@@ -3,20 +3,28 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define TELEMETRY_SIZE 24
+#define TELEMETRY_SIZE 28
+
+#define TELEMETRY_FLAG_GPS_VALID    (1 << 7)
+#define TELEMETRY_FLAG_GPS_ASSISTED (1 << 6)
+#define TELEMETRY_FLAG_SOLAR_ACTIVE (1 << 5)
+#define TELEMETRY_FLAG_TX_24GHZ     (1 << 4)
+#define TELEMETRY_FLAG_TX_FLRC      (1 << 3)
+#define TELEMETRY_FLAG_LOW_POWER    (1 << 1)
 
 typedef struct __attribute__((packed)) {
     uint32_t callsign_hash;
+    uint16_t seq;
     uint32_t latitude_deg1e5;
-    int32_t longitude_deg1e5;
+    int32_t  longitude_deg1e5;
     uint16_t altitude_m;
     uint16_t voltage_mv;
-    int16_t temperature_cdeg;
+    int16_t  temperature_cdeg;
     uint16_t pressure_hpa;
-    uint8_t sats;
-    uint8_t tx_mode;
-    uint8_t antenna;
-    uint8_t flags;
+    uint8_t  sats;
+    uint8_t  tx_mode;
+    uint8_t  antenna;
+    uint8_t  flags;
     uint16_t crc16;
 } telemetry_packet_t;
 

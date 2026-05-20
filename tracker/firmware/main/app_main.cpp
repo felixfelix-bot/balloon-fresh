@@ -4,24 +4,35 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_pm.h"
+#include "esp_sleep.h"
 #include "driver/gpio.h"
+#include "driver/rtc_io.h"
+#include "soc/rtc.h"
 
 #include <RadioLib.h>
 #include "EspHalC3.h"
 
 extern "C" {
-#include "bmp280.h"
-#include "power_manager.h"
 #include "telemetry.h"
+#ifdef CONFIG_ENABLE_BMP280
+#include "bmp280.h"
+#endif
+#ifdef CONFIG_ENABLE_GPS
+#include "gps.h"
+#endif
+#include "power_manager.h"
+#ifdef CONFIG_ENABLE_FEM
+#include "sky66112.h"
+#endif
+#ifdef CONFIG_ENABLE_ANTENNA_SWITCH
 #include "antenna_switch.h"
+#endif
 }
 
-static const char *TAG = "MAIN";
+static const char *TAG = "TRACKER";
 
 #define LED_GPIO 10
 
-/* SPI pin config — matches solder bridge Config A on DIY v0.1 hub board.
- * If D6/D7 pinout is swapped, change SCK=7/MOSI=6 and re-solder bridges crossed. */
 #define LR2021_SCK   6
 #define LR2021_MISO  2
 #define LR2021_MOSI  7
@@ -33,9 +44,20 @@ static const char *TAG = "MAIN";
 static EspHalC3* hal = nullptr;
 static LR2021* radio = nullptr;
 
+#ifdef CONFIG_ENABLE_BMP280
+static bmp280_t bmp;
+#endif
+
+#ifdef CONFIG_ENABLE_GPS
+static gps_data_t gps_data;
+#endif
+
+static RTC_DATA_ATTR uint16_t rtc_seq = 0;
+static RTC_DATA_ATTR bool rtc_first_boot = true;
+
 static bool flag_tx_done = false;
 
-static void on_tx_done(void) {
+static void IRAM_ATTR on_tx_done(void) {
     flag_tx_done = true;
 }
 
@@ -58,9 +80,82 @@ static void blink_led(int times)
     }
 }
 
+static int16_t init_radio(void)
+{
+    hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
+    radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
+    radio->irqDioNum = 9;
+
+    ESP_LOGI(TAG, "Initializing LR2021...");
+    float freq_mhz = (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f;
+    int16_t state = radio->begin(
+        freq_mhz, 125.0,
+        CONFIG_RADIO_SF, 7,
+        0x12, CONFIG_RADIO_TX_POWER_DBM, 8
+    );
+    if (state != RADIOLIB_ERR_NONE) {
+        ESP_LOGE(TAG, "LR2021 init failed: %d", state);
+        return state;
+    }
+
+    radio->setPacketSentAction(on_tx_done);
+    ESP_LOGI(TAG, "LR2021 OK (868 MHz, SF%d, %d dBm)", CONFIG_RADIO_SF, CONFIG_RADIO_TX_POWER_DBM);
+    return RADIOLIB_ERR_NONE;
+}
+
+static void deep_sleep(uint32_t seconds)
+{
+    ESP_LOGI(TAG, "Deep sleep %ds...", (int)seconds);
+#ifdef CONFIG_ENABLE_BMP280
+    bmp280_sleep(&bmp);
+#endif
+    if (radio) {
+        radio->sleep();
+    }
+#ifdef CONFIG_ENABLE_FEM
+    sky66112_shutdown();
+#endif
+    if (radio) {
+        radio->sleep();
+    }
+#ifdef CONFIG_ENABLE_FEM
+    sky66112_shutdown();
+#endif
+    gpio_set_level((gpio_num_t)LED_GPIO, 0);
+
+    esp_sleep_enable_timer_wakeup((uint64_t)seconds * 1000000);
+    esp_deep_sleep_start();
+}
+
 extern "C" void app_main(void)
 {
-    ESP_LOGI(TAG, "Pico Balloon Tracker v0.1 starting...");
+    if (rtc_first_boot) {
+        ESP_LOGI(TAG, "=== Pico Balloon Tracker v0.2 ===");
+#ifdef CONFIG_ENABLE_BMP280
+        ESP_LOGI(TAG, "  BMP280: enabled");
+#else
+        ESP_LOGI(TAG, "  BMP280: disabled");
+#endif
+#ifdef CONFIG_ENABLE_GPS
+        ESP_LOGI(TAG, "  GPS: enabled");
+#else
+        ESP_LOGI(TAG, "  GPS: disabled");
+#endif
+#ifdef CONFIG_ENABLE_FEM
+        ESP_LOGI(TAG, "  FEM: enabled");
+#else
+        ESP_LOGI(TAG, "  FEM: disabled");
+#endif
+#ifdef CONFIG_ENABLE_ANTENNA_SWITCH
+        ESP_LOGI(TAG, "  SP4T: enabled");
+#else
+        ESP_LOGI(TAG, "  SP4T: disabled");
+#endif
+        rtc_first_boot = false;
+        blink_led(3);
+    } else {
+        ESP_LOGI(TAG, "Wakeup from deep sleep (cycle %d)", rtc_seq);
+    }
 
     esp_pm_config_t pm_config = {
         .max_freq_mhz = 80,
@@ -69,73 +164,125 @@ extern "C" void app_main(void)
     };
     ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
 
-    blink_led(3);
-
-    hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
-
-    radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
-    radio->irqDioNum = 9;
-
-    ESP_LOGI(TAG, "Initializing LR2021 (RadioLib)...");
-    int16_t state = radio->begin(868.0, 125.0, 9, 7, 0x12, 22, 8, 1.6);
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "LR2021 init failed: %d", state);
-        while (true) { hal->delay(1000); }
-    }
-    ESP_LOGI(TAG, "LR2021 initialized OK");
-
-    radio->setPacketSentAction(on_tx_done);
-
-    ESP_LOGI(TAG, "Initializing BMP280...");
-    bmp280_t bmp;
-    memset(&bmp, 0, sizeof(bmp));
-    bmp280_init(&bmp, I2C_NUM_0, 8, 9, 400000);
-
-    ESP_LOGI(TAG, "Initializing power manager...");
     power_manager_init();
+    uint16_t cap_mv = power_manager_read_supercap_mv();
+    ESP_LOGI(TAG, "Supercap: %d mV", cap_mv);
+
+    if (cap_mv < CONFIG_LOW_VOLTAGE_MV) {
+        ESP_LOGW(TAG, "Low voltage (%d mV < %d), skipping TX", cap_mv, CONFIG_LOW_VOLTAGE_MV);
+        deep_sleep(CONFIG_TX_INTERVAL_SEC);
+        return;
+    }
+
+    if (init_radio() != RADIOLIB_ERR_NONE) {
+        ESP_LOGE(TAG, "Radio init failed, sleeping");
+        deep_sleep(CONFIG_TX_INTERVAL_SEC);
+        return;
+    }
+
+#ifdef CONFIG_ENABLE_FEM
+    sky66112_init(CONFIG_FEM_TX_PIN, CONFIG_FEM_RX_PIN);
+    sky66112_tx_enable();
+    ESP_LOGI(TAG, "FEM TX enabled");
+#endif
+
+#ifdef CONFIG_ENABLE_ANTENNA_SWITCH
+    antenna_switch_init(CONFIG_ANTENNA_SWITCH_CTRL1_PIN, CONFIG_ANTENNA_SWITCH_CTRL2_PIN);
+    antenna_switch_select(0);
+#endif
+
+#ifdef CONFIG_ENABLE_BMP280
+    memset(&bmp, 0, sizeof(bmp));
+    esp_err_t bmp_ret = bmp280_init(&bmp, I2C_NUM_0, 8, 9, 400000);
+    if (bmp_ret != ESP_OK) {
+        ESP_LOGW(TAG, "BMP280 not found, continuing without sensor");
+    }
+#endif
+
+#ifdef CONFIG_ENABLE_GPS
+    gps_init();
+    ESP_LOGI(TAG, "Waiting for GPS fix...");
+    uint32_t gps_start = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    bool gps_fixed = false;
+    while ((xTaskGetTickCount() * portTICK_PERIOD_MS - gps_start) < 60000) {
+        if (gps_read(&gps_data) && gps_data.fix) {
+            gps_fixed = true;
+            ESP_LOGI(TAG, "GPS: %.5f, %.5f, %dm, %d sats",
+                gps_data.latitude / 1e5, gps_data.longitude / 1e5,
+                gps_data.altitude_m, gps_data.sats);
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    if (!gps_fixed) {
+        ESP_LOGW(TAG, "No GPS fix after 60s, TX without position");
+    }
+    gps_sleep();
+#endif
+
+    float temp = 0, pressure = 0, altitude = 0;
+#ifdef CONFIG_ENABLE_BMP280
+    bmp280_wakeup(&bmp);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    bmp280_read(&bmp, &temp, &pressure, &altitude);
+    bmp280_sleep(&bmp);
+    ESP_LOGI(TAG, "BMP280: %.1f C, %.1f hPa, %.0f m", temp, pressure, altitude);
+#endif
 
     telemetry_packet_t pkt;
     memset(&pkt, 0, sizeof(pkt));
     pkt.callsign_hash = 0x424C4E;
 
-    int cycle = 0;
-    while (1) {
-        ESP_LOGI(TAG, "--- Cycle %d ---", cycle);
-
-        float temp = 0, pressure = 0, altitude = 0;
-        bmp280_read(&bmp, &temp, &pressure, &altitude);
-        ESP_LOGI(TAG, "BMP280: %.1f C, %.1f hPa, %.0f m", temp, pressure, altitude);
-
-        uint16_t cap_mv = power_manager_read_supercap_mv();
-        ESP_LOGI(TAG, "Supercap: %d mV", cap_mv);
-
-        telemetry_fill(&pkt, temp, pressure, altitude, cap_mv, cycle);
-
-        uint8_t buf[TELEMETRY_SIZE];
-        telemetry_serialize(&pkt, buf);
-
-        ESP_LOGI(TAG, "TX %d bytes on 868 MHz...", TELEMETRY_SIZE);
-        flag_tx_done = false;
-        state = radio->startTransmit(buf, TELEMETRY_SIZE);
-        if (state != RADIOLIB_ERR_NONE) {
-            ESP_LOGE(TAG, "startTransmit failed: %d", state);
-        } else {
-            uint32_t timeout = 0;
-            while (!flag_tx_done && timeout < 10000) {
-                hal->delay(1);
-                timeout++;
-            }
-            if (flag_tx_done) {
-                ESP_LOGI(TAG, "TX complete");
-            } else {
-                ESP_LOGW(TAG, "TX timeout");
-            }
-        }
-
-        radio->standby();
-
-        cycle++;
-        ESP_LOGI(TAG, "Sleeping 60s...");
-        vTaskDelay(pdMS_TO_TICKS(60000));
+#ifdef CONFIG_ENABLE_GPS
+    if (gps_data.fix) {
+        pkt.latitude_deg1e5 = (uint32_t)(gps_data.latitude);
+        pkt.longitude_deg1e5 = (int32_t)(gps_data.longitude);
+        pkt.altitude_m = (uint16_t)gps_data.altitude_m;
+        pkt.sats = gps_data.sats;
+        pkt.flags |= TELEMETRY_FLAG_GPS_VALID;
     }
+#endif
+
+#ifdef CONFIG_ENABLE_BMP280
+    if (altitude > 0) {
+#ifdef CONFIG_ENABLE_GPS
+        if (!gps_data.fix)
+#endif
+            pkt.altitude_m = (uint16_t)altitude;
+    }
+#endif
+
+    pkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+
+    telemetry_fill(&pkt, temp, pressure, (float)pkt.altitude_m, cap_mv, rtc_seq);
+
+    uint8_t buf[TELEMETRY_SIZE];
+    telemetry_serialize(&pkt, buf);
+
+    ESP_LOGI(TAG, "TX %d bytes (seq %d)...", TELEMETRY_SIZE, rtc_seq);
+    flag_tx_done = false;
+
+#ifdef CONFIG_ENABLE_FEM
+    sky66112_tx_enable();
+#endif
+
+    int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
+    if (state != RADIOLIB_ERR_NONE) {
+        ESP_LOGE(TAG, "startTransmit failed: %d", state);
+    } else {
+        uint32_t timeout = 0;
+        while (!flag_tx_done && timeout < 10000) {
+            hal->delay(1);
+            timeout++;
+        }
+        ESP_LOGI(TAG, "%s", flag_tx_done ? "TX complete" : "TX timeout");
+    }
+
+#ifdef CONFIG_ENABLE_FEM
+    sky66112_shutdown();
+#endif
+
+    radio->sleep();
+    rtc_seq++;
+    deep_sleep(CONFIG_TX_INTERVAL_SEC);
 }
