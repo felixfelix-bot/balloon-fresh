@@ -270,6 +270,24 @@ These projections are based on INDOOR, room temperature data. At stratospheric a
 
 ---
 
+## External References & Context
+
+Our test data is consistent with published community results:
+
+| Finding | Our Data | Community Data | Source |
+|---------|----------|----------------|--------|
+| Party He = poor lift | 4.8g net lift/balloon (Amazon He) | Spoozer: 4.15g, Party City: 7.25g hover weight | https://www.theastroimager.com/picoballoning/pico-ballooning/ (Ruthroff, "What's up with party store helium?") |
+| Party He = 0% circumnavigation | N/A (not tested) | 0/9 Ruthroff flights with party He circumnavigated | https://www.theastroimager.com/picoballoning/pico-ballooning/ |
+| H2 = 55% circumnavigation rate | N/A (not tested) | 5/9 Ruthroff flights with H2 circumnavigated | https://www.theastroimager.com/picoballoning/pico-ballooning/ |
+| Leak rate consistency | 0.15 g/day/balloon indoor | KI4MCW observed ~3-8 day flights with PartyWoo + He | https://sites.google.com/site/ki4mcw/Home/pico-balloonery |
+| Sealing method matters | N/A (self-sealing valve) | Heat seal + Kapton tape = proven; all adhesives fail | https://www.theastroimager.com/picoballoning/pico-ballooning/ (Ruthroff sealing section) |
+| Cut-down needed for multi-balloon | Calculated: dead balloon = 10.5g drag | KI4MCW noted rapid descent after balloon failure | https://sites.google.com/site/ki4mcw/Home/pico-balloonery |
+| Yokohama durability | N/A (not tested) | 507-528 day flights, 27-32 laps | https://www.theastroimager.com/picoballoning/pico-ballooning/ (JR14, JR29) |
+
+**Conclusion from community data:** Our DecoGlee test confirms that party balloons + party helium are only suitable for short test flights. For long-duration, we must use Yokohama balloons + hydrogen (or 99.999% industrial helium). See `docs/balloon-flight-lessons.md` for full analysis.
+
+---
+
 ## Key Findings
 
 1. **Per-balloon net lift: 4.8g** — Each DecoGlee 18" foil balloon provides ~4.8g of lifting capacity beyond its own weight when filled with helium.
@@ -282,37 +300,40 @@ These projections are based on INDOOR, room temperature data. At stratospheric a
 
 5. **Cut-down is essential for long-duration flights.** A nichrome wire per balloon adds ~0.5g per channel but allows the system to shed dead weight and survive multiple balloon failures.
 
-6. **Party balloons are viable for short test flights (3-8 days).** For multi-week flights, purpose-built envelopes (SBS-13, SPS-13) would be needed. However, the low cost (~EUR 0.37/balloon from a 30-pack) makes party balloons attractive for disposable test flights and iterative development.
+6. **Party balloons are viable for short test flights (3-8 days).** For multi-week flights, Yokohama balloons are required (~$15 each, proven 528-day flights). See `docs/balloon-options-analysis.md`.
 
-7. **Balloon count sweet spot for Mesh V1 (~14g):** 6-7 balloons with cut-down, providing 17-20 days indoor (4-8 days outdoor estimated), surviving 3-4 balloon failures.
+7. **Balloon count sweet spot for Mesh V1 (~14g):** 6-7 DecoGlee with cut-down for short test flights. For long-duration: 1x Yokohama is sufficient (14g payload well within proven range).
 
-8. **Helium purity matters.** Amazon party helium may be diluted with air. Industrial-grade 99% helium would provide more lift per balloon.
+8. **Helium purity matters.** Amazon party helium is diluted. US party He legally capped at ~80% purity. Industrial 99.999% provides 2x more lift. Source: https://www.theastroimager.com/picoballoning/pico-ballooning/
 
-9. **Hydrogen provides ~8% more lift** than helium (1.10 g/L vs 1.02 g/L) at the cost of flammability. For unmanned pico balloons, this is an acceptable tradeoff used by many ham radio balloonists.
+9. **Hydrogen provides ~8% more lift** than helium (1.10 g/L vs 1.02 g/L) and diffuses through Mylar more slowly. 55% circumnavigation rate with Yokohama + H2. Source: https://www.theastroimager.com/picoballoning/pico-ballooning/ and https://sites.google.com/view/picoballoonsbyk9yo/beginners-guide
 
 ---
 
 ## Implications for Project Design
 
-### First Flight Strategy
+### First Flight Strategy (Short Test)
 
-Start with a simple configuration:
+Start with a simple configuration using owned party balloons:
 - 6 DecoGlee balloons in vertical chain
 - Minimal tracker payload (~9g)
 - No cut-down (accept first balloon death = mission end)
 - Heat-seal all valve necks with flat iron
 - Trim excess foil edges (saves ~1g per balloon)
 - Aim for 3-5 day test flight
+- Reference: KI4MCW's first flights used similar configuration — https://sites.google.com/site/ki4mcw/Home/pico-balloonery
 
-### Long-Duration Strategy
+### Long-Duration Strategy (Yokohama + H2)
 
-For the mesh network vision:
-- Over-provision with 7-8 balloons
-- Per-balloon nichrome cut-down with BMP280-triggered release
-- Single vertical chain (avoid tangling)
-- Consider hydrogen for ~8% more lift
-- Consider heat-sealing + additional Mylar tape reinforcement on seams
-- Budget for 4-8 day flights, plan for frequent relaunches
+For the mesh network vision, use proven long-duration hardware:
+- 1x Yokohama balloon (proven 528 days, $15) — https://www.yokohamaballoon.com/
+- Hydrogen from industrial gas supplier — https://sites.google.com/view/picoballoonsbyk9yo/beginners-guide
+- Heat seal + Kapton tape (nothing else works) — https://www.theastroimager.com/picoballoning/pico-ballooning/
+- Stretch to 100-116" circumference before fill — https://www.theastroimager.com/picoballoning/pico-ballooning/
+- 5-7g free lift — https://www.theastroimager.com/picoballoning/pico-ballooning/
+- Target 36,000-45,000 ft altitude — https://www.klofas.com/blog/tag/picoballoon.html (Klofas/SF-HAB)
+- Payload ≤ 22g (our Mesh V1 at 14g is well within proven range)
+- See `docs/balloon-flight-lessons.md` for complete preparation and launch procedures
 
 ### Cost per Flight
 

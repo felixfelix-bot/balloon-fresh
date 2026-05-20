@@ -87,25 +87,31 @@ Details Magenesis Magnete:
 | Verfuegbare MCU Boards | 22 (20x C3, 2x C5) |
 | Verfuegbare RF Module | 7 (4x LR2021, 3x E28-2G4M27S) |
 | Verfuegbare Solarzellen | 150 (100x 52x19mm, 50x 78x39mm) |
-| Verfuegbare Ballons | 30x DecoGlee 18" Folie |
+| Verfuegbare Ballons | 30x DecoGlee 18" Folie (Testflüge) |
 | Verfuegbare Testgewichte | ~43x Magenesis Neodym 10x2mm |
+| Noch zu beschaffen | Yokohama Ballons, H2, Heat Sealer, Kapton Tape (siehe unten) |
 
 ## Noch zu beschaffen
 
-| # | Komponente | Fuer | Prioritaet | Gesch. Kosten |
-|---|-----------|------|-----------|--------------|
-| 1 | ESP-C3-12F bare | Flight-Board | Mittel | ~2 EUR |
-| 2 | BMP280 Breakout | DIY + Flight | Hoch | ~1 EUR |
-| 3 | Supercaps 3.3F 2.7V (2x) | DIY + Flight | Hoch | ~6 EUR |
-| 4 | TPS7A02 LDO | Flight | Hoch | ~0.50 EUR |
-| 5 | SKY66112-11 FEM | Flight (opt.) | Niedrig | ~3 EUR |
-| 6 | SP4T RF Switch | Flight (opt.) | Niedrig | ~2 EUR |
-| 7 | Passive (R, C) | Alle | Hoch | ~2 EUR |
-| 8 | 30 AWG Kupferdraht | Alle | Hoch | ~2 EUR |
-| 9 | Mylar Ballon 36" | Flug (Langzeit) | Niedrig | ~3 EUR |
-| 10 | Helium (Industrie 99%) | Flug | Hoch | ~15 EUR |
-| 11 | PCB Bestellung (Flight) | Flight | Mittel | ~15 EUR |
-| 12 | Protoboard | DIY | Hoch | ~2 EUR |
+| # | Komponente | Fuer | Prioritaet | Gesch. Kosten | Quelle/Referenz |
+|---|-----------|------|-----------|--------------|-----------------|
+| 1 | ESP-C3-12F bare | Flight-Board | Mittel | ~2 EUR | AliExpress |
+| 2 | BMP280 Breakout | DIY + Flight | Hoch | ~1 EUR | AliExpress |
+| 3 | Supercaps 3.3F 2.7V (2x) | DIY + Flight | Hoch | ~6 EUR | AliExpress |
+| 4 | TPS7A02 LDO | Flight | Hoch | ~0.50 EUR | DigiKey/Mouser |
+| 5 | SKY66112-11 FEM | Flight (opt.) | Niedrig | ~3 EUR | DigiKey |
+| 6 | SP4T RF Switch | Flight (opt.) | Niedrig | ~2 EUR | DigiKey |
+| 7 | Passive (R, C) | Alle | Hoch | ~2 EUR | AliExpress |
+| 8 | 30 AWG Kupferdraht | Alle | Hoch | ~2 EUR | AliExpress |
+| 9 | **Yokohama Ballons (10er Pack)** | **Langzeitflug** | **Hoch** | **~EUR 130** | https://www.yokohamaballoon.com/ — Ruthroff: 528 Tage / 32 Runden (JR29) |
+| 10 | **Industriewasserstoff (H2 Flasche)** | **Langzeitflug** | **Hoch** | **~EUR 30-50** | Industrie-Gaslieferant — https://sites.google.com/view/picoballoonsbyk9yo/beginners-guide |
+| 11 | **Impulslöter (Heat Sealer)** | **Alle Ballonflüge** | **Hoch** | **~EUR 15** | Amazon — https://www.theastroimager.com/picoballoning/pico-ballooning/ (Ruthroff: "heat seal + Kapton tape") |
+| 12 | **Kapton Tape** | **Alle Ballonflüge** | **Hoch** | **~EUR 5** | Amazon — Ruthroff: "apply 2-3 heat seals + Kapton tape over seal" |
+| 13 | Mylar Ballon 36" | Flug (Test) | Niedrig | ~3 EUR | AliExpress |
+| 14 | Helium (Industrie 99.999%) | Flug (wenn H2 nicht verfuegbar) | Mittel | ~EUR 30 | Industrie-Gaslieferant — Ruthroff: 67% circumnavigation mit ultra-pure He |
+| 15 | PCB Bestellung (Flight) | Flight | Mittel | ~15 EUR | JLCPCB |
+| 16 | Protoboard | DIY | Hoch | ~2 EUR | AliExpress |
 
 **Minimale Nachbestellung fuer DIY-Start**: ~12 EUR (BMP280 + Supercaps + Passive + Draht + Protoboard)
-**Volle Flight-Ausruestung**: ~35 EUR
+**Erste Flugfertig (Yokohama + H2 + Heat Sealer + Kapton)**: ~EUR 200 (Yokohama 10er + H2 + Heat Sealer + Kapton + Basis-Komponenten)
+**Volle Flight-Ausruestung**: ~EUR 250
