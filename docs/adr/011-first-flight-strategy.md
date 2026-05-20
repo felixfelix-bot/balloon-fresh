@@ -61,11 +61,13 @@ The first flight's primary goal is **range and throughput characterization** acr
 
 ## Decision
 
-### 1. Single Yokohama 32" Balloon
+### 1. Single Yokohama 32" Balloon (Valveless)
 
-Use one Yokohama 32" Sphere Balloon per flight. No multi-balloon, no cut-down mechanism.
+Use one Yokohama 32" Sphere Balloon per flight. **Order valveless version** (no self-sealing valve). No multi-balloon, no cut-down mechanism.
 
 **Rationale:** Proven across 528-day flights. Multi-balloon adds complexity with no community precedent for success. Our 9-14g payload is well within the single-balloon capacity.
+
+**Valveless choice:** Self-sealing valves are unreliable at altitude (Ruthroff: "The self-sealing nozzle may not self-seal" after deflation/refill cycle). Yokohama sells "no nozzle" versions specifically for pico-balloonists. We heat-seal the neck with an impulse sealer + Kapton tape instead — proven across all 37 Ruthroff flights.
 
 **Multi-balloon research is deferred to mesh-stack Phase 5.** See `mesh-stack/ROADMAP.md`.
 
@@ -92,11 +94,13 @@ Start with the Minimal variant (no BMP280, no FEM, wire dipole only).
 
 **Rationale:** The first flight goal is range/throughput characterization, not altitude logging. The 9g weight maximizes free lift margin for learning. Horizontal position from WSPR/LoRa reception + radio temperature is sufficient for range estimation. BMP280 can be added in Mittel variant for subsequent flights.
 
-### 4. Yokohama 32" Sphere Balloon 10-Pack
+### 4. Yokohama 32" Sphere Balloon 10-Pack (Valveless, Crystal Clear)
 
-Order the 10-pack from https://www.yokohamaballoon.com/ (€96.95).
+Order the 10-pack Crystal Clear variant from https://www.yokohamaballoon.com/ (€105.95).
 
-**Rationale:** €9.70/flight is the cheapest component. 10-pack allows iterative learning across multiple launches. Request valveless version if available (self-sealing valves are unreliable at altitude per Ruthroff).
+**Rationale:** €10.60/flight is the cheapest component. 10-pack allows iterative learning across multiple launches. Crystal Clear absorbs less solar IR than colored variants, helping maintain stable internal pressure. Valveless version avoids unreliable self-sealing valves.
+
+**Material note:** Yokohama balloons are Nylon/PE laminate (NOT metalized foil/Mylar). Despite foil having better theoretical gas barrier properties, nylon/PE vastly outperforms in practice due to stretchability, thermal cycling tolerance, and superior seam construction. See `docs/balloon-options-analysis.md` for material comparison.
 
 ## Consequences
 
@@ -115,12 +119,12 @@ Order the 10-pack from https://www.yokohamaballoon.com/ (€96.95).
 
 | Item | Cost |
 |------|------|
-| Yokohama 32" 10-pack | €96.95 |
+| Yokohama 32" Crystal Clear 10-pack (valveless) | €105.95 |
 | ALbee Fly helium | ~€30-50 |
 | Heat sealer (impulse) | ~€15 |
 | Kapton tape | ~€5 |
 | BMP280 + supercaps + passives + wire | ~€12 |
-| **Total to first flight** | **~€170-190** |
+| **Total to first flight** | **~€175-195** |
 
 ## Key References
 
