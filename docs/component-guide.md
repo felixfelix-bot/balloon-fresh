@@ -30,12 +30,32 @@ LoRa/FLRC/Sub-GHz. Ohne dieses Modul kein Funk.
 | Option | Gewicht | Kosten | Vorhanden? | Bewertung |
 |--------|---------|--------|------------|-----------|
 | NiceRF LoRa2021 | ~1.8g | 0 EUR | 4x da | Gen 4, Sub-GHz + 2.4 GHz, FLRC, RTToF, LR-FHSS |
+| EBYTE E28-2G4M27S | ~2g | 0 EUR | 3x da | SX1281, 2.4 GHz only, +27 dBm PA, direct SPI |
 | Seeed Wio-LR2021 | ~2g | ~10 EUR | Nein | Alternative LR2021 Modul |
 | Ebyte E28-LR1121 | ~2g | ~8 EUR | Nein | Gen 3, nur LoRa/GFSK, kein FLRC |
 | SX1262 Modul | ~1.5g | ~5 EUR | Nein | Nur Sub-GHz, kein 2.4 GHz, kein FLRC |
 | SX1280 Modul | ~1.5g | ~6 EUR | Nein | Nur 2.4 GHz, hat Ranging, aber kein Sub-GHz |
 
 **Empfehlung**: NiceRF LoRa2021 - bestes Feature-Set, bereits vorhanden.
+
+### E28-2G4M27S als Entwicklungs-Plattform
+
+Die EBYTE E28-2G4M27S Module bieten einen wichtigen Vorteil gegenueber den NiceRF LoRa2021 fuer die Entwicklung:
+
+**Vorteile:**
+- **+27 dBm (500 mW)** eingebauter PA — 5 dB mehr als SKY66112 FEM (+22 dBm), kein externer FEM noetig
+- **Direkter SPI-Zugriff** auf SX1281 Register — kein USB-Seriell-Chip als Flaschenhals
+- Kann als Throughput-Testplattform dienen (SX1280 USB Dongles haben CH341 als Durchsatz-Begrenzung)
+
+**Nachteile:**
+- Nur 2.4 GHz (kein Sub-GHz)
+- SX1281 statt LR2021 (kein RTToF Ranging)
+- ~2g Modulgewicht
+
+**Nutzung im Projekt:**
+1. Prototyping: +27 dBm TX testen ohne SKY66112 FEM
+2. Throughput-Messung: Direkte SPI-Register-Auslesung ohne CH341-Bottleneck
+3. Bodenstation: Als 2.4 GHz Empfaenger mit +27 dBm Sendeleistung
 
 ---
 
@@ -289,7 +309,48 @@ Antennenstruktur.
 
 ---
 
-## 13. Mechanische Teile
+## 13. Ballons (Traggas-Huellen)
+
+**Warum noetig**: Traggas-Huelle erzeugt Auftrieb durch Verdraengung von Luft.
+Ohne Ballon kein Flug. Die Wahl des Ballons bestimmt maximalen Flug, Gewicht
+und Kosten massgeblich.
+
+| Option | Gewicht | Netto-Auftrieb | Kosten | Bewertung |
+|--------|---------|---------------|--------|-----------|
+| DecoGlee 18" Folie (30x da) | ~10.5g | ~4.8g (He) | 0.37 EUR | Party-Ballon, kurzzeitiger Flug (4-8 Tage), guenstig |
+| SBS-13 / SPS-13 | ~8g | ~20g+ (He) | ~35-50 EUR | Professioneller Pico-Ballon, mehrwoechiger Flug |
+| Qualatex 36" Folie | ~60g | ~100g (He) | ~3 EUR | Schwer, viel Auftrieb, aber Overkill fuer Pico |
+| Mylar 36" (geziehlt) | ~30g | ~50g (He) | ~3 EUR | Mittelweg |
+
+**DecoGlee 18" Details (getestet, siehe docs/balloon-test-results.md):**
+- Netto-Auftrieb: 4.8g pro Ballon mit Helium
+- Leckrate (Indoor): 0.15 g/Tag pro Ballon
+- Ventile muessen mit Flaecheneisen heissversiegelt werden
+- Ueberfluessige Folienraender abschneiden (~1g pro Ballon sparen)
+- Mehrere Ballons in vertikaler Kette fuer mehr Auftrieb
+- Fuer Langzeitflug: Cut-Down-Mechanismus zwingend erforderlich
+
+**Empfehlung**: DecoGlee fuer erste Testfluege (guenstig, vorhanden). SBS-13 fuer Langzeit-Mesh-Flug.
+
+---
+
+## 14. Cut-Down Mechanismus (Nichrome)
+
+**Warum noetig**: Bei Mehr-Ballon-Konfiguration wird ein toter Ballon zur toten
+Last (~10.5g). Da er mehr wiegt als er Auftrieb liefert (4.8g), muss er
+abgeworfen werden. Ohne Cut-Down ist der erste Ballonausfall das Missionsende.
+
+| Option | Gewicht/Kanal | Kosten | Bewertung |
+|--------|-------------|--------|-----------|
+| MOSFET + Nichrome pro Ballon | ~0.5g | ~1 EUR | Vollstaendiges Per-Ballon-Management |
+| Einzelner Nichrome (ganze Kette) | ~0.5g | ~0.50 EUR | Einziger Cut, wirft gesamte Kette unterhalb |
+| Kein Cut-Down | 0g | 0 EUR | Nur fuer Einzel-Ballon oder kurze Testfluege |
+
+**Empfehlung**: Einzelner Nichrome fuer ersten Testflug. Per-Ballon fuer Langzeit-Mesh.
+
+---
+
+## 15. Mechanische Teile
 
 **Warum noetig**: Halten alles zusammen, versiegeln den Ballon, befuellen mit
 Helium.
@@ -297,15 +358,18 @@ Helium.
 | Option | Gewicht | Kosten | Bewertung |
 |--------|---------|--------|-----------|
 | 30 AWG Kupferdraht | ~0.5g/2m | ~2 EUR | Verbindungen, Antennen |
-| Mylar Folienballon 36" | ~60g | ~3 EUR | Traeger. Qualatex oder Aeon |
-| Helium | - | ~15 EUR | Befuellung. Nur von Gas-Dealer |
-| Wasserstoff | - | ~5 EUR | Billiger, mehr Auftrieb, aber entzuendbar |
+| DecoGlee 18" Folienballon | ~10.5g | 0.37 EUR | 30x vorhanden. Testflug, kurzzeitig |
+| Mylar Folienballon 36" | ~60g | ~3 EUR | Langzeit-Alternative (Qualatex/Aeon) |
+| Helium | - | ~15 EUR | Befuellung. Industrie 99% empfohlen |
+| Wasserstoff | - | ~5 EUR | +8% Auftrieb, billiger, entzuendbar |
+| Angelschnur (Dacron/Nylon) | ~0.5g/5m | ~1 EUR | Ballon-Tether (schmilzt mit Nichrome) |
+| Flaecheneisen / Heissversiegler | - | ~10 EUR | Ballon-Ventile permanent verschliessen |
 | Kabelbinder / Tape | ~0.5g | ~1 EUR | Befestigung |
 | Heisskleber | ~0.5g | ~1 EUR | Abdichtung |
 
 ---
 
-## 14. Tools und Testausruestung
+## 16. Tools und Testausruestung
 
 | Option | Kosten | Bewertung |
 |--------|--------|-----------|
@@ -337,8 +401,10 @@ Helium.
 
 8. BMP280 - Hoehe, oder LR2021-intern
 9. BAT54 - oder weglassen
-10. FEM - nur fuer 2.4 GHz @ +22 dBm
+10. FEM - nur fuer 2.4 GHz @ +22 dBm (oder E28-2G4M27S mit +27 dBm ohne FEM)
 11. SP4T Switch - nur fuer 4-Antennen-Setup
 12. Ferrite Beads - nur auf Flight-PCB
 13. Balancing Widerstaende - oder Einzelcap nutzen
 14. Custom PCB - oder Protoboard/Loeten
+15. Cut-Down (Nichrome) - fuer Mehr-Ballon-Langzeitflug
+16. E28-2G4M27S - fuer Entwicklungs-Prototyping mit +27 dBm
