@@ -104,14 +104,15 @@ Details Magenesis Magnete:
 | 7 | Passive (R, C) | Alle | Hoch | ~2 EUR | AliExpress |
 | 8 | 30 AWG Kupferdraht | Alle | Hoch | ~2 EUR | AliExpress |
 | 9 | **Yokohama Ballons (10er Pack)** | **Langzeitflug** | **Hoch** | **~EUR 130** | https://www.yokohamaballoon.com/ — Ruthroff: 528 Tage / 32 Runden (JR29) |
-| 10 | **Industriewasserstoff (H2 Flasche)** | **Langzeitflug** | **Hoch** | **~EUR 30-50** | Industrie-Gaslieferant — https://sites.google.com/view/picoballoonsbyk9yo/beginners-guide |
+| 10 | **Industries Helium He 4.6 (ALbee Fly)** | **Langzeitflug** | **Hoch** | **~EUR 30-50** | Air Liquide ALbee Fly — https://www.airliquide.com/ — integrierter Druckminderer, 99.996% Reinheit |
+| 10b | Wasserstoff H2 (Fallback) | Langzeitflug (opt.) | Niedrig | ~EUR 30 | Industrie-Gaslieferant — verschoben bis He Erfahrung vorliegt (ADR-011) |
 | 11 | **Impulslöter (Heat Sealer)** | **Alle Ballonflüge** | **Hoch** | **~EUR 15** | Amazon — https://www.theastroimager.com/picoballoning/pico-ballooning/ (Ruthroff: "heat seal + Kapton tape") |
 | 12 | **Kapton Tape** | **Alle Ballonflüge** | **Hoch** | **~EUR 5** | Amazon — Ruthroff: "apply 2-3 heat seals + Kapton tape over seal" |
 | 13 | Mylar Ballon 36" | Flug (Test) | Niedrig | ~3 EUR | AliExpress |
-| 14 | Helium (Industrie 99.999%) | Flug (wenn H2 nicht verfuegbar) | Mittel | ~EUR 30 | Industrie-Gaslieferant — Ruthroff: 67% circumnavigation mit ultra-pure He |
+| 14 | Helium (Industrie 99.999%) | Flug (reserve) | Niedrig | ~EUR 30 | Linde/Messer — falls ALbee nicht verfuegbar |
 | 15 | PCB Bestellung (Flight) | Flight | Mittel | ~15 EUR | JLCPCB |
 | 16 | Protoboard | DIY | Hoch | ~2 EUR | AliExpress |
 
 **Minimale Nachbestellung fuer DIY-Start**: ~12 EUR (BMP280 + Supercaps + Passive + Draht + Protoboard)
-**Erste Flugfertig (Yokohama + H2 + Heat Sealer + Kapton)**: ~EUR 200 (Yokohama 10er + H2 + Heat Sealer + Kapton + Basis-Komponenten)
+**Erste Flugfertig (Yokohama + He 4.6 + Heat Sealer + Kapton)**: ~EUR 170-190 (ADR-011)
 **Volle Flight-Ausruestung**: ~EUR 250
