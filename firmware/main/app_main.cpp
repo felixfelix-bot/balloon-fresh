@@ -20,6 +20,8 @@ static const char *TAG = "MAIN";
 
 #define LED_GPIO 10
 
+/* SPI pin config — matches solder bridge Config A on DIY v0.1 hub board.
+ * If D6/D7 pinout is swapped, change SCK=7/MOSI=6 and re-solder bridges crossed. */
 #define LR2021_SCK   6
 #define LR2021_MISO  2
 #define LR2021_MOSI  7

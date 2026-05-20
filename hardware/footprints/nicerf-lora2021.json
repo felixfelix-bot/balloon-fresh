@@ -1,0 +1,47 @@
+{
+  "module": "NiceRF LoRa2021 Gen4",
+  "dimensions": {
+    "width_mm": 19.81,
+    "height_mm": 14.98,
+    "thickness_mm": 2.32
+  },
+  "pin_type": "castellated",
+  "pins_per_side": 9,
+  "total_pins": 18,
+  "pin_pitch_mm": 1.29,
+  "pin_offset_from_edge_mm": 1.69,
+  "pin1_marker": "none visible",
+  "note": "Pin numbering reconstructed from back-side labels. Back side left = ANT top, VCC bottom. When flipped to component (top) view, left/right swap. ANT is top-left on component side.",
+  "top_view_left_side_top_to_bottom": [
+    {"pin": 9, "function": "ANT", "type": "RF", "note": "Sub-GHz (433/868/915 MHz), 50 Ohm"},
+    {"pin": 2, "function": "GND", "type": "GND"},
+    {"pin": 7, "function": "BUSY", "type": "output", "note": "High = internal controller busy"},
+    {"pin": 6, "function": "NSS", "type": "input", "note": "SPI Chip Select, active low"},
+    {"pin": 5, "function": "SCK", "type": "input", "note": "SPI Clock"},
+    {"pin": 4, "function": "MOSI", "type": "input", "note": "SPI Data In (MCU -> module)"},
+    {"pin": 3, "function": "MISO", "type": "output", "note": "SPI Data Out (module -> MCU)"},
+    {"pin": 8, "function": "GND", "type": "GND"},
+    {"pin": 1, "function": "VCC", "type": "power", "note": "1.8-3.6V, use 3.3V"}
+  ],
+  "top_view_right_side_top_to_bottom": [
+    {"pin": 10, "function": "2.4G/S_ANT", "type": "RF", "note": "2.4 GHz + S-Band, 50 Ohm"},
+    {"pin": 11, "function": "GND", "type": "GND"},
+    {"pin": 12, "function": "GND", "type": "GND"},
+    {"pin": 13, "function": "VTCXO", "type": "power", "note": "TCXO supply/output"},
+    {"pin": 14, "function": "RST", "type": "input", "note": "Active low hardware reset"},
+    {"pin": 15, "function": "DIO9", "type": "I/O", "note": "Configurable GPIO, used as IRQ in RadioLib"},
+    {"pin": 16, "function": "DIO8", "type": "I/O", "note": "Configurable GPIO"},
+    {"pin": 17, "function": "DIO7", "type": "I/O", "note": "Configurable GPIO"},
+    {"pin": 18, "function": "GND", "type": "GND"}
+  ],
+  "electrical": {
+    "tx_433mhz_22dbm_ma": 120,
+    "tx_2_4ghz_12dbm_ma": 35,
+    "rx_subghz_ma": 6,
+    "rx_2_4ghz_ma": 7,
+    "sleep_ua": 2,
+    "sensitivity_subghz_sf12_dbm": -143,
+    "sensitivity_2_4ghz_sf12_dbm": -137
+  },
+  "layout_top_view_ascii": "         ┌──────────────────────────┐\n  ANT  9 │                          │ 10 2.4G\n  GND  2 │                          │ 11 GND\n BUSY  7 │                          │ 12 GND\n  NSS  6 │       LoRa2021            │ 13 VTCXO\n  SCK  5 │       19.81x14.98mm       │ 14 RST\n MOSI  4 │       Castellated         │ 15 DIO9\n MISO  3 │       18-pin              │ 16 DIO8\n  GND  8 │                          │ 17 DIO7\n  VCC  1 │                          │ 18 GND\n         └──────────────────────────┘\n         (Left: pins 9,2,7,6,5,4,3,8,1)  (Right: pins 10-18)"
+}
