@@ -173,6 +173,49 @@ weglassen und LR2021-internen Temp-Sensor nutzen.
 
 ---
 
+## 8b. GPS Modul (u-blox MAX-M10S)
+
+**Warum noetig**: Liefert Position (Lat/Lon) und Hoehe. Ohne GPS weiss die
+Bodenstation nicht wo sich der Ballon befindet. Kritisch fuer Tracking und
+Recovery. BMP280 liefert nur relative Hoehe (Druck), GPS gibt absolute Koordinaten.
+
+| Option | Gewicht | Strom | Kosten | Bewertung |
+|--------|---------|-------|--------|-----------|
+| u-blox MAX-M10S | ~0.6g | ~25 mW (cont) / 8 mW (PSM) | ~15-20 EUR | Superellipse, multi-GNSS, UART |
+| u-blox MAX-M10C | ~0.4g | ~25 mW | ~12 EUR | Kleiner, weniger Konstellationen |
+| ATGM336H | ~0.5g | ~25 mW | ~5 EUR | Chinesisch, weniger genau |
+| L76K (Quectel) | ~0.5g | ~25 mW | ~8 EUR | Gute Alternative |
+| Kein GPS | 0g | 0 | 0 EUR | Nur BMP280-Hoehe + chip-Temperatur |
+
+**MAX-M10S Details:**
+- Schnittstelle: UART (9600/38400 Baud, NMEA 4.11)
+- Multi-GNSS: GPS, GLONASS, Galileo, BeiDou (bis 4 gleichzeitig)
+- Power Save Mode: 8 mW Durchschnitt (zyklisches Tracking)
+- Cold Start: ~25s, Hot Start: ~1s
+- Genauigkeit: 1.5 m CEP (open sky)
+- Flash: Supercap/battery backup fuer schnellen Hot Start
+- Firmware-konfigurierbar (u-center Tool oder UART-Kommandos)
+
+**Wiring (ESP32-C3):**
+```
+MAX-M10S TX  →  GPIO0  (ESP32 UART1 RX)
+MAX-M10S RX  →  GPIO1  (ESP32 UART1 TX)
+MAX-M10S VCC →  3.3V
+MAX-M10S GND →  GND
+```
+
+**Firmware-Integration:**
+- `CONFIG_ENABLE_GPS=y` in Kconfig (compile-time, optional)
+- NMEA GGA/RMC Parser in `tracker/firmware/components/gps/gps.c`
+- Sleep/Wakeup via PUBX-Kommandos (Power Save Mode)
+- GPIO0 ist Strapping-Pin — GPS TX ist High-Z bei Boot, kein Konflikt
+- GPIO1 konkurriert mit FEM TX_EN — GPS und FEM sind gegenseitig exklusiv
+
+**Empfehlung**: MAX-M10S fuer first flight (Position = wichtigste Telemetrie).
+Fuer Minimal ohne GPS: LR2021 chip-Temp + BMP280-Druck als Fallback.
+
+---
+
 ## 9. SKY66112-11 FEM (PA + LNA)
 
 **Warum noetig**: Power Amplifier boostet Sendeleistung von +12 auf +22 dBm
