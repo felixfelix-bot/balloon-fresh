@@ -8,7 +8,7 @@ Comprehensive comparison of balloon envelopes for pico-balloon flights, based on
 
 | Balloon | Cost Each | Diameter | Weight | Net Lift | Best Flight | Typical Duration | Success Rate |
 |---------|----------|----------|--------|----------|-------------|-----------------|-------------|
-| **Yokohama (Japan)** | **~$15** (10-pack) | ~90cm (36") | 47g | ~20-25g | **528 days, 32 laps** | 60-500+ days | ~55% circumnavigation (H2) |
+| **Yokohama (Japan)** | **~€10.60** (10-pack) | ~90cm (36") | 47g | ~20-25g | **528 days, 32 laps** | 60-500+ days | ~67% circumnavigation (He 4.6) |
 | **SBS-13** | **~$165** | ~91cm x 228cm | TBD | TBD | Multi-week | Designed for this | High (purpose-built) |
 | **SBS-12** | Contact for quote | ~91cm x 196cm | TBD | TBD | Similar to SBS-13 | Similar | High |
 | **Chinese clear party (36")** | ~$1-2 | ~90cm | ~30g | ~20g | ~12 days | 1-12 days | Low-moderate |
@@ -52,7 +52,9 @@ Ruthroff conducted a controlled experiment: inflate identical Yokohama balloons 
 
 ### Recommendation
 
-**Use hydrogen for all long-duration flights.** It is cheaper, provides ~8% more lift than helium, and has a proven track record. For safety-constrained situations, use industrial-grade 99.999% helium from a gas supplier (NOT party-store).
+**Use industrial He 4.6 (99.996%) for initial flights** (ADR-011). Safer, indoor-compatible, higher circumnavigation rate. Source: Air Liquide ALbee Fly, Linde, or Messer.
+
+Hydrogen is deferred to future consideration — cheaper and more lift, but requires outdoor handling, anti-static precautions, and left-hand thread regulators. See ADR-011 for full rationale.
 
 ---
 
@@ -68,22 +70,29 @@ Ruthroff conducted a controlled experiment: inflate identical Yokohama balloons 
 | Original purpose | Wedding/party decoration |
 | Diameter (inflated) | ~90cm (~3 feet), just under 100" circumference |
 | Weight | 47g (confirmed by Ruthroff) |
-| Cost | $150 for 10-pack including shipping = **$15 each** |
+| Cost | **€105.95 for 10-pack = ~€10.60 each** |
 | Nozzle types | Self-sealing (older) and no-nozzle (newer) |
 | Proven altitude | 38,000-51,000 feet (11.6-15.5 km) |
 | Proven duration | 528 days, 32 circumnavigations (JR29, Ruthroff) |
-| Material | Trade-secret foil (not standard Mylar) |
+| Material | **Nylon/Polyethylene laminate** (NOT metalized foil/Mylar) |
 | Film thickness | Estimated 1-2 mil (25-50 µm) |
+| Shop URL | https://www.yokohamaballoon.com/ |
 
-**Preparation procedure (from Ruthroff):**
-1. Inflate with air pump to 100-116" circumference (stretch)
-2. Hold at stretch for hours to days
-3. Deflate completely (2 hours with pump)
-4. Refill with lifting gas (~0.07 m³ for launch)
-5. Heat-seal nozzle (setting "6" on standard heat sealer, ~5 seconds)
-6. Add Kapton/Kynar tape over seal
-7. Measure neck lift with calibrated weights
-8. Launch with 5-8g free lift
+**Note:** Crystal Clear variant also available at same price (€105.95/10-pack). Clear balloons absorb less solar IR, which helps maintain stable internal pressure in direct sunlight.
+
+**Preparation procedure (from Ruthroff + Yokohama manufacturer):**
+1. Humidify the environment a few days before inflating (Yokohama manufacturer recommendation)
+2. Inflate with air pump to 100-116" circumference (stretch) in a warm environment
+3. Inflate to ~85% first, leave untouched for a few hours, then inflate remaining 15% (Yokohama manufacturer)
+4. Hold at stretch for hours to days
+5. Deflate completely (2 hours with pump)
+6. Refill with lifting gas (~0.07 m³ for launch)
+7. Heat-seal nozzle (setting "6" on standard heat sealer, ~5 seconds)
+8. Add Kapton/Kynar tape over seal
+9. Measure neck lift with calibrated weights
+10. Launch with 5-7g free lift
+
+**Note on humidity:** Ruthroff stated "manometer or high-humidity stretching not required" (JR09 notes), but the Yokohama manufacturer explicitly recommends humidifying before inflation. The manufacturer's guidance likely reflects their nylon/PE material properties — cold/dry film may not stretch properly and can burst. Ruthroff's method worked for 528 days, but following the manufacturer's guidance is prudent for first flights.
 
 **At launch, Yokohama looks underinflated** — this is normal. The balloon expands as it rises to altitude.
 
@@ -195,20 +204,78 @@ See `docs/balloon-test-results.md` for full test data.
 
 ---
 
+## Envelope Material Comparison: Foil/Mylar vs Nylon/PE
+
+This is a counterintuitive topic. Metalized foil (Mylar) has better gas barrier properties in theory, but nylon/PE (Yokohama) vastly outperforms it in practice.
+
+### Material Properties
+
+| Property | Metalized Foil/Mylar (DecoGlee, PartyWoo) | Nylon/PE Laminate (Yokohama) |
+|----------|-------------------------------------------|------------------------------|
+| Material | PET film + thin aluminum vapor deposit | Nylon + polyethylene laminate |
+| Metal layer | Yes — aluminum barrier | None |
+| Gas barrier (theoretical) | Excellent — metal blocks H2/He diffusion | Moderate — relies on polymer thickness |
+| Stretchability | **None** — rigid, fixed volume | **High** — designed to stretch into sphere |
+| Cold flexibility | Brittle at -60°C, seams crack | Remains flexible at -60°C |
+| UV resistance | Metal layer reflects UV | Film degrades slowly under UV |
+| Radar signature | Metalized = visible to radar | Transparent to radar |
+
+### Gas Permeability Detail
+
+Hydrogen (H2) molecules are smaller than helium (He) atoms:
+- H2 molecular weight: 2 → diffuses through ALL polymers faster
+- He atomic weight: 4 → slower diffusion through polymer matrices
+- The aluminum layer in Mylar does block gas diffusion, but **only where the metal is intact**
+- At seams, folds, and stress points, the metal layer cracks — creating diffusion paths
+- Thermal cycling (-60°C to +20°C daily) causes metal layer to delaminate
+
+### Why Nylon/PE Wins in Practice
+
+Despite worse theoretical gas barrier properties, Yokohama nylon/PE balloons achieve 10-100x longer flights:
+
+| Factor | Explanation | Impact |
+|--------|-------------|--------|
+| **Seam quality** | Japanese craftsmanship produces superior weld seams vs cheap party balloons | Most leaks happen at seams, not through the envelope material |
+| **Superpressure tolerance** | Stretchable envelope expands at altitude without bursting; foil has fixed volume → overpressure → burst | Foil bursts when gas expands; nylon/PE accommodates |
+| **Thermal cycling** | Nylon/PE flexes through daily -60°C to +20°C cycles; foil becomes brittle and cracks | Stratospheric thermal cycling is the #2 killer after seam failure |
+| **Material thickness** | Yokohama film is likely thicker and more carefully laminated than cheap party foil | Thicker = fewer micro-punctures |
+| **Pre-stretching** | Pre-stretching creates stable superpressure envelope at target altitude | Only possible with stretchable material |
+
+### Real-World Evidence
+
+| Balloon | Material | Best Flight | Source |
+|---------|----------|-------------|--------|
+| Yokohama 32" | Nylon/PE | **528 days, 32 laps** | https://www.theastroimager.com/picoballoning/pico-ballooning/ (JR29) |
+| Yokohama 32" | Nylon/PE | 507 days, 27 laps (H2!) | https://www.theastroimager.com/picoballoning/pico-ballooning/ (JR14) |
+| PartyWoo 50" | Metalized foil | 15 days | https://sites.google.com/site/ki4mcw/Home/pico-balloonery (Flight #14) |
+| Cymylar 60" | Metalized foil | 7 days 18h | https://sites.google.com/site/ki4mcw/Home/pico-balloonery (Flight #25) |
+| DecoGlee 18" | Metalized foil | 25 days indoor (0 outdoor) | Our test: docs/balloon-test-results.md |
+| Chinese clear 36" | Unknown film | ~12 days | https://www.klofas.com/blog/tag/picoballoon.html (Klofas) |
+
+Even with **hydrogen** (which diffuses faster than helium), the nylon/PE Yokohama achieved 507 days — proving the material is more than adequate for gas containment when properly sealed.
+
+### Key Takeaway
+
+**Gas permeability through the envelope material is NOT the limiting factor for flight duration.** Seam quality, superpressure tolerance, and thermal cycling resistance matter far more. The metalized foil's theoretical gas barrier advantage is overwhelmed by its mechanical disadvantages.
+
+---
+
 ## Cost per Successful Long-Duration Flight
 
 Factoring in balloon cost + gas + success rate:
 
 | Option | Balloon Cost | Gas Cost | Success Rate | Cost per Successful Flight |
 |--------|-------------|----------|-------------|---------------------------|
-| **Yokohama + H2** | **$15** | **~$5** | **~55%** | **~$36** |
-| Yokohama + ultra-pure He | $15 | ~$25 | ~67% | ~$60 |
+| **Yokohama + He 4.6** | **~€10.60** | **~€5-10** | **~67%** | **~€25** |
+| Yokohama + H2 | ~€10.60 | ~€3 | ~55% | ~€25 |
 | SBS-13 + H2 | $165 | ~$5 | ~70% (estimated) | ~$243 |
 | Chinese clear (2x) + H2 | $3 | ~$5 | ~20% | ~$40 |
 | PartyWoo 50" + He | $5 | ~$10 | ~10% | ~$150 |
 | DecoGlee (6x) + He | $2.50 | ~$15 | ~5% | ~$350 |
 
-**Yokohama + hydrogen is clearly the best value.** At ~$36 per successful circumnavigation, it's affordable for regular relaunches in a mesh network scenario.
+**Yokohama + He 4.6 is our chosen combination** (ADR-011). At ~€25 per successful flight and 67% circumnavigation rate, it is safe, convenient, and cost-effective. H2 is deferred to future consideration.
+
+Note: H2 provides ~8% more lift and lower gas cost, but requires outdoor-only handling, special safety equipment, and has a lower circumnavigation rate in available data. See ADR-011 for full rationale.
 
 ---
 

@@ -164,7 +164,7 @@ GPIO20 = SP4T CTRL_2 (Antenna Select) -- optional
 
 **Short test flights (DecoGlee, owned):** 30x DecoGlee 18" foil, 4.8g net lift, 0.15 g/day leak rate. Use for 3-8 day shakedown flights. Heat seal + Kapton tape. 6-7 balloons with cut-down for Mesh V1.
 
-**Long-duration flights (Yokohama + He 4.6, to purchase):** Yokohama 32" Sphere Balloon 10-pack €96.95 from https://www.yokohamaballoon.com/. Industrial helium (grade 4.6, 99.996%) from Air Liquide ALbee Fly system. 67% circumnavigation rate with ultra-pure He (Ruthroff data). Our 9-14g payload is well within proven range (Ruthroff flew 14-22g payloads). Hydrogen deferred to future — He 4.6 is safer, higher success rate, and can be handled indoors. See ADR-011.
+**Long-duration flights (Yokohama + He 4.6, to purchase):** Yokohama 32" Crystal Clear Sphere Balloon valveless 10-pack €105.95 from https://www.yokohamaballoon.com/. Nylon/PE laminate (NOT foil). Industrial helium (grade 4.6, 99.996%) from Air Liquide ALbee Fly system. 67% circumnavigation rate with ultra-pure He (Ruthroff data). Our 9-14g payload is well within proven range (Ruthroff flew 14-22g payloads). Hydrogen deferred to future — He 4.6 is safer, higher success rate, and can be handled indoors. See ADR-011.
 
 **Key references:**
 - Ruthroff (37 flights, Yokohama + H2/He): https://www.theastroimager.com/picoballoning/pico-ballooning/

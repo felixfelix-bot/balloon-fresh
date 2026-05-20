@@ -103,7 +103,7 @@ Details Magenesis Magnete:
 | 6 | SP4T RF Switch | Flight (opt.) | Niedrig | ~2 EUR | DigiKey |
 | 7 | Passive (R, C) | Alle | Hoch | ~2 EUR | AliExpress |
 | 8 | 30 AWG Kupferdraht | Alle | Hoch | ~2 EUR | AliExpress |
-| 9 | **Yokohama Ballons (10er Pack)** | **Langzeitflug** | **Hoch** | **~EUR 130** | https://www.yokohamaballoon.com/ — Ruthroff: 528 Tage / 32 Runden (JR29) |
+| 9 | **Yokohama Ballons 32" Crystal Clear valveless (10er Pack)** | **Langzeitflug** | **Hoch** | **EUR 105,95** | https://www.yokohamaballoon.com/ — Nylon/PE, nicht Folie. Ruthroff: 528 Tage / 32 Runden (JR29). Valveless = heat seal + Kapton |
 | 10 | **Industries Helium He 4.6 (ALbee Fly)** | **Langzeitflug** | **Hoch** | **~EUR 30-50** | Air Liquide ALbee Fly — https://www.airliquide.com/ — integrierter Druckminderer, 99.996% Reinheit |
 | 10b | Wasserstoff H2 (Fallback) | Langzeitflug (opt.) | Niedrig | ~EUR 30 | Industrie-Gaslieferant — verschoben bis He Erfahrung vorliegt (ADR-011) |
 | 11 | **Impulslöter (Heat Sealer)** | **Alle Ballonflüge** | **Hoch** | **~EUR 15** | Amazon — https://www.theastroimager.com/picoballoning/pico-ballooning/ (Ruthroff: "heat seal + Kapton tape") |
@@ -114,5 +114,5 @@ Details Magenesis Magnete:
 | 16 | Protoboard | DIY | Hoch | ~2 EUR | AliExpress |
 
 **Minimale Nachbestellung fuer DIY-Start**: ~12 EUR (BMP280 + Supercaps + Passive + Draht + Protoboard)
-**Erste Flugfertig (Yokohama + He 4.6 + Heat Sealer + Kapton)**: ~EUR 170-190 (ADR-011)
+**Erste Flugfertig (Yokohama + He 4.6 + Heat Sealer + Kapton)**: ~EUR 175-195 (ADR-011)
 **Volle Flight-Ausruestung**: ~EUR 250
