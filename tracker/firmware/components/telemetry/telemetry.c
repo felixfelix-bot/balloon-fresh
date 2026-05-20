@@ -51,14 +51,15 @@ uint16_t telemetry_crc16(const uint8_t *data, uint8_t len)
 void telemetry_fill(telemetry_packet_t *pkt, float temp_c, float pressure_hpa,
                     float altitude_m, uint16_t voltage_mv, uint16_t seq)
 {
+    pkt->seq = seq;
     pkt->temperature_cdeg = (int16_t)(temp_c * 100.0f);
     pkt->pressure_hpa = (uint16_t)(pressure_hpa * 10.0f);
-    pkt->altitude_m = (uint16_t)altitude_m;
+    if (pkt->altitude_m == 0) {
+        pkt->altitude_m = (uint16_t)altitude_m;
+    }
     pkt->voltage_mv = voltage_mv;
     pkt->tx_mode = 0;
     pkt->antenna = 0;
-    pkt->flags = 0;
-    pkt->sats = 0;
 
     uint8_t *raw = (uint8_t *)pkt;
     pkt->crc16 = telemetry_crc16(raw, TELEMETRY_SIZE - 2);
@@ -72,7 +73,7 @@ void telemetry_serialize(const telemetry_packet_t *pkt, uint8_t *buf)
 bool telemetry_validate(const uint8_t *buf, uint8_t len)
 {
     if (len != TELEMETRY_SIZE) return false;
-    uint16_t received = (buf[22] << 8) | buf[23];
+    uint16_t received = buf[TELEMETRY_SIZE - 2] | (buf[TELEMETRY_SIZE - 1] << 8);
     uint16_t calculated = telemetry_crc16(buf, TELEMETRY_SIZE - 2);
     return received == calculated;
 }

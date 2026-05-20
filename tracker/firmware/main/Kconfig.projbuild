@@ -1,0 +1,94 @@
+config ENABLE_BMP280
+    bool "Enable BMP280 pressure/temperature sensor"
+    default y
+    help
+        Enable BMP280 sensor for pressure, temperature, and altitude readings.
+        Disable for Minimal variant to save weight and power.
+
+config ENABLE_GPS
+    bool "Enable GPS module (u-blox MAX-M10S or compatible)"
+    default n
+    help
+        Enable GPS via UART1. Uses GPIO1 (RX) and optionally GPIO0 (TX).
+        GPS provides latitude, longitude, altitude, and satellite count.
+        Must configure GPS to Airborne <1G mode for high-altitude operation.
+
+config GPS_UART_RX_PIN
+    int "GPS UART RX pin (receives NMEA from GPS module)"
+    default 1
+    depends on ENABLE_GPS
+
+config GPS_UART_TX_PIN
+    int "GPS UART TX pin (sends config to GPS module, -1 to disable)"
+    default -1
+    depends on ENABLE_GPS
+
+config GPS_UART_BAUD
+    int "GPS UART baud rate"
+    default 9600
+    depends on ENABLE_GPS
+
+config ENABLE_FEM
+    bool "Enable SKY66112 FEM (Power Amplifier + LNA)"
+    default n
+    help
+        Enable SKY66112-11 front-end module for +24 dBm TX and LNA RX.
+        Not needed for Minimal variant with wire dipole.
+
+config FEM_TX_PIN
+    int "FEM TX_EN GPIO pin"
+    default 1
+    depends on ENABLE_FEM
+
+config FEM_RX_PIN
+    int "FEM RX_EN GPIO pin"
+    default 0
+    depends on ENABLE_FEM
+
+config ENABLE_ANTENNA_SWITCH
+    bool "Enable SP4T antenna switch"
+    default n
+    help
+        Enable SP4T switch for 4-antenna selection (Komfort variant).
+        Not needed for Minimal variant with single wire dipole.
+
+config ANTENNA_SWITCH_CTRL1_PIN
+    int "SP4T CTRL_1 GPIO pin"
+    default 21
+    depends on ENABLE_ANTENNA_SWITCH
+
+config ANTENNA_SWITCH_CTRL2_PIN
+    int "SP4T CTRL_2 GPIO pin"
+    default 20
+    depends on ENABLE_ANTENNA_SWITCH
+
+config TX_INTERVAL_SEC
+    int "TX interval in seconds"
+    default 60
+    help
+        Seconds between telemetry transmissions. Longer interval = longer flight.
+
+config LOW_VOLTAGE_MV
+    int "Low voltage threshold in millivolts"
+    default 3300
+    help
+        Skip TX and enter deep sleep immediately if supercap voltage is below
+        this threshold. Prevents brownout during low-power conditions.
+
+config RADIO_FREQ_MHZ_X10
+    int "Radio frequency in MHz * 10 (e.g. 8680 = 868.0 MHz)"
+    default 8680
+    help
+        LoRa frequency * 10. 8680 for EU ISM (868.0 MHz), 4330 for Sub-GHz (433.0 MHz).
+
+config RADIO_SF
+    int "LoRa spreading factor"
+    default 9
+    help
+        SF7 = fast/short range, SF12 = slow/long range. SF9 is a good balance.
+
+config RADIO_TX_POWER_DBM
+    int "TX power in dBm"
+    default 22
+    help
+        LR2021 maximum is +22 dBm. With SKY66112 FEM: +24 dBm.
