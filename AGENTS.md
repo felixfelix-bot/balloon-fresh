@@ -20,9 +20,14 @@ Two-track project:
 - 20x ESP32-C3_Mini_V1 (Maker go, 22.52x18mm, USB-C, U.FL antenna) — was listed as "XIAO ESP32C3"
 - 2x XIAO ESP32-C5
 - 4x NiceRF LoRa2021 modules (19.72x15x2.2mm, 18-pin)
+- 3x EBYTE E28-2G4M27S (SX1281, 2.4 GHz, +27 dBm PA built-in, SPI)
 - 100x Solar cells 52x19mm (0.5V 400mA)
 - 50x Solar cells 78x39mm (0.54W 0.5V)
+- 30x DecoGlee 18" foil party balloons (short test flights only)
+- ~43x Magenesis 10x2mm neodymium magnets (~1.21g each, test weights)
 - 1x Pressure sensor + pump (for balloon testing)
+- 1x MS300 jewelry scale (cannot weigh neodymium magnets — magnetic interference)
+- 1x Digital calipers
 - Double-sided copper clad FR4 boards (for toner transfer PCB fab)
 
 ## Build & Flash Commands
@@ -65,8 +70,11 @@ docs/inventory.md              - Full inventory tracking
 docs/plan-variants.md          - DIY / Minimal / Mittel / Komfort / Mesh V1 / Mesh V2
 docs/antenna-strategy.md       - V1 omni + V2 directional + product research
 docs/power-budget.md           - Tracker + mesh relay power analysis
-docs/balloon-pressure-test.md  - Mylar balloon test plan
-docs/sx1280-repos-reference.md - Related SX1280 repos with git URLs
+  docs/balloon-pressure-test.md  - Mylar balloon test plan
+  docs/balloon-test-results.md   - DecoGlee leak test data + community references
+  docs/balloon-options-analysis.md - 7 balloon types compared with cost analysis
+  docs/balloon-flight-lessons.md - Lessons from 80+ community flights (6 practitioners)
+  docs/sx1280-repos-reference.md - Related SX1280 repos with git URLs
 bom/BOM.md                     - Bill of Materials (prioritized)
 ```
 
@@ -150,3 +158,22 @@ GPIO20 = SP4T CTRL_2 (Antenna Select) -- optional
 - Solder joints connect wing boards to hub board (no connectors on flight board)
 - Always run `idf.py build` after firmware changes to verify compilation
 - FEM and SP4T are optional; start without them for DIY/Minimal
+
+## Balloon Strategy
+
+**Short test flights (DecoGlee, owned):** 30x DecoGlee 18" foil, 4.8g net lift, 0.15 g/day leak rate. Use for 3-8 day shakedown flights. Heat seal + Kapton tape. 6-7 balloons with cut-down for Mesh V1.
+
+**Long-duration flights (Yokohama + H2, to purchase):** Yokohama balloons ~EUR 130/10-pack. Proven 528 days (JR29). Hydrogen from industrial gas supplier. 55% circumnavigation rate. Our 14g Mesh V1 payload is well within proven range (Ruthroff flew 14-22g payloads).
+
+**Key references:**
+- Ruthroff (37 flights, Yokohama + H2/He): https://www.theastroimager.com/picoballoning/pico-ballooning/
+- KI4MCW (31 flights, party balloons): https://sites.google.com/site/ki4mcw/Home/pico-balloonery
+- K9YO (beginner guide): https://sites.google.com/view/picoballoonsbyk9yo/beginners-guide
+- Klofas/SF-HAB (5+ launches): https://www.klofas.com/blog/tag/picoballoon.html
+- IEEE Spectrum (David Schneider): https://spectrum.ieee.org/explore-stratosphere-diy-pico-balloon
+- Pico Balloon mailing list (1,152 members): https://groups.io/g/picoballoon
+- Traquito/Picoballoons.net: https://www.picoballoons.net/
+- WSPRnet (global spot database): https://wsprnet.org/
+- Yokohama balloons: https://www.yokohamaballoon.com/
+- SBS balloons: https://www.scientificballoonsolutions.com/products/
+- HYSPLIT (NOAA trajectory prediction): https://ready.arl.noaa.gov/HYSPLIT.php
