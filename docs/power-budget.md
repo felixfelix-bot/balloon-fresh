@@ -37,58 +37,66 @@
 | Sleep | 0.1 uA | 29.5s | 0.003 mAs |
 | Forced Mode (1 measurement) | ~1 mA | ~10 ms | 0.01 mAs |
 
+### u-blox MAX-M10S GPS Stromverbrauch
+
+| Modus | Strom | Dauer | Energie |
+|-------|-------|-------|---------|
+| Power Off (sleep) | 0.5 uA | ~28s | 0.014 mAs |
+| Acquisition (cold start) | ~25 mA | ~25s (once) | 625 mAs (einmalig) |
+| Tracking (continuous) | ~8 mA | - | - |
+| Power Save Mode (PSM) | ~2.5 mA avg | ~1s | 2.5 mAs |
+| Hot Start | ~8 mA | ~1s | 8 mAs |
+
+**GPS-Strategie:** Bei 120s TX-Intervall: GPS PSM aktiv → Hot Start ~1s vor TX →
+Position lesen → GPS Sleep. Durchschnitt ~2.5 mAs pro Zyklus.
+
 ### SP4T Switch Stromverbrauch
 
 | Modus | Strom |
 |-------|-------|
 | Any state | < 1 uA |
 
-## Energie pro Sendezyklus (30s Intervall)
+## Energie pro Sendezyklus (120s Intervall, GPS-enabled)
 
-### Szenario A: LoRa SF10 @ 2.4 GHz (Normalbetrieb)
+### Szenario A: LoRa SF7 @ Sub-GHz (Normalbetrieb, Minimal-Variante)
 
 ```
 Phase                    Dauer    Strom      Energie (mAs)
 ─────────────────────────────────────────────────────────
-Deep Sleep               29.5s    ~15 uA     0.44
+Deep Sleep               119s     ~15 uA     1.79
+GPS Hot Start + Fix      1000ms   8 mA       8.0
 Wake + ADC Read          5 ms     20 mA      0.10
 BMP280 Read              10 ms    1 mA       0.01
 LR2021 Wake + Config     20 ms    5 mA       0.10
-Leuchtturm TX (4 Wings):
-  - SP4T Switch          -        < 1 uA     ~0
-  - FEM TX Enable        4x400ms  90 mA      144.0
-  - LR2021 TX            4x400ms  31 mA      49.6
-  - Telemetry Encode     4x1ms    20 mA      0.08
-RX Window                1000ms   5.7+5 mA   10.7
+LR2021 TX SF7            17 ms    120 mA     2.04
 ─────────────────────────────────────────────────────────
-TOTAL pro Zyklus (30s):                      ~205 mAs
+TOTAL pro Zyklus (120s):                     ~12.0 mAs
 ```
 
-### Szenario B: FLRC Schnellmodus (naehe Distanz)
+### Szenario B: LoRa SF10 @ Sub-GHz (Max Range, GPS-enabled)
 
 ```
 Phase                    Dauer    Strom      Energie (mAs)
 ─────────────────────────────────────────────────────────
-Deep Sleep               29.5s    ~15 uA     0.44
+Deep Sleep               119s     ~15 uA     1.79
+GPS Hot Start + Fix      1000ms   8 mA       8.0
 Wake + Sensors           35 ms    20 mA      0.70
-Leuchtturm TX (4 Wings):
-  - LR2021 TX FLRC       4x0.2ms  31 mA      0.025
-  - FEM TX               4x0.2ms  90 mA      0.072
+LR2021 TX SF10           430 ms   120 mA     51.6
 ─────────────────────────────────────────────────────────
-TOTAL pro Zyklus (30s):                      ~1.24 mAs
+TOTAL pro Zyklus (120s):                     ~62.1 mAs
 ```
 
-### Szenario C: Sub-GHz LoRa SF12 (Maximale Reichweite)
+### Szenario C: LoRa SF12 @ Sub-GHz (Maximale Reichweite, GPS-enabled)
 
 ```
 Phase                    Dauer    Strom      Energie (mAs)
 ─────────────────────────────────────────────────────────
-Deep Sleep               28s      ~15 uA     0.42
+Deep Sleep               119s     ~15 uA     1.79
+GPS Hot Start + Fix      1000ms   8 mA       8.0
 Wake + Sensors           35 ms    20 mA      0.70
-LR2021 TX SF12           2000ms   120 mA     240.0
-(kein FEM, LR2021 direkt +22 dBm)
+LR2021 TX SF12           2100ms   120 mA     252.0
 ─────────────────────────────────────────────────────────
-TOTAL pro Zyklus (30s):                      ~241 mAs
+TOTAL pro Zyklus (120s):                     ~262.5 mAs
 ```
 
 ## Supercapacitor Kapazitaet
@@ -99,15 +107,15 @@ TOTAL pro Zyklus (30s):                      ~241 mAs
 - Maximale Energie: E = 0.5 * C * V^2 = 0.5 * 1.65 * 5.4^2 = **24.1 Joule**
 - Nutzbare Energie (5.4V → 3.0V Min): E = 0.5 * 1.65 * (5.4^2 - 3.0^2) = **16.7 Joule**
 
-### Spannungsabfall pro Sendezyklus
+### Spannungsabfall pro Sendezyklus (120s, 1.65F Supercaps)
 
 | Szenario | Energie (mAs) | Delta V = I*t/C | Spannungsabfall |
 |----------|--------------|-----------------|-----------------|
-| LoRa SF10 (2.4 GHz, 4 Wings) | 205 mAs | 0.205/1.65 = 0.124V | **-0.12V** |
-| FLRC Schnell | 1.24 mAs | 0.00124/1.65 = 0.00075V | **-0.001V** |
-| Sub-GHz SF12 | 241 mAs | 0.241/1.65 = 0.146V | **-0.15V** |
+| LoRa SF7 Sub-GHz + GPS | 12.0 mAs | 0.012/1.65 = 0.007V | **-0.01V** |
+| LoRa SF10 Sub-GHz + GPS | 62.1 mAs | 0.062/1.65 = 0.038V | **-0.04V** |
+| LoRa SF12 Sub-GHz + GPS | 262.5 mAs | 0.263/1.65 = 0.159V | **-0.16V** |
 
-> Alle Szenarien sind problemlos: Supercaps verlieren weniger als 0.15V pro Zyklus.
+> Alle Szenarien sind problemlos: Supercaps verlieren weniger als 0.16V pro Zyklus.
 
 ## Solar-Aufladung
 
@@ -119,20 +127,19 @@ TOTAL pro Zyklus (30s):                      ~241 mAs
   = 6.0V, 400mA = 2.4W Peak (direktes Sonnenlicht)
 ```
 
-### Ladezeit zwischen Sendezyklen
+### Ladezeit zwischen Sendezyklen (120s Intervall)
 
 ```
-Verfuegbare Solar-Power: 2.4W peak (worst case: ~0.5W bei bewoelkt)
-Supercap Lade-Strom ueber BAT54: ~400mA peak (wenn Sonne scheint)
+Verfuegbare Solar-Power: ~320 mW avg (8 Zellen, bewoelkt ~80 mW)
+Supercap Lade-Strom: ~100 mA avg
 
-Nach LoRa SF10 Zyklus (205 mAs verbraucht):
-  Nachlade-Zeit = 205 mAs / 400 mA = 0.51 Sekunden!
-  
-Nach Sub-GHz SF12 Zyklus (241 mAs):
-  Nachlade-Zeit = 241 mAs / 400 mA = 0.60 Sekunden!
+Nach LoRa SF7 Zyklus (12 mAs verbraucht):
+  Nachlade-Zeit = 12 mAs / 100 mA = 0.12 Sekunden!
 
-→ Selbst im schlimmsten Fall laden die Supercaps in < 1 Sekunde nach.
-→ Mit 30s Sende-Intervall ist genug Reserve fuer Wolken/Dunkelheit.
+Nach LoRa SF12 Zyklus (263 mAs):
+  Nachlade-Zeit = 263 mAs / 100 mA = 2.6 Sekunden!
+
+→ Selbst bei bewoelkt (80 mW) laden die Supercaps zwischen den Zyklen voll auf.
 ```
 
 ### Dunkelheits-Reserve
