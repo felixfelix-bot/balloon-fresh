@@ -157,3 +157,93 @@ den dunklen Teil der Erdumrundung problemlos.
 3. **CPU-Takt**: 80 MHz statt 160 MHz (halbiert Active-Strom)
 4. **WiFi/BLE**: Immer deaktiviert (spart ~30 mA im Idle)
 5. **Sub-GHz nur wenn noetig**: SF12 verbraucht 10x mehr als SF10 bei 2.4 GHz
+
+---
+
+## Mesh Relay Power Budget (Mai 2026 Update)
+
+### Mesh V1: Adaptive TX Relay (Night-Off Default)
+
+TDMA Frame (2s Dauer, 50/50 RX/TX):
+
+```
+Slot    Funktion              Dauer    Strom      Energie (mAs)
+──────────────────────────────────────────────────────────────
+Slot 1  RX von GS-nah         500ms    11 mA      5.5
+Slot 2  TX zu GS-fern         500ms    150 mA     75.0
+Slot 3  RX von GS-fern        500ms    11 mA      5.5
+Slot 4  TX zu GS-nah (low pwr) 500ms   30 mA      15.0
+──────────────────────────────────────────────────────────────
+Total pro Frame (2s):                             ~101 mAs
+Durchschnittsleistung: 101 mAs / 2s x 3.3V = ~167 mW
+```
+
+Adaptive TX spart 38% vs fixed +22 dBm (265 mW).
+
+### Mesh V1: Fixed +22 dBm Relay
+
+```
+Slot    Funktion              Dauer    Strom      Energie (mAs)
+──────────────────────────────────────────────────────────────
+Slot 1  RX von GS-nah         500ms    11 mA      5.5
+Slot 2  TX zu GS-fern         500ms    150 mA     75.0
+Slot 3  RX von GS-fern        500ms    11 mA      5.5
+Slot 4  TX zu GS-nah          500ms    150 mA     75.0
+──────────────────────────────────────────────────────────────
+Total pro Frame (2s):                             ~161 mAs
+Durchschnittsleistung: 161 mAs / 2s x 3.3V = ~265 mW
+```
+
+### Night-Off vs Night-Active
+
+| Parameter | Night-Active | Night-Off |
+|-----------|-------------|-----------|
+| Supercaps | 2x 3.3F 2.7V Serie (1.65F) | 1x 0.47F 5.5V |
+| Cap Gewicht | 3.0g | 0.5g |
+| Solarzellen | 12x (6.0g) | 6-8x (3.0-4.0g) |
+| Gesamtgewicht Mesh V1 | ~17g | ~14g |
+| Nacht-Reserve | 73h Deep Sleep | ~8h (nur fuer TX-Bursts) |
+| Nacht-Betrieb | Ja (relaying) | Nein (schlafen) |
+| Position bei Nacht | GPS aktiv | Geschetzt aus Winddaten |
+
+### Night-Off Ablauf
+
+```
+1. Solar-Spannung faellt unter Schwellwert (z.B. <2.5V)
+2. Letzte TX: "SLEEPING" Announcement
+3. Deep Sleep (15 µA) — kein RX, kein TX, kein GPS
+4. Solar-Spannung steigt ueber Schwellwert (GPIO Wake)
+5. GPS Lock (~30s)
+6. TX: "AWAKE" Announcement mit neuer Position
+7. Mesh TDMA Resume
+```
+
+Bodenstationen interpolieren Nacht-Position aus:
+- Letzte bekannte Position + Hoehe
+- Winddaten (z.B. von OpenMeteo API)
+- Barometrische Hoehe vom letzten TX
+
+### Solar-Auslegung: Mesh Relay
+
+| Szenario | Avg Power | 8-Zellen Solar (320 mW avg) | 12-Zellen Solar (480 mW avg) |
+|----------|-----------|----------------------------|------------------------------|
+| Tracker | ~7 mW | 73h Reserve | 73h Reserve |
+| Mesh adaptive TX | ~167 mW | 5.3h Reserve | 8.8h Reserve |
+| Mesh fixed +22 dBm | ~265 mW | 3.2h Reserve | 5.4h Reserve |
+| Mesh +30 dBm adaptive | ~350 mW | 2.3h Reserve | 3.2h Reserve → 16 Zellen noetig |
+
+Night-Off Default (6-8 Zellen): Tageszeit-Margin komfortabel (240-320 mW Solar avg vs 167 mW Last).
+
+### Mesh V2: +30 dBm Directional Relay
+
+```
+TDMA Frame (2s Dauer):
+Slot 1  RX von GS-nah         500ms    11 mA      5.5
+Slot 2  TX zu GS-fern (+30)   500ms    350 mA     175.0
+Slot 3  RX von GS-fern        500ms    11 mA      5.5
+Slot 4  TX zu GS-nah (+22)    500ms    150 mA     75.0
+Total pro Frame (2s):                             ~261 mAs
+Durchschnittsleistung: 261 mAs / 2s x 3.3V = ~431 mW
+```
+
+Benötigt 16-20 Solarzellen fuer night-active Betrieb (~640-800 mW avg).

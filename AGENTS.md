@@ -1,7 +1,11 @@
 # AGENTS.md - AI Agent Instructions
 
 ## Project Overview
-ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker. Solar/supercap power. Target weight: <15g (Mittel-Plan) or <9g (Minimal-Plan).
+ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker AND mesh internet transport network. Solar/supercap power. Target weight: <14g (Mesh V1, night-off) or <9g (Minimal tracker).
+
+Two-track project:
+1. **Tracker** (`tracker/`): Single balloon telemetry, position reporting
+2. **Mesh Stack** (`mesh-stack/`): Multi-balloon relay network for internet transport
 
 ## RF Driver: RadioLib
 
@@ -9,8 +13,8 @@ ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker. Solar/su
 - RadioLib is included as an ESP-IDF component dependency via `idf_component.yml`
 - Supports: LoRa, FLRC, GFSK, OOK, LR-FHSS, O-QPSK, RTToF ranging
 - Has native ESP-IDF support with HAL abstraction layer
-- The custom LR2021 driver in `firmware/components/lr2021/` is DEPRECATED
-- See `firmware/main/EspHalC3.h` for the ESP32-C3 hardware abstraction
+- The custom LR2021 driver in `tracker/firmware/components/lr2021/` is DEPRECATED
+- See `tracker/firmware/main/EspHalC3.h` for the ESP32-C3 hardware abstraction
 
 ## Inventory (Owned Parts)
 - 20x ESP32-C3_Mini_V1 (Maker go, 22.52x18mm, USB-C, U.FL antenna) — was listed as "XIAO ESP32C3"
@@ -26,7 +30,7 @@ ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker. Solar/su
 ### Firmware (ESP-IDF v5.4.1)
 ```bash
 source ~/esp/esp-idf/export.sh
-cd firmware && idf.py build
+cd tracker/firmware && idf.py build
 idf.py -p /dev/ttyACM0 flash monitor    # ESP32-C3_Mini_V1 (USB-C)
 idf.py -p /dev/ttyUSB0 flash             # bare ESP-C3-12F
 ```
@@ -34,31 +38,36 @@ idf.py -p /dev/ttyUSB0 flash             # bare ESP-C3-12F
 ### Hardware (SKiDL + KiCad)
 ```bash
 pip install skidl graphviz
-cd hardware && python hub_board/hub_schematic.py
+cd tracker/hardware && python hub_board/hub_schematic.py
 ```
 
 ### Lint & Typecheck
 ```bash
-cd firmware && idf.py reconfigure
-ruff check hardware/
+cd tracker/firmware && idf.py reconfigure
+ruff check tracker/hardware/
 ```
 
 ## Project Structure
 ```
-firmware/main/         - Main application (C++, uses RadioLib)
-firmware/components/   - Drivers (BMP280, power_manager, antenna_switch, sky66112)
-                       NOTE: lr2021/ is deprecated, use RadioLib instead
-hardware/hub_board/    - Central electronics board (SKiDL + KiCad)
-hardware/hub_board_diy/- DIY v0.1 development hub board (toner transfer)
-hardware/wing_board/   - 4x identical antenna+solar boards
-hardware/footprints/   - Custom component footprint data (JSON)
-docs/adr/              - Architecture Decision Records (8 decisions)
-docs/component-guide.md - All parts with explanations and alternatives
-docs/inventory.md      - Full inventory tracking
-docs/plan-variants.md  - DIY / Minimal / Mittel / Komfort plans
-docs/antenna-strategy.md - Yagi vs Patch + CP strategy
-docs/balloon-pressure-test.md - Mylar balloon test plan
-bom/BOM.md             - Bill of Materials (prioritized)
+tracker/firmware/main/         - Main application (C++, uses RadioLib)
+tracker/firmware/components/   - Drivers (BMP280, power_manager, antenna_switch, sky66112)
+                               NOTE: lr2021/ is deprecated, use RadioLib instead
+tracker/hardware/hub_board/    - Central electronics board (SKiDL + KiCad)
+tracker/hardware/hub_board_diy/- DIY v0.1 development hub board (toner transfer)
+tracker/hardware/wing_board/   - 4x identical antenna+solar boards
+tracker/hardware/footprints/   - Custom component footprint data (JSON)
+tracker/ground-station/        - Antenna tracker + ground station software
+mesh-stack/                    - Mesh internet transport (separate AGENTS.md)
+mesh-stack/ROADMAP.md          - Comprehensive mesh plan, link budgets, research checklist
+docs/adr/                      - Architecture Decision Records (10 decisions)
+docs/component-guide.md        - All parts with explanations and alternatives
+docs/inventory.md              - Full inventory tracking
+docs/plan-variants.md          - DIY / Minimal / Mittel / Komfort / Mesh V1 / Mesh V2
+docs/antenna-strategy.md       - V1 omni + V2 directional + product research
+docs/power-budget.md           - Tracker + mesh relay power analysis
+docs/balloon-pressure-test.md  - Mylar balloon test plan
+docs/sx1280-repos-reference.md - Related SX1280 repos with git URLs
+bom/BOM.md                     - Bill of Materials (prioritized)
 ```
 
 ## Plan Variants
@@ -68,6 +77,8 @@ bom/BOM.md             - Bill of Materials (prioritized)
 | Minimal | ~8-9g | Wire dipole | No | Ultra-light flight |
 | Mittel | ~12-13g | 1-2x PCB-Yagi | Optional | Recommended flight |
 | Komfort | ~16.6g | 4x PCB-Yagi | Yes | Full features |
+| **Mesh V1** | **~14g** | **Wire dipole** | **SKY66112** | **Mesh relay (night-off)** |
+| **Mesh V2** | **~18-22g** | **PCB-Yagis** | **SKY66114 +30dBm** | **Mesh relay (night-active)** |
 
 ## Key Design Decisions (see docs/adr/)
 1. ESP32-C3 as MCU (ADR-001)
@@ -78,6 +89,8 @@ bom/BOM.md             - Bill of Materials (prioritized)
 6. Supercapacitor power (Solar → Caps → LDO) (ADR-006)
 7. Adaptive protocol (FLRC/LoRa/Sub-GHz) (ADR-007)
 8. 24-byte binary telemetry with CRC-16 (ADR-008)
+9. **V1 omnidirectional dipoles, V2 directional upgrade** (ADR-009)
+10. **Adaptive TX power per TDMA slot** (ADR-010)
 
 ## NiceRF LoRa2021 Pin Mapping (ESP32-C3_Mini_V1 Dev Board)
 ```
@@ -102,7 +115,7 @@ GPIO4-7 are labeled "JTAG" on silkscreen but are general-purpose GPIO when JTAG 
 GPIO8 (I2C SDA) is shared with onboard LED (inverted) — LED flickers during I2C (cosmetic only).
 GPIO9 (I2C SCL) is shared with BOOT button — internal pullup is fine for I2C.
 Using GPIO4-7 means no JTAG debug; use UART/printf via USB-C.
-See `hardware/footprints/esp32c3-mini-v1.json` for full pinout data.
+See `tracker/hardware/footprints/esp32c3-mini-v1.json` for full pinout data.
 
 ## Pin Assignment (ESP32-C3 bare, Flight Board)
 ```
@@ -126,6 +139,8 @@ GPIO20 = SP4T CTRL_2 (Antenna Select) -- optional
 - 2.4 GHz: PCB Yagis on wing boards (Komfort) or wire dipole (Minimal)
 - Ground station: Circular polarized (RHCP) antenna for 2.4 GHz to eliminate rotation loss
 - See docs/antenna-strategy.md for details
+- **V1: Omnidirectional wire dipoles** — ground station gain sufficient for 22 kbps @ 300 km
+- **V2: Directional PCB Yagis** — 2-3x throughput upgrade when needed (ADR-009)
 
 ## Important Notes
 - WiFi and Bluetooth MUST be disabled in sdkconfig.defaults (power saving)
