@@ -99,6 +99,7 @@ bom/BOM.md                     - Bill of Materials (prioritized)
 8. 24-byte binary telemetry with CRC-16 (ADR-008)
 9. **V1 omnidirectional dipoles, V2 directional upgrade** (ADR-009)
 10. **Adaptive TX power per TDMA slot** (ADR-010)
+11. **Single balloon first, He 4.6, Minimal variant for first flight** (ADR-011)
 
 ## NiceRF LoRa2021 Pin Mapping (ESP32-C3_Mini_V1 Dev Board)
 ```
@@ -163,7 +164,7 @@ GPIO20 = SP4T CTRL_2 (Antenna Select) -- optional
 
 **Short test flights (DecoGlee, owned):** 30x DecoGlee 18" foil, 4.8g net lift, 0.15 g/day leak rate. Use for 3-8 day shakedown flights. Heat seal + Kapton tape. 6-7 balloons with cut-down for Mesh V1.
 
-**Long-duration flights (Yokohama + H2, to purchase):** Yokohama balloons ~EUR 130/10-pack. Proven 528 days (JR29). Hydrogen from industrial gas supplier. 55% circumnavigation rate. Our 14g Mesh V1 payload is well within proven range (Ruthroff flew 14-22g payloads).
+**Long-duration flights (Yokohama + He 4.6, to purchase):** Yokohama 32" Sphere Balloon 10-pack €96.95 from https://www.yokohamaballoon.com/. Industrial helium (grade 4.6, 99.996%) from Air Liquide ALbee Fly system. 67% circumnavigation rate with ultra-pure He (Ruthroff data). Our 9-14g payload is well within proven range (Ruthroff flew 14-22g payloads). Hydrogen deferred to future — He 4.6 is safer, higher success rate, and can be handled indoors. See ADR-011.
 
 **Key references:**
 - Ruthroff (37 flights, Yokohama + H2/He): https://www.theastroimager.com/picoballoning/pico-ballooning/

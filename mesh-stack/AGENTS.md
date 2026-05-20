@@ -50,7 +50,9 @@ Multi-balloon mesh relay network for internet transport. Balloons at ~12 km alti
 - Power budget complete (tracker + mesh relay scenarios)
 - Antenna strategy decided (V1 omni, V2 directional)
 - Night-off design complete
-- ADR-009 and ADR-010 written
+- ADR-009, ADR-010, ADR-011 written
+- First flight planned: single Yokohama 32" + He 4.6, Minimal variant (ADR-011)
+- Multi-balloon research added as Phase 5 (see ROADMAP.md)
 - **Not started**: Protocol implementation, TDMA firmware, erasure coding integration
 
 ## Night-Off Default

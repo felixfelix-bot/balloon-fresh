@@ -546,6 +546,37 @@ With night-off default (6-8 cells), daytime margin is comfortable: 240-320 mW so
 
 ---
 
+## Phase 5: Multi-Balloon Reliability (Future Research)
+
+Single Yokohama 32" balloon is proven for long-duration flights (528 days, Ruthroff JR29). However, multi-balloon configurations could theoretically provide redundancy against the #1 failure mode (balloon death). This research is deferred until single-balloon flights are proven.
+
+### Research Questions
+
+1. **Tandem rubbing mitigation**: Jetstream winds at 40,000 ft reach 150+ km/h. How to prevent balloons from abrading each other? Options: long tethers (5-10m), rigid spreader bars, vertical chain spacing.
+2. **Superpressure fill calibration**: With 3 balloons, each must reach superpressure independently. Too much fill → altitude overshoot → burst. Too little → no superpressure → nightly descent. What fill volume per balloon gives stable altitude?
+3. **Cut-down trigger**: When a balloon leaks, detect via BMP280 altitude drop or radio telemetry timeout. Trigger nichrome wire to sever tether. Hardware: MOSFET + nichrome + nylon tether, ~0.5g per channel.
+4. **3x 20" vs 1x 32" cost tradeoff**: 3x 20" Yokohama = €12.90/flight with redundancy. 1x 32" = €9.70/flight with no redundancy. Is the €4.20 premium worth 2x redundancy?
+5. **Community precedent**: No successful long-duration multi-balloon pico flights documented. This would be novel research.
+
+### Potential Configurations
+
+| Config | Balloons | Cost/Flight | Redundancy | Gross Lift | Risk |
+|--------|----------|-------------|------------|------------|------|
+| Standard | 1x 32" | €9.70 | None | ~250g | Low (proven) |
+| Redundant | 3x 32" | €29.10 | 2 balloons | ~750g | High (overfill, rubbing) |
+| Economy | 3x 20" | €12.90 | 2 balloons | ~180g | Medium (unproven size, rubbing) |
+| Hybrid | 1x 32" + 2x 20" backup | €18.30 | 2 balloons | ~370g | Medium |
+
+### Prerequisites Before Starting Phase 5
+
+- [ ] At least 3 successful single-balloon flights completed
+- [ ] Failure mode analysis from our own flights (what actually kills our balloons?)
+- [ ] Balloon rubbing abrasion test (two inflated balloons in wind tunnel or car roof)
+- [ ] Cut-down mechanism proven on ground (nichrome + nylon tether reliability)
+- [ ] Altitude-based leak detection algorithm validated (BMP280 data from flights)
+
+---
+
 ## Updated Research Checklist
 
 ### Completed
