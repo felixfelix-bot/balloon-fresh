@@ -27,12 +27,13 @@ esp_err_t power_manager_init(void)
     };
     adc_oneshot_config_channel(adc_handle, SUPERCAP_ADC_CHANNEL, &chan_cfg);
 
-    adc_cali_line_fitting_config_t cali_cfg = {
+    adc_cali_curve_fitting_config_t cali_cfg = {
         .unit_id = SUPERCAP_ADC_UNIT,
+        .chan = SUPERCAP_ADC_CHANNEL,
         .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_12,
     };
-    adc_cali_create_scheme_line_fitting(&cali_cfg, &cali_handle);
+    adc_cali_create_scheme_curve_fitting(&cali_cfg, &cali_handle);
 
     ESP_LOGI(TAG, "Power manager initialized (ADC ch0)");
     return ESP_OK;

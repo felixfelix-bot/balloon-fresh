@@ -1,0 +1,9 @@
+firmware/build/
+firmware/managed_components/
+firmware/dependencies.lock
+firmware/sdkconfig.old
+node_modules/
+target/
+*.pyc
+__pycache__/
+serve.log

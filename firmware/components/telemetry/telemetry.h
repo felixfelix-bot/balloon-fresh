@@ -25,4 +25,3 @@ void telemetry_fill(telemetry_packet_t *pkt, float temp_c, float pressure_hpa,
 uint16_t telemetry_crc16(const uint8_t *data, uint8_t len);
 void telemetry_serialize(const telemetry_packet_t *pkt, uint8_t *buf);
 bool telemetry_validate(const uint8_t *buf, uint8_t len);
-esp_err_t telemetry_tx(void *lr2021_dev, const telemetry_packet_t *pkt);

@@ -1,0 +1,10 @@
+server:
+  - ./mcp-antenna/target/release/mcp-antenna
+privateKey: eb1021aeaec60f2bef13c588be23935b5dde947cdd51209fc3589de6b1433e3b
+relays:
+  - wss://relay.damus.io
+  - wss://relay.corvusnostr.org
+  - wss://strfry.bonsai.com/
+public: true
+serverInfo:
+  name: c03rad0rs-antenna-tracker
