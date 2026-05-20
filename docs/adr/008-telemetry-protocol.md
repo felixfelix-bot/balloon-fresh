@@ -1,75 +1,72 @@
 # ADR 008: Telemetrie-Paketformat
 
 ## Status
-Akzeptiert
+Akzeptiert (v2 - aktualisiert fuer 28-Byte Format mit Sequenznummer)
 
 ## Kontext
 Der Ballon sendet periodisch Telemetrie-Daten zur Bodenstation. Das Paketformat muss kompakt sein (minimale Airtime = minimaler Stromverbrauch) aber alle kritischen Daten enthalten.
 
 ## Entscheidung
-**24 Byte binieres Telemetrie-Paket** mit CRC-16 Pruefsumme.
+**28 Byte binaeres Telemetrie-Paket** mit CRC-16/CCITT Pruefsumme.
 
-## Paketformat
+## Paketformat (v2)
 
 ```
 Offset  Laenge  Feld              Typ       Beschreibung
 ------  ------  ----              ---       -----------
-0       1       HEADER            uint8     Paket-Typ + Version
-                                          Bits [7:5] = Version (0x01)
-                                          Bits [4:0] = Typ (0x01=Telemetrie)
-1-4     4       LATITUDE          int32     Breitengrad (1e-7 Grad)
-5-8     4       LONGITUDE         int32     Laengengrad (1e-7 Grad)
-9-10    2       ALTITUDE          uint16    Hoehe in Metern (0-65535m)
-11      1       TEMPERATURE       int8      Temperatur in °C (-128..+127)
-12-13   2       PRESSURE          uint16    Luftdruck in hPa * 10
-14      1       VCAP_VOLTAGE      uint8     Supercap-Spannung (V * 20)
-                                          3.0V = 60, 5.0V = 100, 5.4V = 108
-15      1       TX_COUNTER        uint8     Zaehler (Rollover bei 255)
-16      1       ANTENNA_ID        uint8     Aktive Antenne (0-3) im Leuchtturm
-17      1       STATUS_FLAGS      uint8     Bitfield (siehe unten)
-18-19   2       CRC16             uint16    CRC-16/CCITT Pruefsumme
-20-23   4       GNSS_HASH         uint32    GNSS-Snapshot Hash (optional)
+0-3     4       CALLSIGN_HASH     uint32    Identifizierung (FNV-1a Hash)
+4-5     2       SEQ               uint16    Sequenznummer (Rollover bei 65535)
+6-9     4       LATITUDE          uint32    Breitengrad (deg * 1e5, unsigned)
+10-13   4       LONGITUDE         int32     Laengengrad (deg * 1e5, signed)
+14-15   2       ALTITUDE          uint16    Hoehe in Metern (0-65535m)
+16-17   2       VOLTAGE_MV        uint16    Supercap-Spannung in mV
+18-19   2       TEMPERATURE_CDEG  int16     Temperatur in °C * 100 (-40.25 = -4025)
+20-21   2       PRESSURE_HPA      uint16    Luftdruck in hPa * 10
+22      1       SATS              uint8     Anzahl GPS-Satelliten
+23      1       TX_MODE           uint8     Sende-Modus (SF, Band, etc.)
+24      1       ANTENNA           uint8     Aktive Antenne (0-3)
+25      1       FLAGS             uint8     Status-Flags (siehe unten)
+26-27   2       CRC16             uint16    CRC-16/CCITT (Little-Endian)
 ------  ------
-Total:  24 Bytes
+Total:  28 Bytes
 ```
 
-## Status-Flags (Byte 17)
+## Status-Flags (Byte 25)
 
 ```
 Bit 7: GPS_VALID       (1 = Gueltige GPS-Position im Paket)
 Bit 6: GPS_ASSISTED    (1 = Position wurde serverseitig berechnet)
 Bit 5: SOLAR_ACTIVE    (1 = Solarzellen liefern Strom)
-Bit 4: TX_MODE_24GHZ   (1 = 2.4 GHz, 0 = Sub-GHz)
-Bit 3: TX_MODE_FLRC    (1 = FLRC Modulation aktiv)
-Bit 2: TX_MODE_LORAWAN (1 = LoRaWAN, 0 = P2P LoRa)
-Bit 1: LOW_POWER       (1 = Supercap < 3.5V, sparsamer Modus)
-Bit 0: DEBUG_FLAG      (1 = Debug-Modus aktiv)
+Bit 4: TX_24GHZ        (1 = 2.4 GHz, 0 = Sub-GHz)
+Bit 3: TX_FLRC         (1 = FLRC Modulation aktiv)
+Bit 1: LOW_POWER       (1 = Supercap < 3.3V, sparsamer Modus)
 ```
 
-## Paket-Typen (Header Byte)
+## Aenderungen zu v1 (24 Byte)
 
-```
-0x01 = Standard Telemetrie (24 Bytes)
-0x02 = GNSS Snapshot Raw (variabel, ~200 Bytes)
-0x03 = Command ACK (8 Bytes, Bodenstations-Bestaetigung)
-0x04 = Debug Log (variabel, nur im Entwickler-Modus)
-0x05 = Mode Change (4 Bytes, Bodenstations-Kommando)
-```
+1. **CALLSIGN_HASH** ersetzt HEADER byte — groessere Identifizierung
+2. **SEQ** erweitert von uint8 (255) auf uint16 (65535) — laengerer Flug ohne Rollover
+3. **VOLTAGE_MV** ersetzt VCAP_VOLTAGE (V*20) — hoehere Aufloesung (1 mV vs 50 mV)
+4. **TEMPERATURE_CDEG** erweitert von int8 auf int16*100 — hoehere Praezision
+5. **SATS** hinzugefuegt — GPS-Qualitaetsindikator
+6. **GNSS_HASH** entfernt — nicht benoetigt fuer erste Fluege
+7. CRC-16 in Little-Endian (matcht packed struct auf ESP32-C3)
 
 ## Airtime-Berechnung
 
 | Modus | Bytes | Spreading Factor | Bandwidth | Airtime | Stromkosten |
 |-------|-------|-----------------|-----------|---------|------------|
-| FLRC | 24 | - | 1.3 Mbps | **~0.2 ms** | 0.006 mAs |
-| LoRa SF7 | 24 | 7 | 500 kHz | **~15 ms** | 0.47 mAs |
-| LoRa SF10 | 24 | 10 | 125 kHz | **~400 ms** | 12.4 mAs |
-| LoRa SF12 | 24 | 12 | 125 kHz | **~2 s** | 62 mAs |
+| FLRC | 28 | - | 1.3 Mbps | **~0.2 ms** | 0.006 mAs |
+| LoRa SF7 | 28 | 7 | 500 kHz | **~17 ms** | 0.53 mAs |
+| LoRa SF10 | 28 | 10 | 125 kHz | **~430 ms** | 13.3 mAs |
+| LoRa SF12 | 28 | 12 | 125 kHz | **~2.1 s** | 65 mAs |
 
 ## Begruendung
 
-1. **24 Bytes**: Kompakt aber informativ genug fuer Bodenstation-Tracking
-2. **CRC-16**: Zuverlaessige Fehlerkennung bei schwachen Signalen
-3. **Antenna_ID**: Bodenstation weiss welche Yagi das Signal geliefert hat
-4. **GNSS_HASH**: Optionaler Hash des GNSS-Snapshots fuer Positionierungs-Server
-5. **VCAP_VOLTAGE**: Kritisch fuer Missions-Status (lebt der Ballon noch?)
-6. **Biniaer**: Kein ASCII/JSON-Overhead, jedes Byte zaehlt bei der Airtime
+1. **28 Bytes**: Kompakt aber informativ genug fuer Bodenstation-Tracking
+2. **CRC-16/CCITT**: Zuverlaessige Fehlerkennung bei schwachen Signalen
+3. **CALLSIGN_HASH**: Eindeutige Ballon-Identifikation ohne Klartext
+4. **SEQ**: Duplikaterkennung und Paketverlust-Tracking ueber mehrtagige Fluege
+5. **VOLTAGE_MV**: Kritisch fuer Missions-Status (lebt der Ballon noch?)
+6. **SATS**: GPS-Fix-Qualitaet ohne zusaetzliche Pakete
+7. **Binaer**: Kein ASCII/JSON-Overhead, jedes Byte zaehlt bei der Airtime

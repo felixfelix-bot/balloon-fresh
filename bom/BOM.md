@@ -57,10 +57,13 @@
 
 | # | Komponente | Spezifikation | Menge | Preis | Lieferant |
 |---|-----------|---------------|-------|-------|-----------|
-| 19 | Mylar Ballon 36" | Qualatex oder Aeon | 2-3 | ~3 EUR/St | Amazon |
-| 20 | Helium | Ballonfuellung | 1 | ~15 EUR | Gas-Dealer |
+| 19 | Yokohama 32" Crystal Clear | Nylon/PE, ventillos, 10er Pack | 1 Set | 105.95 EUR | yokohamaballoon.com |
+| 20 | He 99.6% (Bauhaus Party Factory) | 0.14 m³, Einweg | 1 | 27.50 EUR | Bauhaus |
+| 21 | Impuls-Heissiegelgeraet | Fuer Yokohama Nahtversiegelung | 1 | ~15 EUR | Amazon |
+| 22 | Kapton Tape | Fuer Nahtverstaerkung | 1 Rolle | ~5 EUR | Amazon |
+| 23 | u-blox MAX-M10S GPS | UART, ~0.6g, 25 mW | 1 | ~15-20 EUR | DigiKey/Mouser |
 
-**Subtotal Flug**: ~21 EUR
+**Subtotal Flug**: ~170 EUR (inkl. 10 Yokohama Ballons)
 
 ## Kostenuebersicht
 
@@ -71,8 +74,8 @@
 | Solar-Erweiterung (Prioritaet 2) | ~7 EUR |
 | Flight Minimal (Prioritaet 3) | ~20 EUR |
 | Komfort-Optionen (Prioritaet 4) | ~7 EUR |
-| Flug-Vorbereitung (Prioritaet 5) | ~21 EUR |
-| **Nachbeschaffung Gesamt** | **~60 EUR** |
+| Flug-Vorbereitung (Prioritaet 5) | ~170 EUR |
+| **Nachbeschaffung Gesamt** | **~209 EUR** |
 
 ## Lieferanten
 
@@ -85,3 +88,5 @@
 | JLCPCB | jlcpcb.com | PCB Fertigung (guenstig) |
 | PCBWay | pcbway.com | Alternative PCB Fertigung |
 | NiceRF | nicerf.com | LoRa2021 Module |
+| Yokohama | yokohamaballoon.com | 32" Crystal Clear Ballons |
+| Bauhaus | bauhaus.info | Party Factory He 99.6% |
