@@ -1,6 +1,6 @@
 # Inventarliste - Vorhandene Komponenten
 
-Stand: 2026-05-20
+Stand: 2026-05-21
 
 ## Mikrocontroller
 
@@ -14,6 +14,7 @@ Stand: 2026-05-20
 | # | Komponente | Spezifikation | Menge | Quelle | Einzelpreis | Gesamtpreis |
 |---|-----------|---------------|-------|--------|------------|------------|
 | 3 | NiceRF LoRa2021 | LR2021 Gen4, Sub-GHz + 2.4GHz, FLRC, RTToF, 19.72x15x2.2mm | **4** | NiceRF | ~10 EUR | ~40 EUR |
+| 4 | EBYTE E28-2G4M27S | SX1281, 2.4 GHz, +27 dBm PA built-in, SPI interface | **3** | Amazon | ~8 EUR | ~24 EUR |
 
 Details NiceRF LoRa2021:
 - Pin 1: VCC (1.8-3.6V)
@@ -29,6 +30,15 @@ Details NiceRF LoRa2021:
 - RX Sub-GHz: <6mA, RX 2.4GHz: <7mA
 - Sleep: <2uA, Sensitivity: -143dBm (SF12/62.5kHz Sub-GHz), -137dBm (SF12/203kHz 2.4GHz)
 
+Details EBYTE E28-2G4M27S:
+- Chip: Semtech SX1281 (2.4 GHz only)
+- TX power: +27 dBm (500 mW) built-in PA — no external FEM needed
+- Interface: Direct SPI (no serial chip bottleneck)
+- Modulations: LoRa, FLRC, GFSK, LR-FHSS
+- Key advantage: Direct register access for prototyping and throughput testing
+- Can replace SKY66112 FEM in development setups
+- Product: https://www.amazon.de/dp/B07QQSS2XD
+
 ## Solarzellen
 
 | # | Komponente | Spezifikation | Menge | Quelle | Einzelpreis | Gesamtpreis |
@@ -42,15 +52,43 @@ Details NiceRF LoRa2021:
 |---|-----------|---------------|-------|-----------|
 | 6 | Drucksensor | - | **1** | Fuer Ballon-Drucktest |
 | 7 | Pumpe | - | **1** | Fuer Ballon-Drucktest |
+| 8 | MS300 Waage | 0.01g Aufloesung | **1** | Fuer Gewichtsmessung (nicht fuer Magnete geeignet) |
+| 9 | Messschieber | Digital, 0.01mm | **1** | Fuer Magnet-Dimensionierung |
+
+## Ballons
+
+| # | Komponente | Spezifikation | Menge | Quelle | Einzelpreis | Gesamtpreis |
+|---|-----------|---------------|-------|--------|------------|------------|
+| 10 | DecoGlee 18" Foil Balloons | Rund, Mylar, selbstversiegelnd | **30** | Amazon (DecoGlee) | 0.37 EUR | 11.09 EUR |
+| 11 | Magenesis Neodym Magnete | 10x2mm, N35, ~1.21g/Stueck | **52** | Amazon (Magenesis) | 0.21 EUR | 10.99 EUR |
+
+Details DecoGlee Ballons:
+- Produkt: https://www.amazon.de/dp/B0F5H6VLPZ
+- 30 Stück, 18 Zoll (~45.7cm) Durchmesser, rund
+- Mylar-Folie, selbstversiegelndes Ventil
+- Gemessener Netto-Auftrieb: ~4.8g pro Ballon mit Helium
+- Geschätztes Huellengewicht: ~10.5g pro Ballon
+- Leckrate (Indoor, Amazon-He): ~0.15 g/Tag pro Ballon
+- Siehe docs/balloon-test-results.md fuer vollstaendige Testdaten
+
+Details Magenesis Magnete:
+- Produkt: https://www.amazon.de/dp/B06X977K8L
+- 52 Stück, 9.97mm Durchmesser x 2.12mm Dicke (kalibriert gemessen)
+- Gewicht: ~1.21g pro Magnet (berechnet aus Volumen + N35 Dichte 7.3 g/cm³)
+- MS300 Waage kann Neodym-Magnete nicht zuverlaessig wiegen (magnetische Interferenz mit Dehnungsmessstreifen)
+- Verwendet als Testgewichte fuer Ballon-Leckrate-Test
+- Einige Magnete gebrochen (verbleibend: ~43 intakt + Fragmente)
 
 ## Zusammenfassung
 
 | Kategorie | Wert |
 |-----------|------|
-| Gesamtinvestition | ~149 EUR |
+| Gesamtinvestition | ~185 EUR |
 | Verfuegbare MCU Boards | 22 (20x C3, 2x C5) |
-| Verfuegbare RF Module | 4x LR2021 |
+| Verfuegbare RF Module | 7 (4x LR2021, 3x E28-2G4M27S) |
 | Verfuegbare Solarzellen | 150 (100x 52x19mm, 50x 78x39mm) |
+| Verfuegbare Ballons | 30x DecoGlee 18" Folie |
+| Verfuegbare Testgewichte | ~43x Magenesis Neodym 10x2mm |
 
 ## Noch zu beschaffen
 
@@ -64,8 +102,8 @@ Details NiceRF LoRa2021:
 | 6 | SP4T RF Switch | Flight (opt.) | Niedrig | ~2 EUR |
 | 7 | Passive (R, C) | Alle | Hoch | ~2 EUR |
 | 8 | 30 AWG Kupferdraht | Alle | Hoch | ~2 EUR |
-| 9 | Mylar Ballon 36" | Flug | Hoch | ~3 EUR |
-| 10 | Helium | Flug | Hoch | ~15 EUR |
+| 9 | Mylar Ballon 36" | Flug (Langzeit) | Niedrig | ~3 EUR |
+| 10 | Helium (Industrie 99%) | Flug | Hoch | ~15 EUR |
 | 11 | PCB Bestellung (Flight) | Flight | Mittel | ~15 EUR |
 | 12 | Protoboard | DIY | Hoch | ~2 EUR |
 
