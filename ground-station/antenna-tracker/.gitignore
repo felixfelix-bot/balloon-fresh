@@ -1,0 +1,15 @@
+ts/package-lock.json
+target/release/
+mcp-antenna/target/release/
+*~
+mcp-antenna/target/debug/
+nak-v0.19.0-linux-amd64
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Bun cache (if present)
+.bun/
+libxml2_2.9.14+dfsg-1.3ubuntu3_amd64.deb

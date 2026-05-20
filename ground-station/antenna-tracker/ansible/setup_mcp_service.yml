@@ -1,0 +1,120 @@
+---
+- name: Setup Antenna MCP Server service
+  hosts: all
+  become: true
+
+  vars:
+    app_user: c03rad0r
+    app_dir: /home/c03rad0r/antenna-tracker/ts
+    service_name: antenna-mcp
+    esp32_vid: "10c4"
+    esp32_pid: "ea60"
+    serial_symlink: "esp32"
+
+  tasks:
+    - name: Ensure node and npm are installed
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+        update_cache: true
+
+    - name: Install tsx globally
+      npm:
+        name: tsx
+        global: true
+
+    - name: Ensure app user is in dialout group for serial access
+      user:
+        name: "{{ app_user }}"
+        groups: dialout
+        append: true
+
+    - name: Install ESP32 device resolver script
+      copy:
+        dest: /usr/local/bin/find-esp32.sh
+        owner: root
+        group: root
+        mode: '0755'
+        content: |
+          #!/usr/bin/env bash
+          set -e
+
+          for dev in /dev/ttyUSB*; do
+            [ -e "$dev" ] || continue
+            if udevadm info -q property -n "$dev" | grep -q "ID_VENDOR_ID={{ esp32_vid }}"; then
+              echo "$dev"
+              exit 0
+            fi
+          done
+
+          echo "ESP32 device not found" >&2
+          exit 1
+
+    - name: Install healthcheck script
+      copy:
+        dest: /usr/local/bin/antenna-mcp-healthcheck.sh
+        owner: root
+        group: root
+        mode: '0755'
+        content: |
+          #!/usr/bin/env bash
+          set -e
+
+          DEVICE="/dev/{{ serial_symlink }}"
+
+          # Ensure serial device exists
+          if [ ! -e "$DEVICE" ]; then
+            echo "Serial device missing"
+            exit 1
+          fi
+
+          # Ensure service process is running
+          if ! systemctl is-active --quiet {{ service_name }}; then
+            echo "Service not active"
+            exit 1
+          fi
+
+          exit 0
+
+    - name: Create systemd service file
+      copy:
+        dest: /etc/systemd/system/{{ service_name }}.service
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Antenna MCP Server
+          After=network.target
+          StartLimitIntervalSec=60
+          StartLimitBurst=5
+
+          [Service]
+          Type=simple
+          User={{ app_user }}
+          SupplementaryGroups=dialout
+          WorkingDirectory={{ app_dir }}
+          Environment="NODE_OPTIONS=--require ./websocket-shim.cjs"
+          Environment=PATH=/usr/local/bin:/usr/bin:/bin
+          ExecStartPre=/bin/bash -c 'for i in {1..30}; do /usr/local/bin/find-esp32.sh && exit 0; sleep 1; done; exit 1'
+          ExecStart=/bin/bash -c '/usr/local/bin/tsx src/server.ts "$(/usr/local/bin/find-esp32.sh)"'
+          Restart=always
+          RestartSec=5
+          TimeoutStartSec=40
+          StandardOutput=journal
+          StandardError=journal
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: true
+
+    - name: Enable and start MCP service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: true
+        state: started

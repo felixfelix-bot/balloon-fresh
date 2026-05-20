@@ -1,6 +1,4 @@
 #include "telemetry.h"
-#include "lr2021.h"
-#include "antenna_switch.h"
 #include "esp_log.h"
 #include <string.h>
 
@@ -77,13 +75,4 @@ bool telemetry_validate(const uint8_t *buf, uint8_t len)
     uint16_t received = (buf[22] << 8) | buf[23];
     uint16_t calculated = telemetry_crc16(buf, TELEMETRY_SIZE - 2);
     return received == calculated;
-}
-
-esp_err_t telemetry_tx(void *lr2021_dev, const telemetry_packet_t *pkt)
-{
-    lr2021_t *dev = (lr2021_t *)lr2021_dev;
-    uint8_t buf[TELEMETRY_SIZE];
-    telemetry_serialize(pkt, buf);
-    ESP_LOGI(TAG, "TX %d bytes, CRC=0x%04X", TELEMETRY_SIZE, pkt->crc16);
-    return lr2021_send(dev, buf, TELEMETRY_SIZE);
 }
