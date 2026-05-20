@@ -13,12 +13,13 @@ ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker. Solar/su
 - See `firmware/main/EspHalC3.h` for the ESP32-C3 hardware abstraction
 
 ## Inventory (Owned Parts)
-- 20x XIAO ESP32C3
+- 20x ESP32-C3_Mini_V1 (Maker go, 22.52x18mm, USB-C, U.FL antenna) — was listed as "XIAO ESP32C3"
 - 2x XIAO ESP32-C5
 - 4x NiceRF LoRa2021 modules (19.72x15x2.2mm, 18-pin)
 - 100x Solar cells 52x19mm (0.5V 400mA)
 - 50x Solar cells 78x39mm (0.54W 0.5V)
 - 1x Pressure sensor + pump (for balloon testing)
+- Double-sided copper clad FR4 boards (for toner transfer PCB fab)
 
 ## Build & Flash Commands
 
@@ -26,7 +27,7 @@ ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker. Solar/su
 ```bash
 source ~/esp/esp-idf/export.sh
 cd firmware && idf.py build
-idf.py -p /dev/ttyACM0 flash monitor    # XIAO ESP32C3
+idf.py -p /dev/ttyACM0 flash monitor    # ESP32-C3_Mini_V1 (USB-C)
 idf.py -p /dev/ttyUSB0 flash             # bare ESP-C3-12F
 ```
 
@@ -48,7 +49,9 @@ firmware/main/         - Main application (C++, uses RadioLib)
 firmware/components/   - Drivers (BMP280, power_manager, antenna_switch, sky66112)
                        NOTE: lr2021/ is deprecated, use RadioLib instead
 hardware/hub_board/    - Central electronics board (SKiDL + KiCad)
+hardware/hub_board_diy/- DIY v0.1 development hub board (toner transfer)
 hardware/wing_board/   - 4x identical antenna+solar boards
+hardware/footprints/   - Custom component footprint data (JSON)
 docs/adr/              - Architecture Decision Records (8 decisions)
 docs/component-guide.md - All parts with explanations and alternatives
 docs/inventory.md      - Full inventory tracking
@@ -69,31 +72,37 @@ bom/BOM.md             - Bill of Materials (prioritized)
 ## Key Design Decisions (see docs/adr/)
 1. ESP32-C3 as MCU (ADR-001)
 2. LR2021 Gen 4 as LoRa chip (ADR-002)
-3. Dual-track hardware: Dev board (XIAO) + Flight board (bare chip) (ADR-003)
+3. Dual-track hardware: Dev board (ESP32-C3_Mini_V1) + Flight board (bare chip) (ADR-003)
 4. 3D Yagi antenna structure: 4 wings + SP4T switch (ADR-004)
 5. SKY66112-11 FEM for PA+LNA (ADR-005)
 6. Supercapacitor power (Solar → Caps → LDO) (ADR-006)
 7. Adaptive protocol (FLRC/LoRa/Sub-GHz) (ADR-007)
 8. 24-byte binary telemetry with CRC-16 (ADR-008)
 
-## NiceRF LoRa2021 Pin Mapping (XIAO ESP32C3)
+## NiceRF LoRa2021 Pin Mapping (ESP32-C3_Mini_V1 Dev Board)
 ```
-NiceRF Pin   Function    XIAO GPIO   XIAO Pin
+NiceRF Pin   Function    ESP32 GPIO  Silkscreen  Notes
 Pin 1        VCC         3.3V        3V3
 Pin 2,8,11,12,18  GND   GND         GND
-Pin 3        MISO        GPIO7       D7
-Pin 4        MOSI        GPIO6       D6
-Pin 5        SCK         GPIO5       D5
+Pin 3        MISO        GPIO2       D2          Strapping pin (OK as input)
+Pin 4        MOSI        GPIO7       D7          JTAG label, usable as GPIO
+Pin 5        SCK         GPIO6       D6          JTAG label, usable as GPIO
 Pin 6        NSS         GPIO10      D10
-Pin 7        BUSY        GPIO4       D4
+Pin 7        BUSY        GPIO4       D4          JTAG label, usable as GPIO
 Pin 9        ANT (Sub-GHz, 50 Ohm)
 Pin 10       2.4G (2.4 GHz + S Band, 50 Ohm)
 Pin 14       RST         GPIO3       D3
-Pin 15       DIO9 (IRQ)  GPIO2       D2
+Pin 15       DIO9 (IRQ)  GPIO5       D5          JTAG label, usable as GPIO
 Pin 16       DIO8        GPIO1       D1
 Pin 17       DIO7        GPIO0       D0
 ```
 RadioLib: Set `radio.irqDioNum = 9` and call `setDioFunction()` for DIO9 as IRQ.
+
+GPIO4-7 are labeled "JTAG" on silkscreen but are general-purpose GPIO when JTAG not enabled.
+GPIO8 (I2C SDA) is shared with onboard LED (inverted) — LED flickers during I2C (cosmetic only).
+GPIO9 (I2C SCL) is shared with BOOT button — internal pullup is fine for I2C.
+Using GPIO4-7 means no JTAG debug; use UART/printf via USB-C.
+See `hardware/footprints/esp32c3-mini-v1.json` for full pinout data.
 
 ## Pin Assignment (ESP32-C3 bare, Flight Board)
 ```

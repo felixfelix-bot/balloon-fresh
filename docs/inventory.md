@@ -6,7 +6,7 @@ Stand: 2026-05-20
 
 | # | Komponente | Spezifikation | Menge | Quelle | Einzelpreis | Gesamtpreis |
 |---|-----------|---------------|-------|--------|------------|------------|
-| 1 | XIAO ESP32C3 | WiFi/BLE, USB-C, 4MB Flash, RISC-V 160MHz | **20** | AliExpress | 3.89 EUR | 77.80 EUR |
+| 1 | ESP32-C3_Mini_V1 | WiFi/BLE, USB-C, U.FL, 4MB Flash, RISC-V 160MHz | **20** | AliExpress | 3.89 EUR | 77.80 EUR |
 | 2 | XIAO ESP32-C5 | WiFi 6 (2.4+5GHz), BT5, Zigbee, Thread, 8MB | **2** | AliExpress | 5.89 EUR | 11.78 EUR |
 
 ## RF Module

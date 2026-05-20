@@ -1,0 +1,18 @@
+silkscreen,gpio,function,adc,strapping,jtag,onboard,notes
+3V3,,3.3V output,,,,From ME6211 regulator
+GND,,Ground,,,,,
+D0,0,GPIO0,ADC1_CH0,,,,General purpose
+D1,1,GPIO1,ADC1_CH1,,,,General purpose
+D2,2,GPIO2,ADC1_CH2,Yes,,,Boot mode strapping
+D3,3,GPIO3,ADC1_CH3,,,,General purpose
+D4,4,GPIO4,ADC1_CH4,,Yes,,JTAG TMS / General purpose
+D5,5,GPIO5,,,Yes,,JTAG TDI / General purpose
+D6,6,GPIO6,,,Yes,,JTAG TCK / General purpose
+D7,7,GPIO7,,,Yes,,JTAG TDO / General purpose
+D8,8,GPIO8,,Yes,,LED,Onboard LED (inverted) + strapping
+D9,9,GPIO9,,Yes,,BOOT,BOOT button + strapping
+D10,10,GPIO10,,,,,General purpose
+D9_alt,20,GPIO20,,,,,UART RX (USB console)
+D10_alt,21,GPIO21,,,,,UART TX (USB console)
+5V,,5V I/O,,,,USB or external supply
+GND2,,Ground,,,,,

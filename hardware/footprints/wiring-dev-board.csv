@@ -1,0 +1,20 @@
+function,esp32_gpio,esp32_silkscreen,lr2021_pin,lr2021_function,bmp280_pin,destination,notes
+SPI_SCK,6,D6,5,SCK,,LoRa2021,via SB1; JTAG TCK pin; Config A: straight
+SPI_MISO,2,D2,3,MISO,,LoRa2021,direct; strapping pin; safe as input after boot
+SPI_MOSI,7,D7,4,MOSI,,LoRa2021,via SB2; JTAG TDO pin; Config A: straight
+SPI_CS,10,D10,6,NSS,,LoRa2021,Active low chip select
+BUSY,4,D4,7,BUSY,,LoRa2021,JTAG TMS pin; input from LoRa2021
+RST,3,D3,14,RST,,LoRa2021,Active low reset
+DIO9_IRQ,5,D5,15,DIO9,,LoRa2021,JTAG TDI pin; interrupt from LoRa2021
+I2C_SDA,8,D8,,SDA,SDA,BMP280,Shared with onboard LED (LED flickers during I2C)
+I2C_SCL,9,D9,,SCL,SCL,BMP280,Shared with BOOT button; internal pullup OK for I2C
+UART_TX,21,D10,,,,USB console,Serial debug output
+UART_RX,20,D9,,,,USB console,Serial debug input
+LED,8,D8,,,,Onboard,Blue LED (inverted); shared with I2C SDA
+ANT_SUBGHZ,,,9,ANT,,Wire dipole,16.4cm wire @ 868 MHz
+ANT_24GHZ,,,10,2.4G,,Wire dipole,3.1cm wire @ 2.4 GHz
+VCC_3V3,,3V3,1,VCC,VCC,Power,3.3V from ESP32 regulator
+GND,,GND,"2,8,11,12,18",GND,GND,Power,Common ground
+VTCXO,,,13,VTCXO,,Decouple,100nF cap to GND
+SB1_SCK,,,,,,Solder bridge for SCK; pads A1-B1(straight) or A1-B2(crossed)
+SB2_MOSI,,,,,,Solder bridge for MOSI; pads A2-B2(straight) or A2-B1(crossed)

@@ -1,0 +1,123 @@
+{
+  "board": "ESP32-C3_Mini_V1",
+  "manufacturer": "Maker go",
+  "aliases": ["ESP32-C3 Super Mini", "ESP32C3SuperMini"],
+  "chipset": "ESP32-C3 FN4",
+  "cpu": "32-bit RISC-V single-core @ 160 MHz",
+  "memory": {
+    "sram": "400 KB",
+    "rom": "384 KB",
+    "flash": "4 MB"
+  },
+  "wireless": {
+    "wifi": "802.11 b/g/n 2.4 GHz",
+    "bluetooth": "BLE 5.0"
+  },
+  "dimensions_mm": {
+    "length": 22.52,
+    "width": 18.0
+  },
+  "power": {
+    "usb": "USB Type-C",
+    "vin": "5V (USB or external)",
+    "vreg": "ME6211 (onboard, 3.3V output)",
+    "operating_voltage": 3.3,
+    "external_supply_range": "3.3-6V (via 5V pin)",
+    "deep_sleep_current": "43 uA"
+  },
+  "connectors": {
+    "antenna": "U.FL (I-PEX) for external antenna",
+    "antenna_accessories": "U.FL-to-SMA pigtail + 3dBi SMA antenna included"
+  },
+  "onboard": {
+    "led": "GPIO8 (active LOW / inverted)",
+    "boot_button": "GPIO9 (active LOW)",
+    "reset_button": true
+  },
+  "strapping_pins": {
+    "GPIO2": {
+      "default": "floating",
+      "function": "Boot mode selection",
+      "spi_boot": "HIGH or floating",
+      "uart_download": "not applicable (GPIO8/9 control this)"
+    },
+    "GPIO8": {
+      "default": "floating",
+      "function": "Boot mode / ROM message printing",
+      "spi_boot": "Any",
+      "uart_download": "HIGH"
+    },
+    "GPIO9": {
+      "default": "pull-up",
+      "function": "Boot mode selection",
+      "spi_boot": "HIGH (default with internal pullup)",
+      "uart_download": "LOW (hold BOOT button)"
+    }
+  },
+  "boot_modes": {
+    "SPI_boot": { "GPIO2": "HIGH", "GPIO8": "Any", "GPIO9": "HIGH" },
+    "UART_JTAG_download": { "GPIO2": "HIGH", "GPIO8": "HIGH", "GPIO9": "LOW" }
+  },
+  "pins": [
+    { "silkscreen": "3V3", "gpio": null, "function": "3.3V regulated output", "analog": null, "notes": "From onboard ME6211 regulator" },
+    { "silkscreen": "GND", "gpio": null, "function": "Ground", "analog": null, "notes": "" },
+    { "silkscreen": "D0", "gpio": 0, "function": "Digital I/O, ADC1_CH0", "analog": "ADC1_CH0", "notes": "" },
+    { "silkscreen": "D1", "gpio": 1, "function": "Digital I/O, ADC1_CH1", "analog": "ADC1_CH1", "notes": "" },
+    { "silkscreen": "D2", "gpio": 2, "function": "Digital I/O, ADC1_CH2, strapping", "analog": "ADC1_CH2", "notes": "Boot mode strapping pin" },
+    { "silkscreen": "D3", "gpio": 3, "function": "Digital I/O, ADC1_CH3", "analog": "ADC1_CH3", "notes": "" },
+    { "silkscreen": "D4", "gpio": 4, "function": "Digital I/O, ADC1_CH4, JTAG", "analog": "ADC1_CH4", "notes": "JTAG TMS when JTAG enabled" },
+    { "silkscreen": "D5", "gpio": 5, "function": "Digital I/O, JTAG", "analog": null, "notes": "JTAG TDI when JTAG enabled" },
+    { "silkscreen": "D6", "gpio": 6, "function": "Digital I/O, JTAG", "analog": null, "notes": "JTAG TCK when JTAG enabled" },
+    { "silkscreen": "D7", "gpio": 7, "function": "Digital I/O, JTAG", "analog": null, "notes": "JTAG TDO when JTAG enabled" },
+    { "silkscreen": "D8", "gpio": 8, "function": "Digital I/O, LED, strapping", "analog": null, "notes": "Onboard blue LED (inverted), boot strapping" },
+    { "silkscreen": "D9", "gpio": 9, "function": "Digital I/O, BOOT button, strapping", "analog": null, "notes": "BOOT button on board, must be HIGH at boot" },
+    { "silkscreen": "D10", "gpio": 10, "function": "Digital I/O", "analog": null, "notes": "" },
+    { "silkscreen": "D9_alt", "gpio": 20, "function": "UART RX / Digital I/O", "analog": null, "notes": "USB serial RX (console input)" },
+    { "silkscreen": "D10_alt", "gpio": 21, "function": "UART TX / Digital I/O", "analog": null, "notes": "USB serial TX (console output)" },
+    { "silkscreen": "5V", "gpio": null, "function": "5V input/output", "analog": null, "notes": "USB 5V or external supply" },
+    { "silkscreen": "GND2", "gpio": null, "function": "Ground", "analog": null, "notes": "" }
+  ],
+  "header_layout": {
+    "left_side_top_to_bottom": ["3V3", "GND", "D0", "D1", "D2", "D3", "D4", "D5", "TX"],
+    "right_side_top_to_bottom": ["5V", "GND", "D10", "D9_alt", "D8", "D7", "D6", "RX"],
+    "note": "Left = GPIO0-5 bottom to top, Right = GPIO6-10,20,21. TX/RX are GPIO20/21 (USB UART)."
+  },
+  "pinout_ascii": "        ┌──────────────────────┐\n  3V3 ──┤                      ├── 5V\n  GND ──┤                      ├── GND\n  D0  0 ├── GPIO0              ├── 21  D10\n  D1  1 ├── GPIO1              ├── 20  D9\n  D2  2 ├── GPIO2              ├── 9   D8\n  D3  3 ├── GPIO3              ├── 8   D7\n  D4  4 ├── GPIO4              ├── 7   D6\n  D5  5 ├── GPIO5              ├── 6   RX\n  TX    ├──                    ├──     NC\n        ├──  [USB-C]  [U.FL]   ├──     BOOT\n        └──────────────────────┘",
+  "spi_notes": {
+    "SPI0": "Internal, connected to onboard flash (GPIO11-17 on ESP32-C3 chip, not broken out)",
+    "SPI1": "Internal, connected to onboard flash",
+    "SPI2": "User-accessible via GPIO matrix. ANY GPIO can be mapped to SPI2 signals (SCK, MISO, MOSI, CS) using gpio_matrix_out/gpio_matrix_in.",
+    "GPIO4_7_JTAG": "GPIO4-7 are labeled 'JTAG' on silkscreen but are fully usable as general-purpose GPIO or SPI2 when JTAG is not enabled. They are NOT reserved for flash."
+  },
+  "firmware_gpio_map": {
+    "SPI_SCK":  { "gpio": 6, "pin": "D6", "to": "LoRa2021 Pin 5 (SCK)" },
+    "SPI_MISO": { "gpio": 2, "pin": "D2", "to": "LoRa2021 Pin 3 (MISO)" },
+    "SPI_MOSI": { "gpio": 7, "pin": "D7", "to": "LoRa2021 Pin 4 (MOSI)" },
+    "SPI_CS":   { "gpio": 10, "pin": "D10", "to": "LoRa2021 Pin 6 (NSS)" },
+    "BUSY":     { "gpio": 4, "pin": "D4", "to": "LoRa2021 Pin 7 (BUSY)" },
+    "RST":      { "gpio": 3, "pin": "D3", "to": "LoRa2021 Pin 14 (RST)" },
+    "DIO9_IRQ": { "gpio": 5, "pin": "D5", "to": "LoRa2021 Pin 15 (DIO9)" },
+    "I2C_SDA":  { "gpio": 8, "pin": "D8", "to": "BMP280 SDA (shared with onboard LED)" },
+    "I2C_SCL":  { "gpio": 9, "pin": "D9", "to": "BMP280 SCL (shared with BOOT button)" },
+    "LED":      { "gpio": 8, "pin": "D8", "to": "Onboard blue LED (inverted, shared with I2C SDA)" },
+    "UART_TX":  { "gpio": 21, "pin": "D10", "to": "USB console TX" },
+    "UART_RX":  { "gpio": 20, "pin": "D9", "to": "USB console RX" }
+  },
+  "caveats": [
+    "GPIO4-7 for SPI+control means no JTAG debugging; use UART/printf only",
+    "GPIO8 (I2C SDA) is shared with onboard LED: LED will flicker during I2C traffic (cosmetic only)",
+    "GPIO9 (I2C SCL) is shared with BOOT button: has internal pullup (good for I2C), must be HIGH at boot",
+    "GPIO2 (SPI MISO) is a strapping pin: must be floating or HIGH at boot for SPI boot mode (safe as input)",
+    "Using GPIO6/7 for SPI: these are labeled JTAG on silkscreen but are general-purpose GPIO when JTAG not enabled",
+    "U.FL antenna connector is in addition to onboard PCB antenna; some boards require solder bridge to switch",
+    "ME6211 regulator needs >=4.3V on 5V pin for stable 3.3V output; direct 3.3V via 3V3 pin bypasses regulator"
+  ],
+  "sources": [
+    "https://dl.artronshop.co.th/ESP32-C3%20SuperMini%20datasheet.pdf",
+    "https://www.sudo.is/docs/esphome/boards/esp32c3supermini/",
+    "https://wiki.icbbuy.com/doku.php?id=developmentboard:esp32-c3mini",
+    "https://www.fambach.net/esp32-c3-super-mini-board/",
+    "https://github.com/sidharthmohannair/Tutorial-ESP32-C3-Super-Mini",
+    "https://mischianti.org (ESP32-C3 Super Mini article, 2025-07-09)"
+  ]
+}
