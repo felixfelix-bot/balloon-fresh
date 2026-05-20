@@ -1,0 +1,33 @@
+(kicad_pro
+  (version 9.0)
+  (generator "pcbnew")
+  (general
+    (thickness 1.6)
+  )
+  (paper "A4")
+  (layout
+    (path "hub_board_diy.kicad_pcb")
+  )
+  (schematic
+    (path "hub_board_diy.kicad_sch")
+  )
+  (nets 0)
+  (net_classes
+    (net_class "Default" ""
+      (clearance 0.4)
+      (trace_width 0.4)
+      (via_dia 0.8)
+      (via_drill 0.4)
+      (uvia_dia 0.3)
+      (uvia_drill 0.1)
+    )
+    (net_class "Power" ""
+      (clearance 0.4)
+      (trace_width 0.6)
+      (via_dia 0.8)
+      (via_drill 0.4)
+      (uvia_dia 0.3)
+      (uvia_drill 0.1)
+    )
+  )
+)
