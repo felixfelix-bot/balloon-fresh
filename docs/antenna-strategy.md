@@ -136,3 +136,87 @@ Boden: 2.4 GHz Helical Antenne (RHCP)
 Hinweis: Die Wing-PCBs mit Yagis sind gleichzeitig Solarzellen-Traeger.
 Das "zusaetzliche" Gewicht fuer Yagis betraegt effektiv nur den SP4T-Switch (+0.1g),
 da die PCBs ohnehin fuer die Solarzellen benoetigt werden.
+
+---
+
+## Produktrecherche (Mai 2026)
+
+### Ergebnis: Keine handelsueblichen 2.4 GHz CP Patch-Antennen fuer Pico-Balloons
+
+Umfassende Suche auf AliExpress, DigiKey, Mouser, Taoglas, Linx/TE Connectivity und Johanson Technology.
+
+| Produkt | Frequenz | Polarisation | Gewinn | Gewicht | Geeignet? |
+|---------|----------|-------------|--------|---------|-----------|
+| AliExpress FPC Streifen | 2.4 GHz | Linear (nicht CP) | ~1-2 dBi (trotz "5 dBi" Angabe) | ~0.2g | Nein — omnidirektional, keine Richtwirkung |
+| Foxeer Lollipop 2.4G | 2.4 GHz | RHCP | 2.6 dBi | ~3g pro Stueck (x4 = 12g) | Nein — zu schwer fuer 4x Diversity |
+| iFlight 2.4G CP Panel | 2.4 GHz | RHCP/LHCP | ~5-8 dBi | ~15-25g | Nein — zu schwer fuer Ballon |
+| Custom CP PCB Patch | 2.4 GHz | RHCP | ~5-7 dBi | ~0.5g | Moeglich — braucht EM-Simulation + VNA |
+| PCB Yagi (unser Design) | 2.4 GHz | Linear | ~6-9 dBi | ~0g (geaetzt) | Ja — bereits designt |
+
+**Warum keine CP Patches existieren:**
+- 2.4 GHz Markt dominiert von WiFi/BT (linear)
+- CP Markt bei 5.8 GHz (FPV Drohnen) und GPS L1 (1.575 GHz)
+- FPC flex Antennen bei 2.4 GHz sind alle linear
+- Custom CP Patch moeglich (~29x29mm auf 0.4mm FR4) aber braucht EM-Simulation (openEMS/HFSS) und VNA-Abgleich
+
+---
+
+## V1 Entscheidung: Omnidirektionale Dipole (Mai 2026 Update)
+
+**Siehe ADR-009 fuer vollstaendige Begrundung.**
+
+### Ballon: Wire-Dipole fuer beide Baender
+
+| Band | Antenne | Laenge | Gewinn | Rotation? |
+|------|---------|--------|--------|-----------|
+| 868 MHz | Draht-Dipol | ~16.4 cm | ~2 dBi | Immun (omnidirektional) |
+| 2.4 GHz | Draht-Dipol | ~6 cm | ~2 dBi | Immun (omnidirektional) |
+
+Kein SP4T Switch, keine Antennen-Umschaltung, keine Wing-Board Antennen-Design.
+
+### Link-Budget Rechtfertigung
+
+```
+TX: +22 dBm (SKY66112 FEM) + 2 dBi Dipol = +24 dBm EIRP
+FSPL @ 300 km, 2.4 GHz: -149.6 dB
+RX: 18 dBi Boden-Yagi = -107.6 dBm empfangen
+Empfaengerempfindlichkeit SF9/1625: -117 dBm
+Margin: +9.4 dB → funktioniert!
+
+22 kbps Luftrate, ~9 kbps netto nach Erasure Coding + TDMA Overhead
+4x MultiWAN Bonding: ~36 kbps aggregiert
+```
+
+### Bodenstation: Dual-Band
+
+| Band | Antenne | Polarisation | Gewinn | Kosten | Zweck |
+|------|---------|-------------|--------|--------|-------|
+| 868 MHz | Linear Yagi | Linear | ~12 dBi | ~EUR 15 | Sub-GHz Telemetrie + Fallback |
+| 2.4 GHz | CP Helical (5-Windung) | RHCP | ~14 dBi | ~EUR 15 (DIY) | 2.4 GHz Hochrat, rotationsimmun |
+
+Die CP Helical kompensiert die Ballon-Rotation mit festem 3 dB Polarisationsverlust.
+
+### Warum nicht Yagis auf dem Ballon (fuer V1)?
+
+1. **Link-Budget funktioniert ohne** — 22 kbps bei 300 km mit einfachen Dipolen
+2. **Keine passenden CP Patches verfuegbar** — Produktrecherche zeigt keine Optionen
+3. **Einfachere Hardware** — kein SP4T, keine Umschalt-Firmware
+4. **Gewicht** — Spart ~1-2g (SP4T + Antennen-Montage)
+5. **Rotation** — Dipole sind omnidirektional, kein Rotationsproblem
+
+---
+
+## V2 Upgrade-Pfad: Richtantennen wenn mehr Throughput noetig
+
+Wenn V1-Throughput (22 kbps) nicht ausreicht, koennen Richtantennen nachgeruestet werden:
+
+| Option | Gewinn | Gewicht | Aufwand |
+|--------|--------|---------|---------|
+| PCB Yagis auf Wing-Boards (ADR-004) | 6-9 dBi | +0g (geaetzt) + SP4T (+0.1g) | Mittel |
+| Custom CP PCB Patches | 5-7 dBi | +0.5g | Hoch (EM-Sim + VNA) |
+| Gekaufte FPC Sticker | ~1-2 dBi | +0.8g (4x0.2g) | Niedrig (aber kein Richtgewinn) |
+
+V2 bringt ~2-3x mehr Throughput pro Link (38-87 kbps bei 300 km).
+
+Das PCB ist bereits mit SP4T-Footprint und Wing-Board Connectors designt —
+Hardware-Upgrade durch Bestueckung der optionalen Bauteile.

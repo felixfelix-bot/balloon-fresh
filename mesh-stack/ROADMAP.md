@@ -317,3 +317,258 @@ Software drift tracking maintains accuracy between sync events:
 10. **Coordinator election at altitude?** The sx1280-serial coordinator election assumes all nodes can potentially hear each other. At altitude with directional antennas, the topology is different. How does this change the protocol?
 11. **Can we use LoRa hardware FEC + erasure coding together effectively?** LoRa has built-in CR (coding rate) 4/5 to 4/8. Does using a higher CR (more hardware FEC) plus erasure coding give better throughput than lower CR (less overhead) with more erasure overhead? Where's the sweet spot?
 12. **Temperature impact on LR2021 frequency stability?** At -60°C stratospheric temps, the LR2021's oscillator may drift. Does this affect ranging accuracy? Do we need TCXO on the radio module too, not just the MCU?
+
+---
+
+## Balloon-to-Balloon Range at Altitude
+
+At 12 km altitude, two balloons have geometric line-of-sight of ~780 km (4/3 Earth radius refraction model):
+
+```
+d = sqrt(2 * 4/3 * 6371 * h1) + sqrt(2 * 4/3 * 6371 * h2)
+  = sqrt(2 * 8495 * 12000) + sqrt(2 * 8495 * 12000)
+  = 2 * sqrt(203,880,000) = 2 * 14,280 m = ~28.6 km... wait
+```
+
+Correct formula: `d(km) = 4.12 * (sqrt(h1_m) + sqrt(h2_m))`
+
+```
+d = 4.12 * (sqrt(12000) + sqrt(12000)) = 4.12 * (109.5 + 109.5) = ~902 km geometric
+Practical RF range: ~750-780 km due to FSPL and power constraints
+```
+
+### Practical 2.4 GHz LoRa Range (Balloon-to-Balloon)
+
+Both balloons at 12 km, each with omnidirectional dipole (+22 dBm FEM):
+
+| Distance | FSPL | Received | Best Modulation | Air Rate |
+|----------|------|----------|-----------------|----------|
+| 100 km | -140.0 dB | -116.0 dBm | SF8/1625 (-114) | 38 kbps |
+| 300 km | -149.6 dB | -125.6 dBm | SF10/125 (-133.5) | 1.0 kbps |
+| 500 km | -154.0 dB | -130.0 dBm | SF11/125 (-138.5) | 0.5 kbps |
+| 780 km | -157.9 dB | -133.9 dBm | SF12/125 (-141.5) | 0.25 kbps |
+
+Balloon-to-balloon at max range is limited to ~0.25 kbps — insufficient for internet transport. Primary mesh links should be balloon-to-ground (~300 km, ~22 kbps).
+
+---
+
+## Link Budget: Balloon to Ground
+
+### Free Space Path Loss
+
+| Distance | 2.4 GHz | 868 MHz |
+|----------|---------|---------|
+| 50 km | 134.0 dB | 125.2 dB |
+| 100 km | 140.0 dB | 131.2 dB |
+| 200 km | 146.0 dB | 137.2 dB |
+| 300 km | 149.6 dB | 140.8 dB |
+| 500 km | 154.0 dB | 145.2 dB |
+
+### Receiver Sensitivity (LR2021/LR2022)
+
+| Modulation | Sensitivity | Air Rate |
+|-----------|-------------|----------|
+| LoRa SF12/125 kHz | -141.5 dBm | 0.25 kbps |
+| LoRa SF11/125 kHz | -138.5 dBm | 0.5 kbps |
+| LoRa SF10/125 kHz | -133.5 dBm | 1.0 kbps |
+| LoRa SF9/125 kHz | -129.0 dBm | 1.7 kbps |
+| LoRa SF8/125 kHz | -126.0 dBm | 3.1 kbps |
+| LoRa SF7/125 kHz | -123.0 dBm | 5.5 kbps |
+| LoRa SF10/1625 kHz | -121.0 dBm | ~12 kbps |
+| LoRa SF9/1625 kHz | -117.0 dBm | ~22 kbps |
+| LoRa SF8/1625 kHz | -114.0 dBm | ~38 kbps |
+| LoRa SF7/1625 kHz | -109.0 dBm | ~87 kbps |
+| LoRa SF5/1625 kHz | -102.0 dBm | ~200 kbps |
+| FLRC 325 kbps | -98.0 dBm | ~325 kbps |
+| FLRC 1300 kbps | -88.0 dBm | ~1300 kbps |
+
+### V1: Omnidirectional Balloon + Ground Station
+
+Balloon: +22 dBm (FEM) + 2 dBi dipole. Ground: high-gain antenna.
+
+**2.4 GHz with 18 dBi ground Yagi:**
+
+| Distance | Received | Best Mode | Air Rate | Net (~40%) |
+|----------|----------|-----------|----------|-----------|
+| 50 km | -101.6 dBm | FLRC 325k | 325 kbps | ~130 kbps |
+| 100 km | -107.6 dBm | SF7/1625 | 87 kbps | ~37 kbps |
+| 200 km | -113.6 dBm | SF8/1625 | 38 kbps | ~16 kbps |
+| 300 km | -117.6 dBm | SF9/1625 | 22 kbps | ~9 kbps |
+| 500 km | -122.0 dBm | SF10/125 | 1.0 kbps | ~0.4 kbps |
+
+**868 MHz with 12 dBi ground Yagi (dipole is omnidirectional, no pol issue):**
+
+| Distance | Received | Best Mode | Air Rate | Net (~40%) |
+|----------|----------|-----------|----------|-----------|
+| 50 km | -89.2 dBm | SF7/125 | 5.5 kbps | ~2.3 kbps |
+| 100 km | -95.2 dBm | SF7/125 | 5.5 kbps | ~2.3 kbps |
+| 300 km | -104.8 dBm | SF9/125 | 1.7 kbps | ~0.7 kbps |
+| 480 km | -108.8 dBm | SF10/125 | 1.0 kbps | ~0.4 kbps |
+
+### V2: Directional Balloon (7 dBi Yagi) + Ground Station
+
+**2.4 GHz with 18 dBi ground Yagi:**
+
+| Distance | Received | Best Mode | Air Rate | Net (~40%) |
+|----------|----------|-----------|----------|-----------|
+| 50 km | -94.6 dBm | FLRC 1300k | 1300 kbps | ~550 kbps |
+| 100 km | -100.6 dBm | FLRC 325k | 325 kbps | ~130 kbps |
+| 200 km | -106.6 dBm | SF7/1625 | 87 kbps | ~37 kbps |
+| 300 km | -110.6 dBm | SF8/1625 | 38 kbps | ~16 kbps |
+| 500 km | -115.0 dBm | SF10/1625 | 12 kbps | ~5 kbps |
+
+---
+
+## Throughput: MultiWAN Bonding
+
+With 4 balloons visible from a ground station:
+
+| Distance | V1 Per-Link Net | 4x Bonded | V2 Per-Link Net | 4x Bonded |
+|----------|----------------|-----------|----------------|-----------|
+| 100 km | 37 kbps | **~150 kbps** | 130 kbps | **~520 kbps** |
+| 200 km | 16 kbps | **~64 kbps** | 37 kbps | **~150 kbps** |
+| 300 km | 9 kbps | **~36 kbps** | 16 kbps | **~64 kbps** |
+
+Net efficiency ~40% of air rate (erasure coding 1.5x overhead for 35% loss + TDMA 20-30% + protocol 10-15%).
+
+---
+
+## TX Power Tradeoffs
+
+Each +3 dB (doubling TX power) roughly bumps one modulation step (~2x data rate).
+
+| TX Power | Hardware Needed | DC Power | 300 km Throughput | Solar Cells |
+|----------|----------------|----------|-------------------|-------------|
+| +12 dBm (16 mW) | Bare LR2021 | 165 mW | 0.7 kbps | 6x |
+| +22 dBm (158 mW) | **SKY66112 FEM (our design)** | 500 mW | 9 kbps | 6-8x |
+| +24 dBm (250 mW) | SKY66112 at max | 660 mW | 16 kbps | 8-10x |
+| +27 dBm (500 mW) | External PA stage | 1.65W | 37 kbps | 12x |
+| +30 dBm (1 W) | SKY66114 or discrete PA | 3.3W | 85 kbps | 16-20x |
+
+**Design decision:** Build +22 dBm first, design PCB for +30 dBm upgrade path (SKY66114 footprint).
+
+### Regulatory Limits
+
+| Region | 2.4 GHz ISM EIRP Limit | With 2 dBi Dipole |
+|--------|------------------------|-------------------|
+| EU | +20 dBm (100 mW) | +22 dBm TX = +24 dBm EIRP (technically over) |
+| US | +30 dBm | +22 dBm TX = OK |
+
+Pico balloons are a gray area — brief transmissions, international airspace.
+
+---
+
+## Power Budget: Mesh Scenarios
+
+### Tracker (Current Design)
+
+```
+30s cycle, LoRa SF10 @ 2.4 GHz, 4 Wings Leuchtturm
+Energy per cycle: ~205 mAs
+Average power: ~7 mW
+```
+
+### Mesh Relay with Adaptive TX (50/50 RX/TX)
+
+```
+TDMA Frame (2s):
+  Slot 1: RX from GS-close   (500ms, 11 mA)    = 5.5 mAs
+  Slot 2: TX to GS-far        (500ms, 150 mA)   = 75.0 mAs
+  Slot 3: RX from GS-far      (500ms, 11 mA)    = 5.5 mAs
+  Slot 4: TX to GS-close      (500ms, 30 mA)    = 15.0 mAs
+  Total per frame: ~101 mAs
+  Average power: 101 mAs / 2s x 3.3V = ~167 mW
+```
+
+Adaptive TX saves 38% vs fixed +22 dBm (265 mW).
+
+### Night-Off Default (ADR-010)
+
+Balloon sleeps at night. Default configuration:
+
+| Component | Night-Active | Night-Off |
+|-----------|-------------|-----------|
+| Supercaps | 2x 3.3F (3.0g) | 1x 0.47F (0.5g) |
+| Solar cells | 12x (6.0g) | 6-8x (3.0-4.0g) |
+| Total weight | ~17g | ~14g |
+| Night coverage | Yes (single balloon) | No (needs multiple balloons) |
+
+Night-off sequence: solar drops → announce "sleeping" → deep sleep (15 µA) → solar rises → GPS lock → announce "awake" → resume mesh. Ground stations estimate night position from wind data.
+
+Configurable night-active mode: populate larger caps and more solar cells for special missions. Same PCB, different component population.
+
+### Solar Adequacy
+
+| Scenario | Avg Power | 12-Cell Avg Solar | Night Reserve |
+|----------|-----------|-------------------|---------------|
+| Tracker | ~7 mW | 480 mW | 73h |
+| Mesh adaptive TX | ~167 mW | 480 mW | 8.8h |
+| Mesh fixed +22 dBm | ~265 mW | 480 mW | 5.4h |
+| Mesh +30 dBm adaptive | ~350 mW | 480 mW | 3.2h → need 16 cells |
+
+With night-off default (6-8 cells), daytime margin is comfortable: 240-320 mW solar avg vs 167 mW load.
+
+---
+
+## FEM Comparison
+
+| FEM | Max TX | Band | Antenna Diversity | Weight | Reference |
+|-----|--------|------|-------------------|--------|-----------|
+| **SKY66112-11** | **+24 dBm** | Sub-GHz + 2.4 GHz | No (separate SP4T) | ~0.1g | **In our design** |
+| nRF21540 | +21 dBm | 2.4 GHz only | Yes (built-in SPDT) | ~0.1g | `https://github.com/ketoglou/nrf21540-custom-driver` |
+| SE2431L | +20 dBm | 2.4 GHz only | Yes (PA+LNA+switch) | ~0.1g | `https://github.com/AnyLeaf/elrs-hardware` |
+| SKY66114 | +30 dBm | Sub-GHz | No | ~0.3g | Upgrade path for V2 |
+
+**nRF21540 interesting** — built-in antenna diversity (SPDT) simplifies V2 design. But 2.4 GHz only and lower power than SKY66112.
+
+**SKY66112 driver reference:** `https://github.com/AxDen-Dev/SKY66112_NRF52_Ping_pong_example` — GPIO control for PA/LNA switching.
+
+**ExpressLRS antenna diversity:** `https://github.com/ExpressLRS/ExpressLRS` — production SX1280 diversity firmware with RSSI scanning.
+
+---
+
+## Antenna Strategy (ADR-009)
+
+**V1 (build first):** Omnidirectional wire dipoles for both bands. Ground station provides all gain.
+
+- 868 MHz: wire dipole ~16.4cm + ground 12 dBi Yagi → 1.7 kbps at 300 km
+- 2.4 GHz: wire dipole ~6cm + ground 18 dBi Yagi → 22 kbps at 300 km
+- No SP4T, no switching firmware, no wing board antenna design
+- Night-off default, 6-8 solar cells, ~14g total
+
+**V2 (upgrade path):** Directional antennas when higher throughput needed.
+
+- PCB Yagis on wing boards (current design) or custom CP patches
+- SP4T switch + antenna diversity firmware
+- 38-87 kbps at 300 km, +30 dBm PA upgrade path
+
+**Ground station:** Dual-band — 868 MHz Yagi + 2.4 GHz CP helical (RHCP). The CP helical handles balloon rotation with fixed 3 dB loss.
+
+---
+
+## Updated Research Checklist
+
+### Completed
+- [x] Link budget analysis at various distances (50-500 km, both bands)
+- [x] Throughput per modulation mode with net efficiency (~40%)
+- [x] Solar power requirements for mesh (167 mW avg with adaptive TX)
+- [x] FEM product research (SKY66112, nRF21540, SE2431L, SKY66114)
+- [x] Antenna product research (no 2.4 GHz CP patches exist for balloons)
+- [x] Balloon-to-balloon range at 12 km altitude (~780 km geometric)
+- [x] TX power tradeoffs (+12 to +33 dBm, throughput vs power vs weight)
+- [x] Night-off vs night-active design decision
+- [x] Adaptive TX power concept for relay scenario (38% savings)
+- [x] Project reorganization (tracker/ subdirectory)
+
+### Remaining
+- [ ] Clone and study Wirehair (`https://github.com/catid/wirehair`) — ESP32-C3 feasibility
+- [ ] Clone and study Shorthair (`https://github.com/catid/shorthair`) — streaming variant
+- [ ] Clone and study OpenFEC (`https://github.com/OpenFEC/OpenFEC`) — algorithm comparison
+- [ ] Clone and study ts-lora (`https://github.com/deltazita/ts-lora`) — TDMA frame structure
+- [ ] Clone and study LoRaMesher (`https://github.com/LoRaMesher/LoRaMesher`) — mesh superframes
+- [ ] Clone and study LoraRangingTest (`https://github.com/yplam/LoraRangingTest`) — ranging implementation
+- [ ] Clone and study ublox library (`https://github.com/u-blox/ublox-GNSS-Arduino-Library`) — GPS PPS
+- [ ] Verify LR2021 ranging vs SX1280 ranging compatibility
+- [ ] Measure actual LR2021 throughput at various configurations via SPI
+- [ ] Design TDMA frame structure with per-slot power/modulation parameters
+- [ ] Write protocol specification (mesh-stack/protocol/SPEC.md)

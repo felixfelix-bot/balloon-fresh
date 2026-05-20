@@ -265,6 +265,63 @@ Unterschiede sind nur Compile-Time-Konfigurationen (#define).
 
 ---
 
+## Mesh-Varianten (Mai 2026 Update)
+
+### Mesh V1 (~14g, Omnidirektional, Night-Off)
+
+Erster Mesh-Relay-Knoten. Selbes PCB wie Mittel-Plan, aber mit FEM bestueckt.
+
+| Teil | Option | Gewicht |
+|------|--------|---------|
+| Hub PCB | 22x22mm, 0.4mm FR4 | 0.2g |
+| MCU | ESP-C3-12F bare | 1.0g |
+| RF | NiceRF LoRa2021 | 1.8g |
+| FEM | SKY66112-11 (+22 dBm) | 0.1g |
+| Antenne Sub-GHz | Draht-Dipol 16.4cm | 0.3g |
+| Antenne 2.4 GHz | Draht-Dipol 6cm | 0.1g |
+| Supercaps | 1x 0.47F 5.5V | 0.5g |
+| Solar | 6-8x 52x19mm | 3.0-4.0g |
+| LDO | TPS7A02 | 0.05g |
+| Sensor | BMP280 | 0.5g |
+| Passiv | R, C | 0.15g |
+| Loeten + Draht | | 0.2g |
+| **Total** | | **~11.9-12.9g** |
+| + Ballon + Henkel | | **~14g** |
+
+**Leistung:**
+- 2.4 GHz @ +22 dBm: 22 kbps @ 300 km (SF9/1625), ~9 kbps netto
+- 868 MHz @ +22 dBm: 1.7 kbps @ 300 km (SF9/125), ~0.7 kbps netto
+- 4x MultiWAN Bonding: ~36 kbps @ 300 km
+- Adaptive TX Power: ~167 mW avg (38% Ersparnis vs fixed)
+- Night-off: deep sleep (15 µA), wake on sunrise
+
+**Warum Night-Off:**
+- Spart ~3.5g (kleinere Caps, weniger Solarzellen)
+- Bodestationen schaetzen Nacht-Position aus Winddaten
+- Mehrere Ballons in verschiedenen Zeitzonen = 24h Abdeckung
+- Konfigurierbar: night-active mit groesseren Caps fuer Spezialmissionen
+
+### Mesh V2 (~18-22g, Directional, Night-Active)
+
+Upgrade-Pfad mit Richtantennen und +30 dBm.
+
+| Teil | Aenderung vs V1 | Gewicht |
+|------|----------------|---------|
+| Wings | 2-4x Wing PCBs mit PCB-Yagis | +1.1-3.2g |
+| SP4T | SKY13351-378LF | +0.1g |
+| FEM | SKY66114 (+30 dBm) statt SKY66112 | +0.2g |
+| Supercaps | 2x 3.3F 2.7V Serie | +2.5g |
+| Solar | 12-20x 52x19mm | +3.0-6.0g |
+| **Total V2** | | **~18-22g** |
+
+**Leistung:**
+- 2.4 GHz @ +30 dBm: 38-87 kbps @ 300 km mit PCB-Yagis
+- 4x MultiWAN Bonding: ~150-350 kbps @ 300 km
+- Night-active: 73h Deep Sleep Reserve
+- Richtantennen: ~2-3x mehr Throughput pro Link
+
+---
+
 ## Prioritaet und Reihenfolge
 
 ```
@@ -297,4 +354,16 @@ Phase 4: Flug vorbereiten (Woche 7+)
   → Helium besorgen
   → Finaler Weight-Check
   → Start!
+
+Phase 5: Mesh V1 (nach erfolgreichem Tracker-Flug)
+  → 2. LoRa2021 + FEM auf gleichem PCB
+  → TDMA Firmware mit adaptive TX
+  → Bodenstation mit dual-band Antennen
+  → 2-Ballon Mesh-Test
+
+Phase 6: Mesh V2 (optional, wenn mehr Throughput noetig)
+  → PCB-Yagis auf Wing-Boards
+  → SKY66114 +30 dBm FEM
+  → Night-active Konfiguration
+  → MultiWAN Bonding
 ```
