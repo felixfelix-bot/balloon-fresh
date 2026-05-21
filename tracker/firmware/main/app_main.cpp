@@ -28,6 +28,7 @@ extern "C" {
 #ifdef CONFIG_ENABLE_ANTENNA_SWITCH
 #include "antenna_switch.h"
 #endif
+#include "cli.h"
 }
 
 static const char *TAG = "TRACKER";
@@ -122,6 +123,107 @@ static void deep_sleep(uint32_t seconds)
     esp_deep_sleep_start();
 }
 
+static void cli_cmd_status(const char *args) {
+    (void)args;
+    printf("=== System Status ===\n");
+    printf("  Uptime: %lld ms\n", esp_timer_get_time() / 1000);
+    printf("  Free heap: %lu bytes\n", (unsigned long)esp_get_free_heap_size());
+    printf("  Wake count: %d\n", rtc_seq);
+    printf("  First boot: %s\n", rtc_first_boot ? "yes" : "no");
+    uint16_t cap_mv = power_manager_read_supercap_mv();
+    printf("  Supercap: %d mV\n", cap_mv);
+}
+
+static void cli_cmd_gps(const char *args) {
+    (void)args;
+#ifdef CONFIG_ENABLE_GPS
+    printf("=== GPS Data ===\n");
+    printf("  Fix: %s\n", gps_data.fix ? "YES" : "NO");
+    if (gps_data.fix) {
+        printf("  Lat: %.5f deg\n", gps_data.latitude / 1e5);
+        printf("  Lon: %.5f deg\n", gps_data.longitude / 1e5);
+        printf("  Alt: %d m\n", gps_data.altitude_m);
+        printf("  Sats: %d\n", gps_data.sats);
+        printf("  HDOP: %d\n", gps_data.hdop);
+    }
+#else
+    printf("GPS: disabled in config\n");
+#endif
+}
+
+static void cli_cmd_telemetry(const char *args) {
+    (void)args;
+    telemetry_packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.callsign_hash = (uint32_t)strtoul(CONFIG_CALLSIGN_HASH_HEX, NULL, 16);
+    uint16_t cap_mv = power_manager_read_supercap_mv();
+    telemetry_fill(&pkt, 0, 0, 0, cap_mv, rtc_seq);
+
+    uint8_t buf[TELEMETRY_SIZE];
+    telemetry_serialize(&pkt, buf);
+
+    printf("=== Telemetry Packet (%d bytes) ===\n", TELEMETRY_SIZE);
+    printf("  HEX: ");
+    for (int i = 0; i < TELEMETRY_SIZE; i++) printf("%02x", buf[i]);
+    printf("\n");
+    printf("  Callsign hash: 0x%08lx\n", (unsigned long)pkt.callsign_hash);
+    printf("  Seq: %d\n", pkt.seq);
+    printf("  Supercap: %d mV\n", cap_mv);
+}
+
+static void cli_cmd_config(const char *args) {
+    (void)args;
+    printf("=== Configuration ===\n");
+    printf("  Callsign hash: %s\n", CONFIG_CALLSIGN_HASH_HEX);
+    printf("  Frequency: %.1f MHz\n", (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f);
+    printf("  SF: %d\n", CONFIG_RADIO_SF);
+    printf("  TX power: %d dBm\n", CONFIG_RADIO_TX_POWER_DBM);
+    printf("  TX interval: %d s\n", CONFIG_TX_INTERVAL_SEC);
+    printf("  Low voltage: %d mV\n", CONFIG_LOW_VOLTAGE_MV);
+#ifdef CONFIG_ENABLE_GPS
+    printf("  GPS: enabled\n");
+#else
+    printf("  GPS: disabled\n");
+#endif
+#ifdef CONFIG_ENABLE_BMP280
+    printf("  BMP280: enabled\n");
+#else
+    printf("  BMP280: disabled\n");
+#endif
+}
+
+static void cli_cmd_radio(const char *args) {
+    (void)args;
+    printf("=== Radio State ===\n");
+    printf("  Freq: %.1f MHz\n", (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f);
+    printf("  SF: %d, BW: 125 kHz, CR: 4/7\n", CONFIG_RADIO_SF);
+    printf("  TX power: %d dBm\n", CONFIG_RADIO_TX_POWER_DBM);
+    printf("  Initialized: %s\n", radio ? "yes" : "no");
+}
+
+static void cli_cmd_restart(const char *args) {
+    (void)args;
+    printf("Restarting...\n");
+    esp_restart();
+}
+
+static void cli_cmd_sleep_now(const char *args) {
+    (void)args;
+    printf("Forcing deep sleep...\n");
+    deep_sleep(CONFIG_TX_INTERVAL_SEC);
+}
+
+static void setup_cli(void) {
+    cli_init();
+    cli_register_command("status", "System status (uptime, heap, voltage)", cli_cmd_status);
+    cli_register_command("gps", "GPS data (fix, lat, lon, alt, sats)", cli_cmd_gps);
+    cli_register_command("telemetry", "Current telemetry packet", cli_cmd_telemetry);
+    cli_register_command("config", "Kconfig settings", cli_cmd_config);
+    cli_register_command("radio", "Radio configuration", cli_cmd_radio);
+    cli_register_command("restart", "Software restart", cli_cmd_restart);
+    cli_register_command("sleep", "Force deep sleep cycle", cli_cmd_sleep_now);
+}
+
 extern "C" void app_main(void)
 {
     if (rtc_first_boot) {
@@ -162,6 +264,10 @@ extern "C" void app_main(void)
     power_manager_init();
     uint16_t cap_mv = power_manager_read_supercap_mv();
     ESP_LOGI(TAG, "Supercap: %d mV", cap_mv);
+
+    setup_cli();
+    printf("> ");
+    fflush(stdout);
 
     if (cap_mv < CONFIG_LOW_VOLTAGE_MV) {
         ESP_LOGW(TAG, "Low voltage (%d mV < %d), skipping TX", cap_mv, CONFIG_LOW_VOLTAGE_MV);
@@ -207,6 +313,7 @@ extern "C" void app_main(void)
                 gps_data.altitude_m, gps_data.sats);
             break;
         }
+        cli_process();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
     if (!gps_fixed) {
