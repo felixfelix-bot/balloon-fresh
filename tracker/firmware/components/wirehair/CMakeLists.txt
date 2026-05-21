@@ -1,0 +1,10 @@
+idf_component_register(
+    SRCS
+        "gf256.cpp"
+        "wirehair.cpp"
+        "WirehairCodec.cpp"
+        "WirehairTools.cpp"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+)

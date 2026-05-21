@@ -62,8 +62,11 @@ tracker/hardware/hub_board_diy/- DIY v0.1 development hub board (toner transfer)
 tracker/hardware/wing_board/   - 4x identical antenna+solar boards
 tracker/hardware/footprints/   - Custom component footprint data (JSON)
 tracker/ground-station/        - Antenna tracker + ground station software
+tracker/ground-station/receiver/ - Ground station LoRa receiver (ESP32-C3, builds OK)
 mesh-stack/                    - Mesh internet transport (separate AGENTS.md)
 mesh-stack/ROADMAP.md          - Comprehensive mesh plan, link budgets, research checklist
+mesh-stack/research/           - Research notes (erasure-coding, routing, tdma, etc.)
+IMPLEMENTATION-PLAN.md         - Master implementation plan with checklists
 docs/adr/                      - Architecture Decision Records (10 decisions)
 docs/component-guide.md        - All parts with explanations and alternatives
 docs/inventory.md              - Full inventory tracking
