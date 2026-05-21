@@ -84,6 +84,18 @@ This is **not** a competitor to Starlink (50-350 Mbps via 12 GHz Ku/Ka-band phas
 | sx1280-testing | `nostr://npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/relay.ngit.dev/sx1280-testing` | Basic bring-up, ~1 kbps throughput benchmark. |
 | sx1280-ethernet-adapter | `nostr://npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/relay.ngit.dev/sx1280-ethernet-adapter` | ESP32-S3 + SX1280 Wi-Fi AP bridge scaffold. Architecture closest to what ground station could look like. |
 
+### Mesh Networking (FIPS + MeshCore + TollGate)
+
+| Repo | URL | Notes |
+|------|-----|-------|
+| FIPS | `https://github.com/jmcorgan/fips` | Free Internetworking Peering System. Self-organizing encrypted mesh, Nostr identity, Noise IK/XK, v0.3.0. |
+| microfips | `https://github.com/Amperstrand/microfips` | FIPS leaf node on STM32 + ESP32 (D0WD, S3). Rust/no_std. Transport trait, Noise handshakes, FSP sessions. |
+| MeshCore | `https://github.com/meshcore-dev/MeshCore` | Lightweight LoRa mesh protocol. 2.9k stars. Repeater firmware, geographic routing, EU community (UK/DE/Benelux). |
+| TollGate protocol | `https://github.com/OpenTollGate/tollgate` | Payment protocol spec (TIP-01/02, HTTP-01, NOSTR-01, WIFI-01). Cashu ecash for network access. |
+| TollGate OpenWRT | `https://github.com/OpenTollGate/tollgate-module-basic-go` | Reference TollGate implementation. Go. Cashu payments, Nostr relay, WiFi captive portal on OpenWRT. |
+| ESP32 TollGate + Nostr | `https://gitworkshop.dev/npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/git.orangesync.tech/esp32-tollgate` | ESP32 TollGate + integrated Nostr relay (our implementation) |
+| strfry | `https://github.com/hoytech/strfry` | Efficient Nostr relay in C++. For ground station deployment. |
+
 ### External References (not GitHub)
 
 | Resource | URL | Notes |
@@ -173,61 +185,89 @@ Software drift tracking maintains accuracy between sync events:
 
 ## Relationship to Existing Work
 
+See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `mesh-stack/INTEGRATION-ARCHITECTURE.md` (detailed technical architecture).
+
 ### What We Already Have
 
 | Component | Source | Status |
 |-----------|--------|--------|
-| LR2021 RadioLib driver | `firmware/` (tracker) | Working, builds |
-| ESP32-C3 HAL for RadioLib | `firmware/main/EspHalC3.h` | Working |
-| TDMA + coordinator election | `sx1280-serial` (Rust) | Proven, needs port to C++ |
+| LR2021 RadioLib driver | `tracker/firmware/` (C++) | Working, builds v0.2 |
+| ESP32-C3 HAL for RadioLib | `tracker/firmware/main/EspHalC3.h` | Working |
+| TDMA + coordinator election | `sx1280-serial` (Rust) | Proven, needs port to C++ or esp-rs |
 | Fragmentation + reassembly | `sx1280-serial` (Rust) | Proven: SLIP + CRC-32 + 128-byte frags |
 | Crypto identity binding | `sx1280-serial` (Rust) | Proven: secp256k1 Schnorr signatures |
-| Range testing methodology | `sx1280-correlation-test` | 35k records, deterministic payloads |
+| Range testing methodology | `sx1280-correlation-test` | 35k records, deterministic payloads, 30-37% loss |
 | Hardware debug ladder (L0→L3) | `sx1280-serial` feature branch | Proven methodology |
 | Wi-Fi AP + HTTP status | `sx1280-ethernet-adapter` | Scaffold only (Rust/ESP-IDF) |
-| PCB design for balloon | `hardware/` (tracker) | In progress (KiCad) |
+| PCB design for balloon | `tracker/hardware/` | In progress (KiCad) |
+| FIPS mesh networking | `github.com/jmcorgan/fips` (Rust) | v0.3.0: spanning-tree, Noise IK/XK, Nostr identity |
+| FIPS embedded leaf node | `github.com/Amperstrand/microfips` (Rust/no_std) | Runs on STM32 + ESP32 (D0WD, S3) |
+| MeshCore mesh protocol | `github.com/meshcore-dev/MeshCore` (C++) | 2.9k stars, repeater firmware, EU community |
+| TollGate protocol | `github.com/OpenTollGate/tollgate` | TIP-01/02 specs, Cashu ecash payments |
+| TollGate OpenWRT impl | `github.com/OpenTollGate/tollgate-module-basic-go` (Go) | Cashu, Nostr relay, WiFi captive portal |
+| ESP32 TollGate + Nostr relay | `https://gitworkshop.dev/npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/git.orangesync.tech/esp32-tollgate` | ESP32 TollGate + integrated Nostr relay (our implementation) |
+| GPS NMEA parser | `tracker/firmware/components/gps/` (C) | Working: GGA/RMC, sleep/wakeup |
+| Telemetry packet (28 bytes) | `tracker/firmware/components/telemetry/` (C) | Working: CRC-16, 17/17 tests pass |
 
 ### What's New (Not in Any Existing Repo)
 
 | Component | Library | Notes |
 |-----------|---------|-------|
-| Erasure/fountain coding | `github.com/catid/wirehair` | Critical new capability |
+| Erasure/fountain coding | `github.com/catid/wirehair` | Critical gap — not yet integrated with sx1280-serial fragmentation |
+| Wirehair + sx1280-serial integration | Custom | Erasure encoding layer between fragmentation and LoRa PHY |
+| FIPS Transport trait for LoRa | Custom | Implement FIPS `Transport` over LoRa using sx1280-serial + Wirehair |
+| MeshCore LR2021 radio wrapper | Custom | Port MeshCore's `RadioLibWrapper` to LR2021 Sub-GHz via RadioLib |
+| Dual-band TDMA scheduler | Custom | Time-shares LR2021 between Sub-GHz (MeshCore) and 2.4 GHz (FIPS) |
+| Nostr-over-FIPS protocol | Custom | Simplified NIP-01 over FIPS encrypted sessions, store-and-forward |
+| microfips ESP32-C3 (RISC-V) port | `github.com/Amperstrand/microfips` | Currently tested on Xtensa (ESP32-D0WD/S3), needs RISC-V target |
 | Clock sync protocol | Custom + RadioLib ranging | New protocol design |
 | GPS PPS discipline | `github.com/u-blox/ublox-GNSS-Arduino-Library` | New hardware component |
-| Mesh routing | TBD (study LoRaMesher) | New capability |
 | MultiWAN bonding | Custom | New capability |
-| UDP/IP transport | Custom | New capability |
+| UDP/IP transport over FIPS | Custom | FIPS provides mesh routing, we add IP tunneling |
 
 ## Phased Roadmap
 
 ### Phase 1: Balloon Tracker (Current Scope — `tracker/`)
 - 1 balloon, 1 ground station
-- 868 MHz LoRa telemetry (24 bytes, CRC-16)
+- 868 MHz LoRa telemetry (28 bytes, CRC-16, GPS)
 - No mesh, no TDMA, no erasure coding
-- **Status: In progress** — PCB design, firmware builds
+- **Status: Done** — firmware v0.2, 17/17 tests pass, ADR-011 first flight strategy
 
-### Phase 2: Reliable Link (`mesh-stack/` research → implement)
-- Add Wirehair erasure coding to firmware
-- Add RTToF ranging for clock sync via RadioLib
-- Add fragmentation/reassembly (port from `sx1280-serial`)
-- Switch to UDP transport
-- Still 1:1, but now reliable despite 30-37% packet loss
-- **Status: Research phase**
+### Phase 2: FIPS + MeshCore Dual-Band Flight (`mesh-stack/`)
+- Implement FIPS `Transport` trait over LoRa (sx1280-serial fragmentation + Wirehair erasure coding)
+- Port MeshCore repeater firmware to LR2021 Sub-GHz (868 MHz, SF8/BW62.5/CR8)
+- Implement dual-band TDMA scheduler (Sub-GHz MeshCore + 2.4 GHz FIPS)
+- GPS PPS discipline for TDMA slot boundaries
+- RTToF ranging for clock sync via RadioLib
+- Bench validation: dual-band operation, FIPS handshake over LoRa, MeshCore advert reception
+- First dual-band flight: MeshCore stratospheric repeater + FIPS mesh node
+- Coverage mapping: MeshCore advert log → mapme.sh data
+- Decide: C++/ESP-IDF or Rust/esp-rs for mesh firmware (document both, evaluate during bench work)
+- **Status: Research phase** — see `mesh-stack/INTEGRATION-ARCHITECTURE.md`
 
-### Phase 3: TDMA Mesh (`mesh-stack/`)
-- Port TDMA coordinator election from `sx1280-serial`
-- Add GPS PPS discipline with MAX-M10S
-- Implement contention windows and slot leases
-- Reference: `ts-lora`, `LoRaMesher`
-- Multiple balloons, multiple ground stations
+### Phase 3: Nostr Store-and-Forward + Ground Station (`mesh-stack/`)
+- Implement Nostr-over-FIPS protocol (simplified NIP-01 over FIPS encrypted sessions)
+- Balloon store-and-forward: SPIFFS/LittleFS FIFO buffer (~2000 events)
+- Short text events only (kind 0/1/7, ~500 bytes max)
+- Ground station Nostr relay bridge (strfry or esp32-tollgate relay)
+- Two ground station options: minimal (ESP32-C3) or full (Raspberry Pi + TollGate)
+- TollGate at full ground station: tollgate-module-basic-go on OpenWRT, Cashu WiFi captive portal
 - **Status: Not started**
 
-### Phase 4: Internet Transport (`mesh-stack/`)
-- Mesh routing between balloons
-- MultiWAN bonding across balloon paths
-- IP tunneling over the mesh
-- UDP transport with erasure-coded reliability
-- Ground stations provide internet backhaul
+### Phase 4: Multi-Balloon Mesh + Internet Transport (`mesh-stack/`)
+- FIPS mesh routing between multiple balloons (spanning-tree, bloom-filter discovery)
+- MultiWAN bonding across balloon paths for aggregate throughput
+- IP tunneling over FIPS mesh (UDP transport)
+- Full internet transport: user → LoRa → balloon mesh → ground station → internet
+- TollGate payment gating on all ground stations
+- Expand Nostr: DMs, long-form content, zap receipts
+- **Status: Not started**
+
+### Phase 5: Multi-Balloon Reliability Research
+- Prerequisites: 3+ successful Phase 2 flights
+- Multi-balloon configurations (cut-down, redundant lift)
+- Long-duration flight reliability
+- See `mesh-stack/ROADMAP.md` Phase 5 section
 - **Status: Not started**
 
 ---
@@ -262,13 +302,31 @@ Software drift tracking maintains accuracy between sync events:
 - [ ] Study Stuart's Balloon Tracker ranging calibration data (40-85 km)
 - [ ] Write findings to `mesh-stack/research/clock-sync/notes.md`
 
-### Step 4: Mesh Routing
-- [ ] Study LoRaMesher's routing approach
-- [ ] Research mesh routing protocols suitable for high-latency, lossy links
-- [ ] Determine: full routing protocol vs. simple flood/gateway-discovery
-- [ ] Determine: source routing vs. distance-vector vs. reactive (AODV-style)
-- [ ] Consider: Does each balloon need a routing table, or can we use balloon-to-balloon flooding?
-- [ ] Write findings to `mesh-stack/research/routing/notes.md`
+### Step 4: Mesh Routing → FIPS Integration
+- [ ] Study FIPS architecture: `https://github.com/jmcorgan/fips` — spanning-tree, bloom-filter, Noise IK/XK
+- [ ] Study microfips Transport trait: `https://github.com/Amperstrand/microfips` — `crates/microfips-protocol/src/`
+- [ ] Design FIPS `Transport` implementation for LoRa: how FIPS frames map to sx1280-serial fragments + Wirehair
+- [ ] Evaluate: Can microfips run on ESP32-C3 (RISC-V)? Test `cargo build -p microfips --target riscv32imc-unknown-none-elf`
+- [ ] Evaluate: C++ FIPS leaf node — estimate effort to implement Noise IK/XK + FMP + FSP in C++/ESP-IDF
+- [ ] Decision: Rust (microfips) vs C++ (ESP-IDF) for mesh firmware
+- [ ] Write findings to `mesh-stack/research/fips-integration/notes.md`
+
+### Step 5: MeshCore LR2021 Port
+- [ ] Study MeshCore radio abstraction: `https://github.com/meshcore-dev/MeshCore` — `arch/esp32/`, RadioLibWrapper
+- [ ] Verify: Does MeshCore's `RadioLibWrapper` work with LR2021 via RadioLib v7.6.0?
+- [ ] Create MeshCore variant for ESP32-C3 + LR2021 (pin mapping, SPI config)
+- [ ] Test: MeshCore repeater firmware on ESP32-C3_Mini_V1 + LoRa2021 dev board
+- [ ] Evaluate: PlatformIO build vs ESP-IDF port — effort, compatibility, maintenance
+- [ ] Write findings to `mesh-stack/research/meshcore-port/notes.md`
+
+### Step 6: Nostr over FIPS over LoRa
+- [ ] Study esp32-tollgate Nostr relay implementation: `https://gitworkshop.dev/npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/git.orangesync.tech/esp32-tollgate`
+- [ ] Study strfry relay: `https://github.com/hoytech/strfry` — for ground station
+- [ ] Design Nostr-over-FIPS message types (EVENT, REQ, REPLY, OK, TOO_LARGE)
+- [ ] Design SPIFFS/LittleFS event storage layout for balloon (FIFO, TTL, indexing)
+- [ ] Calculate: How many kind 0/1 events fit in LoRa airtime budget per TDMA frame?
+- [ ] Prototype: Serialize NIP-01 event → FIPS encrypted frame → erasure-coded fragments → LoRa
+- [ ] Write findings to `mesh-stack/research/nostr-over-lora/notes.md`
 
 ### Step 5: Throughput & Link Budget
 - [ ] Calculate TDMA overhead: contention window, guard bands, slot headers
