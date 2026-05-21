@@ -166,10 +166,12 @@ Write the code that bridges received telemetry to Nostr events.
 
 | Task | Status | Tests | Build |
 |------|--------|-------|-------|
-| 1. FIPS/microfips study | ⬜ Not started | N/A | N/A |
-| 2. Nostr event store | ⬜ Not started | — | — |
-| 3. TDMA scheduler | ⬜ Not started | — | — |
-| 4. Erasure+frag pipeline | ⬜ Not started | — | — |
-| 5. Serial diagnostics | ⬜ Not started | — | — |
-| 6. Link budget calculator | ⬜ Not started | N/A | N/A |
-| 7. JSON→Nostr bridge | ⬜ Not started | N/A | N/A |
+| 1. FIPS/microfips study | ✅ Complete | N/A | N/A |
+| 2. Nostr event store | ✅ Complete | 7/7 | ✅ |
+| 3. TDMA scheduler | ✅ Complete | 7/7 | ✅ |
+| 4. Erasure+frag pipeline | ✅ Complete | 5/5 | ✅ |
+| 5. Serial diagnostics | ✅ Complete | N/A | ✅ |
+| 6. Link budget calculator | ✅ Complete | N/A | N/A |
+| 7. JSON→Nostr bridge | ✅ Complete | N/A | N/A |
+
+**All 7 tasks complete. 19/19 host tests passing. ESP-IDF build passes.**
