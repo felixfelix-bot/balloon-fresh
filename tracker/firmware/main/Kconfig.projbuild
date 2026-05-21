@@ -92,3 +92,10 @@ config RADIO_TX_POWER_DBM
     default 22
     help
         LR2021 maximum is +22 dBm. With SKY66112 FEM: +24 dBm.
+
+config CALLSIGN_HASH_HEX
+    string "Callsign hash as 8-char hex (e.g. 424C4E00)"
+    default "424C4E00"
+    help
+        32-bit identifier for this tracker. Used to distinguish multiple balloons.
+        Generate with: python3 -c "print(hex(hash('YOUR_CALLSIGN') & 0xFFFFFFFF))"

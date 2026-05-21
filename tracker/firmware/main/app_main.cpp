@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -108,12 +109,6 @@ static void deep_sleep(uint32_t seconds)
     ESP_LOGI(TAG, "Deep sleep %ds...", (int)seconds);
 #ifdef CONFIG_ENABLE_BMP280
     bmp280_sleep(&bmp);
-#endif
-    if (radio) {
-        radio->sleep();
-    }
-#ifdef CONFIG_ENABLE_FEM
-    sky66112_shutdown();
 #endif
     if (radio) {
         radio->sleep();
@@ -231,7 +226,7 @@ extern "C" void app_main(void)
 
     telemetry_packet_t pkt;
     memset(&pkt, 0, sizeof(pkt));
-    pkt.callsign_hash = 0x424C4E;
+    pkt.callsign_hash = (uint32_t)strtoul(CONFIG_CALLSIGN_HASH_HEX, NULL, 16);
 
 #ifdef CONFIG_ENABLE_GPS
     if (gps_data.fix) {

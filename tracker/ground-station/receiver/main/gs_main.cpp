@@ -82,13 +82,13 @@ extern "C" void app_main(void)
         while (true) { hal->delay(1000); }
     }
 
+    radio->setPacketReceivedAction(on_rx_done);
+
     state = radio->startReceive();
     if (state != RADIOLIB_ERR_NONE) {
         ESP_LOGE(TAG, "startReceive failed: %d", state);
         while (true) { hal->delay(1000); }
     }
-
-    radio->setPacketReceivedAction(on_rx_done);
     ESP_LOGI(TAG, "Listening on 868 MHz SF9...");
 
     while (1) {
@@ -96,15 +96,15 @@ extern "C" void app_main(void)
             flag_rx_done = false;
 
             uint8_t buf[TELEMETRY_SIZE];
-            int16_t len = radio->readData(buf, TELEMETRY_SIZE);
+            int16_t state = radio->readData(buf, TELEMETRY_SIZE);
 
             int16_t rssi = radio->getRSSI();
             float snr = radio->getSNR();
 
-            if (len == TELEMETRY_SIZE) {
+            if (state == RADIOLIB_ERR_NONE) {
                 print_telemetry(buf, rssi, snr);
             } else {
-                ESP_LOGW(TAG, "Wrong length: %d (expected %d), RSSI=%d", len, TELEMETRY_SIZE, rssi);
+                ESP_LOGW(TAG, "readData failed: %d, RSSI=%d", state, rssi);
             }
 
             state = radio->startReceive();
