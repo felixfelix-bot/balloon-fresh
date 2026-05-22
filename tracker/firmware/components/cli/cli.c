@@ -16,11 +16,22 @@ static uint8_t s_num_cmds;
 static char s_buf[CLI_BUF_SIZE];
 static uint16_t s_buf_pos;
 
+static int (*s_getchar_fn)(void) = NULL;
+static void (*s_printf_fn)(const char *, ...) = NULL;
+
+void cli_set_io(int (*getchar_fn)(void), void (*printf_fn)(const char *, ...)) {
+    s_getchar_fn = getchar_fn;
+    s_printf_fn = printf_fn;
+}
+
+#define CLI_GETCHAR() (s_getchar_fn ? s_getchar_fn() : getchar())
+#define CLI_PRINTF(...) do { if (s_printf_fn) s_printf_fn(__VA_ARGS__); else printf(__VA_ARGS__); } while(0)
+
 static void cmd_help(const char *args) {
     (void)args;
-    printf("Available commands:\n");
+    CLI_PRINTF("Available commands:\n");
     for (uint8_t i = 0; i < s_num_cmds; i++) {
-        printf("  %-12s %s\n", s_cmds[i].name, s_cmds[i].help);
+        CLI_PRINTF("  %-12s %s\n", s_cmds[i].name, s_cmds[i].help);
     }
 }
 
@@ -40,13 +51,13 @@ void cli_register_command(const char *name, const char *help, cli_cmd_handler ha
 }
 
 void cli_process(void) {
-    int ch = getchar();
+    int ch = CLI_GETCHAR();
     if (ch == EOF) return;
 
     if (ch == '\r' || ch == '\n') {
         if (s_buf_pos == 0) return;
         s_buf[s_buf_pos] = '\0';
-        printf("\n");
+        CLI_PRINTF("\n");
 
         char *space = strchr(s_buf, ' ');
         char *args = NULL;
@@ -64,13 +75,12 @@ void cli_process(void) {
             }
         }
         if (!found) {
-            printf("Unknown command: %s (type 'help')\n", s_buf);
+            CLI_PRINTF("Unknown command: %s (type 'help')\n", s_buf);
         }
 
         s_buf_pos = 0;
         memset(s_buf, 0, sizeof(s_buf));
-        printf("> ");
-        fflush(stdout);
+        CLI_PRINTF("> ");
     } else if (ch == 0x7F || ch == 0x08) {
         if (s_buf_pos > 0) {
             s_buf_pos--;
