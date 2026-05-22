@@ -113,37 +113,74 @@ def format_packet(pkt: TelemetryPacket) -> str:
         f"Ant:{pkt.antenna} Mode:{mode} Sats:{pkt.sats}"
     )
 
+def decode_json_line(line: str) -> TelemetryPacket | None:
+    import json
+    try:
+        j = json.loads(line)
+    except json.JSONDecodeError:
+        return None
+
+    if j.get("type") != "telemetry":
+        return None
+
+    return TelemetryPacket(
+        callsign_hash=j.get("callsign_hash", 0),
+        latitude=j.get("lat", 0),
+        longitude=j.get("lon", 0),
+        altitude_m=j.get("alt", 0),
+        voltage_mv=j.get("voltage_mv", 0),
+        temp_c=j.get("temp_c", 0),
+        pressure_hpa=j.get("pressure_hpa", 0),
+        sats=j.get("sats", 0),
+        tx_mode=j.get("tx_mode", 0),
+        antenna=j.get("antenna", 0),
+        flags=j.get("flags", 0),
+        crc_ok=True,
+    )
+
 def main():
     parser = argparse.ArgumentParser(description="Pico Balloon Ground Station")
     parser.add_argument("port", help="Serial port (e.g. /dev/ttyUSB0)")
     parser.add_argument("-b", "--baud", type=int, default=115200, help="Baud rate")
+    parser.add_argument("--mode", choices=["json", "binary"], default="json",
+                        help="Input mode: json (from gs_main.cpp) or binary (raw frames)")
     args = parser.parse_args()
 
-    print(f"Ground Station - listening on {args.port} @ {args.baud} baud")
-    print(f"Waiting for telemetry packets ({TELEMETRY_SIZE} bytes)...\n")
+    print(f"Ground Station - listening on {args.port} @ {args.baud} baud ({args.mode} mode)")
+    print(f"Waiting for telemetry packets...\n")
 
     buf = bytearray()
     with serial.Serial(args.port, args.baud, timeout=1) as ser:
         while True:
-            data = ser.read(64)
+            data = ser.read(256)
             if data:
                 buf.extend(data)
 
-            while len(buf) >= TELEMETRY_SIZE:
-                idx = buf.find(b'\x42\x4C\x4E')
-                if idx < 0:
-                    buf = buf[-(TELEMETRY_SIZE - 1):]
-                    break
-
-                if idx > 0:
-                    buf = buf[idx:]
-
-                if len(buf) >= TELEMETRY_SIZE:
-                    pkt_data = bytes(buf[:TELEMETRY_SIZE])
-                    buf = buf[TELEMETRY_SIZE:]
-                    pkt = decode_packet(pkt_data)
+            if args.mode == "json":
+                while b'\n' in buf:
+                    line, buf = buf.split(b'\n', 1)
+                    text = line.decode('utf-8', errors='replace').strip()
+                    if not text:
+                        continue
+                    pkt = decode_json_line(text)
                     if pkt:
                         print(format_packet(pkt))
+            else:
+                while len(buf) >= TELEMETRY_SIZE:
+                    idx = buf.find(b'\x42\x4C\x4E')
+                    if idx < 0:
+                        buf = buf[-(TELEMETRY_SIZE - 1):]
+                        break
+
+                    if idx > 0:
+                        buf = buf[idx:]
+
+                    if len(buf) >= TELEMETRY_SIZE:
+                        pkt_data = bytes(buf[:TELEMETRY_SIZE])
+                        buf = buf[TELEMETRY_SIZE:]
+                        pkt = decode_packet(pkt_data)
+                        if pkt:
+                            print(format_packet(pkt))
 
 if __name__ == "__main__":
     main()

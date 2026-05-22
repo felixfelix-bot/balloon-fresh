@@ -66,7 +66,7 @@ class TestTDMA:
             [os.path.join(COMPONENTS, "tdma", "tdma.c")],
             [os.path.join(COMPONENTS, "tdma", "include")],
         )
-        assert "7/7 passed" in out
+        assert "12/12 passed" in out
 
 
 class TestNostrStore:
@@ -97,7 +97,8 @@ class TestFIPSTransport:
         makefile_dir = os.path.join(COMPONENTS, "fips_transport", "test")
         if os.path.exists(os.path.join(makefile_dir, "Makefile")):
             out = _compile_with_makefile(makefile_dir)
-            assert "10/10" in out
+            assert "13/13" in out
+            assert "4/4 passed" in out
         else:
             pytest.skip("No Makefile for fips_transport")
 
@@ -117,7 +118,7 @@ class TestPipeline:
                 os.path.join(COMPONENTS, "frag", "include"),
             ],
         )
-        assert "5/5 passed" in out
+        assert "9/9 passed" in out
 
 
 class TestTelemetry:
@@ -135,7 +136,7 @@ class TestGPS:
         out = _compile_and_run_c(
             os.path.join(COMPONENTS, "gps", "test", "test_gps.c"),
             [],
-            [],
+            [os.path.join(COMPONENTS, "gps")],
             link_flags=["-lm"],
         )
         assert "8/8 passed" in out
@@ -197,6 +198,51 @@ class TestPowerManager:
         out = _compile_and_run_c(
             os.path.join(COMPONENTS, "power_manager", "test", "test_power_manager.c"),
             [],
-            [],
+            [
+                os.path.join(COMPONENTS, "power_manager"),
+                os.path.join(HOST_STUBS),
+            ],
         )
         assert "5/5 passed" in out
+
+
+class TestMeshAdapter:
+    def test_mesh_adapter_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "mesh_adapter", "test", "test_mesh_adapter.c"),
+            [
+                os.path.join(COMPONENTS, "mesh_adapter", "mesh_adapter.c"),
+                os.path.join(COMPONENTS, "pipeline", "pipeline.c"),
+                os.path.join(COMPONENTS, "erasure", "erasure.c"),
+                os.path.join(COMPONENTS, "frag", "frag.c"),
+            ],
+            [
+                os.path.join(COMPONENTS, "mesh_adapter", "include"),
+                os.path.join(COMPONENTS, "pipeline", "include"),
+                os.path.join(COMPONENTS, "erasure", "include"),
+                os.path.join(COMPONENTS, "frag", "include"),
+            ],
+        )
+        assert "8/8 passed" in out
+
+
+class TestEndToEnd:
+    def test_e2e_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "mesh_adapter", "test", "test_e2e.c"),
+            [
+                os.path.join(COMPONENTS, "mesh_adapter", "mesh_adapter.c"),
+                os.path.join(COMPONENTS, "pipeline", "pipeline.c"),
+                os.path.join(COMPONENTS, "erasure", "erasure.c"),
+                os.path.join(COMPONENTS, "frag", "frag.c"),
+                os.path.join(COMPONENTS, "telemetry", "telemetry.c"),
+            ],
+            [
+                os.path.join(COMPONENTS, "mesh_adapter", "include"),
+                os.path.join(COMPONENTS, "pipeline", "include"),
+                os.path.join(COMPONENTS, "erasure", "include"),
+                os.path.join(COMPONENTS, "frag", "include"),
+                os.path.join(COMPONENTS, "telemetry"),
+            ],
+        )
+        assert "4/4 passed" in out

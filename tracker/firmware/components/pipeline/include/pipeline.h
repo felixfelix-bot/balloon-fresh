@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*pipeline_frame_cb)(const uint8_t *frame, uint16_t frame_len, void *user_data);
 
 int pipeline_tx_encode_fragment(
@@ -20,3 +24,7 @@ int pipeline_rx_feed_frame(
 
 void pipeline_rx_reset(void);
 void pipeline_rx_set_data_len(uint16_t len);
+
+#ifdef __cplusplus
+}
+#endif

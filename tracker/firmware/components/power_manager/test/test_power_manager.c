@@ -1,13 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
-static int power_manager_raw_to_mv(int raw, int calibrated_mv) {
-    int voltage_mv = calibrated_mv;
-    if (voltage_mv == 0) {
-        voltage_mv = raw * 3300 / 4095;
-    }
-    return voltage_mv * 2;
-}
+#include "../power_manager.c"
 
 static void test_midrange_raw(void) {
     int mv = power_manager_raw_to_mv(2048, 0);

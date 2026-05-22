@@ -29,6 +29,16 @@ extern "C" {
 #include "antenna_switch.h"
 #endif
 #include "cli.h"
+#ifdef CONFIG_ENABLE_MESH
+#include "mesh_adapter.h"
+#include "pipeline.h"
+#endif
+#ifdef CONFIG_ENABLE_TDMA
+#include "tdma.h"
+#endif
+#ifdef CONFIG_ENABLE_NOSTR_STORE
+#include "nostr_store.h"
+#endif
 }
 
 static const char *TAG = "TRACKER";
@@ -58,10 +68,29 @@ static RTC_DATA_ATTR uint16_t rtc_seq = 0;
 static RTC_DATA_ATTR bool rtc_first_boot = true;
 
 static bool flag_tx_done = false;
+#ifdef CONFIG_ENABLE_MESH
+static mesh_frame_queue_t s_mesh_tx_queue;
+static int s_mesh_pending = 0;
+#endif
 
 static void IRAM_ATTR on_tx_done(void) {
     flag_tx_done = true;
 }
+
+#ifdef CONFIG_ENABLE_MESH
+static void mesh_radio_send(const uint8_t *frame, uint16_t len) {
+    if (!radio) return;
+    flag_tx_done = false;
+    int16_t state = radio->startTransmit(frame, len);
+    if (state == RADIOLIB_ERR_NONE) {
+        uint32_t timeout = 0;
+        while (!flag_tx_done && timeout < 10000) {
+            hal->delay(1);
+            timeout++;
+        }
+    }
+}
+#endif
 
 static void blink_led(int times)
 {
@@ -368,6 +397,21 @@ extern "C" void app_main(void)
     sky66112_tx_enable();
 #endif
 
+#ifdef CONFIG_ENABLE_MESH
+    mesh_adapter_config_t mesh_cfg = {
+        .send_fn = mesh_radio_send,
+        .tx_queue = &s_mesh_tx_queue,
+    };
+    mesh_adapter_init(&mesh_cfg);
+
+    mesh_result_t mr = mesh_adapter_send(buf, TELEMETRY_SIZE, 50, 4);
+    if (mr != MESH_OK) {
+        ESP_LOGE(TAG, "mesh_adapter_send failed: %d", mr);
+    } else {
+        s_mesh_pending = mesh_adapter_get_pending_frame_count();
+        ESP_LOGI(TAG, "Mesh: %d frames sent", s_mesh_pending);
+    }
+#else
     int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
     if (state != RADIOLIB_ERR_NONE) {
         ESP_LOGE(TAG, "startTransmit failed: %d", state);
@@ -379,6 +423,7 @@ extern "C" void app_main(void)
         }
         ESP_LOGI(TAG, "%s", flag_tx_done ? "TX complete" : "TX timeout");
     }
+#endif
 
 #ifdef CONFIG_ENABLE_FEM
     sky66112_shutdown();
