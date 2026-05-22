@@ -1,0 +1,24 @@
+menu "Ground Station WiFi Uplink"
+
+    config GS_WIFI_SSID
+        string "WiFi SSID"
+        default "YOUR_SSID"
+        help
+            WiFi network name for ground station uplink.
+
+    config GS_WIFI_PASS
+        string "WiFi Password"
+        default "YOUR_PASSWORD"
+        help
+            WiFi network password for ground station uplink.
+
+    config GS_UPLINK_URL
+        string "Telemetry Uplink URL"
+        default "http://localhost:8080/api/telemetry"
+        help
+            HTTP endpoint to POST telemetry JSON.
+            Examples:
+            - http://your-server:8080/api/telemetry
+            - https://robot.cloud/api/v1/data
+
+endmenu
