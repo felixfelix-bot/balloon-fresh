@@ -56,11 +56,11 @@ CRC16_TABLE = [
 def crc16(data: bytes) -> int:
     crc = 0xFFFF
     for b in data:
-        crc = (crc << 8) ^ CRC16_TABLE[(crc >> 8) ^ b]
-    return crc & 0xFFFF
+        crc = ((crc << 8) ^ CRC16_TABLE[(crc >> 8) ^ b]) & 0xFFFF
+    return crc
 
-TELEMETRY_FMT = "<IIihHhHBBBH"
-TELEMETRY_SIZE = 24
+TELEMETRY_FMT = "<IHIiHHhHBBBBH"
+TELEMETRY_SIZE = 28
 
 @dataclass
 class TelemetryPacket:
@@ -81,22 +81,22 @@ def decode_packet(data: bytes) -> TelemetryPacket | None:
     if len(data) != TELEMETRY_SIZE:
         return None
 
-    received_crc = struct.unpack_from("<H", data, 22)[0]
-    calculated_crc = crc16(data[:22])
+    received_crc = struct.unpack_from("<H", data, 26)[0]
+    calculated_crc = crc16(data[:26])
 
-    vals = struct.unpack(TELEMETRY_FMT, data[:22])
+    vals = struct.unpack(TELEMETRY_FMT, data)
     return TelemetryPacket(
         callsign_hash=vals[0],
-        latitude=vals[1] / 1e5,
-        longitude=vals[2] / 1e5,
-        altitude_m=vals[3],
-        voltage_mv=vals[4],
-        temp_c=vals[5] / 100.0,
-        pressure_hpa=vals[6] / 10.0,
-        sats=vals[7],
-        tx_mode=vals[8],
-        antenna=vals[9],
-        flags=vals[10],
+        latitude=vals[2] / 1e5,
+        longitude=vals[3] / 1e5,
+        altitude_m=vals[4],
+        voltage_mv=vals[5],
+        temp_c=vals[6] / 100.0,
+        pressure_hpa=vals[7] / 10.0,
+        sats=vals[8],
+        tx_mode=vals[9],
+        antenna=vals[10],
+        flags=vals[11],
         crc_ok=(received_crc == calculated_crc),
     )
 
