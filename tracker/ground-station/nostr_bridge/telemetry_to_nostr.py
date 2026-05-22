@@ -44,9 +44,9 @@ def event_id(evt: dict) -> str:
 
 
 def create_telemetry_event(pubkey: str, telemetry: dict) -> dict:
-    lat = telemetry.get("latitude", 0)
-    lon = telemetry.get("longitude", 0)
-    alt = telemetry.get("altitude", 0)
+    lat = telemetry.get("lat", telemetry.get("latitude", 0))
+    lon = telemetry.get("lon", telemetry.get("longitude", 0))
+    alt = telemetry.get("alt", telemetry.get("altitude", 0))
     voltage = telemetry.get("voltage_mv", 0)
     sats = telemetry.get("sats", 0)
     seq = telemetry.get("seq", 0)
@@ -96,14 +96,42 @@ def parse_json_telemetry(line: str) -> dict:
         return {}
 
 
+def derive_pubkey(nsec_hex: str) -> str:
+    from coincurve import PrivateKey
+    privkey_bytes = bytes.fromhex(nsec_hex)
+    pk = PrivateKey(privkey_bytes)
+    return pk.public_key.format(compressed=False)[1:33].hex()
+
+
 def sign_event(evt: dict, nsec_hex: str) -> dict:
-    evt["sig"] = "placeholder_signature_needs_schnorr_impl"
+    from coincurve import PrivateKey
+    import hashlib
+    privkey_bytes = bytes.fromhex(nsec_hex)
+    pk = PrivateKey(privkey_bytes)
+    serialized = serialize_event(evt).encode()
+    msg = hashlib.sha256(serialized).digest()
+    sig = pk.sign_schnorr(msg)
+    evt["sig"] = sig.hex()
     return evt
 
 
+async def _publish_async(evt: dict, relay_url: str):
+    import asyncio
+    import websockets
+    msg = json.dumps(["EVENT", evt])
+    async with websockets.connect(relay_url) as ws:
+        await ws.send(msg)
+        response = await asyncio.wait_for(ws.recv(), timeout=10)
+        return response
+
+
 def publish_to_relay(evt: dict, relay_url: str):
-    print(f"[RELAY] Would publish to {relay_url}: event {evt.get('id', '?')[:16]}...",
-          file=sys.stderr)
+    import asyncio
+    try:
+        result = asyncio.run(_publish_async(evt, relay_url))
+        print(f"[RELAY] {result}", file=sys.stderr)
+    except Exception as e:
+        print(f"[RELAY ERROR] {e}", file=sys.stderr)
 
 
 def main():
@@ -116,8 +144,7 @@ def main():
     args = parser.parse_args()
 
     nsec_bytes = bytes.fromhex(args.nsec)
-    pubkey_bytes = sha256_bytes(b'\x02' + nsec_bytes)[:32]
-    pubkey = pubkey_bytes.hex()
+    pubkey = derive_pubkey(args.nsec)
 
     print(f"[*] Pubkey: {pubkey}", file=sys.stderr)
     if args.relay:
