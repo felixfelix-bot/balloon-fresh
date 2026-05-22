@@ -160,3 +160,43 @@ class TestBMP280:
             link_flags=["-lm"],
         )
         assert "6/6 passed" in out
+
+
+class TestAntennaSwitch:
+    def test_antenna_switch_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "antenna_switch", "test", "test_antenna_switch.c"),
+            [],
+            [os.path.join(COMPONENTS, "antenna_switch")],
+        )
+        assert "7/7 passed" in out
+
+
+class TestSKY66112:
+    def test_sky66112_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "sky66112", "test", "test_sky66112.c"),
+            [],
+            [os.path.join(COMPONENTS, "sky66112")],
+        )
+        assert "9/9 passed" in out
+
+
+class TestCLI:
+    def test_cli_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "cli", "test", "test_cli.c"),
+            [],
+            [os.path.join(COMPONENTS, "cli", "include")],
+        )
+        assert "8/8 passed" in out
+
+
+class TestPowerManager:
+    def test_power_manager_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "power_manager", "test", "test_power_manager.c"),
+            [],
+            [],
+        )
+        assert "5/5 passed" in out

@@ -6,7 +6,7 @@ Full pytest test coverage for all business logic in the pico balloon tracker pro
 C host tests compiled with gcc/g++ and wrapped in pytest via subprocess.
 Python modules tested directly with pytest.
 
-**Current status: 66/66 tests passing. Target: ~102 tests.**
+**Current status: 72/72 tests passing. All tiers complete.**
 
 Run all tests:
 ```bash
@@ -18,50 +18,69 @@ python -m pytest tests/ -v
 ## Tier 1: High ROI, Zero/Low Effort
 
 ### T1.1: Frag standalone tests
-- [ ] Write `tracker/firmware/components/frag/test/test_frag.c`
-  - [ ] `frag_crc16` known vectors, empty, deterministic, different data
-  - [ ] `frag_reassembler_init` zero state, correct field values
-  - [ ] `frag_reassembler_feed` valid frame, short frame (< header), wrong block_id, wrong count, duplicate detection, completion
-  - [ ] `frag_make_frame` output format, CRC in header, oversized output
-  - [ ] Roundtrip: make_frame → feed → verify assembly
-- [ ] Add `TestFrag` entry in `tests/test_c_host.py`
-- [ ] Verify passing
+- [x] Write `tracker/firmware/components/frag/test/test_frag.c` (13 tests)
+  - [x] `frag_crc16` known vectors, empty, deterministic, different data
+  - [x] `frag_reassembler_init` zero state, correct field values
+  - [x] `frag_reassembler_feed` valid frame, short frame (< header), wrong block_id, wrong count, duplicate detection, completion
+  - [x] `frag_make_frame` output format, CRC in header, oversized output
+  - [x] Roundtrip: make_frame → feed → verify assembly
+- [x] Add `TestFrag` entry in `tests/test_c_host.py`
+- [x] Verify passing
 
 ### T1.2: BMP280 compensation math tests
-- [ ] Write `tracker/firmware/components/bmp280/test/test_bmp280.c` (include bmp280.c directly for static functions)
-  - [ ] `compensate_temp` with known ADC_T + calibration → expected output
-  - [ ] `compensate_press` with known ADC_P + calibration + t_fine → expected output
-  - [ ] Edge cases: zero ADC, max ADC, negative temperature
-- [ ] Add `TestBMP280` entry in `tests/test_c_host.py`
-- [ ] Verify passing
+- [x] Write `tracker/firmware/components/bmp280/test/test_bmp280.c` (include bmp280.c directly for static functions)
+  - [x] `compensate_temp` with known ADC_T + calibration → expected output
+  - [x] `compensate_press` with known ADC_P + calibration + t_fine → expected output
+  - [x] Edge cases: zero ADC, max ADC, negative temperature
+- [x] Add `TestBMP280` entry in `tests/test_c_host.py`
+- [x] Verify passing
 
 ### T1.3: CI config (GitHub Actions)
-- [ ] Write `.github/workflows/test.yml`
-  - [ ] Trigger on push/PR to main
-  - [ ] Install gcc, g++, python 3.13, pytest, pyserial, libmbedtls-dev
-  - [ ] Run `python -m pytest tests/ -v`
-- [ ] Verify workflow syntax
+- [x] Write `.github/workflows/test.yml`
+  - [x] Trigger on push/PR to main
+  - [x] Install gcc, g++, python 3.13, pytest, pyserial, libmbedtls-dev
+  - [x] Run `python -m pytest tests/ -v`
+- [x] Verify workflow syntax
 
 ---
 
 ## Tier 2: Medium Effort
 
 ### T2.1: Antenna switch + SKY66112 GPIO tests
-- [ ] Write `tests/host_stubs/driver_gpio.h` (gpio_config, gpio_set_level stubs recording to arrays)
-- [ ] Write `tracker/firmware/components/antenna_switch/test/test_antenna_switch.c`
-  - [ ] Init sets GPIO outputs
-  - [ ] Select antenna 0-3 sets correct pin states
-  - [ ] Select >3 clamps to 3
-  - [ ] get_current returns last selected
-- [ ] Write `tracker/firmware/components/sky66112/test/test_sky66112.c`
-  - [ ] Init sets GPIO outputs
-  - [ ] set_mode TX: TX_EN=1, RX_EN=0
-  - [ ] set_mode RX: TX_EN=0, RX_EN=1
-  - [ ] set_mode BYPASS: TX_EN=1, RX_EN=1
-  - [ ] set_mode SHUTDOWN: TX_EN=0, RX_EN=0
-  - [ ] Wrapper functions delegate correctly
-- [ ] Add `TestAntennaSwitch` and `TestSKY66112` entries in `tests/test_c_host.py`
-- [ ] Verify passing
+- [x] Write `tests/host_stubs/driver/gpio.h` (gpio_config, gpio_set_level stubs recording to arrays)
+- [x] Write `tracker/firmware/components/antenna_switch/test/test_antenna_switch.c` (7 tests)
+  - [x] Init sets GPIO outputs
+  - [x] Select antenna 0-3 sets correct pin states
+  - [x] Select >3 clamps to 3
+  - [x] get_current returns last selected
+- [x] Write `tracker/firmware/components/sky66112/test/test_sky66112.c` (9 tests)
+  - [x] Init sets GPIO outputs
+  - [x] set_mode TX/RX/BYPASS/SHUTDOWN pin states
+  - [x] Wrapper functions delegate correctly
+- [x] Add `TestAntennaSwitch` and `TestSKY66112` entries in `tests/test_c_host.py`
+- [x] Verify passing
+
+### T2.2: CLI tests
+- [x] Refactor `cli.c`: add `cli_set_io(getchar_fn, printf_fn)` for test injection
+- [x] Write `tracker/firmware/components/cli/test/test_cli.c` (8 tests)
+  - [x] Init registers "help" command
+  - [x] Register custom command, dispatch matches
+  - [x] Unknown command prints error
+  - [x] Args splitting (command + space + args)
+  - [x] Backspace handling
+  - [x] Buffer overflow protection
+  - [x] Multiple commands in sequence
+- [x] Add `TestCLI` entry in `tests/test_c_host.py`
+- [x] Verify passing
+
+### T2.3: Power manager voltage math tests
+- [x] Extract `power_manager_raw_to_mv(raw, calibrated_mv)` pure function
+- [x] Write `tracker/firmware/components/power_manager/test/test_power_manager.c` (5 tests)
+  - [x] Raw ADC → voltage conversion (12-bit, 3.3V ref)
+  - [x] Voltage divider multiplier (×2)
+  - [x] Calibration override
+- [x] Add `TestPowerManager` entry in `tests/test_c_host.py`
+- [x] Verify passing
 
 ### T2.2: CLI tests
 - [ ] Refactor `cli.c`: add `cli_set_io(int (*getchar_fn)(void), void (*printf_fn)(const char *, ...))` for test injection
@@ -119,11 +138,11 @@ python -m pytest tests/ -v
 | **C Host** | pipeline | 5 | Done |
 | **C Host** | telemetry | 11 | Done |
 | **C Host** | gps | 8 | Done |
-| **C Host** | frag | ~10 | T1.1 |
-| **C Host** | bmp280 | ~6 | T1.2 |
-| **C Host** | antenna_switch | ~4 | T2.1 |
-| **C Host** | sky66112 | ~6 | T2.1 |
-| **C Host** | cli | ~8 | T2.2 |
-| **C Host** | power_manager | ~4 | T2.3 |
+| **C Host** | frag | 13 | Done |
+| **C Host** | bmp280 | 6 | Done |
+| **C Host** | antenna_switch | 7 | Done |
+| **C Host** | sky66112 | 9 | Done |
+| **C Host** | cli | 8 | Done |
+| **C Host** | power_manager | 5 | Done |
 
-**Total: 66 done + ~38 planned = ~104 target**
+**Total: 72 done + ~0 planned = 72 complete**

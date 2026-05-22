@@ -39,6 +39,14 @@ esp_err_t power_manager_init(void)
     return ESP_OK;
 }
 
+int power_manager_raw_to_mv(int raw, int calibrated_mv) {
+    int voltage_mv = calibrated_mv;
+    if (voltage_mv == 0) {
+        voltage_mv = raw * 3300 / 4095;
+    }
+    return voltage_mv * 2;
+}
+
 uint16_t power_manager_read_supercap_mv(void)
 {
     if (!adc_handle) {
