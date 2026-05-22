@@ -22,3 +22,36 @@ menu "Ground Station WiFi Uplink"
             - https://robot.cloud/api/v1/data
 
 endmenu
+
+menu "Ground Station Mesh Mode"
+
+    config GS_ENABLE_MESH
+        bool "Enable mesh packet reception (FIPS + pipeline)"
+        default n
+        help
+            Enable reception of mesh-encrypted, fragmented packets.
+            When disabled, only raw 28-byte telemetry is accepted.
+
+    config GS_ENABLE_FIPS
+        bool "Enable FIPS Noise IK encryption"
+        default n
+        depends on GS_ENABLE_MESH
+        help
+            Enable FIPS encryption layer on top of mesh pipeline.
+            Requires pre-shared keys configured at build time.
+
+    config GS_FIPS_LOCAL_KEY
+        hex "FIPS local private key (64 hex chars = 32 bytes)"
+        default 0x0000000000000000000000000000000000000000000000000000000000000000
+        depends on GS_ENABLE_FIPS
+        help
+            Ground station's FIPS private key (secp256k1, 32 bytes).
+
+    config GS_FIPS_REMOTE_KEY
+        hex "FIPS balloon remote public key (66 hex chars = 33 bytes compressed)"
+        default 0x000000000000000000000000000000000000000000000000000000000000000000
+        depends on GS_ENABLE_FIPS
+        help
+            Balloon tracker's FIPS public key (compressed secp256k1, 33 bytes).
+
+endmenu
