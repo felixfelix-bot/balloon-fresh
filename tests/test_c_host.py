@@ -139,3 +139,24 @@ class TestGPS:
             link_flags=["-lm"],
         )
         assert "8/8 passed" in out
+
+
+class TestFrag:
+    def test_frag_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "frag", "test", "test_frag.c"),
+            [os.path.join(COMPONENTS, "frag", "frag.c")],
+            [os.path.join(COMPONENTS, "frag", "include")],
+        )
+        assert "13/13 passed" in out
+
+
+class TestBMP280:
+    def test_bmp280_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "bmp280", "test", "test_bmp280.c"),
+            [],
+            [os.path.join(COMPONENTS, "bmp280")],
+            link_flags=["-lm"],
+        )
+        assert "6/6 passed" in out
