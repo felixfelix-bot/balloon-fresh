@@ -153,6 +153,25 @@ class TestCreateTelemetryEvent:
 
 class TestSignEvent:
     def test_sign_adds_sig_field(self):
-        evt = {"id": "00" * 32, "pubkey": "00" * 32}
-        signed = tn.sign_event(evt, "00" * 32)
+        evt = {
+            "pubkey": "ab" * 32,
+            "created_at": 1700000000,
+            "kind": 30023,
+            "tags": [["d", "test"]],
+            "content": "hello",
+        }
+        signed = tn.sign_event(evt, "01" * 32)
         assert "sig" in signed
+        assert len(signed["sig"]) == 128
+        assert signed["sig"] != "placeholder_signature_needs_schnorr_impl"
+
+    def test_derive_pubkey_deterministic(self):
+        pk1 = tn.derive_pubkey("01" * 32)
+        pk2 = tn.derive_pubkey("01" * 32)
+        assert pk1 == pk2
+        assert len(pk1) == 64
+
+    def test_different_keys_different_pubkeys(self):
+        pk1 = tn.derive_pubkey("01" * 32)
+        pk2 = tn.derive_pubkey("02" * 32)
+        assert pk1 != pk2
