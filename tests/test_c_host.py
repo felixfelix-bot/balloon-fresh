@@ -1,0 +1,141 @@
+import os
+import subprocess
+import tempfile
+
+import pytest
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+COMPONENTS = os.path.join(REPO_ROOT, "tracker", "firmware", "components")
+
+
+HOST_STUBS = os.path.join(REPO_ROOT, "tests", "host_stubs")
+
+
+def _compile_and_run_c(test_src, sources, include_dirs, link_flags=None, cxx=False, extra_cflags=None):
+    if link_flags is None:
+        link_flags = []
+    if extra_cflags is None:
+        extra_cflags = []
+    compiler = "g++" if cxx else "gcc"
+    std_flag = "-std=c++17" if cxx else "-std=c11"
+    binary = os.path.join(tempfile.gettempdir(), os.path.splitext(os.path.basename(test_src))[0])
+
+    cmd = [compiler, std_flag, "-Wall", "-Wextra", "-g", "-O0"]
+    cmd.extend(["-I", HOST_STUBS])
+    for d in include_dirs:
+        cmd.extend(["-I", d])
+    cmd.extend(extra_cflags)
+    cmd.append(test_src)
+    cmd.extend(sources)
+    cmd.extend(["-o", binary])
+    cmd.extend(link_flags)
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        pytest.fail(f"Compile failed:\n{' '.join(cmd)}\n{result.stderr}")
+    result = subprocess.run([binary], capture_output=True, text=True, timeout=30)
+    if result.returncode != 0:
+        pytest.fail(f"Test failed (rc={result.returncode}):\n{result.stdout}\n{result.stderr}")
+    return result.stdout
+
+
+def _compile_with_makefile(makefile_dir):
+    result = subprocess.run(
+        ["make", "-C", makefile_dir, "test"],
+        capture_output=True, text=True, timeout=60,
+    )
+    if result.returncode != 0:
+        pytest.fail(f"make test failed in {makefile_dir}:\n{result.stdout}\n{result.stderr}")
+    return result.stdout
+
+
+class TestErasure:
+    def test_erasure_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "erasure", "test", "test_erasure.c"),
+            [os.path.join(COMPONENTS, "erasure", "erasure.c")],
+            [os.path.join(COMPONENTS, "erasure", "include")],
+        )
+        assert "5/5 passed" in out
+
+
+class TestTDMA:
+    def test_tdma_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "tdma", "test", "test_tdma.c"),
+            [os.path.join(COMPONENTS, "tdma", "tdma.c")],
+            [os.path.join(COMPONENTS, "tdma", "include")],
+        )
+        assert "7/7 passed" in out
+
+
+class TestNostrStore:
+    def test_nostr_store_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "nostr_store", "test", "test_nostr_store.c"),
+            [os.path.join(COMPONENTS, "nostr_store", "nostr_store.c")],
+            [os.path.join(COMPONENTS, "nostr_store", "include")],
+        )
+        assert "7/7 passed" in out
+
+
+class TestMicroECC:
+    def test_micro_ecc_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "micro_ecc", "test", "test_micro_ecc.c"),
+            [
+                os.path.join(COMPONENTS, "micro_ecc", "uECC.c"),
+            ],
+            [os.path.join(COMPONENTS, "micro_ecc", "include")],
+            extra_cflags=["-DESP32"],
+        )
+        assert "5/5" in out
+
+
+class TestFIPSTransport:
+    def test_fips_transport_host(self):
+        makefile_dir = os.path.join(COMPONENTS, "fips_transport", "test")
+        if os.path.exists(os.path.join(makefile_dir, "Makefile")):
+            out = _compile_with_makefile(makefile_dir)
+            assert "10/10" in out
+        else:
+            pytest.skip("No Makefile for fips_transport")
+
+
+class TestPipeline:
+    def test_pipeline_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "pipeline", "test", "test_pipeline.c"),
+            [
+                os.path.join(COMPONENTS, "pipeline", "pipeline.c"),
+                os.path.join(COMPONENTS, "erasure", "erasure.c"),
+                os.path.join(COMPONENTS, "frag", "frag.c"),
+            ],
+            [
+                os.path.join(COMPONENTS, "pipeline", "include"),
+                os.path.join(COMPONENTS, "erasure", "include"),
+                os.path.join(COMPONENTS, "frag", "include"),
+            ],
+        )
+        assert "5/5 passed" in out
+
+
+class TestTelemetry:
+    def test_telemetry_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "telemetry", "test", "test_telemetry.c"),
+            [os.path.join(COMPONENTS, "telemetry", "telemetry.c")],
+            [os.path.join(COMPONENTS, "telemetry")],
+        )
+        assert "11/11 passed" in out
+
+
+class TestGPS:
+    def test_gps_nmea_host(self):
+        out = _compile_and_run_c(
+            os.path.join(COMPONENTS, "gps", "test", "test_gps.c"),
+            [],
+            [],
+            link_flags=["-lm"],
+        )
+        assert "8/8 passed" in out
