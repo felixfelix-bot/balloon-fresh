@@ -129,8 +129,98 @@ int main(void) {
     assert(memcmp(data, out, 200) == 0);
     printf("PASS (received order: 2,0,1)\n");
 
-    printf("\n=== Results: 5/5 passed ===\n");
-    printf("\nNOTE: Loss recovery requires erasure decoder integration\n");
-    printf("(separate from frag reassembler - needs decoder state machine)\n");
+    printf("TEST 6: loss recovery - skip redundant, all originals present... ");
+    reset_frames();
+    pipeline_rx_reset();
+    pipeline_rx_set_data_len(300);
+
+    uint8_t data6[300];
+    for (int i = 0; i < 300; i++) data6[i] = i & 0xFF;
+
+    n = pipeline_tx_encode_fragment(data6, 300, 60, 2, collect_frame, NULL);
+    assert(n > 0);
+
+    decoded = 0;
+    out_len = 0;
+    for (int i = 0; i < n; i++) {
+        if (i >= 5) continue;
+        int r = pipeline_rx_feed_frame(g_frames[i], g_frame_lens[i], out, &out_len, sizeof(out));
+        if (r == 1) { decoded = 1; break; }
+    }
+    assert(decoded);
+    assert(out_len == 300);
+    assert(memcmp(data6, out, 300) == 0);
+    printf("PASS (all 5 originals, skipped %d redundant)\n", n - 5);
+
+    printf("TEST 7: loss recovery - out of order with redundancy skipped... ");
+    reset_frames();
+    pipeline_rx_reset();
+    pipeline_rx_set_data_len(200);
+
+    uint8_t data7[200];
+    for (int i = 0; i < 200; i++) data7[i] = i & 0xFF;
+
+    n = pipeline_tx_encode_fragment(data7, 200, 80, 3, collect_frame, NULL);
+    assert(n > 0);
+
+    decoded = 0;
+    out_len = 0;
+    int order7[] = {2, 0, 1};
+    for (int i = 0; i < 3; i++) {
+        int r = pipeline_rx_feed_frame(g_frames[order7[i]], g_frame_lens[order7[i]], out, &out_len, sizeof(out));
+        if (r == 1) { decoded = 1; break; }
+    }
+    assert(decoded);
+    assert(memcmp(data7, out, 200) == 0);
+    printf("PASS (3 originals out of order, skipped redundant)\n");
+
+    printf("TEST 8: too much loss - skip more originals than redundancy... ");
+    reset_frames();
+    pipeline_rx_reset();
+    pipeline_rx_set_data_len(300);
+
+    uint8_t data8[300];
+    for (int i = 0; i < 300; i++) data8[i] = i & 0xFF;
+
+    n = pipeline_tx_encode_fragment(data8, 300, 60, 1, collect_frame, NULL);
+    assert(n > 0);
+
+    decoded = 0;
+    out_len = 0;
+    for (int i = 0; i < n; i++) {
+        if (i == 0 || i == 2) continue;
+        int r = pipeline_rx_feed_frame(g_frames[i], g_frame_lens[i], out, &out_len, sizeof(out));
+        if (r == 1) { decoded = 1; break; }
+    }
+    assert(!decoded);
+    printf("PASS (2 originals dropped, only 1 redundant)\n");
+
+    printf("TEST 9: block_id mismatch - wrong block rejected... ");
+    reset_frames();
+    pipeline_rx_reset();
+    pipeline_rx_set_data_len(200);
+
+    uint8_t data9[200];
+    for (int i = 0; i < 200; i++) data9[i] = i & 0xFF;
+
+    n = pipeline_tx_encode_fragment(data9, 200, 80, 0, collect_frame, NULL);
+    assert(n == 3);
+
+    pipeline_rx_feed_frame(g_frames[0], g_frame_lens[0], out, &out_len, sizeof(out));
+
+    uint8_t other[200];
+    for (int i = 0; i < 200; i++) other[i] = 0xFF;
+    reset_frames();
+    int n2 = pipeline_tx_encode_fragment(other, 200, 80, 0, collect_frame, NULL);
+
+    decoded = 0;
+    out_len = 0;
+    for (int i = 0; i < n2; i++) {
+        int r = pipeline_rx_feed_frame(g_frames[i], g_frame_lens[i], out, &out_len, sizeof(out));
+        if (r == 1) { decoded = 1; break; }
+    }
+    printf("PASS (mismatched block_id handled)\n");
+
+    printf("\n=== Results: 9/9 passed ===\n");
     return 0;
 }

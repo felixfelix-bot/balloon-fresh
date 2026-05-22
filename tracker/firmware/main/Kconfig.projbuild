@@ -99,3 +99,26 @@ config CALLSIGN_HASH_HEX
     help
         32-bit identifier for this tracker. Used to distinguish multiple balloons.
         Generate with: python3 -c "print(hex(hash('YOUR_CALLSIGN') & 0xFFFFFFFF))"
+
+config ENABLE_MESH
+    bool "Enable mesh networking (fragmentation + erasure coding)"
+    default n
+    help
+        Enable mesh adapter for fragmented, erasure-coded transmissions.
+        Uses pipeline (frag + erasure) for reliable delivery over lossy links.
+
+config ENABLE_TDMA
+    bool "Enable TDMA scheduler for dual-band operation"
+    default n
+    depends on ENABLE_MESH
+    help
+        Enable TDMA time-slot scheduling. Requires GPS PPS for discipline.
+        Slots alternate between TX, RX, sleep, and beacon.
+
+config ENABLE_NOSTR_STORE
+    bool "Enable Nostr event store (for mesh relay)"
+    default n
+    depends on ENABLE_MESH
+    help
+        Enable Nostr event storage for store-and-forward mesh relay.
+        Stores up to 512 events with bloom filter deduplication.

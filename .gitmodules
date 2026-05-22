@@ -1,0 +1,3 @@
+[submodule "tracker/firmware/components/RadioLib"]
+	path = tracker/firmware/components/RadioLib
+	url = https://github.com/jgromes/RadioLib.git

@@ -7,9 +7,9 @@
 #define PIPELINE_MAX_FRAG_SIZE 242
 
 static uint8_t s_enc_buf[PIPELINE_MAX_FRAG_SIZE * (PIPELINE_MAX_FRAGS + 32)];
-static uint16_t s_enc_buf_used;
 
-static uint8_t s_ra_buf[PIPELINE_MAX_FRAG_SIZE * PIPELINE_MAX_FRAGS];
+static uint8_t s_ra_buf[(PIPELINE_MAX_FRAG_SIZE * PIPELINE_MAX_FRAGS) +
+                        (PIPELINE_MAX_FRAG_SIZE * 32)];
 static uint8_t s_matrix_buf[PIPELINE_MAX_FRAGS * PIPELINE_MAX_FRAGS];
 static frag_reassembler_t s_ra;
 static erasure_decoder_t s_dec;
@@ -78,15 +78,25 @@ int pipeline_tx_encode_fragment(
 }
 
 static void pipeline_init_rx(uint16_t frag_nb, uint8_t frag_size) {
+    if (!s_dec_inited) {
+        erasure_decoder_init(&s_dec, frag_nb, frag_size, s_ra_buf, s_matrix_buf);
+        s_dec_inited = true;
+    }
     if (!s_ra_inited) {
         frag_reassembler_init(&s_ra, 0, (uint8_t)frag_nb, frag_size,
                               s_ra_buf, sizeof(s_ra_buf));
         s_ra_inited = true;
     }
-    if (!s_dec_inited) {
-        erasure_decoder_init(&s_dec, frag_nb, frag_size, s_ra_buf, s_matrix_buf);
-        s_dec_inited = true;
-    }
+}
+
+static int pipeline_check_complete(uint8_t *out_buf, uint16_t *out_len, uint16_t out_buf_size) {
+    uint16_t data_len = (uint16_t)s_ra.original_count * s_ra.frag_size;
+    if (s_rx_data_len_known && s_rx_data_len < data_len) data_len = s_rx_data_len;
+    if (data_len > out_buf_size) return -1;
+    memcpy(out_buf, s_ra_buf, data_len);
+    *out_len = data_len;
+    s_ra.complete = true;
+    return 1;
 }
 
 int pipeline_rx_feed_frame(
@@ -111,31 +121,19 @@ int pipeline_rx_feed_frame(
         return -1;
 
     if (s_ra.complete) {
-        uint16_t data_len = (uint16_t)s_ra.original_count * s_ra.frag_size;
-        if (s_rx_data_len_known && s_rx_data_len < data_len) data_len = s_rx_data_len;
-        if (data_len > out_buf_size) return -1;
-        memcpy(out_buf, s_ra_buf, data_len);
-        *out_len = data_len;
-        return 1;
+        return pipeline_check_complete(out_buf, out_len, out_buf_size);
     }
 
-    int r = frag_reassembler_feed(&s_ra, frame, frame_len);
-    if (r == 0) {
-        uint16_t data_len = (uint16_t)s_ra.original_count * s_ra.frag_size;
-        if (s_rx_data_len_known && s_rx_data_len < data_len) data_len = s_rx_data_len;
-        if (data_len > out_buf_size) return -1;
-        memcpy(out_buf, s_ra_buf, data_len);
-        *out_len = data_len;
-        return 1;
+    uint16_t frag_counter = hdr.frag_index + 1;
+    int r = erasure_decoder_process(&s_dec, frag_counter, frame + FRAG_HEADER_SIZE);
+    s_ra.frags_received++;
+
+    if (r == 0 || s_dec.complete) {
+        return pipeline_check_complete(out_buf, out_len, out_buf_size);
     }
 
-    if (s_ra.frags_received >= s_ra.original_count) {
-        uint16_t data_len = (uint16_t)s_ra.original_count * s_ra.frag_size;
-        if (s_rx_data_len_known && s_rx_data_len < data_len) data_len = s_rx_data_len;
-        if (data_len > out_buf_size) return -1;
-        memcpy(out_buf, s_ra_buf, data_len);
-        *out_len = data_len;
-        return 1;
+    if (s_ra.frags_received >= s_ra.original_count && !s_dec.complete) {
+        return pipeline_check_complete(out_buf, out_len, out_buf_size);
     }
 
     return 0;

@@ -1,4 +1,5 @@
 #include "gps.h"
+#include "gps_parser.h"
 #include "esp_log.h"
 #include "driver/uart.h"
 #include "freertos/FreeRTOS.h"
@@ -27,107 +28,6 @@ static const char *TAG = "GPS";
 static bool s_initialized = false;
 static gps_data_t s_last_data;
 
-static bool parse_nmea_gga(const char *sentence, gps_data_t *data)
-{
-    char *p = strchr(sentence, ',');
-    if (!p) return false;
-
-    int field = 0;
-    char lat_str[16] = {0}, lat_dir[2] = {0};
-    char lon_str[16] = {0}, lon_dir[2] = {0};
-    char alt_str[16] = {0}, sats_str[4] = {0};
-    char hdop_str[8] = {0};
-    char fix_str[2] = {0};
-
-    p++;
-    while (*p && field < 15) {
-        const char *start = p;
-        while (*p && *p != ',' && *p != '*') p++;
-        size_t len = p - start;
-        switch (field) {
-            case 1: if (len < 16) strncpy(lat_str, start, len); break;
-            case 2: if (len < 2) strncpy(lat_dir, start, len); break;
-            case 3: if (len < 16) strncpy(lon_str, start, len); break;
-            case 4: if (len < 2) strncpy(lon_dir, start, len); break;
-            case 5: if (len < 2) strncpy(fix_str, start, len); break;
-            case 6: if (len < 4) strncpy(sats_str, start, len); break;
-            case 7: if (len < 8) strncpy(hdop_str, start, len); break;
-            case 8: if (len < 16) strncpy(alt_str, start, len); break;
-        }
-        if (*p == ',') p++;
-        field++;
-    }
-
-    data->fix = (fix_str[0] >= '1');
-    if (!data->fix) return false;
-
-    if (strlen(lat_str) >= 4) {
-        int deg = atoi(lat_str) / 100;
-        float min = atof(lat_str + 2);
-        data->latitude = (int32_t)((deg + min / 60.0) * 1e5);
-        if (lat_dir[0] == 'S') data->latitude = -data->latitude;
-    }
-
-    if (strlen(lon_str) >= 5) {
-        int deg = atoi(lon_str) / 100;
-        float min = atof(lon_str + 3);
-        data->longitude = (int32_t)((deg + min / 60.0) * 1e5);
-        if (lon_dir[0] == 'W') data->longitude = -data->longitude;
-    }
-
-    data->sats = (uint8_t)atoi(sats_str);
-    data->hdop = atof(hdop_str);
-    data->altitude_m = (uint16_t)atof(alt_str);
-
-    return true;
-}
-
-static bool parse_nmea_rmc(const char *sentence, gps_data_t *data)
-{
-    char *p = strchr(sentence, ',');
-    if (!p) return false;
-
-    int field = 0;
-    char status[2] = {0};
-    char lat_str[16] = {0}, lat_dir[2] = {0};
-    char lon_str[16] = {0}, lon_dir[2] = {0};
-
-    p++;
-    while (*p && field < 8) {
-        const char *start = p;
-        while (*p && *p != ',' && *p != '*') p++;
-        size_t len = p - start;
-        switch (field) {
-            case 0: break;
-            case 1: if (len < 2) strncpy(status, start, len); break;
-            case 2: if (len < 15) strncpy(lat_str, start, len); break;
-            case 3: if (len < 2) strncpy(lat_dir, start, len); break;
-            case 4: if (len < 15) strncpy(lon_str, start, len); break;
-            case 5: if (len < 2) strncpy(lon_dir, start, len); break;
-        }
-        if (*p == ',') p++;
-        field++;
-    }
-
-    if (status[0] != 'A') return false;
-
-    if (strlen(lat_str) >= 4) {
-        int deg = atoi(lat_str) / 100;
-        float min = atof(lat_str + 2);
-        data->latitude = (int32_t)((deg + min / 60.0) * 1e5);
-        if (lat_dir[0] == 'S') data->latitude = -data->latitude;
-    }
-
-    if (strlen(lon_str) >= 5) {
-        int deg = atoi(lon_str) / 100;
-        float min = atof(lon_str + 3);
-        data->longitude = (int32_t)((deg + min / 60.0) * 1e5);
-        if (lon_dir[0] == 'W') data->longitude = -data->longitude;
-    }
-
-    return true;
-}
-
 esp_err_t gps_init(void)
 {
     if (s_initialized) return ESP_OK;
@@ -152,11 +52,23 @@ esp_err_t gps_init(void)
 
 static void process_nmea_sentence(const char *sentence, gps_data_t *data)
 {
+    gps_parser_data_t parsed;
+    memset(&parsed, 0, sizeof(parsed));
+
     if (strstr(sentence, "$GNGGA") || strstr(sentence, "$GPGGA")) {
-        parse_nmea_gga(sentence, data);
+        if (gps_parse_nmea_gga(sentence, &parsed)) {
+            data->fix = parsed.fix;
+            data->latitude = parsed.latitude;
+            data->longitude = parsed.longitude;
+            data->altitude_m = parsed.altitude_m;
+            data->sats = parsed.sats;
+            data->hdop = parsed.hdop;
+        }
     } else if (strstr(sentence, "$GNRMC") || strstr(sentence, "$GPRMC")) {
-        if (parse_nmea_rmc(sentence, data)) {
-            if (!data->fix) data->fix = true;
+        if (gps_parse_nmea_rmc(sentence, &parsed)) {
+            data->fix = true;
+            data->latitude = parsed.latitude;
+            data->longitude = parsed.longitude;
         }
     }
 }

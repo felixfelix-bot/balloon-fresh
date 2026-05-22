@@ -177,3 +177,42 @@ class TestFormatPacket:
             )
             text = gs.format_packet(pkt)
             assert name in text
+
+
+class TestJsonDecode:
+    def test_decode_valid_json(self):
+        line = '{"type":"telemetry","seq":42,"lat":52.0,"lon":13.0,"alt":12000,"temp_c":22.5,"pressure_hpa":1013.3,"voltage_mv":4100,"sats":8,"rssi":-45,"snr":9.2,"flags":128}'
+        pkt = gs.decode_json_line(line)
+        assert pkt is not None
+        assert pkt.crc_ok is True
+        assert pkt.latitude == 52.0
+        assert pkt.longitude == 13.0
+        assert pkt.altitude_m == 12000
+        assert pkt.voltage_mv == 4100
+        assert pkt.sats == 8
+
+    def test_decode_non_telemetry_json(self):
+        line = '{"type":"other","msg":"hello"}'
+        pkt = gs.decode_json_line(line)
+        assert pkt is None
+
+    def test_decode_invalid_json(self):
+        line = "not json at all"
+        pkt = gs.decode_json_line(line)
+        assert pkt is None
+
+    def test_decode_partial_json(self):
+        line = '{"type":"telemetry","seq":1}'
+        pkt = gs.decode_json_line(line)
+        assert pkt is not None
+        assert pkt.sats == 0
+        assert pkt.voltage_mv == 0
+
+    def test_json_format_match(self):
+        line = '{"type":"telemetry","seq":5,"lat":48.8566,"lon":2.3522,"alt":35,"temp_c":15.0,"pressure_hpa":1012.5,"voltage_mv":3800,"sats":12,"tx_mode":0,"antenna":0,"flags":0}'
+        pkt = gs.decode_json_line(line)
+        text = gs.format_packet(pkt)
+        assert "OK" in text
+        assert "48.8566" in text
+        assert "2.3522" in text
+        assert "3800mV" in text

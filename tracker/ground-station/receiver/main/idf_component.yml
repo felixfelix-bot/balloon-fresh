@@ -1,4 +1,2 @@
-dependencies:
-  RadioLib:
-    git: https://github.com/jgromes/RadioLib.git
-    version: 7.6.0
+# RadioLib is vendored as a git submodule at tracker/firmware/components/RadioLib/
+# Referenced via symlink in receiver/components/RadioLib
