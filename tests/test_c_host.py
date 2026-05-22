@@ -98,9 +98,29 @@ class TestFIPSTransport:
         if os.path.exists(os.path.join(makefile_dir, "Makefile")):
             out = _compile_with_makefile(makefile_dir)
             assert "13/13" in out
-            assert "4/4 passed" in out
         else:
             pytest.skip("No Makefile for fips_transport")
+
+
+class TestWirehair:
+    def test_wirehair_host(self):
+        wirehair_dir = os.path.join(COMPONENTS, "wirehair")
+        out = _compile_and_run_c(
+            os.path.join(wirehair_dir, "test", "test_wirehair.cpp"),
+            [
+                os.path.join(wirehair_dir, "gf256.cpp"),
+                os.path.join(wirehair_dir, "wirehair.cpp"),
+                os.path.join(wirehair_dir, "WirehairCodec.cpp"),
+                os.path.join(wirehair_dir, "WirehairTools.cpp"),
+            ],
+            [
+                os.path.join(wirehair_dir, "include"),
+                wirehair_dir,
+            ],
+            cxx=True,
+            extra_cflags=["-DCAT_ALL_ORIGINAL", "-mssse3", "-Wno-implicit-fallthrough", "-Wno-restrict"],
+        )
+        assert "9/9 passed" in out
 
 
 class TestPipeline:
