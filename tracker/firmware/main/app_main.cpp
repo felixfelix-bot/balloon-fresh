@@ -8,6 +8,7 @@
 #include "esp_sleep.h"
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
+#include "driver/i2c.h"
 #include "soc/rtc.h"
 
 #include <RadioLib.h>
@@ -242,6 +243,100 @@ static void cli_cmd_sleep_now(const char *args) {
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
 }
 
+static bool flag_rx_done = false;
+static int16_t s_rx_rssi = 0;
+static float s_rx_snr = 0;
+
+static void IRAM_ATTR on_rx_done(void) {
+    flag_rx_done = true;
+}
+
+static void cli_cmd_radio_test(const char *args) {
+    (void)args;
+    if (!radio) {
+        printf("Radio not initialized\n");
+        return;
+    }
+    telemetry_packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.callsign_hash = (uint32_t)strtoul(CONFIG_CALLSIGN_HASH_HEX, NULL, 16);
+    telemetry_fill(&pkt, 0, 0, 0, power_manager_read_supercap_mv(), rtc_seq);
+    uint8_t buf[TELEMETRY_SIZE];
+    telemetry_serialize(&pkt, buf);
+
+    flag_tx_done = false;
+    printf("TX test packet (%d bytes)... ", TELEMETRY_SIZE);
+    fflush(stdout);
+    int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
+    if (state != RADIOLIB_ERR_NONE) {
+        printf("FAIL (err %d)\n", state);
+        return;
+    }
+    uint32_t timeout = 0;
+    while (!flag_tx_done && timeout < 10000) {
+        hal->delay(1);
+        timeout++;
+    }
+    printf("%s\n", flag_tx_done ? "OK" : "TIMEOUT");
+}
+
+static void cli_cmd_radio_recv(const char *args) {
+    (void)args;
+    if (!radio) {
+        printf("Radio not initialized\n");
+        return;
+    }
+    printf("Listening for 30s...\n");
+    flag_rx_done = false;
+    radio->setPacketReceivedAction(on_rx_done);
+    radio->startReceive();
+
+    uint32_t start = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    while ((xTaskGetTickCount() * portTICK_PERIOD_MS - start) < 30000) {
+        if (flag_rx_done) {
+            uint8_t rx_buf[256];
+            int16_t len = radio->readData(rx_buf, sizeof(rx_buf));
+            if (len >= 0) {
+                s_rx_rssi = radio->getRSSI();
+                s_rx_snr = radio->getSNR();
+                printf("RX %d bytes, RSSI: %d dBm, SNR: %.1f dB\n  HEX: ", len, s_rx_rssi, s_rx_snr);
+                for (int i = 0; i < len && i < 64; i++) printf("%02x", rx_buf[i]);
+                printf("\n");
+                if (len == TELEMETRY_SIZE) {
+                    telemetry_packet_t *rpkt = (telemetry_packet_t *)rx_buf;
+                    if (telemetry_validate(rx_buf, TELEMETRY_SIZE)) {
+                        printf("  Valid telemetry! seq=%d voltage=%dmV\n", rpkt->seq, rpkt->voltage_mv);
+                    }
+                }
+            }
+            flag_rx_done = false;
+            radio->startReceive();
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    radio->standby();
+    printf("Listen done\n");
+}
+
+static void cli_cmd_i2c_scan(const char *args) {
+    (void)args;
+    printf("Scanning I2C bus (SDA=8, SCL=9)...\n");
+    uint8_t found = 0;
+    for (uint8_t addr = 1; addr < 127; addr++) {
+        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+        i2c_master_start(cmd);
+        i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_WRITE, true);
+        i2c_master_stop(cmd);
+        esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(50));
+        i2c_cmd_link_delete(cmd);
+        if (ret == ESP_OK) {
+            printf("  Found device at 0x%02x\n", addr);
+            found++;
+        }
+    }
+    printf("Scan complete: %d device(s) found\n", found);
+}
+
 static void setup_cli(void) {
     cli_init();
     cli_register_command("status", "System status (uptime, heap, voltage)", cli_cmd_status);
@@ -251,6 +346,9 @@ static void setup_cli(void) {
     cli_register_command("radio", "Radio configuration", cli_cmd_radio);
     cli_register_command("restart", "Software restart", cli_cmd_restart);
     cli_register_command("sleep", "Force deep sleep cycle", cli_cmd_sleep_now);
+    cli_register_command("radio_test", "Transmit test packet", cli_cmd_radio_test);
+    cli_register_command("radio_recv", "Listen for LoRa packets (30s)", cli_cmd_radio_recv);
+    cli_register_command("i2c_scan", "Scan I2C bus for devices", cli_cmd_i2c_scan);
 }
 
 extern "C" void app_main(void)
