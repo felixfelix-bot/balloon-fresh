@@ -1,1 +1,1 @@
-/home/c03rad0r/esp32-balloon-integration/tracker/firmware/main/EspHalC3.h
+../../../firmware/main/EspHalC3.h

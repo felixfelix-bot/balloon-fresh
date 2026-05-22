@@ -8,7 +8,7 @@ Hacken ab wenn erledigt.
 ## Phase 0: Inventar pruefen (HEUTE)
 
 ### Verfuegbarkeit bestaetigen
-- [ ] **20x XIAO ESP32C3** - Auspacken, 2 Stk bereitlegen
+- [ ] **20x ESP32-C3_Mini_V1** - Auspacken, 2 Stk bereitlegen
 - [ ] **2x XIAO ESP32-C5** - Falls als Bodenstation genutzt
 - [ ] **4x NiceRF LoRa2021 Module** - Auspacken, Pinbelegung pruefen (18-Pin)
 - [ ] **100x Solarzellen 52x19mm** - Verfuegbarkeit bestaetigen
@@ -27,7 +27,7 @@ Hacken ab wenn erledigt.
   - Brauchen: 2-3x 100nF (Spannungsstabilisierung)
 - [ ] **Widerstaende** - Irgendwelche 4.7kOhm (I2C Pullups) vorhanden?
 - [ ] **Lötzinn + Lötkolben** - Funktioniert? Spitze sauber?
-- [ ] **USB-C Kabel** - Fuer XIAO ESP32C3 (mindestens 2 Stk)
+- [ ] **USB-C Kabel** - Fuer ESP32-C3_Mini_V1 (mindestens 2 Stk)
 - [ ] **Dupont-Kabel (Female-Female)** - Fuer Breadboard-Verbindung
 - [ ] **Breadboard** - Falls kein Loeten moeglich
 - [ ] **Multimeter** - Fuer Spannungs- und Widerstandsmessung
@@ -47,10 +47,10 @@ Hacken ab wenn erledigt.
 - [ ] Loetstation aufbauen, auf ~320 C einstellen
 - [ ] Belueftung sicherstellen (Loetdampfe!)
 - [ ] Werkzeug bereitlegen: Pinzette, Seitenschneider, Abisolierzange
-- [ ] XIAO ESP32C3 auspacken und per USB anschliessen
+- [ ] ESP32-C3_Mini_V1 auspacken und per USB anschliessen
 - [ ] Pruefen: Wird der XIAO als USB-Geraet erkannt? (`lsusb` oder Gerätemanager)
 
-### Schritt 2: XIAO ESP32C3 testen
+### Schritt 2: ESP32-C3_Mini_V1 testen
 - [ ] USB-C Kabel an XIAO anschliessen
 - [ ] Pruefen ob Serial Port erscheint (`ls /dev/ttyACM*` oder `/dev/ttyUSB*`)
 - [ ] Einfaches Blink-Testprogramm flashen (wir stellen das bereit)
@@ -68,17 +68,17 @@ Hacken ab wenn erledigt.
 Verbindungen XIAO → LoRa2021:
 
 ```
-XIAO          →  LoRa2021
-──────────────────────────────
-3V3 (Pin)     →  Pin 1 (VCC)
-GND (Pin)     →  Pin 2,8,11,12,18 (GND) - mindestens einen verbinden
-D7 (GPIO7)    →  Pin 3 (MISO)
-D6 (GPIO6)    →  Pin 4 (MOSI)
-D5 (GPIO5)    →  Pin 5 (SCK)
-D10 (GPIO10)  →  Pin 6 (NSS/CS)
-D4 (GPIO4)    →  Pin 7 (BUSY)
-D3 (GPIO3)    →  Pin 14 (RST)
-D2 (GPIO2)    →  Pin 15 (DIO9/IRQ)
+ESP32-C3_Mini_V1  →  LoRa2021
+──────────────────────────────────
+3V3 (Pin)         →  Pin 1 (VCC)
+GND (Pin)         →  Pin 2,8,11,12,18 (GND) - mindestens einen verbinden
+D2 (GPIO2)        →  Pin 3 (MISO)
+D7 (GPIO7)        →  Pin 4 (MOSI)
+D6 (GPIO6)        →  Pin 5 (SCK)
+D10 (GPIO10)      →  Pin 6 (NSS/CS)
+D4 (GPIO4)        →  Pin 7 (BUSY)
+D3 (GPIO3)        →  Pin 14 (RST)
+D5 (GPIO5)        →  Pin 15 (DIO9/IRQ)
 ```
 
 - [ ] Alle 9 Verbindungen hergestellt (Breadboard-Draht oder gelötet)
@@ -129,7 +129,7 @@ D2 (GPIO2)    →  Pin 15 (DIO9/IRQ)
 - [ ] Falls analoger Sensor: ADC-Firmware anpassen
 
 ### Schritt 2: Testaufbau
-- [ ] XIAO ESP32C3 (3. Board) + Drucksensor verkabeln
+- [ ] ESP32-C3_Mini_V1 (3. Board) + Drucksensor verkabeln
 - [ ] Sensor an Pumpe/Ballon anschliessen (Schlauch + Kabelbinder oder Tesa)
 - [ ] Falls BMP280: SDA→D8, SCL→D9, VCC→3V3, GND→GND
 - [ ] Pruefen: Wird der Sensor am I2C erkannt?

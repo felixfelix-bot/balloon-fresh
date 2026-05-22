@@ -6,7 +6,7 @@ Full pytest test coverage for all business logic in the pico balloon tracker pro
 C host tests compiled with gcc/g++ and wrapped in pytest via subprocess.
 Python modules tested directly with pytest.
 
-**Current status: 72/72 tests passing. All tiers complete.**
+**Current status: 82/82 tests passing. All tiers complete.**
 
 Run all tests:
 ```bash
@@ -82,28 +82,6 @@ python -m pytest tests/ -v
 - [x] Add `TestPowerManager` entry in `tests/test_c_host.py`
 - [x] Verify passing
 
-### T2.2: CLI tests
-- [ ] Refactor `cli.c`: add `cli_set_io(int (*getchar_fn)(void), void (*printf_fn)(const char *, ...))` for test injection
-- [ ] Write `tracker/firmware/components/cli/test/test_cli.c`
-  - [ ] Init registers "help" command
-  - [ ] Register custom command, dispatch matches
-  - [ ] Unknown command prints error
-  - [ ] Args splitting (command + space + args)
-  - [ ] Backspace handling
-  - [ ] Buffer overflow protection
-  - [ ] Multiple commands in sequence
-- [ ] Add `TestCLI` entry in `tests/test_c_host.py`
-- [ ] Verify passing
-
-### T2.3: Power manager voltage math tests
-- [ ] Extract `pm_raw_to_mv(int raw, int calibrated_mv)` pure function
-- [ ] Write `tracker/firmware/components/power_manager/test/test_power_manager.c`
-  - [ ] Raw ADC → voltage conversion (12-bit, 3.3V ref)
-  - [ ] Voltage divider multiplier (×2)
-  - [ ] Calibration fallback when no calibration scheme
-- [ ] Add `TestPowerManager` entry in `tests/test_c_host.py`
-- [ ] Verify passing
-
 ---
 
 ## Tier 3: Deferred
@@ -128,14 +106,14 @@ python -m pytest tests/ -v
 | Category | Component | Tests | Status |
 |----------|-----------|-------|--------|
 | **Python** | link_budget | 29 | Done |
-| **Python** | telemetry_to_nostr | 11 | Done |
-| **Python** | ground_station | 14 | Done |
+| **Python** | telemetry_to_nostr | 14 | Done |
+| **Python** | ground_station | 20 | Done |
 | **C Host** | erasure | 5 | Done |
-| **C Host** | tdma | 7 | Done |
+| **C Host** | tdma | 12 | Done |
 | **C Host** | nostr_store | 7 | Done |
 | **C Host** | micro_ecc | 5 | Done |
-| **C Host** | fips_transport | 10 | Done |
-| **C Host** | pipeline | 5 | Done |
+| **C Host** | fips_transport | 13+4 | Done |
+| **C Host** | pipeline | 9 | Done |
 | **C Host** | telemetry | 11 | Done |
 | **C Host** | gps | 8 | Done |
 | **C Host** | frag | 13 | Done |
@@ -144,5 +122,8 @@ python -m pytest tests/ -v
 | **C Host** | sky66112 | 9 | Done |
 | **C Host** | cli | 8 | Done |
 | **C Host** | power_manager | 5 | Done |
+| **C Host** | mesh_adapter | 8 | Done |
+| **C Host** | e2e | 4 | Done |
+| **C Host** | wirehair | 9 | Done |
 
-**Total: 72 done + ~0 planned = 72 complete**
+**Total: 82/82 passing**
