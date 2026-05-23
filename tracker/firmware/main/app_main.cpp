@@ -386,7 +386,10 @@ extern "C" void app_main(void)
         .min_freq_mhz = 10,
         .light_sleep_enable = true,
     };
-    ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+    esp_err_t pm_ret = esp_pm_configure(&pm_config);
+    if (pm_ret != ESP_OK) {
+        ESP_LOGW(TAG, "PM configure failed (%s), power saving disabled", esp_err_to_name(pm_ret));
+    }
 
     power_manager_init();
     uint16_t cap_mv = power_manager_read_supercap_mv();
