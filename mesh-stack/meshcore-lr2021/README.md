@@ -1,7 +1,7 @@
 # MeshCore LR2021 Integration Plan
 
 **Created**: 2026-05-23
-**Status**: Planning → Implementation
+**Status**: Implementation complete, ready for hardware testing
 **Approach**: PlatformIO standalone (no fork maintenance)
 
 ## Goal
@@ -19,10 +19,13 @@ MeshCore uses PlatformIO + Arduino. Our tracker uses ESP-IDF. **We do NOT integr
 ```
 PhysicalLayer
 ├── SX126x → SX1262 (MeshCore default, private: spreadingFactor)
+├── LR11x0 → LR1110 (MeshCore already supported, sibling to LR2021)
 └── LRxxxx → LR2021 (our chip, protected: spreadingFactor)
 ```
 
-Both inherit from `PhysicalLayer`. MeshCore's `RadioLibWrapper` holds a `PhysicalLayer*`, so it accepts both. The key difference:
+MeshCore already has `CustomLR1110.h`, `CustomLR1110Wrapper.h`, and `LR11x0Reset.h` — the LR1110 is a sibling chip to LR2021 (both in the LRxxxx family). Our implementation closely follows the LR1110 pattern.
+
+Both LR1110 and LR2021 inherit from `PhysicalLayer`. MeshCore's `RadioLibWrapper` holds a `PhysicalLayer*`, so it accepts both. The key difference:
 
 | Aspect | SX1262 | LR2021 |
 |--------|--------|--------|
@@ -41,8 +44,23 @@ MeshCore sets `RADIOLIB_GODMODE=1` in build flags. This makes `private:` → `pu
 
 - `spreadingFactor` is `protected` in `LRxxxx` — already accessible from `CustomLR2021` subclass
 - `mod` (Module*) is `protected` — accessible from subclass
-- GODMODE still works for LR2021 because MeshCore's wrapper accesses `PhysicalLayer` public virtual methods
+- `getRssiInst()`, `calibrate()`, etc. become `public` with GODMODE — needed for wrapper access
 - **We set `RADIOLIB_GODMODE=1` in our platformio.ini, same as all other variants**
+
+## LR1110 Pattern (MeshCore Reference Implementation)
+
+MeshCore already supports the LR1110 (LR11x0 family, sibling to LR2021). Our implementation follows this pattern closely:
+
+| Feature | LR1110 Pattern | LR2021 Implementation |
+|---------|---------------|----------------------|
+| `isReceiving()` | `getIrqStatus()` + `LR11X0_IRQ_*` flags | Same — `getIrqStatus()` works on LRxxxx |
+| `getCurrentRSSI()` | `getRssiInst(&rssi)` | Same method available on LR2021 |
+| AGC reset | `lr11x0ResetAGC()` from `LR11x0Reset.h` | Custom inline — LR2021 lacks `calibrateImageRejection` |
+| `onSendFinished()` | Sets preamble length to 16 | Same — overcomes weird packet size issues |
+| `setRxBoostedGainMode()` | `bool en` parameter | `uint8_t level` (0-7) on LR2021, wrapped to match bool API |
+| `spreadingFactor` access | Via GODMODE (private on LR1110) | Via subclass (protected on LRxxxx) |
+
+Key difference: `lr11x0ResetAGC()` uses `calibrateImageRejection()` which is LR11x0-specific. LR2021 does image calibration automatically in `setFrequency()`, so our `doResetAGC()` calls `calibrate()` + `setFrequency()` instead.
 
 ## Hardware Wiring
 
@@ -148,10 +166,11 @@ make dist-clean         # remove MeshCore clone entirely
 - [ ] T1.2: CustomLR2021Wrapper.h compiles (no errors)
 - [ ] T1.3: companion_radio USB builds for LR2021 (`make build-companion`, BIN produced)
 - [ ] T1.4: companion_radio BLE builds for LR2021 (`make build-companion-ble`, BIN produced)
-- [ ] T1.5: simple_secure_chat builds for LR2021 (`make build-chat`, BIN produced)
+- [ ] T1.5: secure_chat builds for LR2021 (`make build-chat`, BIN produced)
 - [ ] T1.6: kiss_modem builds for LR2021 (`make build-kiss`, BIN produced)
-- [ ] T1.7: simple_repeater builds for LR2021 (`make build-repeater`, BIN produced)
-- [ ] T1.8: All binary sizes < 1.5 MB (fits ESP32-C3 4MB flash)
+- [ ] T1.7: repeater builds for LR2021 (`make build-repeater`, BIN produced)
+- [ ] T1.8: room_server builds for LR2021 (`make build-room`, BIN produced)
+- [ ] T1.9: All binary sizes < 1.5 MB (fits ESP32-C3 4MB flash)
 
 ### Tier 2: Single-Device Hardware Tests (needs wired LR2021 board)
 
