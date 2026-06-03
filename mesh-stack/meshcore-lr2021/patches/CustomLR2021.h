@@ -12,6 +12,8 @@ class CustomLR2021 : public LR2021 {
 
     float getFreqMHz() const { return freqMHz; }
 
+    uint8_t getSpreadingFactor() const { return spreadingFactor; }
+
     int16_t setRxBoostedGainMode(uint8_t level) {
       _rx_boosted = (level > 0);
       return LR2021::setRxBoostedGainMode(level);

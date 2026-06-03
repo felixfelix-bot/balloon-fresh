@@ -34,10 +34,10 @@ public:
     return ((CustomLR2021 *)_radio)->getSNR();
   }
 
-  float packetScore(float snr, int packet_len) override {
-    int sf = ((CustomLR2021 *)_radio)->spreadingFactor;
-    return packetScoreInt(snr, sf, packet_len);
-  }
+    float packetScore(float snr, int packet_len) override {
+      int sf = ((CustomLR2021 *)_radio)->getSpreadingFactor();
+      return packetScoreInt(snr, sf, packet_len);
+    }
 
   void powerOff() override {
     ((CustomLR2021 *)_radio)->sleep(false, 0);

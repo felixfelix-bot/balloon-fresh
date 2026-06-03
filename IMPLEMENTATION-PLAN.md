@@ -1,7 +1,7 @@
 # Master Implementation Plan — ESP32 Balloon Tracker + Mesh Stack
 
 **Created**: 2026-05-21
-**Last Updated**: 2026-06-03
+**Last Updated**: 2026-06-03 (MeshCore bench test phase)
 
 ## Status Legend
 
@@ -56,35 +56,54 @@
 - [ ] Measure current consumption (TX burst, sleep, GPS on)
 
 ### A.5 Shakedown Flight Prep
-- [ ] Inflation test: DecoGlee balloon + He fill + heat seal
-- [ ] Leak test: measure diameter over 24-48 hours
+- [ ] Pre-stretch Yokohama 32" balloon: inflate with aquarium pump to 100-105" circumference, hold 10-24h
+- [ ] Leak test: heat seal + pressure sensor, monitor 30-60 min
+- [ ] Deflate and store for helium fill day
+- [ ] Get industrial He 4.6 (Air Liquide ALbee Fly, ~EUR 30-50)
+- [ ] Inflation test: Yokohama + He 4.6 fill + heat seal + Kapton tape
+- [ ] Leak test: measure circumference over 24-48 hours
 - [ ] Weight check: tracker payload on scale (< 4.8g net lift budget)
 - [ ] Antenna orientation test: vertical dipole on balloon
 - [ ] Ground range test: 100m, 500m, 1km, 5km with tracker on pole/tree
 - [ ] Prepare first flight checklist per `docs/first-flight-checklist.md`
 - [ ] HYSPLIT trajectory prediction for launch date
 - [ ] File NOTAM if required
-- [ ] Launch shakedown flight (DecoGlee + He, 3-8 day target)
+- [ ] Launch shakedown flight (Yokohama 32" + He 4.6, Minimal variant)
 
 ---
 
 ## Phase B: Mesh Foundation (MeshCore + Erasure Coding)
 
 ### B.1 MeshCore PlatformIO Integration (Dev/Testing)
-- [ ] Fork MeshCore repo
-- [ ] Create `variants/nicerf_lr2021/` with our pin mapping
-  - DIO9→GPIO5, NSS→GPIO10, RST→GPIO3, BUSY→GPIO4
-  - SCLK→GPIO6, MISO→GPIO2, MOSI→GPIO7
-- [ ] Handle DIO9 IRQ mapping in `CustomSX1262::std_init()`
-- [ ] Remove `SX126X_DIO2_AS_RF_SWITCH` (NiceRF has own RF switch)
-- [ ] Build with PlatformIO
-- [ ] Flash to 2× ESP32-C3_Mini_V1 dev boards
-- [ ] Bench test: MeshCore flood routing between 2 nodes
-- [ ] Test encryption (Ed25519 identity, AES-128)
+
+**Variant files created** (commit `4a589e7`):
+- [x] `variants/nicerf_lr2021/` with our pin mapping (DIO9→GPIO5, NSS→GPIO10, RST→GPIO3, BUSY→GPIO4, SCLK→GPIO6, MISO→GPIO2, MOSI→GPIO7)
+- [x] `CustomLR2021.h` — RadioLib wrapper with `tcxoVoltage=0.0`, `irqDioNum=9`, `isReceiving()`
+- [x] `CustomLR2021Wrapper.h` — MeshCore RadioLibWrapper subclass with LR2021-specific methods
+- [x] `NiceRFLR2021Board.h` — Board class (deep sleep, battery ADC, GPIO5 wakeup)
+- [x] `target.cpp` / `target.h` — Radio init, SPI begin, identity generation
+- [x] `platformio.ini` — 7 build targets (companion USB/BLE/WiFi, chat, KISS, repeater, room)
+- [x] `Makefile` — Build/flash/test/monitor automation, pinned to `companion-v1.15.0`
+- [x] `apply-patches.sh` — Copies variant files into MeshCore clone
+
+**Bench testing (current phase)**:
+- [ ] T0.1: Install PlatformIO (`pip install platformio`)
+- [ ] T0.2: Clone MeshCore and apply patches (`make setup`)
+- [ ] T0.3: Verify toolchain with existing Xiao C3 variant (`make verify-toolchain`)
+- [ ] T1.1: Build `LR2021_companion_radio_usb` successfully
+- [ ] T1.2: Build all 7 LR2021 targets successfully (`make build-all`)
+- [ ] T2.1: Flash companion_radio to ESP32-C3 SuperMini
+- [ ] T2.2: Radio init succeeds (no "radio init failed" error)
+- [ ] T2.3: MeshCore serial console responsive
+- [ ] T2.4: RX test — see MeshCore adverts from Berlin community nodes
+- [ ] T2.5: TX test — send advert, check if it appears on MeshCore map
+- [ ] T3.1: Chat test — encrypted message exchange with community node
+- [ ] T3.2: KISS modem test — serial bridge verification
 - [ ] Range test: MeshCore SF8/BW62.5 vs our tracker SF9/BW125
 - [ ] Document results
+- [ ] Upstream PR #1: LR2021 variant to MeshCore (after bench validation)
 
-**References**: `mesh-stack/research/routing/meshcore-study.md`
+**References**: `mesh-stack/research/routing/meshcore-study.md`, `mesh-stack/meshcore-lr2021/README.md`
 
 ### B.2 MeshCore Core Extraction (ESP-IDF Flight Firmware)
 - [ ] Copy core files: Packet, Dispatcher, Mesh, Identity, Utils, helpers
@@ -353,19 +372,34 @@ The balloon broadcasts its position and status via standard MeshCore adverts and
 
 ## Existing Completed Work
 
-- [x] ADR-001 through ADR-012 written
+- [x] ADR-001 through ADR-013 written
 - [x] Tracker firmware v0.2 (deep sleep, GPS, 28-byte telemetry, Kconfig)
+- [x] **LR2021 radio fully working** (commit `5175ada`): TX at 868 MHz, SF9, 22 dBm
+  - Root cause of -707 found: XTAL not TCXO → `tcxoVoltage=0.0` fixes it
+  - RadioLib config() patched for calibration error tolerance
+  - ESP-IDF SPI master driver (not raw registers), full-duplex, byte-by-byte
 - [x] 17/17 unit tests passing (NMEA parsing, CRC-16, packet format)
-- [x] Ground station receiver code written (needs bug fixes)
+- [x] 82/82 tests passing across all components (wirehair, FIPS, pipeline, TDMA, erasure, etc.)
+- [x] Ground station receiver code (WiFi uplink + mesh pipeline, 864KB BIN)
+- [x] Wirehair ported to ESP-IDF — 9/9 host tests
+- [x] FIPS-over-LoRa Noise IK — 13/13 host tests + 4/4 pipeline integration
+- [x] Pipeline integration — 9/9 host tests
+- [x] Semtech PRBS23-XOR erasure coding — 5/5 host tests
+- [x] TDMA scheduler — 12/12 host tests
+- [x] Nostr event store — 7/7 host tests
+- [x] Mesh adapter component — 8/8 tests
+- [x] MeshCore LR2021 variant files (8 files, commit `4a589e7`) — never compiled yet
+- [x] Cluster-aware bridge design + algorithm (`mesh-stack/research/routing/cluster-aware-bridge.md`)
+- [x] INTEGRATION-ARCHITECTURE.md — full 7-layer mesh stack
+- [x] Protocol specification: `mesh-stack/protocol/SPEC.md`
 - [x] Breadboard wiring guide
 - [x] First flight checklist
 - [x] BOM updated
 - [x] Power budget analysis
-- [x] Integration architecture documented
-- [x] ROADMAP.md with reference repos
-- [x] Yokohama 32" balloons ordered
-- [x] Heat sealer ordered
-- [x] Kapton tape ordered
+- [x] Yokohama 32" Crystal Clear valveless 10-pack ARRIVED (€105.95)
+- [x] Heat sealer + Kapton tape ARRIVED
+- [x] Aquarium air pump available for pre-stretching
+- [x] Some helium available (industrial He 4.6 recommended for first flight)
 
 ## Key File Index
 
