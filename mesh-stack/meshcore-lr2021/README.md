@@ -193,11 +193,23 @@ make dist-clean         # remove MeshCore clone entirely
 - [x] T2.1: Flash companion_radio to ESP32-C3 (`make flash-companion`)
 - [x] T2.2: Radio init succeeds (no "radio init failed" error) — **VERIFIED** via ESP-IDF HAL
 - [x] T2.3: MeshCore boot sequence completes (identity generated, SPIFFS mounted)
-- [ ] T2.4: Ed25519 identity generated and stored
-- [ ] T2.5: Noise floor calibration runs (RSSI values in log every ~2s)
-- [ ] T2.6: MeshCore serial console responsive (via USB CDC)
+- [x] T2.4: Ed25519 identity generated and stored — `Repeater ID: D60BE809...`
+- [x] T2.5: Noise floor calibration runs — **-102 dBm stable**, polls every ~2s
+- [x] T2.6: MeshCore serial console responsive (via USB CDC)
 - [ ] T2.7: Companion app connects via USB (app.meshcore.nz or serial terminal)
-- [ ] T2.8: Repeater firmware flashes and runs on ESP32-C3 SuperMini
+- [x] T2.8: Repeater firmware flashes and runs on ESP32-C3 SuperMini — 1.16MB flash
+- [x] T2.9: Passive monitoring test (10+5 min) — **no Berlin community nodes in range**
+  - Logs: `logs/meshcore_20260603_*.log`
+  - Noise floor stable at -102 dBm, occasional -109 dBm recalibration
+  - Radio RX confirmed working, no crashes in 15 min total
+
+### Tier 3: Community Integration Tests
+
+- [ ] T3.1: Move to location with known MeshCore nodes (or outdoors with better antenna)
+- [ ] T3.2: Test with MeshCore companion app (app.meshcore.nz) — send advert
+- [ ] T3.3: Encrypted chat with community node
+- [ ] T3.4: Range test: walk with repeater outdoors, check for community adverts
+- [ ] T3.5: Check MeshCore Discord (#eu-nodes, #germany) for Berlin node locations
 
 ### Tier 3: Two-Device Integration Tests (our board + friend's device)
 
