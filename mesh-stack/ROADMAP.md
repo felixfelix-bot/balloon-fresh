@@ -203,6 +203,7 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 | FIPS mesh networking | `github.com/jmcorgan/fips` (Rust) | v0.3.0: spanning-tree, Noise IK/XK, Nostr identity |
 | FIPS embedded leaf node | `github.com/Amperstrand/microfips` (Rust/no_std) | Runs on STM32 + ESP32 (D0WD, S3) |
 | MeshCore mesh protocol | `github.com/meshcore-dev/MeshCore` (C++) | 2.9k stars, repeater firmware, EU community |
+| MeshCore LR2021 variant | `mesh-stack/meshcore-lr2021/` (C++) | 8 files, needs PlatformIO build + bench test |
 | TollGate protocol | `github.com/OpenTollGate/tollgate` | TIP-01/02 specs, Cashu ecash payments |
 | TollGate OpenWRT impl | `github.com/OpenTollGate/tollgate-module-basic-go` (Go) | Cashu, Nostr relay, WiFi captive portal |
 | ESP32 TollGate + Nostr relay | `https://gitworkshop.dev/npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/git.orangesync.tech/esp32-tollgate` | ESP32 TollGate + integrated Nostr relay (our implementation) |
@@ -253,7 +254,7 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 - First dual-band flight: MeshCore stratospheric repeater + FIPS mesh node
 - Coverage mapping: MeshCore advert log → mapme.sh data
 - **Upstream PRs**: (1) LR2021 variant to MeshCore, (2) StratoRelayMesh example
-- **Status: Research phase** — see `mesh-stack/INTEGRATION-ARCHITECTURE.md`, `mesh-stack/research/routing/cluster-aware-bridge.md`
+- **Status: Bench testing** — MeshCore LR2021 variant files created (commit `4a589e7`), needs PlatformIO build + Berlin community node test. See `mesh-stack/meshcore-lr2021/README.md` test plan.
 
 ### Phase 3: Nostr Store-and-Forward + Ground Station (`mesh-stack/`)
 - Implement Nostr-over-FIPS protocol (simplified NIP-01 over FIPS encrypted sessions)
@@ -325,7 +326,16 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 - [x] Study MeshCore radio abstraction: `https://github.com/meshcore-dev/MeshCore` — `arch/esp32/`, RadioLibWrapper
 - [x] Verify: Does MeshCore's `RadioLibWrapper` work with LR2021 via RadioLib v7.6.0?
 - [x] Create MeshCore variant for ESP32-C3 + LR2021 (pin mapping, SPI config)
-- [ ] Test: MeshCore repeater firmware on ESP32-C3_Mini_V1 + LoRa2021 dev board
+- [x] Install PlatformIO (`pip install platformio`)
+- [ ] Clone MeshCore + apply patches (`make setup`)
+- [ ] Build `LR2021_companion_radio_usb` successfully
+- [ ] Build all 7 LR2021 targets (`make build-all`)
+- [ ] Flash to ESP32-C3 SuperMini + LR2021 dev board
+- [ ] Test: MeshCore RX in Berlin (community node adverts)
+- [ ] Test: MeshCore TX in Berlin (advert appears on map)
+- [ ] Test: Encrypted chat with community node
+- [ ] Test: KISS modem serial bridge
+- [ ] Range test: MeshCore SF8/BW62.5 vs our tracker SF9/BW125
 - [x] Evaluate: PlatformIO build vs ESP-IDF port — **Decision: ESP-IDF for flight, PlatformIO for bench/PR**
 - [x] Write findings to `mesh-stack/research/meshcore-study.md` and `mesh-stack/research/meshcore-radiolib-wrapper-study.md`
 

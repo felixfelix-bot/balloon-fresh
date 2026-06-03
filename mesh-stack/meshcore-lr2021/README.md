@@ -1,7 +1,7 @@
 # MeshCore LR2021 Integration Plan
 
 **Created**: 2026-05-23
-**Status**: Implementation complete, ready for hardware testing
+**Status**: Implementation complete, bench testing in progress (Berlin)
 **Approach**: PlatformIO standalone (no fork maintenance)
 
 ## Goal
