@@ -1,7 +1,7 @@
 # Master Implementation Plan — ESP32 Balloon Tracker + Mesh Stack
 
 **Created**: 2026-05-21
-**Last Updated**: 2026-06-03 (MeshCore bench test phase)
+**Last Updated**: 2026-06-03 (MeshCore LR2021 radio init verified on hardware)
 
 ## Status Legend
 
@@ -84,23 +84,43 @@
 - [x] `target.cpp` / `target.h` — Radio init, SPI begin, identity generation
 - [x] `platformio.ini` — 7 build targets (companion USB/BLE/WiFi, chat, KISS, repeater, room)
 - [x] `Makefile` — Build/flash/test/monitor automation, pinned to `companion-v1.15.0`
-- [x] `apply-patches.sh` — Copies variant files into MeshCore clone
+- [x] `apply-patches.sh` — Copies variant files into MeshCore clone + framework dir
 
-**Bench testing (current phase)**:
+**Custom board definition** (commit `540a8d6`+):
+- [x] `boards/esp32c3_supermini.json` — Board JSON with correct flash config (4MB, DIO)
+- [x] `variants/esp32c3_supermini/pins_arduino.h` — SuperMini V1 pin mapping (D0-D10 = GPIO0-GPIO10)
+  - Fixes XIAO board D-pin conflict (D6=GPIO21, D7=GPIO20 vs our GPIO6/GPIO7)
+  - Default SPI pins: `MOSI=7, MISO=2, SCK=6, SS=10` (matches LR2021 wiring)
+  - GPIO10 is CS only (not also MOSI as on XIAO variant)
+- [x] `platformio.ini` updated to `board = esp32c3_supermini`
+- [x] PlatformIO variant resolution fixed: `pins_arduino.h` copied to framework package dir
+
+**ESP-IDF HAL** (latest, radio init fix):
+- [x] `EspIdfHal.h` — Custom RadioLib HAL using ESP-IDF `spi_bus_initialize()` directly
+  - Bypasses Arduino `SPIClass` which returns all-zero responses from LR2021
+  - Same approach as tracker firmware's `EspHalC3.h`
+  - Uses `Module(&hal, cs, irq, rst, busy)` constructor instead of `Module(cs, irq, rst, busy, spi)`
+- [x] `CustomLR2021.h` updated: `std_init()` no longer takes `SPIClass*` parameter
+- [x] `target.cpp` updated: uses `EspIdfHal` instead of `SPIClass`
+- [x] Radio init verified on hardware: `std_init result: OK`
+
+**Bench testing**:
 - [x] T0.1: Install PlatformIO (`pip install platformio`) — PlatformIO 6.1.19
 - [x] T0.2: Clone MeshCore and apply patches (`make setup`) — tag companion-v1.15.0
 - [x] T0.3: Verify toolchain with existing Xiao C3 variant (`make verify-toolchain`) — BUILD SUCCESS
-- [x] T1.1: Build `LR2021_companion_radio_usb` successfully — 501KB flash, 136KB RAM
+- [x] T1.1: Build `LR2021_companion_radio_usb` successfully — 529KB flash, 41.6% RAM
 - [x] T1.2: Build all 7 LR2021 targets successfully (`make build-all`) — all 7 pass
-- [ ] T2.1: Flash companion_radio to ESP32-C3 SuperMini
-- [ ] T2.2: Radio init succeeds (no "radio init failed" error)
-- [ ] T2.3: MeshCore serial console responsive
-- [ ] T2.4: RX test — see MeshCore adverts from Berlin community nodes
-- [ ] T2.5: TX test — send advert, check if it appears on MeshCore map
+- [x] T2.1: Flash companion_radio to ESP32-C3 SuperMini (`/dev/ttyACM2`) — FLASH SUCCESS
+- [x] T2.2: Radio init succeeds — **VERIFIED** (was -707 with Arduino SPI, now OK with ESP-IDF HAL)
+- [x] T2.3: MeshCore boot sequence completes — VERIFIED (companion running, listening on 869.618 MHz)
+- [ ] T2.4: Repeater firmware builds and flashes with EspIdfHal
+- [ ] T2.5: Passive RX test — see MeshCore adverts from Berlin community nodes (10-30 min monitoring)
+- [ ] T2.6: TX test — send advert, check if it appears on MeshCore map (needs MeshCore app)
+- [ ] T2.7: Verify all 7 targets rebuild with EspIdfHal changes
 - [ ] T3.1: Chat test — encrypted message exchange with community node
 - [ ] T3.2: KISS modem test — serial bridge verification
 - [ ] Range test: MeshCore SF8/BW62.5 vs our tracker SF9/BW125
-- [ ] Document results
+- [ ] Document results in README.md
 - [ ] Upstream PR #1: LR2021 variant to MeshCore (after bench validation)
 
 **References**: `mesh-stack/research/routing/meshcore-study.md`, `mesh-stack/meshcore-lr2021/README.md`
