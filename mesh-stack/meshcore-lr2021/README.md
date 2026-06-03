@@ -196,39 +196,105 @@ make dist-clean         # remove MeshCore clone entirely
 - [x] T2.4: Ed25519 identity generated and stored — `Repeater ID: D60BE809...`
 - [x] T2.5: Noise floor calibration runs — **-102 dBm stable**, polls every ~2s
 - [x] T2.6: MeshCore serial console responsive (via USB CDC)
-- [ ] T2.7: Companion app connects via USB (app.meshcore.nz or serial terminal)
+- [x] T2.7: Companion app connects via USB (app.meshcore.nz or serial terminal) — **VERIFIED** via meshcore-cli
 - [x] T2.8: Repeater firmware flashes and runs on ESP32-C3 SuperMini — 1.16MB flash
 - [x] T2.9: Passive monitoring test (10+5 min) — **no Berlin community nodes in range**
   - Logs: `logs/meshcore_20260603_*.log`
   - Noise floor stable at -102 dBm, occasional -109 dBm recalibration
   - Radio RX confirmed working, no crashes in 15 min total
 
-### Tier 3: Community Integration Tests
+### Tier 3: Community Validation — meshcore-cli + Berlin MeshCore Network
 
-- [ ] T3.1: Move to location with known MeshCore nodes (or outdoors with better antenna)
-- [ ] T3.2: Test with MeshCore companion app (app.meshcore.nz) — send advert
-- [ ] T3.3: Encrypted chat with community node
-- [ ] T3.4: Range test: walk with repeater outdoors, check for community adverts
-- [ ] T3.5: Check MeshCore Discord (#eu-nodes, #germany) for Berlin node locations
+**Objective**: Prove our LR2021 firmware communicates with real MeshCore nodes — receive adverts, send messages, confirm end-to-end encrypted chat.
 
-### Tier 3: Two-Device Integration Tests (our board + friend's device)
+**Tools**:
+- `meshcore-cli` (Python): serial CLI for companion firmware — `pipx install meshcore-cli`
+- MeshCore web app: https://app.meshcore.nz (connects via USB serial)
+- MeshCore Discord: https://meshcore.gg (community hub, find nearby nodes)
+- MeshCore node map: https://meshcore.io/map
 
-- [ ] T3.1: PHY packet exchange same room (LR2021 TX → friend's device RX)
-- [ ] T3.2: Reverse direction (friend's device TX → LR2021 RX)
-- [ ] T3.3: Encrypted chat (simple_secure_chat, both devices)
-- [ ] T3.4: Flood routing (2 nodes, broadcast)
-- [ ] T3.5: Companion chat end-to-end (MeshCore app on both sides)
-- [ ] T3.6: KISS modem serial bridge (send KISS DATA frame, get response)
-- [ ] T3.7: RSSI vs distance plot (0m, 10m, 50m, 100m)
-- [ ] T3.8: Max reliable range (urban, walk until >50% packet loss)
+**EU default PHY** (our firmware matches): 869.618 MHz, SF8, BW62.5, CR4/5, sync word 0x12
 
-### Tier 4: Physical Long-Range Tests
+#### Phase 1: meshcore-cli Setup & Serial Connection (~15 min)
 
-- [ ] T4.1: Wall penetration (one device inside, one outside)
-- [ ] T4.2: Cross-building test (500m+)
-- [ ] T4.3: Budapest-Stettin via community MeshCore repeaters
-- [ ] T4.4: Overnight reliability test (12+ hours, no crashes, >95% delivery)
-- [ ] T4.5: Power consumption measurement (TX/RX/sleep current)
+- [x] T3.P1.1: Install meshcore-cli: `pipx install meshcore-cli` — **v1.5.7 installed**
+- [x] T3.P1.2: Flash companion_radio_usb: `make flash-companion`
+- [x] T3.P1.3: Verify serial connection: `meshcli -s /dev/ttyACM2 infos`
+  - Public key: `d60be809b4a1ae6b5d39269aa5298797847b10d3cf2c41bedee05801f29f26db`
+  - Freq: 869.618, SF: 8, BW: 62.5, TX power: 22 dBm, Name: D60BE809
+  - Contact URI: `meshcore://1100d60be809...`
+- [x] T3.P1.4: Check clock: `meshcli clock` — synced to 2026-06-03
+- [x] T3.P1.5: Send zero-hop advert: `meshcli advert` — **Advert sent**
+- [x] T3.P1.6: Send flood advert: `meshcli floodadv` — **Advert sent**
+
+#### Phase 2: Community Discovery (manual, ~15 min)
+
+- [ ] T3.P2.1: Join MeshCore Discord at https://meshcore.gg
+- [ ] T3.P2.2: Check #general, #eu-nodes for Berlin/Germany nodes
+- [ ] T3.P2.3: Check MeshCore map at https://meshcore.io/map for Berlin pins
+- [ ] T3.P2.4: Post in Discord: "Custom LR2021 node in Berlin on 869.618/SF8/BW62.5, looking for community nodes to test with"
+- [ ] T3.P2.5: Note any Berlin/Germany node locations and approximate distances
+
+#### Phase 3: Interactive Monitoring (~30 min)
+
+- [x] T3.P3.1: Launch interactive mode: `meshcli -s /dev/ttyACM2`
+- [x] T3.P3.2: Run `list` — check initial contact list — **0 contacts (empty)**
+- [x] T3.P3.3: Run `advert` — broadcast self-advert — **Advert sent**
+- [x] T3.P3.4: Run `floodadv` — flood advert (multi-hop reach) — **Advert sent**
+- [x] T3.P3.5: Run `public "Hello from LR2021 in Berlin!"` — **sent to public channel**
+- [x] T3.P3.6: Wait 10 min, run `list` again — **0 contacts, no community nodes in range**
+- [x] T3.P3.7: Run `sync_msgs` — **no messages received**
+- [x] T3.P3.8: Run `msgs_subscribe` for 10 min — **no incoming messages**
+- [x] T3.P3.9: Results logged — **no Berlin MeshCore community nodes detected indoors**
+
+#### Phase 4: Two-Device Self-Test (if no community nodes found)
+
+Requires wiring a second LR2021 to another ESP32-C3 (20x ESP32-C3_Mini_V1 owned, 4x LR2021 owned).
+
+- [ ] T3.P4.1: Wire second LR2021 to second ESP32-C3_Mini_V1 (same pin mapping)
+- [ ] T3.P4.2: Flash companion_radio_usb on second device
+- [ ] T3.P4.3: Place devices 2-5 meters apart
+- [ ] T3.P4.4: From device 1: `meshcli -s /dev/ttyACM2 advert`
+- [ ] T3.P4.5: Check device 2 serial output for received advert
+- [ ] T3.P4.6: Test encrypted chat between the two devices
+- [ ] T3.P4.7: Test repeater firmware on one device, companion on other
+- [ ] T3.P4.8: Verify RSSI/SNR values reported by both devices
+
+#### Phase 5: Outdoor/Portable Test (if indoor test finds nothing)
+
+Repeater firmware runs headless — power from USB battery pack, no computer needed.
+
+- [ ] T3.P5.1: Flash repeater firmware: `make flash-repeater`
+- [ ] T3.P5.2: Power from USB battery pack, place outdoors (balcony/window/rooftop)
+- [ ] T3.P5.3: Run `make monitor` or `python3 monitor.py /dev/ttyACM2 1800` for 30+ min
+- [ ] T3.P5.4: Bring back, check serial log for any received adverts or packets
+- [ ] T3.P5.5: Suggested locations: Tempelhofer Feld, Teufelsberg, balcony facing south
+
+#### Phase 6: Map Registration & Community Engagement
+
+- [ ] T3.P6.1: Export contact URI: `meshcli -s /dev/ttyACM2 card`
+- [ ] T3.P6.2: Add node to MeshCore map (see FAQ 5.12)
+- [ ] T3.P6.3: Post in Discord #show-and-tell: "Custom LR2021 + ESP32-C3 MeshCore node working"
+- [ ] T3.P6.4: Prepare upstream PR: LR2021 variant for MeshCore
+
+### Tier 4: Two-Device Integration Tests (our board + friend's device)
+
+- [ ] T4.1: PHY packet exchange same room (LR2021 TX → friend's device RX)
+- [ ] T4.2: Reverse direction (friend's device TX → LR2021 RX)
+- [ ] T4.3: Encrypted chat (simple_secure_chat, both devices)
+- [ ] T4.4: Flood routing (2 nodes, broadcast)
+- [ ] T4.5: Companion chat end-to-end (MeshCore app on both sides)
+- [ ] T4.6: KISS modem serial bridge (send KISS DATA frame, get response)
+- [ ] T4.7: RSSI vs distance plot (0m, 10m, 50m, 100m)
+- [ ] T4.8: Max reliable range (urban, walk until >50% packet loss)
+
+### Tier 5: Physical Long-Range Tests
+
+- [ ] T5.1: Wall penetration (one device inside, one outside)
+- [ ] T5.2: Cross-building test (500m+)
+- [ ] T5.3: Budapest-Berlin via community MeshCore repeaters
+- [ ] T5.4: Overnight reliability test (12+ hours, no crashes, >95% delivery)
+- [ ] T5.5: Power consumption measurement (TX/RX/sleep current)
 
 ## KISS Modem Integration (Future)
 
