@@ -139,12 +139,17 @@ GPIO3  = LR2021 RESET
 GPIO4  = LR2021 BUSY
 GPIO5  = LR2021 DIO9 (IRQ) -- note: NiceRF exposes DIO7/8/9, not DIO1/5
 GPIO0  = ADC Supercap Voltage (or use LR2021 getVoltage())
-GPIO8  = I2C_SDA (BMP280)
-GPIO9  = I2C_SCL (BMP280)
+GPIO20 = I2C_SDA (BMP280)  -- was GPIO8, moved to avoid strapping pin issue
+GPIO21 = I2C_SCL (BMP280)  -- was GPIO9, moved to avoid strapping pin issue
 GPIO1  = FEM TX_EN (SKY66112) -- optional
-GPIO21 = SP4T CTRL_1 (Antenna Select) -- optional
-GPIO20 = SP4T CTRL_2 (Antenna Select) -- optional
 ```
+
+**IMPORTANT**: GPIO8 and GPIO9 are strapping pins on ESP32-C3:
+- GPIO8 pulled HIGH at reset → can force download boot mode
+- GPIO9 pulled LOW at reset (BOOT button) → download boot mode
+- Do NOT use GPIO8/GPIO9 for I2C or any function with pull-up resistors
+- The dev board (SuperMini) has an onboard LED on GPIO8 that causes this exact issue
+- Flight board uses GPIO20/GPIO21 for I2C instead (safe, non-strapping)
 
 ## Antenna Strategy
 - Sub-GHz (868 MHz): Wire dipole, omnidirectional, +22 dBm, ~480 km range
@@ -162,6 +167,10 @@ GPIO20 = SP4T CTRL_2 (Antenna Select) -- optional
 - Solder joints connect wing boards to hub board (no connectors on flight board)
 - Always run `idf.py build` after firmware changes to verify compilation
 - FEM and SP4T are optional; start without them for DIY/Minimal
+- **Flight board uses GPIO20/GPIO21 for I2C (NOT GPIO8/GPIO9)** — see strapping pin warning above
+- **NiceRF LoRa2021 uses crystal oscillator (XTAL), NOT TCXO** — pass `tcxoVoltage=0` to `radio->begin()`. With TCXO config, oscillator fails to start (HF_XOSC_START_ERR) causing calibrate and setFrequency to fail.
+- **RadioLib calibration error handling**: `RADIOLIB_DEBUG_BASIC` must be set in RadioLib component (not just main) for the debug branch. We patched `config()` to always continue on calibration failure.
+- **SPI debug**: `RADIOLIB_DEBUG_SPI=1` and `RADIOLIB_DEBUG_BASIC=1` in main CMakeLists are PRIVATE — they only apply to the main component, not RadioLib
 
 ## Balloon Strategy
 
