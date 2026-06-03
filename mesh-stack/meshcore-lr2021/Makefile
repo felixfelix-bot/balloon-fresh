@@ -1,13 +1,27 @@
 MESHCORE_DIR := MeshCore
 MESHCORE_REPO := https://github.com/meshcore-dev/MeshCore.git
 MESHCORE_TAG := companion-v1.15.0
-PORT ?= /dev/ttyACM0
 BAUD := 115200
+
+SUPERMINI_SERIAL ?= B0:A6:04:00:96:DC
+
+PORT := $(shell readlink -f /dev/serial/by-id/usb-Espressif_USB_JTAG_serial_debug_unit_$(SUPERMINI_SERIAL)-if00 2>/dev/null)
 
 .PHONY: setup verify-toolchain build-all build-companion build-companion-ble \
         build-companion-wifi build-chat build-kiss build-repeater build-room \
         flash-companion flash-chat flash-kiss flash-repeater monitor \
-        test-t1 clean dist-clean
+        ports detect-port test-t1 clean dist-clean
+
+ports:
+	@echo "Connected Espressif boards:"
+	@ls -la /dev/serial/by-id/ 2>/dev/null | grep Espressif || echo "  None found"
+	@echo ""
+	@echo "Target SuperMini (SER=$(SUPERMINI_SERIAL)):"
+	@if [ -n "$(PORT)" ]; then echo "  PORT=$(PORT)"; else echo "  NOT FOUND — check SUPERMINI_SERIAL or connect board"; fi
+
+detect-port:
+	@if [ -z "$(PORT)" ]; then echo "ERROR: SuperMini not found (SER=$(SUPERMINI_SERIAL))"; exit 1; fi
+	@echo "$(PORT)"
 
 setup: $(MESHCORE_DIR)
 	pip install platformio 2>/dev/null || pip3 install platformio
@@ -46,18 +60,23 @@ build-room:
 build-all: build-companion build-companion-ble build-companion-wifi build-chat build-kiss build-repeater build-room
 
 flash-companion: build-companion
+	@if [ -z "$(PORT)" ]; then echo "ERROR: SuperMini not found. Run 'make ports' to check."; exit 1; fi
 	cd $(MESHCORE_DIR) && pio run --target upload -e LR2021_companion_radio_usb --upload-port $(PORT)
 
 flash-chat: build-chat
+	@if [ -z "$(PORT)" ]; then echo "ERROR: SuperMini not found. Run 'make ports' to check."; exit 1; fi
 	cd $(MESHCORE_DIR) && pio run --target upload -e LR2021_secure_chat --upload-port $(PORT)
 
 flash-kiss: build-kiss
+	@if [ -z "$(PORT)" ]; then echo "ERROR: SuperMini not found. Run 'make ports' to check."; exit 1; fi
 	cd $(MESHCORE_DIR) && pio run --target upload -e LR2021_kiss_modem --upload-port $(PORT)
 
 flash-repeater: build-repeater
+	@if [ -z "$(PORT)" ]; then echo "ERROR: SuperMini not found. Run 'make ports' to check."; exit 1; fi
 	cd $(MESHCORE_DIR) && pio run --target upload -e LR2021_repeater --upload-port $(PORT)
 
 monitor:
+	@if [ -z "$(PORT)" ]; then echo "ERROR: SuperMini not found. Run 'make ports' to check."; exit 1; fi
 	pio device monitor -p $(PORT) -b $(BAUD)
 
 test-t1: build-all
