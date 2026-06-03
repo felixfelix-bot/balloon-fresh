@@ -117,8 +117,13 @@
 - [ ] T2.5: Passive RX test — see MeshCore adverts from Berlin community nodes (10-30 min monitoring)
 - [ ] T2.6: TX test — send advert, check if it appears on MeshCore map (needs MeshCore app)
 - [ ] T2.7: Verify all 7 targets rebuild with EspIdfHal changes
-- [ ] T3.1: Chat test — encrypted message exchange with community node
-- [ ] T3.2: KISS modem test — serial bridge verification
+- [ ] T3.P1.1-P1.6: Install meshcore-cli, connect via serial, send advert/floodadv
+- [ ] T3.P2.1-P2.5: Join Discord, check map, find Berlin community nodes
+- [ ] T3.P3.1-P3.9: Interactive monitoring with meshcore-cli, public channel message
+- [ ] T3.P4.1-P4.8: Two-device self-test (second LR2021 wired to second ESP32-C3)
+- [ ] T3.P5.1-P5.5: Outdoor portable repeater test (if indoor finds nothing)
+- [ ] T3.P6.1-P6.4: Register on MeshCore map, prepare upstream PR
+- [ ] T4.1-T4.8: Two-device integration tests (encrypted chat, range, RSSI)
 - [ ] Range test: MeshCore SF8/BW62.5 vs our tracker SF9/BW125
 - [ ] Document results in README.md
 - [ ] Upstream PR #1: LR2021 variant to MeshCore (after bench validation)
