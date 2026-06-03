@@ -1,7 +1,8 @@
 # MeshCore LR2021 Integration Plan
 
 **Created**: 2026-05-23
-**Status**: All 7 targets build. Arduino SPI not communicating with LR2021 (all-zero responses). ESP-IDF SPI works fine with same hardware. Under investigation.
+**Last Updated**: 2026-06-03
+**Status**: Radio init VERIFIED on hardware. ESP-IDF HAL bypasses Arduino SPI. Companion + repeater built.
 **Approach**: PlatformIO standalone (no fork maintenance)
 
 ## Goal
@@ -37,6 +38,16 @@ Both LR1110 and LR2021 inherit from `PhysicalLayer`. MeshCore's `RadioLibWrapper
 | DIO2 as RF switch | Common | No (NiceRF handles RF switching internally) |
 | TCXO | DIO3, configurable voltage | Internal, use 0.0 |
 | IRQ pin | DIO1 | DIO9 (must call `setDioFunction(9)`) |
+
+## Critical Finding: Arduino SPI Returns All Zeros
+
+The Arduino `SPIClass` on ESP32-C3 returns all-zero responses from the LR2021 chip, causing `-707` (RADIOLIB_ERR_SPI_CMD_FAILED). The same hardware works perfectly with ESP-IDF's `spi_bus_initialize()`.
+
+**Root cause**: The XIAO ESP32-C3 board definition (which PlatformIO uses for `board = xiao_esp32c3`) maps `MOSI=GPIO10`, which conflicts with our CS pin on GPIO10. Even with our custom board definition fixing `MOSI=GPIO7`, the Arduino SPI layer still returned zeros — likely a deeper issue with `SPIClass` initialization or DMA configuration.
+
+**Solution**: `EspIdfHal.h` — a custom RadioLib HAL that bypasses Arduino SPI entirely and uses ESP-IDF's `spi_bus_initialize()` / `spi_device_polling_transmit()` directly. This is the same approach used in our tracker firmware's `EspHalC3.h`.
+
+**Impact**: All 7 MeshCore LR2021 targets must use `EspIdfHal` instead of `SPIClass`. The `Module` constructor takes a `RadioLibHal*` parameter instead of `SPIClass&`.
 
 ## RADIOLIB_GODMODE Resolution
 
@@ -88,18 +99,21 @@ Antenna: ~8.2 cm wire soldered to Pin 9 (Sub-GHz, 868 MHz quarter-wave).
 |------|---------|
 | `Makefile` | All build/flash/test/monitor commands |
 | `README.md` | Setup, wiring, testing instructions |
-| `patches/apply-patches.sh` | Copies variant files into MeshCore checkout |
+| `patches/apply-patches.sh` | Copies variant files into MeshCore checkout + framework dir |
 
 ### Patches (copied into MeshCore clone by apply-patches.sh)
 
 | # | Target in MeshCore clone | ~Lines | Content |
 |---|--------------------------|--------|---------|
-| 1 | `src/helpers/radiolib/CustomLR2021.h` | 60 | Extends `LR2021`, `std_init()` with `setDioFunction(9)`, `isReceiving()` using `LR11X0_IRQ_*` |
-| 2 | `src/helpers/radiolib/CustomLR2021Wrapper.h` | 45 | Extends `RadioLibWrapper`, `isReceivingPacket()`, `getCurrentRSSI()`, `packetScore()` |
-| 3 | `variants/nicerf_lr2021/platformio.ini` | 80 | Build envs: companion/chat/kiss/repeater, pin defs |
-| 4 | `variants/nicerf_lr2021/target.h` | 20 | Extern declarations |
-| 5 | `variants/nicerf_lr2021/target.cpp` | 55 | `radio_init()`, SPI begin, identity generation |
-| 6 | `variants/nicerf_lr2021/NiceRFLR2021Board.h` | 65 | Board: deep sleep on GPIO5 (DIO9), battery ADC |
+| 1 | `src/helpers/radiolib/CustomLR2021.h` | 45 | Extends `LR2021`, `std_init()`, `isReceiving()` using `LR11X0_IRQ_*` |
+| 2 | `src/helpers/radiolib/CustomLR2021Wrapper.h` | 63 | Extends `RadioLibWrapper`, `isReceivingPacket()`, `getCurrentRSSI()`, `packetScore()` |
+| 3 | `variants/nicerf_lr2021/EspIdfHal.h` | 130 | Custom RadioLib HAL using ESP-IDF SPI (bypasses Arduino SPIClass) |
+| 4 | `variants/nicerf_lr2021/platformio.ini` | 80 | Build envs: companion/chat/kiss/repeater, pin defs |
+| 5 | `variants/nicerf_lr2021/target.h` | 20 | Extern declarations |
+| 6 | `variants/nicerf_lr2021/target.cpp` | 50 | `radio_init()`, ESP-IDF SPI HAL init, identity generation |
+| 7 | `variants/nicerf_lr2021/NiceRFLR2021Board.h` | 65 | Board: deep sleep on GPIO5 (DIO9), battery ADC |
+| 8 | `boards/esp32c3_supermini.json` | 30 | Board JSON: 4MB flash, DIO, USB CDC |
+| 9 | `variants/esp32c3_supermini/pins_arduino.h` | 40 | SuperMini V1 pin mapping (D0-D10 = GPIO0-GPIO10) |
 
 ## Pin Mapping (platformio.ini build flags)
 
@@ -176,13 +190,14 @@ make dist-clean         # remove MeshCore clone entirely
 
 ### Tier 2: Single-Device Hardware Tests (needs wired LR2021 board)
 
-- [ ] T2.1: Flash companion_radio to ESP32-C3 (`make flash-companion`)
-- [ ] T2.2: Serial boot output shows MeshCore boot messages
-- [ ] T2.3: Radio init succeeds (no "radio init failed" error)
+- [x] T2.1: Flash companion_radio to ESP32-C3 (`make flash-companion`)
+- [x] T2.2: Radio init succeeds (no "radio init failed" error) — **VERIFIED** via ESP-IDF HAL
+- [x] T2.3: MeshCore boot sequence completes (identity generated, SPIFFS mounted)
 - [ ] T2.4: Ed25519 identity generated and stored
 - [ ] T2.5: Noise floor calibration runs (RSSI values in log every ~2s)
-- [ ] T2.6: MeshCore serial console responsive
+- [ ] T2.6: MeshCore serial console responsive (via USB CDC)
 - [ ] T2.7: Companion app connects via USB (app.meshcore.nz or serial terminal)
+- [ ] T2.8: Repeater firmware flashes and runs on ESP32-C3 SuperMini
 
 ### Tier 3: Two-Device Integration Tests (our board + friend's device)
 
@@ -234,14 +249,19 @@ mesh-stack/meshcore-lr2021/
 ├── Makefile                    # Build/flash/test automation
 ├── README.md                   # This file
 ├── patches/
-│   ├── apply-patches.sh        # Copies files into MeshCore checkout
+│   ├── apply-patches.sh        # Copies files into MeshCore checkout + framework dir
 │   ├── CustomLR2021.h          # RadioLib radio wrapper
 │   ├── CustomLR2021Wrapper.h   # MeshCore RadioLibWrapper subclass
+│   ├── EspIdfHal.h             # ESP-IDF SPI HAL (bypasses Arduino SPIClass)
+│   ├── boards/
+│   │   └── esp32c3_supermini.json  # Board definition (4MB, DIO, USB CDC)
 │   └── variant/
 │       ├── platformio.ini      # Build environments + pin definitions
 │       ├── target.h            # Extern declarations
-│       ├── target.cpp          # Radio init + identity generation
-│       └── NiceRFLR2021Board.h # Board class (deep sleep, battery)
+│       ├── target.cpp          # Radio init via ESP-IDF HAL + identity generation
+│       ├── NiceRFLR2021Board.h # Board class (deep sleep, battery)
+│       └── esp32c3_supermini/
+│           └── pins_arduino.h  # SuperMini V1 pin mapping (D0-D10 = GPIO0-GPIO10)
 └── MeshCore/                   # Cloned by `make setup` (gitignored)
 ```
 
