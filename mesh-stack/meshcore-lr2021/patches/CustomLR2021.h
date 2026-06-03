@@ -28,7 +28,7 @@ class CustomLR2021 : public LR2021 {
     }
 
     bool std_init(SPIClass* spi = NULL) {
-      if (spi) spi->begin(P_LORA_SCLK, P_LORA_MISO, P_LORA_MOSI);
+      (void)spi;
 
       int status = begin(LORA_FREQ, LORA_BW, LORA_SF, 5, RADIOLIB_LR2021_LORA_SYNC_WORD_PRIVATE, LORA_TX_POWER, 16, 0.0);
       if (status == RADIOLIB_ERR_SPI_CMD_FAILED || status == RADIOLIB_ERR_SPI_CMD_INVALID) {

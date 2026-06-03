@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include "target.h"
+#include "EspIdfHal.h"
 
 NiceRFLR2021Board board;
 
-static SPIClass spi;
-RADIO_CLASS radio = new Module(P_LORA_NSS, P_LORA_DIO_1, P_LORA_RESET, P_LORA_BUSY, spi);
-
+static EspIdfHal hal(P_LORA_SCLK, P_LORA_MISO, P_LORA_MOSI);
+RADIO_CLASS radio(new Module(&hal, P_LORA_NSS, P_LORA_DIO_1, P_LORA_RESET, P_LORA_BUSY));
 WRAPPER_CLASS radio_driver(radio, board);
 
 ESP32RTCClock fallback_clock;
@@ -23,8 +23,8 @@ bool radio_init() {
   fallback_clock.begin();
   rtc_clock.begin(Wire);
 
-  spi.begin(P_LORA_SCLK, P_LORA_MISO, P_LORA_MOSI);
-  return radio.std_init(&spi);
+  hal.init();
+  return radio.std_init(NULL);
 }
 
 uint32_t radio_get_rng_seed() {
