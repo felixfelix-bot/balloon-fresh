@@ -20,3 +20,8 @@ idf_component_register(
     INCLUDE_DIRS "."
     REQUIRES ${COMPONENT_REQUIRES}
 )
+
+target_compile_definitions(${COMPONENT_LIB} PRIVATE
+    RADIOLIB_DEBUG_SPI=1
+    RADIOLIB_DEBUG_BASIC=1
+)

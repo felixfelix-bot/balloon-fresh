@@ -8,108 +8,25 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp32c3/rom/gpio.h"
-#include "soc/rtc.h"
-#include "soc/spi_reg.h"
-#include "soc/spi_struct.h"
 #include "driver/gpio.h"
-#include "hal/gpio_hal.h"
+#include "driver/spi_master.h"
 #include "esp_timer.h"
 #include "esp_log.h"
-#include "hal/spi_types.h"
-#include "soc/periph_defs.h"
-#include "esp_private/periph_ctrl.h"
 
-#define LOW                         (0x0)
-#define HIGH                        (0x1)
-#define INPUT                       (0x01)
-#define OUTPUT                      (0x03)
-#define RISING                      (0x01)
-#define FALLING                     (0x02)
-#define NOP()                       asm volatile ("nop")
+#define LOW    (0x0)
+#define HIGH   (0x1)
+#define INPUT  (0x01)
+#define OUTPUT (0x03)
+#define RISING (0x01)
+#define FALLING (0x02)
+#define NOP()  asm volatile ("nop")
 
-#define MATRIX_DETACH_OUT_SIG       (0x100)
-#define MATRIX_DETACH_IN_LOW_PIN    (0x30)
-
-#define ClkRegToFreq(reg)           (apb_freq / (((reg)->clkdiv_pre + 1) * ((reg)->clkcnt_n + 1)))
-
-typedef union {
-  uint32_t value;
-  struct {
-    uint32_t clkcnt_l:       6;
-    uint32_t clkcnt_h:       6;
-    uint32_t clkcnt_n:       6;
-    uint32_t clkdiv_pre:    13;
-    uint32_t clk_equ_sysclk: 1;
-  };
-} spiClk_t;
-
-static uint32_t getApbFrequency() {
-  rtc_cpu_freq_config_t conf;
-  rtc_clk_cpu_freq_get_config(&conf);
-  if(conf.freq_mhz >= 80) {
-    return(80 * MHZ);
-  }
-  return((conf.source_freq_mhz * MHZ) / conf.div);
-}
-
-static uint32_t spiFrequencyToClockDiv(uint32_t freq) {
-  uint32_t apb_freq = getApbFrequency();
-  if(freq >= apb_freq) {
-    return SPI_CLK_EQU_SYSCLK;
-  }
-
-  const spiClk_t minFreqReg = { 0x7FFFF000 };
-  uint32_t minFreq = ClkRegToFreq((spiClk_t*) &minFreqReg);
-  if(freq < minFreq) {
-    return minFreqReg.value;
-  }
-
-  uint8_t calN = 1;
-  spiClk_t bestReg = { 0 };
-  int32_t bestFreq = 0;
-  while(calN <= 0x3F) {
-    spiClk_t reg = { 0 };
-    int32_t calFreq;
-    int32_t calPre;
-    int8_t calPreVari = -2;
-
-    reg.clkcnt_n = calN;
-
-    while(calPreVari++ <= 1) {
-      calPre = (((apb_freq / (reg.clkcnt_n + 1)) / freq) - 1) + calPreVari;
-      if(calPre > 0x1FFF) {
-        reg.clkdiv_pre = 0x1FFF;
-      } else if(calPre <= 0) {
-        reg.clkdiv_pre = 0;
-      } else {
-        reg.clkdiv_pre = calPre;
-      }
-      reg.clkcnt_l = ((reg.clkcnt_n + 1) / 2);
-      calFreq = ClkRegToFreq(&reg);
-      if(calFreq == (int32_t) freq) {
-        memcpy(&bestReg, &reg, sizeof(bestReg));
-        break;
-      } else if(calFreq < (int32_t) freq) {
-        if(RADIOLIB_ABS(freq - calFreq) < RADIOLIB_ABS(freq - bestFreq)) {
-          bestFreq = calFreq;
-          memcpy(&bestReg, &reg, sizeof(bestReg));
-        }
-      }
-    }
-    if(calFreq == (int32_t) freq) {
-      break;
-    }
-    calN++;
-  }
-  return(bestReg.value);
-}
 
 class EspHalC3 : public RadioLibHal {
   public:
     EspHalC3(int8_t sck, int8_t miso, int8_t mosi)
       : RadioLibHal(INPUT, OUTPUT, LOW, HIGH, RISING, FALLING),
-      spiSCK(sck), spiMISO(miso), spiMOSI(mosi)  {
+      spiSCK(sck), spiMISO(miso), spiMOSI(mosi), csPin(-1), busyPin(-1) {
     }
 
     void init() override {
@@ -122,14 +39,12 @@ class EspHalC3 : public RadioLibHal {
 
     void pinMode(uint32_t pin, uint32_t mode) override {
       if(pin == RADIOLIB_NC) return;
-      gpio_hal_context_t gpiohal;
-      gpiohal.dev = GPIO_LL_GET_HW(GPIO_PORT_0);
       gpio_config_t conf = {
-        .pin_bit_mask = (1ULL<<pin),
+        .pin_bit_mask = (1ULL << pin),
         .mode = (gpio_mode_t)mode,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = (gpio_int_type_t)gpiohal.dev->pin[pin].int_type,
+        .intr_type = GPIO_INTR_DISABLE,
       };
       gpio_config(&conf);
     }
@@ -193,67 +108,74 @@ class EspHalC3 : public RadioLibHal {
     }
 
     void spiBegin() {
-      periph_module_enable(PERIPH_SPI2_MODULE);
-
-      this->spi->cmd.val = 0;
-      this->spi->user.val = 0;
-      this->spi->user1.val = 0;
-      this->spi->user2.val = 0;
-      this->spi->ms_dlen.val = 0;
-      this->spi->clock.val = 0;
-      this->spi->ctrl.val = 0;
-      this->spi->misc.val = 0;
-      this->spi->user.usr_mosi = 1;
-      this->spi->user.usr_miso = 1;
-      this->spi->user.doutdin = 1;
-      for(uint8_t i = 0; i < 16; i++) {
-        this->spi->data_buf[i] = 0x00000000;
+      spi_bus_config_t bus_cfg = {};
+      bus_cfg.mosi_io_num = this->spiMOSI;
+      bus_cfg.miso_io_num = this->spiMISO;
+      bus_cfg.sclk_io_num = this->spiSCK;
+      bus_cfg.quadwp_io_num = -1;
+      bus_cfg.quadhd_io_num = -1;
+      bus_cfg.max_transfer_sz = 256;
+      esp_err_t ret = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
+      if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
+        ESP_LOGE("HAL", "spi_bus_initialize failed: %s", esp_err_to_name(ret));
+        return;
       }
 
-      this->spi->misc.ck_idle_edge = 0;
-      this->spi->user.ck_out_edge = 0;
-      this->spi->ctrl.wr_bit_order = 0;
-      this->spi->ctrl.rd_bit_order = 0;
-
-      this->spi->clock.val = spiFrequencyToClockDiv(2000000);
-
-      this->pinMode(this->spiSCK, OUTPUT);
-      this->pinMode(this->spiMISO, INPUT);
-      this->pinMode(this->spiMOSI, OUTPUT);
-
-      gpio_matrix_out(this->spiSCK, FSPICLK_OUT_IDX, false, false);
-      gpio_matrix_in(this->spiMISO, FSPIQ_OUT_IDX, false);
-      gpio_matrix_out(this->spiMOSI, FSPID_IN_IDX, false, false);
+      spi_device_interface_config_t dev_cfg = {};
+      dev_cfg.mode = 0;
+      dev_cfg.clock_speed_hz = 2000000;
+      dev_cfg.spics_io_num = -1;
+      dev_cfg.queue_size = 1;
+      ret = spi_bus_add_device(SPI2_HOST, &dev_cfg, &this->spiDev);
+      if (ret != ESP_OK) {
+        ESP_LOGE("HAL", "spi_bus_add_device failed: %s", esp_err_to_name(ret));
+        return;
+      }
+      this->spiInitialized = true;
+      ESP_LOGI("HAL", "SPI initialized: MOSI=%d MISO=%d SCK=%d", this->spiMOSI, this->spiMISO, this->spiSCK);
     }
 
     void spiBeginTransaction() {}
 
     uint8_t spiTransferByte(uint8_t b) {
-      this->spi->ms_dlen.ms_data_bitlen = 7;
-      this->spi->data_buf[0] = b;
-      this->spi->cmd.usr = 1;
-      while(this->spi->cmd.usr);
-      return(this->spi->data_buf[0] & 0xFF);
+      spi_transaction_t trans = {};
+      trans.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
+      trans.length = 8;
+      trans.tx_data[0] = b;
+      esp_err_t ret = spi_device_polling_transmit(this->spiDev, &trans);
+      if (ret != ESP_OK) {
+        ESP_LOGE("HAL", "spiTransferByte failed: %s", esp_err_to_name(ret));
+        return 0xFF;
+      }
+      return trans.rx_data[0];
     }
 
     void spiTransfer(uint8_t* out, size_t len, uint8_t* in) {
       for(size_t i = 0; i < len; i++) {
-        in[i] = this->spiTransferByte(out[i]);
+        in[i] = spiTransferByte(out[i]);
       }
     }
 
     void spiEndTransaction() {}
 
     void spiEnd() {
-      gpio_matrix_out(this->spiSCK, MATRIX_DETACH_OUT_SIG, false, false);
-      gpio_matrix_in(this->spiMISO, MATRIX_DETACH_IN_LOW_PIN, false);
-      gpio_matrix_out(this->spiMOSI, MATRIX_DETACH_OUT_SIG, false, false);
-      periph_module_disable(PERIPH_SPI2_MODULE);
+      if (this->spiDev) {
+        spi_bus_remove_device(this->spiDev);
+        this->spiDev = nullptr;
+      }
+      spi_bus_free(SPI2_HOST);
+      this->spiInitialized = false;
     }
+
+    void setCsPin(int8_t pin) { this->csPin = pin; }
+    void setBusyPin(int8_t pin) { this->busyPin = pin; }
 
   private:
     int8_t spiSCK;
     int8_t spiMISO;
     int8_t spiMOSI;
-    spi_dev_t * spi = (volatile spi_dev_t *)(DR_REG_SPI2_BASE);
+    int8_t csPin;
+    int8_t busyPin;
+    spi_device_handle_t spiDev = nullptr;
+    bool spiInitialized = false;
 };

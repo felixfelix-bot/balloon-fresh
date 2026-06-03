@@ -115,15 +115,24 @@ static void blink_led(int times)
 static int16_t init_radio(void)
 {
     hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
+    hal->setCsPin(LR2021_NSS);
+    hal->setBusyPin(LR2021_BUSY);
     radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
     radio->irqDioNum = 9;
 
     ESP_LOGI(TAG, "Initializing LR2021...");
+    printf("GPIO states: BUSY(%d)=%d RST(%d)=%d NSS(%d)=%d\n",
+        (int)LR2021_BUSY, (int)gpio_get_level((gpio_num_t)LR2021_BUSY),
+        (int)LR2021_RST, (int)gpio_get_level((gpio_num_t)LR2021_RST),
+        (int)LR2021_NSS, (int)gpio_get_level((gpio_num_t)LR2021_NSS));
+    fflush(stdout);
+
     float freq_mhz = (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f;
     int16_t state = radio->begin(
         freq_mhz, 125.0,
         CONFIG_RADIO_SF, 7,
-        0x12, CONFIG_RADIO_TX_POWER_DBM, 8
+        0x12, CONFIG_RADIO_TX_POWER_DBM, 8,
+        0.0f
     );
     if (state != RADIOLIB_ERR_NONE) {
         ESP_LOGE(TAG, "LR2021 init failed: %d", state);
@@ -150,7 +159,11 @@ static void deep_sleep(uint32_t seconds)
     gpio_set_level((gpio_num_t)LED_GPIO, 0);
 
     esp_sleep_enable_timer_wakeup((uint64_t)seconds * 1000000);
-    esp_deep_sleep_start();
+    ESP_LOGI(TAG, "(deep sleep disabled for debug)");
+    while (true) {
+        cli_process();
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
 }
 
 static void cli_cmd_status(const char *args) {
@@ -353,6 +366,8 @@ static void setup_cli(void) {
 
 extern "C" void app_main(void)
 {
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
     if (rtc_first_boot) {
         ESP_LOGI(TAG, "=== Pico Balloon Tracker v0.2 ===");
 #ifdef CONFIG_ENABLE_BMP280
