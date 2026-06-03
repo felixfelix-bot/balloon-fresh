@@ -43,8 +43,12 @@ Multi-balloon mesh relay network for internet transport. Balloons at ~12 km alti
 
 ## Key Files
 - `docs/adr/012-mesh-networking-strategy.md` — Strategic architecture decision (FIPS + MeshCore + TollGate + Nostr)
+- `docs/adr/013-cluster-aware-stratorelay.md` — Cluster-aware stratorelay decision
 - `mesh-stack/INTEGRATION-ARCHITECTURE.md` — Detailed technical architecture, dual-band plan, TDMA, Nostr-over-FIPS
 - `mesh-stack/ROADMAP.md` — Full plan, link budgets, power analysis, research checklist
+- `mesh-stack/research/routing/cluster-aware-bridge.md` — Clustering algorithm analysis + MeshCore hooks
+- `mesh-stack/research/routing/meshcore-study.md` — MeshCore architecture + LR2021 port plan
+- `mesh-stack/meshcore-lr2021/` — PlatformIO build for LR2021 variant (bench test + upstream PR)
 - `docs/adr/009-antenna-strategy-v1-v2.md` — V1 omni + V2 directional decision
 - `docs/adr/010-adaptive-tx-power.md` — Adaptive TX per TDMA slot
 - `docs/power-budget.md` — Tracker + mesh relay power scenarios
@@ -75,10 +79,31 @@ Multi-balloon mesh relay network for internet transport. Balloons at ~12 km alti
 ## Current Status
 - Phase 1 tracker firmware v0.2 complete (17/17 tests pass)
 - ADR-012: FIPS + MeshCore + TollGate + Nostr strategy decided
+- ADR-013: Cluster-Aware Stratorelay decision proposed
 - INTEGRATION-ARCHITECTURE.md: detailed technical architecture documented
 - Link budget, throughput, power budget analyses complete
-- ADR-009, ADR-010, ADR-011, ADR-012 written
-- **Not started**: FIPS Transport for LoRa, MeshCore LR2021 port, Wirehair integration, Nostr-over-FIPS
+- ADR-009, ADR-010, ADR-011, ADR-012, ADR-013 written
+- MeshCore LR2021 PlatformIO port: patches ready, needs hardware testing
+- Cluster-aware bridge: research complete, algorithm designed, implementation pending
+- **Not started**: FIPS Transport for LoRa, MeshCore LR2021 bench test, Wirehair integration, Nostr-over-FIPS
+
+## StratoRelay (Cluster-Aware MeshCore Bridge)
+
+The balloon runs a smart MeshCore relay (`StratoRelayMesh`) that identifies ground node clusters via union-find on observed flood paths, elects one cluster head per cluster, and only bridges messages between clusters. Ground nodes remain completely stock.
+
+**See**: `docs/adr/013-cluster-aware-stratorelay.md`, `mesh-stack/research/routing/cluster-aware-bridge.md`
+
+**Key files** (to be created):
+- `tracker/firmware/components/meshcore/` — extracted MeshCore core (ESP-IDF)
+- `tracker/firmware/components/stratorelay/` — StratoRelayMesh + NodeTable + UnionFind + StaticBloomFilter
+
+**Build system**: Flight firmware = ESP-IDF (single MCU). Bench testing = PlatformIO (`mesh-stack/meshcore-lr2021/`).
+
+**Memory budget**: ~6.5 KB static DRAM for clustering layer (256 nodes, 32 clusters). ESP32-C3 has 258 KB free after tracker.
+
+**MeshCore version**: Pinned to `companion-v1.15.0` release tag for reproducibility.
+
+**Upstream PRs**: (1) LR2021 variant, (2) StratoRelayMesh example — two separate tightly-scoped PRs.
 
 ## Firmware Language
 Decision deferred. Options documented in INTEGRATION-ARCHITECTURE.md:

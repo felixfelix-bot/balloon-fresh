@@ -132,6 +132,8 @@ These are **incompatible** — MeshCore and our tracker firmware cannot hear eac
 
 ## Makefile Targets
 
+**MeshCore version**: Pinned to `companion-v1.15.0` release tag for reproducibility. Update `MESHCORE_TAG` in Makefile to change.
+
 ```makefile
 make setup              # pip install platformio + git clone MeshCore + apply patches
 make verify-toolchain   # build existing Xiao C3 variant (confirms toolchain works)
