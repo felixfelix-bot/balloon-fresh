@@ -1,7 +1,7 @@
 # MeshCore LR2021 Integration Plan
 
 **Created**: 2026-05-23
-**Status**: Implementation complete, bench testing in progress (Berlin)
+**Status**: All 7 targets build. Arduino SPI not communicating with LR2021 (all-zero responses). ESP-IDF SPI works fine with same hardware. Under investigation.
 **Approach**: PlatformIO standalone (no fork maintenance)
 
 ## Goal
@@ -156,23 +156,23 @@ make dist-clean         # remove MeshCore clone entirely
 
 ### Tier 0: Prerequisites (manual, tracked in Makefile)
 
-- [ ] T0.1: Install PlatformIO (`pip install platformio`, verify `pio --version`)
-- [ ] T0.2: Clone MeshCore and apply patches (`make setup`)
-- [ ] T0.3: Verify toolchain with existing variant (`make verify-toolchain`, build Xiao C3 companion)
+- [x] T0.1: Install PlatformIO (`pip install platformio`, verify `pio --version`) — PlatformIO 6.1.19
+- [x] T0.2: Clone MeshCore and apply patches (`make setup`) — tag companion-v1.15.0
+- [x] T0.3: Verify toolchain with existing variant (`make verify-toolchain`, build Xiao C3 companion) — BUILD SUCCESS
 - [ ] T0.4: Wire LR2021 to ESP32-C3_Mini_V1 (9 wires + 8.2cm antenna on Pin 9)
 - [ ] T0.5: Verify hardware with our tracker firmware (`idf.py -p /dev/ttyACM0 flash monitor`, radio init OK)
 
 ### Tier 1: Build Verification (automated, no hardware)
 
-- [ ] T1.1: CustomLR2021.h compiles (no errors)
-- [ ] T1.2: CustomLR2021Wrapper.h compiles (no errors)
-- [ ] T1.3: companion_radio USB builds for LR2021 (`make build-companion`, BIN produced)
-- [ ] T1.4: companion_radio BLE builds for LR2021 (`make build-companion-ble`, BIN produced)
-- [ ] T1.5: secure_chat builds for LR2021 (`make build-chat`, BIN produced)
-- [ ] T1.6: kiss_modem builds for LR2021 (`make build-kiss`, BIN produced)
-- [ ] T1.7: repeater builds for LR2021 (`make build-repeater`, BIN produced)
-- [ ] T1.8: room_server builds for LR2021 (`make build-room`, BIN produced)
-- [ ] T1.9: All binary sizes < 1.5 MB (fits ESP32-C3 4MB flash)
+- [x] T1.1: CustomLR2021.h compiles (no errors) — fixed: added `getSpreadingFactor()` getter
+- [x] T1.2: CustomLR2021Wrapper.h compiles (no errors) — fixed: uses `getSpreadingFactor()` instead of protected member
+- [x] T1.3: companion_radio USB builds for LR2021 (`make build-companion`, BIN produced) — 501KB flash, 136KB RAM
+- [x] T1.4: companion_radio BLE builds for LR2021 (`make build-companion-ble`, BIN produced) — 1226KB flash, 162KB RAM
+- [x] T1.5: secure_chat builds for LR2021 (`make build-chat`, BIN produced) — 485KB flash, 88KB RAM
+- [x] T1.6: kiss_modem builds for LR2021 (`make build-kiss`, BIN produced) — 457KB flash, 18KB RAM
+- [x] T1.7: repeater builds for LR2021 (`make build-repeater`, BIN produced) — 1135KB flash, 51KB RAM
+- [x] T1.8: room_server builds for LR2021 (`make build-room`, BIN produced) — 1129KB flash, 55KB RAM
+- [x] T1.9: All binary sizes < 1.5 MB (fits ESP32-C3 4MB flash)
 
 ### Tier 2: Single-Device Hardware Tests (needs wired LR2021 board)
 

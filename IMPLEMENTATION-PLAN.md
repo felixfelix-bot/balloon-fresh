@@ -87,11 +87,11 @@
 - [x] `apply-patches.sh` — Copies variant files into MeshCore clone
 
 **Bench testing (current phase)**:
-- [ ] T0.1: Install PlatformIO (`pip install platformio`)
-- [ ] T0.2: Clone MeshCore and apply patches (`make setup`)
-- [ ] T0.3: Verify toolchain with existing Xiao C3 variant (`make verify-toolchain`)
-- [ ] T1.1: Build `LR2021_companion_radio_usb` successfully
-- [ ] T1.2: Build all 7 LR2021 targets successfully (`make build-all`)
+- [x] T0.1: Install PlatformIO (`pip install platformio`) — PlatformIO 6.1.19
+- [x] T0.2: Clone MeshCore and apply patches (`make setup`) — tag companion-v1.15.0
+- [x] T0.3: Verify toolchain with existing Xiao C3 variant (`make verify-toolchain`) — BUILD SUCCESS
+- [x] T1.1: Build `LR2021_companion_radio_usb` successfully — 501KB flash, 136KB RAM
+- [x] T1.2: Build all 7 LR2021 targets successfully (`make build-all`) — all 7 pass
 - [ ] T2.1: Flash companion_radio to ESP32-C3 SuperMini
 - [ ] T2.2: Radio init succeeds (no "radio init failed" error)
 - [ ] T2.3: MeshCore serial console responsive

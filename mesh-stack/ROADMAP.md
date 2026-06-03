@@ -327,9 +327,9 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 - [x] Verify: Does MeshCore's `RadioLibWrapper` work with LR2021 via RadioLib v7.6.0?
 - [x] Create MeshCore variant for ESP32-C3 + LR2021 (pin mapping, SPI config)
 - [x] Install PlatformIO (`pip install platformio`)
-- [ ] Clone MeshCore + apply patches (`make setup`)
-- [ ] Build `LR2021_companion_radio_usb` successfully
-- [ ] Build all 7 LR2021 targets (`make build-all`)
+- [x] Clone MeshCore + apply patches (`make setup`)
+- [x] Build `LR2021_companion_radio_usb` successfully — 501KB flash, 136KB RAM
+- [x] Build all 7 LR2021 targets (`make build-all`) — all 7 pass
 - [ ] Flash to ESP32-C3 SuperMini + LR2021 dev board
 - [ ] Test: MeshCore RX in Berlin (community node adverts)
 - [ ] Test: MeshCore TX in Berlin (advert appears on map)
