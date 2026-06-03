@@ -1,5 +1,6 @@
 MESHCORE_DIR := MeshCore
 MESHCORE_REPO := https://github.com/meshcore-dev/MeshCore.git
+MESHCORE_TAG := companion-v1.15.0
 PORT ?= /dev/ttyACM0
 BAUD := 115200
 
@@ -15,7 +16,7 @@ setup: $(MESHCORE_DIR)
 	@echo "Setup complete. Run 'make verify-toolchain' to test the build."
 
 $(MESHCORE_DIR):
-	git clone --depth 1 $(MESHCORE_REPO) $(MESHCORE_DIR)
+	git clone --depth 1 --branch $(MESHCORE_TAG) $(MESHCORE_REPO) $(MESHCORE_DIR)
 	./patches/apply-patches.sh $(MESHCORE_DIR)
 
 verify-toolchain:

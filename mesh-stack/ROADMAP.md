@@ -217,6 +217,9 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 | Wirehair + sx1280-serial integration | Custom | Erasure encoding layer between fragmentation and LoRa PHY |
 | FIPS Transport trait for LoRa | Custom | Implement FIPS `Transport` over LoRa using sx1280-serial + Wirehair |
 | MeshCore LR2021 radio wrapper | Custom | Port MeshCore's `RadioLibWrapper` to LR2021 Sub-GHz via RadioLib |
+| Cluster-aware stratorelay | Custom | StratoRelayMesh: union-find clustering + bloom filter filtering + cluster head bridging |
+| Balloon telemetry over MeshCore | Custom | GPS adverts + chat telemetry + on-demand REQ/RESP |
+| MeshCore core extraction to ESP-IDF | Custom | ~1,500 lines framework-agnostic C++ for single MCU flight firmware |
 | Dual-band TDMA scheduler | Custom | Time-shares LR2021 between Sub-GHz (MeshCore) and 2.4 GHz (FIPS) |
 | Nostr-over-FIPS protocol | Custom | Simplified NIP-01 over FIPS encrypted sessions, store-and-forward |
 | microfips ESP32-C3 (RISC-V) port | `github.com/Amperstrand/microfips` | Currently tested on Xtensa (ESP32-D0WD/S3), needs RISC-V target |
@@ -236,14 +239,21 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 ### Phase 2: FIPS + MeshCore Dual-Band Flight (`mesh-stack/`)
 - Implement FIPS `Transport` trait over LoRa (sx1280-serial fragmentation + Wirehair erasure coding)
 - Port MeshCore repeater firmware to LR2021 Sub-GHz (868 MHz, SF8/BW62.5/CR8)
+- **MeshCore LR2021 bench test**: PlatformIO build, 2-node test, community mesh test
+- **MeshCore core extraction to ESP-IDF**: Single MCU flight firmware (`tracker/firmware/components/meshcore/`)
+- **Cluster-aware stratorelay**: `StratoRelayMesh` with union-find clustering + bloom filter membership
+  - Ground nodes remain stock — all intelligence on balloon
+  - Only bridge between cluster heads, prevent flood storms
+  - See `docs/adr/013-cluster-aware-stratorelay.md`
+- **Balloon telemetry over MeshCore**: GPS adverts + chat telemetry + on-demand queries
 - Implement dual-band TDMA scheduler (Sub-GHz MeshCore + 2.4 GHz FIPS)
 - GPS PPS discipline for TDMA slot boundaries
 - RTToF ranging for clock sync via RadioLib
 - Bench validation: dual-band operation, FIPS handshake over LoRa, MeshCore advert reception
 - First dual-band flight: MeshCore stratospheric repeater + FIPS mesh node
 - Coverage mapping: MeshCore advert log → mapme.sh data
-- Decide: C++/ESP-IDF or Rust/esp-rs for mesh firmware (document both, evaluate during bench work)
-- **Status: Research phase** — see `mesh-stack/INTEGRATION-ARCHITECTURE.md`
+- **Upstream PRs**: (1) LR2021 variant to MeshCore, (2) StratoRelayMesh example
+- **Status: Research phase** — see `mesh-stack/INTEGRATION-ARCHITECTURE.md`, `mesh-stack/research/routing/cluster-aware-bridge.md`
 
 ### Phase 3: Nostr Store-and-Forward + Ground Station (`mesh-stack/`)
 - Implement Nostr-over-FIPS protocol (simplified NIP-01 over FIPS encrypted sessions)
@@ -312,12 +322,27 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 - [ ] Write findings to `mesh-stack/research/fips-integration/notes.md`
 
 ### Step 5: MeshCore LR2021 Port
-- [ ] Study MeshCore radio abstraction: `https://github.com/meshcore-dev/MeshCore` — `arch/esp32/`, RadioLibWrapper
-- [ ] Verify: Does MeshCore's `RadioLibWrapper` work with LR2021 via RadioLib v7.6.0?
-- [ ] Create MeshCore variant for ESP32-C3 + LR2021 (pin mapping, SPI config)
+- [x] Study MeshCore radio abstraction: `https://github.com/meshcore-dev/MeshCore` — `arch/esp32/`, RadioLibWrapper
+- [x] Verify: Does MeshCore's `RadioLibWrapper` work with LR2021 via RadioLib v7.6.0?
+- [x] Create MeshCore variant for ESP32-C3 + LR2021 (pin mapping, SPI config)
 - [ ] Test: MeshCore repeater firmware on ESP32-C3_Mini_V1 + LoRa2021 dev board
-- [ ] Evaluate: PlatformIO build vs ESP-IDF port — effort, compatibility, maintenance
-- [ ] Write findings to `mesh-stack/research/meshcore-port/notes.md`
+- [x] Evaluate: PlatformIO build vs ESP-IDF port — **Decision: ESP-IDF for flight, PlatformIO for bench/PR**
+- [x] Write findings to `mesh-stack/research/meshcore-study.md` and `mesh-stack/research/meshcore-radiolib-wrapper-study.md`
+
+### Step 5b: Cluster-Aware Stratorelay
+- [x] Analyze MeshCore virtual hooks for subclassing (`filterRecvFloodPacket`, `allowPacketForward`, `onAdvertRecv`, `routeRecvPacket`)
+- [x] Evaluate bloom filter libraries: ArashPartow/bloom, jvirkki/libbloom, aappleby/smhasher — **Decision: custom StaticBloomFilter**
+- [x] Design union-find clustering from flood path observations
+- [x] Design cluster head election scoring (recency + SNR + stability)
+- [x] Design packet filtering logic (drop from non-heads, bridge between clusters)
+- [x] Calculate memory budget: ~6.5 KB for 256 nodes / 32 clusters on ESP32-C3
+- [x] Write findings to `mesh-stack/research/routing/cluster-aware-bridge.md`
+- [x] Write ADR-013: `docs/adr/013-cluster-aware-stratorelay.md`
+- [ ] Fly basic MeshCore repeater first → collect node density + advert frequency data
+- [ ] Tune parameters (MAX_NODES, REBUILD_INTERVAL, bloom sizes) based on flight data
+- [ ] Implement StratoRelayMesh + NodeTable + UnionFind + StaticBloomFilter as ESP-IDF component
+- [ ] Bench test with 3+ ground nodes
+- [ ] Submit upstream PR #2: StratoRelayMesh example to MeshCore
 
 ### Step 6: Nostr over FIPS over LoRa
 - [ ] Study esp32-tollgate Nostr relay implementation: `https://gitworkshop.dev/npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/git.orangesync.tech/esp32-tollgate`
