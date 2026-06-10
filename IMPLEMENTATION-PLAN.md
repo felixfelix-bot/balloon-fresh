@@ -1,7 +1,7 @@
 # Master Implementation Plan — ESP32 Balloon Tracker + Mesh Stack
 
 **Created**: 2026-05-21
-**Last Updated**: 2026-06-10 (Two-device MeshCore tests in progress, FLRC benchmark planned)
+**Last Updated**: 2026-06-10 (Phase 1 two-device tests done, FLRC firmware built, starting B.2/B.7/B.8)
 
 ## Status Legend
 
@@ -124,9 +124,13 @@
 - [x] T3.P5.1-P5.5: Outdoor test — **DONE** (Freifunk meetup, carried device + MeshCore app)
 - [ ] T3.P6.1-P3.P6.4: Register on MeshCore map, prepare upstream PR
 - [ ] T4.1-T4.8: Two-device integration tests (encrypted chat, range, RSSI)
-- [ ] P1.T3-P1.T5: Flood advert, encrypted chat, public channel (in progress)
+- [x] P1.T3-P1.T5: Flood advert, encrypted chat, public channel — **all bidirectional** ✅
 - [ ] P1.T6-P1.T7: Repeater mode test, RSSI vs distance (needs user)
-- [ ] Phase 2: FLRC throughput benchmark — firmware build in progress
+- [x] Phase 2 FLRC benchmark: firmware BUILT (6 targets, all compile) — flash + test needs user
+- [ ] P1.T8: Duration test (30 min) — in progress
+- [ ] 0.2: Additional FLRC targets (650 kbps, 2600 kbps, SF8 baseline)
+- [ ] 0.4: MeshCore ESP-IDF component extraction (B.2/B.7) — in progress
+- [ ] 0.5: StratoRelay utility classes (B.8 Phase A) — in progress
 - [ ] Document results in README.md
 - [ ] Upstream PR #1: LR2021 variant to MeshCore (after bench validation)
 
