@@ -83,9 +83,11 @@ Multi-balloon mesh relay network for internet transport. Balloons at ~12 km alti
 - INTEGRATION-ARCHITECTURE.md: detailed technical architecture documented
 - Link budget, throughput, power budget analyses complete
 - ADR-009, ADR-010, ADR-011, ADR-012, ADR-013 written
-- MeshCore LR2021 PlatformIO port: patches ready, needs hardware testing
-- Cluster-aware bridge: research complete, algorithm designed, implementation pending
-- **Not started**: FIPS Transport for LoRa, MeshCore LR2021 bench test, Wirehair integration, Nostr-over-FIPS
+- MeshCore LR2021 PlatformIO port: patches ready, hardware tested (120+ community nodes)
+- **MeshCore ESP-IDF component**: core extracted, building (41KB flash, 246KB total binary)
+- StratoRelay utility classes: 11/11 tests passing (UnionFind, NodeTable, StaticBloomFilter, ClusterHeadElector)
+- **In progress**: ESP-IDF interface stubs (EspIdfRadio, EspIdfClock, EspIdfRNG, EspIdfRTC, EspIdfBoard)
+- **Not started**: FIPS Transport for LoRa, Wirehair integration, Nostr-over-FIPS
 
 ## StratoRelay (Cluster-Aware MeshCore Bridge)
 
@@ -93,9 +95,9 @@ The balloon runs a smart MeshCore relay (`StratoRelayMesh`) that identifies grou
 
 **See**: `docs/adr/013-cluster-aware-stratorelay.md`, `mesh-stack/research/routing/cluster-aware-bridge.md`
 
-**Key files** (to be created):
-- `tracker/firmware/components/meshcore/` — extracted MeshCore core (ESP-IDF)
-- `tracker/firmware/components/stratorelay/` — StratoRelayMesh + NodeTable + UnionFind + StaticBloomFilter
+**Key files**:
+- `tracker/firmware/components/meshcore/` — extracted MeshCore core (ESP-IDF, builds OK)
+- `tracker/firmware/components/stratorelay/` — StratoRelay utilities (11/11 tests pass)
 
 **Build system**: Flight firmware = ESP-IDF (single MCU). Bench testing = PlatformIO (`mesh-stack/meshcore-lr2021/`).
 

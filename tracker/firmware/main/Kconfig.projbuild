@@ -122,3 +122,16 @@ config ENABLE_NOSTR_STORE
     help
         Enable Nostr event storage for store-and-forward mesh relay.
         Stores up to 512 events with bloom filter deduplication.
+
+config ENABLE_MESHCORE
+    bool "Enable MeshCore community mesh (ESP-IDF integration)"
+    default n
+    help
+        Enable MeshCore mesh networking. Runs a continuous mesh loop
+        instead of the tracker TX + deep sleep pattern. For bench testing
+        and StratoRelay development. Uses same LR2021 radio as tracker.
+
+config MESHCORE_NODE_NAME
+    string "MeshCore node name (max 16 chars)"
+    default "balloon-01"
+    depends on ENABLE_MESHCORE

@@ -1,7 +1,7 @@
 # Master Implementation Plan — ESP32 Balloon Tracker + Mesh Stack
 
 **Created**: 2026-05-21
-**Last Updated**: 2026-06-10 (Phase 1 two-device tests done, FLRC firmware built, starting B.2/B.7/B.8)
+**Last Updated**: 2026-06-10 (MeshCore ESP-IDF component extracted, building, interface stubs next)
 
 ## Status Legend
 
@@ -129,28 +129,36 @@
 - [x] Phase 2 FLRC benchmark: firmware BUILT (6 targets, all compile) — flash + test needs user
 - [ ] P1.T8: Duration test (30 min) — in progress
 - [ ] 0.2: Additional FLRC targets (650 kbps, 2600 kbps, SF8 baseline)
-- [ ] 0.4: MeshCore ESP-IDF component extraction (B.2/B.7) — in progress
-- [ ] 0.5: StratoRelay utility classes (B.8 Phase A) — in progress
+- [ ] 0.4: MeshCore ESP-IDF component extraction (B.2/B.7) — **core copied + adapted, building**
+- [x] 0.5: StratoRelay utility classes (B.8 Phase A) — 11/11 tests passing
 - [ ] Document results in README.md
 - [ ] Upstream PR #1: LR2021 variant to MeshCore (after bench validation)
 
 **References**: `mesh-stack/research/routing/meshcore-study.md`, `mesh-stack/meshcore-lr2021/README.md`
 
 ### B.2 MeshCore Core Extraction (ESP-IDF Flight Firmware)
-- [ ] Copy core files: Packet, Dispatcher, Mesh, Identity, Utils, helpers
-- [ ] Create `tracker/firmware/components/meshcore/` component
-- [ ] Implement `mesh::Radio` interface wrapping our RadioLib HAL
-- [ ] Implement `mesh::MillisecondClock` (esp_timer)
-- [ ] Implement `mesh::RNG` (esp_random)
-- [ ] Implement `mesh::RTCClock` (GPS time)
-- [ ] Implement `mesh::MainBoard` (battery, sleep)
-- [ ] Port `rweather/Crypto` as ESP-IDF component
-- [ ] Remove `RADIOLIB_GODMODE` dependency
-- [ ] Verify `idf.py build` passes
+- [x] Copy core files: Packet, Dispatcher, Mesh, Identity, Utils, helpers (14 files)
+- [x] Copy ed25519 C library (17 files, self-contained with own SHA512)
+- [x] Create `tracker/firmware/components/meshcore/` component with CMakeLists.txt
+- [x] Adapt Utils.cpp: dual crypto backend (mbedtls on ESP_PLATFORM, Arduino Crypto otherwise)
+- [x] Adapt Identity.cpp: replace rweather Ed25519 C++ with C ed25519 API
+- [x] Adapt Packet.cpp: dual SHA256 backend
+- [x] Guard all Stream/Arduino methods with `#ifdef ARDUINO`
+- [x] Guard SimpleMeshTables filesystem persistence with `#ifdef ARDUINO`
+- [x] Fix member init order in Dispatcher.h and Mesh.h
+- [x] Verify `idf.py build` passes — **BUILD SUCCESS** (246KB binary, 76% free)
+- [ ] Implement `EspIdfRadio` wrapping RadioLib LR2021 as `mesh::Radio`
+- [ ] Implement `EspIdfClock` (`esp_timer_get_time() / 1000`)
+- [ ] Implement `EspIdfRNG` (`esp_fill_random()`)
+- [ ] Implement `EspIdfRTC` (GPS time or `esp_timer` fallback)
+- [ ] Implement `EspIdfBoard` (battery ADC, deep sleep, reboot)
+- [ ] Wire MeshCore into `app_main.cpp` (minimal integration)
 - [ ] Unit tests for mesh routing (flood + direct)
 - [ ] Integration test: 2 nodes on ESP-IDF firmware
 
 **References**: `mesh-stack/research/routing/meshcore-study.md` Section 8
+
+**Component size**: ~41KB flash (ed25519: 27KB, MeshCore: 13KB, pktmgr: 1KB), zero heap allocations
 
 ### B.3 Wirehair Port to ESP-IDF
 - [x] Clone Wirehair repo (https://github.com/catid/wirehair)
@@ -212,20 +220,21 @@ MeshCore is PlatformIO + Arduino. Our tracker is ESP-IDF. For single-MCU flight 
 
 | ID | Task | Est. | Status |
 |---|---|---|---|
-| B.7.1 | Copy MeshCore core files to `tracker/firmware/components/meshcore/` (Packet, Dispatcher, Mesh, Identity, Utils, helpers) | 1 hr | [ ] |
-| B.7.2 | Create CMakeLists.txt for meshcore component | 30 min | [ ] |
-| B.7.3 | Port `rweather/Crypto` as `tracker/firmware/components/crypto/` ESP-IDF component (Ed25519, AES-128, SHA-256) | 2 hrs | [ ] |
+| B.7.1 | Copy MeshCore core files to `tracker/firmware/components/meshcore/` (Packet, Dispatcher, Mesh, Identity, Utils, helpers) | 1 hr | [x] |
+| B.7.2 | Create CMakeLists.txt for meshcore component | 30 min | [x] |
+| B.7.3 | Port ed25519 C library + adapt crypto (mbedtls AES/SHA256/HMAC, C ed25519 API) | 2 hrs | [x] |
 | B.7.4 | Implement `EspIdfRadio` wrapping our RadioLib HAL (shares radio with tracker via mutex) | 2 hrs | [ ] |
 | B.7.5 | Implement `EspIdfClock` (`esp_timer_get_time() / 1000`) | 15 min | [ ] |
-| B.7.6 | Implement `EspIdfRNG` (`esp_random()`) | 15 min | [ ] |
+| B.7.6 | Implement `EspIdfRNG` (`esp_fill_random()`) | 15 min | [ ] |
 | B.7.7 | Implement `EspIdfRTC` (GPS time from our gps component) | 30 min | [ ] |
 | B.7.8 | Implement `EspIdfBoard` (battery ADC, deep sleep via esp_sleep) | 1 hr | [ ] |
-| B.7.9 | Implement `StaticPoolPacketManager` (8-packet static pool, no heap) | 30 min | [ ] |
+| B.7.9 | Verify `StaticPoolPacketManager` compiles (already in meshcore core) | — | [x] |
 | B.7.10 | Remove `RADIOLIB_GODMODE` dependency (use subclass access for protected members) | 1 hr | [ ] |
-| B.7.11 | Verify `idf.py build` passes with meshcore component | 15 min | [ ] |
-| B.7.12 | Unit tests: flood routing, direct routing, encryption, identity | 2 hrs | [ ] |
-| B.7.13 | Integration test: 2 ESP32-C3 nodes running ESP-IDF MeshCore firmware | 2 hrs | [ ] |
-| B.7.14 | Memory profiling: measure actual DRAM usage, confirm < 50 KB total | 1 hr | [ ] |
+| B.7.11 | Verify `idf.py build` passes with meshcore component | 15 min | [x] |
+| B.7.12 | Wire MeshCore into `app_main.cpp` (minimal: init + loop) | 1 hr | [ ] |
+| B.7.13 | Unit tests: flood routing, direct routing, encryption, identity | 2 hrs | [ ] |
+| B.7.14 | Integration test: 2 ESP32-C3 nodes running ESP-IDF MeshCore firmware | 2 hrs | [ ] |
+| B.7.15 | Memory profiling: measure actual DRAM usage, confirm < 50 KB total | 1 hr | [ ] |
 
 **Estimated total**: ~14 hours
 
@@ -239,14 +248,14 @@ The balloon acts as a smart MeshCore relay that identifies ground node clusters,
 
 | ID | Task | Est. | Status |
 |---|---|---|---|
-| B.8.1 | Implement `StaticBloomFilter` template class (~60 lines, no deps, no heap) | 1 hr | [ ] |
-| B.8.2 | Unit test StaticBloomFilter: insert, contains, FP rate measurement (target < 1%) | 30 min | [ ] |
-| B.8.3 | Implement `NodeTable` with fixed-size array, LRU eviction, aging | 2 hrs | [ ] |
-| B.8.4 | Unit test NodeTable: insert, find-by-hash, aging timeout, overflow eviction | 1 hr | [ ] |
-| B.8.5 | Implement `UnionFind` with path compression + rank balancing | 1 hr | [ ] |
-| B.8.6 | Unit test UnionFind: union, find, separate components, path compression | 30 min | [ ] |
-| B.8.7 | Implement `ClusterHeadElector` with scoring (recency + SNR + stability) | 1.5 hrs | [ ] |
-| B.8.8 | Unit test ClusterHeadElector: election, stale fallback, score ordering | 30 min | [ ] |
+| B.8.1 | Implement `StaticBloomFilter` template class (~60 lines, no deps, no heap) | 1 hr | [x] |
+| B.8.2 | Unit test StaticBloomFilter: insert, contains, FP rate measurement (target < 1%) | 30 min | [x] |
+| B.8.3 | Implement `NodeTable` with fixed-size array, LRU eviction, aging | 2 hrs | [x] |
+| B.8.4 | Unit test NodeTable: insert, find-by-hash, aging timeout, overflow eviction | 1 hr | [x] |
+| B.8.5 | Implement `UnionFind` with path compression + rank balancing | 1 hr | [x] |
+| B.8.6 | Unit test UnionFind: union, find, separate components, path compression | 30 min | [x] |
+| B.8.7 | Implement `ClusterHeadElector` with scoring (recency + SNR + stability) | 1.5 hrs | [x] |
+| B.8.8 | Unit test ClusterHeadElector: election, stale fallback, score ordering | 30 min | [x] |
 | B.8.9 | Implement `StratoRelayMesh` class extending `mesh::Mesh` | 3 hrs | [ ] |
 | B.8.10 | Override `onAdvertRecv()`: populate NodeTable + UnionFind from advert paths | 1 hr | [ ] |
 | B.8.11 | Override `filterRecvFloodPacket()`: drop packets from non-cluster-head nodes | 1 hr | [ ] |
@@ -375,8 +384,8 @@ The balloon broadcasts its position and status via standard MeshCore adverts and
 | Wirehair fountain codes | `tracker/firmware/components/wirehair/` | Builds OK | Benchmark pending (needs hardware) |
 | PRBS23-XOR erasure coding | `tracker/firmware/components/erasure/` | Builds OK | 5/5 passed |
 | Fragmentation layer | `tracker/firmware/components/frag/` | Builds OK | 3/3 passed |
-| MeshCore core extraction | `tracker/firmware/components/meshcore/` | Not started | — |
-| StratoRelay cluster layer | `tracker/firmware/components/stratorelay/` | Not started | — |
+| MeshCore core extraction | `tracker/firmware/components/meshcore/` | **Builds OK** (246KB, ~41KB meshcore) | Interface stubs pending |
+| StratoRelay cluster layer | `tracker/firmware/components/stratorelay/` | Builds OK | **11/11 passed** |
 
 ## Build System Decision
 
