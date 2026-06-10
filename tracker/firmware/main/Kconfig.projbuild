@@ -68,6 +68,19 @@ config TX_INTERVAL_SEC
     help
         Seconds between telemetry transmissions. Longer interval = longer flight.
 
+config BENCH_TEST_MODE
+    bool "Bench test mode (continuous TX, no deep sleep)"
+    default n
+    help
+        Enable for bench testing: TX telemetry every 10 seconds in a loop
+        instead of deep sleep. Ground station can verify continuous reception.
+        Disable for flight (uses deep sleep between TX).
+
+config BENCH_TEST_INTERVAL_SEC
+    int "Bench test TX interval in seconds"
+    default 10
+    depends on BENCH_TEST_MODE
+
 config LOW_VOLTAGE_MV
     int "Low voltage threshold in millivolts"
     default 3300

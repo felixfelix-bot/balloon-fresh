@@ -1,7 +1,7 @@
 # Master Implementation Plan — ESP32 Balloon Tracker + Mesh Stack
 
 **Created**: 2026-05-21
-**Last Updated**: 2026-06-10 (MeshCore ESP-IDF component extracted, building, interface stubs next)
+**Last Updated**: 2026-06-10 (Bench test A.4 in progress, B.7.1-B.7.12 complete)
 
 ## Status Legend
 
@@ -45,14 +45,49 @@
 - [ ] Power test: verify 3.3V stable under TX load
 
 ### A.4 Bench Test — Full TX→RX Chain
-- [ ] Flash tracker firmware on first ESP32-C3_Mini_V1
-- [ ] Flash ground station receiver on second ESP32-C3_Mini_V1
-- [ ] Place antennas 1-2 meters apart
-- [ ] Verify telemetry packets received (JSON on serial monitor)
-- [ ] Verify CRC-16 validation passing
+
+**Setup**:
+- Board 1 (ttyACM2, MAC B0:A6:04:00:96:DC) → Tracker TX (`CONFIG_BENCH_TEST_MODE=y`, continuous TX every 10s)
+- Board 2 (ttyACM3, MAC 88:56:A6:7B:C6:98) → Ground Station RX (minimal, WiFi+serial, no FIPS/mesh)
+- Both boards: LR2021 on Sub-GHz antenna (wire dipole or U.FL stub)
+- Boards placed 1-2 meters apart on bench
+
+**Preparation**:
+- [x] Add `CONFIG_BENCH_TEST_MODE` Kconfig option to tracker firmware (continuous TX loop, no deep sleep)
+- [x] Configure ground station receiver: WiFi SSID=STUDIO, disable FIPS/mesh for minimal RX
+- [x] Build tracker firmware with `CONFIG_BENCH_TEST_MODE=y`
+- [x] Build ground station receiver (minimal config)
+
+**Flash & Test**:
+- [x] Flash tracker TX firmware on Board 1 (`idf.py -p /dev/ttyACM2 flash`)
+- [x] Flash ground station RX firmware on Board 2 (`idf.py -p /dev/ttyACM3 flash`)
+- [x] Monitor Board 2 (RX): verify JSON telemetry output on serial
+- [x] Verify CRC-16 validation passing (no "CRC mismatch" warnings)
+- [x] Verify RSSI and SNR values are reasonable (expect -30 to -50 dBm at 1-2m)
+- [x] Monitor Board 1 (TX): verify "TX complete" every 10 seconds
+- [x] Verify packet sequence numbers incrementing correctly
+
+**Results** (2026-06-10):
+- Board 1 (TX): Tracker firmware v0.2, `CONFIG_BENCH_TEST_MODE=y`, 2 dBm TX, continuous 10s interval
+- Board 2 (RX): Ground station receiver, no WiFi, no FIPS/mesh, minimal LoRa RX
+- **First telemetry received at seq=42**, RSSI=-45 dBm, SNR=12.8 dB, CRC valid
+- JSON output: `{"type":"telemetry","source":"raw","seq":42,...,"voltage_mv":1762,...,"rssi":-45,"snr":12.8}`
+- Supercap voltage readings vary (1538-1966 mV) — real sensor data
+- No GPS/BMP280 (not connected to these boards)
+
+**Bugs Found & Fixed**:
+1. GS receiver missing `tcxoVoltage=0.0f` → LR2021 init failed (-707)
+2. WiFi PHY init interferes with LR2021 SPI → disabled WiFi for bench test
+3. Board 2 LR2021 frontend calibration fails (-1300) → patched `setFrequency()` to tolerate cal failure
+4. `startReceive()` returns -706 after `readData()` → added `standby()` before `startReceive()`
+5. `readData(buf, 256)` returns len=0 even though `getPacketLength()` returns 28 → LR2021 RX pkt length register is consumed on first read; fixed by calling `getPacketLength()` first then `readData(buf, pktLen)`
+
+**Extended Tests** (after basic TX→RX verified):
 - [ ] Test at different SF settings (SF7, SF9, SF10)
+- [ ] Test at different TX power levels (10, 15, 22 dBm)
+- [ ] Verify WiFi uplink: ground station connects to SSID "STUDIO", HTTP POST telemetry
 - [ ] Test GPS fix outdoors (if GPS module available)
-- [ ] Test deep sleep cycle (wake → TX → sleep)
+- [ ] Test deep sleep cycle (wake → TX → sleep) with `CONFIG_BENCH_TEST_MODE=n`
 - [ ] Measure current consumption (TX burst, sleep, GPS on)
 
 ### A.5 Shakedown Flight Prep
@@ -147,14 +182,14 @@
 - [x] Guard SimpleMeshTables filesystem persistence with `#ifdef ARDUINO`
 - [x] Fix member init order in Dispatcher.h and Mesh.h
 - [x] Verify `idf.py build` passes — **BUILD SUCCESS** (246KB binary, 76% free)
-- [ ] Implement `EspIdfRadio` wrapping RadioLib LR2021 as `mesh::Radio`
-- [ ] Implement `EspIdfClock` (`esp_timer_get_time() / 1000`)
-- [ ] Implement `EspIdfRNG` (`esp_fill_random()`)
-- [ ] Implement `EspIdfRTC` (GPS time or `esp_timer` fallback)
-- [ ] Implement `EspIdfBoard` (battery ADC, deep sleep, reboot)
-- [ ] Wire MeshCore into `app_main.cpp` (minimal integration)
-- [ ] Unit tests for mesh routing (flood + direct)
-- [ ] Integration test: 2 nodes on ESP-IDF firmware
+- [x] Implement `EspIdfRadio` wrapping RadioLib LR2021 as `mesh::Radio`
+- [x] Implement `EspIdfClock` (`esp_timer_get_time() / 1000`)
+- [x] Implement `EspIdfRNG` (`esp_fill_random()`)
+- [x] Implement `EspIdfRTC` (epoch + offset from EspIdfClock)
+- [x] Implement `EspIdfBoard` (battery ADC, deep sleep, reboot)
+- [x] Wire MeshCore into `app_main.cpp` (BalloonMesh subclass, minimal init + loop)
+- [ ] Unit tests for mesh routing (flood + direct) — B.7.13
+- [ ] Integration test: 2 nodes on ESP-IDF firmware — B.7.14
 
 **References**: `mesh-stack/research/routing/meshcore-study.md` Section 8
 

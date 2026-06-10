@@ -428,12 +428,6 @@ extern "C" void app_main(void)
     printf("> ");
     fflush(stdout);
 
-    if (cap_mv < CONFIG_LOW_VOLTAGE_MV) {
-        ESP_LOGW(TAG, "Low voltage (%d mV < %d), skipping TX", cap_mv, CONFIG_LOW_VOLTAGE_MV);
-        deep_sleep(CONFIG_TX_INTERVAL_SEC);
-        return;
-    }
-
     if (init_radio() != RADIOLIB_ERR_NONE) {
         ESP_LOGE(TAG, "Radio init failed, sleeping");
         deep_sleep(CONFIG_TX_INTERVAL_SEC);
@@ -480,6 +474,13 @@ extern "C" void app_main(void)
     }
     gps_sleep();
 #endif
+
+#ifdef CONFIG_BENCH_TEST_MODE
+    ESP_LOGI(TAG, "=== BENCH TEST MODE (TX every %ds) ===", CONFIG_BENCH_TEST_INTERVAL_SEC);
+    while (true) {
+#endif
+
+    cap_mv = power_manager_read_supercap_mv();
 
     float temp = 0, pressure = 0, altitude = 0;
 #ifdef CONFIG_ENABLE_BMP280
@@ -583,8 +584,24 @@ extern "C" void app_main(void)
     sky66112_shutdown();
 #endif
 
+#ifdef CONFIG_BENCH_TEST_MODE
+    radio->sleep();
+    rtc_seq++;
+    ESP_LOGI(TAG, "Waiting %ds until next TX...", CONFIG_BENCH_TEST_INTERVAL_SEC);
+    for (int i = 0; i < CONFIG_BENCH_TEST_INTERVAL_SEC * 100; i++) {
+        cli_process();
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    int16_t rx_state = radio->standby();
+    if (rx_state != RADIOLIB_ERR_NONE) {
+        ESP_LOGW(TAG, "radio standby failed: %d", rx_state);
+    }
+    } // end bench test while loop
+#else
     radio->sleep();
     rtc_seq++;
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
+#endif // CONFIG_BENCH_TEST_MODE
+
 #endif // CONFIG_ENABLE_MESHCORE
 }

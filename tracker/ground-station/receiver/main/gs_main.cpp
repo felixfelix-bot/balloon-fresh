@@ -4,15 +4,20 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "esp_log.h"
+#if __has_include("esp_wifi.h")
+#define GS_HAS_WIFI 1
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_http_client.h"
 #include "esp_netif.h"
+#include "lwip/err.h"
+#include "lwip/sys.h"
+#else
+#define GS_HAS_WIFI 0
+#endif
 #include "nvs_flash.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
-#include "lwip/err.h"
-#include "lwip/sys.h"
 
 #include <RadioLib.h>
 #include "EspHalC3.h"
@@ -48,12 +53,6 @@ static const char *TAG = "GS_RX";
 #define CONFIG_GS_UPLINK_URL "http://localhost:8080/api/telemetry"
 #endif
 
-static EventGroupHandle_t s_wifi_event_group;
-#define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT      BIT1
-static int s_retry_count = 0;
-#define MAX_WIFI_RETRY 5
-
 static EspHalC3* hal = nullptr;
 static LR2021* radio = nullptr;
 
@@ -67,6 +66,13 @@ static bool s_fips_established = false;
 static void IRAM_ATTR on_rx_done(void) {
     flag_rx_done = true;
 }
+
+#if GS_HAS_WIFI
+static EventGroupHandle_t s_wifi_event_group;
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT      BIT1
+static int s_retry_count = 0;
+#define MAX_WIFI_RETRY 5
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                 int32_t event_id, void *event_data)
@@ -157,15 +163,19 @@ static void http_post_telemetry(const char *json)
     esp_http_client_cleanup(client);
 }
 
+#endif // GS_HAS_WIFI
+
 static void output_json(const char *json, int16_t rssi, float snr)
 {
     printf("%s\n", json);
     fflush(stdout);
     ESP_LOGI(TAG, "RSSI=%d SNR=%.1f", rssi, snr);
 
+#if GS_HAS_WIFI
     if (s_wifi_event_group && (xEventGroupGetBits(s_wifi_event_group) & WIFI_CONNECTED_BIT)) {
         http_post_telemetry(json);
     }
+#endif
 }
 
 static void handle_raw_telemetry(const uint8_t *buf, int16_t rssi, float snr)
@@ -346,7 +356,31 @@ extern "C" void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
+    hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
+    radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
+    radio->irqDioNum = 9;
+
+    ESP_LOGI(TAG, "Initializing LR2021...");
+    int16_t state = radio->begin(868.0, 125.0, 9, 7, 0x12, 22, 8, 0.0f);
+    if (state != RADIOLIB_ERR_NONE) {
+        ESP_LOGE(TAG, "LR2021 init failed: %d", state);
+        while (true) { hal->delay(1000); }
+    }
+
+    radio->setFrequency(868.0, true);
+
+    radio->setPacketReceivedAction(on_rx_done);
+
+    state = radio->startReceive();
+    if (state != RADIOLIB_ERR_NONE) {
+        ESP_LOGE(TAG, "startReceive failed: %d", state);
+        while (true) { hal->delay(1000); }
+    }
+    ESP_LOGI(TAG, "Listening on 868 MHz SF9...");
+
+#if GS_HAS_WIFI
     wifi_init_sta();
+#endif
 
 #ifdef CONFIG_GS_ENABLE_FIPS
     {
@@ -359,45 +393,35 @@ extern "C" void app_main(void)
     }
 #endif
 
-    hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
-    radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
-    radio->irqDioNum = 9;
-
-    ESP_LOGI(TAG, "Initializing LR2021...");
-    int16_t state = radio->begin(868.0, 125.0, 9, 7, 0x12, 22, 8);
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "LR2021 init failed: %d", state);
-        while (true) { hal->delay(1000); }
-    }
-
-    radio->setPacketReceivedAction(on_rx_done);
-
-    state = radio->startReceive();
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "startReceive failed: %d", state);
-        while (true) { hal->delay(1000); }
-    }
-    ESP_LOGI(TAG, "Listening on 868 MHz SF9...");
-
     while (1) {
         if (flag_rx_done) {
             flag_rx_done = false;
 
-            uint8_t buf[RX_BUF_SIZE];
-            int16_t len = radio->readData(buf, RX_BUF_SIZE);
+            size_t pktLen = radio->getPacketLength();
+            uint32_t irq = radio->getIrqStatus();
+            ESP_LOGI(TAG, "IRQ=0x%08lX pktLen=%u", (unsigned long)irq, (unsigned)pktLen);
 
-            int16_t rssi = radio->getRSSI();
-            float snr = radio->getSNR();
-
-            if (len >= 0) {
-                process_received_packet(buf, len, rssi, snr);
+            if (pktLen > 0 && pktLen <= RX_BUF_SIZE) {
+                uint8_t buf[RX_BUF_SIZE];
+                int16_t r = radio->readData(buf, pktLen);
+                int16_t rssi = radio->getRSSI();
+                float snr = radio->getSNR();
+                ESP_LOGI(TAG, "RX: readData=%d len=%u rssi=%d snr=%.1f", r, (unsigned)pktLen, rssi, snr);
+                if (r >= 0) {
+                    ESP_LOGI(TAG, "HEX: %02X %02X %02X %02X %02X %02X %02X %02X",
+                        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+                    process_received_packet(buf, (int16_t)pktLen, rssi, snr);
+                } else {
+                    ESP_LOGW(TAG, "readData failed: %d", r);
+                }
             } else {
-                ESP_LOGW(TAG, "readData failed: %d, RSSI=%d", len, rssi);
+                ESP_LOGW(TAG, "Invalid packet length: %u", (unsigned)pktLen);
             }
 
+            radio->standby();
             state = radio->startReceive();
             if (state != RADIOLIB_ERR_NONE) {
-                ESP_LOGE(TAG, "restartReceive failed: %d", state);
+                ESP_LOGE(TAG, "startReceive failed: %d", state);
             }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
