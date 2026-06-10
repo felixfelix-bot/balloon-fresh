@@ -1,8 +1,92 @@
-# Two-Device Test Plan
+# Two-Device Test Plan + Autonomous Work Plan
 
 Two ESP32-C3 SuperMini V1 boards, each with NiceRF LoRa2021 module.
-Board 1: `/dev/ttyACM2` (serial `B0:A6:04:00:96:DC`) — original board
-Board 2: `/dev/ttyACM3` (serial `88:56:A6:7B:C6:98`) — second board
+Board 1: `/dev/ttyACM2` (serial `B0:A6:04:00:96:DC`) — original board (`D60BE809`)
+Board 2: `/dev/ttyACM3` (serial `88:56:A6:7B:C6:98`) — second board (`53A53B5D`)
+
+---
+
+## Phase 0: Autonomous Work While User Away
+
+These tasks can be completed without the user present (boards stay connected on USB).
+
+### 0.1 Duration/Stability Test (~30 min)
+
+- [ ] P0.T1: Start `meshcli msgs_subscribe` logging for 30 min on Board 1 → `logs/duration_test_b1.log`
+- [ ] P0.T2: Start `meshcli msgs_subscribe` logging for 30 min on Board 2 → `logs/duration_test_b2.log`
+- [ ] P0.T3: Send adverts from both boards at start
+- [ ] P0.T4: After 30 min, check `meshcli contacts` on both boards — note counts
+- [ ] P0.T5: Verify no errors/crashes in logs
+- [ ] P0.T6: Update results table below
+
+### 0.2 Additional FLRC Test Targets (~15 min)
+
+- [ ] P0.F1: Add `flrc_tx_650` / `flrc_rx_650` (868 MHz, 650 kbps, +22 dBm)
+- [ ] P0.F2: Add `flrc_tx_24_max` / `flrc_rx_24_max` (2.4 GHz, 2600 kbps, +12 dBm)
+- [ ] P0.F3: Add `lora_tx_sf8` / `lora_rx_sf8` (868 MHz, SF8/BW62.5, MeshCore PHY)
+- [ ] P0.F4: Build all new targets, verify compilation
+- [ ] P0.F5: Add Makefile targets for flash/monitor
+
+### 0.3 flrc-test/README.md (~10 min)
+
+- [ ] P0.R1: Create README with wiring, build/flash commands, test procedure, results template
+
+### 0.4 MeshCore ESP-IDF Component Extraction (B.2/B.7, ~4-6 hrs)
+
+#### 4A: Copy + Adapt Core Files (~2 hrs)
+
+- [ ] 4A.1: Create `tracker/firmware/components/meshcore/` directory
+- [ ] 4A.2: Copy `MeshCore.h` — wrap `Arduino.h` in `#ifdef ARDUINO`, add `ESP_LOG` macros
+- [ ] 4A.3: Copy `Packet.h/.cpp` — replace `SHA256.h` with `mbedtls/sha256.h`
+- [ ] 4A.4: Copy `Dispatcher.h/.cpp` — wrap `Arduino.h` in `#ifdef`
+- [ ] 4A.5: Copy `Mesh.h/.cpp` — already clean, minimal changes
+- [ ] 4A.6: Copy `Identity.h/.cpp` — `#ifdef` out `Stream&` methods
+- [ ] 4A.7: Copy `Utils.h/.cpp` — replace `AES.h`/`SHA256.h` with mbedTLS stubs
+- [ ] 4A.8: Copy `StaticPoolPacketManager.h/.cpp` — clean, no changes
+- [ ] 4A.9: Copy `SimpleMeshTables.h` — clean, no changes
+- [ ] 4A.10: Create `CMakeLists.txt` for meshcore component
+
+#### 4B: Crypto Adaptation (~1 hr)
+
+- [ ] 4B.1: Create `tracker/firmware/components/crypto/` directory
+- [ ] 4B.2: Extract `ed25519.c`/`ed25519.h` from rweather/Crypto (~2,000 lines)
+- [ ] 4B.3: Implement AES-128 ECB wrapper using `mbedtls/aes.h`
+- [ ] 4B.4: Implement SHA-256 wrapper using `mbedtls/sha256.h`
+- [ ] 4B.5: Implement HMAC-SHA-256 wrapper using `mbedtls/md.h`
+- [ ] 4B.6: Create `CMakeLists.txt` for crypto component with `REQUIRES mbedtls`
+
+#### 4C: ESP-IDF Interface Implementations (~1 hr)
+
+- [ ] 4C.1: Create `tracker/firmware/components/meshcore/esp_idf/` directory
+- [ ] 4C.2: `EspIdfRadio.h/.cpp` — `mesh::Radio` wrapping RadioLib HAL with mutex
+- [ ] 4C.3: `EspIdfClock.h` — `mesh::MillisecondClock` via `esp_timer_get_time()`
+- [ ] 4C.4: `EspIdfRNG.h` — `mesh::RNG` via `esp_random()`
+- [ ] 4C.5: `EspIdfRTC.h` — `mesh::RTCClock` via GPS time
+- [ ] 4C.6: `EspIdfBoard.h` — `mesh::MainBoard` (battery ADC, reboot)
+
+#### 4D: Build Verification (~1 hr)
+
+- [ ] 4D.1: Update main `CMakeLists.txt` to include meshcore + crypto components
+- [ ] 4D.2: Run `idf.py build` — fix compilation errors iteratively
+- [ ] 4D.3: Verify flash size within budget (< 4 MB)
+- [ ] 4D.4: Verify DRAM usage within budget (< 150 KB static)
+- [ ] 4D.5: Tag build (e.g., `v0.4.0-meshcore-espidf`) if successful
+
+### 0.5 StratoRelay Clustering Layer — Independent Utilities (B.8 Phase A, ~2 hrs)
+
+These have no MeshCore dependency — pure algorithm classes:
+
+- [ ] 5A.1: Create `tracker/firmware/components/stratorelay/` directory
+- [ ] 5A.2: Implement `StaticBloomFilter<N, FP>` (~60 lines) — `StaticBloomFilter.h`
+- [ ] 5A.3: Unit test StaticBloomFilter: insert, contains, FP rate, clear
+- [ ] 5A.4: Implement `UnionFind` with path compression + rank (~50 lines) — `UnionFind.h`
+- [ ] 5A.5: Unit test UnionFind: union, find, separate components, path compression
+- [ ] 5A.6: Implement `NodeTable<N>` with LRU eviction + aging (~120 lines) — `NodeTable.h`
+- [ ] 5A.7: Unit test NodeTable: insert, find, aging, overflow eviction, update
+- [ ] 5A.8: Implement `ClusterHeadElector` with scoring (~80 lines) — `ClusterHeadElector.h`
+- [ ] 5A.9: Unit test ClusterHeadElector: election, stale fallback, score ordering
+- [ ] 5A.10: Create `CMakeLists.txt` for stratorelay component
+- [ ] 5A.11: Run `idf.py build` — verify compilation
 
 ## Phase 1: MeshCore Two-Device LoRa Test
 
