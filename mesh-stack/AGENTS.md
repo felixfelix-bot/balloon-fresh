@@ -84,9 +84,10 @@ Multi-balloon mesh relay network for internet transport. Balloons at ~12 km alti
 - Link budget, throughput, power budget analyses complete
 - ADR-009, ADR-010, ADR-011, ADR-012, ADR-013 written
 - MeshCore LR2021 PlatformIO port: patches ready, hardware tested (120+ community nodes)
-- **MeshCore ESP-IDF component**: core extracted, building (41KB flash, 246KB total binary)
+- **MeshCore ESP-IDF component**: core extracted + all interfaces + BalloonMesh integration, builds OK (330KB with MeshCore, 246KB without)
 - StratoRelay utility classes: 11/11 tests passing (UnionFind, NodeTable, StaticBloomFilter, ClusterHeadElector)
-- **In progress**: ESP-IDF interface stubs (EspIdfRadio, EspIdfClock, EspIdfRNG, EspIdfRTC, EspIdfBoard)
+- **Done**: B.7.1–B.7.12 all complete (core extraction, ed25519, crypto adapt, EspIdfRadio/Clock/RNG/RTC/Board, BalloonMesh subclass, build verified)
+- **Next**: B.7.13–B.7.15 (unit tests, 2-node integration test, memory profiling)
 - **Not started**: FIPS Transport for LoRa, Wirehair integration, Nostr-over-FIPS
 
 ## StratoRelay (Cluster-Aware MeshCore Bridge)

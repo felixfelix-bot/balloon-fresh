@@ -223,15 +223,15 @@ MeshCore is PlatformIO + Arduino. Our tracker is ESP-IDF. For single-MCU flight 
 | B.7.1 | Copy MeshCore core files to `tracker/firmware/components/meshcore/` (Packet, Dispatcher, Mesh, Identity, Utils, helpers) | 1 hr | [x] |
 | B.7.2 | Create CMakeLists.txt for meshcore component | 30 min | [x] |
 | B.7.3 | Port ed25519 C library + adapt crypto (mbedtls AES/SHA256/HMAC, C ed25519 API) | 2 hrs | [x] |
-| B.7.4 | Implement `EspIdfRadio` wrapping our RadioLib HAL (shares radio with tracker via mutex) | 2 hrs | [ ] |
-| B.7.5 | Implement `EspIdfClock` (`esp_timer_get_time() / 1000`) | 15 min | [ ] |
-| B.7.6 | Implement `EspIdfRNG` (`esp_fill_random()`) | 15 min | [ ] |
-| B.7.7 | Implement `EspIdfRTC` (GPS time from our gps component) | 30 min | [ ] |
-| B.7.8 | Implement `EspIdfBoard` (battery ADC, deep sleep via esp_sleep) | 1 hr | [ ] |
+| B.7.4 | Implement `EspIdfRadio` wrapping our RadioLib HAL (shares radio with tracker via mutex) | 2 hrs | [x] |
+| B.7.5 | Implement `EspIdfClock` (`esp_timer_get_time() / 1000`) | 15 min | [x] |
+| B.7.6 | Implement `EspIdfRNG` (`esp_fill_random()`) | 15 min | [x] |
+| B.7.7 | Implement `EspIdfRTC` (epoch + offset from EspIdfClock) | 30 min | [x] |
+| B.7.8 | Implement `EspIdfBoard` (battery ADC, deep sleep via esp_sleep) | 1 hr | [x] |
 | B.7.9 | Verify `StaticPoolPacketManager` compiles (already in meshcore core) | — | [x] |
-| B.7.10 | Remove `RADIOLIB_GODMODE` dependency (use subclass access for protected members) | 1 hr | [ ] |
+| B.7.10 | Remove `RADIOLIB_GODMODE` dependency (use subclass access for protected members) | 1 hr | [x] |
 | B.7.11 | Verify `idf.py build` passes with meshcore component | 15 min | [x] |
-| B.7.12 | Wire MeshCore into `app_main.cpp` (minimal: init + loop) | 1 hr | [ ] |
+| B.7.12 | Wire MeshCore into `app_main.cpp` (minimal: init + loop, BalloonMesh subclass) | 1 hr | [x] |
 | B.7.13 | Unit tests: flood routing, direct routing, encryption, identity | 2 hrs | [ ] |
 | B.7.14 | Integration test: 2 ESP32-C3 nodes running ESP-IDF MeshCore firmware | 2 hrs | [ ] |
 | B.7.15 | Memory profiling: measure actual DRAM usage, confirm < 50 KB total | 1 hr | [ ] |
@@ -384,7 +384,7 @@ The balloon broadcasts its position and status via standard MeshCore adverts and
 | Wirehair fountain codes | `tracker/firmware/components/wirehair/` | Builds OK | Benchmark pending (needs hardware) |
 | PRBS23-XOR erasure coding | `tracker/firmware/components/erasure/` | Builds OK | 5/5 passed |
 | Fragmentation layer | `tracker/firmware/components/frag/` | Builds OK | 3/3 passed |
-| MeshCore core extraction | `tracker/firmware/components/meshcore/` | **Builds OK** (246KB, ~41KB meshcore) | Interface stubs pending |
+| MeshCore core extraction | `tracker/firmware/components/meshcore/` | **Builds OK** (330KB with MeshCore, 246KB without) | B.7.13-B.7.15 pending (unit tests, integration, profiling) |
 | StratoRelay cluster layer | `tracker/firmware/components/stratorelay/` | Builds OK | **11/11 passed** |
 
 ## Build System Decision
