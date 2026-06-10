@@ -1,7 +1,7 @@
 # Master Implementation Plan — ESP32 Balloon Tracker + Mesh Stack
 
 **Created**: 2026-05-21
-**Last Updated**: 2026-06-03 (MeshCore LR2021 radio init verified on hardware)
+**Last Updated**: 2026-06-10 (Two-device MeshCore tests in progress, FLRC benchmark planned)
 
 ## Status Legend
 
@@ -113,18 +113,20 @@
 - [x] T2.1: Flash companion_radio to ESP32-C3 SuperMini (`/dev/ttyACM2`) — FLASH SUCCESS
 - [x] T2.2: Radio init succeeds — **VERIFIED** (was -707 with Arduino SPI, now OK with ESP-IDF HAL)
 - [x] T2.3: MeshCore boot sequence completes — VERIFIED (companion running, listening on 869.618 MHz)
-- [ ] T2.4: Repeater firmware builds and flashes with EspIdfHal
-- [ ] T2.5: Passive RX test — see MeshCore adverts from Berlin community nodes (10-30 min monitoring)
-- [ ] T2.6: TX test — send advert, check if it appears on MeshCore map (needs MeshCore app)
-- [ ] T2.7: Verify all 7 targets rebuild with EspIdfHal changes
-- [ ] T3.P1.1-P1.6: Install meshcore-cli, connect via serial, send advert/floodadv
-- [ ] T3.P2.1-P2.5: Join Discord, check map, find Berlin community nodes
-- [ ] T3.P3.1-P3.9: Interactive monitoring with meshcore-cli, public channel message
-- [ ] T3.P4.1-P4.8: Two-device self-test (second LR2021 wired to second ESP32-C3)
-- [ ] T3.P5.1-P5.5: Outdoor portable repeater test (if indoor finds nothing)
-- [ ] T3.P6.1-P6.4: Register on MeshCore map, prepare upstream PR
+- [x] T2.4: Repeater firmware builds and flashes with EspIdfHal
+- [x] T2.5: Passive RX test — **70+ Berlin community nodes discovered at Freifunk meetup**
+- [x] T2.6: TX test — advert sent, community interaction bidirectional confirmed
+- [x] T2.7: All 7 targets rebuild with EspIdfHal changes
+- [x] T3.P1.1-P1.6: meshcore-cli v1.5.7 installed, serial connected, adverts sent
+- [x] T3.P2.1-P2.5: Community discovery — 70+ nodes found at Freifunk Berlin meetup
+- [x] T3.P3.1-P3.9: Interactive monitoring — no nodes indoors, but Freifunk meetup successful
+- [~] T3.P4.1-P4.8: Two-device self-test — P4.1-P4.5 done (adverts bidirectional), P4.6-P4.8 pending
+- [x] T3.P5.1-P5.5: Outdoor test — **DONE** (Freifunk meetup, carried device + MeshCore app)
+- [ ] T3.P6.1-P3.P6.4: Register on MeshCore map, prepare upstream PR
 - [ ] T4.1-T4.8: Two-device integration tests (encrypted chat, range, RSSI)
-- [ ] Range test: MeshCore SF8/BW62.5 vs our tracker SF9/BW125
+- [ ] P1.T3-P1.T5: Flood advert, encrypted chat, public channel (in progress)
+- [ ] P1.T6-P1.T7: Repeater mode test, RSSI vs distance (needs user)
+- [ ] Phase 2: FLRC throughput benchmark — firmware build in progress
 - [ ] Document results in README.md
 - [ ] Upstream PR #1: LR2021 variant to MeshCore (after bench validation)
 

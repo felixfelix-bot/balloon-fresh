@@ -251,11 +251,11 @@ make dist-clean         # remove MeshCore clone entirely
 
 Requires wiring a second LR2021 to another ESP32-C3 (20x ESP32-C3_Mini_V1 owned, 4x LR2021 owned).
 
-- [ ] T3.P4.1: Wire second LR2021 to second ESP32-C3_Mini_V1 (same pin mapping)
-- [ ] T3.P4.2: Flash companion_radio_usb on second device
-- [ ] T3.P4.3: Place devices 2-5 meters apart
-- [ ] T3.P4.4: From device 1: `meshcli -s /dev/ttyACM2 advert`
-- [ ] T3.P4.5: Check device 2 serial output for received advert
+- [x] T3.P4.1: Wire second LR2021 to second ESP32-C3_Mini_V1 (same pin mapping)
+- [x] T3.P4.2: Flash companion_radio_usb on second device — Board 2: `53A53B5D` on `/dev/ttyACM3`
+- [x] T3.P4.3: Place devices 2-5 meters apart
+- [x] T3.P4.4: From device 1: `meshcli -s /dev/ttyACM2 advert` → Board 2 sees D60BE809 in contacts ✅
+- [x] T3.P4.5: Check device 2 serial output for received advert — **bidirectional adverts confirmed**
 - [ ] T3.P4.6: Test encrypted chat between the two devices
 - [ ] T3.P4.7: Test repeater firmware on one device, companion on other
 - [ ] T3.P4.8: Verify RSSI/SNR values reported by both devices
@@ -264,11 +264,11 @@ Requires wiring a second LR2021 to another ESP32-C3 (20x ESP32-C3_Mini_V1 owned,
 
 Repeater firmware runs headless — power from USB battery pack, no computer needed.
 
-- [ ] T3.P5.1: Flash repeater firmware: `make flash-repeater`
-- [ ] T3.P5.2: Power from USB battery pack, place outdoors (balcony/window/rooftop)
-- [ ] T3.P5.3: Run `make monitor` or `python3 monitor.py /dev/ttyACM2 1800` for 30+ min
-- [ ] T3.P5.4: Bring back, check serial log for any received adverts or packets
-- [ ] T3.P5.5: Suggested locations: Tempelhofer Feld, Teufelsberg, balcony facing south
+- [x] T3.P5.1: Flash repeater firmware: `make flash-repeater` — used companion + MeshCore app instead
+- [x] T3.P5.2: Power from USB battery pack, place outdoors (balcony/window/rooftop) — brought to Freifunk meetup
+- [x] T3.P5.3: Run monitoring — **70+ community nodes discovered** at Freifunk Berlin
+- [x] T3.P5.4: Check results — bidirectional community interaction confirmed
+- [x] T3.P5.5: Location: Freifunk meetup, Berlin
 
 #### Phase 6: Map Registration & Community Engagement
 
@@ -276,6 +276,24 @@ Repeater firmware runs headless — power from USB battery pack, no computer nee
 - [ ] T3.P6.2: Add node to MeshCore map (see FAQ 5.12)
 - [ ] T3.P6.3: Post in Discord #show-and-tell: "Custom LR2021 + ESP32-C3 MeshCore node working"
 - [ ] T3.P6.4: Prepare upstream PR: LR2021 variant for MeshCore
+
+### Tier 3.5: FLRC Throughput Benchmark (mesh-stack/flrc-test/)
+
+**Objective**: Measure actual FLRC throughput at 868 MHz and 2.4 GHz, compare with LoRa baselines.
+**Firmware**: Custom PlatformIO project in `mesh-stack/flrc-test/`, using RadioLib FLRC API + EspIdfHal.
+
+- [ ] FLRC.S1: Create `mesh-stack/flrc-test/` PlatformIO project
+- [ ] FLRC.S2: Port EspIdfHal.h from meshcore-lr2021 project
+- [ ] FLRC.S3: Implement TX firmware (configurable freq, bitrate, packet count, payload size)
+- [ ] FLRC.S4: Implement RX firmware (receive, count packets, measure RSSI/SNR, report stats)
+- [ ] FLRC.S5: Build and verify both TX/RX configs compile
+- [ ] FLRC.T1: FLRC 868 MHz @ 325 kbps (1000 pkts, 50B each)
+- [ ] FLRC.T2: FLRC 868 MHz @ 260 kbps (1000 pkts, 50B each)
+- [ ] FLRC.T3: FLRC 2.4 GHz @ 1300 kbps (1000 pkts, 50B each) — FIPS target rate
+- [ ] FLRC.T4: FLRC 2.4 GHz @ 2600 kbps (1000 pkts, 50B each) — max throughput
+- [ ] FLRC.T5: LoRa 868 MHz SF9/BW125 baseline (1000 pkts, 50B each) — tracker comparison
+- [ ] FLRC.T6: LoRa 868 MHz SF8/BW62.5 baseline (1000 pkts, 50B each) — MeshCore comparison
+- [ ] FLRC.D1-D6: Distance tests at 2m, 5m, 10m, 20m, 50m, 100m (needs user)
 
 ### Tier 4: Two-Device Integration Tests (our board + friend's device)
 
