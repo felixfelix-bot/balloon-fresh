@@ -14,6 +14,20 @@
 #include <RadioLib.h>
 #include "EspHalC3.h"
 
+#ifdef CONFIG_ENABLE_MESHCORE
+#include <Mesh.h>
+#include <StaticPoolPacketManager.h>
+#include <SimpleMeshTables.h>
+#include <EspIdfInterfaces.h>
+
+class BalloonMesh : public mesh::Mesh {
+public:
+    BalloonMesh(mesh::Radio& radio, mesh::MillisecondClock& ms, mesh::RNG& rng,
+                mesh::RTCClock& rtc, mesh::PacketManager& mgr, mesh::MeshTables& tables)
+        : Mesh(radio, ms, rng, rtc, mgr, tables) {}
+};
+#endif
+
 extern "C" {
 #include "telemetry.h"
 #ifdef CONFIG_ENABLE_BMP280
@@ -513,6 +527,30 @@ extern "C" void app_main(void)
     sky66112_tx_enable();
 #endif
 
+#ifdef CONFIG_ENABLE_MESHCORE
+    ESP_LOGI(TAG, "Starting MeshCore mesh...");
+
+    static mesh::EspIdfClock meshClock;
+    static mesh::EspIdfRNG meshRNG;
+    static mesh::EspIdfBoard meshBoard;
+    static mesh::EspIdfRTC meshRTC;
+    static mesh::EspIdfRadio meshRadio(*radio, meshBoard);
+    static StaticPoolPacketManager meshPktMgr(8);
+    static SimpleMeshTables meshTables;
+
+    static mesh::LocalIdentity meshIdentity(&meshRNG);
+
+    static BalloonMesh mesh(meshRadio, meshClock, meshRNG, meshRTC, meshPktMgr, meshTables);
+    mesh.begin();
+    ESP_LOGI(TAG, "MeshCore started, running loop...");
+
+    while (true) {
+        mesh.loop();
+        cli_process();
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+#else
+
 #ifdef CONFIG_ENABLE_MESH
     mesh_adapter_config_t mesh_cfg = {
         .send_fn = mesh_radio_send,
@@ -548,4 +586,5 @@ extern "C" void app_main(void)
     radio->sleep();
     rtc_seq++;
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
+#endif // CONFIG_ENABLE_MESHCORE
 }

@@ -15,10 +15,16 @@ if(CONFIG_ENABLE_NOSTR_STORE)
     list(APPEND COMPONENT_REQUIRES nostr_store)
 endif()
 
+if(CONFIG_ENABLE_MESHCORE)
+    list(APPEND COMPONENT_REQUIRES meshcore)
+    message(STATUS "MeshCore enabled, adding meshcore to REQUIRES")
+endif()
+
 idf_component_register(
     SRCS "app_main.cpp"
     INCLUDE_DIRS "."
     REQUIRES ${COMPONENT_REQUIRES}
+    PRIV_REQUIRES meshcore
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
