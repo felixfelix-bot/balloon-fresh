@@ -29,12 +29,12 @@ struct AutoTest {
 };
 
 static const AutoTest auto_tests[] = {
-    { "L1-868",   AUTO_LORA, 868.0f,  0,    9, 125.0f, 7,     22, 28,  10, 1000, 8 },
-    { "F1-868",   AUTO_FLRC, 868.0f,  1300, 0, 0.0f,   0x02,  22, 100, 100, 10,   16 },
     { "F2-868",   AUTO_FLRC, 868.0f,  2600, 0, 0.0f,   0x02,  22, 100, 100, 10,   16 },
+    { "F1-868",   AUTO_FLRC, 868.0f,  1300, 0, 0.0f,   0x02,  22, 100, 100, 10,   16 },
     { "2G4-F1",   AUTO_FLRC, 2450.0f, 1300, 0, 0.0f,   0x02,  12, 100, 100, 10,   16 },
     { "2G4-F2",   AUTO_FLRC, 2450.0f, 2600, 0, 0.0f,   0x02,  12, 100, 100, 10,   16 },
     { "BURST",    AUTO_FLRC, 868.0f,  2600, 0, 0.0f,   0x02,  22, 200, 200, 0,    16 },
+    { "L1-868",   AUTO_LORA, 868.0f,  0,    9, 125.0f, 7,     22, 28,  10, 1000, 8 },
 };
 
 static inline void build_marker(uint8_t *buf, uint8_t type, uint8_t test_id,

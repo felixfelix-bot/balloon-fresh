@@ -160,7 +160,7 @@ static void runAutoRx() {
     uint32_t rxPayloadCorrupt = 0;
     uint32_t testStartMs = 0;
 
-    radio->beginFLRC(868.0f, 2600, RADIOLIB_LR2021_FLRC_CR_3_4, 22, 16, RADIOLIB_SHAPING_0_5, 0.0f);
+    radio->beginFLRC(868.0f, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, 22, 16, RADIOLIB_SHAPING_0_5, 0.0f);
     radio->setPacketReceivedAction(onRxIrq);
     radio->startReceive();
     ESP_LOGI(TAG, "Listening...");
@@ -266,7 +266,7 @@ static void runAutoRx() {
                     inTest = false;
 
                     radio->standby();
-                    radio->beginFLRC(868.0f, 2600, RADIOLIB_LR2021_FLRC_CR_3_4, 22, 16, RADIOLIB_SHAPING_0_5, 0.0f);
+                    radio->beginFLRC(868.0f, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, 22, 16, RADIOLIB_SHAPING_0_5, 0.0f);
                     radio->setPacketReceivedAction(onRxIrq);
                     radio->startReceive();
 
