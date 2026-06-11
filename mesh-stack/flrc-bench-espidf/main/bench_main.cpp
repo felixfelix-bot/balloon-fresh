@@ -1,3 +1,5 @@
+#if !defined(CONFIG_BENCH_MODE_AUTONOMOUS_TX) && !defined(CONFIG_BENCH_MODE_AUTONOMOUS_RX)
+
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -19,9 +21,9 @@ static const char *TAG = "BENCH";
 #define LR2021_RST   3
 #define LR2021_DIO9  5
 
-static EspHalC3 *hal = nullptr;
-static Module *mod = nullptr;
-static LR2021 *radio = nullptr;
+static EspHalC3 *hal __attribute__((unused)) = nullptr;
+static Module *mod __attribute__((unused)) = nullptr;
+static LR2021 *radio __attribute__((unused)) = nullptr;
 
 enum BenchMode { MODE_FLRC, MODE_LORA };
 enum BenchRole { ROLE_NONE, ROLE_TX, ROLE_RX };
@@ -387,7 +389,7 @@ static void processCommand(const char *cmd) {
 static char cmdBuf[CMD_BUF_SIZE];
 static uint16_t cmdIdx = 0;
 
-static void stdin_read_task(void *arg) {
+static void __attribute__((unused)) stdin_read_task(void *arg) {
     while (true) {
         int c = fgetc(stdin);
         if (c != EOF) {
@@ -405,6 +407,11 @@ static void stdin_read_task(void *arg) {
         }
     }
 }
+
+#ifndef CONFIG_BENCH_MODE_AUTONOMOUS_TX
+#ifndef CONFIG_BENCH_MODE_AUTONOMOUS_RX
+
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 extern "C" void app_main() {
     ESP_LOGI(TAG, "=== LR2021 ESP-IDF Benchmarker v1.1 ===");
@@ -424,3 +431,8 @@ extern "C" void app_main() {
 
     xTaskCreate(stdin_read_task, "cmd", 4096, NULL, 5, NULL);
 }
+
+#endif
+#endif
+
+#endif // guard for whole file

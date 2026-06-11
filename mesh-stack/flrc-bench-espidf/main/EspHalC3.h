@@ -115,7 +115,7 @@ class EspHalC3 : public RadioLibHal {
       bus_cfg.sclk_io_num = this->spiSCK;
       bus_cfg.quadwp_io_num = -1;
       bus_cfg.quadhd_io_num = -1;
-      bus_cfg.max_transfer_sz = 256;
+      bus_cfg.max_transfer_sz = 512;
       esp_err_t ret = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
       if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
         ESP_LOGE("HAL", "spi_bus_initialize failed: %s", esp_err_to_name(ret));
@@ -124,7 +124,7 @@ class EspHalC3 : public RadioLibHal {
 
       spi_device_interface_config_t dev_cfg = {};
       dev_cfg.mode = 0;
-      dev_cfg.clock_speed_hz = 2000000;
+      dev_cfg.clock_speed_hz = 18000000;
       dev_cfg.spics_io_num = -1;
       dev_cfg.queue_size = 1;
       ret = spi_bus_add_device(SPI2_HOST, &dev_cfg, &this->spiDev);
@@ -152,8 +152,15 @@ class EspHalC3 : public RadioLibHal {
     }
 
     void spiTransfer(uint8_t* out, size_t len, uint8_t* in) {
-      for(size_t i = 0; i < len; i++) {
-        in[i] = spiTransferByte(out[i]);
+      if (len == 0) return;
+      spi_transaction_t trans = {};
+      trans.length = len * 8;
+      trans.tx_buffer = out;
+      trans.rx_buffer = in;
+      esp_err_t ret = spi_device_polling_transmit(this->spiDev, &trans);
+      if (ret != ESP_OK) {
+        ESP_LOGE("HAL", "spiTransfer failed: %s", esp_err_to_name(ret));
+        memset(in, 0xFF, len);
       }
     }
 
