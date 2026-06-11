@@ -171,6 +171,29 @@ GPIO1  = FEM TX_EN (SKY66112) -- optional
 - **NiceRF LoRa2021 uses crystal oscillator (XTAL), NOT TCXO** — pass `tcxoVoltage=0` to `radio->begin()`. With TCXO config, oscillator fails to start (HF_XOSC_START_ERR) causing calibrate and setFrequency to fail.
 - **RadioLib calibration error handling**: `RADIOLIB_DEBUG_BASIC` must be set in RadioLib component (not just main) for the debug branch. We patched `config()` to always continue on calibration failure.
 - **SPI debug**: `RADIOLIB_DEBUG_SPI=1` and `RADIOLIB_DEBUG_BASIC=1` in main CMakeLists are PRIVATE — they only apply to the main component, not RadioLib
+- **`radio->irqDioNum = 9` is MANDATORY** for LR2021 TX/RX — without it, DIO mapping is not configured and interrupts don't fire on GPIO5. Set before calling `begin()` or `beginFLRC()`.
+- **LR2021 power limits**: Sub-GHz (150-1090 MHz) = -9 to +22 dBm; 2.4 GHz (2400-2500 MHz) = -19 to +12 dBm
+- **ESP-IDF framework required for LR2021 TX** — PlatformIO Arduino framework cannot TX (returns TX_TIMEOUT -5)
+- **`esp_task_wdt_deinit()`** needed in benchmarker — RX loop blocks cmd task and starves IDLE task watchdog
+- **RX processing bottleneck ~15-20ms** — at 2600 kbps with 200B pkts, need 20ms spacing for 0% PER
+
+## Bench Test Results (2026-06-11)
+
+See `mesh-stack/flrc-bench-espidf/RESULTS.md` for full data.
+
+| Test | Band | Mode | Bit Rate | Pkts | PER | BER | TX Tput |
+|------|------|------|----------|------|-----|-----|---------|
+| L1 | 868 | LoRa SF9 | ~1 kbps | 10/10 | 0% | 0% | 0.2 kbps |
+| F1-F4 | 868 | FLRC | 260-2600 kbps | 100/100 each | 0% | 0% | 4-40 kbps |
+| Burst | 868 | FLRC 2600 | 200B, no delay | 200→100 | 50% | 0% | 167 kbps |
+| Sustained | 868 | FLRC 2600 | 200B, 20ms | 200/200 | 0% | 0% | 80 kbps |
+| 2G4 | 2450 | FLRC | 1300-2600 | 100/100 | 0% | 0% | 40 kbps |
+| Power | 868 | FLRC 1300 | -6 to +22 dBm | All pass | 0% | 0% | 40 kbps |
+| Power | 2450 | FLRC 1300 | -16 to +12 dBm | 6/8 pass | ≤2% | 0% | 40 kbps |
+| PktSz | 868 | FLRC 1300 | 20-255 bytes | All pass | 0% | 0% | 8-68 kbps |
+
+**Key result**: Max sustained throughput = **80 kbps** (FLRC 2600 kbps, 200B, 20ms spacing).
+**Deployment config**: 2.4 GHz FLRC 1300-2600 kbps at +12 dBm with wire dipoles.
 
 ## Balloon Strategy
 
