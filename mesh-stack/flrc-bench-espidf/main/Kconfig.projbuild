@@ -1,0 +1,11 @@
+choice BENCH_MODE
+    prompt "Benchmark mode"
+    default BENCH_MODE_INTERACTIVE
+
+config BENCH_MODE_INTERACTIVE
+    bool "Interactive (serial commands)"
+config BENCH_MODE_AUTONOMOUS_TX
+    bool "Autonomous TX (auto-start, no PC)"
+config BENCH_MODE_AUTONOMOUS_RX
+    bool "Autonomous RX (auto-start, NVS storage)"
+endchoice
