@@ -146,6 +146,7 @@ void setup() {
                     rxErrors++;
                 }
             }
+            radio.standby();
             radio.startReceive();
         }
         delay(1);
@@ -154,9 +155,9 @@ void setup() {
 }
 
 void loop() {
-    #ifdef FLRC_ROLE_TX
+#ifdef FLRC_ROLE_TX
     delay(1000);
-    #endif
+#endif
 }
 
 #elif defined(LORA_ROLE_TX) || defined(LORA_ROLE_RX)
@@ -277,6 +278,7 @@ void setup() {
                     rxErrors++;
                 }
             }
+            radio.standby();
             radio.startReceive();
         }
         delay(1);
