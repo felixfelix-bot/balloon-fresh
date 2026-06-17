@@ -1,0 +1,72 @@
+I (208939) RANGE: --- Window 5/16: L9CR7-868 ---
+I (208939) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (209139) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (209139) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (209139) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (209139) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (220559) RANGE: Sending 20 pkts, size=28, delay=1000ms
+I (246159) RANGE: L9CR7-868: sent=20/20 elapsed=25599ms tput=0.2kbps
+I (257429) RANGE: --- Window 6/16: L12-2G4 ---
+I (257429) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (257629) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (257629) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (257629) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (257629) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (274559) RANGE: Sending 20 pkts, size=28, delay=1000ms
+I (327359) RANGE: L12-2G4: sent=20/20 elapsed=52799ms tput=0.1kbps
+I (341919) RANGE: --- Window 7/16: L9-2G4 ---
+I (341919) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (342119) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (342119) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (342119) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (342119) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (353339) RANGE: Sending 20 pkts, size=28, delay=1000ms
+I (377739) RANGE: L9-2G4: sent=20/20 elapsed=24399ms tput=0.2kbps
+I (388879) RANGE: --- Window 8/16: L7-2G4 ---
+I (388879) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (389079) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (389079) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (389079) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (389079) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (399649) RANGE: Sending 20 pkts, size=28, delay=500ms
+I (410849) RANGE: L7-2G4: sent=20/20 elapsed=11199ms tput=0.4kbps
+I (421609) RANGE: --- Window 9/16: F260-868 ---
+I (421609) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (421809) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (421809) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (421809) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (421809) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (424639) RANGE: Sending 50 pkts, size=50, delay=100ms
+I (429639) RANGE: F260-868: sent=50/50 elapsed=4999ms tput=4.0kbps
+I (440239) RANGE: --- Window 10/16: F650-868 ---
+I (440239) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (440439) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (440439) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (440439) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (440439) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (443259) RANGE: Sending 50 pkts, size=50, delay=50ms
+I (445759) RANGE: F650-868: sent=50/50 elapsed=2499ms tput=8.0kbps
+I (456359) RANGE: --- Window 11/16: F1300-868 ---
+I (456359) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (456559) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (456559) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (456559) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (456559) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (459379) RANGE: Sending 100 pkts, size=100, delay=10ms
+I (460379) RANGE: F1300-868: sent=100/100 elapsed=999ms tput=80.1kbps
+I (470979) RANGE: --- Window 12/16: F1300C34-868 ---
+I (470979) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (471179) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (471179) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (471179) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (471179) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (473999) RANGE: Sending 100 pkts, size=100, delay=10ms
+I (474999) RANGE: F1300C34-868: sent=100/100 elapsed=999ms tput=80.1kbps
+I (485599) RANGE: --- Window 13/16: F2600-868 ---
+I (485599) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (485799) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (485799) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (485799) gpio: GPIO[4]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (485799) gpio: GPIO[3]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (488619) RANGE: Sending 100 pkts, size=100, delay=10ms
+I (489619) RANGE: F2600-868: sent=100/100 elapsed=999ms tput=80.1kbps
