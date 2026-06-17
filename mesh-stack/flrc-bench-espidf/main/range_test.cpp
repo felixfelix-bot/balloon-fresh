@@ -153,7 +153,7 @@ static void runRangeTx() {
             if (resultCount < NVS_MAX_RESULTS) {
                 NvsTestResult r = {};
                 snprintf(r.name, sizeof(r.name), "%s", w->name);
-                r.mode = w->mode;
+                r.mode = (w->mode == RANGE_FLRC) ? 0 : 1;
                 r.freq = w->freq;
                 r.bitrate = w->bitrate;
                 r.sf = w->sf;
@@ -385,7 +385,7 @@ static void runRangeRx() {
                     if (resultCount < NVS_MAX_RESULTS) {
                         NvsTestResult r = {};
                         snprintf(r.name, sizeof(r.name), "%s", curWin.name);
-                        r.mode = curWin.mode;
+                        r.mode = (curWin.mode == RANGE_FLRC) ? 0 : 1;
                         r.freq = curWin.freq;
                         r.bitrate = curWin.bitrate;
                         r.sf = curWin.sf;
