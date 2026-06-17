@@ -1,3 +1,7 @@
+#include <sdkconfig.h>
+
+#if defined(CONFIG_BENCH_MODE_AUTONOMOUS_TX) || defined(CONFIG_BENCH_MODE_AUTONOMOUS_RX)
+
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -380,3 +384,5 @@ extern "C" void app_main() {
     runAutoRx();
 #endif
 }
+
+#endif

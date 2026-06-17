@@ -103,15 +103,17 @@ void nvs_print_all_results() {
         printf("No results stored\n");
         return;
     }
-    printf("test_name,mode,freq,bitrate,sf,cr,power,pkt_size,tx_sent,rx_received,crc_errors,lost,per_pct,ber_pct,avg_rssi,min_rssi,max_rssi,elapsed_ms,throughput_kbps,payload_corrupt,bit_errors,bits_checked\n");
+    printf("test_name,role,loop,mode,freq,bitrate,sf,cr,power,pkt_size,tx_sent,rx_received,crc_errors,lost,per_pct,ber_pct,avg_rssi,min_rssi,max_rssi,elapsed_ms,throughput_kbps,payload_corrupt,bit_errors,bits_checked,gps_fix,gps_lat,gps_lon,gps_alt,gps_sats,gps_hdop\n");
     for (uint8_t i = 0; i < count; i++) {
         NvsTestResult r;
         if (nvs_load_result(i, &r) != 0) {
-            printf("ERR,test_%u,,,,,,,,,,,,,,,,,,,,,\n", i);
+            printf("ERR,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n");
             continue;
         }
-        printf("%.15s,%s,%.1f,%u,%u,0x%02X,%d,%u,%u,%u,%u,%u,%.3f,%.6f,%d,%d,%d,%lu,%.1f,%u,%u,%lu\n",
+        printf("%.15s,%s,%lu,%s,%.1f,%u,%u,0x%02X,%d,%u,%u,%u,%u,%u,%.3f,%.6f,%d,%d,%d,%lu,%.1f,%u,%u,%lu,%d,%ld,%ld,%u,%d,%.1f\n",
                r.name,
+               r.role == 0 ? "TX" : "RX",
+               (unsigned long)r.loop_count,
                r.mode == 0 ? "FLRC" : "LORA",
                r.freq,
                r.bitrate,
@@ -132,7 +134,13 @@ void nvs_print_all_results() {
                r.throughput_kbps,
                r.payload_corrupt,
                r.bit_errors,
-               (unsigned long)r.bits_checked);
+               (unsigned long)r.bits_checked,
+               (int)r.gps_fix,
+               (long)r.gps_lat,
+               (long)r.gps_lon,
+               (unsigned)r.gps_alt,
+               (int)r.gps_sats,
+               r.gps_hdop);
     }
     printf("(%u results)\n", count);
 }

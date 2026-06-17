@@ -8,4 +8,37 @@ config BENCH_MODE_AUTONOMOUS_TX
     bool "Autonomous TX (auto-start, no PC)"
 config BENCH_MODE_AUTONOMOUS_RX
     bool "Autonomous RX (auto-start, NVS storage)"
+config BENCH_MODE_RANGE_TX
+    bool "Range test TX (infinite loop, all modes)"
+config BENCH_MODE_RANGE_RX
+    bool "Range test RX (scan + GPS + CSV output)"
+config BENCH_MODE_DUMP
+    bool "NVS dump (read and print stored results)"
+config BENCH_MODE_SPI_LOOPBACK
+    bool "SPI loopback test (verify SPI wiring, no radio needed)"
+config BENCH_MODE_CONTINUITY
+    bool "Continuity test (detect solder shorts after soldering radio)"
 endchoice
+
+config RANGE_TEST_GPS
+    bool "Enable GPS on range test RX board"
+    default y
+    depends on BENCH_MODE_RANGE_RX
+    help
+        Enable u-blox MAX-M10S GPS via UART1 GPIO1.
+        If GPS not physically wired, reads return fix=0.
+
+config RANGE_TEST_GPS_UART_RX_PIN
+    int "GPS UART RX pin"
+    default 1
+    depends on RANGE_TEST_GPS
+
+config RANGE_TEST_GPS_UART_TX_PIN
+    int "GPS UART TX pin (-1 to disable)"
+    default -1
+    depends on RANGE_TEST_GPS
+
+config RANGE_TEST_GPS_UART_BAUD
+    int "GPS UART baud rate"
+    default 9600
+    depends on RANGE_TEST_GPS

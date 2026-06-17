@@ -30,6 +30,14 @@ struct NvsTestResult {
     uint16_t payload_corrupt;
     uint16_t bit_errors;
     uint32_t bits_checked;
+    uint8_t role;
+    uint32_t loop_count;
+    int32_t gps_lat;
+    int32_t gps_lon;
+    uint16_t gps_alt;
+    uint8_t gps_sats;
+    float gps_hdop;
+    uint8_t gps_fix;
 };
 
 int nvs_init();
