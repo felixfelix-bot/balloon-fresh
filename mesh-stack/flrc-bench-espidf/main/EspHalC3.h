@@ -61,7 +61,10 @@ class EspHalC3 : public RadioLibHal {
 
     void attachInterrupt(uint32_t interruptNum, void (*interruptCb)(void), uint32_t mode) override {
       if(interruptNum == RADIOLIB_NC) return;
-      gpio_install_isr_service((int)ESP_INTR_FLAG_IRAM);
+      if(!this->isrInstalled) {
+        gpio_install_isr_service((int)ESP_INTR_FLAG_IRAM);
+        this->isrInstalled = true;
+      }
       gpio_set_intr_type((gpio_num_t)interruptNum, (gpio_int_type_t)(mode & 0x7));
       gpio_isr_handler_add((gpio_num_t)interruptNum, (void (*)(void*))interruptCb, NULL);
     }
@@ -186,4 +189,5 @@ class EspHalC3 : public RadioLibHal {
     int8_t busyPin;
     spi_device_handle_t spiDev = nullptr;
     bool spiInitialized = false;
+    bool isrInstalled = false;
 };

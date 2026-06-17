@@ -1,4 +1,6 @@
-#if !defined(CONFIG_BENCH_MODE_AUTONOMOUS_TX) && !defined(CONFIG_BENCH_MODE_AUTONOMOUS_RX)
+#include <sdkconfig.h>
+
+#if !defined(CONFIG_BENCH_MODE_AUTONOMOUS_TX) && !defined(CONFIG_BENCH_MODE_AUTONOMOUS_RX) && !defined(CONFIG_BENCH_MODE_RANGE_TX) && !defined(CONFIG_BENCH_MODE_RANGE_RX) && !defined(CONFIG_BENCH_MODE_DUMP) && !defined(CONFIG_BENCH_MODE_SPI_LOOPBACK) && !defined(CONFIG_BENCH_MODE_CONTINUITY)
 
 #include <stdio.h>
 #include <string.h>
@@ -406,12 +408,7 @@ static void __attribute__((unused)) stdin_read_task(void *arg) {
             vTaskDelay(pdMS_TO_TICKS(10));
         }
     }
-}
-
-#ifndef CONFIG_BENCH_MODE_AUTONOMOUS_TX
-#ifndef CONFIG_BENCH_MODE_AUTONOMOUS_RX
-
-#pragma GCC diagnostic ignored "-Wunused-variable"
+ }
 
 extern "C" void app_main() {
     ESP_LOGI(TAG, "=== LR2021 ESP-IDF Benchmarker v1.1 ===");
@@ -433,6 +430,3 @@ extern "C" void app_main() {
 }
 
 #endif
-#endif
-
-#endif // guard for whole file
