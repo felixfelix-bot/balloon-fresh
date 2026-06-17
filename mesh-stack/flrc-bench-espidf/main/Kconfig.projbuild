@@ -18,6 +18,10 @@ config BENCH_MODE_SPI_LOOPBACK
     bool "SPI loopback test (verify SPI wiring, no radio needed)"
 config BENCH_MODE_CONTINUITY
     bool "Continuity test (detect solder shorts after soldering radio)"
+config BENCH_MODE_FIFO_TEST
+    bool "FIFO test (LR2021 native FIFO batching characterization)"
+config BENCH_MODE_PROFILE
+    bool "RX pipeline profiler (per-packet timing breakdown)"
 endchoice
 
 config RANGE_TEST_GPS
