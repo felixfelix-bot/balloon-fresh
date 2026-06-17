@@ -415,6 +415,14 @@ See also: `docs/adr/012-mesh-networking-strategy.md` (strategic decisions) and `
 11. **Can we use LoRa hardware FEC + erasure coding together effectively?** LoRa has built-in CR (coding rate) 4/5 to 4/8. Does using a higher CR (more hardware FEC) plus erasure coding give better throughput than lower CR (less overhead) with more erasure overhead? Where's the sweet spot?
 12. **Temperature impact on LR2021 frequency stability?** At -60°C stratospheric temps, the LR2021's oscillator may drift. Does this affect ranging accuracy? Do we need TCXO on the radio module too, not just the MCU?
 
+### High-Throughput Multi-Radio Track (ADR-014)
+13. **Can the LR2021 native FIFO batch multiple packets?** The LR2021 has dedicated RX/TX FIFOs with threshold interrupts and auto-RX-TX mode — capabilities the SX1280 lacks. `getRxFifoLevel()` returns uint16_t (possible >256 bytes). If the FIFO accumulates multiple packets, we can achieve 800+ kbps without extra hardware. **This is the immediate priority test.**
+14. **What throughput can DMA streaming achieve on ESP32-C3?** Replace RadioLib blocking SPI calls with raw register access + DMA burst reads from LR2021 FIFO. Skip PRBS verification in production mode (FIPS AEAD provides integrity). Target: 800 kbps - 2.6 Mbps on single radio.
+15. **FPGA (iCE40 UP5K) vs RP2040 for bent-pipe relay?** FPGA: ~1µs latency, ~5mA, Verilog. RP2040: ~5µs latency, ~15-25mA, C/C++ with PIO. Both power-gated by ESP32-C3 during night-off. Which is better for flight hardware?
+16. **How many radios per balloon?** 2 radios (dual relay, +1.3g), 3 radios (triband, +1.8g), 4 radios (quad crossbar, +2.8g). Weight/power/throughput tradeoffs for Mesh V2/V3 variants.
+17. **Multi-balloon relay chain latency?** With FPGA bent-pipe: 3-hop relay = ~1.8ms (vs 47ms with MCU). Enables near-real-time communication across the mesh. How does this change the application layer (voice, interactive text, responsive payments)?
+18. **TDMA with multiple independent radios?** Each radio operates on a different frequency/mode. How do we synchronize TDMA slots across radios? Can we use GPS PPS for multi-radio clock sync?
+
 ---
 
 ## Balloon-to-Balloon Range at Altitude
@@ -527,6 +535,19 @@ With 4 balloons visible from a ground station:
 | 300 km | 9 kbps | **~36 kbps** | 16 kbps | **~64 kbps** |
 
 Net efficiency ~40% of air rate (erasure coding 1.5x overhead for 35% loss + TDMA 20-30% + protocol 10-15%).
+
+### High-Throughput Multi-Radio Projections (ADR-014)
+
+With LR2021 native FIFO batching + DMA + multi-radio coprocessor:
+
+| Architecture | Per-Link | 2-Radio Aggregate | 4-Radio Aggregate | Power | Weight |
+|-------------|----------|-------------------|-------------------|-------|--------|
+| Current (RadioLib, PRBS, 1 radio) | 80 kbps | — | — | 134 mW | 14g (V1) |
+| DMA + skip PRBS + FIFO batch (1 radio) | ~800 kbps | — | — | 134 mW | 14g |
+| + RP2040 dual-radio | ~800 kbps × 2 | **~1.6 Mbps** | — | 175 mW | 19-23g |
+| + iCE40 FPGA 4-radio | ~2.6 Mbps × 4 | — | **~10.4 Mbps** | 89 mW | 21-25g |
+
+Note: These are bench-range projections. At 300 km with path loss, per-link throughput drops significantly (see MultiWAN table above). The multi-radio advantage is frequency diversity + aggregate throughput, not range extension.
 
 ---
 
