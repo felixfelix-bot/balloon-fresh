@@ -24,6 +24,8 @@ config BENCH_MODE_FIFO_TX
     bool "FIFO TX burst (sends rapid-fire packets for FIFO test)"
 config BENCH_MODE_PROFILE
     bool "RX pipeline profiler (per-packet timing breakdown)"
+config BENCH_MODE_FAST_RX
+    bool "Fast RX optimizer (6 incremental throughput configs)"
 endchoice
 
 config RANGE_TEST_GPS
