@@ -155,7 +155,7 @@ extern "C" void app_main() {
                 rawWriteTxFifo(buf, 255);
                 rawSetTx();
                 txWaitBusy();
-                esp_rom_delay_us(900);
+                esp_rom_delay_us(840);
                 rawClearTxDone();
                 sent++;
             }

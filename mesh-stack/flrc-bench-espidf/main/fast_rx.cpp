@@ -135,6 +135,9 @@ static void testBand(const BandConfig *bc, uint32_t loopNum) {
     uint8_t buf[PKT_SIZE + 4];
     uint32_t received = 0;
     uint32_t errors = 0;
+    uint32_t duplicates = 0;
+    uint32_t lastSeq = 0xFFFFFFFF;
+    uint32_t uniquePkts = 0;
 
     initRadio(bc->freq, bc->power);
 
@@ -162,28 +165,41 @@ static void testBand(const BandConfig *bc, uint32_t loopNum) {
 
         uint32_t t1 = (uint32_t)esp_timer_get_time();
 
+        uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
+                       ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
+
         received++;
 
+        if (seq == lastSeq) {
+            duplicates++;
+        } else {
+            uniquePkts++;
+        }
+        lastSeq = seq;
+
         if (received <= 5) {
-            ESP_LOGI(TAG, "  raw SPI pkt %lu: %lu us", 
-                     (unsigned long)received, (unsigned long)(t1 - t0));
+            ESP_LOGI(TAG, "  raw SPI pkt %lu: %lu us seq=%lu",
+                     (unsigned long)received, (unsigned long)(t1 - t0),
+                     (unsigned long)seq);
         }
     }
 
     uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
-    float tput = (elapsed > 0 && received > 0)
-        ? (float)received * PKT_SIZE * 8.0f / elapsed : 0;
+    float tput = (elapsed > 0 && uniquePkts > 0)
+        ? (float)uniquePkts * PKT_SIZE * 8.0f / elapsed : 0;
     float per = (PKT_COUNT - received) * 100.0f / PKT_COUNT;
 
-    printf("%lu,%s,%d,%lu,%lu,%lu,%.1f,%.1f\n",
+    printf("%lu,%s,%d,%lu,%lu,%lu,%.1f,%.1u,%lu,%lu\n",
            (unsigned long)loopNum, bc->name, PKT_SIZE,
            (unsigned long)received, (unsigned long)errors,
-           (unsigned long)elapsed, tput, per);
+           (unsigned long)elapsed, tput, 0,
+           (unsigned long)duplicates, (unsigned long)uniquePkts);
     fflush(stdout);
 
-    ESP_LOGI(TAG, "%s: recv=%lu/%d elapsed=%lums tput=%.1fkbps PER=%.1f%%",
-             bc->name, (unsigned long)received, PKT_COUNT,
-             (unsigned long)elapsed, tput, per);
+    ESP_LOGI(TAG, "%s: recv=%lu dup=%lu unique=%lu/%d elapsed=%lums tput=%.1fkbps",
+             bc->name, (unsigned long)received, (unsigned long)duplicates,
+             (unsigned long)uniquePkts, PKT_COUNT,
+             (unsigned long)elapsed, tput);
 }
 
 extern "C" void app_main() {
@@ -206,7 +222,7 @@ extern "C" void app_main() {
     printf("  Alternates: 868 MHz (12s) -> 2450 MHz (12s)\n");
     printf("=================================================\n");
     printf("\n");
-    printf("loop,band,pkt_size,rx_received,rx_errors,elapsed_ms,throughput_kbps,per_pct\n");
+    printf("loop,band,pkt_size,rx_received,rx_errors,elapsed_ms,throughput_kbps,per_pct,duplicates,unique_pkts\n");
     fflush(stdout);
 
     uint32_t loopCount = 0;
