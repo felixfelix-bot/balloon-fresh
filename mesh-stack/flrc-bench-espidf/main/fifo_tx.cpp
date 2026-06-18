@@ -69,21 +69,21 @@ extern "C" void app_main() {
     uint8_t nvsCount = 0;
     ESP_LOGI(TAG, "NVS initialized for resilient logging");
 
-    EspHalC3 hal(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
-    hal.setCsPin(LR2021_NSS);
-    hal.setBusyPin(LR2021_BUSY);
-    Module mod(&hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);
-    LR2021 radio(&mod);
-    radio.irqDioNum = 9;
+    EspHalC3 *hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
+    hal->setCsPin(LR2021_NSS);
+    hal->setBusyPin(LR2021_BUSY);
+    Module *mod = new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);
+    LR2021 *radio = new LR2021(mod);
+    radio->irqDioNum = 9;
 
-    int16_t state = radio.beginFLRC(2450.0f, 2600, 0x02, 12,
+    int16_t state = radio->beginFLRC(2450.0f, 2600, 0x02, 12,
                                     16, RADIOLIB_SHAPING_0_5, 0.0f);
     if (state != RADIOLIB_ERR_NONE) {
         ESP_LOGE(TAG, "Radio init failed: %d", state);
         blink(10, 500, 500);
         return;
     }
-    radio.fixedPacketLengthMode(255);
+    radio->fixedPacketLengthMode(255);
     ESP_LOGI(TAG, "Radio initialized OK");
 
     printf("\n");
@@ -125,7 +125,7 @@ extern "C" void app_main() {
                     prbs15_fill(buf + 4, tc->pktSize - 4, p);
                 }
 
-                state = radio.transmit(buf, tc->pktSize);
+                state = radio->transmit(buf, tc->pktSize);
                 if (state == RADIOLIB_ERR_NONE) sent++;
             }
 
