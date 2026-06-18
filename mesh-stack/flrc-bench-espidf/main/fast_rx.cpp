@@ -16,7 +16,6 @@
 static const char *TAG = "FASTRX";
 
 #define LED_GPIO 8
-#define IRQ_GPIO 5
 #define LR2021_SCK   6
 #define LR2021_MISO  2
 #define LR2021_MOSI  7
@@ -48,13 +47,84 @@ static void blink(int times, int on_ms, int off_ms) {
 
 #define PKT_SIZE 255
 #define PKT_COUNT 100
-#define TEST_TIMEOUT_MS 15000
+#define LISTEN_MS 12000
+
+struct BandConfig {
+    float freq;
+    int8_t power;
+    const char *name;
+};
+
+static const BandConfig bands[] = {
+    {868.0f,  22, "868"},
+    {2450.0f, 12, "2450"},
+};
+static const int bandCount = sizeof(bands) / sizeof(bands[0]);
+
+static void initRadio(float freq, int8_t power) {
+    radio->standby();
+    int16_t state = radio->beginFLRC(freq, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, power,
+                                     16, RADIOLIB_SHAPING_0_5, 0.0f);
+    if (state != RADIOLIB_ERR_NONE) {
+        ESP_LOGE(TAG, "Radio init failed at %.0f MHz: %d", freq, state);
+        return;
+    }
+    radio->fixedPacketLengthMode(255);
+    radio->setPacketReceivedAction(onIrq);
+    radio->startReceive();
+    irqFlag = false;
+    ESP_LOGI(TAG, "Listening at %.0f MHz, +%d dBm", freq, power);
+}
+
+static void testBand(const BandConfig *bc, uint32_t loopNum) {
+    uint8_t buf[PKT_SIZE + 4];
+    uint32_t received = 0;
+    uint32_t errors = 0;
+
+    initRadio(bc->freq, bc->power);
+
+    uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
+
+    while (received < PKT_COUNT &&
+           (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs < LISTEN_MS) {
+
+        if (!irqFlag) {
+            taskYIELD();
+            continue;
+        }
+        irqFlag = false;
+
+        int16_t state = radio->readData(buf, PKT_SIZE);
+        radio->startReceive();
+
+        if (state == RADIOLIB_ERR_NONE) {
+            received++;
+        } else {
+            errors++;
+        }
+    }
+
+    uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
+    float tput = (elapsed > 0 && received > 0)
+        ? (float)received * PKT_SIZE * 8.0f / elapsed : 0;
+    float per = (PKT_COUNT - received) * 100.0f / PKT_COUNT;
+
+    printf("%lu,%s,%d,%lu,%lu,%lu,%.1f,%.1f\n",
+           (unsigned long)loopNum, bc->name, PKT_SIZE,
+           (unsigned long)received, (unsigned long)errors,
+           (unsigned long)elapsed, tput, per);
+    fflush(stdout);
+
+    ESP_LOGI(TAG, "%s: recv=%lu/%d elapsed=%lums tput=%.1fkbps PER=%.1f%%",
+             bc->name, (unsigned long)received, PKT_COUNT,
+             (unsigned long)elapsed, tput, per);
+}
 
 extern "C" void app_main() {
-    ESP_LOGI(TAG, "=== Polled RX (no ISR, direct GPIO poll) ===");
+    ESP_LOGI(TAG, "=== Dual-Band RX (868 + 2450 MHz) ===");
     setvbuf(stdout, NULL, _IONBF, 0);
     blink(3, 200, 200);
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(5000));
 
     hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
     hal->setCsPin(LR2021_NSS);
@@ -65,78 +135,30 @@ extern "C" void app_main() {
 
     printf("\n");
     printf("=================================================\n");
-    printf("  Polled RX (no ISR, direct GPIO poll)\n");
-    printf("  FLRC 2600 kbps @ 868 MHz, +22 dBm\n");
-    printf("  Fixed 255B, no PRBS, no RSSI, busy-wait\n");
+    printf("  Dual-Band RX (868 + 2450 MHz)\n");
+    printf("  FLRC 2600 kbps, 255B fixed, no PRBS, taskYIELD\n");
+    printf("  Alternates: 868 MHz (12s) -> 2450 MHz (12s)\n");
     printf("=================================================\n");
     printf("\n");
+    printf("loop,band,pkt_size,rx_received,rx_errors,elapsed_ms,throughput_kbps,per_pct\n");
     fflush(stdout);
 
-    int16_t state = radio->beginFLRC(868.0f, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, 22,
-                                     16, RADIOLIB_SHAPING_0_5, 0.0f);
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "Radio init failed: %d", state);
-        blink(10, 500, 500);
-        return;
-    }
-    radio->fixedPacketLengthMode(255);
-    radio->setPacketReceivedAction(onIrq);
-    radio->startReceive();
-    ESP_LOGI(TAG, "Radio initialized OK (ISR + busy-wait on flag)");
+    uint32_t loopCount = 0;
 
-    uint8_t buf[PKT_SIZE + 4];
-    uint32_t received = 0;
-    uint32_t errors = 0;
-    uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
-
-    ESP_LOGI(TAG, "Listening (ISR + busy-wait, no yield)...");
-
-    while (received < PKT_COUNT &&
-           (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs < TEST_TIMEOUT_MS) {
-
-        while (!irqFlag) {
-            taskYIELD();
-            if ((uint32_t)(esp_timer_get_time() / 1000ULL) - startMs >= TEST_TIMEOUT_MS) {
-                goto done;
-            }
-        }
-        irqFlag = false;
-
-        state = radio->readData(buf, PKT_SIZE);
-        radio->startReceive();
-
-        if (state == RADIOLIB_ERR_NONE) {
-            received++;
-        } else {
-            errors++;
-        }
-    }
-
-done:
-    uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
-    float tput = (elapsed > 0 && received > 0)
-        ? (float)received * PKT_SIZE * 8.0f / elapsed : 0;
-    float per = (PKT_COUNT - received) * 100.0f / PKT_COUNT;
-
-    printf("\n");
-    printf("=================================================\n");
-    printf("  RESULT: %lu/%d packets in %lums = %.1f kbps\n",
-           (unsigned long)received, PKT_COUNT,
-           (unsigned long)elapsed, tput);
-    printf("  PER: %.1f%%  Errors: %lu\n", per, (unsigned long)errors);
-    printf("  Per-packet: %.1fms\n", elapsed / (float)(received > 0 ? received : 1));
-    printf("=================================================\n");
-    printf("\n");
-    printf("pkt_size,rx_received,rx_errors,elapsed_ms,throughput_kbps,per_pct,ms_per_pkt\n");
-    printf("%d,%lu,%lu,%lu,%.1f,%.1f,%.1f\n",
-           PKT_SIZE, (unsigned long)received, (unsigned long)errors,
-           (unsigned long)elapsed, tput, per,
-           elapsed / (float)(received > 0 ? received : 1));
-    fflush(stdout);
-
-    blink(received > 0 ? 5 : 10, 200, 200);
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        loopCount++;
+        ESP_LOGI(TAG, "====== Loop %lu ======", (unsigned long)loopCount);
+
+        for (int bi = 0; bi < bandCount; bi++) {
+            blink(bi + 1, 100, 100);
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            testBand(&bands[bi], loopCount);
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        }
+
+        ESP_LOGI(TAG, "=== Loop %lu complete ===", (unsigned long)loopCount);
+        blink(3, 200, 200);
+        vTaskDelay(pdMS_TO_TICKS(3000));
     }
 }
 
