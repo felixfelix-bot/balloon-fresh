@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "driver/gpio.h"
+#include "soc/rtc.h"
 #include <RadioLib.h>
 #include "EspHalC3.h"
 #include "prbs.h"
@@ -93,7 +94,7 @@ static void rawSpiRead(const uint8_t *cmd, size_t cmdLen, uint8_t *data, size_t 
     gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
 }
 
-static void rawStandby() {
+static void __attribute__((unused)) rawStandby() {
     uint8_t cmd[] = {0x01, 0x28, 0x00};
     rawSpiWrite(cmd, 3, nullptr, 0);
 }
