@@ -28,8 +28,16 @@ static EspHalC3 *hal = nullptr;
 static Module *mod = nullptr;
 static LR2021 *radio = nullptr;
 static volatile bool irqFlag = false;
+static TaskHandle_t rxTaskHandle = NULL;
 
-static void IRAM_ATTR onIrq(void) { irqFlag = true; }
+static void IRAM_ATTR onIrq(void) {
+    irqFlag = true;
+    if (rxTaskHandle) {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        vTaskNotifyGiveFromISR(rxTaskHandle, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+}
 
 static void blink(int times, int on_ms, int off_ms) {
     gpio_config_t io = {};
@@ -61,6 +69,51 @@ static const BandConfig bands[] = {
 };
 static const int bandCount = sizeof(bands) / sizeof(bands[0]);
 
+#define LR2021_NSS_PIN 10
+#define LR2021_BUSY_PIN 4
+
+static void rawWaitBusy() {
+    while (gpio_get_level((gpio_num_t)LR2021_BUSY_PIN) == 1) {}
+}
+
+static void rawSpiWrite(const uint8_t *cmd, size_t cmdLen, const uint8_t *data, size_t dataLen) {
+    rawWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 0);
+    hal->spiTransfer(const_cast<uint8_t*>(cmd), cmdLen, nullptr);
+    if (dataLen > 0 && data) {
+        hal->spiTransfer(const_cast<uint8_t*>(data), dataLen, nullptr);
+    }
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
+}
+
+static void rawSpiRead(const uint8_t *cmd, size_t cmdLen, uint8_t *data, size_t dataLen) {
+    rawWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 0);
+    hal->spiTransfer(const_cast<uint8_t*>(cmd), cmdLen, nullptr);
+    hal->spiTransfer(nullptr, dataLen, data);
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
+}
+
+static void rawStandby() {
+    uint8_t cmd[] = {0x01, 0x28, 0x00};
+    rawSpiWrite(cmd, 3, nullptr, 0);
+}
+
+static void rawReadFifo(uint8_t *buf, size_t len) {
+    uint8_t cmd[] = {0x00, 0x01};
+    rawSpiRead(cmd, 2, buf, len);
+}
+
+static void rawClearIrq() {
+    uint8_t cmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
+    rawSpiWrite(cmd, 6, nullptr, 0);
+}
+
+static void rawSetRx() {
+    uint8_t cmd[] = {0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF};
+    rawSpiWrite(cmd, 6, nullptr, 0);
+}
+
 static void initRadio(float freq, int8_t power) {
     radio->standby();
     int16_t state = radio->beginFLRC(freq, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, power,
@@ -72,8 +125,9 @@ static void initRadio(float freq, int8_t power) {
     radio->fixedPacketLengthMode(255);
     radio->setPacketReceivedAction(onIrq);
     radio->startReceive();
+    rxTaskHandle = xTaskGetCurrentTaskHandle();
     irqFlag = false;
-    ESP_LOGI(TAG, "Listening at %.0f MHz, +%d dBm", freq, power);
+    ESP_LOGI(TAG, "Listening at %.0f MHz, +%d dBm (task notify)", freq, power);
 }
 
 static void testBand(const BandConfig *bc, uint32_t loopNum) {
@@ -85,22 +139,35 @@ static void testBand(const BandConfig *bc, uint32_t loopNum) {
 
     uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
 
+    gpio_config_t csConf = {};
+    csConf.pin_bit_mask = (1ULL << LR2021_NSS_PIN);
+    csConf.mode = GPIO_MODE_OUTPUT;
+    gpio_config(&csConf);
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
+
     while (received < PKT_COUNT &&
            (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs < LISTEN_MS) {
 
         if (!irqFlag) {
-            taskYIELD();
+            ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
             continue;
         }
         irqFlag = false;
 
-        int16_t state = radio->readData(buf, PKT_SIZE);
-        radio->startReceive();
+        uint32_t t0 = (uint32_t)esp_timer_get_time();
 
-        if (state == RADIOLIB_ERR_NONE) {
-            received++;
-        } else {
-            errors++;
+        rawStandby();
+        rawReadFifo(buf, PKT_SIZE);
+        rawClearIrq();
+        rawSetRx();
+
+        uint32_t t1 = (uint32_t)esp_timer_get_time();
+
+        received++;
+
+        if (received <= 5) {
+            ESP_LOGI(TAG, "  raw SPI pkt %lu: %lu us", 
+                     (unsigned long)received, (unsigned long)(t1 - t0));
         }
     }
 
