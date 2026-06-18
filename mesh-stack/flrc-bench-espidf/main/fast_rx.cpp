@@ -54,7 +54,7 @@ static void blink(int times, int on_ms, int off_ms) {
 }
 
 #define PKT_SIZE 255
-#define PKT_COUNT 100
+#define PKT_COUNT 500
 #define LISTEN_MS 12000
 
 struct BandConfig {
@@ -65,7 +65,6 @@ struct BandConfig {
 
 static const BandConfig bands[] = {
     {868.0f,  22, "868"},
-    {2450.0f, 12, "2450"},
 };
 static const int bandCount = sizeof(bands) / sizeof(bands[0]);
 
@@ -156,10 +155,8 @@ static void testBand(const BandConfig *bc, uint32_t loopNum) {
 
         uint32_t t0 = (uint32_t)esp_timer_get_time();
 
-        rawStandby();
         rawReadFifo(buf, PKT_SIZE);
         rawClearIrq();
-        rawSetRx();
 
         uint32_t t1 = (uint32_t)esp_timer_get_time();
 

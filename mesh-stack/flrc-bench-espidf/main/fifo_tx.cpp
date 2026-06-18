@@ -47,7 +47,6 @@ struct BandConfig {
 
 static const BandConfig bands[] = {
     {868.0f,  22, "868"},
-    {2450.0f, 12, "2450"},
 };
 static const int bandCount = sizeof(bands) / sizeof(bands[0]);
 
@@ -109,7 +108,7 @@ extern "C" void app_main() {
             initRadio(bc->freq, bc->power);
             vTaskDelay(pdMS_TO_TICKS(500));
 
-            int pktCount = 100;
+            int pktCount = 500;
             memset(buf, 0, sizeof(buf));
             uint16_t sent = 0;
             uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
@@ -155,7 +154,7 @@ extern "C" void app_main() {
                 nvs_set_count(nvsCount);
             }
 
-            vTaskDelay(pdMS_TO_TICKS(3000));
+            vTaskDelay(pdMS_TO_TICKS(500));
         }
 
         ESP_LOGI(TAG, "=== Loop %lu complete, next in 5s ===", (unsigned long)loopCount);
