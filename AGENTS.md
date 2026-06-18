@@ -176,6 +176,9 @@ GPIO1  = FEM TX_EN (SKY66112) -- optional
 - **ESP-IDF framework required for LR2021 TX** — PlatformIO Arduino framework cannot TX (returns TX_TIMEOUT -5)
 - **`esp_task_wdt_deinit()`** needed in benchmarker — RX loop blocks cmd task and starves IDLE task watchdog
 - **RX processing bottleneck ~15-20ms** — at 2600 kbps with 200B pkts, need 20ms spacing for 0% PER
+- **LR2021 has native FIFO API** (unlike SX1280): `readRadioRxFifo()`, `getRxFifoLevel()` (uint16_t!), `configFifoIrq()`, `autoTxRx()`, `clearRxFifo()`. Access via `#define RADIOLIB_GODMODE 1` before `#include <RadioLib.h>` (zero-patch, no RadioLib file modifications needed)
+- **SPI FIFO read speed: 10.46 Mbps** — reading 255 bytes takes only 195µs. The 80 kbps bottleneck is NOT the SPI bus; it's per-packet processing overhead (standby + startReceive + PRBS + RTOS)
+- **LR2021 ≠ SX1280** — different chip, different architecture. LR2021 has dedicated RX/TX FIFOs with threshold interrupts, auto-RX-TX mode, single-frame reads. SX1280 has flat 256B buffer with single-packet overwrite.
 
 ## Bench Test Results (2026-06-11)
 

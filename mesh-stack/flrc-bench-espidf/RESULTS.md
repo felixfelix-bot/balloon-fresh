@@ -152,3 +152,67 @@ Mesh V2 with SKY66114 (+30 dBm on 2.4 GHz) would provide adequate margin.
 - **Bidirectional range test**: requires both boards, flaky 96:DC board keeps disconnecting
 - **RX-side PER/BER/RSSI measurement**: needs RX board running range_rx.bin
 - **Outdoor range test**: needs GPS wiring + both boards operational
+
+---
+
+## LR2021 FIFO Read Speed Test (2026-06-18)
+
+### Setup
+- Board: ESP32-C3 (MAC C6:98), LR2021 + wire dipoles
+- Firmware: fifo_test.bin (RADIOLIB_GODMODE enabled)
+- Mode: FLRC 2600 kbps @ 2450 MHz, +12 dBm
+- API: Native LR2021 `readRadioRxFifo()` via GODMODE
+
+### Phase 2: FIFO Read Speed (single-board test, no TX needed)
+
+Measures raw SPI throughput for reading from LR2021 RX FIFO:
+
+| Bytes Read | Time (µs) | Throughput (Mbps) | % of 18 MHz Theoretical |
+|-----------|----------|-------------------|------------------------|
+| 20 | 63 | 2.54 | 14% |
+| 50 | 93 | 4.30 | 24% |
+| 100 | 104 | 7.69 | 43% |
+| 128 | 123 | 8.33 | 46% |
+| 200 | 160 | 10.00 | 56% |
+| **255** | **195** | **10.46** | **58%** |
+
+### Phase 3: Auto-RX Mode
+- `autoTxRx()` configured successfully
+- `configFifoIrq()` configured: FIFO_IRQ_FULL + HIGH@200
+- FIFO IRQ flags read: 0x20 (HIGH threshold configured correctly)
+- No TX board available to test accumulation
+
+### Critical Analysis
+
+**The SPI bus is NOT the bottleneck.** Reading 255 bytes takes only 195µs (0.2ms).
+The current 80 kbps ceiling is caused by per-packet processing overhead:
+
+| Phase | Time | % of Total |
+|-------|------|-----------|
+| FIFO read (255B) | 0.2ms | 1% |
+| standby() + startReceive() | ~2ms | 10% |
+| getPacketLength() + getRSSI() | ~2ms | 10% |
+| PRBS-15 verification | ~5-10ms | 30-50% |
+| RTOS task scheduling | ~2ms | 10% |
+| **Total per-packet** | **15-20ms** | **100%** |
+
+**Optimization path to 2000+ kbps:**
+1. Skip PRBS (CRC + FIPS AEAD sufficient): saves 5-10ms
+2. Inline SPI (bypass RadioLib virtual calls): saves 1-2ms
+3. Batch FIFO reads (if FIFO accumulates multiple packets): amortizes overhead
+4. Target: ~1-2ms per packet → 1000-2000 kbps
+
+**LR2021 native FIFO API discovered:**
+- `readRadioRxFifo()` — single-frame read (faster than SX1280)
+- `getRxFifoLevel()` — returns uint16_t (possible >256 bytes depth)
+- `configFifoIrq()` — threshold interrupts (EMPTY/LOW/HIGH/FULL/OVERFLOW)
+- `autoTxRx()` — radio auto-returns to RX after packet
+- `clearRxFifo()` — clear RX FIFO
+
+**Access method:** `#define RADIOLIB_GODMODE 1` before `#include <RadioLib.h>`
+(zero-patch, exposes all private methods)
+
+### Blocked Phases (need TX board)
+- **Phase 1 (FIFO depth)**: Does FIFO accumulate multiple packets?
+- **Phase 3 (Auto-RX with TX)**: Does radio stay receiving during read?
+- **Phase 5 (End-to-end throughput)**: Sustained throughput measurement
