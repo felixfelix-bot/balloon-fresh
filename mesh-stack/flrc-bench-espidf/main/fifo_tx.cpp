@@ -71,7 +71,7 @@ extern "C" void app_main() {
     LR2021 *radio = new LR2021(mod);
     radio->irqDioNum = 9;
 
-    int16_t state = radio->beginFLRC(2450.0f, 2600, 0x02, 12,
+    int16_t state = radio->beginFLRC(868.0f, 2600, 0x02, 22,
                                     16, RADIOLIB_SHAPING_0_5, 0.0f);
     if (state != RADIOLIB_ERR_NONE) {
         ESP_LOGE(TAG, "Radio init failed: %d", state);
@@ -84,7 +84,7 @@ extern "C" void app_main() {
     printf("\n");
     printf("=================================================\n");
     printf("  LR2021 FIFO TX (255B continuous, Resilient NVS)\n");
-    printf("  Mode: FLRC 2600 kbps @ 2450 MHz, +12 dBm\n");
+    printf("  Mode: FLRC 2600 kbps @ 868 MHz, +22 dBm\n");
     printf("  All packets are 255 bytes (fixed length)\n");
     printf("  Runs from power bank, no USB needed after flash\n");
     printf("=================================================\n");
@@ -132,7 +132,7 @@ extern "C" void app_main() {
                 NvsTestResult r = {};
                 snprintf(r.name, sizeof(r.name), "%s", tc->name);
                 r.mode = 0;
-                r.freq = 2450.0f;
+                r.freq = 868.0f;
                 r.bitrate = 2600;
                 r.pkt_size = 255;
                 r.tx_sent = sent;

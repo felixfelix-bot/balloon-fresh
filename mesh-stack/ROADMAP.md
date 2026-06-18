@@ -551,6 +551,44 @@ Note: These are bench-range projections. At 300 km with path loss, per-link thro
 
 ---
 
+## Three-Board Hardware Strategy (ADR-015)
+
+Three board variants sharing ESP32-C3 + LR2021 core, with progressive coprocessor upgrades:
+
+### Board A: ESP32-C3 Solo (Tracker / Mesh V1)
+- **Coprocessor**: None — software optimization only (inline SPI, skip PRBS)
+- **Throughput**: 500-1000 kbps (from 80 kbps baseline)
+- **Weight/Power**: 14-22g / 134-431 mW (unchanged)
+- **Status**: 2 prototypes, firmware optimization in progress
+
+### Board B: ESP32-C3 + RP2040 Coprocessor (Mesh V2)
+- **Coprocessor**: RP2040-Zero (~$1, +1.3g) — PIO hardware SPI master, dual-core
+- **Throughput**: 2000+ kbps per radio
+- **Key advantage**: PIO = mini-FPGA for single-radio I/O, dual-core parallel processing
+- **Power gating**: RP2040 OFF at night (ESP32-C3 sleeps at 5µA)
+- **Status**: RP2040-Zero ordered, prototype pending
+
+### Board C: ESP32-C3 + iCE40 UP5K FPGA (Mesh V3)
+- **Coprocessor**: Lattice iCE40 UP5K (JLCPCB C2678152, ~$6, +0.8g) — hardware crossbar
+- **Throughput**: 2600 kbps × N radios (full air rate per radio)
+- **Key advantage**: N×N crossbar for multi-radio bent-pipe relay, 128KB SPRAM packet queue
+- **Power gating**: FPGA OFF at night (ESP32-C3 sleeps at 5µA)
+- **Configuration**: W25Q32JV flash, yosys + nextpnr open-source toolchain
+- **Status**: Design phase — PCB to be ordered from JLCPCB (~$15-20/board)
+
+See `docs/board-variants.md` for full pin assignments, BOMs, and checklists.
+See `docs/adr/015-three-board-hardware-strategy.md` for the decision record.
+
+### Board Variant Throughput Projections
+
+| Variant | Bench (1m) | 50 km | 100 km | 300 km | Max Radios |
+|---------|-----------|-------|--------|--------|------------|
+| Board A (solo) | ~1000 kbps | ~130 kbps | ~37 kbps | ~9 kbps | 1 |
+| Board B (RP2040) | ~2000 kbps | ~550 kbps | ~130 kbps | ~16 kbps | 1-2 |
+| Board C (FPGA, 2 radio) | ~5200 kbps | ~1100 kbps | ~260 kbps | ~32 kbps | 2-6 |
+
+---
+
 ## TX Power Tradeoffs
 
 Each +3 dB (doubling TX power) roughly bumps one modulation step (~2x data rate).

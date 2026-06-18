@@ -1,10 +1,9 @@
 # Throughput Optimization Plan
 
 ## Overview
-Incremental optimization of the ESP32-C3 RX pipeline to maximize throughput.
-Phase 2 proved SPI bus reads at 10.46 Mbps (255B in 195µs) — the bottleneck
-is per-packet processing overhead (15-20ms). This plan eliminates that overhead
-step by step, measuring each optimization's contribution.
+Incremental optimization of the RX pipeline to maximize throughput.
+Three board variants (ADR-015): Board A (ESP32-C3 solo), Board B (+RP2040), Board C (+FPGA).
+This plan covers Board A software optimization first (free, no hardware needed).
 
 ## Hardware
 - RX board: ESP32-C3 (MAC C6:98) + LR2021, ttyACM1
@@ -30,35 +29,35 @@ step by step, measuring each optimization's contribution.
 
 ## Checklist
 
-### Step 1: Code (no hardware needed)
-- [ ] Write THROUGHPUT-OPTIMIZATION-PLAN.md
-- [ ] Create fast_rx.cpp (6 optimization configs)
-- [ ] Add NVS logging to fifo_tx.cpp (resilient TX)
-- [ ] Add CONFIG_BENCH_MODE_FAST_RX to Kconfig
-- [ ] Update CMakeLists.txt + bench_main.cpp guard
-- [ ] Build fast_rx.bin and fifo_tx.bin
+### Board A: ESP32-C3 Solo (software optimization, FREE)
+- [x] Write THROUGHPUT-OPTIMIZATION-PLAN.md
+- [x] Create fast_rx.cpp (6 optimization configs)
+- [x] Add NVS logging to fifo_tx.cpp (resilient TX)
+- [x] Build fast_rx.bin and fifo_tx.bin
+- [ ] **Fix frequency: change from 2450 MHz to 868 MHz (proven RX path)**
+- [ ] **Add 2.4 GHz RX path fix: setRxPath(RX_PATH_HF, RX_BOOST_HF)**
+- [ ] **Implement inline SPI bypass (bypass RadioLib virtual calls)**
+- [ ] Flash both boards and run Phase C at 868 MHz
+- [ ] Test 2.4 GHz with RX path fix
+- [ ] Document results in RESULTS.md
 - [ ] Commit and push
 
-### Step 2: Test (when TX board briefly available)
-- [ ] Flash resilient fifo_tx.bin to flaky board (96:DC)
-- [ ] Disconnect USB, attach power bank
-- [ ] Flash fast_rx.bin to stable board (C6:98)
-- [ ] Run Phase C: measure all 6 optimization configs
-- [ ] Run Phase A: FIFO depth discovery (from fifo_test.bin)
-- [ ] Flash range_dump.bin to both boards, recover NVS data
-- [ ] Document results in RESULTS.md
+### Board B: RP2040 Coprocessor (when RP2040-Zero arrives)
+- [ ] Wire RP2040 to LR2021 (SPI0) + ESP32-C3 (UART)
+- [ ] Write PIO SPI master program (hardware-driven radio I/O)
+- [ ] Write dual-core firmware (Core 0: radio, Core 1: protocol)
+- [ ] Measure throughput with PIO handling radio
+- [ ] Compare with Board A inline SPI results
+- [ ] Design custom PCB for flight (optional)
 
-### Step 3: Phase B — DMA Streaming (if Phase A shows FIFO batching)
-- [ ] Create dma_rx.cpp with FIFO threshold + DMA burst read
-- [ ] Configure autoTxRx() for continuous reception
-- [ ] Benchmark sustained throughput
-- [ ] Target: 800-2000 kbps
-
-### Step 4: Phase D — RP2040 Multi-Radio (when RP2040-Zero arrives)
-- [ ] Wire 2x LR2021 to RP2040-Zero (SPI0 + SPI1)
-- [ ] Write PIO SPI master firmware for RP2040
-- [ ] Test dual-radio bent-pipe relay
-- [ ] Measure power consumption and latency
+### Board C: iCE40 UP5K FPGA (JLCPCB design phase)
+- [ ] Design schematic: ESP32-C3 + iCE40 + LR2021 + config flash
+- [ ] Design PCB layout in KiCad
+- [ ] Order 5 boards from JLCPCB (~$15-20 each)
+- [ ] Write Verilog: SPI master + packet queue
+- [ ] Write Verilog: N×N crossbar (for multi-radio)
+- [ ] Assemble and test
+- [ ] Benchmark full 2600 kbps air rate
 
 ## RP2040-Zero Pin Assignment (for Phase D)
 ```
