@@ -8,6 +8,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_rom_sys.h"
 #include "driver/gpio.h"
 #include <RadioLib.h>
 #include "EspHalC3.h"
@@ -54,6 +55,38 @@ static EspHalC3 *hal = nullptr;
 static Module *mod = nullptr;
 static LR2021 *radio = nullptr;
 
+#define LR2021_NSS_PIN 10
+#define LR2021_BUSY_PIN 4
+
+static void txWaitBusy() {
+    while (gpio_get_level((gpio_num_t)LR2021_BUSY_PIN) == 1) {}
+}
+
+static void rawWriteTxFifo(const uint8_t *data, size_t len) {
+    txWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 0);
+    uint8_t cmd[] = {0x00, 0x02};
+    hal->spiTransfer(cmd, 2, nullptr);
+    hal->spiTransfer(const_cast<uint8_t*>(data), len, nullptr);
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
+}
+
+static void rawSetTx() {
+    txWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 0);
+    uint8_t cmd[] = {0x02, 0x0D, 0x00, 0x00, 0x00, 0x00};
+    hal->spiTransfer(cmd, 6, nullptr);
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
+}
+
+static void rawClearTxDone() {
+    uint8_t cmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
+    txWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 0);
+    hal->spiTransfer(cmd, 6, nullptr);
+    gpio_set_level((gpio_num_t)LR2021_NSS_PIN, 1);
+}
+
 static void initRadio(float freq, int8_t power) {
     radio->standby();
     int16_t state = radio->beginFLRC(freq, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, power,
@@ -82,7 +115,6 @@ extern "C" void app_main() {
     hal->setBusyPin(LR2021_BUSY);
     mod = new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);
     radio = new LR2021(mod);
-    radio->irqDioNum = 9;
 
     printf("\n");
     printf("=================================================\n");
@@ -120,8 +152,12 @@ extern "C" void app_main() {
                 buf[3] = p & 0xFF;
                 prbs15_fill(buf + 4, 251, p);
 
-                int16_t state = radio->transmit(buf, 255);
-                if (state == RADIOLIB_ERR_NONE) sent++;
+                rawWriteTxFifo(buf, 255);
+                rawSetTx();
+                txWaitBusy();
+                esp_rom_delay_us(900);
+                rawClearTxDone();
+                sent++;
             }
 
             uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
