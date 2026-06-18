@@ -28,6 +28,9 @@ static const char *TAG = "FASTRX";
 static EspHalC3 *hal = nullptr;
 static Module *mod = nullptr;
 static LR2021 *radio = nullptr;
+static volatile bool irqFlag = false;
+
+static void IRAM_ATTR onIrq(void) { irqFlag = true; }
 
 static void blink(int times, int on_ms, int off_ms) {
     gpio_config_t io = {};
@@ -77,32 +80,27 @@ extern "C" void app_main() {
         return;
     }
     radio->fixedPacketLengthMode(255);
+    radio->setPacketReceivedAction(onIrq);
     radio->startReceive();
-    ESP_LOGI(TAG, "Radio initialized OK (polled mode)");
-
-    gpio_config_t irqConf = {};
-    irqConf.pin_bit_mask = (1ULL << IRQ_GPIO);
-    irqConf.mode = GPIO_MODE_INPUT;
-    irqConf.pull_up_en = GPIO_PULLUP_DISABLE;
-    irqConf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    irqConf.intr_type = GPIO_INTR_DISABLE;
-    gpio_config(&irqConf);
+    ESP_LOGI(TAG, "Radio initialized OK (ISR + busy-wait on flag)");
 
     uint8_t buf[PKT_SIZE + 4];
     uint32_t received = 0;
     uint32_t errors = 0;
     uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
 
-    ESP_LOGI(TAG, "Listening (polled, busy-wait on GPIO%d)...", IRQ_GPIO);
+    ESP_LOGI(TAG, "Listening (ISR + busy-wait, no yield)...");
 
     while (received < PKT_COUNT &&
            (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs < TEST_TIMEOUT_MS) {
 
-        while (gpio_get_level((gpio_num_t)IRQ_GPIO) == 0) {
+        while (!irqFlag) {
+            taskYIELD();
             if ((uint32_t)(esp_timer_get_time() / 1000ULL) - startMs >= TEST_TIMEOUT_MS) {
                 goto done;
             }
         }
+        irqFlag = false;
 
         state = radio->readData(buf, PKT_SIZE);
         radio->startReceive();
