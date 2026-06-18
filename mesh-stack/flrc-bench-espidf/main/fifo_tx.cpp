@@ -42,19 +42,14 @@ static void blink(int times, int on_ms, int off_ms) {
 
 struct TxBurst {
     const char *name;
-    uint8_t pktSize;
     uint8_t pktCount;
 };
 
 static const TxBurst bursts[] = {
-    {"20B",   20,  10},
-    {"50B",   50,   5},
-    {"100B", 100,   3},
-    {"255B", 255,   1},
-    {"20Bx100",  20, 100},
-    {"50Bx100",  50, 100},
-    {"100Bx100",100, 100},
-    {"255Bx100",255, 100},
+    {"255Bx10",  10},
+    {"255Bx50",  50},
+    {"255Bx100", 100},
+    {"255Bx200", 200},
 };
 static const int burstCount = sizeof(bursts) / sizeof(bursts[0]);
 
@@ -84,17 +79,17 @@ extern "C" void app_main() {
         return;
     }
     radio->fixedPacketLengthMode(255);
-    ESP_LOGI(TAG, "Radio initialized OK");
+    ESP_LOGI(TAG, "Radio initialized OK (fixed 255B mode)");
 
     printf("\n");
     printf("=================================================\n");
-    printf("  LR2021 FIFO TX Burst (Resilient NVS Logging)\n");
+    printf("  LR2021 FIFO TX (255B continuous, Resilient NVS)\n");
     printf("  Mode: FLRC 2600 kbps @ 2450 MHz, +12 dBm\n");
+    printf("  All packets are 255 bytes (fixed length)\n");
     printf("  Runs from power bank, no USB needed after flash\n");
-    printf("  Data recoverable via range_dump.bin\n");
     printf("=================================================\n");
     printf("\n");
-    printf("loop,burst_name,pkt_size,pkt_count,sent,elapsed_ms,tx_throughput_kbps\n");
+    printf("loop,burst_name,pkt_count,sent,elapsed_ms,tx_throughput_kbps\n");
     fflush(stdout);
 
     uint8_t buf[255];
@@ -108,9 +103,7 @@ extern "C" void app_main() {
             const TxBurst *tc = &bursts[b];
             blink(1, 50, 50);
 
-            for (int i = 0; i < tc->pktSize; i++) {
-                buf[i] = (uint8_t)(i ^ 0x55);
-            }
+            memset(buf, 0, sizeof(buf));
 
             uint16_t sent = 0;
             uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
@@ -120,21 +113,18 @@ extern "C" void app_main() {
                 buf[1] = (p >> 16) & 0xFF;
                 buf[2] = (p >> 8) & 0xFF;
                 buf[3] = p & 0xFF;
+                prbs15_fill(buf + 4, 251, p);
 
-                if (tc->pktSize > 4) {
-                    prbs15_fill(buf + 4, tc->pktSize - 4, p);
-                }
-
-                state = radio->transmit(buf, tc->pktSize);
+                state = radio->transmit(buf, 255);
                 if (state == RADIOLIB_ERR_NONE) sent++;
             }
 
             uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
             float tput = (elapsed > 0 && sent > 0)
-                ? (float)sent * tc->pktSize * 8.0f / elapsed : 0;
+                ? (float)sent * 255 * 8.0f / elapsed : 0;
 
-            printf("%lu,%s,%d,%d,%d,%lu,%.1f\n",
-                   (unsigned long)loopCount, tc->name, tc->pktSize, tc->pktCount,
+            printf("%lu,%s,%d,%d,%lu,%.1f\n",
+                   (unsigned long)loopCount, tc->name, tc->pktCount,
                    sent, (unsigned long)elapsed, tput);
             fflush(stdout);
 
@@ -144,7 +134,7 @@ extern "C" void app_main() {
                 r.mode = 0;
                 r.freq = 2450.0f;
                 r.bitrate = 2600;
-                r.pkt_size = tc->pktSize;
+                r.pkt_size = 255;
                 r.tx_sent = sent;
                 r.elapsed_ms = elapsed;
                 r.throughput_kbps = tput;
