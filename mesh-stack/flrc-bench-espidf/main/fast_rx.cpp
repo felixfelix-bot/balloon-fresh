@@ -125,8 +125,10 @@ static void initRadio(float freq, int8_t power) {
     radio->setPacketReceivedAction(onIrq);
     radio->startReceive();
     rxTaskHandle = xTaskGetCurrentTaskHandle();
+    vTaskPrioritySet(NULL, configMAX_PRIORITIES - 1);
     irqFlag = false;
-    ESP_LOGI(TAG, "Listening at %.0f MHz, +%d dBm (task notify)", freq, power);
+    ESP_LOGI(TAG, "Listening at %.0f MHz, +%d dBm (task notify, priority %d)",
+             freq, power, configMAX_PRIORITIES - 1);
 }
 
 static void testBand(const BandConfig *bc, uint32_t loopNum) {
