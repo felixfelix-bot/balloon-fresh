@@ -20,6 +20,8 @@ config BENCH_MODE_CONTINUITY
     bool "Continuity test (detect solder shorts after soldering radio)"
 config BENCH_MODE_FIFO_TEST
     bool "FIFO test (LR2021 native FIFO batching characterization)"
+config BENCH_MODE_FIFO_TX
+    bool "FIFO TX burst (sends rapid-fire packets for FIFO test)"
 config BENCH_MODE_PROFILE
     bool "RX pipeline profiler (per-packet timing breakdown)"
 endchoice
