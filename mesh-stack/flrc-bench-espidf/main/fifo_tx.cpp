@@ -12,6 +12,7 @@
 #include <RadioLib.h>
 #include "EspHalC3.h"
 #include "prbs.h"
+#include "nvs_results.h"
 
 static const char *TAG = "FIFOTX";
 
@@ -58,10 +59,15 @@ static const TxBurst bursts[] = {
 static const int burstCount = sizeof(bursts) / sizeof(bursts[0]);
 
 extern "C" void app_main() {
-    ESP_LOGI(TAG, "=== LR2021 FIFO TX Burst ===");
+    ESP_LOGI(TAG, "=== LR2021 FIFO TX Burst (Resilient) ===");
     setvbuf(stdout, NULL, _IONBF, 0);
     blink(3, 200, 200);
     vTaskDelay(pdMS_TO_TICKS(5000));
+
+    nvs_init();
+    nvs_clear_all();
+    uint8_t nvsCount = 0;
+    ESP_LOGI(TAG, "NVS initialized for resilient logging");
 
     EspHalC3 hal(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
     hal.setCsPin(LR2021_NSS);
@@ -82,68 +88,80 @@ extern "C" void app_main() {
 
     printf("\n");
     printf("=================================================\n");
-    printf("  LR2021 FIFO TX Burst Transmitter\n");
+    printf("  LR2021 FIFO TX Burst (Resilient NVS Logging)\n");
     printf("  Mode: FLRC 2600 kbps @ 2450 MHz, +12 dBm\n");
-    printf("  Sends bursts to match RX FIFO test phases\n");
+    printf("  Runs from power bank, no USB needed after flash\n");
+    printf("  Data recoverable via range_dump.bin\n");
     printf("=================================================\n");
     printf("\n");
-    printf("burst_name,pkt_size,pkt_count,sent,elapsed_ms,tx_throughput_kbps\n");
+    printf("loop,burst_name,pkt_size,pkt_count,sent,elapsed_ms,tx_throughput_kbps\n");
     fflush(stdout);
 
     uint8_t buf[255];
+    uint32_t loopCount = 0;
 
-    for (int b = 0; b < burstCount; b++) {
-        const TxBurst *tc = &bursts[b];
-        ESP_LOGI(TAG, "Burst %d/%d: %s (%d pkts x %d bytes, NO delay)",
-                 b+1, burstCount, tc->name, tc->pktCount, tc->pktSize);
+    while (true) {
+        loopCount++;
+        ESP_LOGI(TAG, "====== Loop %lu ======", (unsigned long)loopCount);
 
-        blink(1, 100, 100);
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        for (int b = 0; b < burstCount; b++) {
+            const TxBurst *tc = &bursts[b];
+            blink(1, 50, 50);
 
-        for (int i = 0; i < tc->pktSize; i++) {
-            buf[i] = (uint8_t)(i ^ 0x55);
-        }
-        buf[0] = 0; buf[1] = 0; buf[2] = 0; buf[3] = 0;
-
-        uint16_t sent = 0;
-        uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
-
-        for (int p = 0; p < tc->pktCount; p++) {
-            buf[0] = (p >> 24) & 0xFF;
-            buf[1] = (p >> 16) & 0xFF;
-            buf[2] = (p >> 8) & 0xFF;
-            buf[3] = p & 0xFF;
-
-            if (tc->pktSize > 4) {
-                prbs15_fill(buf + 4, tc->pktSize - 4, p);
+            for (int i = 0; i < tc->pktSize; i++) {
+                buf[i] = (uint8_t)(i ^ 0x55);
             }
 
-            state = radio.transmit(buf, tc->pktSize);
-            if (state == RADIOLIB_ERR_NONE) sent++;
+            uint16_t sent = 0;
+            uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
+
+            for (int p = 0; p < tc->pktCount; p++) {
+                buf[0] = (p >> 24) & 0xFF;
+                buf[1] = (p >> 16) & 0xFF;
+                buf[2] = (p >> 8) & 0xFF;
+                buf[3] = p & 0xFF;
+
+                if (tc->pktSize > 4) {
+                    prbs15_fill(buf + 4, tc->pktSize - 4, p);
+                }
+
+                state = radio.transmit(buf, tc->pktSize);
+                if (state == RADIOLIB_ERR_NONE) sent++;
+            }
+
+            uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
+            float tput = (elapsed > 0 && sent > 0)
+                ? (float)sent * tc->pktSize * 8.0f / elapsed : 0;
+
+            printf("%lu,%s,%d,%d,%d,%lu,%.1f\n",
+                   (unsigned long)loopCount, tc->name, tc->pktSize, tc->pktCount,
+                   sent, (unsigned long)elapsed, tput);
+            fflush(stdout);
+
+            if (nvsCount < NVS_MAX_RESULTS) {
+                NvsTestResult r = {};
+                snprintf(r.name, sizeof(r.name), "%s", tc->name);
+                r.mode = 0;
+                r.freq = 2450.0f;
+                r.bitrate = 2600;
+                r.pkt_size = tc->pktSize;
+                r.tx_sent = sent;
+                r.elapsed_ms = elapsed;
+                r.throughput_kbps = tput;
+                r.role = 0;
+                r.loop_count = loopCount;
+                nvs_save_result(nvsCount, &r);
+                nvsCount++;
+                nvs_set_count(nvsCount);
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(2000));
         }
 
-        uint32_t elapsed = (uint32_t)(esp_timer_get_time() / 1000ULL) - startMs;
-        float tput = (elapsed > 0 && sent > 0)
-            ? (float)sent * tc->pktSize * 8.0f / elapsed : 0;
-
-        printf("%s,%d,%d,%d,%lu,%.1f\n",
-               tc->name, tc->pktSize, tc->pktCount,
-               sent, (unsigned long)elapsed, tput);
-        fflush(stdout);
-
-        ESP_LOGI(TAG, "%s: sent=%d/%d elapsed=%lums tput=%.1fkbps",
-                 tc->name, sent, tc->pktCount,
-                 (unsigned long)elapsed, tput);
-
-        vTaskDelay(pdMS_TO_TICKS(3000));
+        ESP_LOGI(TAG, "=== Loop %lu complete, next in 5s ===", (unsigned long)loopCount);
+        blink(3, 200, 200);
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
-
-    printf("\n=== TX BURST COMPLETE ===\n");
-    printf("Looping again in 10s...\n\n");
-    fflush(stdout);
-
-    blink(5, 200, 200);
-    vTaskDelay(pdMS_TO_TICKS(10000));
 }
 
 #endif
