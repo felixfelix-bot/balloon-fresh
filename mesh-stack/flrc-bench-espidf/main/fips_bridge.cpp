@@ -86,6 +86,9 @@ static void radioTx(const uint8_t *data, size_t len) {
     esp_rom_delay_us(900);
     uint8_t clrCmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
     spiWrite(clrCmd, 6, nullptr, 0);
+    uint8_t rxCmd[] = {0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF};
+    spiWrite(rxCmd, 6, nullptr, 0);
+    irqFlag = false;
 }
 
 static uint16_t radioRx(uint8_t *buf, size_t maxLen) {
@@ -162,8 +165,6 @@ static void uartToRadioTask(void *arg) {
 }
 
 extern "C" void app_main() {
-    esp_log_level_set("*", ESP_LOG_INFO);
-
     gpio_config_t io = {};
     io.pin_bit_mask = (1ULL << LED_GPIO) | (1ULL << NSS_PIN);
     io.mode = GPIO_MODE_OUTPUT;
@@ -202,8 +203,6 @@ extern "C" void app_main() {
     radio->setPacketReceivedAction(onIrq);
     radio->startReceive();
 
-    ESP_LOGI(TAG, "Bridge ready: 2.4 GHz FLRC 2600, +12 dBm, fixed 255B");
-
     radioRxTask = xTaskGetCurrentTaskHandle();
     vTaskPrioritySet(NULL, configMAX_PRIORITIES - 1);
 
@@ -217,7 +216,6 @@ extern "C" void app_main() {
 
     uint8_t rxBuf[MAX_PKT];
     uint8_t slipBuf[MAX_PKT * 2 + 2];
-    uint32_t rxCount = 0;
 
     while (true) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
@@ -225,13 +223,6 @@ extern "C" void app_main() {
         irqFlag = false;
 
         uint16_t pktLen = radioRx(rxBuf, MAX_PKT);
-        rxCount++;
-
-        if (rxCount <= 5 || (rxCount % 100) == 0) {
-            ESP_LOGI(TAG, "RX pkt %lu: len=%u magic=%02X%02X plen=%u",
-                     (unsigned long)rxCount, pktLen, rxBuf[0], rxBuf[1],
-                     (rxBuf[11] | (rxBuf[12] << 8)));
-        }
 
         int slipLen = slipEncode(rxBuf, pktLen, slipBuf, sizeof(slipBuf));
         if (slipLen > 0) {
