@@ -91,17 +91,11 @@ static void radioTx(const uint8_t *data, size_t len) {
     irqFlag = false;
 }
 
-static uint16_t radioRx(uint8_t *buf, size_t maxLen) {
-    uint8_t lenCmd[] = {0x02, 0x12};
-    uint8_t lenResp[2] = {0, 0};
-    spiRead(lenCmd, 2, lenResp, 2);
-    uint16_t pktLen = (lenResp[0] << 8) | lenResp[1];
-    if (pktLen == 0 || pktLen > maxLen) pktLen = maxLen;
+static void radioRx(uint8_t *buf, size_t len) {
     uint8_t readCmd[] = {0x00, 0x01};
-    spiRead(readCmd, 2, buf, pktLen);
+    spiRead(readCmd, 2, buf, len);
     uint8_t clrCmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
     spiWrite(clrCmd, 6, nullptr, 0);
-    return pktLen;
 }
 
 static int slipEncode(const uint8_t *in, size_t inLen, uint8_t *out, size_t outMax) {
@@ -180,7 +174,18 @@ extern "C" void app_main() {
         .tx_buffer_size = 1024,
         .rx_buffer_size = 1024,
     };
-    usb_serial_jtag_driver_install(&usbCfg);
+    esp_err_t usb_ret = usb_serial_jtag_driver_install(&usbCfg);
+    if (usb_ret == ESP_ERR_INVALID_STATE) {
+        // Already installed by console — that's fine, we can still use it
+    } else if (usb_ret != ESP_OK) {
+        // Real error — blink fast
+        while (true) {
+            gpio_set_level((gpio_num_t)LED_GPIO, 0);
+            vTaskDelay(pdMS_TO_TICKS(100));
+            gpio_set_level((gpio_num_t)LED_GPIO, 1);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    }
 
     hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
     hal->setCsPin(LR2021_NSS);
@@ -222,9 +227,9 @@ extern "C" void app_main() {
         if (!irqFlag) continue;
         irqFlag = false;
 
-        uint16_t pktLen = radioRx(rxBuf, MAX_PKT);
+        radioRx(rxBuf, MAX_PKT);
 
-        int slipLen = slipEncode(rxBuf, pktLen, slipBuf, sizeof(slipBuf));
+        int slipLen = slipEncode(rxBuf, MAX_PKT, slipBuf, sizeof(slipBuf));
         if (slipLen > 0) {
             usb_serial_jtag_write_bytes(slipBuf, slipLen, pdMS_TO_TICKS(50));
         }
