@@ -76,8 +76,11 @@ static void spiRead(const uint8_t *cmd, size_t cmdLen, uint8_t *data, size_t dat
 }
 
 static void radioTx(const uint8_t *data, size_t len) {
+    uint8_t pad[MAX_PKT];
+    memset(pad, 0, sizeof(pad));
+    memcpy(pad, data, len > MAX_PKT ? MAX_PKT : len);
     uint8_t writeCmd[] = {0x00, 0x02};
-    spiWrite(writeCmd, 2, data, len);
+    spiWrite(writeCmd, 2, pad, MAX_PKT);
     uint8_t txCmd[] = {0x02, 0x0D, 0x00, 0x00, 0x00, 0x00};
     spiWrite(txCmd, 6, nullptr, 0);
     esp_rom_delay_us(900);
@@ -85,11 +88,17 @@ static void radioTx(const uint8_t *data, size_t len) {
     spiWrite(clrCmd, 6, nullptr, 0);
 }
 
-static void radioRx(uint8_t *buf, size_t len) {
+static uint16_t radioRx(uint8_t *buf, size_t maxLen) {
+    uint8_t lenCmd[] = {0x02, 0x12};
+    uint8_t lenResp[2] = {0, 0};
+    spiRead(lenCmd, 2, lenResp, 2);
+    uint16_t pktLen = (lenResp[0] << 8) | lenResp[1];
+    if (pktLen == 0 || pktLen > maxLen) pktLen = maxLen;
     uint8_t readCmd[] = {0x00, 0x01};
-    spiRead(readCmd, 2, buf, len);
+    spiRead(readCmd, 2, buf, pktLen);
     uint8_t clrCmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
     spiWrite(clrCmd, 6, nullptr, 0);
+    return pktLen;
 }
 
 static int slipEncode(const uint8_t *in, size_t inLen, uint8_t *out, size_t outMax) {
@@ -153,7 +162,7 @@ static void uartToRadioTask(void *arg) {
 }
 
 extern "C" void app_main() {
-    esp_log_level_set("*", ESP_LOG_ERROR);
+    esp_log_level_set("*", ESP_LOG_INFO);
 
     gpio_config_t io = {};
     io.pin_bit_mask = (1ULL << LED_GPIO) | (1ULL << NSS_PIN);
@@ -193,6 +202,8 @@ extern "C" void app_main() {
     radio->setPacketReceivedAction(onIrq);
     radio->startReceive();
 
+    ESP_LOGI(TAG, "Bridge ready: 2.4 GHz FLRC 2600, +12 dBm, fixed 255B");
+
     radioRxTask = xTaskGetCurrentTaskHandle();
     vTaskPrioritySet(NULL, configMAX_PRIORITIES - 1);
 
@@ -206,15 +217,23 @@ extern "C" void app_main() {
 
     uint8_t rxBuf[MAX_PKT];
     uint8_t slipBuf[MAX_PKT * 2 + 2];
+    uint32_t rxCount = 0;
 
     while (true) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         if (!irqFlag) continue;
         irqFlag = false;
 
-        radioRx(rxBuf, MAX_PKT);
+        uint16_t pktLen = radioRx(rxBuf, MAX_PKT);
+        rxCount++;
 
-        int slipLen = slipEncode(rxBuf, MAX_PKT, slipBuf, sizeof(slipBuf));
+        if (rxCount <= 5 || (rxCount % 100) == 0) {
+            ESP_LOGI(TAG, "RX pkt %lu: len=%u magic=%02X%02X plen=%u",
+                     (unsigned long)rxCount, pktLen, rxBuf[0], rxBuf[1],
+                     (rxBuf[11] | (rxBuf[12] << 8)));
+        }
+
+        int slipLen = slipEncode(rxBuf, pktLen, slipBuf, sizeof(slipBuf));
         if (slipLen > 0) {
             usb_serial_jtag_write_bytes(slipBuf, slipLen, pdMS_TO_TICKS(50));
         }

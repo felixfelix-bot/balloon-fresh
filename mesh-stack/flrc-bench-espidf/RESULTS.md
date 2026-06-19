@@ -216,3 +216,54 @@ The current 80 kbps ceiling is caused by per-packet processing overhead:
 - **Phase 1 (FIFO depth)**: Does FIFO accumulate multiple packets?
 - **Phase 3 (Auto-RX with TX)**: Does radio stay receiving during read?
 - **Phase 5 (End-to-end throughput)**: Sustained throughput measurement
+
+---
+
+## Phase C Throughput Optimization Results (2026-06-19)
+
+### Setup
+- TX board: ESP32-C3 (MAC 96:DC), LR2021, raw SPI TX, 868 MHz FLRC 2600, +22 dBm
+- RX board: ESP32-C3 (MAC C6:98), LR2021, raw SPI RX, 868 MHz FLRC 2600, +22 dBm
+- 500 × 255B packets, fixed length, no PRBS, no RSSI
+
+### Throughput Progression
+
+| Step | Method | Per-Pkt Time | Throughput | PER | Unique |
+|------|--------|-------------|-----------|-----|--------|
+| Baseline | RadioLib readData+startReceive | 14ms | 101.2 kbps | 0% | 100/100 |
+| No PRBS | Skip prbs15_verify | 13.8ms | 147.8 kbps | 0% | 100/100 |
+| Raw SPI | rawReadFifo+rawClearIrq | 252µs | 388.9 kbps | 0% | 500/500 |
+| No STBY | Skip standby (continuous RX) | 188µs | 771.0 kbps | 0% | 500/500 |
+| **Final** | **+ high-pri task + raw SPI TX** | **188µs** | **838.8 kbps** | **0%** | **500/500** |
+
+### Key Optimizations Applied
+1. **Raw SPI bypass**: Replaced RadioLib's 9-SPI-roundtrip `readData()+startReceive()` with 2 direct SPI commands (`CMD_READ_RX_FIFO` + `CMD_CLEAR_IRQ`)
+2. **No-STBY continuous RX**: Radio stays in RX mode during FIFO read (no standby/setRx transition)
+3. **High-priority task**: `vTaskPrioritySet(NULL, configMAX_PRIORITIES-1)` for immediate ISR→task scheduling
+4. **Task notification**: `vTaskNotifyGiveFromISR` + `ulTaskNotifyTake` (lower latency than taskYIELD)
+5. **Raw SPI TX**: `CMD_WRITE_TX_FIFO` + `CMD_SET_TX` + 840µs delay (matches air time)
+
+### Dual-Band Test Results
+| Band | TX Throughput | RX PER | Notes |
+|------|-------------|--------|-------|
+| 868 MHz | 1395.3 kbps | 0% | Lab-only (exceeds EU ISM BW) |
+| 2450 MHz | 1395.3 kbps | 2% | EU legal, WiFi interference at bench |
+
+### Tests That Did NOT Improve Throughput
+| Optimization | Result | Reason |
+|-------------|--------|--------|
+| 160 MHz CPU | 775 kbps (worse) | USB serial JTAG generates more interrupts |
+| WFI (asm volatile) | Starved USB | No task scheduling, no serial output |
+| Tight busy-wait | Starved USB | Same as WFI |
+| 830µs TX delay | 809 kbps | TX faster but RX misses packets |
+
+### Critical Bugs Found
+1. **RADIOLIB_GODMODE breaks RX** — Using `#define RADIOLIB_GODMODE 1` silently corrupts radio config. All RX must use public API only.
+2. **Sequential config runs corrupt radio state** — Running variable mode then fixed mode breaks subsequent configs. Fix: one config per build.
+
+### Final Air Rate Utilization
+```
+Achieved: 838.8 / 2600 = 32.3% (was 3.9% with baseline)
+Remaining bottleneck: ISR → task notification latency (~2.2ms per packet)
+Next step: RP2040 PIO (eliminates RTOS latency) → 1300+ kbps target
+```

@@ -20,18 +20,20 @@ Design **three board variants**, sharing the same ESP32-C3 + LR2021 core but wit
 
 ### Board A: ESP32-C3 Solo (Baseline / Tracker / Mesh V1)
 
+**STATUS: Throughput optimization COMPLETE — 838.8 kbps achieved**
+
 ```
 [ESP32-C3] ←SPI→ [LR2021] ←→ Antenna
 ```
 
-- **Coprocessor**: None
-- **Optimization**: Inline SPI (bypass RadioLib), skip PRBS, fixed 255B packets
-- **Throughput target**: 500-1000 kbps
+- **Coprocessor**: None — raw SPI bypass (direct LR2021 commands)
+- **Throughput**: **838.8 kbps ACHIEVED** (8.3x over 101.2 kbps baseline)
 - **Weight**: 14-22g (existing tracker/mesh weight)
-- **Power**: 134-431 mW (existing budget)
+- **Power**: 134-431 mW (existing budget, 80 MHz optimal)
 - **Deep sleep**: 5 µA (ESP32-C3 native)
 - **Use case**: Tracker, Mesh V1 single-balloon, Minimal variant flights
-- **Status**: Prototype exists (2 boards), firmware optimization in progress
+- **Status**: ✅ Complete — raw SPI + no-STBY + high-priority task
+- **FIPS bridge**: In progress — relay verified, handshake pending (see FIPS-BRIDGE-STATUS.md)
 
 ### Board B: ESP32-C3 + RP2040 Coprocessor (Mesh V2)
 
