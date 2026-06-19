@@ -26,6 +26,8 @@ config BENCH_MODE_PROFILE
     bool "RX pipeline profiler (per-packet timing breakdown)"
 config BENCH_MODE_FAST_RX
     bool "Fast RX optimizer (6 incremental throughput configs)"
+config BENCH_MODE_FIPS_BRIDGE
+    bool "FIPS UART-to-FLRC bridge (transparent SLIP relay)"
 endchoice
 
 config RANGE_TEST_GPS
