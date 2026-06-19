@@ -10,12 +10,14 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_rom_sys.h"
+#include "esp_random.h"
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include <RadioLib.h>
 #include "EspHalC3.h"
 
-static const char *TAG = "BRIDGE";
+// Uncomment to use 868 MHz sub-GHz (less WiFi interference, +22 dBm TX)
+// #define BRIDGE_BAND_SUBGHZ
 
 #define LED_GPIO 8
 #define NSS_PIN 10
@@ -34,12 +36,24 @@ static const char *TAG = "BRIDGE";
 #define SLIP_ESC_ESC 0xDD
 #define MAX_PKT 255
 
+#ifdef BRIDGE_BAND_SUBGHZ
+  #define BRIDGE_FREQ     868.0f
+  #define BRIDGE_POWER    22
+#else
+  #define BRIDGE_FREQ     2450.0f
+  #define BRIDGE_POWER    12
+#endif
+
 static EspHalC3 *hal = nullptr;
 static Module *mod = nullptr;
 static LR2021 *radio = nullptr;
 static volatile bool irqFlag = false;
 static TaskHandle_t radioRxTask = NULL;
 static SemaphoreHandle_t spiMutex = NULL;
+static volatile uint32_t lastValidRxMs = 0;
+static volatile uint32_t txCount = 0;
+static volatile uint32_t rxValidCount = 0;
+static volatile uint32_t rxNoiseCount = 0;
 
 static void IRAM_ATTR onIrq(void) {
     irqFlag = true;
@@ -51,7 +65,10 @@ static void IRAM_ATTR onIrq(void) {
 }
 
 static void rawWaitBusy() {
-    while (gpio_get_level((gpio_num_t)BUSY_PIN) == 1) {}
+    uint32_t timeout = 100000;
+    while (gpio_get_level((gpio_num_t)BUSY_PIN) == 1) {
+        if (--timeout == 0) return;
+    }
 }
 
 static void spiWrite(const uint8_t *cmd, size_t cmdLen, const uint8_t *data, size_t dataLen) {
@@ -75,7 +92,19 @@ static void spiRead(const uint8_t *cmd, size_t cmdLen, uint8_t *data, size_t dat
     xSemaphoreGive(spiMutex);
 }
 
+static void radioInit() {
+    radio->reset();
+    radio->irqDioNum = 9;
+    radio->beginFLRC(BRIDGE_FREQ, 2600, RADIOLIB_LR2021_FLRC_CR_1_0,
+                     BRIDGE_POWER, 16, RADIOLIB_SHAPING_0_5, 0.0f);
+    radio->fixedPacketLengthMode(255);
+    radio->setPacketReceivedAction(onIrq);
+    radio->startReceive();
+}
+
 static void radioTx(const uint8_t *data, size_t len) {
+    esp_rom_delay_us(esp_random() % 3000);
+
     uint8_t pad[MAX_PKT];
     memset(pad, 0, sizeof(pad));
     memcpy(pad, data, len > MAX_PKT ? MAX_PKT : len);
@@ -83,12 +112,13 @@ static void radioTx(const uint8_t *data, size_t len) {
     spiWrite(writeCmd, 2, pad, MAX_PKT);
     uint8_t txCmd[] = {0x02, 0x0D, 0x00, 0x00, 0x00, 0x00};
     spiWrite(txCmd, 6, nullptr, 0);
-    esp_rom_delay_us(900);
+    esp_rom_delay_us(1200);
     uint8_t clrCmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
     spiWrite(clrCmd, 6, nullptr, 0);
-    uint8_t rxCmd[] = {0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF};
-    spiWrite(rxCmd, 6, nullptr, 0);
-    irqFlag = false;
+    radio->standby();
+    radio->setPacketReceivedAction(onIrq);
+    radio->startReceive();
+    txCount++;
 }
 
 static void radioRx(uint8_t *buf, size_t len) {
@@ -96,6 +126,9 @@ static void radioRx(uint8_t *buf, size_t len) {
     spiRead(readCmd, 2, buf, len);
     uint8_t clrCmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
     spiWrite(clrCmd, 6, nullptr, 0);
+    radio->standby();
+    radio->setPacketReceivedAction(onIrq);
+    radio->startReceive();
 }
 
 static int slipEncode(const uint8_t *in, size_t inLen, uint8_t *out, size_t outMax) {
@@ -176,9 +209,7 @@ extern "C" void app_main() {
     };
     esp_err_t usb_ret = usb_serial_jtag_driver_install(&usbCfg);
     if (usb_ret == ESP_ERR_INVALID_STATE) {
-        // Already installed by console — that's fine, we can still use it
     } else if (usb_ret != ESP_OK) {
-        // Real error — blink fast
         while (true) {
             gpio_set_level((gpio_num_t)LED_GPIO, 0);
             vTaskDelay(pdMS_TO_TICKS(100));
@@ -192,10 +223,9 @@ extern "C" void app_main() {
     hal->setBusyPin(LR2021_BUSY);
     mod = new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);
     radio = new LR2021(mod);
-    radio->irqDioNum = 9;
 
-    int16_t state = radio->beginFLRC(2450.0f, 2600, RADIOLIB_LR2021_FLRC_CR_1_0, 12,
-                                     16, RADIOLIB_SHAPING_0_5, 0.0f);
+    int16_t state = radio->beginFLRC(BRIDGE_FREQ, 2600, RADIOLIB_LR2021_FLRC_CR_1_0,
+                                     BRIDGE_POWER, 16, RADIOLIB_SHAPING_0_5, 0.0f);
     if (state != RADIOLIB_ERR_NONE) {
         while (true) {
             gpio_set_level((gpio_num_t)LED_GPIO, 0);
@@ -214,24 +244,47 @@ extern "C" void app_main() {
     xTaskCreate(uartToRadioTask, "uart_rx", 4096, NULL, 5, NULL);
 
     vTaskDelay(pdMS_TO_TICKS(200));
-
     gpio_set_level((gpio_num_t)LED_GPIO, 0);
-    vTaskDelay(pdMS_TO_TICKS(500));
-    gpio_set_level((gpio_num_t)LED_GPIO, 1);
 
     uint8_t rxBuf[MAX_PKT];
     uint8_t slipBuf[MAX_PKT * 2 + 2];
+    lastValidRxMs = esp_timer_get_time() / 1000;
 
     while (true) {
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        if (!irqFlag) continue;
-        irqFlag = false;
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
+        uint32_t nowMs = esp_timer_get_time() / 1000;
 
-        radioRx(rxBuf, MAX_PKT);
+        if (irqFlag) {
+            irqFlag = false;
+            radioRx(rxBuf, MAX_PKT);
 
-        int slipLen = slipEncode(rxBuf, MAX_PKT, slipBuf, sizeof(slipBuf));
-        if (slipLen > 0) {
-            usb_serial_jtag_write_bytes(slipBuf, slipLen, pdMS_TO_TICKS(50));
+            if (rxBuf[0] == 0xF1 && rxBuf[1] == 0x50 && rxBuf[2] == 0x01) {
+                lastValidRxMs = nowMs;
+                rxValidCount++;
+
+                uint16_t payloadLen = rxBuf[11] | (rxBuf[12] << 8);
+                int frameLen = 13 + payloadLen + 4;
+                int actualLen = MAX_PKT;
+                if (frameLen > 0 && frameLen <= MAX_PKT) {
+                    actualLen = frameLen;
+                }
+
+                int slipLen = slipEncode(rxBuf, actualLen, slipBuf, sizeof(slipBuf));
+                if (slipLen > 0) {
+                    usb_serial_jtag_write_bytes(slipBuf, slipLen, pdMS_TO_TICKS(50));
+                }
+            } else {
+                rxNoiseCount++;
+            }
+            continue;
+        }
+
+        if (nowMs - lastValidRxMs > 15000) {
+            lastValidRxMs = nowMs;
+            gpio_set_level((gpio_num_t)LED_GPIO, 1);
+            vTaskDelay(pdMS_TO_TICKS(50));
+            gpio_set_level((gpio_num_t)LED_GPIO, 0);
+            radioInit();
         }
     }
 }
