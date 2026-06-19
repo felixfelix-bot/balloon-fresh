@@ -3,7 +3,8 @@
 ## Overview
 Incremental optimization of the RX pipeline to maximize throughput.
 Three board variants (ADR-015): Board A (ESP32-C3 solo), Board B (+RP2040), Board C (+FPGA).
-This plan covers Board A software optimization first (free, no hardware needed).
+Board A optimization COMPLETE: 838.8 kbps achieved (8.3x improvement over baseline).
+FIPS-over-FLRC bridge (Path A) in progress — bridge relay verified, handshake debugging.
 
 ## Hardware
 - RX board: ESP32-C3 (MAC C6:98) + LR2021, ttyACM1
@@ -34,13 +35,28 @@ This plan covers Board A software optimization first (free, no hardware needed).
 - [x] Create fast_rx.cpp (6 optimization configs)
 - [x] Add NVS logging to fifo_tx.cpp (resilient TX)
 - [x] Build fast_rx.bin and fifo_tx.bin
-- [ ] **Fix frequency: change from 2450 MHz to 868 MHz (proven RX path)**
-- [ ] **Add 2.4 GHz RX path fix: setRxPath(RX_PATH_HF, RX_BOOST_HF)**
-- [ ] **Implement inline SPI bypass (bypass RadioLib virtual calls)**
-- [ ] Flash both boards and run Phase C at 868 MHz
-- [ ] Test 2.4 GHz with RX path fix
-- [ ] Document results in RESULTS.md
-- [ ] Commit and push
+- [x] **Fix frequency: 868 MHz + 2450 MHz both confirmed working**
+- [x] **Implement raw SPI bypass (14ms → 188µs per packet)**
+- [x] **Implement no-STBY continuous RX (keep radio in RX mode)**
+- [x] **Implement raw SPI TX (writeTxFifo + setTx + delay)**
+- [x] **Implement high-priority task + task notification**
+- [x] **Run Phase C test: 838.8 kbps verified (500/500 unique, 0% PER)**
+- [x] Test 160 MHz CPU (no improvement, 80 MHz optimal)
+- [x] Document results in RESULTS.md
+- [x] Commit and push
+
+### Board A.5: FIPS-over-FLRC Bridge (Path A)
+- [x] Write fips_bridge.cpp (SLIP relay, raw SPI, 2.4 GHz)
+- [x] Build FIPS binary (`cargo build`)
+- [x] Create FIPS configs (node-a.yaml, node-b.yaml)
+- [x] Fix SerialConfig field names (virtual_mtu, deny_unknown_fields)
+- [x] Flash bridge firmware to both boards
+- [x] Verify bridge relay works (manual SLIP test confirmed)
+- [x] Verify FIPS A sends data through bridge (524 bytes at ACM1)
+- [ ] **Fix FIPS B handshake (root cause under investigation)**
+- [ ] Test ping6 end-to-end
+- [ ] Test UDP throughput (iperf3)
+- [ ] See FIPS-BRIDGE-STATUS.md for details
 
 ### Board B: RP2040 Coprocessor (when RP2040-Zero arrives)
 - [ ] Wire RP2040 to LR2021 (SPI0) + ESP32-C3 (UART)
