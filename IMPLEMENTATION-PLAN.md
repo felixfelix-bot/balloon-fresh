@@ -358,15 +358,15 @@ The balloon broadcasts its position and status via standard MeshCore adverts and
 ## Phase C: FIPS + Nostr Integration
 
 ### C.1 FIPS Transport over LoRa
-- [ ] Study FIPS daemon architecture (https://github.com/jmcorgan/fips)
-- [ ] Study microfips leaf node (https://github.com/Amperstrand/microfips)
-- [ ] Assess feasibility: FIPS Noise XK handshake over LoRa (roundtrip budget)
-- [ ] Implement FIPS session establishment over erasure-coded fragmentation
-- [ ] Implement Nostr-native identity (secp256k1 keypairs)
-- [ ] Implement Noise encryption (ChaCha20-Poly1305)
-- [ ] FIPS mesh routing: spanning-tree + bloom-filter discovery
-- [ ] UDP/IP tunnel over FIPS mesh
-- [ ] Integration test: 2 nodes, encrypted transport, UDP ping
+- [x] Study FIPS daemon architecture (https://github.com/jmcorgan/fips)
+- [x] Study microfips leaf node (https://github.com/Amperstrand/microfips)
+- [x] Assess feasibility: FIPS Noise XK handshake over LoRa (roundtrip budget) — **PROVEN 2026-06-19**
+- [x] Implement FIPS session establishment over erasure-coded fragmentation — **handshake works over FLRC**
+- [x] Implement Nostr-native identity (secp256k1 keypairs) — **FIPS built-in**
+- [x] Implement Noise encryption (ChaCha20-Poly1305) — **FIPS built-in**
+- [ ] FIPS mesh routing: spanning-tree + bloom-filter discovery — **needs stable radio link**
+- [ ] UDP/IP tunnel over FIPS mesh — **needs stable radio link + end-to-end session**
+- [ ] Integration test: 2 nodes, encrypted transport, UDP ping — **blocked on radio stability**
 
 ### C.2 Nostr Store-and-Forward
 - [ ] Design Nostr event storage format (SPIFFS/LittleFS)

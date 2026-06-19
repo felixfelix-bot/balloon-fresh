@@ -267,3 +267,63 @@ Achieved: 838.8 / 2600 = 32.3% (was 3.9% with baseline)
 Remaining bottleneck: ISR → task notification latency (~2.2ms per packet)
 Next step: RP2040 PIO (eliminates RTOS latency) → 1300+ kbps target
 ```
+
+---
+
+## FIPS-over-FLRC End-to-End Test (2026-06-19)
+
+### Setup
+- TX/RX: 2x ESP32-C3 SuperMini + NiceRF LoRa2021, wire dipoles, bench range (~1m)
+- Firmware: fips_bridge.cpp (SLIP → FLRC transparent bridge, 2450 MHz, 2600 kbps, +12 dBm)
+- Host: FIPS v0.3.0-dev on Linux, serial transport via Python PTY bridge
+
+### Architecture
+```
+FIPS A → SLIP/frag/CRC → PTY → Python bridge → USB CDC → ESP32-A → FLRC radio
+                                                                    ↕ (air, 2.4 GHz)
+FIPS B ← SLIP/frag/CRC ← PTY ← Python bridge ← USB CDC ← ESP32-B ← FLRC radio
+```
+
+### Results
+
+| Test | Result | Details |
+|------|--------|---------|
+| Radio link (A→B) | PASS | SLIP frames correctly bridged, CRC valid |
+| Radio link (B→A) | PASS | Bidirectional verified |
+| FIPS Noise XK handshake | PASS | Both nodes promoted to active peer (~22s) |
+| Heartbeat exchange | PASS | 37B every 10s, both directions |
+| Multi-fragment datagram | PASS | 1071B split into 5 SLIP frames, reassembled |
+| TUN interface A (fipsa) | PASS | fd12:ce2:25ab:c459:ec45:2302:f006:f6ce |
+| TUN interface B (fipsb) | PASS | fdfd:fef7:933d:9667:8c41:2515:82d0:2d10 |
+| End-to-end session | PASS | state=established, handshake_established=true, dataplane_proven=true |
+| Mesh forwarding | PASS | 22 packets / 1777 bytes delivered, 0% loss, ETX=1.0 |
+| iperf3 connection | PASS | UDP client connected to server through mesh |
+| Sustained throughput | LIMITED | Link stable 3-5 min before radio lockup (raw SPI TX issue) |
+| Long-term stability (>5 min) | FAIL | Radio locks up after sustained raw SPI TX/RX |
+
+### Bugs Found & Fixed
+
+1. **FIPS serial transport missing Err arm** — `src/transport/serial/mod.rs:388` match on `reader.read()` was non-exhaustive. Fixed: added `Err(_)` arm.
+
+2. **fips_bridge.cpp RX padding** — Bridge padded TX to 255 bytes (fixed packet length mode), but FIPS rejects frames where `frame.len() != expected`. Fixed: parse FIPS header (magic 0xF1 0x50, version 0x01) on RX to compute actual frame length (13 + payload_len + 4), trim output.
+
+3. **FIPS TUN route conflict** — Both FIPS instances on same machine try to add `fd00::/8` route; second one fails with "File exists". Fixed: made route addition non-fatal in `src/upper/tun.rs:463`.
+
+4. **Radio lockup with raw SPI TX** — Bridge firmware uses raw SPI commands for TX (CMD_WRITE_TX_FIFO + CMD_SET_TX). After ~5 minutes of sustained operation, the radio's internal state gets corrupted and RX stops working. The 900µs TX delay was too short (actual TX takes ~1.1-1.4ms including calibration).
+
+### RadioLib-Based Bridge (Written, Pending Flash)
+
+A new version of `fips_bridge.cpp` was written using RadioLib's full high-level API:
+- TX: `radio->transmit()` (blocking, handles full TX cycle)
+- RX: `radio->readData()` + `radio->startReceive()` (proper state management)
+- Variable packet length mode (no 255-byte padding)
+- Radio mutex for thread-safe TX/RX
+- 15-second watchdog with full radio reinit
+
+**Status**: Compiled successfully. Cannot flash — both ESP32-C3 boards have flaky USB connections that prevent reliable firmware upload.
+
+### Blocking Issues
+
+1. **Flaky USB** — Both boards drop USB connection during flash. Multiple esptool modes tried (--no-stub, stub, 115200, 230400, 460800 baud). Board with MAC 96:DC has known intermittent USB; today both boards affected. Likely cause: bad USB cable or hub. Needs physical inspection.
+
+2. **Radio lockup** — Raw SPI TX approach corrupts radio state after sustained use. RadioLib-based bridge firmware ready but not yet tested on hardware.

@@ -1,55 +1,50 @@
 # FIPS-over-FLRC Bridge Status
 
-## Current State: Bridge relay works, FIPS handshake pending
+## Current State: FIPS session ESTABLISHED, radio stability improved
 
 ### Architecture
 ```
-FIPS A (laptop) → /dev/ttyACM0 → ESP32-C3 bridge → LR2021 radio TX → ✓ WORKS
-                                                                    ↓
-FIPS B (laptop) ← /dev/ttyACM1 ← ESP32-C3 bridge ← LR2021 radio RX ← ✗ NOT DECODING
+FIPS A (laptop) → PTY → Python bridge → USB CDC → ESP32-C3 bridge → LR2021 radio TX → ✓ WORKS
+                                                                                ↕ (air, 2.4 GHz)
+FIPS B (laptop) ← PTY ← Python bridge ← USB CDC ← ESP32-C3 bridge ← LR2021 radio RX ← ✓ WORKS
 ```
 
-### What's Verified Working
-- Bridge firmware correctly relays SLIP data between USB serial JTAG and LR2021 radio
-- Manual test: sent 6-byte SLIP frame to ACM0, received 257-byte SLIP frame on ACM1
-- FIPS A serial transport sends datagrams (confirmed in debug log: msg_id 1-4, 114 bytes each)
-- FIPS A data arrives at ACM1 with correct FIPS magic (0xF1 0x50) — 524 bytes received
-- Radio link is clean (0% PER in throughput tests)
+### What's Verified Working (2026-06-19)
+- FIPS Noise XK handshake over FLRC: **PROVEN** (both nodes promoted to active peer, ~22s)
+- End-to-end session: **ESTABLISHED** (handshake_established=true, dataplane_proven=true)
+- Mesh forwarding: 22 packets / 1777 bytes delivered, **0% loss, ETX=1.0**
+- iperf3 UDP connectivity through mesh
+- Multi-fragment datagrams (1071B split into 5 SLIP frames, reassembled correctly)
+- Both TUN interfaces (fipsa, fipsb) with IPv6 addresses
 
-### Root Cause of Handshake Failure (Under Investigation)
-The bridge sends 255-byte fixed-length radio packets (padded with zeros).
-FIPS B receives these but doesn't complete the handshake.
+### Bridge Firmware Version History
 
-**Hypothesis 1 (most likely):** The 255-byte frame exceeds FIPS's SLIP decoder
-`max_raw_len` when `fragment_payload_max < 238`. Setting it to 238 should fix this
-(`max_raw_len = 13 + 238 + 4 = 255`), but handshake still fails.
+| Version | TX Method | Watchdog | Result |
+|---------|-----------|----------|--------|
+| v1 (original) | Raw SPI, 900µs delay | None | Works ~5 min, then radio locks up |
+| v2 | Raw SPI, 900µs, startReceive() after TX | IRQ-based 15s | Works ~5 min, watchdog doesn't fire (noise IRQs keep it alive) |
+| v3 | RadioLib transmit() | Valid-frame 15s | TX collisions (~15ms TX time), link dead immediately |
+| **v4 (current)** | **Raw SPI, 1200µs, jitter TX, startReceive()** | **Valid-frame 15s (FIPS magic check)** | **Pending test** |
 
-**Hypothesis 2:** The radio's variable-length packet query returns wrong length.
-The bridge queries `CMD_GET_RX_PKT_LENGTH` (0x0212) but the response format may
-not match what we expect (2-byte big-endian vs little-endian).
+### v4 Stability Fixes Applied
 
-**Hypothesis 3:** Console output (ESP_LOGI) on the USB serial JTAG interferes
-with FIPS SLIP data. Both console and bridge data share the same USB pipe.
-Console was disabled (CONFIG_ESP_CONSOLE_NONE=y) but handshake still failed —
-though this might have been because the debug build wasn't actually flashed.
+1. **Valid-frame watchdog**: `lastValidRxMs` only updates when FIPS magic (0xF1 0x50 0x01) is detected. Noise/garbage IRQs don't prevent watchdog from firing.
+2. **TX jitter**: 0-3ms random delay before each TX (`esp_random() % 3000`). Reduces collisions between the two nodes.
+3. **Noise packet suppression**: Packets without FIPS magic are silently dropped (not SLIP-encoded, not sent to serial). Eliminates serial flooding.
+4. **Sub-GHz compile option**: Uncomment `#define BRIDGE_BAND_SUBGHZ` for 868 MHz operation (less WiFi interference, +22 dBm TX power).
 
-### Next Debugging Steps
-1. Flash the debug build (already compiled, binary exists in build/)
-2. Monitor bridge serial output on ACM1 to verify radio packets arrive
-3. Check if FIPS magic (0xF1 0x50) is present in received radio data
-4. If CRC fails → investigate radio data integrity
-5. If no packets → investigate IRQ/RX task
+### Known Limitations
+
+- **Radio lockup**: Raw SPI TX eventually corrupts LR2021 state (3-5 min). v4 watchdog should auto-recover.
+- **Flaky USB**: Both ESP32-C3 boards have intermittent USB connections. Flash when USB is stable.
+- **Python PTY bridge required**: tokio_serial can't read USB CDC ACM directly. Python bridge (serial_bridge.py) converts CDC ACM ↔ PTY.
+- **Same-host TUN shortcut**: Both TUNs on one machine → kernel delivers locally, bypassing mesh. Use 2 machines or network namespaces for real throughput.
 
 ### Files
 - Bridge firmware: `mesh-stack/flrc-bench-espidf/main/fips_bridge.cpp`
+- Python PTY bridge: `mesh-stack/flrc-bench-espidf/serial_bridge.py`
 - FIPS config A: `/home/c03rad0r/fips/.runtime/flrc-bridge/node-a.yaml`
 - FIPS config B: `/home/c03rad0r/fips/.runtime/flrc-bridge/node-b.yaml`
-- FIPS binary: `/home/c03rad0r/fips/target/debug/fips`
-
-### Build Config
-```
-CONFIG_BENCH_MODE_FIPS_BRIDGE=y
-CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y  (debug build, may interfere)
-CONFIG_LOG_DEFAULT_LEVEL_INFO=y        (for bridge RX debug output)
-fragment_payload_max: 238              (FIPS config, both nodes)
-```
+- FIPS binary: `/home/c03rad0r/fips/target/debug/fips` (with cap_net_admin)
+- Launch script: `/tmp/run_flrc_test.sh`
+- Results: `mesh-stack/flrc-bench-espidf/RESULTS.md` (FIPS-over-FLRC section)
