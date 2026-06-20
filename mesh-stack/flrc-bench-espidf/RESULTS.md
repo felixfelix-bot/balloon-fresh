@@ -298,8 +298,9 @@ FIPS B ← SLIP/frag/CRC ← PTY ← Python bridge ← USB CDC ← ESP32-B ← F
 | End-to-end session | PASS | state=established, handshake_established=true, dataplane_proven=true |
 | Mesh forwarding | PASS | 22 packets / 1777 bytes delivered, 0% loss, ETX=1.0 |
 | iperf3 connection | PASS | UDP client connected to server through mesh |
-| Sustained throughput | LIMITED | Link stable 3-5 min before radio lockup (raw SPI TX issue) |
-| Long-term stability (>5 min) | FAIL | Radio locks up after sustained raw SPI TX/RX |
+| Sustained throughput | LIMITED | Active data exchange for first ~5 min, then RX degrades |
+| 30-min link survival | PASS | Peer link survived 30 min with valid-frame watchdog + auto-reconnect |
+| Long-term RX stability | PARTIAL | TX stable (99 pkts), RX degrades after ~5 min of sustained raw SPI |
 
 ### Bugs Found & Fixed
 
