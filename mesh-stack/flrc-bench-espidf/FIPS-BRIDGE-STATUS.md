@@ -1,6 +1,14 @@
 # FIPS-over-FLRC Bridge Status
 
-## Current State: FIPS session ESTABLISHED, radio stability improved
+## Current State: FIPS session ESTABLISHED, 30-min link survival proven
+
+### v4 Firmware Test Results (2026-06-19)
+- **30-minute stability test**: PASS — peer link survived entire duration
+- **Valid-frame watchdog**: Working — radio auto-resets after 15s of noise-only RX
+- **Active data exchange**: First ~5 minutes (24 packets delivered, 0% loss, ETX=1.0)
+- **RX degradation after ~5 min**: Known limitation of raw SPI TX approach
+- **TX stability**: 99 packets sent over 30 min with zero errors
+- **Auto-reconnect**: FIPS maintains peer connection across watchdog resets
 
 ### Architecture
 ```
