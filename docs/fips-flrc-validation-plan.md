@@ -23,12 +23,16 @@ On 2026-06-19, we proved FIPS Noise XK handshake over FLRC radio (2.4 GHz, 2600 
 
 ## What Didn't Work / Is Blocked
 
-- [x] TUN device as user — `Operation not permitted` (needs root or CAP_NET_ADMIN)
-- [x] TUN stale routes — `fd00::/8` route from previous instance (`File exists`)
-- [x] RADIOLIB_GODMODE — silently corrupts RX config
-- [x] PlatformIO Arduino — can't TX with LR2021
-- [x] Board MAC 96:DC — flaky USB
-- [x] 160 MHz CPU — worse than 80 MHz (USB JTAG IRQ)
+- [x] TUN device as user — FIXED: `setcap cap_net_admin=eip` on FIPS binary
+- [x] TUN stale routes — FIXED: made fd00::/8 route addition non-fatal
+- [x] RADIOLIB_GODMODE — silently corrupts RX config — DO NOT USE for RX
+- [x] PlatformIO Arduino — can't TX with LR2021 — use ESP-IDF only
+- [x] Board MAC 96:DC — flaky USB — replug temporarily fixes
+- [x] 160 MHz CPU — worse than 80 MHz (USB JTAG IRQ interference)
+- [x] RadioLib transmit() bridge — ~15ms TX causes collisions — raw SPI TX required
+- [x] tokio_serial can't read USB CDC ACM — Python PTY bridge workaround required
+- [x] RX degradation at 2.4 GHz after ~5 min — WiFi interference — TESTING sub-GHz fix
+- [ ] Real RTT/throughput on single machine — kernel TUN shortcut — needs 2 machines or netns
 
 ## Transport Architecture Decision
 
@@ -68,16 +72,24 @@ On 2026-06-19, we proved FIPS Noise XK handshake over FLRC radio (2.4 GHz, 2600 
 - [ ] Try `iperf3 -c <fipsb> -t 10` (TCP)
 - [ ] Document: confirms why UDP-only for balloon mesh
 
-### Step 1.5: Stability Test
-- [ ] Run iperf3 UDP for 10+ minutes
-- [ ] Monitor FIPS logs: CRC errors, reassembly timeouts, connection drops
-- [ ] Monitor bridge logs: serial errors, reconnections
-- [ ] Record: packet loss %, throughput degradation over time
+### Step 1.5: Stability Test (v4 firmware, 2.4 GHz)
+- [x] 30-min monitor completed — peer link survived (valid-frame watchdog working)
+- [x] Active data exchange first ~5 min (24 packets, 0% loss)
+- [x] TX stable 30 min (99 packets, zero errors)
+- [x] RX degrades after ~5 min at 2.4 GHz — WiFi interference saturates noise floor
+- [x] Watchdog auto-resets radio, FIPS maintains peer connection
 
-### Step 1.6: Document Results
-- [ ] Update `mesh-stack/flrc-bench-espidf/RESULTS.md` with FIPS-over-FLRC section
-- [ ] Record: handshake time, throughput, latency, packet loss
-- [ ] Create ADR-014: FIPS Serial Transport over FLRC
+### Step 1.6: Sub-GHz (868 MHz) Test — INCONCLUSIVE
+- [x] Flash sub-GHz firmware (BRIDGE_BAND_SUBGHZ built and flashed)
+- [x] Handshake completed at 868 MHz (22 packets RX in ~30s)
+- [ ] Monitor 10+ min — BLOCKED: USB serial dropped after ~30s (boards disconnected)
+- [ ] Need to retest with stable USB (replug boards, verify bridge stability first)
+- [ ] Compare: 2.4 GHz (5 min RX) vs 868 MHz (unknown — test invalid)
+
+### Step 1.7: Document Results
+- [x] RESULTS.md updated with FIPS-over-FLRC section
+- [ ] RESULTS.md updated with sub-GHz comparison
+- [ ] Create ADR-016: FIPS Serial Transport over FLRC
 
 ---
 

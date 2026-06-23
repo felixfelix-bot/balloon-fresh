@@ -325,6 +325,12 @@ A new version of `fips_bridge.cpp` was written using RadioLib's full high-level 
 
 ### Blocking Issues
 
-1. **Flaky USB** — Both boards drop USB connection during flash. Multiple esptool modes tried (--no-stub, stub, 115200, 230400, 460800 baud). Board with MAC 96:DC has known intermittent USB; today both boards affected. Likely cause: bad USB cable or hub. Needs physical inspection.
+1. **Flaky USB** — Both boards drop USB connection during operation. Multiple esptool modes tried. Likely cause: bad USB cable or hub. Needs physical inspection. **Impact**: Invalidated sub-GHz test (USB dropped after 30s, not a radio issue).
 
-2. **Radio lockup** — Raw SPI TX approach corrupts radio state after sustained use. RadioLib-based bridge firmware ready but not yet tested on hardware.
+2. **Radio RX degradation (2.4 GHz)** — Raw SPI TX eventually corrupts radio RX state after ~5 min of sustained operation. TX remains stable. The valid-frame watchdog (v4) auto-resets the radio, and FIPS maintains the peer connection across resets. **Impact**: Active data exchange limited to ~5 min windows.
+
+### Sub-GHz (868 MHz) Test — INCONCLUSIVE (2026-06-23)
+
+Firmware flashed with `#define BRIDGE_BAND_SUBGHZ` (868 MHz FLRC, +22 dBm). Handshake completed (22 packets RX), but USB serial connection dropped after ~30 seconds (bridge logs: "Attempting to use a port that is not open"). Both boards disappeared from USB. Test invalid — cannot distinguish USB failure from radio issues.
+
+**To retest**: Replug boards with fresh USB, flash sub-GHz firmware (already built), verify bridge stability before drawing conclusions about 868 MHz RX performance.
