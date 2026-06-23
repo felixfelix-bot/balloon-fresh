@@ -16,8 +16,7 @@
 #include <RadioLib.h>
 #include "EspHalC3.h"
 
-// Uncomment to use 868 MHz sub-GHz (less WiFi interference, +22 dBm TX)
-// #define BRIDGE_BAND_SUBGHZ
+#define BRIDGE_BAND_SUBGHZ
 
 #define LED_GPIO 8
 #define NSS_PIN 10
