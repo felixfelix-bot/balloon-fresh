@@ -16,7 +16,8 @@
 #include <RadioLib.h>
 #include "EspHalC3.h"
 
-#define BRIDGE_BAND_SUBGHZ
+// Uncomment to use 868 MHz sub-GHz (tested: worse RX than 2.4 GHz)
+// #define BRIDGE_BAND_SUBGHZ
 
 #define LED_GPIO 8
 #define NSS_PIN 10
