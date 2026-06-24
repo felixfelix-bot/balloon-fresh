@@ -8,3 +8,11 @@ target/
 *.pyc
 __pycache__/
 serve.log
+
+# hermes-orchestration handover (not committed)
+HANDOVER*.md
+
+# Generated/build artifacts
+freerouting.jar
+llms.txt
+*.net
