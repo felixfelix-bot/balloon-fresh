@@ -197,3 +197,36 @@ antenna-sim:
 setup-tools:
 	chmod +x tools/setup_env.sh
 	bash tools/setup_env.sh
+
+# =============================================================================
+# RP2040 Coprocessor (Board B / ADR-015)
+# =============================================================================
+
+RP2040_DIR = firmware/rp2040
+RP2040_TX_PORT ?= /dev/ttyUSB0
+RP2040_RX_PORT ?= /dev/ttyACM0
+
+.PHONY: rp2040-build rp2040-flash rp2040-monitor rp2040-test rp2040-clean rp2040-sim
+
+rp2040-build:
+	@echo "Building RP2040 coprocessor firmware..."
+	cd $(RP2040_DIR) && pio run -e rp2040
+
+rp2040-flash: rp2040-build
+	@echo "Flashing RP2040 (hold BOOT while connecting USB)..."
+	cd $(RP2040_DIR) && pio run -e rp2040 -t upload
+
+rp2040-monitor:
+	cd $(RP2040_DIR) && pio device monitor -p $(RP2040_RX_PORT) -b 115200
+
+rp2040-test:
+	@echo "Running hardware speed test (TX=$(RP2040_TX_PORT) RX=$(RP2040_RX_PORT))..."
+	pytest tests/src/test_rp2040_speed.py -v -m hardware \
+		--tx-port $(RP2040_TX_PORT) --rx-port $(RP2040_RX_PORT)
+
+rp2040-sim:
+	@echo "Running simulation tests (no hardware)..."
+	pytest tests/src/test_rp2040_speed.py -v -k "simulate or sim or parsing or breakdown or dominant or loss or target or esp32"
+
+rp2040-clean:
+	rm -rf $(RP2040_DIR)/.pio
