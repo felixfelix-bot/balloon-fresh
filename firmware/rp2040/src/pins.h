@@ -12,6 +12,7 @@
 #define PIN_RST         8    // GP8  → LR2021 Pin 14 (RST)
 #define PIN_UART_TX     20   // GP20 → ESP32 GPIO1 (RX)
 #define PIN_UART_RX     21   // GP21 ← ESP32 GPIO0 (TX)
-#define PIN_LED         25   // GP25 — standard Pico LED
+#define PIN_LED         25   // GP25 — standard Pico LED (RP2040-Zero uses GP16, check your board!)
+#define PIN_LED_ALT     16   // GP16 — RP2040-Zero onboard LED
 
 #endif
