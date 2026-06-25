@@ -16,3 +16,5 @@ HANDOVER*.md
 freerouting.jar
 llms.txt
 *.net
+.pio/
+.venv/
