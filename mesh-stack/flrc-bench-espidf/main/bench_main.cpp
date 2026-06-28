@@ -27,6 +27,65 @@ static EspHalC3 *hal __attribute__((unused)) = nullptr;
 static Module *mod __attribute__((unused)) = nullptr;
 static LR2021 *radio __attribute__((unused)) = nullptr;
 
+// === Raw SPI bypass helpers (proven in fast_rx.cpp at 838.8 kbps) ===
+static void rawWaitBusy() {
+    while (gpio_get_level((gpio_num_t)LR2021_BUSY) == 1) {}
+}
+static void rawSpiWrite(const uint8_t *cmd, size_t cmdLen, const uint8_t *data, size_t dataLen) {
+    rawWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS, 0);
+    hal->spiTransfer(const_cast<uint8_t*>(cmd), cmdLen, nullptr);
+    if (dataLen > 0 && data) hal->spiTransfer(const_cast<uint8_t*>(data), dataLen, nullptr);
+    gpio_set_level((gpio_num_t)LR2021_NSS, 1);
+}
+static void rawSpiRead(const uint8_t *cmd, size_t cmdLen, uint8_t *data, size_t dataLen) {
+    rawWaitBusy();
+    gpio_set_level((gpio_num_t)LR2021_NSS, 0);
+    hal->spiTransfer(const_cast<uint8_t*>(cmd), cmdLen, nullptr);
+    hal->spiTransfer(nullptr, dataLen, data);
+    gpio_set_level((gpio_num_t)LR2021_NSS, 1);
+}
+static void rawStandby() {
+    uint8_t cmd[] = {0x01, 0x28, 0x00};
+    rawSpiWrite(cmd, 3, nullptr, 0);
+}
+static void rawWriteBuffer(const uint8_t *data, size_t len, uint8_t offset = 0) {
+    uint8_t cmd[] = {0x0D, offset};
+    rawSpiWrite(cmd, 2, data, len);
+}
+static void rawSetTx() {
+    uint8_t cmd[] = {0x83, 0x00, 0x00};
+    rawSpiWrite(cmd, 3, nullptr, 0);
+}
+static bool rawWaitTxDone(uint32_t timeoutUs = 100000) {
+    uint8_t cmd[] = {0x12, 0x00, 0x00};
+    uint8_t status[2] = {0, 0};
+    uint32_t start = (uint32_t)esp_timer_get_time();
+    while ((uint32_t)esp_timer_get_time() - start < timeoutUs) {
+        rawSpiRead(cmd, 3, status, 2);
+        if (status[0] & 0x01) return true;  // TxDone bit
+    }
+    return false;
+}
+static void rawClearIrq() {
+    uint8_t cmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
+    rawSpiWrite(cmd, 6, nullptr, 0);
+}
+static void rawSetRx() {
+    uint8_t cmd[] = {0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF};
+    rawSpiWrite(cmd, 6, nullptr, 0);
+}
+static void rawReadFifo(uint8_t *buf, size_t len) {
+    uint8_t cmd[] = {0x00, 0x01};
+    rawSpiRead(cmd, 2, buf, len);
+}
+static uint16_t rawReadIrqStatus() {
+    uint8_t cmd[] = {0x12, 0x00, 0x00};
+    uint8_t status[2] = {0, 0};
+    rawSpiRead(cmd, 3, status, 2);
+    return (uint16_t)((status[0] << 8) | status[1]);
+}
+
 enum BenchMode { MODE_FLRC, MODE_LORA };
 enum BenchRole { ROLE_NONE, ROLE_TX, ROLE_RX };
 
@@ -47,7 +106,7 @@ struct BenchConfig {
 
 static BenchConfig cfg = {
     MODE_FLRC, 2450.0f, 325, 9, 2000.0f,
-    RADIOLIB_LR2021_FLRC_CR_3_4, 22, 50, 1000, 5, 16, ROLE_NONE
+    RADIOLIB_LR2021_FLRC_CR_3_4, 12, 50, 1000, 5, 16, ROLE_NONE
 };
 
 static volatile bool rxFlag = false;
@@ -193,6 +252,72 @@ static void runTx() {
     ESP_LOGI(TAG, "elapsed_ms,%lu", (unsigned long)txElapsedMs);
     ESP_LOGI(TAG, "throughput_kbps,%.1f", throughput);
     ESP_LOGI(TAG, "time_per_pkt_ms,%.2f", txSent > 0 ? txElapsedMs / (float)txSent : 0);
+    ESP_LOGI(TAG, "=== TX END ===");
+}
+
+// === Raw SPI TX bypass — replaces radio->transmit() with direct SPI ===
+static void runRawTx() {
+    resetCounters();
+    int16_t state = initRadio();  // RadioLib init (beginFLRC) — OK for config
+    if (state != RADIOLIB_ERR_NONE) return;
+
+    ESP_LOGI(TAG, "RAWTX: Starting %d pkts, size=%d, delay=%dms (raw SPI bypass)",
+             cfg.pktCount, cfg.pktSize, cfg.txDelayMs);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    // Switch to raw SPI mode
+    rawStandby();
+    rawClearIrq();
+
+    txStartTime = (uint32_t)(esp_timer_get_time() / 1000ULL);
+    uint8_t buf[255];
+
+    for (txCurrentPkt = 0; txCurrentPkt < cfg.pktCount; txCurrentPkt++) {
+        buf[0] = (txCurrentPkt >> 24) & 0xFF;
+        buf[1] = (txCurrentPkt >> 16) & 0xFF;
+        buf[2] = (txCurrentPkt >> 8) & 0xFF;
+        buf[3] = txCurrentPkt & 0xFF;
+        if (cfg.pktSize > 4) {
+            prbs15_fill(buf + 4, cfg.pktSize - 4, txCurrentPkt);
+        }
+
+        // Raw SPI TX sequence: WriteBuffer → SetTx → wait TxDone → clear IRQ
+        rawStandby();
+        rawWriteBuffer(buf, cfg.pktSize);
+        rawSetTx();
+        if (rawWaitTxDone()) {
+            txSent++;
+        } else {
+            txErrors++;
+        }
+        rawClearIrq();
+
+        if (txCurrentPkt > 0 && txCurrentPkt % 100 == 0) {
+            ESP_LOGI(TAG, "RAWTX: %lu/%d", (unsigned long)txCurrentPkt, cfg.pktCount);
+        }
+
+        if (cfg.txDelayMs > 0) {
+            vTaskDelay(pdMS_TO_TICKS(cfg.txDelayMs));
+        }
+    }
+
+    txElapsedMs = (uint32_t)(esp_timer_get_time() / 1000ULL) - txStartTime;
+
+    // Send end marker via RadioLib (so RX can detect end of burst)
+    uint8_t endBuf[8] = {0xDE, 0xAD, 0xBE, 0xEF,
+                         (uint8_t)(txSent >> 24), (uint8_t)(txSent >> 16),
+                         (uint8_t)(txSent >> 8), (uint8_t)(txSent)};
+    radio->standby();
+    radio->transmit(endBuf, 8);
+
+    float sec = txElapsedMs / 1000.0f;
+    float throughput = (txSent > 0 && sec > 0) ? (txSent * cfg.pktSize * 8.0f) / (sec * 1000.0f) : 0;
+    ESP_LOGI(TAG, "=== TX RESULTS ===");
+    ESP_LOGI(TAG, "sent,%lu", (unsigned long)txSent);
+    ESP_LOGI(TAG, "tx_errors,%lu", (unsigned long)txErrors);
+    ESP_LOGI(TAG, "elapsed_ms,%lu", (unsigned long)txElapsedMs);
+    ESP_LOGI(TAG, "throughput_kbps,%.1f", throughput);
+    ESP_LOGI(TAG, "time_per_pkt_ms,%.3f", txSent > 0 ? txElapsedMs / (float)txSent : 0);
     ESP_LOGI(TAG, "=== TX END ===");
 }
 
@@ -380,8 +505,14 @@ static void processCommand(const char *cmd) {
         if (cfg.role == ROLE_TX) runTx();
         else if (cfg.role == ROLE_RX) runRx();
         else ESP_LOGE(TAG, "Set ROLE first");
+    } else if (strcmp(cmd, "RAWTX") == 0) {
+        if (cfg.role == ROLE_TX) runRawTx();
+        else { cfg.role = ROLE_TX; runRawTx(); }
+    } else if (strcmp(cmd, "RAWRX") == 0) {
+        if (cfg.role == ROLE_RX) runRx();
+        else { cfg.role = ROLE_RX; runRx(); }
     } else if (strcmp(cmd, "HELP") == 0) {
-        ESP_LOGI(TAG, "Commands: MODE FLRC|LORA, FREQ, BR, SF, BW, CR, PWR, SIZE, COUNT, DELAY, PREAMBLE, ROLE TX|RX, RUN, CONFIG, HELP");
+        ESP_LOGI(TAG, "Commands: MODE FLRC|LORA, FREQ, BR, SF, BW, CR, PWR, SIZE, COUNT, DELAY, PREAMBLE, ROLE TX|RX, RUN, RAWTX, RAWRX, CONFIG, HELP");
     } else {
         ESP_LOGW(TAG, "Unknown: %s", cmd);
     }
