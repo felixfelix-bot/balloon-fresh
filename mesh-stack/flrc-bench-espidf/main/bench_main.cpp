@@ -46,7 +46,7 @@ struct BenchConfig {
 };
 
 static BenchConfig cfg = {
-    MODE_FLRC, 868.0f, 325, 9, 125.0f,
+    MODE_FLRC, 2450.0f, 325, 9, 2000.0f,
     RADIOLIB_LR2021_FLRC_CR_3_4, 22, 50, 1000, 5, 16, ROLE_NONE
 };
 
