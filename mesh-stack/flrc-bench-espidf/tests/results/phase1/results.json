@@ -1,0 +1,28 @@
+[
+  {
+    "test": "T1: ESP32-A\u2192ESP32-B FLRC2600 255B",
+    "rx_output_len": 0,
+    "rx_output_sample": "",
+    "tx_output_sample": "I (11225) BENCH: Init FLRC 2450.0 MHz BR=2600 CR=0x01 PWR=12\r\nI (11225) HAL: SPI initialized: MOSI=7 MISO=2 SCK=6\r\nI (11225) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 \r\nI (11225) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0|",
+    "parsed": {},
+    "packets_received": 0,
+    "rssi": null
+  },
+  {
+    "test": "T6: ESP32-A\u2192ESP32-B LORA SF7 BW500",
+    "rx_output_len": 0,
+    "rx_output_sample": "",
+    "tx_output_sample": "I (12816) BENCH: Init LoRa 2450.0 MHz SF7 BW=500 CR=1 PWR=12\r\nI (12816) HAL: SPI initialized: MOSI=7 MISO=2 SCK=6\r\nI (12816) gpio: GPIO[10]| InputEn: 1| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 \r\nI (12816) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0|",
+    "parsed": {},
+    "packets_received": 0,
+    "rssi": null
+  },
+  {
+    "test": "T2: ESP32-A\u2192RP2040 FLRC2600",
+    "error": "[Errno 110] Connection timed out"
+  },
+  {
+    "test": "T3: RP2040\u2192ESP32-B (RP2040 TX mode)",
+    "error": "[Errno 110] Connection timed out"
+  }
+]
