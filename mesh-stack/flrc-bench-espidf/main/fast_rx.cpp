@@ -65,7 +65,7 @@ struct BandConfig {
 };
 
 static const BandConfig bands[] = {
-    {868.0f,  22, "868"},
+    {2450.0f, 12, "2450"},
 };
 static const int bandCount = sizeof(bands) / sizeof(bands[0]);
 

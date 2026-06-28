@@ -169,7 +169,7 @@ int radio_init(int mode) {
     // config (tracker/firmware/main/app_main.cpp): 868 MHz / 125 kHz / SF9 /
     // CR 4-7 / sync 0x12 / +22 dBm / preamble 8 / XTAL (tcxo = 0.0 V).
     radio.irqDioNum = 9;   // route IRQ onto DIO9 (physical wiring)
-    int16_t state = radio.begin(868.0, 125.0, 9, 7, 0x12, 22, 8, 0.0f);
+    int16_t state = radio.begin(2450.0, 2000.0, 9, 7, 0x12, 12, 8, 0.0f);
     if (state != RADIOLIB_ERR_NONE) {
         return -2;
     }
