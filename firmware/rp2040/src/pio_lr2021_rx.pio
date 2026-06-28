@@ -1,0 +1,85 @@
+;
+; pio_lr2021_rx.pio — Gapless SPI RX master for the LR2021 radio on RP2040
+; ============================================================================
+;
+; GOAL (SPEED-P6): move SPI clock generation and FIFO data shifting off the
+; CPU so the RP2040 coprocessor can keep pace with the LR2021's 2.6 Mbps FLRC
+; air rate.  The CPU only arms the DMA and reacts to the DMA-completion IRQ.
+;
+; DESIGN — single state machine, full-duplex, SPI Mode 0, MSB-first.
+; --------------------------------------------------------------------------
+; One SM does both directions at once.  Each bit takes exactly 2 SM cycles:
+;
+;     cycle A:  out pins, 1   side 0    ; drive MOSI bit, SCK LOW  (setup)
+;     cycle B:  in  pins, 1   side 1    ; sample MISO,    SCK HIGH (rising edge)
+;
+; Why this is correct SPI Mode 0:
+;   * SCK idles LOW.  On cycle A SCK is low and MOSI is driven — data set up
+;     while the clock is low (Mode 0 requirement).
+;   * On cycle B the `side 1` raises SCK in the SAME instruction that samples
+;     MISO.  The slave latches MOSI on this rising edge and, because MISO only
+;     changes on the falling edge, the bit we sample is stable.  Master
+;     sampling on the rising edge is exactly Mode 0.
+;   * The wrap returns to cycle A: SCK falls (slave advances MISO), the next
+;     MOSI bit is driven, and the loop repeats.  2 cycles/bit → SCK = sysclk/(2*div).
+;
+; This fixes the bug in the earlier two-SM draft (pio_spi_v2), where a separate
+; RX SM ran `in pins,1; jmp` and sampled MISO on its cycle 0 — the same phase
+; the TX SM held SCK low — so reads happened on the wrong edge.  Folding both
+; shifts into one SM makes SCK and the MISO sample lock-step by construction.
+;
+; Data flow (configured by the C++ wrapper pio_lr2021_rx.cpp):
+;   * TX (MOSI): DMA mem→TXFIFO, 32-bit, BSWAP on.  Autopull every 32 bits,
+;     shift-left (MSB first).  BSWAP + MSB-first ⇒ a wire-order byte array in
+;     SRAM ([0x00,0x01,0xFF,...]) leaves the pin in the same order.
+;   * RX (MISO): shift-left (MSB first), autopush every 32 bits → RXFIFO.
+;     DMA RXFIFO→mem, 32-bit, BSWAP on ⇒ bytes land in SRAM in wire order.
+;   * Completion is signalled by the RX DMA channel's IRQ (its transfer count
+;     defines the frame length), not by a PIO instruction — the DMA controller
+;     is the only entity that knows how many bytes were requested.
+;
+; Pins (see pins.h, ADR-015):
+;   GP2 = SCK   (side-set base, 1 bit)
+;   GP3 = MOSI  (OUT  base)
+;   GP4 = MISO  (IN   base)
+;   GP5 = NSS   (driven from C++; see "CS framing" note in pio_lr2021_rx.cpp)
+;
+; Clock: with the system clock at 125 MHz and divider d,
+;   SCK = 125 / (2*d) MHz.
+;   d=2  → 31.25 MHz   (RP2040 practical ceiling; use only on short wires)
+;   d=3  → 20.83 MHz   (default — comfortably > the 18 MHz ESP32 baseline)
+;   d=4  → 15.625 MHz
+; At 20.83 MHz a full 255-byte FIFO read (257 bytes incl. command) takes
+; 257*8 / 20.83e6 ≈ 98.7 µs — ~8× faster than the ~785 µs the same packet
+; spends on air at 2.6 Mbps, leaving large headroom for gapless double-buffering.
+;
+; CS framing note
+; --------------------------------------------------------------------------
+; The LR2021 transaction length is variable (2 cmd bytes + N payload, N up to
+; 255) and the PIO has no way to observe the DMA transfer count, so NSS cannot
+; be released "exactly when DMA finishes" from inside the program without an
+; independent bit counter that fights the autopull cadence.  We therefore drive
+; NSS from the C++ wrapper: assert (low) immediately before arming the DMA,
+; release (high) in the RX-DMA completion ISR.  This adds zero latency because
+; that ISR runs anyway, and it keeps the bit loop 100 % cycle-dense.  This is
+; the same pattern used by pico-examples/pio_spi and the upstream RP2040 SPI
+; flash driver.
+;
+.program lr2021_rx
+.side_set 1 opt        ; 1 side-set bit (SCK); `opt` so non-shifted ops
+                       ; (none here) wouldn't consume a side bit.
+
+public entry_point:
+.wrap_target
+bit_loop:
+    out pins, 1   side 0      ; cycle A: present MOSI bit, SCK low
+    in  pins, 1   side 1      ; cycle B: sample MISO,    SCK high (rising)
+.wrap                          ; 2 cycles/bit  ⇒  SCK = sysclk / (2 * div)
+;
+; The SM runs this two-instruction loop forever once enabled.  TX underrun is
+; benign: when the TX FIFO empties the SM stalls on `out`, holding SCK low and
+; MISO sampled, until the C++ wrapper stops it for the next transaction.  The
+; RX FIFO is drained by DMA on the RX DREQ, so it never overflows between
+; frames.
+;
+; Program length: 2 instructions.  Fits in any PIO instruction memory.

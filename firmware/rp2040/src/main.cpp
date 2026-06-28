@@ -11,6 +11,15 @@
 #include <Arduino.h>
 #include "pins.h"
 #include "radio.h"
+#include "pio_lr2021_rx.h"
+
+/* SPEED-P6: when 1, the speed-test loop uses the PIO+DMA gapless RX engine
+ * (pio_lr2021_rx.*). Set to 0 to force the original CPU-polled MbedSPI path.
+ * The PIO engine also falls back automatically if lr2021_rx_init() fails. */
+#ifndef USE_PIO_RX
+#define USE_PIO_RX 1
+#endif
+static bool g_pio_rx_ok = false;
 
 #define PKT_SIZE        255
 #define PKT_COUNT       500
@@ -64,6 +73,27 @@ void setup() {
     Serial.println("READY");
     Serial1.println("READY");
 
+#if USE_PIO_RX
+    // ─── PIO + DMA gapless RX engine ────────────────────────────────
+    // Claim a PIO state machine + two DMA channels and load the SPI program.
+    // Falls back transparently to the MbedSPI path if init fails (e.g. all SMs
+    // already claimed by another consumer).
+    {
+        int rc = lr2021_rx_init(PIN_SPI_SCK, PIN_SPI_MOSI, PIN_SPI_MISO,
+                                PIN_SPI_CS, LR2021_RX_DEFAULT_CLK);
+        if (rc == 0) {
+            lr2021_rx_set_payload_len(PKT_SIZE);
+            g_pio_rx_ok = true;
+            Serial.println("PIO_RX_OK");
+            Serial1.println("PIO_RX_OK");
+        } else {
+            Serial.print("PIO_RX_FAIL rc=");
+            Serial.println(rc);
+            Serial.println("PIO_RX_FAIL — using MbedSPI fallback");
+        }
+    }
+#endif
+
     // ─── Wait for start ───
     while (true) {
         if (Serial.available()) {
@@ -93,6 +123,63 @@ void setup() {
     uint32_t startMs = millis();
 
     while (pktNum < PKT_COUNT && (millis() - startMs) < LISTEN_MS) {
+#if USE_PIO_RX
+        /* ── PIO + DMA gapless RX path (SPEED-P6) ──────────────────────
+         * On each DIO9 edge we arm one DMA capture into the inactive
+         * ping-pong slot, then drain whichever slot finished on a previous
+         * iteration.  The CPU never bit-bangs the SPI clock; radio_clear_irq()
+         * + radio_start_rx() are the only remaining CPU SPI writes (short
+         * 6-byte commands, fine on the MbedSPI path).  NOTE: the one-packet
+         * pipeline delay and the per-phase timing columns need calibration on
+         * real hardware — see PIO_RX notes in the commit. */
+        if (g_pio_rx_ok) {
+            static bool pio_armed = false;
+            uint32_t t_arm = 0;
+
+            /* Arm exactly one capture per DIO9 edge. */
+            if (radio_poll_irq() && !pio_armed && !lr2021_rx_busy()) {
+                t_arm = micros();
+                lr2021_rx_arm();
+                pio_armed = true;
+            }
+
+            /* Drain the previously-completed capture. */
+            const uint8_t *pp = nullptr;
+            size_t plen = 0;
+            int slot = lr2021_rx_take(&pp, &plen);
+            if (slot >= 0) {
+                pio_armed = false;
+                if (plen >= 4) {
+                    uint32_t t_done = micros();
+                    uint32_t seq = ((uint32_t)pp[0] << 24) | ((uint32_t)pp[1] << 16) |
+                                   ((uint32_t)pp[2] << 8) | (uint32_t)pp[3];
+                    radio_clear_irq();          /* clear radio IRQ + re-enter RX */
+                    radio_start_rx();
+                    uint32_t t3 = micros();
+                    uint32_t tot = t3 - t_done;
+
+                    pktNum++; received++;
+                    if (seq == lastSeq) duplicates++; else unique++;
+                    lastSeq = seq;
+                    if (tot < minUs) minUs = tot;
+                    if (tot > maxUs) maxUs = tot;
+                    totalUs += tot;
+                    (void)t_arm;
+
+                    snprintf(buf, sizeof(buf), "%lu,%lu,%lu,%lu,%lu,%lu,%lu",
+                             (unsigned long)pktNum, (unsigned long)seq,
+                             (unsigned long)0UL,   /* irq_to_read (n/a) */
+                             (unsigned long)0UL,   /* read_fifo (DMA)   */
+                             (unsigned long)0UL,   /* clear_irq         */
+                             (unsigned long)0UL,   /* restart_rx        */
+                             (unsigned long)tot);
+                    Serial.println(buf);
+                }
+            }
+            continue;
+        }
+#endif
+        /* ── CPU-polled MbedSPI path (original / fallback) ── */
         if (!radio_poll_irq()) continue;
         radio_clear_irq_flag();
 
