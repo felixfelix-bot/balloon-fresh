@@ -1,20 +1,41 @@
 /*
- * radio.cpp — LR2021 SPI driver for RP2040 coprocessor (mbed core)
+ * radio.cpp — LR2021 driver for RP2040 coprocessor (mbed core) via RadioLib
+ *
+ * P1.3-FIX: The original radio_init() only reset the chip and set RX mode with
+ * ZERO modulation configuration. The radio could never talk to the ESP32
+ * tracker. This version uses RadioLib to configure the LR2021 modem
+ * byte-identically with the tracker fleet config:
+ *
+ *   Frequency: 868.0 MHz   Bandwidth: 125 kHz   SF: 9   CR: 4/7
+ *   Sync word: 0x12         Preamble: 8 symbols  CRC: 2 bytes (RadioLib default)
+ *   TX power:  +22 dBm      TCXO: XTAL (0.0 V = no TCXO)
+ *
+ * Both RX and TX paths are implemented. The raw-SPI pin self-test is retained
+ * for soldering verification (it shares the same MbedSPI bus as RadioLib).
  */
 
 #include <Arduino.h>
 #include <SPI.h>
+#include <RadioLib.h>
 #include "pins.h"
 #include "radio.h"
 
 #define SPI_FREQ_HZ  18000000
 
+// ─── Shared SPI bus (mbed MbedSPI) + RadioLib Arduino HAL ──────────────
 static MbedSPI spiRf(PIN_SPI_MOSI, PIN_SPI_MISO, PIN_SPI_SCK);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
-static volatile bool irq_flag = false;
+static ArduinoHal hal(spiRf, spiSettings);
 
-static void on_irq();
-static inline void cs_select() { digitalWrite(PIN_SPI_CS, LOW); }
+// LR2021 module wiring:
+//   cs  = PIN_SPI_CS (NSS)   irq = PIN_IRQ (DIO9)   rst = PIN_RST   gpio = PIN_BUSY
+static LR2021 radio = new Module(&hal, PIN_SPI_CS, PIN_IRQ, PIN_RST, PIN_BUSY);
+
+static volatile bool irq_flag = false;
+static void on_irq() { irq_flag = true; }
+
+// ─── Low-level SPI helpers (used by the pin self-test only) ────────────
+static inline void cs_select()   { digitalWrite(PIN_SPI_CS, LOW); }
 static inline void cs_deselect() { digitalWrite(PIN_SPI_CS, HIGH); }
 
 static void spi_write(const uint8_t *buf, size_t len) {
@@ -36,21 +57,6 @@ static void spi_read(const uint8_t *cmd, size_t cmd_len, uint8_t *data, size_t d
     spiRf.endTransaction();
 }
 
-static void raw_set_rx() {
-    uint8_t cmd[] = {0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF};
-    spi_write(cmd, 6);
-}
-
-static void raw_clear_irq() {
-    uint8_t cmd[] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
-    spi_write(cmd, 6);
-}
-
-static void raw_read_fifo(uint8_t *buf, size_t len) {
-    uint8_t cmd[] = {0x02, 0x00, 0x00};
-    spi_read(cmd, 3, buf, len);
-}
-
 static void read_reg16(uint16_t addr, uint8_t *data, size_t len) {
     uint8_t cmd[3] = {0x01, (uint8_t)(addr >> 8), (uint8_t)(addr & 0xFF)};
     spi_read(cmd, 3, data, len);
@@ -63,11 +69,7 @@ static uint32_t read_irq_status() {
            ((uint32_t)data[2] << 8)  | (uint32_t)data[3];
 }
 
-static void on_irq() {
-    irq_flag = true;
-}
-
-// ─── Pin self-test ───────────────────────────────────────────────────
+// ─── Pin self-test (soldering verification) ───────────────────────────
 
 PinTestResult radio_pin_selftest() {
     PinTestResult r = {};
@@ -151,6 +153,7 @@ int radio_init(int mode) {
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
 
+    // Hardware reset
     delay(10);
     digitalWrite(PIN_RST, LOW);
     delayMicroseconds(200);
@@ -162,13 +165,22 @@ int radio_init(int mode) {
         if (millis() - timeout > 1000) return -1;
     }
 
+    // RadioLib modem configuration — byte-identical to the ESP32 tracker fleet
+    // config (tracker/firmware/main/app_main.cpp): 868 MHz / 125 kHz / SF9 /
+    // CR 4-7 / sync 0x12 / +22 dBm / preamble 8 / XTAL (tcxo = 0.0 V).
+    radio.irqDioNum = 9;   // route IRQ onto DIO9 (physical wiring)
+    int16_t state = radio.begin(868.0, 125.0, 9, 7, 0x12, 22, 8, 0.0f);
+    if (state != RADIOLIB_ERR_NONE) {
+        return -2;
+    }
+
     irq_flag = false;
     return 0;
 }
 
-void radio_start_rx(void) { raw_set_rx(); }
-void radio_standby(void)  {}
-void radio_clear_irq(void) { raw_clear_irq(); }
+void radio_start_rx(void)  { radio.startReceive(); }
+void radio_standby(void)   { radio.standby(); }
+void radio_clear_irq(void) {}
 
 bool radio_poll_irq(void) {
     return (digitalRead(PIN_IRQ) == HIGH);
@@ -183,30 +195,32 @@ void radio_clear_irq_flag(void) {
 int radio_read_packet(uint8_t *buf, size_t len, PacketTiming *timing) {
     uint32_t t_irq = micros();
 
-    uint32_t irq = read_irq_status();
-    if (!(irq & IRQ_RX_DONE)) return 0;
-
-    uint32_t t0 = micros();
-    raw_read_fifo(buf, len);
+    // RadioLib readData pulls the payload from the FIFO and clears the IRQ.
+    int16_t state = radio.readData(buf, len);
     uint32_t t1 = micros();
-    raw_clear_irq();
-    uint32_t t2 = micros();
-    raw_set_rx();
+    if (state != RADIOLIB_ERR_NONE) return 0;
+
+    // Re-arm the receiver for the next packet.
+    radio.startReceive();
     uint32_t t3 = micros();
 
     if (timing) {
-        timing->irq_to_read = t0 - t_irq;
-        timing->read_fifo   = t1 - t0;
-        timing->clear_irq   = t2 - t1;
-        timing->restart_rx  = t3 - t2;
+        timing->irq_to_read = t1 - t_irq;
+        timing->read_fifo   = t1 - t_irq;
+        timing->clear_irq   = 0;
+        timing->restart_rx  = t3 - t1;
         timing->total       = t3 - t_irq;
     }
 
     return (int)len;
 }
 
+int radio_send_packet(const uint8_t *data, size_t len) {
+    // Blocking transmit: RadioLib sets TX mode and polls TxDone via SPI.
+    int16_t state = radio.transmit(data, len);
+    return (state == RADIOLIB_ERR_NONE) ? (int)len : (int)state;
+}
+
 float radio_get_rssi(void) {
-    uint8_t rssi_raw;
-    read_reg16(0x0AAB, &rssi_raw, 1);
-    return (float)(int8_t)rssi_raw / -2.0f;
+    return radio.getRSSI();
 }
