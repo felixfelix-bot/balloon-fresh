@@ -54,6 +54,52 @@ make rp2040-sim
 make rp2040-test TX_PORT=/dev/ttyUSB0 RX_PORT=/dev/ttyACM0
 ```
 
+## FLRC Speed RX (`rp2040-flrc-rx` env)
+
+A standalone build that uses **RadioLib for modulation init** and a **raw SPI hot
+loop** for minimum per-packet latency. This is the RX half of the speed-record
+test (2450 MHz, BR=2600, uncoded, 255-byte fixed packets). It is a separate
+source file (`src/flrc_rx_main.cpp`) and a separate PlatformIO environment so it
+does **not** touch the UART coprocessor firmware (`main.cpp` / `radio.cpp`).
+
+```bash
+cd firmware/rp2040
+pio run -e rp2040-flrc-rx
+pio run -e rp2040-flrc-rx -t upload --upload-port /dev/ttyACM1
+pio device monitor -p /dev/ttyACM1 -b 115200
+```
+
+### How it works
+
+1. **Init** — `radio.beginFLRC(2450, 2600, CR_1_0, 22, 16, BT_0.5, tcxo=0)` +
+   `fixedPacketLengthMode(255)` + `startReceive()`. RadioLib configures the
+   modulation and maps RX_DONE onto DIO9 (GP7). A custom `MbedSPI` on SPI0
+   (GP2/GP3/GP4 at 16 MHz) is handed to RadioLib via `Module(cs,irq,rst,busy,
+   SPIClass&, SPISettings)`, so init and the hot loop share one bus. (The mbed
+   core's global `SPI` is on GP16/18/19, hence the explicit injection.)
+2. **Hot loop** — poll DIO9 for RX_DONE, then three raw-SPI ops with `micros()`
+   timing: `READ_RX_FIFO` (0x0001, read 255 B) → `CLEAR_IRQ` (0x0116) →
+   `SET_RX` (0x020C, timeout=0xFFFFFF = continuous) to re-arm. Opcodes verified
+   against RadioLib `LR2021_commands.h`.
+3. **Counting** — big-endian seq# from the first 4 bytes; a `DEADBEEF` end
+   marker `{DE,AD,BE,EF, totalSent(4 B)}` from the ESP32 TX ends the run.
+
+> Note: the legacy `radio.h`/`radio.cpp` use a wrong FIFO opcode (0x0200 = SET_RF)
+> and a wrong RX_DONE bit (3 instead of **19**) for the LR2021. `flrc_rx_main.cpp`
+> uses the correct values inline and does not depend on those files.
+
+### Serial commands (USB CDC, 115200)
+
+| Command  | Action |
+|----------|--------|
+| `RUN`    | start receiving; stops on DEADBEEF marker, silence (3 s), or hard cap (12 s) |
+| `CONFIG` | print radio config + pin map |
+| `RESULTS`| print accumulated statistics |
+| `HELP`   | list commands |
+
+Output includes per-packet CSV (`pkt,seq,irq2read_us,read2clr_us,clr2rx_us,total_us`),
+a human-readable summary, and a machine-readable `RESULT,...` line.
+
 ## Serial Protocol
 
 The RP2040 outputs:
