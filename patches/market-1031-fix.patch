@@ -1,0 +1,41 @@
+From 5614f263d2095644a0ed3e1c71c002de198916e4 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Thu, 25 Jun 2026 19:03:01 +0530
+Subject: [PATCH] fix(ci): sanitize test_grep input (command injection + length
+ limit)
+
+Use env var interpolation instead of direct ${{ }} in shell command
+to prevent command injection. Add 200-char length limit and echo
+the active filter for debuggability.
+
+Addresses security concern from @Franchovy in PR #1031.
+---
+ .github/workflows/e2e.yml | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/.github/workflows/e2e.yml b/.github/workflows/e2e.yml
+index 43f0ba4..96dfad8 100644
+--- a/.github/workflows/e2e.yml
++++ b/.github/workflows/e2e.yml
+@@ -227,9 +227,16 @@ jobs:
+           LOCAL_RELAY_ONLY: 'true'
+ 
+       - name: Run remaining E2E tests
++        env:
++          TEST_GREP: ${{ inputs.test_grep }}
+         run: |
+-          if [ -n "${{ inputs.test_grep }}" ]; then
+-            bun run test:e2e -- --grep "${{ inputs.test_grep }}"
++          if [ -n "$TEST_GREP" ]; then
++            if [ ${#TEST_GREP} -gt 200 ]; then
++              echo "::error::test_grep pattern too long (max 200 chars)"
++              exit 1
++            fi
++            echo "Using test filter: $TEST_GREP"
++            bun run test:e2e -- --grep "$TEST_GREP"
+           else
+             bun run test:e2e -- --grep-invert 'Product Page - View Only|Collection Management'
+           fi
+-- 
+2.53.0
+

@@ -1,0 +1,21 @@
+{
+  "repos": [
+    "meshcore-dev/MeshCore",
+    "PlebeianApp/market",
+    "OpenTollGate/tollgate-module-basic-go",
+    "OpenTollGate/physical-router-test-automation",
+    "DanConwayDev/ngit-relay",
+    "jgromes/RadioLib",
+    "net4sats/configurationwizzard"
+  ],
+  "watch_user": "c03rad0r",
+  "nostr_relays": [
+    "wss://relay.orangesync.tech",
+    "wss://relay.ngit.dev"
+  ],
+  "poll_interval_seconds": 300,
+  "ngit_repos": {
+    "esp32-balloon-integration": "nostr://npub12m5exm2uk3xa674cc5r0hlyvccs5xxn7qv83ezuteefv5972nquq4j4szl/relay.ngit.dev/esp32-balloon-integration"
+  },
+  "auto_reply": false
+}
