@@ -1,23 +1,9 @@
-**/build/
-**/managed_components/
-**/dependencies.lock
-**/sdkconfig.old
-**/sdkconfig
-node_modules/
-target/
-*.pyc
-__pycache__/
-serve.log
-
-# hermes-orchestration handover (not committed)
-HANDOVER*.md
-
-# Generated/build artifacts
-freerouting.jar
-llms.txt
-*.net
 .pio/
-.venv/
-agent.log
-*.log
-gh_ngit_watchdog.log
+__pycache__/
+*.pyc
+.kanban/
+kanban.db
+*.o
+*.elf
+**/test_erasure
+nip34.json
