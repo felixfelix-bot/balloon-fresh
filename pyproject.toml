@@ -9,3 +9,8 @@ markers = [
     "hardware: requires actual hardware",
     "host_c: C host compilation test",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
