@@ -206,9 +206,29 @@ pio device monitor -p /dev/ttyACM1 -b 115200
 | Processing/pkt | 188µs (raw) | <140µs (est.) | <200µs |
 | Throughput | 838.8 kbps | 2000+ kbps | ≥2000 |
 
+## Wiring Table 5: ESP32-C3 → RP2040 BOOTSEL/RESET Control (VERIFIED 2026-07-13)
+
+> **DIRECT WIRE, NO RESISTORS.** See `docs/FLIGHT-BOARD-AUTO-BOOTSEL.md` for full design.
+> RP2040 button pads have internal pull-ups. No series or pull-up resistors needed.
+
+| ESP32-C3 Pin | Via | RP2040 Button Pad | Resistors |
+|:-:|:-:|:-:|:-:|
+| GPIO1 (D1) | DIRECT WIRE | RESET button (3V3 signal side) | NONE |
+| GPIO8 (D8) | DIRECT WIRE | BOOTSEL button (3V3 signal side) | NONE |
+| GND | DIRECT WIRE | GND | NONE |
+
+**CRITICAL:** Solder to the 3V3 signal side of each button pad (NOT the GND side).
+Use multimeter to verify: correct pad reads ~3.3V idle, drops to 0V when pressed.
+
+**Why no resistors:** 1kOhm series resistors create a voltage divider with the RP2040
+internal pull-ups, producing 1.65V — not low enough for logic LOW (<0.8V threshold).
+Direct wire lets ESP32 overpower the pull-up and drive to true 0V.
+
 ## References
 
 - `docs/adr/015-three-board-hardware-strategy.md` — Three-board architecture decision
+- `docs/FLIGHT-BOARD-AUTO-BOOTSEL.md` — BOOTSEL circuit design (VERIFIED WORKING)
+- `HARDWARE_CONNECTIONS.md` — Detailed soldering instructions
 - `mesh-stack/flrc-bench-espidf/THROUGHPUT-OPTIMIZATION-PLAN.md` — Optimization phases
 - `mesh-stack/flrc-bench-espidf/main/fast_rx.cpp` — ESP32-C3 raw SPI bypass reference
 - `firmware/rp2040/src/radio.cpp` — RP2040 raw SPI driver
