@@ -7,3 +7,7 @@ kanban.db
 *.elf
 **/test_erasure
 nip34.json
+build/
+*.elf
+*.bin
+sdkconfig.old

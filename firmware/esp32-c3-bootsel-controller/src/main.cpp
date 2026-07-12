@@ -1,114 +1,43 @@
-/*
- * ESP32-C3 RP2040 BOOTSEL Controller v2 (FIXED)
- * 
- * Correct RP2040 BOOTSEL logic:
- *   GP0 LOW during reset  → USB bootloader mode (BOOTSEL)
- *   GP0 HIGH during reset → boot from flash (normal)
- *   RUN LOW for ≥1µs      → global reset
- *
- * Serial commands (115200 baud, newline-terminated):
- *   BOOTSEL  - force RP2040 into USB bootloader mode
- *   RESET    - reset RP2040 to run flash firmware  
- *   PINS     - report current pin assignment
- *   SETPINS <run> <bootsel> - reconfigure GPIO pins at runtime
- *   STATUS   - report GPIO states
- *   HELP     - list commands
- *
- * Default pins (per balloon-flight-test-guide.md):
- *   RUN_PIN = GPIO2 → 1kΩ → RP2040 RUN (pin 30)
- *   BOOTSEL_PIN = GPIO8 → 1kΩ → RP2040 GP0 (pin 1)
- */
-
 #include <Arduino.h>
 
-// Pin assignment (configurable via SETPINS command)
-int RUN_PIN = 2;
-int BOOTSEL_PIN = 8;
+// AUTO BOOTSEL TEST — no serial commands needed
+// On boot: waits 3s (LED on), then does BOOTSEL sequence
+// D1 (GPIO1) → RP2040 RESET button
+// D8 (GPIO8) → RP2040 BOOTSEL button
 
-void configure_pins() {
-    pinMode(RUN_PIN, OUTPUT);
-    pinMode(BOOTSEL_PIN, OUTPUT);
-    // Idle: RUN HIGH (not reset), BOOTSEL HIGH (not bootloader)
-    digitalWrite(RUN_PIN, HIGH);
-    digitalWrite(BOOTSEL_PIN, HIGH);
-}
-
-void pulse_reset(int hold_ms) {
-    digitalWrite(RUN_PIN, LOW);
-    delay(hold_ms);
-    digitalWrite(RUN_PIN, HIGH);
-}
-
-void force_bootsel() {
-    // 1. Drive GP0 LOW (bootloader mode)
-    digitalWrite(BOOTSEL_PIN, LOW);
-    delay(5);
-    // 2. Pulse RUN LOW (reset RP2040 while GP0 is LOW)
-    pulse_reset(10);
-    // 3. Hold GP0 LOW for RP2040 to sample BOOTSEL
-    delay(100);
-    // 4. Release GP0
-    digitalWrite(BOOTSEL_PIN, HIGH);
-    Serial.println("OK BOOTSEL");
-}
-
-void reset_to_firmware() {
-    digitalWrite(BOOTSEL_PIN, HIGH);
-    delay(2);
-    pulse_reset(10);
-    delay(50);
-    Serial.println("OK RESET");
-}
+#define PIN_RESET   1
+#define PIN_BOOTSEL 8
 
 void setup() {
-    Serial.begin(115200);
-    delay(200);
-    configure_pins();
-    Serial.println("=== ESP32 RP2040 BOOTSEL Controller v2 ===");
-    Serial.printf("RUN=GPIO%d BOOTSEL=GPIO%d\n", RUN_PIN, BOOTSEL_PIN);
-    Serial.println("Ready. Send HELP for commands.");
+    // Start idle
+    pinMode(PIN_RESET, OUTPUT);
+    pinMode(PIN_BOOTSEL, OUTPUT);
+    digitalWrite(PIN_RESET, HIGH);
+    digitalWrite(PIN_BOOTSEL, HIGH);
+    
+    // Wait 3 seconds for observer to be ready
+    delay(3000);
+    
+    // BOOTSEL sequence:
+    // 1. Hold BOOTSEL LOW
+    digitalWrite(PIN_BOOTSEL, LOW);
+    delay(50);
+    
+    // 2. Pulse RESET LOW (100ms)
+    digitalWrite(PIN_RESET, LOW);
+    delay(100);
+    digitalWrite(PIN_RESET, HIGH);
+    
+    // 3. Hold BOOTSEL LOW while RP2040 boots (500ms)
+    delay(500);
+    
+    // 4. Release BOOTSEL
+    digitalWrite(PIN_BOOTSEL, HIGH);
+    
+    // Done. RP2040 should now be in bootloader mode.
 }
 
 void loop() {
-    if (Serial.available()) {
-        String cmd = Serial.readStringUntil('\n');
-        cmd.trim();
-        cmd.toUpperCase();
-
-        if (cmd == "BOOTSEL") {
-            force_bootsel();
-        } else if (cmd == "RESET") {
-            reset_to_firmware();
-        } else if (cmd == "PINS") {
-            Serial.printf("PINS RUN=GPIO%d BOOTSEL=GPIO%d\n", RUN_PIN, BOOTSEL_PIN);
-        } else if (cmd == "STATUS") {
-            Serial.printf("STATUS RUN_PIN=%d(%s) BOOTSEL_PIN=%d(%s)\n",
-                          RUN_PIN, digitalRead(RUN_PIN) ? "HIGH" : "LOW",
-                          BOOTSEL_PIN, digitalRead(BOOTSEL_PIN) ? "HIGH" : "LOW");
-        } else if (cmd == "HELP") {
-            Serial.println("COMMANDS: BOOTSEL RESET PINS SETPINS<run><bootsel> STATUS HELP");
-        } else if (cmd.startsWith("SETPINS")) {
-            int space1 = cmd.indexOf(' ');
-            int space2 = cmd.indexOf(' ', space1 + 1);
-            if (space1 > 0 && space2 > 0) {
-                int nr = cmd.substring(space1 + 1, space2).toInt();
-                int nb = cmd.substring(space2 + 1).toInt();
-                if (nr >= 0 && nr <= 21 && nb >= 0 && nb <= 21) {
-                    digitalWrite(RUN_PIN, HIGH);
-                    digitalWrite(BOOTSEL_PIN, HIGH);
-                    RUN_PIN = nr;
-                    BOOTSEL_PIN = nb;
-                    configure_pins();
-                    Serial.printf("OK SETPINS RUN=GPIO%d BOOTSEL=GPIO%d\n", RUN_PIN, BOOTSEL_PIN);
-                } else {
-                    Serial.println("ERR pin range 0-21");
-                }
-            } else {
-                Serial.println("ERR usage: SETPINS <run> <bootsel>");
-            }
-        } else if (cmd.length() > 0) {
-            Serial.printf("ERR unknown: %s\n", cmd.c_str());
-        }
-    }
-    delay(10);
+    // Nothing — one-shot test
+    delay(1000);
 }
