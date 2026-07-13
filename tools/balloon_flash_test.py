@@ -27,7 +27,13 @@ import serial, time, sys, os, subprocess, shutil, re, threading
 from collections import defaultdict
 
 REPO = "/home/c03rad0r/repos/balloon-fresh"
-BUILD_DIR = f"{REPO}/firmware/rp2040/.pio/build"
+# rp2040-flrc-max is the current throughput test firmware (TX env + RX env)
+# rp2040 is the legacy directory (kept for backward compat)
+FIRMWARE_DIRS = {
+    "tx": f"{REPO}/firmware/rp2040-flrc-max",
+    "rx": f"{REPO}/firmware/rp2040-flrc-max",
+}
+BUILD_DIR = f"{REPO}/firmware/rp2040-flrc-max/.pio/build"
 
 def find_bootsel():
     """Find BOOTSEL mass storage device."""
@@ -44,9 +50,10 @@ def flash_firmware(port, env):
     uf2_path = f"{BUILD_DIR}/{env}/firmware.uf2"
     if not os.path.exists(uf2_path):
         print(f"Building {env}...")
+        fw_dir = FIRMWARE_DIRS.get(env, f"{REPO}/firmware/rp2040-flrc-max")
         r = subprocess.run(
             ['pio', 'run', '-e', env],
-            cwd=f"{REPO}/firmware/rp2040",
+            cwd=fw_dir,
             capture_output=True, text=True, timeout=120
         )
         if not os.path.exists(uf2_path):
@@ -108,11 +115,21 @@ def capture_serial(port, duration, label=""):
             line = data.decode(errors='replace').strip()
             lines.append(line)
             now = time.time()
-            # TX heartbeat: HB St=0x21 TXtotal=XXXXX perPkt=... kbps=...
+            # TX heartbeat (rp2040-flrc-max): "TX 500/2000 (3283.0 kbps)"
+            m = re.search(r'TX\s+(\d+)/\d+\s+\(([0-9.]+)\s*kbps', line)
+            if m:
+                tx_samples.append((now, int(m.group(1))))
+                # store latest kbps for direct reporting
+                stats_latest_tx_kbps = m.group(2)
+            # TX heartbeat (legacy): "HB St=0x21 TXtotal=XXXXX ..."
             m = re.search(r'TXtotal=(\d+)', line)
             if m:
                 tx_samples.append((now, int(m.group(1))))
-            # RX heartbeat: rx=XXX gaps=XXX dups=XXX ...
+            # RX heartbeat (rp2040-flrc-max): "RX 500 pkts (1234.5 kbps) RSSI=-45"
+            m = re.search(r'RX\s+(\d+)\s+pkts\s+\(([0-9.]+)\s*kbps', line)
+            if m:
+                rx_samples.append((now, int(m.group(1))))
+            # RX heartbeat (legacy): "rx=XXX ..."
             m = re.search(r'rx=(\d+)', line)
             if m:
                 rx_samples.append((now, int(m.group(1))))
@@ -126,6 +143,12 @@ def capture_serial(port, duration, label=""):
             mm = re.search(field + r'=(\d+)', line)
             if mm:
                 stats[key] = int(mm.group(1))
+
+    # rp2040-flrc-max final throughput line: "  Throughput: 3283.0 kbps"
+    for line in lines:
+        mm = re.search(r'Throughput:\s+([0-9.]+)\s*kbps', line)
+        if mm:
+            stats['final_kbps'] = mm.group(1)
 
     def _rate(samples):
         """Return (pkts_per_s, kbps) from real timestamps, or (None, None)."""
