@@ -306,19 +306,16 @@ static void runTransmit() {
         // Trigger TX
         rfSetTx();
 
-        // Wait for TX_DONE — poll IRQ pin (fast) then SPI IRQ (fallback)
+        // Wait for TX_DONE — IRQ PIN ONLY (GET_AND_CLEAR clears flags prematurely!)
         uint32_t timeout = millis() + 20;
         bool irqFired = false;
         while (millis() < timeout) {
             if (digitalRead(PIN_IRQ) == HIGH) { irqFired = true; break; }
-            // Only poll SPI IRQ every few iterations (reduces SPI traffic)
-            uint32_t irq = rfReadIrqStatus();
-            if (irq & 0x00080000) { irqFired = true; break; }  // bit 19 = TX_DONE
         }
 
-        // Read status + IRQ AFTER TX
+        // Read IRQ status ONCE — GET_AND_CLEAR (0x0117) gives us the flags AND clears them
         uint8_t stPost = rfReadStatus();
-        uint32_t irqStatus = rfReadIrqStatus();
+        uint32_t irqStatus = rfReadIrqStatus();  // This clears the flags
 
         // Detailed diagnostics for first 5 packets
         if (i < 5) {
@@ -326,15 +323,15 @@ static void runTransmit() {
                        i, stPre, irqFired ? 1 : 0, stPost, (unsigned long)irqStatus);
         }
 
-        // Count results — only TX_DONE (bit 19) counts as real success
-        if (irqStatus & 0x00080000) {
+        // Count results — use IRQ PIN (irqFired) for TX_DONE detection
+        // since GET_AND_CLEAR already cleared the status
+        if (irqFired) {
             txDoneCount++;
         } else {
             txTimeoutCount++;
         }
 
-        // Clear IRQ
-        rfClearIrq();
+        // IRQ already cleared by GET_AND_CLEAR above
 
         if ((i + 1) % 100 == 0) {
             dualPrintf("TX %d/%d (done=%lu timeout=%lu)",
