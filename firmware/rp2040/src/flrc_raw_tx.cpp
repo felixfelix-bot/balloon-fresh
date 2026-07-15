@@ -35,7 +35,7 @@
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_COUNT    1000
-#define TX_POWER_DBM    22  // max power for range test
+#define TX_POWER_DBM    12  // HF FLRC max per RadioLib (range: -19 to +12)
 
 // Sync word — MUST match RX
 #define SYNC_WORD_0   0x12
@@ -287,9 +287,12 @@ static void runTransmit() {
         { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
         rfWaitBusy();
 
-        // Go to STDBY before TX
+        // STDBY before each TX — needed (removing it drops TX_DONE from ~100 to ~17)
         rfSetStandby();
         rfWaitBusy();
+
+        // Clear IRQ from previous packet
+        rfClearIrq();
 
         // Write to TX FIFO
         rfClearTxFifo();
