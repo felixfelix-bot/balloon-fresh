@@ -1,16 +1,13 @@
 #include <Arduino.h>
 
 /*
- * ESP32-C3 RP2040 BOOTSEL Controller v5
+ * ESP32-C3 RP2040 BOOTSEL Controller v6
  *
- * ROOT CAUSE: One-shot trigger in setup() fails after esptool hard_reset.
- * The ESP32's first boot after esptool is unstable for GPIO.
- * Loop-based triggering works reliably (proven by diagnostic 2026-07-15).
+ * Uses EXACT sequence from diagnostic firmware (proven working 2026-07-15).
+ * Loop-based with 3 attempts, then idle.
  *
- * STRATEGY: Trigger BOOTSEL 3 times in loop() with 3-second gaps.
- * First attempt may miss (ESP32 boot unstable).
- * Second/third attempt always succeeds.
- * After 3 attempts: idle forever (don't re-trigger after UF2 flash).
+ * The diagnostic firmware that works has Phase 2 (3-second RESET) before
+ * Phase 3 (BOOTSEL sequence). This long reset may be important.
  *
  * Wiring:
  *   GPIO1  → RP2040 RUN (RESET)
@@ -21,17 +18,16 @@
 #define PIN_RESET   1
 #define PIN_BOOTSEL 8
 
-static int trigger_count = 0;
-static unsigned long next_trigger = 0;
+static int attempts = 0;
+static bool done = false;
 
-void force_bootsel() {
-    digitalWrite(PIN_BOOTSEL, LOW);
-    delay(50);
-    digitalWrite(PIN_RESET, LOW);
-    delay(100);
-    digitalWrite(PIN_RESET, HIGH);
-    delay(500);
-    digitalWrite(PIN_BOOTSEL, HIGH);
+void blink(int count, int ms) {
+    for (int i = 0; i < count; i++) {
+        digitalWrite(PIN_BOOTSEL, LOW);
+        delay(ms);
+        digitalWrite(PIN_BOOTSEL, HIGH);
+        delay(ms);
+    }
 }
 
 void setup() {
@@ -39,32 +35,42 @@ void setup() {
     pinMode(PIN_BOOTSEL, OUTPUT);
     digitalWrite(PIN_RESET, HIGH);
     digitalWrite(PIN_BOOTSEL, HIGH);
-
-    // Initial delay — let ESP32 stabilize after esptool reset
-    delay(1000);
-    next_trigger = millis();
 }
 
 void loop() {
-    if (trigger_count < 3 && millis() >= next_trigger) {
-        // LED on during trigger
-        digitalWrite(PIN_BOOTSEL, LOW);
-
-        force_bootsel();
-        trigger_count++;
-
-        // LED blink = trigger done
-        for (int i = 0; i < 3; i++) {
-            digitalWrite(PIN_BOOTSEL, HIGH);
-            delay(150);
-            digitalWrite(PIN_BOOTSEL, LOW);
-            delay(150);
-        }
-        digitalWrite(PIN_BOOTSEL, HIGH);
-
-        // Next attempt in 3 seconds
-        next_trigger = millis() + 3000;
+    if (done) {
+        delay(1000);
+        return;
     }
 
-    delay(10);
+    // Phase 1: 3 slow blinks
+    blink(3, 500);
+    delay(1000);
+
+    // Phase 2: Long reset (3 seconds LOW)
+    digitalWrite(PIN_RESET, LOW);
+    delay(3000);
+    digitalWrite(PIN_RESET, HIGH);
+    blink(5, 150);
+    delay(2000);
+
+    // Phase 3: BOOTSEL sequence
+    digitalWrite(PIN_BOOTSEL, LOW);
+    delay(50);
+    digitalWrite(PIN_RESET, LOW);
+    delay(100);
+    digitalWrite(PIN_RESET, HIGH);
+    delay(500);
+    digitalWrite(PIN_BOOTSEL, HIGH);
+    blink(5, 150);
+    delay(3000);
+
+    attempts++;
+    if (attempts >= 3) {
+        done = true;
+        // Continuous slow blink = done
+        while (true) {
+            blink(1, 1000);
+        }
+    }
 }
