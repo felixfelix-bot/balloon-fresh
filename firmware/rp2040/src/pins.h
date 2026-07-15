@@ -10,8 +10,8 @@
 #define PIN_BUSY        6    // GP6  → LR2021 Pin 7 (BUSY)
 #define PIN_IRQ         7    // GP7  → LR2021 Pin 15 (DIO9)
 #define PIN_RST         8    // GP8  → LR2021 Pin 14 (RST)
-#define PIN_UART_TX     20   // GP20 → ESP32 GPIO1 (RX)
-#define PIN_UART_RX     21   // GP21 ← ESP32 GPIO0 (TX)
+#define PIN_UART_TX     12   // GP12 (UART0 TX) → ESP32 GPIO1 (RX) — top-side accessible
+#define PIN_UART_RX     13   // GP13 (UART0 RX) ← ESP32 GPIO0 (TX) — top-side accessible
 #define PIN_LED         25   // GP25 — standard Pico LED (RP2040-Zero uses GP16, check your board!)
 #define PIN_LED_ALT     16   // GP16 — RP2040-Zero onboard LED
 
