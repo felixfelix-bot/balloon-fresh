@@ -216,17 +216,19 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // 11. SEL_PA (high-power PA for HF)
-    { uint8_t cmd[] = { 0x02, 0x0F, 0x01 }; rfWriteCmd(cmd, 3); }
+    // 11. SET_PA_CONFIG (HF PA select via bit 7)
+    //     RadioLib: setPaConfig(highFreq=1, ...) → byte0 = (1 << 7) = 0x80
+    //     BUGFIX: was 0x01 (bit 0), must be 0x80 (bit 7) for HF PA
+    {
+        uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 };
+        rfWriteCmd(cmd, 7);
+    }
     delay(1);
 
-    // 12. SET_PA_CONFIG (HF PA)
-    { uint8_t cmd[] = { 0x02, 0x02, 0x01, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
-    delay(1);
-
-    // 13. SET_TX_PARAMS (power + ramp)
-    //     power byte: 13 (safe), ramp: 0x04 = Ramp16us
-    { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)TX_POWER_DBM, 0x04 }; rfWriteCmd(cmd, 4); }
+    // 12. SET_TX_PARAMS (power + ramp)
+    //     RadioLib: setTxParams sends txPower*2 as raw byte
+    //     BUGFIX: was sending raw dBm, must multiply by 2
+    { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)(TX_POWER_DBM * 2), 0x04 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
     // 14. SET_RX_TX_FALLBACK (FS mode)
@@ -269,6 +271,9 @@ static void runTransmit() {
     uint8_t pkt[FLRC_PKT_SIZE];
     uint32_t startMs = millis();
 
+    uint32_t txDoneCount = 0;
+    uint32_t txTimeoutCount = 0;
+
     for (int i = 0; i < TX_PKT_COUNT; i++) {
         // Build packet: big-endian seq in first 4 bytes, rest = counter
         pkt[0] = (uint8_t)(i >> 24);
@@ -277,26 +282,58 @@ static void runTransmit() {
         pkt[3] = (uint8_t)(i & 0xFF);
         for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
+        // Go to STDBY before TX — radio may be in RX mode (CMD_ERROR if TX from RX)
+        rfSetStandby();
+        rfWaitBusy();
+
         // Write to TX FIFO
         rfClearTxFifo();
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
+        // Read status BEFORE TX
+        uint8_t stPre = rfReadStatus();
+
         // Trigger TX
         rfSetTx();
 
-        // Wait for TX_DONE (DIO9 goes HIGH)
+        // Wait for TX_DONE via SPI IRQ polling (primary) + DIO pin (fallback)
         uint32_t timeout = millis() + 20;
-        while (digitalRead(PIN_IRQ) != HIGH) {
-            if (millis() > timeout) break;
+        bool irqFired = false;
+        while (millis() < timeout) {
+            if (digitalRead(PIN_IRQ) == HIGH) { irqFired = true; break; }
+            uint32_t irq = rfReadIrqStatus();
+            if (irq & 0x00080000) { irqFired = true; break; }  // bit 19 = TX_DONE
+        }
+
+        // Read status + IRQ AFTER TX
+        uint8_t stPost = rfReadStatus();
+        uint32_t irqStatus = rfReadIrqStatus();
+
+        // Detailed diagnostics for first 5 packets
+        if (i < 5) {
+            dualPrintf("PKT %d: preSt=0x%02X irqPin=%d postSt=0x%02X IRQ=0x%08lX",
+                       i, stPre, irqFired ? 1 : 0, stPost, (unsigned long)irqStatus);
+        }
+
+        // Count results (irqFired = DIO or SPI saw TX_DONE)
+        if (irqFired) {
+            txDoneCount++;
+        } else {
+            txTimeoutCount++;
         }
 
         // Clear IRQ
         rfClearIrq();
 
-        if (i < 5 || (i % 100) == 0) {
-            dualPrintf("TX %d/%d", i, TX_PKT_COUNT);
+        if ((i + 1) % 100 == 0) {
+            dualPrintf("TX %d/%d (done=%lu timeout=%lu)",
+                       i + 1, TX_PKT_COUNT,
+                       (unsigned long)txDoneCount, (unsigned long)txTimeoutCount);
         }
     }
+
+    dualPrintf("TX_DONE_STATS: fired=%lu timeout=%lu",
+               (unsigned long)txDoneCount, (unsigned long)txTimeoutCount);
 
     // Send DEADBEEF end marker with total count
     pkt[0] = 0xDE; pkt[1] = 0xAD; pkt[2] = 0xBE; pkt[3] = 0xEF;
