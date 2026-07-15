@@ -8,8 +8,15 @@
  *
  * Wiring (verified 2026-07-15):
  *   RP2040 GP12 (UART0 TX) → ESP32 GPIO3 (UART1 RX)  [physical pin 3]
- *   RP2040 GP13 (UART0 RX) ← ESP32 GPIO4 (UART1 TX)  [physical pin 4]
+ *   RP2040 GP13 (UART0 RX) ← ESP32 GPIO2 (UART1 TX)  [physical pin 2]
  *   GND → GND
+ *
+ * TESTING HISTORY:
+ *   GPIO0(RX)/GPIO1(TX) → no data
+ *   GPIO1(RX)/GPIO0(TX) → no data
+ *   GPIO3(RX)/GPIO4(TX) → RECEIVED "UART_LINK_OK" + "HB alive" ✓
+ *     (worked because GPIO3 IS wired; GPIO4 TX went nowhere)
+ *   GPIO3(RX)/GPIO2(TX) → CORRECT: GPIO3=RX (wired), GPIO2=TX (wired)
  */
 
 #include <Arduino.h>
@@ -20,16 +27,14 @@ void setup() {
     Serial.begin(115200);
     delay(300);
 
-    // UART1 on GPIO3(RX) / GPIO4(TX) — VERIFIED WORKING 2026-07-15
-    // RP2040 GP12 (TX) → ESP32 GPIO3 (UART1 RX)
-    // RP2040 GP13 (RX) ← ESP32 GPIO4 (UART1 TX)
-    Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_4);
+    // UART1: GPIO3=RX (from RP2040 GP12 TX), GPIO2=TX (to RP2040 GP13 RX)
+    Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_2);
 
     delay(100);
 
     Serial.println();
-    Serial.println("=== ESP32 UART Bridge v5 ===");
-    Serial.println("UART1: RX=GPIO2 TX=GPIO3 @ 115200");
+    Serial.println("=== ESP32 UART Bridge v6 ===");
+    Serial.println("UART1: RX=GPIO3 TX=GPIO2 @ 115200");
     Serial.println("[BOOT OK]");
 }
 

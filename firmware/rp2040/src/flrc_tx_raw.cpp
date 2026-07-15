@@ -162,22 +162,6 @@ static bool initRadio() {
         return false;
     }
 
-    // Set sync word to MATCH RX (0xCD05CAFE) — RadioLib default is different!
-    state = radio.setFlrcSyncWord(1, 0xCD05CAFE);
-    if (state != RADIOLIB_ERR_NONE) {
-        dualPrint("ERR: setFlrcSyncWord failed, code ");
-        dualPrintln(state);
-        return false;
-    }
-
-    // Disable CRC — RX has CRC=0, must match
-    state = radio.setCRC(0);
-    if (state != RADIOLIB_ERR_NONE) {
-        dualPrint("ERR: setCRC failed, code ");
-        dualPrintln(state);
-        return false;
-    }
-
     // Standby RC mode (we'll SET_TX per-packet via raw SPI).
     state = radio.standby();
     if (state != RADIOLIB_ERR_NONE) {
