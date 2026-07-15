@@ -107,18 +107,20 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // FLRC mod params: brBw=0x00 (2600), cr|shaping=0x05 (CR_1_0, BT0.5)
-    { uint8_t c[] = { 0x02, 0x48, 0x00, 0x05 }; rfWriteCmd(c, 4); } delay(1);
+    // FLRC mod params: brBw=0x00 (2600), cr|shaping=(CR_1_0=0x02 << 4)|(BT_0_5=0x05) = 0x25
+    { uint8_t c[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(c, 4); } delay(1);
 
-    // FLRC packet params: preamble=16, syncWordLen=4, syncMatch=1, fixed=1, crc=0
+    // FLRC packet params: preamble=16, syncWordLen=4, syncWordTx=1, syncMatch=1, fixed=1, crc=0
+    // byte0: ((preamble & 0x0F) << 2) | (syncWordLen / 2)
+    // byte1: ((syncWordTx & 0x03) << 6) | ((syncMatch & 0x07) << 3) | ((uint8_t)fixed << 2) | (crc & 0x03)
     {
         uint8_t c[] = { 0x02, 0x49,
-            (uint8_t)(((FLRC_PREAMBLE & 0x0F) << 2) | (4 / 2)),
-            (uint8_t)(((1 & 0x07) << 3) | (1 << 2) | 0),
+            (uint8_t)(((FLRC_PREAMBLE & 0x0F) << 2) | (4 / 2)),     // preamble=16, syncLen=4 → 0x42
+            (uint8_t)(((1 & 0x03) << 6) | ((1 & 0x07) << 3) | (1 << 2) | 0), // syncWordTx=1, match=1, fixed=1, crc=0 → 0x4C
             (uint8_t)(FLRC_PKT_SIZE >> 8),
             (uint8_t)(FLRC_PKT_SIZE & 0xFF) };
         rfWriteCmd(c, 6);
-    }
+    } delay(1);
     delay(1);
 
     // FLRC sync word: {0x12, 0xAD, 0x10, 0x1B} at slot 1
@@ -172,15 +174,20 @@ static void runTX() {
         pkt[2] = (i >> 8) & 0xFF;
         pkt[3] = i & 0xFF;
 
-        // 1. Set standby
-        rfSetStandby();
-        // 2. Write TX FIFO
+        // 1. Write TX FIFO
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
-        // 3. Set TX (triggers transmission)
+        // 2. Set TX (triggers transmission)
         rfSetTx();
-        // 4. Wait for TX_DONE (poll BUSY)
-        rfWaitBusy();
-
+        // 3. Wait for TX_DONE — poll IRQ pin (DIO9/GP7 goes HIGH)
+        //    At 2600 kbps, 255 bytes = ~785 us. Add preamble/sync ~50us.
+        //    Poll for up to 5ms.
+        {
+            uint32_t txStart = millis();
+            while (digitalRead(PIN_IRQ) != HIGH) {
+                if (millis() - txStart > 5) break; // timeout
+            }
+        }
+        // 4. Clear IRQ (de-asserts DIO9)
         rfClearIrq();
 
         if (i < 5 || (i % 200) == 0) {
@@ -199,7 +206,9 @@ static void runTX() {
     rfSetStandby();
     rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
     rfSetTx();
-    rfWaitBusy();
+    // Wait for TX_DONE
+    { uint32_t s = millis(); while (digitalRead(PIN_IRQ) != HIGH) { if (millis() - s > 5) break; } }
+    rfClearIrq();
 
     uint32_t elapsed = millis() - startMs;
     float kbps = ((float)TX_PKT_COUNT * (float)FLRC_PKT_SIZE * 8.0f) / (float)elapsed;
