@@ -28,15 +28,17 @@ void setup() {
     Serial.begin(115200);
     delay(300);
 
-    // UART1 on GPIO0(RX)/GPIO1(TX) — the soldered wires
+    // UART1 on GPIO1(RX)/GPIO0(TX) — the soldered wires
+    // RP2040 GP12 (TX) → ESP32 GPIO1 (UART1 RX)
+    // RP2040 GP13 (RX) ← ESP32 GPIO0 (UART1 TX)
     // Serial1.begin(baud, config, rxPin, txPin)
-    Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_0, GPIO_NUM_1);
+    Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_1, GPIO_NUM_0);
 
     delay(100);
 
     Serial.println();
     Serial.println("=== ESP32 UART Bridge v4 ===");
-    Serial.println("UART1: RX=GPIO0 TX=GPIO1 @ 115200");
+    Serial.println("UART1: RX=GPIO1 TX=GPIO0 @ 115200");
     Serial.println("[BOOT OK]");
 }
 
