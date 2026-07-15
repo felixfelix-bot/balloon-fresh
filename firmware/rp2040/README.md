@@ -23,10 +23,14 @@ bypassing the ESP32-C3's single-core RX pipeline bottleneck.
 | GP6         | BUSY in  | Pin 7      |
 | GP7         | IRQ in   | Pin 15 (DIO9)|
 | GP8         | RST out  | Pin 14     |
-| GP20        | UART1 TX | → ESP32 GPIO1 |
-| GP21        | UART1 RX | ← ESP32 GPIO0 |
+| GP12        | UART0 TX | → ESP32 GPIO3 (RX) |
+| GP13        | UART0 RX | ← ESP32 GPIO2 (TX) |
 
-See: `docs/adr/015-three-board-hardware-strategy.md`
+**UART pins verified 2026-07-15.** GP20/GP21 are on the backside of RP2040-Zero
+(inaccessible when soldered). GP12/GP13 (UART0 function) are top-side and confirmed
+working bidirectionally through the ESP32 UART bridge.
+
+See: `docs/uart-bridge-pin-verification.md`
 
 ## Build & Flash
 
