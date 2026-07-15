@@ -36,7 +36,7 @@
 #define FLRC_FREQ_HZ   2440.0f
 #define FLRC_BR        2600
 #define FLRC_PWR_DBM   13
-#define FLRC_PREAMBLE  12
+#define FLRC_PREAMBLE  16
 #define FLRC_PKT_SIZE  255
 #define SPI_FREQ_HZ    16000000UL
 
@@ -145,17 +145,30 @@ static bool rawInitRadio() {
     delay(1);
 
     // Step 6: Set FLRC Packet Params
-    // preamble=12 (nibbles), syncWordLen=4 bytes, syncMatch=1, fixedLength=1, crc=0
+    // preamble=12, syncWordLen=4 bytes, syncMatch=1, fixedLength=1, crc=0
     {
         uint8_t preamble = FLRC_PREAMBLE;
         uint8_t cmd[] = {
             0x02, 0x49,
-            (uint8_t)(((preamble & 0x0F) << 2) | (4 / 2)),  // preamble + syncWordLen/2
-            (uint8_t)(((1 & 0x07) << 3) | (1 << 2) | 0),    // syncMatch=1, fixed=1, crc=0
+            (uint8_t)(((preamble & 0x0F) << 2) | (4 / 2)),
+            (uint8_t)(((1 & 0x07) << 3) | (1 << 2) | 0),
             (uint8_t)(FLRC_PKT_SIZE >> 8),
             (uint8_t)(FLRC_PKT_SIZE & 0xFF)
         };
         rfWriteCmd(cmd, 6);
+    }
+    delay(1);
+
+    // Step 6b: Set FLRC Sync Word — opcode 0x024C
+    // RadioLib default: {0x12, 0xAD, 0x10, 0x1B} at slot 1
+    // MUST match TX side or no packets will be received!
+    {
+        uint8_t cmd[] = {
+            0x02, 0x4C,
+            0x01,           // syncWordNum = 1 (match slot 1)
+            0x12, 0xAD, 0x10, 0x1B  // sync word bytes (MSB first)
+        };
+        rfWriteCmd(cmd, 7);
     }
     delay(1);
 
