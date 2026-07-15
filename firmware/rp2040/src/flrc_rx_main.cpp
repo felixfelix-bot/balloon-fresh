@@ -501,12 +501,24 @@ void setup() {
     dualPrintln("RadioLib init + raw SPI hot loop");
     delay(50);
 
+    // DIAGNOSTIC: output BEFORE beginFLRC to see if UART survives RadioLib
+    dualPrintln("BEFORE_BEGINFLRC");
+    Serial1.flush();  // make sure it goes out before SPI traffic
+
     if (initRadio()) {
         dualPrintln("RADIO_INIT_OK");
         digitalWrite(PIN_LED_ALT, HIGH);  // steady on = ready
     } else {
-        dualPrintln("RADIO_INIT_FAILED — type CONFIG, check wiring");
+        dualPrintln("RADIO_INIT_FAILED");
     }
+    Serial1.flush();
+
+    // Re-init Serial1 in case RadioLib disturbed it
+    Serial1.end();
+    Serial1.setTX(PIN_UART_TX);
+    Serial1.setRX(PIN_UART_RX);
+    Serial1.begin(115200);
+    dualPrintln("SERIAL1_REINIT_OK");
 
     resetStats();
     printHelp();
@@ -518,6 +530,14 @@ void setup() {
 }
 
 void loop() {
+    // Heartbeat on Serial1 every 2s — proves RP2040 alive after beginFLRC
+    static unsigned long lastHB = 0;
+    if (millis() - lastHB > 2000) {
+        lastHB = millis();
+        Serial1.println("HB alive");
+        Serial1.flush();
+    }
+
     // Line-buffered command parsing over USB CDC (Serial).
     while (Serial.available()) {
         char c = (char)Serial.read();
