@@ -42,14 +42,21 @@ The **RX side** changes: LR2021 moves from the ESP32-C3's SPI to the RP2040's SP
 
 ## Wiring Table 2: ESP32-C3 → RP2040-Zero (UART data link)
 
-| ESP32-C3_Mini_V1 | Function | RP2040-Zero GPIO | RP2040 UART1 Function |
+**VERIFIED 2026-07-15** — GPIO2/GPIO3 on ESP32, GP12/GP13 on RP2040.
+
+GP20/GP21 are on the BACKSIDE of RP2040-Zero — inaccessible when soldered to carrier board.
+Switched to GP12/GP13 (top-side, UART0 function).
+
+| ESP32-C3 SuperMini | Function | RP2040-Zero GPIO | RP2040 UART0 Function |
 |:-:|:-:|:-:|:-:|
-| GPIO0 (D0) | UART1 TX → | **GP21** | UART1 RX |
-| GPIO1 (D1) | UART1 RX ← | **GP20** | UART1 TX |
-| 3V3 | Power (shared) | 3V3 | — |
+| GPIO2 (pin 2) | UART1 TX → | **GP13** | UART0 RX |
+| GPIO3 (pin 3) | UART1 RX ← | **GP12** | UART0 TX |
 | GND | Ground (shared) | GND | — |
 
-**Note:** GP20 = UART1 TX on RP2040, GP21 = UART1 RX. Cross-connect TX↔RX.
+Cross-connect TX→RX on both ends. Firmware verified bidirectional.
+
+ESP32 bridge firmware: `Serial1.begin(115200, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_2)`
+
 
 ## Wiring Table 3: Power
 

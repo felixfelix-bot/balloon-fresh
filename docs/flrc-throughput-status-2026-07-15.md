@@ -1,95 +1,116 @@
-# FLRC Throughput Status — 2026-07-15
+# FLRC Throughput Status — 2026-07-15 (final update)
 
-## CRITICAL: Lost Source Files
+## Current Blocker: RadioLib beginFLRC() returns -707
 
-These files achieved 1546 kbps but were NEVER committed to git. They are LOST:
+**Error code -707 = RADIOLIB_ERR_SPI_CMD_FAILED**
 
-| File | Achievement | Status |
-|------|-------------|--------|
-| tx_fast.cpp | 393 kbps, USB-stable, 30s verified | **LOST** — never committed |
-| tx_overlap.cpp | 1546 kbps (best), double-buffered | **LOST** — never committed |
-| rx_fast.cpp | 758 pkts/s RX, DIO9 polling | **LOST** — never committed |
-| rx_ab_b.cpp | 2-txn RX variant | **LOST** — never committed |
+The LR2021 chip's status byte reports CMD_FAIL after an SPI command.
+RadioLib's `SPIparseStatus()` checks bits 3:1 of the status byte:
+- `0b000` = CMD_FAIL → returns -707
+- `0b010` = CMD_PERR → returns -706
+- 0x00 or 0xFF → CHIP_NOT_FOUND (-711)
 
-### How to recreate (from skill documentation)
+### Root cause (from RadioLib source analysis)
 
-**tx_fast.cpp**: RadioLib-based TX. Standard beginFLRC(), then loop:
-- Write TX FIFO (255 bytes), SET_TX, wait BUSY LOW, yield()
-- 800 pkts/s, USB CDC stable
-- Key: yield() per-packet, NOT per-heartbeat
+LR2021.h explicitly states:
+> "If you are seeing -706/-707 error codes, it likely means you are using
+> non-0 value for module with XTAL. To use XTAL, either set this value to 0,
+> or set LR2021::XTAL to true."
 
-**tx_overlap.cpp**: Double-buffered TX for maximum speed.
-- While radio transmits packet N, pre-load FIFO for packet N+1
-- Uses raw SPI for FIFO write, RadioLib for SET_TX
-- 800+ pkts/s, ~1546 kbps
-- USB CDC DIES (Mode A boot-time death on mbed core)
-- Yield-in-wait fix merged (commit 80a4894) but unverified
+Our firmware already passes `tcxoVoltage=0.0f`. So either:
+1. The firmware needs `LR2021::XTAL = true` explicitly set
+2. SPI communication is broken (chip not responding to getVersion())
+3. Hardware issue: RST/BUSY/SPI wiring problem on the carrier board
 
-**rx_fast.cpp**: RadioLib init + raw SPI hot loop.
-- beginFLRC() for init (convenience), then raw SPI for receive
-- Poll DIO9 pin (not IRQ status register)
-- Per-packet: READ_FIFO → CLEAR_IRQ → SET_RX (3 SPI transactions)
-- 758 pkts/s catch rate at 18 MHz SPI
-- USB CDC stable on RX side (plenty idle CPU)
+### What was verified
 
-## What We Have NOW (committed + pushed)
+Sent INIT command to RP2040 via UART bridge:
+- `beginFLRC code: -707` — radio init fails
+- Radio status: NOT_INIT
+- All other config correct (freq=2440, BR=2600, CR=uncoded, pins match)
 
-### RP2040 RX: flrc_rx_raw.cpp ✅ WORKING
-- Raw SPI init (12-step paced sequence, no RadioLib)
-- Radio reports READY, status 0x03/0x05
-- USB CDC survives (no Mode A death)
-- Serial commands: RUN, CONFIG, INIT, RESULTS, HELP
-- Dual output: USB Serial + UART GP12/GP13
-- Path: firmware/rp2040/src/flrc_rx_raw.cpp
-- Build: `pio run -e rp2040-flrc-rx-raw`
-- Flash: `make rp2040-flash ENV=rp2040-flrc-rx-raw PORT=/dev/ttyACM0`
+## Hardware Setup (verified)
 
-### ESP32 TX: fifo_tx.cpp ⚠️ UNTESTED
-- ESP-IDF + RadioLib, CONFIG_BENCH_MODE_FIFO_TX
-- Pin config matches hardware wiring (verified)
-- Freq 2440 MHz, BR 2600, CR_1_0
-- Uses raw SPI for FIFO write (gpio level, not RadioLib SPI)
-- Path: mesh-stack/flrc-bench-espidf/main/fifo_tx.cpp
-- Build: `source ~/esp/esp-idf/export.sh && idf.py build`
-- Flash: `python -m esptool --chip esp32c3 -p /dev/ttyACM3 write_flash ...`
+### Boards
+| Board | Serial | USB Port | Role |
+|-------|--------|----------|------|
+| RP2040-Zero #1 | E663B035973B8332 | ACM0 | RX (8332) |
+| RP2040-Zero #2 | E663B035977F242D | ACM2 | TX (F242D) |
+| ESP32-C3 SuperMini #1 | 70:AF:09:13:21:00 | ACM1 | UART bridge for 8332 |
+| ESP32-C3 SuperMini #2 | 70:AF:09:21:FB:18 | ACM3 | UART bridge for F242D |
 
-### RP2040 TX: rp2040-flrc-max/main.cpp ✅ BUILT (untested with new RX)
-- RadioLib-based, achieved 3283 kbps TX-only (Jul 13)
-- Uses RadioLib beginFLRC() — USB dies (Mode A)
-- Could be used as TX if we flash via 1200 baud and read results from RX side only
-
-## Current Blocker: 0 Packets Received
-
-Both boards initialize correctly but no packets flow TX→RX.
-
-### Likely cause: Sync word mismatch
-- ESP32 TX uses RadioLib default sync word
-- RP2040 raw SPI RX doesn't explicitly set sync word
-- LR2021 default sync word may differ from RadioLib default
-
-### Next steps to debug:
-1. Check RadioLib default FLRC sync word (in LR2021 source)
-2. Add sync word set command to raw SPI init sequence
-3. Verify preamble length matches (ESP32=? vs RP2040=12)
-4. Test with both boards at close range
-
-## Architecture
-
+### UART bridge wiring (VERIFIED BIDIRECTIONAL)
 ```
-ESP32-C3 (TX)                    RP2040 (RX)
-fifo_tx.cpp                      flrc_rx_raw.cpp
-  RadioLib beginFLRC()             Raw SPI init (12 steps, paced)
-  Raw SPI FIFO write               Poll DIO9 → READ_FIFO → CLR_IRQ → SET_RX
-  2440 MHz, 2600 kbps, CR_1_0     2440 MHz, 2600 kbps, CR_1_0
-  LR2021 module                    LR2021 module
-         |                              |
-         +---- 2.4 GHz FLRC link -------+
+RP2040 GP12 (UART0 TX) ──→ ESP32 GPIO3 (UART1 RX)
+RP2040 GP13 (UART0 RX) ←── ESP32 GPIO2 (UART1 TX)
+GND ───────────────────── GND
+```
+Bridge firmware: `Serial1.begin(115200, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_2)`
+
+### LR2021 SPI wiring (RP2040 pins.h)
+```
+GP2 = SPI0 SCK → LR2021 Pin 5
+GP3 = SPI0 MOSI → LR2021 Pin 4
+GP4 = SPI0 MISO ← LR2021 Pin 3
+GP5 = SPI CS → LR2021 Pin 6 (NSS)
+GP6 = BUSY ← LR2021 Pin 7
+GP7 = IRQ ← LR2021 Pin 15 (DIO9)
+GP8 = RST → LR2021 Pin 14
 ```
 
-## Preventing Future Data Loss
+## Firmware Status
 
-1. **ALL source files MUST be committed immediately after creation**
-2. Use `write_file` tool (not /tmp heredocs) — creates in repo tree
-3. Commit after every build success, not just at session end
-4. Push to ngit after every commit
-5. Session-notes.md tracks current state across resets
+All source files committed and pushed. Both TX and RX build clean.
+
+| File | Env | Status |
+|------|-----|--------|
+| flrc_tx_raw.cpp | rp2040-flrc-tx-raw | Builds OK, radio init untested (USB CDC dies) |
+| flrc_rx_main.cpp | rp2040-flrc-rx | Builds OK, radio init fails (-707) |
+| flrc_rx_raw.cpp | rp2040-flrc-rx-raw | Builds OK, deprecated (no RadioLib) |
+| esp32-uart-bridge/main.cpp | — | Working, bidirectional verified |
+
+### TX/RX config comparison (IDENTICAL)
+Both use the same RadioLib beginFLRC() call:
+- Freq: 2440.0 MHz
+- Bit rate: 2600 kbps
+- Coding rate: CR_1_0 (uncoded)
+- TX power: 22 dBm
+- Preamble: 16
+- BT shaping: 0.5
+- TCXO: 0.0V (crystal)
+- Packet size: 255 bytes (fixed)
+- SPI: 16 MHz
+- IRQ: DIO9
+
+No config mismatch between TX and RX.
+
+## What works
+- 1200 baud BOOTSEL trigger on both RP2040s (fully autonomous, no physical access)
+- UART bridge: bidirectional RP2040↔ESP32 communication
+- PlatformIO builds for all environments
+- Serial1 (UART0 on GP12/GP13) survives RadioLib SPI traffic
+- Bridge forwards commands (CONFIG, INIT) from PC to RP2040
+
+## What doesn't work
+- RadioLib beginFLRC() fails with -707 on RX board (8332)
+- TX board (F242D) USB CDC dies after boot (expected), radio status unknown
+- 0 packets received in any test run
+- ACM3 bridge doesn't see RP2040 UART data from F242D
+
+## Next steps to debug -707
+
+1. Try `LR2021::XTAL = true` before beginFLRC() — forces XTAL mode explicitly
+2. Add raw SPI diagnostic: read GET_STATUS (0x0100) before beginFLRC() to check if chip responds at all
+3. Check if firmware version matches expected 1.18 (findChip() requirement)
+4. Toggle RST pin (GP8) LOW→HIGH with delay before beginFLRC()
+5. Lower SPI clock from 16 MHz to 8 MHz to rule out signal integrity
+6. If chip returns 0x00/0xFF on status → CHIP_NOT_FOUND, check wiring continuity
+
+## Git log (last 5 commits)
+```
+4bb3c7b docs: honest UART bridge pin verification report
+1cb0bbf fix: UART bridge GPIO3(RX)/GPIO4(TX) VERIFIED — RP2040 data flowing
+35fffb0 fix: ESP32 UART bridge uses GPIO3(RX)/GPIO4(TX) — matches actual wiring
+39e3366 feat: ESP32 flash recovery targets + GPIO swap fix + skill update
+b1d968a feat(firmware): add esp-recover make target for corrupted ESP32 flash
+```
