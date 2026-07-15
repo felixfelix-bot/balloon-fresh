@@ -106,9 +106,8 @@ static void rfSetTx() {
 }
 
 static void rfSetStandby() {
-    // STDBY_RC (0x00) — matches RadioLib standby() for TX operations
-    // STDBY_XOSC (0x01) caused CMD_ERROR on ~86% of packets
-    uint8_t cmd[] = { 0x01, 0x28, 0x00 };
+    // STDBY_XOSC (0x01) — empirically better than STDBY_RC (137 vs 11 TX_DONE)
+    uint8_t cmd[] = { 0x01, 0x28, 0x01 };
     rfWriteCmd(cmd, 3);
 }
 
@@ -157,8 +156,8 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 2. SET_STANDBY (STDBY_RC = 0x00) — matches RadioLib standby()
-    { uint8_t cmd[] = { 0x01, 0x28, 0x00 }; rfWriteCmd(cmd, 3); }
+    // 2. SET_STANDBY (STDBY_XOSC = 0x01)
+    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
     delay(5);
 
     // 3. SET_PACKET_TYPE FLRC
@@ -192,8 +191,9 @@ static bool rawInitRadio() {
     }
     delay(5);
 
-    // 7. CALIBRATE — all blocks 0x6F (matches RadioLib CALIBRATE_ALL)
-    { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); }
+    // 7. CALIBRATE — defined bits only 0x5F (per TheClams reference)
+    // Bit 5 is undefined on LR2021 Gen4, was 0x6F before
+    { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
 
     // 8. SET_FLRC_MOD_PARAMS
@@ -234,8 +234,10 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)(TX_POWER_DBM * 2), 0x04 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 14. SET_RX_TX_FALLBACK (STDBY_RC per RadioLib config())
-    { uint8_t cmd[] = { 0x02, 0x06, 0x00 }; rfWriteCmd(cmd, 3); }
+    // 14. SET_RX_TX_FALLBACK (Fs=0x03 per TheClams reference)
+    // Fs mode keeps PLL running between TX cycles — no PLL re-lock delay
+    // STDBY_RC (0x00) stops PLL → 90% CMD_ERROR on subsequent SET_TX
+    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
     // 15. DIO function — DIO9 = IRQ for TX_DONE
@@ -285,37 +287,31 @@ static void runTransmit() {
         pkt[3] = (uint8_t)(i & 0xFF);
         for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
-        // CLEAR_ERRORS between TX cycles — CMD_ERROR persists and blocks SET_TX
-        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
-        rfWaitBusy();
-
-        // STDBY before each TX — needed (removing it drops TX_DONE from ~100 to ~17)
-        rfSetStandby();
-        rfWaitBusy();
+        // Minimal per-packet sequence (matches RadioLib startTransmit):
+        // After TX_DONE, chip auto-returns to Fs (PLL stays warm).
+        // No need for STDBY, CLEAR_ERRORS, or DIO_IRQ re-set.
 
         // Clear IRQ from previous packet
         rfClearIrq();
-
-        // Re-set DIO_IRQ_CONFIG before each TX — RadioLib does this in startTransmit()
-        // Without this, chip may lose IRQ mapping after previous TX_DONE cycle
-        { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
         rfWaitBusy();
 
         // Write to TX FIFO
         rfClearTxFifo();
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
-        // Read status BEFORE TX
-        uint8_t stPre = rfReadStatus();
+        // Read status BEFORE TX (diagnostic, first 5 packets only)
+        uint8_t stPre = 0;
+        if (i < 5) stPre = rfReadStatus();
 
         // Trigger TX
         rfSetTx();
 
-        // Wait for TX_DONE via SPI IRQ polling (primary) + DIO pin (fallback)
+        // Wait for TX_DONE — poll IRQ pin (fast) then SPI IRQ (fallback)
         uint32_t timeout = millis() + 20;
         bool irqFired = false;
         while (millis() < timeout) {
             if (digitalRead(PIN_IRQ) == HIGH) { irqFired = true; break; }
+            // Only poll SPI IRQ every few iterations (reduces SPI traffic)
             uint32_t irq = rfReadIrqStatus();
             if (irq & 0x00080000) { irqFired = true; break; }  // bit 19 = TX_DONE
         }

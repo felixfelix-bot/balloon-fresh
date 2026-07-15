@@ -71,7 +71,9 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
 
 // Two-phase read: send command, release CS, then read response
 static void rfReadFifo(uint8_t *buf, size_t len) {
-    // Phase 1: READ_RX_FIFO (0x0001)
+    // LR2021 READ_RX_FIFO (0x0001) — NO status bytes!
+    // RadioLib readRadioRxFifo sets BITS_0 status width (no status bytes returned)
+    // Phase 1: send opcode
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
@@ -80,11 +82,9 @@ static void rfReadFifo(uint8_t *buf, size_t len) {
     spiRf.endTransaction();
     rfWaitBusy();
 
-    // Phase 2: read 2 status bytes + payload
+    // Phase 2: read payload directly (NO status bytes)
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x00); // NOP → status MSB
-    spiRf.transfer(0x00); // NOP → status LSB
     for (size_t i = 0; i < len; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -199,8 +199,8 @@ static bool rawInitRadio() {
     }
     delay(5);
 
-    // 7. CALIBRATE (0x0122) — all blocks, bitmask 0x6F (matches RadioLib CALIBRATE_ALL)
-    { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); }
+    // 7. CALIBRATE (0x0122) — defined bits only 0x5F (per TheClams reference)
+    { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
 
     // 8. SET_FLRC_MOD_PARAMS (0x0248)
@@ -231,8 +231,8 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // 11. SET_RX_TX_FALLBACK (0x0206) — STDBY_RC (0x00) per RadioLib config()
-    { uint8_t cmd[] = { 0x02, 0x06, 0x00 }; rfWriteCmd(cmd, 3); }
+    // 11. SET_RX_TX_FALLBACK (Fs=0x03 per TheClams — keeps PLL warm)
+    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
     // 12. DIO function — DIO9 = IRQ output
@@ -314,34 +314,13 @@ static void runReceive() {
         uint32_t irq = rfReadIrqStatus();
         if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
 
-        // Verify FIFO has data — GET_RX_BUFFER_STATUS (0x013D)
-        rfWaitBusy();
-        spiRf.beginTransaction(spiSettings);
-        digitalWrite(PIN_CS, LOW);
-        spiRf.transfer(0x01); spiRf.transfer(0x3D);
-        digitalWrite(PIN_CS, HIGH);
-        spiRf.endTransaction();
-        rfWaitBusy();
-        spiRf.beginTransaction(spiSettings);
-        digitalWrite(PIN_CS, LOW);
-        uint8_t statusMsb = spiRf.transfer(0x00);
-        uint8_t payloadLen = spiRf.transfer(0x00);
-        uint8_t fifoStart = spiRf.transfer(0x00);
-        digitalWrite(PIN_CS, HIGH);
-        spiRf.endTransaction();
-
-        if (payloadLen == 0) {
-            // Stale IRQ — no data in FIFO, clear and re-arm
-            rfClearIrq();
-            rfSetRx();
-            continue;
-        }
-
-        // Read packet
+        // Read packet from FIFO (no status bytes — LR2021 READ_RX_FIFO)
         rfReadFifo(buf, FLRC_PKT_SIZE);
 
-        // CLEAR_ERRORS + re-arm RX for next packet
-        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
+        // Clear RX FIFO + CLEAR_ERRORS + re-arm RX
+        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }  // CLEAR_RX_FIFO
+        rfWaitBusy();
+        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }  // CLEAR_ERRORS
         rfClearIrq();
         rfSetRx();
 
