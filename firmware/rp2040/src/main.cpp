@@ -13,6 +13,9 @@
 #include "radio.h"
 #include "pio_lr2021_rx.h"
 
+// Custom UART on GP12(TX)/GP13(RX) — SerialLink is hardcoded to GP0/GP1 in Mbed variant
+UART SerialLink(p12, p13, NC, NC);
+
 /* SPEED-P6: when 1, the speed-test loop uses the PIO+DMA gapless RX engine
  * (pio_lr2021_rx.*). Set to 0 to force the original CPU-polled MbedSPI path.
  * The PIO engine also falls back automatically if lr2021_rx_init() fails. */
@@ -27,7 +30,7 @@ static bool g_pio_rx_ok = false;
 
 void setup() {
     Serial.begin(115200);
-    Serial1.begin(115200);
+    SerialLink.begin(115200);
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
@@ -57,7 +60,7 @@ void setup() {
 
     if (test.errors > 0) {
         Serial.println("SELFTEST_WARN — continuing without radio (pins may not be soldered yet)");
-        Serial1.println("SELFTEST_WARN");
+        SerialLink.println("SELFTEST_WARN");
         // Don't halt — continue so we can verify serial output works
     } else {
         Serial.println("SELFTEST_PASSED");
@@ -71,7 +74,7 @@ void setup() {
     }
     Serial.println("RADIO_INIT_OK");
     Serial.println("READY");
-    Serial1.println("READY");
+    SerialLink.println("READY");
 
 #if USE_PIO_RX
     // ─── PIO + DMA gapless RX engine ────────────────────────────────
@@ -85,7 +88,7 @@ void setup() {
             lr2021_rx_set_payload_len(PKT_SIZE);
             g_pio_rx_ok = true;
             Serial.println("PIO_RX_OK");
-            Serial1.println("PIO_RX_OK");
+            SerialLink.println("PIO_RX_OK");
         } else {
             Serial.print("PIO_RX_FAIL rc=");
             Serial.println(rc);
@@ -100,8 +103,8 @@ void setup() {
             char c = Serial.read();
             if (c == 'S' || c == 's') break;
         }
-        if (Serial1.available()) {
-            char c = Serial1.read();
+        if (SerialLink.available()) {
+            char c = SerialLink.read();
             if (c == 'S' || c == 's') break;
         }
         delay(1);
@@ -236,7 +239,7 @@ void setup() {
              avg,
              (unsigned long)maxUs);
     Serial.println(buf);
-    Serial1.println(buf);
+    SerialLink.println(buf);
 
     while (true) {
         digitalWrite(PIN_LED, HIGH); delay(500);

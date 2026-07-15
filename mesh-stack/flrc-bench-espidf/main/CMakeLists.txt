@@ -1,3 +1,3 @@
-idf_component_register(SRCS "bench_main.cpp" "autonomous_main.cpp" "range_test.cpp" "dump_main.cpp" "spi_loopback.cpp" "continuity_test.cpp" "fifo_test.cpp" "fifo_tx.cpp" "profile_rx.cpp" "fast_rx.cpp" "fips_bridge.cpp" "nvs_results.cpp" "prbs.cpp"
+idf_component_register(SRCS "bench_main.cpp" "autonomous_main.cpp" "range_test.cpp" "dump_main.cpp" "spi_loopback.cpp" "continuity_test.cpp" "fifo_test.cpp" "fifo_tx.cpp" "profile_rx.cpp" "fast_rx.cpp" "fips_bridge.cpp" "nvs_results.cpp" "prbs.cpp" "bootsel_ctrl.cpp"
                        INCLUDE_DIRS "."
                        REQUIRES driver esp_timer nvs_flash gps)
