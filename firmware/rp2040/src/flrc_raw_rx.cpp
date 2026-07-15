@@ -310,12 +310,38 @@ static void runReceive() {
             dualPrintln("RX_DONE silence"); break;
         }
 
-        // Poll IRQ via SPI status register (not DIO pin — more reliable)
+        // Poll IRQ via SPI — GET_AND_CLEAR_IRQ_STATUS (0x0117)
         uint32_t irq = rfReadIrqStatus();
         if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
 
+        // Verify FIFO has data — GET_RX_BUFFER_STATUS (0x013D)
+        rfWaitBusy();
+        spiRf.beginTransaction(spiSettings);
+        digitalWrite(PIN_CS, LOW);
+        spiRf.transfer(0x01); spiRf.transfer(0x3D);
+        digitalWrite(PIN_CS, HIGH);
+        spiRf.endTransaction();
+        rfWaitBusy();
+        spiRf.beginTransaction(spiSettings);
+        digitalWrite(PIN_CS, LOW);
+        uint8_t statusMsb = spiRf.transfer(0x00);
+        uint8_t payloadLen = spiRf.transfer(0x00);
+        uint8_t fifoStart = spiRf.transfer(0x00);
+        digitalWrite(PIN_CS, HIGH);
+        spiRf.endTransaction();
+
+        if (payloadLen == 0) {
+            // Stale IRQ — no data in FIFO, clear and re-arm
+            rfClearIrq();
+            rfSetRx();
+            continue;
+        }
+
         // Read packet
         rfReadFifo(buf, FLRC_PKT_SIZE);
+
+        // CLEAR_ERRORS + re-arm RX for next packet
+        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
         rfClearIrq();
         rfSetRx();
 

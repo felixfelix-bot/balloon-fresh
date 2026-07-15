@@ -63,6 +63,39 @@ THROUGHPUT: 0.0 kbps
 ```
 **0 packets received.** TX sends, RX listens, nothing arrives.
 
+## ROOT CAUSE #3 — CMD_ERROR on Every TX/RX: Wrong Command Lengths (FOUND + FIXED)
+
+After PA fix reduced CMD_ERROR rate, deeper investigation of RadioLib source
+revealed three SPI command format bugs:
+
+### Bug 4: SET_RX was 6 bytes, should be 5
+```
+Our code:    { 0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF }  // 6 bytes
+RadioLib:    { 0x02, 0x0C, 0xFF, 0xFF, 0xFF }         // 5 bytes
+```
+Extra trailing byte (0xFF) parsed as start of next command → CMD_ERROR every
+time SET_RX was called → radio never entered true RX mode → 0 packets.
+
+### Bug 5: SET_TX was 6 bytes, should be 5
+```
+Our code:    { 0x02, 0x0D, 0x00, 0x00, 0x00, 0x00 }  // 6 bytes
+RadioLib:    { 0x02, 0x0D, 0x00, 0x00, 0x00 }         // 5 bytes
+```
+Same bug on TX side. Extra byte → CMD_ERROR → TX_DONE never fired.
+IRQ showed 0x00020000 (CMD_ERROR) instead of 0x00080000 (TX_DONE).
+
+### Bug 6: CALIBRATE bitmask 0x2F → 0x6F
+```
+Our code:    0x2F (missing bit 5 = MU + PA_OFF calibration)
+RadioLib:    0x6F (CALIBRATE_ALL = all blocks)
+```
+Incomplete calibration. Not fatal but degraded radio performance.
+
+### Fix Applied (commit 5b108b4)
+- SET_RX: 6→5 bytes (removed trailing 0xFF)
+- SET_TX: 6→5 bytes (removed trailing 0x00)
+- CALIBRATE: 0x2F→0x6F on both TX and RX
+
 ## ROOT CAUSE #2 — 0 Packets: Wrong PA Select Bit (FOUND + FIXED)
 
 TX diagnostic firmware added per-packet status/IRQ reads. Results:
