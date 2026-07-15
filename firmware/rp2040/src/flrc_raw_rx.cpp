@@ -308,8 +308,9 @@ static void runReceive() {
             dualPrintln("RX_DONE silence"); break;
         }
 
-        // IRQ pin goes HIGH on RX_DONE
-        if (digitalRead(PIN_IRQ) != HIGH) continue;
+        // Poll IRQ via SPI status register (not DIO pin — more reliable)
+        uint32_t irq = rfReadIrqStatus();
+        if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
 
         // Read packet
         rfReadFifo(buf, FLRC_PKT_SIZE);
@@ -418,6 +419,13 @@ void setup() {
     dualPrintln();
     dualPrintln("=== RP2040 FLRC RAW RX ===");
     dualPrintln("Raw SPI init (no RadioLib)");
+
+    // Initialize SPI bus + GPIO pins BEFORE radio init
+    spiRf.begin();
+    pinMode(PIN_CS, OUTPUT);
+    digitalWrite(PIN_CS, HIGH);
+    pinMode(PIN_BUSY, INPUT);
+    pinMode(PIN_IRQ, INPUT);
 
     radioReady = rawInitRadio();
 

@@ -35,7 +35,7 @@
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_COUNT    1000
-#define TX_POWER_DBM    13  // safe default, not max
+#define TX_POWER_DBM    22  // max power for range test
 
 // Sync word — MUST match RX
 #define SYNC_WORD_0   0x12
@@ -129,6 +129,7 @@ static void rfClearTxFifo() {
 // ─── Dual output ─────────────────────────────────────────────────────
 static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
 static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
+static void dualPrintln() { Serial.println(); Serial1.println(); }
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
@@ -338,6 +339,13 @@ void setup() {
     dualPrintln();
     dualPrintln("=== RP2040 FLRC RAW TX ===");
     dualPrintln("Raw SPI init (no RadioLib)");
+
+    // Initialize SPI bus + GPIO pins BEFORE radio init
+    spiRf.begin();
+    pinMode(PIN_CS, OUTPUT);
+    digitalWrite(PIN_CS, HIGH);
+    pinMode(PIN_BUSY, INPUT);
+    pinMode(PIN_IRQ, INPUT);
 
     radioReady = rawInitRadio();
 
