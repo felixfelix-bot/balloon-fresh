@@ -142,12 +142,68 @@ RadioLib:    does NOT call SEL_PA — SET_PA_CONFIG alone handles selection
 - Fixed TX params: TX_POWER_DBM → TX_POWER_DBM * 2
 - Status: BUILT, NOT YET TESTED on hardware
 
-## Remaining Suspects (if PA fix doesn't solve 0 packets)
+## RF LINK CONFIRMED (2026-07-16)
 
-1. **Sync word SPI encoding** — both use 0x12AD101B, but raw SPI command
-   byte ordering may differ from what chip expects
-2. **RX_DONE IRQ mapping** — RX maps bit 18 to DIO9, may need verification
-3. **SET_RX_PATH on both boards** — HF path config must be confirmed on RX side too
+After all fixes above, TX→RX link IS WORKING. Packets DO travel between boards.
+RX received 1001 packets (3 unique sequences) from TX burst.
+
+However, two problems block high throughput:
+
+### PROBLEM 1: TX CMD_ERROR on ~86% of packets
+
+TX_DONE fires on only ~100-137 out of 1000 packets (10-14%).
+The rest return CMD_ERROR (IRQ=0x00020000 instead of TX_DONE=0x00080000).
+
+Mitigations applied that improved success rate:
+- CLEAR_ERRORS (0x0111) between TX cycles → 2% → 10%
+- STDBY before each TX → removing it drops from ~100 to ~17 TX_DONE
+- Power set to 12dBm (HF FLRC max per RadioLib)
+
+Remaining suspects (ordered by likelihood):
+
+#### a) STDBY_XOSC vs STDBY_RC
+Our `rfSetStandby()` sends `{0x01, 0x28, 0x01}` = STDBY_XOSC.
+RadioLib uses STDBY_RC (0x00) for all TX operations.
+STDBY_XOSC may cause issues if crystal already running after previous TX_DONE
+(chip auto-returns to STDBY_RC as fallback, then we force XOSC — redundant
+transition may cause CMD_ERROR on some packets).
+**FIX**: Change rfSetStandby() to `{0x01, 0x28, 0x00}` (STDBY_RC).
+
+#### b) DIO_IRQ_CONFIG not re-set before each TX
+RadioLib `startTransmit()` calls `setDioIrqParams()` before EVERY `setTx()`.
+Our code only sets it once during init.
+If chip clears/reconfigures DIO mapping after each TX cycle, subsequent
+SET_TX may not set up IRQ properly → timeout → counted as CMD_ERROR.
+**FIX**: Re-send SET_DIO_IRQ_PARAMS (0x0115) before each SET_TX.
+
+#### c) TX timeout=0 may need non-zero
+Our SET_TX sends timeout=0x000000 (no timeout). RadioLib uses TIMEOUT_NONE
+which is also 0. But some chip variants may need a non-zero timeout for
+proper TX sequencing.
+**FIX**: Try timeout = 0x000100 (short timeout as safety).
+
+### PROBLEM 2: Bridge wiring / USB CDC instability
+
+- RP2040 USB CDC port is unstable — dies during radio operations
+- UART bridge needed for reliable output reading
+- Bridge was wired to F242D (TX board) instead of 8332 (RX board) in last test
+- Need to move bridge wires or swap board roles for next test
+
+### Current Commits
+```
+df662ae fix(flrc-tx): restore STDBY between TX + fix power to 12dBm HF max
+21b457c fix(flrc-rx): FIFO buffer check + CLEAR_ERRORS + doc root cause #3
+5b108b4 fix(flrc-rx): SET_RX 5-byte command + CALIBRATE 0x6F + STDBY_RC fallback
+5ed617c fix(flrc-tx): add CLEAR_ERRORS between TX cycles
+0ec0288 docs: root cause #2 — PA select bit wrong (0x01 vs 0x80)
+14be375 fix(flrc-tx): PA config bit 7 select + power×2 + TX diagnostics
+```
+
+## Remaining Suspects (original list, resolved)
+
+1. ~~Sync word SPI encoding~~ — confirmed matching, link works
+2. ~~RX_DONE IRQ mapping~~ — working, packets received
+3. ~~SET_RX_PATH on both boards~~ — confirmed in both TX and RX init
 
 ## USB Enumeration Warning
 
