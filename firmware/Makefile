@@ -64,8 +64,14 @@ bootsel:
 bootsel-1200:
 	@echo "Triggering BOOTSEL via 1200 baud on $(PORT)..."
 	@timeout 5 python3 -c "import serial; s=serial.Serial('$(PORT)', 1200, timeout=1); s.close()" 2>/dev/null
-	@sleep 3
-	@ls /dev/disk/by-label/RPI-RP2 2>/dev/null && echo "RP2040 in BOOTSEL ✓" || echo "ERROR: 1200 baud failed"
+	@echo "Waiting for RPI-RP2 to appear..."
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+		if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then \
+			echo "RP2040 in BOOTSEL ✓ (after $${i}s)"; exit 0; \
+		fi; \
+		sleep 1; \
+	done; \
+	echo "ERROR: 1200 baud failed — RPI-RP2 never appeared"; exit 1
 
 rp2040-reset:
 	@echo "Resetting RP2040 via $(PORT)..."
@@ -91,7 +97,10 @@ rp2040-flash: rp2040-build
 	else \
 		echo "Trying 1200 baud BOOTSEL on $(PORT)..."; \
 		timeout 5 python3 -c "import serial; s=serial.Serial('$(PORT)', 1200, timeout=1); s.close()" 2>/dev/null; \
-		sleep 3; \
+		for i in 1 2 3 4 5 6 7 8 9 10; do \
+			if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then break; fi; \
+			sleep 1; \
+		done; \
 		if ! ls /dev/disk/by-label/RPI-RP2 2>/dev/null; then \
 			echo "1200 baud failed, trying ESP32 GPIO..."; \
 			printf 'b' > $(PORT); sleep 3; \
