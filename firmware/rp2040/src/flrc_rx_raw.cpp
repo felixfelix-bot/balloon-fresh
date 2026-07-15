@@ -90,9 +90,56 @@ static uint8_t rfReadStatus() {
 }
 
 // ─── RX hot path helpers ─────────────────────────────────────────────
-static void rfReadFifo(uint8_t *buf, size_t len) {
-    uint8_t cmd[2] = { 0x00, 0x01 }; // READ_RX_FIFO = 0x0001 big-endian
-    rfReadCmd(cmd, 2, buf, len);
+// LR2021 read protocol: TWO separate SPI transactions
+// Phase 1: send opcode (CS LOW → send 2 bytes → CS HIGH)
+// Phase 2: read response (CS LOW → send NOP 0x00 → read status 2 bytes → read data → CS HIGH)
+
+static void rfReadFifoTwoPhase(uint8_t *buf, size_t len) {
+    // Phase 1: send READ_RX_FIFO command (0x0001)
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    rfCsLow();
+    spiRf.transfer(0x00); // opcode MSB
+    spiRf.transfer(0x01); // opcode LSB
+    rfCsHigh();
+    spiRf.endTransaction();
+
+    // Wait for BUSY to go LOW (command processing)
+    rfWaitBusy();
+
+    // Phase 2: read response — NOP bytes come back as status, then data
+    spiRf.beginTransaction(spiSettings);
+    rfCsLow();
+    // First 2 bytes are status (16-bit per LR2021 SPI config)
+    spiRf.transfer(0x00); // NOP MSB → returns status byte 1
+    spiRf.transfer(0x00); // NOP LSB → returns status byte 2
+    // Now read payload data
+    for (size_t i = 0; i < len; i++) buf[i] = spiRf.transfer(0x00);
+    rfCsHigh();
+    spiRf.endTransaction();
+}
+
+static uint32_t rfReadIrqStatus() {
+    // GET_AND_CLEAR_IRQ_STATUS = 0x0117
+    // Phase 1: send command
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    rfCsLow();
+    spiRf.transfer(0x01); spiRf.transfer(0x17);
+    rfCsHigh();
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    // Phase 2: read 2 status + 4 IRQ bytes
+    uint8_t buf[6];
+    spiRf.beginTransaction(spiSettings);
+    rfCsLow();
+    for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
+    rfCsHigh();
+    spiRf.endTransaction();
+    // bytes 0-1 = status, bytes 2-5 = IRQ flags (big-endian)
+    return ((uint32_t)buf[2] << 24) | ((uint32_t)buf[3] << 16) |
+           ((uint32_t)buf[4] << 8) | (uint32_t)buf[5];
 }
 
 static void rfClearIrq() {
@@ -139,19 +186,17 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // Step 5: Set FLRC Modulation Params
-    // brBw=0x00 (2600 kbps), cr=0x00 (CR_1_0 uncoded), pulseShape=0x05 (BT 0.5)
-    { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x05 }; rfWriteCmd(cmd, 4); }
-    delay(1);
+    // FLRC mod params: brBw=0x00 (2600), cr|shaping=(CR_1_0=0x02 << 4)|(BT_0_5=0x05) = 0x25
+    { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); } delay(1);
 
-    // Step 6: Set FLRC Packet Params
-    // preamble=12, syncWordLen=4 bytes, syncMatch=1, fixedLength=1, crc=0
+    // FLRC packet params: preamble=16, syncWordLen=4, syncWordTx=1, syncMatch=1, fixed=1, crc=0
+    // byte0: ((preamble & 0x0F) << 2) | (syncWordLen / 2)
+    // byte1: ((syncWordTx & 0x03) << 6) | ((syncMatch & 0x07) << 3) | ((uint8_t)fixed << 2) | (crc & 0x03)
     {
-        uint8_t preamble = FLRC_PREAMBLE;
         uint8_t cmd[] = {
             0x02, 0x49,
-            (uint8_t)(((preamble & 0x0F) << 2) | (4 / 2)),
-            (uint8_t)(((1 & 0x07) << 3) | (1 << 2) | 0),
+            (uint8_t)(((FLRC_PREAMBLE & 0x0F) << 2) | (4 / 2)),     // 0x42
+            (uint8_t)(((1 & 0x03) << 6) | ((1 & 0x07) << 3) | (1 << 2) | 0), // 0x4C
             (uint8_t)(FLRC_PKT_SIZE >> 8),
             (uint8_t)(FLRC_PKT_SIZE & 0xFF)
         };
@@ -289,8 +334,11 @@ static void runReceive() {
         // Poll DIO9 IRQ pin
         if (digitalRead(PIN_IRQ) != HIGH) continue;
 
-        // 1. Read FIFO
-        rfReadFifo(buf, FLRC_PKT_SIZE);
+        // Read IRQ status to verify it's RX_DONE
+        uint32_t irqFlags = rfReadIrqStatus();
+
+        // 1. Read FIFO (two-phase read)
+        rfReadFifoTwoPhase(buf, FLRC_PKT_SIZE);
 
         // 2. Clear IRQ (de-asserts DIO9)
         rfClearIrq();
@@ -504,9 +552,10 @@ void loop() {
     if (now - lastHB >= 2000) {
         lastHB = now;
         uint8_t st = rfReadStatus();
+        uint32_t irq = rfReadIrqStatus();
         char b[96];
-        snprintf(b, sizeof(b), "HB rx=%lu St=0x%02X",
-                 (unsigned long)stats.received, st);
+        snprintf(b, sizeof(b), "HB rx=%lu St=0x%02X IRQ=0x%08lX",
+                 (unsigned long)stats.received, st, (unsigned long)irq);
         dualPrintln(b);
         digitalWrite(PIN_LED, !digitalRead(PIN_LED)); // toggle heartbeat
     }
