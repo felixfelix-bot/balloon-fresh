@@ -106,7 +106,9 @@ static void rfSetTx() {
 }
 
 static void rfSetStandby() {
-    uint8_t cmd[] = { 0x01, 0x28, 0x01 }; // STDBY_XOSC
+    // STDBY_RC (0x00) — matches RadioLib standby() for TX operations
+    // STDBY_XOSC (0x01) caused CMD_ERROR on ~86% of packets
+    uint8_t cmd[] = { 0x01, 0x28, 0x00 };
     rfWriteCmd(cmd, 3);
 }
 
@@ -155,8 +157,8 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 2. SET_STANDBY (STDBY_XOSC)
-    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
+    // 2. SET_STANDBY (STDBY_RC = 0x00) — matches RadioLib standby()
+    { uint8_t cmd[] = { 0x01, 0x28, 0x00 }; rfWriteCmd(cmd, 3); }
     delay(5);
 
     // 3. SET_PACKET_TYPE FLRC
@@ -293,6 +295,11 @@ static void runTransmit() {
 
         // Clear IRQ from previous packet
         rfClearIrq();
+
+        // Re-set DIO_IRQ_CONFIG before each TX — RadioLib does this in startTransmit()
+        // Without this, chip may lose IRQ mapping after previous TX_DONE cycle
+        { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+        rfWaitBusy();
 
         // Write to TX FIFO
         rfClearTxFifo();
