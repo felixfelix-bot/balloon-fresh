@@ -63,29 +63,58 @@ THROUGHPUT: 0.0 kbps
 ```
 **0 packets received.** TX sends, RX listens, nothing arrives.
 
-## Why 0 Packets — Open Questions
+## ROOT CAUSE #2 — 0 Packets: Wrong PA Select Bit (FOUND + FIXED)
 
-1. **Sync word format mismatch?** Both use 0x12AD101B in source, but raw SPI
-   sync word command format may encode differently than expected.
-2. **F242D TX not emitting RF?** SET_TX command accepted, TX_DONE fires, but
-   PA/antenna path may not be configured correctly for 2.4 GHz.
-3. **Different LR2021 modules?** 8332 and F242D may have different hardware
-   revisions or antenna connections.
-4. **DIO9 IRQ mapping?** TX maps TX_DONE (bit 19) to DIO9. RX maps RX_DONE
-   (bit 18) to DIO9. If the DIO mapping is wrong, RX never sees the IRQ.
-5. **CRC mismatch?** Both set crc=0, but RadioLib's default sync word
-   ({0x2D, 0x01, 0x4B, 0x1D}) differs from raw firmware sync (0x12AD101B).
-   Since both TX and RX use the same raw sync word, this should match —
-   unless one board still has old RadioLib firmware cached.
+TX diagnostic firmware added per-packet status/IRQ reads. Results:
 
-## Next Debug Steps
+```
+PKT 0: preSt=0x05 irqPin=1 postSt=0x04 IRQ=0x00020000
+PKT 1: preSt=0x05 irqPin=1 postSt=0x04 IRQ=0x00020000
+...
+TX_DONE_STATS: fired=18 timeout=982
+```
 
-1. Flash TX to 8332, RX to F242D — reverse roles to test if F242D can receive
-2. Add raw SPI status read AFTER SET_TX to verify TX_DONE actually fires
-3. Check antenna: LR2021 pin 10 (2.4G) must have antenna connected on BOTH boards
-4. Add GET_RX_BUFFER_STATUS read before FIFO read to check if any bytes arrived
-5. Lower frequency to Sub-GHz (868 MHz, pin 9) to test different RF path
-6. Try loopback: same board TX→RX to verify radio works at all
+- IRQ=0x00020000 = CMD_ERROR (bit 17), NOT TX_DONE (bit 19 = 0x00080000)
+- 982/1000 packets failed with CMD_ERROR
+- Radio accepted SET_TX but couldn't execute — wrong PA selected
+
+Three bugs in raw TX PA config (found by comparing with RadioLib source):
+
+### Bug 1: SET_PA_CONFIG byte0 — PA select bit WRONG
+```
+Our code:    0x01 (bit 0) → selects LF PA
+RadioLib:    0x80 (bit 7) → selects HF PA for 2.4 GHz
+```
+LF PA cannot operate at 2.4 GHz. Every SET_TX command failed with CMD_ERROR.
+
+RadioLib source: `setPaConfig()` sends `(pa << 7)` where pa=1 for highFreq.
+Our code sent raw `0x01` instead of `0x80`.
+
+### Bug 2: SET_TX_PARAMS power — not multiplied by 2
+```
+Our code:    TX_POWER_DBM (13)
+RadioLib:    TX_POWER_DBM * 2 (26)
+```
+RadioLib: `setTxParams()` sends `(uint8_t)(txPower * 2)`.
+
+### Bug 3: SEL_PA called unnecessarily
+```
+Our code:    SET 0x020F 0x01  (SEL_PA)
+RadioLib:    does NOT call SEL_PA — SET_PA_CONFIG alone handles selection
+```
+
+### Fix Applied (commit 14be375)
+- Removed SEL_PA call entirely
+- Fixed PA config byte0: 0x01 → 0x80
+- Fixed TX params: TX_POWER_DBM → TX_POWER_DBM * 2
+- Status: BUILT, NOT YET TESTED on hardware
+
+## Remaining Suspects (if PA fix doesn't solve 0 packets)
+
+1. **Sync word SPI encoding** — both use 0x12AD101B, but raw SPI command
+   byte ordering may differ from what chip expects
+2. **RX_DONE IRQ mapping** — RX maps bit 18 to DIO9, may need verification
+3. **SET_RX_PATH on both boards** — HF path config must be confirmed on RX side too
 
 ## USB Enumeration Warning
 
