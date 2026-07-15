@@ -99,9 +99,10 @@ static void rfClearIrq() {
 }
 
 static void rfSetTx() {
-    // SET_TX = 0x020D, periodBase=0, timeout=0 (no timeout)
-    uint8_t cmd[6] = { 0x02, 0x0D, 0x00, 0x00, 0x00, 0x00 };
-    rfWriteCmd(cmd, 6);
+    // SET_TX = 0x020D + 3-byte timeout (0x000000 = no timeout)
+    // Total: 5 bytes (NOT 6 — extra byte causes CMD_ERROR)
+    uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
+    rfWriteCmd(cmd, 5);
 }
 
 static void rfSetStandby() {
@@ -189,8 +190,8 @@ static bool rawInitRadio() {
     }
     delay(5);
 
-    // 7. CALIBRATE
-    { uint8_t cmd[] = { 0x01, 0x22, 0x2F }; rfWriteCmd(cmd, 3); }
+    // 7. CALIBRATE — all blocks 0x6F (matches RadioLib CALIBRATE_ALL)
+    { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); }
     delay(5);
 
     // 8. SET_FLRC_MOD_PARAMS
@@ -231,8 +232,8 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)(TX_POWER_DBM * 2), 0x04 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 14. SET_RX_TX_FALLBACK (FS mode)
-    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
+    // 14. SET_RX_TX_FALLBACK (STDBY_RC per RadioLib config())
+    { uint8_t cmd[] = { 0x02, 0x06, 0x00 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
     // 15. DIO function — DIO9 = IRQ for TX_DONE
@@ -282,7 +283,11 @@ static void runTransmit() {
         pkt[3] = (uint8_t)(i & 0xFF);
         for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
-        // Go to STDBY before TX — radio may be in RX mode (CMD_ERROR if TX from RX)
+        // CLEAR_ERRORS between TX cycles — CMD_ERROR persists and blocks SET_TX
+        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
+        rfWaitBusy();
+
+        // Go to STDBY before TX
         rfSetStandby();
         rfWaitBusy();
 
@@ -315,8 +320,8 @@ static void runTransmit() {
                        i, stPre, irqFired ? 1 : 0, stPost, (unsigned long)irqStatus);
         }
 
-        // Count results (irqFired = DIO or SPI saw TX_DONE)
-        if (irqFired) {
+        // Count results — only TX_DONE (bit 19) counts as real success
+        if (irqStatus & 0x00080000) {
             txDoneCount++;
         } else {
             txTimeoutCount++;
