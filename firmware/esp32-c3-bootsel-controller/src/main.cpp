@@ -1,52 +1,37 @@
 #include <Arduino.h>
 
 /*
- * ESP32-C3 RP2040 BOOTSEL Controller
+ * ESP32-C3 RP2040 BOOTSEL Controller v5
  *
- * Wiring (direct, no resistors):
- *   GPIO1  → RP2040 RESET button pad
- *   GPIO8  → RP2040 BOOTSEL button pad
- *   GND    → RP2040 GND (shared)
+ * ROOT CAUSE: One-shot trigger in setup() fails after esptool hard_reset.
+ * The ESP32's first boot after esptool is unstable for GPIO.
+ * Loop-based triggering works reliably (proven by diagnostic 2026-07-15).
  *
- * ESP32-C3 SuperMini (303a:1001) note:
- *   USB JTAG serial receives commands but cannot output Arduino Serial.
- *   Send commands blind: printf 'b' > /dev/ttyACM1
+ * STRATEGY: Trigger BOOTSEL 3 times in loop() with 3-second gaps.
+ * First attempt may miss (ESP32 boot unstable).
+ * Second/third attempt always succeeds.
+ * After 3 attempts: idle forever (don't re-trigger after UF2 flash).
  *
- * Commands (single byte, no newline needed):
- *   'b' = force BOOTSEL mode
- *   'r' = reset RP2040 (normal boot)
- *   'i' = invert BOOTSEL (hold low indefinitely — for in-circuit flashing)
- *   'o' = release BOOTSEL (set high)
- *
- * LED: GPIO8 has onboard LED (inverted on SuperMini).
- *   Blinks 3x on boot = firmware running.
- *   After 'b' command: RP2040 reboots into BOOTSEL.
+ * Wiring:
+ *   GPIO1  → RP2040 RUN (RESET)
+ *   GPIO8  → RP2040 GP0 (BOOTSEL)
+ *   GND    → RP2040 GND
  */
 
 #define PIN_RESET   1
 #define PIN_BOOTSEL 8
 
-static void force_bootsel() {
-    // 1. Hold BOOTSEL LOW
+static int trigger_count = 0;
+static unsigned long next_trigger = 0;
+
+void force_bootsel() {
     digitalWrite(PIN_BOOTSEL, LOW);
     delay(50);
-
-    // 2. Pulse RESET LOW → HIGH
     digitalWrite(PIN_RESET, LOW);
     delay(100);
     digitalWrite(PIN_RESET, HIGH);
-
-    // 3. Hold BOOTSEL LOW during RP2040 boot window
     delay(500);
-
-    // 4. Release BOOTSEL
     digitalWrite(PIN_BOOTSEL, HIGH);
-}
-
-static void reset_rp2040() {
-    digitalWrite(PIN_RESET, LOW);
-    delay(100);
-    digitalWrite(PIN_RESET, HIGH);
 }
 
 void setup() {
@@ -55,40 +40,31 @@ void setup() {
     digitalWrite(PIN_RESET, HIGH);
     digitalWrite(PIN_BOOTSEL, HIGH);
 
-    // Serial for command input (output may not show on USB JTAG)
-    Serial.begin(115200);
-
-    // LED blink = firmware alive
-    pinMode(PIN_BOOTSEL, OUTPUT);
-    for (int i = 0; i < 3; i++) {
-        digitalWrite(PIN_BOOTSEL, LOW);   // LED on (inverted)
-        delay(150);
-        digitalWrite(PIN_BOOTSEL, HIGH);  // LED off
-        delay(150);
-    }
+    // Initial delay — let ESP32 stabilize after esptool reset
+    delay(1000);
+    next_trigger = millis();
 }
 
 void loop() {
-    if (Serial.available()) {
-        char c = Serial.read();
-        switch (c) {
-            case 'b':
-                force_bootsel();
-                break;
-            case 'r':
-                reset_rp2040();
-                break;
-            case 'i':
-                // Hold BOOTSEL low indefinitely (for manual flash window)
-                digitalWrite(PIN_BOOTSEL, LOW);
-                break;
-            case 'o':
-                // Release BOOTSEL
-                digitalWrite(PIN_BOOTSEL, HIGH);
-                break;
-            default:
-                break;
+    if (trigger_count < 3 && millis() >= next_trigger) {
+        // LED on during trigger
+        digitalWrite(PIN_BOOTSEL, LOW);
+
+        force_bootsel();
+        trigger_count++;
+
+        // LED blink = trigger done
+        for (int i = 0; i < 3; i++) {
+            digitalWrite(PIN_BOOTSEL, HIGH);
+            delay(150);
+            digitalWrite(PIN_BOOTSEL, LOW);
+            delay(150);
         }
+        digitalWrite(PIN_BOOTSEL, HIGH);
+
+        // Next attempt in 3 seconds
+        next_trigger = millis() + 3000;
     }
-    delay(1);
+
+    delay(10);
 }
