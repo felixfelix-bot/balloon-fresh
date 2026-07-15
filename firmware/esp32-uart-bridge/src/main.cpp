@@ -4,19 +4,12 @@
  * ESP32-C3 SuperMini (303a:1001 = USB JTAG/serial debug unit)
  *
  * Serial  = USB JTAG CDC (what the PC reads)
- * Serial1 = UART1 (remapped to GPIO0/GPIO1 — the soldered wires)
+ * Serial1 = UART1 (remapped via GPIO matrix — avoids USB JTAG conflict)
  *
- * Wiring (already soldered):
- *   RP2040 GP12 (UART0 TX) → ESP32 GPIO0 (D0, UART1 RX)
- *   RP2040 GP13 (UART0 RX) ← ESP32 GPIO1 (D1, UART1 TX)
+ * Wiring (verified 2026-07-15):
+ *   RP2040 GP12 (UART0 TX) → ESP32 GPIO3 (UART1 RX)  [physical pin 3]
+ *   RP2040 GP13 (UART0 RX) ← ESP32 GPIO4 (UART1 TX)  [physical pin 4]
  *   GND → GND
- *
- * IMPORTANT: We use UART1 (Serial1), NOT UART0 (Serial0).
- * UART0 conflicts with USB CDC on ESP32-C3.
- * UART1 can be remapped to any pin via the GPIO matrix.
- *
- * Build:  pio run -e esp32-uart-bridge
- * Flash:  make esp32-flash-bridge PORT=/dev/ttyACMX
  */
 
 #include <Arduino.h>
@@ -24,21 +17,19 @@
 #define UART_BAUD 115200
 
 void setup() {
-    // USB JTAG CDC — what the PC reads
     Serial.begin(115200);
     delay(300);
 
-    // UART1 on GPIO3(RX)/GPIO4(TX) — the soldered wires
+    // UART1 on GPIO3(RX) / GPIO4(TX) — VERIFIED WORKING 2026-07-15
     // RP2040 GP12 (TX) → ESP32 GPIO3 (UART1 RX)
-    // UART1 on GPIO2(RX)/GPIO3(TX) — the soldered wires (physical pins 3&4)
-    // Serial1.begin(baud, config, rxPin, txPin)
-    Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_2, GPIO_NUM_3);
+    // RP2040 GP13 (RX) ← ESP32 GPIO4 (UART1 TX)
+    Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_4);
 
     delay(100);
 
     Serial.println();
-    Serial.println("=== ESP32 UART Bridge v4 ===");
-    Serial.println("UART1: RX=GPIO1 TX=GPIO0 @ 115200");
+    Serial.println("=== ESP32 UART Bridge v5 ===");
+    Serial.println("UART1: RX=GPIO2 TX=GPIO3 @ 115200");
     Serial.println("[BOOT OK]");
 }
 
