@@ -18,6 +18,7 @@
 # ESP32 targets:
 #   make bridge-flash PORT=/dev/ttyACMX   — Flash UART bridge (RP2040 UART → USB CDC)
 #   make bridge-monitor PORT=/dev/ttyACMX — Monitor RP2040 output via ESP32 bridge
+#   make esp-recover PORT=/dev/ttyACMX    — Full erase + reflash (fixes corrupted bootloader)
 #   make esp-bootsel-flash PORT=xx        — Flash BOOTSEL controller to ESP32
 #   make esp32-flash PORT=xx              — (legacy) Flash BOOTSEL diagnostic
 #
@@ -162,6 +163,22 @@ bridge-monitor:
 # Usage: make bridge-test PORT=/dev/ttyACM1 SECS=20
 bridge-test:
 	@python3 scripts/bridge-serial.py test PORT=$(PORT) SECS=$(or $(SECS),20)
+
+# ── ESP32 recovery (corrupted flash — boot loop, SHA mismatch) ──────
+# Usage: make esp-recover PORT=/dev/ttyACM1
+# Full erase + rebuild + reflash. Fixes bootloader corruption from
+# wrong-offset write_flash 0x0.
+.PHONY: esp-recover
+esp-recover:
+	@if [ -z "$(PORT)" ]; then echo "Usage: make esp-recover PORT=/dev/ttyACMX"; exit 1; fi
+	@echo "=== ESP32 RECOVERY on $(PORT) ==="
+	@echo "1/3 Erasing flash..."
+	@python3 -m esptool --port $(PORT) --chip esp32c3 erase_flash 2>&1 | tail -2
+	@echo "2/3 Rebuilding bridge firmware..."
+	@cd $(BRIDGE_DIR) && $(PIO) run -e esp32-uart-bridge 2>&1 | tail -3
+	@echo "3/3 Flashing clean..."
+	@cd $(BRIDGE_DIR) && $(PIO) run -e esp32-uart-bridge -t upload --upload-port $(PORT) 2>&1 | tail -3
+	@echo "=== RECOVERY COMPLETE — ESP32 should boot clean ==="
 
 # ── ESP32 BOOTSEL Controller ─────────────────────────────────────────
 # Flash BOOTSEL controller to ESP32 (auto-triggers RP2040 BOOTSEL on boot)
