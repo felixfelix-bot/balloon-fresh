@@ -158,11 +158,14 @@ static bool rawInitRadio() {
     digitalWrite(PIN_RST, LOW);
     delayMicroseconds(200);
     digitalWrite(PIN_RST, HIGH);
-    delay(10); // wait for BUSY to go low
+    delay(50); // wait for crystal to stabilize (RadioLib retries 10x with 10ms each)
+
+    // Step 0b: Set Rx/Tx fallback mode to STBY_RC (RadioLib config() does this)
+    { uint8_t cmd[] = { 0x02, 0x06, 0x01 }; rfWriteCmd(cmd, 3); } delay(1);
 
     // Step 1: Set Standby XOSC
     { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
-    delay(2);
+    delay(5);
 
     // Step 2: Calibrate all
     { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); }
@@ -173,9 +176,8 @@ static bool rawInitRadio() {
     delay(1);
 
     // Step 4: Set RF Frequency 2440 MHz
-    // rfFreq = freq_Hz / step_size, step = 0.00390625 Hz
-    // 2440e6 / 0.00390625 = 624,640,000
-    uint32_t rfFreq = (uint32_t)(FLRC_FREQ_HZ * 1000000.0f / 0.00390625f);
+    // RadioLib sends freq_MHz * 1e6 directly (radio does internal conversion)
+    uint32_t rfFreq = (uint32_t)(FLRC_FREQ_HZ * 1000000.0f);
     {
         uint8_t cmd[] = {
             0x02, 0x00,
@@ -217,37 +219,20 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // Step 7: Set PA Config (high-power PA for 2.4 GHz)
-    { uint8_t cmd[] = { 0x02, 0x02, 0x01, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
-    delay(1);
+    // Step 7: DIO function — DIO9 = IRQ output
+    // RadioLib: setDioFunction(dioNum, func, pull) → opcode(0x0112) + {dio, (func&0xF0)|(pull&0x0F)}
+    // dioNum=9, func=IRQ=0x10, pull=PULL_DOWN=0x01 → byte1 = 0x11
+    { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); } delay(1);
 
-    // Step 8: Set TX Params (power=13 dBm, ramp=0x02)
-    { uint8_t cmd[] = { 0x02, 0x03, FLRC_PWR_DBM, 0x02 }; rfWriteCmd(cmd, 4); }
-    delay(1);
-
-    // Step 9: Set DIO Function (DIO9 = IRQ output)
-    { uint8_t cmd[] = { 0x01, 0x12, 0x10 }; rfWriteCmd(cmd, 3); }
-    delay(1);
-
-    // Step 10: Set DIO IRQ Config (RX_DONE bit 18 → DIO9)
-    // IRQ mask: bit 18 = RX_DONE
-    // DIO2 mask (maps to DIO9 output): bit 18
+    // Step 8: DIO IRQ config — map RX_DONE (bit 18) to DIO9
+    // RadioLib: setDioIrqConfig(dio, irq) → opcode(0x0115) + {dio, irq[4]}
+    // RX_DONE = 0x00040000 (bit 18)
     {
-        uint32_t irqMask = (1UL << 18);
-        uint32_t dio2Mask = (1UL << 18);
-        uint8_t cmd[] = {
-            0x01, 0x15,
-            (uint8_t)(irqMask >> 24), (uint8_t)(irqMask >> 16),
-            (uint8_t)(irqMask >> 8),  (uint8_t)(irqMask & 0xFF),
-            0x00, 0x00, 0x00, 0x00,  // dio1Mask = 0
-            (uint8_t)(dio2Mask >> 24), (uint8_t)(dio2Mask >> 16),
-            (uint8_t)(dio2Mask >> 8),  (uint8_t)(dio2Mask & 0xFF)
-        };
-        rfWriteCmd(cmd, 14);
-    }
-    delay(1);
+        uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x04, 0x00, 0x00 };
+        rfWriteCmd(cmd, 7);
+    } delay(1);
 
-    // Step 11: Clear IRQ
+    // Step 9: Clear IRQ
     rfClearIrq();
     delay(1);
 
