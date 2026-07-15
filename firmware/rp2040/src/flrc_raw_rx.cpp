@@ -126,8 +126,10 @@ static void rfClearIrq() {
 }
 
 static void rfSetRx() {
-    uint8_t cmd[6] = { 0x02, 0x0C, 0x00, 0xFF, 0xFF, 0xFF };
-    rfWriteCmd(cmd, 6);
+    // SET_RX = 0x020C + 3-byte timeout (0xFFFFFF = continuous)
+    // Total: 5 bytes (NOT 6 — extra byte causes CMD_ERROR)
+    uint8_t cmd[5] = { 0x02, 0x0C, 0xFF, 0xFF, 0xFF };
+    rfWriteCmd(cmd, 5);
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
@@ -197,8 +199,8 @@ static bool rawInitRadio() {
     }
     delay(5);
 
-    // 7. CALIBRATE (0x0122) — all blocks, bitmask 0x2F (NOT 0x6F — bit 5 undefined)
-    { uint8_t cmd[] = { 0x01, 0x22, 0x2F }; rfWriteCmd(cmd, 3); }
+    // 7. CALIBRATE (0x0122) — all blocks, bitmask 0x6F (matches RadioLib CALIBRATE_ALL)
+    { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); }
     delay(5);
 
     // 8. SET_FLRC_MOD_PARAMS (0x0248)
@@ -229,8 +231,8 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // 11. SET_RX_TX_FALLBACK (0x0206) — FS mode (0x03) for fast turnaround
-    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
+    // 11. SET_RX_TX_FALLBACK (0x0206) — STDBY_RC (0x00) per RadioLib config()
+    { uint8_t cmd[] = { 0x02, 0x06, 0x00 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
     // 12. DIO function — DIO9 = IRQ output
