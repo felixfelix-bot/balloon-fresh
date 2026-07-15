@@ -19,6 +19,11 @@
 #define LR2021_IRQ   7
 #define LR2021_RST   8
 
+// earlephilhower: explicit SPI0 on our pins
+// SPIClassRP2040(spi_inst, rx(MISO), cs, sck, tx(MOSI))
+static SPIClassRP2040 spiRf(spi0, LR2021_MISO, LR2021_CS, LR2021_SCK, LR2021_MOSI);
+static SPISettings spiSettings(16000000, MSBFIRST, SPI_MODE0);
+
 // ─── FLRC MAX SPEED ──────────────────────────────────────
 #define FLRC_FREQ     2440.0
 #define FLRC_BR       2600
@@ -32,7 +37,7 @@
 #define RX_TIMEOUT_MS 30000
 
 // ─── Radio ───────────────────────────────────────────────
-Module radioMod(LR2021_CS, LR2021_IRQ, LR2021_RST, LR2021_BUSY);
+Module radioMod(LR2021_CS, LR2021_IRQ, LR2021_RST, LR2021_BUSY, spiRf, spiSettings);
 LR2021 radio(&radioMod);
 
 volatile bool rxFlag = false;
@@ -60,7 +65,9 @@ void setup() {
 
     // SPI0 default pins on RP2040 mbed: SCK=GP2, MOSI=GP3, MISO=GP4
     // These match our wiring — no custom pin config needed
-    SPI.begin();
+    spiRf.begin();
+
+    radio.irqDioNum = 9;  // DIO9 carries RX_DONE on NiceRF LR2021
 
     Serial.print("Init LR2021...");
     int16_t state = radio.beginFLRC(FLRC_FREQ, FLRC_BR, FLRC_CR, FLRC_PWR,

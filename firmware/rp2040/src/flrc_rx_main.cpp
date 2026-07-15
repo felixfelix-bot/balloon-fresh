@@ -13,21 +13,30 @@
  * Hardware (pins.h):
  *   SPI0: SCK=GP2, MOSI=GP3, MISO=GP4, CS=GP5
  *   BUSY=GP6, IRQ(DIO9)=GP7, RST=GP8
+ *   UART0: TX=GP12, RX=GP13 (Serial1 — survives USB CDC death)
  *
- * Serial commands (USB CDC, 115200):
+ * Dual output: USB CDC (Serial) + UART (Serial1).
+ * USB CDC dies on boot (Mode A) because RadioLib beginFLRC() SPI traffic kills
+ * TinyUSB enumeration. Serial1 (UART0) survives — the ESP32 UART bridge reads
+ * it and forwards to its own USB CDC.
+ *
+ * Serial commands (USB CDC or UART, 115200):
  *   RUN     — start receiving (stops on DEADBEEF end marker or silence timeout)
  *   CONFIG  — print current radio configuration
  *   RESULTS — print accumulated statistics
  *   HELP    — list commands
+ *
+ * Auto-start: RX begins automatically 3 seconds after boot (no command needed).
  */
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <RadioLib.h>
+#include <stdarg.h>
 #include "pins.h"
 
 // ─── Radio configuration ────────────────────────────────────────────
-#define FLRC_FREQ_HZ      2450.0f    // 2.4 GHz
+#define FLRC_FREQ_HZ      2440.0f    // 2.4 GHz (match TX firmware)
 #define FLRC_BR           2600        // bit rate kbps (max)
 #define FLRC_CR           RADIOLIB_LR2021_FLRC_CR_1_0   // uncoded
 #define FLRC_PWR_DBM      22
@@ -139,6 +148,60 @@ struct RxStats {
     uint32_t clrRxMin,     clrRxMax,     clrRxSum;
 };
 
+// ─── Dual output: USB CDC (Serial) + UART bridge (Serial1) ──────────
+// USB CDC will likely die on boot (Mode A death from RadioLib beginFLRC),
+// but Serial1 (UART0 on GP12/GP13) survives because it's a separate hardware
+// peripheral. Output goes to both — whichever the host can read.
+
+static void dualBegin() {
+    Serial.begin(SERIAL_BAUD);
+    // UART0 on GP12(TX)/GP13(RX) — earlephilhower requires setTX/setRX before begin
+    Serial1.setTX(PIN_UART_TX);   // GP12
+    Serial1.setRX(PIN_UART_RX);   // GP13
+    Serial1.begin(115200);
+}
+
+// Print a string (with newline) to both Serial and Serial1
+static void dualPrintln(const char *s) {
+    Serial.println(s);
+    Serial1.println(s);
+}
+
+// Empty println (blank line)
+static void dualPrintln() {
+    Serial.println();
+    Serial1.println();
+}
+
+// Print an integer (with newline) to both
+static void dualPrintln(int v) {
+    Serial.println(v);
+    Serial1.println(v);
+}
+
+// Print a string (no newline) to both Serial and Serial1
+static void dualPrint(const char *s) {
+    Serial.print(s);
+    Serial1.print(s);
+}
+
+// Print an integer (no newline)
+static void dualPrint(int v) {
+    Serial.print(v);
+    Serial1.print(v);
+}
+
+// Printf-style formatting to both outputs (newline appended)
+static void dualPrintf(const char *fmt, ...) {
+    char buf[256];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    Serial.println(buf);
+    Serial1.println(buf);
+}
+
 static RxStats stats;
 
 static void resetStats() {
@@ -161,16 +224,16 @@ static bool initRadio() {
     int16_t state = radio.beginFLRC(FLRC_FREQ_HZ, FLRC_BR, FLRC_CR, FLRC_PWR_DBM,
                                     FLRC_PREAMBLE, FLRC_SHAPING, FLRC_TCXO_V);
     if (state != RADIOLIB_ERR_NONE) {
-        Serial.print("ERR: beginFLRC failed, code ");
-        Serial.println(state);
+        dualPrint("ERR: beginFLRC failed, code ");
+        dualPrintln(state);
         return false;
     }
 
     // Fixed 255-byte packets → we can read the FIFO without querying length.
     state = radio.fixedPacketLengthMode(FLRC_PKT_SIZE);
     if (state != RADIOLIB_ERR_NONE) {
-        Serial.print("ERR: fixedPacketLengthMode failed, code ");
-        Serial.println(state);
+        dualPrint("ERR: fixedPacketLengthMode failed, code ");
+        dualPrintln(state);
         return false;
     }
 
@@ -178,8 +241,8 @@ static bool initRadio() {
     // we take over the hot path with raw SPI; DIO9 stays mapped to RX_DONE.
     state = radio.startReceive();
     if (state != RADIOLIB_ERR_NONE) {
-        Serial.print("ERR: startReceive failed, code ");
-        Serial.println(state);
+        dualPrint("ERR: startReceive failed, code ");
+        dualPrintln(state);
         return false;
     }
 
@@ -192,7 +255,7 @@ static void printResultsInline();  // forward declaration
 
 static void runReceive() {
     if (!radioReady) {
-        Serial.println("ERR: radio not initialized");
+        dualPrintln("ERR: radio not initialized");
         return;
     }
 
@@ -202,8 +265,8 @@ static void runReceive() {
 
     uint8_t buf[FLRC_PKT_SIZE];
 
-    Serial.println("RX_START listening for FLRC packets...");
-    Serial.println("pkt,seq,irq2read_us,read2clr_us,clr2rx_us,total_us");
+    dualPrintln("RX_START listening for FLRC packets...");
+    dualPrintln("pkt,seq,irq2read_us,read2clr_us,clr2rx_us,total_us");
 
     bool stopped = false;
     while (!stopped) {
@@ -211,7 +274,7 @@ static void runReceive() {
         // Stop on hard cap, or on silence once we have started receiving.
         if ((now - stats.startMs) >= RX_LISTEN_MS) { stopped = true; break; }
         if (stats.received > 0 && (now - lastPktMs) >= RX_SILENCE_MS) {
-            Serial.println("RX_TIMEOUT: silence, stopping");
+            dualPrintln("RX_TIMEOUT: silence, stopping");
             stopped = true; break;
         }
 
@@ -242,7 +305,7 @@ static void runReceive() {
             stats.totalSentByTx = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
                                   ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
             stats.elapsedMs = millis() - stats.startMs;
-            Serial.println("RX_END: received DEADBEEF end marker");
+            dualPrintln("RX_END: received DEADBEEF end marker");
             break;
         }
 
@@ -276,7 +339,7 @@ static void runReceive() {
                      (unsigned long)stats.received, (unsigned long)seq,
                      (unsigned long)irq2read, (unsigned long)read2clr,
                      (unsigned long)clr2rx, (unsigned long)total);
-            Serial.println(line);
+            dualPrintln(line);
         }
     }
 
@@ -296,44 +359,44 @@ static void printResultsInline() {
                      : 0.0f;
     float avgTotal = (n > 0) ? ((float)stats.sumTotalUs / (float)n) : 0.0f;
 
-    Serial.println("=============================================");
+    dualPrintln("=============================================");
     {
         char b[96];
         snprintf(b, sizeof(b), "  Received:    %lu (unique %lu, dup %lu)",
                  (unsigned long)n, (unsigned long)stats.unique,
                  (unsigned long)stats.duplicates);
-        Serial.println(b);
+        dualPrintln(b);
         snprintf(b, sizeof(b), "  TX sent:     %lu  (est total %lu)",
                  (unsigned long)stats.totalSentByTx, (unsigned long)total);
-        Serial.println(b);
+        dualPrintln(b);
         snprintf(b, sizeof(b), "  Lost:        %lu  (%.2f%%)", (unsigned long)lost, perPct);
-        Serial.println(b);
+        dualPrintln(b);
         snprintf(b, sizeof(b), "  Elapsed:     %lu ms", (unsigned long)stats.elapsedMs);
-        Serial.println(b);
+        dualPrintln(b);
         snprintf(b, sizeof(b), "  Throughput:  %.1f kbps", tputKbps);
-        Serial.println(b);
+        dualPrintln(b);
         snprintf(b, sizeof(b), "  Hot-path us: total min=%lu avg=%.0f max=%lu",
                  (unsigned long)stats.minTotalUs, avgTotal, (unsigned long)stats.maxTotalUs);
-        Serial.println(b);
+        dualPrintln(b);
         if (n > 0) {
             snprintf(b, sizeof(b), "    irq->read  min=%lu avg=%lu max=%lu",
                      (unsigned long)stats.irqToReadMin,
                      (unsigned long)(stats.irqToReadSum / n),
                      (unsigned long)stats.irqToReadMax);
-            Serial.println(b);
+            dualPrintln(b);
             snprintf(b, sizeof(b), "    read->clr  min=%lu avg=%lu max=%lu",
                      (unsigned long)stats.readClrMin,
                      (unsigned long)(stats.readClrSum / n),
                      (unsigned long)stats.readClrMax);
-            Serial.println(b);
+            dualPrintln(b);
             snprintf(b, sizeof(b), "    clr->rx    min=%lu avg=%lu max=%lu",
                      (unsigned long)stats.clrRxMin,
                      (unsigned long)(stats.clrRxSum / n),
                      (unsigned long)stats.clrRxMax);
-            Serial.println(b);
+            dualPrintln(b);
         }
     }
-    Serial.println("=============================================");
+    dualPrintln("=============================================");
 
     // Machine-readable RESULT line (mirrors the bench format)
     {
@@ -344,35 +407,35 @@ static void printResultsInline() {
                  (unsigned long)lost, (unsigned long)total, perPct,
                  (unsigned long)stats.elapsedMs, tputKbps, avgTotal,
                  (unsigned long)stats.minTotalUs, (unsigned long)stats.maxTotalUs);
-        Serial.println(b);
+        dualPrintln(b);
     }
 }
 
 // ─── Serial command interface ───────────────────────────────────────
 static void printConfig() {
-    Serial.println("=== FLRC RX CONFIG ===");
+    dualPrintln("=== FLRC RX CONFIG ===");
     char b[96];
     snprintf(b, sizeof(b), "  freq=%.1f MHz  BR=%d  CR=0x%02X (uncoded)",
              FLRC_FREQ_HZ, FLRC_BR, (unsigned)FLRC_CR);
-    Serial.println(b);
+    dualPrintln(b);
     snprintf(b, sizeof(b), "  power=%d dBm  preamble=%d  shaping=BT0.5",
              FLRC_PWR_DBM, FLRC_PREAMBLE);
-    Serial.println(b);
+    dualPrintln(b);
     snprintf(b, sizeof(b), "  pktSize=%d  SPI=%.2f MHz  irqDio=%d",
              FLRC_PKT_SIZE, SPI_FREQ_HZ / 1.0e6f, (int)radio.irqDioNum);
-    Serial.println(b);
+    dualPrintln(b);
     snprintf(b, sizeof(b), "  pins: SCK=%d MOSI=%d MISO=%d CS=%d BUSY=%d IRQ=%d RST=%d",
              PIN_SPI_SCK, PIN_SPI_MOSI, PIN_SPI_MISO, PIN_SPI_CS,
              PIN_BUSY, PIN_IRQ, PIN_RST);
-    Serial.println(b);
+    dualPrintln(b);
     snprintf(b, sizeof(b), "  radio: %s  listen_cap=%dms  silence=%dms",
              radioReady ? "READY" : "NOT_INIT", RX_LISTEN_MS, RX_SILENCE_MS);
-    Serial.println(b);
-    Serial.println("======================");
+    dualPrintln(b);
+    dualPrintln("======================");
 }
 
 static void printHelp() {
-    Serial.println("Commands: RUN  CONFIG  RESULTS  HELP");
+    dualPrintln("Commands: RUN  CONFIG  RESULTS  HELP");
 }
 
 static char cmdBuf[64];
@@ -388,22 +451,43 @@ static void processCommand(const char *cmd) {
         printConfig();
     } else if (strcmp(cmd, "RESULTS") == 0 || strcmp(cmd, "results") == 0) {
         if (stats.received == 0) {
-            Serial.println("No results yet (send RUN first)");
+            dualPrintln("No results yet (send RUN first)");
         } else {
             printResultsInline();
+        }
+    } else if (strcmp(cmd, "INIT") == 0 || strcmp(cmd, "init") == 0) {
+        // Re-attempt radio init and print error code
+        radio.irqDioNum = 9;
+        int16_t state = radio.beginFLRC(FLRC_FREQ_HZ, FLRC_BR, FLRC_CR, FLRC_PWR_DBM,
+                                        FLRC_PREAMBLE, FLRC_SHAPING, FLRC_TCXO_V);
+        dualPrint("beginFLRC code: ");
+        dualPrintln(state);
+        if (state == RADIOLIB_ERR_NONE) {
+            state = radio.fixedPacketLengthMode(FLRC_PKT_SIZE);
+            dualPrint("fixedPktLen code: ");
+            dualPrintln(state);
+            state = radio.startReceive();
+            dualPrint("startRx code: ");
+            dualPrintln(state);
+            if (state == RADIOLIB_ERR_NONE) {
+                radioReady = true;
+                dualPrintln("RADIO_INIT_OK (manual)");
+            }
         }
     } else if (strcmp(cmd, "HELP") == 0 || strcmp(cmd, "help") == 0) {
         printHelp();
     } else {
-        Serial.print("ERR: unknown command '");
-        Serial.print(cmd);
-        Serial.println("' (try HELP)");
+        dualPrint("ERR: unknown command '");
+        dualPrint(cmd);
+        dualPrintln("' (try HELP)");
     }
 }
 
 // ─── Arduino entry points ───────────────────────────────────────────
 void setup() {
-    Serial.begin(SERIAL_BAUD);
+    // Dual serial init: USB CDC + UART0 (Serial1 on GP12/GP13)
+    dualBegin();
+
     // Brief LED blink to confirm boot.
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
@@ -412,26 +496,45 @@ void setup() {
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
     }
 
-    Serial.println();
-    Serial.println("=== RP2040 FLRC Speed RX ===");
-    Serial.println("RadioLib init + raw SPI hot loop");
+    dualPrintln();
+    dualPrintln("=== RP2040 FLRC Speed RX ===");
+    dualPrintln("RadioLib init + raw SPI hot loop");
     delay(50);
 
     if (initRadio()) {
-        Serial.println("RADIO_INIT_OK");
+        dualPrintln("RADIO_INIT_OK");
         digitalWrite(PIN_LED_ALT, HIGH);  // steady on = ready
     } else {
-        Serial.println("RADIO_INIT_FAILED — type CONFIG, check wiring");
+        dualPrintln("RADIO_INIT_FAILED — type CONFIG, check wiring");
     }
 
     resetStats();
     printHelp();
+
+    // Auto-start RX after 3 seconds (no command needed — USB CDC may be dead)
+    dualPrintln("AUTO_START in 3 seconds...");
+    delay(3000);
+    runReceive();
 }
 
 void loop() {
-    // Line-buffered command parsing over USB CDC.
+    // Line-buffered command parsing over USB CDC (Serial).
     while (Serial.available()) {
         char c = (char)Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (cmdLen > 0) {
+                cmdBuf[cmdLen] = '\0';
+                processCommand(cmdBuf);
+                cmdLen = 0;
+            }
+        } else if (cmdLen < (sizeof(cmdBuf) - 1)) {
+            cmdBuf[cmdLen++] = c;
+        }
+    }
+
+    // Also read commands from UART (Serial1) — host may send via UART bridge.
+    while (Serial1.available()) {
+        char c = (char)Serial1.read();
         if (c == '\n' || c == '\r') {
             if (cmdLen > 0) {
                 cmdBuf[cmdLen] = '\0';
