@@ -120,36 +120,78 @@ esp32-flash:
 
 # ── ESP32 UART Bridge ────────────────────────────────────────────────
 BRIDGE_DIR := esp32-uart-bridge
+BRIDGE_BUILD := $(BRIDGE_DIR)/.pio/build/esp32-uart-bridge
 
 # Flash UART bridge firmware to ESP32 (forwards RP2040 UART → USB CDC)
+# Uses esptool with bootloader + partitions + firmware (not just firmware.bin)
 # Usage: make bridge-flash PORT=/dev/ttyACM1
-.PHONY: bridge-flash bridge-build bridge-monitor
+.PHONY: bridge-flash bridge-build bridge-read bridge-send bridge-monitor
 bridge-flash: bridge-build
 	@echo "Flashing UART bridge to $(PORT)..."
-	cd $(BRIDGE_DIR) && $(PIO) run -e esp32-uart-bridge -t upload --upload-port $(PORT) 2>&1 | tail -5
-	@echo "Bridge flashed ✓ — ESP32 now forwards RP2040 UART to USB"
+	@FW=$$(pwd)/$(BRIDGE_BUILD)/firmware.bin; \
+	BL=$$(pwd)/$(BRIDGE_BUILD)/bootloader.bin; \
+	PT=$$(pwd)/$(BRIDGE_BUILD)/partitions.bin; \
+	[ -f "$$FW" ] || { echo "ERROR: $$FW not found. Run make bridge-build"; exit 1; }; \
+	echo "Erasing flash..."; \
+	$(ESPTOOL) --port $(PORT) --chip esp32c3 erase_flash 2>&1 | tail -1; \
+	echo "Flashing bootloader+partitions+firmware..."; \
+	$(ESPTOOL) --port $(PORT) --chip esp32c3 --baud 921600 \
+		write_flash 0x0 "$$BL" 0x8000 "$$PT" 0x10000 "$$FW" 2>&1 | tail -2; \
+	echo "Bridge flashed ✓ — ESP32 now forwards RP2040 UART to USB"
+	@sleep 2
 
 bridge-build:
 	@echo "Building UART bridge..."
 	cd $(BRIDGE_DIR) && $(PIO) run -e esp32-uart-bridge 2>&1 | tail -3
 
-# Monitor the ESP32 bridge output (RP2040 serial via UART)
+# Read bridge output for N seconds (default 10)
+# Usage: make bridge-read PORT=/dev/ttyACM1 SECS=15
+bridge-read:
+	@python3 scripts/bridge-serial.py read PORT=$(PORT) SECS=$(or $(SECS),10)
+
+# Send command through bridge to RP2040
+# Usage: make bridge-send PORT=/dev/ttyACM1 CMD=RUN
+bridge-send:
+	@python3 scripts/bridge-serial.py send PORT=$(PORT) CMD=$(CMD)
+
+# Monitor bridge continuously (Ctrl+C to stop)
 bridge-monitor:
-	@echo "Monitoring bridge on $(PORT) at 115200... (Ctrl+C to stop)"
-	@timeout 30 cat $(PORT) 2>/dev/null || \
-		python3 -c "import serial,time; s=serial.Serial('$(PORT)',115200,timeout=1); [print(s.read(1024).decode(errors='replace'),end='',flush=True) for _ in iter(lambda: True, False)]" 2>/dev/null
+	@python3 scripts/bridge-serial.py monitor PORT=$(PORT)
+
+# Send RUN + listen for results (default 20s)
+# Usage: make bridge-test PORT=/dev/ttyACM1 SECS=20
+bridge-test:
+	@python3 scripts/bridge-serial.py test PORT=$(PORT) SECS=$(or $(SECS),20)
 
 # ── ESP32 BOOTSEL Controller ─────────────────────────────────────────
 # Flash BOOTSEL controller to ESP32 (auto-triggers RP2040 BOOTSEL on boot)
 # Usage: make esp-bootsel-flash PORT=/dev/ttyACM1
+BOOTSEL_BUILD_DIR := $(BOOTSEL_DIR)/.pio/build/esp32c3
 .PHONY: esp-bootsel-flash esp-bootsel-build
 esp-bootsel-flash: esp-bootsel-build
 	@echo "Flashing BOOTSEL controller to $(PORT)..."
-	cd $(BOOTSEL_DIR) && $(PIO) run -e esp32-c3-bootsel-controller -t upload --upload-port $(PORT) 2>&1 | tail -5
+	@FW=$$(pwd)/$(BOOTSEL_DIR)/.pio/build/esp32c3/firmware.bin; \
+	[ -f "$$FW" ] || { echo "ERROR: $$FW not found"; exit 1; }; \
+	$(ESPTOOL) --port $(PORT) --chip esp32c3 --baud 921600 \
+		write_flash 0x0 "$$FW" 2>&1 | tail -2
 	@echo "BOOTSEL controller flashed ✓"
 
 esp-bootsel-build:
-	cd $(BOOTSEL_DIR) && $(PIO) run -e esp32-c3-bootsel-controller 2>&1 | tail -3
+	cd $(BOOTSEL_DIR) && $(PIO) run -e esp32c3 2>&1 | tail -3
+
+# Flash BOOTSEL oneshot controller (single trigger, then idle)
+# Usage: make esp-bootsel-oneshot-flash PORT=/dev/ttyACM1
+.PHONY: esp-bootsel-oneshot-flash esp-bootsel-oneshot-build
+esp-bootsel-oneshot-flash: esp-bootsel-oneshot-build
+	@echo "Flashing BOOTSEL oneshot to $(PORT)..."
+	@FW=$$(pwd)/$(BOOTSEL_DIR)/.pio/build/esp32-bootsel-oneshot/firmware.bin; \
+	[ -f "$$FW" ] || { echo "ERROR: $$FW not found"; exit 1; }; \
+	$(ESPTOOL) --port $(PORT) --chip esp32c3 --baud 921600 \
+		write_flash 0x0 "$$FW" 2>&1 | tail -2
+	@echo "BOOTSEL oneshot flashed ✓"
+
+esp-bootsel-oneshot-build:
+	cd $(BOOTSEL_DIR) && $(PIO) run -e esp32-bootsel-oneshot 2>&1 | tail -3
 
 # ── RP2040 FLRC convenience targets ─────────────────────────────────
 # Auto-detect board by serial number: 8332=RX, F242D=TX
@@ -180,7 +222,7 @@ uart-test:
 # ── Full test setup: flash both + bridge ────────────────────────────
 # Usage: make flrc-test-setup BRIDGE_PORT=/dev/ttyACM1
 BRIDGE_PORT ?= /dev/ttyACM1
-.PHONY: flrc-test-setup
+.PHONY: flrc-test-setup flrc-run
 flrc-test-setup: flrc-flash-both bridge-flash
 	@echo ""
 	@echo "=== FLRC TEST SETUP COMPLETE ==="
@@ -189,6 +231,15 @@ flrc-test-setup: flrc-flash-both bridge-flash
 	@echo "Bridge ESP32:     UART bridge ($(BRIDGE_PORT))"
 	@echo ""
 	@echo "Monitor RX via bridge: make bridge-monitor PORT=$(BRIDGE_PORT)"
+	@echo "Send RUN to RX:       make bridge-send PORT=$(BRIDGE_PORT) CMD=RUN"
+
+# Full automated test: flash both + bridge, send RUN, listen for results
+# Usage: make flrc-run BRIDGE_PORT=/dev/ttyACM1
+flrc-run: flrc-test-setup
+	@echo "Waiting for boards to boot..."
+	@sleep 5
+	@echo "Sending RUN + listening for results (20s)..."
+	@python3 scripts/bridge-serial.py test PORT=$(BRIDGE_PORT) SECS=20
 
 # ── Clean ───────────────────────────────────────────────────────────
 .PHONY: clean
