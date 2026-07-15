@@ -184,6 +184,38 @@ esp-recover:
 # Flash BOOTSEL controller to ESP32 (auto-triggers RP2040 BOOTSEL on boot)
 # Usage: make esp-bootsel-flash PORT=/dev/ttyACM1
 BOOTSEL_BUILD_DIR := $(BOOTSEL_DIR)/.pio/build/esp32c3
+
+# ── ESP32 full recovery (fixes corrupted flash / WDT reset loop) ─────
+# Does: erase → flash bootloader(0x0) + partitions(0x8000) + firmware(0x10000)
+# Use when ESP32 is stuck in WDT reset loop after bad flash.
+# Usage: make esp32-recover PORT=/dev/ttyACM1 FW_DIR=esp32-uart-bridge FW_ENV=esp32-uart-bridge
+#        make esp32-recover PORT=/dev/ttyACM1 FW_DIR=esp32-c3-bootsel-controller FW_ENV=esp32c3
+.PHONY: esp32-recover
+esp32-recover:
+	@if [ -z "$(FW_DIR)" ] || [ -z "$(FW_ENV)" ]; then \
+		echo "ERROR: FW_DIR and FW_ENV required"; \
+		echo "Usage: make esp32-recover PORT=/dev/ttyACM1 FW_DIR=esp32-uart-bridge FW_ENV=esp32-uart-bridge"; \
+		echo "       make esp32-recover PORT=/dev/ttyACM1 FW_DIR=esp32-c3-bootsel-controller FW_ENV=esp32c3"; \
+		exit 1; \
+	fi
+	@BUILD=$(FW_DIR)/.pio/build/$(FW_ENV); \
+	FW=$$(pwd)/$$BUILD/firmware.bin; \
+	BL=$$(pwd)/$$BUILD/bootloader.bin; \
+	PT=$$(pwd)/$$BUILD/partitions.bin; \
+	if [ ! -f "$$FW" ]; then echo "Building $(FW_ENV)..."; cd $(FW_DIR) && $(PIO) run -e $(FW_ENV) 2>&1 | tail -3; cd ..; fi; \
+	[ -f "$$FW" ] || { echo "ERROR: $$FW not found"; exit 1; }; \
+	[ -f "$$BL" ] || { echo "ERROR: $$BL not found"; exit 1; }; \
+	[ -f "$$PT" ] || { echo "ERROR: $$PT not found"; exit 1; }; \
+	echo "=== RECOVER $(PORT) ==="; \
+	echo "Erasing flash..."; \
+	$(ESPTOOL) --port $(PORT) --chip esp32c3 erase_flash 2>&1 | tail -1; \
+	echo "Flashing bootloader(0x0) + partitions(0x8000) + firmware(0x10000)..."; \
+	$(ESPTOOL) --port $(PORT) --chip esp32c3 --baud 921600 \
+		write_flash 0x0 "$$BL" 0x8000 "$$PT" 0x10000 "$$FW" 2>&1 | tail -2; \
+	echo "Recovery done ✓"; \
+	sleep 3; \
+	echo "Verifying..."; \
+	timeout 5 python3 -c "import serial,time; s=serial.Serial('$(PORT)',115200,timeout=1); time.sleep(2); d=s.read(4096); print('Output: %s' % d.decode(errors='replace').strip()[:200])" 2>&1 || echo "(no output yet — may need reset)"
 .PHONY: esp-bootsel-flash esp-bootsel-build
 esp-bootsel-flash: esp-bootsel-build
 	@echo "Flashing BOOTSEL controller to $(PORT)..."
@@ -209,6 +241,16 @@ esp-bootsel-oneshot-flash: esp-bootsel-oneshot-build
 
 esp-bootsel-oneshot-build:
 	cd $(BOOTSEL_DIR) && $(PIO) run -e esp32-bootsel-oneshot 2>&1 | tail -3
+
+# Convenience: recover + flash specific firmware
+# make recover-bridge PORT=/dev/ttyACM1   — recover + flash UART bridge
+# make recover-bootsel PORT=/dev/ttyACM1   — recover + flash BOOTSEL controller
+.PHONY: recover-bridge recover-bootsel
+recover-bridge:
+	$(MAKE) esp32-recover PORT=$(PORT) FW_DIR=esp32-uart-bridge FW_ENV=esp32-uart-bridge
+
+recover-bootsel:
+	$(MAKE) esp32-recover PORT=$(PORT) FW_DIR=esp32-c3-bootsel-controller FW_ENV=esp32c3
 
 # ── RP2040 FLRC convenience targets ─────────────────────────────────
 # Auto-detect board by serial number: 8332=RX, F242D=TX
