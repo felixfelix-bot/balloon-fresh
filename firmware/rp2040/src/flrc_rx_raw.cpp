@@ -152,93 +152,102 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 6);
 }
 
-// ─── Raw SPI Init Sequence (replaces RadioLib beginFLRC) ─────────────
+// ─── Raw SPI Init Sequence (matches TheClams lr2021-apps FLRC reference) ─
 static bool rawInitRadio() {
     // Step 0: Hardware reset
     digitalWrite(PIN_RST, LOW);
-    delayMicroseconds(200);
-    digitalWrite(PIN_RST, HIGH);
-    delay(50); // wait for crystal to stabilize (RadioLib retries 10x with 10ms each)
+        delayMicroseconds(200);
+        digitalWrite(PIN_RST, HIGH);
+        delay(50);
 
-    // Step 0b: Set Rx/Tx fallback mode to STBY_RC (RadioLib config() does this)
-    { uint8_t cmd[] = { 0x02, 0x06, 0x01 }; rfWriteCmd(cmd, 3); } delay(1);
+        // Step 1: SET_RF_FREQUENCY (0x0200) — freq in Hz, big-endian
+        // TheClams: set_rf(2_400_000_000) — value IS in Hz
+        uint32_t rfFreq = (uint32_t)(FLRC_FREQ_HZ * 1000000.0f);
+        {
+            uint8_t cmd[] = {
+                0x02, 0x00,
+                (uint8_t)(rfFreq >> 24), (uint8_t)(rfFreq >> 16),
+                (uint8_t)(rfFreq >> 8),  (uint8_t)(rfFreq & 0xFF)
+            };
+            rfWriteCmd(cmd, 6);
+        }
+        delay(1);
 
-    // Step 1: Set Standby XOSC
-    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
-    delay(5);
+        // Step 2: SET_RX_PATH (0x0201) — MUST select HF path for 2.4 GHz!
+        // TheClams: set_rx_path(RxPath::HfPath, 0)
+        // Without this, radio uses LF path → CMD_ERROR on 2.4 GHz commands
+        { uint8_t cmd[] = { 0x02, 0x01, 0x01 }; rfWriteCmd(cmd, 3); } delay(1);
 
-    // Step 2: Calibrate all
-    { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); }
-    delay(5);
+        // Step 3: CALIBRATE (0x0122) — all defined blocks = 0x5F (NOT 0x6F)
+        // Rust driver: bit6=pa_offset, bit4=meas_unit, bit3=aaf, bit2=pll, bit1=hf_rc, bit0=lf_rc
+        // 0x6F has bit5 set which is UNDEFINED → likely CMD_ERROR source
+        { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
+        delay(5);
+        rfWaitBusy(); // wait for calibration to complete
 
-    // Step 3: Set Packet Type FLRC
-    { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); }
-    delay(1);
+        // Step 4: CALIB_FE (0x0123) — front-end calibration (REQUIRED before RX)
+        // Datasheet: "If image rejection calibration was not done, RXFREQ_NO_CAL_ERR"
+        // TheClams: calib_fe(&[]) — defaults
+        { uint8_t cmd[] = { 0x01, 0x23, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }; rfWriteCmd(cmd, 8); }
+        delay(5);
+        rfWaitBusy();
 
-    // Step 4: Set RF Frequency 2440 MHz
-    // RadioLib sends freq_MHz * 1e6 directly (radio does internal conversion)
-    uint32_t rfFreq = (uint32_t)(FLRC_FREQ_HZ * 1000000.0f);
-    {
-        uint8_t cmd[] = {
-            0x02, 0x00,
-            (uint8_t)(rfFreq >> 24), (uint8_t)(rfFreq >> 16),
-            (uint8_t)(rfFreq >> 8),  (uint8_t)(rfFreq & 0xFF)
-        };
-        rfWriteCmd(cmd, 6);
-    }
-    delay(1);
+        // Step 5: SET_PACKET_TYPE (0x0207) — FLRC=5
+        // TheClams: set_packet_type(PacketType::Flrc)
+        { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); } delay(1);
 
-    // FLRC mod params: brBw=0x00 (2600), cr|shaping=(CR_1_0=0x02 << 4)|(BT_0_5=0x05) = 0x25
-    { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); } delay(1);
+        // Step 6: SET_FLRC_MODULATION_PARAMS (0x0248)
+        // TheClams: Br2600=0, None=2, Bt1p0=7 → byte3 = (2<<4)|7 = 0x27
+        // Bt1p0 matches reference. Bt0p5=5 also valid but use reference value.
+        { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x27 }; rfWriteCmd(cmd, 4); } delay(1);
 
-    // FLRC packet params: preamble=16, syncWordLen=4, syncWordTx=1, syncMatch=1, fixed=1, crc=0
-    // byte0: ((preamble & 0x0F) << 2) | (syncWordLen / 2)
-    // byte1: ((syncWordTx & 0x03) << 6) | ((syncMatch & 0x07) << 3) | ((uint8_t)fixed << 2) | (crc & 0x03)
-    {
-        uint8_t cmd[] = {
-            0x02, 0x49,
-            (uint8_t)(((FLRC_PREAMBLE & 0x0F) << 2) | (4 / 2)),     // 0x42
-            (uint8_t)(((1 & 0x03) << 6) | ((1 & 0x07) << 3) | (1 << 2) | 0), // 0x4C
-            (uint8_t)(FLRC_PKT_SIZE >> 8),
-            (uint8_t)(FLRC_PKT_SIZE & 0xFF)
-        };
-        rfWriteCmd(cmd, 6);
-    }
-    delay(1);
+        // Step 7: SET_FLRC_SYNCWORD (0x024C) — 32-bit sync word at slot 1
+        // TheClams: 0xCD05CAFE at slot 1
+        {
+            uint8_t cmd[] = {
+                0x02, 0x4C,
+                0x01,               // sw_num = 1
+                0xCD, 0x05, 0xCA, 0xFE  // syncword MSB first
+            };
+            rfWriteCmd(cmd, 7);
+        }
+        delay(1);
 
-    // Step 6b: Set FLRC Sync Word — opcode 0x024C
-    // RadioLib default: {0x12, 0xAD, 0x10, 0x1B} at slot 1
-    // MUST match TX side or no packets will be received!
-    {
-        uint8_t cmd[] = {
-            0x02, 0x4C,
-            0x01,           // syncWordNum = 1 (match slot 1)
-            0x12, 0xAD, 0x10, 0x1B  // sync word bytes (MSB first)
-        };
-        rfWriteCmd(cmd, 7);
-    }
-    delay(1);
+        // Step 8: SET_FLRC_PACKET_PARAMS (0x0249)
+        // TheClams: 16b preamble, 32b SW, SwTx=1, Match1, Dynamic, CRC24, PLD=255
+        // byte2 = (agc_pbl_len << 2) | sw_len = (3<<2)|2 = 0x0E
+        // byte3 = (sw_tx<<6)|(sw_match<<3)|(pkt_fmt<<2)|crc = (1<<6)|(1<<3)|(1<<2)|0 = 0x4C
+        //         Fixed=1, CRC=0 — MUST match TX (RadioLib fixedPacketLengthMode + CRC disabled)
+        // byte4-5 = pld_len = 255
+        {
+            uint8_t cmd[] = {
+                0x02, 0x49,
+                0x0E,   // 16b preamble (3<<2) | 32b SW (2)
+                0x4C,   // SwTx=1(1<<6) | Match1(1<<3) | Fixed(1) | CRC_OFF(0)
+                0x00, 0xFF  // pld_len = 255
+            };
+            rfWriteCmd(cmd, 6);
+        }
+        delay(1);
 
-    // Step 7: DIO function — DIO9 = IRQ output
-    // RadioLib: setDioFunction(dioNum, func, pull) → opcode(0x0112) + {dio, (func&0xF0)|(pull&0x0F)}
-    // dioNum=9, func=IRQ=0x10, pull=PULL_DOWN=0x01 → byte1 = 0x11
-    { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); } delay(1);
+        // Step 9: SET_RX_TX_FALLBACK_MODE (0x0206) — Fs=3 (TheClams uses FS)
+        { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); } delay(1);
 
-    // Step 8: DIO IRQ config — map RX_DONE (bit 18) to DIO9
-    // RadioLib: setDioIrqConfig(dio, irq) → opcode(0x0115) + {dio, irq[4]}
-    // RX_DONE = 0x00040000 (bit 18)
-    {
-        uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x04, 0x00, 0x00 };
-        rfWriteCmd(cmd, 7);
-    } delay(1);
+        // Step 10: SET_DIO_FUNCTION (0x0112) — DIO9 = IRQ
+        { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); } delay(1);
 
-    // Step 9: Clear IRQ
-    rfClearIrq();
-    delay(1);
+        // Step 11: SET_DIO_IRQ_CONFIG (0x0115) — RX_DONE+TX_DONE to DIO9
+        // RX_DONE=bit18=0x00040000, TX_DONE=bit19=0x00080000 → 0x000C0000
+        {
+            uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x0C, 0x00, 0x00 };
+            rfWriteCmd(cmd, 7);
+        } delay(1);
 
-    // Step 12: Set RX Continuous
-    rfSetRx();
-    delay(1);
+        // Step 12: CLEAR_IRQ (0x0116) — clear all
+        { uint8_t cmd[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF }; rfWriteCmd(cmd, 6); } delay(1);
+
+        // Step 13: SET_RX (0x020C) — enter RX continuous
+        { uint8_t cmd[] = { 0x02, 0x0C }; rfWriteCmd(cmd, 2); } delay(1);
 
     // Verify: read status
     uint8_t st = rfReadStatus();

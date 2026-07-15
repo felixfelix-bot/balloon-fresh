@@ -1,56 +1,66 @@
 /*
- * flrc_tx_raw.cpp — RP2040 FLRC TX with RAW SPI init (no RadioLib)
+ * flrc_tx_raw.cpp — RP2040 FLRC TX (RadioLib init + raw SPI hot loop)
  *
- * IDENTICAL radio config as flrc_rx_raw.cpp — same sync word, same params.
- * This ensures TX and RX can communicate.
+ * IDENTICAL RadioLib config as flrc_rx_main.cpp — same freq, BR, CR, preamble,
+ * shaping, sync word. RadioLib beginFLRC() configures both radios identically.
+ * Raw SPI is used ONLY for the per-packet TX hot path (write FIFO → set TX →
+ * wait TX_DONE) for minimum inter-packet latency.
  *
  * Auto-transmits 3s after boot. 2000 packets × 255 bytes + DEADBEEF end marker.
  *
- * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
- *       UART_TX=GP12 UART_RX=GP13
+ * Build env: rp2040-flrc-tx-raw (earlephilhower core + RadioLib).
+ *
+ * Pins (pins.h):
+ *   SPI0: SCK=GP2, MOSI=GP3, MISO=GP4, CS=GP5
+ *   BUSY=GP6, IRQ(DIO9)=GP7, RST=GP8
+ *   UART0: TX=GP12, RX=GP13 (Serial1 — survives USB CDC death)
  */
 
 #include <Arduino.h>
 #include <SPI.h>
+#include <RadioLib.h>
+#include <stdarg.h>
+#include "pins.h"
 
-// ─── Pins ────────────────────────────────────────────────────────────
-#define PIN_SCK     2
-#define PIN_MOSI    3
-#define PIN_MISO    4
-#define PIN_CS      5
-#define PIN_BUSY    6
-#define PIN_IRQ     7
-#define PIN_RST     8
-#define PIN_UART_TX 12
-#define PIN_UART_RX 13
-#define PIN_LED     25
-#define PIN_LED_ALT 16
+// ─── Radio configuration (MUST match flrc_rx_main.cpp EXACTLY) ───────
+#define FLRC_FREQ_HZ      2440.0f    // 2.4 GHz
+#define FLRC_BR           2600        // bit rate kbps (max)
+#define FLRC_CR           RADIOLIB_LR2021_FLRC_CR_1_0   // uncoded
+#define FLRC_PWR_DBM      22
+#define FLRC_PREAMBLE     16
+#define FLRC_SHAPING      RADIOLIB_SHAPING_0_5
+#define FLRC_TCXO_V       0.0f        // no TCXO (crystal)
+#define FLRC_PKT_SIZE     255         // fixed-length packets
+#define SPI_FREQ_HZ       16000000UL  // 16 MHz
 
-// ─── FLRC Config (MUST match flrc_rx_raw.cpp) ────────────────────────
-#define FLRC_FREQ_HZ   2440.0f
-#define FLRC_BR        2600
-#define FLRC_PWR_DBM   13
-#define FLRC_PREAMBLE  12
-#define FLRC_PKT_SIZE  255
-#define SPI_FREQ_HZ    16000000UL
+#define PKT_COUNT         2000
 
-#define PKT_COUNT      2000
+// ─── LR2021 raw SPI opcodes for TX hot path ──────────────────────────
+#define OP_WRITE_TX_FIFO  0x0002u     // + data bytes
+#define OP_CLEAR_TX_FIFO  0x011Fu     // clear TX FIFO
+#define OP_CLEAR_IRQ      0x0116u     // + 4-byte mask
+#define OP_SET_TX         0x020Du     // + periodBase + 3-byte timeout
+// TX_DONE is IRQ status bit 19 on the LR2021.
+#define IRQ_TX_DONE_BIT   (1UL << 19)
 
-// ─── SPI ─────────────────────────────────────────────────────────────
-static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
+// ─── SPI bus: SPI0 on our pins (shared by RadioLib + raw hot loop) ───
+static SPIClassRP2040 spiRf(spi0, PIN_SPI_MISO, PIN_SPI_CS, PIN_SPI_SCK, PIN_SPI_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-// ─── Raw SPI helpers (IDENTICAL to flrc_rx_raw.cpp) ──────────────────
-static inline void rfCsLow()  { digitalWrite(PIN_CS, LOW); }
-static inline void rfCsHigh() { digitalWrite(PIN_CS, HIGH); }
+// ─── RadioLib module on our SPI ─────────────────────────────────────
+static Module radioMod(PIN_SPI_CS, PIN_IRQ, PIN_RST, PIN_BUSY, spiRf, spiSettings);
+static LR2021 radio(&radioMod);
+
+static volatile bool radioReady = false;
+
+// ─── Raw SPI helpers (same SPI0 bus, manual NSS + BUSY) ─────────────
+static inline void rfCsLow()  { digitalWrite(PIN_SPI_CS, LOW); }
+static inline void rfCsHigh() { digitalWrite(PIN_SPI_CS, HIGH); }
 static inline void rfWaitBusy() {
-    uint32_t timeout = millis() + 50;
-    while (digitalRead(PIN_BUSY) == HIGH) {
-        if (millis() > timeout) return;
-    }
+    while (digitalRead(PIN_BUSY) == HIGH) { /* spin until chip ready */ }
 }
 
-static void rfWriteCmd(const uint8_t *buf, size_t len) {
+static void rfRawWrite(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     rfCsLow();
@@ -77,18 +87,13 @@ static uint32_t rfReadIrqStatus() {
            ((uint32_t)buf[4] << 8) | (uint32_t)buf[5];
 }
 
-static void rfClearIrq() {
-    uint8_t cmd[6] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
-    rfWriteCmd(cmd, 6);
+// ─── TX-specific raw SPI commands ───────────────────────────────────
+static inline void rfClearTxFifo() {
+    uint8_t cmd[2] = { (uint8_t)(OP_CLEAR_TX_FIFO >> 8), (uint8_t)(OP_CLEAR_TX_FIFO & 0xFF) };
+    rfRawWrite(cmd, 2);
 }
 
-// ─── TX-specific SPI commands ────────────────────────────────────────
-static void rfClearTxFifo() {
-    uint8_t cmd[2] = { 0x01, 0x1F };
-    rfWriteCmd(cmd, 2);
-}
-
-static void rfWriteTxFifo(const uint8_t *data, size_t len) {
+static inline void rfWriteTxFifo(const uint8_t *data, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     rfCsLow();
@@ -99,16 +104,32 @@ static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     spiRf.endTransaction();
 }
 
-static void rfSetTx() {
-    // SET_TX = 0x020D, timeout=0 (no timeout)
-    uint8_t cmd[6] = { 0x02, 0x0D, 0x00, 0x00, 0x00, 0x00 };
-    rfWriteCmd(cmd, 6);
+static inline void rfClearIrq() {
+    uint8_t cmd[6] = {
+        (uint8_t)(OP_CLEAR_IRQ >> 8), (uint8_t)(OP_CLEAR_IRQ & 0xFF),
+        0xFF, 0xFF, 0xFF, 0xFF
+    };
+    rfRawWrite(cmd, 6);
 }
 
-// ─── Dual output ─────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
+static inline void rfSetTx() {
+    // SET_TX = 0x020D, timeout=0 (no timeout — single packet)
+    uint8_t cmd[6] = { 0x02, 0x0D, 0x00, 0x00, 0x00, 0x00 };
+    rfRawWrite(cmd, 6);
+}
+
+// ─── Dual output: USB CDC (Serial) + UART (Serial1) ─────────────────
+static void dualBegin() {
+    Serial.begin(SERIAL_BAUD);
+    Serial1.setTX(PIN_UART_TX);
+    Serial1.setRX(PIN_UART_RX);
+    Serial1.begin(115200);
+}
+
 static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
 static void dualPrintln() { Serial.println(); Serial1.println(); }
+static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
+static void dualPrintln(int v) { Serial.println(v); Serial1.println(v); }
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
@@ -120,92 +141,65 @@ static void dualPrintf(const char *fmt, ...) {
     Serial1.println(buf);
 }
 
-// ─── Raw SPI Init (IDENTICAL to flrc_rx_raw.cpp) ─────────────────────
-static bool rawInitRadio() {
-    digitalWrite(PIN_RST, LOW);
-    delayMicroseconds(200);
-    digitalWrite(PIN_RST, HIGH);
-    delay(50); // wait for crystal stabilization
+// ─── Radio init (RadioLib — IDENTICAL to flrc_rx_main.cpp) ──────────
+static bool initRadio() {
+    // DIO9 carries TX_DONE on the NiceRF LR2021.
+    radio.irqDioNum = 9;
 
-    // Step 0b: Set Rx/Tx fallback mode to STBY_RC (matches RadioLib config())
-    { uint8_t cmd[] = { 0x02, 0x06, 0x01 }; rfWriteCmd(cmd, 3); } delay(1);
-
-    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); } delay(5);  // Standby XOSC
-    { uint8_t cmd[] = { 0x01, 0x22, 0x6F }; rfWriteCmd(cmd, 3); } delay(5);  // Calibrate all
-    { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); } delay(1);  // Packet type FLRC
-
-    // RF Frequency 2440 MHz — send freq_Hz directly (radio does internal conversion)
-    uint32_t rfFreq = (uint32_t)(FLRC_FREQ_HZ * 1000000.0f);
-    {
-        uint8_t cmd[] = {
-            0x02, 0x00,
-            (uint8_t)(rfFreq >> 24), (uint8_t)(rfFreq >> 16),
-            (uint8_t)(rfFreq >> 8),  (uint8_t)(rfFreq & 0xFF)
-        };
-        rfWriteCmd(cmd, 6);
+    int16_t state = radio.beginFLRC(FLRC_FREQ_HZ, FLRC_BR, FLRC_CR, FLRC_PWR_DBM,
+                                    FLRC_PREAMBLE, FLRC_SHAPING, FLRC_TCXO_V);
+    if (state != RADIOLIB_ERR_NONE) {
+        dualPrint("ERR: beginFLRC failed, code ");
+        dualPrintln(state);
+        return false;
     }
-    delay(1);
 
-    // FLRC mod params: brBw=0x00 (2600), cr|shaping=0x25
-    { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); } delay(1);
-
-    // FLRC packet params: preamble=12, syncLen=4, syncTx=1, syncMatch=1, fixed=1, crc=0
-    {
-        uint8_t cmd[] = {
-            0x02, 0x49,
-            (uint8_t)(((FLRC_PREAMBLE & 0x0F) << 2) | (4 / 2)),
-            (uint8_t)(((1 & 0x03) << 6) | ((1 & 0x07) << 3) | (1 << 2) | 0),
-            (uint8_t)(FLRC_PKT_SIZE >> 8),
-            (uint8_t)(FLRC_PKT_SIZE & 0xFF)
-        };
-        rfWriteCmd(cmd, 6);
+    // Fixed 255-byte packets — matches RX.
+    state = radio.fixedPacketLengthMode(FLRC_PKT_SIZE);
+    if (state != RADIOLIB_ERR_NONE) {
+        dualPrint("ERR: fixedPacketLengthMode failed, code ");
+        dualPrintln(state);
+        return false;
     }
-    delay(1);
 
-    // Sync word — MUST match RX: {0x12, 0xAD, 0x10, 0x1B}
-    {
-        uint8_t cmd[] = {
-            0x02, 0x4C,
-            0x01,           // syncWordNum = 1
-            0x12, 0xAD, 0x10, 0x1B
-        };
-        rfWriteCmd(cmd, 7);
+    // Set sync word to MATCH RX (0xCD05CAFE) — RadioLib default is different!
+    state = radio.setFlrcSyncWord(1, 0xCD05CAFE);
+    if (state != RADIOLIB_ERR_NONE) {
+        dualPrint("ERR: setFlrcSyncWord failed, code ");
+        dualPrintln(state);
+        return false;
     }
-    delay(1);
 
-    // PA Config
-    { uint8_t cmd[] = { 0x02, 0x02, 0x01, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); } delay(1);
-
-    // TX Params
-    { uint8_t cmd[] = { 0x02, 0x03, FLRC_PWR_DBM, 0x02 }; rfWriteCmd(cmd, 4); } delay(1);
-
-    // DIO9 = IRQ
-    { uint8_t cmd[] = { 0x01, 0x12, 0x10 }; rfWriteCmd(cmd, 3); } delay(1);
-
-    // IRQ config — TX_DONE (bit 19) on DIO9
-    {
-        uint32_t irqMask = (1UL << 19);  // TX_DONE
-        uint32_t dio2Mask = (1UL << 19);
-        uint8_t cmd[] = {
-            0x01, 0x15,
-            (uint8_t)(irqMask >> 24), (uint8_t)(irqMask >> 16),
-            (uint8_t)(irqMask >> 8),  (uint8_t)(irqMask & 0xFF),
-            0x00, 0x00, 0x00, 0x00,
-            (uint8_t)(dio2Mask >> 24), (uint8_t)(dio2Mask >> 16),
-            (uint8_t)(dio2Mask >> 8),  (uint8_t)(dio2Mask & 0xFF)
-        };
-        rfWriteCmd(cmd, 14);
+    // Disable CRC — RX has CRC=0, must match
+    state = radio.setCRC(0);
+    if (state != RADIOLIB_ERR_NONE) {
+        dualPrint("ERR: setCRC failed, code ");
+        dualPrintln(state);
+        return false;
     }
-    delay(1);
 
+    // Standby RC mode (we'll SET_TX per-packet via raw SPI).
+    state = radio.standby();
+    if (state != RADIOLIB_ERR_NONE) {
+        dualPrint("ERR: standby failed, code ");
+        dualPrintln(state);
+        return false;
+    }
+
+    // Clear any pending IRQs.
     rfClearIrq();
+
+    radioReady = true;
     return true;
 }
 
 // ─── TX burst ────────────────────────────────────────────────────────
-static bool radioReady = false;
-
 void runTX() {
+    if (!radioReady) {
+        dualPrintln("ERR: radio not initialized");
+        return;
+    }
+
     dualPrintf("TX: %d packets x %d bytes", PKT_COUNT, FLRC_PKT_SIZE);
     dualPrintln("Starting in 3 seconds...");
     delay(3000);
@@ -215,32 +209,26 @@ void runTX() {
     uint32_t startMs = millis();
 
     for (uint32_t i = 0; i < PKT_COUNT; i++) {
-        // Sequence number (big endian)
+        // Sequence number (big endian) + payload
         buf[0] = (i >> 24) & 0xFF;
         buf[1] = (i >> 16) & 0xFF;
         buf[2] = (i >> 8) & 0xFF;
         buf[3] = i & 0xFF;
         memset(buf + 4, 0xAA, FLRC_PKT_SIZE - 4);
 
-        // Clear TX FIFO
+        // TX hot path: clear FIFO → write packet → clear IRQ → SET_TX
         rfClearTxFifo();
-
-        // Write packet to TX FIFO
         rfWriteTxFifo(buf, FLRC_PKT_SIZE);
-
-        // Clear IRQ before TX
         rfClearIrq();
-
-        // Start TX
         rfSetTx();
 
-        // Wait for TX_DONE IRQ (bit 19) or timeout
-        uint32_t txStart = millis();
+        // Wait for TX_DONE IRQ (DIO9 pin goes HIGH) or timeout
+        uint32_t txStart = micros();
         bool txDone = false;
-        while (millis() - txStart < 10) {
+        while ((micros() - txStart) < 10000) {  // 10ms timeout
             if (digitalRead(PIN_IRQ) == HIGH) {
                 uint32_t irq = rfReadIrqStatus();
-                if (irq & (1UL << 19)) {  // TX_DONE
+                if (irq & IRQ_TX_DONE_BIT) {
                     txDone = true;
                     break;
                 }
@@ -250,8 +238,12 @@ void runTX() {
             }
         }
 
-        if (txDone) sentOk++;
-        else sentErr++;
+        if (txDone) {
+            sentOk++;
+            rfClearIrq();  // clear TX_DONE for next iteration
+        } else {
+            sentErr++;
+        }
 
         if ((i + 1) % 500 == 0) {
             uint32_t elapsed = millis() - startMs;
@@ -260,11 +252,17 @@ void runTX() {
         }
     }
 
-    // Send end marker
+    // Send end marker: DEADBEEF + total sent count (big endian)
     delay(10);
     rfClearTxFifo();
-    uint8_t endMarker[] = {0xDE, 0xAD, 0xBE, 0xEF};
-    rfWriteTxFifo(endMarker, 4);
+    uint8_t endMarker[8] = {
+        0xDE, 0xAD, 0xBE, 0xEF,
+        (uint8_t)((PKT_COUNT >> 24) & 0xFF),
+        (uint8_t)((PKT_COUNT >> 16) & 0xFF),
+        (uint8_t)((PKT_COUNT >> 8) & 0xFF),
+        (uint8_t)(PKT_COUNT & 0xFF)
+    };
+    rfWriteTxFifo(endMarker, 8);
     rfClearIrq();
     rfSetTx();
     delay(5);
@@ -274,7 +272,7 @@ void runTX() {
     float throughput = (sentOk * FLRC_PKT_SIZE * 8.0f) / (elapsedSec * 1000.0f);
 
     dualPrintln("=============================================");
-    dualPrintln("  TX RESULTS (RAW SPI)");
+    dualPrintln("  TX RESULTS (RadioLib init + raw SPI TX)");
     dualPrintln("=============================================");
     dualPrintf("  Sent OK:    %d / %d", sentOk, PKT_COUNT);
     dualPrintf("  Errors:     %d", sentErr);
@@ -286,47 +284,111 @@ void runTX() {
     dualPrintln("TX COMPLETE - DEADBEEF end marker sent");
 }
 
+// ─── Serial command interface ───────────────────────────────────────
+static void printConfig() {
+    dualPrintln("=== FLRC TX CONFIG ===");
+    char b[96];
+    snprintf(b, sizeof(b), "  freq=%.1f MHz  BR=%d  CR=0x%02X (uncoded)",
+             FLRC_FREQ_HZ, FLRC_BR, (unsigned)FLRC_CR);
+    dualPrintln(b);
+    snprintf(b, sizeof(b), "  power=%d dBm  preamble=%d  shaping=BT0.5",
+             FLRC_PWR_DBM, FLRC_PREAMBLE);
+    dualPrintln(b);
+    snprintf(b, sizeof(b), "  pktSize=%d  SPI=%.2f MHz  irqDio=%d",
+             FLRC_PKT_SIZE, SPI_FREQ_HZ / 1.0e6f, (int)radio.irqDioNum);
+    dualPrintln(b);
+    snprintf(b, sizeof(b), "  pins: SCK=%d MOSI=%d MISO=%d CS=%d BUSY=%d IRQ=%d RST=%d",
+             PIN_SPI_SCK, PIN_SPI_MOSI, PIN_SPI_MISO, PIN_SPI_CS,
+             PIN_BUSY, PIN_IRQ, PIN_RST);
+    dualPrintln(b);
+    snprintf(b, sizeof(b), "  radio: %s", radioReady ? "READY" : "NOT_INIT");
+    dualPrintln(b);
+    dualPrintln("======================");
+}
+
+static void printHelp() {
+    dualPrintln("Commands: RUN  CONFIG  HELP");
+}
+
+static char cmdBuf[64];
+static uint8_t cmdLen = 0;
+
+static void processCommand(const char *cmd) {
+    while (*cmd == ' ' || *cmd == '\t') cmd++;
+    if (*cmd == '\0') return;
+
+    if (strcmp(cmd, "RUN") == 0 || strcmp(cmd, "run") == 0) {
+        runTX();
+    } else if (strcmp(cmd, "CONFIG") == 0 || strcmp(cmd, "config") == 0) {
+        printConfig();
+    } else if (strcmp(cmd, "HELP") == 0 || strcmp(cmd, "help") == 0) {
+        printHelp();
+    } else {
+        dualPrint("ERR: unknown command '");
+        dualPrint(cmd);
+        dualPrintln("' (try HELP)");
+    }
+}
+
+// ─── Arduino entry points ───────────────────────────────────────────
 void setup() {
-    Serial.begin(115200);
-    Serial1.setTX(PIN_UART_TX);
-    Serial1.setRX(PIN_UART_RX);
-    Serial1.begin(115200);
+    dualBegin();
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
-    pinMode(PIN_CS, OUTPUT);
-    digitalWrite(PIN_CS, HIGH);
-    pinMode(PIN_BUSY, INPUT);
-    pinMode(PIN_IRQ, INPUT);
-    pinMode(PIN_RST, OUTPUT);
-    digitalWrite(PIN_RST, HIGH);
-
-    spiRf.begin();
-
-    // Boot blink
     for (int i = 0; i < 3; i++) {
         digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(120);
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
     }
-    delay(500);
 
-    dualPrintln("");
-    dualPrintln("=== RP2040 FLRC TX (RAW SPI) ===");
-    dualPrintln("No RadioLib — matching RX raw SPI config");
+    dualPrintln();
+    dualPrintln("=== RP2040 FLRC TX (RadioLib + raw SPI) ===");
+    dualPrintln("RadioLib init + raw SPI TX hot loop");
+    delay(50);
 
-    radioReady = rawInitRadio();
-    if (radioReady) {
+    if (initRadio()) {
         dualPrintln("RADIO_INIT_OK");
+        digitalWrite(PIN_LED_ALT, HIGH);
     } else {
         dualPrintln("RADIO_INIT_FAILED");
     }
 
-    if (radioReady) {
-        runTX();
-    }
+    printHelp();
+
+    // Auto-start TX after 3 seconds
+    dualPrintln("AUTO_START in 3 seconds...");
+    delay(3000);
+    runTX();
 }
 
 void loop() {
+    // Command parsing over USB CDC + UART
+    while (Serial.available()) {
+        char c = (char)Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (cmdLen > 0) {
+                cmdBuf[cmdLen] = '\0';
+                processCommand(cmdBuf);
+                cmdLen = 0;
+            }
+        } else if (cmdLen < (sizeof(cmdBuf) - 1)) {
+            cmdBuf[cmdLen++] = c;
+        }
+    }
+
+    while (Serial1.available()) {
+        char c = (char)Serial1.read();
+        if (c == '\n' || c == '\r') {
+            if (cmdLen > 0) {
+                cmdBuf[cmdLen] = '\0';
+                processCommand(cmdBuf);
+                cmdLen = 0;
+            }
+        } else if (cmdLen < (sizeof(cmdBuf) - 1)) {
+            cmdBuf[cmdLen++] = c;
+        }
+    }
+
     // Heartbeat
     digitalWrite(PIN_LED, !digitalRead(PIN_LED));
     delay(1000);
