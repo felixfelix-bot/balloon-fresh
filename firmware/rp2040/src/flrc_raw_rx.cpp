@@ -71,20 +71,13 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
 
 // Two-phase read: send command, release CS, then read response
 static void rfReadFifo(uint8_t *buf, size_t len) {
-    // LR2021 READ_RX_FIFO (0x0001) — NO status bytes!
-    // RadioLib readRadioRxFifo sets BITS_0 status width (no status bytes returned)
-    // Phase 1: send opcode
+    // LR2021 READ_RX_FIFO (0x0001) — single SPI transaction
+    // RadioLib does opcode+data in one CS-low cycle, no CS toggle between
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x00); spiRf.transfer(0x01);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
-    // Phase 2: read payload directly (NO status bytes)
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x00); spiRf.transfer(0x01);  // opcode
+    // Read data immediately — no CS toggle, no status bytes
     for (size_t i = 0; i < len; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -347,6 +340,12 @@ static void runReceive() {
 
         if (stats.received <= 5 || (stats.received % PRINT_EVERY) == 0) {
             dualPrintf("%lu,%lu", (unsigned long)stats.received, (unsigned long)seq);
+            // Hex dump first 8 bytes of first 3 packets
+            if (stats.received <= 3) {
+                dualPrintf("  HEX: %02X %02X %02X %02X %02X %02X %02X %02X",
+                    buf[0], buf[1], buf[2], buf[3],
+                    buf[4], buf[5], buf[6], buf[7]);
+            }
         }
     }
 
