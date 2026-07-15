@@ -54,9 +54,9 @@
 #define PRINT_EVERY       100         // progress line cadence
 
 // ─── SPI bus: SPI0 on our pins (shared by RadioLib + raw hot loop) ───
-// The mbed core's global `SPI` is on GP16/18/19, so we MUST bring our own
-// MbedSPI and hand it to RadioLib via the Module(SPIClass&) constructor.
-static MbedSPI spiRf(PIN_SPI_MOSI, PIN_SPI_MISO, PIN_SPI_SCK);
+// earlephilhower core: SPIClassRP2040 gives us hardware SPI on custom pins.
+// Constructor: SPIClassRP2040(spi_inst, rx(MISO), cs, sck, tx(MOSI))
+static SPIClassRP2040 spiRf(spi0, PIN_SPI_MISO, PIN_SPI_CS, PIN_SPI_SCK, PIN_SPI_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
 // ─── RadioLib module on our SPI ─────────────────────────────────────
