@@ -1,11 +1,9 @@
 /*
- * flrc_raw_tx.cpp — RP2040 FLRC TX v5: HW SPI 20MHz + CDC-safe init
+ * flrc_raw_tx.cpp — RP2040 FLRC TX with RAW SPI init (no RadioLib)
+ * v4: Pure Arduino SPI + CDC-safe init + BUSY-based TX completion
  *
- * Based on v4 (proven 1000/1000, 1366 kbps). Changes:
- * - SPI clock 16MHz → 20MHz
- * - Hot loop: Arduino transfer() → direct spi0_hw->dr register writes
- * - beginTransaction() called once after begin() to configure peripheral
- * - No endTransaction() in hot loop — keeps peripheral configured
+ * This version uses ONLY Arduino SPI (beginTransaction/transfer/endTransaction)
+ * to avoid any direct spi0_hw register access that could crash TinyUSB.
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       UART_TX=GP12 UART_RX=GP13
@@ -31,7 +29,7 @@
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_BR         2600
 #define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     20000000UL  // 20MHz — LR2021 max
+#define SPI_FREQ_HZ     16000000UL  // 16MHz proven working
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_COUNT    1000
@@ -47,10 +45,7 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-// ─── Direct HW SPI helpers ───────────────────────────────────────────
-// These write directly to spi0_hw->dr after beginTransaction configured
-// the peripheral (clock, mode, bit order).
-
+// ─── SPI helpers (ALL Arduino, no direct HW registers) ───────────────
 static inline bool rfWaitBusy() {
     uint32_t busyMask = 1UL << PIN_BUSY;
     uint32_t timeout = 100000;
@@ -58,28 +53,6 @@ static inline bool rfWaitBusy() {
     return timeout > 0;
 }
 
-// Burst write to SPI TX FIFO — no per-byte function call overhead
-static inline void spiWriteBurst(const uint8_t *buf, size_t len) {
-    spi_hw_t *hw = spi0_hw;
-    for (size_t i = 0; i < len; i++) {
-        while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}  // Wait for TX FIFO space
-        *(volatile uint8_t *)&hw->dr = buf[i];     // Write byte
-    }
-    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}  // Wait for fully drained
-}
-
-static inline void spiWriteByte(uint8_t b) {
-    spi_hw_t *hw = spi0_hw;
-    while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}
-    *(volatile uint8_t *)&hw->dr = b;
-}
-
-static inline void spiDrain() {
-    spi_hw_t *hw = spi0_hw;
-    while (hw->sr & SPI_SSPSR_RNE_BITS) (void)hw->dr;
-}
-
-// ─── Radio commands (use Arduino SPI for init, HW SPI for hot loop) ──
 static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
@@ -159,7 +132,7 @@ static void dualPrintf(const char *fmt, ...) {
     Serial1.println(buf);
 }
 
-// ─── Raw SPI Init (identical to v4 — uses Arduino SPI) ───────────────
+// ─── Raw SPI Init ────────────────────────────────────────────────────
 static bool rawInitRadio() {
     pinMode(PIN_RST, OUTPUT);
     digitalWrite(PIN_RST, LOW);
@@ -246,13 +219,13 @@ static bool rawInitRadio() {
     return false;
 }
 
-// ─── TX burst — HW SPI hot loop ──────────────────────────────────────
+// ─── TX burst — sequential loop using Arduino SPI + IRQ pin poll ─────
 static volatile bool radioReady = false;
 
 static void runTransmit() {
     if (!radioReady) { dualPrintln("ERR: radio not initialized"); return; }
 
-    dualPrintf("TX_START count=%d pktSize=%d SPI=20MHz HW", TX_PKT_COUNT, FLRC_PKT_SIZE);
+    dualPrintf("TX_START count=%d pktSize=%d", TX_PKT_COUNT, FLRC_PKT_SIZE);
     delay(10);
 
     uint8_t pkt[FLRC_PKT_SIZE];
@@ -263,37 +236,20 @@ static void runTransmit() {
     uint32_t txDoneCount = 0;
     uint32_t txTimeoutCount = 0;
 
-    // Static command arrays for hot loop
-    static const uint8_t clrCmd[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
-    static const uint8_t fifoHdr[] = { 0x00, 0x02 };  // WRITE_TX_FIFO opcode
-    static const uint8_t txCmd[] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
-
     for (int i = 0; i < TX_PKT_COUNT; i++) {
         pkt[0] = (uint8_t)(i >> 24);
         pkt[1] = (uint8_t)(i >> 16);
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // === HOT LOOP — direct HW SPI, 20MHz ===
-
         // 1. Clear IRQ
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(clrCmd, 6);
-        digitalWrite(PIN_CS, HIGH);
+        rfClearIrq();
 
-        // 2. Write TX FIFO (header + payload in one CS assertion)
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(fifoHdr, 2);
-        spiWriteBurst(pkt, FLRC_PKT_SIZE);
-        digitalWrite(PIN_CS, HIGH);
+        // 2. Write TX FIFO
+        rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
         // 3. Trigger TX
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(txCmd, 5);
-        digitalWrite(PIN_CS, HIGH);
+        rfSetTx();
 
         // 4. Wait for TX_DONE — IRQ pin HIGH
         uint32_t spinCount = 0;
@@ -350,9 +306,6 @@ static void runTransmit() {
 // ─── Arduino entry points ────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
-    delay(2000);  // CRITICAL: give TinyUSB time to enumerate
-    Serial.println("BOOT v5");
-
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -366,30 +319,26 @@ void setup() {
     }
 
     Serial1.println();
-    Serial1.println("=== RP2040 FLRC RAW TX v5 ===");
-    Serial1.println("HW SPI 20MHz + CDC-safe init");
+    Serial1.println("=== RP2040 FLRC RAW TX v4 ===");
+    Serial1.println("Pure Arduino SPI + IRQ poll + 16MHz");
 
-    Serial.println("PRE_SPI");
     spiRf.begin();
-    // CRITICAL: beginTransaction configures the SPI peripheral (clock, mode,
-    // bit order) for direct spi0_hw register access in the hot loop.
-    // Without this, spi0_hw->dr writes use default (broken) settings.
-    spiRf.beginTransaction(spiSettings);
-    Serial.println("POST_SPI");
     pinMode(PIN_CS, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     pinMode(PIN_BUSY, INPUT);
     pinMode(PIN_IRQ, INPUT);
 
-    Serial.println("PRE_INIT");
+    Serial1.println("SPI init done");
+
     radioReady = rawInitRadio();
-    Serial.println("POST_INIT");
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
         for (int w = 8; w > 0; w--) {
-            Serial.print("WAIT "); Serial.println(w);
-            Serial1.print("WAIT "); Serial1.println(w);
+            Serial.print("WAIT ");
+            Serial.println(w);
+            Serial1.print("WAIT ");
+            Serial1.println(w);
             delay(1000);
         }
         runTransmit();
