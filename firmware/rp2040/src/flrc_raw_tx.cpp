@@ -45,44 +45,7 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-// ─── Direct HW SPI helpers (hot loop) ────────────────────────────────
-// These use spi0_hw->dr directly, bypassing Arduino SPI overhead.
-// Requires spiRf.beginTransaction(spiSettings) called once in setup()
-// (never endTransaction), so the peripheral stays configured at 20MHz.
-
-// Wait for TX FIFO to have space, write one byte to the data register
-static inline void spiWriteByte(uint8_t b) {
-    while (!(spi0_hw->sr & SPI_SSPSR_TNF_BITS)) tight_loop_contents();
-    spi0_hw->dr = (uint32_t)b;
-}
-
-// Write a burst of bytes, then drain RX FIFO and wait for idle
-static inline void spiWriteBurst(const uint8_t *buf, size_t len) {
-    const size_t fifo_depth = 8;
-    size_t rx_remaining = len, tx_remaining = len;
-    while (rx_remaining || tx_remaining) {
-        if (tx_remaining && (spi0_hw->sr & SPI_SSPSR_TNF_BITS) &&
-            rx_remaining < tx_remaining + fifo_depth) {
-            spi0_hw->dr = (uint32_t)*buf++;
-            --tx_remaining;
-        }
-        if (rx_remaining && (spi0_hw->sr & SPI_SSPSR_RNE_BITS)) {
-            (void)spi0_hw->dr;
-            --rx_remaining;
-        }
-    }
-    // Wait for BSY to clear
-    while (spi0_hw->sr & SPI_SSPSR_BSY_BITS) tight_loop_contents();
-    // Drain any leftover RX
-    while (spi0_hw->sr & SPI_SSPSR_RNE_BITS) (void)spi0_hw->dr;
-}
-
-// Drain the RX FIFO (discard received data)
-static inline void spiDrain() {
-    while (spi0_hw->sr & SPI_SSPSR_RNE_BITS) (void)spi0_hw->dr;
-}
-
-// ─── SPI helpers (Arduino SPI for cold-path init) ────────────────────
+// ─── SPI helpers (ALL Arduino, no direct HW registers) ───────────────
 static inline bool rfWaitBusy() {
     uint32_t busyMask = 1UL << PIN_BUSY;
     uint32_t timeout = 100000;
@@ -152,36 +115,6 @@ static void rfWriteTxFifo(const uint8_t *data, size_t len) {
 static void rfClearTxFifo() {
     uint8_t cmd[] = { 0x01, 0x1F };
     rfWriteCmd(cmd, 2);
-}
-
-// ─── Hot-loop SPI operations (direct HW SPI, no begin/endTransaction) ──
-// These assume spiRf.beginTransaction was called once in setup() and the
-// peripheral stays configured. Each does: CS LOW → write → CS HIGH.
-
-// CLR_IRQ: 6 bytes, includes rfWaitBusy (chip transitioning TX→STDBY)
-static inline void hotClearIrq() {
-    rfWaitBusy();
-    digitalWrite(PIN_CS, LOW);
-    static const uint8_t cmd[6] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
-    spiWriteBurst(cmd, 6);
-    digitalWrite(PIN_CS, HIGH);
-}
-
-// WRITE_FIFO: 2 header bytes + payload, NO rfWaitBusy (chip idle after CLR_IRQ)
-static inline void hotWriteFifo(const uint8_t *data, size_t len) {
-    digitalWrite(PIN_CS, LOW);
-    spiWriteByte(0x00);  // FIFO write command
-    spiWriteByte(0x02);  // offset 0
-    spiWriteBurst(data, len);
-    digitalWrite(PIN_CS, HIGH);
-}
-
-// SET_TX: 5 bytes, NO rfWaitBusy (chip idle after FIFO write)
-static inline void hotSetTx() {
-    digitalWrite(PIN_CS, LOW);
-    static const uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
-    spiWriteBurst(cmd, 5);
-    digitalWrite(PIN_CS, HIGH);
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
@@ -303,23 +236,20 @@ static void runTransmit() {
     uint32_t txDoneCount = 0;
     uint32_t txTimeoutCount = 0;
 
-    // Lock SPI peripheral for direct HW access in hot loop
-    spiRf.beginTransaction(spiSettings);
-
     for (int i = 0; i < TX_PKT_COUNT; i++) {
         pkt[0] = (uint8_t)(i >> 24);
         pkt[1] = (uint8_t)(i >> 16);
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // 1. Clear IRQ (keep rfWaitBusy — chip transitioning TX→STDBY)
-        hotClearIrq();
+        // 1. Clear IRQ
+        rfClearIrq();
 
-        // 2. Write TX FIFO (no rfWaitBusy — chip idle after CLR_IRQ)
-        hotWriteFifo(pkt, FLRC_PKT_SIZE);
+        // 2. Write TX FIFO
+        rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
-        // 3. Trigger TX (no rfWaitBusy — chip idle after FIFO write)
-        hotSetTx();
+        // 3. Trigger TX
+        rfSetTx();
 
         // 4. Wait for TX_DONE — IRQ pin HIGH
         uint32_t spinCount = 0;
@@ -329,15 +259,13 @@ static void runTransmit() {
             spinCount++;
         }
 
-        // Diagnostic disabled — rfReadStatus uses Arduino beginTransaction
-        // which nests inside the already-open beginTransaction in runTransmit()
-        // if (i < 5) {
-        //     uint8_t stPost = rfReadStatus();
-        //     uint32_t irqStatus = rfReadIrqStatus();
-        //     dualPrintf("PKT %d: irqPin=%d st=0x%02X IRQ=0x%08lX spin=%lu",
-        //                i, irqFired ? 1 : 0, stPost,
-        //                (unsigned long)irqStatus, (unsigned long)spinCount);
-        // }
+        if (i < 5) {
+            uint8_t stPost = rfReadStatus();
+            uint32_t irqStatus = rfReadIrqStatus();
+            dualPrintf("PKT %d: irqPin=%d st=0x%02X IRQ=0x%08lX spin=%lu",
+                       i, irqFired ? 1 : 0, stPost,
+                       (unsigned long)irqStatus, (unsigned long)spinCount);
+        }
 
         if (irqFired) txDoneCount++;
         else txTimeoutCount++;
@@ -395,8 +323,6 @@ void setup() {
     Serial1.println("Pure Arduino SPI + IRQ poll + 16MHz");
 
     spiRf.begin();
-    // NOTE: Do NOT call beginTransaction here — init functions need their own
-    // begin/endTransaction. Hot loop will call beginTransaction once before starting.
     pinMode(PIN_CS, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     pinMode(PIN_BUSY, INPUT);
