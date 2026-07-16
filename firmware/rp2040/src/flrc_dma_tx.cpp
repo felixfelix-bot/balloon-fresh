@@ -425,6 +425,9 @@ static void runTransmit() {
 // ─── Arduino entry points ────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
+    delay(2000);  // CRITICAL: give TinyUSB time to enumerate
+    Serial.println("BOOT DMA");
+
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -442,17 +445,22 @@ void setup() {
     dualPrintln("DMA SPI FIFO writes — zero CPU wait");
 
     // Initialize SPI bus + GPIO pins BEFORE radio init
+    Serial.println("PRE_SPI");
     spiRf.begin();
+    spiRf.beginTransaction(spiSettings);  // Configure SPI peripheral (20MHz, mode0, MSBFIRST) for direct register access
     pinMode(PIN_CS, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     pinMode(PIN_BUSY, INPUT);
     pinMode(PIN_IRQ, INPUT);
+    Serial.println("POST_SPI");
 
     // Claim DMA channel for SPI TX FIFO writes
     dma_chan = dma_claim_unused_channel(true);
     dualPrintf("DMA channel claimed: %d", dma_chan);
 
+    Serial.println("PRE_INIT");
     radioReady = rawInitRadio();
+    Serial.println("POST_INIT");
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
