@@ -173,4 +173,6 @@ git push github master && git push origin master
 - Other track: docs/range-test-comprehensive-plan-2026-07-17.md
 - Bottleneck analysis: docs/lr2021-spi-bottleneck-analysis-2026-07-16.md
 - Skill: lr2021-throughput-optimization (load with skill_view)
-- Repo: ~/repos/balloon-fresh
+- Repo: ~/worktrees/track-speed-testing (branch: track/speed-testing)
+- Isolated worktree — do NOT work in ~/repos/balloon-fresh
+- Commit and push to track/speed-testing branch
