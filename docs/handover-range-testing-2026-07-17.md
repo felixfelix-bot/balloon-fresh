@@ -117,5 +117,7 @@ git push github master && git push origin master
 - Full plan: docs/range-test-comprehensive-plan-2026-07-17.md
 - Master plan: docs/lr2021-dual-track-master-plan-2026-07-17.md
 - Other track: docs/speed-test-comprehensive-plan-2026-07-17.md
-- Repo: ~/repos/balloon-fresh
+- Repo: ~/worktrees/track-range-testing (branch: track/range-testing)
+- Isolated worktree — do NOT work in ~/repos/balloon-fresh
+- Commit and push to track/range-testing branch
 - Pin mapping: firmware/rp2040/src/flrc_raw_tx.cpp (header comment)
