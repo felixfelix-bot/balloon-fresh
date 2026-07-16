@@ -29,7 +29,7 @@
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_BR         2600
 #define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     16000000UL  // 16MHz proven working
+#define SPI_FREQ_HZ     20000000UL  // 20MHz Stage 2
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_COUNT    1000
