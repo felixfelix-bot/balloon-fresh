@@ -11,3 +11,5 @@ build/
 *.elf
 *.bin
 sdkconfig.old
+# External artifact
+opentollgate_security_scan.sh

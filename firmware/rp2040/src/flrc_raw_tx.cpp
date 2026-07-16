@@ -31,7 +31,7 @@
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_BR         2600
 #define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     16000000UL
+#define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_COUNT    1000
@@ -55,13 +55,36 @@ static inline void rfWaitBusy() {
     }
 }
 
+// Direct SPI write — bypasses Arduino byte-by-byte overhead
+// Uses RP2040 hardware SPI FIFO (8-deep) for near-zero overhead
+static inline void spiWriteBurst(const uint8_t *buf, size_t len) {
+    spi_hw_t *hw = spi0_hw;  // Direct hardware register access
+    for (size_t i = 0; i < len; i++) {
+        while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}  // Wait for TX FIFO space
+        *(volatile uint8_t *)&hw->dr = buf[i];     // Write byte
+    }
+    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}  // Wait for fully drained
+}
+
+static inline void spiWriteByte(uint8_t b) {
+    spi_hw_t *hw = spi0_hw;
+    while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}
+    *(volatile uint8_t *)&hw->dr = b;
+}
+
+static inline void spiDrain() {
+    spi_hw_t *hw = spi0_hw;
+    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}
+    // Drain RX FIFO
+    while (hw->sr & SPI_SSPSR_RNE_BITS) (void)hw->dr;
+}
+
 static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
-    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (size_t i = 0; i < len; i++) spiRf.transfer(buf[i]);
+    spiWriteBurst(buf, len);
     digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
+    spiDrain();
 }
 
 static uint8_t rfReadStatus() {
@@ -273,68 +296,80 @@ static void runTransmit() {
     dualPrintf("TX_START count=%d pktSize=%d", TX_PKT_COUNT, FLRC_PKT_SIZE);
     delay(10);
 
+    // Pre-build packet payload ONCE — only update seq bytes per iteration
     uint8_t pkt[FLRC_PKT_SIZE];
-    uint32_t startMs = millis();
+    for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
+    // IRQ pin mask for fast GPIO polling (avoid digitalRead overhead)
+    uint32_t irqMask = 1UL << PIN_IRQ;
+    uint32_t busyMask = 1UL << PIN_BUSY;
+
+    uint32_t startMs = millis();
     uint32_t txDoneCount = 0;
     uint32_t txTimeoutCount = 0;
 
+    // Static command arrays (avoid stack alloc per iteration)
+    static const uint8_t clrCmd[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
+    static const uint8_t txCmd[] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
+
     for (int i = 0; i < TX_PKT_COUNT; i++) {
-        // Build packet: big-endian seq in first 4 bytes, rest = counter
+        // Update only seq bytes (4 bytes, no inner loop)
         pkt[0] = (uint8_t)(i >> 24);
         pkt[1] = (uint8_t)(i >> 16);
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
-        for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
-        // Minimal per-packet sequence (matches RadioLib startTransmit):
-        // After TX_DONE, chip auto-returns to Fs (PLL stays warm).
-        // No need for STDBY, CLEAR_ERRORS, or DIO_IRQ re-set.
+        // === HOT LOOP — direct hardware SPI, no Arduino overhead ===
 
-        // Clear IRQ from previous packet
-        rfClearIrq();
+        // 1. Clear IRQ flags (CLR_IRQ = 0x0116)
         rfWaitBusy();
+        digitalWrite(PIN_CS, LOW);
+        spiWriteBurst(clrCmd, 6);
+        digitalWrite(PIN_CS, HIGH);
+        spiDrain();
 
-        // Write to TX FIFO
-        rfClearTxFifo();
-        rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
+        // 2. Write TX FIFO (WRITE_TX_FIFO = 0x0002 + payload)
+        rfWaitBusy();
+        digitalWrite(PIN_CS, LOW);
+        spiWriteByte(0x00); spiWriteByte(0x02);
+        spiWriteBurst(pkt, FLRC_PKT_SIZE);
+        digitalWrite(PIN_CS, HIGH);
+        spiDrain();
 
-        // Read status BEFORE TX (diagnostic, first 5 packets only)
+        // Diagnostic for first 5 packets only
         uint8_t stPre = 0;
         if (i < 5) stPre = rfReadStatus();
 
-        // Trigger TX
-        rfSetTx();
+        // 3. Trigger TX (SET_TX = 0x020D + 3-byte timeout)
+        rfWaitBusy();
+        digitalWrite(PIN_CS, LOW);
+        spiWriteBurst(txCmd, 5);
+        digitalWrite(PIN_CS, HIGH);
+        spiDrain();
 
-        // Wait for TX_DONE — IRQ PIN ONLY (GET_AND_CLEAR clears flags prematurely!)
-        uint32_t timeout = millis() + 20;
+        // 4. Wait for TX_DONE — TIGHT GPIO spin (no millis() in inner loop)
+        uint32_t spinCount = 0;
         bool irqFired = false;
-        while (millis() < timeout) {
-            if (digitalRead(PIN_IRQ) == HIGH) { irqFired = true; break; }
+        while (spinCount < 500000) {
+            if (sio_hw->gpio_in & irqMask) { irqFired = true; break; }
+            spinCount++;
         }
 
-        // Read IRQ status ONCE — GET_AND_CLEAR (0x0117) gives us the flags AND clears them
-        uint8_t stPost = rfReadStatus();
-        uint32_t irqStatus = rfReadIrqStatus();  // This clears the flags
-
-        // Detailed diagnostics for first 5 packets
+        // Diagnostic for first 5 packets
         if (i < 5) {
-            dualPrintf("PKT %d: preSt=0x%02X irqPin=%d postSt=0x%02X IRQ=0x%08lX",
-                       i, stPre, irqFired ? 1 : 0, stPost, (unsigned long)irqStatus);
+            uint8_t stPost = rfReadStatus();
+            uint32_t irqStatus = rfReadIrqStatus();
+            dualPrintf("PKT %d: preSt=0x%02X irqPin=%d postSt=0x%02X IRQ=0x%08lX spin=%lu",
+                       i, stPre, irqFired ? 1 : 0, stPost,
+                       (unsigned long)irqStatus, (unsigned long)spinCount);
         }
 
-        // Count results — use IRQ PIN (irqFired) for TX_DONE detection
-        // since GET_AND_CLEAR already cleared the status
-        if (irqFired) {
-            txDoneCount++;
-        } else {
-            txTimeoutCount++;
-        }
+        if (irqFired) txDoneCount++;
+        else txTimeoutCount++;
 
-        // IRQ already cleared by GET_AND_CLEAR above
-
-        if ((i + 1) % 100 == 0) {
-            dualPrintf("TX %d/%d (done=%lu timeout=%lu)",
+        // Progress every 500 (less Serial overhead)
+        if ((i + 1) % 500 == 0) {
+            dualPrintf("TX %d/%d (done=%lu to=%lu)",
                        i + 1, TX_PKT_COUNT,
                        (unsigned long)txDoneCount, (unsigned long)txTimeoutCount);
         }
