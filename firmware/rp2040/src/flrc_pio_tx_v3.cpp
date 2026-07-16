@@ -26,6 +26,7 @@
 #include "hardware/irq.h"
 #include "hardware/gpio.h"
 #include "hardware/sync.h"
+#include "pico/bootrom.h"
 #include "pio_lr2021_rx.pio.h"
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -262,6 +263,23 @@ static void pioClearTxFifo() {
     pioWriteCmd(cmd, 2);
 }
 
+// ─── PIO teardown + CDC restore ──────────────────────────────────────
+static void pioSpiStop(void) {
+    pio_sm_set_enabled(g_pio, g_sm, false);
+    pio_sm_unclaim(g_pio, g_sm);
+    pio_remove_program(g_pio, &lr2021_rx_program, g_off);
+    if (g_dma_tx >= 0) { dma_channel_unclaim((uint)g_dma_tx); g_dma_tx = -1; }
+    if (g_dma_rx >= 0) { dma_channel_unclaim((uint)g_dma_rx); g_dma_rx = -1; }
+    irq_set_enabled(DMA_IRQ_0, false);
+    irq_remove_handler(DMA_IRQ_0, pio_dma_isr);
+}
+
+// Global results struct for post-TX CDC print
+static uint32_t g_txDone = 0;
+static uint32_t g_txTimeout = 0;
+static uint32_t g_txElapsed = 0;
+static float    g_txThroughput = 0.0f;
+
 // ─── Dual output ─────────────────────────────────────────────────────
 static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
 static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
@@ -425,6 +443,12 @@ static void runTransmit() {
     uint32_t elapsed = millis() - startMs;
     float tput = ((float)TX_PKT_COUNT * FLRC_PKT_SIZE * 8.0f) / elapsed;
 
+    // Store results for post-TX CDC print
+    g_txDone = txDoneCount;
+    g_txTimeout = txTimeoutCount;
+    g_txElapsed = elapsed;
+    g_txThroughput = tput;
+
     uartPrintln("=============================================");
     uartPrintf("  TX sent:     %d", TX_PKT_COUNT);
     uartPrintf("  Elapsed:     %lu ms", (unsigned long)elapsed);
@@ -432,6 +456,7 @@ static void runTransmit() {
     uartPrintln("=============================================");
     uartPrintf("RESULT_TX,sent=%d,elapsed_ms=%lu,throughput_kbps=%.1f",
                TX_PKT_COUNT, (unsigned long)elapsed, tput);
+    uartPrintln("TX_COMPLETE — PIO teardown next");
 }
 
 // ─── Arduino entry points ────────────────────────────────────────────
@@ -493,6 +518,29 @@ void setup() {
 
         // Step 5: TX burst with PIO+DMA
         runTransmit();
+
+        // Step 6: PIO teardown + CDC restore
+        delay(100);
+        pioSpiStop();
+        delay(500);  // Give TinyUSB time to recover
+
+        // Re-init Arduino SPI for any further radio commands
+        spiRf.begin();
+
+        // Print results to CDC (was dead during PIO, now restored)
+        Serial.println("=============================================");
+        Serial.printf("  TX sent:     %d\n", TX_PKT_COUNT);
+        Serial.printf("  Elapsed:     %lu ms\n", (unsigned long)g_txElapsed);
+        Serial.printf("  TX DONE:     %lu / %d\n", (unsigned long)g_txDone, TX_PKT_COUNT);
+        Serial.printf("  TX TIMEOUT:  %lu\n", (unsigned long)g_txTimeout);
+        Serial.printf("  TX THROUGHPUT: %.1f kbps\n", g_txThroughput);
+        Serial.println("=============================================");
+        Serial.printf("RESULT_TX,sent=%d,elapsed_ms=%lu,done=%lu,timeout=%lu,throughput_kbps=%.1f\n",
+                      TX_PKT_COUNT, (unsigned long)g_txElapsed,
+                      (unsigned long)g_txDone, (unsigned long)g_txTimeout,
+                      g_txThroughput);
+        Serial.println("CDC_RESTORED — PIO torn down, Arduino SPI re-initialized");
+        Serial.println("Send RUN to repeat TX (will re-init PIO)");
     } else {
         Serial1.println("INIT FAILED");
         Serial.println("INIT FAILED");
@@ -503,6 +551,8 @@ void loop() {
     static unsigned long lastHB = 0;
     if (millis() - lastHB > 2000) {
         lastHB = millis();
+        // Use both Serial and Serial1 after CDC restore
+        Serial.println("HB alive");
         Serial1.println("HB alive");
     }
 
@@ -516,8 +566,11 @@ void loop() {
                 if (cmdLen > 0) {
                     cmdBuf[cmdLen] = '\0';
                     if (strcmp(cmdBuf, "RUN") == 0) runTransmit();
-                    // INIT disabled after PIO mode — rawInitRadio uses CDC (dualPrintf)
-                    // which crashes TinyUSB when PIO+DMA is active
+                    else if (strcmp(cmdBuf, "BOOTSEL") == 0) {
+                        Serial1.println("REBOOT TO BOOTSEL");
+                        delay(100);
+                        reset_usb_boot(0, 0);
+                    }
                     cmdLen = 0;
                 }
             } else if (cmdLen < sizeof(cmdBuf) - 1) {

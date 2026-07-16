@@ -17,6 +17,7 @@
 
 #include <Arduino.h>
 #include <SPI.h>
+#include "pico/bootrom.h"
 
 // ─── Pins ────────────────────────────────────────────────────────────
 #define PIN_SCK     2
@@ -394,6 +395,7 @@ static void processCommand(const char *cmd) {
     if (strcmp(cmd, "RUN") == 0)      { runReceive(); }
     else if (strcmp(cmd, "CONFIG") == 0) { printConfig(); }
     else if (strcmp(cmd, "INIT") == 0)   { radioReady = rawInitRadio(); }
+    else if (strcmp(cmd, "BOOTSEL") == 0) { Serial.println("REBOOT TO BOOTSEL"); delay(100); reset_usb_boot(0, 0); }
     else if (strcmp(cmd, "RESULTS") == 0) {
         if (stats.received > 0) {
             float tput = (stats.elapsedMs > 0)
