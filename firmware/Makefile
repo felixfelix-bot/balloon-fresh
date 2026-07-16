@@ -72,6 +72,10 @@ bootsel:
 	done; \
 	echo "ERROR: RPI-RP2 never appeared. Is $(PORT) an RP2040 with earlephilhower core?"; exit 1
 
+# Alias for discoverability
+.PHONY: bootsel-1200
+bootsel-1200: bootsel
+
 # ── Full RP2040 flash cycle: build → trigger → mount → copy → reboot ──
 .PHONY: rp2040-flash
 rp2040-flash: rp2040-build
