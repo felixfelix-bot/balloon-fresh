@@ -529,12 +529,32 @@ void setup() {
         digitalWrite(PIN_LED_ALT, HIGH);
 
         // Step 3: Wait window with heartbeat (CDC confirmed alive)
+        // Also check for BOOTSEL command during WAIT window (CDC alive here)
         for (int w = 8; w > 0; w--) {
             Serial.print("WAIT ");
             Serial.println(w);
             Serial1.print("WAIT ");
             Serial1.println(w);
-            delay(1000);
+            // Check for BOOTSEL command during WAIT window (CDC alive here)
+            if (Serial.available() > 0) {
+                char c = Serial.read();
+                if (c == 'B' || c == 'b') {
+                    delay(10);
+                    char cmd[16]; int idx = 0; cmd[idx++] = c;
+                    while (Serial.available() > 0 && idx < 15) {
+                        cmd[idx++] = Serial.read();
+                        delayMicroseconds(100);
+                    }
+                    cmd[idx] = 0;
+                    if (strstr(cmd, "BOOTSEL") || strstr(cmd, "bootsel")) {
+                        Serial.println("REBOOT TO BOOTSEL");
+                        Serial1.println("REBOOT TO BOOTSEL");
+                        delay(100);
+                        reset_usb_boot(0, 0);
+                    }
+                }
+            }
+            delay(900);
         }
 
         // Step 4: Release Arduino SPI, switch to PIO+DMA
