@@ -505,7 +505,8 @@ void setup() {
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
-    delay(100);
+    // CDC fix: TinyUSB needs 2s for enumeration
+    delay(2000);
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
