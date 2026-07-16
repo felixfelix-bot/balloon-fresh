@@ -1,11 +1,7 @@
 /*
  * flrc_raw_tx.cpp — RP2040 FLRC TX with RAW SPI init (no RadioLib)
  *
- * Sends FLRC packets at maximum speed. Same init sequence as flrc_raw_rx.cpp.
- * Sends PKT_COUNT packets of 255 bytes, then a DEADBEEF end marker with
- * total sent count.
- *
- * Output: Serial1 (UART GP12→ESP32 bridge) + Serial (USB, may die)
+ * v2: CDC-safe init + FIFO pipelining + reduced preamble
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       UART_TX=GP12 UART_RX=GP13
@@ -13,6 +9,8 @@
 
 #include <Arduino.h>
 #include <SPI.h>
+#include <hardware/dma.h>
+#include <hardware/irq.h>
 
 // ─── Pins ────────────────────────────────────────────────────────────
 #define PIN_SCK     2
@@ -47,23 +45,23 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-// ─── Raw SPI helpers ─────────────────────────────────────────────────
-// Direct GPIO register read — no millis()/digitalRead() function call overhead
-static inline void rfWaitBusy() {
+// ─── Direct SPI helpers ──────────────────────────────────────────────
+// Wait for BUSY pin LOW. Returns false on timeout (chip not responding).
+static inline bool rfWaitBusy() {
     uint32_t busyMask = 1UL << PIN_BUSY;
-    uint32_t timeout = 500000;  // ~4ms at 125MHz
+    uint32_t timeout = 100000;
     while ((sio_hw->gpio_in & busyMask) && --timeout) {}
+    return timeout > 0;
 }
 
-// Direct SPI write — bypasses Arduino byte-by-byte overhead
-// Uses RP2040 hardware SPI FIFO (8-deep) for near-zero overhead
+// Direct SPI write — uses RP2040 hardware SPI FIFO (8-deep)
 static inline void spiWriteBurst(const uint8_t *buf, size_t len) {
-    spi_hw_t *hw = spi0_hw;  // Direct hardware register access
+    spi_hw_t *hw = spi0_hw;
     for (size_t i = 0; i < len; i++) {
-        while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}  // Wait for TX FIFO space
-        *(volatile uint8_t *)&hw->dr = buf[i];     // Write byte
+        while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}
+        *(volatile uint8_t *)&hw->dr = buf[i];
     }
-    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}  // Wait for fully drained
+    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}
 }
 
 static inline void spiWriteByte(uint8_t b) {
@@ -75,10 +73,10 @@ static inline void spiWriteByte(uint8_t b) {
 static inline void spiDrain() {
     spi_hw_t *hw = spi0_hw;
     while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}
-    // Drain RX FIFO
     while (hw->sr & SPI_SSPSR_RNE_BITS) (void)hw->dr;
 }
 
+// Combined: wait busy + assert CS + write + deassert CS + drain
 static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     digitalWrite(PIN_CS, LOW);
@@ -122,28 +120,23 @@ static void rfClearIrq() {
 }
 
 static void rfSetTx() {
-    // SET_TX = 0x020D + 3-byte timeout (0x000000 = no timeout)
-    // Total: 5 bytes (NOT 6 — extra byte causes CMD_ERROR)
     uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
     rfWriteCmd(cmd, 5);
 }
 
 static void rfSetStandby() {
-    // STDBY_XOSC (0x01) — empirically better than STDBY_RC (137 vs 11 TX_DONE)
     uint8_t cmd[] = { 0x01, 0x28, 0x01 };
     rfWriteCmd(cmd, 3);
 }
 
 static void rfWriteTxFifo(const uint8_t *data, size_t len) {
-    // WRITE_TX_FIFO = 0x0002
     rfWaitBusy();
-    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x00); // opcode MSB
-    spiRf.transfer(0x02); // opcode LSB
-    for (size_t i = 0; i < len; i++) spiRf.transfer(data[i]);
+    spiWriteByte(0x00);
+    spiWriteByte(0x02);
+    spiWriteBurst(data, len);
     digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
+    spiDrain();
 }
 
 static void rfClearTxFifo() {
@@ -198,7 +191,7 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // 5. SET_RX_PATH (HF path for 2.4 GHz) — needed even on TX for PLL
+    // 5. SET_RX_PATH (HF path for 2.4 GHz)
     { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
@@ -214,8 +207,7 @@ static bool rawInitRadio() {
     }
     delay(5);
 
-    // 7. CALIBRATE — defined bits only 0x5F (per TheClams reference)
-    // Bit 5 is undefined on LR2021 Gen4, was 0x6F before
+    // 7. CALIBRATE — 0x5F (per TheClams reference)
     { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
 
@@ -230,7 +222,7 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // 10. SET_FLRC_PACKET_PARAMS (same as RX, but with syncWordTx=1)
+    // 10. SET_FLRC_PACKET_PARAMS (MUST match RX: preamble idx 3 | syncLen 2)
     {
         uint8_t cmd[] = {
             0x02, 0x49,
@@ -243,23 +235,14 @@ static bool rawInitRadio() {
     delay(1);
 
     // 11. SET_PA_CONFIG (HF PA select via bit 7)
-    //     RadioLib: setPaConfig(highFreq=1, ...) → byte0 = (1 << 7) = 0x80
-    //     BUGFIX: was 0x01 (bit 0), must be 0x80 (bit 7) for HF PA
-    {
-        uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 };
-        rfWriteCmd(cmd, 7);
-    }
+    { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
     delay(1);
 
     // 12. SET_TX_PARAMS (power + ramp)
-    //     RadioLib: setTxParams sends txPower*2 as raw byte
-    //     BUGFIX: was sending raw dBm, must multiply by 2
     { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)(TX_POWER_DBM * 2), 0x04 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 14. SET_RX_TX_FALLBACK (Fs=0x03 per TheClams reference)
-    // Fs mode keeps PLL running between TX cycles — no PLL re-lock delay
-    // STDBY_RC (0x00) stops PLL → 90% CMD_ERROR on subsequent SET_TX
+    // 14. SET_RX_TX_FALLBACK (Fs=0x03 keeps PLL warm between TX)
     { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
@@ -287,7 +270,7 @@ static bool rawInitRadio() {
     return false;
 }
 
-// ─── TX burst ────────────────────────────────────────────────────────
+// ─── TX burst with FIFO pipelining ───────────────────────────────────
 static volatile bool radioReady = false;
 
 static void runTransmit() {
@@ -296,13 +279,11 @@ static void runTransmit() {
     dualPrintf("TX_START count=%d pktSize=%d", TX_PKT_COUNT, FLRC_PKT_SIZE);
     delay(10);
 
-    // Pre-build packet payload ONCE — only update seq bytes per iteration
+    // Pre-build packet payload ONCE
     uint8_t pkt[FLRC_PKT_SIZE];
     for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
-    // IRQ pin mask for fast GPIO polling (avoid digitalRead overhead)
     uint32_t irqMask = 1UL << PIN_IRQ;
-    uint32_t busyMask = 1UL << PIN_BUSY;
 
     uint32_t startMs = millis();
     uint32_t txDoneCount = 0;
@@ -310,42 +291,34 @@ static void runTransmit() {
 
     // Static command arrays (avoid stack alloc per iteration)
     static const uint8_t clrCmd[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
+    static const uint8_t fifoCmd[] = { 0x00, 0x02 }; // WRITE_TX_FIFO header
     static const uint8_t txCmd[] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
 
+    // === STAGE 1: FIFO PIPELINING ===
+    // Strategy: write packet 0 to FIFO + trigger TX.
+    // Then for each subsequent packet:
+    //   1. Wait for TX_DONE (IRQ pin)
+    //   2. Immediately clear IRQ + write next packet to FIFO + trigger TX
+    //   This minimizes the gap between TX_DONE and next SET_TX.
+
+    // Prime: write first packet to FIFO
+    pkt[0] = 0; pkt[1] = 0; pkt[2] = 0; pkt[3] = 0;
+    rfWaitBusy();
+    digitalWrite(PIN_CS, LOW);
+    spiWriteBurst(fifoCmd, 2);
+    spiWriteBurst(pkt, FLRC_PKT_SIZE);
+    digitalWrite(PIN_CS, HIGH);
+    spiDrain();
+
+    // Trigger TX for first packet
+    rfWaitBusy();
+    digitalWrite(PIN_CS, LOW);
+    spiWriteBurst(txCmd, 5);
+    digitalWrite(PIN_CS, HIGH);
+    spiDrain();
+
     for (int i = 0; i < TX_PKT_COUNT; i++) {
-        // Update only seq bytes (4 bytes, no inner loop)
-        pkt[0] = (uint8_t)(i >> 24);
-        pkt[1] = (uint8_t)(i >> 16);
-        pkt[2] = (uint8_t)(i >> 8);
-        pkt[3] = (uint8_t)(i & 0xFF);
-
-        // === HOT LOOP — direct hardware SPI, no Arduino overhead ===
-
-        // 1. Clear IRQ flags (CLR_IRQ = 0x0116)
-        // spiWriteBurst already waits for TFE, so spiDrain is redundant
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(clrCmd, 6);
-        digitalWrite(PIN_CS, HIGH);
-
-        // 2. Write TX FIFO (WRITE_TX_FIFO = 0x0002 + payload)
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteByte(0x00); spiWriteByte(0x02);
-        spiWriteBurst(pkt, FLRC_PKT_SIZE);
-        digitalWrite(PIN_CS, HIGH);
-
-        // Diagnostic for first 5 packets only
-        uint8_t stPre = 0;
-        if (i < 5) stPre = rfReadStatus();
-
-        // 3. Trigger TX (SET_TX = 0x020D + 3-byte timeout)
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(txCmd, 5);
-        digitalWrite(PIN_CS, HIGH);
-
-        // 4. Wait for TX_DONE — TIGHT GPIO spin (no millis() in inner loop)
+        // Wait for TX_DONE — tight GPIO spin
         uint32_t spinCount = 0;
         bool irqFired = false;
         while (spinCount < 500000) {
@@ -353,20 +326,55 @@ static void runTransmit() {
             spinCount++;
         }
 
+        if (irqFired) txDoneCount++;
+        else txTimeoutCount++;
+
         // Diagnostic for first 5 packets
         if (i < 5) {
             uint8_t stPost = rfReadStatus();
             uint32_t irqStatus = rfReadIrqStatus();
-            dualPrintf("PKT %d: preSt=0x%02X irqPin=%d postSt=0x%02X IRQ=0x%08lX spin=%lu",
-                       i, stPre, irqFired ? 1 : 0, stPost,
+            dualPrintf("PKT %d: irqPin=%d st=0x%02X IRQ=0x%08lX spin=%lu",
+                       i, irqFired ? 1 : 0, stPost,
                        (unsigned long)irqStatus, (unsigned long)spinCount);
         }
 
-        if (irqFired) txDoneCount++;
-        else txTimeoutCount++;
+        // === STAGE 2: MERGED CLR_IRQ + FIFO WRITE + SET_TX ===
+        // Overlap: clear IRQ from previous TX, write next packet, trigger TX
+        // all in rapid succession. Minimizes dead time between packets.
 
-        // Progress every 500 (less Serial overhead)
-        if ((i + 1) % 500 == 0) {
+        if (i + 1 < TX_PKT_COUNT) {
+            // Update seq bytes for next packet
+            int next = i + 1;
+            pkt[0] = (uint8_t)(next >> 24);
+            pkt[1] = (uint8_t)(next >> 16);
+            pkt[2] = (uint8_t)(next >> 8);
+            pkt[3] = (uint8_t)(next & 0xFF);
+
+            // 1. Clear IRQ (acknowledges previous TX_DONE)
+            rfWaitBusy();
+            digitalWrite(PIN_CS, LOW);
+            spiWriteBurst(clrCmd, 6);
+            digitalWrite(PIN_CS, HIGH);
+            spiDrain();
+
+            // 2. Write next packet to FIFO
+            rfWaitBusy();
+            digitalWrite(PIN_CS, LOW);
+            spiWriteBurst(fifoCmd, 2);
+            spiWriteBurst(pkt, FLRC_PKT_SIZE);
+            digitalWrite(PIN_CS, HIGH);
+            spiDrain();
+
+            // 3. Trigger TX immediately
+            rfWaitBusy();
+            digitalWrite(PIN_CS, LOW);
+            spiWriteBurst(txCmd, 5);
+            digitalWrite(PIN_CS, HIGH);
+            spiDrain();
+        }
+
+        // Progress every 200
+        if ((i + 1) % 200 == 0) {
             dualPrintf("TX %d/%d (done=%lu to=%lu)",
                        i + 1, TX_PKT_COUNT,
                        (unsigned long)txDoneCount, (unsigned long)txTimeoutCount);
@@ -376,7 +384,7 @@ static void runTransmit() {
     dualPrintf("TX_DONE_STATS: fired=%lu timeout=%lu",
                (unsigned long)txDoneCount, (unsigned long)txTimeoutCount);
 
-    // Send DEADBEEF end marker with total count
+    // Send DEADBEEF end marker
     pkt[0] = 0xDE; pkt[1] = 0xAD; pkt[2] = 0xBE; pkt[3] = 0xEF;
     pkt[4] = (uint8_t)(TX_PKT_COUNT >> 24);
     pkt[5] = (uint8_t)(TX_PKT_COUNT >> 16);
@@ -407,6 +415,9 @@ void setup() {
     Serial1.begin(115200);
     delay(100);
 
+    // NOTE: Do NOT call Serial.flush() — it blocks if no host has CDC open.
+    // Just print and let TinyUSB buffer drain asynchronously.
+
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
     for (int i = 0; i < 3; i++) {
@@ -414,26 +425,36 @@ void setup() {
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
     }
 
-    dualPrintln();
-    dualPrintln("=== RP2040 FLRC RAW TX ===");
-    dualPrintln("Raw SPI init (no RadioLib)");
+    Serial1.println("=== RP2040 FLRC RAW TX v2 ===");
+    Serial1.println("FIFO pipelining + reduced preamble + 20MHz SPI");
 
-    // Initialize SPI bus + GPIO pins BEFORE radio init
+    // Initialize SPI bus + configure clock/format via beginTransaction
     spiRf.begin();
+    spiRf.beginTransaction(spiSettings);
     pinMode(PIN_CS, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     pinMode(PIN_BUSY, INPUT);
     pinMode(PIN_IRQ, INPUT);
 
+    Serial1.println("SPI_INIT_DONE");
+
     radioReady = rawInitRadio();
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
-        dualPrintln("Auto-start TX in 10 seconds...");
-        delay(10000); // wait for RX board to be ready
+        Serial1.println("RADIO_OK — TX starts in 8s");
+        // Heartbeat loop during wait — host catches output whenever it connects
+        for (int w = 8; w > 0; w--) {
+            Serial.print("WAIT ");
+            Serial.println(w);
+            Serial1.print("WAIT ");
+            Serial1.println(w);
+            delay(1000);
+        }
         runTransmit();
     } else {
-        dualPrintln("INIT FAILED — type INIT to retry");
+        Serial1.println("INIT FAILED — type INIT to retry");
+        Serial.println("INIT FAILED");
     }
 }
 
