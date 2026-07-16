@@ -293,21 +293,31 @@ static void runTransmit() {
             // 2. Wait for BUSY LOW (chip back in STDBY after TX)
             rfWaitBusy();
 
-            // 3. Combined CLR_IRQ + CLR_TX_FIFO + CLEAR_ERRORS (ONE CS assertion)
-            //    CLR_IRQ:       0x01 0x16 0xFF 0xFF 0xFF 0xFF  (6 bytes)
-            //    CLR_TX_FIFO:   0x01 0x1F                     (2 bytes)
-            //    CLEAR_ERRORS:  0x01 0x11 0x00 0x00            (4 bytes)
-            //    Total: 12 bytes in one CS assertion
+            // 3. CLR_IRQ + CLR_TX_FIFO + CLEAR_ERRORS (separate CS per command)
+            //    SX1280 requires one command per CS assertion — combining
+            //    multiple commands in one CS causes only the first to execute,
+            //    leaving CLR_TX_FIFO unexecuted so the FIFO is not cleared
+            //    and the chip reads stale data (wrong sequence numbers).
+
+            // CLR_IRQ: 0x01 0x16 0xFF 0xFF 0xFF 0xFF
             digitalWrite(PIN_CS, LOW);
             spiRf.transfer(0x01); spiRf.transfer(0x16);
             spiRf.transfer(0xFF); spiRf.transfer(0xFF);
             spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            digitalWrite(PIN_CS, HIGH);
+            rfWaitBusy();
+
+            // CLR_TX_FIFO: 0x01 0x1F
+            digitalWrite(PIN_CS, LOW);
             spiRf.transfer(0x01); spiRf.transfer(0x1F);
+            digitalWrite(PIN_CS, HIGH);
+            rfWaitBusy();
+
+            // CLEAR_ERRORS: 0x01 0x11 0x00 0x00
+            digitalWrite(PIN_CS, LOW);
             spiRf.transfer(0x01); spiRf.transfer(0x11);
             spiRf.transfer(0x00); spiRf.transfer(0x00);
             digitalWrite(PIN_CS, HIGH);
-
-            // Wait for combined command processing
             rfWaitBusy();
 
             // 4. WRITE_TX_FIFO: header + payload (ONE CS assertion)
