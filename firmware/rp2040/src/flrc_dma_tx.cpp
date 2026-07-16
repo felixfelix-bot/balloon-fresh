@@ -318,8 +318,7 @@ static void runTransmit() {
     uint8_t pkt[FLRC_PKT_SIZE];
     for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
-    // IRQ pin mask for fast GPIO polling (avoid digitalRead overhead)
-    uint32_t irqMask = 1UL << PIN_IRQ;
+    // BUSY pin mask for fast GPIO polling (avoid digitalRead overhead)
     uint32_t busyMask = 1UL << PIN_BUSY;
 
     uint32_t startMs = millis();
@@ -339,10 +338,24 @@ static void runTransmit() {
 
         // === DMA HOT LOOP — DMA feeds SPI FIFO at hardware speed ===
 
+        // 0. Clear errors (PA_OCP_OVP, CMD_ERROR accumulate across packets)
+        uint8_t clrErr[] = { 0x01, 0x11, 0x00, 0x00 };
+        rfWaitBusy();
+        gpio_put(PIN_CS, 0);
+        dmaSpiWrite(clrErr, 4);
+        gpio_put(PIN_CS, 1);
+
         // 1. Clear IRQ flags (CLR_IRQ = 0x0116)
         rfWaitBusy();
         gpio_put(PIN_CS, 0);
         dmaSpiWrite(clrCmd, 6);
+        gpio_put(PIN_CS, 1);
+
+        // 1b. Clear TX FIFO before writing new packet
+        uint8_t clrFifo[] = { 0x01, 0x1F };
+        rfWaitBusy();
+        gpio_put(PIN_CS, 0);
+        dmaSpiWrite(clrFifo, 2);
         gpio_put(PIN_CS, 1);
 
         // 2. Write TX FIFO via DMA (WRITE_TX_FIFO = 0x0002 + payload)
@@ -368,11 +381,14 @@ static void runTransmit() {
         dmaSpiWrite(txCmd, 5);
         gpio_put(PIN_CS, 1);
 
-        // 4. Wait for TX_DONE — TIGHT GPIO spin (no millis() in inner loop)
+        // 4. Wait for BUSY LOW = TX complete (ground truth, not IRQ)
+        //    DIO9/IRQ fires on ALL enabled IRQ bits, not just TX_DONE.
+        //    BUSY goes HIGH during SPI command processing AND RF TX,
+        //    goes LOW when chip returns to STDBY = TX complete.
         uint32_t spinCount = 0;
-        bool irqFired = false;
+        bool txDone = false;
         while (spinCount < 500000) {
-            if (sio_hw->gpio_in & irqMask) { irqFired = true; break; }
+            if (!(sio_hw->gpio_in & busyMask)) { txDone = true; break; }
             spinCount++;
         }
 
@@ -380,12 +396,12 @@ static void runTransmit() {
         if (i < 5) {
             uint8_t stPost = rfReadStatus();
             uint32_t irqStatus = rfReadIrqStatus();
-            dualPrintf("PKT %d: preSt=0x%02X irqPin=%d postSt=0x%02X IRQ=0x%08lX spin=%lu",
-                       i, stPre, irqFired ? 1 : 0, stPost,
+            dualPrintf("PKT %d: preSt=0x%02X busy=%d postSt=0x%02X IRQ=0x%08lX spin=%lu",
+                       i, stPre, txDone ? 1 : 0, stPost,
                        (unsigned long)irqStatus, (unsigned long)spinCount);
         }
 
-        if (irqFired) txDoneCount++;
+        if (txDone) txDoneCount++;
         else txTimeoutCount++;
 
         // Progress every 500 (less Serial overhead)
