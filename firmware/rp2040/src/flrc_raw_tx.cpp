@@ -185,7 +185,7 @@ static bool rawInitRadio() {
     {
         uint8_t cmd[] = {
             0x02, 0x49,
-            0x0E,  // preamble=16
+            0x0C,  // preamble=8 (was 16)
             0x4C,
             0x00, (uint8_t)FLRC_PKT_SIZE
         };
