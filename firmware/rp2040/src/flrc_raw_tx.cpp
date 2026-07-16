@@ -306,6 +306,9 @@ static void runTransmit() {
 // ─── Arduino entry points ────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
+    delay(2000);  // CRITICAL: give TinyUSB time to enumerate
+    Serial.println("BOOT v4");
+    
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -322,7 +325,9 @@ void setup() {
     Serial1.println("=== RP2040 FLRC RAW TX v4 ===");
     Serial1.println("Pure Arduino SPI + IRQ poll + 16MHz");
 
+    Serial.println("PRE_SPI");
     spiRf.begin();
+    Serial.println("POST_SPI");
     pinMode(PIN_CS, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     pinMode(PIN_BUSY, INPUT);
@@ -330,7 +335,9 @@ void setup() {
 
     Serial1.println("SPI init done");
 
+    Serial.println("PRE_INIT");
     radioReady = rawInitRadio();
+    Serial.println("POST_INIT");
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
