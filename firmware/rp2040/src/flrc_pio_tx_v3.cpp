@@ -113,6 +113,9 @@ static void ardClearIrq() {
 }
 
 // ─── PIO + DMA state (for TX hot loop) ───────────────────────────────
+// Forward declaration — uartPrintf defined later, used in timeout handlers
+static void uartPrintf(const char *fmt, ...);
+
 static PIO    g_pio    = pio0;
 static uint   g_sm     = 0;
 static uint   g_off    = 0;
@@ -223,13 +226,34 @@ static void pioSpiXfer(const uint8_t *tx_data, size_t tx_len) {
     dma_channel_set_irq0_enabled((uint)g_dma_rx, true);
     g_dma_done = false;
     dma_start_channel_mask((1u << (uint)g_dma_tx) | (1u << (uint)g_dma_rx));
-    while (!g_dma_done) {}
+
+    // Timeout — if DMA never completes, report and break
+    uint32_t spin = 0;
+    while (!g_dma_done && spin < 500000) { spin++; }
+    if (!g_dma_done) {
+        // DMA hung — print debug via UART
+        uartPrintf("DMA_HUNG: words=%u tx_ch=%d rx_ch=%d tx_busy=%d rx_busy=%d",
+                   (unsigned)words, g_dma_tx, g_dma_rx,
+                   dma_channel_is_busy((uint)g_dma_tx) ? 1 : 0,
+                   dma_channel_is_busy((uint)g_dma_rx) ? 1 : 0);
+        // Force-abort DMA channels
+        dma_channel_abort((uint)g_dma_tx);
+        dma_channel_abort((uint)g_dma_rx);
+        gpio_put(PIN_CS, HIGH);
+        return;
+    }
+
+    gpio_put(PIN_CS, HIGH);
 }
 
 static inline bool pioWaitBusy() {
     uint32_t busyMask = 1UL << PIN_BUSY;
     uint32_t timeout = 100000;
     while ((sio_hw->gpio_in & busyMask) && --timeout) {}
+    if (timeout == 0) {
+        uartPrintf("BUSY_TIMEOUT: pin=%d val=%d", PIN_BUSY,
+                   (sio_hw->gpio_in & busyMask) ? 1 : 0);
+    }
     return timeout > 0;
 }
 
@@ -401,9 +425,20 @@ static void runTransmit() {
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
+        if (i < 3) uartPrintf("PKT %d: pre-clear-irq busy=%d", i,
+                              (sio_hw->gpio_in & (1UL << PIN_BUSY)) ? 1 : 0);
+
         pioClearIrq();
+        if (i < 3) uartPrintf("PKT %d: post-clear-irq busy=%d", i,
+                              (sio_hw->gpio_in & (1UL << PIN_BUSY)) ? 1 : 0);
+
         pioWriteTxFifo(pkt, FLRC_PKT_SIZE);
+        if (i < 3) uartPrintf("PKT %d: post-fifo busy=%d", i,
+                              (sio_hw->gpio_in & (1UL << PIN_BUSY)) ? 1 : 0);
+
         pioSetTx();
+        if (i < 3) uartPrintf("PKT %d: post-settx busy=%d", i,
+                              (sio_hw->gpio_in & (1UL << PIN_BUSY)) ? 1 : 0);
 
         uint32_t spinCount = 0;
         bool irqFired = false;
