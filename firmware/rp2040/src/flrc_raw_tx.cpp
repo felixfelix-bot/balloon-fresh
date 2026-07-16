@@ -48,11 +48,11 @@ static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
 // ─── Raw SPI helpers ─────────────────────────────────────────────────
+// Direct GPIO register read — no millis()/digitalRead() function call overhead
 static inline void rfWaitBusy() {
-    uint32_t timeout = millis() + 50;
-    while (digitalRead(PIN_BUSY) == HIGH) {
-        if (millis() > timeout) return;
-    }
+    uint32_t busyMask = 1UL << PIN_BUSY;
+    uint32_t timeout = 500000;  // ~4ms at 125MHz
+    while ((sio_hw->gpio_in & busyMask) && --timeout) {}
 }
 
 // Direct SPI write — bypasses Arduino byte-by-byte overhead
@@ -322,11 +322,11 @@ static void runTransmit() {
         // === HOT LOOP — direct hardware SPI, no Arduino overhead ===
 
         // 1. Clear IRQ flags (CLR_IRQ = 0x0116)
+        // spiWriteBurst already waits for TFE, so spiDrain is redundant
         rfWaitBusy();
         digitalWrite(PIN_CS, LOW);
         spiWriteBurst(clrCmd, 6);
         digitalWrite(PIN_CS, HIGH);
-        spiDrain();
 
         // 2. Write TX FIFO (WRITE_TX_FIFO = 0x0002 + payload)
         rfWaitBusy();
@@ -334,7 +334,6 @@ static void runTransmit() {
         spiWriteByte(0x00); spiWriteByte(0x02);
         spiWriteBurst(pkt, FLRC_PKT_SIZE);
         digitalWrite(PIN_CS, HIGH);
-        spiDrain();
 
         // Diagnostic for first 5 packets only
         uint8_t stPre = 0;
@@ -345,7 +344,6 @@ static void runTransmit() {
         digitalWrite(PIN_CS, LOW);
         spiWriteBurst(txCmd, 5);
         digitalWrite(PIN_CS, HIGH);
-        spiDrain();
 
         // 4. Wait for TX_DONE — TIGHT GPIO spin (no millis() in inner loop)
         uint32_t spinCount = 0;
