@@ -209,14 +209,14 @@ static bool rawInitRadio() {
     delay(1);
 
     // 10. SET_FLRC_PACKET_PARAMS (0x0249)
-    //     preamble=16 → index 3, syncWordLen=4, syncWordTx=1, syncMatch=1, fixed=1, crc=0
-    //     byte0: ((3 & 0x0F) << 2) | (4/2) = 0x0E
+    //     preamble=8 → index 2, syncWordLen=4, syncWordTx=1, syncMatch=1, fixed=1, crc=0
+    //     byte0: ((2 & 0x0F) << 2) | (4/2) = 0x0C
     //     byte1: ((1 & 0x03) << 6) | ((1 & 0x07) << 3) | (1<<2) | 0 = 0x4C
     //     byte2-3: payloadLen = 255 (big-endian)
     {
         uint8_t cmd[] = {
             0x02, 0x49,
-            0x0E,  // preamble idx 3 (16 symbols) | syncLen 4/2=2
+            0x0C,  // preamble idx 2 (8 symbols, was 16) | syncLen 4/2=2
             0x4C,  // syncTx=1 | syncMatch=1 | fixed=1 | crc=0
             0x00, (uint8_t)FLRC_PKT_SIZE
         };
