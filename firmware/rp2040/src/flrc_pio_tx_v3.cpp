@@ -2,7 +2,7 @@
  * flrc_pio_tx_v3.cpp — Hybrid Arduino+PIO SPI TX v3 (UART-only during PIO)
  * ============================================================================
  *
- * FIX for v2: UART-only output during PIO mode. No Serial (CDC) calls
+ * FIX for v3: UART-only output during PIO mode. No Serial (CDC) calls
  * then switches to PIO+DMA only for the TX hot loop (after CDC established).
  *
  * Sequence:
@@ -440,7 +440,7 @@ void setup() {
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
-    delay(100);
+    delay(2000); // CDC fix: TinyUSB needs 2s for enumeration
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
@@ -450,7 +450,7 @@ void setup() {
     }
 
     Serial1.println();
-    Serial1.println("=== RP2040 FLRC PIO TX v2 (Hybrid) ===");
+    Serial1.println("=== RP2040 FLRC PIO TX v3 (Hybrid) ===");
     Serial1.println("Arduino SPI for init, PIO+DMA for TX");
 
     // Step 1: Arduino SPI init (CDC-safe)
