@@ -1,7 +1,9 @@
 /*
  * flrc_raw_tx.cpp — RP2040 FLRC TX with RAW SPI init (no RadioLib)
+ * v4: Pure Arduino SPI + CDC-safe init + BUSY-based TX completion
  *
- * v3: CDC-safe + direct HW SPI + proven sequential TX loop
+ * This version uses ONLY Arduino SPI (beginTransaction/transfer/endTransaction)
+ * to avoid any direct spi0_hw register access that could crash TinyUSB.
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       UART_TX=GP12 UART_RX=GP13
@@ -9,7 +11,6 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include <hardware/spi.h>
 
 // ─── Pins ────────────────────────────────────────────────────────────
 #define PIN_SCK     2
@@ -28,7 +29,7 @@
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_BR         2600
 #define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     20000000UL
+#define SPI_FREQ_HZ     16000000UL  // 16MHz proven working
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_COUNT    1000
@@ -44,7 +45,7 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-// ─── Direct SPI helpers ──────────────────────────────────────────────
+// ─── SPI helpers (ALL Arduino, no direct HW registers) ───────────────
 static inline bool rfWaitBusy() {
     uint32_t busyMask = 1UL << PIN_BUSY;
     uint32_t timeout = 100000;
@@ -52,65 +53,40 @@ static inline bool rfWaitBusy() {
     return timeout > 0;
 }
 
-static inline void spiWriteBurst(const uint8_t *buf, size_t len) {
-    spi_hw_t *hw = spi0_hw;
-    for (size_t i = 0; i < len; i++) {
-        while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}
-        *(volatile uint8_t *)&hw->dr = buf[i];
-    }
-    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}
-}
-
-static inline void spiWriteByte(uint8_t b) {
-    spi_hw_t *hw = spi0_hw;
-    while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}
-    *(volatile uint8_t *)&hw->dr = b;
-}
-
-static inline void spiDrain() {
-    spi_hw_t *hw = spi0_hw;
-    while (!(hw->sr & SPI_SSPSR_TFE_BITS)) {}
-    while (hw->sr & SPI_SSPSR_RNE_BITS) (void)hw->dr;
-}
-
-// Full-duplex SPI transfer via direct hardware register
-static inline uint8_t spiTransferByte(uint8_t b) {
-    spi_hw_t *hw = spi0_hw;
-    while (!(hw->sr & SPI_SSPSR_TNF_BITS)) {}
-    *(volatile uint8_t *)&hw->dr = b;
-    while (!(hw->sr & SPI_SSPSR_RNE_BITS)) {}
-    return (uint8_t)hw->dr;
-}
-
-// Unified SPI write — uses direct HW, no beginTransaction needed
 static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiWriteBurst(buf, len);
+    for (size_t i = 0; i < len; i++) spiRf.transfer(buf[i]);
     digitalWrite(PIN_CS, HIGH);
-    spiDrain();
+    spiRf.endTransaction();
 }
 
-// Read status via direct HW SPI (no beginTransaction — avoids nesting bug)
 static uint8_t rfReadStatus() {
     rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    uint8_t st = spiTransferByte(0x00);
+    uint8_t st = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
     return st;
 }
 
 static uint32_t rfReadIrqStatus() {
     rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiTransferByte(0x01); spiTransferByte(0x17);
+    spiRf.transfer(0x01); spiRf.transfer(0x17);
     digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
     rfWaitBusy();
 
     uint8_t buf[6];
+    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 6; i++) buf[i] = spiTransferByte(0x00);
+    for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
     return ((uint32_t)buf[2] << 24) | ((uint32_t)buf[3] << 16) |
            ((uint32_t)buf[4] << 8) | (uint32_t)buf[5];
 }
@@ -127,12 +103,13 @@ static void rfSetTx() {
 
 static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiWriteByte(0x00);
-    spiWriteByte(0x02);
-    spiWriteBurst(data, len);
+    spiRf.transfer(0x00);
+    spiRf.transfer(0x02);
+    for (size_t i = 0; i < len; i++) spiRf.transfer(data[i]);
     digitalWrite(PIN_CS, HIGH);
-    spiDrain();
+    spiRf.endTransaction();
 }
 
 static void rfClearTxFifo() {
@@ -157,26 +134,19 @@ static void dualPrintf(const char *fmt, ...) {
 
 // ─── Raw SPI Init ────────────────────────────────────────────────────
 static bool rawInitRadio() {
-    // 0. Hardware reset
     pinMode(PIN_RST, OUTPUT);
     digitalWrite(PIN_RST, LOW);
     delayMicroseconds(200);
     digitalWrite(PIN_RST, HIGH);
     delay(50);
 
-    // 1. CLEAR_ERRORS
     { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
-
-    // 2. SET_STANDBY (STDBY_XOSC = 0x01)
     { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
     delay(5);
-
-    // 3. SET_PACKET_TYPE FLRC
     { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
-    // 4. SET_RF_FREQUENCY
     uint32_t frf = (uint32_t)((FLRC_FREQ_MHZ * 1e6 * (double)(1ULL << 18)) / (XTAL_MHZ * 1e6));
     {
         uint8_t cmd[] = {
@@ -187,11 +157,9 @@ static bool rawInitRadio() {
     }
     delay(1);
 
-    // 5. SET_RX_PATH (HF path for 2.4 GHz)
     { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 6. CALIB_FRONT_END
     uint16_t feFreq = (uint16_t)((FLRC_FREQ_MHZ / 4.0f) + 0.5f) | 0x8000;
     {
         uint8_t cmd[] = {
@@ -203,50 +171,36 @@ static bool rawInitRadio() {
     }
     delay(5);
 
-    // 7. CALIBRATE — 0x5F
     { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
-
-    // 8. SET_FLRC_MOD_PARAMS
     { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
-    // 9. SET_FLRC_SYNCWORD
     {
         uint8_t cmd[] = { 0x02, 0x4C, 0x01, SYNC_WORD_0, SYNC_WORD_1, SYNC_WORD_2, SYNC_WORD_3 };
         rfWriteCmd(cmd, 7);
     }
     delay(1);
 
-    // 10. SET_FLRC_PACKET_PARAMS — preamble=16 (PROVEN WORKING, do NOT reduce)
     {
         uint8_t cmd[] = {
             0x02, 0x49,
-            0x0E,  // preamble idx 3 (16 symbols) | syncLen 2
-            0x4C,  // syncTx=1 | syncMatch=1 | fixed=1 | crc=0
+            0x0E,  // preamble=16
+            0x4C,
             0x00, (uint8_t)FLRC_PKT_SIZE
         };
         rfWriteCmd(cmd, 6);
     }
     delay(1);
 
-    // 11. SET_PA_CONFIG (HF PA select via bit 7)
     { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
     delay(1);
-
-    // 12. SET_TX_PARAMS (power + ramp)
     { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)(TX_POWER_DBM * 2), 0x04 }; rfWriteCmd(cmd, 4); }
     delay(1);
-
-    // 13. SET_RX_TX_FALLBACK (Fs=0x03 keeps PLL warm between TX)
     { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
-
-    // 14. DIO function — DIO9 = IRQ for TX_DONE
     { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); }
     delay(1);
-
-    // 15. DIO IRQ config — map TX_DONE to DIO9
     { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
     delay(1);
 
@@ -265,7 +219,7 @@ static bool rawInitRadio() {
     return false;
 }
 
-// ─── TX burst — PROVEN SEQUENTIAL LOOP with direct HW SPI ────────────
+// ─── TX burst — sequential loop using Arduino SPI + IRQ pin poll ─────
 static volatile bool radioReady = false;
 
 static void runTransmit() {
@@ -274,88 +228,46 @@ static void runTransmit() {
     dualPrintf("TX_START count=%d pktSize=%d", TX_PKT_COUNT, FLRC_PKT_SIZE);
     delay(10);
 
-    // Pre-build packet payload ONCE
     uint8_t pkt[FLRC_PKT_SIZE];
     for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
+    uint32_t irqMask = 1UL << PIN_IRQ;
     uint32_t startMs = millis();
     uint32_t txDoneCount = 0;
     uint32_t txTimeoutCount = 0;
 
-    // Static command arrays
-    static const uint8_t clrErrCmd[] = { 0x01, 0x11, 0x00, 0x00 };
-    static const uint8_t clrCmd[]    = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
-    static const uint8_t clrFifoCmd[]= { 0x01, 0x1F };
-    static const uint8_t txCmd[]     = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
-    uint32_t busyPinMask = 1UL << PIN_BUSY;
-
     for (int i = 0; i < TX_PKT_COUNT; i++) {
-        // Update only seq bytes
         pkt[0] = (uint8_t)(i >> 24);
         pkt[1] = (uint8_t)(i >> 16);
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // 0. Clear errors (prevents PA_OCP_OVP / CMD_ERROR accumulation)
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(clrErrCmd, 4);
-        digitalWrite(PIN_CS, HIGH);
-        spiDrain();
+        // 1. Clear IRQ
+        rfClearIrq();
 
-        // 1. Clear IRQ flags
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(clrCmd, 6);
-        digitalWrite(PIN_CS, HIGH);
-        spiDrain();
+        // 2. Write TX FIFO
+        rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
-        // 2. Clear TX FIFO (prevents stale data)
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(clrFifoCmd, 2);
-        digitalWrite(PIN_CS, HIGH);
-        spiDrain();
+        // 3. Trigger TX
+        rfSetTx();
 
-        // 3. Write TX FIFO
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteByte(0x00); spiWriteByte(0x02);
-        spiWriteBurst(pkt, FLRC_PKT_SIZE);
-        digitalWrite(PIN_CS, HIGH);
-        spiDrain();
-
-        // Diagnostic for first 5 packets
-        uint8_t stPre = 0;
-        if (i < 5) stPre = rfReadStatus();
-
-        // 4. Trigger TX
-        rfWaitBusy();
-        digitalWrite(PIN_CS, LOW);
-        spiWriteBurst(txCmd, 5);
-        digitalWrite(PIN_CS, HIGH);
-        spiDrain();
-
-        // 5. Wait for TX completion — BUSY pin is ground truth.
-        //    BUSY stays HIGH during command processing + RF transmission.
-        //    Goes LOW when chip returns to STDBY = TX truly done.
+        // 4. Wait for TX_DONE — IRQ pin HIGH
         uint32_t spinCount = 0;
-        bool txDone = false;
+        bool irqFired = false;
         while (spinCount < 500000) {
-            if (!(sio_hw->gpio_in & busyPinMask)) { txDone = true; break; }
+            if (sio_hw->gpio_in & irqMask) { irqFired = true; break; }
             spinCount++;
         }
 
-        // Diagnostic for first 5 + last 5 packets
-        if (i < 5 || i >= TX_PKT_COUNT - 5) {
-            uint32_t irqStatus = rfReadIrqStatus();
+        if (i < 5) {
             uint8_t stPost = rfReadStatus();
-            dualPrintf("PKT %d: spin=%lu st=0x%02X IRQ=0x%08lX",
-                       i, (unsigned long)spinCount, stPost,
-                       (unsigned long)irqStatus);
+            uint32_t irqStatus = rfReadIrqStatus();
+            dualPrintf("PKT %d: irqPin=%d st=0x%02X IRQ=0x%08lX spin=%lu",
+                       i, irqFired ? 1 : 0, stPost,
+                       (unsigned long)irqStatus, (unsigned long)spinCount);
         }
 
-        if (txDone) txDoneCount++;
+        if (irqFired) txDoneCount++;
         else txTimeoutCount++;
 
         if ((i + 1) % 200 == 0) {
@@ -393,7 +305,6 @@ static void runTransmit() {
 
 // ─── Arduino entry points ────────────────────────────────────────────
 void setup() {
-    // CDC FIX: begin serial early, let TinyUSB enumerate naturally
     Serial.begin(115200);
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
@@ -408,26 +319,21 @@ void setup() {
     }
 
     Serial1.println();
-    Serial1.println("=== RP2040 FLRC RAW TX v3 ===");
-    Serial1.println("Proven sequential loop + direct HW SPI + CDC fix");
+    Serial1.println("=== RP2040 FLRC RAW TX v4 ===");
+    Serial1.println("Pure Arduino SPI + IRQ poll + 16MHz");
 
-    // Initialize SPI — begin() calls spi_init() with default clock.
-    // Then explicitly set 20MHz via hardware register.
     spiRf.begin();
-    spi_set_baudrate(spi0, SPI_FREQ_HZ);
-
     pinMode(PIN_CS, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     pinMode(PIN_BUSY, INPUT);
     pinMode(PIN_IRQ, INPUT);
 
-    Serial1.println("SPI clock set to 20MHz");
+    Serial1.println("SPI init done");
 
     radioReady = rawInitRadio();
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
-        // Heartbeat during wait — host catches output whenever it connects
         for (int w = 8; w > 0; w--) {
             Serial.print("WAIT ");
             Serial.println(w);
@@ -449,7 +355,6 @@ void loop() {
         Serial1.println("HB alive");
     }
 
-    // Command interface
     static char cmdBuf[64];
     static size_t cmdLen = 0;
     for (int src = 0; src < 2; src++) {
