@@ -450,7 +450,7 @@ void setup() {
     }
 
     Serial1.println();
-    Serial1.println("=== RP2040 FLRC PIO TX v3 (Hybrid) ===");
+    Serial1.println("=== RP2040 FLRC PIO TX v3 (UART-only) ===");
     Serial1.println("Arduino SPI for init, PIO+DMA for TX");
 
     // Step 1: Arduino SPI init (CDC-safe)
@@ -516,7 +516,8 @@ void loop() {
                 if (cmdLen > 0) {
                     cmdBuf[cmdLen] = '\0';
                     if (strcmp(cmdBuf, "RUN") == 0) runTransmit();
-                    else if (strcmp(cmdBuf, "INIT") == 0) radioReady = rawInitRadio();
+                    // INIT disabled after PIO mode — rawInitRadio uses CDC (dualPrintf)
+                    // which crashes TinyUSB when PIO+DMA is active
                     cmdLen = 0;
                 }
             } else if (cmdLen < sizeof(cmdBuf) - 1) {
