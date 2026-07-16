@@ -1,9 +1,19 @@
 # FLRC Throughput Optimization — Comprehensive Plan
 
 **Date:** 2026-07-16
-**Status:** PROPOSED — awaiting user approval
+**Status:** SUPERSEDED — split into two active plans below
 **Repo:** balloon-fresh
 **Pre-requisite reading:** `docs/flrc-platform-analysis-2026-07-16.md`
+
+> **UPDATE 2026-07-16:** This plan has been superseded by two focused, actionable plans:
+> - **[PLAN-speed-optimization.md](PLAN-speed-optimization.md)** — Throughput optimization track (breaking 1391 kbps ceiling)
+> - **[PLAN-range-tests.md](PLAN-range-tests.md)** — Range testing track (distance/bitrate/payload sweeps)
+>
+> Each has its own handover document for separate context windows:
+> - [HANDOVER-speed-tests.md](HANDOVER-speed-tests.md)
+> - [HANDOVER-range-tests.md](HANDOVER-range-tests.md)
+>
+> This document is kept for historical context. The two plans above are authoritative.
 
 ---
 
