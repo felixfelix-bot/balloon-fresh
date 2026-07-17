@@ -56,6 +56,16 @@ What physical hardware does your track need to test? Be specific about boards, m
 
 - [hardware requirements]
 
+## Decisions Needed From The Human
+Surface anything that requires a decision from the operator (the human behind balloon-hermes). Do NOT bury decisions in code — list them explicitly. The coordinator collects these and presents them in one batch.
+
+- DECISION: [what needs deciding] — [options if known] — [impact if delayed]
+
+## User Blockers
+Things only the human can resolve. Purchasing hardware, physically soldering boards, registering services, regulatory questions. Be specific about what's needed and why a machine can't do it.
+
+- BLOCKER: [what] — [why it blocks this track] — [what the human needs to do]
+
 ## Estimated Effort
 Rough estimate to reach minimal viable integration.
 
