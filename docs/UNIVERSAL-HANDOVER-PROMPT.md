@@ -1,170 +1,124 @@
-# Universal Handover Prompt
+# Universal Handover Prompt — Balloon Project
 
-**Purpose:** A single message you can paste into ANY Signal group in the project.
-Each group reads it, finds their section by name, and knows exactly what to do.
+**Purpose:** A single message to paste into ANY balloon-related Signal group.
+Each group reads it, finds their track by name, and knows exactly what to do.
 
 **How to use:** Copy everything below the `---CUT---` line and paste it into your Signal group.
-The message is self-contained — it works for all 10 workstreams + the coordinator.
+The message is self-contained — it works for all 7 balloon tracks + the coordinator.
+
+GitHub: https://github.com/c03rad0r/balloon-fresh/blob/master/docs/UNIVERSAL-HANDOVER-PROMPT.md
 
 ---
 
 # CUT HERE ---
 
-## PROJECT WORKSTREAM INITIALIZATION — READ THIS FIRST
+## BALLOON PROJECT — TRACK INITIALIZATION — READ THIS FIRST
 
-You are part of a multi-workstream engineering project. Each workstream has its own Signal group,
-worktree, kanban board, and source repo. All workstreams report to a top-level coordinator.
+You are part of the Balloon Project — solar-powered pico balloon nodes with ESP32-C3 + LR2021 LoRa radios that form a mesh internet transport network. Each track has its own Signal group, worktree, and source code. All tracks report to a top-level coordinator.
 
-**STEP 1 — IDENTIFY YOUR ROLE**
+**STEP 1 — IDENTIFY YOUR TRACK**
 
-Read your Signal group name and find it in the table below. That is your workstream and role.
+Read your Signal group name and find it in the table below.
 
-| Signal Group Name | WS # | Your Role |
+| Signal Group | Track | Your Job |
 |---|---|---|
-| balloon-hermes | — | **TOP COORDINATOR.** You are NOT a single workstream. You coordinate ALL workstreams, resolve cross-workstream dependencies, and plan integration. You also manage WS3 (Balloon) radio link testing directly. |
-| esp32-tollgate | WS1 | ESP32-S3 TollGate firmware — captive portal WiFi hotspot with Cashu, Nostr relay, mining |
-| microfips | WS2 | microFIPS Mesh — Rust firmware for ESP32-C3, ESP-NOW mesh, Noise XK, Wirehair erasure coding |
-| balloon | WS3 | Balloon/LR2021 — ESP32-C3 pico balloon tracker + mesh internet transport. Radio link baseline |
-| balloon-nostr | WS3a | Balloon sub-track: Extract wisp-esp32 Nostr relay → port to ESP32-C3 |
-| balloon-tollgate | WS3b | Balloon sub-track: Extract captive portal + Cashu → port to ESP32-C3 |
-| balloon-pow | WS3c | Balloon sub-track: Extract sw_miner + stratum → evaluate C3 feasibility |
-| balloon-fips | WS3d | Balloon sub-track: Add LR2021 LoRa transport to microfips protocol |
-| balloon-blossom | WS3e | Balloon sub-track: Design + build ESP32 Blossom media server (BUD-01/02) |
-| tollgate-module-basic-go | WS4 | TollGate Router/Backend — Go backend (:2121) + pytest router test automation |
-| market | WS5 | Plebeian Market — Nostr-native marketplace, React + TanStack + Bun, Playwright e2e |
-| continuum-agent | WS6a | Torii Continuum backend — Go agent, FIPS mesh, Noise handshake, Wirehair |
-| continuum-ui | WS6b | Torii Continuum frontend — browser onboarding, KeyVault, Web Crypto + IndexedDB |
-| tollgate-android | WS7 | TollGate Android — native Kotlin/Jetpack Compose + Rust core via UniFFI |
-| configurationwizzard | WS8 | net4sats MVP — onboarding wizard (Go :8099), admin dashboard (Preact PWA) |
-| devops-infra | WS9 | Infrastructure — z.ai proxy, burn prediction, rate limiting, monitoring, kanban |
-| sovereign-shops | WS10 | Sovereign Shops — Nostr-native arbitrage business on Plebeian Market |
+| balloon-hermes | — | **COORDINATOR.** You track all balloon tracks, resolve cross-track dependencies, plan integration. You also handle Track 1 (radio baseline). |
+| balloon-nostr | Track 2 | Extract wisp-esp32 Nostr relay → port to ESP32-C3. NIP-01 WebSocket server, LittleFS storage, subscription manager, Schnorr validation. |
+| balloon-tollgate | Track 3 | Extract captive portal + Cashu + DNS from tollgate-esp32 → port to ESP32-C3. WiFi AP, payment validation, firewall. |
+| balloon-pow | Track 4 | Extract sw_miner + stratum_client from tollgate-esp32 → evaluate mining feasibility on ESP32-C3. SHA256 PoW, Stratum v1 protocol. |
+| balloon-fips | Track 5 | Add LR2021 LoRa transport to microfips mesh protocol. Noise XK encryption, Wirehair erasure coding, balloon-to-balloon mesh. |
+| balloon-blossom | Track 6 | Design + build Blossom media server (BUD-01/02) on ESP32. Greenfield — no existing code. Serves media over captive portal WiFi. |
+| balloon-range-tests | Track 7 | Outdoor distance testing: 10m, 25m, 50m, 100m. FLRC + LoRa modes. Packet loss vs distance. Uses RP2040 + LR2021 hardware. |
+| balloon-speed-tests | Track 8 | Throughput optimization: FLRC 2600 kbps target. SPI tuning, PIO/DMA, packet size sweeps. RP2040 + LR2021 hardware. |
 
-If your group name is **balloon-hermes**: You are the coordinator. All other groups report to you.
-Integration decisions are yours. You sequence work across workstreams and resolve conflicts.
+If your group name is **balloon-hermes**: You are the coordinator. All other balloon tracks report to you. You sequence integration, resolve hardware conflicts (shared boards, shared SPI buses), and maintain the master plan to get balloons flying.
 
-If your group name is **anything else**: You are an async sub-agent. You work independently in your
-assigned worktree, maintain your kanban board, and report progress + blockers back to balloon-hermes.
-When you complete a phase or hit a blocker, you write a handover doc and report to balloon-hermes
-so they can plan integration.
+If your group name is **anything else**: You are an async sub-agent. You work independently in your assigned worktree, maintain your code, and report progress + blockers back to balloon-hermes.
 
-**STEP 2 — READ THE MASTER INDEX**
+**STEP 2 — READ YOUR HANDOVER DOC**
 
-This is the single source of truth for ALL repos, branches, remotes, worktrees, hardware, and
-cross-workstream dependencies. Read it first:
+Each track has a detailed, self-contained handover document. A fresh LLM session with zero conversation history can bootstrap from it. Read yours:
 
-```
-https://raw.githubusercontent.com/c03rad0r/balloon-fresh/master/docs/WORKSTREAM-INDEX.md
-```
+| Track | Handover Doc (local) | Handover Doc (GitHub) |
+|---|---|---|
+| All tracks | `~/repos/balloon-fresh/docs/WORKSTREAM-INDEX.md` | [WORKSTREAM-INDEX.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/WORKSTREAM-INDEX.md) |
+| Track 2 Nostr | `~/repos/balloon-fresh/docs/coordination/handover-balloon-nostr.md` | [handover-balloon-nostr.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/handover-balloon-nostr.md) |
+| Track 3 Tollgate | `~/repos/balloon-fresh/docs/coordination/handover-balloon-tollgate.md` | [handover-balloon-tollgate.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/handover-balloon-tollgate.md) |
+| Track 4 PoW | `~/repos/balloon-fresh/docs/coordination/handover-balloon-pow.md` | [handover-balloon-pow.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/handover-balloon-pow.md) |
+| Track 5 FIPS | `~/repos/balloon-fresh/docs/coordination/handover-balloon-fips.md` | [handover-balloon-fips.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/handover-balloon-fips.md) |
+| Track 6 Blossom | `~/repos/balloon-fresh/docs/coordination/handover-balloon-blossom.md` | [handover-balloon-blossom.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/handover-balloon-blossom.md) |
+| Track 7 Range | `~/repos/balloon-fresh/docs/handover-range-testing-2026-07-17.md` | [handover-range-testing.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/handover-range-testing-2026-07-17.md) |
+| Track 8 Speed | `~/repos/balloon-fresh/docs/handover-speed-testing-2026-07-17.md` | [handover-speed-testing.md](https://github.com/c03rad0r/balloon-fresh/blob/master/docs/handover-speed-testing-2026-07-17.md) |
 
-GitHub view: `https://github.com/c03rad0r/balloon-fresh/blob/master/docs/WORKSTREAM-INDEX.md`
+**STEP 3 — YOUR WORKTREE**
 
-**STEP 3 — READ YOUR DETAILED HANDOVER DOC**
+| Track | Worktree | Branch | Source |
+|---|---|---|---|
+| Track 2 Nostr | `~/worktrees/balloon-nostr/` | `balloon-nostr-extraction` | from balloon-fresh master |
+| Track 3 Tollgate | `~/worktrees/balloon-tollgate/` | `balloon-tollgate-c3-port` | from balloon-fresh master |
+| Track 4 PoW | `~/worktrees/balloon-pow/` | `balloon-pow-extraction` | from balloon-fresh master |
+| Track 5 FIPS | `~/worktrees/balloon-fips/` | `balloon-fips-lr2021` | from balloon-fresh master |
+| Track 6 Blossom | `~/worktrees/balloon-blossom/` | `main` | from balloon-fresh master |
+| Track 7 Range | `~/worktrees/balloon-range-tests/` | `range-tests` | from balloon-fresh master |
+| Track 8 Speed | `~/worktrees/balloon-speed-tests/` | `speed-optimization` | from balloon-fresh master |
+| Coordinator | `~/repos/balloon-fresh/` | `master` | primary repo |
 
-Each workstream has a self-contained handover document. A fresh LLM session can bootstrap from it
-without any conversation history. Find yours:
+**STEP 4 — COORDINATOR AUTHORITY**
 
-| Your Workstream | Handover Doc Path |
-|---|---|
-| WS1 ESP32 TollGate | `~/coordination/handover-esp32-tollgate.md` |
-| WS2 microFIPS | `~/coordination/handover-microfips.md` |
-| WS3 Balloon/LR2021 | `~/coordination/handover-balloon.md` |
-| WS4 TollGate Router | `~/coordination/handover-tollgate-router.md` |
-| WS5 Plebeian Market | `~/coordination/handover-plebeian-market.md` |
-| WS6 Torii Continuum | `~/coordination/handover-torii-continuum.md` |
-| WS7 TollGate Android | `~/coordination/handover-tollgate-android.md` |
-| WS8 net4sats | `~/coordination/handover-net4sats.md` |
-| WS9 Infrastructure | `~/coordination/handover-infrastructure.md` |
-| WS10 Sovereign Shops | `~/coordination/handover-sovereign-shops.md` |
+**balloon-hermes is the top-level coordinator.** This means:
 
-Balloon sub-tracks also have handovers in the repo at `docs/coordination/handover-balloon-*.md`.
+1. **Cross-track decisions** go through balloon-hermes. If your track depends on another track's output (e.g., FIPS needs the Nostr relay, Blossom needs the captive portal WiFi), escalate — do NOT negotiate directly with the other group.
+2. **Hardware conflicts** are resolved by balloon-hermes. We have limited physical boards (20x ESP32-C3, 4x LR2021, 3x EBYTE E28, 2x RP2040). The coordinator decides who uses what.
+3. **Integration sequencing** is determined by balloon-hermes. Do not integrate work from another track without coordinator approval.
+4. **All tracks report to balloon-hermes.** Status, blockers, and handover docs go there.
+5. **Goal: get balloons flying.** The coordinator tracks the critical path to first flight. If you're blocked, report immediately so the coordinator can reroute work.
 
-**STEP 4 — COORDINATOR AUTHORITY STATEMENT**
+**STEP 5 — WORKTREE DISCIPLINE (MANDATORY)**
 
-**balloon-hermes is the top-level coordination authority.** This means:
-
-1. **Cross-workstream decisions** are made by balloon-hermes. If your work depends on another
-   workstream's output, do NOT negotiate directly — escalate to balloon-hermes.
-2. **Integration sequencing** is determined by balloon-hermes. Do not integrate work from other
-   workstreams into yours without coordinator approval.
-3. **balloon-hermes resolves conflicts** when two workstreams need the same resource (hardware board,
-   API key, deploy target, shared component).
-4. **All workstreams report to balloon-hermes.** Status, blockers, and handover docs go there.
-5. **If balloon-hermes gives you an instruction, follow it.** If you disagree, state your reasoning
-   once and defer. The coordinator has the full cross-workstream picture.
-
-**STEP 5 — WORKTREE DISCIPLINE (MANDATORY, NO EXCEPTIONS)**
-
-1. **ALL git work goes in `~/worktrees/ws-<name>/`** — your dedicated worktree with your dedicated branch.
-   | Workstream | Worktree | Branch |
-   |---|---|---|
-   | WS1 ESP32 TollGate | `~/worktrees/ws-esp32-tollgate/` | `ws-esp32-tollgate` |
-   | WS2 microFIPS | `~/worktrees/ws-microfips/` | `ws/microfips` |
-   | WS3 Balloon | `~/worktrees/ws-balloon/` | `ws/balloon-lr2021` |
-   | WS4 Router/Backend | `~/worktrees/ws-tollgate-router/` | `ws/tollgate-router` |
-   | WS5 Market | `~/worktrees/ws-plebeian-market/` | `ws/plebeian-market` |
-   | WS6 Torii | `~/worktrees/ws-torii-continuum/` | `ws/torii-continuum` |
-   | WS7 Android | `~/worktrees/ws-tollgate-android/` | `ws/tollgate-android` |
-   | WS8 net4sats | `~/worktrees/ws-net4sats/` | `ws-net4sats/mvp` |
-   | WS9 Infrastructure | `~/worktrees/ws-infrastructure/` | `ws/infrastructure` |
-   | WS10 Shops | `~/worktrees/ws-sovereign-shops/` | `ws/sovereign-shops` |
-
-2. **NEVER use `/tmp`** — it is tmpfs (RAM-backed). Your work will be silently destroyed on reboot.
-3. **NEVER work directly in the primary repo** (e.g., `~/repos/balloon-fresh/`) unless you ARE
-   the coordinator doing integration work. Always use your worktree.
-4. **Done = pushed.** Commit AND push every change before ending your session. Unpushed work does
-   not exist. Shared/org repos → branch + PR. Your own repos → push to main/master.
-5. **Conventional commits.** Atomic commits — one concern per commit.
-6. **Verify hardware before flashing** — board ports change on every USB replug:
+1. **ALL git work in your worktree** — never work directly in `~/repos/balloon-fresh/` unless you ARE the coordinator.
+2. **NEVER use `/tmp`** — tmpfs is RAM-backed. Work is destroyed on reboot.
+3. **Done = pushed.** Commit AND push every change. Unpushed work = lost work.
+4. **Verify hardware before flashing** — board ports change on every USB replug:
    ```bash
    esptool.py --port /dev/ttyACM0 chip_id  # verify BEFORE flashing
    ```
+5. **Conventional commits.** Atomic commits — one concern per commit.
+6. **No secrets in repos.** No nsec keys, passwords, Signal numbers, real names. Scrub everything.
 
 **STEP 6 — HOW TO REPORT BACK**
 
-You are an async sub-agent. Report to balloon-hermes when:
+Report to balloon-hermes when:
+- You start: Post initial findings after reading the codebase.
+- You complete a phase: Write a handover doc summarizing what you did.
+- You hit a blocker: Post blocker + what you've tried + what you need.
+- You need a cross-track dependency: Escalate to balloon-hermes.
 
-- ✅ **You start:** Post your initial findings after reading the codebase.
-- ✅ **You complete a phase:** Write a handover doc summarizing what you did, what works, what's next.
-- ✅ **You hit a blocker:** Post the blocker + what you've tried + what you need.
-- ✅ **You need a cross-workstream dependency:** Escalate — do NOT negotiate directly with another group.
-
-**Report format (keep it concise):**
+Report format:
 ```
 STATUS: [done | in-progress | blocked]
-WORKSTREAM: [your WS name]
+TRACK: [your track name]
 TASK: [what you worked on]
 RESULT: [what happened]
 NEXT: [what's next, or what you need]
-KANBAN: [board slug + task ID if applicable]
 ```
 
-**Handover doc format:** Self-contained markdown. A fresh LLM session with zero conversation history
-should be able to pick up your work by reading ONLY the handover doc. Include:
-- What the workstream is
-- Current state (done / in-progress / blocked)
-- Key files, repos, and branches
-- Integration points with other workstreams
-- Next steps
+**STEP 7 — KEY REPOS (source code you'll work with)**
 
-Write handover docs to `~/coordination/handover-<name>.md`.
-
-**STEP 7 — SECURITY & PII RULES**
-
-- **No secrets in public repos.** No nsec keys, no passwords, no API tokens, no Signal numbers,
-  no real names of individuals. Use generic descriptors (e.g., "the upstream maintainer").
-- **Secret-detection hooks** are installed on repos that have them. Do NOT bypass with
-  `--no-verify` unless explicitly authorized.
-- **Commit hygiene:** Review your diff before committing. If you see anything that looks like a
-  credential, stop and scrub it.
+| Repo | Path | What's There |
+|---|---|---|
+| balloon-fresh (main) | `~/repos/balloon-fresh/` | Tracker firmware, mesh stack, hardware design, docs |
+| tollgate-esp32 | `~/esp32-tollgate/` | Full ESP32-S3 TollGate: Nostr relay, Cashu, Stratum, portal |
+| wisp-esp32 | `~/wisp-esp32/` | Standalone ESP32 Nostr relay (NIP-01) |
+| microfips | `~/repos/microfips/` | Rust ESP32-C3 FIPS mesh firmware |
+| LR2021 firmware | `~/repos/balloon-fresh/firmware/` | RP2040 + ESP32-C3 FLRC/LoRa firmware |
 
 **STEP 8 — BEGIN**
 
-1. Read the master index: `https://raw.githubusercontent.com/c03rad0r/balloon-fresh/master/docs/WORKSTREAM-INDEX.md`
-2. Read your handover doc: `~/coordination/handover-<name>.md`
-3. `cd` to your worktree: `~/worktrees/ws-<name>/`
-4. Check state: `git status && git log --oneline -5`
-5. Check your kanban board: `hermes kanban --board <slug> list`
-6. Start working on your next task.
-7. Report your initial findings to balloon-hermes once you understand the codebase.
+1. Read your handover doc (from the table in Step 2)
+2. `cd` to your worktree
+3. Check state: `git status && git log --oneline -5`
+4. Read AGENTS.md if present in your worktree
+5. Start working on your next task
+6. Report initial findings to balloon-hermes
 
 --- END ---
