@@ -1,0 +1,1 @@
+date,distance_m,bitrate_kbps,tx_power_dbm,payload_bytes,freq_mhz,antenna,orientation,obstacle,environment,tx_sent,rx_received,rx_unique,rx_lost,loss_pct,rssi_avg_dbm,rssi_min_dbm,throughput_kbps,elapsed_ms,verdict,notes
