@@ -1,43 +1,72 @@
-# BOOTSTRAP — Balloon Pre-Stretching Track
+# Bootstrap — Balloon Pre-Stretching Track
 
-**This message is for YOUR track group only: balloon-pre-stretching. Do not forward it to other balloon groups. You are a SUB-MANAGER, not a coordinator. Your only external duty is to report status to balloon-hermes when asked.**
+**This message is for YOUR track group only (balloon-pre-stretching). Do not forward it to other balloon groups. The orchestrator (balloon-hermes) sends messages individually to each track. Your only job is to work in YOUR worktree and report back to balloon-hermes.**
 
-## YOUR ROLE
+---
 
-You are the isolated manager of the balloon-pre-stretching track. You report to the balloon-hermes orchestrator group. You do NOT coordinate other tracks. You have ZERO visibility into other tracks.
+You are the balloon-pre-stretching track group. This is a NEW track — you have not been bootstrapped yet.
 
-## YOUR MISSION
+## Your Role
 
-Balloon pre-stretching and physical preparation. You research pico balloon best practices and ensure balloons are properly pre-stretched, pressurized, and leak-tested before actual flight. This is the physical preparation track — no firmware, no circuit design.
+You are a SUB-MANAGER in the balloon project hierarchy. You report to balloon-hermes (the orchestrator). You manage ONE track only: physical balloon preparation. You do NOT coordinate other tracks.
 
-## YOUR WORKTREE
+## Your Worktree
 
 ~/worktrees/balloon-pre-stretching/
 
-Your AGENTS.md is already in place with role guardrails. Read it.
+Your AGENTS.md is already configured with anti-collapse guardrails. Read it.
 
-Key reference docs in your worktree:
-- docs/balloon-pressure-test.md — pressure test plan
+## Your Mission
+
+Pico balloon pre-stretching and preparation. You research best practices and ensure balloons are properly pressurized and stretched before flight. This is the physical preparation track — no firmware, no circuit design.
+
+Focus areas:
+- Balloon material research (Mylar/foil vs latex, DecoGlee 18" foil party balloons)
+- Pre-stretching protocols (how long, what pressure, how many cycles)
+- Inflation procedures (helium vs hydrogen, fill volume, purity requirements)
+- Leak testing methodology
+- Pressure-holding validation criteria
+- Temperature cycling effects on balloon integrity
+
+## Reference Documents (in your worktree under docs/)
+
+- docs/balloon-pressure-test.md — existing pressure test plan
 - docs/balloon-test-results.md — DecoGlee leak test data + community references
 - docs/balloon-options-analysis.md — 7 balloon types compared with cost analysis
 - docs/balloon-flight-lessons.md — lessons from 80+ community flights (6 practitioners)
 
-## YOUR FIRST TASKS
+## Physical Equipment Available
 
-1. Read the reference docs listed above
-2. Research pico balloon pre-stretching best practices from the community flight lessons
-3. Establish a pre-stretching protocol: which balloon type, how many stretch cycles, what pressure, how long to hold
-4. Design a leak testing procedure using the available pressure sensor + pump
-5. Document the protocol in docs/PRE-STRETCHING-PROTOCOL.md
+- 30x DecoGlee 18" foil party balloons (short test flights)
+- Pressure sensor + pump (for balloon testing)
+- MS300 jewelry scale (note: cannot weigh neodymium magnets due to magnetic interference)
+- Digital calipers
 
-## NO DEPENDENCIES
+## Your First Task
 
-You have no dependencies on other tracks. You can start immediately.
+1. Read all four reference documents listed above
+2. Research pico balloon best practices from the community (HB9HC, AE5GY, K6STS — references in balloon-flight-lessons.md)
+3. Design a pre-stretching protocol: how many cycles, what pressure, duration, validation criteria
+4. Design a leak test methodology that validates a balloon can hold sufficient pressure for the target flight duration
+5. Write your findings as a structured protocol document
 
-## REPORTING
+Save your work to docs/PRE-STRETCHING-PROTOCOL.md in your worktree.
 
-When balloon-hermes sends you a STATUS-REQUEST-PROMPT.md, fill the template and reply with the filled template only. No commentary, no cross-track opinions.
+## Then Write Your Assessment
 
-## WHEN YOU'RE READY TO START
+After completing initial research, write docs/INTEGRATION-ASSESSMENT.md using the standard 10-section format:
 
-Reply in this group with a one-line confirmation: "balloon-pre-stretching bootstrapped, starting pre-stretching protocol research."
+https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/ASSESSMENT-PROMPT.md
+
+Since this is a physical-prep track (not firmware), adapt the sections:
+- "Blockers for ESP32-C3 Port" becomes "Blockers for Flight Readiness"
+- "Dependencies on Other Tracks" — do you need circuit-design for weight constraints?
+- "Shared Resources Needed" — physical equipment, helium supply, balloons
+
+## When Done
+
+git add docs/
+git commit -m "docs: pre-stretching protocol and integration assessment"
+git push
+
+Then send a 5-line summary to balloon-hermes.
