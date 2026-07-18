@@ -1,54 +1,109 @@
-# BOOTSTRAP — Balloon Circuit Design Track
+# Bootstrap — Balloon Circuit Design Track
 
-**This message is for YOUR track group only: balloon-circuit-design. Do not forward it to other balloon groups. You are a SUB-MANAGER, not a coordinator. Your only external duty is to report status to balloon-hermes when asked.**
+**This message is for YOUR track group only (balloon-circuit-design). Do not forward it to other balloon groups. The orchestrator (balloon-hermes) sends messages individually to each track. Your only job is to work in YOUR worktree and report back to balloon-hermes.**
 
-## YOUR ROLE
+---
 
-You are the isolated manager of the balloon-circuit-design track. You report to the balloon-hermes orchestrator group. You do NOT coordinate other tracks. You have ZERO visibility into other tracks.
+You are the balloon-circuit-design track group. This is a NEW track — you have not been bootstrapped yet.
 
-## YOUR MISSION
+## Your Role
 
-PCB circuit design for JLCPCB manufacturing. You produce a manufacturable, tested PCB design for the balloon tracker hardware.
+You are a SUB-MANAGER in the balloon project hierarchy. You report to balloon-hermes (the orchestrator). You manage ONE track only: PCB circuit design for manufacturing. You do NOT coordinate other tracks.
 
-CRITICAL RULE: circuits MUST be tested before ordering from JLCPCB. Prototype on dev boards first, validate pin assignments, verify power budget, then finalize Gerber files.
-
-## YOUR WORKTREE
+## Your Worktree
 
 ~/worktrees/balloon-circuit-design/
 
-Your AGENTS.md is already in place with role guardrails. Read it.
+Your AGENTS.md is already configured with anti-collapse guardrails. Read it.
 
-Key reference material in your worktree:
-- tracker/hardware/hub_board/ — central electronics board (SKiDL + KiCad)
-- tracker/hardware/wing_board/ — 4x antenna+solar boards
-- tracker/hardware/footprints/ — custom footprint data (JSON)
-- docs/component-guide.md — all parts with alternatives
-- docs/power-budget.md — tracker + mesh power analysis
-- docs/plan-variants.md — DIY / Minimal / Mittel / Komfort / Mesh V1 / Mesh V2
+## Your Mission
 
-## JLCPCB CONSTRAINTS
+Design a manufacturable, tested PCB for the balloon tracker hardware. Target manufacturer: JLCPCB.
 
-- 2-layer boards preferred (cheaper, faster)
-- Minimum trace width: 6mil (0.15mm) for JLCPCB standard
-- Panelization if ordering multiple wing boards
-- Component availability on LCSC (JLCPCB's component store)
+CRITICAL RULE: circuits MUST be tested on dev boards (ESP32-C3_Mini_V1) BEFORE ordering from JLCPCB. No ordering unvalidated designs.
 
-## YOUR FIRST TASKS
+Focus areas:
+- Schematic capture using SKiDL (Python) + KiCad (for layout)
+- PCB layout (2-layer preferred for cost)
+- JLCPCB DRC compliance (6mil minimum trace, LCSC component availability)
+- Power budget verification (solar → supercaps → LDO → ESP32-C3 + LR2021)
+- Gerber file generation for manufacturing
+- Design for weight: target <9g flight board (Minimal variant) or <14g (Mesh V1)
 
-1. Read the existing hub_board schematic (SKiDL + KiCad) and understand the current design
-2. Review the plan variants — focus on Minimal variant (~8-9g) for first flight
-3. Identify what needs to change for a JLCPCB-manufacturable 2-layer board
-4. Audit component availability on LCSC
-5. Document findings in docs/CIRCUIT-DESIGN-ASSESSMENT.md
+## Reference Documents (in your worktree)
 
-## YOUR DEPENDENCY
+- tracker/hardware/hub_board/ — central electronics board (SKiDL + KiCad schematic generator)
+- tracker/hardware/hub_board_diy/ — DIY v0.1 dev hub board (toner transfer)
+- tracker/hardware/wing_board/ — 4x antenna+solar wing boards
+- tracker/hardware/footprints/ — custom component footprint data (JSON)
+- docs/component-guide.md — all parts with explanations and alternatives
+- docs/power-budget.md — tracker + mesh relay power analysis
+- docs/plan-variants.md — DIY / Minimal / Mittel / Komfort / Mesh V1 / Mesh V2 variants
 
-You depend on balloon-hermes for validated radio pin assignments (NiceRF LR2021 to ESP32-C3 GPIO mapping). The pin mapping exists in your AGENTS.md under "Pin Assignment (ESP32-C3 bare, Flight Board)" — use that as the starting point. If you need changes or clarifications, note them as questions for the orchestrator.
+## Radio Pin Assignments (from balloon-hermes, VALIDATED)
 
-## REPORTING
+### ESP32-C3_Mini_V1 Dev Board (NiceRF LR2021)
+```
+NiceRF Pin   ESP32 GPIO  Silkscreen
+Pin 1        3.3V        3V3
+Pin 2,8,11,12,18  GND    GND
+Pin 3 (MISO) GPIO2      D2
+Pin 4 (MOSI) GPIO7      D7
+Pin 5 (SCK)  GPIO6      D6
+Pin 6 (NSS)  GPIO10     D10
+Pin 7 (BUSY) GPIO4      D4
+Pin 9        ANT (Sub-GHz, 50 Ohm)
+Pin 10       2.4G (2.4 GHz, 50 Ohm)
+Pin 14 (RST) GPIO3      D3
+Pin 15 (DIO9/IRQ) GPIO5 D5
+Pin 16 (DIO8) GPIO1     D1
+Pin 17 (DIO7) GPIO0     D0
+```
 
-When balloon-hermes sends you a STATUS-REQUEST-PROMPT.md, fill the template and reply with the filled template only. No commentary, no cross-track opinions.
+### ESP32-C3 Bare Flight Board
+```
+GPIO7  = SPI_MOSI (LR2021)
+GPIO2  = SPI_MISO (LR2021)
+GPIO6  = SPI_SCLK (LR2021)
+GPIO10 = SPI_CS   (LR2021 NSS)
+GPIO3  = LR2021 RESET
+GPIO4  = LR2021 BUSY
+GPIO5  = LR2021 DIO9 (IRQ)
+GPIO0  = ADC Supercap Voltage
+GPIO20 = I2C_SDA (BMP280)  -- NOT GPIO8 (strapping pin)
+GPIO21 = I2C_SCL (BMP280)  -- NOT GPIO9 (strapping pin)
+GPIO1  = FEM TX_EN (SKY66112) -- optional
+```
 
-## WHEN YOU'RE READY TO START
+IMPORTANT: GPIO8 and GPIO9 are strapping pins on ESP32-C3. Do NOT use them for I2C or anything with pull-ups. The flight board uses GPIO20/GPIO21 for I2C.
 
-Reply in this group with a one-line confirmation: "balloon-circuit-design bootstrapped, starting schematic review and LCSC component audit."
+## Your First Task
+
+1. Read the existing hub_board SKiDL schematic and the DIY v0.1 board docs
+2. Read the component guide and power budget analysis
+3. Review the plan-variants to understand weight/feature tradeoffs for each PCB variant
+4. Design a first-pass schematic for the Minimal variant (~8-9g, wire dipole, no FEM)
+5. Verify the pin assignments above are consistent with the existing hub_board design
+6. Identify any conflicts between the validated pin map and existing schematic
+
+Save your work to tracker/hardware/balloon-minimal-board/ in your worktree.
+
+## Then Write Your Assessment
+
+Write docs/INTEGRATION-ASSESSMENT.md using the standard 10-section format:
+
+https://github.com/c03rad0r/balloon-fresh/blob/master/docs/coordination/ASSESSMENT-PROMPT.md
+
+Adapt sections for hardware track:
+- "What Works Right Now" — which parts of existing hub_board design are proven
+- "Blockers for ESP32-C3 Port" becomes "Blockers for PCB Manufacturing"
+- "Dependencies on Other Tracks" — you need validated pin assignments from balloon-hermes (provided above) and weight constraints from balloon-pre-stretching
+- "Estimated Effort" — time to schematic capture, layout, DRC, Gerber generation
+
+## When Done
+
+git add tracker/hardware/balloon-minimal-board/ docs/
+git commit -m "feat: balloon minimal board schematic + integration assessment"
+git push
+
+Then send a 5-line summary to balloon-hermes.
