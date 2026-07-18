@@ -66,7 +66,7 @@ tracks:
 
   - name: balloon-pow
     display_name: "PoW/Mining (stratum + SHA256)"
-    signal_group_id: "n9j4nnlqhi8lyL9gqnE8Df7W2b5jU2eUxjK1sV8k2H0="
+    signal_group_id: "nJ2nVXfigVWaC+wEBZlg4SwHo6YLwTtVy+G4EP/EK9o="
     worktree: ~/worktrees/balloon-pow/
     kanban_board: null
     status_file: docs/STATUS-balloon-pow.md
@@ -93,7 +93,7 @@ tracks:
 
   - name: balloon-blossom
     display_name: "Blossom Server (BUD-02 media upload)"
-    signal_group_id: "8a6ozSWbfaUT5hXlRCA9Yv3rN6mP4qWzT5kJxR7sMa4="
+    signal_group_id: "Yi2On6xci0JEFn3hIkhJterfs4k3foG5jrdqJKmIZtc="
     worktree: ~/worktrees/balloon-blossom/
     kanban_board: null
     status_file: docs/STATUS-balloon-blossom.md
@@ -129,6 +129,35 @@ tracks:
     notes: >
       Lightweight assessment sent. Awaiting response.
       Throughput optimization, configurable TX firmware.
+
+  - name: balloon-pre-stretching
+    display_name: "Balloon Pre-Stretching (pressurization validation)"
+    signal_group_id: "u45QgoCt/GB3KwXza4eM+2GmijwZyJys4053Pe4Ipk0="
+    worktree: ~/worktrees/balloon-pre-stretching/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-pre-stretching.md
+    depends_on: []
+    blocks: []
+    phase: assessment-pending
+    notes: >
+      Pico balloon best practices research, pre-stretching protocols,
+      pressurization validation before flight. Physical preparation track.
+      References: balloon-pressure-test.md, balloon-test-results.md,
+      balloon-options-analysis.md, balloon-flight-lessons.md.
+
+  - name: balloon-circuit-design
+    display_name: "Circuit Design (JLCPCB PCB design + verification)"
+    signal_group_id: "8qBP7aZufyKFburu6I6LVhG1F8MxudiBbwDek8cBqMk="
+    worktree: ~/worktrees/balloon-circuit-design/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-circuit-design.md
+    depends_on: [balloon-hermes]
+    blocks: []
+    phase: assessment-pending
+    notes: >
+      PCB design for JLCPCB manufacturing. Circuits MUST be tested before
+      ordering. Schematic capture (SKiDL + KiCad), PCB layout, DRC compliance,
+      Gerber generation. Depends on radio pin assignments from balloon-hermes.
 
 # Shared resources that need allocation decisions
 shared_resources:
