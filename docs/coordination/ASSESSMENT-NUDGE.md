@@ -1,5 +1,7 @@
 # Assessment Nudge — Action Required
 
+**This message is for YOUR track group only. Do not forward it to other balloon groups. The coordinator (balloon-hermes) sends nudge messages individually to each group that is missing an assessment. You do not need to prompt anyone else. Your only job is to write YOUR assessment in YOUR worktree and report back to balloon-hermes.**
+
 Your integration assessment has not been received at the correct location. The coordinator checks for exactly one file:
 
 **docs/INTEGRATION-ASSESSMENT.md**
