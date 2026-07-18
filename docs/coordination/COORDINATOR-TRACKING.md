@@ -11,7 +11,7 @@ Maintained by balloon-hermes coordinator. Updated as assessments arrive.
 | balloon-tollgate | SUBMITTED | — | — |
 | balloon-pow | MISSING — no Signal group | — | No Signal group exists |
 | balloon-fips | SUBMITTED | — | — |
-| balloon-blossom | MISSING — no Signal group | — | No Signal group exists |
+| balloon-blossom | DONE — https://github.com/c03rad0r/balloon-blossom | 7 questions surfaced | See assessment Q1-Q7 |
 | balloon-range-tests | MISSING — misnamed file (ground-station-assessment.md) — nudged | — | — |
 | balloon-speed-tests | MISSING — misnamed file (ground-station-assessment.md) — nudged | — | — |
 
