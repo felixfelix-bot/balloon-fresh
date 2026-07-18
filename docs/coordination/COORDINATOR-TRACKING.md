@@ -7,13 +7,13 @@ Maintained by balloon-hermes coordinator. Updated as assessments arrive.
 
 | Track | Assessment Committed | Decisions Surfaced | User Blockers |
 |---|---|---|---|
-| balloon-nostr | PENDING | — | — |
-| balloon-tollgate | PENDING | — | — |
-| balloon-pow | PENDING | — | — |
-| balloon-fips | PENDING | — | — |
-| balloon-blossom | PENDING | — | — |
-| balloon-range-tests | PENDING | — | — |
-| balloon-speed-tests | PENDING | — | — |
+| balloon-nostr | MISSING — nudged | — | No Signal group for balloon-pow/blossom |
+| balloon-tollgate | SUBMITTED | — | — |
+| balloon-pow | MISSING — no Signal group | — | No Signal group exists |
+| balloon-fips | SUBMITTED | — | — |
+| balloon-blossom | MISSING — no Signal group | — | No Signal group exists |
+| balloon-range-tests | MISSING — misnamed file (ground-station-assessment.md) — nudged | — | — |
+| balloon-speed-tests | MISSING — misnamed file (ground-station-assessment.md) — nudged | — | — |
 
 ## Decisions Needed From Human
 
