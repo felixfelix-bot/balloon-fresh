@@ -1,26 +1,29 @@
 # Balloon Project — Master Index
 
-**Last updated:** 2026-07-17
-**Coordinator:** balloon-hermes Signal group
+**Last updated:** 2026-07-18
+**Coordinator:** balloon-hermes Signal group (ORCHESTRATOR)
 **Purpose:** Single source of truth for all repos, worktrees, branches, remotes, and tracks.
 Future context windows should read THIS FILE FIRST to bootstrap.
+
+**Hierarchy upgrade 2026-07-18:** 4-layer identity system deployed.
+10 tracks (was 6). TRACKS-REGISTRY.yaml is now the canonical track list.
 
 ---
 
 ## Architecture Overview
 
 The Balloon Project builds solar-powered pico balloon nodes using ESP32-C3 + LR2021 LoRa radios.
-Development is split across 6 independent tracks, each with its own Signal group, worktree, and
-source repo. All tracks report to the balloon-hermes coordinator group.
+Development is split across 10 independent tracks, each with its own Signal group, worktree, and
+source repo. All tracks report to the balloon-hermes orchestrator group.
 
 ```
-                    balloon-hermes (TOP COORDINATOR)
+                    balloon-hermes (ORCHESTRATOR)
                                 |
-        +-----------+-----------+-----------+-----------+-----------+
-        |           |           |           |           |           |
-   Track 1      Track 2     Track 3     Track 4     Track 5     Track 6
-   Radio Link   Nostr Relay Tollgate   PoW/Mining  FIPS Mesh   Blossom
-                            +Cashu                              Server
+    +-------+-------+-------+-------+-------+-------+-------+-------+-------+
+    |       |       |       |       |       |       |       |       |       |
+  Track1  Track2  Track3  Track4  Track5  Track6  Track7  Track8  Track9  Track10
+  Radio   Nostr   Toll    PoW     FIPS    Blossom Range   Speed   Pre-    Circuit
+  Link    Relay   gate    Mining  Mesh    Server  Tests   Tests   Stretch Design
 ```
 
 ### Integration Strategy
@@ -28,6 +31,11 @@ source repo. All tracks report to the balloon-hermes coordinator group.
 2. Port each to ESP32-C3 (4MB flash, 400KB RAM — no PSRAM)
 3. Final integration happens in balloon-hermes (this repo)
 4. NO integration until all tracks pass standalone verification
+
+### Canonical Track List
+
+**TRACKS-REGISTRY.yaml is the single source of truth.** The track details below are
+for human readability. If they disagree with the registry, the registry wins.
 
 ---
 
@@ -179,7 +187,65 @@ ESP32 Blossom media server (BUD-01/BUD-02 protocol). Greenfield — no server co
 | **Remote** | None yet (new repo, needs GitHub remote) |
 | **Reference** | `~/repos/prta-review/lib/blossom_publisher.py` (Python uploader) |
 
-**Status:** Greenfield. Design phase first.
+**Status:** Assessment submitted. 7 questions for coordinator. GitHub repo created.
+**Depends on:** balloon-nostr (NIP-94 events for file metadata)
+
+---
+
+## Track 7 — Range Tests (balloon-range-tests)
+
+Outdoor range sweep testing — measure FLRC/LoRa performance at 10m/25m/50m/100m.
+
+| Item | Value |
+|------|-------|
+| **Worktree** | `~/worktrees/balloon-range-tests/` |
+| **Target** | ESP32-C3_Mini_V1 + RP2040 Pico |
+
+**Status:** Baseline established (1377 kbps, 0% packet loss). Assessment pending — has misnamed file.
+**Depends on:** balloon-hermes (radio link proven)
+
+---
+
+## Track 8 — Speed Tests (balloon-speed-tests)
+
+Throughput optimization — configurable TX firmware, SPI burst tuning.
+
+| Item | Value |
+|------|-------|
+| **Worktree** | `~/worktrees/balloon-speed-tests/` |
+| **Target** | ESP32-C3_Mini_V1 + RP2040 Pico |
+
+**Status:** Single-batch SPI breakthrough (1733 kbps, TX_DONE=1000/1000). Assessment pending — has misnamed file.
+**Depends on:** balloon-hermes
+
+---
+
+## Track 9 — Balloon Pre-Stretching (balloon-pre-stretching)
+
+Physical preparation track — pico balloon best practices research, pre-stretching protocols,
+pressurization validation before flight.
+
+| Item | Value |
+|------|-------|
+| **Worktree** | `~/worktrees/balloon-pre-stretching/` |
+
+**Status:** NEW track, needs bootstrapping. No dependencies — can start immediately.
+**Depends on:** None
+**References:** balloon-pressure-test.md, balloon-test-results.md, balloon-options-analysis.md, balloon-flight-lessons.md
+
+---
+
+## Track 10 — Circuit Design (balloon-circuit-design)
+
+PCB design for JLCPCB manufacturing. Schematic capture (SKiDL + KiCad), PCB layout, DRC compliance,
+Gerber generation. Circuits MUST be tested before ordering.
+
+| Item | Value |
+|------|-------|
+| **Worktree** | `~/worktrees/balloon-circuit-design/` |
+
+**Status:** NEW track, needs bootstrapping.
+**Depends on:** balloon-hermes (radio pin assignments — available in AGENTS.md)
 
 ---
 
