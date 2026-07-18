@@ -1,0 +1,160 @@
+# Balloon Project — Tracks Registry
+#
+# Machine-readable registry of all balloon tracks.
+# The orchestrator (balloon-hermes) reads this at startup to know:
+#   - Which tracks it owns (scope)
+#   - How to reach each track (Signal group ID for `hermes send`)
+#   - Where each track's worktree is (for reading status files)
+#   - Which kanban board each track uses (for querying board state)
+#   - What each track depends on (for building the dependency graph)
+#
+# This file is the SINGLE SOURCE OF TRUTH for orchestrator scope.
+# If a track is added/removed, update THIS file.
+
+project: balloon
+orchestrator_group: balloon-hermes
+orchestrator_signal_id: "DsaZYWqljekDA4/cBK9NLDVrudr7rkqcVhI02Z0/M08="
+repo: ~/repos/balloon-fresh/
+coordination_dir: docs/coordination/
+
+# Dependency notation:
+#   depends_on: list of track names this track needs output from
+#   blocks: list of track names that wait on this track
+#   "none" = no dependencies, can start immediately
+
+tracks:
+  - name: balloon-hermes
+    display_name: "Radio Link + Speed/Range Tests"
+    signal_group_id: "DsaZYWqljekDA4/cBK9NLDVrudr7rkqcVhI02Z0/M08="
+    worktree: ~/repos/balloon-fresh/
+    kanban_board: balloon
+    status_file: docs/coordination/STATUS-balloon-hermes.md
+    depends_on: []
+    blocks: [balloon-fips]
+    phase: execution
+    notes: >
+      Baseline proven (1377 kbps, 0% packet loss).
+      Next: outdoor range sweep + configurable TX firmware.
+      Also hosts range-tests and speed-tests as sub-tracks.
+
+  - name: balloon-nostr
+    display_name: "Nostr Relay (wisp-esp32 port)"
+    signal_group_id: "yZ5t/RwJR+crH+551nA2jWAeCF7l7ZISf0xnbPf7JRM="
+    worktree: ~/worktrees/balloon-nostr/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-nostr.md
+    depends_on: []
+    blocks: [balloon-blossom]
+    phase: assessment-pending
+    notes: >
+      Assessment nudged. Awaiting INTEGRATION-ASSESSMENT.md.
+      Source: ~/wisp-esp32/, port to ESP32-C3.
+
+  - name: balloon-tollgate
+    display_name: "Tollgate/Cashu (captive portal + payment)"
+    signal_group_id: "98/vxkbtZ/xalrb2/iQgq9NF18lR3+Pi4OBc3cwgFtw="
+    worktree: ~/worktrees/balloon-tollgate/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-tollgate.md
+    depends_on: []
+    blocks: [balloon-pow]
+    phase: assessment-complete
+    notes: >
+      Assessment submitted. 86/86 unit tests pass on S3.
+      C3 port NOT verified. Display hard-blocks C3.
+      Key decision: local relay needed? AP or STA only?
+
+  - name: balloon-pow
+    display_name: "PoW/Mining (stratum + SHA256)"
+    signal_group_id: "n9j4nnlqhi8lyL9gqnE8Df7W2b5jU2eUxjK1sV8k2H0="
+    worktree: ~/worktrees/balloon-pow/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-pow.md
+    depends_on: [balloon-tollgate]
+    blocks: []
+    phase: assessment-pending
+    notes: >
+      Assessment sent. Awaiting response.
+      Shares ESP32-S3 boards with tollgate (D-001 hardware allocation).
+
+  - name: balloon-fips
+    display_name: "FIPS Mesh (LR2021 transport)"
+    signal_group_id: "OQqq+8cMjrbZ7XzAyH8gdZLHltX8z6ChcUBntbAyE1M="
+    worktree: ~/worktrees/balloon-fips/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-fips.md
+    depends_on: [balloon-hermes]
+    blocks: []
+    phase: assessment-complete
+    notes: >
+      Assessment submitted. LR2021 framing/SPI/transport modules written (1134 lines).
+      Test crate broken (20 errors). ESP-NOW blocked by esp-radio pub(crate).
+      Critical path ~7-10 days to first LR2021 radio demo.
+
+  - name: balloon-blossom
+    display_name: "Blossom Server (BUD-02 media upload)"
+    signal_group_id: "8a6ozSWbfaUT5hXlRCA9Yv3rN6mP4qWzT5kJxR7sMa4="
+    worktree: ~/worktrees/balloon-blossom/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-blossom.md
+    depends_on: [balloon-nostr]
+    blocks: []
+    phase: assessment-complete
+    notes: >
+      Assessment done. 7 questions surfaced for coordinator.
+      GitHub repo created: c03rad0r/balloon-blossom.
+
+  - name: balloon-range-tests
+    display_name: "Range Tests (outdoor distance sweep)"
+    signal_group_id: "gZ79Pz43XBbb0t0Fh+c7HHLp31iZlMg/Qng7ACz6Rec="
+    worktree: ~/worktrees/balloon-range-tests/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-range-tests.md
+    depends_on: [balloon-hermes]
+    blocks: []
+    phase: assessment-pending
+    notes: >
+      Lightweight assessment sent. Awaiting response.
+      Baseline established, ready for outdoor tests.
+
+  - name: balloon-speed-tests
+    display_name: "Speed Tests (throughput optimization)"
+    signal_group_id: "LjZcVC7k0P9dA3YNs/yNdifyaUlqDO0H4vy+/wZ37mc="
+    worktree: ~/worktrees/balloon-speed-tests/
+    kanban_board: null
+    status_file: docs/STATUS-balloon-speed-tests.md
+    depends_on: [balloon-hermes]
+    blocks: []
+    phase: assessment-pending
+    notes: >
+      Lightweight assessment sent. Awaiting response.
+      Throughput optimization, configurable TX firmware.
+
+# Shared resources that need allocation decisions
+shared_resources:
+  - name: "ESP32-S3 boards (3x Board A/B/C)"
+    needed_by: [balloon-tollgate, balloon-pow]
+    decision_id: D-001
+    status: open
+
+  - name: "ESP32-C3 Mini V1 (20x)"
+    needed_by: [all]
+    decision_id: null
+    status: available
+
+  - name: "NiceRF LoRa2021 modules (4x)"
+    needed_by: [balloon-hermes, balloon-fips]
+    decision_id: null
+    status: limited
+
+# Open decisions (mirrors DECISIONS-AND-BLOCKERS.md)
+open_decisions:
+  - id: D-001
+    topic: "Hardware allocation — 3 ESP32-S3 boards shared between tollgate + pow"
+    status: open
+  - id: D-002
+    topic: "microfips git remote — no remote configured"
+    status: open
+  - id: D-003
+    topic: "balloon-blossom git repo — created, needs verification"
+    status: resolved
