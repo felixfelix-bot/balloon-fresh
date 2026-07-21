@@ -64,6 +64,17 @@ Detailed plan exists with:
 - Generate netlist → import to KiCad → layout
 - More work but reproducible/version-controlled
 
+## Cross-Track Discovery: SPI Speed (from balloon-speed-tests)
+
+- Single-batch SPI at 20 MHz confirmed working with LR2021 (1733 kbps, 1000/1000 TX_DONE)
+- Continuous SCK (spi_write_blocking) — no gaps needed
+- **PCB layout implication:** SPI traces (MOSI/MISO/SCK/CS) ESP32-C3 ↔ LR2021 must be:
+  - Short (<30mm ideal for 20 MHz on 2-layer FR4)
+  - Length-matched within ~5mm (SCK vs MOSI/MISO)
+  - No sharp corners (45° or rounded traces preferred)
+  - Ground plane under SPI bus (minimize loop area)
+  - Decoupling cap close to LR2021 VCC pin (100nF + 10µF per existing plan)
+
 ## Environment Status
 - KiCad v9.0.8 installed ✓
 - kicad-cli available ✓
