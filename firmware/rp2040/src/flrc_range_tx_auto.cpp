@@ -60,6 +60,8 @@ static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 // Pre-allocated combined buffer for single-batch FIFO write
 // Header (2 bytes) + payload (255 bytes) = 257 bytes in ONE transfer call
 static uint8_t fifoCmd[2 + 255];
+// Dummy RX buffer for write-only transfers (nullptr crashes on some cores)
+static uint8_t spiRxJunk[257];
 
 static volatile bool radioReady = false;
 
@@ -75,7 +77,7 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(buf, nullptr, len);  // SINGLE BATCH — continuous SCK
+    spiRf.transfer((uint8_t*)buf, spiRxJunk, len);  // SINGLE BATCH — continuous SCK
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
@@ -95,7 +97,7 @@ static uint32_t rfReadIrqStatus() {
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     uint8_t cmd[2] = { 0x01, 0x17 };
-    spiRf.transfer(cmd, nullptr, 2);  // SINGLE BATCH
+    spiRf.transfer(cmd, spiRxJunk, 2);  // SINGLE BATCH
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
@@ -129,7 +131,7 @@ static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(fifoCmd, nullptr, 2 + len);  // SINGLE BATCH — continuous SCK
+    spiRf.transfer(fifoCmd, spiRxJunk, 2 + len);  // SINGLE BATCH — continuous SCK
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
