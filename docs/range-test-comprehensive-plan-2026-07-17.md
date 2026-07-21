@@ -156,6 +156,54 @@ Tests:
 
 NOT required for initial characterization. Document for future.
 
+### Axis 9: GPS-Enabled Autonomous Testing (ROADMAP)
+
+**Goal:** Eliminate laptop dependency. TX board carries GPS, logs distance
+automatically. Walk freely with power bank only.
+
+**Hardware needed:**
+- GPS module (soldered to RP2040 board, UART NMEA 9600 baud)
+- Free RP2040 pins: GP20/GP21 (Serial2 = UART1) for GPS RX/TX
+- Power bank (USB 5V → RP2040 VBUS)
+
+**Firmware phases:**
+
+Phase 1 — GPS NMEA parsing (TX board):
+- Read $GPGGA/$GPRMC sentences from GPS module over Serial2 (9600 baud)
+- Parse lat/lon, store in struct
+- Embed coordinates in TX packet payload (bytes 4-20: lat float, lon float, sat count)
+- Reduce payload data bytes accordingly (255 - 12 = 243 data bytes)
+
+Phase 2 — RX distance calculation (RX board, stays on computer):
+- Extract GPS coords from received packets
+- Compute distance from last known RX position (or fixed base station coords)
+- Log per-packet: seq, rssi, lat, lon, distance_m
+- Output: RANGE_RESULT_RX with gps_lat, gps_lon, distance_m fields
+
+Phase 3 — Fully autonomous (both boards on power banks):
+- RX logs to flash storage (RP2040 has 2MB flash, ~1MB free after firmware)
+- Read back results via serial after test session
+- No computer needed during test at all
+
+**GPS module pinout (when soldered):**
+```
+GPS TX → RP2040 GP21 (UART1 RX)
+GPS RX → RP2040 GP20 (UART1 TX)
+GPS VCC → 3.3V
+GPS GND → GND
+```
+
+**Test protocol with GPS:**
+1. Both boards plugged into power banks
+2. Walk with TX board, GPS acquires fix (~30s cold start)
+3. TX transmits continuously, embedding current GPS position
+4. RX logs every packet with timestamp + GPS position + RSSI
+5. Post-test: dump RX flash, plot distance vs RSSI/loss curve
+6. Continuous distance data — not just fixed points
+
+**Priority:** After baseline phone-GPS distance sweep (Session 1). GPS firmware
+is v2 enhancement for finer-grained data and laptop-free operation.
+
 ---
 
 ## TEST EXECUTION ORDER
