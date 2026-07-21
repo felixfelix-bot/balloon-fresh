@@ -1,0 +1,28 @@
+WARNING: KICAD6_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD8_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD7_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap>:241]
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+WARNING: Missing tag on Solar_Cell instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:24.
+WARNING: Random tag 3oKRxDGeMZ generated for Solar_Cell.
+WARNING: Missing tag on Solar_Cell instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:26.
+WARNING: Random tag QLv06r5vej generated for Solar_Cell.
+WARNING: Missing tag on Solar_Cell instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:28.
+WARNING: Random tag 4PzghpASsf generated for Solar_Cell.
+WARNING: Missing tag on Conn_01x03 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:33.
+WARNING: Random tag TJbSBka276 generated for Conn_01x03.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:38.
+WARNING: Random tag kWT8RNNCAp generated for Conn_01x01.
+WARNING: Missing tag on Ferrite_Bead instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:48.
+WARNING: Random tag amYaxaYTiB generated for Ferrite_Bead.
+WARNING: Missing tag on Conn_01x02 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:52.
+WARNING: Random tag ITqAVr7Lmm generated for Conn_01x02.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:56.
+WARNING: Random tag JnAWfiRwTj generated for Conn_01x01.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/wing_schematic.py:59.
+WARNING: Random tag lowqweGe8C generated for Conn_01x01.
+WARNING: Missing tag on  instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/wing_board/<frozen importlib._bootstrap>:241.
+INFO: 22 warnings found while generating netlist.
+INFO: 0 errors found while generating netlist.
+
