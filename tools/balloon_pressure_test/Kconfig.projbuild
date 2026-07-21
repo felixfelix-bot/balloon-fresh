@@ -1,0 +1,10 @@
+# Kconfig for measurement interval config
+
+config MEASUREMENT_INTERVAL
+    int "Measurement interval in seconds"
+    default 30
+    range 5 3600
+    help
+        How often to read pressure and temperature from BMP280.
+        Default: 30 seconds (short test).
+        For long-term tests: 300 seconds (5 minutes).
