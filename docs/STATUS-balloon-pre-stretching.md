@@ -1,11 +1,11 @@
 # STATUS REPORT: balloon-pre-stretching
-- Current Phase: assessment
+- Current Phase: execution
 - Kanban Telemetry: no board
-- Last Commit: c5f563b — docs: pre-stretching protocol and integration assessment
-- Immediate Blockers: None (protocol written, awaiting physical equipment for execution)
+- Last Commit: 78c35d1 — feat: pressure test rig firmware + analysis script
+- Immediate Blockers: Hardware not connected to DQ05 (BMP280 + ESP32-C3 not detected on USB/I2C)
 - Dependencies Waiting On: circuit-design (payload weight for balloon count/gas volume), orchestrator (launch coordination)
-- Next 3 Deliverables: Pressure test rig build (BMP280+ESP32), DecoGlee batch leak test (owned balloons), Yokohama balloon procurement
+- Next 3 Deliverables: Flash firmware to ESP32-C3 when connected, Run DecoGlee batch leak test, Run Yokohama pre-stretching protocol
 - Estimated Integration Readiness: unknown (hardware-dependent)
-- Critical Output: Pre-stretching protocol + leak test methodology for flight-ready balloons
-- Shared Resources Needed: BMP280 breakout (to buy), 12V air pump (have), heat sealer (to buy), industrial He 4.6 (to source), Yokohama 10-pack (to buy, €106)
+- Critical Output: Pre-stretching protocol + leak test methodology + pressure test rig firmware
+- Shared Resources Needed: BMP280 breakout (connect to DQ05), ESP32-C3 (connect via USB), 12V air pump, heat sealer, industrial He 4.6, Yokohama 10-pack
 - Questions for Orchestrator: None
