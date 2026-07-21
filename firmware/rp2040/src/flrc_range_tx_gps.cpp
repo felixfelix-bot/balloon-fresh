@@ -196,6 +196,9 @@ static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
 static volatile bool radioReady = false;
 
+// Dummy RX buffer for write-only transfers (nullptr crashes on some cores)
+static uint8_t spiRxJunk[257];
+
 // ─── SPI helpers (single-batch from speed-tests) ────────────────────
 static inline bool rfWaitBusy() {
     uint32_t busyMask = 1UL << PIN_BUSY;
@@ -208,7 +211,7 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(buf, nullptr, len);
+    spiRf.transfer((uint8_t*)buf, spiRxJunk, len);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
@@ -258,7 +261,7 @@ static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x00);
     spiRf.transfer(0x02);
-    spiRf.transfer(data, nullptr, len);
+    spiRf.transfer((uint8_t*)data, spiRxJunk, len);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }

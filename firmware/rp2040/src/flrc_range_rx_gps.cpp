@@ -80,6 +80,9 @@ static float haversineM(float lat1, float lon1, float lat2, float lon2) {
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
+// Dummy RX buffer for write-only transfers (nullptr crashes on some cores)
+static uint8_t spiRxJunk[257];
+
 static volatile bool radioReady = false;
 
 static inline void rfWaitBusy() {
@@ -93,7 +96,7 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(buf, nullptr, len);
+    spiRf.transfer((uint8_t*)buf, spiRxJunk, len);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
