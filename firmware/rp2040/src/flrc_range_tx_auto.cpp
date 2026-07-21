@@ -57,6 +57,10 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
+// Pre-allocated combined buffer for single-batch FIFO write
+// Header (2 bytes) + payload (255 bytes) = 257 bytes in ONE transfer call
+static uint8_t fifoCmd[2 + 255];
+
 static volatile bool radioReady = false;
 
 // ─── SPI helpers (ALL Arduino, no direct HW registers) ───────────────
@@ -71,7 +75,7 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (size_t i = 0; i < len; i++) spiRf.transfer(buf[i]);
+    spiRf.transfer(buf, nullptr, len);  // SINGLE BATCH — continuous SCK
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
@@ -90,15 +94,17 @@ static uint32_t rfReadIrqStatus() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x17);
+    uint8_t cmd[2] = { 0x01, 0x17 };
+    spiRf.transfer(cmd, nullptr, 2);  // SINGLE BATCH
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
     uint8_t buf[6];
+    uint8_t dummy[6] = {0, 0, 0, 0, 0, 0};
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
+    spiRf.transfer(dummy, buf, 6);  // batch read
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     return ((uint32_t)buf[2] << 24) | ((uint32_t)buf[3] << 16) |
@@ -116,12 +122,14 @@ static void rfSetTx() {
 }
 
 static void rfWriteTxFifo(const uint8_t *data, size_t len) {
+    fifoCmd[0] = 0x00;  // header MSB
+    fifoCmd[1] = 0x02;  // header LSB (WRITE_TX_FIFO)
+    memcpy(fifoCmd + 2, data, len);
+
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x00);
-    spiRf.transfer(0x02);
-    for (size_t i = 0; i < len; i++) spiRf.transfer(data[i]);
+    spiRf.transfer(fifoCmd, nullptr, 2 + len);  // SINGLE BATCH — continuous SCK
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
