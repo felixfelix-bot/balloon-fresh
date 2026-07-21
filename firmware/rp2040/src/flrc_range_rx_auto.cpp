@@ -309,8 +309,8 @@ static void runReceive() {
     uint16_t pktSize = RX_PKT_SIZE;
     uint8_t buf[256];
 
-    dualPrintf("RX_WINDOW %lu START listen=%dms",
-               (unsigned long)windowNum, RX_LISTEN_MS);
+    dualPrintf("RX_WINDOW %lu START uptime=%lums listen=%dms",
+               (unsigned long)windowNum, (unsigned long)stats.startMs, RX_LISTEN_MS);
 
     while (true) {
         uint32_t now = millis();
@@ -370,8 +370,9 @@ static void runReceive() {
         digitalWrite(PIN_LED, LOW);
 
         if (stats.received <= 5 || (stats.received % PRINT_EVERY) == 0) {
-            dualPrintf("PKT %lu seq=%lu rssi=%d",
-                       (unsigned long)stats.received, (unsigned long)seq, rssi);
+            dualPrintf("PKT %lu seq=%lu rssi=%d uptime=%lums",
+                       (unsigned long)stats.received, (unsigned long)seq, rssi,
+                       (unsigned long)millis());
         }
     }
 
@@ -404,11 +405,12 @@ static void runReceive() {
     dualPrintln("=============================================");
 
     // Structured result line for automated parsing
-    dualPrintf("RANGE_RESULT_RX,window=%lu,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,freq=%.1f,bitrate=%d,pktSize=%d",
+    dualPrintf("RANGE_RESULT_RX,window=%lu,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,freq=%.1f,bitrate=%d,pktSize=%d,uptime_ms=%lu",
                (unsigned long)windowNum,
                (unsigned long)n, (unsigned long)stats.unique, (unsigned long)lost,
                (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps,
-               rssiAvg, stats.rssiMin, RX_FREQ_MHZ, RX_BITRATE_KBPS, RX_PKT_SIZE);
+               rssiAvg, stats.rssiMin, RX_FREQ_MHZ, RX_BITRATE_KBPS, RX_PKT_SIZE,
+               (unsigned long)stats.startMs);
 
     windowNum++;
 }

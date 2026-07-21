@@ -269,7 +269,9 @@ static void runTransmit() {
     digitalWrite(PIN_LED, HIGH);
     digitalWrite(PIN_LED_ALT, HIGH);
 
-    dualPrintf("BURST %lu START count=%d", (unsigned long)burstNum, count);
+    uint32_t burstStartMs = millis();
+    dualPrintf("BURST %lu START uptime=%lums count=%d",
+               (unsigned long)burstNum, (unsigned long)burstStartMs, count);
 
     uint8_t pkt[256];
     for (int j = 4; j < pktSize; j++) pkt[j] = (uint8_t)(j & 0xFF);
@@ -318,11 +320,12 @@ static void runTransmit() {
                (unsigned long)burstNum,
                (unsigned long)txDoneCount, (unsigned long)txTimeoutCount,
                (unsigned long)elapsed, tput);
-    dualPrintf("RANGE_RESULT_TX,burst=%lu,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,freq=%.1f,bitrate=%d,power=%.1f,pktSize=%d",
+    dualPrintf("RANGE_RESULT_TX,burst=%lu,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,freq=%.1f,bitrate=%d,power=%.1f,pktSize=%d,uptime_ms=%lu",
                (unsigned long)burstNum, count,
                (unsigned long)txDoneCount, (unsigned long)txTimeoutCount,
                (unsigned long)elapsed, tput,
-               TX_FREQ_MHZ, TX_BITRATE_KBPS, TX_POWER_DBM, TX_PKT_SIZE);
+               TX_FREQ_MHZ, TX_BITRATE_KBPS, TX_POWER_DBM, TX_PKT_SIZE,
+               (unsigned long)burstStartMs);
 
     burstNum++;
 
