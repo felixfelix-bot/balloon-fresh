@@ -2,24 +2,42 @@
 """
 balloon-board-lock.py -- Mutex lock for RP2040/ESP32 board access.
 
-Prevents concurrent LLM sessions (speed-test, range-test, etc.) from
+Prevents concurrent LLM sessions (speed-test, range-test, tollgate, etc.) from
 accessing the same physical boards simultaneously.
 
-LOCK FILES: ~/.hermes/peripheral_locks/balloon-{tx,rx}.lock
+LOCK FILES: ~/.hermes/peripheral_locks/balloon-{tx,rx,board-a,board-b,board-c}.lock
 STALE TIMEOUT: 15 minutes (auto-release if holder crashed)
+
+RESOURCES:
+    tx, rx       — RP2040 boards (speed-tests, range-tests)
+    board-a      — ESP32-S3 board A (MAC 94:a9:90:2e:37:7c, TollGate-B96D80)
+    board-b      — ESP32-S3 board B (MAC fc:01:2c:c5:50:50, TollGate-C0E9CA)
+    board-c      — ESP32-S3 board C (MAC 20:6e:f1:98:d7:08, display board)
+    all-s3       — All 3 ESP32-S3 boards (board-a + board-b + board-c)
+    both         — TX + RX (RP2040 pair)
+    all          — All boards (tx + rx + board-a + board-b + board-c)
 
 USAGE:
     # Acquire TX board (blocks up to 120s)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire tx \\
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire tx \\\\
         --purpose "flash timing diag" --timeout 120
 
-    # Acquire both boards (for coordinated TX/RX tests)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire both \\
+    # Acquire both RP2040 boards (for coordinated TX/RX tests)
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire both \\\\
         --purpose "coordinated throughput test" --timeout 120
+
+    # Acquire ESP32-S3 board A (tollgate track)
+    BALLOON_TRACK=tollgate python3 balloon-board-lock.py acquire board-a \\\\
+        --purpose "flash C3 stripped build" --timeout 120
+
+    # Acquire all 3 ESP32-S3 boards
+    BALLOON_TRACK=tollgate python3 balloon-board-lock.py acquire all-s3 \\\\
+        --purpose "full tollgate test suite" --timeout 180
 
     # Release
     python3 balloon-board-lock.py release tx
     python3 balloon-board-lock.py release both --force
+    python3 balloon-board-lock.py release board-a
 
     # Status (who holds what)
     python3 balloon-board-lock.py status
@@ -63,6 +81,10 @@ def _lock_path(resource: str) -> Path:
 def _get_resources(resource: str) -> list:
     if resource == "both":
         return ["tx", "rx"]
+    if resource == "all-s3":
+        return ["board-a", "board-b", "board-c"]
+    if resource == "all":
+        return ["tx", "rx", "board-a", "board-b", "board-c"]
     return [resource]
 
 
@@ -223,7 +245,7 @@ def release(resource: str, force: bool) -> int:
 def status() -> int:
     """Print status of all balloon board locks."""
     print("=== Balloon Board Lock Status ===")
-    for resource in ["tx", "rx"]:
+    for resource in ["tx", "rx", "board-a", "board-b", "board-c"]:
         path = _lock_path(resource)
         data = _read_lock(path)
         if data is None or not data.get("locked"):
@@ -270,7 +292,7 @@ Examples:
         """)
     parser.add_argument("action", choices=["acquire", "release", "status"],
                         help="Action to perform")
-    parser.add_argument("resource", nargs="?", choices=["tx", "rx", "both"],
+    parser.add_argument("resource", nargs="?", choices=["tx", "rx", "both", "board-a", "board-b", "board-c", "all-s3", "all"],
                         help="Which board(s) to lock/unlock")
     parser.add_argument("--purpose", default="unspecified",
                         help="Why you need the board (shown to other sessions)")
