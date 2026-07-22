@@ -1,4 +1,8 @@
 /*
+ * DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
+ * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+ * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
+ *
  * flrc_range_rx_auto.cpp — FLRC RX with RSSI for outdoor range testing
  *
  * Auto-listens on boot, continuous RX (no timeout), outputs per-packet RSSI.
@@ -118,24 +122,30 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
-// ─── RSSI readback via GET_PACKET_STATUS (0x0104) ───────────────────
+// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) ─────────────
+// LR2021 native command — NOT SX1280's 0x0104!
+// Returns 5 bytes: [pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+// RSSI is 9-bit: bits [8:1] from buf[2], bit [0] from buf[4] bit 2
 // Call AFTER RX_DONE, BEFORE clearing IRQ
 static int8_t rfReadRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x04);
+    spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS = 0x024B
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
-    uint8_t buf[4];
+    uint8_t buf[7];
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
+    for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    return -(int8_t)buf[1];  // SX1280 RSSI is stored unsigned, negate for dBm
+    // LR2021 response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    // 9-bit RSSI average: (buf[4] << 1) | ((buf[6] & 0x04) >> 2), then / -2 for dBm
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int8_t)(raw / 2);  // Returns dBm (negative)
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────

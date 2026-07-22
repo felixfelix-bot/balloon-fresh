@@ -1,4 +1,8 @@
 /*
+ * DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
+ * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+ * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
+ *
  * flrc_range_rx_gps.cpp — FLRC RX with RSSI + GPS extraction
  *
  * Backward compatible: parses GPS fields from TX payload if present.
