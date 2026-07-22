@@ -135,7 +135,7 @@ static int8_t rfReadRssi() {
     for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    return (int8_t)buf[1];  // signed dBm
+    return -(int8_t)buf[1];  // SX1280 RSSI is stored unsigned, negate for dBm
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
