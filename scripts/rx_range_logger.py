@@ -103,7 +103,7 @@ class RotatingLogger:
         self.csv_path = os.path.join(self.outdir, f"range_test_{ts}.csv")
         self.log_file = open(self.log_path, "a")
         self.csv_file = open(self.csv_path, "a")
-        self.csv_file.write("timestamp_iso,n,seq,rssi_dbm\n")
+        self.csv_file.write("timestamp_iso,n,seq,rssi_dbm,gps_lat1e7,gps_lon1e7,gps_alt,gps_sats,gps_hdop_x10,gps_fix\n")
         self.csv_file.flush()
         self.current_size = 0
         log.info(f"New log: {self.log_path}")
@@ -136,27 +136,36 @@ class RotatingLogger:
                 pass
 
     def write(self, line_text, is_packet=False, n=0, seq=0, rssi=0):
-        """Write a line. Rotates if exceeding max size."""
+        """Write a non-packet line. Rotates if exceeding max size."""
         ts = datetime.now(timezone.utc)
         ts_iso = ts.isoformat(timespec="milliseconds")
 
-        # Raw log line
         log_line = f"{ts_iso} | {line_text}\n"
         self.log_file.write(log_line)
         self.log_file.flush()
         self.current_size += len(log_line)
 
-        # CSV for packets
-        if is_packet:
-            self.csv_file.write(f"{ts_iso},{n},{seq},{rssi}\n")
-            self.csv_file.flush()
-            self.current_size += len(ts_iso) + 30  # approx
-
-        # Check rotation
         if self.current_size >= self.max_bytes:
-            log.info(
-                f"Rotating at {self.current_size / 1024 / 1024:.1f} MB"
-            )
+            log.info(f"Rotating at {self.current_size / 1024 / 1024:.1f} MB")
+            self._rotate()
+
+    def write_pkt(self, ts_iso, n, seq, rssi,
+                  gps_lat, gps_lon, gps_alt, gps_sats, gps_hdop, gps_fix):
+        """Write a packet line to both raw log and CSV."""
+        # Raw log
+        log_line = f"{ts_iso} | PKT,{n},{seq},{rssi},{gps_lat},{gps_lon},{gps_alt},{gps_sats},{gps_hdop},{gps_fix}\n"
+        self.log_file.write(log_line)
+        self.log_file.flush()
+
+        # CSV
+        csv_line = f"{ts_iso},{n},{seq},{rssi},{gps_lat},{gps_lon},{gps_alt},{gps_sats},{gps_hdop},{gps_fix}\n"
+        self.csv_file.write(csv_line)
+        self.csv_file.flush()
+
+        self.current_size += len(log_line) + len(csv_line)
+
+        if self.current_size >= self.max_bytes:
+            log.info(f"Rotating at {self.current_size / 1024 / 1024:.1f} MB")
             self._rotate()
 
 
@@ -203,24 +212,41 @@ def run(port, baud, outdir, max_bytes, max_files):
 
                 is_pkt = line.startswith("PKT,")
                 n = seq = rssi = 0
+                gps_lat = gps_lon = gps_alt = "0"
+                gps_sats = gps_hdop = gps_fix = "0"
 
                 if is_pkt:
                     parts = line.split(",")
-                    if len(parts) >= 4:
-                        try:
-                            n = int(parts[1])
-                            seq = int(parts[2])
-                            rssi = int(parts[3])
-                            pkt_count += 1
-                            rssi_sum += rssi
-                            if rssi < rssi_min:
-                                rssi_min = rssi
-                            if rssi > rssi_max:
-                                rssi_max = rssi
-                        except ValueError:
-                            is_pkt = False
+                    try:
+                        n = int(parts[1])
+                        seq = int(parts[2])
+                        rssi = int(parts[3])
+                        pkt_count += 1
+                        rssi_sum += rssi
+                        if rssi < rssi_min:
+                            rssi_min = rssi
+                        if rssi > rssi_max:
+                            rssi_max = rssi
 
-                logger.write(line, is_pkt, n, seq, rssi)
+                        # GPS fields (if present — backward compatible)
+                        gps_lat = parts[4] if len(parts) > 4 else "0"
+                        gps_lon = parts[5] if len(parts) > 5 else "0"
+                        gps_alt = parts[6] if len(parts) > 6 else "0"
+                        gps_sats = parts[7] if len(parts) > 7 else "0"
+                        gps_hdop = parts[8] if len(parts) > 8 else "0"
+                        gps_fix = parts[9] if len(parts) > 9 else "0"
+                    except (ValueError, IndexError):
+                        is_pkt = False
+
+                # Write to logger with GPS fields appended
+                ts = datetime.now(timezone.utc)
+                ts_iso = ts.isoformat(timespec="milliseconds")
+                if is_pkt:
+                    logger.write_pkt(ts_iso, n, seq, rssi,
+                                     gps_lat, gps_lon, gps_alt,
+                                     gps_sats, gps_hdop, gps_fix)
+                else:
+                    logger.write(line, is_pkt, n, seq, rssi)
 
                 # Periodic console (→ journald)
                 current = time.time()
