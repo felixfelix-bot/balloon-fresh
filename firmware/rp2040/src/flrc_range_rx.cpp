@@ -14,8 +14,8 @@
  *   STATUS           Print config + radio status
  *   HELP             Command list
  *
- * RSSI is read after each packet via GET_PACKET_STATUS (0x0104).
- * SX1280/LR2021 returns RSSI as signed byte in dBm.
+ * RSSI is read after each packet via GET_FLRC_PACKET_STATUS (0x024B).
+ * LR2021 returns 9-bit RSSI: (buf[4]<<1)|((buf[6]&0x04)>>2), /2, negate.
  *
  * Output format (for automated parsing):
  *   RANGE_RESULT_RX,rx=<n>,unique=<n>,lost=<n>,total=<n>,per=<f>,
@@ -140,36 +140,41 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
-// ─── RSSI readback via GET_PACKET_STATUS (0x0104) ───────────────────
-// SX1280/LR2021: send opcode 0x0104, wait BUSY, read [status, rssi, ...]
-// rssi is signed byte in dBm (e.g. -70 = 0xBA)
+// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) — 9-bit assembly
+// Matches verified LR2021Raw.h implementation. SX1280's 0x0104 returns garbage.
 static int8_t rfReadRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x04);
+    spiRf.transfer(0x02); spiRf.transfer(0x4B); // GET_FLRC_PACKET_STATUS
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
-    uint8_t buf[4];
+    // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    uint8_t buf[7];
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
+    for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // buf[0]=status, buf[1]=RSSI (signed dBm), buf[2]=SNR (FLRC may be 0)
-    return (int8_t)buf[1];
+    // 9-bit RSSI: bits [8:1] from buf[4], bit[0] from buf[6] bit[2]
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int8_t)(raw / 2);
 }
 
 // ─── Runtime parameter setters ───────────────────────────────────────
 static uint8_t bitrateToBrBw(uint16_t kbps) {
     switch (kbps) {
-        case 2600: return 0x00;
-        case 1300: return 0x01;
-        case 650:  return 0x02;
-        case 325:  return 0x03;
+        case 2600: return 0x00;  // FLRC_BR_2600
+        case 2080: return 0x01;  // FLRC_BR_2080
+        case 1300: return 0x02;  // FLRC_BR_1300
+        case 1040: return 0x03;  // FLRC_BR_1040
+        case 650:  return 0x04;  // FLRC_BR_650
+        case 520:  return 0x05;  // FLRC_BR_520
+        case 325:  return 0x06;  // FLRC_BR_325
+        case 260:  return 0x07;  // FLRC_BR_260
         default:   return 0x00;
     }
 }
