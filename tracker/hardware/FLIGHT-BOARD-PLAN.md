@@ -39,7 +39,7 @@ Fabrication: JLCPCB (primary) + toner transfer fallback (0.4mm trace/clearance).
 - GPS provides position for ground station antenna tracking
 - LR2021 has RTToF (untested) for future ranging experiments
 - SX1280 adds ~2g + SPI complexity for uncertain benefit at 200+ km
-- If ranging needed: test LR2021 RTToF first (RadioLib commands exist)
+- If ranging needed: test LR2021 RTToF first (raw 2-byte opcode SPI — RadioLib DEPRECATED, see ADR-020)
 
 ---
 
