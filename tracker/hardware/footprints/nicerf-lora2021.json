@@ -29,7 +29,7 @@
     {"pin": 12, "function": "GND", "type": "GND"},
     {"pin": 13, "function": "VTCXO", "type": "power", "note": "TCXO supply/output"},
     {"pin": 14, "function": "RST", "type": "input", "note": "Active low hardware reset"},
-    {"pin": 15, "function": "DIO9", "type": "I/O", "note": "Configurable GPIO, used as IRQ in RadioLib"},
+    {"pin": 15, "function": "DIO9", "type": "I/O", "note": "Configurable GPIO, used as IRQ in raw LR2021 SPI driver"},
     {"pin": 16, "function": "DIO8", "type": "I/O", "note": "Configurable GPIO"},
     {"pin": 17, "function": "DIO7", "type": "I/O", "note": "Configurable GPIO"},
     {"pin": 18, "function": "GND", "type": "GND"}
