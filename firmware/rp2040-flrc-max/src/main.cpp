@@ -32,7 +32,7 @@ static SPISettings spiSettings(16000000, MSBFIRST, SPI_MODE0);
 #define FLRC_PREAMBLE 12
 #define FLRC_SHAPING  RADIOLIB_SHAPING_0_5
 
-#define PKT_SIZE      255
+#define PKT_SIZE      127
 #define PKT_COUNT     2000
 #define RX_TIMEOUT_MS 30000
 
@@ -42,6 +42,12 @@ LR2021 radio(&radioMod);
 
 volatile bool rxFlag = false;
 void rxISR() { rxFlag = true; }
+
+// RSSI tracking — use getFlrcPacketStatus() directly, NOT getRSSI()
+// RadioLib getRSSI() doesn't handle FLRC modem type (returns 0)
+float rssiAvgLast = 0;
+float rssiSyncLast = 0;
+float rssiSum = 0;
 
 char linebuf[256];
 
@@ -158,7 +164,6 @@ void runRX() {
     uint8_t buf[PKT_SIZE + 16];
     uint32_t rxCount = 0, rxErrors = 0;
     uint32_t firstSeq = 0xFFFFFFFF, lastSeq = 0;
-    int16_t lastRssi = 0;
     uint32_t startMs = millis();
     bool gotEnd = false;
 
@@ -175,7 +180,10 @@ void runRX() {
                         break;
                     }
                     rxCount++;
-                    lastRssi = radio.getRSSI();
+                    // getRSSI() is patched in RadioLib to handle FLRC mode
+                    // (stock RadioLib returns 0 for FLRC — missing dispatch branch)
+                    rssiAvgLast = radio.getRSSI();
+                    rssiSum += rssiAvgLast;
                     if (len >= 4) {
                         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                                        ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
@@ -185,8 +193,10 @@ void runRX() {
                     if (rxCount % 500 == 0) {
                         uint32_t elapsed = millis() - startMs;
                         float kbps = (float)rxCount * PKT_SIZE * 8.0f / (float)elapsed;
-                        snprintf(linebuf, sizeof(linebuf), "RX %lu pkts (%.1f kbps) RSSI=%d",
-                                 rxCount, kbps, lastRssi);
+                        float rssiAvg = rssiSum / rxCount;
+                        snprintf(linebuf, sizeof(linebuf),
+                            "RX %lu pkts (%.1f kbps) RSSI_avg=%.1f RSSI_sync=%.1f",
+                            rxCount, kbps, rssiAvg, rssiSyncLast);
                         Serial.println(linebuf);
                     }
                 } else {
@@ -217,7 +227,12 @@ void runRX() {
     Serial.println(linebuf);
     snprintf(linebuf, sizeof(linebuf), "  Throughput: %.1f kbps", throughput);
     Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  RSSI:       %d dBm", lastRssi);
+    snprintf(linebuf, sizeof(linebuf), "  RSSI avg:   %.1f dBm",
+             (rxCount > 0) ? (rssiSum / rxCount) : 0);
+    Serial.println(linebuf);
+    snprintf(linebuf, sizeof(linebuf), "  RSSI sync:  %.1f dBm", rssiSyncLast);
+    Serial.println(linebuf);
+    snprintf(linebuf, sizeof(linebuf), "  RSSI last:  %.1f dBm", rssiAvgLast);
     Serial.println(linebuf);
     Serial.println("=============================================");
 }
