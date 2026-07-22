@@ -1,13 +1,6 @@
 /*
  * tx_main.cpp — Multi-mode sweep transmitter (ADR-018/019)
- *
  * Press button (GP15) to start 55-second sweep through all 10 configs.
- * Each config transmits continuous packets with mode_id + seq in payload.
- *
- * Pin mapping:
- *   GP2=SCK, GP3=MOSI, GP4=MISO, GP5=CS, GP6=BUSY, GP7=IRQ, GP8=RST, GP9=DIO9
- *   GP12=Serial1 TX, GP13=Serial1 RX (UART bridge)
- *   GP14=GPS PPS (future), GP15=Sweep button
  */
 #ifdef ROLE_TX
 
@@ -20,6 +13,7 @@ char linebuf[256];
 
 void setup() {
     Serial.begin(115200);
+    // CRITICAL: must remap Serial1 to GP12/GP13 for ESP32 bridge
     Serial1.setTX(12);
     Serial1.setRX(13);
     Serial1.begin(115200);
@@ -30,17 +24,33 @@ void setup() {
 
     Serial1.println("=== SWEEP TX READY ===");
     Serial1.println("Press GP15 button to start sweep");
+    Serial1.println("DBG: before spiRf.begin");
+    Serial1.flush();
 
     spiRf.begin();
+    Serial1.println("DBG: after spiRf.begin");
+    Serial1.flush();
 
-    // Initialize with first config to verify radio works
-    int16_t state = configureRadio(SWEEP_TABLE[0]);
+    // Initialize with FLRC 650 kbps (proven working bitrate)
+    Serial1.println("DBG: before radio init (FLRC 650)");
+    Serial1.flush();
+    int16_t state = configureRadio(SWEEP_TABLE[2]); // index 2 = FLRC_650
+    Serial1.println("DBG: after radio init");
+    Serial1.flush();
     if (state != RADIOLIB_ERR_NONE) {
-        snprintf(linebuf, sizeof(linebuf), "Radio init FAILED: %d", state);
+        snprintf(linebuf, sizeof(linebuf), " FAILED: %d", state);
         Serial1.println(linebuf);
-        while (true) { delay(1000); }
+        // Don't hang forever — blink LED and retry
+        Serial1.println("RETRY: radio may need warm-up");
+        delay(1000);
+        state = configureRadio(SWEEP_TABLE[0]);
+        if (state != RADIOLIB_ERR_NONE) {
+            snprintf(linebuf, sizeof(linebuf), "FAILED2: %d", state);
+            Serial1.println(linebuf);
+            while (true) { digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); delay(500); }
+        }
     }
-    Serial1.println("Radio OK");
+    Serial1.println(" Radio OK");
 }
 
 void runSweep() {
@@ -82,7 +92,7 @@ void runSweep() {
             radio.transmit(pkt, SWEEP_PKT_SIZE);
             seq++;
 
-            // Yield for slow modes to avoid watchdog
+            // Yield for slow modes
             if (cfg.mod == MOD_LORA && cfg.sf >= 11) {
                 delay(10);
             }
@@ -91,11 +101,13 @@ void runSweep() {
         snprintf(linebuf, sizeof(linebuf), "MODE_END id=%d pkts=%lu", cfg.id, seq);
         Serial1.println(linebuf);
 
-        // Guard interval between configs
         delay(SWEEP_GUARD_MS);
     }
 
     Serial1.println("SWEEP_COMPLETE");
+
+    // Re-init to first config
+    configureRadio(SWEEP_TABLE[0]);
 }
 
 void loop() {
@@ -104,20 +116,14 @@ void loop() {
         digitalWrite(LED_BUILTIN, HIGH);
         delay(50); // debounce
 
-        // Wait for release
-        while (digitalRead(SWEEP_BUTTON) == LOW) {
-            delay(10);
-        }
+        while (digitalRead(SWEEP_BUTTON) == LOW) { delay(10); }
         delay(50);
 
         runSweep();
         digitalWrite(LED_BUILTIN, LOW);
-
-        // Re-init to first config so radio is ready
-        configureRadio(SWEEP_TABLE[0]);
     }
 
     delay(10);
 }
 
-#endif // ROLE_TX
+#endif

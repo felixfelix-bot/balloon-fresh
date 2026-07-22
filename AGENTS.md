@@ -1,16 +1,46 @@
 # AGENTS.md - AI Agent Instructions
 
-## CRITICAL: CHIP IS LR2021, NOT SX1280
+## CRITICAL: LR2021 SPI Protocol — Do NOT Use RadioLib
 
-**The RF chip is the Semtech LR2021 (Gen 4). It is NOT an SX1280.**
+**The RF chip is the Semtech LR2021 (Gen 4), confirmed by module label "LORA2021-915".**
 
-These are completely different chips with different SPI command sets, different register maps, and different RSSI handling. The SX1280 is an older 2.4 GHz chip. The LR2021 is a 2025 dual-band chip.
+### DO NOT USE RADIOLIB for LR2021 communication
 
-**NEVER write SX1280 SPI commands, register definitions, or constants.**
-**ALWAYS use RadioLib's LR2021 driver** (radio.beginFLRC, radio.beginLoRa, radio.getRSSI()).
+RadioLib's LR2021 driver (v7.6.0) DOES NOT WORK on our hardware:
+- RadioLib uses 24-bit register addressing — our chip uses **2-byte big-endian opcodes**
+- `findChip()` expects firmware version 1.24 (0x01, 0x18) — our chip returns different bytes
+- RadioLib always returns error -707 or hangs indefinitely
+- The `rp2040-flrc-max` firmware using RadioLib has NEVER successfully run
 
-If you see 0x024B in any code — that's an SX1280 command. It's WRONG. Delete it.
-See ADR-017 for full details.
+### DO Use Raw 2-Byte Opcode SPI Protocol
+
+The proven working approach is **raw SPI with 2-byte opcodes**. This achieved:
+- 1377 kbps verified end-to-end throughput
+- 0% packet loss at 1000/1000 packets
+- Full dual-band support (2.4 GHz + sub-GHz 915 MHz)
+
+Protocol: `NSS LOW → wait BUSY LOW → send [opcode_hi, opcode_lo, ...payload] → NSS HIGH`
+
+Reference implementations:
+- `firmware/rp2040/src/flrc_raw_tx.cpp` — RP2040 TX (PROVEN WORKING)
+- `firmware/esp32-c3-flrc/main/main.cpp` — ESP32 TX+RX (PROVEN WORKING)
+
+Authoritative protocol docs:
+- `docs/lr2021-spi-protocol-reference.md`
+- `docs/lr2021-spi-command-reference.md`
+
+See **ADR-020** for full details. ADR-017 is SUPERSEDED.
+
+### Common Pitfalls for LLM Sessions
+
+1. **RadioLib will fail silently** — don't waste time debugging it. It's a protocol mismatch.
+2. **Do not send SX1280 1-byte opcodes** (0x80-0xFF range) — LR2021 uses 2-byte opcodes (0x01xx, 0x02xx)
+3. **SET_RX_PATH (0x0201) is MANDATORY** before entering RX mode — HF=1 for 2.4GHz, LF=0 for sub-GHz
+4. **CALIB_FRONT_END (0x0123) is MANDATORY** before RX or chip returns CMD_ERROR
+5. **tcxoVoltage=0** for NiceRF LoRa2021 module (uses XTAL, not TCXO)
+6. **IRQ status is 32-bit** (not 16-bit like SX1280). RX_DONE=bit18, TX_DONE=bit19
+7. **RSSI is unsigned** — must negate for dBm (e.g., raw 36 = -36 dBm)
+8. **CALIBRATE mask is 0x5F** (bit 5 is UNDEFINED — do not use 0x6F)
 
 ## Project Overview
 ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker AND mesh internet transport network. Solar/supercap power. Target weight: <14g (Mesh V1, night-off) or <9g (Minimal tracker).
@@ -19,13 +49,14 @@ Two-track project:
 1. **Tracker** (`tracker/`): Single balloon telemetry, position reporting
 2. **Mesh Stack** (`mesh-stack/`): Multi-balloon relay network for internet transport
 
-## RF Driver: RadioLib
+## RF Driver: Raw LR2021 SPI (NOT RadioLib)
 
-**IMPORTANT**: We use RadioLib v7.6.0 (NOT a custom driver) for LR2021 communication.
-- RadioLib is included as an ESP-IDF component dependency via `idf_component.yml`
-- Supports: LoRa, FLRC, GFSK, OOK, LR-FHSS, O-QPSK, RTToF ranging
-- Has native ESP-IDF support with HAL abstraction layer
-- The custom LR2021 driver in `tracker/firmware/components/lr2021/` is DEPRECATED
+**CRITICAL**: We use a **raw 2-byte opcode SPI driver** for LR2021 communication.
+RadioLib's LR2021 driver does NOT work on our hardware (protocol mismatch — see ADR-020).
+
+- Proven implementations: `firmware/rp2040/src/flrc_raw_tx.cpp`, `firmware/esp32-c3-flrc/`
+- Protocol docs: `docs/lr2021-spi-protocol-reference.md`
+- The `rp2040-flrc-max` firmware using RadioLib is BROKEN — do not use as reference
 - See `tracker/firmware/main/EspHalC3.h` for the ESP32-C3 hardware abstraction
 
 ## Inventory (Owned Parts)

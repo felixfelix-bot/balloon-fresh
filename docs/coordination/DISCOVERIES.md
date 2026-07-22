@@ -26,6 +26,13 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files (2026-07-23) | tags: RADIO
+- **Commit:** `d8a7187` by Felix
+- **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/coordination/DISCOVERIES.md (+6 more)
+- **Full message:** ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files
+- **Relevance:** RADIO
+
+
 ### [balloon-hermes] docs: forward speed-tests learnings to range-tests via DISCOVERIES.md (2026-07-22) | tags: GENERAL
 - **Commit:** `f07c812` by Felix
 - **Files:** docs/coordination/DISCOVERIES.md
