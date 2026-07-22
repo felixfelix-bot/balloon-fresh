@@ -127,24 +127,28 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
-// ─── RSSI readback via GET_PACKET_STATUS (0x0104) ───────────────────
+// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) — 9-bit assembly
+// Matches verified LR2021Raw.h implementation. SX1280's 0x0104 returns garbage.
 static int8_t rfReadRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x04);
+    spiRf.transfer(0x02); spiRf.transfer(0x4B); // GET_FLRC_PACKET_STATUS
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
-    uint8_t buf[4];
+    // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    uint8_t buf[7];
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
+    for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    return (int8_t)buf[1];
+    // 9-bit RSSI: bits [8:1] from buf[4], bit[0] from buf[6] bit[2]
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int8_t)(raw / 2);
 }
 
 // ─── Runtime parameter setters ───────────────────────────────────────
