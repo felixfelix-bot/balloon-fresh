@@ -123,7 +123,9 @@ static int8_t rfReadRssi() {
     for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    return (int8_t)buf[1];
+    // SX1280/LR2021: PACKET_STATUS buf[0]=status, buf[1]=RSSI (unsigned, negate for dBm)
+    // RadioLib negates this value: RSSI_dBm = -buf[1]
+    return -(int8_t)buf[1];
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
