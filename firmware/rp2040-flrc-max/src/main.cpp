@@ -1,6 +1,8 @@
 /*
- * rp2040-flrc-max — Maximum FLRC Throughput Test
+ * rp2040-flrc-max — Continuous FLRC Range Logger + TX
  * Target: 2600 kbps air rate (LR2021 FLRC maximum)
+ * RX: Continuous logging with fixed RSSI via getFlrcPacketStatus
+ * TX: Continuous transmission for range testing
  *
  * Pin mapping matches rp2040 coprocessor:
  *   GP2=SCK, GP3=MOSI, GP4=MISO, GP5=CS, GP6=BUSY, GP7=IRQ, GP8=RST
@@ -20,11 +22,10 @@
 #define LR2021_RST   8
 
 // earlephilhower: explicit SPI0 on our pins
-// SPIClassRP2040(spi_inst, rx(MISO), cs, sck, tx(MOSI))
 static SPIClassRP2040 spiRf(spi0, LR2021_MISO, LR2021_CS, LR2021_SCK, LR2021_MOSI);
 static SPISettings spiSettings(16000000, MSBFIRST, SPI_MODE0);
 
-// ─── FLRC MAX SPEED ──────────────────────────────────────
+// ─── FLRC CONFIG ─────────────────────────────────────────
 #define FLRC_FREQ     2440.0
 #define FLRC_BR       2600
 #define FLRC_CR       RADIOLIB_LR2021_FLRC_CR_1_0
@@ -33,8 +34,6 @@ static SPISettings spiSettings(16000000, MSBFIRST, SPI_MODE0);
 #define FLRC_SHAPING  RADIOLIB_SHAPING_0_5
 
 #define PKT_SIZE      127
-#define PKT_COUNT     2000
-#define RX_TIMEOUT_MS 30000
 
 // ─── Radio ───────────────────────────────────────────────
 Module radioMod(LR2021_CS, LR2021_IRQ, LR2021_RST, LR2021_BUSY, spiRf, spiSettings);
@@ -43,199 +42,126 @@ LR2021 radio(&radioMod);
 volatile bool rxFlag = false;
 void rxISR() { rxFlag = true; }
 
-// RSSI tracking — use getFlrcPacketStatus() directly, NOT getRSSI()
-// RadioLib getRSSI() doesn't handle FLRC modem type (returns 0)
-float rssiAvgLast = 0;
-float rssiSyncLast = 0;
-float rssiSum = 0;
+// Dual output: USB Serial + UART Serial1 (to ESP32 bridge)
+// Serial1 works even when USB CDC dies during SPI
+#define DUAL_PRINT(s)    do { Serial1.print(s); } while(0)
+#define DUAL_PRINTLN(s)  do { Serial1.println(s); } while(0)
 
 char linebuf[256];
 
-// Forward declarations
-#ifdef ROLE_TX
-void runTX();
-#else
-void runRX();
-#endif
-
 void setup() {
     Serial.begin(115200);
+    // Serial1 remapped to GP12(TX)/GP13(RX) for ESP32 UART bridge
+    // Default is GP0/GP1 — MUST remap or bridge gets nothing
+    Serial1.setTX(12);
+    Serial1.setRX(13);
+    Serial1.begin(115200);
     delay(2000);
 
-    Serial.println("=== RP2040 FLRC MAX TEST ===");
+    DUAL_PRINTLN("=== RP2040 FLRC RANGE LOGGER ===");
 #ifdef ROLE_TX
-    Serial.println("Mode: TX");
+    DUAL_PRINTLN("Mode: TX (continuous)");
 #else
-    Serial.println("Mode: RX");
+    DUAL_PRINTLN("Mode: RX (continuous)");
 #endif
 
-    // SPI0 default pins on RP2040 mbed: SCK=GP2, MOSI=GP3, MISO=GP4
-    // These match our wiring — no custom pin config needed
     spiRf.begin();
+    radio.irqDioNum = 9;
 
-    radio.irqDioNum = 9;  // DIO9 carries RX_DONE on NiceRF LR2021
-
-    Serial.print("Init LR2021...");
+    DUAL_PRINT("Init LR2021 FLRC...");
     int16_t state = radio.beginFLRC(FLRC_FREQ, FLRC_BR, FLRC_CR, FLRC_PWR,
                                      FLRC_PREAMBLE, FLRC_SHAPING);
     if (state != RADIOLIB_ERR_NONE) {
         snprintf(linebuf, sizeof(linebuf), " FAILED: %d", state);
-        Serial.println(linebuf);
-        Serial.println("Wiring: GP2=SCK GP3=MOSI GP4=MISO GP5=CS GP6=BUSY GP7=IRQ GP8=RST");
+        DUAL_PRINTLN(linebuf);
         while (true) { delay(1000); }
     }
-    Serial.println(" OK");
-
-    radio.setCRC(0);  // disable CRC for max speed
+    DUAL_PRINTLN(" OK");
+    radio.setCRC(0);
 
 #ifdef ROLE_TX
-    runTX();
+    // TX mode handled in loop()
+    DUAL_PRINTLN("TX ready");
 #else
-    runRX();
-#endif
-}
-
-#ifdef ROLE_TX
-void runTX() {
-    snprintf(linebuf, sizeof(linebuf), "TX: %d packets x %d bytes", PKT_COUNT, PKT_SIZE);
-    Serial.println(linebuf);
-    Serial.println("Starting in 3 seconds...");
-    delay(3000);
-
-    uint8_t buf[PKT_SIZE];
-    uint32_t sentOk = 0, sentErr = 0;
-    uint32_t startMs = millis();
-
-    for (uint32_t i = 0; i < PKT_COUNT; i++) {
-        buf[0] = (i >> 24) & 0xFF;
-        buf[1] = (i >> 16) & 0xFF;
-        buf[2] = (i >> 8) & 0xFF;
-        buf[3] = i & 0xFF;
-        memset(buf + 4, 0xAA, PKT_SIZE - 4);
-
-        int16_t result = radio.transmit(buf, PKT_SIZE);
-        if (result == RADIOLIB_ERR_NONE) sentOk++;
-        else sentErr++;
-
-        if ((i + 1) % 500 == 0) {
-            uint32_t elapsed = millis() - startMs;
-            float kbps = (float)(i + 1) * PKT_SIZE * 8.0f / (float)elapsed;
-            snprintf(linebuf, sizeof(linebuf), "TX %lu/%lu (%.1f kbps)",
-                     (unsigned long)(i + 1), (unsigned long)PKT_COUNT, kbps);
-            Serial.println(linebuf);
-        }
-    }
-
-    uint32_t elapsedMs = millis() - startMs;
-    float elapsedSec = elapsedMs / 1000.0f;
-    float throughput = (sentOk * PKT_SIZE * 8.0f) / (elapsedSec * 1000.0f);
-
-    Serial.println("=============================================");
-    Serial.println("  TX RESULTS");
-    Serial.println("=============================================");
-    snprintf(linebuf, sizeof(linebuf), "  Sent OK:    %lu / %d", sentOk, PKT_COUNT);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Errors:     %lu", sentErr);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Elapsed:    %.2f sec", elapsedSec);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Throughput: %.1f kbps", throughput);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Per-pkt:    %.3f ms", elapsedMs / (float)sentOk);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Pkt rate:   %.1f pkt/s", sentOk / elapsedSec);
-    Serial.println(linebuf);
-    Serial.println("=============================================");
-
-    delay(100);
-    uint8_t endMarker[] = {0xDE, 0xAD, 0xBE, 0xEF};
-    radio.transmit(endMarker, 4);
-    Serial.println("TX COMPLETE - end marker sent");
-}
-#endif
-
-#ifndef ROLE_TX
-void runRX() {
-    snprintf(linebuf, sizeof(linebuf), "RX: Listening %d ms...", RX_TIMEOUT_MS);
-    Serial.println(linebuf);
     radio.setPacketReceivedAction(rxISR);
     radio.startReceive();
+    DUAL_PRINTLN("RX listening (continuous)");
+#endif
+}
 
-    uint8_t buf[PKT_SIZE + 16];
-    uint32_t rxCount = 0, rxErrors = 0;
-    uint32_t firstSeq = 0xFFFFFFFF, lastSeq = 0;
-    uint32_t startMs = millis();
-    bool gotEnd = false;
+#ifdef ROLE_TX
+// ─── TX: Continuous transmission ─────────────────────────
+void loop() {
+    static uint32_t seq = 0;
+    static uint32_t startMs = millis();
+    static uint32_t sentOk = 0;
 
-    while ((millis() - startMs) < RX_TIMEOUT_MS && !gotEnd) {
-        if (rxFlag) {
-            rxFlag = false;
-            int16_t len = radio.getPacketLength();
-            if (len > 0 && len <= (int)sizeof(buf)) {
-                int16_t state = radio.readData(buf, len);
-                if (state == RADIOLIB_ERR_NONE) {
-                    if (len >= 4 && buf[0] == 0xDE && buf[1] == 0xAD &&
-                        buf[2] == 0xBE && buf[3] == 0xEF) {
-                        gotEnd = true;
-                        break;
-                    }
-                    rxCount++;
-                    // getRSSI() is patched in RadioLib to handle FLRC mode
-                    // (stock RadioLib returns 0 for FLRC — missing dispatch branch)
-                    rssiAvgLast = radio.getRSSI();
-                    rssiSum += rssiAvgLast;
-                    if (len >= 4) {
-                        uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
-                                       ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
-                        if (firstSeq == 0xFFFFFFFF) firstSeq = seq;
-                        lastSeq = seq;
-                    }
-                    if (rxCount % 500 == 0) {
-                        uint32_t elapsed = millis() - startMs;
-                        float kbps = (float)rxCount * PKT_SIZE * 8.0f / (float)elapsed;
-                        float rssiAvg = rssiSum / rxCount;
-                        snprintf(linebuf, sizeof(linebuf),
-                            "RX %lu pkts (%.1f kbps) RSSI_avg=%.1f RSSI_sync=%.1f",
-                            rxCount, kbps, rssiAvg, rssiSyncLast);
-                        Serial.println(linebuf);
-                    }
-                } else {
-                    rxErrors++;
-                }
-            }
-            radio.startReceive();
-        }
+    uint8_t buf[PKT_SIZE];
+    buf[0] = (seq >> 24) & 0xFF;
+    buf[1] = (seq >> 16) & 0xFF;
+    buf[2] = (seq >> 8) & 0xFF;
+    buf[3] = seq & 0xFF;
+    memset(buf + 4, 0xAA, PKT_SIZE - 4);
+
+    int16_t result = radio.transmit(buf, PKT_SIZE);
+    if (result == RADIOLIB_ERR_NONE) {
+        sentOk++;
     }
+    seq++;
 
-    uint32_t elapsedMs = millis() - startMs;
-    float elapsedSec = elapsedMs / 1000.0f;
-    float throughput = (rxCount * PKT_SIZE * 8.0f) / (elapsedSec * 1000.0f);
-    long lost = (firstSeq != 0xFFFFFFFF) ? (long)(lastSeq - firstSeq + 1 - rxCount) : 0;
+    if (seq % 1000 == 0) {
+        uint32_t elapsed = millis() - startMs;
+        float kbps = (float)sentOk * PKT_SIZE * 8.0f / (float)elapsed;
+        snprintf(linebuf, sizeof(linebuf), "TX %lu pkts (%.1f kbps)", sentOk, kbps);
+        DUAL_PRINTLN(linebuf);
+    }
+}
+#else
+// ─── RX: Continuous logging with fixed RSSI ──────────────
+void loop() {
+    static uint32_t rxCount = 0;
+    static uint32_t startMs = millis();
 
-    Serial.println("=============================================");
-    Serial.println("  RX RESULTS");
-    Serial.println("=============================================");
-    snprintf(linebuf, sizeof(linebuf), "  Received:   %lu", rxCount);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Errors:     %lu", rxErrors);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Seq range:  %lu - %lu", firstSeq, lastSeq);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Lost:       %ld", lost);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Elapsed:    %.2f sec", elapsedSec);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  Throughput: %.1f kbps", throughput);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  RSSI avg:   %.1f dBm",
-             (rxCount > 0) ? (rssiSum / rxCount) : 0);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  RSSI sync:  %.1f dBm", rssiSyncLast);
-    Serial.println(linebuf);
-    snprintf(linebuf, sizeof(linebuf), "  RSSI last:  %.1f dBm", rssiAvgLast);
-    Serial.println(linebuf);
-    Serial.println("=============================================");
+    if (rxFlag) {
+        rxFlag = false;
+        int16_t len = radio.getPacketLength();
+        if (len > 0 && len <= 200) {
+            uint8_t buf[200];
+            int16_t state = radio.readData(buf, len);
+            if (state == RADIOLIB_ERR_NONE) {
+                rxCount++;
+
+                // RSSI: getRSSI() patched to dispatch to getFlrcPacketStatus for FLRC
+                float rssi = radio.getRSSI();
+
+                // Extract sequence number from first 4 bytes
+                uint32_t seq = 0;
+                if (len >= 4) {
+                    seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
+                          ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
+                }
+
+                // Output PKT format that rx_range_logger.py expects:
+                // PKT,n,seq,rssi_dbm
+                snprintf(linebuf, sizeof(linebuf), "PKT,%lu,%lu,%.0f",
+                         rxCount, seq, rssi);
+                DUAL_PRINTLN(linebuf);
+
+                // Periodic stats
+                if (rxCount % 500 == 0) {
+                    uint32_t elapsed = millis() - startMs;
+                    float kbps = (float)rxCount * PKT_SIZE * 8.0f / (float)elapsed;
+                    snprintf(linebuf, sizeof(linebuf),
+                        "STATS rx=%lu kbps=%.1f rssi_last=%.1f",
+                        rxCount, kbps, rssi);
+                    DUAL_PRINTLN(linebuf);
+                }
+            } else {
+                snprintf(linebuf, sizeof(linebuf), "ERR rx_error=%d", state);
+                DUAL_PRINTLN(linebuf);
+            }
+        }
+        radio.startReceive();
+    }
 }
 #endif
-
-void loop() {}

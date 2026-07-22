@@ -1,5 +1,17 @@
 # AGENTS.md - AI Agent Instructions
 
+## CRITICAL: CHIP IS LR2021, NOT SX1280
+
+**The RF chip is the Semtech LR2021 (Gen 4). It is NOT an SX1280.**
+
+These are completely different chips with different SPI command sets, different register maps, and different RSSI handling. The SX1280 is an older 2.4 GHz chip. The LR2021 is a 2025 dual-band chip.
+
+**NEVER write SX1280 SPI commands, register definitions, or constants.**
+**ALWAYS use RadioLib's LR2021 driver** (radio.beginFLRC, radio.beginLoRa, radio.getRSSI()).
+
+If you see 0x024B in any code — that's an SX1280 command. It's WRONG. Delete it.
+See ADR-017 for full details.
+
 ## Project Overview
 ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker AND mesh internet transport network. Solar/supercap power. Target weight: <14g (Mesh V1, night-off) or <9g (Minimal tracker).
 

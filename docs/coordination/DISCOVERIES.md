@@ -26,6 +26,13 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: forward speed-tests learnings to range-tests via DISCOVERIES.md (2026-07-22) | tags: GENERAL
+- **Commit:** `f07c812` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md
+- **Full message:** docs: forward speed-tests learnings to range-tests via DISCOVERIES.md
+- **Relevance:** GENERAL
+
+
 ### [balloon-hermes] docs: hierarchy upgrade notification template for sub-managers (2026-07-18) | tags: GENERAL
 - **Commit:** `bc4b512` by c03rad0r
 - **Files:** docs/coordination/HIERARCHY-UPGRADE-NOTIFICATION.md
