@@ -185,10 +185,14 @@ static void rfSetFreq(float mhz) {
 static void rfSetBitrate(uint16_t kbps) {
     uint8_t brBw;
     switch (kbps) {
-        case 2600: brBw = 0x00; break;
-        case 1300: brBw = 0x01; break;
-        case 650:  brBw = 0x02; break;
-        case 325:  brBw = 0x03; break;
+        case 2600: brBw = 0x00; break;  // FLRC_BR_2600
+        case 2080: brBw = 0x01; break;  // FLRC_BR_2080
+        case 1300: brBw = 0x02; break;  // FLRC_BR_1300
+        case 1040: brBw = 0x03; break;  // FLRC_BR_1040
+        case 650:  brBw = 0x04; break;  // FLRC_BR_650
+        case 520:  brBw = 0x05; break;  // FLRC_BR_520
+        case 325: brBw = 0x06; break;  // FLRC_BR_325
+        case 260:  brBw = 0x07; break;  // FLRC_BR_260
         default:   brBw = 0x00; break;
     }
     uint8_t cmd[] = { 0x02, 0x48, brBw, 0x25 };
