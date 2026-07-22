@@ -107,12 +107,16 @@ public:
 
     // ─── Low-level SPI ───────────────────────────────────────────────────
     bool waitBusy(uint32_t timeout = 100000) {
-        while ((digitalRead(pin_busy) == HIGH) && --timeout) {}
-        return timeout > 0;
+        uint32_t start = millis();
+        while ((digitalRead(pin_busy) == HIGH)) {
+            if (--timeout == 0) return false;
+            if ((millis() - start) > 500) return false; // hard 500ms cap
+        }
+        return true;
     }
 
     void writeCmd(const uint8_t *buf, size_t len) {
-        waitBusy();
+        if (!waitBusy()) return; // don't hang if BUSY stuck
         spiRf->beginTransaction(spiSettings);
         digitalWrite(pin_cs, LOW);
         for (size_t i = 0; i < len; i++) spiRf->transfer(buf[i]);
@@ -427,30 +431,30 @@ public:
     }
 
     // ─── RSSI ────────────────────────────────────────────────────────────
-    // RSSI is read from GET_RX_STATUS response (0x024B)
-    // Returns NEGATED value (proper dBm). Raw register is unsigned positive.
+    // RSSI via GET_FLRC_PACKET_STATUS (0x024B)
+    // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    // 9-bit RSSI average: (buf[4] << 1) | ((buf[6] & 0x04) >> 2), then / -2 for dBm
+    // CRITICAL: Call AFTER RX_DONE, BEFORE clearing IRQ
     int8_t getRSSI() {
         waitBusy();
         spiRf->beginTransaction(spiSettings);
         digitalWrite(pin_cs, LOW);
-        spiRf->transfer(0x02); // GET_RX_STATUS opcode hi
-        spiRf->transfer(0x4B); // GET_RX_STATUS opcode lo
+        spiRf->transfer(0x02); // GET_FLRC_PACKET_STATUS opcode hi
+        spiRf->transfer(0x4B); // opcode lo
         digitalWrite(pin_cs, HIGH);
         spiRf->endTransaction();
         waitBusy();
 
-        uint8_t buf[8];
+        uint8_t buf[7];
         spiRf->beginTransaction(spiSettings);
         digitalWrite(pin_cs, LOW);
-        for (int i = 0; i < 8; i++) buf[i] = spiRf->transfer(0x00);
+        for (int i = 0; i < 7; i++) buf[i] = spiRf->transfer(0x00);
         digitalWrite(pin_cs, HIGH);
         spiRf->endTransaction();
 
-        // RSSI is in byte 3 (offset 4-6 in status response)
-        // Format varies — byte 4 of payload after 2 status + 2 padding
-        // Based on proven raw firmware: RSSI at offset 3 in response
-        uint8_t rssi_raw = buf[3];
-        return -(int8_t)rssi_raw; // negate for dBm
+        // 9-bit RSSI: (buf[4] << 1) | ((buf[6] & 0x04) >> 2), then /2, negate
+        uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+        return -(int8_t)(raw / 2);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────
