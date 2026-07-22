@@ -57,7 +57,7 @@
 #define TX_POWER_DBM    12
 #define BURST_DELAY_MS  1000
 #define AUTO_START_MS   3000
-#define GPS_DETECT_MS   5000
+#define GPS_DETECT_MS   9000   // total detection budget (3s per baud × 3 bauds)
 
 #define SYNC_WORD_0   0x12
 #define SYNC_WORD_1   0xAD
@@ -184,36 +184,66 @@ static void gpsProcessChar(char c) {
     }
 }
 
-// Detect + populate GPS. Blocks up to GPS_DETECT_MS.
-static void gpsInit(SerialUART &gpsSerial) {
-    Serial1.println("GPS: Probing UART0 for NMEA (5s timeout)...");
-    uint32_t start = millis();
-    uint32_t lastChar = 0;
+// Detect GPS module with baud rate auto-detection.
+// Tries: 9600, 38400 (M10 default), 115200. Blocks up to GPS_DETECT_MS per baud.
+static bool tryBaud(SerialUART &gpsSerial, uint32_t baud, uint32_t timeout_ms) {
+    gpsSerial.begin(baud);
+    delay(50);
 
-    while (millis() - start < GPS_DETECT_MS) {
+    uint32_t start = millis();
+    uint32_t charCount = 0;
+
+    while (millis() - start < timeout_ms) {
         while (gpsSerial.available()) {
             char c = gpsSerial.read();
-            lastChar = millis();
+            charCount++;
             gpsProcessChar(c);
-
-            if (gpsData.present) {
-                Serial1.println("GPS: DETECTED");
-                Serial1.printf("GPS: fix=%d sats=%d lat=%.5f lon=%.5f\n",
-                               gpsData.fix, gpsData.satellites,
-                               gpsData.lat1e7 / 1e7, gpsData.lon1e7 / 1e7);
-                return;
-            }
+            if (gpsData.present) return true;
         }
-        delay(10);
+        delay(5);
+    }
+    return gpsData.present;
+}
+
+static void gpsInit(SerialUART &gpsSerial) {
+    // Baud rates to try — M10 defaults to 38400, older modules to 9600
+    const uint32_t bauds[] = {9600, 38400, 115200};
+    const int numBauds = 3;
+    uint32_t perBaudMs = GPS_DETECT_MS / numBauds;
+
+    Serial1.println("GPS: Auto-detecting baud (9600/38400/115200)...");
+
+    for (int i = 0; i < numBauds; i++) {
+        Serial1.printf("GPS: Trying %lu baud...\n", (unsigned long)bauds[i]);
+
+        // Count chars to detect if any UART data at all
+        uint32_t beforeCount = 0;
+        // We'll count via tryBaud's internal processing
+        bool found = tryBaud(gpsSerial, bauds[i], perBaudMs);
+
+        if (gpsData.present) {
+            Serial1.printf("GPS: DETECTED at %lu baud\n", (unsigned long)bauds[i]);
+            Serial1.printf("GPS: fix=%d sats=%d lat=%.5f lon=%.5f\n",
+                           gpsData.fix, gpsData.satellites,
+                           gpsData.lat1e7 / 1e7, gpsData.lon1e7 / 1e7);
+            return;
+        }
+
+        // Check if we got any raw data at this baud
+        // If we got garbage chars, the baud is wrong. If zero chars, module not connected.
     }
 
-    if (lastChar == 0) {
-        Serial1.println("GPS: No module detected (no UART data). Running without GPS.");
-    } else {
-        Serial1.println("GPS: UART data present but no valid GGA fix yet.");
-        Serial1.println("GPS: Will parse in background during TX.");
-        gpsData.present = true; // module exists, fix may come later
+    // Final check — try one more time at 9600 with longer timeout
+    // (some M10 boards ship at 9600 despite datasheet saying 38400)
+    Serial1.println("GPS: No valid GGA. Retrying 9600 baud (3s)...");
+    bool found = tryBaud(gpsSerial, 9600, 3000);
+
+    if (gpsData.present) {
+        Serial1.println("GPS: DETECTED at 9600 baud");
+        return;
     }
+
+    Serial1.println("GPS: No module detected. Running without GPS.");
 }
 
 // ─── SPI ─────────────────────────────────────────────────────────────
