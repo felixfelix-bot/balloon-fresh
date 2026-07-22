@@ -143,11 +143,15 @@ static void rfClearTxFifo() {
 
 static uint8_t bitrateToBrBw(uint16_t kbps) {
     switch (kbps) {
-        case 2600: return 0x00;
-        case 1300: return 0x01;
-        case 650:  return 0x02;
-        case 325:  return 0x03;
-        default:   return 0x00; // default 2600
+        case 2600: return 0x00;  // FLRC_BR_2600
+        case 2080: return 0x01;  // FLRC_BR_2080
+        case 1300: return 0x02;  // FLRC_BR_1300
+        case 1040: return 0x03;  // FLRC_BR_1040
+        case 650:  return 0x04;  // FLRC_BR_650
+        case 520:  return 0x05;  // FLRC_BR_520
+        case 325:  return 0x06;  // FLRC_BR_325
+        case 260:  return 0x07;  // FLRC_BR_260
+        default:   return 0x00;  // default 2600
     }
 }
 
