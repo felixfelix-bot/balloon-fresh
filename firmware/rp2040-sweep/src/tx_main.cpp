@@ -1,129 +1,72 @@
 /*
- * tx_main.cpp — Multi-mode sweep transmitter (ADR-018/019)
- * Press button (GP15) to start 55-second sweep through all 10 configs.
+ * tx_main.cpp — FLRC transmitter using LR2021Raw
+ * Fixed mode: continuous TX at 2600 kbps, 127-byte packets
+ * Link verification before multi-mode sweep
  */
 #ifdef ROLE_TX
 
+#include <Arduino.h>
+#include "LR2021Raw.h"
 #include "sweep_config.h"
-#include "radio.h"
 
-#define SWEEP_BUTTON 15
+#define PIN_SCK     2
+#define PIN_MOSI    3
+#define PIN_MISO    4
+#define PIN_CS      5
+#define PIN_BUSY    6
+#define PIN_IRQ     7
+#define PIN_RST     8
+#define PIN_UART_TX 12
+#define PIN_UART_RX 13
+#define PIN_LED     25
 
-char linebuf[256];
+LR2021Raw radio;
 
 void setup() {
     Serial.begin(115200);
-    // CRITICAL: must remap Serial1 to GP12/GP13 for ESP32 bridge
-    Serial1.setTX(12);
-    Serial1.setRX(13);
+    Serial1.setRX(PIN_UART_RX);
+    Serial1.setTX(PIN_UART_TX);
     Serial1.begin(115200);
+    pinMode(PIN_LED, OUTPUT);
     delay(2000);
 
-    pinMode(SWEEP_BUTTON, INPUT_PULLUP);
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    Serial1.println("=== SWEEP TX READY ===");
-    Serial1.println("Press GP15 button to start sweep");
-    Serial1.println("DBG: before spiRf.begin");
+    Serial1.println("\n=== FLRC TX FIXED 2600 (LR2021Raw) ===");
     Serial1.flush();
 
-    spiRf.begin();
-    Serial1.println("DBG: after spiRf.begin");
+    radio.begin(PIN_SCK, PIN_MOSI, PIN_MISO, PIN_CS, PIN_BUSY, PIN_IRQ, PIN_RST);
+    radio.initFLRC(2440.0, 2600, 12, 127, true);
+
+    Serial1.println("TX READY — continuous 2600 kbps");
     Serial1.flush();
-
-    // Initialize with FLRC 650 kbps (proven working bitrate)
-    Serial1.println("DBG: before radio init (FLRC 650)");
-    Serial1.flush();
-    int16_t state = configureRadio(SWEEP_TABLE[2]); // index 2 = FLRC_650
-    Serial1.println("DBG: after radio init");
-    Serial1.flush();
-    if (state != RADIOLIB_ERR_NONE) {
-        snprintf(linebuf, sizeof(linebuf), " FAILED: %d", state);
-        Serial1.println(linebuf);
-        // Don't hang forever — blink LED and retry
-        Serial1.println("RETRY: radio may need warm-up");
-        delay(1000);
-        state = configureRadio(SWEEP_TABLE[0]);
-        if (state != RADIOLIB_ERR_NONE) {
-            snprintf(linebuf, sizeof(linebuf), "FAILED2: %d", state);
-            Serial1.println(linebuf);
-            while (true) { digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); delay(500); }
-        }
-    }
-    Serial1.println(" Radio OK");
-}
-
-void runSweep() {
-    Serial1.println("SWEEP_START");
-
-    for (int i = 0; i < SWEEP_COUNT; i++) {
-        const SweepConfig& cfg = SWEEP_TABLE[i];
-
-        snprintf(linebuf, sizeof(linebuf), "MODE_START id=%d %s", cfg.id, cfg.name);
-        Serial1.println(linebuf);
-
-        // Configure radio for this mode
-        int16_t state = configureRadio(cfg);
-        if (state != RADIOLIB_ERR_NONE) {
-            snprintf(linebuf, sizeof(linebuf), "  CFG_ERR id=%d err=%d", cfg.id, state);
-            Serial1.println(linebuf);
-            delay(SWEEP_GUARD_MS);
-            continue;
-        }
-
-        // Transmit packets for the window duration
-        uint32_t windowStart = millis();
-        uint32_t seq = 0;
-
-        while ((millis() - windowStart) < cfg.window_ms) {
-            uint8_t pkt[SWEEP_PKT_SIZE];
-            pkt[0] = cfg.id;
-            pkt[1] = (seq >> 24) & 0xFF;
-            pkt[2] = (seq >> 16) & 0xFF;
-            pkt[3] = (seq >> 8) & 0xFF;
-            pkt[4] = seq & 0xFF;
-            uint32_t ts = millis() / 1000;
-            pkt[5] = (ts >> 24) & 0xFF;
-            pkt[6] = (ts >> 16) & 0xFF;
-            pkt[7] = (ts >> 8) & 0xFF;
-            pkt[8] = ts & 0xFF;
-            memset(pkt + 9, 0xAA, SWEEP_PKT_SIZE - 9);
-
-            radio.transmit(pkt, SWEEP_PKT_SIZE);
-            seq++;
-
-            // Yield for slow modes
-            if (cfg.mod == MOD_LORA && cfg.sf >= 11) {
-                delay(10);
-            }
-        }
-
-        snprintf(linebuf, sizeof(linebuf), "MODE_END id=%d pkts=%lu", cfg.id, seq);
-        Serial1.println(linebuf);
-
-        delay(SWEEP_GUARD_MS);
-    }
-
-    Serial1.println("SWEEP_COMPLETE");
-
-    // Re-init to first config
-    configureRadio(SWEEP_TABLE[0]);
+    delay(1000);
 }
 
 void loop() {
-    // Wait for button press (active low)
-    if (digitalRead(SWEEP_BUTTON) == LOW) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(50); // debounce
+    static uint32_t pktCount = 0;
+    static uint32_t failCount = 0;
+    static uint32_t lastReport = millis();
 
-        while (digitalRead(SWEEP_BUTTON) == LOW) { delay(10); }
-        delay(50);
+    uint8_t pkt[127];
+    pkt[0] = 0xAA; // mode marker
+    pkt[1] = (pktCount >> 24) & 0xFF;
+    pkt[2] = (pktCount >> 16) & 0xFF;
+    pkt[3] = (pktCount >> 8) & 0xFF;
+    pkt[4] = pktCount & 0xFF;
+    for (int j = 5; j < 127; j++) pkt[j] = (uint8_t)(j & 0xFF);
 
-        runSweep();
-        digitalWrite(LED_BUILTIN, LOW);
+    bool ok = radio.transmit(pkt, 127, 100000);
+    if (ok) pktCount++;
+    else failCount++;
+
+    digitalWrite(PIN_LED, pktCount & 1);
+
+    // Report every 2s
+    if (millis() - lastReport > 2000) {
+        Serial1.printf("TX: %lu pkts, %lu fails\n",
+                       (unsigned long)pktCount, (unsigned long)failCount);
+        Serial1.flush();
+        lastReport = millis();
     }
-
-    delay(10);
 }
 
 #endif

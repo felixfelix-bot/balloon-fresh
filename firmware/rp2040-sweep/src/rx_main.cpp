@@ -1,161 +1,95 @@
 /*
- * rx_main.cpp — Multi-mode sweep receiver (ADR-018/019)
- * Detects TX sweep start, switches modes in sync.
+ * rx_main.cpp — FLRC receiver using LR2021Raw
+ * Fixed mode: continuous RX at 2600 kbps, 127-byte packets
+ * Link verification before multi-mode sweep
  */
 #ifdef ROLE_RX
 
+#include <Arduino.h>
+#include "LR2021Raw.h"
 #include "sweep_config.h"
-#include "radio.h"
 
-char linebuf[256];
+#define PIN_SCK     2
+#define PIN_MOSI    3
+#define PIN_MISO    4
+#define PIN_CS      5
+#define PIN_BUSY    6
+#define PIN_IRQ     7
+#define PIN_RST     8
+#define PIN_UART_TX 12
+#define PIN_UART_RX 13
+#define PIN_LED     25
 
-bool sweepActive = false;
-uint8_t currentModeIdx = 0;
-uint32_t modeStartTime = 0;
-uint32_t rxCount = 0;
-
-void startSweep() {
-    sweepActive = true;
-    currentModeIdx = 0;
-    modeStartTime = millis();
-    rxCount = 0;
-
-    Serial1.println("SWEEP_START_RX");
-
-    int16_t state = configureRadio(SWEEP_TABLE[0]);
-    if (state == RADIOLIB_ERR_NONE) {
-        radio.setPacketReceivedAction(rxISR);
-        radio.startReceive();
-    } else {
-        snprintf(linebuf, sizeof(linebuf), "RX_INIT_ERR=%d", state);
-        Serial1.println(linebuf);
-    }
-}
-
-void nextMode() {
-    currentModeIdx++;
-    if (currentModeIdx >= SWEEP_COUNT) {
-        sweepActive = false;
-        radio.standby();
-        snprintf(linebuf, sizeof(linebuf), "SWEEP_COMPLETE_RX rx=%lu", rxCount);
-        Serial1.println(linebuf);
-
-        configureRadio(SWEEP_TABLE[0]);
-        radio.setPacketReceivedAction(rxISR);
-        radio.startReceive();
-        return;
-    }
-
-    const SweepConfig& cfg = SWEEP_TABLE[currentModeIdx];
-    snprintf(linebuf, sizeof(linebuf), "MODE_START id=%d %s", cfg.id, cfg.name);
-    Serial1.println(linebuf);
-
-    int16_t state = configureRadio(cfg);
-    if (state == RADIOLIB_ERR_NONE) {
-        radio.setPacketReceivedAction(rxISR);
-        radio.startReceive();
-    } else {
-        snprintf(linebuf, sizeof(linebuf), "RX_CFG_ERR id=%d err=%d", cfg.id, state);
-        Serial1.println(linebuf);
-    }
-    modeStartTime = millis();
-}
+LR2021Raw radio;
 
 void setup() {
     Serial.begin(115200);
-    // CRITICAL: must remap Serial1 to GP12/GP13 for ESP32 bridge
-    Serial1.setTX(12);
-    Serial1.setRX(13);
+    Serial1.setRX(PIN_UART_RX);
+    Serial1.setTX(PIN_UART_TX);
     Serial1.begin(115200);
+    pinMode(PIN_LED, OUTPUT);
     delay(2000);
 
-    Serial1.println("=== SWEEP RX READY ===");
+    Serial1.println("\n=== FLRC RX FIXED 2600 (LR2021Raw) ===");
+    Serial1.flush();
 
-    spiRf.begin();
+    radio.begin(PIN_SCK, PIN_MOSI, PIN_MISO, PIN_CS, PIN_BUSY, PIN_IRQ, PIN_RST);
+    radio.initFLRC(2440.0, 2600, 12, 127, true);
 
-    Serial1.print("Init radio FLRC_2600...");
-    int16_t state = configureRadio(SWEEP_TABLE[0]);
-    if (state != RADIOLIB_ERR_NONE) {
-        snprintf(linebuf, sizeof(linebuf), " FAILED: %d", state);
-        Serial1.println(linebuf);
-        delay(1000);
-        state = configureRadio(SWEEP_TABLE[0]);
-        if (state != RADIOLIB_ERR_NONE) {
-            snprintf(linebuf, sizeof(linebuf), "FAILED2: %d", state);
-            Serial1.println(linebuf);
-            while (true) { delay(1000); }
-        }
-    }
-    Serial1.println(" Radio OK");
+    // Configure for RX
+    radio.setDioIrq(9, IRQ_RX_DONE);
+    radio.clearIrq();
+    radio.clearRxFifo();
+    radio.setRx();
 
-    radio.setPacketReceivedAction(rxISR);
-    radio.startReceive();
-    Serial1.println("RX listening on FLRC_2600 (waiting for sweep)");
+    Serial1.println("RX LISTENING — continuous 2600 kbps");
+    Serial1.flush();
 }
 
 void loop() {
-    if (!sweepActive) {
-        // Idle: listen for TX packets on config 0
-        if (rxFlag) {
-            rxFlag = false;
-            int16_t len = radio.getPacketLength();
-            if (len >= 5) {
-                uint8_t buf[64];
-                radio.readData(buf, len);
-                uint8_t modeId = buf[0];
-                if (modeId == 0) {
-                    float rssi = radio.getRSSI();
-                    rxCount++;
-                    snprintf(linebuf, sizeof(linebuf),
-                             "PKT,%lu,%d,%.0f,%d",
-                             rxCount, 0, rssi, 0);
-                    Serial1.println(linebuf);
+    static uint32_t pktCount = 0;
+    static uint32_t lastReport = millis();
+    static int8_t lastRssi = 0;
 
-                    // Start sweep timeline
-                    startSweep();
-                    return;
-                }
-            }
-            radio.startReceive();
-        }
-        delay(1);
-        return;
-    }
+    if (digitalRead(PIN_IRQ) == HIGH) {
+        uint8_t buf[127];
+        radio.readRxFifo(buf, 127);
+        int8_t rssi = radio.getRSSI();
 
-    // Sweep active: check for mode window expiry
-    const SweepConfig& cfg = SWEEP_TABLE[currentModeIdx];
-    uint32_t elapsed = millis() - modeStartTime;
+        // Check mode marker
+        if (buf[0] == 0xAA) {
+            pktCount++;
+            lastRssi = rssi;
 
-    if (elapsed >= (cfg.window_ms + SWEEP_GUARD_MS)) {
-        nextMode();
-        return;
-    }
+            uint32_t seq = ((uint32_t)buf[1] << 24) | ((uint32_t)buf[2] << 16) |
+                           ((uint32_t)buf[3] << 8) | buf[4];
 
-    // Process received packets
-    if (rxFlag) {
-        rxFlag = false;
-        int16_t len = radio.getPacketLength();
-        if (len > 0 && len <= 64) {
-            uint8_t buf[64];
-            int16_t state = radio.readData(buf, len);
-            if (state == RADIOLIB_ERR_NONE) {
-                rxCount++;
-
-                uint8_t modeId = buf[0];
-                uint32_t seq = ((uint32_t)buf[1] << 24) |
-                               ((uint32_t)buf[2] << 16) |
-                               ((uint32_t)buf[3] << 8) |
-                               (uint32_t)buf[4];
-
-                float rssi = radio.getRSSI();
-
-                snprintf(linebuf, sizeof(linebuf),
-                         "PKT,%lu,%lu,%.0f,%d",
-                         rxCount, seq, rssi, modeId);
-                Serial1.println(linebuf);
+            if (pktCount <= 5 || pktCount % 100 == 0) {
+                Serial1.printf("PKT#%lu seq=%lu RSSI=%d dBm\n",
+                               (unsigned long)pktCount, (unsigned long)seq, rssi);
+                Serial1.flush();
             }
         }
-        radio.startReceive();
+
+        // Re-arm
+        radio.clearRxFifo();
+        radio.clearErrors();
+        radio.clearIrq();
+        radio.setRx();
+
+        digitalWrite(PIN_LED, pktCount & 1);
+    }
+
+    // Report every 2s
+    if (millis() - lastReport > 2000) {
+        if (pktCount == 0) {
+            Serial1.println("RX: 0 pkts (no signal)");
+        } else {
+            Serial1.printf("RX: %lu pkts, last RSSI=%d dBm\n",
+                           (unsigned long)pktCount, lastRssi);
+        }
+        Serial1.flush();
+        lastReport = millis();
     }
 }
 
