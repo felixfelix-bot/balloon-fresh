@@ -1,0 +1,37 @@
+PKT 100 seq=1020039395 rssi=-106 uptime=466550ms
+RX_DONE timeout
+=============================================
+  Window:   16
+  Received: 167 (unique 167, dup 0)
+  TX sent:  0
+  Lost:     4278868851 (100.00%)
+  Elapsed:  30000 ms
+  THROUGHPUT: 11.4 kbps
+  RSSI: avg=-105.7 dBm min=-107 dBm max=-105 dBm (n=167)
+=============================================
+RANGE_RESULT_RX,window=16,rx=167,unique=167,lost=4278868851,total=4278869018,per=100.00,elapsed_ms=30000,throughput_kbps=11.4,rssi_avg=-105.7,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=255,uptime_ms=450739
+RX_WINDOW 17 START uptime=481283ms listen=30000ms
+PKT 1 seq=2873366225 rssi=-106 uptime=481339ms
+PKT 2 seq=4026010792 rssi=-105 uptime=481475ms
+PKT 3 seq=2868827960 rssi=-105 uptime=481628ms
+PKT 4 seq=1034694407 rssi=-106 uptime=481747ms
+PKT 5 seq=4290044373 rssi=-105 uptime=481817ms
+PKT 100 seq=3297812743 rssi=-107 uptime=498919ms
+RX_DONE timeout
+=============================================
+  Window:   17
+  Received: 155 (unique 155, dup 0)
+  TX sent:  0
+  Lost:     4290044219 (100.00%)
+  Elapsed:  30000 ms
+  THROUGHPUT: 10.5 kbps
+  RSSI: avg=-105.6 dBm min=-107 dBm max=-104 dBm (n=155)
+=============================================
+RANGE_RESULT_RX,window=17,rx=155,unique=155,lost=4290044219,total=4290044374,per=100.00,elapsed_ms=30000,throughput_kbps=10.5,rssi_avg=-105.6,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=255,uptime_ms=481283
+RX_WINDOW 18 START uptime=511827ms listen=30000ms
+PKT 1 seq=667542926 rssi=-105 uptime=511936ms
+PKT 2 seq=1874373156 rssi=-105 uptime=511963ms
+PKT 3 seq=179858741 rssi=-104 uptime=512072ms
+PKT 4 seq=1090886436 rssi=-106 uptime=512970ms
+PKT 5 seq=1688049827 rssi=-106 uptime=513122ms
+PKT 100 seq=4130856845 rssi=-106 uptime=526706ms
