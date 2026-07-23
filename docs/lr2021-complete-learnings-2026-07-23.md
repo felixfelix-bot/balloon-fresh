@@ -1,270 +1,188 @@
-# LR2021 FLRC Complete Learnings — 2026-07-23
+# LR2021 FLRC — Complete Learnings (2026-07-24, consolidated)
 
-This document captures all technical learnings from the LR2021 FLRC range-testing
-effort. It supersedes earlier learning docs dated 2026-07-16.
-
-## 1. The FIFO Race Bug (SOLVED)
-
-### Symptom
-RX received packets but sequence numbers were garbage. TX sends seq 0, 1, 2, 3...
-RX read random 32-bit values (824152753, 2611017220, etc.). Persisted across 8+
-debugging sessions.
-
-### Root Cause
-RX polled IRQ status via SPI (`rfReadIrqStatus()`). This is a 3-byte SPI
-transaction taking ~50 microseconds. At 2600 kbps FLRC, packets arrive every
-~400 microseconds. During the SPI IRQ read, the chip would start receiving the
-next packet and overwrite the FIFO buffer before firmware finished reading.
-
-### Diagnosis Method
-Added hex dump of first 16 bytes of each received packet (`RX_DEBUG_HEX` build flag).
-Result:
-- PKT[2] had VALID data: `00 00 00 00 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F`
-  (seq=0, payload bytes incrementing from 4)
-- PKT[0,1] had garbage (FIFO already overwritten)
-- PKT[3,4] showed mid-buffer reads (same issue)
-
-### Fix
-Replace SPI IRQ polling with GPIO register read:
-```cpp
-// OLD (slow, ~50us): SPI transaction
-uint32_t irq = rfReadIrqStatus();
-if (!(irq & 0x00040000)) continue;
-
-// NEW (fast, nanoseconds): GPIO register read
-uint32_t irqMask = 1UL << PIN_IRQ;
-if (!(sio_hw->gpio_in & irqMask)) continue;
-```
-
-TX firmware already used GPIO polling successfully. RX was the only holdout.
-
-### Result
-- 0% PER at 12.5 dBm
-- 622 packets received (from 500 sent + adjacent burst bleed)
-- Correct sequence numbers 0-499
-- DEADBEEF end marker caught correctly
-- 260 kbps throughput
-
-Commit: 3dcddaf
-
-### Lesson
-**Never poll radio IRQ via SPI in a high-throughput RX loop.** The SPI transaction
-itself takes long enough for the next packet to arrive and overwrite the FIFO.
-Always use GPIO pin polling (DIO9 → RP2040 GPIO register). This is a fundamental
-timing constraint of the LR2021 at 2600 kbps.
-
-## 2. PA Discontinuity (LR2021 Power Amplifier)
-
-### Finding
-The LR2021 power amplifier is binary, not proportional:
-
-| Register Code | Requested Power | Actual RF Behavior |
-|---------------|----------------|-------------------|
-| 0-24          | 0.0-12.0 dBm   | PA bypassed. Direct output. All identical. |
-| 25            | 12.5 dBm       | PA enabled. ~43 dB RSSI jump. |
-
-### Evidence (Indoor, ~30cm)
-- 0.0 dBm: 481/500 rx, 3.8% PER, 1463 kbps
-- 3.0 dBm: 477/500 rx, 4.6% PER, 1457 kbps
-- 6.0 dBm: 481/500 rx, 3.8% PER, 1463 kbps
-- 9.0 dBm: 478/500 rx, 4.0% PER, 1458 kbps
-- 12.0 dBm: 478/500 rx, 4.2% PER, 1457 kbps
-- 12.5 dBm: 622/500 rx, ~0% PER, 260 kbps (continuous mode)
-
-PER is flat across 0-12 dBm because the PA is off. Requesting lower power just
-attenuates the baseband, not the RF output.
-
-### Implication
-For balloon use: always use 12.5 dBm (PA on) for maximum range. There is no
-benefit to lower power settings — they just waste the PA opportunity. For power
-saving, use TX duty cycling (burst + sleep) instead of power reduction.
-
-### Power Register Code
-```cpp
-// rfSetTxPower implementation
-uint8_t powerRaw = (uint8_t)(dbm * 2);  // 0.5 dBm steps
-uint8_t cmd[] = { 0x02, 0x03, powerRaw, 0x04 };
-// dbm=12.5 → powerRaw=25 → PA enabled
-// dbm=12.0 → powerRaw=24 → PA bypassed
-```
-
-## 3. RSSI Measurement (SOLVED)
-
-### Root Cause of -127 dBm Bug
-Previous sessions used SX1280 register 0x022A. The LR2021 uses a completely
-different opcode space. The SX1280 register returns garbage (always -127 dBm)
-on LR2021.
-
-### Fix
-Use LR2021 FLRC command 0x024B (GET_FLRC_PACKET_STATUS):
-```
-CS LOW → send 0x02 0x4B → CS HIGH → wait BUSY → CS LOW → read 7 bytes → CS HIGH
-Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
-9-bit RSSI: raw = (buf[4] << 1) | ((buf[6] & 0x04) >> 2)
-dBm = -(raw / 2)
-```
-
-Also added GET_RSSI_INST (0x020B) for noise floor measurement:
-```
-CS LOW → send 0x02 0x0B → CS HIGH → wait BUSY → CS LOW → read 2 bytes → CS HIGH
-9-bit RSSI: raw = (buf[0] << 1) | (buf[1] >> 7)
-dBm = -(raw / 2)
-```
-
-### Verified Results (Bench, ~30cm, 12.5 dBm TX)
-- Signal RSSI: -60 dBm (stable across 2500+ packets)
-- Noise floor: -103 to -105 dBm (TX off)
-- SNR: 43 dB (excellent link margin)
-- Noise floor matches theory: thermal noise at 2.6 MHz BW (-174 + 10log(2.6e6) = -110 dBm) + 7 dB NF = -103 dBm
-
-### RSSI Calibration
-SET_RSSI_CALIBRATION (0x0205) is NOT needed. The chip ships with default OTP
-calibration applied on reset. Our CALIBRATE + CALIB_FRONT_END commands
-sufficiently calibrate the analog front-end. Adding 0x0205 would require
-per-module factory calibration data we don't have. Accuracy: ±2-3 dBm.
-
-Commit: d85b5ea
-
-## 3b. PER Calculation Fix
-
-### Bug
-TX sends 500-pkt bursts with 2s pause. RX listens for 12s windows (sees ~3-4
-bursts). Old code used DEADBEEF marker's count field (= 500, last burst only)
-or maxSeq+1 (but seq restarts at 0 each burst). Result: always reported 100% PER.
-
-### Fix
-- DEADBEEF no longer breaks out of receive loop — continues listening
-- Tracks burstCount and accumulates totalExpected across all bursts
-- PER = lost / totalExpected (correct)
-- Added bursts=N to RESULT line
-
-## 3c. Auto Noise Floor at Boot
-
-RX firmware now measures noise floor at boot (before first RX window) using
-GET_RSSI_INST, 10 samples averaged. Printed as NOISE_FLOOR=X dBm. Included in
-RESULT line as noise_floor=X.
-
-## 3d. Packet Size Consistency Fix
-
-rp2040-range-rx-auto (flrc_range_rx_auto.cpp) used 144B while TX used 127B.
-Fixed to 127B with #ifndef guard. Both now match.
-
-## 4. SPI Interface
-
-### Working Configuration
-- SPI frequency: 20 MHz (works fine for TX FIFO write)
-- SPI frequency: 10 MHz (tested for RX, same results as 20 MHz)
-- Mode: SPI_MODE0, MSBFIRST
-- FIFO write: single-batch transfer (CS held low for entire packet)
-- FIFO read: same, opcode 0x0001 followed by data bytes
-
-### Not a Bottleneck
-SPI frequency was suspected as cause of seq corruption. Reduced to 10 MHz
-with no change. The real bottleneck was the IRQ polling method, not SPI speed.
-
-## 5. Packet Size
-
-- 127 bytes: max reliable FLRC payload. Matches proven throughput firmware.
-- 144 bytes: caused issues in earlier sessions (not the root cause, but abandoned).
-- 255 bytes: proven TX firmware used 255B TX with 127B RX. Chip handles mismatch
-  by truncating. Works but wasteful.
-
-Current standard: 127 bytes for both TX and RX.
-
-## 6. FLRC Modem Configuration (Verified Working)
-
-```
-Packet type:    FLRC (0x05)
-Frequency:      2440.0 MHz
-Bitrate:        2600 kbps (brBw=0x00)
-Coding rate:    4/5 (CR field=0x02, BT=0x05 → modParam byte=0x25)
-Preamble:       8 symbols (index 2)
-Sync word:      0x12 0xAD 0x10 0x1B (4 bytes, match=1, tx=1)
-Packet type:    Fixed length, no CRC, no header
-Payload size:   127 bytes
-```
-
-All init parameters identical between TX and RX. Verified byte-by-byte.
-
-## 7. Board Recovery
-
-### BOOTSEL Trigger Methods (in order of preference)
-1. **1200 baud serial**: Open port at 1200 baud, close. Works ~60% of time.
-2. **ESP32 GPIO loop trigger**: Flash loop firmware to paired ESP32, it pulses
-   RUN pin every 5s. Works when 1200 baud fails.
-3. **Physical BOOTSEL button**: Hold BOOTSEL while plugging USB. Always works
-   but requires physical access.
-
-### Port Swapping
-Ports (ttyACM0/2) swap when boards enter BOOTSEL mode and reboot. ALWAYS verify
-board identity by serial number:
-```bash
-udevadm info -q property /dev/ttyACMX | grep ID_SERIAL_SHORT
-```
-
-### CDC Port Death
-If radio init hangs (BUSY pin stuck), TinyUSB never gets CPU time → no CDC port.
-Recovery: BOOTSEL trigger → reflash with working firmware.
-
-## 8. Init Sequence Pitfalls
-
-### Mandatory for 2.4 GHz
-1. SET_RX_PATH (0x0201) with HF path — without this, no reception at 2.4 GHz
-2. CALIB_FRONT_END (0x0123) — image rejection calibration
-3. CLEAR_ERRORS (0x0111) before calibration — clear stale error flags
-
-### Calibration
-- CALIBRATE bitmask 0x5F (per TheClams reference). Earlier used 0x6F but bit 5
-  is undefined in datasheet.
-- After bitrate change, recalibrate (bandwidth changes with bitrate).
-
-### DIO Configuration
-- DIO9 = IRQ output (physical pin → GP7 on RP2040)
-- IRQ mapping: RX_DONE (bit 18 = 0x00040000) → DIO9
-- Must poll DIO9 via GPIO, NOT via SPI GET_IRQ_STATUS
+Cross-track knowledge from range-tests + speed-tests sessions. All findings verified on hardware unless marked UNTESTED.
 
 ---
 
-## 14. Cross-Track Learnings (from speed-tests group, 2026-07-24)
+## 1. SPI Protocol — Raw 2-Byte Opcodes (NOT RadioLib)
 
-### Verified opcode consistency
-Both groups use identical opcodes. Speed-tests handover line 174 has a typo (0x0208 for
-SET_FLRC_MOD_PARAMS) — actual firmware code uses 0x0248 everywhere, matching ours.
+LR2021 Gen 4 uses 2-byte big-endian SPI opcodes: `NSS LOW → wait BUSY LOW → [opcode_hi, opcode_lo, ...payload] → NSS HIGH`.
 
-### FLRC bitrate efficiency (speed-tests verified)
-Lower FLRC bitrates are MORE efficient (SPI overhead is constant):
+RadioLib uses 24-bit register addressing. Returns -707 or hangs. DEAD on our hardware. See ADR-020.
 
-| Bitrate | Throughput | PER  | RSSI   | Efficiency |
-|---------|-----------|------|--------|------------|
-| 2600    | 602 kbps  | 0%   | -48.8  | 23%        |
-| 1300    | 495 kbps  | 0%   | -50.7  | 38%        |
-| 650     | 317 kbps  | 0%   | -57.5  | 49%        |
-| 325     | 195 kbps  | 0%   | -51.2  | 60%        |
+Proven implementations: flrc_raw_tx.cpp, flrc_raw_rx.cpp (range-tests), flrc_bitrate_tx/rx.cpp (speed-tests).
 
-This means lower bitrates not only improve sensitivity but also throughput efficiency.
+---
 
-### LoRa mode bugs (critical for future ADR-007 implementation)
-1. **CR encoding**: LORA_CR=5 is INVALID. Valid range 1-4 (1=4/5, 2=4/6, 3=4/7, 4=4/8).
-   SF7 tolerates CR=5 silently. SF9/SF12 receive ZERO packets. Bug found by speed-tests.
-2. **RSSI/SNR byte swap in LoRa**: GET_LORA_PACKET_STATUS (0x022A) returns buf[2]=RSSI,
-   buf[3]=SNR. Speed-tests had them backwards — caused -127 dBm phantom readings.
-3. **LoRa BW codes**: 812 kHz = 0x0F (NOT 0x0A). 203 kHz = 0x0D, 406 kHz = 0x0E.
+## 2. FIFO Race Bug — The 8+ Session Killer (FIXED)
 
-### Runtime bitrate switching (UNTESTED — #1 RISK for sweep firmware)
-Speed-tests group explicitly avoided runtime bitrate changes:
-"Runtime bitrate serial commands — USB CDC dies during TX loops. Compile-time only."
-They used separate firmware per bitrate (compile-time defines).
+RX polled IRQ status via SPI (3-byte read, ~50us). At 2600 kbps, packets arrive every ~400us. During SPI read, chip starts receiving next packet and overwrites FIFO.
 
-Our sweep firmware is the FIRST attempt at runtime FLRC bitrate switching on this hardware.
-Approach is different: switch at window boundaries (between bursts), not via serial commands.
-The CDC death issue should NOT apply — we switch during idle time, not during active TX.
+Fix: Poll IRQ via GPIO (DIO9=GP7) using `sio_hw->gpio_in`. Nanosecond read. Commit 3dcddaf.
 
-STILL UNTESTED: Whether rfSwitchBitrate() actually changes the radio's operating parameters
-without requiring full re-init of all registers (frequency, sync word, packet params, etc.).
+---
 
-Verification needed: Flash sweep firmware, confirm SWEEP_SWITCH messages appear, confirm
-RSSI/PER data differs between windows at the same distance.
+## 3. RSSI Measurement (FIXED)
 
-### Baseline indoor data (speed-tests, 1-2m)
-All 4 FLRC bitrates: 0% PER at 1-2m indoor. LoRa SF7/9/12: 0-3% PER.
-These are the indoor baselines for the outdoor test — expect PER to increase with distance.
+Old sessions used SX1280 register 0x022A. Returns garbage on LR2021.
+
+Correct commands:
+- Per-packet RSSI: GET_FLRC_PACKET_STATUS (0x024B). Returns status bytes, RSSI in buf after 2 status bytes.
+- Instant/noise floor: GET_RSSI_INST (0x020B). Returns RSSI_INST in response.
+- RSSI is unsigned, negate for dBm: raw 60 = -60 dBm.
+
+Verified: -60 dBm signal at 30cm, -103 dBm noise floor. Commit d85b5ea.
+
+---
+
+## 4. PER Calculation (FIXED)
+
+TX sends 500-pkt bursts with DEADBEEF marker (pkt[0:3]=0xDEADBEEF, pkt[4:7]=count). RX sees 3-4 bursts per 12s window.
+
+Bug: Old code used last burst's count (500) as total. Actually 2000+ packets sent.
+
+Fix: Accumulate totalExpected across all DEADBEEF markers in window. PER = lost/totalExpected. Commit 7a3d150.
+
+Speed-tests had similar bug (resetStats zeroed count but seq kept climbing). Their fix: cumulativeRx field.
+
+---
+
+## 5. PA Discontinuity (LR2021 Power Amp)
+
+Register codes 0-24 (0.0-12.0 dBm): PA BYPASSED. All identical ~4% PER. RSSI -103 dBm.
+Register code 25 (12.5 dBm): PA ENABLED. 43 dB jump. RSSI -60 dBm.
+
+Power control below 12.5 dBm doesn't reduce RF output proportionally — it disables the PA.
+
+SET_TX_PARAMS (0x0203): powerRaw = dBm * 2. So 12.5 dBm → powerRaw=25.
+
+---
+
+## 6. FLRC Bitrate Efficiency (speed-tests verified)
+
+| Bitrate | Throughput | PER | RSSI (1-2m) | Efficiency |
+|---------|-----------|------|-------------|------------|
+| 2600    | 602 kbps  | 0%   | -48.8       | 23%        |
+| 1300    | 495 kbps  | 0%   | -50.7       | 38%        |
+| 650     | 317 kbps  | 0%   | -57.5       | 49%        |
+| 325     | 195 kbps  | 0%   | -51.2       | 60%        |
+
+SPI overhead is constant. Lower bitrates = smaller overhead fraction = better efficiency.
+
+---
+
+## 7. LoRa Mode Bugs (from speed-tests, for future ADR-007)
+
+### CR Encoding
+LORA_CR valid range is 1-4 (NOT 5). Index encoding: 1=4/5, 2=4/6, 3=4/7, 4=4/8.
+CR=5 encodes as (5<<4)=0x50 — invalid. SF7 tolerates silently. SF9/SF12: ZERO packets received.
+
+### RSSI/SNR Byte Swap
+GET_LORA_PACKET_STATUS (0x022A) response after 2 status bytes:
+- buf[2] = RSSI (rssiSync, dBm = -val/2)
+- buf[3] = SNR (signed, dB = val/4)
+Speed-tests had them swapped. "-127 dBm" was actually SNR 31.75 dB.
+
+### BW Codes
+812 kHz = 0x0F (NOT 0x0A). 203 kHz = 0x0D, 406 kHz = 0x0E.
+
+---
+
+## 8. SET_RX_PATH + CALIB_FRONT_END Mandatory
+
+SET_RX_PATH (0x0201): HF=1 for 2.4 GHz. MUST be called before entering RX mode.
+CALIB_FRONT_END (0x0123): MUST be called before RX or chip returns CMD_ERROR.
+
+CALIBRATE mask is 0x5F (bit 5 undefined — do NOT use 0x6F).
+
+---
+
+## 9. Opcode Reference (Verified Against Working Firmware)
+
+| Command | Opcode | Notes |
+|---------|--------|-------|
+| SET_STANDBY | 0x0200 | 0x01=STDBY_RC |
+| SET_PACKET_TYPE | 0x0207 | LoRa=0x00, FLRC=0x04 |
+| SET_TX_PARAMS | 0x0203 | powerRaw=dBm*2, ramp=0x04 |
+| SET_FLRC_MOD_PARAMS | 0x0248 | [brBw, crBt] |
+| SET_LORA_MOD_PARAMS | 0x0220 | byte0=SF/BW, byte1=CR/LDRO |
+| GET_FLRC_PACKET_STATUS | 0x024B | per-packet RSSI |
+| GET_LORA_PACKET_STATUS | 0x022A | buf[2]=RSSI, buf[3]=SNR |
+| GET_RSSI_INST | 0x020B | instant RSSI (noise floor) |
+| SET_RX_PATH | 0x0201 | HF=1 for 2.4 GHz |
+| CALIB_FRONT_END | 0x0123 | mandatory before RX |
+| CALIBRATE | 0x0122 | mask 0x5F |
+| CLEAR_IRQ | 0x020B | 0x02 = clear all |
+| SET_RX | 0x0208 | 0x00=continuous |
+
+---
+
+## 10. Runtime Bitrate Switching (UNTESTED — #1 RISK)
+
+rfSwitchBitrate() sequence: STDBY_RC → SET_FLRC_MOD_PARAMS → CALIBRATE → CLEAR_IRQ.
+
+Speed-tests group AVOIDED runtime bitrate changes. Quote: "Compile-time only. USB CDC dies during TX loops."
+
+Our sweep firmware switches between bursts (not during TX). Different approach. Whether the radio actually changes operating parameters without full re-init of all registers (frequency, sync word, packet params) is UNTESTED.
+
+**Verification**: Flash sweep firmware, confirm RSSI/PER differs between bitrate windows at same distance.
+
+---
+
+## 11. Board Management
+
+### USB Port Swaps
+RP2040 direct USB ports (ACM0/ACM2) swap on every reboot/reflash. ESP32 UART bridge ports (ACM1/ACM3) are stable but ESP32 needs its own flash procedure.
+
+### BOOTSEL Recovery
+1200 baud trigger unreliable. ESP32 loop trigger (flash bootsel-controller firmware to ESP32, it pulses GPIO to RP2040 RUN/BOOTO pins every 5s) is the reliable path.
+
+After BOOTSEL flash, ALWAYS reflash ESP32 with UART bridge firmware to stop the loop.
+
+### Flash Method (Most Reliable)
+UF2 mass storage: mount RPI-RP2 partition, copy .uf2, unmount. Board reboots automatically.
+
+picotool needs -v -x flags or silent failure.
+
+### Board Mutex
+flock-based. ALWAYS acquire/release BOTH boards atomically. Partial lock is a bug.
+```bash
+BALLOON_TRACK=range-tests python3 balloon-board-lock.py acquire both
+BALLOON_TRACK=range-tests python3 balloon-board-lock.py release both
+```
+
+---
+
+## 12. Adaptive Sweep Architecture (ADR-007 precursor)
+
+### Schedule
+4 bitrates (2600/1300/650/325 kbps), 3 min each, 12-min cycle.
+
+### Time Sync
+- GPS locked: UTC-anchored via NMEA + PPS. Both boards switch at exact same UTC boundary. Zero drift.
+- No GPS: millis()-anchored. ~5s boot skew acceptable. Mid-cycle boot support.
+
+### GPS Pins (RP2040)
+- GP0 = UART0 TX (to GPS RX, for config)
+- GP1 = UART0 RX (from GPS TX, NMEA data)
+- GP9 = PPS interrupt
+
+### Evolution Path
+Same codebase → flight firmware. GPS sync → multi-balloon TDMA. Adaptive bitrate → ADR-007 full implementation.
+
+---
+
+## 13. What Didn't Work (Complete List)
+
+1. RadioLib LR2021 driver — protocol mismatch, -707 errors
+2. SPI IRQ polling during high-rate RX — FIFO race
+3. SX1280 RSSI register on LR2021 — garbage values
+4. Batch SPI (FIFO+SET_TX combined) — needs CS HIGH between commands
+5. Runtime serial commands during TX — USB CDC dies
+6. picotool without -v -x — silent flash failures
+7. ESP32 flash at 0x0 only — corrupts bootloader, must flash 3 files
+8. picotool dual-device targeting — --address flag broken
+9. Direct USB port mapping — swaps on every reboot
+10. Subagent delegation for HW tasks — 300s timeout too short for captures
+11. CR=5 in LoRa — invalid, SF9/SF12 get zero packets
+12. RSSI/SNR byte swap — plausible but wrong numbers
