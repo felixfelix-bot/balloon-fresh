@@ -35,8 +35,12 @@
 // ─── FLRC Config ─────────────────────────────────────────────────────
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_BR         2600
+#ifndef FLRC_PKT_SIZE
 #define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     16000000UL
+#endif
+#ifndef SPI_FREQ_HZ
+#define SPI_FREQ_HZ     20000000UL
+#endif
 #define XTAL_MHZ        52.0f
 
 #define RX_LISTEN_MS    12000
