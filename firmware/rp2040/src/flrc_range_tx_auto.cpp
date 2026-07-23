@@ -46,7 +46,7 @@
 #endif
 #define TX_PKT_SIZE     144
 #ifndef TX_POWER_DBM
-#define TX_POWER_DBM    12.0f
+#define TX_POWER_DBM    12.5f
 #endif
 #define TX_PKT_COUNT    500
 #define TX_PAUSE_MS     2000
@@ -364,6 +364,12 @@ void setup() {
     Serial1.begin(115200);
     delay(100);
 
+    // Print BEFORE radio init — if radio hangs, USB CDC stays alive for recovery
+    dualPrintln();
+    dualPrintln("=== RP2040 FLRC RANGE TX (AUTONOMOUS) ===");
+    dualPrintf("Config: freq=%.1f br=%d pktSize=%d power=%.1f count=%d",
+               TX_FREQ_MHZ, TX_BITRATE_KBPS, TX_PKT_SIZE, TX_POWER_DBM, TX_PKT_COUNT);
+
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
 
@@ -374,11 +380,6 @@ void setup() {
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);
         delay(250);
     }
-
-    dualPrintln();
-    dualPrintln("=== RP2040 FLRC RANGE TX (AUTONOMOUS) ===");
-    dualPrintf("Config: freq=%.1f br=%d pktSize=%d power=%.1f count=%d",
-               TX_FREQ_MHZ, TX_BITRATE_KBPS, TX_PKT_SIZE, TX_POWER_DBM, TX_PKT_COUNT);
 
     spiRf.begin();
     pinMode(PIN_CS, OUTPUT);
@@ -404,14 +405,22 @@ void setup() {
     }
 }
 
+static unsigned long lastHB = 0;
+
 void loop() {
     if (radioReady) {
         runTransmit();
         delay(TX_PAUSE_MS);
+        // Heartbeat to keep USB CDC alive (prevents 1200 baud recovery failure)
+        if (millis() - lastHB > 3000) {
+            lastHB = millis();
+            dualPrintf("[TX HB %lus] burst=%d", millis() / 1000, burstNum);
+        }
     } else {
-        // Blink SOS if radio dead
+        // Blink SOS if radio dead + heartbeat so USB CDC stays alive
         digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(100);
         digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(100);
         digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(500);
+        dualPrintf("[TX DEAD %lus]", millis() / 1000);
     }
 }
