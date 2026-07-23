@@ -1,12 +1,19 @@
 /*
  * dual_radio_sweep_rx.cpp — Dual-radio sweep RX for LR2021 balloon range test
  *
- * RX counterpart to dual_radio_sweep_tx.cpp. Same 4-mode 12-minute cycle:
+ * RX counterpart to dual_radio_sweep_tx.cpp. Same 11-mode 22-minute cycle:
  *
- *   MODE 0 (0-3min):  HF FLRC 2600 kbps @ 2440 MHz (pin 10)
- *   MODE 1 (3-6min):  HF FLRC 325 kbps  @ 2440 MHz (pin 10)
- *   MODE 2 (6-9min):  LF LoRa SF7       @ 868 MHz  (pin 9)
- *   MODE 3 (9-12min): LF LoRa SF12      @ 868 MHz  (pin 9)
+ *   MODE  0 (0-2min):   HF FLRC 2600 kbps @ 2440 MHz (pin 10)
+ *   MODE  1 (2-4min):   HF FLRC 1300 kbps @ 2440 MHz (pin 10)
+ *   MODE  2 (4-6min):   HF FLRC 650 kbps  @ 2440 MHz (pin 10)
+ *   MODE  3 (6-8min):   HF FLRC 325 kbps  @ 2440 MHz (pin 10)
+ *   MODE  4 (8-10min):  HF LoRa SF7       @ 2440 MHz (pin 10)
+ *   MODE  5 (10-12min): HF LoRa SF9       @ 2440 MHz (pin 10)
+ *   MODE  6 (12-14min): HF LoRa SF12      @ 2440 MHz (pin 10)
+ *   MODE  7 (14-16min): LF LoRa SF7       @ 868 MHz  (pin 9)
+ *   MODE  8 (16-18min): LF LoRa SF9       @ 868 MHz  (pin 9)
+ *   MODE  9 (18-20min): LF LoRa SF12      @ 868 MHz  (pin 9)
+ *   MODE 10 (20-22min): LF FLRC 2600 kbps @ 868 MHz  (pin 9)
  *
  * Shares pins, SPI helpers, mode definitions, and initMode with TX.
  * Adds RX-specific: rfSetRx, rfReadRxFifo, rfReadRssiFlrc, rfReadRssiLora.
@@ -36,7 +43,9 @@
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_SIZE     127
+#ifndef TX_POWER_DBM
 #define TX_POWER_DBM    12.5f
+#endif
 
 // FLRC sync word — MUST match TX
 #define SYNC_WORD_0   0x12
@@ -44,8 +53,8 @@
 #define SYNC_WORD_2   0x10
 #define SYNC_WORD_3   0x1B
 
-#define MODE_DURATION_MS  (3UL * 60UL * 1000UL)  // 3 minutes per mode
-#define NUM_MODES         4
+#define MODE_DURATION_MS  (2UL * 60UL * 1000UL)  // 2 minutes per mode
+#define NUM_MODES         11
 
 // ─── Mode definitions ────────────────────────────────────────────────
 struct RadioMode {
@@ -55,17 +64,28 @@ struct RadioMode {
     float freqMhz;
     uint16_t flrcBitrate; // FLRC only
     uint8_t loraSf;       // LoRa only
-    uint8_t loraBwCode;   // LoRa only (0x0D=203kHz, 0x0E=406kHz, 0x0F=812kHz)
+    uint8_t loraBwCode;   // LoRa only (0x05=250kHz, 0x0D=203kHz, 0x0E=406kHz, 0x0F=812kHz)
     uint8_t loraCr;       // LoRa only (1=4/5, 2=4/6, ...)
     uint16_t txPktCount;  // packets per burst
     uint32_t txPauseMs;   // pause between bursts
 };
 
 static const RadioMode modes[NUM_MODES] = {
+    // HF FLRC (2.4 GHz, pin 10) — 4 bitrates
     {"HF_FLRC_2600", true,  true,  2440.0f, 2600, 0,  0,    0, 500, 2000},
+    {"HF_FLRC_1300", true,  true,  2440.0f, 1300, 0,  0,    0, 500, 2000},
+    {"HF_FLRC_650",  true,  true,  2440.0f, 650,  0,  0,    0, 500, 2000},
     {"HF_FLRC_325",  true,  true,  2440.0f, 325,  0,  0,    0, 500, 2000},
-    {"LF_LORA_SF7",  false, false, 868.0f,  0,    7,  0x0F, 1, 50,  2000},
-    {"LF_LORA_SF12", false, false, 868.0f,  0,    12, 0x0D, 1, 50,  2000},
+    // HF LoRa (2.4 GHz, pin 10) — 3 spreading factors
+    {"HF_LORA_SF7",  false, true,  2440.0f, 0,    7,  0x0F, 1, 50,  2000},
+    {"HF_LORA_SF9",  false, true,  2440.0f, 0,    9,  0x0F, 1, 50,  2000},
+    {"HF_LORA_SF12", false, true,  2440.0f, 0,    12, 0x0F, 1, 50,  2000},
+    // LF LoRa (868 MHz, pin 9) — 3 spreading factors
+    {"LF_LORA_SF7",  false, false, 868.0f,  0,    7,  0x05, 1, 50,  2000},  // BW=250kHz for LF
+    {"LF_LORA_SF9",  false, false, 868.0f,  0,    9,  0x05, 1, 50,  2000},
+    {"LF_LORA_SF12", false, false, 868.0f,  0,    12, 0x05, 1, 50,  2000},
+    // LF FLRC (868 MHz, pin 9) — feasibility test, may not be supported
+    {"LF_FLRC_2600", true,  false, 868.0f,  2600, 0,  0,    0, 500, 2000},
 };
 
 // ─── SPI (VERBATIM from dual_radio_sweep_tx.cpp) ─────────────────────
@@ -182,9 +202,32 @@ static uint8_t flrcBitrateToCode(uint16_t kbps) {
 // ─── LoRa LDRO computation (VERBATIM) ────────────────────────────────
 static uint8_t computeLdro(uint8_t sf, uint8_t bwCode) {
     float bwHz = (bwCode == 0x0D) ? 203125.0f :
-                 (bwCode == 0x0E) ? 406250.0f : 812500.0f;
+                 (bwCode == 0x0E) ? 406250.0f :
+                 (bwCode == 0x05) ? 250000.0f : 812500.0f;
     float symTimeMs = (float)(1UL << sf) / bwHz * 1000.0f;
     return (symTimeMs > 16.0f) ? 1 : 0;
+}
+
+// ─── Unified CSV field helpers ───────────────────────────────────────
+static const char* getPath(const RadioMode& m) {
+    if (m.isHF && m.isFlrc)  return "HF_FLRC";
+    if (m.isHF && !m.isFlrc) return "HF_LORA";
+    if (!m.isHF && m.isFlrc) return "LF_FLRC";
+    return "LF_LORA";  // !isHF && !isFlrc
+}
+
+static const char* getPaState() {
+    return (TX_POWER_DBM >= 12.5f) ? "ON" : "OFF";
+}
+
+static int getBandwidthKhz(const RadioMode& m) {
+    if (m.isFlrc) return m.flrcBitrate;  // FLRC BW ≈ bitrate
+    switch (m.loraBwCode) {
+        case 0x0D: return 203;
+        case 0x0E: return 406;
+        case 0x05: return 250;
+        default:   return 812;  // 0x0F
+    }
 }
 
 // ═══ RX-SPECIFIC FUNCTIONS ═══════════════════════════════════════════
@@ -241,7 +284,7 @@ static int16_t rfReadRssiFlrc() {
 // GET_LORA_PACKET_STATUS = 0x022A
 // buf[2] = RSSI raw → dBm = -(val / 2)
 // buf[3] = SNR → dB = buf[3]<128 ? buf[3]/4 : (buf[3]-256)/4
-static int16_t rfReadRssiLora() {
+static int16_t rfReadRssiLora(int16_t *snrOut = nullptr) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
@@ -259,6 +302,11 @@ static int16_t rfReadRssiLora() {
     spiRf.transfer(dummy, buf, 5);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
+
+    // buf[3] = SNR raw: signed, divide by 4
+    if (snrOut) {
+        *snrOut = buf[3] < 128 ? (int16_t)(buf[3] / 4) : (int16_t)((buf[3] - 256) / 4);
+    }
 
     // buf[2] = RSSI raw → dBm = -(val / 2)
     return -(int16_t)(buf[2] / 2);
@@ -295,6 +343,8 @@ struct ModeStats {
     int16_t  rssiMin;
     int16_t  rssiMax;
     uint16_t rssiCount;
+    int32_t  snrSum;
+    uint16_t snrCount;
     uint32_t startMs;
 };
 
@@ -309,6 +359,8 @@ static void resetModeStats(int mode) {
     s.rssiMin   = 0;       // first negative RSSI will be < 0, updating it
     s.rssiMax   = -128;    // first RSSI will be > -128, updating it
     s.rssiCount = 0;
+    s.snrSum    = 0;
+    s.snrCount  = 0;
     s.startMs   = millis();
 }
 
@@ -318,21 +370,24 @@ static void printModeResult(int mode) {
     ModeStats& s = modeStats[mode];
     float rssiAvg = (s.rssiCount > 0)
                     ? ((float)s.rssiSum / (float)s.rssiCount) : 0.0f;
+    float snrAvg = (s.snrCount > 0)
+                   ? ((float)s.snrSum / (float)s.snrCount) : 0.0f;
+    int bwKhz = getBandwidthKhz(m);
 
     if (m.isFlrc) {
-        dualPrintf("SWEEP_RX_RESULT,mode=%d,type=FLRC,freq=%.0f,bitrate=%d,received=%lu,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d,max_seq=%lu,start_ms=%lu",
+        dualPrintf("SWEEP_RX_RESULT,mode=%d,type=FLRC,freq=%.0f,bitrate=%d,received=%lu,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d,max_seq=%lu,start_ms=%lu,path=%s,pa_state=%s,bandwidth_khz=%d,snr_avg=NA",
                    mode, m.freqMhz, m.flrcBitrate,
                    (unsigned long)s.received, rssiAvg,
                    (int)s.rssiMin, (int)s.rssiMax,
-                   (unsigned long)s.maxSeq, (unsigned long)s.startMs);
+                   (unsigned long)s.maxSeq, (unsigned long)s.startMs,
+                   getPath(m), getPaState(), bwKhz);
     } else {
-        int bwKhz = (m.loraBwCode == 0x0D) ? 203 :
-                    (m.loraBwCode == 0x0E) ? 406 : 812;
-        dualPrintf("SWEEP_RX_RESULT,mode=%d,type=LoRa,freq=%.0f,SF=%d,bw=%d,received=%lu,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d,max_seq=%lu,start_ms=%lu",
+        dualPrintf("SWEEP_RX_RESULT,mode=%d,type=LoRa,freq=%.0f,SF=%d,bw=%d,received=%lu,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d,max_seq=%lu,start_ms=%lu,path=%s,pa_state=%s,bandwidth_khz=%d,snr_avg=%.1f",
                    mode, m.freqMhz, m.loraSf, bwKhz,
                    (unsigned long)s.received, rssiAvg,
                    (int)s.rssiMin, (int)s.rssiMax,
-                   (unsigned long)s.maxSeq, (unsigned long)s.startMs);
+                   (unsigned long)s.maxSeq, (unsigned long)s.startMs,
+                   getPath(m), getPaState(), bwKhz, snrAvg);
     }
 }
 
@@ -476,8 +531,9 @@ static void pollRx() {
     uint8_t buf[TX_PKT_SIZE];
     rfReadRxFifo(buf, TX_PKT_SIZE);
 
-    // Read RSSI (mode-specific)
-    int16_t rssi = modes[currentMode].isFlrc ? rfReadRssiFlrc() : rfReadRssiLora();
+    // Read RSSI (mode-specific); LoRa also extracts SNR
+    int16_t snr = 0;
+    int16_t rssi = modes[currentMode].isFlrc ? rfReadRssiFlrc() : rfReadRssiLora(&snr);
 
     // Re-arm RX for next packet
     rfSetRx();
@@ -498,6 +554,11 @@ static void pollRx() {
     s.rssiCount++;
     if (rssi < s.rssiMin) s.rssiMin = rssi;
     if (rssi > s.rssiMax) s.rssiMax = rssi;
+    // Track SNR for LoRa modes
+    if (!modes[currentMode].isFlrc) {
+        s.snrSum += snr;
+        s.snrCount++;
+    }
 
     // Extract big-endian seq from first 4 bytes
     uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
@@ -532,8 +593,8 @@ void setup() {
     dualPrintln("=========================================");
     dualPrintln("=== RP2040 DUAL RADIO SWEEP RX       ===");
     dualPrintln("=========================================");
-    dualPrintf("Modes: 0=FLRC2600 1=FLRC325 2=LoRaSF7 3=LoRaSF12");
-    dualPrintf("Cycle: %d min (%d min per mode)", NUM_MODES * 3, 3);
+    dualPrintf("Modes: 0=FLRC2600 1=FLRC1300 2=FLRC650 3=FLRC325 4=LoRaSF7 5=LoRaSF9 6=LoRaSF12 7=LF_SF7 8=LF_SF9 9=LF_SF12 10=LF_FLRC");
+    dualPrintf("Cycle: %d min (%d min per mode)", NUM_MODES * 2, 2);
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
@@ -560,6 +621,8 @@ void setup() {
         modeStats[i].rssiMin   = 0;
         modeStats[i].rssiMax   = -128;
         modeStats[i].rssiCount = 0;
+        modeStats[i].snrSum    = 0;
+        modeStats[i].snrCount  = 0;
         modeStats[i].startMs   = 0;
     }
 
