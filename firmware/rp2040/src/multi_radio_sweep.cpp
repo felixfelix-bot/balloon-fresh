@@ -105,15 +105,21 @@ static void rfWriteCmd(const uint8_t *cmd, size_t len) {
 
 static uint32_t rfReadIrqStatus() {
     rfWaitBusy();
-    uint8_t cmd[6] = {0x01, 0x16, 0, 0, 0, 0};
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x01); spiRf.transfer(0x17);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
     uint8_t buf[6] = {0};
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(cmd, buf, 6);
+    for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    return ((uint32_t)buf[3] << 24) | ((uint32_t)buf[4] << 16) |
-           ((uint32_t)buf[5] << 8);
+    return ((uint32_t)buf[2] << 24) | ((uint32_t)buf[3] << 16) |
+           ((uint32_t)buf[4] << 8) | (uint32_t)buf[5];
 }
 
 static uint8_t rfReadStatus() {
@@ -147,9 +153,9 @@ static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x00);  // read flag
+    spiRf.transfer(0x00);
     spiRf.transfer(0x02);  // WRITE_TX_FIFO
-    spiRf.transfer(data, nullptr, len);
+    for (size_t i = 0; i < len; i++) spiRf.transfer(data[i]);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
@@ -354,18 +360,17 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
         rfWriteTxFifo(txBuf, pktSize);
         rfSetTx();
 
-        // Wait for TX_DONE IRQ
-        uint32_t dead = millis() + 5000;
-        while (millis() < dead) {
-            uint32_t irq = rfReadIrqStatus();
-            if (irq & 0x00080000) break; // TX_DONE
+        // Wait for TX_DONE — poll DIO9 GPIO pin (proven method from lora_range_tx.cpp)
+        uint32_t irqPinMask = 1UL << PIN_IRQ;
+        uint32_t spinCount = 0;
+        bool irqFired = false;
+        while (spinCount < 30000000) {
+            if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
+            spinCount++;
         }
 
-        if (millis() >= dead) {
-            timeout++;
-        } else {
-            sent++;
-        }
+        if (irqFired) sent++;
+        else timeout++;
 
         digitalWrite(PIN_LED, (i & 1) ? HIGH : LOW);
 
@@ -403,32 +408,38 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
 
     Serial.printf("PHASE_RX %d %s listening=%lums\n", phaseIdx, p.name, slotBudget);
 
+    uint32_t irqPinMask = 1UL << PIN_IRQ;
+
     while ((millis() - startMs) < slotBudget) {
-        uint32_t irq = rfReadIrqStatus();
-        if (irq & 0x00200000) {
-            // CRC error
-            crcErrors++;
-            rfClearIrq();
-            rfSetRx();
-            continue;
-        }
-        if (irq & 0x00040000) {
-            // RX_DONE
-            rfReadRxFifo(rxBuf, pktSize);
-            received++;
-
-            uint16_t seq = ((uint16_t)rxBuf[0] << 8) | rxBuf[1];
-            lastSeq = seq;
-
-            if (p.pktType == PT_LORA) {
-                int16_t rssi = rfGetLoraRssi();
-                rssiSum += rssi;
-                rssiCount++;
+        // Poll DIO9 IRQ pin (proven method, not SPI register read)
+        if (sio_hw->gpio_in & irqPinMask) {
+            // IRQ fired — check what happened via SPI
+            uint32_t irq = rfReadIrqStatus();
+            if (irq & 0x00200000) {
+                // CRC error
+                crcErrors++;
+                rfClearIrq();
+                rfSetRx();
+                continue;
             }
+            if (irq & 0x00040000) {
+                // RX_DONE
+                rfReadRxFifo(rxBuf, pktSize);
+                received++;
 
-            rfClearRxFifo();
-            rfClearIrq();
-            rfSetRx();
+                uint16_t seq = ((uint16_t)rxBuf[0] << 8) | rxBuf[1];
+                lastSeq = seq;
+
+                if (p.pktType == PT_LORA) {
+                    int16_t rssi = rfGetLoraRssi();
+                    rssiSum += rssi;
+                    rssiCount++;
+                }
+
+                rfClearRxFifo();
+                rfClearIrq();
+                rfSetRx();
+            }
         }
     }
 
@@ -449,6 +460,7 @@ void setup() {
 
     pinMode(PIN_CS, OUTPUT);
     pinMode(PIN_RST, OUTPUT);
+    pinMode(PIN_IRQ, INPUT);
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
