@@ -280,3 +280,27 @@ python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both --force
 
 ### Track Identity
 Always set `BALLOON_TRACK=range-tests` (or your track name) so others can see who holds the lock.
+
+### MANDATORY: Use BoardSerial, NOT serial.Serial()
+
+**All scripts accessing /dev/ttyACM* MUST use the BoardSerial wrapper.**
+Raw `serial.Serial()` calls BYPASS the lock and cause concurrent access bugs.
+
+```python
+# WRONG — bypasses lock, causes conflicts:
+import serial
+ser = serial.Serial('/dev/ttyACM0', 115200)
+
+# CORRECT — enforces lock:
+import sys
+sys.path.insert(0, str(__import__('pathlib').Path.home() / 'repos' / 'balloon-fresh' / 'tools'))
+from board_serial import BoardSerial
+ser = BoardSerial('/dev/ttyACM0', 115200)
+```
+
+**Pre-flight assertion** — call this at the top of every test script:
+```bash
+python3 ~/repos/balloon-fresh/tools/board-lock-assert.py tx rx || exit 1
+```
+
+Scripts found using raw `serial.Serial()` on board ports are BUGS.
