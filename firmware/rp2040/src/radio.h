@@ -48,4 +48,9 @@ bool radio_poll_irq(void);
 void radio_clear_irq_flag(void);
 PinTestResult radio_pin_selftest(void);
 
+// Switch FLRC bitrate at runtime without full chip reset.
+// Handles STDBY → MOD_PARAMS → CALIBRATE → CLEAR_IRQ sequence.
+// newBitrate: one of 2600, 2080, 1300, 1040, 650, 520, 325, 260 (kbps).
+void rfSwitchBitrate(uint16_t newBitrate);
+
 #endif
