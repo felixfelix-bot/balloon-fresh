@@ -43,7 +43,7 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
-#define SPI_FREQ_HZ     16000000UL
+#define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
 
 #define RX_LISTEN_MS    15000
@@ -342,8 +342,8 @@ static void runReceive() {
             dualPrintln("RX_DONE silence"); break;
         }
 
-        uint32_t irq = rfReadIrqStatus();
-        if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
+        // Hardware pin poll — matches proven LR2021Raw.h receive()
+        if (digitalRead(PIN_IRQ) == LOW) continue;
 
         // Read packet
         rfReadFifo(buf, pktSize);
