@@ -18,6 +18,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "pico/bootrom.h"
+// sio_hw is available via earlephilhower core (rp2040/pico.h)
 
 // ─── Pins ────────────────────────────────────────────────────────────
 #define PIN_SCK     2
@@ -308,23 +309,35 @@ static void runReceive() {
             dualPrintln("RX_DONE silence"); break;
         }
 
-        // Poll IRQ via SPI — GET_AND_CLEAR_IRQ_STATUS (0x0117)
-        uint32_t irq = rfReadIrqStatus();
-        if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
+        // Poll IRQ via GPIO (nanoseconds) — NOT SPI (microseconds, loses packets)
+        // DIO9 = GP7. When RX_DONE fires, DIO9 goes HIGH.
+        uint32_t irqMask = 1UL << PIN_IRQ;
+        if (!(sio_hw->gpio_in & irqMask)) continue;  // no IRQ yet
 
-        // Read packet from FIFO (no status bytes — LR2021 READ_RX_FIFO)
+        // READ FIFO IMMEDIATELY — before chip receives next packet
         rfReadFifo(buf, FLRC_PKT_SIZE);
 
-        // Clear RX FIFO + CLEAR_ERRORS + re-arm RX
+        // Now clear FIFO + errors + re-arm RX (minimize dead time)
         { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }  // CLEAR_RX_FIFO
         rfWaitBusy();
-        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }  // CLEAR_ERRORS
         rfClearIrq();
         rfSetRx();
 
         // Extract big-endian seq
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
+
+#ifdef RX_DEBUG_HEX
+        // Full 16-byte hex dump for first 5 packets
+        if (stats.received < 5) {
+            dualPrintf("PKT[%lu] RAW16: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+                (unsigned long)stats.received,
+                buf[0], buf[1], buf[2], buf[3],
+                buf[4], buf[5], buf[6], buf[7],
+                buf[8], buf[9], buf[10], buf[11],
+                buf[12], buf[13], buf[14], buf[15]);
+        }
+#endif
 
         // DEADBEEF end marker
         if (buf[0] == 0xDE && buf[1] == 0xAD &&
