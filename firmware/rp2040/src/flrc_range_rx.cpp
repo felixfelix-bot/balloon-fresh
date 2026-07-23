@@ -342,8 +342,12 @@ static void runReceive() {
             dualPrintln("RX_DONE silence"); break;
         }
 
-        // Hardware pin poll — matches proven LR2021Raw.h receive()
-        if (digitalRead(PIN_IRQ) == LOW) continue;
+        // SPI IRQ poll — matches proven range-rx-auto (working, 0% PER)
+        uint32_t irq = rfReadIrqStatus();
+        if (!(irq & 0x00040000)) {
+            // No RX_DONE — check serial for commands, then continue
+            continue;
+        }
 
         // Read packet
         rfReadFifo(buf, pktSize);
@@ -359,7 +363,10 @@ static void runReceive() {
         { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }
         rfWaitBusy();
         { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
+        rfWaitBusy();
         rfClearIrq();
+        rfWaitBusy();
+        delayMicroseconds(50);
         rfSetRx();
 
         // Extract big-endian seq
