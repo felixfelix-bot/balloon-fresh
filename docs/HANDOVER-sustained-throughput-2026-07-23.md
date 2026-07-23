@@ -35,7 +35,7 @@ The range-testing track has achieved a working FLRC link with verified results:
 
 **AND:** Only FLRC 2600 kbps has been tested. The LR2021 supports 4 modulations across ~4 orders of magnitude in throughput. We need the FULL dynamic range characterized.
 
-**The speed group's job:** Measure SUSTAINED throughput across ALL modulation modes and bitrates, using log-spaced sampling to cover the full dynamic range efficiently.
+**The speed group's job:** Measure SUSTAINED throughput across ALL modulation modes and bitrates, using binary-step sampling to cover the full dynamic range efficiently.
 
 ---
 
@@ -62,7 +62,19 @@ You (the speed track) have been working on breaking the 1391 kbps ceiling by opt
 
 ---
 
-## Full-Spectrum Sweep Design
+## Binary-Step Sweep Methodology
+
+### The Principle
+
+We use the same binary/exponential step approach as our range tests. For distance, we step 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024m — covering 1024:1 range with just 10 points instead of 1024 linear steps.
+
+**Applied to throughput:** The LR2021's full throughput dynamic range spans ~4 orders of magnitude (2600 kbps down to ~0.5 kbps = 5200:1). Instead of testing every available config (50+ points, hours of testing), we binary-step across the range with ~8 points.
+
+**Key advantages:**
+- log(N) points instead of N — covers full range efficiently
+- Each step roughly halves throughput — catches non-monotonic behavior
+- If any point shows anomalous results, add intermediate point (binary refinement)
+- No wasted linear coverage in between
 
 ### The Full Dynamic Range
 
@@ -75,59 +87,64 @@ LR2021 supports 4 modulation types. Throughput spans ~4 orders of magnitude:
 | FLRC 650 | BR=0x04, BT0.5 | 1.56 ms | 650 kbps | Tradeoff speed/range |
 | FLRC 325 | BR=0x06, BT0.5 | 3.12 ms | 325 kbps | Max FLRC range |
 | LoRa SF5 BW1625 | Fastest LoRa | ~2.5 ms | ~400 kbps | Fast LoRa, medium range |
-| LoRa SF7 BW812 | Medium LoRa | ~8 ms | ~125 kbps | Medium range telemetry |
-| LoRa SF9 BW406 | Long LoRa | ~40 ms | ~25 kbps | Long range telemetry |
+| LoRa SF7 BW812 | Medium LoRa | ~8 ms | ~50 kbps | Medium range telemetry |
+| LoRa SF9 BW406 | Long LoRa | ~40 ms | ~12 kbps | Long range telemetry |
 | LoRa SF12 BW203 | Max LoRa | ~2000 ms | ~0.5 kbps | Max range, balloon-to-ground |
-| GFSK 1000 | Fast FSK | ~1.0 ms | ~1000 kbps | Alternative to FLRC |
-| GFSK 50 | Slow FSK | ~20 ms | ~20 kbps | Low-power fallback |
+| GFSK 1000 | Fast FSK | ~1.0 ms | ~1000 kbps | Alternative to FLRC (optional) |
+| GFSK 50 | Slow FSK | ~20 ms | ~20 kbps | Low-power fallback (optional) |
 
-### Log-Spaced Sampling Strategy
+### Binary-Step Sweep Design
 
-**DO NOT test every possible combination.** The LR2021 has 8 FLRC bitrates, 8 LoRa spreading factors × 5 bandwidths, and many GFSK options. Testing all would take hours.
+Treat ALL modulations as one continuous throughput axis. Binary-step across it. The modulation type is just the mechanism to hit each throughput point.
 
-Instead, use **log-spaced sampling** — pick points that span the full dynamic range with ~factor-2 to factor-4 spacing:
+| Step | Config | Throughput | Step ratio | Cumulative range |
+|------|--------|-----------|-----------|-----------------|
+| 1 | FLRC 2600 | 2600 kbps | — | 1× |
+| 2 | FLRC 1300 | 1300 kbps | ÷2 | 2× |
+| 3 | FLRC 650 | 650 kbps | ÷2 | 4× |
+| 4 | FLRC 325 | 325 kbps | ÷2 | 8× |
+| 5 | LoRa SF5 BW1625 | ~400 kbps | ÷0.8 (overlap!) | 6.5× |
+| 6 | LoRa SF7 BW812 | ~50 kbps | ÷8 | 52× |
+| 7 | LoRa SF9 BW406 | ~12 kbps | ÷4 | 217× |
+| 8 | LoRa SF12 BW203 | ~0.5 kbps | ÷24 | 5200× |
 
-**FLRC sweep (factor-2 steps, 4 points):**
-- 2600 → 1300 → 650 → 325 kbps
-- Covers 8:1 throughput range
-- All use same firmware, just change `RX_BITRATE_KBPS` and `TX_BITRATE_KBPS`
+**8 points, 5200:1 range, ~20 min total.**
 
-**LoRa sweep (factor-4 steps in airtime, 4 points):**
-- SF5 BW1625 (fastest, ~2.5ms/pkt)
-- SF7 BW812 (~8ms/pkt)
-- SF9 BW406 (~40ms/pkt)
-- SF12 BW203 (slowest, ~2000ms/pkt)
-- Covers ~800:1 airtime range
-- Needs new LoRa firmware (different init sequence from FLRC)
+**Interesting wrinkle:** FLRC 325 (325 kbps) and LoRa SF5 BW1625 (~400 kbps) OVERLAP in throughput. FLRC 325 is actually SLOWER than fastest LoRa. The modulation boundary isn't a clean throughput boundary — there's a crossover zone where both modulations offer similar rates but different sensitivity characteristics. This overlap is important for the adaptive protocol design.
 
-**GFSK sweep (2 points, optional):**
-- 1000 kbps (fast)
-- 50 kbps (slow)
-- Optional — GFSK is not a primary flight mode
+**Binary refinement rule:** If any step shows non-monotonic behavior (e.g. PER at 650 is worse than at 325 AND worse than at 1300), add an intermediate point:
+- Between FLRC 650 and 325: add FLRC 520 (BR=0x05)
+- Between LoRa SF7 and SF9: add LoRa SF8 BW406
+- Between LoRa SF9 and SF12: add LoRa SF10 BW203 or SF11 BW203
 
-**Total: 10 test points (8 required + 2 optional)**
+Only refine where data shows anomalies. Don't pre-add points — let the data guide refinement.
 
-### Time Budget Analysis
+### Why Not Test Every Config?
+
+The LR2021 has 8 FLRC bitrates, 8 LoRa spreading factors × 5 bandwidths, and many GFSK options. Testing all would be 50+ points, hours of testing, mostly redundant data.
+
+Binary stepping gives the same coverage signal with 8 points. The gaps between steps are intentional — if throughput at step N and step N+1 is monotonic and follows theory, the intermediate configs are predictable. If not, we refine.
+
+---
+
+## Time Budget Analysis
 
 **CRITICAL:** Test duration scales inversely with throughput. Slow modes need MUCH longer per packet.
 
-| Mode | Test duration | Packets sent | Packets received (est) | Time justification |
-|---|---|---|---|---|
-| FLRC 2600 | 30s | ~75,000 | ~73,000 | Enough for statistical confidence |
-| FLRC 1300 | 30s | ~38,000 | ~37,000 | Same |
-| FLRC 650 | 30s | ~19,000 | ~18,500 | Same |
-| FLRC 325 | 30s | ~9,500 | ~9,300 | Same |
-| LoRa SF5 BW1625 | 30s | ~12,000 | ~11,500 | Fast LoRa, 30s sufficient |
-| LoRa SF7 BW812 | 60s | ~7,500 | ~7,200 | Medium LoRa, need more time |
-| LoRa SF9 BW406 | 120s | ~3,000 | ~2,900 | Slow LoRa, 2 min for enough data |
-| LoRa SF12 BW203 | 300s | ~150 | ~145 | VERY slow. 5 min for 150 packets. Could reduce to 50 pkts = 100s |
-| GFSK 1000 | 30s | ~30,000 | ~29,000 | Fast |
-| GFSK 50 | 60s | ~3,000 | ~2,900 | Medium |
+| Step | Mode | Test duration | Packets sent | Packets received (est) | Time justification |
+|---|---|---|---|---|---|
+| 1 | FLRC 2600 | 10s | ~25,000 | ~24,000 | 10s enough for 25K+ stats |
+| 2 | FLRC 1300 | 10s | ~12,500 | ~12,200 | Same |
+| 3 | FLRC 650 | 10s | ~6,000 | ~5,900 | Same |
+| 4 | FLRC 325 | 10s | ~3,000 | ~2,950 | Same |
+| 5 | LoRa SF5 BW1625 | 30s | ~12,000 | ~11,500 | Fast LoRa, 30s sufficient |
+| 6 | LoRa SF7 BW812 | 60s | ~7,500 | ~7,200 | Medium LoRa, need more time |
+| 7 | LoRa SF9 BW406 | 120s | ~3,000 | ~2,900 | Slow LoRa, 2 min for enough data |
+| 8 | LoRa SF12 BW203 | 100s | ~50 | ~48 | VERY slow. 50 pkts = enough for PER yes/no |
 
-**Total time (required 8 points):** ~11 minutes of active testing
-**Total time (all 10 points):** ~14 minutes of active testing
-**Plus reconfiguration time:** ~2 min per point (reflash or serial command) = ~20 min
-**Grand total:** ~35 min for full spectrum sweep
+**Active testing time:** 10+10+10+10+30+60+120+100 = 350s = ~6 min
+**Reconfiguration time:** ~2 min per point (reflash or serial command) = ~16 min
+**Grand total:** ~22 min for full 8-point binary sweep
 
 ### Adaptive Packet Count
 
@@ -135,10 +152,10 @@ For very slow modes, adapt packet count to keep test reasonable:
 
 | Mode | Packets per test | Duration | Rationale |
 |---|---|---|---|
-| FLRC (all) | 10,000+ | 30s | High rate, need lots for statistics |
-| LoRa SF5 | 5,000 | 30s | Still fast enough |
-| LoRa SF7 | 1,000 | 60s | Medium |
-| LoRa SF9 | 300 | 120s | Slow but enough for PER stats |
+| FLRC (all) | 10,000+ | 10s | High rate, lots of data for statistics |
+| LoRa SF5 | 5,000+ | 30s | Still fast enough |
+| LoRa SF7 | 1,000+ | 60s | Medium |
+| LoRa SF9 | 300+ | 120s | Slow but enough for PER stats |
 | LoRa SF12 | 50 | 100s | VERY slow. 50 pkts = enough for yes/no link |
 
 **Rule of thumb:** aim for at least 50 packets at each point for meaningful PER. 500+ for meaningful throughput statistics.
@@ -191,11 +208,11 @@ GFSK uses yet another init sequence. If time permits, add 2 GFSK points. If not,
 
 ## Test Execution Plan
 
-### Phase 1: FLRC Sustained Sweep (4 points, ~15 min)
+### Phase 1: FLRC Sustained Sweep (4 binary steps, ~8 min)
 
 1. Flash continuous TX + existing RX (FLRC 2600)
-2. Start RX capture (30s window)
-3. Start TX continuous (30s)
+2. Start RX capture (10s window)
+3. Start TX continuous (10s)
 4. Capture: total received, unique, lost, PER, throughput, RSSI
 5. Repeat for 1300, 650, 325 (change `TX_BITRATE_KBPS` + `RX_BITRATE_KBPS`, rebuild, reflash)
 
@@ -204,8 +221,9 @@ GFSK uses yet another init sequence. If time permits, add 2 GFSK points. If not,
 - Does PER increase over time? (RX falling behind)
 - What's the RX processing bottleneck? (SPI commands? waitBusy? RSSI read?)
 - Does throughput match link rate at each bitrate? If not, what's the gap?
+- Is throughput monotonic across binary steps? If not, refine with intermediate bitrate.
 
-### Phase 2: LoRa Sustained Sweep (4 points, ~20 min)
+### Phase 2: LoRa Sustained Sweep (4 binary steps, ~14 min)
 
 1. Flash LoRa TX + LoRa RX firmware
 2. Test SF5 BW1625: 30s continuous, 5000+ packets
@@ -217,13 +235,15 @@ GFSK uses yet another init sequence. If time permits, add 2 GFSK points. If not,
 - Does LoRa sustained throughput match theoretical?
 - Is RX re-arm time proportionally less significant at low rates? (more air time = more processing margin)
 - Any LoRa-specific RX issues? (different FIFO size? different IRQ behavior?)
+- Is PER monotonic across SF steps? If not, refine with intermediate SF.
 
-### Phase 3: Cross-Modulation Analysis (~10 min)
+### Phase 3: Cross-Modulation Analysis (~5 min)
 
-1. Plot throughput vs air-time-per-packet across ALL modes
+1. Plot throughput vs air-time-per-packet across ALL 8 modes
 2. Identify: is there a universal RX processing ceiling? (e.g. max 2000 pkts/s regardless of mode?)
 3. Identify: at what air-time does RX overhead become negligible? (re-arm time << air time)
 4. Compare: FLRC 325 vs LoRa SF5 — which gives better sustained throughput? (similar air time, different modulation)
+5. Identify the FLRC→LoRa crossover: at what throughput does switching to LoRa give better reliability for similar speed?
 
 ---
 
@@ -254,14 +274,16 @@ pio run -e rp2040-range-rx-auto    # RX (FLRC)
 
 ## Reasoning Prompts — Work Through These Before Starting
 
-### 1. Sweep Design Reasoning
+### 1. Binary-Step Sweep Design
 
-- Why log-spaced and not linear? Linear sampling over 4 orders of magnitude = 99% of points at the slow end. Log-spaced gives equal coverage across the range.
-- Is factor-2 spacing for FLRC fine enough? Could miss non-linear behavior (e.g. RX fails at 1000 kbps but works at 1300 and 650). If so, add 1000 kbps as an extra point.
-- Is factor-4 spacing for LoRa fine enough? SF7→SF9 is a big jump. Could add SF8 BW406 as intermediate if results are non-monotonic.
-- What about bandwidth? LoRa BW affects both sensitivity and throughput. Should we test SF7 at multiple BWs (203, 406, 812, 1625)? That's 4 more points but reveals BW vs SF tradeoff.
+- Why binary steps and not linear? Linear sampling over 4 orders of magnitude = 99% of points at the slow end. Binary steps give equal coverage across the range with log(N) points.
+- Is ÷2 per step for FLRC fine enough? Could miss non-linear behavior (e.g. RX fails at 1000 kbps but works at 1300 and 650). If so, add FLRC 1000 (BR=0x03) as a binary-refinement point.
+- Is the LoRa step from SF7 to SF9 (÷8) too large? If results are non-monotonic, add SF8 BW406 as intermediate.
+- Is the LoRa step from SF9 to SF12 (÷24) too large? If so, add SF10 BW203 or SF11 BW203.
+- What about bandwidth? LoRa BW affects both sensitivity and throughput. Should we test SF7 at multiple BWs (203, 406, 812, 1625)? That's 4 more points but reveals BW vs SF tradeoff. Consider if time permits.
+- The FLRC 325 / LoRa SF5 overlap (~325 vs ~400 kbps) — is this a problem? No — it's a feature. It tells us which modulation is more efficient at the same throughput. Test both, compare PER and reliability.
 
-### 2. RX Bottleneck Reasoning
+### 2. RX Bottleneck Analysis
 
 - RX re-arm sequence: readFifo → clearRxFifo → clearErrors → clearIrq → setRx → waitBusy → readRSSI
 - Total re-arm overhead: ~100-200µs per packet
@@ -270,14 +292,16 @@ pio run -e rp2040-range-rx-auto    # RX (FLRC)
 - At LoRa SF12 (2000ms air time): re-arm = 0.01% → completely negligible
 - **Hypothesis:** RX overhead is proportional to packet rate, not throughput. At high packet rates, RX may be the bottleneck. At low rates, TX air time dominates.
 - **Test:** Plot sustained throughput as fraction of theoretical vs packet rate. Where does the curve cross 90%? 95%? 99%?
+- **Key question:** Is there a universal RX processing ceiling (max pkts/s regardless of mode)? If RX can process 2000 pkts/s max, then at FLRC 2600 (6400 pkts/s air rate) RX is the bottleneck, but at LoRa SF12 (0.5 pkts/s) TX air time is the bottleneck by 4 orders of magnitude.
 
-### 3. PER Over Time Reasoning
+### 3. PER Over Time
 
 - If RX falls behind, FIFO fills with stale data → garbage seq numbers
 - Watch for: PER increasing in later windows vs early windows
 - Watch for: seq numbers going backwards or jumping (FIFO corruption)
 - At slow modes (LoRa SF12), PER should be ~0% — if it's not, something is fundamentally wrong
 - At fast modes (FLRC 2600), some PER is acceptable (<5%) — but should it increase over time?
+- Binary refinement: if PER at step N is fine but step N-1 (faster) shows increasing PER over time, the RX ceiling is between those two points. Add intermediate point to find exact threshold.
 
 ### 4. Cross-Modulation Comparison
 
@@ -285,15 +309,16 @@ pio run -e rp2040-range-rx-auto    # RX (FLRC)
 - Which has lower PER? FLRC has forward error correction (CR), LoRa has spreading gain
 - Which has better sustained throughput? FLRC is simpler, LoRa has processing gain
 - This comparison informs the adaptive protocol: at what distance do we switch from FLRC to LoRa?
+- The binary sweep puts these two points adjacent (steps 4 and 5) — directly comparable
 
 ### 5. Time Budget Optimization
 
-- Total test time: ~35 min for full sweep (8 points + reflash)
-- Can we reduce? Serial command bitrate change (no reflash) = saves 2 min per point × 8 = 16 min saved
+- Total test time: ~22 min for full 8-point binary sweep
+- Can we reduce? Serial command bitrate change (no reflash) = saves 2 min per FLRC point × 4 = 8 min saved
 - Can we parallelize? No — only 2 boards, both needed for one test
-- Is 30s enough for FLRC? 30s × 75,000 pkts = massive sample. 10s would suffice (25,000 pkts). Saves 20s × 4 = 80s.
-- Is 300s needed for LoRa SF12? 50 packets in 100s is enough for PER yes/no. Could reduce to 50s if link is clearly working.
-- **Optimized budget:** 4×10s (FLRC) + 4×30-120s (LoRa) + reflash = ~20 min total
+- Is 10s enough for FLRC? 10s × 25,000 pkts = massive sample. Could reduce to 5s (12,500 pkts). Saves 20s × 4 = 80s.
+- Is 100s needed for LoRa SF12? 50 packets in 100s is enough for PER yes/no. Could reduce to 50s (25 pkts) if link is clearly working. But 25 pkts is marginal for PER statistics.
+- **Optimized budget:** 4×5s (FLRC) + 30+60+120+100s (LoRa) + reflash = ~18 min total
 
 ### 6. How This Informs the Adaptive Protocol
 
@@ -303,10 +328,11 @@ The LR2021 adaptive protocol (ADR-007) switches modulation based on distance:
 - LoRa SF7 for long range
 - LoRa SF12 for max range
 
-The sustained throughput sweep tells us:
+The binary-step sustained throughput sweep tells us:
 1. What throughput to expect at each mode (for link budget calculations)
 2. Whether RX can keep up at each mode (for firmware design — does RX need optimization for slow modes too?)
 3. The crossover points where switching to a slower mode doesn't hurt throughput much but improves reliability
+4. Whether FLRC or LoRa is more efficient at the overlap zone (~325-400 kbps)
 
 ---
 
@@ -404,9 +430,9 @@ The range-testing track (separate Signal group) is working on:
 
 ## Questions to Answer — Report Back to Range Group
 
-After running the full-spectrum sustained throughput sweep, report:
+After running the full-spectrum binary-step sustained throughput sweep, report:
 
-1. What sustained throughput did you measure at each of the 8-10 test points?
+1. What sustained throughput did you measure at each of the 8 test points?
 2. Can RX keep up with continuous TX at FLRC 2600 kbps? (PER < 5%?)
 3. What's the RX processing bottleneck? Is it the same across all modulations?
 4. Does PER increase over time at any mode? (RX falling behind)
@@ -416,6 +442,7 @@ After running the full-spectrum sustained throughput sweep, report:
 8. At what air-time-per-packet does RX overhead become negligible? (<1% of air time)
 9. Does the existing 1391 kbps ceiling still apply, or has the RX firmware change (RSSI-after-rearm) changed the equation?
 10. What modulation should the adaptive protocol use as the FLRC→LoRa crossover point?
+11. Did any binary step show non-monotonic behavior requiring refinement? If so, which intermediate points were added?
 
 ---
 
