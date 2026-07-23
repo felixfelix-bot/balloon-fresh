@@ -1,0 +1,4 @@
+me=691630ms
+PKT 2 seq=209 rssi=-60 uptime=691634ms
+PKT 3 seq=215 rssi=-60 uptime=691637ms
+PKT 4 seq=2223343239 rssi=-61 uptim
