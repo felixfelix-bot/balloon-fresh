@@ -45,7 +45,9 @@
 #define TX_BITRATE_KBPS 2600
 #endif
 #define TX_PKT_SIZE     144
+#ifndef TX_POWER_DBM
 #define TX_POWER_DBM    12.0f
+#endif
 #define TX_PKT_COUNT    500
 #define TX_PAUSE_MS     2000
 
