@@ -124,6 +124,54 @@ static void rfClearIrq() {
     rfWriteCmd(cmd, 6);
 }
 
+// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) — 9-bit assembly
+// Matches verified implementation from flrc_range_rx_auto.cpp / LR2021Raw.h
+static int8_t rfReadRssi() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x02); spiRf.transfer(0x4B); // GET_FLRC_PACKET_STATUS
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    uint8_t buf[7];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+
+    // 9-bit RSSI: bits [8:1] from buf[4], bit[0] from buf[6] bit[2]
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int8_t)(raw / 2);
+}
+
+// ─── Instantaneous RSSI via GET_RSSI_INST (0x020B) — 9-bit assembly
+// Used for noise-floor measurement when no packet is being received.
+static int8_t rfReadRssiInst() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x02); spiRf.transfer(0x0B); // GET_RSSI_INST
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    // Response: [rssiMsb][rssiLsb] — 9-bit value
+    uint8_t buf[2];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 2; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+
+    // 9-bit RSSI: bits [8:1] from buf[0], bit[0] from buf[1] bit[7]
+    uint16_t raw = ((uint16_t)buf[0] << 1) | (buf[1] >> 7);
+    return -(int8_t)(raw / 2);
+}
+
 static void rfSetRx() {
     // SET_RX = 0x020C + 3-byte timeout (0xFFFFFF = continuous)
     // Total: 5 bytes (NOT 6 — extra byte causes CMD_ERROR)
@@ -276,6 +324,10 @@ struct RxStats {
     uint32_t totalSentByTx;
     uint32_t startMs;
     uint32_t elapsedMs;
+    int32_t  rssiSum;
+    int16_t  rssiMin;
+    int16_t  rssiMax;
+    uint16_t rssiCount;
 };
 static RxStats stats;
 static volatile bool radioReady = false;
@@ -283,6 +335,8 @@ static volatile bool radioReady = false;
 static void resetStats() {
     memset(&stats, 0, sizeof(stats));
     stats.lastSeq = 0xFFFFFFFF;
+    stats.rssiMin  = 0;      // will be overwritten by first packet
+    stats.rssiMax  = -128;   // will be overwritten by first packet
 }
 
 // ─── Receive session ─────────────────────────────────────────────────
@@ -323,6 +377,13 @@ static void runReceive() {
         rfClearIrq();
         rfSetRx();
 
+        // Read packet RSSI (from last received packet's status)
+        int8_t rssi = rfReadRssi();
+        stats.rssiSum += rssi;
+        stats.rssiCount++;
+        if (rssi < stats.rssiMin) stats.rssiMin = rssi;
+        if (rssi > stats.rssiMax) stats.rssiMax = rssi;
+
         // Extract big-endian seq
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
@@ -357,7 +418,8 @@ static void runReceive() {
         lastPktMs = millis();
 
         if (stats.received <= 5 || (stats.received % PRINT_EVERY) == 0) {
-            dualPrintf("%lu,%lu", (unsigned long)stats.received, (unsigned long)seq);
+            dualPrintf("PKT %lu seq=%lu rssi=%d", (unsigned long)stats.received,
+                       (unsigned long)seq, (int)rssi);
             // Hex dump first 8 bytes of first 3 packets
             if (stats.received <= 3) {
                 dualPrintf("  HEX: %02X %02X %02X %02X %02X %02X %02X %02X",
@@ -376,6 +438,7 @@ static void runReceive() {
     float perPct = (total > 0) ? (100.0f * (float)lost / (float)total) : 0.0f;
     float tputKbps = (stats.elapsedMs > 0 && n > 0)
                      ? ((float)n * (float)FLRC_PKT_SIZE * 8.0f) / (float)stats.elapsedMs : 0.0f;
+    float rssiAvg = (stats.rssiCount > 0) ? ((float)stats.rssiSum / (float)stats.rssiCount) : 0.0f;
 
     dualPrintln("=============================================");
     dualPrintf("  Received: %lu (unique %lu, dup %lu)", (unsigned long)n,
@@ -385,10 +448,15 @@ static void runReceive() {
     dualPrintf("  Lost:     %lu (%.2f%%)", (unsigned long)lost, perPct);
     dualPrintf("  Elapsed:  %lu ms", (unsigned long)stats.elapsedMs);
     dualPrintf("  THROUGHPUT: %.1f kbps", tputKbps);
+    if (stats.rssiCount > 0) {
+        dualPrintf("  RSSI: avg=%.1f dBm min=%d dBm max=%d dBm (n=%d)",
+                   rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax, (int)stats.rssiCount);
+    }
     dualPrintln("=============================================");
-    dualPrintf("RESULT,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f",
+    dualPrintf("RESULT,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d",
                (unsigned long)n, (unsigned long)stats.unique, (unsigned long)lost,
-               (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps);
+               (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps,
+               rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax);
 }
 
 // ─── Config print ────────────────────────────────────────────────────
@@ -421,8 +489,18 @@ static void processCommand(const char *cmd) {
                        (unsigned long)stats.received, tput);
         } else { dualPrintln("No results yet"); }
     }
+    else if (strcmp(cmd, "NOISE") == 0) {
+        // Measure noise floor — TX should be OFF for accurate reading
+        int32_t sum = 0;
+        for (int i = 0; i < 10; i++) {
+            sum += rfReadRssiInst();
+            delay(10);
+        }
+        int8_t avg = (int8_t)(sum / 10);
+        dualPrintf("NOISE_FLOOR rssi_inst=%d dBm (avg of 10)", (int)avg);
+    }
     else if (strcmp(cmd, "HELP") == 0) {
-        dualPrintln("Commands: RUN CONFIG INIT RESULTS HELP");
+        dualPrintln("Commands: RUN CONFIG INIT RESULTS NOISE HELP");
     }
 }
 
