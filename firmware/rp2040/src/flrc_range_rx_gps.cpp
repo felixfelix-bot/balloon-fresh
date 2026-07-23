@@ -258,7 +258,11 @@ static bool rawInitRadio() {
     delay(5);
 
     rfSetBitrate(RX_BITRATE_KBPS);
-    delay(1);
+    delay(5);
+
+    // Recalibrate after bitrate change (bandwidth changes with bitrate)
+    { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
+    delay(5);
 
     {
         uint8_t cmd[] = { 0x02, 0x4C, 0x01, SYNC_WORD_0, SYNC_WORD_1, SYNC_WORD_2, SYNC_WORD_3 };
