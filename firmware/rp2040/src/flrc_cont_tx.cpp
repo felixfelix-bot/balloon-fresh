@@ -60,7 +60,7 @@
 #define TX_POWER_DBM    12.0f
 #endif
 #ifndef TX_PKT_COUNT
-#define TX_PKT_COUNT    10000
+#define TX_PKT_COUNT    0       // 0 = infinite
 #endif
 #ifndef TX_DURATION_SEC
 #define TX_DURATION_SEC 0   // 0 = use COUNT only

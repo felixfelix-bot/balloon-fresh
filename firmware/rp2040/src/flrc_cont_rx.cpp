@@ -353,6 +353,16 @@ static void runContinuousReceive() {
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
 
+        // DEBUG: hex dump first 16 bytes for first 10 packets
+        if (stats.received < 10) {
+            char hex[128];
+            snprintf(hex, sizeof(hex), "HEX[%lu] %02X %02X %02X %02X | %02X %02X %02X %02X | %02X %02X %02X %02X | %02X %02X %02X %02X",
+                     (unsigned long)stats.received,
+                     buf[0],buf[1],buf[2],buf[3], buf[4],buf[5],buf[6],buf[7],
+                     buf[8],buf[9],buf[10],buf[11], buf[12],buf[13],buf[14],buf[15]);
+            dualPrintln(hex);
+        }
+
         stats.received++;
         if (stats.lastSeq != 0xFFFFFFFF && seq == stats.lastSeq) stats.duplicates++;
         else stats.unique++;
