@@ -42,7 +42,7 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
-#define SPI_FREQ_HZ     16000000UL
+#define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -370,8 +370,8 @@ static void runReceive() {
             break;
         }
 
-        uint32_t irq = rfReadIrqStatus();
-        if (!(irq & 0x00040000)) continue;
+        // Hardware pin poll — matches proven LR2021Raw.h receive()
+        if (digitalRead(PIN_IRQ) == LOW) continue;
 
         rfReadFifo(buf, pktSize);
         int8_t rssi = rfReadRssi();
@@ -424,7 +424,7 @@ static void runReceive() {
         }
 
         digitalWrite(PIN_LED, HIGH);
-        delayMicroseconds(1000);
+        delayMicroseconds(50);
         digitalWrite(PIN_LED, LOW);
 
         if (stats.received <= 5 || (stats.received % PRINT_EVERY) == 0) {

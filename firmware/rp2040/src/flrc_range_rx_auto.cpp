@@ -38,13 +38,13 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
-#define SPI_FREQ_HZ     16000000UL
+#define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
 
 // ─── Compile-time config ─────────────────────────────────────────────
 #define RX_FREQ_MHZ     2440.0f
 #define RX_BITRATE_KBPS 2600
-#define RX_PKT_SIZE     255
+#define RX_PKT_SIZE     127
 #define RX_LISTEN_MS    30000
 #define RX_SILENCE_MS   3000
 #define PRINT_EVERY     100
@@ -331,25 +331,25 @@ static void runReceive() {
             break;
         }
 
-        uint32_t irq = rfReadIrqStatus();
-        if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
+        // Hardware pin poll — matches proven LR2021Raw.h receive()
+        if (digitalRead(PIN_IRQ) == LOW) continue;
 
         // Read packet
         rfReadFifo(buf, pktSize);
 
-        // Read RSSI before clearing IRQ
+        // Re-arm FIRST (before RSSI) to minimize dead time
+        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }  // clearRxFifo
+        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }  // clearErrors
+        rfClearIrq();
+        rfSetRx();
+        rfWaitBusy();  // ensure setRx completed before polling IRQ again
+
+        // Read RSSI AFTER re-arm (chip is now listening for next packet)
         int8_t rssi = rfReadRssi();
         stats.rssiSum += rssi;
         stats.rssiCount++;
         if (rssi < stats.rssiMin) stats.rssiMin = rssi;
         if (rssi > stats.rssiMax) stats.rssiMax = rssi;
-
-        // Clear FIFO + errors + re-arm RX
-        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }
-        rfWaitBusy();
-        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
-        rfClearIrq();
-        rfSetRx();
 
         // Extract big-endian seq
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
@@ -372,9 +372,9 @@ static void runReceive() {
         if (seq > stats.maxSeq) stats.maxSeq = seq;
         lastPktMs = millis();
 
-        // Blink LED on packet
+        // Blink LED on packet (non-blocking, short)
         digitalWrite(PIN_LED, HIGH);
-        delayMicroseconds(1000);
+        delayMicroseconds(50);
         digitalWrite(PIN_LED, LOW);
 
         if (stats.received <= 5 || (stats.received % PRINT_EVERY) == 0) {
