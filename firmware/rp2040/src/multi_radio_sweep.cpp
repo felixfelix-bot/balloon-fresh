@@ -97,7 +97,7 @@ static const Phase phases[] = {
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
-#define TX_POWER_DBM   12.0f
+#define TX_POWER_DBM   12.5f   // Code 25 = PA enabled (binary PA, see power sweep results)
 #define LORA_PKT_SIZE  127
 #define FLRC_PKT_SIZE  255
 #define AUTO_START_DELAY_MS  8000
