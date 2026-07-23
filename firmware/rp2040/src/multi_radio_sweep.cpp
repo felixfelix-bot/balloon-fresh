@@ -198,8 +198,11 @@ static int16_t rfGetLoraRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // buf[2] = rssiSync, dBm = -val / 2. Return in tenths of dBm to avoid truncation.
-    return -(int16_t)buf[2] * 5;  // e.g. val=1 → -5 → -0.5 dBm
+    // Raw format: [stat_msb][stat_lsb][flag][snr][rssi_avg][rssi_sync][?][?]
+    // buf[4] = rssiAvg (verified: varies per-packet, gives realistic dBm)
+    // buf[3] = snr (0x7F = 31.75 dB, matches proven value)
+    // Return in tenths of dBm: -buf[4] * 5 = -(val/2) * 10
+    return -(int16_t)buf[4] * 5;  // e.g. val=51 → -255 → -25.5 dBm
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
