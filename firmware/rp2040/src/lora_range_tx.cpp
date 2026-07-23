@@ -58,7 +58,7 @@
 #define LORA_BW_KHZ     812
 #endif
 #ifndef LORA_CR
-#define LORA_CR         5   // 4/5
+#define LORA_CR         1   // internal: 1=4/5, 2=4/6, 3=4/7, 4=4/8
 #endif
 #ifndef LORA_PKT_SIZE
 #define LORA_PKT_SIZE   127
