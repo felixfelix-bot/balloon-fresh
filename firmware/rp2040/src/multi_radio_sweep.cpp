@@ -408,7 +408,7 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint8_t rxBuf[256];
 
     uint32_t startMs = millis();
-    uint32_t slotBudget = (uint32_t)p.slotMs + 5000; // 5s margin for sync drift
+    uint32_t slotBudget = (uint32_t)p.slotMs + 3000; // Match TX cycle length (3s delay per phase)
     uint16_t received = 0, crcErrors = 0;
     int32_t rssiSum = 0;
     uint16_t rssiCount = 0;
@@ -441,8 +441,22 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     rssiSum += rssi;
                     rssiCount++;
                     if (received < 3) {
-                        Serial.printf("DEBUG_RSSI pkt=%d rssi_raw=%d rssi_dBm=%d\n",
-                                      received, rssi, rssi);
+                        // Dump raw SPI bytes for RSSI debugging
+                        rfWaitBusy();
+                        spiRf.beginTransaction(spiSettings);
+                        digitalWrite(PIN_CS, LOW);
+                        spiRf.transfer(0x02); spiRf.transfer(0x2A);
+                        digitalWrite(PIN_CS, HIGH);
+                        spiRf.endTransaction();
+                        rfWaitBusy();
+                        uint8_t raw[8];
+                        spiRf.beginTransaction(spiSettings);
+                        digitalWrite(PIN_CS, LOW);
+                        for (int j = 0; j < 8; j++) raw[j] = spiRf.transfer(0x00);
+                        digitalWrite(PIN_CS, HIGH);
+                        spiRf.endTransaction();
+                        Serial.printf("DEBUG_RSSI pkt=%d raw=[%02X %02X %02X %02X %02X %02X %02X %02X] rssi=%d\n",
+                                      received, raw[0],raw[1],raw[2],raw[3],raw[4],raw[5],raw[6],raw[7], rssi);
                     }
                 }
 
