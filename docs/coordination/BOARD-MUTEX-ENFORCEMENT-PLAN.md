@@ -68,14 +68,14 @@ Range-tests followed the rules. Speed-tests bypassed them.
 
 ## Execution Order
 
-1. Write this plan doc ← DONE (this file)
-2. Implement Layer 1: board-serial.py wrapper
-3. Implement Layer 2: board-lock-assert.py
-4. Implement Layer 3: board-access-monitor.sh + cron
-5. Implement Layer 4: Update AGENTS.md files + copy tools
-6. Restart gateway, notify sub-managers
-7. Commit + push all changes
-8. Verify with live test
+1. Write this plan doc ← DONE
+2. Implement Layer 1: board-serial.py wrapper ← DONE
+3. Implement Layer 2: board-lock-assert.py ← DONE
+4. Implement Layer 3: board-access-monitor.sh + cron ← DONE (cron b6df723690d7)
+5. Implement Layer 4: Update AGENTS.md files ← DONE
+6. Restart gateway, notify sub-managers ← GATEWAY RESTARTING (02:55), then send messages
+7. Commit + push all changes ← DONE (4e4956b, d7bfc78, 171387d)
+8. Verify with live test ← PENDING (after gateway restart)
 
 ## Files to Create/Modify
 
