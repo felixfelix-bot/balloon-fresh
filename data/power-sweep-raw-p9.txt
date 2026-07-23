@@ -1,0 +1,4 @@
+e_ms=622578
+RX_WINDOW 99 START uptime=624969ms listen=30000ms
+PKT 1 seq=3234630306 rssi=-104 uptime=625031ms
+PKT 2 seq=191200

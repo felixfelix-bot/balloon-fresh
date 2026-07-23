@@ -1,0 +1,5 @@
+7588ms listen=30000ms
+PKT 1 seq=1254778487 rssi=-104 uptime=557610ms
+PKT 2 seq=416338502 rssi=-103 uptime=557653ms
+PKT 3 seq=3339547788 rssi=-103 uptime=557776ms
+PKT 4 seq=1306643230 rssi=-103 uptime=557792ms
