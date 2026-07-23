@@ -44,7 +44,7 @@
 // ─── Compile-time config ─────────────────────────────────────────────
 #define RX_FREQ_MHZ     2440.0f
 #define RX_BITRATE_KBPS 2600
-#define RX_PKT_SIZE     127
+#define RX_PKT_SIZE     144
 #define RX_LISTEN_MS    30000
 #define RX_SILENCE_MS   3000
 #define PRINT_EVERY     100
