@@ -108,6 +108,15 @@ def check_board_lock(port: str) -> bool:
     if "/dev/ttyACM" not in port and "/dev/ttyUSB" not in port:
         return True  # Not a board port, allow
 
+    # HARD GATE: BALLOON_TRACK must be set
+    track = os.getenv("BALLOON_TRACK")
+    if not track:
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"REFUSED: BALLOON_TRACK not set. Cannot verify identity.", file=sys.stderr)
+        print(f"Set it: export BALLOON_TRACK=speed-tests  # your track name", file=sys.stderr)
+        print(f"{'='*60}\n", file=sys.stderr)
+        return False
+
     resource = _resolve_port_to_resource(port)
     if resource is None:
         # Unknown board — still try to protect, but warn
