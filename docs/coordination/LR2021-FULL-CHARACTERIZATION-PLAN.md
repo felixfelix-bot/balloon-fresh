@@ -1,375 +1,597 @@
-# LR2021 Full Characterization Plan — Unified Speed + Range Test Matrix
+# LR2021 Full Characterization Plan
 
-> **Master reference document for the LR2021 Gen 4 characterization campaign.**
-> Coordinates the speed-tests and range-tests tracks into a single unified test matrix.
-> One walk-around test yields a complete dataset across all modes, bands, and distances.
+> **One document, two groups, four radio paths.** Each sub-manager reads this doc + their own AGENTS.md and has everything they need.
 
 ---
 
-## Table of Contents
+## 0. TL;DR — Who Does What
 
-1. [Objective](#1-objective)
-2. [LR2021 Capability Matrix](#2-lr2021-capability-matrix)
-3. [Firmware Status](#3-firmware-status)
-4. [Critical Cross-Track Context](#4-critical-cross-track-context)
-5. [Unified Test Matrix](#5-unified-test-matrix)
-6. [Task Assignment](#6-task-assignment)
-7. [Execution Order](#7-execution-order)
-8. [Data Output Format](#8-data-output-format)
-9. [Risks and Mitigations](#9-risks-and-mitigations)
+| Group | Owns | Delivers |
+|-------|------|----------|
+| **speed-tests** | HF path firmware (2.4 GHz, pin 10), SPI protocol expertise, bitrate/SF sweeps | Sustained throughput curves, TX bottleneck analysis, runtime bitrate-switch validation |
+| **range-tests** | Dual-radio sweep firmware (HF+LF), outdoor test methodology, board recovery | Range-vs-PER curves, RSSI-vs-distance curves, PA characterization |
+
+**Execution order:** Phase 0 (blockers) → Phase 1 (indoor baseline) → Phase 2 (outdoor sweep) → Phase 3 (analysis).
 
 ---
 
-## 1. Objective
+## 1. SHARED CONTEXT — Cross-Knowledge Transfer
 
-Full characterization of the **Semtech LR2021 Gen 4** chip (NiceRF LoRa2021 module) across **all modes, bands, and distances**.
+Each group has expertise the other lacks. This section is the bridge.
 
-A single unified test matrix ties both sub-manager tracks together. **One physical walk-around test** — carrying the RX board through a series of distance markers while the TX board runs autonomously — produces a complete dataset of every mode/band/bitrate combination at every distance and environment.
+### 1.1 What speed-tests knows (range-tests needs this)
 
-**Deliverables:**
-- All 14 firmware phases (10 existing + 4 new LF-FLRC) tested and verified.
-- ~198 data points across 9 distance/environment positions × 22 mode/band/bitrate combos.
-- A single merged CSV with PER, RSSI, SNR, and throughput for every combination.
-- A summary matrix (mode × distance) showing max usable range per mode/bitrate.
+#### SPI Protocol — Raw 2-Byte Opcodes
+
+The LR2021 uses **2-byte big-endian SPI opcodes**, NOT RadioLib's 24-bit register addressing. RadioLib's LR2021 driver is DEAD on our hardware (returns -707 or hangs). See ADR-020.
+
+```
+Write:  NSS LOW → wait BUSY LOW → send [opcode_hi, opcode_lo, ...payload] → NSS HIGH
+Read:   NSS LOW → wait BUSY LOW → send opcode → NSS HIGH → wait BUSY LOW
+        → NSS LOW → send NOP → read [status(2) + data] → NSS HIGH
+```
+
+**SPI frequency:** 20 MHz maximum. 40 MHz corrupts FIFO writes (verified, reverted in commit `1092c3f`).
+
+#### FLRC Bitrate Configuration
+
+Register `brBw` byte (byte 0 of SET_FLRC_MOD_PARAMS `0x0248`):
+
+| Code | Bitrate | Bandwidth |
+|------|---------|-----------|
+| 0x00 | 2600 kbps | 2666 kHz |
+| 0x01 | 2080 kbps | 2222 kHz |
+| 0x02 | 1300 kbps | 1333 kHz |
+| 0x03 | 1040 kbps | 1333 kHz |
+| 0x04 | 650 kbps | 888 kHz |
+| 0x05 | 520 kbps | 769 kHz |
+| 0x06 | 325 kbps | 444 kHz |
+| 0x07 | 260 kbps | 444 kHz |
+
+Byte 1: `(coding_rate << 4) | pulse_shape`. CR: 0=1/2, 1=3/4, 2=none(uncoded), 3=2/3. Shape: 0x05=BT0.5, 0x07=BT1.0. Working default: `0x25` = CR_None + BT_0.5.
+
+#### TX SPI Bottleneck
+
+Sustained throughput is **TX-limited, not RX-limited**. Per-packet breakdown:
+- RF air time: 803 µs (54%) — physics, cannot reduce
+- Arduino SPI FIFO write: 535 µs (36%) — only working path
+- Loop overhead: 154 µs (10%)
+- **Total: ~1492 µs/packet = 1377 kbps ceiling**
+
+All DMA, PIO, direct-register, and batch-SPI acceleration attempts FAILED on real hardware. The LR2021 appears to require Arduino `transfer()` inter-byte timing. A logic analyzer capture ($20, 1 afternoon) is the highest-value untried diagnostic.
+
+RX blind window: ~572 µs per packet (IRQ read + FIFO read + clear + re-arm). At current TX rate there's 920 µs of RX listening between packets, so 0% loss.
+
+#### Power Encoding
+
+```c
+uint8_t powerRaw = (uint8_t)(dBm * 2.0f + 0.5f);
+// SET_TX_PARAMS: {0x02, 0x03, powerRaw, 0x04}
+```
+Examples: 0 dBm → 0x00, 6 dBm → 0x0C, 12 dBm → 0x18, 12.5 dBm → 0x19.
+
+#### FLRC Bitrate Sweep Results (VERIFIED, indoor 1-2m, 12 dBm)
+
+All 4 bitrates: **0% PER** at indoor range.
+
+| Bitrate | Sustained Throughput | Efficiency | RSSI |
+|---------|---------------------|------------|------|
+| 2600 | 1485 kbps | 57.1% | -71 dBm |
+| 1300 | 806 kbps | 62.0% | -71 dBm |
+| 650 | 420 kbps | 64.6% | -73 dBm |
+| 325 | 240 kbps | 73.8% | -73 dBm |
+
+Efficiency increases at lower bitrates because fixed TX SPI overhead (~680 µs) is a smaller fraction of longer air time.
+
+### 1.2 What range-tests knows (speed-tests needs this)
+
+#### Dual-Radio Sweep Firmware — ALREADY BUILT
+
+`dual_radio_sweep_tx.cpp` + `dual_radio_sweep_rx.cpp` cycle 4 modes in one binary, auto-starting after 3s LED countdown:
+
+| Mode | Duration | Config |
+|------|----------|--------|
+| 0 | 0-3 min | HF FLRC 2600 kbps @ 2440 MHz (pin 10) |
+| 1 | 3-6 min | HF FLRC 325 kbps @ 2440 MHz (pin 10) |
+| 2 | 6-9 min | LF LoRa SF7 @ 868 MHz (pin 9) |
+| 3 | 9-12 min | LF LoRa SF12 @ 868 MHz (pin 9) |
+
+Also available: `multi_radio_sweep.cpp` (speed-tests worktree) — 10-phase cycle including all 3 LoRa SFs + all 4 FLRC bitrates on HF, plus 3 LoRa SFs on LF. Uses `0x05` for FLRC packet type (vs `0x04` in range-tests — **both work**, likely 0x04/0x05 are aliases).
+
+#### Outdoor Test Methodology — PROVEN
+
+1. Flash both boards (TX + RX). Verify 0% PER at 1m.
+2. TX board → USB power bank (needs >50mA dummy load to prevent auto-shutoff).
+3. RX board → laptop USB, serial log via `tee`.
+4. TX auto-starts 3s after power-on (LED countdown blink).
+5. Walk away carrying TX. RX stays put.
+6. Phone GPS app records track (GPX export).
+7. Dwell 30s at each distance marker.
+8. Correlate GPS timestamps with RX `uptime_ms` fields.
+
+#### PA Is BINARY — No Linear Power Control
+
+Register codes 0-24 (0.0-12.0 dBm): **PA bypassed**. All identical ~4% PER. RSSI -103 dBm.
+Register code 25 (12.5 dBm): **PA enabled**. ~43 dB RSSI jump. ~0% PER.
+
+There is NO intermediate power level. The SET_TX_PARAMS opcode works, but below code 25 the chip disables the PA entirely. **Only two TX power states exist: PA-off (~0 dBm effective) and PA-on (~12.5 dBm).**
+
+#### Board Recovery Protocol
+
+If USB CDC disappears (radio init hang):
+1. Try **1200 baud trigger** — open serial at 1200 baud, close. May reset.
+2. If that fails: **ESP32 BOOTSEL pulse** — flash `bootsel_oneshot.cpp` to paired ESP32. It pulses GPIO to RP2040 RUN/BOOOT pins every 5s → board enters BOOTSEL mode.
+3. After BOOTSEL recovery: copy `.uf2` via mass storage (RPI-RP2). Board reboots automatically.
+4. **ALWAYS** reflash ESP32 with UART bridge firmware after recovery (to stop the BOOTSEL loop).
+
+**Reliable flash method:** UF2 mass storage copy. `picotool` needs `-v -x` flags or silently fails.
+
+#### 868 MHz LF Path Configuration
+
+```
+SET_RX_PATH (0x0201): byte0=0x00 (LF path)  [vs 0x01 for HF]
+CALIB_FRONT_END (0x0123): NO bit 15 for LF  [bit 15 set for HF]
+```
+
+LF CALIB_FRONT_END: `feFreq = (uint16_t)((868.0/4.0) + 0.5)` — do NOT OR with `0x8000`.
+HF CALIB_FRONT_END: `feFreq = (uint16_t)((2440.0/4.0) + 0.5) | 0x8000`.
+
+#### RSSI Measurement — FIXED (was broken for 8+ sessions)
+
+**FLRC RSSI:** `GET_FLRC_PACKET_STATUS (0x024B)`, 9-bit assembly:
+```c
+uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+int16_t rssi = -(int16_t)(raw / 2);  // dBm
+```
+
+**LoRa RSSI:** `GET_LORA_PACKET_STATUS (0x022A)`:
+```c
+int16_t rssi = -(int16_t)(buf[2] / 2);  // dBm
+int8_t snr = buf[3] < 128 ? buf[3]/4 : (buf[3]-256)/4;  // dB
+```
+
+**DO NOT use:** SX1280 register 0x0104 (returns garbage), SX1280 register 0x022A for FLRC (returns -127 or -8 regardless of signal). The old RSSI bug was: raw firmware used SX1280's GET_PACKET_STATUS (0x0104) instead of LR2021's GET_FLRC_PACKET_STATUS (0x024B).
+
+#### LoRa Modulation Parameter Encoding
+
+`SET_LORA_MOD_PARAMS (0x0220)`: `[0x02, 0x20, byte0, byte1]`
+- byte0: `((sf & 0x0F) << 4) | (bwCode & 0x0F)` — SF is direct value (7-12), BW codes below
+- byte1: `((cr & 0x0F) << 4) | (ldro & 0x01)` — CR: 1=4/5, 2=4/6, 3=4/7, 4=4/8. **CR=5 is INVALID** (causes 0 packets at SF9/SF12).
+
+| BW | Code | 
+|----|------|
+| 812.5 kHz | 0x0F |
+| 406.25 kHz | 0x0E |
+| 203.125 kHz | 0x0D |
+| 250 kHz | 0x05 |
+
+LDRO auto-enable: `symTimeMs > 16.0` → enable. Only SF12 @ 203 kHz triggers this in practice.
+
+**Common LoRa configs (CR=4/5, LDRO=off → byte1=0x10):**
+
+| SF | BW | byte0 | SPI Frame |
+|----|-----|-------|-----------|
+| SF7 | 812 kHz | 0x7F | `{0x02, 0x20, 0x7F, 0x10}` |
+| SF9 | 812 kHz | 0x9F | `{0x02, 0x20, 0x9F, 0x10}` |
+| SF12 | 812 kHz | 0xCF | `{0x02, 0x20, 0xCF, 0x10}` |
+
+### 1.3 Knowledge Both Groups Share
+
+#### Mandatory Init Sequence (ALL modes)
+
+```
+1. SET_STANDBY (0x0200, STDBY_RC=0x01)     — known state
+2. SET_PACKET_TYPE (0x0207)                 — LoRa=0x00, FLRC=0x04 (or 0x05)
+3. SET_RF_FREQUENCY (0x0200)                — freq in Hz, 3-byte big-endian
+4. SET_RX_PATH (0x0201)                     — HF=0x01, LF=0x00 [MANDATORY]
+5. CALIB_FRONT_END (0x0123)                 — HF: bit15 set, LF: no bit15 [MANDATORY]
+6. CALIBRATE (0x0122)                       — mask 0x5F [NOT 0x6F — bit 5 undefined]
+7. SET_MOD_PARAMS (0x0248 FLRC / 0x0220 LoRa)
+8. SET_PACKET_PARAMS (0x0249 FLRC / 0x0221 LoRa)
+9. SET_PA_CONFIG (0x0202)                   — {0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10}
+10. SET_TX_PARAMS (0x0203)                  — powerRaw = dBm*2, ramp=0x04
+11. SET_RX_TX_FALLBACK (0x0206)             — FS=0x03
+12. SET_DIO_FUNCTION (0x0112)               — DIO9=IRQ: {0x01, 0x12, 0x09, 0x11}
+13. SET_DIO_IRQ_CONFIG (0x0115)             — RX_DONE=bit18, TX_DONE=bit19
+14. CLEAR_IRQ (0x0116)                      — all: {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF}
+```
+
+#### IRQ Bits (32-bit, NOT 16-bit like SX1280)
+
+| Bit | Name | Value |
+|-----|------|-------|
+| 16 | ERROR | 0x00010000 |
+| 17 | CMD_ERROR | 0x00020000 |
+| 18 | RX_DONE | 0x00040000 |
+| 19 | TX_DONE | 0x00080000 |
+| 21 | TIMEOUT | 0x00200000 |
+| 22 | CRC_ERROR | 0x00400000 |
+
+#### FIFO Race Bug — SOLVED
+
+RX must poll IRQ via GPIO (`sio_hw->gpio_in` on GP7/DIO9), NOT via SPI read. SPI IRQ polling takes ~50µs during which the chip starts receiving the next packet and overwrites the FIFO. GPIO polling is nanosecond latency. Commit `3dcddaf`.
+
+#### BoardSerial Wrapper — MANDATORY
+
+ALL serial access MUST go through `BoardSerial()`, not `serial.Serial()`:
+```python
+from board_serial import BoardSerial
+ser = BoardSerial('/dev/ttyACM0', 115200)  # checks flock before opening
+```
+Raw `serial.Serial()` on `/dev/ttyACM*` is a BUG. The wrapper refuses to open ports if the calling track doesn't hold the flock.
 
 ---
 
-## 2. LR2021 Capability Matrix
+## 2. UNIFIED TEST MATRIX
 
-### Tested Modes
+Four radio paths × modulation parameters × distances × power levels.
 
-| Band | Mode | Parameters | Theoretical Bitrate | Tested? | Data Quality |
-|------|------|-----------|--------------------|---------|--------------|
-| 2.4 GHz (HF) | FLRC | 2600/2080/1300/650/325 kbps | 2600 kbps max | YES (speed-tests) | Good: 0% PER, throughput measured |
-| 2.4 GHz (HF) | LoRa | SF7/SF9/SF12, BW 812 kHz | ~31 / 9.7 / 1.5 kbps | YES (speed-tests) | Good: 0% PER, RSSI saturated |
-| 868 MHz (LF) | FLRC | 2600/2080/1300/650/325 kbps | 2600 kbps max | ESP-IDF bench only | **Missing RP2040 data** |
-| 868 MHz (LF) | LoRa | SF7/SF9/SF12, BW 250 kHz | ~31 / 9.7 / 1.5 kbps | Firmware exists | **NO DATA collected** |
+### 2.1 Radio Paths
 
-### Untested Modes (Lower Priority)
+| # | Path | Freq | Antenna Pin | Modulation | Status |
+|---|------|------|-------------|------------|--------|
+| A | HF FLRC | 2440 MHz | Pin 10 (2.4G) | FLRC | ✅ VERIFIED |
+| B | HF LoRa | 2440 MHz | Pin 10 (2.4G) | LoRa | ✅ VERIFIED |
+| C | LF LoRa | 868 MHz | Pin 9 (ANT) | LoRa | ✅ VERIFIED |
+| D | LF FLRC | 868 MHz | Pin 9 (ANT) | FLRC | ⚠️ UNTESTED — may not be supported |
 
-| Mode | Notes |
-|------|-------|
-| GFSK | Standard FSK modulation. LR2021 supports it but not needed for balloon telemetry. Low priority. |
-| LR-FHSS | LoRa Frequency Hopping Spread Spectrum. Designed for massive-scale IoT satellite uplinks. Not relevant for point-to-point balloon links. Low priority. |
-| OOK | On-Off Keying. Simplest modulation, no sync word. Useful only for legacy compatibility. Lowest priority. |
+### 2.2 Modulation Parameters per Path
 
-These three modes exist in the chip's register map but are **out of scope** for this characterization campaign unless the primary matrix reveals unexpected results.
+**FLRC paths (A, D):** 4 bitrates × {PA-off, PA-on} = 8 configs per path
 
----
+| Bitrate (kbps) | brBw Code | Air time/pkt |
+|----------------|-----------|-------------|
+| 2600 | 0x00 | ~0.39 ms |
+| 1300 | 0x02 | ~0.78 ms |
+| 650 | 0x04 | ~1.56 ms |
+| 325 | 0x06 | ~3.12 ms |
 
-## 3. Firmware Status
+**LoRa paths (B, C):** 3 spreading factors × {PA-off, PA-on} = 6 configs per path
 
-### Existing Firmware
+| SF | BW | CR | Time/pkt (127B) |
+|----|----|----|-----------------|
+| SF7 | 812 kHz | 4/5 | ~6 ms |
+| SF9 | 812 kHz | 4/5 | ~25 ms |
+| SF12 | 812 kHz | 4/5 | ~800 ms |
 
-**`multi_radio_sweep.cpp`** (speed-tests worktree) runs a **10-phase sweep**:
+> **Note:** Range-tests used BW=250 kHz (code 0x05) for LF LoRa in sweep firmware. Speed-tests used BW=812 kHz (0x0F). For the unified matrix, standardize on **BW=812 kHz for HF** and **BW=250 kHz for LF** (better sub-GHz sensitivity). Document which BW was used in every CSV row.
 
-| Phase | Mode | Band | Detail |
-|-------|------|------|--------|
-| 0 | LoRa | HF (2.4 GHz) | SF7, BW 812 kHz |
-| 1 | LoRa | HF | SF9, BW 812 kHz |
-| 2 | LoRa | HF | SF12, BW 812 kHz |
-| 3 | FLRC | HF | 2600 kbps |
-| 4 | FLRC | HF | 1300 kbps |
-| 5 | FLRC | HF | 650 kbps |
-| 6 | FLRC | HF | 325 kbps |
-| 7 | LoRa | LF (868 MHz) | SF7, BW 250 kHz |
-| 8 | LoRa | LF | SF9, BW 250 kHz |
-| 9 | LoRa | LF | SF12, BW 250 kHz |
+### 2.3 Distance Points
 
-**MISSING: LF FLRC phases (868 MHz FLRC).** Four new phases must be added (Task S1).
+| Environment | Distances |
+|-------------|-----------|
+| Indoor (baseline) | 0.3m, 1m, 2m |
+| Outdoor LOS | 10m, 25m, 50m, 100m, 200m, 500m |
+| Outdoor LOS (stretch) | 1000m+ (if 500m still 0% PER) |
 
-### Firmware Capabilities Already Implemented
+> Dwell time: 30s minimum per point (ensures ≥1 full burst capture). For LoRa SF12, dwell 60s (packets are slow).
 
-- **RF path switching**: `SET_RX_PATH` — HF=1 for 2.4 GHz, LF=0 for 868 MHz. Applied per phase.
-- **Frequency switching**: 2440 MHz (HF) / 868.0 MHz (LF), set per phase.
-- **Modulation type switching**: per-phase packet type and modulation parameters.
+### 2.4 Power Levels
 
-### SPI Initialization Sequences
+Only **two** meaningful states (PA is binary):
 
-**FLRC phase init:**
-```
-SET_PACKET_TYPE(0x05)        // PT_FLRC
-SET_FLRC_MOD_PARAMS          // bitrate, coding rate, shaping
-SET_FLRC_SYNCWORD            // sync word bytes
-SET_FLRC_PACKET_PARAMS       // preamble, payload length, CRC type
-```
+| State | powerRaw | dBm | PER (indoor) |
+|-------|----------|-----|-------------|
+| PA-off | 0x00 | ~0 effective | ~4% |
+| PA-on | 0x19 | 12.5 | ~0% |
 
-**LoRa phase init:**
-```
-SET_PACKET_TYPE(0x00)        // PT_LORA
-SET_LORA_MOD_PARAMS          // SF, BW, CR
-SET_LORA_PACKET_PARAMS       // preamble, payload length, CRC, header type
-```
+> For the full matrix, test BOTH states at each distance. PA-off gives us a "weaker TX" for free — useful for indoor/close-range where PA-on saturates the receiver.
 
-**MANDATORY before entering RX (every phase):**
-```
-SET_RX_PATH(0x01 or 0x00)    // 0x01=HF path, 0x00=LF path
-CALIB_FE(0x0123)             // Front-end calibration — MANDATORY or CMD_ERROR
-CALIBRATE(0x0122, mask 0x5F) // Image/bias calibration, mask 0x5F (NOT 0x6F — bit 5 undefined)
-```
+### 2.5 Full Matrix Size
 
-### Phase Schedule
+| Path | Configs | Distances | Power | Total Points |
+|------|---------|-----------|-------|-------------|
+| HF FLRC | 4 bitrates | 9 | 2 | 72 |
+| HF LoRa | 3 SFs | 9 | 2 | 54 |
+| LF LoRa | 3 SFs | 9 | 2 | 54 |
+| LF FLRC | 4 bitrates | 9 | 2 | 72 |
+| **Total** | | | | **252** (if LF FLRC works) |
 
-- Fixed time budgets per phase — TX and RX stay synchronized.
-- `TX_POWER_DBM` is a compile-time constant (currently **12 dBm**, max for LR2021).
-- Full cycle (10 phases) ≈ 3 minutes. With 14 phases ≈ 3–4 minutes.
+Reality: ~180 points if LF FLRC is unsupported. Prioritize by value (see execution order).
 
 ---
 
-## 4. Critical Cross-Track Context
+## 3. UNIFIED CSV OUTPUT FORMAT
 
-This section captures hard-won knowledge that **both tracks must share**. Ignore any of these at your peril.
+ALL test results use this single CSV schema. Both groups' firmware outputs this format.
 
-### Speed-tests → Range-tests Handoff
-
-| Item | Detail |
-|------|--------|
-| **SPI Protocol** | Raw 2-byte opcode SPI **WORKS**. RadioLib does **NOT** work. **Never use RadioLib.** |
-| **RSSI decoding** | RSSI is **unsigned** — must negate for dBm. `GET_LORA_PACKET_STATUS` (opcode `0x022A`): `buf[2]`=RSSI, `buf[3]`=SNR. `RSSI_raw / 2 = dBm` (negate). `SNR_raw` (signed) `/ 4 = dB`. |
-| **CR bug** | `LORA_CR` must be **1** (coding rate 4/5), **NOT 5**. Value 5 encodes an invalid CR → SF12/SF9 RX = 0. |
-| **RSSI saturation** | At 1–2 m indoor, RSSI reads **-8 dBm** regardless of TX power (0–12 dBm). **Distance testing is the ONLY way** to see power-vs-range tradeoffs. |
-| **FLRC indoor throughput** | 2600 kbps → **602 kbps** sustained; 1300 → **495**; 650 → **318**; 325 → **195** (all 0% PER). |
-| **Duplicates** | RX picks up packets across listen windows. Use a **cumulative unique counter**, not raw count. |
-| **SET_RX_PATH** | **MANDATORY**: HF=1 for 2.4 GHz, LF=0 for 868 MHz. Without it, the radio listens on the wrong path. |
-| **CALIB_FE** | `CALIB_FE(0x0123)` is **MANDATORY** before RX or chip returns `CMD_ERROR`. |
-| **USB CDC** | USB CDC dies on RP2040 during TX loops — known behavior, not a bug. **RX side stays responsive.** Capture serial data from the RX board only. |
-| **BoardSerial()** | `BoardSerial()` wrapper is **MANDATORY** for all serial access. `serial.Serial()` is blocked by the guard. |
-| **Board locking** | Lock **BOTH** boards atomically: `BALLOON_TRACK=<track> python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both --purpose 'description' --timeout 120` |
-
-### Range-tests → Speed-tests Handoff
-
-| Item | Detail |
-|------|--------|
-| **CSV template** | `data/range-test-results.csv` — columns: `date, distance_m, bitrate_kbps, tx_power_dbm, payload_bytes, freq_mhz, antenna, orientation, obstacle, environment, tx_sent, rx_received, rx_unique, rx_lost, loss_pct, rssi_avg_dbm, rssi_min_dbm, throughput_kbps, elapsed_ms, verdict, notes` |
-| **Unique-counting bug** | Range-tests found that PER showed 100% because the lost count was calculated wrong (4 billion+ "lost" packets). **Cumulative unique count must be maintained correctly.** `lost = expected_sent - unique_received`. |
-| **Physical test methodology** | Walk to fixed distances, capture one full firmware cycle (~4 min) at each position. |
-| **PCB antenna** | Dev boards use PCB trace antennas (not optimal). Note this for flight hardware comparison. |
-| **Environment matters** | Indoor reflections cause multipath. Outdoor LOS gives cleaner data. Test both. |
-
----
-
-## 5. Unified Test Matrix
-
-### Fixed Parameters
-
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| TX power | **12 dBm** | Max for LR2021 |
-| Payload (LoRa) | **127 bytes** | |
-| Payload (FLRC) | **255 bytes** | |
-| Preamble | **16 bytes** | |
-| Packets per phase (FLRC) | **200** | |
-| Packets per phase (LoRa) | **50** | SF12: reduced to 20–30 |
-| Coding Rate (LoRa) | **4/5 (CR=1)** | NOT 5 — see CR bug above |
-
-### Variable Parameters
-
-| Parameter | Values |
-|-----------|--------|
-| Band | 2.4 GHz (HF path) / 868 MHz (LF path) |
-| Mode | FLRC / LoRa |
-| FLRC bitrate | 2600, 1300, 650, 325 kbps |
-| LoRa SF | SF7, SF9, SF12 |
-| Distance | 1 m, 5 m, 10 m, 25 m, 50 m |
-| Environment | indoor LOS, indoor through 1 wall, indoor through 2 walls, outdoor LOS |
-
-### Full Sweep Matrix
-
-**22 mode/band/bitrate combinations per distance position.**
-
-Distance + environment positions: 5 distances + 4 environments = **9 positions**.
-
-**Total: 9 positions × 22 combos = 198 data points.**
-
-### Phase Schedule (with new LF-FLRC phases)
-
-| Phase | Name | Band | Frequency | Mode | Params | Packets | Time Budget |
-|-------|------|------|-----------|------|--------|---------|-------------|
-| 0 | HF-LoRa-SF7 | HF | 2440 MHz | LoRa | SF7, BW 812 kHz | 50 | 15 s |
-| 1 | HF-LoRa-SF9 | HF | 2440 MHz | LoRa | SF9, BW 812 kHz | 50 | 15 s |
-| 2 | HF-LoRa-SF12 | HF | 2440 MHz | LoRa | SF12, BW 812 kHz | 30 | 30 s |
-| 3 | HF-FLRC-2600 | HF | 2440 MHz | FLRC | 2600 kbps | 200 | 8 s |
-| 4 | HF-FLRC-1300 | HF | 2440 MHz | FLRC | 1300 kbps | 200 | 8 s |
-| 5 | HF-FLRC-650 | HF | 2440 MHz | FLRC | 650 kbps | 200 | 8 s |
-| 6 | HF-FLRC-325 | HF | 2440 MHz | FLRC | 325 kbps | 200 | 8 s |
-| 7 | LF-LoRa-SF7 | LF | 868 MHz | LoRa | SF7, BW 250 kHz | 50 | 8 s |
-| 8 | LF-LoRa-SF9 | LF | 868 MHz | LoRa | SF9, BW 250 kHz | 50 | 20 s |
-| 9 | LF-LoRa-SF12 | LF | 868 MHz | LoRa | SF12, BW 250 kHz | 20 | 50 s |
-| 10 | LF-FLRC-2600 | LF | 868 MHz | FLRC | 2600 kbps | 200 | 8 s | **← NEW** |
-| 11 | LF-FLRC-1300 | LF | 868 MHz | FLRC | 1300 kbps | 200 | 8 s | **← NEW** |
-| 12 | LF-FLRC-650 | LF | 868 MHz | FLRC | 650 kbps | 200 | 8 s | **← NEW** |
-| 13 | LF-FLRC-325 | LF | 868 MHz | FLRC | 325 kbps | 200 | 8 s | **← NEW** |
-
-**Full cycle ≈ 3–4 minutes. One cycle per distance position.**
-
----
-
-## 6. Task Assignment
-
-### Speed-tests Track
-
-#### TASK S1: Add LF-FLRC phases to `multi_radio_sweep.cpp`
-
-- Add **4 new Phase entries** for LF FLRC: 868 MHz, `rfPath=0`, `pktType=PT_FLRC`.
-- Use the same FLRC modulation params as HF phases, but with `SET_RX_PATH(0x00)` for LF.
-- Frequency: **868.0 MHz**.
-- Keep all existing 10 phases unchanged — new phases are appended as 10–13.
-- **Acceptance test:** compile successfully, verify total phase count = **14**.
-
-#### TASK S2: Fix RX unique-counting for range data
-
-RX firmware must output a structured result line per phase:
+### 3.1 Per-Burst Result Line
 
 ```
-PHASE_RESULT <phase_num> <name> rx=<count> unique=<unique> lost=<lost> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> throughput=<kbps>
+LR2021_RESULT,timestamp_iso,path={HF_FLRC|HF_LORA|LF_LORA|LF_FLRC},freq_mhz={2440|868},modulation={FLRC|LORA},bitrate_kbps={2600|1300|650|325|0},spreading_factor={0|7|9|12},bandwidth_khz={812|406|250|203},coding_rate={45|46|47|48|0},tx_power_dbm={0.0|12.5},pa_state={OFF|ON},distance_m={0.3|1|2|10|25|50|100|200|500|1000},los={Y|N},packets_sent={N},packets_rx={N},packets_unique={N},per_percent={F},throughput_kbps={F},rssi_avg_dbm={I},rssi_min_dbm={I},rssi_max_dbm={I},snr_avg_db={F|NA},pkt_size_bytes={127|255},uptime_ms={N},notes={free_text}
 ```
 
-Semantics:
-- `unique` = count of **distinct sequence numbers** received.
-- `lost` = `expected_sent - unique_received` (**NOT** `total_received - received`).
-- `per` = `lost / expected_sent * 100`.
+### 3.2 Field Definitions
 
-**Acceptance test:** verify with known packet sequences (e.g., inject gaps, confirm PER matches).
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp_iso` | ISO 8601 | Wall-clock time of burst start (GPS-correlated) |
+| `path` | enum | HF_FLRC, HF_LORA, LF_LORA, LF_FLRC |
+| `freq_mhz` | int | 2440 or 868 |
+| `modulation` | enum | FLRC or LORA |
+| `bitrate_kbps` | int | FLRC only; 0 for LoRa |
+| `spreading_factor` | int | LoRa only; 0 for FLRC |
+| `bandwidth_khz` | int | Actual BW used |
+| `coding_rate` | int | 45=4/5, 46=4/6, etc.; 0 for FLRC uncoded |
+| `tx_power_dbm` | float | Requested power (0.0 or 12.5) |
+| `pa_state` | enum | OFF (codes 0-24) or ON (code 25) |
+| `distance_m` | float | TX-RX separation (GPS or measured) |
+| `los` | bool | Y = clear line-of-sight, N = obstructed |
+| `packets_sent` | int | From TX DEADBEEF marker |
+| `packets_rx` | int | Total received (including dups) |
+| `packets_unique` | int | Unique sequence numbers |
+| `per_percent` | float | (sent - unique) / sent × 100 |
+| `throughput_kbps` | float | Measured goodput |
+| `rssi_avg_dbm` | int | Average RSSI across received packets |
+| `rssi_min_dbm` | int | Worst (most negative) RSSI |
+| `rssi_max_dbm` | int | Best RSSI |
+| `snr_avg_db` | float | LoRa only; NA for FLRC |
+| `pkt_size_bytes` | int | 127 (LoRa) or 255 (FLRC) |
+| `uptime_ms` | int | RX board uptime (for GPS correlation) |
+| `notes` | string | Free text (e.g., "multipath suspected", "antenna orientation: vertical") |
 
-#### TASK S3: Add JSON output mode for automated capture
+### 3.3 Firmware Output Convention
 
-Each phase outputs one JSON line:
-
-```json
-{"phase":3,"name":"HF-FLRC-2600","band":"HF","freq":2440,"mode":"FLRC","bitrate":2600,"rx":200,"unique":200,"per":0.0,"rssi_avg":-48.8,"rssi_min":-104,"throughput":602.4}
-```
-
-Easy to parse, easy to merge across distances. One line per phase per cycle.
+Both sweep firmwares already output structured lines (`SWEEP_TX_RESULT`, `RANGE_RESULT_RX`). The unified format above is a **superset**. Migration path:
+1. Add `path`, `pa_state`, `los`, `distance_m` fields to existing firmware output.
+2. `distance_m` and `los` are filled post-test from GPS correlation (not in firmware output).
+3. `pa_state` is derived from `tx_power_dbm >= 12.5 ? ON : OFF`.
 
 ---
 
-### Range-tests Track
+## 4. TASK ASSIGNMENTS
 
-#### TASK R1: Prepare distance markers
+### 4.1 speed-tests Tasks
 
-- Identify **5 distances**: 1 m, 5 m, 10 m, 25 m, 50 m.
-- **Indoor:** through walls and around corners.
-- **Outdoor:** clear LOS in a park or field.
-- **Key metric:** sub-GHz (868 MHz) penetration through walls — this is the primary reason for dual-band testing.
+| ID | Task | Deliverable | Depends On |
+|----|------|-------------|------------|
+| S1 | **Validate runtime bitrate switching** — flash dual_radio_sweep, confirm RSSI/PER differs between 2600 and 325 windows at same distance | Test report confirming mode-switch works mid-cycle | Phase 0 |
+| S2 | **Complete LoRa sustained sweep** — SF7/SF9/SF12 at HF 2440 MHz, sustained throughput | 3 data rows filling Phase 2 of sustained-throughput doc | ESP32 bridge recovery |
+| S3 | **HF LoRa power sweep** — repeat power sweep at SF7/SF9/SF12 (verify PA binary behavior in LoRa mode) | 6 data points (3 SFs × 2 PA states) | S2 |
+| S4 | **Add unified CSV fields to multi_radio_sweep.cpp** — add `path`, `pa_state` to SWEEP_TX_RESULT output | Patched firmware | S1 |
+| S5 | **TX bottleneck logic analyzer capture** — capture working vs failing SPI transactions | Diagnostic data, root cause for PIO/DMA failures | Hardware ($20 analyzer) |
 
-#### TASK R2: Fix data capture pipeline
+### 4.2 range-tests Tasks
 
-- Use the CSV template at `data/range-test-results.csv`.
-- Parse `PHASE_RESULT` lines (or JSON lines) from RX serial output.
-- One file per distance position, named: `data/char_dist_<m>_env_<indoor|outdoor|wall1|wall2>.csv`.
-- Calculate PER correctly: `(sent - unique_received) / sent * 100`.
+| ID | Task | Deliverable | Depends On |
+|----|------|-------------|------------|
+| R1 | **Extend dual_radio_sweep to full matrix** — add HF LoRa SF7/SF9/SF12 modes, add LF FLRC mode (test if supported) | Updated firmware with 10+ modes | Phase 0 |
+| R2 | **Indoor baseline at all distances (0.3/1/2m)** — run full sweep at desk-top range | CSV with ~20 baseline rows | R1 |
+| R3 | **Outdoor LOS sweep** — 10/25/50/100/200/500m, HF FLRC + LF LoRa | CSV with ~100+ outdoor rows | R2 |
+| R4 | **RSSI validation at distance** — confirm RSSI follows free-space path loss curve | Validation report (RSSI vs expected curve) | R3 |
+| R5 | **LF FLRC feasibility test** — attempt FLRC on 868 MHz path, report if chip supports it | Go/no-go for Path D | R1 |
+| R6 | **Powerbank dummy load fix** — ensure TX runs >30 min on battery without auto-shutoff | Working battery-powered TX setup | None |
 
-#### TASK R3: Physical walk-around test
+### 4.3 Shared Tasks (either group, coordinate via board lock)
 
-1. Flash **BOTH** boards with the updated `multi_radio_sweep` firmware (14 phases).
-2. TX board stays at a **fixed position** (battery powered).
-3. RX board (laptop connected) walks to each distance marker.
-4. At each position: wait for `CYCLE START` message, capture **one full cycle** (~4 min).
-5. Record: distance, environment, any obstacles.
-6. Move to next position after the full cycle is captured.
+| ID | Task | Deliverable |
+|----|------|-------------|
+| X1 | **Unify CSV parser** — single Python script that parses both `SWEEP_TX_RESULT` and `RANGE_RESULT_RX` into unified CSV | `tools/parse_unified_csv.py` |
+| X2 | **Plotting script** — PER vs distance, RSSI vs distance, throughput vs bitrate, one PNG per radio path | `tools/plot_characterization.py` |
+| X3 | **Sync `board_serial.py` to both worktrees** — ensure both have latest wrapper | Symlink or copy |
 
 ---
 
-## 7. Execution Order
-
-| Phase | Track | Tasks | Dependency | Hardware? |
-|-------|-------|-------|------------|-----------|
-| **A** | Speed-tests | S1 + S2 + S3 | None | No (software only) |
-| **B** | Range-tests | R1 + R2 | None | No (prep only) |
-| **C** | Joint | R3 | A **AND** B complete | **Yes** (operator + both boards) |
-| **D** | Analysis | Aggregate CSVs, generate matrix + charts | C complete | No |
+## 5. EXECUTION ORDER
 
 ```
-Phase A (speed-tests: S1+S2+S3) ──────────────┐
-                                                ├──► Phase C (joint: R3) ──► Phase D (analysis)
-Phase B (range-tests: R1+R2) ──────────────────┘
+Phase 0: BLOCKERS (both groups, parallel)
+├── [S2] Recover ESP32 bridge (physical USB reconnect)
+├── [R6] Fix powerbank auto-shutoff (dummy load)
+├── [X3] Sync board_serial.py to both worktrees
+└── [R5] LF FLRC feasibility quick-test (10 min, determines if Path D exists)
+         │
+         ▼
+Phase 1: INDOOR BASELINE (range-tests leads, speed-tests supports)
+├── [S1] Validate runtime bitrate switching
+├── [R1] Extend sweep firmware to full mode list
+├── [R2] Indoor baseline sweep (0.3/1/2m, all configs)
+├── [S2] Complete LoRa sustained sweep (if bridge recovered)
+└── [S3] LoRa power sweep
+         │
+         ▼
+Phase 2: OUTDOOR SWEEP (range-tests executes, speed-tests analyzes)
+├── [R3] Outdoor LOS sweep (10→500m)
+│   ├── Day 1: HF FLRC all bitrates, PA-on + PA-off
+│   ├── Day 2: HF LoRa all SFs, PA-on + PA-off
+│   └── Day 3: LF LoRa all SFs (if LF FLRC works, add it)
+├── [R4] RSSI validation at distance
+├── [S5] Logic analyzer capture (independent, indoor)
+└── [X1][X2] Build parser + plotter (can start during Phase 1)
+         │
+         ▼
+Phase 3: ANALYSIS & DELIVERY
+├── Merge all CSVs into unified dataset
+├── Generate characterization report:
+│   ├── Range-vs-PER curves (4 paths overlaid)
+│   ├── RSSI-vs-distance curves (validation against FSPL)
+│   ├── Throughput-vs-bitrate curves (FLRC)
+│   ├── Sensitivity comparison (SF7 vs SF9 vs SF12)
+│   └── PA impact quantification (on vs off, dB improvement)
+└── Define adaptive protocol thresholds for flight firmware
 ```
 
-**Phase A and B run in PARALLEL.**
-**Phase C requires both A and B complete.**
-**Phase D requires C complete.**
-
----
-
-## 8. Data Output Format
-
-### Final Deliverable
-
-A **single merged CSV** with all 198+ data points.
-
-**Columns:**
+### Dependency Graph (visual)
 
 ```
-date, distance_m, environment, band, freq_mhz, mode, bitrate_kbps, sf, tx_power_dbm,
-payload_bytes, tx_sent, rx_received, rx_unique, per_pct, rssi_avg_dbm, rssi_min_dbm,
-throughput_kbps, snr_avg_db, verdict, notes
+Phase 0                    Phase 1                 Phase 2              Phase 3
+───────                    ────────                ────────             ────────
+ESP32 bridge ──────────► LoRa sustained ───────► Outdoor LoRa ──────► Report
+                     ┌──► sweep (S2)          (R3 Day 2)
+Powerbank fix (R6) ──┤
+                     ├──► Indoor baseline ────► Outdoor FLRC ──────► Report
+LF FLRC test (R5) ───┘    (R2)               (R3 Day 1)
+                          
+Bitrate switch (S1) ─────► Firmware patch ───► Outdoor sweep uses
+                           (S4, R1)           unified CSV
 ```
 
-**Example rows:**
+---
 
-| date | distance_m | environment | band | freq_mhz | mode | bitrate_kbps | sf | tx_power_dbm | payload_bytes | tx_sent | rx_received | rx_unique | per_pct | rssi_avg_dbm | rssi_min_dbm | throughput_kbps | snr_avg_db | verdict | notes |
-|------|-----------|-------------|------|----------|------|-------------|-----|-------------|--------------|---------|------------|-----------|---------|-------------|-------------|----------------|-----------|---------|-------|
-| 2026-07-24 | 1 | indoor_los | HF | 2440 | FLRC | 2600 | — | 12 | 255 | 200 | 200 | 200 | 0.0 | -8.0 | -8.0 | 602.4 | 8.5 | PASS | RSSI saturated |
-| 2026-07-24 | 25 | wall1 | LF | 868 | LoRa | — | SF12 | 12 | 127 | 20 | 18 | 18 | 10.0 | -95.0 | -102.0 | 1.2 | -7.5 | MARGINAL | Through 1 drywall |
+## 6. BOARD ACCESS COORDINATION PROTOCOL
 
-### Summary Table
+### 6.1 Hardware Inventory
 
-A **mode × distance grid** showing the maximum usable range (or PER) at each mode/bitrate combination. This is the executive summary of the campaign — one glance tells you which modes work at which distances.
+| Board | Serial | Role | Port (typical) |
+|-------|--------|------|----------------|
+| RP2040 #1 | E663B035973B8332 | RX | /dev/ttyACM2 (via ESP32 bridge) |
+| RP2040 #2 | E663B035977F242D | TX | /dev/ttyACM0 (via ESP32 bridge) |
+| ESP32 bridge A | — | UART bridge for 8332 | paired with ACM2 |
+| ESP32 bridge B | — | UART bridge for F242D | paired with ACM0 |
 
-| Mode / Bitrate | 1 m | 5 m | 10 m | 25 m | 50 m |
-|----------------|-----|-----|------|------|------|
-| HF FLRC 2600 | ? | ? | ? | ? | ? |
-| HF FLRC 1300 | ? | ? | ? | ? | ? |
-| HF FLRC 650 | ? | ? | ? | ? | ? |
-| HF FLRC 325 | ? | ? | ? | ? | ? |
-| HF LoRa SF7 | ? | ? | ? | ? | ? |
-| HF LoRa SF9 | ? | ? | ? | ? | ? |
-| HF LoRa SF12 | ? | ? | ? | ? | ? |
-| LF FLRC 2600 | ? | ? | ? | ? | ? |
-| LF FLRC 1300 | ? | ? | ? | ? | ? |
-| LF FLRC 650 | ? | ? | ? | ? | ? |
-| LF FLRC 325 | ? | ? | ? | ? | ? |
-| LF LoRa SF7 | ? | ? | ? | ? | ? |
-| LF LoRa SF9 | ? | ? | ? | ? | ? |
-| LF LoRa SF12 | ? | ? | ? | ? | ? |
+> **Port assignments swap on every reboot/reflash.** Always verify with `ls /dev/ttyACM*` and `udevadm info -q property -n /dev/ttyACM*`.
 
-> Cells filled with verdict: **PASS** (PER < 5%), **MARGINAL** (5–30%), **FAIL** (> 30%).
+### 6.2 Lock Acquisition — MANDATORY
+
+```bash
+# Acquire BOTH boards atomically
+BALLOON_TRACK=speed-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both --purpose "LoRa sustained sweep"
+
+# Check who holds the lock
+python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py status
+
+# Release when done
+BALLOON_TRACK=speed-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
+```
+
+### 6.3 Rules
+
+1. **ALWAYS acquire before ANY serial access.** The `BoardSerial()` wrapper enforces this at the Python level.
+2. **Acquire BOTH boards atomically.** Partial lock (TX only or RX only) is a bug.
+3. **Release immediately after test completes.** Don't hold locks idle.
+4. **Set `BALLOON_TRACK` env var** before any board operation:
+   - `export BALLOON_TRACK=speed-tests`
+   - `export BALLOON_TRACK=range-tests`
+5. **Monitor cron runs every 60s** checking `fuser /dev/ttyACM*` against flock holders. Violations are reported to orchestrator.
+6. **If a board is stuck/unresponsive:** do NOT force-access. Post in your status report. The other group may have context on recovery.
+
+### 6.4 Outdoor Test Board Protocol
+
+During outdoor tests, the TX board runs on battery (no USB to host). The RX board stays on laptop. **Only the RX board needs the serial lock** during outdoor testing. The TX board is flashed and locked BEFORE going outside, then unplugged from USB and connected to power bank. The lock is released for TX after unplugging.
+
+```
+1. Acquire both locks (BALLOON_TRACK=range-tests)
+2. Flash TX + RX firmware
+3. Verify 1m baseline
+4. Unplug TX from USB → connect power bank
+5. Release TX lock (TX is now autonomous, no serial needed)
+6. Keep RX lock (laptop monitoring)
+7. Go outside, run test
+8. Return, release RX lock
+```
 
 ---
 
-## 9. Risks and Mitigations
+## 7. KNOWN ISSUES & MITIGATIONS
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| **USB CDC dies during TX** | TX serial output unreliable | Use serial capture on **RX board only**; TX runs autonomously |
-| **Board lock conflicts** | Both tracks try to access boards simultaneously | Both tracks use the same `BALLOON_TRACK` for the joint test; lock both boards atomically |
-| **Antenna variation** | Results not comparable across tests | Document which antenna is used: PCB trace, wire dipole, or U.FL + external |
-| **Multipath indoors** | Erratic RSSI/PER due to reflections | Test **both indoor and outdoor**; compare and note discrepancies |
-| **RSSI accuracy** | Wrong dBm readings | Cross-check with known reference: at 1 m, 12 dBm, RSSI should be **> -50 dBm** |
-| **Sub-GHz antenna disconnected** | LF path receives nothing | **VERIFY Pin 9 (ANT) has antenna attached** before starting LF phases |
+### 7.1 RSSI Saturation at Close Range
 
----
+At 1-2m indoor, RSSI reads constant (-8 dBm) regardless of TX power. Receiver front-end is saturated. **Mitigation:** All meaningful RSSI data must come from outdoor tests at ≥10m. Use PA-off mode for close-range baseline (weaker signal, may avoid saturation).
 
-## Hardware Reference
+### 7.2 Timing Drift Between Free-Running Boards
 
-| Component | Detail |
-|-----------|--------|
-| **Chip** | Semtech LR2021 Gen 4 (NiceRF LoRa2021 module) |
-| **MCU** | RP2040 (Raspberry Pi Pico) |
-| **Bridge** | ESP32-C3 UART bridge for flashing |
-| **TX board** | Serial F242D — `/dev/ttyACM0` |
-| **RX board** | Serial 8332 — `/dev/ttyACM2` |
-| **ESP32 bridges** | `/dev/ttyACM1` and `/dev/ttyACM3` |
-| **Protocol** | Raw 2-byte opcode SPI (**NOT RadioLib**) |
+Two RP2040s drift 5-10s per ~100s cycle. Sweep firmware phases misalign. **Mitigation:**
+- Short cycles (12 min) with 3-min phases are worst case
+- **Preferred fix:** Use compile-time single-config firmware for critical measurements (one bitrate/SF per flash). Eliminates sync entirely.
+- Sweep firmware is for quick characterization only, not precision measurement.
 
-## Worktree Locations
+### 7.3 ESP32 Bridge WDT Crash
 
-| Track | Worktree |
-|-------|----------|
-| Speed-tests | `~/worktrees/balloon-speed-tests/` |
-| Range-tests | `~/worktrees/balloon-range-tests/` |
-| Main repo | `~/repos/balloon-fresh/` |
+Rapid pyserial open/close cycles crash the ESP32 UART bridge (watchdog timeout). **Mitigation:**
+- Use persistent serial connections (`dsrdtr=False`)
+- Use `BoardSerial()` wrapper (keeps connection alive)
+- Physical USB reconnect to recover
+- Flash `bootsel_oneshot.cpp` to recover stuck RP2040
+
+### 7.4 RP2040 USB CDC Output Unreliable
+
+RP2040 direct USB CDC (Serial.print) is unreliable with earlephilhower core. Output doesn't appear. **Mitigation:** UART bridge via ESP32 (GP12/GP13 → ESP32 → USB CDC) is the only reliable serial path. All sweep firmware uses `dualPrint()` (both Serial + Serial1).
+
+### 7.5 4% PER at PA-Off
+
+Consistent ~4% PER at all non-PA power levels. Likely indoor multipath + no CRC + SPI bus contention. **Mitigation:** Enable CRC in FLRC packet params to distinguish corrupted packets from truly lost. Expected to drop to ~0% outdoors with LOS.
 
 ---
 
-*This document is the single source of truth for the LR2021 characterization campaign. Both tracks reference it for firmware details, test methodology, and data format.*
+## 8. QUICK REFERENCE — Opcodes & Configs
+
+### Verified SPI Opcodes
+
+| Command | Opcode | Payload |
+|---------|--------|---------|
+| SET_STANDBY | 0x0200 | 0x01 = STDBY_RC |
+| SET_PACKET_TYPE | 0x0207 | LoRa=0x00, FLRC=0x04 |
+| SET_RF_FREQUENCY | 0x0200 | 3-byte freq (big-endian) |
+| SET_RX_PATH | 0x0201 | HF=0x01, LF=0x00 |
+| CALIB_FRONT_END | 0x0123 | HF: freq\|0x8000, LF: freq only |
+| CALIBRATE | 0x0122 | 0x5F (NOT 0x6F) |
+| SET_FLRC_MOD_PARAMS | 0x0248 | [brBw, crBt] |
+| SET_LORA_MOD_PARAMS | 0x0220 | [sfBw, crLdro] |
+| SET_PA_CONFIG | 0x0202 | {0x80, 0x00, 0x60, 0x07, 0x10} |
+| SET_TX_PARAMS | 0x0203 | [powerRaw, 0x04] |
+| SET_RX | 0x020C | [0xFF, 0xFF, 0xFF] = continuous |
+| SET_TX | 0x020D | [0x00, 0x00, 0x00] |
+| WRITE_TX_FIFO | 0x0002 | + data bytes |
+| READ_RX_FIFO | 0x0001 | → data bytes |
+| GET_FLRC_PACKET_STATUS | 0x024B | → 9-bit RSSI |
+| GET_LORA_PACKET_STATUS | 0x022A | → RSSI + SNR |
+| GET_AND_CLEAR_IRQ | 0x0117 | → 32-bit IRQ |
+| CLEAR_IRQ | 0x0116 | {0xFF, 0xFF, 0xFF, 0xFF} |
+| SET_DIO_FUNCTION | 0x0112 | DIO9 IRQ: {0x09, 0x11} |
+| SET_DIO_IRQ_CONFIG | 0x0115 | DIO9 RX+TX: {0x09, 0x00, 0x0C, 0x00, 0x00} |
+
+### Frequency Encoding
+
+```c
+uint32_t frf = (uint32_t)((freq_MHz * 1e6 * (1ULL << 18)) / (XTAL_MHz * 1e6));
+// XTAL_MHz = 52.0 for NiceRF LoRa2021 module (XTAL, not TCXO — tcxoVoltage=0)
+// 2440 MHz → frf = 0x916800
+// 868 MHz  → frf = 0x337000
+```
+
+### Expected RSSI vs Distance (Free-Space, 2440 MHz, 12.5 dBm TX)
+
+| Distance | Path Loss | Expected RSSI |
+|----------|-----------|---------------|
+| 1m | 40 dB | -27 dBm |
+| 10m | 60 dB | -47 dBm |
+| 50m | 74 dB | -61 dBm |
+| 100m | 80 dB | -67 dBm |
+| 500m | 94 dB | -81 dBm |
+| 1000m | 100 dB | -87 dBm |
+
+Formula: `RSSI = TX_power - 20*log10(d) - 20*log10(f_MHz) + 27.55`
+
+At 868 MHz: subtract 9 dB less path loss than 2440 MHz at same distance.
+
+---
+
+## 9. REFERENCE FILES
+
+| File | Location | What It Contains |
+|------|----------|------------------|
+| SPI Protocol Reference | `docs/lr2021-spi-protocol-reference.md` | Full init sequence, all opcodes |
+| SPI Command Reference | `docs/lr2021-spi-command-reference.md` | Opcode cross-ref, bug analysis |
+| LoRa Mod Params Encoding | `docs/lr2021-lora-modulation-params-encoding.md` | Byte-level LoRa config |
+| SPI Bottleneck Analysis | `docs/lr2021-spi-bottleneck-analysis-2026-07-16.md` | Why acceleration failed |
+| Complete Learnings | `docs/lr2021-complete-learnings-2026-07-23.md` | All consolidated knowledge |
+| RSSI Fix Plan | `docs/RSSI-FIX-PLAN.md` | RSSI bug root cause + fix |
+| Bitrate Sweep Results | `docs/flrc-bitrate-sweep-results-2026-07-23.md` | 4-bitrate FLRC data |
+| Sustained Throughput | `docs/sustained-throughput-results-2026-07-23.md` | 50K-packet sustained data |
+| Power Sweep Results | `docs/power-sweep-results-2026-07-24.md` | PA binary behavior data |
+| Multi-Radio Sweep Results | `docs/SWEEP-RESULTS.md` | All 10-phase dual-band data |
+| Power Sweep v2 | `tests/power-sweep-v2-results.md` | 6-level power sweep data |
+| Outdoor Test Procedure | `docs/OUTDOOR-TEST-PROCEDURE.md` | Step-by-step outdoor guide |
+| Board Mutex Plan | `docs/coordination/BOARD-MUTEX-ENFORCEMENT-PLAN.md` | Lock system architecture |
+| Dual Radio Sweep TX | `firmware/rp2040/src/dual_radio_sweep_tx.cpp` | Range-tests sweep TX |
+| Dual Radio Sweep RX | `firmware/rp2040/src/dual_radio_sweep_rx.cpp` | Range-tests sweep RX |
+| Multi-Radio Sweep | `firmware/rp2040/src/multi_radio_sweep.cpp` | Speed-tests 10-phase sweep |
+| BoardSerial Wrapper | `tools/board_serial.py` | Mandatory serial wrapper |
+
+> Files without a worktree prefix exist in BOTH worktrees (shared via git). Check your local copy.
+
+---
+
+*Document version: 1.0 — 2026-07-24*
+*Owner: balloon-hermes orchestrator*
+*Read by: speed-tests sub-manager, range-tests sub-manager*
