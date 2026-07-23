@@ -1,31 +1,46 @@
 # STATUS: balloon-range-tests
 
-**Last Updated**: 2026-07-21
-**Phase**: Infrastructure complete, outdoor distance sweep pending
+**Last Updated**: 2026-07-23
+**Phase**: RF link verified, power sweep complete, outdoor range testing next
 
 ## Current State
 
-- Proven RF baseline: 1377 kbps FLRC, 0% packet loss at <1m, 1000/1000 packets
-- 2x RP2040+LR2021 boards working (TX: E663B035973B8332, RX: E663B035977F242D)
-- Runtime-configurable FLRC firmware committed (POWER, PKTLEN, FREQ, COUNT, BITRATE, RUN commands)
-- RSSI readback + test runner implemented
-- Ground station receiver firmware built (181KB, 82% partition free), P0/P1 bugs fixed
-- Board mutex (balloon-board-lock.py) deployed
-- 5 failed SPI optimization approaches documented
+- RX FIFO race bug FIXED (commit 3dcddaf). Was unsolved across 8+ sessions.
+- 0% PER at 12.5 dBm (PA enabled). Correct seq 0-499. DEADBEEF marker caught.
+- Power sweep v2 complete (commit 5b439f3): PA discontinuity confirmed.
+- LR2021 has binary PA: codes 0-24 bypass PA (identical ~4% PER), code 25 enables PA (~0% PER).
+- RSSI register reads unreliable (0x022A always returns -127 dBm).
+- Board lock released. Both boards free.
+
+## Board Assignments
+
+| Role | Serial | Port (verify each session) |
+|------|--------|---------------------------|
+| TX   | E663B035977F242D | /dev/ttyACM0 (swaps on reflash) |
+| RX   | E663B035973B8332 | /dev/ttyACM2 (swaps on reflash) |
+
+**ALWAYS verify by serial number.** Ports swap when boards enter BOOTSEL mode.
+
+## Verified Performance (Indoor, ~30cm)
+
+| Power (dBm) | PER | Throughput | PA Status |
+|-------------|-----|------------|-----------|
+| 0.0-12.0    | ~4% | ~1460 kbps | Bypassed  |
+| 12.5        | ~0% | 219 kbps*  | Enabled   |
+
+*Continuous RX mode. Per-burst: 622/500 pkts, 0% PER, 260 kbps.
+
+## Git State
+
+- Branch: range-tests
+- Commits: 3dcddaf (GPIO IRQ fix), 5b439f3 (power sweep data)
+- Pushed to: ngit + GitHub (felixfelix-bot/balloon-fresh)
+- Working tree: clean
 
 ## Next Steps
 
-1. Flash GS receiver to second ESP32-C3, bench test tracker TX → GS RX
-2. Baseline re-verification after transport/reconnection
-3. Outdoor distance sweep: 10m, 25m, 50m, 100m LOS
-4. TX power sweep (0-12.5 dBm) + packet size sweep (16-255 bytes)
-
-## Blockers
-
-None. Requires physical board access + outdoor space for distance sweep.
-
-## Hardware Required
-
-- 2x RP2040+LR2021 boards (owned)
-- 2x wire dipole antennas λ/2=61mm at 2440 MHz
-- Laptop + USB cables for outdoor testing
+1. Outdoor range test (10m, 50m, 100m+ LOS)
+2. Fix RSSI measurement (register 0x022A broken)
+3. Test 1300/650 kbps modes for extended range
+4. Investigate 4% non-PA PER (enable CRC to distinguish lost vs corrupted)
+5. Battery-powered autonomous walk test
