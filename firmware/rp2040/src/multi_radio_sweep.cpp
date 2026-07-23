@@ -515,6 +515,24 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     int16_t rssi = rfGetFlrcRssi();
                     rssiSum += rssi;
                     rssiCount++;
+                    if (received < 3) {
+                        // Dump raw SPI bytes for FLRC RSSI debugging
+                        rfWaitBusy();
+                        spiRf.beginTransaction(spiSettings);
+                        digitalWrite(PIN_CS, LOW);
+                        spiRf.transfer(0x02); spiRf.transfer(0x4B);
+                        digitalWrite(PIN_CS, HIGH);
+                        spiRf.endTransaction();
+                        rfWaitBusy();
+                        uint8_t raw[8];
+                        spiRf.beginTransaction(spiSettings);
+                        digitalWrite(PIN_CS, LOW);
+                        for (int j = 0; j < 8; j++) raw[j] = spiRf.transfer(0x00);
+                        digitalWrite(PIN_CS, HIGH);
+                        spiRf.endTransaction();
+                        dualPrintf("DEBUG_FLRC_RSSI pkt=%d raw=[%02X %02X %02X %02X %02X %02X %02X %02X] rssi=%d\n",
+                                      received, raw[0],raw[1],raw[2],raw[3],raw[4],raw[5],raw[6],raw[7], rssi);
+                    }
                 }
 
                 rfReadRxFifo(rxBuf, pktSize);
