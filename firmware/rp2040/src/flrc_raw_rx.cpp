@@ -458,28 +458,19 @@ void setup() {
 }
 
 void loop() {
-    // Heartbeat every 2s on Serial1
-    static unsigned long lastHB = 0;
-    if (millis() - lastHB > 2000) {
-        lastHB = millis();
-        Serial1.println("HB alive");
-        Serial1.flush();
-    }
-
-    // Read commands from both Serial and Serial1
-    for (int src = 0; src < 2; src++) {
-        Stream *s = (src == 0) ? (Stream*)&Serial : (Stream*)&Serial1;
-        while (s->available()) {
-            char c = (char)s->read();
-            if (c == '\n' || c == '\r') {
-                if (cmdLen > 0) {
-                    cmdBuf[cmdLen] = '\0';
-                    processCommand(cmdBuf);
-                    cmdLen = 0;
-                }
-            } else if (cmdLen < sizeof(cmdBuf) - 1) {
-                cmdBuf[cmdLen++] = c;
-            }
+    // Auto-restart RX continuously (ESP32 bridge can't forward serial commands)
+    if (radioReady) {
+        runReceive();
+        delay(2000); // brief pause between windows
+    } else {
+        // Heartbeat + retry init
+        static unsigned long lastHB = 0;
+        if (millis() - lastHB > 2000) {
+            lastHB = millis();
+            Serial1.println("RX DEAD - retrying init");
+            Serial1.flush();
         }
+        radioReady = rawInitRadio();
+        delay(1000);
     }
 }
