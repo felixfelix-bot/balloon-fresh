@@ -243,3 +243,40 @@ See `mesh-stack/flrc-bench-espidf/RESULTS.md` for full data.
 - Yokohama balloons: https://www.yokohamaballoon.com/
 - SBS balloons: https://www.scientificballoonsolutions.com/products/
 - HYSPLIT (NOAA trajectory prediction): https://ready.arl.noaa.gov/HYSPLIT.php
+
+## BOARD ACCESS — Mutex Lock (MANDATORY)
+
+**Before flashing or testing ANY board, you MUST acquire the board lock.**
+Skipping the lock is a bug. The lock uses OS-enforced flock(2) — true mutual exclusion.
+
+### Commands
+
+```bash
+# Check who holds what
+python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py status
+
+# Acquire boards (blocks up to --timeout seconds)
+BALLOON_TRACK=speed-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both \
+    --purpose "describe your test" --timeout 120
+
+# Release when done
+BALLOON_TRACK=speed-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
+
+# Force-release stale lock (if another track crashed without releasing)
+python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both --force
+```
+
+### Resources
+- `tx` — RP2040 TX board (F242D, /dev/ttyACM0)
+- `rx` — RP2040 RX board (8332, /dev/ttyACM2)
+- `both` — TX + RX (for coordinated tests)
+- `board-a`, `board-b`, `board-c` — ESP32-S3 boards
+
+### How It Works
+- Uses `flock(LOCK_EX)` — OS-enforced, no race conditions
+- A sentinel daemon process holds the lock open
+- Auto-releases if your Hermes session crashes (sentinel monitors your PID)
+- `status` shows real flock state, not just file existence
+
+### Track Identity
+Always set `BALLOON_TRACK=speed-tests` (or your track name) so others can see who holds the lock.
