@@ -472,11 +472,9 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
 
                 rfReadRxFifo(rxBuf, pktSize);
 
-                // Validate phase ID to prevent cross-phase contamination
-                // (adjacent FLRC phases all use 2440 MHz)
-                if (rxBuf[2] == (uint8_t)phaseIdx) {
-                    received++;
-                }
+                // Count packet — accept any phase (TX/RX may be in different phases
+                // due to boot timing drift). Phase ID still in rxBuf[2] for analysis.
+                received++;
 
                 rfClearRxFifo();
                 rfClearIrq();
