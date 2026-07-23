@@ -46,7 +46,9 @@
 #ifndef RX_BITRATE_KBPS
 #define RX_BITRATE_KBPS 2600
 #endif
-#define RX_PKT_SIZE     144
+#ifndef RX_PKT_SIZE
+#define RX_PKT_SIZE     127
+#endif
 #define RX_LISTEN_MS    30000
 #define RX_SILENCE_MS   3000
 #define PRINT_EVERY     100
