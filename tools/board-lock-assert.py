@@ -31,6 +31,15 @@ PORT_MAP = {
 }
 
 def main():
+    track = os.getenv("BALLOON_TRACK")
+    if not track:
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"REFUSED: BALLOON_TRACK environment variable not set.", file=sys.stderr)
+        print(f"Set it before running any board script:", file=sys.stderr)
+        print(f"  export BALLOON_TRACK=speed-tests  # or range-tests, etc", file=sys.stderr)
+        print(f"{'='*60}\n", file=sys.stderr)
+        sys.exit(1)
+
     if len(sys.argv) < 2:
         print("Usage: board-lock-assert.py tx [rx] [board-a] ...", file=sys.stderr)
         sys.exit(2)

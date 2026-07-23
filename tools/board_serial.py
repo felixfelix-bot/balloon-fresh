@@ -43,12 +43,10 @@ PORT_TO_RESOURCE = {
 
 # Reverse map built dynamically from lock file metadata too
 def _resolve_port_to_resource(port: str) -> str | None:
-    """Map a serial port path to a lock resource name.
-    
-    Priority: udev serial number > hardcoded map.
-    Ports swap on reboot (known RP2040 USB issue), so udev is authoritative.
-    """
-    # Try udev serial number FIRST (ports swap on reboot)
+    """Map a serial port path to a lock resource name."""
+    if port in PORT_TO_RESOURCE:
+        return PORT_TO_RESOURCE[port]
+    # Try to identify by udev serial number
     import subprocess
     try:
         result = subprocess.run(
@@ -66,9 +64,6 @@ def _resolve_port_to_resource(port: str) -> str | None:
             return "rx"
     except Exception:
         pass
-    # Fall back to hardcoded map (may be stale after port swap)
-    if port in PORT_TO_RESOURCE:
-        return PORT_TO_RESOURCE[port]
     return None
 
 
@@ -112,6 +107,15 @@ def check_board_lock(port: str) -> bool:
     # Only enforce on /dev/ttyACM* (board ports)
     if "/dev/ttyACM" not in port and "/dev/ttyUSB" not in port:
         return True  # Not a board port, allow
+
+    # HARD GATE: BALLOON_TRACK must be set
+    track = os.getenv("BALLOON_TRACK")
+    if not track:
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"REFUSED: BALLOON_TRACK not set. Cannot verify identity.", file=sys.stderr)
+        print(f"Set it: export BALLOON_TRACK=speed-tests  # your track name", file=sys.stderr)
+        print(f"{'='*60}\n", file=sys.stderr)
+        return False
 
     resource = _resolve_port_to_resource(port)
     if resource is None:
