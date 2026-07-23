@@ -10,7 +10,15 @@ This replaces the old TTL-based approach which had a fatal flaw: locks expired
 (15 min) while sessions were still actively using the boards, allowing another
 session to reclaim a "stale" lock mid-test.
 
+THEFT PROTECTION (v2):
+    - Sentinels trap SIGTERM, log the attempt, and IGNORE it.
+      Only SIGKILL (uncatchable) or parent-death can release a sentinel.
+    - All theft events are logged to ~/.hermes/peripheral_locks/THEFT-LOG
+    - The `release` command requires `--steal` to kill another track's sentinel
+      (not just `--force`, which is for releasing locks with no/corrupt metadata).
+
 LOCK FILES: ~/.hermes/peripheral_locks/balloon-{tx,rx,board-a,board-b,board-c}.lock
+THEFT LOG:  ~/.hermes/peripheral_locks/THEFT-LOG
 
 RESOURCES:
     tx, rx       — RP2040 boards (speed-tests, range-tests)
@@ -162,16 +170,63 @@ def _is_locked(path: Path) -> bool:
             os.close(fd)
 
 
+THEFT_LOG = LOCK_DIR / "board-lock-theft.log"
+
+
+def _log_theft(resource: str, metadata: dict, signal_name: str, source: str = "unknown"):
+    """Log a theft attempt to the shared theft log."""
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "resource": resource,
+        "victim_track": metadata.get("track", "?"),
+        "victim_purpose": metadata.get("purpose", "?"),
+        "signal": signal_name,
+        "source": source,
+    }
+    try:
+        with open(THEFT_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass
+
+
+def _sentinel_sigterm_handler(signum, frame):
+    """Trap SIGTERM — log the theft attempt and IGNORE the signal.
+
+    Only SIGKILL (uncatchable) or parent-death can release a sentinel.
+    This prevents casual `kill <PID>` from stealing locks.
+    """
+    # We can't access metadata in a signal handler easily,
+    # but we can write to the theft log with what we know
+    try:
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "resource": os.environ.get("_BALLOON_LOCK_RESOURCE", "?"),
+            "victim_track": os.environ.get("_BALLOON_LOCK_TRACK", "?"),
+            "signal": "SIGTERM",
+            "source": f"pid={os.getppid()}",
+            "note": "SIGTERM trapped and ignored by sentinel",
+        }
+        with open(THEFT_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass
+    # DO NOT exit — ignore the signal
+
+
 def _start_sentinel(fd: int, path: Path, metadata: dict):
     """Fork a sentinel daemon that holds the flock and monitors the caller.
 
     The sentinel:
     1. Holds the flock via its inherited fd
-    2. Monitors the caller process (Hermes agent PID)
-    3. Exits when the caller dies → fd closes → flock released
-    4. Writes metadata to the lock file
+    2. Traps SIGTERM (logs theft, ignores signal)
+    3. Monitors the caller process (Hermes agent PID)
+    4. Exits when the caller dies → fd closes → flock released
+    5. Writes metadata to the lock file
     """
     monitor_pid = metadata.get("monitor_pid", 0)
+    resource = metadata.get("resource", "?")
+    track = metadata.get("track", "?")
 
     sentinel_pid = os.fork()
     if sentinel_pid != 0:
@@ -184,10 +239,14 @@ def _start_sentinel(fd: int, path: Path, metadata: dict):
 
     # Set process name for easy identification
     try:
-        resource = metadata.get("resource", "?")
         _prctl(PR_SET_NAME, 0)  # Clear
     except Exception:
         pass
+
+    # Trap SIGTERM — log and ignore (theft protection)
+    os.environ["_BALLOON_LOCK_RESOURCE"] = resource
+    os.environ["_BALLOON_LOCK_TRACK"] = track
+    signal.signal(signal.SIGTERM, _sentinel_sigterm_handler)
 
     # Write metadata to lock file
     metadata["sentinel_pid"] = os.getpid()
@@ -313,7 +372,7 @@ def acquire(resource: str, purpose: str, timeout_s: int) -> int:
         time.sleep(2)
 
 
-def release(resource: str, force: bool) -> int:
+def release(resource: str, force: bool, steal: bool) -> int:
     resources = _get_resources(resource)
     identity = _identity()
     released_any = False
@@ -330,16 +389,23 @@ def release(resource: str, force: bool) -> int:
         sentinel_pid = data.get("sentinel_pid")
         holder_track = data.get("track", "?")
 
-        if not force and holder_track != "unknown" and holder_track != identity["track"]:
-            print(f"SKIP: {r} held by track={holder_track} "
-                  f"(not ours, use --force)", file=sys.stderr)
-            continue
+        # If another track holds this lock, require explicit --steal
+        if holder_track != "unknown" and holder_track != identity["track"]:
+            if not steal and not force:
+                print(f"REFUSED: {r} held by track={holder_track} "
+                      f"(use --steal to forcefully take it — this WILL be logged)",
+                      file=sys.stderr)
+                continue
+            # Log the theft
+            _log_theft(r, data, "RELEASE_WITH_STEAL",
+                       source=f"track={identity['track']} pid={os.getpid()}")
+            print(f"STEAL: {r} taken from track={holder_track} (logged)")
 
         # Kill the sentinel → fd closes → flock released
+        # Sentinels trap SIGTERM, so we use SIGKILL directly
         if sentinel_pid:
             try:
-                os.kill(sentinel_pid, signal.SIGTERM)
-                # Wait briefly for cleanup
+                os.kill(sentinel_pid, signal.SIGKILL)
                 time.sleep(0.3)
                 print(f"RELEASED: {r} (killed sentinel {sentinel_pid})")
                 released_any = True
@@ -445,6 +511,26 @@ def status() -> int:
     except Exception:
         pass
 
+    # Show recent theft events if any
+    theft_log = LOCK_DIR / "board-lock-theft.log"
+    if theft_log.exists():
+        try:
+            lines = theft_log.read_text().strip().split("\n")
+            recent = lines[-5:] if len(lines) > 5 else lines
+            if recent and recent[0]:
+                print(f"\nRecent theft events (last {len(recent)}):")
+                for line in recent:
+                    try:
+                        entry = json.loads(line)
+                        ts = entry.get("timestamp", "?")[:19]
+                        print(f"  {ts} {entry.get('resource','?')}: "
+                              f"{entry.get('victim_track','?')} → "
+                              f"{entry.get('reason','?')}")
+                    except json.JSONDecodeError:
+                        pass
+        except OSError:
+            pass
+
     return 0
 
 
@@ -470,7 +556,9 @@ Examples:
     parser.add_argument("--timeout", type=int, default=120,
                         help="Max seconds to wait for lock (default: 120)")
     parser.add_argument("--force", action="store_true",
-                        help="Force release even if not ours")
+                        help="Force release even if not ours (legacy, no audit log)")
+    parser.add_argument("--steal", action="store_true",
+                        help="Explicitly take a lock from another track (logs to theft audit log)")
     args = parser.parse_args()
 
     if args.action == "status":
@@ -483,7 +571,7 @@ Examples:
     if args.action == "acquire":
         sys.exit(acquire(args.resource, args.purpose, args.timeout))
     elif args.action == "release":
-        sys.exit(release(args.resource, args.force))
+        sys.exit(release(args.resource, args.force, args.steal))
 
 
 if __name__ == "__main__":

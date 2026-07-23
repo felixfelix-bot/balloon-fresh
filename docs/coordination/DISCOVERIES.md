@@ -26,6 +26,73 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-speed-tests] docs: complete handover for range testing group — all results, bugs, setup, plan (2026-07-24) | tags: GENERAL
+- **Commit:** `0fe824e` by Felix
+- **Files:** docs/HANDOVER-COMPLETE-2026-07-24.md
+- **Full message:** docs: complete handover for range testing group — all results, bugs, setup, plan
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: power sweep results + master JSON + range testing handover (2026-07-24) | tags: GENERAL
+- **Commit:** `c1c1811` by Felix
+- **Files:** docs/master-results.json, docs/power-sweep-results-2026-07-24.md, docs/range-testing-handover.md
+- **Full message:** docs: power sweep results + master JSON + range testing handover
+- **Relevance:** GENERAL
+
+
+### [balloon-speed-tests] docs: comprehensive session summary — 10 commits, all results, plan status (2026-07-24) | tags: GENERAL
+- **Commit:** `2be0010` by Felix
+- **Files:** docs/SESSION-SUMMARY-2026-07-24.md
+- **Full message:** docs: comprehensive session summary — 10 commits, all results, plan status
+- **Relevance:** GENERAL
+
+
+### [balloon-range-tests] docs: add BOARD ACCESS mutex lock section to AGENTS.md (2026-07-23) | tags: GENERAL
+- **Commit:** `34eadfe` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: add BOARD ACCESS mutex lock section to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: add BOARD ACCESS mutex lock section to AGENTS.md (2026-07-23) | tags: GENERAL
+- **Commit:** `4aa7385` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: add BOARD ACCESS mutex lock section to AGENTS.md
+- **Relevance:** GENERAL
+
+
+### [balloon-hermes] chore(data): adopt range-test-results.csv template from speed-tests track (2026-07-23) | tags: TEST
+- **Commit:** `51cb97d` by Felix
+- **Files:** data/range-test-results.csv
+- **Full message:** chore(data): adopt range-test-results.csv template from speed-tests track
+- **Relevance:** TEST
+
+
+### [balloon-speed-tests] docs: add anti-coordination guardrails to AGENTS.md (2026-07-18) | tags: GENERAL
+- **Commit:** `5cc537e` by c03rad0r
+- **Files:** AGENTS.md
+- **Full message:** docs: add anti-coordination guardrails to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] chore(data): add range-test-results.csv template (2026-07-18) | tags: TEST
+- **Commit:** `f39fdb9` by c03rad0r
+- **Files:** data/range-test-results.csv
+- **Full message:** chore(data): add range-test-results.csv template
+- **Relevance:** TEST
+
+
+### [balloon-hermes] docs: purge RadioLib references from circuit-design hardware docs (2026-07-23) | tags: RADIO, HARDWARE
+- **Commit:** `1c3e089` by Felix
+- **Files:** tracker/hardware/FLIGHT-BOARD-PLAN.md, tracker/hardware/footprints/nicerf-lora2021.json, tracker/hardware/hub_board_diy/implementation-plan.md
+- **Full message:** docs: purge RadioLib references from circuit-design hardware docs
+- **Relevance:** RADIO, HARDWARE
+
+
+### [balloon-hermes] fix: deprecate RadioLib LR2021, adopt raw 2-byte opcode protocol (2026-07-23) | tags: SPI, RADIO
+- **Commit:** `811a156` by Felix
+- **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md (+8 more)
+- **Full message:** fix: deprecate RadioLib LR2021, adopt raw 2-byte opcode protocol
+- **Relevance:** SPI, RADIO
+
+
 ### [balloon-hermes] ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files (2026-07-23) | tags: RADIO
 - **Commit:** `d8a7187` by Felix
 - **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/coordination/DISCOVERIES.md (+6 more)

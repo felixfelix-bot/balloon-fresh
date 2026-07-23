@@ -1,27 +1,58 @@
 /*
- * esp32-uart-bridge — UART → USB Serial forwarder for RP2040
- *
- * ESP32-C3 SuperMini (303a:1001 = USB JTAG/serial debug unit)
- *
- * Serial  = USB JTAG CDC (what the PC reads)
- * Serial1 = UART1 (remapped via GPIO matrix — avoids USB JTAG conflict)
- *
- * Wiring (verified 2026-07-15):
- *   RP2040 GP12 (UART0 TX) → ESP32 GPIO3 (UART1 RX)  [physical pin 3]
- *   RP2040 GP13 (UART0 RX) ← ESP32 GPIO2 (UART1 TX)  [physical pin 2]
+ * esp32-uart-bridge-v2 — UART Bridge + BOOTSEL Controller
+ * 
+ * Combines UART forwarding with BOOTSEL trigger via serial command.
+ * 
+ * Commands (via USB serial):
+ *   BOOTSEL  — trigger RP2040 BOOTSEL mode (hold BOOTSEL pin + reset)
+ *   RESET    — reset RP2040 only (no BOOTSEL)
+ * 
+ * Wiring:
+ *   UART:  RP2040 GP12 → ESP32 GPIO3 (RX), RP2040 GP13 ← ESP32 GPIO2 (TX)
+ *   BOOT:  ESP32 GPIO8 → RP2040 GP0 (BOOTSEL)
+ *   RESET: ESP32 GPIO1 → RP2040 RUN (RESET)
  *   GND → GND
- *
- * TESTING HISTORY:
- *   GPIO0(RX)/GPIO1(TX) → no data
- *   GPIO1(RX)/GPIO0(TX) → no data
- *   GPIO3(RX)/GPIO4(TX) → RECEIVED "UART_LINK_OK" + "HB alive" ✓
- *     (worked because GPIO3 IS wired; GPIO4 TX went nowhere)
- *   GPIO3(RX)/GPIO2(TX) → CORRECT: GPIO3=RX (wired), GPIO2=TX (wired)
  */
 
 #include <Arduino.h>
 
 #define UART_BAUD 115200
+#define PIN_RESET   1
+#define PIN_BOOTSEL 8
+
+void triggerBootsel() {
+    Serial.println("[BOOTSEL TRIGGER]");
+    
+    // Hold BOOTSEL pin LOW (tells RP2040 to enter bootloader on next reset)
+    pinMode(PIN_BOOTSEL, OUTPUT);
+    digitalWrite(PIN_BOOTSEL, LOW);
+    
+    // Reset RP2040
+    pinMode(PIN_RESET, OUTPUT);
+    digitalWrite(PIN_RESET, LOW);
+    delay(100);
+    digitalWrite(PIN_RESET, HIGH);
+    
+    // Hold BOOTSEL for 500ms more while RP2040 boots
+    delay(500);
+    digitalWrite(PIN_BOOTSEL, HIGH);
+    
+    // Wait for RP2040 to enter BOOTSEL mode
+    delay(500);
+    Serial.println("[BOOTSEL DONE — RP2040 in bootloader mode]");
+}
+
+void resetRP2040() {
+    Serial.println("[RESET RP2040]");
+    pinMode(PIN_RESET, OUTPUT);
+    digitalWrite(PIN_RESET, LOW);
+    delay(100);
+    digitalWrite(PIN_RESET, HIGH);
+    delay(500);
+    Serial.println("[RESET DONE]");
+}
+
+String inputBuf = "";
 
 void setup() {
     Serial.begin(115200);
@@ -29,12 +60,17 @@ void setup() {
 
     // UART1: GPIO3=RX (from RP2040 GP12 TX), GPIO2=TX (to RP2040 GP13 RX)
     Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_2);
-
     delay(100);
 
+    // Control pins — idle HIGH
+    pinMode(PIN_RESET, OUTPUT);
+    pinMode(PIN_BOOTSEL, OUTPUT);
+    digitalWrite(PIN_RESET, HIGH);
+    digitalWrite(PIN_BOOTSEL, HIGH);
+
     Serial.println();
-    Serial.println("=== ESP32 UART Bridge v6 ===");
-    Serial.println("UART1: RX=GPIO3 TX=GPIO2 @ 115200");
+    Serial.println("=== ESP32 UART Bridge v7 (BOOTSEL) ===");
+    Serial.println("Commands: BOOTSEL  RESET");
     Serial.println("[BOOT OK]");
 }
 
@@ -51,9 +87,31 @@ void loop() {
         }
     }
 
-    // USB → RP2040 (forward commands like "RUN")
+    // USB → RP2040 + command processing
     while (Serial.available()) {
-        Serial1.write(Serial.read());
+        char c = Serial.read();
+        
+        // Check for commands (newline-terminated)
+        if (c == '\n' || c == '\r') {
+            if (inputBuf.length() > 0) {
+                inputBuf.trim();
+                inputBuf.toUpperCase();
+                
+                if (inputBuf == "BOOTSEL") {
+                    triggerBootsel();
+                } else if (inputBuf == "RESET") {
+                    resetRP2040();
+                } else {
+                    // Forward to RP2040 as serial command
+                    Serial1.println(inputBuf);
+                }
+                inputBuf = "";
+            }
+        } else {
+            inputBuf += c;
+            // Also forward raw to RP2040 (for non-command data)
+            Serial1.write(c);
+        }
     }
 
     // Heartbeat every 5 seconds
@@ -61,4 +119,6 @@ void loop() {
         lastHeartbeat = millis();
         Serial.printf("[BRIDGE ALIVE %lus]\n", millis() / 1000);
     }
+    
+    yield();  // Feed watchdog
 }
