@@ -75,20 +75,29 @@
 #ifndef LORA_AUTO_START
 #define LORA_AUTO_START 0   // 0 = wait for RUN (LoRa is slow, auto-start optional)
 #endif
+#ifndef RF_PATH
+#define RF_PATH         1   // 1=HF (2.4GHz), 0=LF (sub-GHz 150-960MHz)
+#endif
 
 // ─── LoRa BW encoding ────────────────────────────────────────────────
-// BW values: 203.13kHz=0x0D, 406.25kHz=0x0E, 812.5kHz=0x0F
+// BW values: 203.13kHz=0x0D, 250kHz=0x05, 406.25kHz=0x0E, 500kHz=0x06, 812.5kHz=0x0F, 1000kHz=0x07
 static uint8_t bwKhzToCode(int khz) {
     switch (khz) {
         case 203: return 0x0D;
+        case 250: return 0x05;
         case 406: return 0x0E;
+        case 500: return 0x06;
         case 812: return 0x0F;
+        case 1000: return 0x07;
         default:  return 0x0F;  // default to 812.5
     }
 }
 
 static int bwCodeToKhz(uint8_t code) {
     switch (code) {
+        case 0x05: return 250;
+        case 0x06: return 500;
+        case 0x07: return 1000;
         case 0x0D: return 203;
         case 0x0E: return 406;
         case 0x0F: return 812;
@@ -288,8 +297,8 @@ static bool rawInitRadio() {
     rfSetFreq(cfgFreq);
     delay(1);
 
-    // SET_RX_PATH (HF = 0x01)
-    { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }
+    // SET_RX_PATH (HF=0x01 for 2.4GHz, LF=0x00 for sub-GHz)
+    { uint8_t cmd[] = { 0x02, 0x01, (uint8_t)RF_PATH, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
     // CALIB_FRONT_END
