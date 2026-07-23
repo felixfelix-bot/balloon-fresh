@@ -2,12 +2,19 @@
  * dual_radio_sweep_tx.cpp — Dual-radio sweep TX for LR2021 balloon range test
  *
  * ONE flash, walk around, tests both HF (2.4 GHz) and LF (868 MHz) paths.
- * Sweeps 4 modes on a 12-minute cycle, repeating forever:
+ * Sweeps 11 modes on a 22-minute cycle, repeating forever:
  *
- *   MODE 0 (0-3min):  HF FLRC 2600 kbps @ 2440 MHz (pin 10)
- *   MODE 1 (3-6min):  HF FLRC 325 kbps  @ 2440 MHz (pin 10)
- *   MODE 2 (6-9min):  LF LoRa SF7       @ 868 MHz  (pin 9)
- *   MODE 3 (9-12min): LF LoRa SF12      @ 868 MHz  (pin 9)
+ *   MODE  0 (0-2min):   HF FLRC 2600 kbps @ 2440 MHz (pin 10)
+ *   MODE  1 (2-4min):   HF FLRC 1300 kbps @ 2440 MHz (pin 10)
+ *   MODE  2 (4-6min):   HF FLRC 650 kbps  @ 2440 MHz (pin 10)
+ *   MODE  3 (6-8min):   HF FLRC 325 kbps  @ 2440 MHz (pin 10)
+ *   MODE  4 (8-10min):  HF LoRa SF7       @ 2440 MHz (pin 10)
+ *   MODE  5 (10-12min): HF LoRa SF9       @ 2440 MHz (pin 10)
+ *   MODE  6 (12-14min): HF LoRa SF12      @ 2440 MHz (pin 10)
+ *   MODE  7 (14-16min): LF LoRa SF7       @ 868 MHz  (pin 9)
+ *   MODE  8 (16-18min): LF LoRa SF9       @ 868 MHz  (pin 9)
+ *   MODE  9 (18-20min): LF LoRa SF12      @ 868 MHz  (pin 9)
+ *   MODE 10 (20-22min): LF FLRC 2600 kbps @ 868 MHz  (pin 9)
  *
  * Built from proven flrc_range_tx_auto.cpp SPI patterns (VERBATIM).
  * No RadioLib. Raw 2-byte opcode SPI.
@@ -38,7 +45,9 @@
 #define XTAL_MHZ        52.0f
 
 #define TX_PKT_SIZE     127
+#ifndef TX_POWER_DBM
 #define TX_POWER_DBM    12.5f
+#endif
 
 // FLRC sync word — MUST match RX
 #define SYNC_WORD_0   0x12
@@ -46,8 +55,8 @@
 #define SYNC_WORD_2   0x10
 #define SYNC_WORD_3   0x1B
 
-#define MODE_DURATION_MS  (3UL * 60UL * 1000UL)  // 3 minutes per mode
-#define NUM_MODES         4
+#define MODE_DURATION_MS  (2UL * 60UL * 1000UL)  // 2 minutes per mode
+#define NUM_MODES         11
 
 // ─── Mode definitions ────────────────────────────────────────────────
 struct RadioMode {
@@ -57,17 +66,28 @@ struct RadioMode {
     float freqMhz;
     uint16_t flrcBitrate; // FLRC only
     uint8_t loraSf;       // LoRa only
-    uint8_t loraBwCode;   // LoRa only (0x0D=203kHz, 0x0E=406kHz, 0x0F=812kHz)
+    uint8_t loraBwCode;   // LoRa only (0x05=250kHz, 0x0D=203kHz, 0x0E=406kHz, 0x0F=812kHz)
     uint8_t loraCr;       // LoRa only (1=4/5, 2=4/6, ...)
     uint16_t txPktCount;  // packets per burst
     uint32_t txPauseMs;   // pause between bursts
 };
 
 static const RadioMode modes[NUM_MODES] = {
+    // HF FLRC (2.4 GHz, pin 10) — 4 bitrates
     {"HF_FLRC_2600", true,  true,  2440.0f, 2600, 0,  0,    0, 500, 2000},
+    {"HF_FLRC_1300", true,  true,  2440.0f, 1300, 0,  0,    0, 500, 2000},
+    {"HF_FLRC_650",  true,  true,  2440.0f, 650,  0,  0,    0, 500, 2000},
     {"HF_FLRC_325",  true,  true,  2440.0f, 325,  0,  0,    0, 500, 2000},
-    {"LF_LORA_SF7",  false, false, 868.0f,  0,    7,  0x0F, 1, 50,  2000},
-    {"LF_LORA_SF12", false, false, 868.0f,  0,    12, 0x0D, 1, 50,  2000},
+    // HF LoRa (2.4 GHz, pin 10) — 3 spreading factors
+    {"HF_LORA_SF7",  false, true,  2440.0f, 0,    7,  0x0F, 1, 50,  2000},
+    {"HF_LORA_SF9",  false, true,  2440.0f, 0,    9,  0x0F, 1, 50,  2000},
+    {"HF_LORA_SF12", false, true,  2440.0f, 0,    12, 0x0F, 1, 50,  2000},
+    // LF LoRa (868 MHz, pin 9) — 3 spreading factors
+    {"LF_LORA_SF7",  false, false, 868.0f,  0,    7,  0x05, 1, 50,  2000},  // BW=250kHz for LF
+    {"LF_LORA_SF9",  false, false, 868.0f,  0,    9,  0x05, 1, 50,  2000},
+    {"LF_LORA_SF12", false, false, 868.0f,  0,    12, 0x05, 1, 50,  2000},
+    // LF FLRC (868 MHz, pin 9) — feasibility test, may not be supported
+    {"LF_FLRC_2600", true,  false, 868.0f,  2600, 0,  0,    0, 500, 2000},
 };
 
 // ─── SPI (VERBATIM from flrc_range_tx_auto.cpp) ──────────────────────
@@ -207,9 +227,32 @@ static uint8_t flrcBitrateToCode(uint16_t kbps) {
 // ─── LoRa LDRO computation ───────────────────────────────────────────
 static uint8_t computeLdro(uint8_t sf, uint8_t bwCode) {
     float bwHz = (bwCode == 0x0D) ? 203125.0f :
-                 (bwCode == 0x0E) ? 406250.0f : 812500.0f;
+                 (bwCode == 0x0E) ? 406250.0f :
+                 (bwCode == 0x05) ? 250000.0f : 812500.0f;
     float symTimeMs = (float)(1UL << sf) / bwHz * 1000.0f;
     return (symTimeMs > 16.0f) ? 1 : 0;
+}
+
+// ─── Unified CSV field helpers ───────────────────────────────────────
+static const char* getPath(const RadioMode& m) {
+    if (m.isHF && m.isFlrc)  return "HF_FLRC";
+    if (m.isHF && !m.isFlrc) return "HF_LORA";
+    if (!m.isHF && m.isFlrc) return "LF_FLRC";
+    return "LF_LORA";  // !isHF && !isFlrc
+}
+
+static const char* getPaState() {
+    return (TX_POWER_DBM >= 12.5f) ? "ON" : "OFF";
+}
+
+static int getBandwidthKhz(const RadioMode& m) {
+    if (m.isFlrc) return m.flrcBitrate;  // FLRC BW ≈ bitrate
+    switch (m.loraBwCode) {
+        case 0x0D: return 203;
+        case 0x0E: return 406;
+        case 0x05: return 250;
+        default:   return 812;  // 0x0F
+    }
 }
 
 // ─── Mode scheduling ─────────────────────────────────────────────────
@@ -421,19 +464,21 @@ static void runTransmit() {
                (unsigned long)elapsed, tput);
 
     // Structured result line
+    int bwKhz = getBandwidthKhz(m);
     if (m.isFlrc) {
-        dualPrintf("SWEEP_TX_RESULT,mode=%d,type=FLRC,freq=%.0f,bitrate=%d,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,pktSize=%d,power=%.1f,uptime_ms=%lu",
+        dualPrintf("SWEEP_TX_RESULT,mode=%d,type=FLRC,freq=%.0f,bitrate=%d,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,pktSize=%d,power=%.1f,uptime_ms=%lu,path=%s,pa_state=%s,bandwidth_khz=%d",
                    currentMode, m.freqMhz, m.flrcBitrate, count,
                    (unsigned long)txDoneCount, (unsigned long)txTimeoutCount,
                    (unsigned long)elapsed, tput, pktSize, TX_POWER_DBM,
-                   (unsigned long)burstStartMs);
+                   (unsigned long)burstStartMs,
+                   getPath(m), getPaState(), bwKhz);
     } else {
-        int bwKhz = (m.loraBwCode == 0x0D) ? 203 : (m.loraBwCode == 0x0E) ? 406 : 812;
-        dualPrintf("SWEEP_TX_RESULT,mode=%d,type=LoRa,freq=%.0f,SF=%d,bw=%d,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,pktSize=%d,power=%.1f,uptime_ms=%lu",
+        dualPrintf("SWEEP_TX_RESULT,mode=%d,type=LoRa,freq=%.0f,SF=%d,bw=%d,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,pktSize=%d,power=%.1f,uptime_ms=%lu,path=%s,pa_state=%s,bandwidth_khz=%d",
                    currentMode, m.freqMhz, m.loraSf, bwKhz, count,
                    (unsigned long)txDoneCount, (unsigned long)txTimeoutCount,
                    (unsigned long)elapsed, tput, pktSize, TX_POWER_DBM,
-                   (unsigned long)burstStartMs);
+                   (unsigned long)burstStartMs,
+                   getPath(m), getPaState(), bwKhz);
     }
 
     burstNum++;
@@ -457,8 +502,8 @@ void setup() {
     dualPrintln("=========================================");
     dualPrintln("=== RP2040 DUAL RADIO SWEEP TX       ===");
     dualPrintln("=========================================");
-    dualPrintf("Modes: 0=FLRC2600 1=FLRC325 2=LoRaSF7 3=LoRaSF12");
-    dualPrintf("Cycle: %d min (%d min per mode)", NUM_MODES * 3, 3);
+    dualPrintf("Modes: 0=FLRC2600 1=FLRC1300 2=FLRC650 3=FLRC325 4=LoRaSF7 5=LoRaSF9 6=LoRaSF12 7=LF_SF7 8=LF_SF9 9=LF_SF12 10=LF_FLRC");
+    dualPrintf("Cycle: %d min (%d min per mode)", NUM_MODES * 2, 2);
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
