@@ -393,7 +393,8 @@ static bool rawInitRadio() {
 
 // ─── Statistics ──────────────────────────────────────────────────────
 struct RxStats {
-    uint32_t received;
+    uint32_t received;      // per-window count
+    uint32_t cumulativeRx;  // total across all windows (never reset)
     uint32_t unique;
     uint32_t duplicates;
     uint32_t lastSeq;
@@ -410,7 +411,10 @@ struct RxStats {
 static RxStats stats;
 
 static void resetStats() {
+    // Preserve cumulativeRx across windows
+    uint32_t savedCum = stats.cumulativeRx;
     memset(&stats, 0, sizeof(stats));
+    stats.cumulativeRx = savedCum;
     stats.lastSeq = 0xFFFFFFFF;
     stats.rssiMin = 0;
     stats.rssiMax = -128;
@@ -476,6 +480,7 @@ static void runReceive() {
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
 
         stats.received++;
+        stats.cumulativeRx++;
         if (stats.lastSeq != 0xFFFFFFFF && seq == stats.lastSeq) stats.duplicates++;
         else stats.unique++;
         stats.lastSeq = seq;
@@ -496,10 +501,11 @@ static void runReceive() {
 
     stats.elapsedMs = millis() - stats.startMs;
 
-    // Compute results
+    // Compute results — use cumulative count for PER (maxSeq is global)
     uint32_t n = stats.received;
+    uint32_t cumRx = stats.cumulativeRx;
     uint32_t total = stats.maxSeq + 1;  // no DEADBEEF marker in LoRa mode
-    uint32_t lost = (total > n) ? (total - n) : 0;
+    uint32_t lost = (total > cumRx) ? (total - cumRx) : 0;
     float perPct = (total > 0) ? (100.0f * (float)lost / (float)total) : 0.0f;
     float tputKbps = (stats.elapsedMs > 0 && n > 0)
                      ? ((float)n * (float)pktSize * 8.0f) / (float)stats.elapsedMs : 0.0f;
@@ -510,10 +516,10 @@ static void runReceive() {
 
     dualPrintln("=============================================");
     dualPrintf("  Window:   %lu", (unsigned long)windowNum);
-    dualPrintf("  Received: %lu (unique %lu, dup %lu)", (unsigned long)n,
-               (unsigned long)stats.unique, (unsigned long)stats.duplicates);
+    dualPrintf("  Received: %lu this window (cumulative %lu, unique %lu, dup %lu)", (unsigned long)n,
+               (unsigned long)cumRx, (unsigned long)stats.unique, (unsigned long)stats.duplicates);
     dualPrintf("  Max seq:  %lu", (unsigned long)stats.maxSeq);
-    dualPrintf("  Lost:     %lu (%.2f%%)", (unsigned long)lost, perPct);
+    dualPrintf("  Lost:     %lu (%.2f%% cumulative)", (unsigned long)lost, perPct);
     dualPrintf("  Elapsed:  %lu ms", (unsigned long)stats.elapsedMs);
     dualPrintf("  THROUGHPUT: %.1f kbps", tputKbps);
     if (stats.rssiCount > 0) {
@@ -526,9 +532,9 @@ static void runReceive() {
     dualPrintln("=============================================");
 
     // Structured result line for automated parsing
-    dualPrintf("LORA_RX_RESULT,window=%lu,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,snr_avg=%.1f,sf=%d,bw=%d,cr=4/%d,pktSize=%d,freq=%.1f,uptime_ms=%lu",
+    dualPrintf("LORA_RX_RESULT,window=%lu,rx=%lu,cum_rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,snr_avg=%.1f,sf=%d,bw=%d,cr=4/%d,pktSize=%d,freq=%.1f,uptime_ms=%lu",
                (unsigned long)windowNum,
-               (unsigned long)n, (unsigned long)stats.unique, (unsigned long)lost,
+               (unsigned long)n, (unsigned long)cumRx, (unsigned long)stats.unique, (unsigned long)lost,
                (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps,
                rssiAvg, stats.rssiMin, snrAvg,
                cfgSf, bwKhz, (cfgCr + 4), cfgPktSize, cfgFreq,
