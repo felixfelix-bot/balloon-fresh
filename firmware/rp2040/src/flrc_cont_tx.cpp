@@ -43,7 +43,7 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
-#define SPI_FREQ_HZ     40000000UL  // OPT 4: 20→40 MHz SPI overclock
+#define SPI_FREQ_HZ     20000000UL  // 20MHz — 40MHz corrupts FIFO writes
 #define XTAL_MHZ        52.0f
 
 // ─── Compile-time config (overridable via -D flags) ──────────────────

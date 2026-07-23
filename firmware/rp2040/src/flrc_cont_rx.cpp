@@ -41,7 +41,7 @@
 #define RX_FREQ_MHZ     2440.0f
 #define RX_BITRATE_KBPS 2600
 #define RX_PKT_SIZE     255
-#define PRINT_EVERY     100
+#define PRINT_EVERY     500
 #define RESULT_INTERVAL_MS  10000  // Print summary every 10s
 
 // Sync word — MUST match TX
@@ -353,8 +353,8 @@ static void runContinuousReceive() {
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
 
-        // DEBUG: hex dump first 16 bytes for first 10 packets
-        if (stats.received < 10) {
+        // DEBUG: hex dump first 16 bytes for first 5 packets + every 5000th
+        if (stats.received < 5 || (stats.received % 5000) == 0) {
             char hex[128];
             snprintf(hex, sizeof(hex), "HEX[%lu] %02X %02X %02X %02X | %02X %02X %02X %02X | %02X %02X %02X %02X | %02X %02X %02X %02X",
                      (unsigned long)stats.received,
