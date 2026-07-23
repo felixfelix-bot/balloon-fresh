@@ -1,64 +1,75 @@
 # STATUS: balloon-range-tests
 
-**Last Updated**: 2026-07-23 (session 3)
-**Phase**: All software fixes complete. Ready for outdoor range testing.
+**Last Updated**: 2026-07-24 (session 4)
+**Phase**: Adaptive sweep firmware built. All software done. Ready for outdoor test.
 
 ## Current State
 
-- RX FIFO race bug FIXED (commit 3dcddaf). Was unsolved across 8+ sessions.
-- 0% PER at 12.5 dBm (PA enabled). Correct seq 0-499. DEADBEEF marker caught.
-- Power sweep v2 complete (commit 5b439f3): PA discontinuity confirmed.
-- LR2021 has binary PA: codes 0-24 bypass PA (identical ~4% PER), code 25 enables PA (~0% PER).
-- RSSI measurement FIXED (commit d85b5ea). Uses correct LR2021 command 0x024B.
-- PER calculation FIXED: handles multi-burst windows correctly.
-- Auto noise floor measurement at boot.
-- Packet size mismatch fixed: all RX envs now 127B matching TX.
-- All 9 firmware envs compile clean (2600/1300/650/325 kbps TX+RX pairs + raw-rx-127).
-- Board lock released. Both boards free.
+### Bugs Fixed (all verified on hardware)
+- RX FIFO race (commit 3dcddaf): GPIO IRQ poll replaces SPI poll. 8+ session bug dead.
+- RSSI measurement (commit d85b5ea): LR2021 command 0x024B replaces SX1280 0x022A.
+- PER calculation (commit 7a3d150): Multi-burst window handling via cumulative DEADBEEF tracking.
+- Packet size mismatch (commit 7a3d150): rx-auto 144→127B matching TX.
+- Noise floor measurement (commit 7a3d150): Auto at RX boot via RSSI_INST 0x020B.
+
+### New: Adaptive Bitrate Sweep Firmware (commit 7b00ee2)
+- GPS time module (gps_time.h/cpp): NMEA parser + PPS interrupt + millis() fallback
+- Sweep scheduler (sweep_scheduler.h/cpp): 4-mode state machine, 12-min cycle
+- TX sweep (flrc_range_tx_sweep.cpp): Auto-switches bitrate at window boundaries
+- RX sweep (flrc_range_rx_sweep.cpp): Re-arms RX after each switch, full RSSI+PER preserved
+- Works WITHOUT GPS (millis fallback). Auto-upgrades to UTC sync when GPS soldered.
+
+### Cross-Track Learnings (from speed-tests, commit 80d9f1d)
+- FLRC efficiency: 2600 kbps=23%, 325 kbps=60%. Lower bitrate = better throughput efficiency.
+- LoRa bugs pre-solved: CR encoding (5 invalid), RSSI/SNR byte swap, BW codes (812kHz=0x0F).
+- Runtime bitrate switching UNTESTED — #1 risk for sweep firmware.
+
+### Total Firmware Envs: 14 (all compile clean)
+- 9 original (tx-auto, raw-rx-127, rx-auto, 6x bitrate pairs)
+- 3 new sweep (tx-sweep, rx-sweep, gps-time-test)
+- 2 legacy (raw-rx, raw-rx-20mhz)
 
 ## Board Assignments
 
-| Role | Serial | Port (verify each session) |
-|------|--------|---------------------------|
-| TX   | E663B035977F242D | /dev/ttyACM* (swaps on reflash) |
-| RX   | E663B035973B8332 | /dev/ttyACM* (swaps on reflash) |
+| Role | Serial | Notes |
+|------|--------|-------|
+| TX   | E663B035977F242D | F242D. Port swaps on reflash. |
+| RX   | E663B035973B8332 | 8332. Port swaps on reflash. |
 
-**ALWAYS verify by serial number.** Ports swap when boards enter BOOTSEL mode.
+**ALWAYS verify by serial number. Acquire/release BOTH boards atomically.**
 
 ## Verified Performance (Indoor, ~30cm)
 
-| Power (dBm) | PER | Throughput | RSSI | PA Status |
-|-------------|-----|------------|------|-----------|
-| 0.0-12.0    | ~4% | ~1460 kbps | -103 dBm | Bypassed |
-| 12.5        | ~0% | 219 kbps*  | -60 dBm  | Enabled   |
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Signal RSSI | -60 dBm | At 12.5 dBm TX power, PA enabled |
+| Noise floor | -103 dBm | Measured at boot |
+| SNR | 43 dB | Excellent link margin |
+| PER | 0% | At 12.5 dBm, 2600 kbps, 127B |
+| Throughput | 219 kbps | Continuous RX mode |
+| TX rate | 1558 kbps | 500-pkt bursts, 0 timeouts |
 
-*Continuous RX mode. RSSI: avg -61 dBm, min -105, max -58.
-Noise floor: -103 to -105 dBm (measured at boot).
+## #1 RISK: Runtime Bitrate Switching
+
+Our sweep firmware is the FIRST attempt at runtime FLRC bitrate changes on LR2021.
+Speed-tests group avoided this entirely (used compile-time only).
+Our approach switches between bursts (not during TX), so CDC death shouldn't apply.
+BUT: radio may need full re-init of all registers, not just MOD_PARAMS.
+
+**Verification needed before outdoor test**: Flash sweep firmware, confirm RSSI/PER
+differs between bitrate windows at same distance. If identical → switch not working.
 
 ## Git State
 
 - Branch: range-tests
-- Commits: 3dcddaf (GPIO IRQ), 5b439f3 (power sweep), 9210ef3 (docs), d85b5ea (RSSI)
-- Software fixes pending commit (PER fix, noise floor, pkt size fix, docs update)
-- Pushed to: ngit + GitHub (felixfelix-bot/balloon-fresh)
-
-## Firmware Envs Ready for Testing
-
-| Env | Bitrate | Status | Use |
-|-----|---------|--------|-----|
-| rp2040-range-tx-auto | 2600 kbps | Compiles | Standard TX |
-| rp2040-raw-rx-127 | 2600 kbps | Compiles | Primary RX (RSSI+PER+noise) |
-| rp2040-range-tx-1300 | 1300 kbps | Compiles | Extended range |
-| rp2040-range-rx-1300 | 1300 kbps | Compiles | Extended range |
-| rp2040-range-tx-650 | 650 kbps | Compiles | Long range |
-| rp2040-range-rx-650 | 650 kbps | Compiles | Long range |
-| rp2040-range-tx-325 | 325 kbps | Compiles | Max range |
-| rp2040-range-rx-325 | 325 kbps | Compiles | Max range |
+- Latest: 80d9f1d (cross-track learnings + test_runner.py)
+- All pushed to: ngit + GitHub (felixfelix-bot/balloon-fresh)
+- Working tree: clean
 
 ## Next Steps (Physical — Operator Required)
 
-1. Flash TX+RX with current firmware (rp2040-range-tx-auto + rp2040-raw-rx-127)
-2. Outdoor range test: 10m, 50m, 100m, 500m at 2600 kbps
-3. Repeat at 1300/650/325 kbps for range vs bitrate tradeoff
-4. Record results in data/range-test-template.csv
-5. Battery-powered autonomous walk test
+1. Flash sweep firmware on both boards (rp2040-range-tx-sweep + rp2040-range-rx-sweep)
+2. Verify runtime bitrate switching works (indoor smoke test — see SWEEP_SWITCH messages)
+3. If switching works: outdoor test, stand at each distance 12 min for full cycle
+4. If switching fails: fall back to compile-time bitrate envs (one reflash per bitrate)
+5. Solder GPS module when ready (GP0=TX, GP1=RX, GP9=PPS) — zero code changes needed
