@@ -174,10 +174,23 @@ static void rfClearErrors() {
     rfWriteCmd(cmd, 4);
 }
 
-// ─── LoRa RSSI readback via GET_LORA_PACKET_STATUS (0x022A) ──────────
-// Read 8 bytes total (2 status + 6 data)
-// RSSI: buff[3] (after skipping 2 status bytes), raw=(buff[3]<<1)|((buff[5]&0x02)>>1), then / -2 for dBm
-// SNR: buff[2] / 4.0
+// ─── LoRa RSSI/SNR readback via GET_LORA_PACKET_STATUS (0x022A) ─────
+// Response after 2 status bytes (verified against RadioLib SX128x source):
+//   buf[0] = status_msb
+//   buf[1] = status_lsb
+//   buf[2] = rssiSync (packet RSSI)  → dBm = -val / 2
+//   buf[3] = SNR (signed)            → dB = val<128 ? val/4 : (val-256)/4
+//   buf[4..7] = signal_rssi, flags, etc (unused)
+//
+// BUG FIX: Previous code had RSSI and SNR byte indices SWAPPED.
+// RadioLib SX128x::getRSSI() reads packetStatus[0] for RSSI,
+// SX128x::getSNR() reads packetStatus[1] for SNR.
+
+// Forward declarations (defined later)
+static void dualPrintf(const char *fmt, ...);
+
+static uint8_t g_lastStatusDump = 0;  // dump raw bytes for first 3 packets
+
 static int8_t rfReadLoraRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
@@ -187,7 +200,7 @@ static int8_t rfReadLoraRssi() {
     spiRf.endTransaction();
     rfWaitBusy();
 
-    // Read 8 bytes: [stat_msb][stat_lsb][snr][rssiPkt][rssiSync][flags][rssiAvg?][?]
+    // Read 8 bytes: [stat_msb][stat_lsb][rssiSync][snr][signal_rssi][flags][?][?]
     uint8_t buf[8];
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
@@ -195,9 +208,15 @@ static int8_t rfReadLoraRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // RSSI: raw = (buf[3] << 1) | ((buf[5] & 0x02) >> 1), then dBm = raw / -2
-    uint16_t raw = ((uint16_t)buf[3] << 1) | ((buf[5] & 0x02) >> 1);
-    return -(int8_t)(raw / 2);
+    // Debug: dump raw bytes for first 3 packets
+    if (g_lastStatusDump < 3) {
+        g_lastStatusDump++;
+        dualPrintf("PKT_STATUS_RAW: %02X %02X %02X %02X %02X %02X %02X %02X",
+                   buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+    }
+
+    // RSSI: buf[2] = rssiSync, simple formula: -val / 2
+    return -(int8_t)(buf[2] / 2);
 }
 
 static float rfReadLoraSnr() {
@@ -216,9 +235,13 @@ static float rfReadLoraSnr() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // SNR: buf[2] / 4.0 (signed)
-    int8_t snrRaw = (int8_t)buf[2];
-    return (float)snrRaw / 4.0f;
+    // SNR: buf[3], signed byte / 4
+    uint8_t snrRaw = buf[3];
+    if (snrRaw < 128) {
+        return (float)snrRaw / 4.0f;
+    } else {
+        return ((float)snrRaw - 256.0f) / 4.0f;
+    }
 }
 
 // ─── LoRa-specific setters ───────────────────────────────────────────
