@@ -198,8 +198,8 @@ static int16_t rfGetLoraRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // buf[2] = rssiSync, dBm = -val / 2
-    return -(int16_t)buf[2] / 2;
+    // buf[2] = rssiSync, dBm = -val / 2. Return in tenths of dBm to avoid truncation.
+    return -(int16_t)buf[2] * 5;  // e.g. val=1 → -5 → -0.5 dBm
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
@@ -468,7 +468,12 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 }
 
                 rfReadRxFifo(rxBuf, pktSize);
-                received++;
+
+                // Validate phase ID to prevent cross-phase contamination
+                // (adjacent FLRC phases all use 2440 MHz)
+                if (rxBuf[2] == (uint8_t)phaseIdx) {
+                    received++;
+                }
 
                 rfClearRxFifo();
                 rfClearIrq();
@@ -477,7 +482,7 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
         }
     }
 
-    float rssiAvg = rssiCount > 0 ? (float)rssiSum / rssiCount : 0.0f;
+    float rssiAvg = rssiCount > 0 ? (float)rssiSum / rssiCount / 10.0f : 0.0f;  // tenths → dBm
     float per = (p.pktCount > 0 && received < p.pktCount) ?
                 (float)(p.pktCount - received) / p.pktCount * 100.0f : 0.0f;
 
