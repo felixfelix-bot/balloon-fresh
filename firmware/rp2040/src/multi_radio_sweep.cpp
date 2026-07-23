@@ -358,6 +358,9 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
 
     Serial.printf("PHASE_TX %d %s started uptime=%lu\n", phaseIdx, p.name, startMs);
 
+    // TX: wait 3s at phase start so RX (which may have booted later) is listening
+    delay(3000);
+
     for (uint16_t i = 0; i < p.pktCount; i++) {
         txBuf[0] = (uint8_t)(i >> 8);   // seq high
         txBuf[1] = (uint8_t)(i & 0xFF); // seq low
@@ -431,18 +434,15 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 continue;
             }
             if (irq & 0x00040000) {
-                // RX_DONE
-                rfReadRxFifo(rxBuf, pktSize);
-                received++;
-
-                uint16_t seq = ((uint16_t)rxBuf[0] << 8) | rxBuf[1];
-                lastSeq = seq;
-
+                // RX_DONE — read RSSI FIRST (before FIFO, which may clear status)
                 if (p.pktType == PT_LORA) {
                     int16_t rssi = rfGetLoraRssi();
                     rssiSum += rssi;
                     rssiCount++;
                 }
+
+                rfReadRxFifo(rxBuf, pktSize);
+                received++;
 
                 rfClearRxFifo();
                 rfClearIrq();
