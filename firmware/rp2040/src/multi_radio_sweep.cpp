@@ -386,7 +386,14 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
 
         digitalWrite(PIN_LED, (i & 1) ? HIGH : LOW);
 
-        // Check if we're within slot budget
+        // Spread packets across slot: wait so last packet ends near slot end.
+        // This ensures RX (which may have started later) catches some packets.
+        uint32_t elapsedNow = millis() - startMs;
+        uint32_t targetTime = (uint32_t)(i + 1) * (uint32_t)p.slotMs / (uint32_t)p.pktCount;
+        if (elapsedNow < targetTime) {
+            delay(targetTime - elapsedNow);
+        }
+
         if ((millis() - startMs) > (uint32_t)p.slotMs - 200) break;
     }
 
