@@ -328,9 +328,16 @@ struct RxStats {
     int16_t  rssiMin;
     int16_t  rssiMax;
     uint16_t rssiCount;
+    // Burst tracking — TX sends 500-pkt bursts with DEADBEEF end marker,
+    // restarting seq at 0 for each burst. We must accumulate totals across
+    // all bursts seen during the listen window, not just the last one.
+    uint32_t burstCount;      // number of DEADBEEF markers seen this session
+    uint32_t totalExpected;   // accumulated: sum of per-burst packet counts
+    int8_t  noiseFloor;       // boot-time noise floor measurement (dBm)
 };
 static RxStats stats;
 static volatile bool radioReady = false;
+static int8_t bootNoiseFloor = -128;  // measured at boot, -128 = not yet measured
 
 static void resetStats() {
     memset(&stats, 0, sizeof(stats));
@@ -349,6 +356,7 @@ static void runReceive() {
     delay(1);
 
     resetStats();
+    stats.noiseFloor = bootNoiseFloor;
     stats.startMs = millis();
     uint32_t lastPktMs = millis();
     uint8_t buf[FLRC_PKT_SIZE];
@@ -400,14 +408,27 @@ static void runReceive() {
         }
 #endif
 
-        // DEADBEEF end marker
+        // DEADBEEF end marker — TX burst boundary.
+        // TX restarts seq at 0 for each burst, so we accumulate per-burst
+        // totals across the entire listen window. Do NOT break out of the
+        // receive loop — keep listening for more bursts. Only break on
+        // timeout/silence. Do NOT count DEADBEEF itself in stats.received.
         if (buf[0] == 0xDE && buf[1] == 0xAD &&
             buf[2] == 0xBE && buf[3] == 0xEF) {
-            stats.totalSentByTx = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
-                                  ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
-            stats.elapsedMs = millis() - stats.startMs;
-            dualPrintln("RX_END DEADBEEF");
-            break;
+            uint32_t burstPackets = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
+                                    ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
+            stats.burstCount++;
+            stats.totalExpected += burstPackets;
+            stats.totalSentByTx = burstPackets;  // last burst's count (compat field)
+            dualPrintf("BURST_END n=%lu bursts=%lu totalExpected=%lu",
+                       (unsigned long)burstPackets,
+                       (unsigned long)stats.burstCount,
+                       (unsigned long)stats.totalExpected);
+            // Reset per-burst seq tracker so first pkt of next burst isn't
+            // flagged as a duplicate of the last pkt of this burst.
+            stats.lastSeq = 0xFFFFFFFF;
+            lastPktMs = millis();  // burst marker = recent activity (extends silence timer)
+            continue;  // keep listening — only break on timeout/silence
         }
 
         stats.received++;
@@ -433,7 +454,20 @@ static void runReceive() {
 
     // Print results
     uint32_t n = stats.received;
-    uint32_t total = stats.totalSentByTx > 0 ? stats.totalSentByTx : (stats.maxSeq + 1);
+    // PER calculation — use accumulated burst totals from DEADBEEF markers.
+    // OLD BUG: totalSentByTx was just the LAST burst's count (500), and
+    // maxSeq+1 was wrong because seq restarts at 0 each burst. With 3-4
+    // bursts received (2500+ pkts) but total=500, PER was always ~100%.
+    // FIX: totalExpected accumulates across all bursts seen. If no DEADBEEF
+    // was observed, fall back to maxSeq+1 as a single-burst estimate.
+    uint32_t total;
+    if (stats.totalExpected > 0) {
+        total = stats.totalExpected;
+    } else if (stats.maxSeq > 0) {
+        total = stats.maxSeq + 1;  // estimate: one burst's worth
+    } else {
+        total = 0;
+    }
     uint32_t lost = (total > n) ? (total - n) : 0;
     float perPct = (total > 0) ? (100.0f * (float)lost / (float)total) : 0.0f;
     float tputKbps = (stats.elapsedMs > 0 && n > 0)
@@ -445,6 +479,7 @@ static void runReceive() {
                (unsigned long)stats.unique, (unsigned long)stats.duplicates);
     dualPrintf("  TX sent:  %lu (est total %lu)",
                (unsigned long)stats.totalSentByTx, (unsigned long)total);
+    dualPrintf("  Bursts detected: %lu", (unsigned long)stats.burstCount);
     dualPrintf("  Lost:     %lu (%.2f%%)", (unsigned long)lost, perPct);
     dualPrintf("  Elapsed:  %lu ms", (unsigned long)stats.elapsedMs);
     dualPrintf("  THROUGHPUT: %.1f kbps", tputKbps);
@@ -453,10 +488,11 @@ static void runReceive() {
                    rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax, (int)stats.rssiCount);
     }
     dualPrintln("=============================================");
-    dualPrintf("RESULT,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d",
+    dualPrintf("RESULT,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d,bursts=%lu,noise_floor=%d",
                (unsigned long)n, (unsigned long)stats.unique, (unsigned long)lost,
                (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps,
-               rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax);
+               rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax,
+               (unsigned long)stats.burstCount, (int)stats.noiseFloor);
 }
 
 // ─── Config print ────────────────────────────────────────────────────
@@ -542,6 +578,19 @@ void setup() {
         digitalWrite(PIN_LED_ALT, HIGH);
         dualPrintln("Auto-start RX in 8 seconds...");
         delay(8000); // give bridge time to connect
+
+        // Measure noise floor before entering RX (TX should be OFF)
+        dualPrintln("MEASURING NOISE FLOOR...");
+        {
+            int32_t sum = 0;
+            for (int i = 0; i < 10; i++) {
+                sum += rfReadRssiInst();
+                delay(10);
+            }
+            bootNoiseFloor = (int8_t)(sum / 10);
+            stats.noiseFloor = bootNoiseFloor;
+            dualPrintf("NOISE_FLOOR=%d dBm (measured at boot, n=10)", (int)bootNoiseFloor);
+        }
         runReceive();
     } else {
         dualPrintln("INIT FAILED — type INIT to retry");

@@ -88,18 +88,66 @@ uint8_t cmd[] = { 0x02, 0x03, powerRaw, 0x04 };
 // dbm=12.0 → powerRaw=24 → PA bypassed
 ```
 
-## 3. RSSI Register Unreliable
+## 3. RSSI Measurement (SOLVED)
 
-Register 0x022A always returns -127 dBm at indoor range. The RSSI value is
-either not populated in FLRC mode or requires a different read sequence.
+### Root Cause of -127 dBm Bug
+Previous sessions used SX1280 register 0x022A. The LR2021 uses a completely
+different opcode space. The SX1280 register returns garbage (always -127 dBm)
+on LR2021.
 
-Previous sessions reported -60 dBm at 12.5 dBm and -103 dBm at lower power,
-but these measurements may have been from a different register or a corrupted
-SPI read. Current status: **RSSI measurement does not work.**
+### Fix
+Use LR2021 FLRC command 0x024B (GET_FLRC_PACKET_STATUS):
+```
+CS LOW → send 0x02 0x4B → CS HIGH → wait BUSY → CS LOW → read 7 bytes → CS HIGH
+Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+9-bit RSSI: raw = (buf[4] << 1) | ((buf[6] & 0x04) >> 2)
+dBm = -(raw / 2)
+```
 
-Needs investigation: Semtech datasheet references RSSI at different register
-addresses for different modes. May need to read during RX (not after), or use
-a packet status read instead.
+Also added GET_RSSI_INST (0x020B) for noise floor measurement:
+```
+CS LOW → send 0x02 0x0B → CS HIGH → wait BUSY → CS LOW → read 2 bytes → CS HIGH
+9-bit RSSI: raw = (buf[0] << 1) | (buf[1] >> 7)
+dBm = -(raw / 2)
+```
+
+### Verified Results (Bench, ~30cm, 12.5 dBm TX)
+- Signal RSSI: -60 dBm (stable across 2500+ packets)
+- Noise floor: -103 to -105 dBm (TX off)
+- SNR: 43 dB (excellent link margin)
+- Noise floor matches theory: thermal noise at 2.6 MHz BW (-174 + 10log(2.6e6) = -110 dBm) + 7 dB NF = -103 dBm
+
+### RSSI Calibration
+SET_RSSI_CALIBRATION (0x0205) is NOT needed. The chip ships with default OTP
+calibration applied on reset. Our CALIBRATE + CALIB_FRONT_END commands
+sufficiently calibrate the analog front-end. Adding 0x0205 would require
+per-module factory calibration data we don't have. Accuracy: ±2-3 dBm.
+
+Commit: d85b5ea
+
+## 3b. PER Calculation Fix
+
+### Bug
+TX sends 500-pkt bursts with 2s pause. RX listens for 12s windows (sees ~3-4
+bursts). Old code used DEADBEEF marker's count field (= 500, last burst only)
+or maxSeq+1 (but seq restarts at 0 each burst). Result: always reported 100% PER.
+
+### Fix
+- DEADBEEF no longer breaks out of receive loop — continues listening
+- Tracks burstCount and accumulates totalExpected across all bursts
+- PER = lost / totalExpected (correct)
+- Added bursts=N to RESULT line
+
+## 3c. Auto Noise Floor at Boot
+
+RX firmware now measures noise floor at boot (before first RX window) using
+GET_RSSI_INST, 10 samples averaged. Printed as NOISE_FLOOR=X dBm. Included in
+RESULT line as noise_floor=X.
+
+## 3d. Packet Size Consistency Fix
+
+rp2040-range-rx-auto (flrc_range_rx_auto.cpp) used 144B while TX used 127B.
+Fixed to 127B with #ifndef guard. Both now match.
 
 ## 4. SPI Interface
 
