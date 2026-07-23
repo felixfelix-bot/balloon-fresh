@@ -35,9 +35,19 @@ from pathlib import Path
 
 try:
     import serial
+    import serial as pyserial
 except ImportError:
     print("ERROR: pyserial not installed. Run: pip install pyserial", file=sys.stderr)
     sys.exit(1)
+
+# BoardSerial wrapper for flock enforcement
+BOARD_SERIAL_PATH = os.path.expanduser("~/repos/balloon-fresh/tools")
+if BOARD_SERIAL_PATH not in sys.path:
+    sys.path.insert(0, BOARD_SERIAL_PATH)
+try:
+    from board_serial import BoardSerial as Serial
+except ImportError:
+    Serial = pyserial.Serial
 
 # ─── Constants ─────────────────────────────────────────────────────────
 WORKTREE = Path(os.environ.get("BALLOON_WORKTREE", os.path.expanduser("~/worktrees/balloon-speed-tests")))
@@ -102,8 +112,8 @@ def capture_serial(port_tx: str = PORT_TX, port_rx: str = PORT_RX,
     rx_data = bytearray()
 
     try:
-        tx_ser = serial.Serial(port_tx, BAUD, timeout=0.1)
-        rx_ser = serial.Serial(port_rx, BAUD, timeout=0.1)
+        tx_ser = Serial(port_tx, BAUD, timeout=0.1)
+        rx_ser = Serial(port_rx, BAUD, timeout=0.1)
     except serial.SerialException as e:
         print(f"ERROR: Cannot open serial port: {e}", file=sys.stderr)
         return "", ""
@@ -256,7 +266,7 @@ def flash_tx_board(tx_env: str) -> bool:
     # Send BOOTSEL command via serial to ACM3 bridge
     print("Sending BOOTSEL to TX bridge...", file=sys.stderr)
     try:
-        ser = serial.Serial(PORT_TX, BAUD, timeout=2)
+        ser = Serial(PORT_TX, BAUD, timeout=2)
         time.sleep(0.3)
         ser.write(b"BOOTSEL\n")
         time.sleep(2)

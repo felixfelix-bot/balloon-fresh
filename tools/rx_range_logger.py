@@ -24,8 +24,18 @@ from pathlib import Path
 try:
     import serial
 except ImportError:
-    print("ERROR: pyserial not installed. pip install pyserial")
+    print("ERROR: pyserial not installed. Run: pip install pyserial", file=sys.stderr)
     sys.exit(1)
+
+# BoardSerial wrapper for flock enforcement
+BOARD_SERIAL_PATH = os.path.expanduser("~/repos/balloon-fresh/tools")
+if BOARD_SERIAL_PATH not in sys.path:
+    sys.path.insert(0, BOARD_SERIAL_PATH)
+try:
+    from board_serial import BoardSerial as Serial
+except ImportError:
+    # Fall back to raw serial if board_serial not available
+    Serial = serial.Serial
 
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
@@ -65,7 +75,7 @@ def main():
     csv_path = out_dir / f'range_test_{timestamp}.csv'
     raw_path = out_dir / f'range_test_{timestamp}.raw'
 
-    ser = serial.Serial(args.port, args.baud, timeout=1.0)
+    ser = Serial(args.port, args.baud, timeout=1.0)
     print(f"Logging {args.port} -> {csv_path}")
     print(f"Raw output -> {raw_path}")
     print(f"Duration: {'forever' if args.duration == 0 else f'{args.duration}s'}")
