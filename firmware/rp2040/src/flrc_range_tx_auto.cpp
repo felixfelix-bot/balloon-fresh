@@ -42,7 +42,7 @@
 // ─── Compile-time config ─────────────────────────────────────────────
 #define TX_FREQ_MHZ     2440.0f
 #define TX_BITRATE_KBPS 2600
-#define TX_PKT_SIZE     127
+#define TX_PKT_SIZE     144
 #define TX_POWER_DBM    12.0f
 #define TX_PKT_COUNT    500
 #define TX_PAUSE_MS     2000
