@@ -18,7 +18,7 @@ THEFT PROTECTION (v2):
       (not just `--force`, which is for releasing locks with no/corrupt metadata).
 
 LOCK FILES: ~/.hermes/peripheral_locks/balloon-{tx,rx,board-a,board-b,board-c}.lock
-THEFT LOG:  ~/.hermes/peripheral_locks/THEFT-LOG
+THEFT LOG:  ~/.hermes/peripheral_locks/board-lock-theft.log
 
 RESOURCES:
     tx, rx       — RP2040 boards (speed-tests, range-tests)
