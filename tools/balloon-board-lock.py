@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-balloon-board-lock.py -- Mutex lock for RP2040/ESP32 board access.
+balloon-board-lock.py -- OS-enforced mutex lock for board access.
 
-Prevents concurrent LLM sessions (speed-test, range-test, tollgate, etc.) from
-accessing the same physical boards simultaneously.
+Uses flock(2) for TRUE mutual exclusion. A sentinel daemon process holds the
+flock open for the duration of the lock. The sentinel monitors the caller's
+process tree and auto-releases when the Hermes session dies.
+
+This replaces the old TTL-based approach which had a fatal flaw: locks expired
+(15 min) while sessions were still actively using the boards, allowing another
+session to reclaim a "stale" lock mid-test.
 
 LOCK FILES: ~/.hermes/peripheral_locks/balloon-{tx,rx,board-a,board-b,board-c}.lock
-STALE TIMEOUT: 15 minutes (auto-release if holder crashed)
 
 RESOURCES:
     tx, rx       — RP2040 boards (speed-tests, range-tests)
@@ -19,25 +23,16 @@ RESOURCES:
 
 USAGE:
     # Acquire TX board (blocks up to 120s)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire tx \\\\
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire tx \\
         --purpose "flash timing diag" --timeout 120
 
     # Acquire both RP2040 boards (for coordinated TX/RX tests)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire both \\\\
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire both \\
         --purpose "coordinated throughput test" --timeout 120
 
-    # Acquire ESP32-S3 board A (tollgate track)
-    BALLOON_TRACK=tollgate python3 balloon-board-lock.py acquire board-a \\\\
-        --purpose "flash C3 stripped build" --timeout 120
-
-    # Acquire all 3 ESP32-S3 boards
-    BALLOON_TRACK=tollgate python3 balloon-board-lock.py acquire all-s3 \\\\
-        --purpose "full tollgate test suite" --timeout 180
-
     # Release
-    python3 balloon-board-lock.py release tx
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py release tx
     python3 balloon-board-lock.py release both --force
-    python3 balloon-board-lock.py release board-a
 
     # Status (who holds what)
     python3 balloon-board-lock.py status
@@ -48,29 +43,63 @@ EXIT CODES:
     2 = invalid arguments
 """
 
+import ctypes
+import ctypes.util
+import fcntl
 import json
 import os
+import signal
 import sys
 import time
 import argparse
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 
 LOCK_DIR = Path.home() / ".hermes" / "peripheral_locks"
 LOCK_DIR.mkdir(parents=True, exist_ok=True)
 
-STALE_THRESHOLD = timedelta(minutes=15)
+# Linux prctl constants
+PR_SET_PDEATHSIG = 1
+PR_SET_NAME = 15
 
 
-def _identity() -> dict:
-    """Unique identity for this process/session."""
+def _prctl(option, value):
+    """Call prctl(2) — used for parent-death signal."""
+    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+    libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
+    libc.prctl.restype = ctypes.c_int
+    return libc.prctl(option, value, 0, 0, 0)
+
+
+def _get_grandparent_pid():
+    """Walk up to find the Hermes session PID (skip ephemeral shells).
+
+    Process tree: Hermes agent → bash -c "..." → python3 balloon-board-lock.py
+    We want the Hermes agent PID so the sentinel can monitor it.
+    """
+    pid = os.getpid()
+    ppid = os.getppid()
+    gpids = [pid, ppid]
+    try:
+        with open(f"/proc/{ppid}/stat") as f:
+            stat = f.read().split()
+            gppid = int(stat[3])  # 4th field = ppid
+            gpids.append(gppid)
+        # Walk one more level up
+        with open(f"/proc/{gppid}/stat") as f:
+            stat = f.read().split()
+            ggppid = int(stat[3])
+            gpids.append(ggppid)
+    except (FileNotFoundError, ValueError, IndexError):
+        pass
+    # Return the highest ancestor we found (most likely the Hermes process)
+    return gpids[-1] if len(gpids) > 2 else ppid
+
+
+def _identity():
     return {
-        "pid": os.getpid(),
-        "ppid": os.getppid(),
-        "user": os.getenv("USER", "unknown"),
-        "hermes_profile": os.getenv("HERMES_PROFILE", "manager"),
         "track": os.getenv("BALLOON_TRACK", "unknown"),
-        "started": datetime.now(timezone.utc).isoformat(),
+        "pid": os.getpid(),
     }
 
 
@@ -88,7 +117,8 @@ def _get_resources(resource: str) -> list:
     return [resource]
 
 
-def _read_lock(path: Path) -> dict | None:
+def _read_metadata(path: Path) -> dict | None:
+    """Read lock file metadata (JSON content)."""
     if not path.exists():
         return None
     try:
@@ -97,126 +127,189 @@ def _read_lock(path: Path) -> dict | None:
         return None
 
 
-def _is_stale(data: dict) -> bool:
-    """Check if lock is expired (TTL-based only, no PID check).
-
-    Locks are held by LLM sessions across separate processes. The acquiring
-    process exits immediately after writing the lock. Only the 15-min TTL
-    timestamp determines staleness.
-    """
-    ts_str = data.get("timestamp", "")
+def _pid_alive(pid: int) -> bool:
+    """Check if a process is alive."""
     try:
-        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-        return datetime.now(timezone.utc) - ts > STALE_THRESHOLD
-    except (ValueError, TypeError):
+        os.kill(pid, 0)
         return True
-
-
-def _write_lock(path: Path, purpose: str, identity: dict):
-    data = {
-        "locked": True,
-        "resource": path.stem.replace("balloon-", ""),
-        "purpose": purpose,
-        "identity": identity,
-        "pid": identity["pid"],
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "expires_after_min": STALE_THRESHOLD.total_seconds() / 60,
-    }
-    path.write_text(json.dumps(data, indent=2))
-
-
-def _try_acquire_one(path: Path, purpose: str, identity: dict) -> bool:
-    """Try to acquire one lock. Returns True on success."""
-    existing = _read_lock(path)
-    if existing is not None and existing.get("locked"):
-        if _is_stale(existing):
-            print(f"  Stale lock (held since {existing.get('timestamp')}), reclaiming", file=sys.stderr)
-            _write_lock(path, purpose, identity)
-            return True
+    except ProcessLookupError:
         return False
-    _write_lock(path, purpose, identity)
-    return True
+    except PermissionError:
+        return True  # Alive but not ours
 
 
-def _remove_lock(path: Path, identity: dict, force: bool = False) -> bool:
-    """Remove lock. Returns True if removed."""
+def _is_locked(path: Path) -> bool:
+    """Check if the flock is actually held by testing LOCK_EX | LOCK_NB.
+
+    This is the authoritative check — flock is OS-enforced.
+    """
     if not path.exists():
-        return True
-    if force:
-        path.unlink(missing_ok=True)
-        return True
-    existing = _read_lock(path)
-    if existing is None:
-        path.unlink(missing_ok=True)
-        return True
-    if _is_stale(existing):
-        path.unlink(missing_ok=True)
-        return True
-    # Same track session can release its own locks
-    holder_track = existing.get("identity", {}).get("track", "?")
-    our_track = identity.get("track", "?")
-    if holder_track != "unknown" and holder_track == our_track:
-        path.unlink(missing_ok=True)
-        return True
-    return False
+        return False
+    fd = None
+    try:
+        fd = os.open(str(path), os.O_RDWR)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # We got the lock → nobody was holding it
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            return False
+        except BlockingIOError:
+            return True
+    except OSError:
+        return False
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+def _start_sentinel(fd: int, path: Path, metadata: dict):
+    """Fork a sentinel daemon that holds the flock and monitors the caller.
+
+    The sentinel:
+    1. Holds the flock via its inherited fd
+    2. Monitors the caller process (Hermes agent PID)
+    3. Exits when the caller dies → fd closes → flock released
+    4. Writes metadata to the lock file
+    """
+    monitor_pid = metadata.get("monitor_pid", 0)
+
+    sentinel_pid = os.fork()
+    if sentinel_pid != 0:
+        # Parent: return the sentinel PID
+        return sentinel_pid
+
+    # CHILD — sentinel daemon
+    os.setsid()  # Detach from controlling terminal
+    os.umask(0)
+
+    # Set process name for easy identification
+    try:
+        resource = metadata.get("resource", "?")
+        _prctl(PR_SET_NAME, 0)  # Clear
+    except Exception:
+        pass
+
+    # Write metadata to lock file
+    metadata["sentinel_pid"] = os.getpid()
+    metadata["started"] = datetime.now(timezone.utc).isoformat()
+    try:
+        os.lseek(fd, 0, os.SEEK_SET)
+        os.ftruncate(fd, 0)
+        os.write(fd, json.dumps(metadata, indent=2).encode())
+    except OSError:
+        pass
+
+    # Monitor loop: check if the Hermes process is still alive
+    # Also serve as a heartbeat — our existence means the lock is held
+    while True:
+        time.sleep(10)
+        if monitor_pid > 0 and not _pid_alive(monitor_pid):
+            # Caller process died → release the lock
+            break
+
+    # Cleanup: truncate metadata, close fd (releases flock)
+    try:
+        os.lseek(fd, 0, os.SEEK_SET)
+        os.ftruncate(fd, 0)
+    except OSError:
+        pass
+    os.close(fd)
+    os._exit(0)
 
 
 def acquire(resource: str, purpose: str, timeout_s: int) -> int:
     resources = _get_resources(resource)
     identity = _identity()
+    monitor_pid = _get_grandparent_pid()
+
+    # First, try to acquire ALL needed resources
+    held_fds = []
+    held_paths = []
+    held_sentinels = []
+
     deadline = time.monotonic() + timeout_s if timeout_s > 0 else 0
 
     while True:
-        all_acquired = True
+        all_ok = True
+        # Clean up any previous partial acquisitions
+        for fd, spath, spid in zip(held_fds, held_paths, held_sentinels):
+            if spid:
+                try:
+                    os.kill(spid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+            try:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            except OSError:
+                pass
+            os.close(fd)
+        held_fds = []
+        held_paths = []
+        held_sentinels = []
+
         for r in resources:
             path = _lock_path(r)
-            if not _try_acquire_one(path, purpose, identity):
-                all_acquired = False
+
+            # Ensure lock file exists
+            path.touch()
+
+            fd = os.open(str(path), os.O_RDWR)
+
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                # Got the lock!
+            except BlockingIOError:
+                # Check if it's truly locked or just stale metadata
+                all_ok = False
+                os.close(fd)
+
+                # Read who holds it for the error message
+                data = _read_metadata(path)
+                if data:
+                    holder_track = data.get("track", "?")
+                    holder_purpose = data.get("purpose", "?")
+                    sentinel_pid = data.get("sentinel_pid", "?")
+                    print(f"BLOCKED: {r} held by track={holder_track} "
+                          f"sentinel={sentinel_pid} (purpose: {holder_purpose})",
+                          file=sys.stderr)
+
+                # Break to retry loop
                 break
 
-        if all_acquired:
-            # Double-check race condition
-            time.sleep(0.05)
-            for r in resources:
-                path = _lock_path(r)
-                data = _read_lock(path)
-                if data and data.get("pid") != identity["pid"]:
-                    all_acquired = False
-                    break
+            # We have the flock. Start sentinel to hold it.
+            metadata = {
+                "resource": r,
+                "track": identity["track"],
+                "purpose": purpose,
+                "monitor_pid": monitor_pid,
+                "acquired": datetime.now(timezone.utc).isoformat(),
+            }
+            sentinel_pid = _start_sentinel(fd, path, metadata)
+            held_fds.append(fd)
+            held_paths.append(path)
+            held_sentinels.append(sentinel_pid)
 
-            if all_acquired:
-                board_list = "+".join(resources)
-                print(f"ACQUIRED: {board_list} (purpose: {purpose})")
-                print(f"  PID={identity['pid']} track={identity['track']}")
-                return 0
-
-        # Failed -- release any partial locks
-        for r in resources:
-            path = _lock_path(r)
-            _remove_lock(path, identity)
+        if all_ok:
+            board_list = "+".join(resources)
+            print(f"ACQUIRED: {board_list} (purpose: {purpose})")
+            print(f"  track={identity['track']} monitor_pid={monitor_pid}")
+            for r, spid in zip(resources, held_sentinels):
+                print(f"  {r}: sentinel PID={spid}")
+            # Close our parent copies — sentinels hold their own fd copies
+            for fd in held_fds:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+            return 0
 
         if timeout_s > 0 and time.monotonic() >= deadline:
-            for r in resources:
-                path = _lock_path(r)
-                data = _read_lock(path)
-                if data and data.get("locked"):
-                    holder_pid = data.get("pid", "?")
-                    holder_purpose = data.get("purpose", "?")
-                    holder_track = data.get("identity", {}).get("track", "?")
-                    ts = data.get("timestamp", "?")
-                    age = ""
-                    try:
-                        lock_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                        age_min = (datetime.now(timezone.utc) - lock_time).total_seconds() / 60
-                        age = f" ({age_min:.0f}min ago)"
-                    except Exception:
-                        pass
-                    print(f"BLOCKED: {r} held by track={holder_track} PID={holder_pid} (purpose: {holder_purpose}){age}", file=sys.stderr)
             return 1
 
         if timeout_s > 0:
             remaining = deadline - time.monotonic()
-            print(f"\r  Waiting for {resource}... ({remaining:.0f}s remaining)  ", end="", file=sys.stderr, flush=True)
+            print(f"\r  Waiting for {resource}... ({remaining:.0f}s remaining)  ",
+                  end="", file=sys.stderr, flush=True)
         time.sleep(2)
 
 
@@ -227,39 +320,99 @@ def release(resource: str, force: bool) -> int:
 
     for r in resources:
         path = _lock_path(r)
-        if _remove_lock(path, identity, force=force):
-            tag = "force" if force else "ok"
-            print(f"RELEASED ({tag}): {r}")
+        data = _read_metadata(path)
+
+        if data is None:
+            print(f"FREE: {r} (no lock file)")
             released_any = True
+            continue
+
+        sentinel_pid = data.get("sentinel_pid")
+        holder_track = data.get("track", "?")
+
+        if not force and holder_track != "unknown" and holder_track != identity["track"]:
+            print(f"SKIP: {r} held by track={holder_track} "
+                  f"(not ours, use --force)", file=sys.stderr)
+            continue
+
+        # Kill the sentinel → fd closes → flock released
+        if sentinel_pid:
+            try:
+                os.kill(sentinel_pid, signal.SIGTERM)
+                # Wait briefly for cleanup
+                time.sleep(0.3)
+                print(f"RELEASED: {r} (killed sentinel {sentinel_pid})")
+                released_any = True
+            except ProcessLookupError:
+                # Sentinel already dead — check if flock is truly free
+                if _is_locked(path):
+                    print(f"STALE: {r} metadata says sentinel dead but flock held — use --force",
+                          file=sys.stderr)
+                else:
+                    print(f"RELEASED: {r} (sentinel already dead, flock was free)")
+                    released_any = True
         else:
-            data = _read_lock(path)
-            if data:
-                holder_track = data.get("identity", {}).get("track", "?")
-                print(f"SKIP: {r} held by track={holder_track} PID={data.get('pid', '?')} (not ours, not stale, use --force)", file=sys.stderr)
+            # No sentinel PID in metadata — try force-unlock
+            if force:
+                fd = os.open(str(path), os.O_RDWR)
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(fd, fcntl.LOCK_UN)
+                    print(f"RELEASED: {r} (force — flock was free)")
+                    released_any = True
+                except BlockingIOError:
+                    print(f"BLOCKED: {r} flock held by unknown process — cannot force-release",
+                          file=sys.stderr)
+                os.close(fd)
             else:
-                print(f"SKIP: {r} not locked")
+                print(f"SKIP: {r} no sentinel PID in metadata (use --force)",
+                      file=sys.stderr)
 
     return 0 if released_any else 1
 
 
 def status() -> int:
     """Print status of all balloon board locks."""
-    print("=== Balloon Board Lock Status ===")
+    print("=== Balloon Board Lock Status (flock-based) ===")
     for resource in ["tx", "rx", "board-a", "board-b", "board-c"]:
         path = _lock_path(resource)
-        data = _read_lock(path)
-        if data is None or not data.get("locked"):
+        locked = _is_locked(path)
+        data = _read_metadata(path)
+
+        if not locked:
             print(f"  {resource.upper()}: FREE")
+            # Clean up stale metadata
+            if data and data.get("sentinel_pid"):
+                if not _pid_alive(data["sentinel_pid"]):
+                    try:
+                        path.write_text("")
+                    except OSError:
+                        pass
             continue
-        stale = _is_stale(data)
-        pid = data.get("pid", "?")
-        purpose = data.get("purpose", "?")
-        track = data.get("identity", {}).get("track", "?")
-        ts = data.get("timestamp", "?")
-        flag = "STALE" if stale else "ACTIVE"
-        print(f"  {resource.upper()}: LOCKED [{flag}] by track={track} PID={pid}")
-        print(f"    purpose: {purpose}")
-        print(f"    since:   {ts}")
+
+        # Lock is held
+        track = data.get("track", "?") if data else "?"
+        purpose = data.get("purpose", "?") if data else "?"
+        sentinel_pid = data.get("sentinel_pid", "?") if data else "?"
+        acquired = data.get("acquired", "?") if data else "?"
+
+        sentinel_alive = _pid_alive(data["sentinel_pid"]) if data and data.get("sentinel_pid") else False
+
+        if not sentinel_alive:
+            print(f"  {resource.upper()}: LOCKED [ORPHANED — sentinel dead but flock held?!]")
+        else:
+            age = ""
+            try:
+                acq = datetime.fromisoformat(acquired.replace("Z", "+00:00"))
+                age_min = (datetime.now(timezone.utc) - acq).total_seconds() / 60
+                age = f" ({age_min:.1f}min)"
+            except Exception:
+                pass
+            print(f"  {resource.upper()}: LOCKED by track={track}{age}")
+            print(f"    purpose:      {purpose}")
+            print(f"    sentinel:     {sentinel_pid}")
+            print(f"    acquired:     {acquired}")
+
     print()
 
     # Show connected boards
@@ -267,7 +420,9 @@ def status() -> int:
     import subprocess
     try:
         result = subprocess.run(
-            ["sh", "-c", "for d in /dev/ttyACM*; do echo \"$d: $(udevadm info -q property -n $d 2>/dev/null | grep -E 'ID_SERIAL_SHORT|ID_MODEL=' | head -2)\"; done"],
+            ["sh", "-c",
+             'for d in /dev/ttyACM*; do echo "$d: $(udevadm info -q property -n $d 2>/dev/null '
+             '| grep -E \'ID_SERIAL_SHORT|ID_MODEL=\' | head -2)"; done'],
             capture_output=True, text=True, timeout=5,
         )
         for line in result.stdout.strip().split("\n"):
@@ -275,24 +430,40 @@ def status() -> int:
                 print(f"  {line}")
     except Exception:
         pass
+
+    # Show running sentinels
+    try:
+        result = subprocess.run(
+            ["sh", "-c", "ps aux | grep 'balloon-board-lock' | grep -v grep | head -10"],
+            capture_output=True, text=True, timeout=5,
+        )
+        sentinels = [l for l in result.stdout.strip().split("\n") if l]
+        if sentinels:
+            print(f"\nRunning sentinel processes:")
+            for s in sentinels:
+                print(f"  {s}")
+    except Exception:
+        pass
+
     return 0
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Balloon board mutex lock -- prevents concurrent LLM session conflicts",
+        description="Balloon board mutex lock (flock-based) — prevents concurrent board access",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   BALLOON_TRACK=speed-tests %(prog)s acquire tx --purpose "flash single-batch firmware" --timeout 120
   BALLOON_TRACK=speed-tests %(prog)s acquire both --purpose "coordinated throughput test" --timeout 180
-  %(prog)s release tx
+  BALLOON_TRACK=range-tests %(prog)s release tx
   %(prog)s release both --force
   %(prog)s status
         """)
     parser.add_argument("action", choices=["acquire", "release", "status"],
                         help="Action to perform")
-    parser.add_argument("resource", nargs="?", choices=["tx", "rx", "both", "board-a", "board-b", "board-c", "all-s3", "all"],
+    parser.add_argument("resource", nargs="?",
+                        choices=["tx", "rx", "both", "board-a", "board-b", "board-c", "all-s3", "all"],
                         help="Which board(s) to lock/unlock")
     parser.add_argument("--purpose", default="unspecified",
                         help="Why you need the board (shown to other sessions)")
