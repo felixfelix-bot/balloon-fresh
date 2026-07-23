@@ -241,9 +241,10 @@ static int16_t rfGetFlrcRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // 9-bit RSSI assembly per characterization plan section 1.3
-    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
-    return -(int16_t)(raw / 2) * 10;  // tenths of dBm
+    // RSSI in 0.5 dBm units (same as LoRa — verified via raw byte analysis)
+    // buf[4] = raw RSSI value, resolution 0.5 dBm
+    // Return in tenths of dBm: -buf[4] * 5
+    return -(int16_t)buf[4] * 5;  // e.g. val=49 → -245 → -24.5 dBm
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
