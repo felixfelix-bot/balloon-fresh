@@ -222,3 +222,49 @@ Recovery: BOOTSEL trigger → reflash with working firmware.
 - DIO9 = IRQ output (physical pin → GP7 on RP2040)
 - IRQ mapping: RX_DONE (bit 18 = 0x00040000) → DIO9
 - Must poll DIO9 via GPIO, NOT via SPI GET_IRQ_STATUS
+
+---
+
+## 14. Cross-Track Learnings (from speed-tests group, 2026-07-24)
+
+### Verified opcode consistency
+Both groups use identical opcodes. Speed-tests handover line 174 has a typo (0x0208 for
+SET_FLRC_MOD_PARAMS) — actual firmware code uses 0x0248 everywhere, matching ours.
+
+### FLRC bitrate efficiency (speed-tests verified)
+Lower FLRC bitrates are MORE efficient (SPI overhead is constant):
+
+| Bitrate | Throughput | PER  | RSSI   | Efficiency |
+|---------|-----------|------|--------|------------|
+| 2600    | 602 kbps  | 0%   | -48.8  | 23%        |
+| 1300    | 495 kbps  | 0%   | -50.7  | 38%        |
+| 650     | 317 kbps  | 0%   | -57.5  | 49%        |
+| 325     | 195 kbps  | 0%   | -51.2  | 60%        |
+
+This means lower bitrates not only improve sensitivity but also throughput efficiency.
+
+### LoRa mode bugs (critical for future ADR-007 implementation)
+1. **CR encoding**: LORA_CR=5 is INVALID. Valid range 1-4 (1=4/5, 2=4/6, 3=4/7, 4=4/8).
+   SF7 tolerates CR=5 silently. SF9/SF12 receive ZERO packets. Bug found by speed-tests.
+2. **RSSI/SNR byte swap in LoRa**: GET_LORA_PACKET_STATUS (0x022A) returns buf[2]=RSSI,
+   buf[3]=SNR. Speed-tests had them backwards — caused -127 dBm phantom readings.
+3. **LoRa BW codes**: 812 kHz = 0x0F (NOT 0x0A). 203 kHz = 0x0D, 406 kHz = 0x0E.
+
+### Runtime bitrate switching (UNTESTED — #1 RISK for sweep firmware)
+Speed-tests group explicitly avoided runtime bitrate changes:
+"Runtime bitrate serial commands — USB CDC dies during TX loops. Compile-time only."
+They used separate firmware per bitrate (compile-time defines).
+
+Our sweep firmware is the FIRST attempt at runtime FLRC bitrate switching on this hardware.
+Approach is different: switch at window boundaries (between bursts), not via serial commands.
+The CDC death issue should NOT apply — we switch during idle time, not during active TX.
+
+STILL UNTESTED: Whether rfSwitchBitrate() actually changes the radio's operating parameters
+without requiring full re-init of all registers (frequency, sync word, packet params, etc.).
+
+Verification needed: Flash sweep firmware, confirm SWEEP_SWITCH messages appear, confirm
+RSSI/PER data differs between windows at the same distance.
+
+### Baseline indoor data (speed-tests, 1-2m)
+All 4 FLRC bitrates: 0% PER at 1-2m indoor. LoRa SF7/9/12: 0-3% PER.
+These are the indoor baselines for the outdoor test — expect PER to increase with distance.
