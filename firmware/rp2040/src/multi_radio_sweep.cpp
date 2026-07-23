@@ -64,9 +64,9 @@ typedef struct {
 
 static const Phase phases[] = {
     // ── 2.4 GHz HF path ──
-    {"HF-LoRa-SF7",   PT_LORA, 2440.0, 1,  7, 0x0F, 1,    0,  50,  5000},
-    {"HF-LoRa-SF9",   PT_LORA, 2440.0, 1,  9, 0x0F, 1,    0,  50,  8000},
-    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  30, 25000},
+    {"HF-LoRa-SF7",   PT_LORA, 2440.0, 1,  7, 0x0F, 1,    0,  50, 15000},
+    {"HF-LoRa-SF9",   PT_LORA, 2440.0, 1,  9, 0x0F, 1,    0,  50, 15000},
+    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  30, 30000},
     {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000},
     {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000},
     {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000},
@@ -358,8 +358,9 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
 
     Serial.printf("PHASE_TX %d %s started uptime=%lu\n", phaseIdx, p.name, startMs);
 
-    // TX: wait 3s at phase start so RX (which may have booted later) is listening
-    delay(3000);
+    // NOTE: No per-phase TX delay — it accumulates across phases and
+    // pushes later phases out of RX window. Instead rely on wide slot
+    // durations (15s+ each) so both boards overlap naturally.
 
     for (uint16_t i = 0; i < p.pktCount; i++) {
         txBuf[0] = (uint8_t)(i >> 8);   // seq high
@@ -439,6 +440,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     int16_t rssi = rfGetLoraRssi();
                     rssiSum += rssi;
                     rssiCount++;
+                    if (received < 3) {
+                        Serial.printf("DEBUG_RSSI pkt=%d rssi_raw=%d rssi_dBm=%d\n",
+                                      received, rssi, rssi);
+                    }
                 }
 
                 rfReadRxFifo(rxBuf, pktSize);
