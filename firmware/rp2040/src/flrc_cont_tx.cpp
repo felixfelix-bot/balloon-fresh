@@ -43,7 +43,7 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
-#define SPI_FREQ_HZ     20000000UL
+#define SPI_FREQ_HZ     40000000UL  // OPT 4: 20→40 MHz SPI overclock
 #define XTAL_MHZ        52.0f
 
 // ─── Compile-time config (overridable via -D flags) ──────────────────
@@ -151,6 +151,28 @@ static void rfClearIrq() {
 static void rfSetTx() {
     uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
     rfWriteCmd(cmd, 5);
+}
+
+// OPT 3: Batch WRITE_TX_FIFO + SET_TX in one CS-low session
+// Saves 1× rfWaitBusy + 1× CS toggle + 1× beginTransaction/endTransaction per packet
+static void rfWriteFifoAndTx(const uint8_t *data, size_t len) {
+    // Build combined command: WRITE_TX_FIFO(0x0002) + data + SET_TX(0x020D,0,0,0)
+    static uint8_t batch[2 + 255 + 5];
+    batch[0] = 0x00;  // WRITE_TX_FIFO header MSB
+    batch[1] = 0x02;  // WRITE_TX_FIFO header LSB
+    memcpy(batch + 2, data, len);
+    batch[2 + len]     = 0x02;  // SET_TX opcode MSB
+    batch[2 + len + 1] = 0x0D;  // SET_TX opcode LSB
+    batch[2 + len + 2] = 0x00;
+    batch[2 + len + 3] = 0x00;
+    batch[2 + len + 4] = 0x00;
+
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(batch, spiRxJunk, 2 + len + 5);  // single continuous SCK burst
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
 }
 
 static void rfWriteTxFifo(const uint8_t *data, size_t len) {
@@ -344,6 +366,7 @@ static void runTransmit() {
 
         // OPT 1+2: Skip rfClearTxFifo() (auto-cleared on TX_DONE)
         //         Skip rfClearIrq() (poll IRQ pin, clear once at start)
+        // OPT 3: REVERTED — LR2021 needs CS HIGH between commands to parse opcodes
         rfWriteTxFifo(pkt, pktSize);
         rfSetTx();
 
