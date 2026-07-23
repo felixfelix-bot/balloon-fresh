@@ -26,6 +26,20 @@
 
 #include <Arduino.h>
 #include <SPI.h>
+#include <stdarg.h>
+
+// ─── Dual serial output (USB CDC + UART1→ESP32 bridge) ───────────────
+// RP2040 direct USB CDC is unreliable with earlephilhower core.
+// ESP32 UART bridge (GP12/GP13 → ESP32 → USB CDC) is the reliable path.
+static void dualPrintf(const char* fmt, ...) {
+    char buf[300];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    Serial.print(buf);
+    Serial1.print(buf);
+}
 
 // ─── Role selection ──────────────────────────────────────────────────
 #if !defined(TX_ROLE) && !defined(RX_ROLE)
@@ -75,6 +89,11 @@ static const Phase phases[] = {
     {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000},
     {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 20000},
     {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 50000},
+    // ── 868 MHz LF FLRC path (UNTESTED — may not be supported by chip) ──
+    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000},
+    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000},
+    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000},
+    {"LF-FLRC-325",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  325, 200,  8000},
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
@@ -205,6 +224,28 @@ static int16_t rfGetLoraRssi() {
     return -(int16_t)buf[4] * 5;  // e.g. val=51 → -255 → -25.5 dBm
 }
 
+// ─── FLRC RSSI (was missing — caused rssi_avg=0.0 in FLRC phases) ────
+static int16_t rfGetFlrcRssi() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    uint8_t buf[8];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 8; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+
+    // 9-bit RSSI assembly per characterization plan section 1.3
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int16_t)(raw / 2) * 10;  // tenths of dBm
+}
+
 // ─── Frequency + power setters ───────────────────────────────────────
 static void rfSetFreq(float mhz) {
     uint32_t frf = (uint32_t)((mhz * 1e6 * (double)(1ULL << 18)) / (XTAL_MHZ * 1e6));
@@ -246,9 +287,10 @@ static void rfResetAndStandby() {
     delay(5);
 }
 
-static void rfCalibrate(float freqMHz) {
-    // CALIB_FRONT_END
-    uint16_t feFreq = (uint16_t)((freqMHz / 4.0f) + 0.5f) | 0x8000;
+static void rfCalibrate(float freqMHz, uint8_t rfPath) {
+    // CALIB_FRONT_END — HF: bit15 set, LF: no bit15 (MANDATORY per plan)
+    uint16_t feFreq = (uint16_t)((freqMHz / 4.0f) + 0.5f);
+    if (rfPath == 1) feFreq |= 0x8000;  // HF path
     uint8_t c1[] = {0x01, 0x23,
                     (uint8_t)(feFreq >> 8), (uint8_t)(feFreq & 0xFF),
                     0, 0, 0, 0, 0, 0};
@@ -276,7 +318,7 @@ static void rfInitForPhase(const Phase &p) {
     delay(1);
 
     // Calibrate
-    rfCalibrate(p.freqMHz);
+    rfCalibrate(p.freqMHz, p.rfPath);
 
     if (p.pktType == PT_LORA) {
         // SET_LORA_MODULATION_PARAMS (0x0220)
@@ -359,7 +401,7 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
     uint32_t startMs = millis();
     uint16_t sent = 0, timeout = 0;
 
-    Serial.printf("PHASE_TX %d %s started uptime=%lu\n", phaseIdx, p.name, startMs);
+    dualPrintf("PHASE_TX %d %s started uptime=%lu\n", phaseIdx, p.name, startMs);
 
     // NOTE: No per-phase TX delay — it accumulates across phases and
     // pushes later phases out of RX window. Instead rely on wide slot
@@ -402,9 +444,9 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
 
     digitalWrite(PIN_LED, LOW);
     uint32_t elapsed = millis() - startMs;
-    Serial.printf("PHASE_RESULT %d %s sent=%u timeout=%u elapsed_ms=%lu\n",
+    dualPrintf("PHASE_RESULT %d %s sent=%u timeout=%u elapsed_ms=%lu\n",
                   phaseIdx, p.name, sent, timeout, elapsed);
-    Serial.flush();
+    Serial.flush(); Serial1.flush();
 }
 #endif
 
@@ -428,7 +470,7 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     rfClearIrq();
     rfSetRx();
 
-    Serial.printf("PHASE_RX %d %s listening=%lums\n", phaseIdx, p.name, slotBudget);
+    dualPrintf("PHASE_RX %d %s listening=%lums\n", phaseIdx, p.name, slotBudget);
 
     uint32_t irqPinMask = 1UL << PIN_IRQ;
 
@@ -465,9 +507,14 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                         for (int j = 0; j < 8; j++) raw[j] = spiRf.transfer(0x00);
                         digitalWrite(PIN_CS, HIGH);
                         spiRf.endTransaction();
-                        Serial.printf("DEBUG_RSSI pkt=%d raw=[%02X %02X %02X %02X %02X %02X %02X %02X] rssi=%d\n",
+                        dualPrintf("DEBUG_RSSI pkt=%d raw=[%02X %02X %02X %02X %02X %02X %02X %02X] rssi=%d\n",
                                       received, raw[0],raw[1],raw[2],raw[3],raw[4],raw[5],raw[6],raw[7], rssi);
                     }
+                } else {
+                    // FLRC RSSI — GET_FLRC_PACKET_STATUS (0x024B)
+                    int16_t rssi = rfGetFlrcRssi();
+                    rssiSum += rssi;
+                    rssiCount++;
                 }
 
                 rfReadRxFifo(rxBuf, pktSize);
@@ -487,15 +534,24 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     float per = (p.pktCount > 0 && received < p.pktCount) ?
                 (float)(p.pktCount - received) / p.pktCount * 100.0f : 0.0f;
 
-    Serial.printf("PHASE_RESULT %d %s rx=%u crc_err=%u per=%.1f rssi_avg=%.1f expected=%u\n",
-                  phaseIdx, p.name, received, crcErrors, per, rssiAvg, p.pktCount);
-    Serial.flush();
+    // Build unified CSV path/pa fields
+    const char* pathStr = p.rfPath == 1 ?
+        (p.pktType == PT_LORA ? "HF_LORA" : "HF_FLRC") :
+        (p.pktType == PT_LORA ? "LF_LORA" : "LF_FLRC");
+    const char* paStr = (TX_POWER_DBM >= 12.5f) ? "ON" : "OFF";
+
+    dualPrintf("PHASE_RESULT %d %s path=%s pa=%s rx=%u crc_err=%u per=%.1f rssi_avg=%.1f expected=%u\n",
+                  phaseIdx, p.name, pathStr, paStr, received, crcErrors, per, rssiAvg, p.pktCount);
+    Serial.flush(); Serial1.flush();
 }
 #endif
 
 // ─── Setup ───────────────────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
+    Serial1.setTX(12);  // GP12 = UART0 TX → ESP32 GPIO3 (RX)
+    Serial1.setRX(13);  // GP13 = UART0 RX ← ESP32 GPIO2 (TX)
+    Serial1.begin(115200);  // UART1 → ESP32 bridge (reliable serial path)
     delay(2000);
 
     pinMode(PIN_CS, OUTPUT);
@@ -509,13 +565,13 @@ void setup() {
     spiRf.begin();
 
 #ifdef TX_ROLE
-    Serial.println("=== MULTI-RADIO TX SWEEP ===");
+    dualPrintf("=== MULTI-RADIO TX SWEEP ===\n");
 #else
-    Serial.println("=== MULTI-RADIO RX SWEEP ===");
+    dualPrintf("=== MULTI-RADIO RX SWEEP ===\n");
 #endif
-    Serial.printf("Phases: %d  Power: %.1f dBm\n", NUM_PHASES, TX_POWER_DBM);
+    dualPrintf("Phases: %d  Power: %.1f dBm\n", NUM_PHASES, TX_POWER_DBM);
     for (int i = 0; i < NUM_PHASES; i++) {
-        Serial.printf("  [%d] %-16s %s %.0fMHz SF%d BW%d %dpkts %dms\n",
+        dualPrintf("  [%d] %-16s %s %.0fMHz SF%d BW%d %dpkts %dms\n",
                       i, phases[i].name,
                       phases[i].pktType == PT_LORA ? "LoRa" : "FLRC",
                       phases[i].freqMHz,
@@ -524,21 +580,21 @@ void setup() {
                       phases[i].pktCount, phases[i].slotMs);
     }
 
-    Serial.println("=== AUTO START IN 8s ===");
+    dualPrintf("=== AUTO START IN 8s ===\n");
     // LED blink countdown
     for (int i = 8; i > 0; i--) {
-        Serial.printf("  Starting in %d...\n", i);
+        dualPrintf("  Starting in %d...\n", i);
         digitalWrite(PIN_LED, HIGH); delay(400);
         digitalWrite(PIN_LED, LOW);  delay(600);
     }
-    Serial.println("=== STARTING SWEEP ===");
+    dualPrintf("=== STARTING SWEEP ===\n");
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────
 void loop() {
     static int cycleNum = 0;
 
-    Serial.printf("\n=== CYCLE %d START uptime=%lu ===\n", cycleNum, millis());
+    dualPrintf("\n=== CYCLE %d START uptime=%lu ===\n", cycleNum, millis());
 
     for (int i = 0; i < NUM_PHASES; i++) {
 #ifdef TX_ROLE
@@ -548,7 +604,7 @@ void loop() {
 #endif
     }
 
-    Serial.printf("=== CYCLE %d COMPLETE uptime=%lu ===\n", cycleNum, millis());
+    dualPrintf("=== CYCLE %d COMPLETE uptime=%lu ===\n", cycleNum, millis());
     cycleNum++;
     delay(1000);
 }
