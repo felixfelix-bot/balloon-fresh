@@ -34,9 +34,8 @@
 ## Key Findings
 
 ### 1. Dual-Band Confirmed
-Both HF (2.4 GHz) and LF (868 MHz) paths work. No external sub-GHz antenna needed —
-LR2021 module has internal PCB trace antenna on Pin 9 path.
-
+Both HF (2.4 GHz, Pin 10) and LF (868 MHz, Pin 9) paths work.
+Sub-GHz antenna IS connected to Pin 9. Signal does NOT work without it.
 ### 2. RSSI Disparity Between Bands
 - HF 2.4 GHz: -77 to -104 dBm (weak, despite 1-2m distance)
 - LF 868 MHz: -18.7 dBm (strong, realistic for 1-2m)
