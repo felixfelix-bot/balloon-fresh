@@ -67,10 +67,10 @@ static const Phase phases[] = {
     {"HF-LoRa-SF7",   PT_LORA, 2440.0, 1,  7, 0x0F, 1,    0,  50,  5000},
     {"HF-LoRa-SF9",   PT_LORA, 2440.0, 1,  9, 0x0F, 1,    0,  50,  8000},
     {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  30, 25000},
-    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  3000},
-    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  3000},
-    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  3000},
-    {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  3000},
+    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000},
+    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000},
+    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000},
+    {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000},
     // ── 868 MHz LF path ──
     {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000},
     {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 20000},
@@ -183,14 +183,22 @@ static void rfClearRxFifo() {
 
 static int16_t rfGetLoraRssi() {
     rfWaitBusy();
-    uint8_t buf[6] = {0};
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x2A);
-    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
+    spiRf.transfer(0x02); spiRf.transfer(0x2A);  // GET_LORA_PACKET_STATUS
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    // buf[2]=rssiSync (-val/2 dBm), buf[3]=SNR
+    rfWaitBusy();
+
+    // Read 8 bytes: [stat_msb][stat_lsb][rssiSync][snr]...
+    uint8_t buf[8];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 8; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+
+    // buf[2] = rssiSync, dBm = -val / 2
     return -(int16_t)buf[2] / 2;
 }
 
@@ -396,7 +404,7 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint8_t rxBuf[256];
 
     uint32_t startMs = millis();
-    uint32_t slotBudget = (uint32_t)p.slotMs + 2000; // 2s margin
+    uint32_t slotBudget = (uint32_t)p.slotMs + 5000; // 5s margin for sync drift
     uint16_t received = 0, crcErrors = 0;
     int32_t rssiSum = 0;
     uint16_t rssiCount = 0;
