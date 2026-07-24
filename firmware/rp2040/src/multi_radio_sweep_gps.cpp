@@ -255,6 +255,9 @@ static void parseNMEA(const char *sentence) {
                     uint32_t days = daysSinceEpoch(year, (uint8_t)mo, (uint8_t)dd);
                     gps.unixTime    = days * 86400UL + gps.timeSec;
                     gps.hasUnixTime = true;
+                    outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu\n",
+                              (unsigned long)days, (unsigned long)gps.timeSec,
+                              (unsigned long)gps.unixTime);
                 }
             }
         }
@@ -270,6 +273,10 @@ static void gpsPoll() {
         } else if (c == '\n' || c == '\r') {
             if (nmeaLen > 6) {
                 nmeaBuf[nmeaLen] = '\0';
+                // DEBUG: dump any RMC sentence to see date field
+                if (strstr(nmeaBuf, "RMC")) {
+                    outPrintf("NMEA_RMC: %s\n", nmeaBuf);
+                }
                 parseNMEA(nmeaBuf);
             }
             nmeaLen = 0;
@@ -690,8 +697,13 @@ void loop() {
 
     // Heartbeat every 10s
     if (lastHeartbeatMs == 0 || (millis() - lastHeartbeatMs) > HEARTBEAT_INTERVAL_MS) {
-        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu\n", (unsigned long)millis(),
-                  currentPhase, hasLaptopTime() ? (unsigned long)getUtcNow() : 0UL);
+        uint32_t utcNow = 0;
+        if (gps.hasUnixTime && gps.unixTime > 0) utcNow = gps.unixTime;
+        else if (hasLaptopTime()) utcNow = getUtcNow();
+        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu src=%s\n", (unsigned long)millis(),
+                  currentPhase, (unsigned long)utcNow,
+                  (gps.hasUnixTime && gps.unixTime > 0) ? "GPS" :
+                  hasLaptopTime() ? "LAPTOP" : "NONE");
         lastHeartbeatMs = millis();
     }
 
