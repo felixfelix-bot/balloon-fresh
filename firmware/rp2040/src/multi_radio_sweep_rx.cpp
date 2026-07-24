@@ -453,11 +453,11 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint8_t rxBuf[256];
 
     uint32_t startMs = millis();
-    // Listen for the full slot duration plus guard bands:
-    // 500ms before phase start (overlap with previous phase end) +
-    // 500ms after phase end (overlap with next phase start) +
-    // 2000ms original margin
-    uint32_t slotBudget = (uint32_t)p.slotMs + 1000 + 2000;
+    // Listen for 2x the TX slot duration plus 10 seconds margin.
+    // This ensures RX catches TX packets even if phase timing is off by
+    // up to half the slot duration (e.g. FLRC 8s -> 26s, LF-LoRa-SF12 50s -> 110s).
+    uint32_t slotBudget = (uint32_t)p.slotMs * 2 + 10000;
+    dualPrintf("RX_WINDOW phase=%d listen_ms=%lu slot_ms=%lu\n", phaseIdx, slotBudget, p.slotMs);
     uint16_t received = 0, crcErrors = 0;
     int32_t rssiSum = 0;
     uint16_t rssiCount = 0;
