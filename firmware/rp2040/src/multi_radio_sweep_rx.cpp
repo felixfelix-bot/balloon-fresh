@@ -143,7 +143,10 @@ static int currentPhase = 0;
 static uint32_t phaseStartMs = 0;
 
 static int computePhaseFromUTC(uint32_t utcSec) {
-    uint32_t cyclePos = utcSec % totalCycleSec;
+    // Convert to seconds-since-midnight to match TX (which uses GPS hh:mm:ss)
+    // utcSec from laptop is a unix timestamp. TX uses gps.timeSec = hh*3600+mm*60+ss.
+    uint32_t secSinceMidnight = utcSec % 86400;
+    uint32_t cyclePos = secSinceMidnight % totalCycleSec;
     uint32_t acc = 0;
     for (int i = 0; i < NUM_PHASES; i++) {
         acc += phases[i].slotMs / 1000;
@@ -260,7 +263,16 @@ static int16_t rfGetLoraRssi() {
     spiRf.endTransaction();
 
     // buf[2] = rssiSync, dBm = -val/2. In tenths of dBm: -val * 5
-    return -(int16_t)buf[2] * 5;
+    // Debug: dump raw bytes for first few LoRa packets
+    static uint8_t loraDumpCount = 0;
+    if (loraDumpCount < 5) {
+        loraDumpCount++;
+        dualPrintf("LORA_STATUS: %d %d %d %d %d %d %d %d\n",
+                   buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+    }
+
+    // LR2021 GET_LORA_PACKET_STATUS: buf[4] has RSSI avg (proven working in this firmware)
+    return -(int16_t)buf[4] * 5;  // tenths of dBm
 }
 
 // GET_FLRC_PACKET_STATUS (0x024B) — LR2021 returns 7 bytes:
@@ -480,7 +492,11 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 continue;
             }
             if (irq & 0x00040000) {
-                // RX_DONE — read RSSI FIRST (before FIFO)
+                // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
+                // GET_PACKET_STATUS may reset FIFO read pointer.
+                rfReadRxFifo(rxBuf, pktSize);
+
+                // Now read RSSI
                 int16_t rssi;
                 if (p.pktType == PT_LORA) {
                     rssi = rfGetLoraRssi();
@@ -491,31 +507,43 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 rssiCount++;
                 if (rssiCount == 1 || rssi < rssiMin) rssiMin = rssi;
 
-                rfReadRxFifo(rxBuf, pktSize);
-
-                // Extract sequence number from bytes 0-1 (big-endian uint16)
-                uint16_t seq = ((uint16_t)rxBuf[0] << 8) | rxBuf[1];
+                // Extract GPS data from TX payload — MUST MATCH embedGPS() in multi_radio_sweep_gps.cpp
+                // TX packet layout (with 4-byte sync header at bytes 0-3):
+                //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+                //   bytes 4-7:   latE7 (int32 LE)
+                //   bytes 8-11:  lonE7 (int32 LE)
+                //   bytes 12-13: sats  (uint16 LE)
+                //   byte  14:    fixQ  (uint8)
+                //   bytes 15-18: utcSec (uint32 LE)
+                //   byte  19:    phaseId (uint8)
+                //   bytes 20-21: seq   (uint16 BE)
+                //
+                // IMPORTANT: FLRC hardware strips the sync word before FIFO.
+                // LoRa FIFO: starts at TX byte 0 (sync header present)
+                // FLRC FIFO: starts at TX byte 4 (sync header stripped)
+                // So for FLRC, subtract 4 from all offsets.
+                int gpsOff = (p.pktType == PT_LORA) ? 4 : 0;
+                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[gpsOff+0] |
+                    ((uint32_t)rxBuf[gpsOff+1] << 8) | ((uint32_t)rxBuf[gpsOff+2] << 16) |
+                    ((uint32_t)rxBuf[gpsOff+3] << 24));
+                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[gpsOff+4] |
+                    ((uint32_t)rxBuf[gpsOff+5] << 8) | ((uint32_t)rxBuf[gpsOff+6] << 16) |
+                    ((uint32_t)rxBuf[gpsOff+7] << 24));
+                uint16_t txSats = (uint16_t)rxBuf[gpsOff+8] | ((uint16_t)rxBuf[gpsOff+9] << 8);
+                uint8_t  txFix  = rxBuf[gpsOff+10];
+                uint32_t txUtc  = (uint32_t)rxBuf[gpsOff+11] |
+                    ((uint32_t)rxBuf[gpsOff+12] << 8) | ((uint32_t)rxBuf[gpsOff+13] << 16) |
+                    ((uint32_t)rxBuf[gpsOff+14] << 24);
+                // Sequence from bytes (gpsOff+16)-(gpsOff+17) (uint16 BE)
+                uint16_t seq = ((uint16_t)rxBuf[gpsOff+16] << 8) | rxBuf[gpsOff+17];
                 if (seq < MAX_SEQ) {
                     seenSeq[seq] = true;
                 }
                 received++;
 
-                // Extract GPS data from TX payload (bytes 3-18)
-                // bytes 3-6: latitude (float, LE)
-                // bytes 7-10: longitude (float, LE)
-                // bytes 11-12: num_sats (uint16_t BE)
-                // bytes 13-14: fix_valid (uint16_t BE)
-                // bytes 15-18: utc_seconds (uint32_t BE)
-                float txLat = 0, txLon = 0;
-                uint16_t txSats = 0, txFix = 0;
-                uint32_t txUtc = 0;
-                if (pktSize >= 19) {
-                    memcpy(&txLat, &rxBuf[3], 4);
-                    memcpy(&txLon, &rxBuf[7], 4);
-                    txSats = ((uint16_t)rxBuf[11] << 8) | rxBuf[12];
-                    txFix  = ((uint16_t)rxBuf[13] << 8) | rxBuf[14];
-                    txUtc  = ((uint32_t)rxBuf[15] << 24) | ((uint32_t)rxBuf[16] << 16) |
-                             ((uint32_t)rxBuf[17] << 8) | (uint32_t)rxBuf[18];
+                // Convert E7 to float degrees
+                float txLat = pktLatE7 / 1e7f;
+                float txLon = pktLonE7 / 1e7f;
                     // Save for phase result
                     lastTxLat = txLat; lastTxLon = txLon;
                     lastTxSats = txSats; lastTxFix = txFix;
@@ -526,19 +554,36 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     // Laptop time (SET_TIME) is the primary clock.
                     // Log the difference between laptop UTC and TX GPS UTC
                     // as a measurement vector for analysis.
+                    // Log GPS time and laptop time separately for post-compute
                     if (txUtc > 0 && utcOffset > 0) {
                         uint32_t laptopUtc = getUtcNow();
-                        int32_t diffSec = (int32_t)laptopUtc - (int32_t)txUtc;
-                        int32_t diffMs = diffSec * 1000;
-                        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu diff_ms=%ld\n",
+                        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu\n",
                                       (unsigned long)txUtc,
-                                      (unsigned long)laptopUtc,
-                                      (long)diffMs);
+                                      (unsigned long)laptopUtc);
                     }
-                }
-
+                
                 // Log first few packets per phase for debugging
                 if (received <= 3) {
+                    // Raw byte dump for first FLRC packet — 32 bytes to find sync header offset
+                    if (p.pktType != PT_LORA && received == 1) {
+                        dualPrintf("FLRC_RAW32: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                                   rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
+                                   rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
+                                   rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
+                                   rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
+                                   rxBuf[16], rxBuf[17], rxBuf[18], rxBuf[19],
+                                   rxBuf[20], rxBuf[21], rxBuf[22], rxBuf[23],
+                                   rxBuf[24], rxBuf[25], rxBuf[26], rxBuf[27],
+                                   rxBuf[28], rxBuf[29], rxBuf[30], rxBuf[31]);
+                    }
+                    if (p.pktType == PT_LORA && received == 1) {
+                        dualPrintf("LORA_RAW: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                                   rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
+                                   rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
+                                   rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
+                                   rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
+                                   rxBuf[16], rxBuf[17]);
+                    }
                     dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d rx_ms=%lu tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
                                   received, seq, rssi / 10, phaseIdx,
                                   (unsigned long)millis(),
