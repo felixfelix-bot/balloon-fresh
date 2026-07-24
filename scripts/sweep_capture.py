@@ -259,6 +259,10 @@ def parse_pkt(line: str) -> dict | None:
             result["fix_quality"] = int(val)
         elif key == "utc":
             result["utc_sec"] = int(val)
+        elif key == "tx_fw":
+            result["tx_fw"] = val
+        elif key == "rx_fw":
+            result["rx_fw"] = val
     return result if result else None
 
 
@@ -508,6 +512,66 @@ def write_pkt_csv_row(writer: csv.DictWriter, pkt_data: dict,
     writer.writerow(row)
 
 
+# ─── Firmware query and metadata ─────────────────────────────────────────
+
+def query_rx_firmware(ser) -> str:
+    """Send FW_QUERY to RX board and parse response.
+
+    Returns the full FW_BOOT banner line, or an error string if no response.
+    """
+    try:
+        ser.write(b"FW_QUERY\n")
+        response = ""
+        deadline = time.time() + 3.0
+        while time.time() < deadline:
+            data = ser.read(4096)
+            if data:
+                response += data.decode("ascii", errors="replace")
+                if "FW_BOOT" in response:
+                    for line in response.split("\n"):
+                        if "FW_BOOT" in line:
+                            return line.strip()
+        return "UNKNOWN (no FW_QUERY response)"
+    except Exception as e:
+        return f"UNKNOWN (error: {e})"
+
+
+def build_metadata_header(rx_fw_banner: str, args) -> str:
+    """Build the metadata header string for capture files."""
+    operator = os.getenv("OPERATOR", "unknown")
+    notes = args.notes if hasattr(args, "notes") and args.notes else "none"
+    return (
+        f"# CAPTURE START {datetime.now(timezone.utc).isoformat()}\n"
+        f"# RX_FIRMWARE {rx_fw_banner}\n"
+        f"# TX_FIRMWARE (pending — will appear in first PKT tx_fw field)\n"
+        f"# OPERATOR: {operator}\n"
+        f"# ENV: {args.env}\n"
+        f"# DISTANCE_START: {args.distance}\n"
+        f"# CYCLES: {args.cycles}\n"
+        f"# PORT: {args.port}\n"
+        f"# NOTES: {notes}\n"
+    )
+
+
+def write_tx_fw_sidecar(base_path: str, tx_fw_hash: str, rx_fw_hash: str = ""):
+    """Write/update a sidecar .meta file with TX firmware info.
+
+    Called when the first PKT with tx_fw= is seen during capture.
+    """
+    meta_path = base_path.rsplit(".", 1)[0] + ".meta"
+    try:
+        with open(meta_path, "w") as f:
+            f.write(f"TX_FIRMWARE_HASH {tx_fw_hash}\n")
+            if rx_fw_hash:
+                f.write(f"RX_FIRMWARE_HASH {rx_fw_hash}\n")
+            f.write(f"TX_FW_DISCOVERED_AT {datetime.now(timezone.utc).isoformat()}\n")
+        print(f"  [meta] TX firmware discovered: {tx_fw_hash}", file=sys.stderr)
+        print(f"  [meta] Sidecar written: {meta_path}", file=sys.stderr)
+    except Exception as e:
+        print(f"  [meta] WARNING: Failed to write TX firmware sidecar: {e}",
+              file=sys.stderr)
+
+
 # ─── Main capture loop ───────────────────────────────────────────────────
 
 def main():
@@ -551,6 +615,9 @@ def main():
                         help="Output directory for CSV files (default: data/)")
     parser.add_argument("--raw-log", action="store_true",
                         help="Also save raw serial log alongside CSV")
+    parser.add_argument("--out", default=None,
+                        help="Explicit output file path (overrides auto-naming). "
+                             "Packet file derived from this base name.")
     args = parser.parse_args()
 
     # ─── Validate mode ────────────────────────────────────────────────────
@@ -562,20 +629,37 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    if args.walk:
+    if args.out:
+        # Explicit output path — derive packet file from base name
+        out_base = args.out
+        if "." in os.path.basename(out_base):
+            stem, ext = out_base.rsplit(".", 1)
+            csv_path = out_base
+            pkt_path = stem + "_packets." + ext
+        else:
+            csv_path = out_base + ".csv"
+            pkt_path = out_base + "_packets.csv"
+        # Ensure parent dir exists
+        out_dir = os.path.dirname(csv_path)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
+    elif args.walk:
         csv_filename = f"walk_{timestamp}.csv"
         pkt_filename = f"walk_{timestamp}_packets.csv"
+        csv_path = os.path.join(args.output_dir, csv_filename)
+        pkt_path = os.path.join(args.output_dir, pkt_filename)
     elif args.distance > 0:
         csv_filename = (f"char_dist_{int(args.distance)}m_env_{args.env}"
                         f"_{timestamp}.csv")
         pkt_filename = (f"char_dist_{int(args.distance)}m_env_{args.env}"
                         f"_{timestamp}_packets.csv")
+        csv_path = os.path.join(args.output_dir, csv_filename)
+        pkt_path = os.path.join(args.output_dir, pkt_filename)
     else:
         csv_filename = f"capture_env_{args.env}_{timestamp}.csv"
         pkt_filename = f"capture_env_{args.env}_{timestamp}_packets.csv"
-
-    csv_path = os.path.join(args.output_dir, csv_filename)
-    pkt_path = os.path.join(args.output_dir, pkt_filename)
+        csv_path = os.path.join(args.output_dir, csv_filename)
+        pkt_path = os.path.join(args.output_dir, pkt_filename)
 
     raw_log_path = None
     raw_log_file = None
@@ -608,6 +692,11 @@ def main():
     except Exception as e:
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
+
+    # ─── Query RX firmware version ────────────────────────────────────────
+    print(f"Querying RX firmware (FW_QUERY)...", file=sys.stderr)
+    rx_fw_banner = query_rx_firmware(ser)
+    print(f"RX firmware: {rx_fw_banner}", file=sys.stderr)
 
     print(f"Connected. Sending TIME sync to RX...", file=sys.stderr)
 
@@ -647,12 +736,19 @@ def main():
     print("-" * 60, file=sys.stderr)
 
     # ─── Open CSV writers ─────────────────────────────────────────────────
+    # Build metadata header (written as # comment lines before CSV header)
+    metadata_header = build_metadata_header(rx_fw_banner, args)
+
     csv_file = open(csv_path, "w", newline="")
+    csv_file.write(metadata_header)
+    csv_file.flush()
     writer = csv.DictWriter(csv_file, fieldnames=CSV_COLUMNS)
     writer.writeheader()
     csv_file.flush()
 
     pkt_file = open(pkt_path, "w", newline="")
+    pkt_file.write(metadata_header)
+    pkt_file.flush()
     pkt_writer = csv.DictWriter(pkt_file, fieldnames=PKT_COLUMNS)
     pkt_writer.writeheader()
     pkt_file.flush()
@@ -664,6 +760,7 @@ def main():
     pkt_count = 0
     buf = ""
     start_time = time.time()
+    tx_fw_written = False  # TX firmware sidecar written after first PKT with tx_fw=
 
     # Per-phase packet rx_ms timestamps for throughput computation
     phase_rx_ms_list: list[int] = []  # rx_ms values for current phase
@@ -820,6 +917,12 @@ def main():
                     # Track rx_ms for throughput computation
                     if "rx_ms" in pkt_data:
                         phase_rx_ms_list.append(pkt_data["rx_ms"])
+                    # Write TX firmware sidecar on first PKT with tx_fw=
+                    if not tx_fw_written and "tx_fw" in pkt_data:
+                        tx_fw_hash = pkt_data["tx_fw"]
+                        rx_fw_hash = pkt_data.get("rx_fw", "")
+                        write_tx_fw_sidecar(csv_path, tx_fw_hash, rx_fw_hash)
+                        tx_fw_written = True
                     continue
 
                 # ── Phase start (informational) ──
