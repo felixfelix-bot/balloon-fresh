@@ -33,7 +33,7 @@ BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock
 
 # 2. Verify boards visible
 ls /dev/ttyACM*
-# Note which port is RX (typically ACM2 or ACM0)
+# RX board 8332 = /dev/ttyACM0 (verify with udevadm before flashing)
 
 # 3. Verify 1m baseline BEFORE going outside
 # (see Indoor Baseline section below)
