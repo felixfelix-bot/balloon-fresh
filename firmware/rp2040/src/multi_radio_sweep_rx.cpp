@@ -148,10 +148,9 @@ static int currentPhase = 0;
 static uint32_t phaseStartMs = 0;
 
 static int computePhaseFromUTC(uint32_t utcSec) {
-    // Convert to seconds-since-midnight to match TX (which uses GPS hh:mm:ss)
-    // utcSec from laptop is a unix timestamp. TX uses gps.timeSec = hh*3600+mm*60+ss.
-    uint32_t secSinceMidnight = utcSec % 86400;
-    uint32_t cyclePos = secSinceMidnight % totalCycleSec;
+    // Both TX and RX use full Unix epoch % cycleSec — same clock domain.
+    // TX gets Unix from GPS RMC (date+time→epoch). RX gets Unix from laptop SET_TIME.
+    uint32_t cyclePos = utcSec % totalCycleSec;
     uint32_t acc = 0;
     for (int i = 0; i < NUM_PHASES; i++) {
         acc += phases[i].slotMs / 1000;
