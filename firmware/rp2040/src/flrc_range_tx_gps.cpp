@@ -2,7 +2,7 @@
  * flrc_range_tx_gps.cpp — Autonomous TX with GPS for outdoor range testing
  *
  * Based on flrc_range_tx_auto.cpp (proven 1733 kbps with single-batch SPI).
- * Adds GPS NMEA parsing over Serial2 (UART1, GP20/GP21, 9600 baud).
+ * Adds GPS NMEA parsing over Serial2 (UART1, GP20/GP21, 115200 baud).
  * Embeds lat/lon in TX packet payload.
  *
  * Behavior:
@@ -19,13 +19,13 @@
  * - DEADBEEF marker at end of each burst (same as auto)
  *
  * GPS module wiring:
- *   GPS TX → GP21 (UART1 RX)
- *   GPS RX → GP20 (UART1 TX)
- *   GPS VCC → 3V3
+ *   GPS TX → GP1 (UART0 RX)
+ *   GPS RX → GP0 (UART0 TX, optional)
+ *   GPS VCC → 3V3 or 5V
  *   GPS GND → GND
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
- *       UART1_TX=GP20 UART1_RX=GP21 (GPS)
+ *       UART0_TX=GP0 UART0_RX=GP1 (GPS)
  *       LED=GP25 LED_ALT=GP16
  */
 
@@ -40,8 +40,8 @@
 #define PIN_BUSY    6
 #define PIN_IRQ     7
 #define PIN_RST     8
-#define PIN_GPS_TX  20   // RP2040 TX → GPS RX (for config, optional)
-#define PIN_GPS_RX  21   // RP2040 RX ← GPS TX (NMEA data)
+#define PIN_GPS_TX  0    // RP2040 TX → GPS RX (for config, optional)
+#define PIN_GPS_RX  1    // RP2040 RX ← GPS TX (NMEA data)
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
@@ -57,7 +57,7 @@
 #define TX_PAUSE_MS     2000
 
 // ─── GPS config ─────────────────────────────────────────────────────
-#define GPS_BAUD        9600
+#define GPS_BAUD        115200
 #define GPS_FIX_TIMEOUT 60000   // 60s to acquire fix
 #define GPS_NMEA_MAX    160     // max NMEA sentence length
 
@@ -314,8 +314,8 @@ static void rfSetPktSize(uint16_t size) {
 }
 
 // ─── Output ──────────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
-static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
+static void dualPrint(const char *s) { Serial.print(s); }
+static void dualPrintln(const char *s) { Serial.println(s); }
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
@@ -324,7 +324,6 @@ static void dualPrintf(const char *fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     Serial.println(buf);
-    Serial1.println(buf);
 }
 
 // ─── Radio init ──────────────────────────────────────────────────────
@@ -363,11 +362,7 @@ static bool rawInitRadio() {
     delay(5);
 
     rfSetBitrate(TX_BITRATE_KBPS);
-    delay(5);
-
-    // Recalibrate after bitrate change (bandwidth changes with bitrate)
-    { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
-    delay(5);
+    delay(1);
 
     {
         uint8_t cmd[] = { 0x02, 0x4C, 0x01, SYNC_WORD_0, SYNC_WORD_1, SYNC_WORD_2, SYNC_WORD_3 };
@@ -513,9 +508,9 @@ void setup() {
     delay(2000);
     Serial.println("BOOT TX RANGE GPS");
 
-    // UART1 for GPS (9600 baud)
-    Serial1.setRX(PIN_GPS_RX);  // GP21 — receives from GPS TX
-    Serial1.setTX(PIN_GPS_TX);  // GP20 — sends to GPS RX (optional)
+    // UART0 for GPS (115200 baud, GP0/GP1)
+    Serial1.setRX(PIN_GPS_RX);  // GP1 — receives from GPS TX
+    Serial1.setTX(PIN_GPS_TX);  // GP0 — sends to GPS RX (optional)
     Serial1.begin(GPS_BAUD);
     delay(100);
 
