@@ -481,8 +481,38 @@ void setup() {
     // GPS on UART0: GP1=RX, GP0=TX, 115200 baud
     Serial1.setRX(PIN_GPS_RX);
     Serial1.setTX(PIN_GPS_TX);
-    Serial1.begin(GPS_BAUD);
-    delay(2000);
+    // GPS baud auto-detection: try 115200 first (was working), then 9600
+    {
+        const uint32_t bauds[] = {115200, 9600, 38400, 19200};
+        const int nBauds = 4;
+        bool gpsFound = false;
+        for (int b = 0; b < nBauds && !gpsFound; b++) {
+            Serial1.begin(bauds[b]);
+            delay(500);
+            uint32_t probeStart = millis();
+            int validChars = 0;
+            while (millis() - probeStart < 1500) {
+                while (Serial1.available()) {
+                    char c = Serial1.read();
+                    if (c == '$' || c == 'G' || c == 'N' || c == 'M' || c == 'R' ||
+                        c == 'C' || c == 'A' || c == ',' || c == '.' || c == '\n') {
+                        validChars++;
+                    }
+                }
+            }
+            if (validChars > 10) {
+                outPrintf("GPS_BAUD_DETECTED=%lu (valid=%d)\n", bauds[b], validChars);
+                gpsFound = true;
+            } else {
+                Serial1.end();
+            }
+        }
+        if (!gpsFound) {
+            outPrintf("GPS_BAUD_FAILED — defaulting to 115200\n");
+            Serial1.begin(115200);
+        }
+    }
+    delay(500);
 
     pinMode(PIN_CS, OUTPUT);
     pinMode(PIN_RST, OUTPUT);
