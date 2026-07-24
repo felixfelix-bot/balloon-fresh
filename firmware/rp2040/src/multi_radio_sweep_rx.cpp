@@ -5,7 +5,7 @@
  * Uses laptop time sync (USB CDC) to stay aligned with TX UTC phase schedule.
  * At boot, listens for "TIME <utc_seconds_since_midnight>" from the laptop.
  * Falls back to millis()-based timer if no sync received within 10s.
- * Also performs ongoing drift correction from UTC seconds embedded in TX packets.
+ * GPS time from TX packets is logged as a delta measurement but NOT used for sync.
  *
  * Key fix from multi_radio_sweep.cpp: tracks UNIQUE sequence numbers per phase
  * using a bitmap, fixing the bug where "lost" counted 4 billion.
@@ -291,15 +291,29 @@ static int16_t rfGetFlrcRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // FLRC packet status returns 5 bytes:
-    //   [0-1] packet length (16-bit)
-    //   [2]   RSSI average (7 MSBs of 9-bit value)
-    //   [3]   RSSI sync (7 MSBs of 9-bit value)
-    //   [4]   flags: bits[3:2]=rssiAvg LSB, bit[0]=rssiSync LSB
-    // 9-bit RSSI: ((buf[2] << 1) | ((buf[4] & 0x04) >> 2)) / -2.0
-    // Return in tenths of dBm (×10) for consistency with LoRa path
-    uint16_t raw = ((uint16_t)buf[2] << 1) | ((buf[4] & 0x04) >> 2);
-    return -(int16_t)(raw * 5);  // raw/2 * -10 = raw * -5 (tenths of dBm)
+    // FLRC packet status response format (verified via raw byte dump):
+    //   [0] = status_msb
+    //   [1] = status_lsb
+    //   [2] = pktLen_msb  (NOT RSSI — this was the bug!)
+    //   [3] = pktLen_lsb
+    //   [4] = rssiAvg (raw RSSI value, 0.5 dBm resolution)
+    //   [5] = rssiSync
+    //   [6] = flags
+    //   [7] = ?
+    //
+    // Fix: use buf[4] directly (same index as LoRa uses from 0x022A)
+    // This matches the working implementation in multi_radio_sweep.cpp (old version)
+    // Return in tenths of dBm: -buf[4] * 5  (e.g. val=49 → -245 → -24.5 dBm)
+
+    // Debug: dump all 8 bytes for first few packets
+    static uint8_t flrcRssiDumpCount = 0;
+    if (flrcRssiDumpCount < 5) {
+        flrcRssiDumpCount++;
+        dualPrintf("FLRC_STATUS bytes: %d %d %d %d %d %d %d %d\n",
+                   buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+    }
+
+    return -(int16_t)buf[4] * 5;  // tenths of dBm
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
@@ -443,6 +457,7 @@ static int32_t  lastPktLat = 0;   // lat × 1e7
 static int32_t  lastPktLon = 0;   // lon × 1e7
 static uint16_t lastPktSats = 0;
 static uint8_t  lastPktFix = 0;
+static int32_t  lastPktGpsTimeDeltaMs = 0;  // laptop_utc - gps_utc, in ms
 
 // ─── RX phase runner ─────────────────────────────────────────────────
 static void runRxPhase(const Phase &p, int phaseIdx) {
@@ -465,6 +480,7 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     lastPktLon = 0;
     lastPktSats = 0;
     lastPktFix = 0;
+    lastPktGpsTimeDeltaMs = 0;
 
     rfClearRxFifo();
     rfClearIrq();
@@ -516,25 +532,15 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 // Sequence number from bytes 16-17 (big-endian uint16)
                 uint16_t seq = ((uint16_t)rxBuf[16] << 8) | rxBuf[17];
 
-                // ── Drift correction from TX packet UTC ──
-                // If packet UTC differs from our local UTC estimate by >1s,
-                // update the sync reference to stay aligned with TX.
-                if (pktUtcSec > 0 && pktUtcSec < 86400) {
-                    if (timeSynced) {
-                        uint32_t localUtc = getCurrentUTC();
-                        int32_t driftSec = (int32_t)pktUtcSec - (int32_t)localUtc;
-                        if (abs(driftSec) > 1) {
-                            uint32_t oldUtc = localUtc;
-                            updateTimeSync(pktUtcSec, "packet");
-                            dualPrintf("DRIFT_CORRECT old_utc=%lu new_utc=%lu drift=%ds\n",
-                                       (unsigned long)oldUtc, (unsigned long)pktUtcSec, driftSec);
-                        }
-                    } else {
-                        // First packet received with no prior sync — adopt it
-                        updateTimeSync(pktUtcSec, "packet");
-                        dualPrintf("SYNC_STATUS source=packet utc=%lu drift=0ms\n",
-                                   (unsigned long)pktUtcSec);
-                    }
+                // ── GPS time delta logging (MEASUREMENT ONLY — do NOT resync) ──
+                // Compute delta between laptop UTC and GPS UTC from TX packet.
+                // This tells us propagation delay + clock drift. Do NOT use
+                // this to correct the RX clock — laptop time is the only sync.
+                int32_t gpsTimeDeltaMs = 0;
+                if (pktUtcSec > 0 && pktUtcSec < 86400 && timeSynced) {
+                    uint32_t localUtc = getCurrentUTC();
+                    int32_t deltaSec = (int32_t)localUtc - (int32_t)pktUtcSec;
+                    gpsTimeDeltaMs = deltaSec * 1000;
                 }
                 if (seq < MAX_SEQ) {
                     seenSeq[seq] = true;
@@ -547,6 +553,17 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     lastPktLon = pktLonE7;
                     lastPktSats = pktSats;
                     lastPktFix = pktFix;
+                    lastPktGpsTimeDeltaMs = gpsTimeDeltaMs;
+                }
+
+                // FIX 3: Dump first 20 bytes of FLRC packets for GPS alignment debug
+                if (p.pktType == PT_FLRC && received <= 3) {
+                    dualPrintf("FLRC_RAW bytes 0-19: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                               rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
+                               rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
+                               rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
+                               rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
+                               rxBuf[16], rxBuf[17], rxBuf[18], rxBuf[19]);
                 }
 
                 // Log first few packets per phase for debugging
@@ -580,10 +597,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     float latDeg = lastPktLat / 1e7f;
     float lonDeg = lastPktLon / 1e7f;
 
-    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u gps_lat=%.7f gps_lon=%.7f gps_sats=%u gps_fix=%u\n",
+    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u gps_lat=%.7f gps_lon=%.7f gps_sats=%u gps_fix=%u gps_time_delta_ms=%d\n",
                   phaseIdx, p.name, received, unique, lost, per,
                   rssiAvg, rssiMinDbm, crcErrors,
-                  latDeg, lonDeg, lastPktSats, lastPktFix);
+                  latDeg, lonDeg, lastPktSats, lastPktFix, lastPktGpsTimeDeltaMs);
     Serial.flush(); Serial1.flush();
 }
 
