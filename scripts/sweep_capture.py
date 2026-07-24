@@ -560,19 +560,25 @@ def main():
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Connected. Sending TIME sync to RX...", file=sys.stderr)
+    print(f"Connected. Sending SET_TIME sync to RX...", file=sys.stderr)
 
     # ─── Send laptop time to RX for UTC bootstrap ──────────────────────
-    # RX has no GPS — laptop (NTP-synced) sends UTC seconds since midnight
-    # so the RX board can sync its clock before capture begins.
-    try:
-        now = datetime.now()
-        utc_seconds = now.hour * 3600 + now.minute * 60 + now.second
-        ser.write(f"TIME {utc_seconds}\n".encode("ascii"))
-    except Exception as e:
-        print(f"WARNING: Failed to send TIME sync: {e}", file=sys.stderr)
-    time.sleep(1.0)  # Wait 1s for RX to process TIME command
-    print(f"Sent TIME sync to RX", file=sys.stderr)
+    # RX has no GPS — laptop (NTP-synced) sends unix timestamp (seconds
+    # since epoch) so the RX board can sync its clock before capture.
+    # Firmware expects "SET_TIME <unix_timestamp>\n" (see checkSerialTimeSync).
+    last_sync_time = 0.0  # track when we last sent SET_TIME
+
+    def send_time_sync():
+        """Send SET_TIME with current unix timestamp to RX board."""
+        try:
+            ser.write(f"SET_TIME {int(time.time())}\n".encode("ascii"))
+        except Exception as e:
+            print(f"WARNING: Failed to send SET_TIME sync: {e}", file=sys.stderr)
+
+    send_time_sync()
+    last_sync_time = time.time()
+    time.sleep(1.0)  # Wait 1s for RX to process SET_TIME command
+    print(f"Sent SET_TIME sync to RX", file=sys.stderr)
 
     if not args.walk and args.distance > 0:
         print(f"Distance: {args.distance}m  Environment: {args.env}", file=sys.stderr)
@@ -617,6 +623,12 @@ def main():
             if args.duration > 0 and (time.time() - start_time) >= args.duration:
                 print(f"\nDuration limit ({args.duration}s) reached. Stopping.", file=sys.stderr)
                 break
+
+            # Periodic SET_TIME resend (every 60s) to keep RX clock synced
+            if (time.time() - last_sync_time) >= 60.0:
+                send_time_sync()
+                last_sync_time = time.time()
+                print("Resent SET_TIME", file=sys.stderr)
 
             # Read available data
             data = ser.read(4096)
