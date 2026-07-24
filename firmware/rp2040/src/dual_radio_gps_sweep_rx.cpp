@@ -14,12 +14,11 @@
  *
  * Shares pins, SPI helpers, mode definitions, and initMode with TX.
  * Adds RX-specific: rfSetRx, rfReadRxFifo, rfReadRssiFlrc, rfReadRssiLora,
- *   noise floor measurement, per-mode statistics.
+ *   per-mode statistics.
  * GPIO IRQ polling only (never SPI IRQ read — prevents FIFO race).
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
- *       UART_TX=GP12 UART_RX=GP13 (Serial1, debug)
- *       GPS_RX=GP1 GPS_TX=GP0 (UART0, GPS NMEA input)
+ *       GPS on Serial1 (UART0): GP0=TX, GP1=RX
  *       LED=GP25  LED_ALT=GP16
  */
 
@@ -103,8 +102,8 @@ static size_t nmeaLen = 0;
 static bool usingGpsClock = false;
 static uint32_t bootMs = 0;
 
-// GPS UART: UART0 on GP1(RX)/GP0(TX)
-SerialUART gpsSerial(uart0, 1, 0);
+// GPS uses Serial1 (UART0 default pins: GP0=TX, GP1=RX)
+// No separate gpsSerial instance — Serial1 IS the GPS UART.
 
 // ─── NMEA checksum (XOR of chars between $ and *) ────────────────────
 static bool nmeaValid(const char *s) {
@@ -243,20 +242,20 @@ static void gpsProcessChar(char c) {
 }
 
 static void gpsPoll() {
-    while (gpsSerial.available()) {
-        gpsProcessChar(gpsSerial.read());
+    while (Serial1.available()) {
+        gpsProcessChar(Serial1.read());
     }
 }
 
 // ─── GPS init with baud auto-detect ──────────────────────────────────
 static bool tryBaud(uint32_t baud, uint32_t timeout_ms) {
-    gpsSerial.begin(baud);
+    Serial1.begin(baud);
     delay(50);
 
     uint32_t start = millis();
     while (millis() - start < timeout_ms) {
-        while (gpsSerial.available()) {
-            gpsProcessChar(gpsSerial.read());
+        while (Serial1.available()) {
+            gpsProcessChar(Serial1.read());
             if (gpsData.present) return true;
         }
         delay(5);
@@ -265,29 +264,20 @@ static bool tryBaud(uint32_t baud, uint32_t timeout_ms) {
 }
 
 static void gpsInit() {
-    // GEPRC GEP-M10nano ships at 115200 (not u-blox default 9600)
-    // Try 115200 first, then fall back to 9600/38400 for other modules
-    const uint32_t bauds[] = {115200, 9600, 38400};
+    // GPS module confirmed at 9600 baud (u-blox default)
+    const uint32_t bauds[] = {9600, 38400, 115200};
     const int numBauds = 3;
     uint32_t perBaudMs = GPS_DETECT_TIMEOUT_MS / numBauds;
 
-    Serial1.println("GPS: Auto-detecting baud (115200/9600/38400)...");
+    Serial.println("GPS: Auto-detecting baud (9600/38400/115200)...");
 
     for (int i = 0; i < numBauds; i++) {
-        Serial1.printf("GPS: Trying %lu baud...\n", (unsigned long)bauds[i]);
+        Serial.printf("GPS: Trying %lu baud...\n", (unsigned long)bauds[i]);
         bool found = tryBaud(bauds[i], perBaudMs);
         if (gpsData.present) {
-            Serial1.printf("GPS: DETECTED at %lu baud\n", (unsigned long)bauds[i]);
+            Serial.printf("GPS: DETECTED at %lu baud\n", (unsigned long)bauds[i]);
             return;
         }
-    }
-
-    // Final retry at 115200 (GEPRC default)
-    Serial1.println("GPS: Retrying 115200 baud...");
-    tryBaud(115200, 2000);
-    if (gpsData.present) {
-        Serial1.println("GPS: DETECTED at 115200 baud");
-        return;
     }
 }
 
@@ -454,34 +444,10 @@ static int16_t rfReadRssiLora(int16_t *snrOut = nullptr) {
     return -(int16_t)(buf[2] / 2);
 }
 
-// RSSI_INST = 0x020B — instantaneous RSSI (noise floor measurement)
-// Returns raw RSSI reading for noise floor estimation at boot.
-static int16_t rfReadRssiInst() {
-    rfWaitBusy();
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x02);
-    spiRf.transfer(0x0B);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
-    uint8_t buf[5];
-    uint8_t dummy[5] = {0, 0, 0, 0, 0};
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(dummy, buf, 5);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-
-    // RSSI is in buf[0], negate for dBm
-    return -(int16_t)(buf[0] / 2);
-}
-
-// ─── Dual output ─────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
-static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
-static void dualPrintln() { Serial.println(); Serial1.println(); }
+// ─── Output (USB CDC only — Serial1 reserved for GPS) ────────────────
+static void dualPrint(const char *s) { Serial.print(s); }
+static void dualPrintln(const char *s) { Serial.println(s); }
+static void dualPrintln() { Serial.println(); }
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[512];
@@ -490,7 +456,6 @@ static void dualPrintf(const char *fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     Serial.println(buf);
-    Serial1.println(buf);
 }
 
 // ─── FLRC bitrate encoding ───────────────────────────────────────────
@@ -818,13 +783,9 @@ static void pollRx() {
 
 // ─── Arduino entry points ────────────────────────────────────────────
 static unsigned long lastHB = 0;
-static int16_t noiseFloorDbm = -999;
 
 void setup() {
     Serial.begin(115200);
-    Serial1.setTX(PIN_UART_TX);
-    Serial1.setRX(PIN_UART_RX);
-    Serial1.begin(115200);
     delay(100);
 
     // Print banner BEFORE any radio init — if init hangs, USB CDC is alive
@@ -870,28 +831,6 @@ void setup() {
     delayMicroseconds(200);
     digitalWrite(PIN_RST, HIGH);
     delay(50);
-
-    // ── Noise floor measurement at boot ──
-    // Put radio in RX briefly to measure RSSI_INST (0x020B)
-    // Use mode 0 settings for initial noise floor
-    { uint8_t cmd[] = { 0x02, 0x00, 0x01 }; rfWriteCmd(cmd, 3); }  // STDBY
-    delay(5);
-    { uint8_t cmd[] = { 0x02, 0x07, 0x04 }; rfWriteCmd(cmd, 3); }  // FLRC pkt type
-    delay(1);
-    rfSetFreq(2440.0f);  // HF path for noise floor
-    delay(1);
-    { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }  // HF RX path
-    delay(1);
-
-    // Enter RX briefly to measure noise
-    rfSetRx();
-    delay(50);
-    noiseFloorDbm = rfReadRssiInst();
-    dualPrintf("NOISE_FLOOR=%d dBm (HF 2440 MHz)", (int)noiseFloorDbm);
-
-    // Go back to standby for proper mode init
-    { uint8_t cmd[] = { 0x02, 0x00, 0x01 }; rfWriteCmd(cmd, 3); }
-    delay(5);
 
     // Initialize all mode stats
     for (int i = 0; i < NUM_GPS_MODES; i++) {
