@@ -301,10 +301,11 @@ static int16_t rfGetFlrcRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // 9-bit RSSI: bits [8:1] from buf[4], bit[0] from buf[6] bit[2]
-    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
-    float rssiAvg = (float)raw / -2.0f;  // dBm
-    return (int16_t)(rssiAvg * 10.0f);   // tenths of dBm
+    // RSSI: buf[4] = rssiAvg (7 MSBs). Formula: dBm = -val / 2.0
+    // Same as LoRa (buf[2] / -2.0). The 9-bit assembly with <<1 was WRONG —
+    // it doubled the value: (107<<1)/-2 = -107 instead of -107/2 = -53.5 dBm.
+    // Return in tenths of dBm: -val * 5 (matches LoRa convention)
+    return -(int16_t)buf[4] * 5;
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
