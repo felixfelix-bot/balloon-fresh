@@ -26,6 +26,55 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] plan: LR2021 full characterization — coordinates speed-tests + range-tests (2026-07-24) | tags: RADIO
+- **Commit:** `44f50d2` by Felix
+- **Files:** docs/coordination/LR2021-FULL-CHARACTERIZATION-PLAN.md
+- **Full message:** plan: LR2021 full characterization — coordinates speed-tests + range-tests
+- **Relevance:** RADIO
+
+### [balloon-hermes] docs: LR2021 full characterization plan — unified speed+range test matrix (2026-07-24) | tags: RADIO, TEST
+- **Commit:** `4835477` by Felix
+- **Files:** docs/coordination/LR2021-FULL-CHARACTERIZATION-PLAN.md
+- **Full message:** docs: LR2021 full characterization plan — unified speed+range test matrix
+- **Relevance:** RADIO, TEST
+
+### [balloon-hermes] feat: anti-theft lock improvements for balloon-board-lock.py (2026-07-24) | tags: GENERAL
+- **Commit:** `3b5025a` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, firmware/esp32-uart-bridge/src/main.cpp, tools/balloon-board-lock.py
+- **Full message:** feat: anti-theft lock improvements for balloon-board-lock.py
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: update enforcement plan status — layers 1-5 done (2026-07-24) | tags: GENERAL
+- **Commit:** `b49318c` by Felix
+- **Files:** docs/coordination/BOARD-MUTEX-ENFORCEMENT-PLAN.md
+- **Full message:** docs: update enforcement plan status — layers 1-5 done
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat: enforce board mutex with serial wrapper + assertion + monitor (2026-07-24) | tags: GENERAL
+- **Commit:** `4e4956b` by Felix
+- **Files:** docs/coordination/BOARD-MUTEX-ENFORCEMENT-PLAN.md, tools/board-lock-assert.py, tools/board-serial.py (+1 more)
+- **Full message:** feat: enforce board mutex with serial wrapper + assertion + monitor
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] docs: mandate BoardSerial wrapper — no raw serial.Serial() on board ports (2026-07-24) | tags: GENERAL
+- **Commit:** `171387d` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: mandate BoardSerial wrapper — no raw serial.Serial() on board ports
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: multi-radio sweep characterization results (2026-07-24) | tags: GENERAL
+- **Commit:** `343342e` by Felix
+- **Files:** docs/SWEEP-RESULTS.md
+- **Full message:** docs: multi-radio sweep characterization results
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: mandate BoardSerial wrapper — no raw serial.Serial() on board ports (2026-07-24) | tags: GENERAL
+- **Commit:** `d7bfc78` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: mandate BoardSerial wrapper — no raw serial.Serial() on board ports
+- **Relevance:** GENERAL
+
+
 ### [balloon-speed-tests] docs: complete handover for range testing group — all results, bugs, setup, plan (2026-07-24) | tags: GENERAL
 - **Commit:** `0fe824e` by Felix
 - **Files:** docs/HANDOVER-COMPLETE-2026-07-24.md
