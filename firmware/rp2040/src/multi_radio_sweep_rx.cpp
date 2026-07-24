@@ -563,21 +563,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                                       (unsigned long)laptopUtc);
                     }
                 
-                // BUG3 FIX: If TX packet has valid UTC, check if we're on the wrong phase
-                // and jump to match TX. This makes sync visible in captures.
-                if (txUtc > 0 && totalCycleSec > 0) {
-                    // TX utc is seconds-since-midnight (from GPS hh:mm:ss)
-                    int txPhase = computePhaseFromUTC(txUtc);
-                    if (txPhase != phaseIdx) {
-                        dualPrintf("PHASE_JUMP from=%d to=%d (TX utc=%lu) \n",
-                                      phaseIdx, txPhase, (unsigned long)txUtc);
-                        // Re-init for the TX's phase and listen there
-                        currentPhase = txPhase;
-                        phaseStartMs = millis();
-                        // Don't call runRxPhase recursively — just log the jump
-                        // The main loop will pick up the new currentPhase next cycle
-                    }
-                }
+                // DISABLED: PHASE_JUMP based on TX packet UTC.
+                // TX has no GPS (or GPS not locked) → txUtc is garbage → wild phase jumps.
+                // RX runs its own phase schedule based on SET_TIME from laptop (every 20s).
+                // Both boards boot within 4s + 20s guard band = sufficient alignment.
 
                 // Log first few packets per phase for debugging
                 if (received <= 3) {

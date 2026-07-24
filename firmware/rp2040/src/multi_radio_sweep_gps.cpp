@@ -228,6 +228,36 @@ static void parseNMEA(const char *sentence) {
                 gps.fixValid = false;
             }
         }
+
+        // ── Parse date field (field 9: DDMMYY) for real Unix epoch ──
+        // RMC layout: $xxRMC,time,status,lat,N,lon,E,speed,course,DDMMYY,...
+        // Robust comma-counting: immune to empty fields or talker-ID length
+        {
+            const char *p = sentence;
+            int commaCount = 0;
+            while (*p && commaCount < 9) {
+                if (*p == ',') commaCount++;
+                p++;
+            }
+            // p now points at the start of field 9 (date string)
+            if (commaCount == 9 && *p && gps.hasTime) {
+                char dateStr[16] = {0};
+                int di = 0;
+                while (*p && *p != ',' && *p != '*' && di < 15) {
+                    dateStr[di++] = *p++;
+                }
+                dateStr[di] = '\0';
+                if (strlen(dateStr) >= 6) {
+                    int dd = (dateStr[0]-'0')*10 + (dateStr[1]-'0');
+                    int mo = (dateStr[2]-'0')*10 + (dateStr[3]-'0');
+                    int yy = (dateStr[4]-'0')*10 + (dateStr[5]-'0');
+                    uint16_t year = 2000 + yy;   // NMEA 2-digit year → 20YY
+                    uint32_t days = daysSinceEpoch(year, (uint8_t)mo, (uint8_t)dd);
+                    gps.unixTime    = days * 86400UL + gps.timeSec;
+                    gps.hasUnixTime = true;
+                }
+            }
+        }
     }
 }
 
