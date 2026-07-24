@@ -39,6 +39,12 @@
 #include <stdarg.h>
 
 // ─── Output: USB CDC Serial only (Serial1 = GPS UART) ────────────────
+// BUG2 FIX: CDC watchdog tracking — detect USB CDC death
+static uint32_t lastCdcOutputMs = 0;
+static uint32_t lastHeartbeatMs = 0;
+#define CDC_WATCHDOG_MS       30000
+#define HEARTBEAT_INTERVAL_MS 10000
+
 static void outPrintf(const char* fmt, ...) {
     char buf[300];
     va_list args;
@@ -46,6 +52,8 @@ static void outPrintf(const char* fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     Serial.print(buf);
+    Serial.flush();           // BUG2 FIX: flush after EVERY output, not just every 16 packets
+    lastCdcOutputMs = millis();
 }
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -515,11 +523,22 @@ void setup() {
         delay(10);
     }
 
+    // BUG1 FIX: Validate GPS time — timeSec==0 means stale/invalid (soft reboot leftover)
+    if (gps.hasTime && gps.timeSec == 0) {
+        outPrintf("GPS_HAS_TIME_BUT_STALE timeSec=0 — clearing hasTime\n");
+        gps.hasTime = false;
+    }
+
     if (gps.hasTime) {
         char tbuf[16];
         formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
         outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f\n",
                    tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon);
+        // BUG1 FIX: Compute initial phase from UTC immediately after GPS wait
+        currentPhase = computePhaseFromUTC(gps.timeSec);
+        uint32_t cyclePos = gps.timeSec % totalCycleSec;
+        outPrintf("INITIAL_PHASE=%d utc_sec=%lu cycle_pos=%lu\n",
+                   currentPhase, (unsigned long)gps.timeSec, (unsigned long)cyclePos);
     } else {
         outPrintf("GPS_TIMEOUT — starting with free-running timer (will drift from RX)\n");
         // Fallback: use millis()-based phase cycling if no GPS
@@ -534,6 +553,23 @@ void setup() {
 // ─── Main loop ───────────────────────────────────────────────────────
 void loop() {
     gpsPoll();
+
+    // BUG2 FIX: CDC watchdog — reinitialize USB if no output for 30s
+    if (lastCdcOutputMs > 0 && (millis() - lastCdcOutputMs) > CDC_WATCHDOG_MS) {
+        outPrintf("CDC_WATCHDOG_TIMEOUT — reinitializing USB CDC\n");
+        Serial.end();
+        delay(100);
+        Serial.begin(115200);
+        delay(100);
+        lastCdcOutputMs = millis();
+        outPrintf("CDC_REINIT_DONE millis=%lu\n", (unsigned long)millis());
+    }
+
+    // BUG2 FIX: Heartbeat every 10s
+    if (lastHeartbeatMs == 0 || (millis() - lastHeartbeatMs) > HEARTBEAT_INTERVAL_MS) {
+        outPrintf("HEARTBEAT millis=%lu phase=%d\n", (unsigned long)millis(), currentPhase);
+        lastHeartbeatMs = millis();
+    }
 
     // Determine current phase
     int phase;
@@ -566,7 +602,7 @@ void loop() {
         char tbuf[16] = "NO_GPS";
         if (gps.hasTime) formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
         outPrintf("PHASE_START %d %s %s\n", phase, p.name, tbuf);
-        Serial.flush();
+        // Serial.flush() now happens in outPrintf (BUG2 fix)
     }
 
     const Phase &p = phases[currentPhase];
@@ -636,6 +672,5 @@ void loop() {
         }
     }
 
-    // Flush periodically (not every packet to avoid CDC slowdown)
-    if ((seqInPhase & 0x0F) == 0) Serial.flush();
+    // outPrintf now flushes after every call (BUG2 fix — no more periodic flush needed)
 }
