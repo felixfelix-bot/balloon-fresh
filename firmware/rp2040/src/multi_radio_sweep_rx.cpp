@@ -492,7 +492,11 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 continue;
             }
             if (irq & 0x00040000) {
-                // RX_DONE — read RSSI FIRST (before FIFO)
+                // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
+                // GET_PACKET_STATUS may reset FIFO read pointer.
+                rfReadRxFifo(rxBuf, pktSize);
+
+                // Now read RSSI
                 int16_t rssi;
                 if (p.pktType == PT_LORA) {
                     rssi = rfGetLoraRssi();
@@ -503,11 +507,8 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 rssiCount++;
                 if (rssiCount == 1 || rssi < rssiMin) rssiMin = rssi;
 
-                rfReadRxFifo(rxBuf, pktSize);
-
-                // Extract sequence number from bytes 0-1 (big-endian uint16)
                 // Extract GPS data from TX payload — MUST MATCH embedGPS() in multi_radio_sweep_gps.cpp
-                // TX packet layout (with 4-byte sync header):
+                // TX packet layout (with 4-byte sync header at bytes 0-3):
                 //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
                 //   bytes 4-7:   latE7 (int32 LE)
                 //   bytes 8-11:  lonE7 (int32 LE)
@@ -516,19 +517,25 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 //   bytes 15-18: utcSec (uint32 LE)
                 //   byte  19:    phaseId (uint8)
                 //   bytes 20-21: seq   (uint16 BE)
-                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[4] |
-                    ((uint32_t)rxBuf[5] << 8) | ((uint32_t)rxBuf[6] << 16) |
-                    ((uint32_t)rxBuf[7] << 24));
-                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[8] |
-                    ((uint32_t)rxBuf[9] << 8) | ((uint32_t)rxBuf[10] << 16) |
-                    ((uint32_t)rxBuf[11] << 24));
-                uint16_t txSats = (uint16_t)rxBuf[12] | ((uint16_t)rxBuf[13] << 8);
-                uint8_t  txFix  = rxBuf[14];
-                uint32_t txUtc  = (uint32_t)rxBuf[15] |
-                    ((uint32_t)rxBuf[16] << 8) | ((uint32_t)rxBuf[17] << 16) |
-                    ((uint32_t)rxBuf[18] << 24);
-                // Sequence from bytes 20-21 (uint16 BE) — matches TX embedGPS
-                uint16_t seq = ((uint16_t)rxBuf[20] << 8) | rxBuf[21];
+                //
+                // IMPORTANT: FLRC hardware strips the sync word before FIFO.
+                // LoRa FIFO: starts at TX byte 0 (sync header present)
+                // FLRC FIFO: starts at TX byte 4 (sync header stripped)
+                // So for FLRC, subtract 4 from all offsets.
+                int gpsOff = (p.pktType == PT_LORA) ? 4 : 0;
+                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[gpsOff+0] |
+                    ((uint32_t)rxBuf[gpsOff+1] << 8) | ((uint32_t)rxBuf[gpsOff+2] << 16) |
+                    ((uint32_t)rxBuf[gpsOff+3] << 24));
+                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[gpsOff+4] |
+                    ((uint32_t)rxBuf[gpsOff+5] << 8) | ((uint32_t)rxBuf[gpsOff+6] << 16) |
+                    ((uint32_t)rxBuf[gpsOff+7] << 24));
+                uint16_t txSats = (uint16_t)rxBuf[gpsOff+8] | ((uint16_t)rxBuf[gpsOff+9] << 8);
+                uint8_t  txFix  = rxBuf[gpsOff+10];
+                uint32_t txUtc  = (uint32_t)rxBuf[gpsOff+11] |
+                    ((uint32_t)rxBuf[gpsOff+12] << 8) | ((uint32_t)rxBuf[gpsOff+13] << 16) |
+                    ((uint32_t)rxBuf[gpsOff+14] << 24);
+                // Sequence from bytes (gpsOff+16)-(gpsOff+17) (uint16 BE)
+                uint16_t seq = ((uint16_t)rxBuf[gpsOff+16] << 8) | rxBuf[gpsOff+17];
                 if (seq < MAX_SEQ) {
                     seenSeq[seq] = true;
                 }
@@ -557,14 +564,17 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 
                 // Log first few packets per phase for debugging
                 if (received <= 3) {
-                    // Raw byte dump for first FLRC packet to diagnose GPS extraction
+                    // Raw byte dump for first FLRC packet — 32 bytes to find sync header offset
                     if (p.pktType != PT_LORA && received == 1) {
-                        dualPrintf("FLRC_RAW: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                        dualPrintf("FLRC_RAW32: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                                    rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
                                    rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
                                    rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
                                    rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
-                                   rxBuf[16], rxBuf[17]);
+                                   rxBuf[16], rxBuf[17], rxBuf[18], rxBuf[19],
+                                   rxBuf[20], rxBuf[21], rxBuf[22], rxBuf[23],
+                                   rxBuf[24], rxBuf[25], rxBuf[26], rxBuf[27],
+                                   rxBuf[28], rxBuf[29], rxBuf[30], rxBuf[31]);
                     }
                     if (p.pktType == PT_LORA && received == 1) {
                         dualPrintf("LORA_RAW: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
