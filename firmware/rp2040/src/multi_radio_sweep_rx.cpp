@@ -27,6 +27,9 @@
 #include <string.h>
 
 // ─── Dual serial output (USB CDC + UART1→ESP32 bridge) ───────────────
+static uint32_t lastCdcOutputMs = 0;
+#define CDC_WATCHDOG_MS 30000
+
 static void dualPrintf(const char* fmt, ...) {
     char buf[300];
     va_list args;
@@ -34,7 +37,9 @@ static void dualPrintf(const char* fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     Serial.print(buf);
+    Serial.flush();
     Serial1.print(buf);
+    lastCdcOutputMs = millis();
 }
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -671,6 +676,17 @@ void setup() {
 // ─── Main loop ───────────────────────────────────────────────────────
 void loop() {
     static int cycleNum = 0;
+
+    // CDC watchdog — reinitialize USB if no output for 30s
+    if (lastCdcOutputMs > 0 && (millis() - lastCdcOutputMs) > CDC_WATCHDOG_MS) {
+        dualPrintf("CDC_WATCHDOG_TIMEOUT\n");
+        Serial.end();
+        delay(100);
+        Serial.begin(115200);
+        delay(100);
+        lastCdcOutputMs = millis();
+        dualPrintf("CDC_REINIT_DONE\n");
+    }
 
     // Non-blocking check for laptop time sync command
     checkSerialTimeSync();
