@@ -312,6 +312,24 @@ class RobustSerial:
             self._connect()
             return b""
 
+    def write(self, data: bytes) -> int:
+        """Write data to serial, reconnecting on error."""
+        if self._ser is None:
+            self._connect()
+        try:
+            return self._ser.write(data)
+        except Exception as e:
+            print(f"  [serial] Write error: {e}. Reconnecting...", file=sys.stderr)
+            try:
+                if self._ser:
+                    self._ser.close()
+            except Exception:
+                pass
+            self._ser = None
+            time.sleep(2)
+            self._connect()
+            return 0
+
     def close(self):
         if self._ser:
             try:
@@ -500,7 +518,18 @@ def main():
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Connected. Waiting for sweep data...", file=sys.stderr)
+    print(f"Connected. Sending SET_TIME to RX...", file=sys.stderr)
+
+    # ─── Send laptop time to RX for UTC bootstrap ──────────────────────
+    # RX has no GPS — if it boots on wrong phase, it can't receive TX.
+    # Laptop (NTP-synced, <10ms drift) sends UNIX timestamp over USB serial.
+    try:
+        ser.write(f"SET_TIME {int(time.time())}\n".encode("ascii"))
+    except Exception as e:
+        print(f"WARNING: Failed to send SET_TIME: {e}", file=sys.stderr)
+    time.sleep(0.1)  # Wait 100ms for RX to acknowledge
+    print("Sent SET_TIME to RX", file=sys.stderr)
+
     if not args.walk and args.distance > 0:
         print(f"Distance: {args.distance}m  Environment: {args.env}", file=sys.stderr)
     if args.duration > 0:
@@ -663,7 +692,7 @@ def main():
 
                 # ── Other lines — print if they look interesting ──
                 # (debug output, errors, etc.)
-                if any(keyword in line for keyword in ("ERROR", "WARN", "GPS", "FIX", "BOOT", "READY")):
+                if any(keyword in line for keyword in ("ERROR", "WARN", "GPS", "FIX", "BOOT", "READY", "TIME_SYNCED", "PHASE_JUMP")):
                     print(f"  [fw] {line}", file=sys.stderr)
 
     except KeyboardInterrupt:
