@@ -14,9 +14,9 @@ Output format from firmware:
     === CYCLE <n> COMPLETE uptime=<ms> ===
 
 Usage:
-    python3 scripts/sweep_capture.py --port /dev/ttyACM2 --distance 10 --env outdoor_los
-    python3 scripts/sweep_capture.py --port /dev/ttyACM2 --distance 1 --env indoor --cycles 1
-    python3 scripts/sweep_capture.py --port /dev/ttyACM3 --distance 50 --env outdoor_los --notes "antenna vertical"
+    python3 scripts/sweep_capture.py --port /dev/ttyACM0 --distance 10 --env outdoor_los
+    python3 scripts/sweep_capture.py --port /dev/ttyACM0 --distance 1 --env indoor --cycles 1
+    python3 scripts/sweep_capture.py --port /dev/ttyACM0 --distance 50 --env outdoor_los --notes "antenna vertical"
 
 Requires:
     - pyserial (pip install pyserial)
@@ -215,8 +215,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Capture LR2021 multi-radio sweep data from RX board"
     )
-    parser.add_argument("--port", default="/dev/ttyACM2",
-                        help="Serial port for RX board (default: /dev/ttyACM2)")
+    parser.add_argument("--port", default="/dev/ttyACM0",
+                        help="Serial port for RX board 8332 (default: /dev/ttyACM0)")
     parser.add_argument("--baud", type=int, default=115200,
                         help="Baud rate (default: 115200)")
     parser.add_argument("--distance", type=float, required=True,
