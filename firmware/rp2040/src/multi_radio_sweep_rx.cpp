@@ -2,9 +2,14 @@
  * multi_radio_sweep_rx.cpp — Standalone RX for multi-radio sweep (14 phases)
  *
  * Matching RX counterpart to multi_radio_sweep_gps.cpp (GPS TX).
- * Uses millis()-based timer to cycle through phases (RX board has no GPS).
- * Both boards use the same phase schedule — TX syncs via GPS UTC time,
- * RX syncs via boot timer. They overlap as long as boot times are close.
+ * UTC-driven: RX computes its phase from UTC every loop() iteration,
+ * exactly like TX. UTC is bootstrapped via "SET_TIME <unix_ts>" from the
+ * laptop (NTP-synced) over USB serial. Both boards use the same phase
+ * schedule and the same Unix-epoch-modulo-cycle algorithm, so they always
+ * agree on which phase they are in as long as both have UTC time.
+ *
+ * The loop() is NON-BLOCKING: it polls for ONE packet per call and returns
+ * immediately, so phase changes are detected within a few ms.
  *
  * Key fix from multi_radio_sweep.cpp: tracks UNIQUE sequence numbers per phase
  * using a bitmap, fixing the bug where "lost" counted 4 billion.
@@ -144,7 +149,7 @@ static void checkSerialTimeSync() {
 // instead of raw millis() for initial phase selection, avoiding the
 // chicken-and-egg bootstrap problem.
 static uint32_t totalCycleSec = 0;
-static int currentPhase = 0;
+static int currentPhase = -1;       // -1 = not started yet (forces init on first loop)
 static uint32_t phaseStartMs = 0;
 
 static int computePhaseFromUTC(uint32_t utcSec) {
@@ -158,6 +163,20 @@ static int computePhaseFromUTC(uint32_t utcSec) {
     }
     return NUM_PHASES - 1;  // fallback
 }
+
+// ─── Non-blocking RX state (UTC-driven loop) ─────────────────────────
+// Per-phase statistics, tracked across multiple loop() calls.
+// Reset when phase changes (via resetRxPhaseState()).
+static uint16_t rxReceived   = 0;
+static uint16_t rxCrcErrors  = 0;
+static int32_t  rxRssiSum    = 0;
+static uint16_t rxRssiCount  = 0;
+static int16_t  rxRssiMin    = 0;       // most negative = weakest (tenths dBm)
+static float    rxLastTxLat  = 0, rxLastTxLon = 0;
+static uint16_t rxLastTxSats = 0, rxLastTxFix = 0;
+static uint32_t rxLastTxUtc  = 0;
+static bool     rxRadioInRxMode = false;   // tracks whether radio is listening
+static uint32_t lastWaitingPrintMs = 0;    // throttle for WAITING_FOR_TIME_SYNC
 
 #define TX_POWER_DBM   12.5f   // only for init, not used for RX
 #define LORA_PKT_SIZE  127
@@ -448,184 +467,180 @@ static void rfInitForPhaseRX(const Phase &p) {
     delay(1);
 }
 
-// ─── RX phase runner ─────────────────────────────────────────────────
-static void runRxPhase(const Phase &p, int phaseIdx) {
-    rfInitForPhaseRX(p);
-    delay(100);
+// ─── RX phase state management (UTC-driven, non-blocking) ────────────
 
+// Reset per-phase RX statistics. Called on phase change.
+static void resetRxPhaseState() {
+    rxReceived   = 0;
+    rxCrcErrors  = 0;
+    rxRssiSum    = 0;
+    rxRssiCount  = 0;
+    rxRssiMin    = 0;
+    rxLastTxLat  = 0;
+    rxLastTxLon  = 0;
+    rxLastTxSats = 0;
+    rxLastTxFix  = 0;
+    rxLastTxUtc  = 0;
+    resetSeenSeq();
+    rxRadioInRxMode = false;
+}
+
+// Emit PHASE_RESULT summary for the phase we're leaving.
+static void emitPhaseResult(int phaseIdx) {
+    const Phase &p = phases[phaseIdx];
+
+    int unique = countUniqueSeq();
+    int lost = (int)p.pktCount - unique;
+    if (lost < 0) lost = 0;
+    float per = (p.pktCount > 0)
+              ? (float)lost / p.pktCount * 100.0f : 0.0f;
+    float rssiAvg = (rxRssiCount > 0)
+                  ? (float)rxRssiSum / rxRssiCount / 10.0f : 0.0f;
+    float rssiMinDbm = (float)rxRssiMin / 10.0f;
+
+    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
+                  phaseIdx, p.name, rxReceived, unique, lost, per,
+                  rssiAvg, rssiMinDbm, rxCrcErrors,
+                  rxLastTxLat, rxLastTxLon, rxLastTxSats, rxLastTxFix,
+                  (unsigned long)rxLastTxUtc);
+    Serial.flush(); Serial1.flush();
+
+    digitalWrite(PIN_LED, LOW);
+}
+
+// Non-blocking packet poll: checks IRQ pin ONCE, reads ONE packet if
+// RX_DONE. Returns immediately whether or not a packet was received.
+// Per-phase statistics are tracked in file-scope state (rxReceived etc.).
+static void rxPacketPoll(int phaseIdx) {
+    const Phase &p = phases[phaseIdx];
     uint16_t pktSize = (p.pktType == PT_LORA) ? LORA_PKT_SIZE : FLRC_PKT_SIZE;
     uint8_t rxBuf[256];
 
-    uint32_t startMs = millis();
-    // Listen for 2x the TX slot duration plus 10 seconds margin.
-    // This ensures RX catches TX packets even if phase timing is off by
-    // up to half the slot duration (e.g. FLRC 8s -> 26s, LF-LoRa-SF12 50s -> 110s).
-    uint32_t slotBudget = (uint32_t)p.slotMs * 2 + 10000;
-    dualPrintf("RX_WINDOW phase=%d listen_ms=%lu slot_ms=%lu\n", phaseIdx, slotBudget, p.slotMs);
-    uint16_t received = 0, crcErrors = 0;
-    int32_t rssiSum = 0;
-    uint16_t rssiCount = 0;
-    int16_t rssiMin = 0;   // most negative = weakest signal
+    uint32_t irqPinMask = 1UL << PIN_IRQ;
 
-    // Track last GPS data from TX payload for phase result
-    float lastTxLat = 0, lastTxLon = 0;
-    uint16_t lastTxSats = 0, lastTxFix = 0;
-    uint32_t lastTxUtc = 0;
+    // No IRQ pin asserted → nothing to do, return immediately
+    if (!(sio_hw->gpio_in & irqPinMask)) return;
 
-    resetSeenSeq();
+    uint32_t irq = rfReadIrqStatus();
+
+    if (irq & 0x00200000) {
+        // CRC error
+        rxCrcErrors++;
+        rfClearIrq();
+        rfSetRx();
+        return;
+    }
+
+    if (!(irq & 0x00040000)) {
+        // Other IRQ source — clear and re-arm RX
+        rfClearIrq();
+        rfSetRx();
+        return;
+    }
+
+    // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
+    // GET_PACKET_STATUS may reset FIFO read pointer.
+    rfReadRxFifo(rxBuf, pktSize);
+
+    // Now read RSSI
+    int16_t rssi;
+    if (p.pktType == PT_LORA) {
+        rssi = rfGetLoraRssi();
+    } else {
+        rssi = rfGetFlrcRssi();
+    }
+    rxRssiSum += rssi;
+    rxRssiCount++;
+    if (rxRssiCount == 1 || rssi < rxRssiMin) rxRssiMin = rssi;
+
+    // Extract GPS data from TX payload — MUST MATCH embedGPS() in TX
+    // TX packet layout (with 4-byte sync header at bytes 0-3):
+    //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+    //   bytes 4-7:   latE7 (int32 LE)
+    //   bytes 8-11:  lonE7 (int32 LE)
+    //   bytes 12-13: sats  (uint16 LE)
+    //   byte  14:    fixQ  (uint8)
+    //   bytes 15-18: utcSec (uint32 LE)
+    //   byte  19:    phaseId (uint8)
+    //   bytes 20-21: seq   (uint16 BE)
+    //
+    // FLRC hardware strips the sync word before FIFO:
+    //   LoRa FIFO starts at TX byte 0 (sync header present)
+    //   FLRC FIFO starts at TX byte 4 (sync header stripped)
+    // Application sync header (0xA5 0x5A 0x42 0x24) is part of TX payload,
+    // NOT the hardware sync word. Both LoRa and FLRC FIFO contain it at bytes 0-3.
+    // Hardware sync word (FLRC: 0x12AD10B1B) is stripped by chip before FIFO.
+    int gpsOff = 4;  // skip app sync header in both modes
+    int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[gpsOff+0] |
+        ((uint32_t)rxBuf[gpsOff+1] << 8) | ((uint32_t)rxBuf[gpsOff+2] << 16) |
+        ((uint32_t)rxBuf[gpsOff+3] << 24));
+    int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[gpsOff+4] |
+        ((uint32_t)rxBuf[gpsOff+5] << 8) | ((uint32_t)rxBuf[gpsOff+6] << 16) |
+        ((uint32_t)rxBuf[gpsOff+7] << 24));
+    uint16_t txSats = (uint16_t)rxBuf[gpsOff+8] | ((uint16_t)rxBuf[gpsOff+9] << 8);
+    uint8_t  txFix  = rxBuf[gpsOff+10];
+    uint32_t txUtc  = (uint32_t)rxBuf[gpsOff+11] |
+        ((uint32_t)rxBuf[gpsOff+12] << 8) | ((uint32_t)rxBuf[gpsOff+13] << 16) |
+        ((uint32_t)rxBuf[gpsOff+14] << 24);
+    // Sequence from bytes (gpsOff+16)-(gpsOff+17) (uint16 BE)
+    uint16_t seq = ((uint16_t)rxBuf[gpsOff+16] << 8) | rxBuf[gpsOff+17];
+    if (seq < MAX_SEQ) {
+        seenSeq[seq] = true;
+    }
+    rxReceived++;
+
+    // Convert E7 to float degrees
+    float txLat = pktLatE7 / 1e7f;
+    float txLon = pktLonE7 / 1e7f;
+
+    // Save for phase result
+    rxLastTxLat = txLat; rxLastTxLon = txLon;
+    rxLastTxSats = txSats; rxLastTxFix = txFix;
+    rxLastTxUtc = txUtc;
+
+    // ─── Time difference logging (measurement only) ────
+    // GPS time from TX is NOT used for RX phase control.
+    // Laptop time (SET_TIME) is the primary clock.
+    if (txUtc > 0 && utcOffset > 0) {
+        uint32_t laptopUtc = getUtcNow();
+        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu\n",
+                      (unsigned long)txUtc,
+                      (unsigned long)laptopUtc);
+    }
+
+    // Log first few packets per phase for debugging
+    if (rxReceived <= 3) {
+        // Raw byte dump for first FLRC packet — 32 bytes to find sync header offset
+        if (p.pktType != PT_LORA && rxReceived == 1) {
+            dualPrintf("FLRC_RAW32: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                       rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
+                       rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
+                       rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
+                       rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
+                       rxBuf[16], rxBuf[17], rxBuf[18], rxBuf[19],
+                       rxBuf[20], rxBuf[21], rxBuf[22], rxBuf[23],
+                       rxBuf[24], rxBuf[25], rxBuf[26], rxBuf[27],
+                       rxBuf[28], rxBuf[29], rxBuf[30], rxBuf[31]);
+        }
+        if (p.pktType == PT_LORA && rxReceived == 1) {
+            dualPrintf("LORA_RAW: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                       rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
+                       rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
+                       rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
+                       rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
+                       rxBuf[16], rxBuf[17]);
+        }
+        dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d rx_ms=%lu tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
+                      rxReceived, seq, rssi / 10, phaseIdx,
+                      (unsigned long)millis(),
+                      txLat, txLon, txSats, txFix, (unsigned long)txUtc);
+    }
+
+    digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
 
     rfClearRxFifo();
     rfClearIrq();
     rfSetRx();
-
-    dualPrintf("PHASE_START %d %s\n", phaseIdx, p.name);
-
-    uint32_t irqPinMask = 1UL << PIN_IRQ;
-
-    while ((millis() - startMs) < slotBudget) {
-        // Non-blocking check for laptop time sync (even during RX listening)
-        checkSerialTimeSync();
-
-        // Poll DIO9 IRQ pin
-        if (sio_hw->gpio_in & irqPinMask) {
-            uint32_t irq = rfReadIrqStatus();
-            if (irq & 0x00200000) {
-                // CRC error
-                crcErrors++;
-                rfClearIrq();
-                rfSetRx();
-                continue;
-            }
-            if (irq & 0x00040000) {
-                // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
-                // GET_PACKET_STATUS may reset FIFO read pointer.
-                rfReadRxFifo(rxBuf, pktSize);
-
-                // Now read RSSI
-                int16_t rssi;
-                if (p.pktType == PT_LORA) {
-                    rssi = rfGetLoraRssi();
-                } else {
-                    rssi = rfGetFlrcRssi();
-                }
-                rssiSum += rssi;
-                rssiCount++;
-                if (rssiCount == 1 || rssi < rssiMin) rssiMin = rssi;
-
-                // Extract GPS data from TX payload — MUST MATCH embedGPS() in multi_radio_sweep_gps.cpp
-                // TX packet layout (with 4-byte sync header at bytes 0-3):
-                //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
-                //   bytes 4-7:   latE7 (int32 LE)
-                //   bytes 8-11:  lonE7 (int32 LE)
-                //   bytes 12-13: sats  (uint16 LE)
-                //   byte  14:    fixQ  (uint8)
-                //   bytes 15-18: utcSec (uint32 LE)
-                //   byte  19:    phaseId (uint8)
-                //   bytes 20-21: seq   (uint16 BE)
-                //
-                // IMPORTANT: FLRC hardware strips the sync word before FIFO.
-                // LoRa FIFO: starts at TX byte 0 (sync header present)
-                // FLRC FIFO: starts at TX byte 4 (sync header stripped)
-                // So for FLRC, subtract 4 from all offsets.
-                int gpsOff = (p.pktType == PT_LORA) ? 4 : 0;
-                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[gpsOff+0] |
-                    ((uint32_t)rxBuf[gpsOff+1] << 8) | ((uint32_t)rxBuf[gpsOff+2] << 16) |
-                    ((uint32_t)rxBuf[gpsOff+3] << 24));
-                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[gpsOff+4] |
-                    ((uint32_t)rxBuf[gpsOff+5] << 8) | ((uint32_t)rxBuf[gpsOff+6] << 16) |
-                    ((uint32_t)rxBuf[gpsOff+7] << 24));
-                uint16_t txSats = (uint16_t)rxBuf[gpsOff+8] | ((uint16_t)rxBuf[gpsOff+9] << 8);
-                uint8_t  txFix  = rxBuf[gpsOff+10];
-                uint32_t txUtc  = (uint32_t)rxBuf[gpsOff+11] |
-                    ((uint32_t)rxBuf[gpsOff+12] << 8) | ((uint32_t)rxBuf[gpsOff+13] << 16) |
-                    ((uint32_t)rxBuf[gpsOff+14] << 24);
-                // Sequence from bytes (gpsOff+16)-(gpsOff+17) (uint16 BE)
-                uint16_t seq = ((uint16_t)rxBuf[gpsOff+16] << 8) | rxBuf[gpsOff+17];
-                if (seq < MAX_SEQ) {
-                    seenSeq[seq] = true;
-                }
-                received++;
-
-                // Convert E7 to float degrees
-                float txLat = pktLatE7 / 1e7f;
-                float txLon = pktLonE7 / 1e7f;
-                    // Save for phase result
-                    lastTxLat = txLat; lastTxLon = txLon;
-                    lastTxSats = txSats; lastTxFix = txFix;
-                    lastTxUtc = txUtc;
-
-                    // ─── Time difference logging (measurement only) ────
-                    // GPS time from TX is NOT used for RX phase control.
-                    // Laptop time (SET_TIME) is the primary clock.
-                    // Log the difference between laptop UTC and TX GPS UTC
-                    // as a measurement vector for analysis.
-                    // Log GPS time and laptop time separately for post-compute
-                    if (txUtc > 0 && utcOffset > 0) {
-                        uint32_t laptopUtc = getUtcNow();
-                        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu\n",
-                                      (unsigned long)txUtc,
-                                      (unsigned long)laptopUtc);
-                    }
-                
-                // DISABLED: PHASE_JUMP based on TX packet UTC.
-                // TX has no GPS (or GPS not locked) → txUtc is garbage → wild phase jumps.
-                // RX runs its own phase schedule based on SET_TIME from laptop (every 20s).
-                // Both boards boot within 4s + 20s guard band = sufficient alignment.
-
-                // Log first few packets per phase for debugging
-                if (received <= 3) {
-                    // Raw byte dump for first FLRC packet — 32 bytes to find sync header offset
-                    if (p.pktType != PT_LORA && received == 1) {
-                        dualPrintf("FLRC_RAW32: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                                   rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
-                                   rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
-                                   rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
-                                   rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
-                                   rxBuf[16], rxBuf[17], rxBuf[18], rxBuf[19],
-                                   rxBuf[20], rxBuf[21], rxBuf[22], rxBuf[23],
-                                   rxBuf[24], rxBuf[25], rxBuf[26], rxBuf[27],
-                                   rxBuf[28], rxBuf[29], rxBuf[30], rxBuf[31]);
-                    }
-                    if (p.pktType == PT_LORA && received == 1) {
-                        dualPrintf("LORA_RAW: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                                   rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3],
-                                   rxBuf[4], rxBuf[5], rxBuf[6], rxBuf[7],
-                                   rxBuf[8], rxBuf[9], rxBuf[10], rxBuf[11],
-                                   rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
-                                   rxBuf[16], rxBuf[17]);
-                    }
-                    dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d rx_ms=%lu tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
-                                  received, seq, rssi / 10, phaseIdx,
-                                  (unsigned long)millis(),
-                                  txLat, txLon, txSats, txFix, (unsigned long)txUtc);
-                }
-
-                digitalWrite(PIN_LED, (received & 1) ? HIGH : LOW);
-
-                rfClearRxFifo();
-                rfClearIrq();
-                rfSetRx();
-            }
-        }
-    }
-
-    digitalWrite(PIN_LED, LOW);
-
-    // Compute statistics
-    int unique = countUniqueSeq();
-    int lost = (int)p.pktCount - unique;
-    if (lost < 0) lost = 0;
-    float per = (p.pktCount > 0) ?
-                (float)lost / p.pktCount * 100.0f : 0.0f;
-    float rssiAvg = (rssiCount > 0) ?
-                    (float)rssiSum / rssiCount / 10.0f : 0.0f;
-    float rssiMinDbm = (float)rssiMin / 10.0f;
-
-    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
-                  phaseIdx, p.name, received, unique, lost, per,
-                  rssiAvg, rssiMinDbm, crcErrors,
-                  lastTxLat, lastTxLon, lastTxSats, lastTxFix, (unsigned long)lastTxUtc);
-    Serial.flush(); Serial1.flush();
 }
 
 // ─── Setup ───────────────────────────────────────────────────────────
@@ -672,10 +687,11 @@ void setup() {
     dualPrintf("=== STARTING RX SWEEP ===\n");
 }
 
-// ─── Main loop ───────────────────────────────────────────────────────
+// ─── Main loop (UTC-driven, non-blocking) ────────────────────────────
+// Computes phase from UTC every iteration, just like TX.
+// Never blocks for more than a few ms — returns to loop() frequently
+// so phase changes are detected immediately.
 void loop() {
-    static int cycleNum = 0;
-
     // CDC watchdog — reinitialize USB if no output for 30s
     if (lastCdcOutputMs > 0 && (millis() - lastCdcOutputMs) > CDC_WATCHDOG_MS) {
         dualPrintf("CDC_WATCHDOG_TIMEOUT\n");
@@ -687,40 +703,52 @@ void loop() {
         dualPrintf("CDC_REINIT_DONE\n");
     }
 
-    // Non-blocking check for laptop time sync command
+    // Check for laptop time sync command (SET_TIME)
     checkSerialTimeSync();
 
-    dualPrintf("\n=== CYCLE %d START uptime=%lu utc=%lu ===\n",
-                  cycleNum, millis(),
-                  utcOffset > 0 ? (unsigned long)getUtcNow() : 0UL);
-
-    for (int i = 0; i < NUM_PHASES; i++) {
-        // If we have UTC time from laptop sync, jump to the correct phase
-        // instead of always starting from phase 0. This fixes the bootstrap
-        // problem where RX boots on wrong phase and can never receive TX.
-        if (i == 0 && utcOffset > 0 && totalCycleSec > 0) {
-            int utcPhase = computePhaseFromUTC(getUtcNow());
-            if (utcPhase > 0 && utcPhase < NUM_PHASES) {
-                dualPrintf("PHASE_JUMP from=0 to=%d (UTC sync)\n", utcPhase);
-                currentPhase = utcPhase;
-                phaseStartMs = millis();
-                runRxPhase(phases[utcPhase], utcPhase);
-                i = utcPhase;  // loop will increment to utcPhase+1
-                continue;
-            }
+    // If we don't have UTC time yet, wait for it
+    if (utcOffset == 0) {
+        if (lastWaitingPrintMs == 0 || (millis() - lastWaitingPrintMs) >= 5000) {
+            dualPrintf("WAITING_FOR_TIME_SYNC uptime=%lu\n", (unsigned long)millis());
+            lastWaitingPrintMs = millis();
         }
-        if (i > 0) {
-            dualPrintf("PHASE_GUARD 500\n");
-        }
-        currentPhase = i;
-        phaseStartMs = millis();
-        runRxPhase(phases[i], i);
+        delay(100);
+        return;
     }
 
-    dualPrintf("PHASE_GUARD 500\n");
-    dualPrintf("=== CYCLE %d COMPLETE uptime=%lu utc=%lu ===\n",
-                  cycleNum, millis(),
-                  utcOffset > 0 ? (unsigned long)getUtcNow() : 0UL);
-    cycleNum++;
-    delay(1000);
+    // Compute current phase from UTC — same algorithm as TX
+    int phase = computePhaseFromUTC(getUtcNow());
+
+    // Phase change detection — re-init radio and reset state
+    if (phase != currentPhase) {
+        // Emit PHASE_RESULT for the phase we're leaving
+        if (currentPhase >= 0 && currentPhase < NUM_PHASES) {
+            emitPhaseResult(currentPhase);
+        }
+
+        dualPrintf("PHASE_GUARD 500\n");
+
+        currentPhase = phase;
+        resetRxPhaseState();
+        phaseStartMs = millis();
+
+        // Re-init radio for new phase
+        rfInitForPhaseRX(phases[phase]);
+        delay(50);
+
+        // Put radio into RX mode (continuous, no timeout)
+        rfClearRxFifo();
+        rfClearIrq();
+        rfSetRx();
+        rxRadioInRxMode = true;
+
+        dualPrintf("PHASE_START %d %s\n", phase, phases[phase].name);
+        return;  // return immediately — next loop() will start polling
+    }
+
+    // Still in the same phase — poll for ONE packet (non-blocking)
+    rxPacketPoll(phase);
+
+    // No delay needed — rxPacketPoll returns instantly if no IRQ.
+    // loop() is called again immediately, recomputing phase from UTC.
 }
