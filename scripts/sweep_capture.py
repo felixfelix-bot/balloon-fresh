@@ -14,7 +14,7 @@ Firmware output formats:
     PKT rx=<n> seq=<n> rssi=<dbm> phase=<n>
 
   New firmware (with GPS in TX payload):
-    PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
+    PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec> gps_time_delta_ms=<ms>
     PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> rx_ms=<ms> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
 
 Usage:
@@ -58,21 +58,25 @@ except ImportError:
 # slot_ms: total phase duration in milliseconds (from firmware phase config)
 # theoretical_kbps: rough air-interface maximum for comparison
 #   LoRa SF7 BW812 ~6800, SF9 ~3400, SF12 ~210; FLRC as named bitrate
+# header_overhead: bytes per packet not carrying useful payload
+#   LoRa: 13 preamble + 5 header + 2 CRC = 20 bytes
+#   FLRC: 4 preamble + 4 sync word + 2 CRC = 10 bytes
+# useful_payload_bytes: payload_bytes - header_overhead
 PHASE_TABLE = [
-    {"name": "HF-LoRa-SF7",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 7,  "bw": 812, "sent": 50,  "payload_bytes": 127, "slot_ms": 15000, "theoretical_kbps": 6800},
-    {"name": "HF-LoRa-SF9",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 9,  "bw": 812, "sent": 50,  "payload_bytes": 127, "slot_ms": 15000, "theoretical_kbps": 3400},
-    {"name": "HF-LoRa-SF12",  "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 12, "bw": 812, "sent": 30,  "payload_bytes": 127, "slot_ms": 30000, "theoretical_kbps": 210},
-    {"name": "HF-FLRC-2600",  "mod": "FLRC", "freq": 2440, "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 2600},
-    {"name": "HF-FLRC-1300",  "mod": "FLRC", "freq": 2440, "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 1300},
-    {"name": "HF-FLRC-650",   "mod": "FLRC", "freq": 2440, "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 650},
-    {"name": "HF-FLRC-325",   "mod": "FLRC", "freq": 2440, "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 325},
-    {"name": "LF-LoRa-SF7",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 7,  "bw": 250, "sent": 50,  "payload_bytes": 127, "slot_ms": 12000, "theoretical_kbps": 6800},
-    {"name": "LF-LoRa-SF9",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 9,  "bw": 250, "sent": 50,  "payload_bytes": 127, "slot_ms": 25000, "theoretical_kbps": 3400},
-    {"name": "LF-LoRa-SF12",  "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 12, "bw": 250, "sent": 20,  "payload_bytes": 127, "slot_ms": 60000, "theoretical_kbps": 210},
-    {"name": "LF-FLRC-2600",  "mod": "FLRC", "freq": 868,  "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 2600},
-    {"name": "LF-FLRC-1300",  "mod": "FLRC", "freq": 868,  "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 1300},
-    {"name": "LF-FLRC-650",   "mod": "FLRC", "freq": 868,  "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 650},
-    {"name": "LF-FLRC-325",   "mod": "FLRC", "freq": 868,  "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 325},
+    {"name": "HF-LoRa-SF7",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 7,  "bw": 812, "sent": 50,  "payload_bytes": 127, "header_overhead": 20, "useful_payload_bytes": 107, "slot_ms": 15000, "theoretical_kbps": 6800},
+    {"name": "HF-LoRa-SF9",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 9,  "bw": 812, "sent": 50,  "payload_bytes": 127, "header_overhead": 20, "useful_payload_bytes": 107, "slot_ms": 15000, "theoretical_kbps": 3400},
+    {"name": "HF-LoRa-SF12",  "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 12, "bw": 812, "sent": 30,  "payload_bytes": 127, "header_overhead": 20, "useful_payload_bytes": 107, "slot_ms": 30000, "theoretical_kbps": 210},
+    {"name": "HF-FLRC-2600",  "mod": "FLRC", "freq": 2440, "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 2600},
+    {"name": "HF-FLRC-1300",  "mod": "FLRC", "freq": 2440, "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 1300},
+    {"name": "HF-FLRC-650",   "mod": "FLRC", "freq": 2440, "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 650},
+    {"name": "HF-FLRC-325",   "mod": "FLRC", "freq": 2440, "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 325},
+    {"name": "LF-LoRa-SF7",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 7,  "bw": 250, "sent": 50,  "payload_bytes": 127, "header_overhead": 20, "useful_payload_bytes": 107, "slot_ms": 12000, "theoretical_kbps": 6800},
+    {"name": "LF-LoRa-SF9",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 9,  "bw": 250, "sent": 50,  "payload_bytes": 127, "header_overhead": 20, "useful_payload_bytes": 107, "slot_ms": 25000, "theoretical_kbps": 3400},
+    {"name": "LF-LoRa-SF12",  "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 12, "bw": 250, "sent": 20,  "payload_bytes": 127, "header_overhead": 20, "useful_payload_bytes": 107, "slot_ms": 60000, "theoretical_kbps": 210},
+    {"name": "LF-FLRC-2600",  "mod": "FLRC", "freq": 868,  "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 2600},
+    {"name": "LF-FLRC-1300",  "mod": "FLRC", "freq": 868,  "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 1300},
+    {"name": "LF-FLRC-650",   "mod": "FLRC", "freq": 868,  "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 650},
+    {"name": "LF-FLRC-325",   "mod": "FLRC", "freq": 868,  "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "header_overhead": 10, "useful_payload_bytes": 245, "slot_ms": 8000,  "theoretical_kbps": 325},
 ]
 
 NUM_PHASES = len(PHASE_TABLE)
@@ -105,9 +109,11 @@ CSV_COLUMNS = [
     "distance_m",
     "throughput_kbps",
     "goodput_kbps",
+    "goodput_efficiency_pct",
     "effective_throughput_kbps",
     "theoretical_max_kbps",
     "throughput_efficiency_pct",
+    "gps_time_delta_ms",
     "environment",
     "notes",
 ]
@@ -149,7 +155,7 @@ def parse_phase_result(line: str) -> dict | None:
     Parse PHASE_RESULT lines (both old and new firmware formats).
 
     Old:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n>
-    New:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
+    New:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec> gps_time_delta_ms=<ms>
     """
     line = line.strip()
     if not line.startswith("PHASE_RESULT"):
@@ -197,6 +203,8 @@ def parse_phase_result(line: str) -> dict | None:
             result["fix_quality"] = int(val)
         elif key == "utc":
             result["utc_sec"] = int(val)
+        elif key == "gps_time_delta_ms":
+            result["gps_time_delta_ms"] = int(val)
 
     return result
 
@@ -356,14 +364,24 @@ class RobustSerial:
 def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
                         distance_m: float, env: str, notes: str,
                         throughput_kbps: float = -1, goodput_kbps: float = -1):
-    """Write a phase result row to CSV, enriched with phase table metadata and GPS."""
+    """Write a phase result row to CSV, enriched with phase table metadata and GPS.
+
+    Goodput computation:
+      goodput_kbps = (unique_packets × useful_payload_bytes × 8) / (slot_ms / 1000) / 1000
+      goodput_efficiency_pct = goodput_kbps / theoretical_kbps × 100
+
+    where useful_payload_bytes = payload_bytes - header_overhead
+      LoRa: 127 - 20 = 107 bytes (13 preamble + 5 header + 2 CRC)
+      FLRC: 255 - 10 = 245 bytes (4 preamble + 4 sync + 2 CRC)
+    """
     phase_num = phase_data.get("phase", -1)
     if 0 <= phase_num < NUM_PHASES:
         meta = PHASE_TABLE[phase_num]
     else:
         meta = {"name": phase_data.get("name", "?"), "mod": "?", "freq": 0,
                 "bitrate": 0, "sf": 0, "bw": 0, "sent": 0,
-                "payload_bytes": 0, "slot_ms": 0, "theoretical_kbps": 0}
+                "payload_bytes": 0, "header_overhead": 0,
+                "useful_payload_bytes": 0, "slot_ms": 0, "theoretical_kbps": 0}
 
     row = {col: "" for col in CSV_COLUMNS}
     row["timestamp_iso"] = datetime.now(timezone.utc).isoformat()
@@ -413,6 +431,28 @@ def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
         row["theoretical_max_kbps"] = theoretical_kbps if theoretical_kbps > 0 else ""
         row["throughput_efficiency_pct"] = ""
 
+    # ─── Goodput computation ──────────────────────────────────────────────
+    # goodput_kbps = (unique_packets × useful_payload_bytes × 8) / (slot_ms / 1000) / 1000
+    # goodput_efficiency_pct = goodput_kbps / theoretical_kbps × 100
+    useful_payload_bytes = meta.get("useful_payload_bytes", 0)
+    if unique_packets is not None and useful_payload_bytes > 0 and slot_ms > 0:
+        gp_kbps = (unique_packets * useful_payload_bytes * 8) / (slot_ms / 1000.0) / 1000.0
+        row["goodput_kbps"] = round(gp_kbps, 2)
+        if theoretical_kbps > 0:
+            gp_eff = (gp_kbps / theoretical_kbps) * 100.0
+            row["goodput_efficiency_pct"] = round(gp_eff, 1)
+        else:
+            row["goodput_efficiency_pct"] = ""
+    else:
+        row["goodput_kbps"] = ""
+        row["goodput_efficiency_pct"] = ""
+
+    # ─── GPS time delta ──────────────────────────────────────────────────
+    # gps_time_delta_ms = laptop_utc_time - gps_time_from_tx_packet (ms)
+    # Captures radio propagation delay + clock drift + processing delay.
+    # -1 = unknown (old firmware without this field).
+    row["gps_time_delta_ms"] = phase_data.get("gps_time_delta_ms", -1)
+
     row["environment"] = env
     row["notes"] = notes
 
@@ -427,11 +467,17 @@ def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
     tp_str = ""
     if row["effective_throughput_kbps"] != "":
         tp_str = f"  TP={row['effective_throughput_kbps']:.1f}kbps/{row['theoretical_max_kbps']}kbps({row['throughput_efficiency_pct']}%)"
+    gp_str = ""
+    if row["goodput_kbps"] != "":
+        gp_str = f"  GP={row['goodput_kbps']:.1f}kbps({row['goodput_efficiency_pct']}%)"
+    gps_td_str = ""
+    if row["gps_time_delta_ms"] != -1 and row["gps_time_delta_ms"] != "":
+        gps_td_str = f"  Δt={row['gps_time_delta_ms']}ms"
     print(f"  [{cycle}] Phase {phase_num:2d} {row['name']:16s} "
           f"rx={row['rx_received']:>3}/{row['tx_sent']:<3} "
           f"PER={row['per_pct']:>5.1f}%  "
           f"RSSI={row['rssi_avg_dbm']:>4.0f}dBm  "
-          f"(min {row['rssi_min_dbm']:.0f}){gps_str}{tp_str}",
+          f"(min {row['rssi_min_dbm']:.0f}){gps_str}{tp_str}{gp_str}{gps_td_str}",
           file=sys.stderr)
 
 
@@ -467,7 +513,10 @@ def write_pkt_csv_row(writer: csv.DictWriter, pkt_data: dict,
 def main():
     parser = argparse.ArgumentParser(
         description="Capture LR2021 multi-radio sweep data from RX board. "
-                    "Supports walk mode with GPS distance computation."
+                    "Supports walk mode with GPS distance computation. "
+                    "CSV columns include throughput, goodput (useful payload excluding "
+                    "preamble/header/CRC overhead), and gps_time_delta_ms "
+                    "(laptop_utc - gps_tx_time, in ms)."
     )
     parser.add_argument("--port", default="/dev/ttyACM0",
                         help="Serial port for RX board (default: /dev/ttyACM0)")
