@@ -536,8 +536,9 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
 
                 // Log first few packets per phase for debugging
                 if (received <= 3) {
-                    dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
+                    dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d rx_ms=%lu tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
                                   received, seq, rssi / 10, phaseIdx,
+                                  (unsigned long)millis(),
                                   txLat, txLon, txSats, txFix, (unsigned long)txUtc);
                 }
 
