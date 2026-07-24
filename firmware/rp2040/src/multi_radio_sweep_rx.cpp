@@ -77,9 +77,10 @@ static const Phase phases[] = {
     {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000},
     {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000},
     // ── 868 MHz LF path ──
-    {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000},
-    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 20000},
-    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 50000},
+    // Match TX slot times for LF LoRa phases
+    {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50, 12000},
+    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 25000},
+    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 60000},
     // ── 868 MHz LF FLRC path ──
     {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000},
     {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000},
@@ -211,7 +212,15 @@ static int16_t rfGetFlrcRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    return -(int16_t)buf[4] * 5;
+    // FLRC packet status returns 5 bytes:
+    //   [0-1] packet length (16-bit)
+    //   [2]   RSSI average (7 MSBs of 9-bit value)
+    //   [3]   RSSI sync (7 MSBs of 9-bit value)
+    //   [4]   flags: bits[3:2]=rssiAvg LSB, bit[0]=rssiSync LSB
+    // 9-bit RSSI: ((buf[2] << 1) | ((buf[4] & 0x04) >> 2)) / -2.0
+    // Return in tenths of dBm (×10) for consistency with LoRa path
+    uint16_t raw = ((uint16_t)buf[2] << 1) | ((buf[4] & 0x04) >> 2);
+    return -(int16_t)(raw * 5);  // raw/2 * -10 = raw * -5 (tenths of dBm)
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
@@ -350,6 +359,12 @@ static void rfInitForPhaseRX(const Phase &p) {
     delay(1);
 }
 
+// ─── GPS coord tracking from received packets ────────────────────────
+static int32_t  lastPktLat = 0;   // lat × 1e7
+static int32_t  lastPktLon = 0;   // lon × 1e7
+static uint16_t lastPktSats = 0;
+static uint8_t  lastPktFix = 0;
+
 // ─── RX phase runner ─────────────────────────────────────────────────
 static void runRxPhase(const Phase &p, int phaseIdx) {
     rfInitForPhaseRX(p);
@@ -367,6 +382,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     int16_t rssiMin = 0;   // most negative = weakest signal
 
     resetSeenSeq();
+    lastPktLat = 0;
+    lastPktLon = 0;
+    lastPktSats = 0;
+    lastPktFix = 0;
 
     rfClearRxFifo();
     rfClearIrq();
@@ -401,12 +420,29 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
 
                 rfReadRxFifo(rxBuf, pktSize);
 
-                // Extract sequence number from bytes 0-1 (big-endian uint16)
-                uint16_t seq = ((uint16_t)rxBuf[0] << 8) | rxBuf[1];
+                // Extract GPS coords from new 16-byte header layout
+                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[0] |
+                    ((uint32_t)rxBuf[1] << 8) | ((uint32_t)rxBuf[2] << 16) |
+                    ((uint32_t)rxBuf[3] << 24));
+                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[4] |
+                    ((uint32_t)rxBuf[5] << 8) | ((uint32_t)rxBuf[6] << 16) |
+                    ((uint32_t)rxBuf[7] << 24));
+                uint16_t pktSats = (uint16_t)rxBuf[8] | ((uint16_t)rxBuf[9] << 8);
+                uint8_t pktFix = rxBuf[10];
+                // Sequence number from bytes 16-17 (big-endian uint16)
+                uint16_t seq = ((uint16_t)rxBuf[16] << 8) | rxBuf[17];
                 if (seq < MAX_SEQ) {
                     seenSeq[seq] = true;
                 }
                 received++;
+
+                // Track GPS coords from first packet of each phase
+                if (received == 1) {
+                    lastPktLat = pktLatE7;
+                    lastPktLon = pktLonE7;
+                    lastPktSats = pktSats;
+                    lastPktFix = pktFix;
+                }
 
                 // Log first few packets per phase for debugging
                 if (received <= 3) {
@@ -435,9 +471,14 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     (float)rssiSum / rssiCount / 10.0f : 0.0f;
     float rssiMinDbm = (float)rssiMin / 10.0f;
 
-    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u\n",
+    // Convert GPS coords from E7 to float for display
+    float latDeg = lastPktLat / 1e7f;
+    float lonDeg = lastPktLon / 1e7f;
+
+    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u gps_lat=%.7f gps_lon=%.7f gps_sats=%u gps_fix=%u\n",
                   phaseIdx, p.name, received, unique, lost, per,
-                  rssiAvg, rssiMinDbm, crcErrors);
+                  rssiAvg, rssiMinDbm, crcErrors,
+                  latDeg, lonDeg, lastPktSats, lastPktFix);
     Serial.flush(); Serial1.flush();
 }
 

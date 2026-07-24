@@ -90,9 +90,12 @@ static const Phase phases[] = {
     {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000},
     {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000},
     // ── 868 MHz LF path ──
-    {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000},
-    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 20000},
-    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 50000},
+    // SF7: 50 pkts × ~50ms each = 2.5s, but with spreading = ~8s. Keep 12s.
+    {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50, 12000},
+    // SF9: 50 pkts × ~200ms each = 10s. Slot 25s.
+    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 25000},
+    // SF12: 20 pkts × ~2s each = 40s minimum + 5s TX timeout margin = 60s.
+    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 60000},
     // ── 868 MHz LF FLRC path ──
     {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000},
     {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000},
@@ -412,26 +415,46 @@ static void rfInitForPhase(const Phase &p) {
     delay(1);
 }
 
-// ─── GPS payload embedding ───────────────────────────────────────────
-// Packet layout:
-//   bytes 0-1:   seq (uint16_t big-endian)
-//   byte  2:     phase ID
-//   bytes 3-6:   latitude (float, LE)
-//   bytes 7-10:  longitude (float, LE)
-//   bytes 11-12: num_sats (uint16_t BE)
-//   bytes 13-14: fix_valid (uint16_t BE)
-//   bytes 15-18: utc_seconds (uint32_t BE)
-static void embedGPS(uint8_t *pkt) {
-    memcpy(&pkt[3], &gps.lat, 4);
-    memcpy(&pkt[7], &gps.lon, 4);
-    pkt[11] = (uint8_t)(gps.sats >> 8);
-    pkt[12] = (uint8_t)(gps.sats & 0xFF);
-    pkt[13] = 0;
-    pkt[14] = gps.fixValid ? 1 : 0;
-    pkt[15] = (uint8_t)(gps.timeSec >> 24);
-    pkt[16] = (uint8_t)(gps.timeSec >> 16);
-    pkt[17] = (uint8_t)(gps.timeSec >> 8);
-    pkt[18] = (uint8_t)(gps.timeSec & 0xFF);
+// ─── GPS payload embedding (new 16-byte header layout) ──────────────
+// Packet layout (first 16+ bytes):
+//   bytes 0-3:   latitude as int32 (degrees * 1e7, little-endian)
+//   bytes 4-7:   longitude as int32 (degrees * 1e7, little-endian)
+//   bytes 8-9:   satellites (uint16, little-endian)
+//   byte  10:    fix quality (0=no fix, 1=GPS, 2=DGPS)
+//   bytes 11-14: UTC seconds since midnight (uint32, little-endian)
+//   byte  15:    phase ID
+//   bytes 16-17: sequence number (uint16, big-endian)
+//   bytes 18+:   padding pattern
+static void embedGPS(uint8_t *pkt, uint16_t seq, uint8_t phaseId) {
+    int32_t latE7 = (int32_t)(gps.lat * 1e7f);
+    int32_t lonE7 = (int32_t)(gps.lon * 1e7f);
+    uint8_t fixQ = gps.fixValid ? 1 : 0;
+
+    // Latitude int32 LE
+    pkt[0] = (uint8_t)(latE7 & 0xFF);
+    pkt[1] = (uint8_t)((latE7 >> 8) & 0xFF);
+    pkt[2] = (uint8_t)((latE7 >> 16) & 0xFF);
+    pkt[3] = (uint8_t)((latE7 >> 24) & 0xFF);
+    // Longitude int32 LE
+    pkt[4] = (uint8_t)(lonE7 & 0xFF);
+    pkt[5] = (uint8_t)((lonE7 >> 8) & 0xFF);
+    pkt[6] = (uint8_t)((lonE7 >> 16) & 0xFF);
+    pkt[7] = (uint8_t)((lonE7 >> 24) & 0xFF);
+    // Satellites uint16 LE
+    pkt[8] = (uint8_t)(gps.sats & 0xFF);
+    pkt[9] = (uint8_t)(gps.sats >> 8);
+    // Fix quality
+    pkt[10] = fixQ;
+    // UTC seconds uint32 LE
+    pkt[11] = (uint8_t)(gps.timeSec & 0xFF);
+    pkt[12] = (uint8_t)((gps.timeSec >> 8) & 0xFF);
+    pkt[13] = (uint8_t)((gps.timeSec >> 16) & 0xFF);
+    pkt[14] = (uint8_t)((gps.timeSec >> 24) & 0xFF);
+    // Phase ID
+    pkt[15] = phaseId;
+    // Sequence number uint16 BE
+    pkt[16] = (uint8_t)(seq >> 8);
+    pkt[17] = (uint8_t)(seq & 0xFF);
 }
 
 // ─── Phase computation from GPS UTC time ──────────────────────────────
@@ -574,7 +597,8 @@ void loop() {
 
         char tbuf[16] = "NO_GPS";
         if (gps.hasTime) formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
-        outPrintf("PHASE_START %d %s %s\n", phase, p.name, tbuf);
+        outPrintf("PHASE_START %d %s %s lat=%.7f lon=%.7f sats=%d fix=%d\n",
+                   phase, p.name, tbuf, gps.lat, gps.lon, gps.sats, gps.fixValid ? 1 : 0);
         Serial.flush();
     }
 
@@ -582,8 +606,10 @@ void loop() {
     uint16_t pktSize = (p.pktType == PT_LORA) ? LORA_PKT_SIZE : FLRC_PKT_SIZE;
     uint8_t txBuf[256];
 
-    // Fill payload pattern
-    for (int i = 19; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
+    // Build packet with GPS header
+    embedGPS(txBuf, seqInPhase, (uint8_t)currentPhase);
+    // Fill padding pattern after byte 17
+    for (int i = 18; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;
@@ -602,30 +628,26 @@ void loop() {
         return;
     }
 
-    // Build packet
-    txBuf[0] = (uint8_t)(seqInPhase >> 8);
-    txBuf[1] = (uint8_t)(seqInPhase & 0xFF);
-    txBuf[2] = (uint8_t)currentPhase;
-    embedGPS(txBuf);
-
     // TX
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(txBuf, pktSize);
     rfSetTx();
 
-    // Wait for TX_DONE — poll DIO9 IRQ pin
+    // Wait for TX_DONE — poll DIO9 IRQ pin with timeout
+    // SF12 at BW250 can take ~2+ seconds per packet; use 5000ms timeout
     uint32_t irqPinMask = 1UL << PIN_IRQ;
-    uint32_t spinCount = 0;
+    uint32_t txStartMs = millis();
+    uint32_t txTimeoutMs = 5000;  // 5s — enough for SF12 BW250
     bool irqFired = false;
-    while (spinCount < 30000000) {
+    while ((millis() - txStartMs) < txTimeoutMs) {
         if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
-        spinCount++;
     }
 
     // Output per-packet log
-    int16_t rssiDbm = 0; // TX doesn't have RSSI; placeholder for RX sync
-    outPrintf("PKT seq=%u rssi=%d phase=%d\n", seqInPhase, rssiDbm, currentPhase);
+    if (!irqFired) {
+        outPrintf("PKT seq=%u TX_TIMEOUT phase=%d\n", seqInPhase, currentPhase);
+    }
 
     digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
 
