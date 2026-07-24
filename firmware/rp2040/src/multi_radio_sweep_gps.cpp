@@ -39,6 +39,23 @@
 #include <stdarg.h>
 #include <hardware/watchdog.h>
 
+// ─── Firmware self-identification (injected at build time) ───────────
+// These come from tools/inject_git_version.py via -D flags.
+// Fallback defines allow compilation without the extra_script.
+#ifndef FW_GIT_HASH
+#define FW_GIT_HASH "unknown"
+#endif
+#ifndef FW_BUILD_TAG
+#define FW_BUILD_TAG "UNK0"
+#endif
+#ifndef FW_BUILD_TIME
+#define FW_BUILD_TIME "1970-01-01T00:00Z"
+#endif
+
+// 7-char git hash that gets appended to every TX packet so RX can verify
+// firmware compatibility. NUL-terminated for safe printing.
+static const char FW_HASH_CHARS[8] = FW_GIT_HASH;
+
 // ─── Output: USB CDC Serial only (Serial1 = GPS UART) ────────────────
 // CDC watchdog: track actual USB write success, not just attempts.
 // If Serial.write returns 0 for 30s, the TinyUSB CDC stack is dead.
@@ -58,6 +75,13 @@ static void outPrintf(const char* fmt, ...) {
     size_t written = Serial.write(buf, len);
     Serial.flush();
     if (written > 0) lastCdcSuccessMs = millis();  // only update on real success
+}
+
+// Print the boot banner — first thing on serial, and on FW_QUERY.
+// Also printed on USB CDC reconnect (called from setup).
+static void printBootBanner() {
+    outPrintf("FW_BOOT hash=%s tag=%s built=%s\r\n",
+              FW_GIT_HASH, FW_BUILD_TAG, FW_BUILD_TIME);
 }
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -522,8 +546,9 @@ static void rfInitForPhase(const Phase &p) {
 //   bytes 12-13: sats (uint16 LE)
 //   byte  14:    fixQ (uint8)
 //   bytes 15-18: utcSec (uint32 LE)
-//   byte  19:    phaseId (uint8)
-//   bytes 20-21: seq (uint16 BE)
+//   byte  19:    phaseId (written by caller)
+//   bytes 20-21: seq (written by caller)
+//   bytes 22-28: fw_hash (7 ASCII chars, written by caller)
 // Note: FLRC hardware strips sync word (bytes 0-3) before FIFO, so RX
 //       uses gpsOff=0 for FLRC and gpsOff=4 for LoRa.
 // ─── Laptop time sync (SET_TIME) ─────────────────────────────────────
@@ -557,6 +582,9 @@ static void checkSerialTimeSync() {
                         outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
                                   (unsigned long)getUtcNow(), (long)utcOffset);
                     }
+                } else if (strcmp(syncBuf, "FW_QUERY") == 0) {
+                    // Firmware identification query — respond with boot banner
+                    printBootBanner();
                 }
                 syncLen = 0;
             }
@@ -630,6 +658,9 @@ void setup() {
         delay(10);
     }
     lastCdcSuccessMs = millis();  // initialize so watchdog doesn't fire immediately
+
+    // Boot banner — FIRST output. Identifies exact firmware build.
+    printBootBanner();
     // GPS on UART0: GP1=RX, GP0=TX, 115200 baud
     Serial1.setRX(PIN_GPS_RX);
     Serial1.setTX(PIN_GPS_TX);
@@ -848,6 +879,7 @@ void loop() {
     //   bytes 15-18: utcSec (uint32 LE)
     //   byte  19:    phaseId (uint8)
     //   bytes 20-21: seq   (uint16 BE)
+    //   bytes 22-28: fw_hash (7 ASCII chars — firmware self-identification)
     txBuf[0] = 0xA5;
     txBuf[1] = 0x5A;
     txBuf[2] = 0x42;
@@ -856,6 +888,8 @@ void loop() {
     txBuf[19] = (uint8_t)currentPhase;
     txBuf[20] = (uint8_t)(seqInPhase >> 8);
     txBuf[21] = (uint8_t)(seqInPhase & 0xFF);
+    // Append 7-char firmware git hash so RX can verify TX build compatibility
+    memcpy(&txBuf[22], FW_HASH_CHARS, 7);
 
     // TX
     rfClearIrq();
@@ -880,7 +914,8 @@ void loop() {
 
     // Output per-packet log
     int16_t rssiDbm = 0; // TX doesn't have RSSI; placeholder for RX sync
-    outPrintf("PKT seq=%u rssi=%d phase=%d\n", seqInPhase, rssiDbm, currentPhase);
+    outPrintf("PKT seq=%u rssi=%d phase=%d tx_fw=%s\n", seqInPhase, rssiDbm,
+              currentPhase, FW_GIT_HASH);
 
     digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
 
