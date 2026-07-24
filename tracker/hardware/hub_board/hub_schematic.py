@@ -1,9 +1,21 @@
 """
-Hub Board Schematic - ESP32-C3 + LR2021 + GPS + Power
+Hub Board Schematic - ESP32-C3 + LoRa2021F33-2G4 + GPS + Power
 Central electronics board for pico balloon tracker.
 
 Uses validated pin mapping from DIY v0.1 soldering setup.
 Connector-based approach: dev board modules as connectors, custom inline parts for ICs.
+
+The LoRa module is the NiceRF LoRa2021F33-2G4 (F33) — built-in 2W PA (+33 dBm).
+This replaces the bare LoRa2021 + SKY66112 FEM combination.
+
+Key changes from bare LoRa2021:
+- F33 has completely different pinout (18 pins, 9 per side, 39x21mm)
+- F33 has built-in PA — no SKY66112 FEM, no TX_EN GPIO
+- F33 has CE pin (Pin 5) for LDO enable / sleep mode → GPIO9/D9
+- F33 has internal TCXO — no VTCXO pin, no C3 decoupling cap
+- F33 needs 3.0-5.5V (5V for full 2W) — power chain may need update
+- F33 has bulk capacitance: C4 = 100uF (was 10uF) for 2W TX bursts
+- F33 does NOT have DIO7/DIO8/DIO9 pins — only IRQ (Pin 18)
 
 Generates KiCad netlist via SKiDL.
 Run: python hub_schematic.py
@@ -21,7 +33,12 @@ from skidl import *
 # ============================================================
 
 def make_tps7a02():
-    """TPS7A0233DBVR LDO - 3.3V, SOT-23-5, custom inline part."""
+    """TPS7A0233DBVR LDO - 3.3V, SOT-23-5, custom inline part.
+
+    NOTE: For full 2W output on F33 module, this needs to be replaced with
+    a 5V LDO or boost converter. At 3.3V, F33 operates at reduced power (~1W).
+    See docs/F33-MODULE-PLAN.md for power supply design options.
+    """
     p = Part(name='TPS7A0233DBVR', tool='skidl', dest=TEMPLATE,
              ref_prefix='U', footprint='Package_TO_SOT_SMD:SOT-23-5')
     p += Pin(num='1', name='IN',   func=Pin.types.PWRIN)
@@ -40,7 +57,7 @@ def make_bat54():
     return p()
 
 # ============================================================
-# Schematic: Hub Board V0.1
+# Schematic: Hub Board V0.1 (F33 Module)
 # ============================================================
 
 def generate_hub_schematic():
@@ -53,14 +70,15 @@ def generate_hub_schematic():
                value="ESP32-C3_Mini_V1",
                footprint="Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Vertical")
 
-    # U2: NiceRF LoRa2021 (18-pin castellated module)
+    # U2: NiceRF LoRa2021F33-2G4 (F33) — 18-pin castellated module, 39x21mm
+    # Built-in 2W PA (+33 dBm), internal TCXO, no SKY66112 FEM needed
     # Use two Conn_01x09 to represent 18 pins (left side + right side)
     lora_l = Part("Connector_Generic", "Conn_01x09", ref="U",
-                  value="LoRa2021_Left",
-                  footprint="Connector_PinHeader_2.54mm:PinHeader_1x09_P2.54mm_Vertical")
+                  value="LoRa2021F33_Left",
+                  footprint="custom:LoRa2021F33_2G4")
     lora_r = Part("Connector_Generic", "Conn_01x09", ref="U",
-                  value="LoRa2021_Right",
-                  footprint="Connector_PinHeader_2.54mm:PinHeader_1x09_P2.54mm_Vertical")
+                  value="LoRa2021F33_Right",
+                  footprint="custom:LoRa2021F33_2G4")
 
     # U3: MAX-M10S GPS breakout (4-pin header)
     gps = Part("Connector_Generic", "Conn_01x04", ref="U",
@@ -68,6 +86,8 @@ def generate_hub_schematic():
                footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
 
     # U4: TPS7A02 LDO (custom)
+    # NOTE: At 3.3V, F33 operates at reduced power (~1W instead of 2W).
+    # For full 2W, replace with 5V LDO or boost converter.
     ldo = make_tps7a02()
 
     # D1: BAT54 Schottky diode (custom)
@@ -75,9 +95,9 @@ def generate_hub_schematic():
 
     # Decoupling capacitors
     c1 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # ESP32 decouple
-    c2 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # LoRa VCC
-    c3 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # LoRa VTCXO
-    c4 = Part("Device", "C", ref="C", value="10uF",  footprint="Capacitor_SMD:C_0402_1005Metric")  # LoRa TX burst
+    c2 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # F33 VCC decouple
+    # C3 removed — F33 has internal TCXO, no VTCXO pin
+    c4 = Part("Device", "C", ref="C", value="100uF", footprint="Capacitor_SMD:C_1210_3225Metric")  # F33 TX burst (100uF for 2W PA)
     c5 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # GPS decouple
     c6 = Part("Device", "C", ref="C", value="10uF",  footprint="Capacitor_SMD:C_0402_1005Metric")  # GPS decouple
     c7 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # LDO output
@@ -129,10 +149,11 @@ def generate_hub_schematic():
     spi_sck  = Net("SPI_SCK")
     spi_cs   = Net("SPI_CS")
 
-    # LoRa2021 control
+    # F33 control signals
     lora_rst  = Net("LORA_RST")
     lora_busy = Net("LORA_BUSY")
     lora_irq  = Net("LORA_IRQ")
+    lora_ce   = Net("LORA_CE")    # NEW: F33 CE pin (LDO enable / sleep mode)
 
     # UART1 (GPS)
     uart_tx = Net("UART1_TX")  # ESP TX → GPS RX
@@ -147,9 +168,9 @@ def generate_hub_schematic():
 
     # Solder bridge intermediate nets
     sb1_in  = Net("SB1_IN")   # ESP32 D6 → SB1 pad A
-    sb1_out = Net("SB1_OUT")  # SB1 pad B → LoRa SCK
+    sb1_out = Net("SB1_OUT")  # SB1 pad B → F33 SCK
     sb2_in  = Net("SB2_IN")   # ESP32 D7 → SB2 pad A
-    sb2_out = Net("SB2_OUT")  # SB2 pad B → LoRa MOSI
+    sb2_out = Net("SB2_OUT")  # SB2 pad B → F33 MOSI
 
     # --- ESP32-C3_Mini_V1 pin assignments ---
     # Conn_02x08_Odd_Even: pin 1-8 = top row, 9-16 = bottom row
@@ -183,9 +204,12 @@ def generate_hub_schematic():
     sb2_in += mcu.p[13]      # D7/GPIO7 → SB2 input
 
     # LoRa control signals
-    lora_busy += mcu.p[4]    # D4/GPIO4 = LR2021_BUSY
-    lora_rst  += mcu.p[11]   # D3/GPIO3 = LR2021_RST
-    lora_irq  += mcu.p[12]   # D5/GPIO5 = LR2021_IRQ (DIO9)
+    lora_busy += mcu.p[4]    # D4/GPIO4 = F33 BUSY
+    lora_rst  += mcu.p[11]   # D3/GPIO3 = F33 RESET
+    lora_irq  += mcu.p[12]   # D5/GPIO5 = F33 IRQ
+
+    # F33 CE (NEW — LDO enable / sleep mode)
+    lora_ce   += mcu.p[14]   # D9/GPIO9 = F33 CE
 
     # SPI CS
     spi_cs += mcu.p[7]       # D10/GPIO10 = SPI_CS
@@ -193,54 +217,57 @@ def generate_hub_schematic():
     # ADC (supercap voltage monitoring)
     adc_vcap += mcu.p[6]     # D8/GPIO8 = ADC
 
-    # --- NiceRF LoRa2021 pin assignments ---
-    # Left side (pins 1-9): Conn_01x09 pins 1-9
-    #   Pin 1 = VCC        → 3V3
-    #   Pin 2 = GND
-    #   Pin 3 = MISO       → SPI_MISO
-    #   Pin 4 = MOSI       → SB2_OUT (via solder bridge)
-    #   Pin 5 = SCK        → SB1_OUT (via solder bridge)
-    #   Pin 6 = NSS        → SPI_CS
-    #   Pin 7 = BUSY       → LORA_BUSY
-    #   Pin 8 = GND
-    #   Pin 9 = ANT (Sub-GHz)
-    # Right side (pins 10-18): Conn_01x09 pins 1-9
-    #   Pin 10 = 2.4G antenna
-    #   Pin 11 = GND
-    #   Pin 12 = GND
-    #   Pin 13 = NC
-    #   Pin 14 = RST       → LORA_RST
-    #   Pin 15 = DIO9/IRQ  → LORA_IRQ
-    #   Pin 16 = DIO8      → NC
-    #   Pin 17 = DIO7      → NC
-    #   Pin 18 = GND
+    # --- NiceRF LoRa2021F33-2G4 (F33) pin assignments ---
+    # F33 has completely different pinout from bare LoRa2021!
+    # Left side (F33 pins 1-9): Conn_01x09 pins 1-9
+    #   F33 Pin 1 = VCC        → VCC_3V3 (or 5V for full 2W — see power supply note)
+    #   F33 Pin 2 = GND
+    #   F33 Pin 3 = GND
+    #   F33 Pin 4 = GND
+    #   F33 Pin 5 = CE         → LORA_CE (GPIO9/D9)
+    #   F33 Pin 6 = GND
+    #   F33 Pin 7 = GND
+    #   F33 Pin 8 = GND
+    #   F33 Pin 9 = ANT        → RF_SUBGHZ (Sub-GHz antenna, 50 Ohm)
+    # Right side (F33 pins 10-18): Conn_01x09 pins 1-9
+    #   F33 Pin 10 = ANT-2G4   → RF_2G4 (2.4 GHz antenna, 50 Ohm)
+    #   F33 Pin 11 = GND
+    #   F33 Pin 12 = SCK       → SB1_OUT (via solder bridge from D6)
+    #   F33 Pin 13 = NSS       → SPI_CS
+    #   F33 Pin 14 = BUSY      → LORA_BUSY
+    #   F33 Pin 15 = MOSI      → SB2_OUT (via solder bridge from D7)
+    #   F33 Pin 16 = MISO      → SPI_MISO
+    #   F33 Pin 17 = RESET     → LORA_RST
+    #   F33 Pin 18 = IRQ       → LORA_IRQ
 
-    vcc_3v3    += lora_l.p[1]   # Pin 1 = VCC
-    gnd        += lora_l.p[2]   # Pin 2 = GND
-    spi_miso   += lora_l.p[3]   # Pin 3 = MISO
-    sb2_out    += lora_l.p[4]   # Pin 4 = MOSI (from SB2)
-    sb1_out    += lora_l.p[5]   # Pin 5 = SCK (from SB1)
-    spi_cs     += lora_l.p[6]   # Pin 6 = NSS
-    lora_busy  += lora_l.p[7]   # Pin 7 = BUSY
-    gnd        += lora_l.p[8]   # Pin 8 = GND
-    rf_subghz  += lora_l.p[9]   # Pin 9 = ANT (Sub-GHz)
+    # Left side (F33 pins 1-9)
+    vcc_3v3    += lora_l.p[1]   # F33 Pin 1 = VCC
+    gnd        += lora_l.p[2]   # F33 Pin 2 = GND
+    gnd        += lora_l.p[3]   # F33 Pin 3 = GND
+    gnd        += lora_l.p[4]   # F33 Pin 4 = GND
+    lora_ce    += lora_l.p[5]   # F33 Pin 5 = CE (LDO enable / sleep mode)
+    gnd        += lora_l.p[6]   # F33 Pin 6 = GND
+    gnd        += lora_l.p[7]   # F33 Pin 7 = GND
+    gnd        += lora_l.p[8]   # F33 Pin 8 = GND
+    rf_subghz  += lora_l.p[9]   # F33 Pin 9 = ANT (Sub-GHz)
 
-    rf_2g4     += lora_r.p[1]   # Pin 10 = 2.4G
-    gnd        += lora_r.p[2]   # Pin 11 = GND
-    gnd        += lora_r.p[3]   # Pin 12 = GND
-    # Pin 13 = NC (no connection)
-    lora_rst   += lora_r.p[4]   # Pin 14 = RST
-    lora_irq   += lora_r.p[5]   # Pin 15 = DIO9/IRQ
-    # Pin 16 = DIO8 (NC for now)
-    # Pin 17 = DIO7 (NC for now)
-    gnd        += lora_r.p[8]   # Pin 18 = GND
+    # Right side (F33 pins 10-18)
+    rf_2g4     += lora_r.p[1]   # F33 Pin 10 = ANT-2G4 (2.4 GHz)
+    gnd        += lora_r.p[2]   # F33 Pin 11 = GND
+    sb1_out    += lora_r.p[3]   # F33 Pin 12 = SCK (from SB1)
+    spi_cs     += lora_r.p[4]   # F33 Pin 13 = NSS
+    lora_busy  += lora_r.p[5]   # F33 Pin 14 = BUSY
+    sb2_out    += lora_r.p[6]   # F33 Pin 15 = MOSI (from SB2)
+    spi_miso   += lora_r.p[7]   # F33 Pin 16 = MISO
+    lora_rst   += lora_r.p[8]   # F33 Pin 17 = RESET
+    lora_irq   += lora_r.p[9]   # F33 Pin 18 = IRQ
 
     # --- Solder bridges ---
-    # SB1: ESP32 D6 ↔ LoRa SCK
+    # SB1: ESP32 D6 ↔ F33 SCK
     sb1_in  += sb1.p[1]     # SB1 pad A
     sb1_out += sb1.p[2]     # SB1 pad B
 
-    # SB2: ESP32 D7 ↔ LoRa MOSI
+    # SB2: ESP32 D7 ↔ F33 MOSI
     sb2_in  += sb2.p[1]     # SB2 pad A
     sb2_out += sb2.p[2]     # SB2 pad B
 
@@ -253,6 +280,10 @@ def generate_hub_schematic():
 
     # --- Power chain ---
     # Solar input → BAT54 → supercap → TPS7A02 → 3V3
+    # NOTE: F33 needs 5V for full 2W output. Current chain outputs 3.3V.
+    # For full 2W: replace TPS7A02 with 5V LDO or boost converter.
+    # At 3.3V, F33 operates at reduced power (~1W instead of 2W).
+    # See docs/F33-MODULE-PLAN.md for power supply design options.
     # SB3 selects between USB 3V3 and solar power
     # SolderJumper_3_Bridged12: pins A=1, C=3, B=2 (default bridges A-C)
 
@@ -290,15 +321,14 @@ def generate_hub_schematic():
     vcc_3v3 += c1.p[1]
     gnd     += c1.p[2]
 
-    # C2: LoRa VCC decouple (close to Pin 1)
+    # C2: F33 VCC decouple (close to Pin 1)
     vcc_3v3 += c2.p[1]
     gnd     += c2.p[2]
 
-    # C3: LoRa VTCXO decouple
-    vcc_3v3 += c3.p[1]
-    gnd     += c3.p[2]
+    # C3 removed — F33 has internal TCXO, no VTCXO pin
 
-    # C4: LoRa TX burst cap (10uF)
+    # C4: F33 TX burst cap (100uF for 2W PA current bursts)
+    # F33 can draw up to 1200mA during TX at 433MHz/5V/2W
     vcc_3v3 += c4.p[1]
     gnd     += c4.p[2]
 

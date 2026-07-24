@@ -1,0 +1,55 @@
+(footprint "custom:LoRa2021F33_2G4" (version 20250114) (generator "pcbnew")
+  (layer "F.Cu")
+  (attr smd)
+  (descr "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch")
+  (tags "LoRa LR2021 NiceRF F33 castellated PA 2W")
+  (property "Reference" "U2" (at 0 -12 0) (layer "F.SilkS") (uuid "fp-ref") (effects (font (size 1 1) (thickness 0.15))))
+  (property "Value" "LoRa2021F33_2G4" (at 0 12.5 0) (layer "F.Fab") (uuid "fp-val") (effects (font (size 1 1) (thickness 0.15))))
+
+  ;; Module outline: 39x21mm, centered at origin → x: ±19.5, y: ±10.5
+  (fp_line (start -19.5 -10.5) (end 19.5 -10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-1"))
+  (fp_line (start 19.5 -10.5) (end 19.5 10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-2"))
+  (fp_line (start 19.5 10.5) (end -19.5 10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-3"))
+  (fp_line (start -19.5 10.5) (end -19.5 -10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-4"))
+
+  ;; Fab layer outline
+  (fp_line (start -19.5 -10.5) (end 19.5 -10.5) (stroke (width 0.1) (type solid)) (layer "F.Fab") (uuid "fab-1"))
+  (fp_line (start 19.5 -10.5) (end 19.5 10.5) (stroke (width 0.1) (type solid)) (layer "F.Fab") (uuid "fab-2"))
+  (fp_line (start 19.5 10.5) (end -19.5 10.5) (stroke (width 0.1) (type solid)) (layer "F.Fab") (uuid "fab-3"))
+  (fp_line (start -19.5 10.5) (end -19.5 -10.5) (stroke (width 0.1) (type solid)) (layer "F.Fab") (uuid "fab-4"))
+
+  ;; Courtyard
+  (fp_line (start -19.8 -10.8) (end 19.8 -10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-1"))
+  (fp_line (start 19.8 -10.8) (end 19.8 10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-2"))
+  (fp_line (start 19.8 10.8) (end -19.8 10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-3"))
+  (fp_line (start -19.8 10.8) (end -19.8 -10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-4"))
+
+  ;; Pin 1 marker (circle at top-left corner)
+  (fp_circle (center -18 -9) (end -17.7 -9) (stroke (width 0.12) (type solid)) (fill none) (layer "F.SilkS") (uuid "pin1-mark"))
+
+  ;; Left side pads (pins 1-9, top to bottom)
+  ;; Body height 21mm, 9 pins per side, pitch 2.0mm, offset 1.5mm from top/bottom edge
+  ;; First pin Y = 10.5 - 1.5 = 9.0 (top), last pin Y = 10.5 - 1.5 - 8*2.0 = -7.0 (bottom)
+  ;; Pad X = -19.5 (at left edge, castellated)
+  (pad "1" smd rect (at -19.5 9.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-1"))
+  (pad "2" smd rect (at -19.5 7.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-2"))
+  (pad "3" smd rect (at -19.5 5.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-3"))
+  (pad "4" smd rect (at -19.5 3.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-4"))
+  (pad "5" smd rect (at -19.5 1.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-5"))
+  (pad "6" smd rect (at -19.5 -1.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-6"))
+  (pad "7" smd rect (at -19.5 -3.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-7"))
+  (pad "8" smd rect (at -19.5 -5.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-8"))
+  (pad "9" smd rect (at -19.5 -7.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-9"))
+
+  ;; Right side pads (pins 10-18, top to bottom)
+  ;; Pad X = 19.5 (at right edge, castellated)
+  (pad "10" smd rect (at 19.5 -7.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-10"))
+  (pad "11" smd rect (at 19.5 -5.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-11"))
+  (pad "12" smd rect (at 19.5 -3.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-12"))
+  (pad "13" smd rect (at 19.5 -1.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-13"))
+  (pad "14" smd rect (at 19.5 1.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-14"))
+  (pad "15" smd rect (at 19.5 3.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-15"))
+  (pad "16" smd rect (at 19.5 5.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-16"))
+  (pad "17" smd rect (at 19.5 7.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-17"))
+  (pad "18" smd rect (at 19.5 9.0) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-18"))
+)
