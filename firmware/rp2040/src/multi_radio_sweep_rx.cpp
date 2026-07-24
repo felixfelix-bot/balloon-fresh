@@ -593,7 +593,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
 
                 digitalWrite(PIN_LED, (received & 1) ? HIGH : LOW);
 
-                rfClearRxFifo();
+                // Re-arm: STANDBY → CLEAR_IRQ → RX (matches proven flrc_range_rx_gps.cpp)
+                { uint8_t c[] = {0x01, 0x1E}; rfWriteCmd(c, 2); }
+                rfWaitBusy();
+                { uint8_t c[] = {0x01, 0x11, 0x00, 0x00}; rfWriteCmd(c, 4); }
                 rfClearIrq();
                 rfSetRx();
             }
