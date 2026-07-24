@@ -19,16 +19,37 @@ Exit codes:
 
 import sys
 import os
+import subprocess
+import glob
 from pathlib import Path
 
 # Import the check from board-serial.py
 sys.path.insert(0, str(Path.home() / "repos" / "balloon-fresh" / "tools"))
 from board_serial import check_board_lock
 
-PORT_MAP = {
-    "tx": "/dev/ttyACM0",
-    "rx": "/dev/ttyACM2",
+# Serial-number-based board identification (NOT hardcoded ports)
+BOARD_SERIALS = {
+    "tx": "F242D",   # E663B035977F242D — TX board with GPS
+    "rx": "8332",    # E663B035973B8332 — RX board
 }
+
+
+def find_port_for_resource(resource: str) -> str | None:
+    """Find /dev/ttyACM* port for a board by serial number via udev."""
+    serial_fragment = BOARD_SERIALS.get(resource)
+    if not serial_fragment:
+        return None
+    for port in sorted(glob.glob("/dev/ttyACM*")):
+        try:
+            result = subprocess.run(
+                ["udevadm", "info", "-q", "property", "-n", port],
+                capture_output=True, text=True, timeout=3
+            )
+            if serial_fragment in result.stdout:
+                return port
+        except Exception:
+            pass
+    return None
 
 def main():
     track = os.getenv("BALLOON_TRACK")
@@ -48,9 +69,9 @@ def main():
     all_ok = True
 
     for r in resources:
-        port = PORT_MAP.get(r)
+        port = find_port_for_resource(r)
         if port is None:
-            print(f"SKIP: unknown resource '{r}' (known: {', '.join(PORT_MAP.keys())})", file=sys.stderr)
+            print(f"SKIP: board '{r}' not found on any /dev/ttyACM* port (serial {BOARD_SERIALS.get(r, '?')})", file=sys.stderr)
             continue
 
         if not check_board_lock(port):

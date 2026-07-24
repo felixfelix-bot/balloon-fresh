@@ -20,14 +20,7 @@ LOCK_DIR = Path.home() / ".hermes" / "peripheral_locks"
 
 
 def _resolve_port_to_resource(port: str) -> str | None:
-    """Map serial port path to lock resource name."""
-    PORT_MAP = {
-        "/dev/ttyACM0": "tx",
-        "/dev/ttyACM2": "rx",
-    }
-    if port in PORT_MAP:
-        return PORT_MAP[port]
-    # Try udev serial number
+    """Map serial port path to lock resource name via udev serial number."""
     import subprocess
     try:
         result = subprocess.run(
