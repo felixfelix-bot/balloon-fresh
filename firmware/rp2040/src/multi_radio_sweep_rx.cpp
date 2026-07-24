@@ -624,7 +624,7 @@ static void rxPacketPoll(int phaseIdx) {
     int syncOffset = -1;
     if (phaseIdx >= 0 && phaseIdx < 14) {
         int8_t cached = lastSyncOffset[phaseIdx];
-        if (cached >= 0 && cached <= (int)pktSize - 22 &&
+        if (cached >= 0 && cached <= (int)pktSize - 31 &&
             rxBuf[cached]   == 0xA5 && rxBuf[cached+1] == 0x5A &&
             rxBuf[cached+2] == 0x42 && rxBuf[cached+3] == 0x24) {
             syncOffset = cached;
@@ -632,7 +632,7 @@ static void rxPacketPoll(int phaseIdx) {
     }
     if (syncOffset < 0) {
         // Fast-path miss (or no cached offset) → full scan
-        for (int i = 0; i <= (int)pktSize - 22; i++) {  // need at least 22 bytes after sync
+        for (int i = 0; i <= (int)pktSize - 31; i++) {  // need at least 31 bytes after sync (4 sync + 18 gps + 7 fw + 2 crc)
             if (rxBuf[i] == 0xA5 && rxBuf[i+1] == 0x5A &&
                 rxBuf[i+2] == 0x42 && rxBuf[i+3] == 0x24) {
                 syncOffset = i;
