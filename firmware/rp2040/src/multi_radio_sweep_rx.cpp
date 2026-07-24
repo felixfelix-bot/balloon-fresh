@@ -521,19 +521,19 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     lastTxSats = txSats; lastTxFix = txFix;
                     lastTxUtc = txUtc;
 
-                    // ─── Phase drift correction ───────────────────────
-                    // Use TX's GPS utc_seconds to determine which phase TX
-                    // is currently in. If it differs from our current phase,
-                    // jump RX to TX's phase to stay drift-free over long walks.
-                    if (txUtc > 0 && totalCycleSec > 0) {
-                        int txPhase = computePhaseFromUTC(txUtc);
-                        if (txPhase != currentPhase) {
-                            uint32_t driftMs = (uint32_t)abs((int32_t)(millis() - phaseStartMs));
-                            dualPrintf("PHASE_CORRECTION rx_phase=%d tx_phase=%d drift_ms=%lu\n",
-                                          currentPhase, txPhase, (unsigned long)driftMs);
-                            currentPhase = txPhase;
-                            phaseStartMs = millis();
-                        }
+                    // ─── Time difference logging (measurement only) ────
+                    // GPS time from TX is NOT used for RX phase control.
+                    // Laptop time (SET_TIME) is the primary clock.
+                    // Log the difference between laptop UTC and TX GPS UTC
+                    // as a measurement vector for analysis.
+                    if (txUtc > 0 && utcOffset > 0) {
+                        uint32_t laptopUtc = getUtcNow();
+                        int32_t diffSec = (int32_t)laptopUtc - (int32_t)txUtc;
+                        int32_t diffMs = diffSec * 1000;
+                        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu diff_ms=%ld\n",
+                                      (unsigned long)txUtc,
+                                      (unsigned long)laptopUtc,
+                                      (long)diffMs);
                     }
                 }
 
@@ -649,12 +649,6 @@ void loop() {
         currentPhase = i;
         phaseStartMs = millis();
         runRxPhase(phases[i], i);
-        // After runRxPhase, currentPhase may have been corrected by drift
-        // correction — if so, we skip ahead to the corrected phase
-        if (currentPhase != i && currentPhase > i && currentPhase < NUM_PHASES) {
-            dualPrintf("PHASE_SKIP from=%d to=%d (drift correction)\n", i, currentPhase);
-            i = currentPhase;  // loop will increment to currentPhase+1
-        }
     }
 
     dualPrintf("PHASE_GUARD 500\n");
