@@ -201,8 +201,8 @@ static bool     rxRadioInRxMode = false;   // tracks whether radio is listening
 static uint32_t lastWaitingPrintMs = 0;    // throttle for WAITING_FOR_TIME_SYNC
 
 #define TX_POWER_DBM   12.5f   // only for init, not used for RX
-#define LORA_PKT_SIZE  127
-#define FLRC_PKT_SIZE  255
+#define LORA_PKT_SIZE  32
+#define FLRC_PKT_SIZE  32
 
 // ─── Unique sequence tracking ────────────────────────────────────────
 // Max pktCount is 200, so 256-entry bitmap covers all seq values
