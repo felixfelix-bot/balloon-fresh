@@ -730,26 +730,24 @@ def main():
                                       f"({base_lat:.6f}, {base_lon:.6f})", file=sys.stderr)
                             distance_m = haversine(base_lat, base_lon, lat, lon)
 
-                    # ── Compute throughput from packet rx_ms timestamps ──
+                    # ── Compute throughput using slot_ms from PHASE_TABLE ──
+                    # throughput_kbps = (unique_count * pkt_size * 8) / (slot_ms / 1000) / 1000
+                    # goodput_kbps = throughput_kbps (unique packets = no duplicates)
                     throughput_kbps = -1.0
                     goodput_kbps = -1.0
-                    if len(phase_rx_ms_list) >= 2:
-                        phase_num = phase_data.get("phase", -1)
-                        if 0 <= phase_num < NUM_PHASES:
-                            mod = PHASE_TABLE[phase_num]["mod"]
-                            pkt_size = 127 if mod == "LORA" else 255
-                        else:
-                            pkt_size = 127  # conservative default
+                    phase_num = phase_data.get("phase", -1)
+                    if 0 <= phase_num < NUM_PHASES:
+                        meta = PHASE_TABLE[phase_num]
+                        pkt_size = meta["payload_bytes"]
+                        slot_ms = meta["slot_ms"]
+                    else:
+                        pkt_size = 127
+                        slot_ms = 0
 
-                        first_rx_ms = phase_rx_ms_list[0]
-                        last_rx_ms = phase_rx_ms_list[-1]
-                        duration_s = (last_rx_ms - first_rx_ms) / 1000.0
-
-                        if duration_s > 0:
-                            num_received = phase_data.get("rx_received", len(phase_rx_ms_list))
-                            num_unique = phase_data.get("rx_unique", len(phase_rx_ms_list))
-                            throughput_kbps = (num_received * pkt_size * 8) / duration_s / 1000.0
-                            goodput_kbps = (num_unique * pkt_size * 8) / duration_s / 1000.0
+                    num_unique = phase_data.get("rx_unique", 0)
+                    if num_unique and num_unique > 0 and slot_ms > 0:
+                        throughput_kbps = (num_unique * pkt_size * 8) / (slot_ms / 1000.0) / 1000.0
+                        goodput_kbps = throughput_kbps  # unique packets = no duplicates
 
                     # Console output
                     tp_str = ""
