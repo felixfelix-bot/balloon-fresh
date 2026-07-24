@@ -670,7 +670,11 @@ void setup() {
     while (!Serial && (millis() - bootStart) < 3000) {
         delay(10);
     }
-    lastCdcSuccessMs = millis();  // initialize so watchdog doesn't fire immediately
+    // DO NOT initialize lastCdcSuccessMs here — leave it 0 so the watchdog
+    // only arms after the first successful Serial.write(). This prevents
+    // infinite reboots when USB is disconnected (battery-powered walk test).
+    // If USB connects, outPrintf() sets it via line 77. If USB never connects,
+    // the watchdog check (lastCdcSuccessMs > 0) stays false forever.
 
     // Boot banner — FIRST output. Identifies exact firmware build.
     printBootBanner();
