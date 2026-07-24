@@ -37,10 +37,13 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <stdarg.h>
+#include <hardware/watchdog.h>
 
 // ─── Output: USB CDC Serial only (Serial1 = GPS UART) ────────────────
-// BUG2 FIX: CDC watchdog tracking — detect USB CDC death
-static uint32_t lastCdcOutputMs = 0;
+// CDC watchdog: track actual USB write success, not just attempts.
+// If Serial.write returns 0 for 30s, the TinyUSB CDC stack is dead.
+// Fix: hardware watchdog reboot to restart USB cleanly.
+static uint32_t lastCdcSuccessMs = 0;   // last time Serial.write succeeded
 static uint32_t lastHeartbeatMs = 0;
 #define CDC_WATCHDOG_MS       30000
 #define HEARTBEAT_INTERVAL_MS 10000
@@ -51,9 +54,10 @@ static void outPrintf(const char* fmt, ...) {
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-    Serial.print(buf);
-    Serial.flush();           // BUG2 FIX: flush after EVERY output, not just every 16 packets
-    lastCdcOutputMs = millis();
+    size_t len = strlen(buf);
+    size_t written = Serial.write(buf, len);
+    Serial.flush();
+    if (written > 0) lastCdcSuccessMs = millis();  // only update on real success
 }
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -140,6 +144,59 @@ static uint32_t daysSinceEpoch(uint16_t year, uint8_t month, uint8_t day) {
     uint32_t doy = (153 * (month - 3) + 2) / 5 + day - 1;   // [0, 365]
     uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;   // [0, 146096]
     return era * 146097 + doe - 719468;                       // days since 1970-01-01
+}
+
+// ─── Fault-tolerant DDMMYY date extraction ───────────────────────────
+// Scans an NMEA sentence for a 6-digit date pattern instead of relying on
+// comma field counting (which fails when characters are dropped and field
+// positions shift). Works on garbled/merged sentences.
+//
+// False-match rejection heuristics:
+//   - Stop scanning at '*' (checksum area — hex digits, not dates)
+//   - Only scan first 160 chars (merged sentences could be very long)
+//   - The 6 digits must NOT be preceded by a digit (avoids matching inside
+//     longer numbers like speed/course fields)
+//   - The 6 digits must NOT be followed by a digit or '.' (excludes time
+//     field HHMMSS.ss and lat/lon DDMM.MMMM fields)
+//   - DD must be 01-31, MM must be 01-12
+static bool extractDatePattern(const char *sentence,
+                               uint8_t *outDay, uint8_t *outMonth, uint16_t *outYear) {
+    size_t scanLen = strlen(sentence);
+    if (scanLen > 160) scanLen = 160;   // only search first sentence worth of data
+
+    for (size_t i = 0; i + 6 <= scanLen; i++) {
+        const char *p = sentence + i;
+
+        // Stop at checksum marker — everything after '*' is hex, not a date
+        if (*p == '*') break;
+
+        // Must not be preceded by a digit (avoid matching inside longer numbers)
+        if (i > 0 && isdigit((unsigned char)sentence[i - 1])) continue;
+
+        // Must be 6 consecutive digits
+        if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1]) ||
+            !isdigit((unsigned char)p[2]) || !isdigit((unsigned char)p[3]) ||
+            !isdigit((unsigned char)p[4]) || !isdigit((unsigned char)p[5]))
+            continue;
+
+        // Must not be followed by a digit or '.' (excludes HHMMSS.ss, DDMM.MMMM)
+        if (i + 6 < scanLen) {
+            char after = sentence[i + 6];
+            if (isdigit((unsigned char)after) || after == '.') continue;
+        }
+
+        int dd = (p[0] - '0') * 10 + (p[1] - '0');
+        int mo = (p[2] - '0') * 10 + (p[3] - '0');
+        int yy = (p[4] - '0') * 10 + (p[5] - '0');
+
+        if (dd >= 1 && dd <= 31 && mo >= 1 && mo <= 12) {
+            *outDay   = (uint8_t)dd;
+            *outMonth = (uint8_t)mo;
+            *outYear  = (uint16_t)(2000 + yy);  // NMEA 2-digit year → 20YY
+            return true;   // FIRST valid date pattern wins
+        }
+    }
+    return false;
 }
 
 // ─── NMEA parser (copied from flrc_range_tx_gps.cpp) ─────────────────
@@ -229,41 +286,31 @@ static void parseNMEA(const char *sentence) {
             }
         }
 
-        // ── Parse date field (field 9: DDMMYY) for real Unix epoch ──
-        // RMC layout: $xxRMC,time,status,lat,N,lon,E,speed,course,DDMMYY,...
-        // Robust comma-counting: immune to empty fields or talker-ID length
-        {
-            const char *p = sentence;
-            int commaCount = 0;
-            while (*p && commaCount < 9) {
-                if (*p == ',') commaCount++;
-                p++;
-            }
-            // p now points at the start of field 9 (date string)
-            if (commaCount == 9 && *p && gps.hasTime) {
-                char dateStr[16] = {0};
-                int di = 0;
-                while (*p && *p != ',' && *p != '*' && di < 15) {
-                    dateStr[di++] = *p++;
-                }
-                dateStr[di] = '\0';
-                if (strlen(dateStr) >= 6) {
-                    int dd = (dateStr[0]-'0')*10 + (dateStr[1]-'0');
-                    int mo = (dateStr[2]-'0')*10 + (dateStr[3]-'0');
-                    int yy = (dateStr[4]-'0')*10 + (dateStr[5]-'0');
-                    uint16_t year = 2000 + yy;   // NMEA 2-digit year → 20YY
-                    uint32_t days = daysSinceEpoch(year, (uint8_t)mo, (uint8_t)dd);
-                    gps.unixTime    = days * 86400UL + gps.timeSec;
-                    gps.hasUnixTime = true;
-                    outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu\n",
-                              (unsigned long)days, (unsigned long)gps.timeSec,
-                              (unsigned long)gps.unixTime);
-                }
+        // ── Parse date (DDMMYY) for real Unix epoch ──
+        // ROBUSTNESS FIX: Pattern-match instead of comma-counting.
+        // Handles garbled/merged sentences where dropped characters shift
+        // field positions. Scans the entire (truncated to 160 chars) sentence
+        // for a valid DDMMYY pattern, stopping at '*' checksum boundary.
+        if (gps.hasTime) {
+            uint8_t  dDay, dMo;
+            uint16_t dYear;
+            if (extractDatePattern(sentence, &dDay, &dMo, &dYear)) {
+                uint32_t days = daysSinceEpoch(dYear, dMo, dDay);
+                gps.unixTime    = days * 86400UL + gps.timeSec;
+                gps.hasUnixTime = true;
+                outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu\n",
+                          (unsigned long)days, (unsigned long)gps.timeSec,
+                          (unsigned long)gps.unixTime);
             }
         }
     }
 }
 
+// gpsPoll() drains the Serial1 UART ring buffer into the NMEA parser.
+// IMPORTANT: Must be called at least every 50ms. During SPI radio ops
+// (rfInitForPhase, TX spin), the UART ISR still drains the HW FIFO into
+// the 1024-entry software ring buffer, but gpsPoll() must run to parse
+// accumulated sentences before the ring buffer overflows on long gaps.
 static void gpsPoll() {
     while (Serial1.available()) {
         char c = Serial1.read();
@@ -568,9 +615,20 @@ static uint32_t phaseStartMs = 0;
 // ─── Setup ───────────────────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
+    // Wait up to 3s for USB host to connect (prevents watchdog misfire on boot)
+    uint32_t bootStart = millis();
+    while (!Serial && (millis() - bootStart) < 3000) {
+        delay(10);
+    }
+    lastCdcSuccessMs = millis();  // initialize so watchdog doesn't fire immediately
     // GPS on UART0: GP1=RX, GP0=TX, 115200 baud
     Serial1.setRX(PIN_GPS_RX);
     Serial1.setTX(PIN_GPS_TX);
+    // ROBUSTNESS FIX: Enlarge UART RX ring buffer from default 32 entries.
+    // During SPI radio operations (50-100ms+), GPS sends ~500 chars/sec at
+    // 115200 baud. The tiny default buffer overflows and drops characters,
+    // causing NMEA sentence corruption/merging. Must call BEFORE begin().
+    Serial1.setFIFOSize(1024);
     // GPS baud auto-detection: try 115200 first (was working), then 9600
     {
         const uint32_t bauds[] = {115200, 9600, 38400, 19200};
@@ -684,15 +742,13 @@ void loop() {
     // GPS still works if module is alive — used for position data in packets
     gpsPoll();
 
-    // CDC watchdog — reinitialize USB if no output for 30s
-    if (lastCdcOutputMs > 0 && (millis() - lastCdcOutputMs) > CDC_WATCHDOG_MS) {
-        outPrintf("CDC_WATCHDOG_TIMEOUT — reinitializing USB CDC\n");
-        Serial.end();
-        delay(100);
-        Serial.begin(115200);
-        delay(100);
-        lastCdcOutputMs = millis();
-        outPrintf("CDC_REINIT_DONE millis=%lu\n", (unsigned long)millis());
+    // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
+    // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
+    if (lastCdcSuccessMs > 0 && (millis() - lastCdcSuccessMs) > CDC_WATCHDOG_MS) {
+        // USB CDC is dead. Hardware watchdog reboot to restart USB cleanly.
+        // This reboots the RP2040 — firmware restarts, USB re-enumerates,
+        // GPS re-acquires in ~30s. No manual BOOTSEL button needed.
+        watchdog_reboot(0, 0, 0);
     }
 
     // Heartbeat every 10s
@@ -741,6 +797,7 @@ void loop() {
         const Phase &p = phases[phase];
         rfInitForPhase(p);
         delay(50);
+        gpsPoll();  // drain GPS UART after ~100ms of SPI radio init
 
         char tbuf[16] = "NO_GPS";
         if (gps.hasTime) formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
@@ -786,11 +843,17 @@ void loop() {
     rfSetTx();
 
     // Wait for TX_DONE — poll DIO9 IRQ pin
+    // For LoRa SF12, TX can take 1-2s. The UART ISR drains HW FIFO into the
+    // 1024-byte ring buffer, but we also poll GPS periodically to prevent
+    // overflow on very long transmissions. gpsPoll() returns instantly if
+    // no data is available, so the tight spin loop is minimally impacted.
     uint32_t irqPinMask = 1UL << PIN_IRQ;
     uint32_t spinCount = 0;
     bool irqFired = false;
     while (spinCount < 30000000) {
         if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
+        // Drain GPS UART every ~65K iterations (~3ms at 125MHz)
+        if ((spinCount & 0xFFFF) == 0) gpsPoll();
         spinCount++;
     }
 
