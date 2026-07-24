@@ -15,7 +15,7 @@ Firmware output formats:
 
   New firmware (with GPS in TX payload):
     PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
-    PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
+    PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> rx_ms=<ms> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
 
 Usage:
   # Walk mode — continuous capture with GPS distance
@@ -54,21 +54,25 @@ except ImportError:
     sys.exit(1)
 
 # ─── Phase table (must match firmware multi_radio_sweep_rx.cpp) ───────────
+# payload_bytes: LoRa=127, FLRC=255 (per firmware TX payload size)
+# slot_ms: total phase duration in milliseconds (from firmware phase config)
+# theoretical_kbps: rough air-interface maximum for comparison
+#   LoRa SF7 BW812 ~6800, SF9 ~3400, SF12 ~210; FLRC as named bitrate
 PHASE_TABLE = [
-    {"name": "HF-LoRa-SF7",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 7,  "bw": 812, "sent": 50},
-    {"name": "HF-LoRa-SF9",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 9,  "bw": 812, "sent": 50},
-    {"name": "HF-LoRa-SF12",  "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 12, "bw": 812, "sent": 30},
-    {"name": "HF-FLRC-2600",  "mod": "FLRC", "freq": 2440, "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "HF-FLRC-1300",  "mod": "FLRC", "freq": 2440, "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "HF-FLRC-650",   "mod": "FLRC", "freq": 2440, "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "HF-FLRC-325",   "mod": "FLRC", "freq": 2440, "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "LF-LoRa-SF7",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 7,  "bw": 250, "sent": 50},
-    {"name": "LF-LoRa-SF9",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 9,  "bw": 250, "sent": 50},
-    {"name": "LF-LoRa-SF12",  "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 12, "bw": 250, "sent": 20},
-    {"name": "LF-FLRC-2600",  "mod": "FLRC", "freq": 868,  "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "LF-FLRC-1300",  "mod": "FLRC", "freq": 868,  "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "LF-FLRC-650",   "mod": "FLRC", "freq": 868,  "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200},
-    {"name": "LF-FLRC-325",   "mod": "FLRC", "freq": 868,  "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200},
+    {"name": "HF-LoRa-SF7",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 7,  "bw": 812, "sent": 50,  "payload_bytes": 127, "slot_ms": 15000, "theoretical_kbps": 6800},
+    {"name": "HF-LoRa-SF9",   "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 9,  "bw": 812, "sent": 50,  "payload_bytes": 127, "slot_ms": 15000, "theoretical_kbps": 3400},
+    {"name": "HF-LoRa-SF12",  "mod": "LORA", "freq": 2440, "bitrate": 0,    "sf": 12, "bw": 812, "sent": 30,  "payload_bytes": 127, "slot_ms": 30000, "theoretical_kbps": 210},
+    {"name": "HF-FLRC-2600",  "mod": "FLRC", "freq": 2440, "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 2600},
+    {"name": "HF-FLRC-1300",  "mod": "FLRC", "freq": 2440, "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 1300},
+    {"name": "HF-FLRC-650",   "mod": "FLRC", "freq": 2440, "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 650},
+    {"name": "HF-FLRC-325",   "mod": "FLRC", "freq": 2440, "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 325},
+    {"name": "LF-LoRa-SF7",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 7,  "bw": 250, "sent": 50,  "payload_bytes": 127, "slot_ms": 12000, "theoretical_kbps": 6800},
+    {"name": "LF-LoRa-SF9",   "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 9,  "bw": 250, "sent": 50,  "payload_bytes": 127, "slot_ms": 25000, "theoretical_kbps": 3400},
+    {"name": "LF-LoRa-SF12",  "mod": "LORA", "freq": 868,  "bitrate": 0,    "sf": 12, "bw": 250, "sent": 20,  "payload_bytes": 127, "slot_ms": 60000, "theoretical_kbps": 210},
+    {"name": "LF-FLRC-2600",  "mod": "FLRC", "freq": 868,  "bitrate": 2600, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 2600},
+    {"name": "LF-FLRC-1300",  "mod": "FLRC", "freq": 868,  "bitrate": 1300, "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 1300},
+    {"name": "LF-FLRC-650",   "mod": "FLRC", "freq": 868,  "bitrate": 650,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 650},
+    {"name": "LF-FLRC-325",   "mod": "FLRC", "freq": 868,  "bitrate": 325,  "sf": 0,  "bw": 0,   "sent": 200, "payload_bytes": 255, "slot_ms": 8000,  "theoretical_kbps": 325},
 ]
 
 NUM_PHASES = len(PHASE_TABLE)
@@ -99,6 +103,11 @@ CSV_COLUMNS = [
     "fix_quality",
     "utc_sec",
     "distance_m",
+    "throughput_kbps",
+    "goodput_kbps",
+    "effective_throughput_kbps",
+    "theoretical_max_kbps",
+    "throughput_efficiency_pct",
     "environment",
     "notes",
 ]
@@ -109,6 +118,7 @@ PKT_COLUMNS = [
     "phase",
     "seq",
     "rssi_dbm",
+    "rx_ms",
     "tx_lat",
     "tx_lon",
     "sats",
@@ -229,6 +239,8 @@ def parse_pkt(line: str) -> dict | None:
             result["rssi"] = float(val)
         elif key == "phase":
             result["phase"] = int(val)
+        elif key == "rx_ms":
+            result["rx_ms"] = int(val)
         elif key == "tx_lat":
             result["lat"] = float(val)
         elif key == "tx_lon":
@@ -342,14 +354,16 @@ class RobustSerial:
 # ─── CSV writers ──────────────────────────────────────────────────────────
 
 def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
-                        distance_m: float, env: str, notes: str):
+                        distance_m: float, env: str, notes: str,
+                        throughput_kbps: float = -1, goodput_kbps: float = -1):
     """Write a phase result row to CSV, enriched with phase table metadata and GPS."""
     phase_num = phase_data.get("phase", -1)
     if 0 <= phase_num < NUM_PHASES:
         meta = PHASE_TABLE[phase_num]
     else:
         meta = {"name": phase_data.get("name", "?"), "mod": "?", "freq": 0,
-                "bitrate": 0, "sf": 0, "bw": 0, "sent": 0}
+                "bitrate": 0, "sf": 0, "bw": 0, "sent": 0,
+                "payload_bytes": 0, "slot_ms": 0, "theoretical_kbps": 0}
 
     row = {col: "" for col in CSV_COLUMNS}
     row["timestamp_iso"] = datetime.now(timezone.utc).isoformat()
@@ -375,6 +389,8 @@ def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
     row["fix_quality"] = phase_data.get("fix_quality", "")
     row["utc_sec"] = phase_data.get("utc_sec", "")
     row["distance_m"] = distance_m
+    row["throughput_kbps"] = throughput_kbps if throughput_kbps >= 0 else ""
+    row["goodput_kbps"] = goodput_kbps if goodput_kbps >= 0 else ""
     row["environment"] = env
     row["notes"] = notes
 
@@ -410,6 +426,7 @@ def write_pkt_csv_row(writer: csv.DictWriter, pkt_data: dict,
     row["phase"] = pkt_data.get("phase", "")
     row["seq"] = pkt_data.get("seq", "")
     row["rssi_dbm"] = pkt_data.get("rssi", "")
+    row["rx_ms"] = pkt_data.get("rx_ms", "")
     row["tx_lat"] = lat if lat is not None else ""
     row["tx_lon"] = lon if lon is not None else ""
     row["sats"] = pkt_data.get("sats", "")
@@ -562,6 +579,11 @@ def main():
     buf = ""
     start_time = time.time()
 
+    # Per-phase packet rx_ms timestamps for throughput computation
+    phase_rx_ms_list: list[int] = []  # rx_ms values for current phase
+    phase_rx_count = 0               # total received count for current phase
+    phase_unique_count = 0           # unique count for current phase
+
     try:
         while True:
             # Check duration
@@ -669,8 +691,44 @@ def main():
                                       f"({base_lat:.6f}, {base_lon:.6f})", file=sys.stderr)
                             distance_m = haversine(base_lat, base_lon, lat, lon)
 
+                    # ── Compute throughput from packet rx_ms timestamps ──
+                    throughput_kbps = -1.0
+                    goodput_kbps = -1.0
+                    if len(phase_rx_ms_list) >= 2:
+                        phase_num = phase_data.get("phase", -1)
+                        if 0 <= phase_num < NUM_PHASES:
+                            mod = PHASE_TABLE[phase_num]["mod"]
+                            pkt_size = 127 if mod == "LORA" else 255
+                        else:
+                            pkt_size = 127  # conservative default
+
+                        first_rx_ms = phase_rx_ms_list[0]
+                        last_rx_ms = phase_rx_ms_list[-1]
+                        duration_s = (last_rx_ms - first_rx_ms) / 1000.0
+
+                        if duration_s > 0:
+                            num_received = phase_data.get("rx_received", len(phase_rx_ms_list))
+                            num_unique = phase_data.get("rx_unique", len(phase_rx_ms_list))
+                            throughput_kbps = (num_received * pkt_size * 8) / duration_s / 1000.0
+                            goodput_kbps = (num_unique * pkt_size * 8) / duration_s / 1000.0
+
+                    # Console output
+                    tp_str = ""
+                    if throughput_kbps >= 0:
+                        tp_str = (f"  thrpt={throughput_kbps:.1f} kbps  "
+                                  f"goodput={goodput_kbps:.1f} kbps")
+                    print(f"  PHASE {phase_data.get('phase', '?')} "
+                          f"{phase_data.get('name', '?')}: "
+                          f"rx={phase_data.get('rx_received', '?')} "
+                          f"unique={phase_data.get('rx_unique', '?')} "
+                          f"per={phase_data.get('per_pct', '?')}% "
+                          f"rssi_avg={phase_data.get('rssi_avg_dbm', '?')}dBm "
+                          f"{tp_str}",
+                          file=sys.stderr)
+
                     write_phase_csv_row(writer, phase_data, current_cycle,
-                                        distance_m, args.env, args.notes)
+                                        distance_m, args.env, args.notes,
+                                        throughput_kbps, goodput_kbps)
                     csv_file.flush()
                     phases_in_cycle += 1
                     continue
@@ -681,6 +739,9 @@ def main():
                     write_pkt_csv_row(pkt_writer, pkt_data, base_lat, base_lon)
                     pkt_file.flush()
                     pkt_count += 1
+                    # Track rx_ms for throughput computation
+                    if "rx_ms" in pkt_data:
+                        phase_rx_ms_list.append(pkt_data["rx_ms"])
                     continue
 
                 # ── Phase start (informational) ──
@@ -688,6 +749,10 @@ def main():
                     parts = line.split()
                     if len(parts) >= 3:
                         print(f"  Phase {parts[1]}: {parts[2]} ...", file=sys.stderr)
+                    # Reset per-phase throughput tracking
+                    phase_rx_ms_list = []
+                    phase_rx_count = 0
+                    phase_unique_count = 0
                     continue
 
                 # ── Other lines — print if they look interesting ──
