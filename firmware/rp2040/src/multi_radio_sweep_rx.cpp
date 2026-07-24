@@ -271,8 +271,9 @@ static int16_t rfGetLoraRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // RSSI is unsigned — negate for dBm. Resolution 0.5 dBm → tenths: val*5
-    return -(int16_t)buf[4] * 5;
+    // Working code from lora_range_rx.cpp: buf[2] = rssiSync, dBm = -val/2
+    // Return in tenths of dBm for consistency: -val * 5 (e.g. val=49 → -245 → -24.5 dBm)
+    return -(int16_t)buf[2] * 5;
 }
 
 static int16_t rfGetFlrcRssi() {
@@ -291,19 +292,18 @@ static int16_t rfGetFlrcRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // FLRC packet status response format (verified via raw byte dump):
+    // FLRC packet status response format (from flrc_range_rx_gps.cpp — PROVEN WORKING):
     //   [0] = status_msb
     //   [1] = status_lsb
-    //   [2] = pktLen_msb  (NOT RSSI — this was the bug!)
+    //   [2] = pktLen_msb
     //   [3] = pktLen_lsb
-    //   [4] = rssiAvg (raw RSSI value, 0.5 dBm resolution)
+    //   [4] = rssiAvg (7 MSBs of 9-bit RSSI)
     //   [5] = rssiSync
-    //   [6] = flags
+    //   [6] = flags: bits[3:2]=rssiAvg LSB, bit[0]=rssiSync LSB
     //   [7] = ?
     //
-    // Fix: use buf[4] directly (same index as LoRa uses from 0x022A)
-    // This matches the working implementation in multi_radio_sweep.cpp (old version)
-    // Return in tenths of dBm: -buf[4] * 5  (e.g. val=49 → -245 → -24.5 dBm)
+    // 9-bit RSSI: ((buf[4] << 1) | ((buf[6] & 0x04) >> 2)), negate, /2 for dBm
+    // Return in tenths of dBm: -raw * 5
 
     // Debug: dump all 8 bytes for first few packets
     static uint8_t flrcRssiDumpCount = 0;
@@ -313,7 +313,8 @@ static int16_t rfGetFlrcRssi() {
                    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
     }
 
-    return -(int16_t)buf[4] * 5;  // tenths of dBm
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int16_t)(raw * 5);  // tenths of dBm
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
