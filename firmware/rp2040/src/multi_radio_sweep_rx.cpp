@@ -146,6 +146,42 @@ static void updateTimeSync(uint32_t utcSec, const char* source) {
     syncSource = source;
 }
 
+// ─── Non-blocking periodic time sync check ───────────────────────────
+// Called from main loop() to check for incoming TIME commands.
+// Does NOT block — reads whatever is available and moves on.
+static char syncLineBuf[64];
+static int syncLineLen = 0;
+
+static void checkPeriodicTimeSync() {
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (syncLineLen > 0) {
+                syncLineBuf[syncLineLen] = '\0';
+                // Parse "TIME <number>"
+                if (strncmp(syncLineBuf, "TIME ", 5) == 0 || strncmp(syncLineBuf, "TIME\t", 5) == 0) {
+                    uint32_t utcSec = (uint32_t)strtoul(syncLineBuf + 5, nullptr, 10);
+                    if (utcSec > 0 && utcSec < 86400) {
+                        // Compute drift: how far our predicted UTC was from the new reference
+                        int32_t drift = 0;
+                        if (timeSynced) {
+                            int32_t predictedUtc = (int32_t)getCurrentUTC();
+                            drift = (predictedUtc - (int32_t)utcSec) * 1000; // ms
+                        }
+                        updateTimeSync(utcSec, "laptop");
+                        dualPrintf("SYNC_REFRESH utc=%lu drift=%dms\n",
+                                   (unsigned long)utcSec, drift);
+                    }
+                }
+                // Ignore non-TIME lines silently during operation
+            }
+            syncLineLen = 0;
+        } else if (syncLineLen < (int)sizeof(syncLineBuf) - 1) {
+            syncLineBuf[syncLineLen++] = c;
+        }
+    }
+}
+
 // ─── Wait for laptop time sync over USB CDC ──────────────────────────
 // Listens for "TIME <utc_seconds_since_midnight>" line on Serial.
 // Returns true if sync received, false if timeout.
@@ -501,6 +537,9 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint32_t irqPinMask = 1UL << PIN_IRQ;
 
     while ((millis() - startMs) < slotBudget) {
+        // Check for periodic TIME sync from laptop (non-blocking)
+        checkPeriodicTimeSync();
+
         // Poll DIO9 IRQ pin
         if (sio_hw->gpio_in & irqPinMask) {
             uint32_t irq = rfReadIrqStatus();
@@ -669,6 +708,11 @@ void setup() {
 void loop() {
     static int cycleNum = 0;
     static uint32_t sweepStartMs = 0;
+
+    // ── Non-blocking check for periodic TIME sync from laptop ──
+    // This allows the capture script to send TIME updates every few minutes
+    // to correct clock drift. Does NOT block — just reads what's available.
+    checkPeriodicTimeSync();
 
     // First run: record sweep start for fallback mode
     if (sweepStartMs == 0) {
