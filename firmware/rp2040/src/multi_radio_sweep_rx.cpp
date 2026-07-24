@@ -271,9 +271,18 @@ static int16_t rfGetLoraRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // Working code from lora_range_rx.cpp: buf[2] = rssiSync, dBm = -val/2
-    // Return in tenths of dBm for consistency: -val * 5 (e.g. val=49 → -245 → -24.5 dBm)
-    return -(int16_t)buf[2] * 5;
+    // Debug: dump raw bytes for first few LoRa packets
+    static uint8_t loraRssiDumpCount = 0;
+    if (loraRssiDumpCount < 5) {
+        loraRssiDumpCount++;
+        dualPrintf("LORA_STATUS bytes: %d %d %d %d %d %d %d %d\n",
+                   buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+    }
+
+    // Previous working code used buf[4] and got -27 dBm at 1m for SF12
+    // lora_range_rx.cpp uses buf[2] but may have different SPI timing
+    // Use buf[4] which is proven to work in this firmware's SPI pattern
+    return -(int16_t)buf[4] * 5;  // tenths of dBm
 }
 
 static int16_t rfGetFlrcRssi() {
