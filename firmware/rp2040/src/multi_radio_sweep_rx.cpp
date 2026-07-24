@@ -200,6 +200,20 @@ static char     rxLastTxFw[8] = {0};  // TX firmware git hash (7 chars + NUL)
 static bool     rxRadioInRxMode = false;   // tracks whether radio is listening
 static uint32_t lastWaitingPrintMs = 0;    // throttle for WAITING_FOR_TIME_SYNC
 
+// ─── Closed-loop phase sync statistics (Phase C) ────────────────────
+// RX has no GPS — uses SET_TIME from laptop as UTC bootstrap.
+// Each valid TX packet carries GPS UTC. We compare it to our local
+// clock and auto-correct if the drift exceeds 5 seconds, creating a
+// closed-loop correction that tracks TX's GPS clock over time.
+#define TIME_CORRECT_THRESHOLD_SEC 5
+#define TIME_STATS_INTERVAL_MS     60000
+static int32_t  timeOffsetMinMs = INT32_MAX;   // minimum offset seen (ms)
+static int32_t  timeOffsetMaxMs = INT32_MIN;   // maximum offset seen (ms)
+static int64_t  timeOffsetSumMs = 0;            // running sum for avg (ms)
+static uint32_t timeOffsetCount = 0;            // number of samples
+static uint32_t timeCorrections = 0;            // number of corrections applied
+static uint32_t lastTimeStatsMs  = 0;           // last TIME_STATS print time
+
 // ─── Sync header self-healing state (Phase B) ──────────────────────
 // Per-phase cache of the last known good sync header offset (B1).
 // -1 = unknown → full scan required on next packet.
@@ -752,14 +766,39 @@ static void rxPacketPoll(int phaseIdx) {
     rxLastTxSats = txSats; rxLastTxFix = txFix;
     rxLastTxUtc = txUtc;
 
-    // ─── Time difference logging (measurement only) ────
-    // GPS time from TX is NOT used for RX phase control.
-    // Laptop time (SET_TIME) is the primary clock.
+    // ─── Closed-loop phase sync (Phase C) ────────────────
+    // RX has no GPS. Each valid TX packet carries GPS UTC.
+    // Compare with our local epoch and correct if drift exceeds threshold.
+    // This makes RX slowly track toward TX's GPS clock on every valid packet.
     if (txUtc > 0 && utcOffset > 0) {
         uint32_t laptopUtc = getUtcNow();
-        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu\n",
+        int32_t offset = (int32_t)(txUtc - laptopUtc);
+
+        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu offset=%ld\n",
                       (unsigned long)txUtc,
-                      (unsigned long)laptopUtc);
+                      (unsigned long)laptopUtc,
+                      (long)offset);
+
+        // Track statistics (convert to milliseconds for reporting)
+        int32_t offsetMs = offset * 1000;
+        if (offsetMs < timeOffsetMinMs) timeOffsetMinMs = offsetMs;
+        if (offsetMs > timeOffsetMaxMs) timeOffsetMaxMs = offsetMs;
+        timeOffsetSumMs += offsetMs;
+        timeOffsetCount++;
+
+        // C1: If |offset| > threshold, correct local epoch
+        // utcOffset is uint32_t; modular arithmetic handles negative offset
+        // correctly (uint32_t += int32_t wraps to the right value).
+        if (offset > TIME_CORRECT_THRESHOLD_SEC ||
+            offset < -TIME_CORRECT_THRESHOLD_SEC) {
+            uint32_t oldOffset = utcOffset;
+            utcOffset = utcOffset + (uint32_t)offset;
+            timeCorrections++;
+            dualPrintf("TIME_CORRECT old_offset=%lu new_offset=%lu delta=%ld\n",
+                          (unsigned long)oldOffset,
+                          (unsigned long)utcOffset,
+                          (long)offset);
+        }
     }
 
     // Log first few packets per phase for debugging
@@ -872,6 +911,21 @@ void loop() {
         }
         delay(100);
         return;
+    }
+
+    // ─── Phase C: TIME_STATS every 60 seconds ────
+    // Report min/max/avg clock offset and correction count.
+    if (timeOffsetCount > 0) {
+        if (lastTimeStatsMs == 0) lastTimeStatsMs = millis();
+        if ((millis() - lastTimeStatsMs) >= TIME_STATS_INTERVAL_MS) {
+            int32_t avgMs = (int32_t)(timeOffsetSumMs / (int64_t)timeOffsetCount);
+            dualPrintf("TIME_STATS min=%ldms max=%ldms avg=%ldms corrections=%u\n",
+                          (long)timeOffsetMinMs,
+                          (long)timeOffsetMaxMs,
+                          (long)avgMs,
+                          timeCorrections);
+            lastTimeStatsMs = millis();
+        }
     }
 
     // Compute current phase from UTC — same algorithm as TX
