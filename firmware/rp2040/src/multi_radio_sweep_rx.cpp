@@ -2,9 +2,10 @@
  * multi_radio_sweep_rx.cpp — Standalone RX for multi-radio sweep (14 phases)
  *
  * Matching RX counterpart to multi_radio_sweep_gps.cpp (GPS TX).
- * Uses millis()-based timer to cycle through phases (RX board has no GPS).
- * Both boards use the same phase schedule — TX syncs via GPS UTC time,
- * RX syncs via boot timer. They overlap as long as boot times are close.
+ * Uses laptop time sync (USB CDC) to stay aligned with TX UTC phase schedule.
+ * At boot, listens for "TIME <utc_seconds_since_midnight>" from the laptop.
+ * Falls back to millis()-based timer if no sync received within 10s.
+ * Also performs ongoing drift correction from UTC seconds embedded in TX packets.
  *
  * Key fix from multi_radio_sweep.cpp: tracks UNIQUE sequence numbers per phase
  * using a bitmap, fixing the bug where "lost" counted 4 billion.
@@ -110,6 +111,84 @@ static int countUniqueSeq() {
     return count;
 }
 
+// ─── Time sync state ─────────────────────────────────────────────────
+// When synced, current UTC = syncedUtcSec + (millis() - syncMillis) / 1000
+static bool     timeSynced = false;      // true when we have a UTC reference
+static uint32_t syncedUtcSec = 0;        // UTC seconds at sync point
+static uint32_t syncMillis = 0;          // millis() at sync point
+static const char* syncSource = "millis"; // "laptop" or "packet" or "millis"
+
+// Total cycle duration in seconds (computed at runtime, same as TX)
+static uint32_t totalCycleSec = 0;
+
+// ─── Phase computation from UTC time (identical to TX) ───────────────
+static int computePhaseFromUTC(uint32_t utcSec) {
+    uint32_t cyclePos = utcSec % totalCycleSec;
+    uint32_t acc = 0;
+    for (int i = 0; i < NUM_PHASES; i++) {
+        acc += phases[i].slotMs / 1000;
+        if (cyclePos < acc) return i;
+    }
+    return NUM_PHASES - 1;  // fallback
+}
+
+// ─── Get current UTC seconds (or 0 if not synced) ────────────────────
+static uint32_t getCurrentUTC() {
+    if (!timeSynced) return 0;
+    return syncedUtcSec + (millis() - syncMillis) / 1000;
+}
+
+// ─── Update time sync reference ──────────────────────────────────────
+static void updateTimeSync(uint32_t utcSec, const char* source) {
+    syncedUtcSec = utcSec;
+    syncMillis = millis();
+    timeSynced = true;
+    syncSource = source;
+}
+
+// ─── Wait for laptop time sync over USB CDC ──────────────────────────
+// Listens for "TIME <utc_seconds_since_midnight>" line on Serial.
+// Returns true if sync received, false if timeout.
+static bool waitForTimeSync(uint32_t timeoutMs) {
+    char line[64];
+    int lineLen = 0;
+    uint32_t startMs = millis();
+
+    dualPrintf("WAITING_FOR_TIME_SYNC timeout=%lums\n", timeoutMs);
+
+    while ((millis() - startMs) < timeoutMs) {
+        while (Serial.available()) {
+            char c = Serial.read();
+            if (c == '\n' || c == '\r') {
+                if (lineLen > 0) {
+                    line[lineLen] = '\0';
+                    // Parse "TIME <number>"
+                    if (strncmp(line, "TIME ", 5) == 0 || strncmp(line, "TIME\t", 5) == 0) {
+                        uint32_t utcSec = (uint32_t)strtoul(line + 5, nullptr, 10);
+                        if (utcSec > 0 && utcSec < 86400) {
+                            updateTimeSync(utcSec, "laptop");
+                            int32_t drift = 0; // first sync, drift=0
+                            dualPrintf("SYNC_STATUS source=laptop utc=%lu drift=%dms\n",
+                                       (unsigned long)utcSec, drift);
+                            return true;
+                        }
+                    }
+                    dualPrintf("TIME_SYNC_IGNORED line='%s'\n", line);
+                }
+                lineLen = 0;
+            } else if (lineLen < (int)sizeof(line) - 1) {
+                line[lineLen++] = c;
+            }
+        }
+        digitalWrite(PIN_LED, ((millis() / 200) & 1) ? HIGH : LOW);
+        delay(10);
+    }
+
+    // Timeout — no sync received
+    dualPrintf("SYNC_STATUS source=millis fallback=true\n");
+    return false;
+}
+
 // ─── SPI ─────────────────────────────────────────────────────────────
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
@@ -164,7 +243,7 @@ static void rfReadRxFifo(uint8_t *data, size_t len) {
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x00);
-    spiRf.transfer(0x03);  // READ_RX_FIFO
+    spiRf.transfer(0x01);  // READ_RX_FIFO (0x0001) — matches proven flrc_raw_rx.cpp
     for (size_t i = 0; i < len; i++) data[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -429,8 +508,34 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     ((uint32_t)rxBuf[7] << 24));
                 uint16_t pktSats = (uint16_t)rxBuf[8] | ((uint16_t)rxBuf[9] << 8);
                 uint8_t pktFix = rxBuf[10];
+                // UTC seconds from TX packet bytes 11-14 (uint32 LE)
+                uint32_t pktUtcSec = (uint32_t)rxBuf[11] |
+                    ((uint32_t)rxBuf[12] << 8) |
+                    ((uint32_t)rxBuf[13] << 16) |
+                    ((uint32_t)rxBuf[14] << 24);
                 // Sequence number from bytes 16-17 (big-endian uint16)
                 uint16_t seq = ((uint16_t)rxBuf[16] << 8) | rxBuf[17];
+
+                // ── Drift correction from TX packet UTC ──
+                // If packet UTC differs from our local UTC estimate by >1s,
+                // update the sync reference to stay aligned with TX.
+                if (pktUtcSec > 0 && pktUtcSec < 86400) {
+                    if (timeSynced) {
+                        uint32_t localUtc = getCurrentUTC();
+                        int32_t driftSec = (int32_t)pktUtcSec - (int32_t)localUtc;
+                        if (abs(driftSec) > 1) {
+                            uint32_t oldUtc = localUtc;
+                            updateTimeSync(pktUtcSec, "packet");
+                            dualPrintf("DRIFT_CORRECT old_utc=%lu new_utc=%lu drift=%ds\n",
+                                       (unsigned long)oldUtc, (unsigned long)pktUtcSec, driftSec);
+                        }
+                    } else {
+                        // First packet received with no prior sync — adopt it
+                        updateTimeSync(pktUtcSec, "packet");
+                        dualPrintf("SYNC_STATUS source=packet utc=%lu drift=0ms\n",
+                                   (unsigned long)pktUtcSec);
+                    }
+                }
                 if (seq < MAX_SEQ) {
                     seenSeq[seq] = true;
                 }
@@ -500,8 +605,14 @@ void setup() {
 
     spiRf.begin();
 
+    // Compute total cycle seconds (must match TX)
+    totalCycleSec = 0;
+    for (int i = 0; i < NUM_PHASES; i++) {
+        totalCycleSec += phases[i].slotMs / 1000;
+    }
+
     dualPrintf("=== MULTI-RADIO RX SWEEP (14 phases) ===\n");
-    dualPrintf("Phases: %d\n", NUM_PHASES);
+    dualPrintf("Phases: %d  Cycle: %lus\n", NUM_PHASES, (unsigned long)totalCycleSec);
     for (int i = 0; i < NUM_PHASES; i++) {
         dualPrintf("  [%2d] %-16s %s %.0fMHz %dpkts %ds\n",
                       i, phases[i].name,
@@ -510,27 +621,60 @@ void setup() {
                       phases[i].pktCount, phases[i].slotMs / 1000);
     }
 
-    dualPrintf("=== AUTO START IN 8s ===\n");
-    // LED blink countdown
-    for (int i = 8; i > 0; i--) {
-        dualPrintf("  Starting in %d...\n", i);
-        digitalWrite(PIN_LED, HIGH); delay(400);
-        digitalWrite(PIN_LED, LOW);  delay(600);
+    // ── Wait for laptop time sync (up to 10s) ──
+    dualPrintf("=== TIME SYNC WINDOW (10s) ===\n");
+    bool synced = waitForTimeSync(10000);
+
+    if (synced) {
+        dualPrintf("Time synced from laptop — UTC phase scheduling active\n");
+    } else {
+        dualPrintf("No time sync — falling back to millis() phase cycling\n");
     }
+
+    digitalWrite(PIN_LED, HIGH);
+    delay(500);
+    digitalWrite(PIN_LED, LOW);
+
     dualPrintf("=== STARTING RX SWEEP ===\n");
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────
 void loop() {
     static int cycleNum = 0;
+    static uint32_t sweepStartMs = 0;
 
-    dualPrintf("\n=== CYCLE %d START uptime=%lu ===\n", cycleNum, millis());
-
-    for (int i = 0; i < NUM_PHASES; i++) {
-        runRxPhase(phases[i], i);
+    // First run: record sweep start for fallback mode
+    if (sweepStartMs == 0) {
+        sweepStartMs = millis();
     }
 
-    dualPrintf("=== CYCLE %d COMPLETE uptime=%lu ===\n", cycleNum, millis());
-    cycleNum++;
-    delay(1000);
+    if (timeSynced) {
+        // ── UTC-synced mode: run the phase that matches current UTC time ──
+        // This keeps RX in the same phase as TX at any given moment.
+        uint32_t utcNow = getCurrentUTC();
+        int phase = computePhaseFromUTC(utcNow);
+
+        dualPrintf("\n=== CYCLE %d uptime=%lu utc=%lu phase=%d source=%s ===\n",
+                   cycleNum, millis(), (unsigned long)utcNow, phase, syncSource);
+        runRxPhase(phases[phase], phase);
+
+        // Increment cycle counter when we wrap from last phase back to 0
+        static int lastPhase = -1;
+        if (lastPhase >= 0 && phase < lastPhase) {
+            cycleNum++;
+        }
+        lastPhase = phase;
+
+    } else {
+        // ── Fallback: sequential millis()-based cycling (original behavior) ──
+        dualPrintf("\n=== CYCLE %d START uptime=%lu ===\n", cycleNum, millis());
+
+        for (int i = 0; i < NUM_PHASES; i++) {
+            runRxPhase(phases[i], i);
+        }
+
+        dualPrintf("=== CYCLE %d COMPLETE uptime=%lu ===\n", cycleNum, millis());
+        cycleNum++;
+        delay(1000);
+    }
 }
