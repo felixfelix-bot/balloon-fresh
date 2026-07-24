@@ -136,16 +136,11 @@ static void parseNMEA(const char *sentence) {
         int fix = 0;
         int nsat = 0;
 
+        // u-blox M10 sends $GNGGA (not $GPGGA). Pattern skips 2-char talker ID
+        // so it works with GP, GN, GL, GA — any GNSS constellation.
         int parsed = sscanf(sentence,
-            "$GP%*3s,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
+            "$%*2sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
             timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
-
-        // Fallback: try without $GP prefix handling
-        if (parsed < 6) {
-            parsed = sscanf(sentence,
-                "$%*3sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
-                timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
-        }
 
         if (parsed >= 6) {
             // Parse time even without fix (u-blox sends time before fix)
@@ -183,15 +178,10 @@ static void parseNMEA(const char *sentence) {
         char lonStr[16] = {0};
         char ew = 'E';
 
+        // u-blox M10 sends $GNRMC. Same talker-skip pattern.
         int parsed = sscanf(sentence,
-            "$GP%*3s,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
+            "$%*2sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
             timeStr, &status, latStr, &ns, lonStr, &ew);
-
-        if (parsed < 5) {
-            parsed = sscanf(sentence,
-                "$%*3sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
-                timeStr, &status, latStr, &ns, lonStr, &ew);
-        }
 
         if (parsed >= 5) {
             if (strlen(timeStr) >= 6) {
