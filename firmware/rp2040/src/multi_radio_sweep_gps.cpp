@@ -37,15 +37,51 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <stdarg.h>
+#include <hardware/watchdog.h>
+
+// ─── Firmware self-identification (injected at build time) ───────────
+// These come from tools/inject_git_version.py via -D flags.
+// Fallback defines allow compilation without the extra_script.
+#ifndef FW_GIT_HASH
+#define FW_GIT_HASH "unknown"
+#endif
+#ifndef FW_BUILD_TAG
+#define FW_BUILD_TAG "UNK0"
+#endif
+#ifndef FW_BUILD_TIME
+#define FW_BUILD_TIME "1970-01-01T00:00Z"
+#endif
+
+// 7-char git hash that gets appended to every TX packet so RX can verify
+// firmware compatibility. NUL-terminated for safe printing.
+static const char FW_HASH_CHARS[8] = FW_GIT_HASH;
 
 // ─── Output: USB CDC Serial only (Serial1 = GPS UART) ────────────────
+// CDC watchdog: track actual USB write success, not just attempts.
+// If Serial.write returns 0 for 30s, the TinyUSB CDC stack is dead.
+// Fix: hardware watchdog reboot to restart USB cleanly.
+static uint32_t lastCdcSuccessMs = 0;   // last time Serial.write succeeded
+static uint32_t lastHeartbeatMs = 0;
+#define CDC_WATCHDOG_MS       30000
+#define HEARTBEAT_INTERVAL_MS 10000
+
 static void outPrintf(const char* fmt, ...) {
     char buf[300];
     va_list args;
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-    Serial.print(buf);
+    size_t len = strlen(buf);
+    size_t written = Serial.write(buf, len);
+    Serial.flush();
+    if (written > 0) lastCdcSuccessMs = millis();  // only update on real success
+}
+
+// Print the boot banner — first thing on serial, and on FW_QUERY.
+// Also printed on USB CDC reconnect (called from setup).
+static void printBootBanner() {
+    outPrintf("FW_BOOT hash=%s tag=%s built=%s\r\n",
+              FW_GIT_HASH, FW_BUILD_TAG, FW_BUILD_TIME);
 }
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -90,12 +126,9 @@ static const Phase phases[] = {
     {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000},
     {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000},
     // ── 868 MHz LF path ──
-    // SF7: 50 pkts × ~50ms each = 2.5s, but with spreading = ~8s. Keep 12s.
-    {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50, 12000},
-    // SF9: 50 pkts × ~200ms each = 10s. Slot 25s.
-    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 25000},
-    // SF12: 20 pkts × ~2s each = 40s minimum + 5s TX timeout margin = 60s.
-    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 60000},
+    {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000},
+    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  50, 20000},
+    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  20, 50000},
     // ── 868 MHz LF FLRC path ──
     {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000},
     {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000},
@@ -110,7 +143,7 @@ static uint32_t totalCycleSec = 0;
 #define TX_POWER_DBM   12.5f
 #define LORA_PKT_SIZE  127
 #define FLRC_PKT_SIZE  255
-#define GPS_BAUD       115200
+#define GPS_BAUD       115200  // GEP-M10nano ships at 115200 (confirmed by speed-tests track)
 #define GPS_FIX_TIMEOUT_MS 60000
 #define GPS_NMEA_MAX   160
 
@@ -122,15 +155,81 @@ struct GpsData {
     bool     fixValid;
     uint32_t timeSec;   // seconds since midnight UTC
     bool     hasTime;   // got at least one valid time (even without fix)
+    uint32_t unixTime;    // true Unix epoch seconds (date + time from RMC)
+    bool     hasUnixTime; // GPS gave us a complete date+time → real Unix epoch
 };
-static GpsData gps = {0, 0, 0, false, 0, false};
+static GpsData gps = {0, 0, 0, false, 0, false, 0, false};
+
+// ─── Days-since-1970 helper (Howard Hinnant's civil-from-days algorithm) ──
+static uint32_t daysSinceEpoch(uint16_t year, uint8_t month, uint8_t day) {
+    if (month <= 2) { year--; month += 12; }  // Jan/Feb → months 13/14 of prev year
+    uint32_t era = year / 400;
+    uint32_t yoe = year - era * 400;                         // [0, 399]
+    uint32_t doy = (153 * (month - 3) + 2) / 5 + day - 1;   // [0, 365]
+    uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;   // [0, 146096]
+    return era * 146097 + doe - 719468;                       // days since 1970-01-01
+}
+
+// ─── Fault-tolerant DDMMYY date extraction ───────────────────────────
+// Scans an NMEA sentence for a 6-digit date pattern instead of relying on
+// comma field counting (which fails when characters are dropped and field
+// positions shift). Works on garbled/merged sentences.
+//
+// False-match rejection heuristics:
+//   - Stop scanning at '*' (checksum area — hex digits, not dates)
+//   - Only scan first 160 chars (merged sentences could be very long)
+//   - The 6 digits must NOT be preceded by a digit (avoids matching inside
+//     longer numbers like speed/course fields)
+//   - The 6 digits must NOT be followed by a digit or '.' (excludes time
+//     field HHMMSS.ss and lat/lon DDMM.MMMM fields)
+//   - DD must be 01-31, MM must be 01-12
+static bool extractDatePattern(const char *sentence,
+                               uint8_t *outDay, uint8_t *outMonth, uint16_t *outYear) {
+    size_t scanLen = strlen(sentence);
+    if (scanLen > 160) scanLen = 160;   // only search first sentence worth of data
+
+    for (size_t i = 0; i + 6 <= scanLen; i++) {
+        const char *p = sentence + i;
+
+        // Stop at checksum marker — everything after '*' is hex, not a date
+        if (*p == '*') break;
+
+        // Must not be preceded by a digit (avoid matching inside longer numbers)
+        if (i > 0 && isdigit((unsigned char)sentence[i - 1])) continue;
+
+        // Must be 6 consecutive digits
+        if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1]) ||
+            !isdigit((unsigned char)p[2]) || !isdigit((unsigned char)p[3]) ||
+            !isdigit((unsigned char)p[4]) || !isdigit((unsigned char)p[5]))
+            continue;
+
+        // Must not be followed by a digit or '.' (excludes HHMMSS.ss, DDMM.MMMM)
+        if (i + 6 < scanLen) {
+            char after = sentence[i + 6];
+            if (isdigit((unsigned char)after) || after == '.') continue;
+        }
+
+        int dd = (p[0] - '0') * 10 + (p[1] - '0');
+        int mo = (p[2] - '0') * 10 + (p[3] - '0');
+        int yy = (p[4] - '0') * 10 + (p[5] - '0');
+
+        if (dd >= 1 && dd <= 31 && mo >= 1 && mo <= 12) {
+            *outDay   = (uint8_t)dd;
+            *outMonth = (uint8_t)mo;
+            *outYear  = (uint16_t)(2000 + yy);  // NMEA 2-digit year → 20YY
+            return true;   // FIRST valid date pattern wins
+        }
+    }
+    return false;
+}
 
 // ─── NMEA parser (copied from flrc_range_tx_gps.cpp) ─────────────────
 static char nmeaBuf[GPS_NMEA_MAX];
 static size_t nmeaLen = 0;
 
 static void parseNMEA(const char *sentence) {
-    if (strncmp(sentence, "$GPGGA", 6) == 0 || strncmp(sentence, "$GNGGA", 6) == 0) {
+    // u-blox M10 native prefix support: $%*2sGGA matches GP/GN/GL/GA talker IDs
+    if (strstr(sentence, "GGA")) {
         char timeStr[16] = {0};
         char latStr[16] = {0};
         char ns = 'N';
@@ -139,8 +238,6 @@ static void parseNMEA(const char *sentence) {
         int fix = 0;
         int nsat = 0;
 
-        // u-blox M10 sends $GNGGA (not $GPGGA). Pattern skips 2-char talker ID
-        // so it works with GP, GN, GL, GA — any GNSS constellation.
         int parsed = sscanf(sentence,
             "$%*2sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
             timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
@@ -173,7 +270,7 @@ static void parseNMEA(const char *sentence) {
             }
         }
     }
-    else if (strncmp(sentence, "$GPRMC", 6) == 0 || strncmp(sentence, "$GNRMC", 6) == 0) {
+    else if (strstr(sentence, "RMC")) {
         char timeStr[16] = {0};
         char status = 'V';
         char latStr[16] = {0};
@@ -181,7 +278,6 @@ static void parseNMEA(const char *sentence) {
         char lonStr[16] = {0};
         char ew = 'E';
 
-        // u-blox M10 sends $GNRMC. Same talker-skip pattern.
         int parsed = sscanf(sentence,
             "$%*2sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
             timeStr, &status, latStr, &ns, lonStr, &ew);
@@ -213,9 +309,32 @@ static void parseNMEA(const char *sentence) {
                 gps.fixValid = false;
             }
         }
+
+        // ── Parse date (DDMMYY) for real Unix epoch ──
+        // ROBUSTNESS FIX: Pattern-match instead of comma-counting.
+        // Handles garbled/merged sentences where dropped characters shift
+        // field positions. Scans the entire (truncated to 160 chars) sentence
+        // for a valid DDMMYY pattern, stopping at '*' checksum boundary.
+        if (gps.hasTime) {
+            uint8_t  dDay, dMo;
+            uint16_t dYear;
+            if (extractDatePattern(sentence, &dDay, &dMo, &dYear)) {
+                uint32_t days = daysSinceEpoch(dYear, dMo, dDay);
+                gps.unixTime    = days * 86400UL + gps.timeSec;
+                gps.hasUnixTime = true;
+                outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu\n",
+                          (unsigned long)days, (unsigned long)gps.timeSec,
+                          (unsigned long)gps.unixTime);
+            }
+        }
     }
 }
 
+// gpsPoll() drains the Serial1 UART ring buffer into the NMEA parser.
+// IMPORTANT: Must be called at least every 50ms. During SPI radio ops
+// (rfInitForPhase, TX spin), the UART ISR still drains the HW FIFO into
+// the 1024-entry software ring buffer, but gpsPoll() must run to parse
+// accumulated sentences before the ring buffer overflows on long gaps.
 static void gpsPoll() {
     while (Serial1.available()) {
         char c = Serial1.read();
@@ -225,6 +344,10 @@ static void gpsPoll() {
         } else if (c == '\n' || c == '\r') {
             if (nmeaLen > 6) {
                 nmeaBuf[nmeaLen] = '\0';
+                // DEBUG: dump any RMC sentence to see date field
+                if (strstr(nmeaBuf, "RMC")) {
+                    outPrintf("NMEA_RMC: %s\n", nmeaBuf);
+                }
                 parseNMEA(nmeaBuf);
             }
             nmeaLen = 0;
@@ -278,6 +401,19 @@ static void rfWriteTxFifo(const uint8_t *data, size_t len) {
 static void rfClearTxFifo() {
     uint8_t cmd[] = {0x01, 0x1F};
     rfWriteCmd(cmd, 2);
+}
+
+// ─── App-layer CRC-16 (CCITT 0x1021) ────────────────────────────────
+// Hardware CRC passes garbage — this is the application-layer integrity check.
+// Computed over the 18-byte GPS+seq payload (bytes 4-21 of TX buffer).
+static uint16_t crc16(const uint8_t *data, size_t len) {
+    uint16_t crc = 0xFFFF;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= (uint16_t)data[i] << 8;
+        for (int b = 0; b < 8; b++)
+            crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    }
+    return crc;
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
@@ -415,55 +551,94 @@ static void rfInitForPhase(const Phase &p) {
     delay(1);
 }
 
-// ─── GPS payload embedding (new 16-byte header layout) ──────────────
-// Packet layout (first 16+ bytes):
-//   bytes 0-3:   latitude as int32 (degrees * 1e7, little-endian)
-//   bytes 4-7:   longitude as int32 (degrees * 1e7, little-endian)
-//   bytes 8-9:   satellites (uint16, little-endian)
-//   byte  10:    fix quality (0=no fix, 1=GPS, 2=DGPS)
-//   bytes 11-14: UTC seconds since midnight (uint32, little-endian)
-//   byte  15:    phase ID
-//   bytes 16-17: sequence number (uint16, big-endian)
-//   bytes 18+:   padding pattern
-static void embedGPS(uint8_t *pkt, uint16_t seq, uint8_t phaseId) {
-    int32_t latE7 = (int32_t)(gps.lat * 1e7f);
-    int32_t lonE7 = (int32_t)(gps.lon * 1e7f);
-    uint8_t fixQ = gps.fixValid ? 1 : 0;
+// ─── GPS payload embedding ───────────────────────────────────────────
+// Packet layout (MUST match RX parseGPS in multi_radio_sweep_rx.cpp):
+//   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+//   bytes 4-7:   latE7 (int32 LE)  — lat*1e7
+//   bytes 8-11:  lonE7 (int32 LE) — lon*1e7
+//   bytes 12-13: sats (uint16 LE)
+//   byte  14:    fixQ (uint8)
+//   bytes 15-18: utcSec (uint32 LE)
+//   byte  19:    phaseId (written by caller)
+//   bytes 20-21: seq (written by caller)
+//   bytes 22-28: fw_hash (7 ASCII chars, written by caller)
+// Note: FLRC hardware strips sync word (bytes 0-3) before FIFO, so RX
+//       uses gpsOff=0 for FLRC and gpsOff=4 for LoRa.
+// ─── Laptop time sync (SET_TIME) ─────────────────────────────────────
+// TX accepts SET_TIME over USB, same as RX.
+// Operator plugs TX into laptop, sends SET_TIME, unplugs. RP2040 keeps
+// millis() running on battery → UTC stays correct for the walk.
+static uint32_t utcOffset = 0;  // offset: unix_time = millis()/1000 + utcOffset
 
-    // Bytes 0-3: sync header (matches proven flrc_range_tx_gps.cpp layout)
-    // LR2021 FIFO may prepend status bytes; proven code starts payload at byte 4
-    pkt[0] = 0xA5;
-    pkt[1] = 0x5A;
-    pkt[2] = 0x42;
-    pkt[3] = 0x24;
-    // Latitude int32 LE (bytes 4-7)
-    pkt[4] = (uint8_t)(latE7 & 0xFF);
-    pkt[5] = (uint8_t)((latE7 >> 8) & 0xFF);
-    pkt[6] = (uint8_t)((latE7 >> 16) & 0xFF);
-    pkt[7] = (uint8_t)((latE7 >> 24) & 0xFF);
-    // Longitude int32 LE (bytes 8-11)
-    pkt[8] = (uint8_t)(lonE7 & 0xFF);
-    pkt[9] = (uint8_t)((lonE7 >> 8) & 0xFF);
-    pkt[10] = (uint8_t)((lonE7 >> 16) & 0xFF);
-    pkt[11] = (uint8_t)((lonE7 >> 24) & 0xFF);
-    // Satellites uint16 LE (bytes 12-13)
-    pkt[12] = (uint8_t)(gps.sats & 0xFF);
-    pkt[13] = (uint8_t)(gps.sats >> 8);
-    // Fix quality (byte 14)
-    pkt[14] = fixQ;
-    // UTC seconds uint32 LE (bytes 15-18)
-    pkt[15] = (uint8_t)(gps.timeSec & 0xFF);
-    pkt[16] = (uint8_t)((gps.timeSec >> 8) & 0xFF);
-    pkt[17] = (uint8_t)((gps.timeSec >> 16) & 0xFF);
-    pkt[18] = (uint8_t)((gps.timeSec >> 24) & 0xFF);
-    // Phase ID (byte 19)
-    pkt[19] = phaseId;
-    // Sequence number uint16 BE (bytes 20-21)
-    pkt[20] = (uint8_t)(seq >> 8);
-    pkt[21] = (uint8_t)(seq & 0xFF);
+static uint32_t getUtcNow() {
+    return millis() / 1000 + utcOffset;
 }
 
-// ─── Phase computation from GPS UTC time ──────────────────────────────
+static bool hasLaptopTime() {
+    return utcOffset > 0;
+}
+
+// Non-blocking: check Serial for SET_TIME command
+static void checkSerialTimeSync() {
+    if (!Serial.available()) return;
+    static char syncBuf[64];
+    static int syncLen = 0;
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (syncLen > 0) {
+                syncBuf[syncLen] = '\0';
+                if (strncmp(syncBuf, "SET_TIME ", 9) == 0) {
+                    uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
+                    if (ts > 0) {
+                        utcOffset = ts - millis() / 1000;
+                        outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
+                                  (unsigned long)getUtcNow(), (long)utcOffset);
+                    }
+                } else if (strcmp(syncBuf, "FW_QUERY") == 0) {
+                    // Firmware identification query — respond with boot banner
+                    printBootBanner();
+                }
+                syncLen = 0;
+            }
+        } else {
+            if (syncLen < (int)sizeof(syncBuf) - 1) syncBuf[syncLen++] = c;
+        }
+    }
+}
+
+static void embedGPS(uint8_t *pkt) {
+    // MUST match RX parseGPS in multi_radio_sweep_rx.cpp
+    // pkt[0-3] = sync header (already written by caller)
+    // pkt[4-7]:   latE7 (int32 LE)  — lat*1e7
+    // pkt[8-11]:  lonE7 (int32 LE)  — lon*1e7
+    // pkt[12-13]: sats (uint16 LE)
+    // pkt[14]:    fixQ (uint8)
+    // pkt[15-18]: utcSec (uint32 LE)
+    // pkt[19]:    phaseId (written by caller)
+    // pkt[20-21]: seq (written by caller)
+    int32_t latE7 = (int32_t)(gps.lat * 1e7f);
+    int32_t lonE7 = (int32_t)(gps.lon * 1e7f);
+    memcpy(&pkt[4], &latE7, 4);
+    memcpy(&pkt[8], &lonE7, 4);
+    uint16_t sats = gps.sats;
+    memcpy(&pkt[12], &sats, 2);
+    pkt[14] = gps.fixValid ? 1 : 0;
+    // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync.
+    uint32_t unixNow;
+    if (hasLaptopTime())
+        unixNow = getUtcNow();
+    else if (gps.hasUnixTime)
+        unixNow = gps.unixTime;
+    else
+        unixNow = gps.timeSec;   // seconds since midnight (degraded)
+    memcpy(&pkt[15], &unixNow, 4);  // LE via memcpy
+}
+
+// ─── Phase computation from absolute time ─────────────────────────────
+// Both TX and RX use the SAME clock: Unix epoch seconds.
+// Phase = unixTime % cycleSec. Both boards synced as long as both know Unix time.
+// TX gets Unix time from: SET_TIME (laptop), GPS (if available), or millis() fallback.
 static int computePhaseFromUTC(uint32_t utcSec) {
     uint32_t cyclePos = utcSec % totalCycleSec;
     uint32_t acc = 0;
@@ -473,6 +648,7 @@ static int computePhaseFromUTC(uint32_t utcSec) {
     }
     return NUM_PHASES - 1;  // fallback
 }
+
 
 static void formatUTCTime(uint32_t sec, char *buf, size_t buflen) {
     uint32_t hh = sec / 3600;
@@ -485,16 +661,59 @@ static void formatUTCTime(uint32_t sec, char *buf, size_t buflen) {
 static int currentPhase = -1;
 static uint16_t seqInPhase = 0;
 static uint32_t phaseStartMs = 0;
-static uint32_t sweepStartMs = 0;  // Set when sweep begins (after GPS wait)
 
 // ─── Setup ───────────────────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
+    // Wait up to 3s for USB host to connect (prevents watchdog misfire on boot)
+    uint32_t bootStart = millis();
+    while (!Serial && (millis() - bootStart) < 3000) {
+        delay(10);
+    }
+    lastCdcSuccessMs = millis();  // initialize so watchdog doesn't fire immediately
+
+    // Boot banner — FIRST output. Identifies exact firmware build.
+    printBootBanner();
     // GPS on UART0: GP1=RX, GP0=TX, 115200 baud
     Serial1.setRX(PIN_GPS_RX);
     Serial1.setTX(PIN_GPS_TX);
-    Serial1.begin(GPS_BAUD);
-    delay(2000);
+    // ROBUSTNESS FIX: Enlarge UART RX ring buffer from default 32 entries.
+    // During SPI radio operations (50-100ms+), GPS sends ~500 chars/sec at
+    // 115200 baud. The tiny default buffer overflows and drops characters,
+    // causing NMEA sentence corruption/merging. Must call BEFORE begin().
+    Serial1.setFIFOSize(1024);
+    // GPS baud auto-detection: try 115200 first (was working), then 9600
+    {
+        const uint32_t bauds[] = {115200, 9600, 38400, 19200};
+        const int nBauds = 4;
+        bool gpsFound = false;
+        for (int b = 0; b < nBauds && !gpsFound; b++) {
+            Serial1.begin(bauds[b]);
+            delay(500);
+            uint32_t probeStart = millis();
+            int validChars = 0;
+            while (millis() - probeStart < 1500) {
+                while (Serial1.available()) {
+                    char c = Serial1.read();
+                    if (c == '$' || c == 'G' || c == 'N' || c == 'M' || c == 'R' ||
+                        c == 'C' || c == 'A' || c == ',' || c == '.' || c == '\n') {
+                        validChars++;
+                    }
+                }
+            }
+            if (validChars > 10) {
+                outPrintf("GPS_BAUD_DETECTED=%lu (valid=%d)\n", bauds[b], validChars);
+                gpsFound = true;
+            } else {
+                Serial1.end();
+            }
+        }
+        if (!gpsFound) {
+            outPrintf("GPS_BAUD_FAILED — defaulting to 115200\n");
+            Serial1.begin(115200);
+        }
+    }
+    delay(500);
 
     pinMode(PIN_CS, OUTPUT);
     pinMode(PIN_RST, OUTPUT);
@@ -525,38 +744,38 @@ void setup() {
                       phases[i].pktCount, phases[i].slotMs / 1000);
     }
 
-    // ── Quick GPS detection: check if ANY NMEA data flows in 5s ──
-    // If GPS hardware isn't connected (soldering issue), Serial1 will be
-    // silent. Skip the full 60s wait and fall back immediately.
-    outPrintf("=== GPS DETECTION (5s quick check) ===\n");
-    uint32_t detectStart = millis();
-    bool nmeaSeen = false;
-    while ((millis() - detectStart) < 5000) {
+    // ── Wait for GPS time (up to 60s — M10 cold start needs 30-60s) ──
+    outPrintf("=== WAITING FOR GPS TIME (up to 60s) ===\n");
+    uint32_t gpsStart = millis();
+    while (!gps.hasTime && (millis() - gpsStart) < GPS_FIX_TIMEOUT_MS) {
         gpsPoll();
-        if (Serial1.available()) { nmeaSeen = true; break; }
         digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
         delay(10);
     }
 
-    // ── Wait for GPS time (up to 60s if NMEA detected) ──
-    if (nmeaSeen) {
-        outPrintf("NMEA detected — waiting for time sync (up to 60s)\n");
-    } else {
-        outPrintf("NO NMEA — GPS not connected, skipping to millis() fallback\n");
-    }
-    uint32_t gpsStart = millis();
-    uint32_t timeout = nmeaSeen ? GPS_FIX_TIMEOUT_MS : 0;
-    while (!gps.hasTime && (millis() - gpsStart) < timeout) {
-        gpsPoll();
-        digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
-        delay(10);
+    // BUG1 FIX: Validate GPS time — timeSec==0 means stale/invalid (soft reboot leftover)
+    if (gps.hasTime && gps.timeSec == 0) {
+        outPrintf("GPS_HAS_TIME_BUT_STALE timeSec=0 — clearing hasTime\n");
+        gps.hasTime = false;
     }
 
     if (gps.hasTime) {
         char tbuf[16];
         formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
-        outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f\n",
-                   tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon);
+        outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f unix=%lu\n",
+                   tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon,
+                   gps.hasUnixTime ? (unsigned long)gps.unixTime : 0UL);
+        // Compute initial phase from the best available time source
+        uint32_t phaseTime;
+        if (gps.hasUnixTime)
+            phaseTime = gps.unixTime;
+        else
+            phaseTime = gps.timeSec;   // seconds since midnight (degraded)
+        currentPhase = computePhaseFromUTC(phaseTime);
+        uint32_t cyclePos = phaseTime % totalCycleSec;
+        outPrintf("INITIAL_PHASE=%d phaseTime=%lu cycle_pos=%lu source=%s\n",
+                   currentPhase, (unsigned long)phaseTime, (unsigned long)cyclePos,
+                   gps.hasUnixTime ? "GPS_UNIX" : "GPS_MIDNIGHT");
     } else {
         outPrintf("GPS_TIMEOUT — starting with free-running timer (will drift from RX)\n");
         // Fallback: use millis()-based phase cycling if no GPS
@@ -564,25 +783,53 @@ void setup() {
     }
 
     digitalWrite(PIN_LED, HIGH);
-    sweepStartMs = millis();  // Record sweep start for fallback phase computation
     outPrintf("=== STARTING GPS-SYNCED SWEEP ===\n");
     Serial.flush();
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────
 void loop() {
+    // Check for laptop time sync (SET_TIME over USB)
+    checkSerialTimeSync();
+
+    // GPS still works if module is alive — used for position data in packets
     gpsPoll();
 
-    // Determine current phase
+    // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
+    // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
+    if (lastCdcSuccessMs > 0 && (millis() - lastCdcSuccessMs) > CDC_WATCHDOG_MS) {
+        // USB CDC is dead. Hardware watchdog reboot to restart USB cleanly.
+        // This reboots the RP2040 — firmware restarts, USB re-enumerates,
+        // GPS re-acquires in ~30s. No manual BOOTSEL button needed.
+        watchdog_reboot(0, 0, 0);
+    }
+
+    // Heartbeat every 10s
+    if (lastHeartbeatMs == 0 || (millis() - lastHeartbeatMs) > HEARTBEAT_INTERVAL_MS) {
+        uint32_t utcNow = 0;
+        if (gps.hasUnixTime && gps.unixTime > 0) utcNow = gps.unixTime;
+        else if (hasLaptopTime()) utcNow = getUtcNow();
+        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu src=%s\n", (unsigned long)millis(),
+                  currentPhase, (unsigned long)utcNow,
+                  (gps.hasUnixTime && gps.unixTime > 0) ? "GPS" :
+                  hasLaptopTime() ? "LAPTOP" : "NONE");
+        lastHeartbeatMs = millis();
+    }
+
+    // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
+    // Priority: 1) GPS Unix epoch (updates every second, no drift) 
+    //           2) SET_TIME from laptop (backup when no GPS)
+    //           3) millis() fallback (last resort)
     int phase;
-    if (gps.hasTime) {
-        phase = computePhaseFromUTC(gps.timeSec);
+    if (gps.hasUnixTime && gps.unixTime > 0) {
+        // GPS real Unix epoch (date + time from RMC) — primary for walk tests
+        phase = computePhaseFromUTC(gps.unixTime);
+    } else if (hasLaptopTime()) {
+        // Unix epoch time from laptop SET_TIME — backup when GPS unavailable
+        phase = computePhaseFromUTC(getUtcNow());
     } else {
-        // Fallback: millis()-based cycling relative to sweep start
-        // sweepStartMs is set in setup() when the sweep actually begins.
-        // This keeps TX phases aligned with RX (which starts its own for-loop
-        // at approximately the same wall-clock time).
-        uint32_t cyclePos = ((millis() - sweepStartMs) / 1000) % totalCycleSec;
+        // Last resort: millis() from boot (completely unsynced)
+        uint32_t cyclePos = (millis() / 1000) % totalCycleSec;
         uint32_t acc = 0;
         phase = 0;
         for (int i = 0; i < NUM_PHASES; i++) {
@@ -593,6 +840,9 @@ void loop() {
 
     // Phase change detection
     if (phase != currentPhase) {
+        if (currentPhase >= 0) {
+            outPrintf("PHASE_GUARD 500\n");
+        }
         currentPhase = phase;
         seqInPhase = 0;
         phaseStartMs = millis();
@@ -600,27 +850,26 @@ void loop() {
         const Phase &p = phases[phase];
         rfInitForPhase(p);
         delay(50);
+        gpsPoll();  // drain GPS UART after ~100ms of SPI radio init
 
         char tbuf[16] = "NO_GPS";
         if (gps.hasTime) formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
-        outPrintf("PHASE_START %d %s %s lat=%.7f lon=%.7f sats=%d fix=%d\n",
-                   phase, p.name, tbuf, gps.lat, gps.lon, gps.sats, gps.fixValid ? 1 : 0);
-        Serial.flush();
+        outPrintf("PHASE_START %d %s %s\n", phase, p.name, tbuf);
+        // Serial.flush() now happens in outPrintf (BUG2 fix)
     }
 
     const Phase &p = phases[currentPhase];
     uint16_t pktSize = (p.pktType == PT_LORA) ? LORA_PKT_SIZE : FLRC_PKT_SIZE;
     uint8_t txBuf[256];
 
-    // Build packet with GPS header
-    embedGPS(txBuf, seqInPhase, (uint8_t)currentPhase);
-    // Fill padding pattern after byte 17
-    for (int i = 22; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
+    // Fill payload pattern
+    for (int i = 19; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;
-    if (elapsedInPhase >= (uint32_t)p.slotMs - 200) {
-        // Phase nearly over — wait for phase change
+    if (elapsedInPhase >= (uint32_t)p.slotMs - 500) {
+        // Phase nearly over — enter guard band, wait for phase change
+        outPrintf("PHASE_GUARD 500\n");
         gpsPoll();
         delay(10);
         return;
@@ -634,26 +883,59 @@ void loop() {
         return;
     }
 
+    // Build packet — MUST match RX layout in multi_radio_sweep_rx.cpp
+    //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+    //   bytes 4-7:   latE7 (int32 LE)
+    //   bytes 8-11:  lonE7 (int32 LE)
+    //   bytes 12-13: sats  (uint16 LE)
+    //   byte  14:    fixQ  (uint8)
+    //   bytes 15-18: utcSec (uint32 LE)
+    //   byte  19:    phaseId (uint8)
+    //   bytes 20-21: seq   (uint16 BE)
+    //   bytes 22-28: fw_hash (7 ASCII chars — firmware self-identification)
+    txBuf[0] = 0xA5;
+    txBuf[1] = 0x5A;
+    txBuf[2] = 0x42;
+    txBuf[3] = 0x24;
+    embedGPS(txBuf);
+    txBuf[19] = (uint8_t)currentPhase;
+    txBuf[20] = (uint8_t)(seqInPhase >> 8);
+    txBuf[21] = (uint8_t)(seqInPhase & 0xFF);
+    // Append 7-char firmware git hash so RX can verify TX build compatibility
+    memcpy(&txBuf[22], FW_HASH_CHARS, 7);
+
+    // ─── Fix 2: App-layer CRC-16 over GPS+seq payload ──────────────
+    // CRC-16 (CCITT 0x1021) over bytes 4-21 (18 bytes of GPS+seq data).
+    // Written to bytes 29-30 (big-endian) for RX verification.
+    uint16_t appCrc = crc16(&txBuf[4], 18);
+    txBuf[29] = (uint8_t)(appCrc >> 8);
+    txBuf[30] = (uint8_t)(appCrc & 0xFF);
+
     // TX
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(txBuf, pktSize);
     rfSetTx();
 
-    // Wait for TX_DONE — poll DIO9 IRQ pin with timeout
-    // SF12 at BW250 can take ~2+ seconds per packet; use 5000ms timeout
+    // Wait for TX_DONE — poll DIO9 IRQ pin
+    // For LoRa SF12, TX can take 1-2s. The UART ISR drains HW FIFO into the
+    // 1024-byte ring buffer, but we also poll GPS periodically to prevent
+    // overflow on very long transmissions. gpsPoll() returns instantly if
+    // no data is available, so the tight spin loop is minimally impacted.
     uint32_t irqPinMask = 1UL << PIN_IRQ;
-    uint32_t txStartMs = millis();
-    uint32_t txTimeoutMs = 5000;  // 5s — enough for SF12 BW250
+    uint32_t spinCount = 0;
     bool irqFired = false;
-    while ((millis() - txStartMs) < txTimeoutMs) {
+    while (spinCount < 30000000) {
         if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
+        // Drain GPS UART every ~65K iterations (~3ms at 125MHz)
+        if ((spinCount & 0xFFFF) == 0) gpsPoll();
+        spinCount++;
     }
 
     // Output per-packet log
-    if (!irqFired) {
-        outPrintf("PKT seq=%u TX_TIMEOUT phase=%d\n", seqInPhase, currentPhase);
-    }
+    int16_t rssiDbm = 0; // TX doesn't have RSSI; placeholder for RX sync
+    outPrintf("PKT seq=%u rssi=%d phase=%d tx_fw=%s\n", seqInPhase, rssiDbm,
+              currentPhase, FW_GIT_HASH);
 
     digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
 
@@ -672,6 +954,5 @@ void loop() {
         }
     }
 
-    // Flush periodically (not every packet to avoid CDC slowdown)
-    if ((seqInPhase & 0x0F) == 0) Serial.flush();
+    // outPrintf now flushes after every call (BUG2 fix — no more periodic flush needed)
 }
