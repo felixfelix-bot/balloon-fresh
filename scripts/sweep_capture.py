@@ -391,6 +391,28 @@ def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
     row["distance_m"] = distance_m
     row["throughput_kbps"] = throughput_kbps if throughput_kbps >= 0 else ""
     row["goodput_kbps"] = goodput_kbps if goodput_kbps >= 0 else ""
+
+    # ─── Effective throughput computation ────────────────────────────────
+    # effective_throughput_kbps = (unique_packets × payload_bytes × 8) / (slot_duration_s) / 1000
+    unique_packets = phase_data.get("rx_unique")
+    payload_bytes = meta.get("payload_bytes", 0)
+    slot_ms = meta.get("slot_ms", 0)
+    theoretical_kbps = meta.get("theoretical_kbps", 0)
+
+    if unique_packets is not None and payload_bytes > 0 and slot_ms > 0:
+        effective_kbps = (unique_packets * payload_bytes * 8) / (slot_ms / 1000.0) / 1000.0
+        row["effective_throughput_kbps"] = round(effective_kbps, 2)
+        row["theoretical_max_kbps"] = theoretical_kbps
+        if theoretical_kbps > 0:
+            efficiency = (effective_kbps / theoretical_kbps) * 100.0
+            row["throughput_efficiency_pct"] = round(efficiency, 1)
+        else:
+            row["throughput_efficiency_pct"] = ""
+    else:
+        row["effective_throughput_kbps"] = ""
+        row["theoretical_max_kbps"] = theoretical_kbps if theoretical_kbps > 0 else ""
+        row["throughput_efficiency_pct"] = ""
+
     row["environment"] = env
     row["notes"] = notes
 
@@ -402,11 +424,14 @@ def write_phase_csv_row(writer: csv.DictWriter, phase_data: dict, cycle: int,
         gps_str = f"  GPS=({phase_data['lat']:.5f},{phase_data['lon']:.5f}) d={distance_m:.0f}m"
     elif distance_m >= 0:
         gps_str = f"  d={distance_m:.0f}m"
+    tp_str = ""
+    if row["effective_throughput_kbps"] != "":
+        tp_str = f"  TP={row['effective_throughput_kbps']:.1f}kbps/{row['theoretical_max_kbps']}kbps({row['throughput_efficiency_pct']}%)"
     print(f"  [{cycle}] Phase {phase_num:2d} {row['name']:16s} "
           f"rx={row['rx_received']:>3}/{row['tx_sent']:<3} "
           f"PER={row['per_pct']:>5.1f}%  "
           f"RSSI={row['rssi_avg_dbm']:>4.0f}dBm  "
-          f"(min {row['rssi_min_dbm']:.0f}){gps_str}",
+          f"(min {row['rssi_min_dbm']:.0f}){gps_str}{tp_str}",
           file=sys.stderr)
 
 
@@ -535,17 +560,19 @@ def main():
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Connected. Sending SET_TIME to RX...", file=sys.stderr)
+    print(f"Connected. Sending TIME sync to RX...", file=sys.stderr)
 
     # ─── Send laptop time to RX for UTC bootstrap ──────────────────────
-    # RX has no GPS — if it boots on wrong phase, it can't receive TX.
-    # Laptop (NTP-synced, <10ms drift) sends UNIX timestamp over USB serial.
+    # RX has no GPS — laptop (NTP-synced) sends UTC seconds since midnight
+    # so the RX board can sync its clock before capture begins.
     try:
-        ser.write(f"SET_TIME {int(time.time())}\n".encode("ascii"))
+        now = datetime.now()
+        utc_seconds = now.hour * 3600 + now.minute * 60 + now.second
+        ser.write(f"TIME {utc_seconds}\n".encode("ascii"))
     except Exception as e:
-        print(f"WARNING: Failed to send SET_TIME: {e}", file=sys.stderr)
-    time.sleep(0.1)  # Wait 100ms for RX to acknowledge
-    print("Sent SET_TIME to RX", file=sys.stderr)
+        print(f"WARNING: Failed to send TIME sync: {e}", file=sys.stderr)
+    time.sleep(1.0)  # Wait 1s for RX to process TIME command
+    print(f"Sent TIME sync to RX", file=sys.stderr)
 
     if not args.walk and args.distance > 0:
         print(f"Distance: {args.distance}m  Environment: {args.env}", file=sys.stderr)
