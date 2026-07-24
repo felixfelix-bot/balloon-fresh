@@ -25,7 +25,36 @@ This guide walks the operator through an outdoor range test using the
 - [ ] RX board connected to laptop USB
 - [ ] GPS module connected to TX board (GP0/GP1, 115200 baud — GEPRC factory default)
 
-### Software
+### Automated Pre-Flight Check (REQUIRED before every walk)
+
+Run the pre-flight check script. It verifies all 6 critical conditions:
+
+```bash
+cd ~/worktrees/balloon-range-tests
+
+# Basic — just check boards are alive and communicating
+./tools/pre_flight_check.sh /dev/ttyACM3 /dev/ttyACM0
+
+# With expected build hash (from firmware/BUILD_MAP.md)
+./tools/pre_flight_check.sh /dev/ttyACM3 /dev/ttyACM0 abc123d
+```
+
+**The 6 checks:**
+
+| # | Check | What it does | Pass criteria |
+|---|-------|-------------|---------------|
+| 1 | TX board alive | Port exists, reads data in 5s | Non-empty output |
+| 2 | RX board alive | Port exists, reads data in 5s | Non-empty output |
+| 3 | TX FW_BUILD match | Sends `FW_QUERY`, reads `FW_BOOT` banner | Hash matches expected (if given) |
+| 4 | RX FW_BUILD match | Same as TX | Hash matches expected (if given) |
+| 5 | TX GPS locked | Reads TX output, finds `sats=N` | sats > 4 |
+| 6 | RX receiving TX packets | 10s capture, looks for `PKT`/`PHASE_RESULT` | At least 1 packet line |
+
+> ⚠ **DO NOT START THE WALK if any check fails.** Fix the issue first.
+> Checks 3/4 are INFO-only if no expected build hash is provided.
+> Check 6 requires boards to be in range (1-10m for indoor pre-flight).
+
+### Software (manual setup)
 
 ```bash
 # 1. Acquire board locks
@@ -35,7 +64,9 @@ BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock
 ls /dev/ttyACM*
 # RX board 8332 = /dev/ttyACM0 (verify with udevadm before flashing)
 
-# 3. Verify 1m baseline BEFORE going outside
+# 3. Run pre-flight check (see above)
+
+# 4. Verify 1m baseline BEFORE going outside
 # (see Indoor Baseline section below)
 ```
 
@@ -92,9 +123,38 @@ The 8-second LED countdown should start simultaneously on both.
 ### Setup (at base station / RX position)
 
 1. Place RX board + laptop at a fixed position with USB cable
-2. Open terminal, ready to run capture script
-3. Position TX board at starting distance with power bank connected
-4. Verify both boards have started their 8-second LED countdown
+2. **Run pre-flight check** (verify boards alive, GPS locked, packets flowing):
+   ```bash
+   ./tools/pre_flight_check.sh /dev/ttyACM3 /dev/ttyACM0
+   ```
+3. Open terminal, ready to run **dual capture script**:
+   ```bash
+   # Default: 1 hour capture, ACM0 (USB) + ACM1 (ESP32 bridge)
+   ./tools/walk_capture.sh
+
+   # Custom duration (e.g. 30 min)
+   ./tools/walk_capture.sh 1800
+
+   # Custom ports
+   ./tools/walk_capture.sh 3600 /dev/ttyACM0 /dev/ttyACM1
+   ```
+4. Position TX board at starting distance with power bank connected
+5. Verify both boards have started their 8-second LED countdown
+
+### Why Dual Capture?
+
+The RX firmware uses `dualPrintf()` — it writes the same data to both USB CDC
+(`/dev/ttyACM0`) and UART1→ESP32 bridge (`/dev/ttyACM1`). Capturing both
+simultaneously provides:
+
+- **Redundancy:** If USB CDC drops (common on RP2040), bridge data survives
+- **Cross-check:** Compare both files to detect data corruption
+- **Auto-reconnect:** Each port independently reconnects on CDC dropout
+
+Files are saved to `data/walk-<DATE>/`:
+- `walk-<tag>-<DATE>-usb.txt` — USB CDC capture (with SET_TIME resync)
+- `walk-<tag>-<DATE>-bridge.txt` — ESP32 bridge capture
+- `walk-<tag>-<DATE>-meta.txt` — metadata (ports, duration, firmware hash)
 
 ### Distance Points
 
@@ -251,17 +311,29 @@ The 14-phase cycle takes approximately:
 ## Quick Reference Commands
 
 ```bash
-# Flash TX (GPS version)
-cd ~/worktrees/balloon-range-tests/firmware/rp2040
+cd ~/worktrees/balloon-range-tests
+
+# ── Pre-flight check (REQUIRED before every walk) ──
+./tools/pre_flight_check.sh /dev/ttyACM3 /dev/ttyACM0
+# With expected build hash:
+./tools/pre_flight_check.sh /dev/ttyACM3 /dev/ttyACM0 abc123d
+
+# ── Dual capture (walk test) ──
+./tools/walk_capture.sh              # default 1 hour
+./tools/walk_capture.sh 1800         # 30 min
+# Files: data/walk-<DATE>/walk-<tag>-<DATE>-{usb,bridge,meta}.txt
+
+# ── Flash TX (GPS version) ──
+cd firmware/rp2040
 pio run -e rp2040-sweep-gps-tx -t upload --upload-port /dev/ttyACM3
 
-# Flash RX
+# ── Flash RX ──
 pio run -e rp2040-sweep-rx -t upload --upload-port /dev/ttyACM0
 
-# Capture at 50m outdoor
+# ── Capture at specific distance (legacy single-port) ──
 cd ~/worktrees/balloon-range-tests
 python3 scripts/sweep_capture.py --port /dev/ttyACM0 --distance 50 --env outdoor_los --cycles 1
 
-# Plot results
+# ── Plot results ──
 /opt/miniconda/bin/python3.13 tools/plot_characterization.py data/all_results.csv
 ```
