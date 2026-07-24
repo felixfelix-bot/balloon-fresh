@@ -26,6 +26,19 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: update discoveries sync (2026-07-24) | tags: GENERAL
+- **Commit:** `698a8b8` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md
+- **Full message:** docs: update discoveries sync
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] data: save all test captures + results plot to git repo (not /tmp) (2026-07-24) | tags: TEST
+- **Commit:** `72cbd77` by Felix
+- **Files:** data/rx-capture-20260723.txt, data/sweep-rx-debug-20260724.txt, data/sweep-rx-fixed-20260724.txt (+4 more)
+- **Full message:** data: save all test captures + results plot to git repo (not /tmp)
+- **Relevance:** TEST
+
+
 ### [balloon-hermes] plan: LR2021 full characterization — coordinates speed-tests + range-tests (2026-07-24) | tags: RADIO
 - **Commit:** `44f50d2` by Felix
 - **Files:** docs/coordination/LR2021-FULL-CHARACTERIZATION-PLAN.md
