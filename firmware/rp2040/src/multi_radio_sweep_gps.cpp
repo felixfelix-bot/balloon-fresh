@@ -439,6 +439,46 @@ static void rfInitForPhase(const Phase &p) {
 //   bytes 11-12: num_sats (uint16_t BE)
 //   bytes 13-14: fix_valid (uint16_t BE)
 //   bytes 15-18: utc_seconds (uint32_t BE)
+// ─── Laptop time sync (SET_TIME) ─────────────────────────────────────
+// TX accepts SET_TIME over USB, same as RX.
+// Operator plugs TX into laptop, sends SET_TIME, unplugs. RP2040 keeps
+// millis() running on battery → UTC stays correct for the walk.
+static uint32_t utcOffset = 0;  // offset: unix_time = millis()/1000 + utcOffset
+
+static uint32_t getUtcNow() {
+    return millis() / 1000 + utcOffset;
+}
+
+static bool hasLaptopTime() {
+    return utcOffset > 0;
+}
+
+// Non-blocking: check Serial for SET_TIME command
+static void checkSerialTimeSync() {
+    if (!Serial.available()) return;
+    static char syncBuf[64];
+    static int syncLen = 0;
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (syncLen > 0) {
+                syncBuf[syncLen] = '\0';
+                if (strncmp(syncBuf, "SET_TIME ", 9) == 0) {
+                    uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
+                    if (ts > 0) {
+                        utcOffset = ts - millis() / 1000;
+                        outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
+                                  (unsigned long)getUtcNow(), (long)utcOffset);
+                    }
+                }
+                syncLen = 0;
+            }
+        } else {
+            if (syncLen < (int)sizeof(syncBuf) - 1) syncBuf[syncLen++] = c;
+        }
+    }
+}
+
 static void embedGPS(uint8_t *pkt) {
     memcpy(&pkt[3], &gps.lat, 4);
     memcpy(&pkt[7], &gps.lon, 4);
@@ -446,13 +486,18 @@ static void embedGPS(uint8_t *pkt) {
     pkt[12] = (uint8_t)(gps.sats & 0xFF);
     pkt[13] = 0;
     pkt[14] = gps.fixValid ? 1 : 0;
-    pkt[15] = (uint8_t)(gps.timeSec >> 24);
-    pkt[16] = (uint8_t)(gps.timeSec >> 16);
-    pkt[17] = (uint8_t)(gps.timeSec >> 8);
-    pkt[18] = (uint8_t)(gps.timeSec & 0xFF);
+    // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync
+    uint32_t unixNow = hasLaptopTime() ? getUtcNow() : gps.timeSec;
+    pkt[15] = (uint8_t)(unixNow >> 24);
+    pkt[16] = (uint8_t)(unixNow >> 16);
+    pkt[17] = (uint8_t)(unixNow >> 8);
+    pkt[18] = (uint8_t)(unixNow & 0xFF);
 }
 
-// ─── Phase computation from GPS UTC time ──────────────────────────────
+// ─── Phase computation from absolute time ─────────────────────────────
+// Both TX and RX use the SAME clock: Unix epoch seconds.
+// Phase = unixTime % cycleSec. Both boards synced as long as both know Unix time.
+// TX gets Unix time from: SET_TIME (laptop), GPS (if available), or millis() fallback.
 static int computePhaseFromUTC(uint32_t utcSec) {
     uint32_t cyclePos = utcSec % totalCycleSec;
     uint32_t acc = 0;
@@ -462,6 +507,7 @@ static int computePhaseFromUTC(uint32_t utcSec) {
     }
     return NUM_PHASES - 1;  // fallback
 }
+
 
 static void formatUTCTime(uint32_t sec, char *buf, size_t buflen) {
     uint32_t hh = sec / 3600;
@@ -581,9 +627,13 @@ void setup() {
 
 // ─── Main loop ───────────────────────────────────────────────────────
 void loop() {
+    // Check for laptop time sync (SET_TIME over USB)
+    checkSerialTimeSync();
+
+    // GPS still works if module is alive — used for position data in packets
     gpsPoll();
 
-    // BUG2 FIX: CDC watchdog — reinitialize USB if no output for 30s
+    // CDC watchdog — reinitialize USB if no output for 30s
     if (lastCdcOutputMs > 0 && (millis() - lastCdcOutputMs) > CDC_WATCHDOG_MS) {
         outPrintf("CDC_WATCHDOG_TIMEOUT — reinitializing USB CDC\n");
         Serial.end();
@@ -594,21 +644,27 @@ void loop() {
         outPrintf("CDC_REINIT_DONE millis=%lu\n", (unsigned long)millis());
     }
 
-    // BUG2 FIX: Heartbeat every 10s
+    // Heartbeat every 10s
     if (lastHeartbeatMs == 0 || (millis() - lastHeartbeatMs) > HEARTBEAT_INTERVAL_MS) {
-        outPrintf("HEARTBEAT millis=%lu phase=%d\n", (unsigned long)millis(), currentPhase);
+        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu\n", (unsigned long)millis(),
+                  currentPhase, hasLaptopTime() ? (unsigned long)getUtcNow() : 0UL);
         lastHeartbeatMs = millis();
     }
 
-    // Determine current phase
+    // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
+    // Priority: 1) SET_TIME from laptop  2) GPS time  3) millis() fallback
     int phase;
-    if (gps.hasTime) {
+    if (hasLaptopTime()) {
+        // Unix epoch time from laptop SET_TIME — same clock domain as RX
+        phase = computePhaseFromUTC(getUtcNow());
+    } else if (gps.hasTime && gps.timeSec > 0) {
+        // GPS time (seconds since midnight). Convert to pseudo-unix for modulo.
+        // NOTE: This is NOT true Unix epoch, so RX (using real Unix) won't match.
+        // Only works if RX also uses seconds-since-midnight. For field use,
+        // operator MUST send SET_TIME to TX before unplugging.
         phase = computePhaseFromUTC(gps.timeSec);
-        outPrintf("DBG_UTC hasTime=1 timeSec=%lu cyclePos=%lu phase=%d curPhase=%d\n",
-                   (unsigned long)gps.timeSec, (unsigned long)(gps.timeSec % totalCycleSec),
-                   phase, currentPhase);
     } else {
-        // Fallback: millis()-based cycling
+        // Last resort: millis() from boot (completely unsynced)
         uint32_t cyclePos = (millis() / 1000) % totalCycleSec;
         uint32_t acc = 0;
         phase = 0;
