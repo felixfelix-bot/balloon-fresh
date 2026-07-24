@@ -141,8 +141,8 @@ static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 static uint32_t totalCycleSec = 0;
 
 #define TX_POWER_DBM   12.5f
-#define LORA_PKT_SIZE  127
-#define FLRC_PKT_SIZE  255
+#define LORA_PKT_SIZE  32
+#define FLRC_PKT_SIZE  32
 #define GPS_BAUD       115200  // GEP-M10nano ships at 115200 (confirmed by speed-tests track)
 #define GPS_FIX_TIMEOUT_MS 60000
 #define GPS_NMEA_MAX   160
@@ -506,7 +506,7 @@ static void rfInitForPhase(const Phase &p) {
         { uint8_t c[] = {0x02, 0x23, 0x12}; rfWriteCmd(c, 3); }
         delay(1);
 
-        // SET_LORA_PACKET_PARAMS: preamble=8, payload=127, explicit, CRC on
+        // SET_LORA_PACKET_PARAMS: preamble=8, payload=32, explicit, CRC on
         { uint8_t flags = 0x04; // explicit header, CRC on
           uint8_t c[] = {0x02, 0x21, 0x00, 0x08, LORA_PKT_SIZE, flags};
           rfWriteCmd(c, 6); }
@@ -862,8 +862,8 @@ void loop() {
     uint16_t pktSize = (p.pktType == PT_LORA) ? LORA_PKT_SIZE : FLRC_PKT_SIZE;
     uint8_t txBuf[256];
 
-    // Fill payload pattern
-    for (int i = 19; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
+    // Zero-pad unused trailing byte (real data fills bytes 0-30)
+    txBuf[31] = 0;
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;
