@@ -5,7 +5,7 @@
  * (from RMC/GGA NMEA sentences) as the master clock for mode scheduling.
  * Falls back to millis() if no GPS module is detected within 5s.
  *
- * GPS module on UART0: GP1=RX, GP0=TX (SerialUART gpsSerial(uart0, 1, 0))
+ * GPS module on UART0: GP1=RX, GP0=TX (Serial1 — UART0 default pins)
  * 9600 baud NMEA. Parses RMC for UTC time + GGA for position.
  *
  * MODE SCHEDULE (GPS-disciplined, CYCLE_LENGTH_SEC = 600 = 10 min):
@@ -19,8 +19,7 @@
  * No RadioLib. Raw 2-byte opcode SPI.
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
- *       UART_TX=GP12 UART_RX=GP13 (Serial1, debug)
- *       GPS_RX=GP1 GPS_TX=GP0 (UART0, GPS NMEA input)
+ *       GPS on Serial1 (UART0): GP0=TX, GP1=RX
  *       LED=GP25  LED_ALT=GP16
  */
 
@@ -104,8 +103,8 @@ static size_t nmeaLen = 0;
 static bool usingGpsClock = false;  // true=GPS, false=millis() fallback
 static uint32_t bootMs = 0;         // for millis() fallback
 
-// GPS UART: UART0 on GP1(RX)/GP0(TX)
-SerialUART gpsSerial(uart0, 1, 0);
+// GPS uses Serial1 (UART0 default pins: GP0=TX, GP1=RX)
+// No separate gpsSerial instance — Serial1 IS the GPS UART.
 
 // ─── NMEA checksum (XOR of chars between $ and *) ────────────────────
 static bool nmeaValid(const char *s) {
@@ -248,20 +247,20 @@ static void gpsProcessChar(char c) {
 
 // Non-blocking GPS poll — call frequently to keep NMEA buffer fresh
 static void gpsPoll() {
-    while (gpsSerial.available()) {
-        gpsProcessChar(gpsSerial.read());
+    while (Serial1.available()) {
+        gpsProcessChar(Serial1.read());
     }
 }
 
 // ─── GPS init with baud auto-detect ──────────────────────────────────
 static bool tryBaud(uint32_t baud, uint32_t timeout_ms) {
-    gpsSerial.begin(baud);
+    Serial1.begin(baud);
     delay(50);
 
     uint32_t start = millis();
     while (millis() - start < timeout_ms) {
-        while (gpsSerial.available()) {
-            gpsProcessChar(gpsSerial.read());
+        while (Serial1.available()) {
+            gpsProcessChar(Serial1.read());
             if (gpsData.present) return true;
         }
         delay(5);
@@ -270,31 +269,22 @@ static bool tryBaud(uint32_t baud, uint32_t timeout_ms) {
 }
 
 static void gpsInit() {
-    // GEPRC GEP-M10nano ships at 115200 (not u-blox default 9600)
-    // Try 115200 first, then fall back to 9600/38400 for other modules
-    const uint32_t bauds[] = {115200, 9600, 38400};
+    // GPS module confirmed at 9600 baud (u-blox default)
+    const uint32_t bauds[] = {9600, 38400, 115200};
     const int numBauds = 3;
     uint32_t perBaudMs = GPS_DETECT_TIMEOUT_MS / numBauds;
 
-    Serial1.println("GPS: Auto-detecting baud (115200/9600/38400)...");
+    Serial.println("GPS: Auto-detecting baud (9600/38400/115200)...");
 
     for (int i = 0; i < numBauds; i++) {
-        Serial1.printf("GPS: Trying %lu baud...\n", (unsigned long)bauds[i]);
+        Serial.printf("GPS: Trying %lu baud...\n", (unsigned long)bauds[i]);
         bool found = tryBaud(bauds[i], perBaudMs);
         if (gpsData.present) {
-            Serial1.printf("GPS: DETECTED at %lu baud\n", (unsigned long)bauds[i]);
+            Serial.printf("GPS: DETECTED at %lu baud\n", (unsigned long)bauds[i]);
             return;
         }
     }
-
-    // Final retry at 115200 (GEPRC default)
-    Serial1.println("GPS: Retrying 115200 baud...");
-    tryBaud(115200, 2000);
-    if (gpsData.present) {
-        Serial1.println("GPS: DETECTED at 115200 baud");
-        return;
-    }
-    Serial1.println("GPS: No module detected. Using millis() fallback.");
+    Serial.println("GPS: No module detected. Using millis() fallback.");
 }
 
 // ─── Clock source: get seconds_since_midnight ────────────────────────
@@ -419,10 +409,10 @@ static void rfSetTxPower(float dbm) {
     rfWriteCmd(cmd, 4);
 }
 
-// ─── Dual output ─────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
-static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
-static void dualPrintln() { Serial.println(); Serial1.println(); }
+// ─── Output (USB CDC only — Serial1 reserved for GPS) ────────────────
+static void dualPrint(const char *s) { Serial.print(s); }
+static void dualPrintln(const char *s) { Serial.println(s); }
+static void dualPrintln() { Serial.println(); }
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[512];
@@ -431,7 +421,6 @@ static void dualPrintf(const char *fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     Serial.println(buf);
-    Serial1.println(buf);
 }
 
 // ─── FLRC bitrate encoding ───────────────────────────────────────────
@@ -730,9 +719,6 @@ static unsigned long lastHB = 0;
 
 void setup() {
     Serial.begin(115200);
-    Serial1.setTX(PIN_UART_TX);
-    Serial1.setRX(PIN_UART_RX);
-    Serial1.begin(115200);
     delay(100);
 
     // Print banner BEFORE any radio init — if init hangs, USB CDC is alive
