@@ -1,0 +1,4 @@
+TIME_DIFF gps_utc=2131044601 laptop_utc=1784897037
+TIME_DIFF gps_utc=2270009131 laptop_utc=1784897039
+PHASE_RESULT 12 LF-FLRC-650 rx=21 unique=0 lost=200 per=100.0 rssi_avg=-57 rssi_min=-58 crc_err=0 tx_lat=-95.78547 tx_lon=-54.87PHASE_RESULT 13 LF-FLRC-325 rx=0 unique=0 lost=200 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=fix=0 utc=0
+PHASE_RESULT 1 HF-LoRa-SF9 rx=0 unique=0 lost=50 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 PHASE_START 2 HF-LoRa-SF12
