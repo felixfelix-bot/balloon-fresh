@@ -169,7 +169,7 @@ def assert_locked(*resources: str):
     lock_script = Path.home() / "repos" / "balloon-fresh" / "tools" / "balloon-board-lock.py"
     for r in resources:
         # Map resource to a port for check_board_lock
-        port_map = {"tx": "/dev/ttyACM0", "rx": "/dev/ttyACM2"}
+        port_map = {"tx": "/dev/ttyACM3", "rx": "/dev/ttyACM0"}  # F242D=ACM3, 8332=ACM0
         port = port_map.get(r, f"/dev/ttyACM0")
         if not check_board_lock(port):
             sys.exit(1)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         if not check_board_lock(port):
             all_ok = False
     for r in (args.resource or []):
-        port_map = {"tx": "/dev/ttyACM0", "rx": "/dev/ttyACM2"}
+        port_map = {"tx": "/dev/ttyACM3", "rx": "/dev/ttyACM0"}  # F242D=ACM3, 8332=ACM0
         port = port_map.get(r, "/dev/ttyACM0")
         if not check_board_lock(port):
             all_ok = False
