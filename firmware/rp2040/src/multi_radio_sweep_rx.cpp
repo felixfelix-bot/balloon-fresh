@@ -453,11 +453,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint8_t rxBuf[256];
 
     uint32_t startMs = millis();
-    // Listen for the full slot duration plus guard bands:
-    // 500ms before phase start (overlap with previous phase end) +
-    // 500ms after phase end (overlap with next phase start) +
-    // 2000ms original margin
-    uint32_t slotBudget = (uint32_t)p.slotMs + 1000 + 2000;
+    // Listen for the full slot duration plus LARGE guard bands.
+    // Start 10s before calculated phase start, end 10s after phase end.
+    // This eliminates timing offset from SET_TIME USB latency.
+    uint32_t slotBudget = (uint32_t)p.slotMs + 20000;  // +10s before + 10s after
     uint16_t received = 0, crcErrors = 0;
     int32_t rssiSum = 0;
     uint16_t rssiCount = 0;
