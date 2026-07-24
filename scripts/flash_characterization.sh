@@ -10,6 +10,10 @@
 #   TX board: rp2040-sweep-gps-tx (GPS-synced, fallback to millis())
 #   RX board: rp2040-sweep-rx    (millis()-based, 14 phases, unique seq counting)
 #
+# Board mapping (STABLE — verify with serial number):
+#   TX = F242D (serial E663B035977F242D), typically /dev/ttyACM3, HAS GPS
+#   RX = 8332  (serial E663B035973B8332), typically /dev/ttyACM0, NO GPS
+#
 # After flashing, runs a quick serial test to verify both boards boot
 # and print PHASE_START lines.
 
