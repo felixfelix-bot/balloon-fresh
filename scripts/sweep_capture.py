@@ -624,7 +624,7 @@ def main():
         try:
             now = datetime.now()
             utc_sec = now.hour * 3600 + now.minute * 60 + now.second
-            ser.write(f"TIME {utc_sec}\n".encode("ascii"))
+            ser.write(f"SET_TIME {int(time.time())}\n".encode("ascii"))
         except Exception as e:
             print(f"WARNING: Failed to send TIME sync: {e}", file=sys.stderr)
 
