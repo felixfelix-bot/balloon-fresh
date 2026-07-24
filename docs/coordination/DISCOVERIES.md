@@ -26,6 +26,92 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: firmware integrity plan — 5-layer binary control system (2026-07-24) | tags: GENERAL
+- **Commit:** `b7edcee` by Felix
+- **Files:** docs/coordination/PLAN-FIRMWARE-INTEGRITY.md
+- **Full message:** docs: firmware integrity plan — 5-layer binary control system
+- **Relevance:** GENERAL
+
+### [balloon-fips] docs: cross-track analysis — FLRC byte alignment + GPS payload findings from ran (2026-07-24) | tags: RADIO
+- **Commit:** `2e2ff78` by Felix
+- **Files:** docs/CROSS-TRACK-ANALYSIS-FLRC-ALIGNMENT.md
+- **Full message:** docs: cross-track analysis — FLRC byte alignment + GPS payload findings from range-tests
+- **Relevance:** RADIO
+
+
+### [balloon-hermes] checkpoint: main repo committed before walk test freeze (2026-07-24) | tags: TEST
+- **Commit:** `54500a1` by Felix
+- **Files:** docs/HANDOVER-KEY-ROTATION.md, docs/coordination/DISCOVERIES.md
+- **Full message:** checkpoint: main repo committed before walk test freeze
+- **Relevance:** TEST
+
+### [balloon-hermes] docs: add DELEGATION-PROMPT.md — orchestrator task push template (2026-07-24) | tags: GENERAL
+- **Commit:** `eee5bcb` by Felix
+- **Files:** docs/coordination/DELEGATION-PROMPT.md
+- **Full message:** docs: add DELEGATION-PROMPT.md — orchestrator task push template
+- **Relevance:** GENERAL
+
+### [balloon-tollgate] Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md (2026-07-24) | tags: GENERAL
+- **Commit:** `74d7350` by Felix
+- **Files:** AGENTS.md
+- **Full message:** Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-fips] Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md (2026-07-24) | tags: GENERAL
+- **Commit:** `1e811c0` by Felix
+- **Files:** AGENTS.md
+- **Full message:** Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] data: walk test results — FLRC packets received but CRC/byte alignment still off (2026-07-24) | tags: RADIO, TEST
+- **Commit:** `b182b81` by Felix
+- **Files:** data/walk-balcony-rx-20260724.txt, data/walk-test-results.png, data/walk_test_20260724/capture_env_outdoor_20260724_180347.csv (+3 more)
+- **Full message:** data: walk test results — FLRC packets received but CRC/byte alignment still off
+- **Relevance:** RADIO, TEST
+
+### [balloon-range-tests] data: walk test capture — GPS payload verified on LoRa phases (2026-07-24) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `be354b0` by Felix
+- **Files:** AGENTS.md, data/walk-fix-verified-rx.txt, firmware/rp2040/platformio.ini (+1 more)
+- **Full message:** data: walk test capture — GPS payload verified on LoRa phases
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-range-tests] docs: upgrade guardrails — 3 communication channels (status + task + escalation) (2026-07-24) | tags: GENERAL
+- **Commit:** `9b2fc5f` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: upgrade guardrails — 3 communication channels (status + task + escalation)
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] data: comprehensive plot + autonomous GPS sweep results (2026-07-24) | tags: TEST
+- **Commit:** `980263f` by Felix
+- **Files:** data/box-mounted-rx-20260724.txt, data/comprehensive_plot_20260724.png, data/generate_summary_plot.py (+8 more)
+- **Full message:** data: comprehensive plot + autonomous GPS sweep results
+- **Relevance:** TEST
+
+### [balloon-speed-tests] Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md (2026-07-24) | tags: GENERAL
+- **Commit:** `c849bd4` by Felix
+- **Files:** AGENTS.md
+- **Full message:** Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: upgrade guardrails + fix copy-paste name bug (2026-07-24) | tags: GENERAL
+- **Commit:** `2ea0017` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: upgrade guardrails + fix copy-paste name bug
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] wip: F33 module footprint + schematic updates before walk test freeze (2026-07-24) | tags: HARDWARE, TEST
+- **Commit:** `246616e` by Felix
+- **Files:** docs/F33-MODULE-PLAN.md, tracker/hardware/footprints/nicerf-lora2021f33-2g4.json, tracker/hardware/hub_board/hub_schematic.py (+2 more)
+- **Full message:** wip: F33 module footprint + schematic updates before walk test freeze
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-circuit-design] Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md (2026-07-24) | tags: GENERAL
+- **Commit:** `af3674e` by Felix
+- **Files:** AGENTS.md
+- **Full message:** Add DELEGATION EXPECTATIONS (POSITIVE COLLABORATION) block to AGENTS.md
+- **Relevance:** GENERAL
+
+
 ### [balloon-hermes] docs: update discoveries sync (2026-07-24) | tags: GENERAL
 - **Commit:** `698a8b8` by Felix
 - **Files:** docs/coordination/DISCOVERIES.md
