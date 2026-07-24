@@ -35,9 +35,9 @@ LOCK_DIR = Path.home() / ".hermes" / "peripheral_locks"
 
 # Map serial ports to lock resources
 PORT_TO_RESOURCE = {
-    "/dev/ttyACM0": "tx",   # F242D TX board (was ACM3 in older config, check udev)
-    "/dev/ttyACM2": "rx",   # 8332 RX board (was ACM4 in older config)
-    # ESP32-S3 boards
+    "/dev/ttyACM0": "rx",   # 8332 RX board (serial E663B035973B8332)
+    "/dev/ttyACM3": "tx",   # F242D TX board (serial E663B035977F242D)
+    # ESP32 bridge ports: ACM1 (8332 bridge), ACM2 (F242D bridge)
     # board-a, board-b, board-c mappings TBD
 }
 
