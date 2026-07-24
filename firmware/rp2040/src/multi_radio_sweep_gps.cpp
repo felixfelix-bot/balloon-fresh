@@ -466,6 +466,7 @@ static void formatUTCTime(uint32_t sec, char *buf, size_t buflen) {
 static int currentPhase = -1;
 static uint16_t seqInPhase = 0;
 static uint32_t phaseStartMs = 0;
+static uint32_t sweepStartMs = 0;  // Set when sweep begins (after GPS wait)
 
 // ─── Setup ───────────────────────────────────────────────────────────
 void setup() {
@@ -505,12 +506,29 @@ void setup() {
                       phases[i].pktCount, phases[i].slotMs / 1000);
     }
 
-    // ── Wait for GPS time (up to 60s) ──
-    outPrintf("=== WAITING FOR GPS TIME (up to 60s) ===\n");
-    uint32_t gpsStart = millis();
-    while (!gps.hasTime && (millis() - gpsStart) < GPS_FIX_TIMEOUT_MS) {
+    // ── Quick GPS detection: check if ANY NMEA data flows in 5s ──
+    // If GPS hardware isn't connected (soldering issue), Serial1 will be
+    // silent. Skip the full 60s wait and fall back immediately.
+    outPrintf("=== GPS DETECTION (5s quick check) ===\n");
+    uint32_t detectStart = millis();
+    bool nmeaSeen = false;
+    while ((millis() - detectStart) < 5000) {
         gpsPoll();
-        // Fast blink during GPS search
+        if (Serial1.available()) { nmeaSeen = true; break; }
+        digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
+        delay(10);
+    }
+
+    // ── Wait for GPS time (up to 60s if NMEA detected) ──
+    if (nmeaSeen) {
+        outPrintf("NMEA detected — waiting for time sync (up to 60s)\n");
+    } else {
+        outPrintf("NO NMEA — GPS not connected, skipping to millis() fallback\n");
+    }
+    uint32_t gpsStart = millis();
+    uint32_t timeout = nmeaSeen ? GPS_FIX_TIMEOUT_MS : 0;
+    while (!gps.hasTime && (millis() - gpsStart) < timeout) {
+        gpsPoll();
         digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
         delay(10);
     }
@@ -527,6 +545,7 @@ void setup() {
     }
 
     digitalWrite(PIN_LED, HIGH);
+    sweepStartMs = millis();  // Record sweep start for fallback phase computation
     outPrintf("=== STARTING GPS-SYNCED SWEEP ===\n");
     Serial.flush();
 }
@@ -540,8 +559,11 @@ void loop() {
     if (gps.hasTime) {
         phase = computePhaseFromUTC(gps.timeSec);
     } else {
-        // Fallback: millis()-based cycling
-        uint32_t cyclePos = (millis() / 1000) % totalCycleSec;
+        // Fallback: millis()-based cycling relative to sweep start
+        // sweepStartMs is set in setup() when the sweep actually begins.
+        // This keeps TX phases aligned with RX (which starts its own for-loop
+        // at approximately the same wall-clock time).
+        uint32_t cyclePos = ((millis() - sweepStartMs) / 1000) % totalCycleSec;
         uint32_t acc = 0;
         phase = 0;
         for (int i = 0; i < NUM_PHASES; i++) {
