@@ -373,8 +373,11 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint8_t rxBuf[256];
 
     uint32_t startMs = millis();
-    // Listen for the full slot duration plus a small margin
-    uint32_t slotBudget = (uint32_t)p.slotMs + 2000;
+    // Listen for the full slot duration plus guard bands:
+    // 500ms before phase start (overlap with previous phase end) +
+    // 500ms after phase end (overlap with next phase start) +
+    // 2000ms original margin
+    uint32_t slotBudget = (uint32_t)p.slotMs + 1000 + 2000;
     uint16_t received = 0, crcErrors = 0;
     int32_t rssiSum = 0;
     uint16_t rssiCount = 0;
@@ -529,9 +532,13 @@ void loop() {
     dualPrintf("\n=== CYCLE %d START uptime=%lu ===\n", cycleNum, millis());
 
     for (int i = 0; i < NUM_PHASES; i++) {
+        if (i > 0) {
+            dualPrintf("PHASE_GUARD 500\n");
+        }
         runRxPhase(phases[i], i);
     }
 
+    dualPrintf("PHASE_GUARD 500\n");
     dualPrintf("=== CYCLE %d COMPLETE uptime=%lu ===\n", cycleNum, millis());
     cycleNum++;
     delay(1000);

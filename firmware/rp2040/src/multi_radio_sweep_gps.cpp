@@ -552,6 +552,9 @@ void loop() {
 
     // Phase change detection
     if (phase != currentPhase) {
+        if (currentPhase >= 0) {
+            outPrintf("PHASE_GUARD 500\n");
+        }
         currentPhase = phase;
         seqInPhase = 0;
         phaseStartMs = millis();
@@ -575,8 +578,9 @@ void loop() {
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;
-    if (elapsedInPhase >= (uint32_t)p.slotMs - 200) {
-        // Phase nearly over — wait for phase change
+    if (elapsedInPhase >= (uint32_t)p.slotMs - 500) {
+        // Phase nearly over — enter guard band, wait for phase change
+        outPrintf("PHASE_GUARD 500\n");
         gpsPoll();
         delay(10);
         return;
