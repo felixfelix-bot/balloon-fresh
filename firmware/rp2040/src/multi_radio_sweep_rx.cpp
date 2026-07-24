@@ -189,6 +189,7 @@ static int computePhaseFromUTC(uint32_t utcSec) {
 // Reset when phase changes (via resetRxPhaseState()).
 static uint16_t rxReceived   = 0;
 static uint16_t rxCrcErrors  = 0;
+static uint16_t rxGarbageCount = 0;  // sync-not-found + GPS sanity failures
 static int32_t  rxRssiSum    = 0;
 static uint16_t rxRssiCount  = 0;
 static int16_t  rxRssiMin    = 0;       // most negative = weakest (tenths dBm)
@@ -283,6 +284,19 @@ static void rfReadRxFifo(uint8_t *data, size_t len) {
 static void rfClearRxFifo() {
     uint8_t cmd[] = {0x01, 0x20};
     rfWriteCmd(cmd, 2);
+}
+
+// ─── App-layer CRC-16 (CCITT 0x1021) ────────────────────────────────
+// Hardware CRC passes garbage — this is the application-layer integrity check.
+// Computed over the 18-byte GPS+seq payload (TX bytes 4-21).
+static uint16_t crc16(const uint8_t *data, size_t len) {
+    uint16_t crc = 0xFFFF;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= (uint16_t)data[i] << 8;
+        for (int b = 0; b < 8; b++)
+            crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    }
+    return crc;
 }
 
 // ─── RSSI readers ────────────────────────────────────────────────────
@@ -423,6 +437,12 @@ static void rfInitForPhaseRX(const Phase &p) {
     { uint8_t c[] = {0x02, 0x01, p.rfPath, 0x00}; rfWriteCmd(c, 4); }
     delay(1);
 
+    // Fix 3: LoRa config debug dump — walk test showed near-zero LoRa packets
+    // with noise-floor RSSI. This verifies path/modulation params are correct.
+    if (p.pktType == PT_LORA) {
+        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d\n", p.rfPath, p.bwCode, p.sf);
+    }
+
     // Calibrate (MANDATORY for RX)
     rfCalibrate(p.freqMHz, p.rfPath);
 
@@ -494,6 +514,7 @@ static void rfInitForPhaseRX(const Phase &p) {
 static void resetRxPhaseState() {
     rxReceived   = 0;
     rxCrcErrors  = 0;
+    rxGarbageCount = 0;
     rxRssiSum    = 0;
     rxRssiCount  = 0;
     rxRssiMin    = 0;
@@ -520,9 +541,9 @@ static void emitPhaseResult(int phaseIdx) {
                   ? (float)rxRssiSum / rxRssiCount / 10.0f : 0.0f;
     float rssiMinDbm = (float)rxRssiMin / 10.0f;
 
-    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu tx_fw=%s rx_fw=%s\n",
+    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u garbage=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu tx_fw=%s rx_fw=%s\n",
                   phaseIdx, p.name, rxReceived, unique, lost, per,
-                  rssiAvg, rssiMinDbm, rxCrcErrors,
+                  rssiAvg, rssiMinDbm, rxCrcErrors, rxGarbageCount,
                   rxLastTxLat, rxLastTxLon, rxLastTxSats, rxLastTxFix,
                   (unsigned long)rxLastTxUtc,
                   rxLastTxFw[0] ? rxLastTxFw : "none",
@@ -550,6 +571,7 @@ static void rxPacketPoll(int phaseIdx) {
     if (irq & 0x00200000) {
         // CRC error
         rxCrcErrors++;
+        rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
         return;
@@ -557,6 +579,7 @@ static void rxPacketPoll(int phaseIdx) {
 
     if (!(irq & 0x00040000)) {
         // Other IRQ source — clear and re-arm RX
+        rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
         return;
@@ -565,6 +588,30 @@ static void rxPacketPoll(int phaseIdx) {
     // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
     // GET_PACKET_STATUS may reset FIFO read pointer.
     rfReadRxFifo(rxBuf, pktSize);
+
+    // ─── Fix 1: Dynamic sync header search ──────────────────────────
+    // The LR2021 packet engine prepends framing bytes before our payload.
+    // The sync header (0xA5 0x5A 0x42 0x24) is NOT at byte 0.
+    // Walk test evidence: FLRC first bytes 92 103 250 144, LoRa 38 98 16 153.
+    int syncOffset = -1;
+    for (int i = 0; i <= (int)pktSize - 22; i++) {  // need at least 22 bytes after sync
+        if (rxBuf[i] == 0xA5 && rxBuf[i+1] == 0x5A &&
+            rxBuf[i+2] == 0x42 && rxBuf[i+3] == 0x24) {
+            syncOffset = i;
+            break;
+        }
+    }
+    if (syncOffset < 0) {
+        // Sync header not found — packet is noise or corrupted
+        dualPrintf("SYNC_NOT_FOUND first4=%02X%02X%02X%02X\n",
+                   rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3]);
+        rxGarbageCount++;
+        rfClearRxFifo();
+        rfClearIrq();
+        rfSetRx();
+        return;
+    }
+    int gpsOff = syncOffset + 4;  // GPS data starts right after sync header
 
     // Now read RSSI
     int16_t rssi;
@@ -578,23 +625,16 @@ static void rxPacketPoll(int phaseIdx) {
     if (rxRssiCount == 1 || rssi < rxRssiMin) rxRssiMin = rssi;
 
     // Extract GPS data from TX payload — MUST MATCH embedGPS() in TX
-    // TX packet layout (with 4-byte sync header at bytes 0-3):
-    //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
-    //   bytes 4-7:   latE7 (int32 LE)
-    //   bytes 8-11:  lonE7 (int32 LE)
-    //   bytes 12-13: sats  (uint16 LE)
-    //   byte  14:    fixQ  (uint8)
-    //   bytes 15-18: utcSec (uint32 LE)
-    //   byte  19:    phaseId (uint8)
-    //   bytes 20-21: seq   (uint16 BE)
-    //
-    // FLRC hardware strips the sync word before FIFO:
-    //   LoRa FIFO starts at TX byte 0 (sync header present)
-    //   FLRC FIFO starts at TX byte 4 (sync header stripped)
-    // Application sync header (0xA5 0x5A 0x42 0x24) is part of TX payload,
-    // NOT the hardware sync word. Both LoRa and FLRC FIFO contain it at bytes 0-3.
-    // Hardware sync word (FLRC: 0x12AD10B1B) is stripped by chip before FIFO.
-    int gpsOff = 4;  // skip app sync header in both modes
+    // TX packet layout (sync header found dynamically at syncOffset):
+    //   gpsOff+0-3:   latE7 (int32 LE)
+    //   gpsOff+4-7:   lonE7 (int32 LE)
+    //   gpsOff+8-9:   sats  (uint16 LE)
+    //   gpsOff+10:    fixQ  (uint8)
+    //   gpsOff+11-14: utcSec (uint32 LE)
+    //   gpsOff+15:    phaseId (uint8)
+    //   gpsOff+16-17: seq   (uint16 BE)
+    //   gpsOff+18-24: fw_hash (7 ASCII chars)
+    //   gpsOff+25-26: app CRC-16 (uint16 BE)
     int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[gpsOff+0] |
         ((uint32_t)rxBuf[gpsOff+1] << 8) | ((uint32_t)rxBuf[gpsOff+2] << 16) |
         ((uint32_t)rxBuf[gpsOff+3] << 24));
@@ -608,16 +648,41 @@ static void rxPacketPoll(int phaseIdx) {
         ((uint32_t)rxBuf[gpsOff+14] << 24);
     // Sequence from bytes (gpsOff+16)-(gpsOff+17) (uint16 BE)
     uint16_t seq = ((uint16_t)rxBuf[gpsOff+16] << 8) | rxBuf[gpsOff+17];
+
+    // ─── Fix 2: App-layer CRC-16 verification ──────────────────────
+    // Hardware CRC passes garbage. Verify software CRC-16 (CCITT 0x1021)
+    // over the 18-byte GPS+seq payload (gpsOff+0 through gpsOff+17).
+    uint16_t expectedCrc = ((uint16_t)rxBuf[gpsOff+25] << 8) | rxBuf[gpsOff+26];
+    uint16_t actualCrc = crc16(&rxBuf[gpsOff], 18);
+    if (expectedCrc != actualCrc) {
+        rxCrcErrors++;
+        dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d\n",
+                   expectedCrc, actualCrc, seq, syncOffset);
+        rfClearRxFifo();
+        rfClearIrq();
+        rfSetRx();
+        return;
+    }
+
     if (seq < MAX_SEQ) {
         seenSeq[seq] = true;
     }
 
-    // Extract TX firmware git hash from bytes 22-28 (gpsOff+18 to gpsOff+24)
+    // Extract TX firmware git hash from gpsOff+18 to gpsOff+24
     // 7 ASCII chars — identifies the TX build that sent this packet.
     memcpy(rxLastTxFw, &rxBuf[gpsOff+18], 7);
     rxLastTxFw[7] = '\0';
 
     rxReceived++;
+
+    // ─── Fix 1: GPS sanity check ───────────────────────────────────
+    // Catch corrupted payloads that pass CRC but have impossible values.
+    if (abs(pktLatE7) > 90L*10000000L || abs(pktLonE7) > 180L*10000000L || txSats > 50) {
+        dualPrintf("GPS_REJECT lat=%.5f lon=%.5f sats=%u\n",
+                   pktLatE7/1e7f, pktLonE7/1e7f, txSats);
+        rxGarbageCount++;
+        // Count as received but don't trust data
+    }
 
     // Convert E7 to float degrees
     float txLat = pktLatE7 / 1e7f;
