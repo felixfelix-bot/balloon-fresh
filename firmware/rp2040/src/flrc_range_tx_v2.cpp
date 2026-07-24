@@ -1,0 +1,658 @@
+/*
+ * flrc_range_tx_v2.cpp — CANONICAL TX with GPS for outdoor range testing
+ *
+ * Includes ALL THREE critical alignment fixes (ported from multi_radio_sweep,
+ * commit 9b740aa):
+ *   FIX 1: App-layer sync header (0xA5 0x5A 0x42 0x24) at payload bytes 0-3
+ *   FIX 2: App-layer CRC-16 (CCITT 0x1021) embedded in packet
+ *   FIX 3: (RX side — see flrc_range_rx_v2.cpp) FIFO clear on all IRQ paths
+ *
+ * Based on flrc_range_tx_gps.cpp (proven SPI helpers + GPS NMEA parser).
+ *
+ * ─── UNIFIED PACKET LAYOUT (255 bytes) ──────────────────────────────
+ *   [0..3]    sync header: 0xA5 0x5A 0x42 0x24
+ *   [4..7]    seq          (uint32 BE) — sequential packet number
+ *   [8..11]   latitude     (float LE, decimal degrees)
+ *   [12..15]  longitude    (float LE, decimal degrees)
+ *   [16..17]  num_sats     (uint16 BE)
+ *   [18]      fix_valid    (uint8, 1=valid 0=no fix)
+ *   [19..22]  gps_time     (uint32 BE, seconds since midnight UTC)
+ *   [23..24]  CRC-16       (uint16 BE) over bytes [4..22] (19 bytes)
+ *   [25..254] fill pattern (j & 0xFF)
+ *
+ * DEADBEEF end marker at burst end:
+ *   [0..3] = 0xDE 0xAD 0xBE 0xEF
+ *   [4..7] = total packet count (uint32 BE)
+ *   [8..254] = fill pattern
+ *
+ * Behavior:
+ * - 3s LED blink countdown on boot
+ * - Waits for GPS fix (up to 60s) — LED blinks fast during search
+ * - Once fix acquired (or timeout): LED solid, starts TX bursts
+ * - 500-packet bursts, 2s pause, repeat forever
+ * - GPS coords polled between packets (non-blocking)
+ *
+ * GPS module wiring:
+ *   GPS TX → GP1 (UART0 RX on RP2040)
+ *   GPS RX → GP0 (UART0 TX on RP2040, optional)
+ *
+ * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
+ *       GPS_RX=GP1 GPS_TX=GP0  LED=GP25  LED_ALT=GP16
+ * Output: Serial (USB CDC) only. Serial1 = GPS UART.
+ */
+
+#include <Arduino.h>
+#include <SPI.h>
+
+// ─── Pins ────────────────────────────────────────────────────────────
+#define PIN_SCK     2
+#define PIN_MOSI    3
+#define PIN_MISO    4
+#define PIN_CS      5
+#define PIN_BUSY    6
+#define PIN_IRQ     7
+#define PIN_RST     8
+#define PIN_GPS_TX  0    // RP2040 TX → GPS RX (for config, optional)
+#define PIN_GPS_RX  1    // RP2040 RX ← GPS TX (NMEA data)
+#define PIN_LED     25
+#define PIN_LED_ALT 16
+
+#define SPI_FREQ_HZ     20000000UL
+#define XTAL_MHZ        52.0f
+
+// ─── Compile-time RF config ─────────────────────────────────────────
+#define TX_FREQ_MHZ     2440.0f
+#define TX_BITRATE_KBPS 2600
+#define TX_PKT_SIZE     255
+#define TX_POWER_DBM    12.0f
+#define TX_PKT_COUNT    500
+#define TX_PAUSE_MS     2000
+
+// ─── GPS config ─────────────────────────────────────────────────────
+#define GPS_BAUD        115200
+#define GPS_FIX_TIMEOUT 60000   // 60s to acquire fix
+#define GPS_NMEA_MAX    160     // max NMEA sentence length
+
+// Hardware sync word — MUST match RX
+#define SYNC_WORD_0   0x12
+#define SYNC_WORD_1   0xAD
+#define SYNC_WORD_2   0x10
+#define SYNC_WORD_3   0x1B
+
+// ─── App-layer sync header (FIX 1) ──────────────────────────────────
+// The LR2021 chip prepends framing bytes before the payload in the FIFO,
+// so byte 0 of the FIFO is NOT byte 0 of our payload. TX embeds this
+// 4-byte marker at the START of the payload so RX can find it dynamically.
+#define APP_SYNC_0  0xA5
+#define APP_SYNC_1  0x5A
+#define APP_SYNC_2  0x42
+#define APP_SYNC_3  0x24
+
+// ─── FIX 2: App-layer CRC-16 (CCITT 0x1021) ────────────────────────
+// Hardware CRC passes garbage. This is the application-layer integrity
+// check, proven in multi_radio_sweep_rx.cpp (commit 9b740aa).
+static uint16_t crc16(const uint8_t *data, size_t len) {
+    uint16_t crc = 0xFFFF;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= (uint16_t)data[i] << 8;
+        for (int b = 0; b < 8; b++)
+            crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    }
+    return crc;
+}
+
+// ─── GPS data ───────────────────────────────────────────────────────
+struct GpsData {
+    float    lat;
+    float    lon;
+    uint16_t sats;
+    bool     fixValid;
+    uint32_t timeSec;  // seconds since midnight UTC
+    bool     hasData;
+};
+static GpsData gps = {0, 0, 0, false, 0, false};
+
+// ─── NMEA parser ─────────────────────────────────────────────────────
+static char nmeaBuf[GPS_NMEA_MAX];
+static size_t nmeaLen = 0;
+
+// Parse $GPGGA or $GPRMC sentence
+static void parseNMEA(const char *sentence) {
+    // $GPGGA,time,lat,N/S,lon,E/W,fix,nsat,hdop,alt,M,...
+    // $GPRMC,time,status,lat,N/S,lon,E/W,speed,course,date,...
+    if (strncmp(sentence, "$GPGGA", 6) == 0) {
+        char timeStr[16] = {0};
+        char latStr[16] = {0};
+        char ns = 'N';
+        char lonStr[16] = {0};
+        char ew = 'E';
+        int fix = 0;
+        int nsat = 0;
+
+        int parsed = sscanf(sentence,
+            "$GPGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
+            timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
+
+        if (parsed >= 6 && fix > 0) {
+            float rawLat = atof(latStr);
+            float rawLon = atof(lonStr);
+
+            int latDeg = (int)(rawLat / 100);
+            float latMin = rawLat - (latDeg * 100);
+            gps.lat = latDeg + latMin / 60.0f;
+            if (ns == 'S') gps.lat = -gps.lat;
+
+            int lonDeg = (int)(rawLon / 100);
+            float lonMin = rawLon - (lonDeg * 100);
+            gps.lon = lonDeg + lonMin / 60.0f;
+            if (ew == 'W') gps.lon = -gps.lon;
+
+            gps.sats = (uint16_t)nsat;
+            gps.fixValid = true;
+            gps.hasData = true;
+
+            if (strlen(timeStr) >= 6) {
+                int hh = (timeStr[0]-'0')*10 + (timeStr[1]-'0');
+                int mm = (timeStr[2]-'0')*10 + (timeStr[3]-'0');
+                int ss = (timeStr[4]-'0')*10 + (timeStr[5]-'0');
+                gps.timeSec = (uint32_t)(hh*3600 + mm*60 + ss);
+            }
+        }
+    }
+    else if (strncmp(sentence, "$GPRMC", 6) == 0) {
+        char timeStr[16] = {0};
+        char status = 'V';
+        char latStr[16] = {0};
+        char ns = 'N';
+        char lonStr[16] = {0};
+        char ew = 'E';
+
+        int parsed = sscanf(sentence,
+            "$GPRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
+            timeStr, &status, latStr, &ns, lonStr, &ew);
+
+        if (parsed >= 6 && status == 'A') {
+            float rawLat = atof(latStr);
+            float rawLon = atof(lonStr);
+
+            int latDeg = (int)(rawLat / 100);
+            float latMin = rawLat - (latDeg * 100);
+            gps.lat = latDeg + latMin / 60.0f;
+            if (ns == 'S') gps.lat = -gps.lat;
+
+            int lonDeg = (int)(rawLon / 100);
+            float lonMin = rawLon - (lonDeg * 100);
+            gps.lon = lonDeg + lonMin / 60.0f;
+            if (ew == 'W') gps.lon = -gps.lon;
+
+            gps.fixValid = true;
+            gps.hasData = true;
+
+            if (strlen(timeStr) >= 6) {
+                int hh = (timeStr[0]-'0')*10 + (timeStr[1]-'0');
+                int mm = (timeStr[2]-'0')*10 + (timeStr[3]-'0');
+                int ss = (timeStr[4]-'0')*10 + (timeStr[5]-'0');
+                gps.timeSec = (uint32_t)(hh*3600 + mm*60 + ss);
+            }
+        } else if (status == 'V') {
+            gps.fixValid = false;
+        }
+    }
+}
+
+static void gpsPoll() {
+    while (Serial1.available()) {
+        char c = Serial1.read();
+        if (c == '$') {
+            nmeaLen = 0;
+            nmeaBuf[nmeaLen++] = c;
+        } else if (c == '\n' || c == '\r') {
+            if (nmeaLen > 6) {
+                nmeaBuf[nmeaLen] = '\0';
+                parseNMEA(nmeaBuf);
+            }
+            nmeaLen = 0;
+        } else if (nmeaLen < GPS_NMEA_MAX - 1) {
+            nmeaBuf[nmeaLen++] = c;
+        }
+    }
+}
+
+// ─── SPI ─────────────────────────────────────────────────────────────
+static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
+static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
+
+static volatile bool radioReady = false;
+
+// Dummy RX buffer for write-only transfers (nullptr crashes on some cores)
+static uint8_t spiRxJunk[257];
+
+// ─── SPI helpers (single-batch from speed-tests) ────────────────────
+static inline bool rfWaitBusy() {
+    uint32_t busyMask = 1UL << PIN_BUSY;
+    uint32_t timeout = 100000;
+    while ((sio_hw->gpio_in & busyMask) && --timeout) {}
+    return timeout > 0;
+}
+
+static void rfWriteCmd(const uint8_t *buf, size_t len) {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer((uint8_t*)buf, spiRxJunk, len);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+}
+
+static uint8_t rfReadStatus() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    uint8_t st = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    return st;
+}
+
+static uint32_t rfReadIrqStatus() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x01); spiRf.transfer(0x17);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    uint8_t buf[6];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    return ((uint32_t)buf[2] << 24) | ((uint32_t)buf[3] << 16) |
+           ((uint32_t)buf[4] << 8) | (uint32_t)buf[5];
+}
+
+static void rfClearIrq() {
+    uint8_t cmd[6] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
+    rfWriteCmd(cmd, 6);
+}
+
+static void rfSetTx() {
+    uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
+    rfWriteCmd(cmd, 5);
+}
+
+static void rfWriteTxFifo(const uint8_t *data, size_t len) {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x00);
+    spiRf.transfer(0x02);
+    spiRf.transfer((uint8_t*)data, spiRxJunk, len);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+}
+
+static void rfClearTxFifo() {
+    uint8_t cmd[] = { 0x01, 0x1F };
+    rfWriteCmd(cmd, 2);
+}
+
+// ─── Parameter setters ───────────────────────────────────────────────
+static void rfSetFreq(float mhz) {
+    uint32_t frf = (uint32_t)((mhz * 1e6 * (double)(1ULL << 18)) / (XTAL_MHZ * 1e6));
+    uint8_t cmd[] = {
+        0x02, 0x00,
+        (uint8_t)(frf >> 16), (uint8_t)(frf >> 8), (uint8_t)(frf & 0xFF)
+    };
+    rfWriteCmd(cmd, 5);
+}
+
+static void rfSetBitrate(uint16_t kbps) {
+    uint8_t brBw;
+    switch (kbps) {
+        case 2600: brBw = 0x00; break;  // FLRC_BR_2600
+        case 2080: brBw = 0x01; break;  // FLRC_BR_2080
+        case 1300: brBw = 0x02; break;  // FLRC_BR_1300
+        case 1040: brBw = 0x03; break;  // FLRC_BR_1040
+        case 650:  brBw = 0x04; break;  // FLRC_BR_650
+        case 520:  brBw = 0x05; break;  // FLRC_BR_520
+        case 325:  brBw = 0x06; break;  // FLRC_BR_325
+        case 260:  brBw = 0x07; break;  // FLRC_BR_260
+        default:   brBw = 0x00; break;
+    }
+    uint8_t cmd[] = { 0x02, 0x48, brBw, 0x25 };
+    rfWriteCmd(cmd, 4);
+}
+
+static void rfSetTxPower(float dbm) {
+    uint8_t powerRaw = (uint8_t)(dbm * 2.0f + 0.5f);
+    uint8_t cmd[] = { 0x02, 0x03, powerRaw, 0x04 };
+    rfWriteCmd(cmd, 4);
+}
+
+static void rfSetPktSize(uint16_t size) {
+    uint8_t cmd[] = {
+        0x02, 0x49,
+        0x0C, 0x4C,
+        (uint8_t)(size >> 8), (uint8_t)(size & 0xFF)
+    };
+    rfWriteCmd(cmd, 6);
+}
+
+// ─── Output (Serial USB CDC only — Serial1 is GPS) ───────────────────
+static void dualPrint(const char *s) { Serial.print(s); }
+static void dualPrintln(const char *s) { Serial.println(s); }
+
+static void dualPrintf(const char *fmt, ...) {
+    char buf[256];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    Serial.println(buf);
+}
+
+// ─── Radio init ──────────────────────────────────────────────────────
+static bool rawInitRadio() {
+    pinMode(PIN_RST, OUTPUT);
+    digitalWrite(PIN_RST, LOW);
+    delayMicroseconds(200);
+    digitalWrite(PIN_RST, HIGH);
+    delay(50);
+
+    { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
+    delay(1);
+    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
+    delay(5);
+    { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); }  // SET_PACKET_TYPE FLRC
+    delay(1);
+
+    rfSetFreq(TX_FREQ_MHZ);
+    delay(1);
+
+    // SET_RX_PATH — mandatory before any mode (HF path = 1 for 2.4 GHz)
+    { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }
+    delay(1);
+
+    // CALIB_FRONT_END (0x01 0x23) — mandatory
+    uint16_t feFreq = (uint16_t)((TX_FREQ_MHZ / 4.0f) + 0.5f) | 0x8000;
+    {
+        uint8_t cmd[] = {
+            0x01, 0x23,
+            (uint8_t)(feFreq >> 8), (uint8_t)(feFreq & 0xFF),
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+        rfWriteCmd(cmd, 10);
+    }
+    delay(5);
+
+    // CALIBRATE (0x01 0x22, mask 0x5F)
+    { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
+    delay(5);
+
+    rfSetBitrate(TX_BITRATE_KBPS);
+    delay(1);
+
+    // Hardware sync word (SET_SYNC_WORD 0x02 0x4C)
+    {
+        uint8_t cmd[] = { 0x02, 0x4C, 0x01, SYNC_WORD_0, SYNC_WORD_1, SYNC_WORD_2, SYNC_WORD_3 };
+        rfWriteCmd(cmd, 7);
+    }
+    delay(1);
+
+    rfSetPktSize(TX_PKT_SIZE);
+    delay(1);
+
+    { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
+    delay(1);
+    rfSetTxPower(TX_POWER_DBM);
+    delay(1);
+    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }  // SET_RX_TX_FALLBACK
+    delay(1);
+    { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); }  // SET_DIO_FUNCTION
+    delay(1);
+    // IRQ mask: TX_DONE (bit 19 = 0x00080000)
+    { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+    delay(1);
+
+    rfClearIrq();
+    delay(1);
+
+    uint8_t st = rfReadStatus();
+    uint32_t irq = rfReadIrqStatus();
+    dualPrintf("INIT Status=0x%02X IRQ=0x%08lX", st, (unsigned long)irq);
+
+    if ((st >> 4) == 0x04 || (st >> 4) == 0x07 || (irq & 0x00020000)) {
+        dualPrintln("RADIO_INIT_OK");
+        return true;
+    }
+    dualPrintf("RADIO_INIT_FAIL (St=0x%02X)", st);
+    return false;
+}
+
+// ─── Build unified packet with sync header + CRC-16 ──────────────────
+// Layout (255 bytes):
+//   [0..3]    sync header 0xA5 0x5A 0x42 0x24
+//   [4..7]    seq (uint32 BE)
+//   [8..11]   latitude (float LE)
+//   [12..15]  longitude (float LE)
+//   [16..17]  num_sats (uint16 BE)
+//   [18]      fix_valid (uint8)
+//   [19..22]  gps_time (uint32 BE)
+//   [23..24]  CRC-16 (uint16 BE) over bytes [4..22]
+//   [25..254] fill pattern (j & 0xFF)
+static void buildPacket(uint8_t *pkt, uint32_t seq) {
+    // FIX 1: App-layer sync header
+    pkt[0] = APP_SYNC_0;
+    pkt[1] = APP_SYNC_1;
+    pkt[2] = APP_SYNC_2;
+    pkt[3] = APP_SYNC_3;
+
+    // seq (uint32 BE) at bytes 4-7
+    pkt[4] = (uint8_t)(seq >> 24);
+    pkt[5] = (uint8_t)(seq >> 16);
+    pkt[6] = (uint8_t)(seq >> 8);
+    pkt[7] = (uint8_t)(seq & 0xFF);
+
+    // latitude (float LE) at bytes 8-11
+    memcpy(&pkt[8], &gps.lat, 4);
+
+    // longitude (float LE) at bytes 12-15
+    memcpy(&pkt[12], &gps.lon, 4);
+
+    // num_sats (uint16 BE) at bytes 16-17
+    pkt[16] = (uint8_t)(gps.sats >> 8);
+    pkt[17] = (uint8_t)(gps.sats & 0xFF);
+
+    // fix_valid (uint8) at byte 18
+    pkt[18] = gps.fixValid ? 1 : 0;
+
+    // gps_time (uint32 BE) at bytes 19-22
+    pkt[19] = (uint8_t)(gps.timeSec >> 24);
+    pkt[20] = (uint8_t)(gps.timeSec >> 16);
+    pkt[21] = (uint8_t)(gps.timeSec >> 8);
+    pkt[22] = (uint8_t)(gps.timeSec & 0xFF);
+
+    // FIX 2: CRC-16 over bytes [4..22] (19 bytes: seq + lat + lon + sats + fix + time)
+    uint16_t crc = crc16(&pkt[4], 19);
+    pkt[23] = (uint8_t)(crc >> 8);
+    pkt[24] = (uint8_t)(crc & 0xFF);
+
+    // Fill pattern at bytes 25-254
+    for (int j = 25; j < TX_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
+}
+
+// ─── Build DEADBEEF end marker packet ────────────────────────────────
+// [0..3] = 0xDE 0xAD 0xBE 0xEF
+// [4..7] = total packet count (uint32 BE)
+// [8..254] = fill pattern
+static void buildEndMarker(uint8_t *pkt, uint32_t totalCount) {
+    pkt[0] = 0xDE;
+    pkt[1] = 0xAD;
+    pkt[2] = 0xBE;
+    pkt[3] = 0xEF;
+    pkt[4] = (uint8_t)(totalCount >> 24);
+    pkt[5] = (uint8_t)(totalCount >> 16);
+    pkt[6] = (uint8_t)(totalCount >> 8);
+    pkt[7] = (uint8_t)(totalCount & 0xFF);
+    for (int j = 8; j < TX_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
+}
+
+// ─── TX burst ────────────────────────────────────────────────────────
+static uint32_t burstNum = 0;
+
+static void runTransmit() {
+    if (!radioReady) return;
+
+    uint16_t pktSize = TX_PKT_SIZE;
+    uint16_t count = TX_PKT_COUNT;
+
+    digitalWrite(PIN_LED, HIGH);
+    digitalWrite(PIN_LED_ALT, HIGH);
+
+    uint32_t burstStartMs = millis();
+    dualPrintf("BURST %lu START uptime=%lums count=%d gps_fix=%d sats=%d lat=%.5f lon=%.5f",
+               (unsigned long)burstNum, (unsigned long)burstStartMs, count,
+               gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon);
+
+    uint8_t pkt[256];
+
+    uint32_t irqMask = 1UL << PIN_IRQ;
+    uint32_t startMs = millis();
+    uint32_t txDoneCount = 0;
+    uint32_t txTimeoutCount = 0;
+
+    for (int i = 0; i < count; i++) {
+        // Build packet with sync header + GPS + CRC-16
+        buildPacket(pkt, (uint32_t)i);
+
+        rfClearIrq();
+        rfWriteTxFifo(pkt, pktSize);
+        rfSetTx();
+
+        uint32_t spinCount = 0;
+        bool irqFired = false;
+        while (spinCount < 500000) {
+            if (sio_hw->gpio_in & irqMask) { irqFired = true; break; }
+            spinCount++;
+        }
+
+        if (irqFired) txDoneCount++;
+        else txTimeoutCount++;
+
+        // Poll GPS between packets (non-blocking)
+        gpsPoll();
+    }
+
+    // DEADBEEF end marker
+    buildEndMarker(pkt, (uint32_t)count);
+    rfClearTxFifo();
+    rfWriteTxFifo(pkt, pktSize);
+    rfSetTx();
+    delay(5);
+
+    uint32_t elapsed = millis() - startMs;
+    float tput = ((float)count * pktSize * 8.0f) / elapsed;
+
+    dualPrintf("BURST %lu DONE fired=%lu to=%lu elapsed=%lums tput=%.1fkbps",
+               (unsigned long)burstNum,
+               (unsigned long)txDoneCount, (unsigned long)txTimeoutCount,
+               (unsigned long)elapsed, tput);
+    dualPrintf("RANGE_RESULT_TX,burst=%lu,sent=%d,fired=%lu,timeout=%lu,elapsed_ms=%lu,throughput_kbps=%.1f,freq=%.1f,bitrate=%d,power=%.1f,pktSize=%d,uptime_ms=%lu,gps_fix=%d,gps_sats=%d,gps_lat=%.5f,gps_lon=%.5f",
+               (unsigned long)burstNum, count,
+               (unsigned long)txDoneCount, (unsigned long)txTimeoutCount,
+               (unsigned long)elapsed, tput,
+               TX_FREQ_MHZ, TX_BITRATE_KBPS, TX_POWER_DBM, TX_PKT_SIZE,
+               (unsigned long)burstStartMs,
+               gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon);
+
+    burstNum++;
+
+    digitalWrite(PIN_LED, LOW);
+    digitalWrite(PIN_LED_ALT, LOW);
+}
+
+// ─── Arduino entry points ────────────────────────────────────────────
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println("BOOT TX RANGE V2 (sync+CRC)");
+
+    // UART0 for GPS (115200 baud, GP0/GP1)
+    Serial1.setRX(PIN_GPS_RX);  // GP1 — receives from GPS TX
+    Serial1.setTX(PIN_GPS_TX);  // GP0 — sends to GPS RX (optional)
+    Serial1.begin(GPS_BAUD);
+    delay(100);
+
+    pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_LED_ALT, OUTPUT);
+
+    // 3s countdown blink
+    for (int i = 0; i < 6; i++) {
+        digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH);
+        delay(250);
+        digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);
+        delay(250);
+    }
+
+    Serial.println("=== RP2040 FLRC RANGE TX V2 (sync+CRC+GPS) ===");
+    Serial.printf("RF: freq=%.1f br=%d pktSize=%d power=%.1f count=%d\n",
+                  TX_FREQ_MHZ, TX_BITRATE_KBPS, TX_PKT_SIZE, TX_POWER_DBM, TX_PKT_COUNT);
+    Serial.printf("GPS: baud=%d RX=GP%d TX=GP%d\n", GPS_BAUD, PIN_GPS_RX, PIN_GPS_TX);
+    Serial.println("FIXES: sync=0xA55A4224 CRC16=CCITT pktLayout=v2");
+
+    // Init radio
+    spiRf.begin();
+    pinMode(PIN_CS, OUTPUT);
+    digitalWrite(PIN_CS, HIGH);
+    pinMode(PIN_BUSY, INPUT);
+    pinMode(PIN_IRQ, INPUT);
+
+    radioReady = rawInitRadio();
+
+    if (radioReady) {
+        digitalWrite(PIN_LED_ALT, HIGH);
+        Serial.println("RADIO OK — waiting for GPS fix...");
+    } else {
+        Serial.println("INIT FAILED — retrying...");
+        delay(2000);
+        radioReady = rawInitRadio();
+    }
+
+    // Wait for GPS fix (up to 60s)
+    uint32_t gpsStart = millis();
+    Serial.println("GPS: searching for fix...");
+    while (!gps.fixValid && (millis() - gpsStart) < GPS_FIX_TIMEOUT) {
+        gpsPoll();
+        // Fast blink during GPS search
+        digitalWrite(PIN_LED, HIGH); delay(50);
+        digitalWrite(PIN_LED, LOW); delay(50);
+    }
+
+    if (gps.fixValid) {
+        Serial.printf("GPS FIX: lat=%.5f lon=%.5f sats=%d time=%lus\n",
+                      gps.lat, gps.lon, gps.sats, (unsigned long)gps.timeSec);
+        Serial.println("AUTO TX STARTING — unplug and walk");
+    } else {
+        Serial.println("GPS: NO FIX — starting TX anyway (no GPS data in packets)");
+        Serial.println("AUTO TX STARTING — unplug and walk");
+    }
+
+    // Solid LED = ready
+    digitalWrite(PIN_LED_ALT, HIGH);
+}
+
+void loop() {
+    if (radioReady) {
+        // Poll GPS before each burst
+        gpsPoll();
+        runTransmit();
+        delay(TX_PAUSE_MS);
+    } else {
+        digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(100);
+        digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(100);
+        digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(500);
+    }
+}
