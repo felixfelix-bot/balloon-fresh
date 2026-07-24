@@ -143,7 +143,10 @@ static int currentPhase = 0;
 static uint32_t phaseStartMs = 0;
 
 static int computePhaseFromUTC(uint32_t utcSec) {
-    uint32_t cyclePos = utcSec % totalCycleSec;
+    // Convert to seconds-since-midnight to match TX (which uses GPS hh:mm:ss)
+    // utcSec from laptop is a unix timestamp. TX uses gps.timeSec = hh*3600+mm*60+ss.
+    uint32_t secSinceMidnight = utcSec % 86400;
+    uint32_t cyclePos = secSinceMidnight % totalCycleSec;
     uint32_t acc = 0;
     for (int i = 0; i < NUM_PHASES; i++) {
         acc += phases[i].slotMs / 1000;
@@ -504,27 +507,28 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
 
                 // Extract sequence number from bytes 0-1 (big-endian uint16)
                 // Extract GPS data from TX payload — MUST MATCH embedGPS() in multi_radio_sweep_gps.cpp
-                // TX packet layout:
-                //   bytes 0-3:   latE7 (int32 LE)
-                //   bytes 4-7:   lonE7 (int32 LE)
-                //   bytes 8-9:   sats  (uint16 LE)
-                //   byte  10:    fixQ  (uint8)
-                //   bytes 11-14: utcSec (uint32 LE)
-                //   byte  15:    phaseId (uint8)
-                //   bytes 16-17: seq   (uint16 BE)
-                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[0] |
-                    ((uint32_t)rxBuf[1] << 8) | ((uint32_t)rxBuf[2] << 16) |
-                    ((uint32_t)rxBuf[3] << 24));
-                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[4] |
+                // TX packet layout (with 4-byte sync header):
+                //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+                //   bytes 4-7:   latE7 (int32 LE)
+                //   bytes 8-11:  lonE7 (int32 LE)
+                //   bytes 12-13: sats  (uint16 LE)
+                //   byte  14:    fixQ  (uint8)
+                //   bytes 15-18: utcSec (uint32 LE)
+                //   byte  19:    phaseId (uint8)
+                //   bytes 20-21: seq   (uint16 BE)
+                int32_t pktLatE7 = (int32_t)((uint32_t)rxBuf[4] |
                     ((uint32_t)rxBuf[5] << 8) | ((uint32_t)rxBuf[6] << 16) |
                     ((uint32_t)rxBuf[7] << 24));
-                uint16_t txSats = (uint16_t)rxBuf[8] | ((uint16_t)rxBuf[9] << 8);
-                uint8_t  txFix  = rxBuf[10];
-                uint32_t txUtc  = (uint32_t)rxBuf[11] |
-                    ((uint32_t)rxBuf[12] << 8) | ((uint32_t)rxBuf[13] << 16) |
-                    ((uint32_t)rxBuf[14] << 24);
-                // Sequence from bytes 16-17 (uint16 BE) — matches TX embedGPS
-                uint16_t seq = ((uint16_t)rxBuf[16] << 8) | rxBuf[17];
+                int32_t pktLonE7 = (int32_t)((uint32_t)rxBuf[8] |
+                    ((uint32_t)rxBuf[9] << 8) | ((uint32_t)rxBuf[10] << 16) |
+                    ((uint32_t)rxBuf[11] << 24));
+                uint16_t txSats = (uint16_t)rxBuf[12] | ((uint16_t)rxBuf[13] << 8);
+                uint8_t  txFix  = rxBuf[14];
+                uint32_t txUtc  = (uint32_t)rxBuf[15] |
+                    ((uint32_t)rxBuf[16] << 8) | ((uint32_t)rxBuf[17] << 16) |
+                    ((uint32_t)rxBuf[18] << 24);
+                // Sequence from bytes 20-21 (uint16 BE) — matches TX embedGPS
+                uint16_t seq = ((uint16_t)rxBuf[20] << 8) | rxBuf[21];
                 if (seq < MAX_SEQ) {
                     seenSeq[seq] = true;
                 }
@@ -543,14 +547,12 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     // Laptop time (SET_TIME) is the primary clock.
                     // Log the difference between laptop UTC and TX GPS UTC
                     // as a measurement vector for analysis.
+                    // Log GPS time and laptop time separately for post-compute
                     if (txUtc > 0 && utcOffset > 0) {
                         uint32_t laptopUtc = getUtcNow();
-                        int32_t diffSec = (int32_t)laptopUtc - (int32_t)txUtc;
-                        int32_t diffMs = diffSec * 1000;
-                        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu diff_ms=%ld\n",
+                        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu\n",
                                       (unsigned long)txUtc,
-                                      (unsigned long)laptopUtc,
-                                      (long)diffMs);
+                                      (unsigned long)laptopUtc);
                     }
                 
                 // Log first few packets per phase for debugging
