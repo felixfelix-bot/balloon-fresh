@@ -115,7 +115,7 @@ static uint32_t totalCycleSec = 0;
 #define TX_POWER_DBM   12.5f
 #define LORA_PKT_SIZE  127
 #define FLRC_PKT_SIZE  255
-#define GPS_BAUD       9600    // GEP-M10nano default (NOT 115200 — that was wrong)
+#define GPS_BAUD       115200  // GEP-M10nano ships at 115200 (confirmed by speed-tests track)
 #define GPS_FIX_TIMEOUT_MS 60000
 #define GPS_NMEA_MAX   160
 
@@ -127,15 +127,28 @@ struct GpsData {
     bool     fixValid;
     uint32_t timeSec;   // seconds since midnight UTC
     bool     hasTime;   // got at least one valid time (even without fix)
+    uint32_t unixTime;    // true Unix epoch seconds (date + time from RMC)
+    bool     hasUnixTime; // GPS gave us a complete date+time → real Unix epoch
 };
-static GpsData gps = {0, 0, 0, false, 0, false};
+static GpsData gps = {0, 0, 0, false, 0, false, 0, false};
+
+// ─── Days-since-1970 helper (Howard Hinnant's civil-from-days algorithm) ──
+static uint32_t daysSinceEpoch(uint16_t year, uint8_t month, uint8_t day) {
+    if (month <= 2) { year--; month += 12; }  // Jan/Feb → months 13/14 of prev year
+    uint32_t era = year / 400;
+    uint32_t yoe = year - era * 400;                         // [0, 399]
+    uint32_t doy = (153 * (month - 3) + 2) / 5 + day - 1;   // [0, 365]
+    uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;   // [0, 146096]
+    return era * 146097 + doe - 719468;                       // days since 1970-01-01
+}
 
 // ─── NMEA parser (copied from flrc_range_tx_gps.cpp) ─────────────────
 static char nmeaBuf[GPS_NMEA_MAX];
 static size_t nmeaLen = 0;
 
 static void parseNMEA(const char *sentence) {
-    if (strncmp(sentence, "$GPGGA", 6) == 0 || strncmp(sentence, "$GNGGA", 6) == 0) {
+    // u-blox M10 native prefix support: $%*2sGGA matches GP/GN/GL/GA talker IDs
+    if (strstr(sentence, "GGA")) {
         char timeStr[16] = {0};
         char latStr[16] = {0};
         char ns = 'N';
@@ -145,15 +158,8 @@ static void parseNMEA(const char *sentence) {
         int nsat = 0;
 
         int parsed = sscanf(sentence,
-            "$GP%*3s,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
+            "$%*2sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
             timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
-
-        // Fallback: try without $GP prefix handling
-        if (parsed < 6) {
-            parsed = sscanf(sentence,
-                "$%*3sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
-                timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
-        }
 
         if (parsed >= 6) {
             // Parse time even without fix (u-blox sends time before fix)
@@ -183,7 +189,7 @@ static void parseNMEA(const char *sentence) {
             }
         }
     }
-    else if (strncmp(sentence, "$GPRMC", 6) == 0 || strncmp(sentence, "$GNRMC", 6) == 0) {
+    else if (strstr(sentence, "RMC")) {
         char timeStr[16] = {0};
         char status = 'V';
         char latStr[16] = {0};
@@ -192,14 +198,8 @@ static void parseNMEA(const char *sentence) {
         char ew = 'E';
 
         int parsed = sscanf(sentence,
-            "$GP%*3s,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
+            "$%*2sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
             timeStr, &status, latStr, &ns, lonStr, &ew);
-
-        if (parsed < 5) {
-            parsed = sscanf(sentence,
-                "$%*3sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
-                timeStr, &status, latStr, &ns, lonStr, &ew);
-        }
 
         if (parsed >= 5) {
             if (strlen(timeStr) >= 6) {
@@ -486,8 +486,15 @@ static void embedGPS(uint8_t *pkt) {
     pkt[12] = (uint8_t)(gps.sats & 0xFF);
     pkt[13] = 0;
     pkt[14] = gps.fixValid ? 1 : 0;
-    // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync
-    uint32_t unixNow = hasLaptopTime() ? getUtcNow() : gps.timeSec;
+    // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync.
+    // Priority: 1) SET_TIME from laptop, 2) GPS real Unix epoch, 3) timeSec fallback
+    uint32_t unixNow;
+    if (hasLaptopTime())
+        unixNow = getUtcNow();
+    else if (gps.hasUnixTime)
+        unixNow = gps.unixTime;
+    else
+        unixNow = gps.timeSec;   // seconds since midnight (degraded, won't match RX)
     pkt[15] = (uint8_t)(unixNow >> 24);
     pkt[16] = (uint8_t)(unixNow >> 16);
     pkt[17] = (uint8_t)(unixNow >> 8);
@@ -589,10 +596,10 @@ void setup() {
                       phases[i].pktCount, phases[i].slotMs / 1000);
     }
 
-    // ── Wait for GPS time (5s only — GPS may be dead, don't waste time) ──
-    outPrintf("=== WAITING FOR GPS TIME (5s quick check) ===\n");
+    // ── Wait for GPS time (up to 60s — M10 cold start needs 30-60s) ──
+    outPrintf("=== WAITING FOR GPS TIME (up to 60s) ===\n");
     uint32_t gpsStart = millis();
-    while (!gps.hasTime && (millis() - gpsStart) < 5000) {
+    while (!gps.hasTime && (millis() - gpsStart) < GPS_FIX_TIMEOUT_MS) {
         gpsPoll();
         digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
         delay(10);
@@ -607,13 +614,20 @@ void setup() {
     if (gps.hasTime) {
         char tbuf[16];
         formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
-        outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f\n",
-                   tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon);
-        // BUG1 FIX: Compute initial phase from UTC immediately after GPS wait
-        currentPhase = computePhaseFromUTC(gps.timeSec);
-        uint32_t cyclePos = gps.timeSec % totalCycleSec;
-        outPrintf("INITIAL_PHASE=%d utc_sec=%lu cycle_pos=%lu\n",
-                   currentPhase, (unsigned long)gps.timeSec, (unsigned long)cyclePos);
+        outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f unix=%lu\n",
+                   tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon,
+                   gps.hasUnixTime ? (unsigned long)gps.unixTime : 0UL);
+        // Compute initial phase from the best available time source
+        uint32_t phaseTime;
+        if (gps.hasUnixTime)
+            phaseTime = gps.unixTime;
+        else
+            phaseTime = gps.timeSec;   // seconds since midnight (degraded)
+        currentPhase = computePhaseFromUTC(phaseTime);
+        uint32_t cyclePos = phaseTime % totalCycleSec;
+        outPrintf("INITIAL_PHASE=%d phaseTime=%lu cycle_pos=%lu source=%s\n",
+                   currentPhase, (unsigned long)phaseTime, (unsigned long)cyclePos,
+                   gps.hasUnixTime ? "GPS_UNIX" : "GPS_MIDNIGHT");
     } else {
         outPrintf("GPS_TIMEOUT — starting with free-running timer (will drift from RX)\n");
         // Fallback: use millis()-based phase cycling if no GPS
@@ -652,17 +666,14 @@ void loop() {
     }
 
     // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
-    // Priority: 1) SET_TIME from laptop  2) GPS time  3) millis() fallback
+    // Priority: 1) SET_TIME from laptop  2) GPS Unix epoch  3) millis() fallback
     int phase;
     if (hasLaptopTime()) {
         // Unix epoch time from laptop SET_TIME — same clock domain as RX
         phase = computePhaseFromUTC(getUtcNow());
-    } else if (gps.hasTime && gps.timeSec > 0) {
-        // GPS time (seconds since midnight). Convert to pseudo-unix for modulo.
-        // NOTE: This is NOT true Unix epoch, so RX (using real Unix) won't match.
-        // Only works if RX also uses seconds-since-midnight. For field use,
-        // operator MUST send SET_TIME to TX before unplugging.
-        phase = computePhaseFromUTC(gps.timeSec);
+    } else if (gps.hasUnixTime && gps.unixTime > 0) {
+        // GPS real Unix epoch (date + time from RMC) — same clock domain as RX
+        phase = computePhaseFromUTC(gps.unixTime);
     } else {
         // Last resort: millis() from boot (completely unsynced)
         uint32_t cyclePos = (millis() / 1000) % totalCycleSec;
