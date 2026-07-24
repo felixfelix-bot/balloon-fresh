@@ -18,7 +18,6 @@
 
 set -euo pipefail
 
-TOOLS_DIR="$(dirname "$0")"
 LOCK_SCRIPT="$HOME/repos/balloon-fresh/tools/balloon-board-lock.py"
 
 # ─── Check BALLOON_TRACK ─────────────────────────────────────────────────
@@ -85,36 +84,17 @@ else
     exec pio run -e "$ENV" -t upload --upload-port "$UPLOAD_PORT"
 fi
 
-# ─── Check lock ──────────────────────────────────────────────────────────
-if ! python3 "$LOCK_SCRIPT" status 2>&1 | grep -q "LOCKED by track=$BALLOON_TRACK" | grep -q "$RESOURCE"; then
-    # More precise check — grep for the resource line
-    LOCK_STATUS=$(python3 "$LOCK_SCRIPT" status 2>&1)
-    
-    # Extract the line for our resource
-    case "$RESOURCE" in
-        tx) RESOURCE_LINE=$(echo "$LOCK_STATUS" | grep -A2 "TX:" | head -3) ;;
-        rx) RESOURCE_LINE=$(echo "$LOCK_STATUS" | grep -A2 "RX:" | head -3) ;;
-    esac
-    
-    if echo "$RESOURCE_LINE" | grep -q "FREE"; then
-        echo "============================================================" >&2
-        echo "REFUSED: Board '$RESOURCE' ($UPLOAD_PORT) is not locked." >&2
-        echo "Acquire the lock first:" >&2
-        echo "  BALLOON_TRACK=$BALLOON_TRACK python3 $LOCK_SCRIPT acquire $RESOURCE --purpose 'firmware upload'" >&2
-        echo "============================================================" >&2
-        exit 1
-    fi
-    
-    if ! echo "$RESOURCE_LINE" | grep -q "track=$BALLOON_TRACK"; then
-        HOLDER=$(echo "$RESOURCE_LINE" | grep -o 'track=[^ ]*')
-        echo "============================================================" >&2
-        echo "REFUSED: Board '$RESOURCE' ($UPLOAD_PORT) locked by $HOLDER" >&2
-        echo "Track '$BALLOON_TRACK' does not hold this lock." >&2
-        echo "" >&2
-        echo "Wait for the other track to release, or coordinate." >&2
-        echo "============================================================" >&2
-        exit 1
-    fi
+# ─── Check lock using balloon-board-lock.py check ────────────────────────
+# This returns exit 0 if BALLOON_TRACK holds the lock for $RESOURCE,
+# exit 1 otherwise. Much more reliable than the old grep-based approach.
+if ! python3 "$LOCK_SCRIPT" check "$RESOURCE" 2>/dev/null; then
+    echo "============================================================" >&2
+    echo "REFUSED: Board '$RESOURCE' ($UPLOAD_PORT) is not locked by track=$BALLOON_TRACK." >&2
+    echo "" >&2
+    echo "Acquire the lock first:" >&2
+    echo "  BALLOON_TRACK=$BALLOON_TRACK python3 $LOCK_SCRIPT acquire $RESOURCE --purpose 'firmware upload'" >&2
+    echo "============================================================" >&2
+    exit 1
 fi
 
 echo "[LOCK OK] Track '$BALLOON_TRACK' holds '$RESOURCE' lock for $UPLOAD_PORT"

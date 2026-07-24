@@ -403,6 +403,19 @@ static void rfClearTxFifo() {
     rfWriteCmd(cmd, 2);
 }
 
+// ─── App-layer CRC-16 (CCITT 0x1021) ────────────────────────────────
+// Hardware CRC passes garbage — this is the application-layer integrity check.
+// Computed over the 18-byte GPS+seq payload (bytes 4-21 of TX buffer).
+static uint16_t crc16(const uint8_t *data, size_t len) {
+    uint16_t crc = 0xFFFF;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= (uint16_t)data[i] << 8;
+        for (int b = 0; b < 8; b++)
+            crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    }
+    return crc;
+}
+
 // ─── Frequency + power setters ───────────────────────────────────────
 static void rfSetFreq(float mhz) {
     uint32_t frf = (uint32_t)((mhz * 1e6 * (double)(1ULL << 18)) / (XTAL_MHZ * 1e6));
@@ -890,6 +903,13 @@ void loop() {
     txBuf[21] = (uint8_t)(seqInPhase & 0xFF);
     // Append 7-char firmware git hash so RX can verify TX build compatibility
     memcpy(&txBuf[22], FW_HASH_CHARS, 7);
+
+    // ─── Fix 2: App-layer CRC-16 over GPS+seq payload ──────────────
+    // CRC-16 (CCITT 0x1021) over bytes 4-21 (18 bytes of GPS+seq data).
+    // Written to bytes 29-30 (big-endian) for RX verification.
+    uint16_t appCrc = crc16(&txBuf[4], 18);
+    txBuf[29] = (uint8_t)(appCrc >> 8);
+    txBuf[30] = (uint8_t)(appCrc & 0xFF);
 
     // TX
     rfClearIrq();
