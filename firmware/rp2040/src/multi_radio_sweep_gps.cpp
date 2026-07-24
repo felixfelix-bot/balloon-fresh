@@ -515,14 +515,17 @@ static void rfInitForPhase(const Phase &p) {
 }
 
 // ─── GPS payload embedding ───────────────────────────────────────────
-// Packet layout:
-//   bytes 0-1:   seq (uint16_t big-endian)
-//   byte  2:     phase ID
-//   bytes 3-6:   latitude (float, LE)
-//   bytes 7-10:  longitude (float, LE)
-//   bytes 11-12: num_sats (uint16_t BE)
-//   bytes 13-14: fix_valid (uint16_t BE)
-//   bytes 15-18: utc_seconds (uint32_t BE)
+// Packet layout (MUST match RX parseGPS in multi_radio_sweep_rx.cpp):
+//   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+//   bytes 4-7:   latE7 (int32 LE)  — lat*1e7
+//   bytes 8-11:  lonE7 (int32 LE) — lon*1e7
+//   bytes 12-13: sats (uint16 LE)
+//   byte  14:    fixQ (uint8)
+//   bytes 15-18: utcSec (uint32 LE)
+//   byte  19:    phaseId (uint8)
+//   bytes 20-21: seq (uint16 BE)
+// Note: FLRC hardware strips sync word (bytes 0-3) before FIFO, so RX
+//       uses gpsOff=0 for FLRC and gpsOff=4 for LoRa.
 // ─── Laptop time sync (SET_TIME) ─────────────────────────────────────
 // TX accepts SET_TIME over USB, same as RX.
 // Operator plugs TX into laptop, sends SET_TIME, unplugs. RP2040 keeps
