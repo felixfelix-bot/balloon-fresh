@@ -696,14 +696,16 @@ void loop() {
     }
 
     // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
-    // Priority: 1) SET_TIME from laptop  2) GPS Unix epoch  3) millis() fallback
+    // Priority: 1) GPS Unix epoch (updates every second, no drift) 
+    //           2) SET_TIME from laptop (backup when no GPS)
+    //           3) millis() fallback (last resort)
     int phase;
-    if (hasLaptopTime()) {
-        // Unix epoch time from laptop SET_TIME — same clock domain as RX
-        phase = computePhaseFromUTC(getUtcNow());
-    } else if (gps.hasUnixTime && gps.unixTime > 0) {
-        // GPS real Unix epoch (date + time from RMC) — same clock domain as RX
+    if (gps.hasUnixTime && gps.unixTime > 0) {
+        // GPS real Unix epoch (date + time from RMC) — primary for walk tests
         phase = computePhaseFromUTC(gps.unixTime);
+    } else if (hasLaptopTime()) {
+        // Unix epoch time from laptop SET_TIME — backup when GPS unavailable
+        phase = computePhaseFromUTC(getUtcNow());
     } else {
         // Last resort: millis() from boot (completely unsynced)
         uint32_t cyclePos = (millis() / 1000) % totalCycleSec;
