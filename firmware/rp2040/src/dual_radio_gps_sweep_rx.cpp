@@ -265,11 +265,13 @@ static bool tryBaud(uint32_t baud, uint32_t timeout_ms) {
 }
 
 static void gpsInit() {
-    const uint32_t bauds[] = {9600, 38400, 115200};
+    // GEPRC GEP-M10nano ships at 115200 (not u-blox default 9600)
+    // Try 115200 first, then fall back to 9600/38400 for other modules
+    const uint32_t bauds[] = {115200, 9600, 38400};
     const int numBauds = 3;
     uint32_t perBaudMs = GPS_DETECT_TIMEOUT_MS / numBauds;
 
-    Serial1.println("GPS: Auto-detecting baud (9600/38400/115200)...");
+    Serial1.println("GPS: Auto-detecting baud (115200/9600/38400)...");
 
     for (int i = 0; i < numBauds; i++) {
         Serial1.printf("GPS: Trying %lu baud...\n", (unsigned long)bauds[i]);
@@ -280,13 +282,13 @@ static void gpsInit() {
         }
     }
 
-    Serial1.println("GPS: Retrying 9600 baud...");
-    tryBaud(9600, 2000);
+    // Final retry at 115200 (GEPRC default)
+    Serial1.println("GPS: Retrying 115200 baud...");
+    tryBaud(115200, 2000);
     if (gpsData.present) {
-        Serial1.println("GPS: DETECTED at 9600 baud");
+        Serial1.println("GPS: DETECTED at 115200 baud");
         return;
     }
-    Serial1.println("GPS: No module detected. Using millis() fallback.");
 }
 
 // ─── Clock source: get seconds_since_midnight ────────────────────────

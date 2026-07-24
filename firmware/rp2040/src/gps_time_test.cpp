@@ -22,7 +22,7 @@
 #define GPS_PPS_PIN 9   // GP9 — 1PPS interrupt
 #endif
 #ifndef GPS_BAUD
-#define GPS_BAUD    9600
+#define GPS_BAUD    115200   // GEPRC GEP-M10nano ships at 115200
 #endif
 
 static GpsTimeModule gps;
