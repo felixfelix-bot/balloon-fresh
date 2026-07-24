@@ -9,7 +9,7 @@
  * GPS: GEPRC GEP-M10nano (u-blox M10) on UART0
  *   GPS TX → GP1 (RP2040 UART0 RX, NMEA data in)
  *   GPS RX → GP0 (RP2040 UART0 TX, config out, optional)
- *   9600 baud NMEA
+ *   115200 baud NMEA
  *
  * Output: USB CDC Serial ONLY (Serial1 is the GPS UART — do NOT print to it)
  *
@@ -107,7 +107,7 @@ static uint32_t totalCycleSec = 0;
 #define TX_POWER_DBM   12.5f
 #define LORA_PKT_SIZE  127
 #define FLRC_PKT_SIZE  255
-#define GPS_BAUD       9600
+#define GPS_BAUD       115200
 #define GPS_FIX_TIMEOUT_MS 60000
 #define GPS_NMEA_MAX   160
 
@@ -461,7 +461,7 @@ static uint32_t sweepStartMs = 0;  // Set when sweep begins (after GPS wait)
 // ─── Setup ───────────────────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
-    // GPS on UART0: GP1=RX, GP0=TX, 9600 baud
+    // GPS on UART0: GP1=RX, GP0=TX, 115200 baud
     Serial1.setRX(PIN_GPS_RX);
     Serial1.setTX(PIN_GPS_TX);
     Serial1.begin(GPS_BAUD);

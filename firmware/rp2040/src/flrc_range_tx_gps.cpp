@@ -2,7 +2,7 @@
  * flrc_range_tx_gps.cpp — Autonomous TX with GPS for outdoor range testing
  *
  * Based on flrc_range_tx_auto.cpp (proven 1733 kbps with single-batch SPI).
- * Adds GPS NMEA parsing over Serial2 (UART1, GP20/GP21, 9600 baud).
+ * Adds GPS NMEA parsing over Serial2 (UART1, GP20/GP21, 115200 baud).
  * Embeds lat/lon in TX packet payload.
  *
  * Behavior:
@@ -57,7 +57,7 @@
 #define TX_PAUSE_MS     2000
 
 // ─── GPS config ─────────────────────────────────────────────────────
-#define GPS_BAUD        9600
+#define GPS_BAUD        115200
 #define GPS_FIX_TIMEOUT 60000   // 60s to acquire fix
 #define GPS_NMEA_MAX    160     // max NMEA sentence length
 
@@ -508,7 +508,7 @@ void setup() {
     delay(2000);
     Serial.println("BOOT TX RANGE GPS");
 
-    // UART0 for GPS (9600 baud, GP0/GP1)
+    // UART0 for GPS (115200 baud, GP0/GP1)
     Serial1.setRX(PIN_GPS_RX);  // GP1 — receives from GPS TX
     Serial1.setTX(PIN_GPS_TX);  // GP0 — sends to GPS RX (optional)
     Serial1.begin(GPS_BAUD);

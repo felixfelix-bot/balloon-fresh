@@ -1,6 +1,6 @@
 /*
  * gps_test.cpp — Minimal GPS NMEA echo
- * Reads UART0 on GP1 at 9600 baud, echoes to USB CDC.
+ * Reads UART0 on GP1 at 115200 baud, echoes to USB CDC.
  * Used to verify GPS module soldering.
  *
  * GPS TX → GP1, GPS VCC → 3V3, GPS GND → GND
@@ -10,14 +10,14 @@
 void setup() {
     Serial.begin(115200);
     delay(2000);
-    Serial.println("GPS TEST — listening on GP1 at 9600 baud");
+    Serial.println("GPS TEST — listening on GP1 at 115200 baud");
     Serial.println("GPS TX → GP1, UART0 RX");
     Serial.println("---");
 
     // UART0 on GP0/GP1
     Serial1.setRX(1);  // GP1 = UART0 RX
     Serial1.setTX(0);  // GP0 = UART0 TX (not used, but needed for begin)
-    Serial1.begin(9600);
+    Serial1.begin(115200);
 
     // Blink LED to show we're alive
     pinMode(25, OUTPUT);
