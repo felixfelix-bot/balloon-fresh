@@ -76,11 +76,20 @@ def check_upload_lock(env, target, source):
     """SCons action: check board lock before upload."""
     track = os.getenv("BALLOON_TRACK", "")
 
-    # Skip if BALLOON_TRACK not set (allows manual/interactive use)
+    # BLOCK if BALLOON_TRACK not set — no bypass allowed
     if not track:
-        print("WARNING: BALLOON_TRACK not set. Upload proceeding without lock check.")
-        print("  Set it: export BALLOON_TRACK=range-tests  (or speed-tests)")
-        return
+        msg = (
+            f"\n{'='*60}\n"
+            f"PIO UPLOAD GUARD: REFUSED\n"
+            f"BALLOON_TRACK env var not set. Upload BLOCKED.\n"
+            f"This prevents unauthorized flashes from overwriting walk-test firmware.\n"
+            f"\n"
+            f"Set it before flashing:\n"
+            f"  export BALLOON_TRACK=range-tests  (or speed-tests)\n"
+            f"{'='*60}\n"
+        )
+        sys.stderr.write(msg)
+        sys.exit(1)
 
     # Get upload port from PlatformIO config
     upload_port = env.GetProjectOption("upload_port", "")

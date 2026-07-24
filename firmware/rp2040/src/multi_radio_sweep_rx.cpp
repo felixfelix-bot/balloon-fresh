@@ -31,6 +31,17 @@
 #include <stdarg.h>
 #include <string.h>
 
+// ─── Firmware self-identification (injected at build time) ───────────
+#ifndef FW_GIT_HASH
+#define FW_GIT_HASH "unknown"
+#endif
+#ifndef FW_BUILD_TAG
+#define FW_BUILD_TAG "UNK0"
+#endif
+#ifndef FW_BUILD_TIME
+#define FW_BUILD_TIME "1970-01-01T00:00Z"
+#endif
+
 // ─── Dual serial output (USB CDC + UART1→ESP32 bridge) ───────────────
 static uint32_t lastCdcOutputMs = 0;
 #define CDC_WATCHDOG_MS 30000
@@ -45,6 +56,12 @@ static void dualPrintf(const char* fmt, ...) {
     Serial.flush();
     Serial1.print(buf);
     lastCdcOutputMs = millis();
+}
+
+// Print the boot banner — first output on boot and on FW_QUERY.
+static void printBootBanner() {
+    dualPrintf("FW_BOOT hash=%s tag=%s built=%s\r\n",
+               FW_GIT_HASH, FW_BUILD_TAG, FW_BUILD_TIME);
 }
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -131,6 +148,9 @@ static void checkSerialTimeSync() {
                                       (unsigned long)getUtcNow(),
                                       (long)utcOffset);
                     }
+                } else if (strcmp(syncBuf, "FW_QUERY") == 0) {
+                    // Firmware identification query — respond with boot banner
+                    printBootBanner();
                 }
                 syncLen = 0;
             }
@@ -175,6 +195,7 @@ static int16_t  rxRssiMin    = 0;       // most negative = weakest (tenths dBm)
 static float    rxLastTxLat  = 0, rxLastTxLon = 0;
 static uint16_t rxLastTxSats = 0, rxLastTxFix = 0;
 static uint32_t rxLastTxUtc  = 0;
+static char     rxLastTxFw[8] = {0};  // TX firmware git hash (7 chars + NUL)
 static bool     rxRadioInRxMode = false;   // tracks whether radio is listening
 static uint32_t lastWaitingPrintMs = 0;    // throttle for WAITING_FOR_TIME_SYNC
 
@@ -481,6 +502,7 @@ static void resetRxPhaseState() {
     rxLastTxSats = 0;
     rxLastTxFix  = 0;
     rxLastTxUtc  = 0;
+    memset(rxLastTxFw, 0, sizeof(rxLastTxFw));
     resetSeenSeq();
     rxRadioInRxMode = false;
 }
@@ -498,11 +520,13 @@ static void emitPhaseResult(int phaseIdx) {
                   ? (float)rxRssiSum / rxRssiCount / 10.0f : 0.0f;
     float rssiMinDbm = (float)rxRssiMin / 10.0f;
 
-    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
+    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu tx_fw=%s rx_fw=%s\n",
                   phaseIdx, p.name, rxReceived, unique, lost, per,
                   rssiAvg, rssiMinDbm, rxCrcErrors,
                   rxLastTxLat, rxLastTxLon, rxLastTxSats, rxLastTxFix,
-                  (unsigned long)rxLastTxUtc);
+                  (unsigned long)rxLastTxUtc,
+                  rxLastTxFw[0] ? rxLastTxFw : "none",
+                  FW_GIT_HASH);
     Serial.flush(); Serial1.flush();
 
     digitalWrite(PIN_LED, LOW);
@@ -587,6 +611,12 @@ static void rxPacketPoll(int phaseIdx) {
     if (seq < MAX_SEQ) {
         seenSeq[seq] = true;
     }
+
+    // Extract TX firmware git hash from bytes 22-28 (gpsOff+18 to gpsOff+24)
+    // 7 ASCII chars — identifies the TX build that sent this packet.
+    memcpy(rxLastTxFw, &rxBuf[gpsOff+18], 7);
+    rxLastTxFw[7] = '\0';
+
     rxReceived++;
 
     // Convert E7 to float degrees
@@ -630,10 +660,11 @@ static void rxPacketPoll(int phaseIdx) {
                        rxBuf[12], rxBuf[13], rxBuf[14], rxBuf[15],
                        rxBuf[16], rxBuf[17]);
         }
-        dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d rx_ms=%lu tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
+        dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d rx_ms=%lu tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu tx_fw=%s\n",
                       rxReceived, seq, rssi / 10, phaseIdx,
                       (unsigned long)millis(),
-                      txLat, txLon, txSats, txFix, (unsigned long)txUtc);
+                      txLat, txLon, txSats, txFix, (unsigned long)txUtc,
+                      rxLastTxFw);
     }
 
     digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
@@ -650,6 +681,9 @@ void setup() {
     Serial1.setRX(13);  // GP13 = UART RX ← ESP32 bridge
     Serial1.begin(115200);
     delay(2000);
+
+    // Boot banner — FIRST output. Identifies exact firmware build.
+    printBootBanner();
 
     pinMode(PIN_CS, OUTPUT);
     pinMode(PIN_RST, OUTPUT);
