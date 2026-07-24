@@ -564,25 +564,31 @@ static void checkSerialTimeSync() {
 }
 
 static void embedGPS(uint8_t *pkt) {
-    memcpy(&pkt[3], &gps.lat, 4);
-    memcpy(&pkt[7], &gps.lon, 4);
-    pkt[11] = (uint8_t)(gps.sats >> 8);
-    pkt[12] = (uint8_t)(gps.sats & 0xFF);
-    pkt[13] = 0;
+    // MUST match RX parseGPS in multi_radio_sweep_rx.cpp
+    // pkt[0-3] = sync header (already written by caller)
+    // pkt[4-7]:   latE7 (int32 LE)  — lat*1e7
+    // pkt[8-11]:  lonE7 (int32 LE)  — lon*1e7
+    // pkt[12-13]: sats (uint16 LE)
+    // pkt[14]:    fixQ (uint8)
+    // pkt[15-18]: utcSec (uint32 LE)
+    // pkt[19]:    phaseId (written by caller)
+    // pkt[20-21]: seq (written by caller)
+    int32_t latE7 = (int32_t)(gps.lat * 1e7f);
+    int32_t lonE7 = (int32_t)(gps.lon * 1e7f);
+    memcpy(&pkt[4], &latE7, 4);
+    memcpy(&pkt[8], &lonE7, 4);
+    uint16_t sats = gps.sats;
+    memcpy(&pkt[12], &sats, 2);
     pkt[14] = gps.fixValid ? 1 : 0;
     // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync.
-    // Priority: 1) SET_TIME from laptop, 2) GPS real Unix epoch, 3) timeSec fallback
     uint32_t unixNow;
     if (hasLaptopTime())
         unixNow = getUtcNow();
     else if (gps.hasUnixTime)
         unixNow = gps.unixTime;
     else
-        unixNow = gps.timeSec;   // seconds since midnight (degraded, won't match RX)
-    pkt[15] = (uint8_t)(unixNow >> 24);
-    pkt[16] = (uint8_t)(unixNow >> 16);
-    pkt[17] = (uint8_t)(unixNow >> 8);
-    pkt[18] = (uint8_t)(unixNow & 0xFF);
+        unixNow = gps.timeSec;   // seconds since midnight (degraded)
+    memcpy(&pkt[15], &unixNow, 4);  // LE via memcpy
 }
 
 // ─── Phase computation from absolute time ─────────────────────────────
@@ -830,11 +836,23 @@ void loop() {
         return;
     }
 
-    // Build packet
-    txBuf[0] = (uint8_t)(seqInPhase >> 8);
-    txBuf[1] = (uint8_t)(seqInPhase & 0xFF);
-    txBuf[2] = (uint8_t)currentPhase;
+    // Build packet — MUST match RX layout in multi_radio_sweep_rx.cpp
+    //   bytes 0-3:   sync header (0xA5 0x5A 0x42 0x24)
+    //   bytes 4-7:   latE7 (int32 LE)
+    //   bytes 8-11:  lonE7 (int32 LE)
+    //   bytes 12-13: sats  (uint16 LE)
+    //   byte  14:    fixQ  (uint8)
+    //   bytes 15-18: utcSec (uint32 LE)
+    //   byte  19:    phaseId (uint8)
+    //   bytes 20-21: seq   (uint16 BE)
+    txBuf[0] = 0xA5;
+    txBuf[1] = 0x5A;
+    txBuf[2] = 0x42;
+    txBuf[3] = 0x24;
     embedGPS(txBuf);
+    txBuf[19] = (uint8_t)currentPhase;
+    txBuf[20] = (uint8_t)(seqInPhase >> 8);
+    txBuf[21] = (uint8_t)(seqInPhase & 0xFF);
 
     // TX
     rfClearIrq();
