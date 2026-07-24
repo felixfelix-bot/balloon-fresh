@@ -1,0 +1,1919 @@
+PKT seq=41 rssi=0 phase=8
+PKT seq=42 rssi=0 phase=8
+PKT seq=43 rssi=0 phase=8
+PKT seq=44 rssi=0 phase=8
+PKT seq=45 rssi=0 phase=8
+PKT seq=46 rssi=0 phase=8
+PKT seq=47 rssi=0 phase=8
+PKT seq=48 rssi=0 phase=8
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 9 LF-LoRa-SF12 NO_GPS
+PKT seq=0 rssi=0 phase=9
+PKT seq=1 rssi=0 phase=9
+HEARTBEAT millis=125008 phase=9
+PKT seq=2 rssi=0 phase=9
+PKT seq=3 rssi=0 phase=9
+PKT seq=4 rssi=0 phase=9
+PKT seq=5 rssi=0 phase=9
+PKT seq=6 rssi=0 phase=9
+HEARTBEAT millis=137508 phase=9
+PKT seq=7 rssi=0 phase=9
+PKT seq=8 rssi=0 phase=9
+PKT seq=9 rssi=0 phase=9
+PKT seq=10 rssi=0 phase=9
+PKT seq=11 rssi=0 phase=9
+HEARTBEAT millis=150008 phase=9
+PKT seq=12 rssi=0 phase=9
+PKT seq=13 rssi=0 phase=9
+PKT seq=14 rssi=0 phase=9
+PKT seq=15 rssi=0 phase=9
+PKT seq=16 rssi=0 phase=9
+HEARTBEAT millis=162508 phase=9
+PKT seq=17 rssi=0 phase=9
+PKT seq=18 rssi=0 phase=9
+PKT seq=19 rssi=0 phase=9
+PHASE_GUARD 500
+PHASE_START 10 LF-FLRC-2600 NO_GPS
+PKT seq=0 rssi=0 phase=10
+PKT seq=1 rssi=0 phase=10
+PKT seq=2 rssi=0 phase=10
+PKT seq=3 rssi=0 phase=10
+PKT seq=4 rssi=0 phase=10
+PKT seq=5 rssi=0 phase=10
+PKT seq=6 rssi=0 phase=10
+PKT seq=7 rssi=0 phase=10
+PKT seq=8 rssi=0 phase=10
+PKT seq=9 rssi=0 phase=10
+PKT seq=10 rssi=0 phase=10
+PKT seq=11 rssi=0 phase=10
+PKT seq=12 rssi=0 phase=10
+PKT seq=13 rssi=0 phase=10
+PKT seq=14 rssi=0 phase=10
+PKT seq=15 rssi=0 phase=10
+PKT seq=16 rssi=0 phase=10
+PKT seq=17 rssi=0 phase=10
+PKT seq=18 rssi=0 phase=10
+PKT seq=19 rssi=0 phase=10
+PKT seq=20 rssi=0 phase=10
+PKT seq=21 rssi=0 phase=10
+PKT seq=22 rssi=0 phase=10
+PKT seq=23 rssi=0 phase=10
+PKT seq=24 rssi=0 phase=10
+PKT seq=25 rssi=0 phase=10
+PKT seq=26 rssi=0 phase=10
+PKT seq=27 rssi=0 phase=10
+PKT seq=28 rssi=0 phase=10
+PKT seq=29 rssi=0 phase=10
+PKT seq=30 rssi=0 phase=10
+PKT seq=31 rssi=0 phase=10
+PKT seq=32 rssi=0 phase=10
+PKT seq=33 rssi=0 phase=10
+PKT seq=34 rssi=0 phase=10
+PKT seq=35 rssi=0 phase=10
+PKT seq=36 rssi=0 phase=10
+PKT seq=37 rssi=0 phase=10
+PKT seq=38 rssi=0 phase=10
+PKT seq=39 rssi=0 phase=10
+PKT seq=40 rssi=0 phase=10
+PKT seq=41 rssi=0 phase=10
+PKT seq=42 rssi=0 phase=10
+PKT seq=43 rssi=0 phase=10
+PKT seq=44 rssi=0 phase=10
+PKT seq=45 rssi=0 phase=10
+PKT seq=46 rssi=0 phase=10
+PKT seq=47 rssi=0 phase=10
+PKT seq=48 rssi=0 phase=10
+PKT seq=49 rssi=0 phase=10
+PKT seq=50 rssi=0 phase=10
+PKT seq=51 rssi=0 phase=10
+PKT seq=52 rssi=0 phase=10
+PKT seq=53 rssi=0 phase=10
+PKT seq=54 rssi=0 phase=10
+PKT seq=55 rssi=0 phase=10
+PKT seq=56 rssi=0 phase=10
+PKT seq=57 rssi=0 phase=10
+PKT seq=58 rssi=0 phase=10
+PKT seq=59 rssi=0 phase=10
+PKT seq=60 rssi=0 phase=10
+PKT seq=61 rssi=0 phase=10
+PKT seq=62 rssi=0 phase=10
+HEARTBEAT millis=172528 phase=10
+PKT seq=63 rssi=0 phase=10
+PKT seq=64 rssi=0 phase=10
+PKT seq=65 rssi=0 phase=10
+PKT seq=66 rssi=0 phase=10
+PKT seq=67 rssi=0 phase=10
+PKT seq=68 rssi=0 phase=10
+PKT seq=69 rssi=0 phase=10
+PKT seq=70 rssi=0 phase=10
+PKT seq=71 rssi=0 phase=10
+PKT seq=72 rssi=0 phase=10
+PKT seq=73 rssi=0 phase=10
+PKT seq=74 rssi=0 phase=10
+PKT seq=75 rssi=0 phase=10
+PKT seq=76 rssi=0 phase=10
+PKT seq=77 rssi=0 phase=10
+PKT seq=78 rssi=0 phase=10
+PKT seq=79 rssi=0 phase=10
+PKT seq=80 rssi=0 phase=10
+PKT seq=81 rssi=0 phase=10
+PKT seq=82 rssi=0 phase=10
+PKT seq=83 rssi=0 phase=10
+PKT seq=84 rssi=0 phase=10
+PKT seq=85 rssi=0 phase=10
+PKT seq=86 rssi=0 phase=10
+PKT seq=87 rssi=0 phase=10
+PKT seq=88 rssi=0 phase=10
+PKT seq=89 rssi=0 phase=10
+PKT seq=90 rssi=0 phase=10
+PKT seq=91 rssi=0 phase=10
+PKT seq=92 rssi=0 phase=10
+PKT seq=93 rssi=0 phase=10
+PKT seq=94 rssi=0 phase=10
+PKT seq=95 rssi=0 phase=10
+PKT seq=96 rssi=0 phase=10
+PKT seq=97 rssi=0 phase=10
+PKT seq=98 rssi=0 phase=10
+PKT seq=99 rssi=0 phase=10
+PKT seq=100 rssi=0 phase=10
+PKT seq=101 rssi=0 phase=10
+PKT seq=102 rssi=0 phase=10
+PKT seq=103 rssi=0 phase=10
+PKT seq=104 rssi=0 phase=10
+PKT seq=105 rssi=0 phase=10
+PKT seq=106 rssi=0 phase=10
+PKT seq=107 rssi=0 phase=10
+PKT seq=108 rssi=0 phase=10
+PKT seq=109 rssi=0 phase=10
+PKT seq=110 rssi=0 phase=10
+PKT seq=111 rssi=0 phase=10
+PKT seq=112 rssi=0 phase=10
+PKT seq=113 rssi=0 phase=10
+PKT seq=114 rssi=0 phase=10
+PKT seq=115 rssi=0 phase=10
+PKT seq=116 rssi=0 phase=10
+PKT seq=117 rssi=0 phase=10
+PKT seq=118 rssi=0 phase=10
+PKT seq=119 rssi=0 phase=10
+PKT seq=120 rssi=0 phase=10
+PKT seq=121 rssi=0 phase=10
+PKT seq=122 rssi=0 phase=10
+PKT seq=123 rssi=0 phase=10
+PKT seq=124 rssi=0 phase=10
+PKT seq=125 rssi=0 phase=10
+PKT seq=126 rssi=0 phase=10
+PKT seq=127 rssi=0 phase=10
+PKT seq=128 rssi=0 phase=10
+PKT seq=129 rssi=0 phase=10
+PKT seq=130 rssi=0 phase=10
+PKT seq=131 rssi=0 phase=10
+PKT seq=132 rssi=0 phase=10
+PKT seq=133 rssi=0 phase=10
+PKT seq=134 rssi=0 phase=10
+PKT seq=135 rssi=0 phase=10
+PKT seq=136 rssi=0 phase=10
+PKT seq=137 rssi=0 phase=10
+PKT seq=138 rssi=0 phase=10
+PKT seq=139 rssi=0 phase=10
+PKT seq=140 rssi=0 phase=10
+PKT seq=141 rssi=0 phase=10
+PKT seq=142 rssi=0 phase=10
+PKT seq=143 rssi=0 phase=10
+PKT seq=144 rssi=0 phase=10
+PKT seq=145 rssi=0 phase=10
+PKT seq=146 rssi=0 phase=10
+PKT seq=147 rssi=0 phase=10
+PKT seq=148 rssi=0 phase=10
+PKT seq=149 rssi=0 phase=10
+PKT seq=150 rssi=0 phase=10
+PKT seq=151 rssi=0 phase=10
+PKT seq=152 rssi=0 phase=10
+PKT seq=153 rssi=0 phase=10
+PKT seq=154 rssi=0 phase=10
+PKT seq=155 rssi=0 phase=10
+PKT seq=156 rssi=0 phase=10
+PKT seq=157 rssi=0 phase=10
+PKT seq=158 rssi=0 phase=10
+PKT seq=159 rssi=0 phase=10
+PKT seq=160 rssi=0 phase=10
+PKT seq=161 rssi=0 phase=10
+PKT seq=162 rssi=0 phase=10
+PKT seq=163 rssi=0 phase=10
+PKT seq=164 rssi=0 phase=10
+PKT seq=165 rssi=0 phase=10
+PKT seq=166 rssi=0 phase=10
+PKT seq=167 rssi=0 phase=10
+PKT seq=168 rssi=0 phase=10
+PKT seq=169 rssi=0 phase=10
+PKT seq=170 rssi=0 phase=10
+PKT seq=171 rssi=0 phase=10
+PKT seq=172 rssi=0 phase=10
+PKT seq=173 rssi=0 phase=10
+PKT seq=174 rssi=0 phase=10
+PKT seq=175 rssi=0 phase=10
+PKT seq=176 rssi=0 phase=10
+PKT seq=177 rssi=0 phase=10
+PKT seq=178 rssi=0 phase=10
+PKT seq=179 rssi=0 phase=10
+PKT seq=180 rssi=0 phase=10
+PKT seq=181 rssi=0 phase=10
+PKT seq=182 rssi=0 phase=10
+PKT seq=183 rssi=0 phase=10
+PKT seq=184 rssi=0 phase=10
+PKT seq=185 rssi=0 phase=10
+PKT seq=186 rssi=0 phase=10
+PKT seq=187 rssi=0 phase=10
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 11 LF-FLRC-1300 NO_GPS
+PKT seq=0 rssi=0 phase=11
+PKT seq=1 rssi=0 phase=11
+PKT seq=2 rssi=0 phase=11
+PKT seq=3 rssi=0 phase=11
+PKT seq=4 rssi=0 phase=11
+PKT seq=5 rssi=0 phase=11
+PKT seq=6 rssi=0 phase=11
+PKT seq=7 rssi=0 phase=11
+PKT seq=8 rssi=0 phase=11
+PKT seq=9 rssi=0 phase=11
+PKT seq=10 rssi=0 phase=11
+PKT seq=11 rssi=0 phase=11
+PKT seq=12 rssi=0 phase=11
+PKT seq=13 rssi=0 phase=11
+PKT seq=14 rssi=0 phase=11
+PKT seq=15 rssi=0 phase=11
+PKT seq=16 rssi=0 phase=11
+PKT seq=17 rssi=0 phase=11
+PKT seq=18 rssi=0 phase=11
+PKT seq=19 rssi=0 phase=11
+PKT seq=20 rssi=0 phase=11
+PKT seq=21 rssi=0 phase=11
+PKT seq=22 rssi=0 phase=11
+PKT seq=23 rssi=0 phase=11
+PKT seq=24 rssi=0 phase=11
+PKT seq=25 rssi=0 phase=11
+PKT seq=26 rssi=0 phase=11
+PKT seq=27 rssi=0 phase=11
+PKT seq=28 rssi=0 phase=11
+PKT seq=29 rssi=0 phase=11
+PKT seq=30 rssi=0 phase=11
+PKT seq=31 rssi=0 phase=11
+PKT seq=32 rssi=0 phase=11
+PKT seq=33 rssi=0 phase=11
+PKT seq=34 rssi=0 phase=11
+PKT seq=35 rssi=0 phase=11
+PKT seq=36 rssi=0 phase=11
+PKT seq=37 rssi=0 phase=11
+PKT seq=38 rssi=0 phase=11
+PKT seq=39 rssi=0 phase=11
+PKT seq=40 rssi=0 phase=11
+PKT seq=41 rssi=0 phase=11
+PKT seq=42 rssi=0 phase=11
+PKT seq=43 rssi=0 phase=11
+PKT seq=44 rssi=0 phase=11
+PKT seq=45 rssi=0 phase=11
+PKT seq=46 rssi=0 phase=11
+PKT seq=47 rssi=0 phase=11
+PKT seq=48 rssi=0 phase=11
+PKT seq=49 rssi=0 phase=11
+PKT seq=50 rssi=0 phase=11
+PKT seq=51 rssi=0 phase=11
+PKT seq=52 rssi=0 phase=11
+PKT seq=53 rssi=0 phase=11
+PKT seq=54 rssi=0 phase=11
+PKT seq=55 rssi=0 phase=11
+PKT seq=56 rssi=0 phase=11
+PKT seq=57 rssi=0 phase=11
+PKT seq=58 rssi=0 phase=11
+PKT seq=59 rssi=0 phase=11
+PKT seq=60 rssi=0 phase=11
+PKT seq=61 rssi=0 phase=11
+PKT seq=62 rssi=0 phase=11
+PKT seq=63 rssi=0 phase=11
+PKT seq=64 rssi=0 phase=11
+PKT seq=65 rssi=0 phase=11
+PKT seq=66 rssi=0 phase=11
+PKT seq=67 rssi=0 phase=11
+PKT seq=68 rssi=0 phase=11
+PKT seq=69 rssi=0 phase=11
+PKT seq=70 rssi=0 phase=11
+PKT seq=71 rssi=0 phase=11
+PKT seq=72 rssi=0 phase=11
+PKT seq=73 rssi=0 phase=11
+PKT seq=74 rssi=0 phase=11
+PKT seq=75 rssi=0 phase=11
+PKT seq=76 rssi=0 phase=11
+PKT seq=77 rssi=0 phase=11
+PKT seq=78 rssi=0 phase=11
+PKT seq=79 rssi=0 phase=11
+PKT seq=80 rssi=0 phase=11
+PKT seq=81 rssi=0 phase=11
+PKT seq=82 rssi=0 phase=11
+PKT seq=83 rssi=0 phase=11
+PKT seq=84 rssi=0 phase=11
+PKT seq=85 rssi=0 phase=11
+PKT seq=86 rssi=0 phase=11
+PKT seq=87 rssi=0 phase=11
+PKT seq=88 rssi=0 phase=11
+PKT seq=89 rssi=0 phase=11
+PKT seq=90 rssi=0 phase=11
+PKT seq=91 rssi=0 phase=11
+PKT seq=92 rssi=0 phase=11
+PKT seq=93 rssi=0 phase=11
+PKT seq=94 rssi=0 phase=11
+PKT seq=95 rssi=0 phase=11
+PKT seq=96 rssi=0 phase=11
+PKT seq=97 rssi=0 phase=11
+PKT seq=98 rssi=0 phase=11
+PKT seq=99 rssi=0 phase=11
+PKT seq=100 rssi=0 phase=11
+PKT seq=101 rssi=0 phase=11
+PKT seq=102 rssi=0 phase=11
+PKT seq=103 rssi=0 phase=11
+PKT seq=104 rssi=0 phase=11
+PKT seq=105 rssi=0 phase=11
+PKT seq=106 rssi=0 phase=11
+PKT seq=107 rssi=0 phase=11
+PKT seq=108 rssi=0 phase=11
+PKT seq=109 rssi=0 phase=11
+PKT seq=110 rssi=0 phase=11
+PKT seq=111 rssi=0 phase=11
+PKT seq=112 rssi=0 phase=11
+PKT seq=113 rssi=0 phase=11
+HEARTBEAT millis=182564 phase=11
+PKT seq=114 rssi=0 phase=11
+PKT seq=115 rssi=0 phase=11
+PKT seq=116 rssi=0 phase=11
+PKT seq=117 rssi=0 phase=11
+PKT seq=118 rssi=0 phase=11
+PKT seq=119 rssi=0 phase=11
+PKT seq=120 rssi=0 phase=11
+PKT seq=121 rssi=0 phase=11
+PKT seq=122 rssi=0 phase=11
+PKT seq=123 rssi=0 phase=11
+PKT seq=124 rssi=0 phase=11
+PKT seq=125 rssi=0 phase=11
+PKT seq=126 rssi=0 phase=11
+PKT seq=127 rssi=0 phase=11
+PKT seq=128 rssi=0 phase=11
+PKT seq=129 rssi=0 phase=11
+PKT seq=130 rssi=0 phase=11
+PKT seq=131 rssi=0 phase=11
+PKT seq=132 rssi=0 phase=11
+PKT seq=133 rssi=0 phase=11
+PKT seq=134 rssi=0 phase=11
+PKT seq=135 rssi=0 phase=11
+PKT seq=136 rssi=0 phase=11
+PKT seq=137 rssi=0 phase=11
+PKT seq=138 rssi=0 phase=11
+PKT seq=139 rssi=0 phase=11
+PKT seq=140 rssi=0 phase=11
+PKT seq=141 rssi=0 phase=11
+PKT seq=142 rssi=0 phase=11
+PKT seq=143 rssi=0 phase=11
+PKT seq=144 rssi=0 phase=11
+PKT seq=145 rssi=0 phase=11
+PKT seq=146 rssi=0 phase=11
+PKT seq=147 rssi=0 phase=11
+PKT seq=148 rssi=0 phase=11
+PKT seq=149 rssi=0 phase=11
+PKT seq=150 rssi=0 phase=11
+PKT seq=151 rssi=0 phase=11
+PKT seq=152 rssi=0 phase=11
+PKT seq=153 rssi=0 phase=11
+PKT seq=154 rssi=0 phase=11
+PKT seq=155 rssi=0 phase=11
+PKT seq=156 rssi=0 phase=11
+PKT seq=157 rssi=0 phase=11
+PKT seq=158 rssi=0 phase=11
+PKT seq=159 rssi=0 phase=11
+PKT seq=160 rssi=0 phase=11
+PKT seq=161 rssi=0 phase=11
+PKT seq=162 rssi=0 phase=11
+PKT seq=163 rssi=0 phase=11
+PKT seq=164 rssi=0 phase=11
+PKT seq=165 rssi=0 phase=11
+PKT seq=166 rssi=0 phase=11
+PKT seq=167 rssi=0 phase=11
+PKT seq=168 rssi=0 phase=11
+PKT seq=169 rssi=0 phase=11
+PKT seq=170 rssi=0 phase=11
+PKT seq=171 rssi=0 phase=11
+PKT seq=172 rssi=0 phase=11
+PKT seq=173 rssi=0 phase=11
+PKT seq=174 rssi=0 phase=11
+PKT seq=175 rssi=0 phase=11
+PKT seq=176 rssi=0 phase=11
+PKT seq=177 rssi=0 phase=11
+PKT seq=178 rssi=0 phase=11
+PKT seq=179 rssi=0 phase=11
+PKT seq=180 rssi=0 phase=11
+PKT seq=181 rssi=0 phase=11
+PKT seq=182 rssi=0 phase=11
+PKT seq=183 rssi=0 phase=11
+PKT seq=184 rssi=0 phase=11
+PKT seq=185 rssi=0 phase=11
+PKT seq=186 rssi=0 phase=11
+PKT seq=187 rssi=0 phase=11
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 12 LF-FLRC-650 NO_GPS
+PKT seq=0 rssi=0 phase=12
+PKT seq=1 rssi=0 phase=12
+PKT seq=2 rssi=0 phase=12
+PKT seq=3 rssi=0 phase=12
+PKT seq=4 rssi=0 phase=12
+PKT seq=5 rssi=0 phase=12
+PKT seq=6 rssi=0 phase=12
+PKT seq=7 rssi=0 phase=12
+PKT seq=8 rssi=0 phase=12
+PKT seq=9 rssi=0 phase=12
+PKT seq=10 rssi=0 phase=12
+PKT seq=11 rssi=0 phase=12
+PKT seq=12 rssi=0 phase=12
+PKT seq=13 rssi=0 phase=12
+PKT seq=14 rssi=0 phase=12
+PKT seq=15 rssi=0 phase=12
+PKT seq=16 rssi=0 phase=12
+PKT seq=17 rssi=0 phase=12
+PKT seq=18 rssi=0 phase=12
+PKT seq=19 rssi=0 phase=12
+PKT seq=20 rssi=0 phase=12
+PKT seq=21 rssi=0 phase=12
+PKT seq=22 rssi=0 phase=12
+PKT seq=23 rssi=0 phase=12
+PKT seq=24 rssi=0 phase=12
+PKT seq=25 rssi=0 phase=12
+PKT seq=26 rssi=0 phase=12
+PKT seq=27 rssi=0 phase=12
+PKT seq=28 rssi=0 phase=12
+PKT seq=29 rssi=0 phase=12
+PKT seq=30 rssi=0 phase=12
+PKT seq=31 rssi=0 phase=12
+PKT seq=32 rssi=0 phase=12
+PKT seq=33 rssi=0 phase=12
+PKT seq=34 rssi=0 phase=12
+PKT seq=35 rssi=0 phase=12
+PKT seq=36 rssi=0 phase=12
+PKT seq=37 rssi=0 phase=12
+PKT seq=38 rssi=0 phase=12
+PKT seq=39 rssi=0 phase=12
+PKT seq=40 rssi=0 phase=12
+PKT seq=41 rssi=0 phase=12
+PKT seq=42 rssi=0 phase=12
+PKT seq=43 rssi=0 phase=12
+PKT seq=44 rssi=0 phase=12
+PKT seq=45 rssi=0 phase=12
+PKT seq=46 rssi=0 phase=12
+PKT seq=47 rssi=0 phase=12
+PKT seq=48 rssi=0 phase=12
+PKT seq=49 rssi=0 phase=12
+PKT seq=50 rssi=0 phase=12
+PKT seq=51 rssi=0 phase=12
+PKT seq=52 rssi=0 phase=12
+PKT seq=53 rssi=0 phase=12
+PKT seq=54 rssi=0 phase=12
+PKT seq=55 rssi=0 phase=12
+PKT seq=56 rssi=0 phase=12
+PKT seq=57 rssi=0 phase=12
+PKT seq=58 rssi=0 phase=12
+PKT seq=59 rssi=0 phase=12
+PKT seq=60 rssi=0 phase=12
+PKT seq=61 rssi=0 phase=12
+PKT seq=62 rssi=0 phase=12
+PKT seq=63 rssi=0 phase=12
+PKT seq=64 rssi=0 phase=12
+PKT seq=65 rssi=0 phase=12
+PKT seq=66 rssi=0 phase=12
+PKT seq=67 rssi=0 phase=12
+PKT seq=68 rssi=0 phase=12
+PKT seq=69 rssi=0 phase=12
+PKT seq=70 rssi=0 phase=12
+PKT seq=71 rssi=0 phase=12
+PKT seq=72 rssi=0 phase=12
+PKT seq=73 rssi=0 phase=12
+PKT seq=74 rssi=0 phase=12
+PKT seq=75 rssi=0 phase=12
+PKT seq=76 rssi=0 phase=12
+PKT seq=77 rssi=0 phase=12
+PKT seq=78 rssi=0 phase=12
+PKT seq=79 rssi=0 phase=12
+PKT seq=80 rssi=0 phase=12
+PKT seq=81 rssi=0 phase=12
+PKT seq=82 rssi=0 phase=12
+PKT seq=83 rssi=0 phase=12
+PKT seq=84 rssi=0 phase=12
+PKT seq=85 rssi=0 phase=12
+PKT seq=86 rssi=0 phase=12
+PKT seq=87 rssi=0 phase=12
+PKT seq=88 rssi=0 phase=12
+PKT seq=89 rssi=0 phase=12
+PKT seq=90 rssi=0 phase=12
+PKT seq=91 rssi=0 phase=12
+PKT seq=92 rssi=0 phase=12
+PKT seq=93 rssi=0 phase=12
+PKT seq=94 rssi=0 phase=12
+PKT seq=95 rssi=0 phase=12
+PKT seq=96 rssi=0 phase=12
+PKT seq=97 rssi=0 phase=12
+PKT seq=98 rssi=0 phase=12
+PKT seq=99 rssi=0 phase=12
+PKT seq=100 rssi=0 phase=12
+PKT seq=101 rssi=0 phase=12
+PKT seq=102 rssi=0 phase=12
+PKT seq=103 rssi=0 phase=12
+PKT seq=104 rssi=0 phase=12
+PKT seq=105 rssi=0 phase=12
+PKT seq=106 rssi=0 phase=12
+PKT seq=107 rssi=0 phase=12
+PKT seq=108 rssi=0 phase=12
+PKT seq=109 rssi=0 phase=12
+PKT seq=110 rssi=0 phase=12
+PKT seq=111 rssi=0 phase=12
+PKT seq=112 rssi=0 phase=12
+PKT seq=113 rssi=0 phase=12
+PKT seq=114 rssi=0 phase=12
+PKT seq=115 rssi=0 phase=12
+PKT seq=116 rssi=0 phase=12
+PKT seq=117 rssi=0 phase=12
+PKT seq=118 rssi=0 phase=12
+PKT seq=119 rssi=0 phase=12
+PKT seq=120 rssi=0 phase=12
+PKT seq=121 rssi=0 phase=12
+PKT seq=122 rssi=0 phase=12
+PKT seq=123 rssi=0 phase=12
+PKT seq=124 rssi=0 phase=12
+PKT seq=125 rssi=0 phase=12
+PKT seq=126 rssi=0 phase=12
+PKT seq=127 rssi=0 phase=12
+PKT seq=128 rssi=0 phase=12
+PKT seq=129 rssi=0 phase=12
+PKT seq=130 rssi=0 phase=12
+PKT seq=131 rssi=0 phase=12
+PKT seq=132 rssi=0 phase=12
+PKT seq=133 rssi=0 phase=12
+PKT seq=134 rssi=0 phase=12
+PKT seq=135 rssi=0 phase=12
+PKT seq=136 rssi=0 phase=12
+PKT seq=137 rssi=0 phase=12
+PKT seq=138 rssi=0 phase=12
+PKT seq=139 rssi=0 phase=12
+PKT seq=140 rssi=0 phase=12
+PKT seq=141 rssi=0 phase=12
+PKT seq=142 rssi=0 phase=12
+PKT seq=143 rssi=0 phase=12
+PKT seq=144 rssi=0 phase=12
+PKT seq=145 rssi=0 phase=12
+PKT seq=146 rssi=0 phase=12
+PKT seq=147 rssi=0 phase=12
+PKT seq=148 rssi=0 phase=12
+PKT seq=149 rssi=0 phase=12
+PKT seq=150 rssi=0 phase=12
+PKT seq=151 rssi=0 phase=12
+PKT seq=152 rssi=0 phase=12
+PKT seq=153 rssi=0 phase=12
+PKT seq=154 rssi=0 phase=12
+PKT seq=155 rssi=0 phase=12
+PKT seq=156 rssi=0 phase=12
+PKT seq=157 rssi=0 phase=12
+PKT seq=158 rssi=0 phase=12
+PKT seq=159 rssi=0 phase=12
+PKT seq=160 rssi=0 phase=12
+PKT seq=161 rssi=0 phase=12
+PKT seq=162 rssi=0 phase=12
+PKT seq=163 rssi=0 phase=12
+PKT seq=164 rssi=0 phase=12
+HEARTBEAT millis=192601 phase=12
+PKT seq=165 rssi=0 phase=12
+PKT seq=166 rssi=0 phase=12
+PKT seq=167 rssi=0 phase=12
+PKT seq=168 rssi=0 phase=12
+PKT seq=169 rssi=0 phase=12
+PKT seq=170 rssi=0 phase=12
+PKT seq=171 rssi=0 phase=12
+PKT seq=172 rssi=0 phase=12
+PKT seq=173 rssi=0 phase=12
+PKT seq=174 rssi=0 phase=12
+PKT seq=175 rssi=0 phase=12
+PKT seq=176 rssi=0 phase=12
+PKT seq=177 rssi=0 phase=12
+PKT seq=178 rssi=0 phase=12
+PKT seq=179 rssi=0 phase=12
+PKT seq=180 rssi=0 phase=12
+PKT seq=181 rssi=0 phase=12
+PKT seq=182 rssi=0 phase=12
+PKT seq=183 rssi=0 phase=12
+PKT seq=184 rssi=0 phase=12
+PKT seq=185 rssi=0 phase=12
+PKT seq=186 rssi=0 phase=12
+PKT seq=187 rssi=0 phase=12
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 13 LF-FLRC-325 NO_GPS
+PKT seq=0 rssi=0 phase=13
+PKT seq=1 rssi=0 phase=13
+PKT seq=2 rssi=0 phase=13
+PKT seq=3 rssi=0 phase=13
+PKT seq=4 rssi=0 phase=13
+PKT seq=5 rssi=0 phase=13
+PKT seq=6 rssi=0 phase=13
+PKT seq=7 rssi=0 phase=13
+PKT seq=8 rssi=0 phase=13
+PKT seq=9 rssi=0 phase=13
+PKT seq=10 rssi=0 phase=13
+PKT seq=11 rssi=0 phase=13
+PKT seq=12 rssi=0 phase=13
+PKT seq=13 rssi=0 phase=13
+PKT seq=14 rssi=0 phase=13
+PKT seq=15 rssi=0 phase=13
+PKT seq=16 rssi=0 phase=13
+PKT seq=17 rssi=0 phase=13
+PKT seq=18 rssi=0 phase=13
+PKT seq=19 rssi=0 phase=13
+PKT seq=20 rssi=0 phase=13
+PKT seq=21 rssi=0 phase=13
+PKT seq=22 rssi=0 phase=13
+PKT seq=23 rssi=0 phase=13
+PKT seq=24 rssi=0 phase=13
+PKT seq=25 rssi=0 phase=13
+PKT seq=26 rssi=0 phase=13
+PKT seq=27 rssi=0 phase=13
+PKT seq=28 rssi=0 phase=13
+PKT seq=29 rssi=0 phase=13
+PKT seq=30 rssi=0 phase=13
+PKT seq=31 rssi=0 phase=13
+PKT seq=32 rssi=0 phase=13
+PKT seq=33 rssi=0 phase=13
+PKT seq=34 rssi=0 phase=13
+PKT seq=35 rssi=0 phase=13
+PKT seq=36 rssi=0 phase=13
+PKT seq=37 rssi=0 phase=13
+PKT seq=38 rssi=0 phase=13
+PKT seq=39 rssi=0 phase=13
+PKT seq=40 rssi=0 phase=13
+PKT seq=41 rssi=0 phase=13
+PKT seq=42 rssi=0 phase=13
+PKT seq=43 rssi=0 phase=13
+PKT seq=44 rssi=0 phase=13
+PKT seq=45 rssi=0 phase=13
+PKT seq=46 rssi=0 phase=13
+PKT seq=47 rssi=0 phase=13
+PKT seq=48 rssi=0 phase=13
+PKT seq=49 rssi=0 phase=13
+PKT seq=50 rssi=0 phase=13
+PKT seq=51 rssi=0 phase=13
+PKT seq=52 rssi=0 phase=13
+PKT seq=53 rssi=0 phase=13
+PKT seq=54 rssi=0 phase=13
+PKT seq=55 rssi=0 phase=13
+PKT seq=56 rssi=0 phase=13
+PKT seq=57 rssi=0 phase=13
+PKT seq=58 rssi=0 phase=13
+PKT seq=59 rssi=0 phase=13
+PKT seq=60 rssi=0 phase=13
+PKT seq=61 rssi=0 phase=13
+PKT seq=62 rssi=0 phase=13
+PKT seq=63 rssi=0 phase=13
+PKT seq=64 rssi=0 phase=13
+PKT seq=65 rssi=0 phase=13
+PKT seq=66 rssi=0 phase=13
+PKT seq=67 rssi=0 phase=13
+PKT seq=68 rssi=0 phase=13
+PKT seq=69 rssi=0 phase=13
+PKT seq=70 rssi=0 phase=13
+PKT seq=71 rssi=0 phase=13
+PKT seq=72 rssi=0 phase=13
+PKT seq=73 rssi=0 phase=13
+PKT seq=74 rssi=0 phase=13
+PKT seq=75 rssi=0 phase=13
+PKT seq=76 rssi=0 phase=13
+PKT seq=77 rssi=0 phase=13
+PKT seq=78 rssi=0 phase=13
+PKT seq=79 rssi=0 phase=13
+PKT seq=80 rssi=0 phase=13
+PKT seq=81 rssi=0 phase=13
+PKT seq=82 rssi=0 phase=13
+PKT seq=83 rssi=0 phase=13
+PKT seq=84 rssi=0 phase=13
+PKT seq=85 rssi=0 phase=13
+PKT seq=86 rssi=0 phase=13
+PKT seq=87 rssi=0 phase=13
+PKT seq=88 rssi=0 phase=13
+PKT seq=89 rssi=0 phase=13
+PKT seq=90 rssi=0 phase=13
+PKT seq=91 rssi=0 phase=13
+PKT seq=92 rssi=0 phase=13
+PKT seq=93 rssi=0 phase=13
+PKT seq=94 rssi=0 phase=13
+PKT seq=95 rssi=0 phase=13
+PKT seq=96 rssi=0 phase=13
+PKT seq=97 rssi=0 phase=13
+PKT seq=98 rssi=0 phase=13
+PKT seq=99 rssi=0 phase=13
+PKT seq=100 rssi=0 phase=13
+PKT seq=101 rssi=0 phase=13
+PKT seq=102 rssi=0 phase=13
+PKT seq=103 rssi=0 phase=13
+PKT seq=104 rssi=0 phase=13
+PKT seq=105 rssi=0 phase=13
+PKT seq=106 rssi=0 phase=13
+PKT seq=107 rssi=0 phase=13
+PKT seq=108 rssi=0 phase=13
+PKT seq=109 rssi=0 phase=13
+PKT seq=110 rssi=0 phase=13
+PKT seq=111 rssi=0 phase=13
+PKT seq=112 rssi=0 phase=13
+PKT seq=113 rssi=0 phase=13
+PKT seq=114 rssi=0 phase=13
+PKT seq=115 rssi=0 phase=13
+PKT seq=116 rssi=0 phase=13
+PKT seq=117 rssi=0 phase=13
+PKT seq=118 rssi=0 phase=13
+PKT seq=119 rssi=0 phase=13
+PKT seq=120 rssi=0 phase=13
+PKT seq=121 rssi=0 phase=13
+PKT seq=122 rssi=0 phase=13
+PKT seq=123 rssi=0 phase=13
+PKT seq=124 rssi=0 phase=13
+PKT seq=125 rssi=0 phase=13
+PKT seq=126 rssi=0 phase=13
+PKT seq=127 rssi=0 phase=13
+PKT seq=128 rssi=0 phase=13
+PKT seq=129 rssi=0 phase=13
+PKT seq=130 rssi=0 phase=13
+PKT seq=131 rssi=0 phase=13
+PKT seq=132 rssi=0 phase=13
+PKT seq=133 rssi=0 phase=13
+PKT seq=134 rssi=0 phase=13
+PKT seq=135 rssi=0 phase=13
+PKT seq=136 rssi=0 phase=13
+PKT seq=137 rssi=0 phase=13
+PKT seq=138 rssi=0 phase=13
+PKT seq=139 rssi=0 phase=13
+PKT seq=140 rssi=0 phase=13
+PKT seq=141 rssi=0 phase=13
+PKT seq=142 rssi=0 phase=13
+PKT seq=143 rssi=0 phase=13
+PKT seq=144 rssi=0 phase=13
+PKT seq=145 rssi=0 phase=13
+PKT seq=146 rssi=0 phase=13
+PKT seq=147 rssi=0 phase=13
+PKT seq=148 rssi=0 phase=13
+PKT seq=149 rssi=0 phase=13
+PKT seq=150 rssi=0 phase=13
+PKT seq=151 rssi=0 phase=13
+PKT seq=152 rssi=0 phase=13
+PKT seq=153 rssi=0 phase=13
+PKT seq=154 rssi=0 phase=13
+PKT seq=155 rssi=0 phase=13
+PKT seq=156 rssi=0 phase=13
+PKT seq=157 rssi=0 phase=13
+PKT seq=158 rssi=0 phase=13
+PKT seq=159 rssi=0 phase=13
+PKT seq=160 rssi=0 phase=13
+PKT seq=161 rssi=0 phase=13
+PKT seq=162 rssi=0 phase=13
+PKT seq=163 rssi=0 phase=13
+PKT seq=164 rssi=0 phase=13
+PKT seq=165 rssi=0 phase=13
+PKT seq=166 rssi=0 phase=13
+PKT seq=167 rssi=0 phase=13
+PKT seq=168 rssi=0 phase=13
+PKT seq=169 rssi=0 phase=13
+PKT seq=170 rssi=0 phase=13
+PKT seq=171 rssi=0 phase=13
+PKT seq=172 rssi=0 phase=13
+PKT seq=173 rssi=0 phase=13
+PKT seq=174 rssi=0 phase=13
+PKT seq=175 rssi=0 phase=13
+PKT seq=176 rssi=0 phase=13
+PKT seq=177 rssi=0 phase=13
+PKT seq=178 rssi=0 phase=13
+PKT seq=179 rssi=0 phase=13
+PKT seq=180 rssi=0 phase=13
+PKT seq=181 rssi=0 phase=13
+PKT seq=182 rssi=0 phase=13
+PKT seq=183 rssi=0 phase=13
+PKT seq=184 rssi=0 phase=13
+PKT seq=185 rssi=0 phase=13
+PKT seq=186 rssi=0 phase=13
+PKT seq=187 rssi=0 phase=13
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 0 HF-LoRa-SF7 NO_GPS
+PKT seq=0 rssi=0 phase=0
+PKT seq=1 rssi=0 phase=0
+HEARTBEAT millis=202603 phase=0
+PKT seq=2 rssi=0 phase=0
+PKT seq=3 rssi=0 phase=0
+PKT seq=4 rssi=0 phase=0
+PKT seq=5 rssi=0 phase=0
+PKT seq=6 rssi=0 phase=0
+PKT seq=7 rssi=0 phase=0
+PKT seq=8 rssi=0 phase=0
+PKT seq=9 rssi=0 phase=0
+PKT seq=10 rssi=0 phase=0
+PKT seq=11 rssi=0 phase=0
+PKT seq=12 rssi=0 phase=0
+PKT seq=13 rssi=0 phase=0
+PKT seq=14 rssi=0 phase=0
+PKT seq=15 rssi=0 phase=0
+PKT seq=16 rssi=0 phase=0
+PKT seq=17 rssi=0 phase=0
+PKT seq=18 rssi=0 phase=0
+PKT seq=19 rssi=0 phase=0
+PKT seq=20 rssi=0 phase=0
+PKT seq=21 rssi=0 phase=0
+PKT seq=22 rssi=0 phase=0
+PKT seq=23 rssi=0 phase=0
+PKT seq=24 rssi=0 phase=0
+PKT seq=25 rssi=0 phase=0
+PKT seq=26 rssi=0 phase=0
+PKT seq=27 rssi=0 phase=0
+PKT seq=28 rssi=0 phase=0
+PKT seq=29 rssi=0 phase=0
+PKT seq=30 rssi=0 phase=0
+PKT seq=31 rssi=0 phase=0
+PKT seq=32 rssi=0 phase=0
+PKT seq=33 rssi=0 phase=0
+PKT seq=34 rssi=0 phase=0
+PKT seq=35 rssi=0 phase=0
+HEARTBEAT millis=212804 phase=0
+PKT seq=36 rssi=0 phase=0
+PKT seq=37 rssi=0 phase=0
+PKT seq=38 rssi=0 phase=0
+PKT seq=39 rssi=0 phase=0
+PKT seq=40 rssi=0 phase=0
+PKT seq=41 rssi=0 phase=0
+PKT seq=42 rssi=0 phase=0
+PKT seq=43 rssi=0 phase=0
+PKT seq=44 rssi=0 phase=0
+PKT seq=45 rssi=0 phase=0
+PKT seq=46 rssi=0 phase=0
+PKT seq=47 rssi=0 phase=0
+PKT seq=48 rssi=0 phase=0
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 1 HF-LoRa-SF9 NO_GPS
+PKT seq=0 rssi=0 phase=1
+PKT seq=1 rssi=0 phase=1
+PKT seq=2 rssi=0 phase=1
+PKT seq=3 rssi=0 phase=1
+PKT seq=4 rssi=0 phase=1
+PKT seq=5 rssi=0 phase=1
+PKT seq=6 rssi=0 phase=1
+PKT seq=7 rssi=0 phase=1
+PKT seq=8 rssi=0 phase=1
+PKT seq=9 rssi=0 phase=1
+PKT seq=10 rssi=0 phase=1
+PKT seq=11 rssi=0 phase=1
+PKT seq=12 rssi=0 phase=1
+PKT seq=13 rssi=0 phase=1
+PKT seq=14 rssi=0 phase=1
+PKT seq=15 rssi=0 phase=1
+PKT seq=16 rssi=0 phase=1
+PKT seq=17 rssi=0 phase=1
+PKT seq=18 rssi=0 phase=1
+PKT seq=19 rssi=0 phase=1
+HEARTBEAT millis=223003 phase=1
+PKT seq=20 rssi=0 phase=1
+PKT seq=21 rssi=0 phase=1
+PKT seq=22 rssi=0 phase=1
+PKT seq=23 rssi=0 phase=1
+PKT seq=24 rssi=0 phase=1
+PKT seq=25 rssi=0 phase=1
+PKT seq=26 rssi=0 phase=1
+PKT seq=27 rssi=0 phase=1
+PKT seq=28 rssi=0 phase=1
+PKT seq=29 rssi=0 phase=1
+PKT seq=30 rssi=0 phase=1
+PKT seq=31 rssi=0 phase=1
+PKT seq=32 rssi=0 phase=1
+PKT seq=33 rssi=0 phase=1
+PKT seq=34 rssi=0 phase=1
+PKT seq=35 rssi=0 phase=1
+PKT seq=36 rssi=0 phase=1
+PKT seq=37 rssi=0 phase=1
+PKT seq=38 rssi=0 phase=1
+PKT seq=39 rssi=0 phase=1
+PKT seq=40 rssi=0 phase=1
+PKT seq=41 rssi=0 phase=1
+PKT seq=42 rssi=0 phase=1
+PKT seq=43 rssi=0 phase=1
+PKT seq=44 rssi=0 phase=1
+PKT seq=45 rssi=0 phase=1
+PKT seq=46 rssi=0 phase=1
+PKT seq=47 rssi=0 phase=1
+PKT seq=48 rssi=0 phase=1
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 2 HF-LoRa-SF12 NO_GPS
+PKT seq=0 rssi=0 phase=2
+PKT seq=1 rssi=0 phase=2
+HEARTBEAT millis=234004 phase=2
+PKT seq=2 rssi=0 phase=2
+PKT seq=3 rssi=0 phase=2
+PKT seq=4 rssi=0 phase=2
+PKT seq=5 rssi=0 phase=2
+PKT seq=6 rssi=0 phase=2
+PKT seq=7 rssi=0 phase=2
+PKT seq=8 rssi=0 phase=2
+PKT seq=9 rssi=0 phase=2
+PKT seq=10 rssi=0 phase=2
+PKT seq=11 rssi=0 phase=2
+PKT seq=12 rssi=0 phase=2
+HEARTBEAT millis=245003 phase=2
+PKT seq=13 rssi=0 phase=2
+PKT seq=14 rssi=0 phase=2
+PKT seq=15 rssi=0 phase=2
+PKT seq=16 rssi=0 phase=2
+PKT seq=17 rssi=0 phase=2
+PKT seq=18 rssi=0 phase=2
+PKT seq=19 rssi=0 phase=2
+PKT seq=20 rssi=0 phase=2
+PKT seq=21 rssi=0 phase=2
+PKT seq=22 rssi=0 phase=2
+PKT seq=23 rssi=0 phase=2
+HEARTBEAT millis=256003 phase=2
+PKT seq=24 rssi=0 phase=2
+PKT seq=25 rssi=0 phase=2
+PKT seq=26 rssi=0 phase=2
+PKT seq=27 rssi=0 phase=2
+PKT seq=28 rssi=0 phase=2
+PKT seq=29 rssi=0 phase=2
+PHASE_GUARD 500
+PHASE_START 3 HF-FLRC-2600 NO_GPS
+PKT seq=0 rssi=0 phase=3
+PKT seq=1 rssi=0 phase=3
+PKT seq=2 rssi=0 phase=3
+PKT seq=3 rssi=0 phase=3
+PKT seq=4 rssi=0 phase=3
+PKT seq=5 rssi=0 phase=3
+PKT seq=6 rssi=0 phase=3
+PKT seq=7 rssi=0 phase=3
+PKT seq=8 rssi=0 phase=3
+PKT seq=9 rssi=0 phase=3
+PKT seq=10 rssi=0 phase=3
+PKT seq=11 rssi=0 phase=3
+PKT seq=12 rssi=0 phase=3
+PKT seq=13 rssi=0 phase=3
+PKT seq=14 rssi=0 phase=3
+PKT seq=15 rssi=0 phase=3
+PKT seq=16 rssi=0 phase=3
+PKT seq=17 rssi=0 phase=3
+PKT seq=18 rssi=0 phase=3
+PKT seq=19 rssi=0 phase=3
+PKT seq=20 rssi=0 phase=3
+PKT seq=21 rssi=0 phase=3
+PKT seq=22 rssi=0 phase=3
+PKT seq=23 rssi=0 phase=3
+PKT seq=24 rssi=0 phase=3
+PKT seq=25 rssi=0 phase=3
+PKT seq=26 rssi=0 phase=3
+PKT seq=27 rssi=0 phase=3
+PKT seq=28 rssi=0 phase=3
+PKT seq=29 rssi=0 phase=3
+PKT seq=30 rssi=0 phase=3
+PKT seq=31 rssi=0 phase=3
+PKT seq=32 rssi=0 phase=3
+PKT seq=33 rssi=0 phase=3
+PKT seq=34 rssi=0 phase=3
+PKT seq=35 rssi=0 phase=3
+PKT seq=36 rssi=0 phase=3
+PKT seq=37 rssi=0 phase=3
+PKT seq=38 rssi=0 phase=3
+PKT seq=39 rssi=0 phase=3
+PKT seq=40 rssi=0 phase=3
+PKT seq=41 rssi=0 phase=3
+PKT seq=42 rssi=0 phase=3
+PKT seq=43 rssi=0 phase=3
+PKT seq=44 rssi=0 phase=3
+PKT seq=45 rssi=0 phase=3
+PKT seq=46 rssi=0 phase=3
+PKT seq=47 rssi=0 phase=3
+PKT seq=48 rssi=0 phase=3
+PKT seq=49 rssi=0 phase=3
+PKT seq=50 rssi=0 phase=3
+PKT seq=51 rssi=0 phase=3
+PKT seq=52 rssi=0 phase=3
+PKT seq=53 rssi=0 phase=3
+PKT seq=54 rssi=0 phase=3
+PKT seq=55 rssi=0 phase=3
+PKT seq=56 rssi=0 phase=3
+PKT seq=57 rssi=0 phase=3
+PKT seq=58 rssi=0 phase=3
+PKT seq=59 rssi=0 phase=3
+PKT seq=60 rssi=0 phase=3
+PKT seq=61 rssi=0 phase=3
+PKT seq=62 rssi=0 phase=3
+PKT seq=63 rssi=0 phase=3
+PKT seq=64 rssi=0 phase=3
+PKT seq=65 rssi=0 phase=3
+PKT seq=66 rssi=0 phase=3
+PKT seq=67 rssi=0 phase=3
+PKT seq=68 rssi=0 phase=3
+PKT seq=69 rssi=0 phase=3
+PKT seq=70 rssi=0 phase=3
+PKT seq=71 rssi=0 phase=3
+PKT seq=72 rssi=0 phase=3
+PKT seq=73 rssi=0 phase=3
+PKT seq=74 rssi=0 phase=3
+PKT seq=75 rssi=0 phase=3
+PKT seq=76 rssi=0 phase=3
+PKT seq=77 rssi=0 phase=3
+PKT seq=78 rssi=0 phase=3
+PKT seq=79 rssi=0 phase=3
+PKT seq=80 rssi=0 phase=3
+PKT seq=81 rssi=0 phase=3
+PKT seq=82 rssi=0 phase=3
+PKT seq=83 rssi=0 phase=3
+PKT seq=84 rssi=0 phase=3
+PKT seq=85 rssi=0 phase=3
+PKT seq=86 rssi=0 phase=3
+PKT seq=87 rssi=0 phase=3
+PKT seq=88 rssi=0 phase=3
+PKT seq=89 rssi=0 phase=3
+PKT seq=90 rssi=0 phase=3
+PKT seq=91 rssi=0 phase=3
+PKT seq=92 rssi=0 phase=3
+PKT seq=93 rssi=0 phase=3
+PKT seq=94 rssi=0 phase=3
+PKT seq=95 rssi=0 phase=3
+PKT seq=96 rssi=0 phase=3
+PKT seq=97 rssi=0 phase=3
+PKT seq=98 rssi=0 phase=3
+PKT seq=99 rssi=0 phase=3
+HEARTBEAT millis=266004 phase=3
+PKT seq=100 rssi=0 phase=3
+PKT seq=101 rssi=0 phase=3
+PKT seq=102 rssi=0 phase=3
+PKT seq=103 rssi=0 phase=3
+PKT seq=104 rssi=0 phase=3
+PKT seq=105 rssi=0 phase=3
+PKT seq=106 rssi=0 phase=3
+PKT seq=107 rssi=0 phase=3
+PKT seq=108 rssi=0 phase=3
+PKT seq=109 rssi=0 phase=3
+PKT seq=110 rssi=0 phase=3
+PKT seq=111 rssi=0 phase=3
+PKT seq=112 rssi=0 phase=3
+PKT seq=113 rssi=0 phase=3
+PKT seq=114 rssi=0 phase=3
+PKT seq=115 rssi=0 phase=3
+PKT seq=116 rssi=0 phase=3
+PKT seq=117 rssi=0 phase=3
+PKT seq=118 rssi=0 phase=3
+PKT seq=119 rssi=0 phase=3
+PKT seq=120 rssi=0 phase=3
+PKT seq=121 rssi=0 phase=3
+PKT seq=122 rssi=0 phase=3
+PKT seq=123 rssi=0 phase=3
+PKT seq=124 rssi=0 phase=3
+PKT seq=125 rssi=0 phase=3
+PKT seq=126 rssi=0 phase=3
+PKT seq=127 rssi=0 phase=3
+PKT seq=128 rssi=0 phase=3
+PKT seq=129 rssi=0 phase=3
+PKT seq=130 rssi=0 phase=3
+PKT seq=131 rssi=0 phase=3
+PKT seq=132 rssi=0 phase=3
+PKT seq=133 rssi=0 phase=3
+PKT seq=134 rssi=0 phase=3
+PKT seq=135 rssi=0 phase=3
+PKT seq=136 rssi=0 phase=3
+PKT seq=137 rssi=0 phase=3
+PKT seq=138 rssi=0 phase=3
+PKT seq=139 rssi=0 phase=3
+PKT seq=140 rssi=0 phase=3
+PKT seq=141 rssi=0 phase=3
+PKT seq=142 rssi=0 phase=3
+PKT seq=143 rssi=0 phase=3
+PKT seq=144 rssi=0 phase=3
+PKT seq=145 rssi=0 phase=3
+PKT seq=146 rssi=0 phase=3
+PKT seq=147 rssi=0 phase=3
+PKT seq=148 rssi=0 phase=3
+PKT seq=149 rssi=0 phase=3
+PKT seq=150 rssi=0 phase=3
+PKT seq=151 rssi=0 phase=3
+PKT seq=152 rssi=0 phase=3
+PKT seq=153 rssi=0 phase=3
+PKT seq=154 rssi=0 phase=3
+PKT seq=155 rssi=0 phase=3
+PKT seq=156 rssi=0 phase=3
+PKT seq=157 rssi=0 phase=3
+PKT seq=158 rssi=0 phase=3
+PKT seq=159 rssi=0 phase=3
+PKT seq=160 rssi=0 phase=3
+PKT seq=161 rssi=0 phase=3
+PKT seq=162 rssi=0 phase=3
+PKT seq=163 rssi=0 phase=3
+PKT seq=164 rssi=0 phase=3
+PKT seq=165 rssi=0 phase=3
+PKT seq=166 rssi=0 phase=3
+PKT seq=167 rssi=0 phase=3
+PKT seq=168 rssi=0 phase=3
+PKT seq=169 rssi=0 phase=3
+PKT seq=170 rssi=0 phase=3
+PKT seq=171 rssi=0 phase=3
+PKT seq=172 rssi=0 phase=3
+PKT seq=173 rssi=0 phase=3
+PKT seq=174 rssi=0 phase=3
+PKT seq=175 rssi=0 phase=3
+PKT seq=176 rssi=0 phase=3
+PKT seq=177 rssi=0 phase=3
+PKT seq=178 rssi=0 phase=3
+PKT seq=179 rssi=0 phase=3
+PKT seq=180 rssi=0 phase=3
+PKT seq=181 rssi=0 phase=3
+PKT seq=182 rssi=0 phase=3
+PKT seq=183 rssi=0 phase=3
+PKT seq=184 rssi=0 phase=3
+PKT seq=185 rssi=0 phase=3
+PKT seq=186 rssi=0 phase=3
+PKT seq=187 rssi=0 phase=3
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 4 HF-FLRC-1300 NO_GPS
+PKT seq=0 rssi=0 phase=4
+PKT seq=1 rssi=0 phase=4
+PKT seq=2 rssi=0 phase=4
+PKT seq=3 rssi=0 phase=4
+PKT seq=4 rssi=0 phase=4
+PKT seq=5 rssi=0 phase=4
+PKT seq=6 rssi=0 phase=4
+PKT seq=7 rssi=0 phase=4
+PKT seq=8 rssi=0 phase=4
+PKT seq=9 rssi=0 phase=4
+PKT seq=10 rssi=0 phase=4
+PKT seq=11 rssi=0 phase=4
+PKT seq=12 rssi=0 phase=4
+PKT seq=13 rssi=0 phase=4
+PKT seq=14 rssi=0 phase=4
+PKT seq=15 rssi=0 phase=4
+PKT seq=16 rssi=0 phase=4
+PKT seq=17 rssi=0 phase=4
+PKT seq=18 rssi=0 phase=4
+PKT seq=19 rssi=0 phase=4
+PKT seq=20 rssi=0 phase=4
+PKT seq=21 rssi=0 phase=4
+PKT seq=22 rssi=0 phase=4
+PKT seq=23 rssi=0 phase=4
+PKT seq=24 rssi=0 phase=4
+PKT seq=25 rssi=0 phase=4
+PKT seq=26 rssi=0 phase=4
+PKT seq=27 rssi=0 phase=4
+PKT seq=28 rssi=0 phase=4
+PKT seq=29 rssi=0 phase=4
+PKT seq=30 rssi=0 phase=4
+PKT seq=31 rssi=0 phase=4
+PKT seq=32 rssi=0 phase=4
+PKT seq=33 rssi=0 phase=4
+PKT seq=34 rssi=0 phase=4
+PKT seq=35 rssi=0 phase=4
+PKT seq=36 rssi=0 phase=4
+PKT seq=37 rssi=0 phase=4
+PKT seq=38 rssi=0 phase=4
+PKT seq=39 rssi=0 phase=4
+PKT seq=40 rssi=0 phase=4
+PKT seq=41 rssi=0 phase=4
+PKT seq=42 rssi=0 phase=4
+PKT seq=43 rssi=0 phase=4
+PKT seq=44 rssi=0 phase=4
+PKT seq=45 rssi=0 phase=4
+PKT seq=46 rssi=0 phase=4
+PKT seq=47 rssi=0 phase=4
+PKT seq=48 rssi=0 phase=4
+PKT seq=49 rssi=0 phase=4
+PKT seq=50 rssi=0 phase=4
+PKT seq=51 rssi=0 phase=4
+PKT seq=52 rssi=0 phase=4
+PKT seq=53 rssi=0 phase=4
+PKT seq=54 rssi=0 phase=4
+PKT seq=55 rssi=0 phase=4
+PKT seq=56 rssi=0 phase=4
+PKT seq=57 rssi=0 phase=4
+PKT seq=58 rssi=0 phase=4
+PKT seq=59 rssi=0 phase=4
+PKT seq=60 rssi=0 phase=4
+PKT seq=61 rssi=0 phase=4
+PKT seq=62 rssi=0 phase=4
+PKT seq=63 rssi=0 phase=4
+PKT seq=64 rssi=0 phase=4
+PKT seq=65 rssi=0 phase=4
+PKT seq=66 rssi=0 phase=4
+PKT seq=67 rssi=0 phase=4
+PKT seq=68 rssi=0 phase=4
+PKT seq=69 rssi=0 phase=4
+PKT seq=70 rssi=0 phase=4
+PKT seq=71 rssi=0 phase=4
+PKT seq=72 rssi=0 phase=4
+PKT seq=73 rssi=0 phase=4
+PKT seq=74 rssi=0 phase=4
+PKT seq=75 rssi=0 phase=4
+PKT seq=76 rssi=0 phase=4
+PKT seq=77 rssi=0 phase=4
+PKT seq=78 rssi=0 phase=4
+PKT seq=79 rssi=0 phase=4
+PKT seq=80 rssi=0 phase=4
+PKT seq=81 rssi=0 phase=4
+PKT seq=82 rssi=0 phase=4
+PKT seq=83 rssi=0 phase=4
+PKT seq=84 rssi=0 phase=4
+PKT seq=85 rssi=0 phase=4
+PKT seq=86 rssi=0 phase=4
+PKT seq=87 rssi=0 phase=4
+PKT seq=88 rssi=0 phase=4
+PKT seq=89 rssi=0 phase=4
+PKT seq=90 rssi=0 phase=4
+PKT seq=91 rssi=0 phase=4
+PKT seq=92 rssi=0 phase=4
+PKT seq=93 rssi=0 phase=4
+PKT seq=94 rssi=0 phase=4
+PKT seq=95 rssi=0 phase=4
+PKT seq=96 rssi=0 phase=4
+PKT seq=97 rssi=0 phase=4
+PKT seq=98 rssi=0 phase=4
+PKT seq=99 rssi=0 phase=4
+PKT seq=100 rssi=0 phase=4
+PKT seq=101 rssi=0 phase=4
+PKT seq=102 rssi=0 phase=4
+PKT seq=103 rssi=0 phase=4
+PKT seq=104 rssi=0 phase=4
+PKT seq=105 rssi=0 phase=4
+PKT seq=106 rssi=0 phase=4
+PKT seq=107 rssi=0 phase=4
+PKT seq=108 rssi=0 phase=4
+PKT seq=109 rssi=0 phase=4
+PKT seq=110 rssi=0 phase=4
+PKT seq=111 rssi=0 phase=4
+PKT seq=112 rssi=0 phase=4
+PKT seq=113 rssi=0 phase=4
+PKT seq=114 rssi=0 phase=4
+PKT seq=115 rssi=0 phase=4
+PKT seq=116 rssi=0 phase=4
+PKT seq=117 rssi=0 phase=4
+PKT seq=118 rssi=0 phase=4
+PKT seq=119 rssi=0 phase=4
+PKT seq=120 rssi=0 phase=4
+PKT seq=121 rssi=0 phase=4
+PKT seq=122 rssi=0 phase=4
+PKT seq=123 rssi=0 phase=4
+PKT seq=124 rssi=0 phase=4
+PKT seq=125 rssi=0 phase=4
+PKT seq=126 rssi=0 phase=4
+PKT seq=127 rssi=0 phase=4
+PKT seq=128 rssi=0 phase=4
+PKT seq=129 rssi=0 phase=4
+PKT seq=130 rssi=0 phase=4
+PKT seq=131 rssi=0 phase=4
+PKT seq=132 rssi=0 phase=4
+PKT seq=133 rssi=0 phase=4
+PKT seq=134 rssi=0 phase=4
+PKT seq=135 rssi=0 phase=4
+PKT seq=136 rssi=0 phase=4
+PKT seq=137 rssi=0 phase=4
+PKT seq=138 rssi=0 phase=4
+PKT seq=139 rssi=0 phase=4
+PKT seq=140 rssi=0 phase=4
+PKT seq=141 rssi=0 phase=4
+PKT seq=142 rssi=0 phase=4
+PKT seq=143 rssi=0 phase=4
+PKT seq=144 rssi=0 phase=4
+PKT seq=145 rssi=0 phase=4
+PKT seq=146 rssi=0 phase=4
+PKT seq=147 rssi=0 phase=4
+PKT seq=148 rssi=0 phase=4
+PKT seq=149 rssi=0 phase=4
+PKT seq=150 rssi=0 phase=4
+HEARTBEAT millis=276041 phase=4
+PKT seq=151 rssi=0 phase=4
+PKT seq=152 rssi=0 phase=4
+PKT seq=153 rssi=0 phase=4
+PKT seq=154 rssi=0 phase=4
+PKT seq=155 rssi=0 phase=4
+PKT seq=156 rssi=0 phase=4
+PKT seq=157 rssi=0 phase=4
+PKT seq=158 rssi=0 phase=4
+PKT seq=159 rssi=0 phase=4
+PKT seq=160 rssi=0 phase=4
+PKT seq=161 rssi=0 phase=4
+PKT seq=162 rssi=0 phase=4
+PKT seq=163 rssi=0 phase=4
+PKT seq=164 rssi=0 phase=4
+PKT seq=165 rssi=0 phase=4
+PKT seq=166 rssi=0 phase=4
+PKT seq=167 rssi=0 phase=4
+PKT seq=168 rssi=0 phase=4
+PKT seq=169 rssi=0 phase=4
+PKT seq=170 rssi=0 phase=4
+PKT seq=171 rssi=0 phase=4
+PKT seq=172 rssi=0 phase=4
+PKT seq=173 rssi=0 phase=4
+PKT seq=174 rssi=0 phase=4
+PKT seq=175 rssi=0 phase=4
+PKT seq=176 rssi=0 phase=4
+PKT seq=177 rssi=0 phase=4
+PKT seq=178 rssi=0 phase=4
+PKT seq=179 rssi=0 phase=4
+PKT seq=180 rssi=0 phase=4
+PKT seq=181 rssi=0 phase=4
+PKT seq=182 rssi=0 phase=4
+PKT seq=183 rssi=0 phase=4
+PKT seq=184 rssi=0 phase=4
+PKT seq=185 rssi=0 phase=4
+PKT seq=186 rssi=0 phase=4
+PKT seq=187 rssi=0 phase=4
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_START 5 HF-FLRC-650 NO_GPS
+PKT seq=0 rssi=0 phase=5
+PKT seq=1 rssi=0 phase=5
+PKT seq=2 rssi=0 phase=5
+PKT seq=3 rssi=0 phase=5
+PKT seq=4 rssi=0 phase=5
+PKT seq=5 rssi=0 phase=5
+PKT seq=6 rssi=0 phase=5
+PKT seq=7 rssi=0 phase=5
+PKT seq=8 rssi=0 phase=5
+PKT seq=9 rssi=0 phase=5
+PKT seq=10 rssi=0 phase=5
+PKT seq=11 rssi=0 phase=5
+PKT seq=12 rssi=0 phase=5
+PKT seq=13 rssi=0 phase=5
+PKT seq=14 rssi=0 phase=5
+PKT seq=15 rssi=0 phase=5
+PKT seq=16 rssi=0 phase=5
+PKT seq=17 rssi=0 phase=5
+PKT seq=18 rssi=0 phase=5
+PKT seq=19 rssi=0 phase=5
+PKT seq=20 rssi=0 phase=5
+PKT seq=21 rssi=0 phase=5
+PKT seq=22 rssi=0 phase=5
+PKT seq=23 rssi=0 phase=5
+PKT seq=24 rssi=0 phase=5
+PKT seq=25 rssi=0 phase=5
+PKT seq=26 rssi=0 phase=5
+PKT seq=27 rssi=0 phase=5
+PKT seq=28 rssi=0 phase=5
+PKT seq=29 rssi=0 phase=5
+PKT seq=30 rssi=0 phase=5
+PKT seq=31 rssi=0 phase=5
+PKT seq=32 rssi=0 phase=5
+PKT seq=33 rssi=0 phase=5
+PKT seq=34 rssi=0 phase=5
+PKT seq=35 rssi=0 phase=5
+PKT seq=36 rssi=0 phase=5
+PKT seq=37 rssi=0 phase=5
+PKT seq=38 rssi=0 phase=5
+PKT seq=39 rssi=0 phase=5
+PKT seq=40 rssi=0 phase=5
+PKT seq=41 rssi=0 phase=5
+PKT seq=42 rssi=0 phase=5
+PKT seq=43 rssi=0 phase=5
+PKT seq=44 rssi=0 phase=5
+PKT seq=45 rssi=0 phase=5
+PKT seq=46 rssi=0 phase=5
+PKT seq=47 rssi=0 phase=5
+PKT seq=48 rssi=0 phase=5
+PKT seq=49 rssi=0 phase=5
+PKT seq=50 rssi=0 phase=5
+PKT seq=51 rssi=0 phase=5
+PKT seq=52 rssi=0 phase=5
+PKT seq=53 rssi=0 phase=5
+PKT seq=54 rssi=0 phase=5
+PKT seq=55 rssi=0 phase=5
+PKT seq=56 rssi=0 phase=5
+PKT seq=57 rssi=0 phase=5
+PKT seq=58 rssi=0 phase=5
+PKT seq=59 rssi=0 phase=5
+PKT seq=60 rssi=0 phase=5
+PKT seq=61 rssi=0 phase=5
+PKT seq=62 rssi=0 phase=5
+PKT seq=63 rssi=0 phase=5
+PKT seq=64 rssi=0 phase=5
+PKT seq=65 rssi=0 phase=5
+PKT seq=66 rssi=0 phase=5
+PKT seq=67 rssi=0 phase=5
+PKT seq=68 rssi=0 phase=5
+PKT seq=69 rssi=0 phase=5
+PKT seq=70 rssi=0 phase=5
+PKT seq=71 rssi=0 phase=5
+PKT seq=72 rssi=0 phase=5
+PKT seq=73 rssi=0 phase=5
+PKT seq=74 rssi=0 phase=5
+PKT seq=75 rssi=0 phase=5
+PKT seq=76 rssi=0 phase=5
+PKT seq=77 rssi=0 phase=5
+PKT seq=78 rssi=0 phase=5
+PKT seq=79 rssi=0 phase=5
+PKT seq=80 rssi=0 phase=5
+PKT seq=81 rssi=0 phase=5
+PKT seq=82 rssi=0 phase=5
+PKT seq=83 rssi=0 phase=5
+PKT seq=84 rssi=0 phase=5
+PKT seq=85 rssi=0 phase=5
+PKT seq=86 rssi=0 phase=5
+PKT seq=87 rssi=0 phase=5
+PKT seq=88 rssi=0 phase=5
+PKT seq=89 rssi=0 phase=5
+PKT seq=90 rssi=0 phase=5
+PKT seq=91 rssi=0 phase=5
+PKT seq=92 rssi=0 phase=5
+PKT seq=93 rssi=0 phase=5
+PKT seq=94 rssi=0 phase=5
+PKT seq=95 rssi=0 phase=5
+PKT seq=96 rssi=0 phase=5
+PKT seq=97 rssi=0 phase=5
+PKT seq=98 rssi=0 phase=5
+PKT seq=99 rssi=0 phase=5
+PKT seq=100 rssi=0 phase=5
+PKT seq=101 rssi=0 phase=5
+PKT seq=102 rssi=0 phase=5
+PKT seq=103 rssi=0 phase=5
+PKT seq=104 rssi=0 phase=5
+PKT seq=105 rssi=0 phase=5
+PKT seq=106 rssi=0 phase=5
+PKT seq=107 rssi=0 phase=5
+PKT seq=108 rssi=0 phase=5
+PKT seq=109 rssi=0 phase=5
+PKT seq=110 rssi=0 phase=5
+PKT seq=111 rssi=0 phase=5
+PKT seq=112 rssi=0 phase=5
+PKT seq=113 rssi=0 phase=5
+PKT seq=114 rssi=0 phase=5
+PKT seq=115 rssi=0 phase=5
+PKT seq=116 rssi=0 phase=5
+PKT seq=117 rssi=0 phase=5
+PKT seq=118 rssi=0 phase=5
+PKT seq=119 rssi=0 phase=5
+PKT seq=120 rssi=0 phase=5
+PKT seq=121 rssi=0 phase=5
+PKT seq=122 rssi=0 phase=5
+PKT seq=123 rssi=0 phase=5
+PKT seq=124 rssi=0 phase=5
+PKT seq=125 rssi=0 phase=5
+PKT seq=126 rssi=0 phase=5
+PKT seq=127 rssi=0 phase=5
+PKT seq=128 rssi=0 phase=5
+PKT seq=129 rssi=0 phase=5
+PKT seq=130 rssi=0 phase=5
+PKT seq=131 rssi=0 phase=5
+PKT seq=132 rssi=0 phase=5
+PKT seq=133 rssi=0 phase=5
+PKT seq=134 rssi=0 phase=5
+PKT seq=135 rssi=0 phase=5
+PKT seq=136 rssi=0 phase=5
+PKT seq=137 rssi=0 phase=5
+PKT seq=138 rssi=0 phase=5
+PKT seq=139 rssi=0 phase=5
+PKT seq=140 rssi=0 phase=5
+PKT seq=141 rssi=0 phase=5
+PKT seq=142 rssi=0 phase=5
+PKT seq=143 rssi=0 phase=5
+PKT seq=144 rssi=0 phase=5
+PKT seq=145 rssi=0 phase=5
+PKT seq=146 rssi=0 phase=5
+PKT seq=147 rssi=0 phase=5
+PKT seq=148 rssi=0 phase=5
+PKT seq=149 rssi=0 phase=5
+PKT seq=150 rssi=0 phase=5
+PKT seq=151 rssi=0 phase=5
+PKT seq=152 rssi=0 phase=5
+PKT seq=153 rssi=0 phase=5
+PKT seq=154 rssi=0 phase=5
+PKT seq=155 rssi=0 phase=5
+PKT seq=156 rssi=0 phase=5
+PKT seq=157 rssi=0 phase=5
+PKT seq=158 rssi=0 phase=5
+PKT seq=159 rssi=0 phase=5
+PKT seq=160 rssi=0 phase=5
+PKT seq=161 rssi=0 phase=5
+PKT seq=162 rssi=0 phase=5
+PKT seq=163 rssi=0 phase=5
+PKT seq=164 rssi=0 phase=5
+PKT seq=165 rssi=0 phase=5
+PKT seq=166 rssi=0 phase=5
+PKT seq=167 rssi=0 phase=5
+PKT seq=168 rssi=0 phase=5
+PKT seq=169 rssi=0 phase=5
+PKT seq=170 rssi=0 phase=5
+PKT seq=171 rssi=0 phase=5
+PKT seq=172 rssi=0 phase=5
+PKT seq=173 rssi=0 phase=5
+PKT seq=174 rssi=0 phase=5
+PKT seq=175 rssi=0 phase=5
+PKT seq=176 rssi=0 phase=5
+PKT seq=177 rssi=0 phase=5
+PKT seq=178 rssi=0 phase=5
+PKT seq=179 rssi=0 phase=5
+PKT seq=180 rssi=0 phase=5
+PKT seq=181 rssi=0 phase=5
+PKT seq=182 rssi=0 phase=5
+PKT seq=183 rssi=0 phase=5
+PKT seq=184 rssi=0 phase=5
+PKT seq=185 rssi=0 phase=5
+PKT seq=186 rssi=0 phase=5
+PKT seq=187 rssi=0 phase=5
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
+PHASE_GUARD 500
