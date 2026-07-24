@@ -563,6 +563,22 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                                       (unsigned long)laptopUtc);
                     }
                 
+                // BUG3 FIX: If TX packet has valid UTC, check if we're on the wrong phase
+                // and jump to match TX. This makes sync visible in captures.
+                if (txUtc > 0 && totalCycleSec > 0) {
+                    // TX utc is seconds-since-midnight (from GPS hh:mm:ss)
+                    int txPhase = computePhaseFromUTC(txUtc);
+                    if (txPhase != phaseIdx) {
+                        dualPrintf("PHASE_JUMP from=%d to=%d (TX utc=%lu) \n",
+                                      phaseIdx, txPhase, (unsigned long)txUtc);
+                        // Re-init for the TX's phase and listen there
+                        currentPhase = txPhase;
+                        phaseStartMs = millis();
+                        // Don't call runRxPhase recursively — just log the jump
+                        // The main loop will pick up the new currentPhase next cycle
+                    }
+                }
+
                 // Log first few packets per phase for debugging
                 if (received <= 3) {
                     // Raw byte dump for first FLRC packet — 32 bytes to find sync header offset
