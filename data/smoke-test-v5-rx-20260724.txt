@@ -1,0 +1,36 @@
+PHASE_RESULT 9 LF-LoRa-SF12 rx=11 unique=10 lost=10 per=50.0 rssi_avg=-23 rssi_min=-26 crc_err=0 tx_lat=32.63925 tx_lon=-16.94650 sats=12 fix=1 utc=33335
+PHASE_GUARD 500
+PHASE_START 10 LF-FLRC-2600
+PHASE_RESULT 10 LF-FLRC-2600 rx=0 unique=0 lost=200 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+PHASE_START 11 LF-FLRC-1300
+PHASE_RESULT 11 LF-FLRC-1300 rx=0 unique=0 lost=200 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+PHASE_START 12 LF-FLRC-650
+PHASE_RESULT 12 LF-FLRC-650 rx=0 unique=0 lost=200 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+PHASE_START 13 LF-FLRC-325
+TIME_DIFF gps_utc=1112893592 laptop_utc=1784884595
+FLRC_RAW32: 186 119 48 121 230 125 88 52 29 122 121 152 104 85 66 195 51 203 213 94 158 102 26 21 80 176 204 200 0 8 134 167
+PKT rx=1 seq=13259 rssi=-48 phase=13 rx_ms=248013 tx_lat=203.32195 tx_lon=87.82146 sats=31261 fix=121 utc=1112893592
+TIME_DIFF gps_utc=1512100051 laptop_utc=1784884598
+PKT rx=2 seq=26017 rssi=-47 phase=13 rx_ms=251295 tx_lat=-186.95819 tx_lon=205.37279 sats=54187 fix=204 utc=1512100051
+PHASE_RESULT 13 LF-FLRC-325 rx=2 unique=0 lost=200 per=100.0 rssi_avg=-48 rssi_min=-48 crc_err=0 tx_lat=-186.95819 tx_lon=205.37279 sats=54187 fix=204 utc=1512100051
+PHASE_GUARD 500
+=== CYCLE 0 COMPLETE uptime=256815 utc=1784884603 ===
+
+=== CYCLE 1 START uptime=257818 utc=1784884604 ===
+PHASE_JUMP from=0 to=4 (UTC sync)
+PHASE_START 4 HF-FLRC-1300
+TIME_DIFF gps_utc=428790831 laptop_utc=1784884605
+FLRC_RAW32: 75 23 197 85 93 178 221 46 180 43 110 47 212 142 25 145 117 40 26 107 46 82 232 154 34 10 214 245 40 139 37 127
+PKT rx=1 seq=29992 rssi=-54 phase=4 rx_ms=258551 tx_lat=143.89799 tx_lon=78.62811 sats=11188 fix=110 utc=428790831
+TIME_DIFF gps_utc=502662658 laptop_utc=1784884605
+PKT rx=2 seq=60422 rssi=-54 phase=4 rx_ms=258737 tx_lat=124.61544 tx_lon=-4.15868 sats=34712 fix=215 utc=502662658
+TIME_DIFF gps_utc=3942819238 laptop_utc=1784884606
+PKT rx=3 seq=38707 rssi=-54 phase=4 rx_ms=259798 tx_lat=146.96339 tx_lon=19.37030 sats=63965 fix=235 utc=3942819238
+TIME_DIFF gps_utc=427130460 laptop_utc=1784884610
+TIME_DIFF gps_utc=3879755379 laptop_utc=1784884611
+TIME_DIFF gps_utc=762449644 laptop_utc=1784884612
+TIME_DIFF gps_utc=75518087 laptop_utc=1784884612
+TIME_DIFF gps_utc=1402652869 laptop_utc=1784884613
