@@ -445,8 +445,22 @@ static void runTxPhase(const Phase &p, int phaseIdx) {
 
     digitalWrite(PIN_LED, LOW);
     uint32_t elapsed = millis() - startMs;
-    dualPrintf("PHASE_RESULT %d %s sent=%u timeout=%u elapsed_ms=%lu\n",
-                  phaseIdx, p.name, sent, timeout, elapsed);
+    // TX side output — LR2021_RESULT format with tx-side fields
+    int bw_khz = p.bwCode == 0x05 ? 250 : (p.bwCode == 0x0F ? 812 : 0);
+    int sf = (p.pktType == PT_LORA) ? p.sf : 0;
+    int br = (p.pktType == PT_FLRC) ? p.flrcBr : 0;
+    int pkt_sz = (p.pktType == PT_LORA) ? LORA_PKT_SIZE : FLRC_PKT_SIZE;
+    const char* modStr = (p.pktType == PT_LORA) ? "LORA" : "FLRC";
+    const char* pathStr = p.rfPath == 1 ?
+        (p.pktType == PT_LORA ? "HF_LORA" : "HF_FLRC") :
+        (p.pktType == PT_LORA ? "LF_LORA" : "LF_FLRC");
+    const char* paStr = (TX_POWER_DBM >= 12.5f) ? "ON" : "OFF";
+
+    dualPrintf("LR2021_RESULT,path=%s,freq_mhz=%d,modulation=%s,bitrate_kbps=%d,spreading_factor=%d,bandwidth_khz=%d,coding_rate=45,tx_power_dbm=%.1f,pa_state=%s,distance_m=,los=,packets_sent=%u,packets_rx=0,packets_unique=0,per_percent=,throughput_kbps=,rssi_avg_dbm=,rssi_min_dbm=,rssi_max_dbm=,snr_avg_db=%s,pkt_size_bytes=%d,uptime_ms=%lu,notes=tx_side_phase=%d_timeout=%u\n",
+                  pathStr, (int)p.freqMHz, modStr, br, sf, bw_khz,
+                  (double)TX_POWER_DBM, paStr, sent,
+                  (p.pktType == PT_LORA) ? "" : "NA",
+                  pkt_sz, startMs, phaseIdx, timeout);
     Serial.flush(); Serial1.flush();
 }
 #endif
@@ -559,8 +573,20 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
         (p.pktType == PT_LORA ? "LF_LORA" : "LF_FLRC");
     const char* paStr = (TX_POWER_DBM >= 12.5f) ? "ON" : "OFF";
 
-    dualPrintf("PHASE_RESULT %d %s path=%s pa=%s rx=%u crc_err=%u per=%.1f rssi_avg=%.1f expected=%u\n",
-                  phaseIdx, p.name, pathStr, paStr, received, crcErrors, per, rssiAvg, p.pktCount);
+    // Output in LR2021_RESULT unified CSV format (plan section 3.1)
+    // Fields the firmware can't know (distance_m, los, gps_time) left for post-processing
+    int bw_khz = p.bwCode == 0x05 ? 250 : (p.bwCode == 0x0F ? 812 : 0);
+    int sf = (p.pktType == PT_LORA) ? p.sf : 0;
+    int br = (p.pktType == PT_FLRC) ? p.flrcBr : 0;
+    int pkt_sz = (p.pktType == PT_LORA) ? LORA_PKT_SIZE : FLRC_PKT_SIZE;
+    const char* modStr = (p.pktType == PT_LORA) ? "LORA" : "FLRC";
+
+    dualPrintf("LR2021_RESULT,path=%s,freq_mhz=%d,modulation=%s,bitrate_kbps=%d,spreading_factor=%d,bandwidth_khz=%d,coding_rate=45,tx_power_dbm=%.1f,pa_state=%s,distance_m=,los=,packets_sent=%u,packets_rx=%u,packets_unique=%u,per_percent=%.1f,throughput_kbps=,rssi_avg_dbm=%.0f,rssi_min_dbm=,rssi_max_dbm=,snr_avg_db=%s,pkt_size_bytes=%d,uptime_ms=%lu,notes=phase=%d_crc_err=%u\n",
+                  pathStr, (int)p.freqMHz, modStr, br, sf, bw_khz,
+                  (double)TX_POWER_DBM, paStr,
+                  p.pktCount, received, received, per, rssiAvg,
+                  (p.pktType == PT_LORA) ? "" : "NA",
+                  pkt_sz, startMs, phaseIdx, crcErrors);
     Serial.flush(); Serial1.flush();
 }
 #endif
