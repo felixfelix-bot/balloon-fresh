@@ -227,7 +227,7 @@ static void rfReadRxFifo(uint8_t *data, size_t len) {
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x00);
-    spiRf.transfer(0x03);  // READ_RX_FIFO
+    spiRf.transfer(0x01);  // READ_RX_FIFO (LR2021 opcode = 0x01, NOT 0x03)
     for (size_t i = 0; i < len; i++) data[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
