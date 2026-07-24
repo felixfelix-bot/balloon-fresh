@@ -430,31 +430,37 @@ static void embedGPS(uint8_t *pkt, uint16_t seq, uint8_t phaseId) {
     int32_t lonE7 = (int32_t)(gps.lon * 1e7f);
     uint8_t fixQ = gps.fixValid ? 1 : 0;
 
-    // Latitude int32 LE
-    pkt[0] = (uint8_t)(latE7 & 0xFF);
-    pkt[1] = (uint8_t)((latE7 >> 8) & 0xFF);
-    pkt[2] = (uint8_t)((latE7 >> 16) & 0xFF);
-    pkt[3] = (uint8_t)((latE7 >> 24) & 0xFF);
-    // Longitude int32 LE
-    pkt[4] = (uint8_t)(lonE7 & 0xFF);
-    pkt[5] = (uint8_t)((lonE7 >> 8) & 0xFF);
-    pkt[6] = (uint8_t)((lonE7 >> 16) & 0xFF);
-    pkt[7] = (uint8_t)((lonE7 >> 24) & 0xFF);
-    // Satellites uint16 LE
-    pkt[8] = (uint8_t)(gps.sats & 0xFF);
-    pkt[9] = (uint8_t)(gps.sats >> 8);
-    // Fix quality
-    pkt[10] = fixQ;
-    // UTC seconds uint32 LE
-    pkt[11] = (uint8_t)(gps.timeSec & 0xFF);
-    pkt[12] = (uint8_t)((gps.timeSec >> 8) & 0xFF);
-    pkt[13] = (uint8_t)((gps.timeSec >> 16) & 0xFF);
-    pkt[14] = (uint8_t)((gps.timeSec >> 24) & 0xFF);
-    // Phase ID
-    pkt[15] = phaseId;
-    // Sequence number uint16 BE
-    pkt[16] = (uint8_t)(seq >> 8);
-    pkt[17] = (uint8_t)(seq & 0xFF);
+    // Bytes 0-3: sync header (matches proven flrc_range_tx_gps.cpp layout)
+    // LR2021 FIFO may prepend status bytes; proven code starts payload at byte 4
+    pkt[0] = 0xA5;
+    pkt[1] = 0x5A;
+    pkt[2] = 0x42;
+    pkt[3] = 0x24;
+    // Latitude int32 LE (bytes 4-7)
+    pkt[4] = (uint8_t)(latE7 & 0xFF);
+    pkt[5] = (uint8_t)((latE7 >> 8) & 0xFF);
+    pkt[6] = (uint8_t)((latE7 >> 16) & 0xFF);
+    pkt[7] = (uint8_t)((latE7 >> 24) & 0xFF);
+    // Longitude int32 LE (bytes 8-11)
+    pkt[8] = (uint8_t)(lonE7 & 0xFF);
+    pkt[9] = (uint8_t)((lonE7 >> 8) & 0xFF);
+    pkt[10] = (uint8_t)((lonE7 >> 16) & 0xFF);
+    pkt[11] = (uint8_t)((lonE7 >> 24) & 0xFF);
+    // Satellites uint16 LE (bytes 12-13)
+    pkt[12] = (uint8_t)(gps.sats & 0xFF);
+    pkt[13] = (uint8_t)(gps.sats >> 8);
+    // Fix quality (byte 14)
+    pkt[14] = fixQ;
+    // UTC seconds uint32 LE (bytes 15-18)
+    pkt[15] = (uint8_t)(gps.timeSec & 0xFF);
+    pkt[16] = (uint8_t)((gps.timeSec >> 8) & 0xFF);
+    pkt[17] = (uint8_t)((gps.timeSec >> 16) & 0xFF);
+    pkt[18] = (uint8_t)((gps.timeSec >> 24) & 0xFF);
+    // Phase ID (byte 19)
+    pkt[19] = phaseId;
+    // Sequence number uint16 BE (bytes 20-21)
+    pkt[20] = (uint8_t)(seq >> 8);
+    pkt[21] = (uint8_t)(seq & 0xFF);
 }
 
 // ─── Phase computation from GPS UTC time ──────────────────────────────
@@ -609,7 +615,7 @@ void loop() {
     // Build packet with GPS header
     embedGPS(txBuf, seqInPhase, (uint8_t)currentPhase);
     // Fill padding pattern after byte 17
-    for (int i = 18; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
+    for (int i = 22; i < pktSize; i++) txBuf[i] = (uint8_t)(i ^ 0xA5);
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;
