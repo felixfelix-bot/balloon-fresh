@@ -88,9 +88,56 @@ static const Phase phases[] = {
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
+// ─── Laptop time sync (bootstrap fix) ─────────────────────────────────
+// RX has no GPS. If it boots on the wrong phase, it listens on the wrong
+// frequency, never receives TX packets, and can't correct itself.
+// The laptop (NTP-synced) sends "SET_TIME <unix_timestamp>\n" over USB
+// serial at capture start. RX uses this as its UTC clock bootstrap.
+static uint32_t utcOffset = 0;  // offset from millis()/1000 to UTC seconds
+
+static uint32_t getUtcNow() {
+    return millis() / 1000 + utcOffset;
+}
+
+// Non-blocking: check Serial for SET_TIME command. Called from loop().
+static void checkSerialTimeSync() {
+    if (!Serial.available()) return;
+
+    // Read available characters into a line buffer
+    static char syncBuf[64];
+    static int syncLen = 0;
+
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (syncLen > 0) {
+                syncBuf[syncLen] = '\0';
+                // Parse "SET_TIME <unix_timestamp>"
+                if (strncmp(syncBuf, "SET_TIME ", 9) == 0) {
+                    uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
+                    if (ts > 0) {
+                        utcOffset = ts - millis() / 1000;
+                        dualPrintf("TIME_SYNCED utc=%lu offset=%ld\n",
+                                      (unsigned long)getUtcNow(),
+                                      (long)utcOffset);
+                    }
+                }
+                syncLen = 0;
+            }
+        } else {
+            if (syncLen < (int)sizeof(syncBuf) - 1) {
+                syncBuf[syncLen++] = c;
+            }
+        }
+    }
+}
+
 // ─── Phase drift correction state ────────────────────────────────────
 // RX has no GPS — uses millis(). When a TX packet arrives with utc_seconds,
 // we compute TX's phase from UTC and jump RX to match, eliminating drift.
+// If laptop time sync is available (utcOffset > 0), we use getUtcNow()
+// instead of raw millis() for initial phase selection, avoiding the
+// chicken-and-egg bootstrap problem.
 static uint32_t totalCycleSec = 0;
 static int currentPhase = 0;
 static uint32_t phaseStartMs = 0;
@@ -416,6 +463,9 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint32_t irqPinMask = 1UL << PIN_IRQ;
 
     while ((millis() - startMs) < slotBudget) {
+        // Non-blocking check for laptop time sync (even during RX listening)
+        checkSerialTimeSync();
+
         // Poll DIO9 IRQ pin
         if (sio_hw->gpio_in & irqPinMask) {
             uint32_t irq = rfReadIrqStatus();
@@ -567,9 +617,28 @@ void setup() {
 void loop() {
     static int cycleNum = 0;
 
-    dualPrintf("\n=== CYCLE %d START uptime=%lu ===\n", cycleNum, millis());
+    // Non-blocking check for laptop time sync command
+    checkSerialTimeSync();
+
+    dualPrintf("\n=== CYCLE %d START uptime=%lu utc=%lu ===\n",
+                  cycleNum, millis(),
+                  utcOffset > 0 ? (unsigned long)getUtcNow() : 0UL);
 
     for (int i = 0; i < NUM_PHASES; i++) {
+        // If we have UTC time from laptop sync, jump to the correct phase
+        // instead of always starting from phase 0. This fixes the bootstrap
+        // problem where RX boots on wrong phase and can never receive TX.
+        if (i == 0 && utcOffset > 0 && totalCycleSec > 0) {
+            int utcPhase = computePhaseFromUTC(getUtcNow());
+            if (utcPhase > 0 && utcPhase < NUM_PHASES) {
+                dualPrintf("PHASE_JUMP from=0 to=%d (UTC sync)\n", utcPhase);
+                currentPhase = utcPhase;
+                phaseStartMs = millis();
+                runRxPhase(phases[utcPhase], utcPhase);
+                i = utcPhase;  // loop will increment to utcPhase+1
+                continue;
+            }
+        }
         if (i > 0) {
             dualPrintf("PHASE_GUARD 500\n");
         }
@@ -585,7 +654,9 @@ void loop() {
     }
 
     dualPrintf("PHASE_GUARD 500\n");
-    dualPrintf("=== CYCLE %d COMPLETE uptime=%lu ===\n", cycleNum, millis());
+    dualPrintf("=== CYCLE %d COMPLETE uptime=%lu utc=%lu ===\n",
+                  cycleNum, millis(),
+                  utcOffset > 0 ? (unsigned long)getUtcNow() : 0UL);
     cycleNum++;
     delay(1000);
 }
