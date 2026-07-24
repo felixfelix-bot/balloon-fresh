@@ -1,0 +1,2 @@
+timestamp_iso,phase,seq,rssi_dbm,rx_ms,tx_lat,tx_lon,sats,fix_quality,utc_sec,distance_m
+2026-07-24T12:33:49.478436+00:00,12,18652,-58.0,288908,177.70869,-101.72428,27525,201,875312177,-1
