@@ -14,7 +14,7 @@ Firmware output formats:
     PKT rx=<n> seq=<n> rssi=<dbm> phase=<n>
 
   New firmware (with GPS in TX payload):
-    PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec> gps_time_delta_ms=<ms>
+    PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> gps_lat=<lat> gps_lon=<lon> gps_sats=<n> gps_fix=<n> gps_time_delta_ms=<ms>
     PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> rx_ms=<ms> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
 
 Usage:
@@ -155,7 +155,7 @@ def parse_phase_result(line: str) -> dict | None:
     Parse PHASE_RESULT lines (both old and new firmware formats).
 
     Old:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n>
-    New:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec> gps_time_delta_ms=<ms>
+    New:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> gps_lat=<lat> gps_lon=<lon> gps_sats=<n> gps_fix=<n> gps_time_delta_ms=<ms>
     """
     line = line.strip()
     if not line.startswith("PHASE_RESULT"):
@@ -193,13 +193,13 @@ def parse_phase_result(line: str) -> dict | None:
             result["rssi_min_dbm"] = float(val)
         elif key == "crc_err":
             result["crc_errors"] = int(val)
-        elif key == "tx_lat":
+        elif key == "tx_lat" or key == "gps_lat":
             result["lat"] = float(val)
-        elif key == "tx_lon":
+        elif key == "tx_lon" or key == "gps_lon":
             result["lon"] = float(val)
-        elif key == "sats":
+        elif key == "sats" or key == "gps_sats":
             result["sats"] = int(val)
-        elif key == "fix":
+        elif key == "fix" or key == "gps_fix":
             result["fix_quality"] = int(val)
         elif key == "utc":
             result["utc_sec"] = int(val)
@@ -609,25 +609,29 @@ def main():
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Connected. Sending SET_TIME sync to RX...", file=sys.stderr)
+    print(f"Connected. Sending TIME sync to RX...", file=sys.stderr)
 
     # ─── Send laptop time to RX for UTC bootstrap ──────────────────────
-    # RX has no GPS — laptop (NTP-synced) sends unix timestamp (seconds
-    # since epoch) so the RX board can sync its clock before capture.
-    # Firmware expects "SET_TIME <unix_timestamp>\n" (see checkSerialTimeSync).
-    last_sync_time = 0.0  # track when we last sent SET_TIME
+    # RX has no GPS — laptop (NTP-synced) sends time-of-day seconds
+    # (h*3600 + m*60 + s) so the RX board can sync its clock before capture.
+    # Firmware expects "TIME <utc_sec>\n".
+    # This is also re-sent every 120s during capture to keep the clock fresh.
+    TIME_SYNC_INTERVAL = 120.0  # seconds between periodic time refreshes
+    last_sync_time = 0.0
 
     def send_time_sync():
-        """Send SET_TIME with current unix timestamp to RX board."""
+        """Send TIME with current time-of-day seconds to RX board."""
         try:
-            ser.write(f"SET_TIME {int(time.time())}\n".encode("ascii"))
+            now = datetime.now()
+            utc_sec = now.hour * 3600 + now.minute * 60 + now.second
+            ser.write(f"TIME {utc_sec}\n".encode("ascii"))
         except Exception as e:
-            print(f"WARNING: Failed to send SET_TIME sync: {e}", file=sys.stderr)
+            print(f"WARNING: Failed to send TIME sync: {e}", file=sys.stderr)
 
     send_time_sync()
     last_sync_time = time.time()
-    time.sleep(1.0)  # Wait 1s for RX to process SET_TIME command
-    print(f"Sent SET_TIME sync to RX", file=sys.stderr)
+    time.sleep(1.0)  # Wait 1s for RX to process TIME command
+    print(f"Sent TIME sync to RX", file=sys.stderr)
 
     if not args.walk and args.distance > 0:
         print(f"Distance: {args.distance}m  Environment: {args.env}", file=sys.stderr)
@@ -673,11 +677,11 @@ def main():
                 print(f"\nDuration limit ({args.duration}s) reached. Stopping.", file=sys.stderr)
                 break
 
-            # Periodic SET_TIME resend (every 60s) to keep RX clock synced
-            if (time.time() - last_sync_time) >= 60.0:
+            # Periodic TIME resend (every 120s) to keep RX clock synced
+            if (time.time() - last_sync_time) >= TIME_SYNC_INTERVAL:
                 send_time_sync()
                 last_sync_time = time.time()
-                print("Resent SET_TIME", file=sys.stderr)
+                print("Resent TIME sync", file=sys.stderr)
 
             # Read available data
             data = ser.read(4096)
@@ -780,37 +784,25 @@ def main():
                             distance_m = haversine(base_lat, base_lon, lat, lon)
 
                     # ── Compute throughput using slot_ms from PHASE_TABLE ──
-                    # throughput_kbps = (unique_count * pkt_size * 8) / (slot_ms / 1000) / 1000
-                    # goodput_kbps = throughput_kbps (unique packets = no duplicates)
+                    # throughput_kbps = (unique * payload_bytes * 8) / (slot_ms/1000) / 1000
+                    # goodput_kbps   = (unique * useful_payload_bytes * 8) / (slot_ms/1000) / 1000
                     throughput_kbps = -1.0
                     goodput_kbps = -1.0
                     phase_num = phase_data.get("phase", -1)
                     if 0 <= phase_num < NUM_PHASES:
                         meta = PHASE_TABLE[phase_num]
                         pkt_size = meta["payload_bytes"]
+                        useful_bytes = meta["useful_payload_bytes"]
                         slot_ms = meta["slot_ms"]
                     else:
                         pkt_size = 127
+                        useful_bytes = 107
                         slot_ms = 0
 
                     num_unique = phase_data.get("rx_unique", 0)
                     if num_unique and num_unique > 0 and slot_ms > 0:
                         throughput_kbps = (num_unique * pkt_size * 8) / (slot_ms / 1000.0) / 1000.0
-                        goodput_kbps = throughput_kbps  # unique packets = no duplicates
-
-                    # Console output
-                    tp_str = ""
-                    if throughput_kbps >= 0:
-                        tp_str = (f"  thrpt={throughput_kbps:.1f} kbps  "
-                                  f"goodput={goodput_kbps:.1f} kbps")
-                    print(f"  PHASE {phase_data.get('phase', '?')} "
-                          f"{phase_data.get('name', '?')}: "
-                          f"rx={phase_data.get('rx_received', '?')} "
-                          f"unique={phase_data.get('rx_unique', '?')} "
-                          f"per={phase_data.get('per_pct', '?')}% "
-                          f"rssi_avg={phase_data.get('rssi_avg_dbm', '?')}dBm "
-                          f"{tp_str}",
-                          file=sys.stderr)
+                        goodput_kbps = (num_unique * useful_bytes * 8) / (slot_ms / 1000.0) / 1000.0
 
                     write_phase_csv_row(writer, phase_data, current_cycle,
                                         distance_m, args.env, args.notes,
