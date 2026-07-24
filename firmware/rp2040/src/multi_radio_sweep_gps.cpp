@@ -115,7 +115,7 @@ static uint32_t totalCycleSec = 0;
 #define TX_POWER_DBM   12.5f
 #define LORA_PKT_SIZE  127
 #define FLRC_PKT_SIZE  255
-#define GPS_BAUD       115200
+#define GPS_BAUD       9600    // GEP-M10nano default (NOT 115200 — that was wrong)
 #define GPS_FIX_TIMEOUT_MS 60000
 #define GPS_NMEA_MAX   160
 
