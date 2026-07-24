@@ -575,6 +575,9 @@ void loop() {
     int phase;
     if (gps.hasTime) {
         phase = computePhaseFromUTC(gps.timeSec);
+        outPrintf("DBG_UTC hasTime=1 timeSec=%lu cyclePos=%lu phase=%d curPhase=%d\n",
+                   (unsigned long)gps.timeSec, (unsigned long)(gps.timeSec % totalCycleSec),
+                   phase, currentPhase);
     } else {
         // Fallback: millis()-based cycling
         uint32_t cyclePos = (millis() / 1000) % totalCycleSec;

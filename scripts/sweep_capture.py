@@ -616,7 +616,7 @@ def main():
     # (h*3600 + m*60 + s) so the RX board can sync its clock before capture.
     # Firmware expects "TIME <utc_sec>\n".
     # This is also re-sent every 120s during capture to keep the clock fresh.
-    TIME_SYNC_INTERVAL = 120.0  # seconds between periodic time refreshes
+    TIME_SYNC_INTERVAL = 20.0  # seconds between periodic time refreshes (every phase)
     last_sync_time = 0.0
 
     def send_time_sync():
