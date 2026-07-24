@@ -14,8 +14,8 @@ Firmware output formats:
     PKT rx=<n> seq=<n> rssi=<dbm> phase=<n>
 
   New firmware (with GPS in TX payload):
-    PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> lat=<lat> lon=<lon> sats=<n> fix=<q> utc=<sec>
-    PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> lat=<lat> lon=<lon>
+    PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
+    PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
 
 Usage:
   # Walk mode — continuous capture with GPS distance
@@ -109,8 +109,11 @@ PKT_COLUMNS = [
     "phase",
     "seq",
     "rssi_dbm",
-    "lat",
-    "lon",
+    "tx_lat",
+    "tx_lon",
+    "sats",
+    "fix_quality",
+    "utc_sec",
     "distance_m",
 ]
 
@@ -136,7 +139,7 @@ def parse_phase_result(line: str) -> dict | None:
     Parse PHASE_RESULT lines (both old and new firmware formats).
 
     Old:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n>
-    New:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> lat=<lat> lon=<lon> sats=<n> fix=<q> utc=<sec>
+    New:  PHASE_RESULT <phase> <name> rx=<n> unique=<n> lost=<n> per=<pct> rssi_avg=<dbm> rssi_min=<dbm> crc_err=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
     """
     line = line.strip()
     if not line.startswith("PHASE_RESULT"):
@@ -174,9 +177,9 @@ def parse_phase_result(line: str) -> dict | None:
             result["rssi_min_dbm"] = float(val)
         elif key == "crc_err":
             result["crc_errors"] = int(val)
-        elif key == "lat":
+        elif key == "tx_lat":
             result["lat"] = float(val)
-        elif key == "lon":
+        elif key == "tx_lon":
             result["lon"] = float(val)
         elif key == "sats":
             result["sats"] = int(val)
@@ -205,7 +208,7 @@ def parse_pkt(line: str) -> dict | None:
     Parse PKT lines (both old and new firmware formats).
 
     Old:  PKT rx=<n> seq=<n> rssi=<dbm> phase=<n>
-    New:  PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> lat=<lat> lon=<lon>
+    New:  PKT rx=<n> seq=<n> rssi=<dbm> phase=<n> tx_lat=<lat> tx_lon=<lon> sats=<n> fix=<q> utc=<sec>
     """
     line = line.strip()
     if not line.startswith("PKT"):
@@ -226,10 +229,16 @@ def parse_pkt(line: str) -> dict | None:
             result["rssi"] = float(val)
         elif key == "phase":
             result["phase"] = int(val)
-        elif key == "lat":
+        elif key == "tx_lat":
             result["lat"] = float(val)
-        elif key == "lon":
+        elif key == "tx_lon":
             result["lon"] = float(val)
+        elif key == "sats":
+            result["sats"] = int(val)
+        elif key == "fix":
+            result["fix_quality"] = int(val)
+        elif key == "utc":
+            result["utc_sec"] = int(val)
     return result if result else None
 
 
@@ -383,8 +392,11 @@ def write_pkt_csv_row(writer: csv.DictWriter, pkt_data: dict,
     row["phase"] = pkt_data.get("phase", "")
     row["seq"] = pkt_data.get("seq", "")
     row["rssi_dbm"] = pkt_data.get("rssi", "")
-    row["lat"] = lat if lat is not None else ""
-    row["lon"] = lon if lon is not None else ""
+    row["tx_lat"] = lat if lat is not None else ""
+    row["tx_lon"] = lon if lon is not None else ""
+    row["sats"] = pkt_data.get("sats", "")
+    row["fix_quality"] = pkt_data.get("fix_quality", "")
+    row["utc_sec"] = pkt_data.get("utc_sec", "")
     row["distance_m"] = distance_m
 
     writer.writerow(row)
@@ -444,11 +456,14 @@ def main():
     if args.walk:
         csv_filename = f"walk_{timestamp}.csv"
         pkt_filename = f"walk_{timestamp}_packets.csv"
-    else:
+    elif args.distance > 0:
         csv_filename = (f"char_dist_{int(args.distance)}m_env_{args.env}"
                         f"_{timestamp}.csv")
         pkt_filename = (f"char_dist_{int(args.distance)}m_env_{args.env}"
                         f"_{timestamp}_packets.csv")
+    else:
+        csv_filename = f"capture_env_{args.env}_{timestamp}.csv"
+        pkt_filename = f"capture_env_{args.env}_{timestamp}_packets.csv"
 
     csv_path = os.path.join(args.output_dir, csv_filename)
     pkt_path = os.path.join(args.output_dir, pkt_filename)
@@ -609,9 +624,21 @@ def main():
                             distance_m = haversine(base_lat, base_lon, lat, lon)
                         elif lat is not None and lon is not None and fix == 0:
                             distance_m = -1  # no fix
-                    else:
-                        # Stop-and-capture: use manual distance
+                    elif args.distance > 0:
+                        # Stop-and-capture with explicit distance
                         distance_m = args.distance
+                    else:
+                        # No distance given — log tx_lat/tx_lon from packet,
+                        # distance can be computed post-hoc
+                        lat = phase_data.get("lat")
+                        lon = phase_data.get("lon")
+                        if lat is not None and lon is not None:
+                            if base_lat is None or base_lon is None:
+                                base_lat = lat
+                                base_lon = lon
+                                print(f"  [gps] Base station set to first TX fix: "
+                                      f"({base_lat:.6f}, {base_lon:.6f})", file=sys.stderr)
+                            distance_m = haversine(base_lat, base_lon, lat, lon)
 
                     write_phase_csv_row(writer, phase_data, current_cycle,
                                         distance_m, args.env, args.notes)

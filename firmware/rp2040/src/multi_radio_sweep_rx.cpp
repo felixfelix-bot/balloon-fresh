@@ -380,6 +380,11 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
     uint16_t rssiCount = 0;
     int16_t rssiMin = 0;   // most negative = weakest signal
 
+    // Track last GPS data from TX payload for phase result
+    float lastTxLat = 0, lastTxLon = 0;
+    uint16_t lastTxSats = 0, lastTxFix = 0;
+    uint32_t lastTxUtc = 0;
+
     resetSeenSeq();
 
     rfClearRxFifo();
@@ -422,10 +427,33 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                 }
                 received++;
 
+                // Extract GPS data from TX payload (bytes 3-18)
+                // bytes 3-6: latitude (float, LE)
+                // bytes 7-10: longitude (float, LE)
+                // bytes 11-12: num_sats (uint16_t BE)
+                // bytes 13-14: fix_valid (uint16_t BE)
+                // bytes 15-18: utc_seconds (uint32_t BE)
+                float txLat = 0, txLon = 0;
+                uint16_t txSats = 0, txFix = 0;
+                uint32_t txUtc = 0;
+                if (pktSize >= 19) {
+                    memcpy(&txLat, &rxBuf[3], 4);
+                    memcpy(&txLon, &rxBuf[7], 4);
+                    txSats = ((uint16_t)rxBuf[11] << 8) | rxBuf[12];
+                    txFix  = ((uint16_t)rxBuf[13] << 8) | rxBuf[14];
+                    txUtc  = ((uint32_t)rxBuf[15] << 24) | ((uint32_t)rxBuf[16] << 16) |
+                             ((uint32_t)rxBuf[17] << 8) | (uint32_t)rxBuf[18];
+                    // Save for phase result
+                    lastTxLat = txLat; lastTxLon = txLon;
+                    lastTxSats = txSats; lastTxFix = txFix;
+                    lastTxUtc = txUtc;
+                }
+
                 // Log first few packets per phase for debugging
                 if (received <= 3) {
-                    dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d\n",
-                                  received, seq, rssi / 10, phaseIdx);
+                    dualPrintf("PKT rx=%d seq=%u rssi=%d phase=%d tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
+                                  received, seq, rssi / 10, phaseIdx,
+                                  txLat, txLon, txSats, txFix, (unsigned long)txUtc);
                 }
 
                 digitalWrite(PIN_LED, (received & 1) ? HIGH : LOW);
@@ -449,9 +477,10 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     (float)rssiSum / rssiCount / 10.0f : 0.0f;
     float rssiMinDbm = (float)rssiMin / 10.0f;
 
-    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u\n",
+    dualPrintf("PHASE_RESULT %d %s rx=%u unique=%d lost=%d per=%.1f rssi_avg=%.0f rssi_min=%.0f crc_err=%u tx_lat=%.5f tx_lon=%.5f sats=%u fix=%u utc=%lu\n",
                   phaseIdx, p.name, received, unique, lost, per,
-                  rssiAvg, rssiMinDbm, crcErrors);
+                  rssiAvg, rssiMinDbm, crcErrors,
+                  lastTxLat, lastTxLon, lastTxSats, lastTxFix, (unsigned long)lastTxUtc);
     Serial.flush(); Serial1.flush();
 }
 
