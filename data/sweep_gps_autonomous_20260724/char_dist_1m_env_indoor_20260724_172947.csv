@@ -1,0 +1,7 @@
+timestamp_iso,cycle,phase,name,freq_mhz,modulation,bitrate_kbps,spreading_factor,bandwidth_khz,tx_sent,rx_received,rx_unique,lost,per_pct,rssi_avg_dbm,rssi_min_dbm,crc_errors,lat,lon,sats,fix_quality,utc_sec,distance_m,throughput_kbps,goodput_kbps,goodput_efficiency_pct,effective_throughput_kbps,theoretical_max_kbps,throughput_efficiency_pct,gps_time_delta_ms,environment,notes
+2026-07-24T12:01:16.886515+00:00,-1,11,LF-FLRC-1300,868,FLRC,1300,0,0,200,0,0,200,100.0,0.0,0.0,0,0.0,0.0,,0,0,1.0,,0.0,0.0,0.0,1300,0.0,-1,indoor,
+2026-07-24T12:01:42.898463+00:00,-1,12,LF-FLRC-650,868,FLRC,650,0,0,200,251,1,199,99.5,-50.0,-60.0,0,9.17505,110.74637,37220,135,196801,1.0,0.255,0.24,0.0,0.26,650,0.0,-1,indoor,
+2026-07-24T12:02:09.919262+00:00,-1,13,LF-FLRC-325,868,FLRC,325,0,0,200,189,0,200,100.0,-42.0,-43.0,0,172.12721,148.67757,34142,127,255676669,1.0,,0.0,0.0,0.0,325,0.0,-1,indoor,
+2026-07-24T12:03:00.962945+00:00,2,8,LF-LoRa-SF9,868,LORA,0,9,250,50,30,0,50,100.0,-26.0,-31.0,0,-83.45348,1.26832,3,1,1280598890,1.0,,0.0,0.0,0.0,3400,0.0,-1,indoor,
+2026-07-24T12:06:09.153254+00:00,2,12,LF-FLRC-650,868,FLRC,650,0,0,200,0,0,200,100.0,0.0,0.0,0,0.0,0.0,0,0,0,1.0,,0.0,0.0,0.0,650,0.0,-1,indoor,
+2026-07-24T12:06:36.181389+00:00,2,13,LF-FLRC-325,868,FLRC,325,0,0,200,0,0,200,100.0,0.0,0.0,0,0.0,0.0,0,0,0,1.0,,0.0,0.0,0.0,325,0.0,-1,indoor,
