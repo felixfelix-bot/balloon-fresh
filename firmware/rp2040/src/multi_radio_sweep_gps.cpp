@@ -543,12 +543,11 @@ void setup() {
                       phases[i].pktCount, phases[i].slotMs / 1000);
     }
 
-    // ── Wait for GPS time (up to 60s) ──
-    outPrintf("=== WAITING FOR GPS TIME (up to 60s) ===\n");
+    // ── Wait for GPS time (5s only — GPS may be dead, don't waste time) ──
+    outPrintf("=== WAITING FOR GPS TIME (5s quick check) ===\n");
     uint32_t gpsStart = millis();
-    while (!gps.hasTime && (millis() - gpsStart) < GPS_FIX_TIMEOUT_MS) {
+    while (!gps.hasTime && (millis() - gpsStart) < 5000) {
         gpsPoll();
-        // Fast blink during GPS search
         digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
         delay(10);
     }
