@@ -320,3 +320,25 @@ python3 ~/repos/balloon-fresh/tools/board-lock-assert.py tx rx || exit 1
 ```
 
 Scripts found using raw `serial.Serial()` on board ports are BUGS.
+
+## Board Access Protocol — MANDATORY
+
+1. ALWAYS acquire board lock before ANY board interaction:
+   ```bash
+   BALLOON_TRACK=speed-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both --purpose "<what>" --timeout 120
+   ```
+
+2. ALWAYS release when done:
+   ```bash
+   python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
+   ```
+
+3. NEVER use raw `pio run -t upload` — use pio-flash.sh wrapper:
+   ```bash
+   BALLOON_TRACK=speed-tests tools/pio-flash.sh <env> --upload-port /dev/ttyACMx
+   ```
+
+4. picotool and openocd are shimmed — they check lock before running.
+   Bypassing the shim is a violation.
+
+5. Flash requests require orchestrator approval (see docs/coordination/FLASH-QUEUE.md)
