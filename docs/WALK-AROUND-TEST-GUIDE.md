@@ -23,7 +23,7 @@ This guide walks the operator through an outdoor range test using the
   - HF antenna on Pin 10 (2.4 GHz)
   - LF antenna on Pin 9 (868 MHz sub-GHz)
 - [ ] RX board connected to laptop USB
-- [ ] GPS module connected to TX board (GP0/GP1, 9600 baud) — optional but recommended
+- [ ] GPS module connected to TX board (GP0/GP1, 115200 baud — GEPRC factory default)
 
 ### Software
 
@@ -253,14 +253,14 @@ The 14-phase cycle takes approximately:
 ```bash
 # Flash TX (GPS version)
 cd ~/worktrees/balloon-range-tests/firmware/rp2040
-pio run -e rp2040-sweep-gps-tx -t upload --upload-port /dev/ttyACM0
+pio run -e rp2040-sweep-gps-tx -t upload --upload-port /dev/ttyACM3
 
 # Flash RX
-pio run -e rp2040-sweep-rx -t upload --upload-port /dev/ttyACM2
+pio run -e rp2040-sweep-rx -t upload --upload-port /dev/ttyACM0
 
 # Capture at 50m outdoor
 cd ~/worktrees/balloon-range-tests
-python3 scripts/sweep_capture.py --port /dev/ttyACM2 --distance 50 --env outdoor_los --cycles 1
+python3 scripts/sweep_capture.py --port /dev/ttyACM0 --distance 50 --env outdoor_los --cycles 1
 
 # Plot results
 /opt/miniconda/bin/python3.13 tools/plot_characterization.py data/all_results.csv

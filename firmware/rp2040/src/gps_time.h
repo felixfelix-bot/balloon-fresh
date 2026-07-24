@@ -45,7 +45,7 @@ public:
     //   ppsPin    — RP2040 pin connected to GPS 1PPS output
     //   baud      — NMEA baud rate (default 9600 for ATGM336H / NEO-6M)
     void begin(uint8_t gpsRxPin, uint8_t gpsTxPin, uint8_t ppsPin,
-               uint32_t baud = 9600);
+               uint32_t baud = 115200);  // GEPRC GEP-M10nano default
 
     // Call in loop() — reads UART non-blocking, parses NMEA incrementally.
     void update();
