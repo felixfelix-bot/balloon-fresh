@@ -175,6 +175,10 @@ static void rfClearRxFifo() {
 }
 
 // ─── RSSI readers ────────────────────────────────────────────────────
+// GET_LORA_PACKET_STATUS (0x022A) response after 2 status bytes:
+//   buf[2] = rssiSync (packet RSSI)  → dBm = -val / 2
+//   buf[3] = SNR (signed)            → dB = val<128 ? val/4 : (val-256)/4
+//   (verified against RadioLib SX128x source + lr2021-complete-learnings)
 static int16_t rfGetLoraRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
@@ -191,10 +195,17 @@ static int16_t rfGetLoraRssi() {
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    // RSSI is unsigned — negate for dBm. Resolution 0.5 dBm → tenths: val*5
-    return -(int16_t)buf[4] * 5;
+    // buf[2] = rssiSync, dBm = -val/2. In tenths of dBm: -val * 5
+    return -(int16_t)buf[2] * 5;
 }
 
+// GET_FLRC_PACKET_STATUS (0x024B) — returns 5 bytes:
+//   [0-1] packet length (16-bit)
+//   [2]   RSSI average (7 MSBs of 9-bit value)
+//   [3]   RSSI sync (7 MSBs of 9-bit value)
+//   [4]   flags: bits[3:2]=rssiAvg LSB, bit[0]=rssiSync LSB, bits[7:4]=syncWordNum
+// Correct conversion (per RSSI-FIX-PLAN.md):
+//   rssiAvg = ((buf[2] << 1) | ((buf[4] & 0x04) >> 2)) / -2.0  → dBm (float)
 static int16_t rfGetFlrcRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
@@ -204,14 +215,17 @@ static int16_t rfGetFlrcRssi() {
     spiRf.endTransaction();
     rfWaitBusy();
 
-    uint8_t buf[8];
+    uint8_t buf[5];  // FLRC packet status returns 5 bytes (not 8)
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 8; i++) buf[i] = spiRf.transfer(0x00);
+    for (int i = 0; i < 5; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 
-    return -(int16_t)buf[4] * 5;
+    // 9-bit RSSI assembly: bits[8:1] from buf[2], bit[0] from buf[4] bit[2]
+    uint16_t raw = ((uint16_t)buf[2] << 1) | ((buf[4] & 0x04) >> 2);
+    float rssiAvg = (float)raw / -2.0f;  // dBm
+    return (int16_t)(rssiAvg * 10.0f);   // tenths of dBm
 }
 
 // ─── Frequency + power setters ───────────────────────────────────────
