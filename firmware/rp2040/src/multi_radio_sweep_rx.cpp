@@ -88,6 +88,23 @@ static const Phase phases[] = {
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
+// ─── Phase drift correction state ────────────────────────────────────
+// RX has no GPS — uses millis(). When a TX packet arrives with utc_seconds,
+// we compute TX's phase from UTC and jump RX to match, eliminating drift.
+static uint32_t totalCycleSec = 0;
+static int currentPhase = 0;
+static uint32_t phaseStartMs = 0;
+
+static int computePhaseFromUTC(uint32_t utcSec) {
+    uint32_t cyclePos = utcSec % totalCycleSec;
+    uint32_t acc = 0;
+    for (int i = 0; i < NUM_PHASES; i++) {
+        acc += phases[i].slotMs / 1000;
+        if (cyclePos < acc) return i;
+    }
+    return NUM_PHASES - 1;  // fallback
+}
+
 #define TX_POWER_DBM   12.5f   // only for init, not used for RX
 #define LORA_PKT_SIZE  127
 #define FLRC_PKT_SIZE  255
@@ -450,6 +467,21 @@ static void runRxPhase(const Phase &p, int phaseIdx) {
                     lastTxLat = txLat; lastTxLon = txLon;
                     lastTxSats = txSats; lastTxFix = txFix;
                     lastTxUtc = txUtc;
+
+                    // ─── Phase drift correction ───────────────────────
+                    // Use TX's GPS utc_seconds to determine which phase TX
+                    // is currently in. If it differs from our current phase,
+                    // jump RX to TX's phase to stay drift-free over long walks.
+                    if (txUtc > 0 && totalCycleSec > 0) {
+                        int txPhase = computePhaseFromUTC(txUtc);
+                        if (txPhase != currentPhase) {
+                            uint32_t driftMs = (uint32_t)abs((int32_t)(millis() - phaseStartMs));
+                            dualPrintf("PHASE_CORRECTION rx_phase=%d tx_phase=%d drift_ms=%lu\n",
+                                          currentPhase, txPhase, (unsigned long)driftMs);
+                            currentPhase = txPhase;
+                            phaseStartMs = millis();
+                        }
+                    }
                 }
 
                 // Log first few packets per phase for debugging
@@ -505,8 +537,14 @@ void setup() {
 
     spiRf.begin();
 
+    // Compute total cycle seconds for phase drift correction
+    totalCycleSec = 0;
+    for (int i = 0; i < NUM_PHASES; i++) {
+        totalCycleSec += phases[i].slotMs / 1000;
+    }
+
     dualPrintf("=== MULTI-RADIO RX SWEEP (14 phases) ===\n");
-    dualPrintf("Phases: %d\n", NUM_PHASES);
+    dualPrintf("Phases: %d  Cycle: %lus\n", NUM_PHASES, (unsigned long)totalCycleSec);
     for (int i = 0; i < NUM_PHASES; i++) {
         dualPrintf("  [%2d] %-16s %s %.0fMHz %dpkts %ds\n",
                       i, phases[i].name,
@@ -535,7 +573,15 @@ void loop() {
         if (i > 0) {
             dualPrintf("PHASE_GUARD 500\n");
         }
+        currentPhase = i;
+        phaseStartMs = millis();
         runRxPhase(phases[i], i);
+        // After runRxPhase, currentPhase may have been corrected by drift
+        // correction — if so, we skip ahead to the corrected phase
+        if (currentPhase != i && currentPhase > i && currentPhase < NUM_PHASES) {
+            dualPrintf("PHASE_SKIP from=%d to=%d (drift correction)\n", i, currentPhase);
+            i = currentPhase;  // loop will increment to currentPhase+1
+        }
     }
 
     dualPrintf("PHASE_GUARD 500\n");
