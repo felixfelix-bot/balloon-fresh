@@ -1,0 +1,30 @@
+# 99-balloon-boards.rules — Stable symlinks for balloon RP2040 boards
+#
+# Creates /dev/balloon-tx and /dev/balloon-rx symlinks that survive
+# USB reconnects and port reassignment.
+#
+# Board serials:
+#   TX: E663B035977F242D (RP2040, Pico)
+#   RX: serial contains 8332 (RP2040, Pico)
+#
+# Install:
+#   sudo cp tools/99-balloon-boards.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+#
+# Verify:
+#   ls -la /dev/balloon-tx /dev/balloon-rx
+
+# TX board — application mode (CDC ACM serial)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", ATTRS{serial}=="E663B035977F242D", SYMLINK+="balloon-tx"
+# TX board — BOOTSEL mode (mass storage, for picotool)
+SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", ATTRS{serial}=="E663B035977F242D", SYMLINK+="balloon-tx-boot"
+
+# RX board — application mode (CDC ACM serial, serial contains 8332)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", ATTRS{serial}=="*8332*", SYMLINK+="balloon-rx"
+# RX board — BOOTSEL mode (mass storage)
+SUBSYSTEM=="block", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", ATTRS{serial}=="*8332*", SYMLINK+="balloon-rx-boot"
+
+# Ensure RP2040 devices are world-writable by default (for lock chmod to work)
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666"
+SUBSYSTEM=="tty",  ATTRS{idVendor}=="2e8a", MODE="0666"
