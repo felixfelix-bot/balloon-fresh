@@ -119,16 +119,28 @@ static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 // ─── V4: Interleave mode (must match TX exactly) ─────────────────────
 static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 #define NUM_SWEEP_SIZES 4
-static Phase interleavePhases[64];
+static Phase interleavePhases[128];  // V4: increased for channel sweep
 static int   numInterleavePhases = 0;
 static bool  interleaveMode = true;   // V4 WALK: default ON (no serial command needed)
+
+// V4: Channel sweep frequencies — WiFi channels (2.4GHz) + EU 868MHz sub-bands
+static const float SWEEP_FREQS_HF[] = {
+    2412.0, 2417.0, 2422.0, 2427.0, 2432.0, 2437.0,
+    2442.0, 2447.0, 2452.0, 2457.0, 2462.0, 2467.0, 2472.0  // WiFi ch1-ch13
+};
+#define NUM_SWEEP_FREQS_HF 13
+static const float SWEEP_FREQS_LF[] = {
+    863.0, 864.0, 865.0, 866.0, 867.0, 868.0, 869.0, 870.0
+};
+#define NUM_SWEEP_FREQS_LF 8
+
 // V4: Forward-declare cycle time — referenced by SET_INTERLEAVE handler below
 static uint32_t totalCycleSec = 0;
 static uint32_t totalCycleMs = 0;  // V4: ms precision, avoids truncation drift
 
 static void buildInterleaveTable() {
     int idx = 0;
-    static char nameBufs[64][32];
+    static char nameBufs[128][32];
     for (int mode = 0; mode < NUM_PHASES; mode++) {
         const Phase &base = phases[mode];
         for (int s = 0; s < NUM_SWEEP_SIZES; s++) {
@@ -136,7 +148,7 @@ static void buildInterleaveTable() {
             exp = base;
             exp.pktSize = SWEEP_SIZES[s];
             if (base.pktType == PT_FLRC) {
-                exp.pktCount = 100; exp.slotMs = 2500;  // increased from 2000 for radio settle
+                exp.pktCount = 100; exp.slotMs = 3000;  // V4: match TX, reliable reconfig
             } else {
                 float msPerByte;
                 if (base.rfPath == 1) {
@@ -168,6 +180,31 @@ static void buildInterleaveTable() {
             idx++;
         }
     }
+    
+    // V4: Channel sweep — FLRC-1300-64B at every WiFi channel + 868MHz sub-band
+    for (int f = 0; f < NUM_SWEEP_FREQS_HF; f++) {
+        Phase &exp = interleavePhases[idx];
+        exp = phases[3];  // HF-FLRC-1300 base
+        exp.freqMHz = SWEEP_FREQS_HF[f];
+        exp.pktSize = 64;
+        exp.pktCount = 100;
+        exp.slotMs = 3000;
+        snprintf(nameBufs[idx], 32, "CH-%d-FLRC1300-64", (int)SWEEP_FREQS_HF[f]);
+        exp.name = nameBufs[idx];
+        idx++;
+    }
+    for (int f = 0; f < NUM_SWEEP_FREQS_LF; f++) {
+        Phase &exp = interleavePhases[idx];
+        exp = phases[11];  // LF-FLRC-1300 base
+        exp.freqMHz = SWEEP_FREQS_LF[f];
+        exp.pktSize = 64;
+        exp.pktCount = 100;
+        exp.slotMs = 3000;
+        snprintf(nameBufs[idx], 32, "CH-%d-FLRC1300-64", (int)SWEEP_FREQS_LF[f]);
+        exp.name = nameBufs[idx];
+        idx++;
+    }
+    
     numInterleavePhases = idx;
 }
 
@@ -535,6 +572,26 @@ static void rfCalibrate(float freqMHz, uint8_t rfPath) {
     delay(5);
 }
 
+// ─── Channel sweep: cycle HF/LF frequencies per UTC cycle ──────────
+static const float HF_CHANNELS[] = {
+    2422.0, 2437.0, 2440.0, 2452.0, 2462.0, 2478.0, 2483.0,
+};
+#define NUM_HF_CHANNELS 7
+static const float LF_CHANNELS[] = {
+    863.0, 865.0, 867.0, 868.0, 869.5,
+};
+#define NUM_LF_CHANNELS 5
+static bool channelSweepMode = true;
+static float currentChanFreq = 0;
+
+static float getChannelFreq(uint8_t rfPath, uint32_t utcSec) {
+    if (!channelSweepMode) return 0;
+    uint32_t divisor = (totalCycleSec > 0) ? totalCycleSec : 158;
+    uint32_t cycle = utcSec / divisor;
+    if (rfPath == 1) return HF_CHANNELS[cycle % NUM_HF_CHANNELS];
+    else return LF_CHANNELS[cycle % NUM_LF_CHANNELS];
+}
+
 static void rfInitForPhaseRX(const Phase &p) {
     rfResetAndStandby();
 
@@ -542,8 +599,14 @@ static void rfInitForPhaseRX(const Phase &p) {
     { uint8_t c[] = {0x02, 0x07, p.pktType}; rfWriteCmd(c, 3); }
     delay(1);
 
-    // SET_RF_FREQUENCY
-    rfSetFreq(p.freqMHz);
+    // SET_RF_FREQUENCY — channel sweep overrides phase table freq
+    float useFreq = p.freqMHz;
+    if (channelSweepMode) {
+        float chanFreq = getChannelFreq(p.rfPath, getUtcNow());
+        if (chanFreq > 0) useFreq = chanFreq;
+    }
+    currentChanFreq = useFreq;
+    rfSetFreq(useFreq);
     delay(1);
 
     // SET_RX_PATH — MANDATORY: HF=1, LF=0
@@ -553,11 +616,11 @@ static void rfInitForPhaseRX(const Phase &p) {
     // Fix 3: LoRa config debug dump — walk test showed near-zero LoRa packets
     // with noise-floor RSSI. This verifies path/modulation params are correct.
     if (p.pktType == PT_LORA) {
-        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d\n", p.rfPath, p.bwCode, p.sf);
+        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d freq=%.1f\n", p.rfPath, p.bwCode, p.sf, useFreq);
     }
 
     // Calibrate (MANDATORY for RX)
-    rfCalibrate(p.freqMHz, p.rfPath);
+    rfCalibrate(useFreq, p.rfPath);
 
     if (p.pktType == PT_LORA) {
         // SET_LORA_MODULATION_PARAMS (0x0220)
