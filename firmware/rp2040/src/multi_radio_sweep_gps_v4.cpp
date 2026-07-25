@@ -322,7 +322,10 @@ static void parseNMEA(const char *sentence) {
             "$%*2sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
             timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
 
-        if (parsed >= 6) {
+        // GGA: $GNGGA,hhmmss.ss,llll.ll,N,yyyyy.yy,E,f,nn,...
+        // With no fix: $GNGGA,hhmmss.ss,,,,,0,00,...
+        // sscanf stops at first empty field. parsed >= 1 = time present.
+        if (parsed >= 1) {
             // Parse time even without fix (u-blox sends time before fix)
             if (strlen(timeStr) >= 6) {
                 int hh = (timeStr[0]-'0')*10 + (timeStr[1]-'0');
@@ -362,7 +365,11 @@ static void parseNMEA(const char *sentence) {
             "$%*2sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
             timeStr, &status, latStr, &ns, lonStr, &ew);
 
-        if (parsed >= 5) {
+        // RMC: $GNRMC,hhmmss.ss,V/A,lat,N,lon,E,...,ddmmyy,...
+        // With no fix: $GNRMC,hhmmss.ss,V,,,,,,,ddmmyy,,,N,V
+        // sscanf stops at first empty field (,,) so parsed < 6 is normal.
+        // We only need parsed >= 2 (time + status) to extract time.
+        if (parsed >= 2) {
             if (strlen(timeStr) >= 6) {
                 int hh = (timeStr[0]-'0')*10 + (timeStr[1]-'0');
                 int mm = (timeStr[2]-'0')*10 + (timeStr[3]-'0');
