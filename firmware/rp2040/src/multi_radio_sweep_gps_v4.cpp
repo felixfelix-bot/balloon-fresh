@@ -490,6 +490,33 @@ static void rfClearTxFifo() {
     rfWriteCmd(cmd, 2);
 }
 
+// ─── Phase transition safety: abort any in-progress TX ──────────────
+// SF12 packets have extreme air times:
+//   HF-LoRa-SF12-255B: ~7.9s (31ms/byte × 255 + 10ms preamble)
+//   LF-LoRa-SF12-32B:  ~13.1s (410ms/byte × 32 + 10ms)
+// The TX spin loop below has a bounded timeout (16s). When a phase
+// boundary falls while TX is still active, the radio remains mid-TX.
+// Calling rfInitForPhase() in that state triggers a hardware reset
+// during active transmission — the radio can enter an undefined state.
+//
+// This function checks if TX_DONE has fired (IRQ pin HIGH). If not, it
+// force-aborts by sending SET_STANDBY (STDBY_XOSC) before the next
+// phase reconfigures the modem. Called at the TOP of every phase change,
+// BEFORE rfInitForPhase.
+static void abortTxIfActive() {
+    uint32_t irqPinMask = 1UL << PIN_IRQ;
+    if (sio_hw->gpio_in & irqPinMask) {
+        // TX_DONE already fired — radio returned to fallback mode (STDBY)
+        return;
+    }
+    // TX still in progress — force-abort with SET_STANDBY (STDBY_XOSC)
+    uint8_t stdby[] = {0x01, 0x28, 0x01};
+    rfWriteCmd(stdby, 3);
+    outPrintf("TX_ABORT — previous phase TX still active, force SET_STANDBY\n");
+    rfClearIrq();   // clear stale IRQ bits from the aborted TX
+    delay(100);     // guard: let the radio settle before reconfiguration
+}
+
 // ─── App-layer CRC-16 (CCITT 0x1021) ────────────────────────────────
 // Hardware CRC passes garbage — this is the application-layer integrity check.
 // Computed over the 18-byte GPS+seq payload (bytes 4-21 of TX buffer).
@@ -751,21 +778,27 @@ static void embedGPS(uint8_t *pkt) {
 // Both TX and RX use the SAME clock: Unix epoch seconds.
 // Phase = unixTime % cycleSec. Both boards synced as long as both know Unix time.
 // TX gets Unix time from: SET_TIME (laptop), GPS (if available), or millis() fallback.
+// V4: Use MILLISECOND precision to avoid integer truncation drift.
+// Old code did slotMs/1000 which lost 0.5s+ per slot, accumulating
+// 15-28 seconds of error over 56 phases. Now uses totalCycleMs.
+static uint32_t totalCycleMs = 0;
+
 static int computePhaseFromUTC(uint32_t utcSec) {
-    uint32_t cyclePos = utcSec % totalCycleSec;
-    uint32_t acc = 0;
+    // Convert to milliseconds for precision
+    uint32_t cyclePosMs = (utcSec * 1000) % totalCycleMs;
+    uint32_t accMs = 0;
     if (interleaveMode) {
         for (int i = 0; i < numInterleavePhases; i++) {
-            acc += interleavePhases[i].slotMs / 1000;
-            if (cyclePos < acc) return i;
+            accMs += interleavePhases[i].slotMs;  // milliseconds, no truncation!
+            if (cyclePosMs < accMs) return i;
         }
         return numInterleavePhases - 1;
     }
     for (int i = 0; i < NUM_PHASES; i++) {
-        acc += phases[i].slotMs / 1000;
-        if (cyclePos < acc) return i;
+        accMs += phases[i].slotMs;
+        if (cyclePosMs < accMs) return i;
     }
-    return NUM_PHASES - 1;  // fallback
+    return NUM_PHASES - 1;
 }
 
 // V4: Get the active phase entry by index (interleave or base)
@@ -860,15 +893,17 @@ void setup() {
 
     // Compute total cycle seconds for interleave mode
     totalCycleSec = 0;
+    totalCycleMs = 0;
     for (int i = 0; i < numInterleavePhases; i++) {
         totalCycleSec += interleavePhases[i].slotMs / 1000;
+        totalCycleMs += interleavePhases[i].slotMs;
     }
 
-    outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\n");
-    outPrintf("Mode: INTERLEAVE (56 phases: 14 modes x 4 sizes)\n");
-    outPrintf("Cycle: %lus  Power: %.1f dBm\n",
-               (unsigned long)totalCycleSec, TX_POWER_DBM);
-    outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\n\n");
+    outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\\n");
+    outPrintf("Mode: INTERLEAVE (56 phases: 14 modes x 4 sizes)\\n");
+    outPrintf("Cycle: %lus (%lums)  Power: %.1f dBm\\n",
+               (unsigned long)totalCycleSec, (unsigned long)totalCycleMs, TX_POWER_DBM);
+    outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
 
     // ── GPS GATE: TX NEVER transmits without accurate time ──
     // Walk mode: blocks until GPS fix.
@@ -1030,6 +1065,11 @@ void loop() {
 
     // Phase change detection
     if (phase != currentPhase) {
+        // BUG FIX: Abort any TX still in progress from the previous phase.
+        // SF12-255B takes ~8s; if the phase boundary falls during TX, the
+        // radio is still mid-transmission. Force SET_STANDBY before
+        // rfInitForPhase to avoid hardware-reset during active TX.
+        abortTxIfActive();
         if (currentPhase >= 0) {
             outPrintf("PHASE_GUARD 500\n");
         }
@@ -1164,10 +1204,19 @@ void loop() {
     uint32_t irqPinMask = 1UL << PIN_IRQ;
     uint32_t txStartMs = millis();
     bool irqFired = false;
-    while ((millis() - txStartMs) < 6000) {  // V3: 6s timeout (SF12 255B takes ~4.3s)
+    // V4 FIX: 16s timeout. Was 6s in V3, but LF-LoRa-SF12-32B takes ~13s
+    // (410ms/byte × 32 + 10ms). The old timeout always expired mid-TX,
+    // leaving the radio transmitting into the next phase's time slot.
+    while ((millis() - txStartMs) < 16000) {
         if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
         // Drain GPS UART every ~65K iterations (~3ms at 125MHz)
-        if ((millis() - txStartMs) % 3 == 0) gpsPoll();  // V3: poll GPS ~every 3ms
+        if ((millis() - txStartMs) % 3 == 0) gpsPoll();  // poll GPS ~every 3ms
+    }
+
+    // V4: Log TX timeout — indicates radio didn't complete TX_DONE
+    if (!irqFired) {
+        outPrintf("TX_TIMEOUT — TX_DONE not received after %lu ms (phase=%d)\n",
+                  (unsigned long)(millis() - txStartMs), currentPhase);
     }
 
     // Output per-packet log

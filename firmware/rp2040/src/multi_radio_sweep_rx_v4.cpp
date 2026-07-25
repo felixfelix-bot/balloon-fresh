@@ -121,6 +121,7 @@ static int   numInterleavePhases = 0;
 static bool  interleaveMode = true;   // V4 WALK: default ON (no serial command needed)
 // V4: Forward-declare cycle time — referenced by SET_INTERLEAVE handler below
 static uint32_t totalCycleSec = 0;
+static uint32_t totalCycleMs = 0;  // V4: ms precision, avoids truncation drift
 
 static void buildInterleaveTable() {
     int idx = 0;
@@ -207,11 +208,15 @@ static void checkSerialTimeSync() {
                     interleaveMode = (val != 0);
                     // Recompute totalCycleSec from correct phase table
                     totalCycleSec = 0;
+                    totalCycleMs = 0;
                     if (interleaveMode) {
-                        for (int i = 0; i < numInterleavePhases; i++)
+                        for (int i = 0; i < numInterleavePhases; i++) {
                             totalCycleSec += interleavePhases[i].slotMs / 1000;
-                        dualPrintf("INTERLEAVE_ON phases=%d cycle=%lus\n",
-                                    numInterleavePhases, (unsigned long)totalCycleSec);
+                            totalCycleMs += interleavePhases[i].slotMs;
+                        }
+                        dualPrintf("INTERLEAVE_ON phases=%d cycle=%lus (%lums)\n",
+                                    numInterleavePhases, (unsigned long)totalCycleSec,
+                                    (unsigned long)totalCycleMs);
                     } else {
                         for (int i = 0; i < NUM_PHASES; i++)
                             totalCycleSec += phases[i].slotMs / 1000;
@@ -239,21 +244,28 @@ static void checkSerialTimeSync() {
 static int currentPhase = -1;       // -1 = not started yet (forces init on first loop)
 static uint32_t phaseStartMs = 0;
 
+// V4: TEMPORARILY using truncated formula to match TX firmware (can't flash TX)
+// TODO: When TX can be flashed with ms-precision, switch back to totalCycleMs
+// FIXED: Use ms-precision to match TX (which was upgraded from seconds to ms
+// because seconds-based computation accumulated 15-28s error over 56 phases).
+// TX and RX MUST use identical formula for phase alignment.
 static int computePhaseFromUTC(uint32_t utcSec) {
-    uint32_t cyclePos = utcSec % totalCycleSec;
-    uint32_t acc = 0;
+    if (totalCycleMs == 0) return 0;  // guard against div-by-zero
+    // Convert to milliseconds for precision — identical to TX formula
+    uint32_t cyclePosMs = (utcSec * 1000) % totalCycleMs;
+    uint32_t accMs = 0;
     if (interleaveMode) {
         for (int i = 0; i < numInterleavePhases; i++) {
-            acc += interleavePhases[i].slotMs / 1000;
-            if (cyclePos < acc) return i;
+            accMs += interleavePhases[i].slotMs;  // milliseconds, no truncation!
+            if (cyclePosMs < accMs) return i;
         }
         return numInterleavePhases - 1;
     }
     for (int i = 0; i < NUM_PHASES; i++) {
-        acc += phases[i].slotMs / 1000;
-        if (cyclePos < acc) return i;
+        accMs += phases[i].slotMs;
+        if (cyclePosMs < accMs) return i;
     }
-    return NUM_PHASES - 1;  // fallback
+    return NUM_PHASES - 1;
 }
 
 static const Phase* getPhaseEntry(int idx) {
@@ -988,13 +1000,16 @@ void setup() {
     // Compute total cycle seconds for phase computation
     // MUST match TX: use interleavePhases when interleaveMode==true
     totalCycleSec = 0;
+    totalCycleMs = 0;
     if (interleaveMode) {
         for (int i = 0; i < numInterleavePhases; i++) {
             totalCycleSec += interleavePhases[i].slotMs / 1000;
+            totalCycleMs += interleavePhases[i].slotMs;
         }
     } else {
         for (int i = 0; i < NUM_PHASES; i++) {
             totalCycleSec += phases[i].slotMs / 1000;
+            totalCycleMs += phases[i].slotMs;
         }
     }
 
