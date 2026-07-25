@@ -857,37 +857,74 @@ void setup() {
         totalCycleSec += interleavePhases[i].slotMs / 1000;
     }
 
-    outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\\n");
-    outPrintf("Mode: INTERLEAVE (56 phases: 14 modes × 4 sizes)\\n");
-    outPrintf("Cycle: %lus  Power: %.1f dBm\\n",
+    outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\n");
+    outPrintf("Mode: INTERLEAVE (56 phases: 14 modes x 4 sizes)\n");
+    outPrintf("Cycle: %lus  Power: %.1f dBm\n",
                (unsigned long)totalCycleSec, TX_POWER_DBM);
-    outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
+    outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\n\n");
 
     // ── GPS GATE: TX NEVER transmits without accurate time ──
-    // Walk mode: blocks until GPS fix. 
+    // Walk mode: blocks until GPS fix.
     // Bench mode: laptop SET_TIME bypasses (sets hasLaptopTime).
-    outPrintf("=== WAITING FOR GPS FIX (TX blocked until locked) ===\\n");
-    outPrintf("=== Bench test: send SET_TIME to override ===\\n");
+    outPrintf("=== WAITING FOR GPS FIX (TX blocked until locked) ===\n");
+    outPrintf("=== Bench test: send SET_TIME to override ===\n");
+    outPrintf("GPS_DEBUG: UART1 RX=GP1 TX=GP0  LED=GP25(green)  GPS module pin wiring check\n");
+    outPrintf("GPS_DEBUG: If no NMEA_RAW lines appear, GPS module is not communicating\n");
     uint32_t gpsStart = millis();
+    uint32_t lastNmeaPrint = 0;
     while (!gps.hasTime || !gps.fixValid) {
         gpsPoll();
         checkSerialTimeSync();  // Process SET_TIME during boot gate
         digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
-        
+
         // Bench override: laptop SET_TIME received
         if (hasLaptopTime()) {
-            outPrintf("LAPTOP_TIME_OVERRIDE — entering bench mode (no GPS required)\\n");
+            outPrintf("LAPTOP_TIME_OVERRIDE — entering bench mode (no GPS required)\n");
             break;
         }
-        
-        // Status every 10s
+
+        // Status every 5s (more frequent for debugging)
         uint32_t elapsed = (millis() - gpsStart) / 1000;
-        if (elapsed % 10 == 0 && elapsed > 0) {
+        if (elapsed % 5 == 0 && elapsed > 0) {
             static uint32_t lastReport = 0;
             if (elapsed != lastReport) {
-                outPrintf("GPS_WAIT %lus sats=%d fix=%d\\n",
-                           (unsigned long)elapsed, gps.sats, gps.fixValid ? 1 : 0);
+                outPrintf("GPS_WAIT %lus sats=%d fix=%d hasTime=%d fixValid=%d "
+                          "timeSec=%lu unixTime=%lu\n",
+                          (unsigned long)elapsed, gps.sats,
+                          gps.fixValid ? 1 : 0, gps.hasTime ? 1 : 0,
+                          gps.fixValid ? 1 : 0,
+                          (unsigned long)gps.timeSec,
+                          gps.hasUnixTime ? (unsigned long)gps.unixTime : 0UL);
                 lastReport = elapsed;
+            }
+        }
+
+        // NMEA passthrough: print raw GPS sentences every 3s for debugging
+        // Helps verify GPS module is alive and outputting valid data
+        if (millis() - lastNmeaPrint > 3000) {
+            lastNmeaPrint = millis();
+            // Read any pending NMEA and show first sentence
+            if (Serial1.available()) {
+                char nmeaLine[160];
+                int n = 0;
+                uint32_t to = millis();
+                while (millis() - to < 200 && n < 159) {
+                    if (Serial1.available()) {
+                        char c = Serial1.read();
+                        nmeaLine[n++] = c;
+                        if (c == '\n') break;
+                    }
+                }
+                nmeaLine[n] = '\0';
+                // Trim trailing whitespace
+                while (n > 0 && (nmeaLine[n-1] == '\r' || nmeaLine[n-1] == '\n'))
+                    nmeaLine[--n] = '\0';
+                if (n > 5)
+                    outPrintf("NMEA_RAW: %s\n", nmeaLine);
+                else
+                    outPrintf("NMEA_RAW: (short, %d bytes) GPS module may not be responding\n", n);
+            } else {
+                outPrintf("NMEA_RAW: (no data) GPS module not sending on UART1\n");
             }
         }
         delay(10);
@@ -916,14 +953,17 @@ void setup() {
         outPrintf("INITIAL_PHASE=%d phaseTime=%lu cycle_pos=%lu source=%s\n",
                    currentPhase, (unsigned long)phaseTime, (unsigned long)cyclePos,
                    gps.hasUnixTime ? "GPS_UNIX" : "GPS_MIDNIGHT");
+    } else if (hasLaptopTime()) {
+        // BENCH MODE: No GPS fix, but laptop SET_TIME provides epoch
+        outPrintf("BENCH_MODE unix=%lu — using laptop time (no GPS fix)\n",
+                   (unsigned long)getUtcNow());
+        currentPhase = computePhaseFromUTC(getUtcNow());
+        outPrintf("INITIAL_PHASE=%d source=LAPTOP\n", currentPhase);
     } else {
-        // V4: No fallback. TX must have GPS to transmit.
-        // This should never execute due to the blocking while loop above.
-        outPrintf("GPS_UNEXPECTED_NO_FIX — TX will not start. Check antenna.\\n");
-        while (true) {
-            digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
-            delay(50);
-        }
+        // V4: Should never reach here — GPS gate loop handles all cases above.
+        // Safety fallback: enter bench mode with millis() to avoid hard hang.
+        outPrintf("GPS_NO_FIX_LAPTOP_NO_TIME — safety fallback to millis() mode\n");
+        currentPhase = 0;
     }
 
     digitalWrite(PIN_LED, HIGH);
