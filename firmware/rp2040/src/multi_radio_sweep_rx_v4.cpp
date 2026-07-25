@@ -794,6 +794,16 @@ static void rxPacketPoll(int phaseIdx) {
     // where crcLen = pktSize - 6 (exclude 4 sync + 2 CRC bytes).
     // CRC stored at rxBuf[syncOffset+pktSize-2 : pktSize-1] (big-endian).
     uint16_t crcLen = pktSize - 6;
+    // V4: Bounds check — prevent buffer overread on false sync matches
+    if (gpsOff + crcLen + 2 > readLen) {
+        dualPrintf("SYNC_OOB gpsOff=%d crcLen=%d readLen=%d — skipping\n",
+                   gpsOff, crcLen, readLen);
+        rxGarbageCount++;
+        rfClearRxFifo();
+        rfClearIrq();
+        rfSetRx();
+        return;
+    }
     uint16_t expectedCrc = ((uint16_t)rxBuf[syncOffset + pktSize - 2] << 8)
                          | rxBuf[syncOffset + pktSize - 1];
     uint16_t actualCrc = crc16(&rxBuf[gpsOff], crcLen);
@@ -837,6 +847,17 @@ static void rxPacketPoll(int phaseIdx) {
     rxLastTxFw[7] = '\0';
 
     rxReceived++;
+
+    // V4: Read phase ID from packet and sync to TX's actual phase.
+    // This breaks the chicken-and-egg: once any packet decodes, RX jumps
+    // to TX's phase instead of relying on drifting millis() clock.
+    uint8_t txPhaseId = rxBuf[gpsOff + 15];
+    if (txPhaseId != currentPhase && txPhaseId < numInterleavePhases) {
+        dualPrintf("PHASE_SYNC old=%d new=%d (from TX packet)\n", currentPhase, txPhaseId);
+        currentPhase = txPhaseId;
+        const Phase &np = *getPhaseEntry(currentPhase);
+        rfInitForPhaseRX(np);
+    }
 
     // (GPS sanity check moved up to B4 CRC_FALSE_POS block — runs BEFORE
     //  rxReceived++ so impossible values don't count as valid packets.)
