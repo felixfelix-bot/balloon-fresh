@@ -572,26 +572,6 @@ static void rfCalibrate(float freqMHz, uint8_t rfPath) {
     delay(5);
 }
 
-// ─── Channel sweep: cycle HF/LF frequencies per UTC cycle ──────────
-static const float HF_CHANNELS[] = {
-    2422.0, 2437.0, 2440.0, 2452.0, 2462.0, 2478.0, 2483.0,
-};
-#define NUM_HF_CHANNELS 7
-static const float LF_CHANNELS[] = {
-    863.0, 865.0, 867.0, 868.0, 869.5,
-};
-#define NUM_LF_CHANNELS 5
-static bool channelSweepMode = true;
-static float currentChanFreq = 0;
-
-static float getChannelFreq(uint8_t rfPath, uint32_t utcSec) {
-    if (!channelSweepMode) return 0;
-    uint32_t divisor = (totalCycleSec > 0) ? totalCycleSec : 158;
-    uint32_t cycle = utcSec / divisor;
-    if (rfPath == 1) return HF_CHANNELS[cycle % NUM_HF_CHANNELS];
-    else return LF_CHANNELS[cycle % NUM_LF_CHANNELS];
-}
-
 static void rfInitForPhaseRX(const Phase &p) {
     rfResetAndStandby();
 
@@ -599,14 +579,8 @@ static void rfInitForPhaseRX(const Phase &p) {
     { uint8_t c[] = {0x02, 0x07, p.pktType}; rfWriteCmd(c, 3); }
     delay(1);
 
-    // SET_RF_FREQUENCY — channel sweep overrides phase table freq
-    float useFreq = p.freqMHz;
-    if (channelSweepMode) {
-        float chanFreq = getChannelFreq(p.rfPath, getUtcNow());
-        if (chanFreq > 0) useFreq = chanFreq;
-    }
-    currentChanFreq = useFreq;
-    rfSetFreq(useFreq);
+    // SET_RF_FREQUENCY — use phase table freq directly (matches TX)
+    rfSetFreq(p.freqMHz);
     delay(1);
 
     // SET_RX_PATH — MANDATORY: HF=1, LF=0
@@ -616,11 +590,11 @@ static void rfInitForPhaseRX(const Phase &p) {
     // Fix 3: LoRa config debug dump — walk test showed near-zero LoRa packets
     // with noise-floor RSSI. This verifies path/modulation params are correct.
     if (p.pktType == PT_LORA) {
-        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d freq=%.1f\n", p.rfPath, p.bwCode, p.sf, useFreq);
+        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d freq=%.1f\n", p.rfPath, p.bwCode, p.sf, p.freqMHz);
     }
 
     // Calibrate (MANDATORY for RX)
-    rfCalibrate(useFreq, p.rfPath);
+    rfCalibrate(p.freqMHz, p.rfPath);
 
     if (p.pktType == PT_LORA) {
         // SET_LORA_MODULATION_PARAMS (0x0220)
