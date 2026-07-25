@@ -205,7 +205,8 @@ static void checkSerialTimeSync() {
                 } else if (strncmp(syncBuf, "SET_INTERLEAVE ", 15) == 0) {
                     int val = atoi(syncBuf + 15);
                     interleaveMode = (val != 0);
-                    // currentPhase and totalCycleSec declared later; phase detection handles switch
+                    // Recompute totalCycleSec from correct phase table
+                    totalCycleSec = 0;
                     if (interleaveMode) {
                         for (int i = 0; i < numInterleavePhases; i++)
                             totalCycleSec += interleavePhases[i].slotMs / 1000;
@@ -963,10 +964,17 @@ void setup() {
     for (int i = 0; i < 64; i++) lastSyncOffset[i] = -1;
     buildInterleaveTable();
 
-    // Compute total cycle seconds for phase drift correction
+    // Compute total cycle seconds for phase computation
+    // MUST match TX: use interleavePhases when interleaveMode==true
     totalCycleSec = 0;
-    for (int i = 0; i < NUM_PHASES; i++) {
-        totalCycleSec += phases[i].slotMs / 1000;
+    if (interleaveMode) {
+        for (int i = 0; i < numInterleavePhases; i++) {
+            totalCycleSec += interleavePhases[i].slotMs / 1000;
+        }
+    } else {
+        for (int i = 0; i < NUM_PHASES; i++) {
+            totalCycleSec += phases[i].slotMs / 1000;
+        }
     }
 
     dualPrintf("=== MULTI-RADIO RX SWEEP V4 ===\n");
