@@ -1,0 +1,1256 @@
+{
+  "per_file": {
+    "base_mode_verify_140234.log": [
+      0,
+      0
+    ],
+    "flrc_focused_154639.log": [
+      46,
+      117
+    ],
+    "full_cycle_152954.log": [
+      125,
+      46
+    ],
+    "phase_sync_155609.log": [
+      79,
+      4
+    ],
+    "rx_interleave_063638.log": [
+      2,
+      0
+    ],
+    "rx_interleave_20260725_063345.log": [
+      1,
+      0
+    ],
+    "synced_run_151652.log": [
+      28,
+      73
+    ]
+  },
+  "per_phase": {
+    "LF-LoRa-SF12-32": {
+      "rx": 2,
+      "lost": 2,
+      "agg_per": 50.0,
+      "ber": null,
+      "rssi_best": -18.0,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-LoRa-SF12-64": {
+      "rx": 0,
+      "lost": 0,
+      "agg_per": 0.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 0,
+      "skips": 5,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-LoRa-SF12-128": {
+      "rx": 0,
+      "lost": 0,
+      "agg_per": 0.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 0,
+      "skips": 5,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-LoRa-SF12-255": {
+      "rx": 0,
+      "lost": 0,
+      "agg_per": 0.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 0,
+      "skips": 5,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-2600-32": {
+      "rx": 73,
+      "lost": 427,
+      "agg_per": 85.4,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 82,
+      "garbage": 242,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-2600-64": {
+      "rx": 43,
+      "lost": 457,
+      "agg_per": 91.4,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 128,
+      "garbage": 253,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-2600-128": {
+      "rx": 17,
+      "lost": 483,
+      "agg_per": 96.6,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 97,
+      "garbage": 214,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-2600-255": {
+      "rx": 117,
+      "lost": 383,
+      "agg_per": 76.6,
+      "ber": 0.0,
+      "rssi_best": -36.0,
+      "crc": 3,
+      "garbage": 124,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-1300-32": {
+      "rx": 85,
+      "lost": 415,
+      "agg_per": 83.0,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 87,
+      "garbage": 173,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-1300-64": {
+      "rx": 67,
+      "lost": 433,
+      "agg_per": 86.6,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 126,
+      "garbage": 204,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-1300-128": {
+      "rx": 19,
+      "lost": 481,
+      "agg_per": 96.2,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 91,
+      "garbage": 182,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-1300-255": {
+      "rx": 117,
+      "lost": 383,
+      "agg_per": 76.6,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 2,
+      "garbage": 124,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-650-32": {
+      "rx": 82,
+      "lost": 418,
+      "agg_per": 83.6,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 69,
+      "garbage": 427,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-650-64": {
+      "rx": 26,
+      "lost": 474,
+      "agg_per": 94.8,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 135,
+      "garbage": 385,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-650-128": {
+      "rx": 19,
+      "lost": 481,
+      "agg_per": 96.2,
+      "ber": 0.0,
+      "rssi_best": -38.0,
+      "crc": 98,
+      "garbage": 319,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-650-255": {
+      "rx": 114,
+      "lost": 186,
+      "agg_per": 62.0,
+      "ber": 0.0,
+      "rssi_best": -38.0,
+      "crc": 1,
+      "garbage": 150,
+      "runs": 3,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-325-32": {
+      "rx": 92,
+      "lost": 308,
+      "agg_per": 77.0,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "crc": 55,
+      "garbage": 89,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-325-64": {
+      "rx": 123,
+      "lost": 577,
+      "agg_per": 82.42857142857143,
+      "ber": 0.0,
+      "rssi_best": -38.0,
+      "crc": 172,
+      "garbage": 195,
+      "runs": 7,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-325-128": {
+      "rx": 98,
+      "lost": 702,
+      "agg_per": 87.75,
+      "ber": 0.0,
+      "rssi_best": -38.0,
+      "crc": 106,
+      "garbage": 105,
+      "runs": 8,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "rx_interleave_20260725_063345.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "LF-FLRC-325-255": {
+      "rx": 123,
+      "lost": 477,
+      "agg_per": 79.5,
+      "ber": 0.0,
+      "rssi_best": -36.0,
+      "crc": 4,
+      "garbage": 34,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF7-32": {
+      "rx": 23,
+      "lost": 97,
+      "agg_per": 80.83333333333333,
+      "ber": 0.0,
+      "rssi_best": -25.0,
+      "crc": 47,
+      "garbage": 28,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF7-64": {
+      "rx": 20,
+      "lost": 80,
+      "agg_per": 80.0,
+      "ber": 0.0,
+      "rssi_best": -25.0,
+      "crc": 24,
+      "garbage": 18,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF7-128": {
+      "rx": 29,
+      "lost": 71,
+      "agg_per": 71.0,
+      "ber": 0.0,
+      "rssi_best": -23.0,
+      "crc": 20,
+      "garbage": 19,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF7-255": {
+      "rx": 30,
+      "lost": 70,
+      "agg_per": 70.0,
+      "ber": 0.0,
+      "rssi_best": -24.0,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF9-32": {
+      "rx": 30,
+      "lost": 90,
+      "agg_per": 75.0,
+      "ber": 0.0,
+      "rssi_best": -22.0,
+      "crc": 36,
+      "garbage": 27,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF9-64": {
+      "rx": 30,
+      "lost": 50,
+      "agg_per": 62.5,
+      "ber": 0.0,
+      "rssi_best": -21.0,
+      "crc": 11,
+      "garbage": 2,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF9-128": {
+      "rx": 30,
+      "lost": 35,
+      "agg_per": 53.84615384615385,
+      "ber": 0.0,
+      "rssi_best": -20.0,
+      "crc": 6,
+      "garbage": 2,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF9-255": {
+      "rx": 12,
+      "lost": 18,
+      "agg_per": 60.0,
+      "ber": 0.0,
+      "rssi_best": -19.0,
+      "crc": 0,
+      "garbage": 1,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log",
+        "synced_run_151652.log"
+      ]
+    },
+    "HF-LoRa-SF12-32": {
+      "rx": 2,
+      "lost": 2,
+      "agg_per": 50.0,
+      "ber": 0.0,
+      "rssi_best": -14.0,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 2,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-LoRa-SF12-64": {
+      "rx": 2,
+      "lost": 2,
+      "agg_per": 50.0,
+      "ber": 0.0,
+      "rssi_best": -14.0,
+      "crc": 1,
+      "garbage": 0,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-LoRa-SF12-128": {
+      "rx": 3,
+      "lost": 2,
+      "agg_per": 40.0,
+      "ber": 0.0,
+      "rssi_best": -6.0,
+      "crc": 1,
+      "garbage": 0,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-LoRa-SF12-255": {
+      "rx": 2,
+      "lost": 2,
+      "agg_per": 50.0,
+      "ber": 0.0,
+      "rssi_best": -10.0,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-2600-32": {
+      "rx": 0,
+      "lost": 600,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 74,
+      "garbage": 84,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-2600-64": {
+      "rx": 73,
+      "lost": 527,
+      "agg_per": 87.83333333333333,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 117,
+      "garbage": 142,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-2600-128": {
+      "rx": 67,
+      "lost": 533,
+      "agg_per": 88.83333333333333,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 79,
+      "garbage": 103,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-2600-255": {
+      "rx": 125,
+      "lost": 475,
+      "agg_per": 79.16666666666667,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 11,
+      "garbage": 46,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-1300-32": {
+      "rx": 88,
+      "lost": 512,
+      "agg_per": 85.33333333333333,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 106,
+      "garbage": 82,
+      "runs": 6,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-1300-64": {
+      "rx": 79,
+      "lost": 421,
+      "agg_per": 84.2,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 125,
+      "garbage": 88,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-1300-128": {
+      "rx": 53,
+      "lost": 447,
+      "agg_per": 89.4,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 73,
+      "garbage": 51,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-1300-255": {
+      "rx": 132,
+      "lost": 568,
+      "agg_per": 81.14285714285714,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 21,
+      "garbage": 55,
+      "runs": 7,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-650-32": {
+      "rx": 69,
+      "lost": 631,
+      "agg_per": 90.14285714285714,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 119,
+      "garbage": 252,
+      "runs": 7,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-650-64": {
+      "rx": 31,
+      "lost": 469,
+      "agg_per": 93.8,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 153,
+      "garbage": 204,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-650-128": {
+      "rx": 21,
+      "lost": 479,
+      "agg_per": 95.8,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 55,
+      "garbage": 136,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-650-255": {
+      "rx": 64,
+      "lost": 436,
+      "agg_per": 87.2,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "crc": 1,
+      "garbage": 70,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-325-32": {
+      "rx": 41,
+      "lost": 459,
+      "agg_per": 91.8,
+      "ber": 0.0,
+      "rssi_best": -44.0,
+      "crc": 141,
+      "garbage": 82,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-325-64": {
+      "rx": 36,
+      "lost": 464,
+      "agg_per": 92.8,
+      "ber": 0.0,
+      "rssi_best": -44.0,
+      "crc": 150,
+      "garbage": 109,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "flrc_focused_154639.log",
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-325-128": {
+      "rx": 0,
+      "lost": 500,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 64,
+      "garbage": 74,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "HF-FLRC-325-255": {
+      "rx": 0,
+      "lost": 500,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 6,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF7-64": {
+      "rx": 0,
+      "lost": 100,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 35,
+      "garbage": 27,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF7-128": {
+      "rx": 4,
+      "lost": 48,
+      "agg_per": 92.3076923076923,
+      "ber": 0.0,
+      "rssi_best": -28.0,
+      "crc": 12,
+      "garbage": 10,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF7-255": {
+      "rx": 5,
+      "lost": 30,
+      "agg_per": 85.71428571428571,
+      "ber": 0.0,
+      "rssi_best": -29.0,
+      "crc": 0,
+      "garbage": 1,
+      "runs": 5,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF9-32": {
+      "rx": 2,
+      "lost": 26,
+      "agg_per": 92.85714285714286,
+      "ber": 0.0,
+      "rssi_best": -25.0,
+      "crc": 10,
+      "garbage": 8,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF9-64": {
+      "rx": 0,
+      "lost": 12,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 3,
+      "garbage": 0,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF9-128": {
+      "rx": 0,
+      "lost": 3,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 2,
+      "garbage": 0,
+      "runs": 3,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF9-255": {
+      "rx": 0,
+      "lost": 3,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 3,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-LoRa-SF7-32": {
+      "rx": 0,
+      "lost": 80,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 30,
+      "garbage": 5,
+      "runs": 4,
+      "skips": 0,
+      "sources": [
+        "full_cycle_152954.log",
+        "phase_sync_155609.log"
+      ]
+    },
+    "LF-FLRC-1300": {
+      "rx": 0,
+      "lost": 200,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 1,
+      "skips": 0,
+      "sources": [
+        "rx_interleave_063638.log"
+      ]
+    },
+    "LF-FLRC-650": {
+      "rx": 0,
+      "lost": 200,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "crc": 0,
+      "garbage": 0,
+      "runs": 1,
+      "skips": 0,
+      "sources": [
+        "rx_interleave_063638.log"
+      ]
+    }
+  },
+  "per_mode": {
+    "LF-LoRa-SF12": {
+      "rx": 2,
+      "lost": 2,
+      "agg_per": 50.0,
+      "ber": null,
+      "rssi_best": -18.0,
+      "sizes_with_rx": [
+        32
+      ],
+      "sizes_attempted": [
+        32
+      ],
+      "verdict": "PARTIAL"
+    },
+    "LF-FLRC-2600": {
+      "rx": 250,
+      "lost": 1750,
+      "agg_per": 87.5,
+      "ber": 0.0,
+      "rssi_best": -36.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "LF-FLRC-1300": {
+      "rx": 288,
+      "lost": 1712,
+      "agg_per": 85.6,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "LF-FLRC-650": {
+      "rx": 241,
+      "lost": 1559,
+      "agg_per": 86.61111111111111,
+      "ber": 0.0,
+      "rssi_best": -37.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "LF-FLRC-325": {
+      "rx": 436,
+      "lost": 2064,
+      "agg_per": 82.56,
+      "ber": 0.0,
+      "rssi_best": -36.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "HF-LoRa-SF7": {
+      "rx": 102,
+      "lost": 318,
+      "agg_per": 75.71428571428571,
+      "ber": 0.0,
+      "rssi_best": -23.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "HF-LoRa-SF9": {
+      "rx": 102,
+      "lost": 193,
+      "agg_per": 65.42372881355932,
+      "ber": 0.0,
+      "rssi_best": -19.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "HF-LoRa-SF12": {
+      "rx": 9,
+      "lost": 8,
+      "agg_per": 47.05882352941177,
+      "ber": 0.0,
+      "rssi_best": -6.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "HF-FLRC-2600": {
+      "rx": 265,
+      "lost": 2135,
+      "agg_per": 88.95833333333333,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "sizes_with_rx": [
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "PARTIAL"
+    },
+    "HF-FLRC-1300": {
+      "rx": 352,
+      "lost": 1948,
+      "agg_per": 84.69565217391305,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "HF-FLRC-650": {
+      "rx": 185,
+      "lost": 2015,
+      "agg_per": 91.5909090909091,
+      "ber": 0.0,
+      "rssi_best": -45.0,
+      "sizes_with_rx": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "OK_ALL"
+    },
+    "HF-FLRC-325": {
+      "rx": 77,
+      "lost": 1923,
+      "agg_per": 96.15,
+      "ber": 0.0,
+      "rssi_best": -44.0,
+      "sizes_with_rx": [
+        32,
+        64
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "PARTIAL"
+    },
+    "LF-LoRa-SF7": {
+      "rx": 9,
+      "lost": 258,
+      "agg_per": 96.62921348314607,
+      "ber": 0.0,
+      "rssi_best": -28.0,
+      "sizes_with_rx": [
+        128,
+        255
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "PARTIAL"
+    },
+    "LF-LoRa-SF9": {
+      "rx": 2,
+      "lost": 44,
+      "agg_per": 95.65217391304348,
+      "ber": 0.0,
+      "rssi_best": -25.0,
+      "sizes_with_rx": [
+        32
+      ],
+      "sizes_attempted": [
+        32,
+        64,
+        128,
+        255
+      ],
+      "verdict": "PARTIAL"
+    },
+    "LF-FLRC": {
+      "rx": 0,
+      "lost": 400,
+      "agg_per": 100.0,
+      "ber": null,
+      "rssi_best": null,
+      "sizes_with_rx": [],
+      "sizes_attempted": [
+        650,
+        1300
+      ],
+      "verdict": "FAIL"
+    }
+  }
+}
