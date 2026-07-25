@@ -632,7 +632,10 @@ static void rfInitForPhaseRX(const Phase &p) {
 
         // SET_FLRC_PACKET_PARAMS (0x0249)
         // byte2: 0x0E = agc_pbl_len=3 (16-bit preamble) | sw_len=2 (32-bit sync word)
-        { uint8_t c[] = {0x02, 0x49, 0x0E, 0x4C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
+        // byte3: 0x7C = crc=10 (CRC24) | pkt_format=1 (Fixed) | sw_match=111 (Match123)
+        //   was 0x4C (crc=01 CRC16-off, pkt_format=0 Dynamic, sw_match=100 Match1)
+        //   matched TheClams reference: CRC24 + Match123, keep Fixed format
+        { uint8_t c[] = {0x02, 0x49, 0x0E, 0x7C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
         delay(1);
     }
 
