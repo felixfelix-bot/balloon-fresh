@@ -233,7 +233,7 @@ static void buildInterleaveTable() {
     // Purpose: characterize which frequencies are affected by WiFi interference
     for (int f = 0; f < NUM_SWEEP_FREQS_HF; f++) {
         Phase &exp = interleavePhases[idx];
-        exp = phases[3];  // HF-FLRC-1300 base (first FLRC entry after reorder)
+        exp = phases[4];  // HF-FLRC-1300 base (phases[4] = HF-FLRC-1300)
         exp.freqMHz = SWEEP_FREQS_HF[f];
         exp.pktSize = 64;
         exp.pktCount = 100;
@@ -244,7 +244,7 @@ static void buildInterleaveTable() {
     }
     for (int f = 0; f < NUM_SWEEP_FREQS_LF; f++) {
         Phase &exp = interleavePhases[idx];
-        exp = phases[10];  // LF-FLRC-1300 base
+        exp = phases[12];  // LF-FLRC-1300 base (phases[12] = LF-FLRC-1300)
         exp.freqMHz = SWEEP_FREQS_LF[f];
         exp.pktSize = 64;
         exp.pktCount = 100;
