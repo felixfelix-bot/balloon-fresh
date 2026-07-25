@@ -657,7 +657,7 @@ static void emitPhaseResult(int phaseIdx) {
 static void rxPacketPoll(int phaseIdx) {
     const Phase &p = *getPhaseEntry(phaseIdx);
     uint16_t pktSize = p.pktSize;
-    uint8_t rxBuf[256];
+    uint8_t rxBuf[264];  // V4: extra room for chip framing prefix
 
     uint32_t irqPinMask = 1UL << PIN_IRQ;
 
@@ -685,7 +685,11 @@ static void rxPacketPoll(int phaseIdx) {
 
     // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
     // GET_PACKET_STATUS may reset FIFO read pointer.
-    rfReadRxFifo(rxBuf, pktSize);
+    // V4: read extra bytes to account for chip framing prefix (syncOffset)
+    // syncOffset is typically 0-2, read 8 extra bytes for safety
+    size_t readLen = pktSize + 8;
+    if (readLen > sizeof(rxBuf)) readLen = sizeof(rxBuf);
+    rfReadRxFifo(rxBuf, readLen);
 
     // ─── Sync header search: fast-path then full scan (Phase B) ─────
     // The LR2021 packet engine prepends framing bytes before our payload.
@@ -794,8 +798,8 @@ static void rxPacketPoll(int phaseIdx) {
     uint16_t actualCrc = crc16(&rxBuf[gpsOff], crcLen);
     if (expectedCrc != actualCrc) {
         rxCrcErrors++;
-        dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d\n",
-                   expectedCrc, actualCrc, seq, syncOffset);
+        dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d pSz=%d\n",
+                   expectedCrc, actualCrc, seq, syncOffset, pktSize);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();

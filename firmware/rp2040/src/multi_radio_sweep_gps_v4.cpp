@@ -586,9 +586,9 @@ static void rfInitForPhase(const Phase &p) {
         { uint8_t c[] = {0x02, 0x23, 0x12}; rfWriteCmd(c, 3); }
         delay(1);
 
-        // SET_LORA_PACKET_PARAMS: preamble=8, payload=32, explicit, CRC on
+        // SET_LORA_PACKET_PARAMS: preamble=8, payload=pktSize, explicit, CRC on
         { uint8_t flags = 0x04; // explicit header, CRC on
-          uint8_t c[] = {0x02, 0x21, 0x00, 0x08, LORA_PKT_SIZE, flags};
+          uint8_t c[] = {0x02, 0x21, 0x00, 0x08, (uint8_t)p.pktSize, flags};
           rfWriteCmd(c, 6); }
         delay(1);
 
@@ -602,8 +602,8 @@ static void rfInitForPhase(const Phase &p) {
         { uint8_t c[] = {0x02, 0x4C, 0x01, 0x12, 0xAD, 0x10, 0x1B}; rfWriteCmd(c, 7); }
         delay(1);
 
-        // SET_FLRC_PACKET_PARAMS (0x0249)
-        { uint8_t c[] = {0x02, 0x49, 0x0C, 0x4C, 0x00, FLRC_PKT_SIZE}; rfWriteCmd(c, 6); }
+        // SET_FLRC_PACKET_PARAMS (0x0249) — V4: dynamic pktSize
+        { uint8_t c[] = {0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
         delay(1);
     }
 
