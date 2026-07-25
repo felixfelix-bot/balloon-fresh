@@ -1,0 +1,68 @@
+=== PHASE-SYNC CAPTURE Sat Jul 25 10:26:09 AM UTC 2026 epoch=1784975169 ===
+SYNC_NOT_FOUND first4=27094483
+SYNC_NOT_FOUND first4=AE87002F
+SYNC_NOT_FOUND first4=EA422CA5
+SYNC_NOT_FOUND first4=88392AEA
+SYNC_NOT_FOUND first4=0A97212A
+SYNC_NOT_FOUND first4=47879DB3
+PHASE_RESULT 22 HF-FLRC-650-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=8 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 23 HF-FLRC-650-255 pktSize=255
+SYNC_NOT_FOUND first4=FD46C320
+SYNC_NOT_FOUND first4=7D67E0B7
+SYNC_NOT_FOUND first4=E29CB0B2
+SYNC_LOST phase=23 consecutive=3 cached_off=0
+SYNC_NOT_FOUND first4=818C1B59
+SYNC_NOT_FOUND first4=2C97FECC
+SYNC_NOT_FOUND first4=5EAE99C5
+SYNC_NOT_FOUND first4=2AD79E5F
+SYNC_NOT_FOUND first4=2410401F
+SYNC_NOT_FOUND first4=83C39B97
+PHASE_RESULT 23 HF-FLRC-650-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=9 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 24 HF-FLRC-325-32 pktSize=32
+SYNC_OFFSET phase=24 off=0 prev=-1
+APP_CRC_FAIL exp=1E1F got=4608 seq=60 syncOff=0 pSz=32
+SYNC_NOT_FOUND first4=85857565
+SYNC_NOT_FOUND first4=6038E6F5
+SYNC_NOT_FOUND first4=8F646A1B
+SYNC_LOST phase=24 consecutive=3 cached_off=0
+SYNC_NOT_FOUND first4=1403F3E3
+SYNC_NOT_FOUND first4=95857565
+SYNC_OFFSET phase=24 off=0 prev=-1
+APP_CRC_FAIL exp=1E1F got=326E seq=64 syncOff=0 pSz=32
+SYNC_NOT_FOUND first4=95857565
+SYNC_NOT_FOUND first4=4038E6F5
+SYNC_NOT_FOUND first4=94847464
+SYNC_LOST phase=24 consecutive=3 cached_off=0
+SYNC_NOT_FOUND first4=6B6E6F77
+SYNC_OFFSET phase=24 off=0 prev=-1
+APP_CRC_FAIL exp=1E1F got=1F2A seq=67 syncOff=0 pSz=32
+SYNC_NOT_FOUND first4=81857565
+SYNC_NOT_FOUND first4=4038E6F5
+SYNC_NOT_FOUND first4=94847464
+SYNC_LOST phase=24 consecutive=3 cached_off=0
+SYNC_NOT_FOUND first4=6B6E6F77
+SYNC_OFFSET phase=24 off=0 prev=-1
+APP_CRC_FAIL exp=1E1F got=024B seq=70 syncOff=0 pSz=32
+SYNC_NOT_FOUND first4=95857565
+SYNC_NOT_FOUND first4=6038E6F5
+SYNC_NOT_FOUND first4=94847464
+SYNC_LOST phase=24 consecutive=3 cached_off=0
+SYNC_NOT_FOUND first4=6B6E6F77
+SYNC_OFFSET phase=24 off=0 prev=-1
+APP_CRC_FAIL exp=1E1F got=34E3 seq=73 syncOff=0 pSz=32
+SYNC_NOT_FOUND first4=95857565
+SYNC_NOT_FOUND first4=4038E6F5
+SYNC_NOT_FOUND first4=1403F3E3
+SYNC_LOST phase=24 consecutive=3 cached_off=0
+SYNC_NOT_FOUND first4=AFF61B83
+PHASE_RESULT 24 HF-FLRC-325-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=-46 rssi_min=-46 crc_err=5 garbage=21 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 25 HF-FLRC-325-64 pktSize=64
+SYNC_NOT_FOUND first4=29A820D5
+SYNC_NOT_FOUND first4=C8F9DA2E
+PHASE_RESULT 25 HF-FLRC-325-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=2 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 26 HF-FLRC-325-128 pktSize=128
+SYNC_NOT_FOUND first4=DD5BF59D
