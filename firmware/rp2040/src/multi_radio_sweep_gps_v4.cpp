@@ -146,7 +146,7 @@ static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 
 static Phase interleavePhases[64];
 static int   numInterleavePhases = 0;
-static bool  interleaveMode = false;   // set via SET_INTERLEAVE 1
+static bool  interleaveMode = true;   // V4: DEFAULT ON — no serial command needed for walk
 
 static void buildInterleaveTable() {
     int idx = 0;
@@ -847,36 +847,40 @@ void setup() {
 
     spiRf.begin();
 
-    // V4: Build interleave table (always build so it's ready if enabled)
+    // V4: Build interleave table and default to interleave mode
     buildInterleaveTable();
+    interleaveMode = true;  // V4: always interleave — 56 phases (14 modes × 4 sizes)
 
-    // Compute total cycle seconds (base mode)
+    // Compute total cycle seconds for interleave mode
     totalCycleSec = 0;
-    for (int i = 0; i < NUM_PHASES; i++) {
-        totalCycleSec += phases[i].slotMs / 1000;
+    for (int i = 0; i < numInterleavePhases; i++) {
+        totalCycleSec += interleavePhases[i].slotMs / 1000;
     }
 
-    outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\n");
-    outPrintf("Phases: %d  Cycle: %lus  Power: %.1f dBm  Interleave: OFF\n",
-               NUM_PHASES, (unsigned long)totalCycleSec, TX_POWER_DBM);
-    outPrintf("Interleave mode: %d phases ready. Send 'SET_INTERLEAVE 1' to enable.\n",
-               numInterleavePhases);
-    for (int i = 0; i < NUM_PHASES; i++) {
-        outPrintf("  [%2d] %-16s %s %.0fMHz %s %dpkts %ds %dB\n",
-                      i, phases[i].name,
-                      phases[i].pktType == PT_LORA ? "LoRa" : "FLRC",
-                      phases[i].freqMHz,
-                      phases[i].pktType == PT_LORA ?
-                          (phases[i].bwCode == 0x05 ? "BW250" : "BW812") : "",
-                      phases[i].pktCount, phases[i].slotMs / 1000, phases[i].pktSize);
-    }
+    outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\\n");
+    outPrintf("Mode: INTERLEAVE (56 phases: 14 modes × 4 sizes)\\n");
+    outPrintf("Cycle: %lus  Power: %.1f dBm\\n",
+               (unsigned long)totalCycleSec, TX_POWER_DBM);
+    outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
 
-    // ── Wait for GPS time (up to 60s — M10 cold start needs 30-60s) ──
-    outPrintf("=== WAITING FOR GPS TIME (up to 60s) ===\n");
+    // ── GPS GATE: TX NEVER transmits without GPS fix ──
+    // Felix requirement: no TX without satellite fix. No timeout, no fallback.
+    outPrintf("=== WAITING FOR GPS FIX (TX blocked until locked) ===\\n");
     uint32_t gpsStart = millis();
-    while (!gps.hasTime && (millis() - gpsStart) < GPS_FIX_TIMEOUT_MS) {
+    while (!gps.hasTime || !gps.fixValid) {
         gpsPoll();
-        digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
+        digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
+        
+        // Status every 10s
+        uint32_t elapsed = (millis() - gpsStart) / 1000;
+        if (elapsed % 10 == 0 && elapsed > 0) {
+            static uint32_t lastReport = 0;
+            if (elapsed != lastReport) {
+                outPrintf("GPS_WAIT %lus sats=%d fix=%d\\n",
+                           (unsigned long)elapsed, gps.sats, gps.fixValid ? 1 : 0);
+                lastReport = elapsed;
+            }
+        }
         delay(10);
     }
 
@@ -904,9 +908,13 @@ void setup() {
                    currentPhase, (unsigned long)phaseTime, (unsigned long)cyclePos,
                    gps.hasUnixTime ? "GPS_UNIX" : "GPS_MIDNIGHT");
     } else {
-        outPrintf("GPS_TIMEOUT — starting with free-running timer (will drift from RX)\n");
-        // Fallback: use millis()-based phase cycling if no GPS
-        // This keeps TX running but won't sync with RX
+        // V4: No fallback. TX must have GPS to transmit.
+        // This should never execute due to the blocking while loop above.
+        outPrintf("GPS_UNEXPECTED_NO_FIX — TX will not start. Check antenna.\\n");
+        while (true) {
+            digitalWrite(PIN_LED, ((millis() / 100) & 1) ? HIGH : LOW);
+            delay(50);
+        }
     }
 
     digitalWrite(PIN_LED, HIGH);
@@ -944,27 +952,24 @@ void loop() {
     }
 
     // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
-    // Priority: 1) GPS Unix epoch (updates every second, no drift) 
-    //           2) SET_TIME from laptop (backup when no GPS)
-    //           3) millis() fallback (last resort)
+    // V4 WALK: GPS time is PRIMARY. Laptop SET_TIME is bench-test backup.
+    // No time source = NO TRANSMIT (strict).
     int phase;
     if (gps.hasUnixTime && gps.unixTime > 0) {
         // GPS real Unix epoch (date + time from RMC) — primary for walk tests
         phase = computePhaseFromUTC(gps.unixTime);
     } else if (hasLaptopTime()) {
-        // Unix epoch time from laptop SET_TIME — backup when GPS unavailable
+        // Unix epoch time from laptop SET_TIME — backup for bench tests only
         phase = computePhaseFromUTC(getUtcNow());
     } else {
-        // Last resort: millis() from boot (completely unsynced)
-        uint32_t cyclePos = (millis() / 1000) % totalCycleSec;
-        uint32_t acc = 0;
-        phase = 0;
-        int maxPhase = interleaveMode ? numInterleavePhases : NUM_PHASES;
-        for (int i = 0; i < maxPhase; i++) {
-            const Phase *ph = getPhaseEntry(i);
-            acc += ph->slotMs / 1000;
-            if (cyclePos < acc) { phase = i; break; }
+        // V4 WALK: No time source. Wait for GPS. Do NOT transmit unsynced.
+        if (currentPhase >= 0) {
+            outPrintf("PHASE_GUARD 500\n");
+            currentPhase = -1;
         }
+        gpsPoll();
+        delay(50);
+        return;
     }
 
     // Phase change detection
@@ -998,6 +1003,16 @@ void loop() {
     if (p.pktCount == 0) {
         gpsPoll();
         delay(10);
+        return;
+    }
+
+    // V4 WALK: Require GPS fix when no laptop connected (walk mode).
+    // Bench test: laptop SET_TIME acts as time source override.
+    // Walk mode: GPS fix MANDATORY — TX must know position + time.
+    if (!gps.fixValid && !hasLaptopTime()) {
+        outPrintf("WAIT_GPS sats=%d fix=%d — not transmitting\n", gps.sats, gps.fixValid ? 1 : 0);
+        gpsPoll();
+        delay(100);
         return;
     }
 
