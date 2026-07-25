@@ -1,0 +1,375 @@
+{
+  "captures": {
+    "BENCH": [
+      "full_cycle_152954.log",
+      "synced_run_151652.log",
+      "flrc_focused_154639.log",
+      "phase_sync_155609.log",
+      "rx_interleave_063638.log",
+      "rx_interleave_20260725_063345.log"
+    ],
+    "PREFIX": [
+      "rx_sweep_201758.log"
+    ],
+    "POSTFIX": [
+      "rx_sweep_fixed2_204425.log"
+    ],
+    "FINAL": [
+      "rx_sweep_fixed_204825.log"
+    ]
+  },
+  "summary": {
+    "BENCH": {
+      "phases": 58,
+      "decoded": 45,
+      "pct": 77.58620689655173
+    },
+    "PREFIX": {
+      "phases": 76,
+      "decoded": 37,
+      "pct": 48.68421052631579
+    },
+    "POSTFIX": {
+      "phases": 47,
+      "decoded": 17,
+      "pct": 36.170212765957444
+    },
+    "FINAL": {
+      "phases": 77,
+      "decoded": 40,
+      "pct": 51.94805194805195
+    }
+  },
+  "modes": {
+    "HF-LoRa-SF7": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 55
+      },
+      "PREFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 51
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 0,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 52
+      }
+    },
+    "HF-LoRa-SF9": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 45
+      },
+      "PREFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 44
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 0,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 47
+      }
+    },
+    "HF-FLRC-325": {
+      "BENCH": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 77
+      },
+      "PREFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 81
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 0,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 74
+      }
+    },
+    "HF-FLRC-650": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 156
+      },
+      "PREFIX": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 14
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 0,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 13
+      }
+    },
+    "HF-FLRC-1300": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 191
+      },
+      "PREFIX": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 8
+      },
+      "POSTFIX": {
+        "dec": 1,
+        "tot": 2,
+        "rx_sum": 10
+      },
+      "FINAL": {
+        "dec": 3,
+        "tot": 4,
+        "rx_sum": 19
+      }
+    },
+    "HF-FLRC-2600": {
+      "BENCH": {
+        "dec": 3,
+        "tot": 4,
+        "rx_sum": 147
+      },
+      "PREFIX": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 6
+      },
+      "POSTFIX": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 3
+      },
+      "FINAL": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 9
+      }
+    },
+    "HF-LoRa-SF12": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 5
+      },
+      "PREFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 5
+      },
+      "POSTFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 4
+      },
+      "FINAL": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 5
+      }
+    },
+    "LF-LoRa-SF7": {
+      "BENCH": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 4
+      },
+      "PREFIX": {
+        "dec": 3,
+        "tot": 4,
+        "rx_sum": 30
+      },
+      "POSTFIX": {
+        "dec": 3,
+        "tot": 4,
+        "rx_sum": 34
+      },
+      "FINAL": {
+        "dec": 3,
+        "tot": 4,
+        "rx_sum": 36
+      }
+    },
+    "LF-LoRa-SF9": {
+      "BENCH": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 1
+      },
+      "PREFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 10
+      },
+      "POSTFIX": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 10
+      },
+      "FINAL": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 12
+      }
+    },
+    "LF-LoRa-SF12": {
+      "BENCH": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 1
+      },
+      "PREFIX": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 1
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 4,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 1
+      }
+    },
+    "LF-FLRC-325": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 201
+      },
+      "PREFIX": {
+        "dec": 2,
+        "tot": 3,
+        "rx_sum": 7
+      },
+      "POSTFIX": {
+        "dec": 3,
+        "tot": 4,
+        "rx_sum": 45
+      },
+      "FINAL": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 60
+      }
+    },
+    "LF-FLRC-650": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 138
+      },
+      "PREFIX": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 6
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 4,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 8
+      }
+    },
+    "LF-FLRC-1300": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 148
+      },
+      "PREFIX": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 9
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 4,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 2,
+        "tot": 4,
+        "rx_sum": 13
+      }
+    },
+    "LF-FLRC-2600": {
+      "BENCH": {
+        "dec": 4,
+        "tot": 4,
+        "rx_sum": 148
+      },
+      "PREFIX": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 3
+      },
+      "POSTFIX": {
+        "dec": 0,
+        "tot": 4,
+        "rx_sum": 0
+      },
+      "FINAL": {
+        "dec": 1,
+        "tot": 4,
+        "rx_sum": 3
+      }
+    },
+    "CH-FLRC": {
+      "BENCH": {
+        "dec": 0,
+        "tot": 0,
+        "rx_sum": 0
+      },
+      "PREFIX": {
+        "dec": 3,
+        "tot": 21,
+        "rx_sum": 3
+      },
+      "POSTFIX": {
+        "dec": 1,
+        "tot": 9,
+        "rx_sum": 1
+      },
+      "FINAL": {
+        "dec": 1,
+        "tot": 21,
+        "rx_sum": 1
+      }
+    }
+  }
+}
