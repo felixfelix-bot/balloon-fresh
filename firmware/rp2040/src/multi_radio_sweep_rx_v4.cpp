@@ -96,20 +96,23 @@ typedef struct {
 } Phase;
 
 static const Phase phases[] = {
+    // REORDERED: FLRC before SF12 for gentler transitions (matches TX exactly)
     {"HF-LoRa-SF7",   PT_LORA, 2440.0, 1,  7, 0x0F, 1,    0,  50, 15000, 255},
     {"HF-LoRa-SF9",   PT_LORA, 2440.0, 1,  9, 0x0F, 1,    0,  50, 15000, 255},
-    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  15, 30000, 255},  // V4: match TX
-    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000, 255},
-    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000, 255},
-    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000, 255},
+    // FLRC first — gentle transition from SF9, narrow→wide for gradual BW
     {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000, 255},
+    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000, 255},
+    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000, 255},
+    // SF12 last in HF — 500ms extra gap after SF12→LF transition
+    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  15, 30000, 255},
     {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000, 255},
-    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  30, 20000, 255},  // V4: match TX
-    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  10, 50000, 255},  // V4: match TX
-    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000, 255},
-    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000, 255},
-    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  30, 20000, 255},
+    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  10, 50000, 255},
     {"LF-FLRC-325",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  325, 200,  8000, 255},
+    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000, 255},
+    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000, 255},
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
@@ -133,7 +136,7 @@ static void buildInterleaveTable() {
             exp = base;
             exp.pktSize = SWEEP_SIZES[s];
             if (base.pktType == PT_FLRC) {
-                exp.pktCount = 100; exp.slotMs = 2000;
+                exp.pktCount = 100; exp.slotMs = 2500;  // increased from 2000 for radio settle
             } else {
                 float msPerByte;
                 if (base.rfPath == 1) {
@@ -581,8 +584,9 @@ static void rfInitForPhaseRX(const Phase &p) {
 
     } else {
         // SET_FLRC_MODULATION_PARAMS (0x0248)
+        // CR=3/4 (0x1) + BT=0.5 (0x5) = 0x15 — FEC for error correction
         uint8_t brBw = flrcBitrateToCode(p.flrcBr);
-        { uint8_t c[] = {0x02, 0x48, brBw, 0x25}; rfWriteCmd(c, 4); }
+        { uint8_t c[] = {0x02, 0x48, brBw, 0x15}; rfWriteCmd(c, 4); }
         delay(1);
 
         // SET_FLRC_SYNC_WORD (0x024C)
@@ -1090,7 +1094,15 @@ void loop() {
             emitPhaseResult(currentPhase);
         }
 
-        dualPrintf("PHASE_GUARD 500\n");
+        // Transition guard: log bigger gap when modulation or band changes
+        uint32_t guardMs = 500;
+        if (currentPhase >= 0 && phase < numInterleavePhases) {
+            if (interleavePhases[currentPhase].pktType != interleavePhases[phase].pktType ||
+                interleavePhases[currentPhase].rfPath   != interleavePhases[phase].rfPath) {
+                guardMs = 1000;
+            }
+        }
+        dualPrintf("PHASE_GUARD %lu\n", (unsigned long)guardMs);
 
         currentPhase = phase;
         resetRxPhaseState();

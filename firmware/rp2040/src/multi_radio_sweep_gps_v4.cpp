@@ -118,23 +118,26 @@ typedef struct {
 } Phase;
 
 static const Phase phases[] = {
-    // ── 2.4 GHz HF path ── (pktSize=255 for v3 baseline)
+    // ── 2.4 GHz HF path ── REORDERED: FLRC before SF12 for gentler transitions
     {"HF-LoRa-SF7",   PT_LORA, 2440.0, 1,  7, 0x0F, 1,    0,  50, 15000, 255},
     {"HF-LoRa-SF9",   PT_LORA, 2440.0, 1,  9, 0x0F, 1,    0,  50, 15000, 255},
-    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  15, 30000, 255},  // V3: halved for 255B
-    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000, 255},
-    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000, 255},
-    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000, 255},
+    // FLRC first — transitions from fast LoRa (SF9) to FLRC is gentle
     {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000, 255},
+    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000, 255},
+    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000, 255},
+    // SF12 last in HF — 500ms extra gap added after SF12→LF transition
+    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  15, 30000, 255},
     // ── 868 MHz LF path ──
     {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000, 255},
     {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  30, 20000, 255},  // V3: reduced for 255B
     {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  10, 50000, 255},  // V3: halved for 255B
     // ── 868 MHz LF FLRC path ──
-    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000, 255},
-    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000, 255},
-    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000, 255},
+    // FLRC reordered narrow→wide for gradual bandwidth transitions
     {"LF-FLRC-325",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  325, 200,  8000, 255},
+    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000, 255},
+    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000, 255},
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
@@ -165,7 +168,7 @@ static void buildInterleaveTable() {
             if (base.pktType == PT_FLRC) {
                 // FLRC: all sizes trivial (< 7ms air time)
                 exp.pktCount = 100;
-                exp.slotMs   = 2000;
+                exp.slotMs   = 2500;  // increased from 2000 for radio settle
             } else {
                 // LoRa: compute air time and size accordingly
                 // Air time estimate (ms per byte) at given SF and BW:
@@ -628,8 +631,9 @@ static void rfInitForPhase(const Phase &p) {
 
     } else {
         // SET_FLRC_MODULATION_PARAMS (0x0248)
+        // CR=3/4 (0x1) + BT=0.5 (0x5) = 0x15 — FEC for error correction
         uint8_t brBw = flrcBitrateToCode(p.flrcBr);
-        { uint8_t c[] = {0x02, 0x48, brBw, 0x25}; rfWriteCmd(c, 4); }
+        { uint8_t c[] = {0x02, 0x48, brBw, 0x15}; rfWriteCmd(c, 4); }
         delay(1);
 
         // SET_FLRC_SYNC_WORD (0x024C)
@@ -1070,8 +1074,16 @@ void loop() {
         // radio is still mid-transmission. Force SET_STANDBY before
         // rfInitForPhase to avoid hardware-reset during active TX.
         abortTxIfActive();
+
+        // V4: Add 500ms extra gap after SF12 phases for radio recovery
         if (currentPhase >= 0) {
-            outPrintf("PHASE_GUARD 500\n");
+            const Phase &prevP = *getPhaseEntry(currentPhase);
+            if (prevP.sf == 12) {
+                outPrintf("PHASE_GUARD 500 (SF12 recovery)\n");
+                delay(500);
+            } else {
+                outPrintf("PHASE_GUARD 500\n");
+            }
         }
         currentPhase = phase;
         seqInPhase = 0;
@@ -1110,7 +1122,7 @@ void loop() {
     static bool     gpsFixWasValid = false;
     static uint32_t gpsFixLostMs   = 0;
     static bool     gpsInGrace     = false;
-    #define GPS_GRACE_MS  15000  // 15 seconds
+    #define GPS_GRACE_MS  30000  // 30 seconds — range test needs tolerance for balcony GPS
 
     if (gps.fixValid) {
         gpsFixWasValid = true;
@@ -1144,9 +1156,20 @@ void loop() {
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;
-    if (elapsedInPhase >= (uint32_t)p.slotMs - 500) {
+    // Transition guard: 1000ms when next phase changes modulation or band
+    uint32_t guardMs = 500;
+    {
+        int nextPh = currentPhase + 1;
+        if (nextPh < numInterleavePhases) {
+            if (interleavePhases[currentPhase].pktType != interleavePhases[nextPh].pktType ||
+                interleavePhases[currentPhase].rfPath   != interleavePhases[nextPh].rfPath) {
+                guardMs = 1000;
+            }
+        }
+    }
+    if (elapsedInPhase >= (uint32_t)p.slotMs - guardMs) {
         // Phase nearly over — enter guard band, wait for phase change
-        outPrintf("PHASE_GUARD 500\n");
+        outPrintf("PHASE_GUARD %lu\n", (unsigned long)guardMs);
         gpsPoll();
         delay(10);
         return;
