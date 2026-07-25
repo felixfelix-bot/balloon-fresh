@@ -1055,10 +1055,33 @@ void loop() {
         return;
     }
 
-    // V4 WALK: Require GPS fix when no laptop connected (walk mode).
-    // Bench test: laptop SET_TIME acts as time source override.
-    // Walk mode: GPS fix MANDATORY — TX must know position + time.
-    if (!gps.fixValid && !hasLaptopTime()) {
+    // V4 WALK: GPS fix check with 15s grace period.
+    // If GPS fix drops (walking behind building), TX continues for 15s
+    // using last known time/position. After 15s without fix → STOP.
+    // This prevents phase jumps from momentary GPS dropouts.
+    // Bench test: laptop SET_TIME bypasses GPS requirement entirely.
+    static bool     gpsFixWasValid = false;
+    static uint32_t gpsFixLostMs   = 0;
+    static bool     gpsInGrace     = false;
+    #define GPS_GRACE_MS  15000  // 15 seconds
+
+    if (gps.fixValid) {
+        gpsFixWasValid = true;
+        gpsInGrace = false;
+    } else if (gpsFixWasValid && !hasLaptopTime()) {
+        if (!gpsInGrace) {
+            gpsFixLostMs = millis();
+            gpsInGrace = true;
+            outPrintf("GPS_FIX_LOST — grace period %ds\n", GPS_GRACE_MS / 1000);
+        }
+        if ((millis() - gpsFixLostMs) > GPS_GRACE_MS) {
+            outPrintf("GPS_GRACE_EXPIRED sats=%d — STOPPING TX\n", gps.sats);
+            gpsPoll();
+            delay(100);
+            return;
+        }
+        // Still in grace period — continue transmitting with last known position
+    } else if (!hasLaptopTime()) {
         outPrintf("WAIT_GPS sats=%d fix=%d — not transmitting\n", gps.sats, gps.fixValid ? 1 : 0);
         gpsPoll();
         delay(100);
