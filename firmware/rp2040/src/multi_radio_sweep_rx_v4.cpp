@@ -118,7 +118,7 @@ static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 #define NUM_SWEEP_SIZES 4
 static Phase interleavePhases[64];
 static int   numInterleavePhases = 0;
-static bool  interleaveMode = false;
+static bool  interleaveMode = true;   // V4 WALK: default ON (no serial command needed)
 // V4: Forward-declare cycle time — referenced by SET_INTERLEAVE handler below
 static uint32_t totalCycleSec = 0;
 
@@ -911,6 +911,24 @@ static void rxPacketPoll(int phaseIdx) {
                       (unsigned long)millis(),
                       txLat, txLon, txSats, txFix, (unsigned long)txUtc,
                       rxLastTxFw);
+        
+        // V4: BER analysis — compare received fill pattern to expected (byte[i]=i&0xFF)
+        // TX fills bytes 29..pktSize-3 with known pattern. We compare bit-for-bit.
+        uint16_t berErrors = 0;
+        uint16_t berTotal = 0;
+        for (int i = 29; i < pktSize - 2; i++) {
+            int rxIdx = syncOffset + i;
+            if (rxIdx < 0 || rxIdx >= 264) continue;
+            uint8_t expected = (uint8_t)(i & 0xFF);
+            uint8_t received = rxBuf[rxIdx];
+            if (received != expected) {
+                berErrors += __builtin_popcount(received ^ expected);
+            }
+            berTotal += 8;
+        }
+        dualPrintf("BER seq=%u bits=%u errs=%u ber=%.2e\n",
+                   seq, berTotal, berErrors,
+                   berTotal > 0 ? (double)berErrors / berTotal : 0.0);
     }
 
     digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);

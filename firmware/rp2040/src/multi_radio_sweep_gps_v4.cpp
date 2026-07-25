@@ -863,13 +863,22 @@ void setup() {
                (unsigned long)totalCycleSec, TX_POWER_DBM);
     outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
 
-    // ── GPS GATE: TX NEVER transmits without GPS fix ──
-    // Felix requirement: no TX without satellite fix. No timeout, no fallback.
+    // ── GPS GATE: TX NEVER transmits without accurate time ──
+    // Walk mode: blocks until GPS fix. 
+    // Bench mode: laptop SET_TIME bypasses (sets hasLaptopTime).
     outPrintf("=== WAITING FOR GPS FIX (TX blocked until locked) ===\\n");
+    outPrintf("=== Bench test: send SET_TIME to override ===\\n");
     uint32_t gpsStart = millis();
     while (!gps.hasTime || !gps.fixValid) {
         gpsPoll();
+        checkSerialTimeSync();  // Process SET_TIME during boot gate
         digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
+        
+        // Bench override: laptop SET_TIME received
+        if (hasLaptopTime()) {
+            outPrintf("LAPTOP_TIME_OVERRIDE — entering bench mode (no GPS required)\\n");
+            break;
+        }
         
         // Status every 10s
         uint32_t elapsed = (millis() - gpsStart) / 1000;
