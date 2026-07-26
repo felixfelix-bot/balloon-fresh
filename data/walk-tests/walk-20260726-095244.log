@@ -1,0 +1,143 @@
+2026-07-26T04:22:44 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:46 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:48 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:50 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:52 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:54 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:56 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:22:58 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:00 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:02 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:04 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:06 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:08 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:10 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:12 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:14 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:16 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:18 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:20 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:22 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:24 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:26 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:28 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:30 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:32 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:34 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:36 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:38 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:40 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:42 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T04:23:44 | # CONNECTED port=/dev/ttyACM4
+2026-07-26T04:23:45 | IME_SYNCED utc=1785039824 offset=1785033578
+2026-07-26T04:23:45 | IME_DIFF gps_utc=1785039824 laptop_utc=1785039824 offset=0
+2026-07-26T04:23:45 | T rx=2 seq=3 rssi=-29 phase=28 rx_ms=6246650 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785039824 tx_fw=unknown
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=F17C0F75
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=426A9E7C
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=EE55BE6E
+2026-07-26T04:23:45 | SYNC_LOST phase=28 consecutive=3 cached_off=0
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=32721F76
+2026-07-26T04:23:45 | SYNC_OFFSET phase=28 off=0 prev=-1
+2026-07-26T04:23:45 | TIME_DIFF gps_utc=1785039825 laptop_utc=1785039825 offset=0
+2026-07-26T04:23:45 | PKT rx=3 seq=5 rssi=-29 phase=28 rx_ms=6247049 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785039825 tx_fw=unknown
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=32F21F16
+2026-07-26T04:23:45 | TIME_DIFF gps_utc=1785039825 laptop_utc=1785039825 offset=0
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=827B2115
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=00011364
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=B727F455
+2026-07-26T04:23:45 | SYNC_LOST phase=28 consecutive=3 cached_off=0
+2026-07-26T04:23:45 | SYNC_NOT_FOUND first4=327B1376
+2026-07-26T04:23:46 | PHASE_RESULT 28 LF-LoRa-SF7-32 pktSize=32 rx=4 unique=4 lost=16 per=80.0 rssi_avg=-29 rssi_min=-30 crc_err=0 garbage=13 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785039825 tx_fw=unknown rx_fw=unknown
+2026-07-26T04:23:46 | PHASE_GUARD 500
+2026-07-26T04:23:46 | LORA_CFG path=0 bw=0x05 sf=7
+2026-07-26T04:23:46 | PHASE_START 29 LF-LoRa-SF7-64 pktSize=64
+2026-07-26T04:23:46 | SYNC_NOT_FOUND first4=7AAF27FB
+2026-07-26T04:23:46 | SYNC_NOT_FOUND first4=D31CF8E8
+2026-07-26T04:23:46 | SYNC_LOST phase=29 consecutive=3 cached_off=0
+2026-07-26T04:23:46 | SYNC_NOT_FOUND first4=CBCA7F08
+2026-07-26T04:23:47 | TIME_SYNCED utc=1785039826 offset=1785033578
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=7E1CFAE8
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=1EE111A9
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=7AAE26FB
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=1AE517A9
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=7AAE2EFB
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=7AAE26FB
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=168341C9
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=7AAE26FB
+2026-07-26T04:23:47 | SYNC_NOT_FOUND first4=1AE517A9
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=F31CFAE8
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=D36CFAE8
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=1EE111A9
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=7AAF27FB
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=168311A9
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=7AAE26FB
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=0F720597
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=7BAE17F8
+2026-07-26T04:23:48 | SYNC_NOT_FOUND first4=A36CF6E8
+2026-07-26T04:23:49 | TIME_SYNCED utc=1785039828 offset=1785033578
+2026-07-26T04:23:49 | SYNC_NOT_FOUND first4=168311A9
+2026-07-26T04:23:49 | SYNC_NOT_FOUND first4=D36CFAE8
+2026-07-26T04:23:49 | SYNC_NOT_FOUND first4=2F69D758
+2026-07-26T04:23:49 | PHASE_RESULT 29 LF-LoRa-SF7-64 pktSize=64 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=24 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+2026-07-26T04:23:49 | PHASE_GUARD 500
+2026-07-26T04:23:49 | LORA_CFG path=0 bw=0x05 sf=7
+2026-07-26T04:23:49 | PHASE_START 30 LF-LoRa-SF7-128 pktSize=128
+2026-07-26T04:23:49 | SYNC_NOT_FOUND first4=7BC60E10
+2026-07-26T04:23:49 | SYNC_NOT_FOUND first4=70C093D0
+2026-07-26T04:23:49 | SYNC_LOST phase=30 consecutive=3 cached_off=0
+2026-07-26T04:23:50 | SYNC_OFFSET phase=30 off=0 prev=-1
+2026-07-26T04:23:50 | TIME_DIFF gps_utc=1785039829 laptop_utc=1785039829 offset=0
+2026-07-26T04:23:50 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 213 139 101
+2026-07-26T04:23:50 | PKT rx=1 seq=2 rssi=-29 phase=30 rx_ms=6251742 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785039829 tx_fw=unknown
+2026-07-26T04:23:50 | SYNC_NOT_FOUND first4=0E29B0D0
+2026-07-26T04:23:50 | TIME_STATS min=-2000ms max=1000ms avg=-91ms corrections=0
+2026-07-26T04:23:50 | _SYNCED utc=1785039830 offset=1785033579
+2026-07-26T04:23:50 | INTERLEAVE_ON phases=56 cycle=2400s
+2026-07-26T04:23:50 | PHASE_RESULT 30 LF-LoRa-SF7-128 pktSize=128 rx=1 unique=1 lost=12 per=92.3 rssi_avg=-29 rssi_min=-29 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785039829 tx_fw=unknown rx_fw=unknown
+2026-07-26T04:23:50 | PHASE_GUARD 500
+2026-07-26T04:23:50 | PHASE_START 55 LF-FLRC-325-255 pktSize=255
+2026-07-26T04:23:51 | TIME_SYNCED utc=1785039830 offset=1785033578
+2026-07-26T04:23:53 | TIME_SYNCED utc=1785039832 offset=1785033578
+2026-07-26T04:23:55 | TIME_SYNCED utc=1785039834 offset=1785033578
+2026-07-26T04:23:55 | TIME_SYNCED utc=1785039835 offset=1785033579
+2026-07-26T04:23:57 | E_SYNCED utc=1785039836 offset=1785033578
+2026-07-26T04:23:59 | TIME_SYNCED utc=1785039838 offset=1785033578
+2026-07-26T04:24:01 | TIME_SYNCED utc=1785039840 offset=1785033578
+2026-07-26T04:24:03 | TIME_SYNCED utc=1785039842 offset=1785033578
+2026-07-26T04:24:04 | IME_SYNCED utc=1785039843 offset=1785033578
+2026-07-26T04:24:04 | TERLEAVE_ON phases=56 cycle=2700s
+2026-07-26T04:24:05 | IME_SYNCED utc=1785039844 offset=1785033578
+2026-07-26T04:24:07 | TIME_SYNCED utc=1785039846 offset=1785033578
+2026-07-26T04:24:08 | SYNC_NOT_FOUND first4=B245D1D8
+2026-07-26T04:24:09 | TIME_SYNCED utc=1785039848 offset=1785033578
+2026-07-26T04:24:10 | INTERLEAVE_ON phases=56 cycle=2850s
+2026-07-26T04:24:11 | TIME_SYNCED utc=1785039850 offset=1785033578
+2026-07-26T04:24:13 | TIME_SYNCED utc=1785039852 offset=1785033578
+2026-07-26T04:24:15 | TIME_SYNCED utc=1785039854 offset=1785033578
+2026-07-26T04:24:16 | ME_SYNCED utc=1785039855 offset=1785033578
+2026-07-26T04:24:16 | LEAVE_ON phases=56 cycle=3000s
+2026-07-26T04:24:17 | TIME_SYNCED utc=1785039856 offset=1785033578
+2026-07-26T04:24:19 | TIME_SYNCED utc=1785039858 offset=1785033578
+2026-07-26T04:24:21 | TIME_SYNCED utc=1785039860 offset=1785033578
+2026-07-26T04:24:21 | ME_SYNCED utc=1785039860 offset=1785033578
+2026-07-26T04:24:21 | INTERLEAVE_ON phases=56 cycle=3150s
+2026-07-26T04:24:22 | SYNC_NOT_FOUND first4=53D03CD3
+2026-07-26T04:24:23 | TIME_SYNCED utc=1785039862 offset=1785033578
+2026-07-26T04:24:25 | TIME_SYNCED utc=1785039864 offset=1785033578
+2026-07-26T04:24:25 | SYNC_NOT_FOUND first4=59DF6621
+2026-07-26T04:24:25 | SYNC_LOST phase=55 consecutive=3 cached_off=1
+2026-07-26T04:24:26 | IME_SYNCED utc=1785039865 offset=1785033578
+2026-07-26T04:24:26 | NTERLEAVE_ON phases=56 cycle=3300s
+2026-07-26T04:24:27 | TIME_SYNCED utc=1785039866 offset=1785033578
+2026-07-26T04:24:29 | TIME_SYNCED utc=1785039868 offset=1785033578
+2026-07-26T04:24:31 | TIME_SYNCED utc=1785039870 offset=1785033578
+2026-07-26T04:24:32 | IME_SYNCED utc=1785039871 offset=1785033578
+2026-07-26T04:24:32 | NTERLEAVE_ON phases=56 cycle=3450s
+2026-07-26T04:24:33 | IME_SYNCED utc=1785039872 offset=1785033578
+2026-07-26T04:24:35 | TIME_SYNCED utc=1785039874 offset=1785033578
+2026-07-26T04:24:37 | TIME_SYNCED utc=1785039876 offset=1785033578
+2026-07-26T04:24:38 | IME_SYNCED utc=1785039877 offset=1785033578
+2026-07-26T04:24:38 | NTERLEAVE_ON phases=56 cycle=3600s
+2026-07-26T04:24:39 | TIME_SYNCED utc=1785039878 offset=1785033578
+2026-07-26T04:24:41 | ME_SYNCED utc=1785039880 offset=1785033578
+2026-07-26T04:24:44 | # SHUTDOWN

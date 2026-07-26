@@ -18,6 +18,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "pico/bootrom.h"
+// sio_hw is available via earlephilhower core (rp2040/pico.h)
 
 // ─── Pins ────────────────────────────────────────────────────────────
 #define PIN_SCK     2
@@ -35,8 +36,12 @@
 // ─── FLRC Config ─────────────────────────────────────────────────────
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_BR         2600
+#ifndef FLRC_PKT_SIZE
 #define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     16000000UL
+#endif
+#ifndef SPI_FREQ_HZ
+#define SPI_FREQ_HZ     20000000UL
+#endif
 #define XTAL_MHZ        52.0f
 
 #define RX_LISTEN_MS    12000
@@ -117,6 +122,54 @@ static uint32_t rfReadIrqStatus() {
 static void rfClearIrq() {
     uint8_t cmd[6] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
     rfWriteCmd(cmd, 6);
+}
+
+// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) — 9-bit assembly
+// Matches verified implementation from flrc_range_rx_auto.cpp / LR2021Raw.h
+static int8_t rfReadRssi() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x02); spiRf.transfer(0x4B); // GET_FLRC_PACKET_STATUS
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    uint8_t buf[7];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+
+    // 9-bit RSSI: bits [8:1] from buf[4], bit[0] from buf[6] bit[2]
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int8_t)(raw / 2);
+}
+
+// ─── Instantaneous RSSI via GET_RSSI_INST (0x020B) — 9-bit assembly
+// Used for noise-floor measurement when no packet is being received.
+static int8_t rfReadRssiInst() {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    spiRf.transfer(0x02); spiRf.transfer(0x0B); // GET_RSSI_INST
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    // Response: [rssiMsb][rssiLsb] — 9-bit value
+    uint8_t buf[2];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 2; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+
+    // 9-bit RSSI: bits [8:1] from buf[0], bit[0] from buf[1] bit[7]
+    uint16_t raw = ((uint16_t)buf[0] << 1) | (buf[1] >> 7);
+    return -(int8_t)(raw / 2);
 }
 
 static void rfSetRx() {
@@ -271,13 +324,26 @@ struct RxStats {
     uint32_t totalSentByTx;
     uint32_t startMs;
     uint32_t elapsedMs;
+    int32_t  rssiSum;
+    int16_t  rssiMin;
+    int16_t  rssiMax;
+    uint16_t rssiCount;
+    // Burst tracking — TX sends 500-pkt bursts with DEADBEEF end marker,
+    // restarting seq at 0 for each burst. We must accumulate totals across
+    // all bursts seen during the listen window, not just the last one.
+    uint32_t burstCount;      // number of DEADBEEF markers seen this session
+    uint32_t totalExpected;   // accumulated: sum of per-burst packet counts
+    int8_t  noiseFloor;       // boot-time noise floor measurement (dBm)
 };
 static RxStats stats;
 static volatile bool radioReady = false;
+static int8_t bootNoiseFloor = -128;  // measured at boot, -128 = not yet measured
 
 static void resetStats() {
     memset(&stats, 0, sizeof(stats));
     stats.lastSeq = 0xFFFFFFFF;
+    stats.rssiMin  = 0;      // will be overwritten by first packet
+    stats.rssiMax  = -128;   // will be overwritten by first packet
 }
 
 // ─── Receive session ─────────────────────────────────────────────────
@@ -290,6 +356,7 @@ static void runReceive() {
     delay(1);
 
     resetStats();
+    stats.noiseFloor = bootNoiseFloor;
     stats.startMs = millis();
     uint32_t lastPktMs = millis();
     uint8_t buf[FLRC_PKT_SIZE];
@@ -304,32 +371,64 @@ static void runReceive() {
             dualPrintln("RX_DONE silence"); break;
         }
 
-        // Poll IRQ via SPI — GET_AND_CLEAR_IRQ_STATUS (0x0117)
-        uint32_t irq = rfReadIrqStatus();
-        if (!(irq & 0x00040000)) continue;  // bit 18 = RX_DONE
+        // Poll IRQ via GPIO (nanoseconds) — NOT SPI (microseconds, loses packets)
+        // DIO9 = GP7. When RX_DONE fires, DIO9 goes HIGH.
+        uint32_t irqMask = 1UL << PIN_IRQ;
+        if (!(sio_hw->gpio_in & irqMask)) continue;  // no IRQ yet
 
-        // Read packet from FIFO (no status bytes — LR2021 READ_RX_FIFO)
+        // READ FIFO IMMEDIATELY — before chip receives next packet
         rfReadFifo(buf, FLRC_PKT_SIZE);
 
-        // Clear RX FIFO + CLEAR_ERRORS + re-arm RX
+        // Now clear FIFO + errors + re-arm RX (minimize dead time)
         { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }  // CLEAR_RX_FIFO
         rfWaitBusy();
-        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }  // CLEAR_ERRORS
         rfClearIrq();
         rfSetRx();
+
+        // Read packet RSSI (from last received packet's status)
+        int8_t rssi = rfReadRssi();
+        stats.rssiSum += rssi;
+        stats.rssiCount++;
+        if (rssi < stats.rssiMin) stats.rssiMin = rssi;
+        if (rssi > stats.rssiMax) stats.rssiMax = rssi;
 
         // Extract big-endian seq
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
 
-        // DEADBEEF end marker
+#ifdef RX_DEBUG_HEX
+        // Full 16-byte hex dump for first 5 packets
+        if (stats.received < 5) {
+            dualPrintf("PKT[%lu] RAW16: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+                (unsigned long)stats.received,
+                buf[0], buf[1], buf[2], buf[3],
+                buf[4], buf[5], buf[6], buf[7],
+                buf[8], buf[9], buf[10], buf[11],
+                buf[12], buf[13], buf[14], buf[15]);
+        }
+#endif
+
+        // DEADBEEF end marker — TX burst boundary.
+        // TX restarts seq at 0 for each burst, so we accumulate per-burst
+        // totals across the entire listen window. Do NOT break out of the
+        // receive loop — keep listening for more bursts. Only break on
+        // timeout/silence. Do NOT count DEADBEEF itself in stats.received.
         if (buf[0] == 0xDE && buf[1] == 0xAD &&
             buf[2] == 0xBE && buf[3] == 0xEF) {
-            stats.totalSentByTx = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
-                                  ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
-            stats.elapsedMs = millis() - stats.startMs;
-            dualPrintln("RX_END DEADBEEF");
-            break;
+            uint32_t burstPackets = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
+                                    ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
+            stats.burstCount++;
+            stats.totalExpected += burstPackets;
+            stats.totalSentByTx = burstPackets;  // last burst's count (compat field)
+            dualPrintf("BURST_END n=%lu bursts=%lu totalExpected=%lu",
+                       (unsigned long)burstPackets,
+                       (unsigned long)stats.burstCount,
+                       (unsigned long)stats.totalExpected);
+            // Reset per-burst seq tracker so first pkt of next burst isn't
+            // flagged as a duplicate of the last pkt of this burst.
+            stats.lastSeq = 0xFFFFFFFF;
+            lastPktMs = millis();  // burst marker = recent activity (extends silence timer)
+            continue;  // keep listening — only break on timeout/silence
         }
 
         stats.received++;
@@ -340,7 +439,8 @@ static void runReceive() {
         lastPktMs = millis();
 
         if (stats.received <= 5 || (stats.received % PRINT_EVERY) == 0) {
-            dualPrintf("%lu,%lu", (unsigned long)stats.received, (unsigned long)seq);
+            dualPrintf("PKT %lu seq=%lu rssi=%d", (unsigned long)stats.received,
+                       (unsigned long)seq, (int)rssi);
             // Hex dump first 8 bytes of first 3 packets
             if (stats.received <= 3) {
                 dualPrintf("  HEX: %02X %02X %02X %02X %02X %02X %02X %02X",
@@ -354,24 +454,45 @@ static void runReceive() {
 
     // Print results
     uint32_t n = stats.received;
-    uint32_t total = stats.totalSentByTx > 0 ? stats.totalSentByTx : (stats.maxSeq + 1);
+    // PER calculation — use accumulated burst totals from DEADBEEF markers.
+    // OLD BUG: totalSentByTx was just the LAST burst's count (500), and
+    // maxSeq+1 was wrong because seq restarts at 0 each burst. With 3-4
+    // bursts received (2500+ pkts) but total=500, PER was always ~100%.
+    // FIX: totalExpected accumulates across all bursts seen. If no DEADBEEF
+    // was observed, fall back to maxSeq+1 as a single-burst estimate.
+    uint32_t total;
+    if (stats.totalExpected > 0) {
+        total = stats.totalExpected;
+    } else if (stats.maxSeq > 0) {
+        total = stats.maxSeq + 1;  // estimate: one burst's worth
+    } else {
+        total = 0;
+    }
     uint32_t lost = (total > n) ? (total - n) : 0;
     float perPct = (total > 0) ? (100.0f * (float)lost / (float)total) : 0.0f;
     float tputKbps = (stats.elapsedMs > 0 && n > 0)
                      ? ((float)n * (float)FLRC_PKT_SIZE * 8.0f) / (float)stats.elapsedMs : 0.0f;
+    float rssiAvg = (stats.rssiCount > 0) ? ((float)stats.rssiSum / (float)stats.rssiCount) : 0.0f;
 
     dualPrintln("=============================================");
     dualPrintf("  Received: %lu (unique %lu, dup %lu)", (unsigned long)n,
                (unsigned long)stats.unique, (unsigned long)stats.duplicates);
     dualPrintf("  TX sent:  %lu (est total %lu)",
                (unsigned long)stats.totalSentByTx, (unsigned long)total);
+    dualPrintf("  Bursts detected: %lu", (unsigned long)stats.burstCount);
     dualPrintf("  Lost:     %lu (%.2f%%)", (unsigned long)lost, perPct);
     dualPrintf("  Elapsed:  %lu ms", (unsigned long)stats.elapsedMs);
     dualPrintf("  THROUGHPUT: %.1f kbps", tputKbps);
+    if (stats.rssiCount > 0) {
+        dualPrintf("  RSSI: avg=%.1f dBm min=%d dBm max=%d dBm (n=%d)",
+                   rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax, (int)stats.rssiCount);
+    }
     dualPrintln("=============================================");
-    dualPrintf("RESULT,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f",
+    dualPrintf("RESULT,rx=%lu,unique=%lu,lost=%lu,total=%lu,per=%.2f,elapsed_ms=%lu,throughput_kbps=%.1f,rssi_avg=%.1f,rssi_min=%d,rssi_max=%d,bursts=%lu,noise_floor=%d",
                (unsigned long)n, (unsigned long)stats.unique, (unsigned long)lost,
-               (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps);
+               (unsigned long)total, perPct, (unsigned long)stats.elapsedMs, tputKbps,
+               rssiAvg, (int)stats.rssiMin, (int)stats.rssiMax,
+               (unsigned long)stats.burstCount, (int)stats.noiseFloor);
 }
 
 // ─── Config print ────────────────────────────────────────────────────
@@ -404,8 +525,18 @@ static void processCommand(const char *cmd) {
                        (unsigned long)stats.received, tput);
         } else { dualPrintln("No results yet"); }
     }
+    else if (strcmp(cmd, "NOISE") == 0) {
+        // Measure noise floor — TX should be OFF for accurate reading
+        int32_t sum = 0;
+        for (int i = 0; i < 10; i++) {
+            sum += rfReadRssiInst();
+            delay(10);
+        }
+        int8_t avg = (int8_t)(sum / 10);
+        dualPrintf("NOISE_FLOOR rssi_inst=%d dBm (avg of 10)", (int)avg);
+    }
     else if (strcmp(cmd, "HELP") == 0) {
-        dualPrintln("Commands: RUN CONFIG INIT RESULTS HELP");
+        dualPrintln("Commands: RUN CONFIG INIT RESULTS NOISE HELP");
     }
 }
 
@@ -447,6 +578,19 @@ void setup() {
         digitalWrite(PIN_LED_ALT, HIGH);
         dualPrintln("Auto-start RX in 8 seconds...");
         delay(8000); // give bridge time to connect
+
+        // Measure noise floor before entering RX (TX should be OFF)
+        dualPrintln("MEASURING NOISE FLOOR...");
+        {
+            int32_t sum = 0;
+            for (int i = 0; i < 10; i++) {
+                sum += rfReadRssiInst();
+                delay(10);
+            }
+            bootNoiseFloor = (int8_t)(sum / 10);
+            stats.noiseFloor = bootNoiseFloor;
+            dualPrintf("NOISE_FLOOR=%d dBm (measured at boot, n=10)", (int)bootNoiseFloor);
+        }
         runReceive();
     } else {
         dualPrintln("INIT FAILED — type INIT to retry");
@@ -454,28 +598,19 @@ void setup() {
 }
 
 void loop() {
-    // Heartbeat every 2s on Serial1
-    static unsigned long lastHB = 0;
-    if (millis() - lastHB > 2000) {
-        lastHB = millis();
-        Serial1.println("HB alive");
-        Serial1.flush();
-    }
-
-    // Read commands from both Serial and Serial1
-    for (int src = 0; src < 2; src++) {
-        Stream *s = (src == 0) ? (Stream*)&Serial : (Stream*)&Serial1;
-        while (s->available()) {
-            char c = (char)s->read();
-            if (c == '\n' || c == '\r') {
-                if (cmdLen > 0) {
-                    cmdBuf[cmdLen] = '\0';
-                    processCommand(cmdBuf);
-                    cmdLen = 0;
-                }
-            } else if (cmdLen < sizeof(cmdBuf) - 1) {
-                cmdBuf[cmdLen++] = c;
-            }
+    // Auto-restart RX continuously (ESP32 bridge can't forward serial commands)
+    if (radioReady) {
+        runReceive();
+        delay(2000); // brief pause between windows
+    } else {
+        // Heartbeat + retry init
+        static unsigned long lastHB = 0;
+        if (millis() - lastHB > 2000) {
+            lastHB = millis();
+            Serial1.println("RX DEAD - retrying init");
+            Serial1.flush();
         }
+        radioReady = rawInitRadio();
+        delay(1000);
     }
 }

@@ -26,6 +26,94 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-circuit-design] feat(enclosure): Variant B — big LR2021 dev board with SMA pass-through (2026-07-26) | tags: RADIO
+- **Commit:** `72b7727` by Felix
+- **Files:** tracker/hardware/enclosure/README_big.md, tracker/hardware/enclosure/balloon_dev_case_big.scad, tracker/hardware/enclosure/bottom_big.stl (+2 more)
+- **Full message:** feat(enclosure): Variant B — big LR2021 dev board with SMA pass-through
+- **Relevance:** RADIO
+
+### [balloon-circuit-design] feat(enclosure): oversized GPS slot — fits all M10S breakouts (2026-07-26) | tags: GENERAL
+- **Commit:** `2efbe9d` by Felix
+- **Files:** tracker/hardware/enclosure/balloon_dev_case.scad, tracker/hardware/enclosure/bottom_v2_generic.stl, tracker/hardware/enclosure/lid_v2_generic.stl (+1 more)
+- **Full message:** feat(enclosure): oversized GPS slot — fits all M10S breakouts
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] feat(enclosure): v2 — 4-board design with GPS + RP2040 (2026-07-26) | tags: GENERAL
+- **Commit:** `553606e` by Felix
+- **Files:** tracker/hardware/enclosure/README.md, tracker/hardware/enclosure/balloon_dev_case.scad, tracker/hardware/enclosure/bottom_v2.stl (+2 more)
+- **Full message:** feat(enclosure): v2 — 4-board design with GPS + RP2040
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] feat(enclosure): parametric waterproof dev board case (2026-07-26) | tags: GENERAL
+- **Commit:** `a8f509e` by Felix
+- **Files:** tracker/hardware/enclosure/README.md, tracker/hardware/enclosure/balloon_dev_case.scad, tracker/hardware/enclosure/bottom.stl (+4 more)
+- **Full message:** feat(enclosure): parametric waterproof dev board case
+- **Relevance:** GENERAL
+
+
+### [balloon-range-tests] docs: multi-level delegation hierarchy — sub-managers delegate too (2026-07-25) | tags: GENERAL
+- **Commit:** `4566437` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: multi-level delegation hierarchy — sub-managers delegate too
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] docs: anti-pattern warning + SDR handover (2026-07-25) | tags: GENERAL
+- **Commit:** `fdbe634` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: anti-pattern warning + SDR handover
+- **Relevance:** GENERAL
+
+
+### [balloon-tollgate] docs: adopt hard board locking v3 + flash queue + serial wrapper from discovery  (2026-07-24) | tags: FIRMWARE
+- **Commit:** `a785c70` by Felix
+- **Files:** AGENTS.md, docs/STATUS-balloon-tollgate.md
+- **Full message:** docs: adopt hard board locking v3 + flash queue + serial wrapper from discovery sync
+- **Relevance:** FIRMWARE
+
+
+### [balloon-hermes] docs: comprehensive next walk test plan — 6 phases with sub-manager dispatch mat (2026-07-24) | tags: TEST
+- **Commit:** `655e458` by Felix
+- **Files:** docs/coordination/PLAN-NEXT-WALK-TEST.md
+- **Full message:** docs: comprehensive next walk test plan — 6 phases with sub-manager dispatch matrix
+- **Relevance:** TEST
+
+### [balloon-hermes] fix(tools): Phase 2 — hard board locking + flash queue (2026-07-24) | tags: FIRMWARE
+- **Commit:** `35b292c` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, docs/coordination/FLASH-QUEUE.md, tools/balloon-board-lock.py (+1 more)
+- **Full message:** fix(tools): Phase 2 — hard board locking + flash queue
+- **Relevance:** FIRMWARE
+
+### [balloon-hermes] docs: comprehensive FLRC alignment fix plan — 3 bugs, 8 phases, ~3hr effort (2026-07-24) | tags: RADIO
+- **Commit:** `568a742` by Felix
+- **Files:** docs/coordination/PLAN-FLRC-ALIGNMENT-FIX.md
+- **Full message:** docs: comprehensive FLRC alignment fix plan — 3 bugs, 8 phases, ~3hr effort
+- **Relevance:** RADIO
+
+### [balloon-range-tests] docs: add Board Access Protocol — MANDATORY enforcement section (2026-07-24) | tags: GENERAL
+- **Commit:** `a256fe0` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: add Board Access Protocol — MANDATORY enforcement section
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] fix: FLRC byte alignment + app-layer CRC-16 + FIFO clear + sync search (2026-07-24) | tags: RADIO, FIRMWARE
+- **Commit:** `9b740aa` by Felix
+- **Files:** docs/coordination/FLASH-QUEUE.md, firmware/BUILD_COUNTER.txt, firmware/BUILD_MAP.md (+5 more)
+- **Full message:** fix: FLRC byte alignment + app-layer CRC-16 + FIFO clear + sync search
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-speed-tests] docs: add Board Access Protocol — MANDATORY enforcement section (2026-07-24) | tags: GENERAL
+- **Commit:** `373c230` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: add Board Access Protocol — MANDATORY enforcement section
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] fix: board lock chmod enforcement + pio upload guard shim (2026-07-24) | tags: FIRMWARE
+- **Commit:** `ef60a51` by Felix
+- **Files:** docs/coordination/FLASH-QUEUE.md, tools/balloon-board-lock.py, tools/pio-flash.sh (+1 more)
+- **Full message:** fix: board lock chmod enforcement + pio upload guard shim
+- **Relevance:** FIRMWARE
+
+
 ### [balloon-hermes] docs: firmware integrity plan — 5-layer binary control system (2026-07-24) | tags: GENERAL
 - **Commit:** `b7edcee` by Felix
 - **Files:** docs/coordination/PLAN-FIRMWARE-INTEGRITY.md

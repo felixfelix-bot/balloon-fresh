@@ -1,0 +1,12 @@
+{
+  "date": "",
+  "operator": "",
+  "tx_firmware": {"hash": "", "tag": "", "built": ""},
+  "rx_firmware": {"hash": "", "tag": "", "built": ""},
+  "firmware_match": false,
+  "verified_before_walk": false,
+  "environment": "",
+  "walk_distance_km": 0,
+  "duration_min": 0,
+  "notes": ""
+}

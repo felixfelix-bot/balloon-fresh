@@ -1,0 +1,14 @@
+# /etc/udev/rules.d/99-balloon-boards.rules
+# Stable symlinks for balloon RP2040 boards based on serial number.
+# Ports (ttyACM0/1/3) swap after replug — serial numbers never change.
+#
+# Install: sudo cp tools/99-balloon-boards.rules /etc/udev/rules.d/
+#          sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# After install, use /dev/balloon-tx and /dev/balloon-rx in all scripts.
+
+# TX board: RP2040 serial E663B035977F242D
+SUBSYSTEM=="tty", ATTRS{idSerial}=="*F242D*", SYMLINK+="balloon-tx"
+
+# RX board: RP2040 serial *8332*
+SUBSYSTEM=="tty", ATTRS{idSerial}=="*8332*", SYMLINK+="balloon-rx"

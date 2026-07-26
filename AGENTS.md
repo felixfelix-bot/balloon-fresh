@@ -1,3 +1,62 @@
+# HIERARCHY ROLE: SUB-PROJECT MANAGER
+
+You are the isolated manager of balloon-range-tests. You report to the balloon-hermes orchestrator group.
+
+## ANTI-PATTERN: DOING WORKER WORK (APPLIES TO ALL LEVELS)
+
+This applies to BOTH the orchestrator AND sub-managers at every level.
+
+**The delegation hierarchy is multi-level:**
+```
+Orchestrator (balloon-hermes)
+  → Sub-managers (scoped domain, own context window)
+    → Workers via kanban (worker-balloon, etc.)
+```
+
+**Sub-managers are ALSO managers, NOT workers.** A sub-manager that finds
+itself running `pio run`, reading firmware line-by-line, or flashing boards
+in its own thread is doing it wrong. It should create kanban tasks and
+delegate to worker profiles.
+
+**Every level delegates down. Nobody does mechanical work in their own
+context.** Every level keeps its context for decisions, brainstorming,
+and coordination.
+
+## YOUR EXTERNAL DUTIES (3 communication channels)
+
+1. STATUS REPORTS — When the orchestrator asks, fill STATUS-REQUEST-PROMPT.md and reply.
+2. TASK EXECUTION — When the orchestrator delegates a task (see DELEGATION-PROMPT.md), execute it within your scope and report results.
+3. PROACTIVE ESCALATION — If you discover something relevant to other tracks or the orchestrator (a blocker, a cross-track finding, a dependency, a question), REPORT IT UP IMMEDIATELY. Do NOT wait for a status pull. Reply: "ESCALATION: [what you found] -> [who needs to know]".
+
+## BOUNDARIES (keep your scope tight)
+
+- You are a SUB-MANAGER, not a coordinator. You do NOT coordinate other tracks.
+- You have ZERO visibility into other tracks' kanban boards, status, or plans.
+- ALL cross-track communication goes THROUGH the orchestrator. You escalate UP, never sideways to other track groups.
+- Do NOT message other balloon track Signal groups directly.
+- Do NOT read coordination files (INDEX.md, DECISIONS-AND-BLOCKERS.md, TRACKS-REGISTRY.yaml) — orchestrator-only.
+- Do NOT read ~/.hermes/profiles/manager/state/session-notes.md — coordinator context.
+
+## YOUR SCOPE
+- Worktree: this directory only
+- Kanban: your board only (if configured)
+- Assessment: docs/INTEGRATION-ASSESSMENT.md
+- Status file: docs/STATUS-balloon-range-tests.md
+
+## DELEGATION EXPECTATIONS (POSITIVE COLLABORATION)
+
+You are part of a hierarchy. The orchestrator (balloon-hermes group) DELEGATES work to you. Your responsibilities:
+
+1. **EXPECT DELEGATION.** When the orchestrator sends you a task, it is YOUR responsibility. Execute it, do not bounce it back. The orchestrator chose you because this is your domain expertise.
+2. **RESPOND PROMPTLY.** When asked for status or a task update, respond in the SAME turn. Use the STATUS-REQUEST-PROMPT.md template if one was sent.
+3. **PROACTIVELY REPORT cross-track findings.** If you discover something relevant to another track's domain (e.g., a hardware issue, a protocol mismatch, a shared resource conflict), tell the orchestrator: "ORCHESTRATOR: Forward this to [track-name]: [finding]". The orchestrator routes it — you do NOT contact other tracks directly.
+4. **SHARE BLOCKERS EARLY.** If you are blocked on something another track owns (shared hardware, dependency, protocol), tell the orchestrator immediately. Do NOT silently wait or try to work around it yourself.
+5. **YOUR STATUS IS VISIBILITY.** Commit and push regularly. The orchestrator monitors your worktree via session_search and git log. Uncommitted work is invisible work.
+
+These complement your anti-collapse guardrails above: you collaborate THROUGH the orchestrator, never directly with other tracks.
+
+---
+
 # AGENTS.md - AI Agent Instructions
 
 ## CRITICAL: LR2021 SPI Protocol — Do NOT Use RadioLib
@@ -263,3 +322,86 @@ See `mesh-stack/flrc-bench-espidf/RESULTS.md` for full data.
 - Yokohama balloons: https://www.yokohamaballoon.com/
 - SBS balloons: https://www.scientificballoonsolutions.com/products/
 - HYSPLIT (NOAA trajectory prediction): https://ready.arl.noaa.gov/HYSPLIT.php
+
+## BOARD ACCESS — Mutex Lock (MANDATORY)
+
+**Before flashing or testing ANY board, you MUST acquire the board lock.**
+Skipping the lock is a bug. The lock uses OS-enforced flock(2) — true mutual exclusion.
+
+### Commands
+
+```bash
+# Check who holds what
+python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py status
+
+# Acquire boards (blocks up to --timeout seconds)
+BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both \
+    --purpose "describe your test" --timeout 120
+
+# Release when done
+BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
+
+# Force-release stale lock (if another track crashed without releasing)
+python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both --force
+```
+
+### Resources
+- `tx` — RP2040 TX board (F242D, /dev/ttyACM0)
+- `rx` — RP2040 RX board (8332, /dev/ttyACM2)
+- `both` — TX + RX (for coordinated tests)
+- `board-a`, `board-b`, `board-c` — ESP32-S3 boards
+
+### How It Works
+- Uses `flock(LOCK_EX)` — OS-enforced, no race conditions
+- A sentinel daemon process holds the lock open
+- Auto-releases if your Hermes session crashes (sentinel monitors your PID)
+- `status` shows real flock state, not just file existence
+
+### Track Identity
+Always set `BALLOON_TRACK=range-tests` (or your track name) so others can see who holds the lock.
+
+### MANDATORY: Use BoardSerial, NOT serial.Serial()
+
+**All scripts accessing /dev/ttyACM* MUST use the BoardSerial wrapper.**
+Raw `serial.Serial()` calls BYPASS the lock and cause concurrent access bugs.
+
+```python
+# WRONG — bypasses lock, causes conflicts:
+import serial
+ser = serial.Serial('/dev/ttyACM0', 115200)
+
+# CORRECT — enforces lock:
+import sys
+sys.path.insert(0, str(__import__('pathlib').Path.home() / 'repos' / 'balloon-fresh' / 'tools'))
+from board_serial import BoardSerial
+ser = BoardSerial('/dev/ttyACM0', 115200)
+```
+
+**Pre-flight assertion** — call this at the top of every test script:
+```bash
+python3 ~/repos/balloon-fresh/tools/board-lock-assert.py tx rx || exit 1
+```
+
+Scripts found using raw `serial.Serial()` on board ports are BUGS.
+
+## Board Access Protocol — MANDATORY
+
+1. ALWAYS acquire board lock before ANY board interaction:
+   ```bash
+   BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both --purpose "<what>" --timeout 120
+   ```
+
+2. ALWAYS release when done:
+   ```bash
+   python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
+   ```
+
+3. NEVER use raw `pio run -t upload` — use pio-flash.sh wrapper:
+   ```bash
+   BALLOON_TRACK=range-tests tools/pio-flash.sh <env> --upload-port /dev/ttyACMx
+   ```
+
+4. picotool and openocd are shimmed — they check lock before running.
+   Bypassing the shim is a violation.
+
+5. Flash requests require orchestrator approval (see docs/coordination/FLASH-QUEUE.md)

@@ -1,0 +1,398 @@
+2026-07-26T07:40:32 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:34 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:36 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:38 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:40 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:42 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:44 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:46 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:48 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:50 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:52 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:54 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:56 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:40:58 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:00 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:02 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:04 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:06 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:08 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:10 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:12 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:14 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:16 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:18 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:20 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:22 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:24 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:26 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:28 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:30 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:32 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:34 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:36 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T07:41:38 | # CONNECTED port=/dev/ttyACM4
+2026-07-26T07:41:39 | TIME_SYNCED utc=1785051698 offset=1785033575
+2026-07-26T07:41:39 | SYNC_NOT_FOUND first4=DEC6C2A5
+2026-07-26T07:41:41 | TIME_SYNCED utc=1785051700 offset=1785033575
+2026-07-26T07:41:41 | ME_SYNCED utc=1785051701 offset=1785033576
+2026-07-26T07:41:41 | INTERLEAVE_ON phases=56 cycle=220500s
+2026-07-26T07:41:43 | ME_SYNCED utc=1785051702 offset=1785033575
+2026-07-26T07:41:45 | ME_SYNCED utc=1785051704 offset=1785033575
+2026-07-26T07:41:47 | E_SYNCED utc=1785051706 offset=1785033575
+2026-07-26T07:41:47 | TIME_STATS min=-2000ms max=1000ms avg=-88ms corrections=0
+2026-07-26T07:41:49 | TIME_SYNCED utc=1785051708 offset=1785033575
+2026-07-26T07:41:49 | SYNC_NOT_FOUND first4=193A1851
+2026-07-26T07:41:51 | TIME_SYNCED utc=1785051710 offset=1785033575
+2026-07-26T07:41:51 | SYNC_NOT_FOUND first4=B943599D
+2026-07-26T07:41:51 | SYNC_LOST phase=55 consecutive=3 cached_off=1
+2026-07-26T07:41:51 | TIME_SYNCED utc=1785051711 offset=1785033575
+2026-07-26T07:41:53 | TIME_SYNCED utc=1785051712 offset=1785033575
+2026-07-26T07:41:55 | TIME_SYNCED utc=1785051714 offset=1785033575
+2026-07-26T07:41:57 | ME_SYNCED utc=1785051716 offset=1785033575
+2026-07-26T07:41:59 | TIME_SYNCED utc=1785051718 offset=1785033575
+2026-07-26T07:42:01 | TIME_SYNCED utc=1785051720 offset=1785033575
+2026-07-26T07:42:02 | SYNC_NOT_FOUND first4=569437FF
+2026-07-26T07:42:03 | TIME_SYNCED utc=1785051722 offset=1785033575
+2026-07-26T07:42:05 | TIME_SYNCED utc=1785051724 offset=1785033575
+2026-07-26T07:42:06 | IME_SYNCED utc=1785051725 offset=1785033575
+2026-07-26T07:42:06 | INTERLEAVE_ON phases=56 cycle=220650s
+2026-07-26T07:42:07 | TIME_SYNCED utc=1785051726 offset=1785033575
+2026-07-26T07:42:09 | TIME_SYNCED utc=1785051728 offset=1785033575
+2026-07-26T07:42:11 | TIME_SYNCED utc=1785051730 offset=1785033575
+2026-07-26T07:42:11 | TIME_SYNCED utc=1785051730 offset=1785033575
+2026-07-26T07:42:11 | INTERLEAVE_ON phases=56 cycle=220800s
+2026-07-26T07:42:11 | YNC_NOT_FOUND first4=52625D81
+2026-07-26T07:42:13 | ME_SYNCED utc=1785051732 offset=1785033575
+2026-07-26T07:42:15 | TIME_SYNCED utc=1785051734 offset=1785033575
+2026-07-26T07:42:17 | TIME_SYNCED utc=1785051736 offset=1785033575
+2026-07-26T07:42:17 | SYNC_NOT_FOUND first4=ED2F5089
+2026-07-26T07:42:18 | SYNC_NOT_FOUND first4=C505A5A5
+2026-07-26T07:42:18 | SYNC_NOT_FOUND first4=2D16D988
+2026-07-26T07:42:19 | TIME_SYNCED utc=1785051738 offset=1785033575
+2026-07-26T07:42:19 | SYNC_NOT_FOUND first4=CA82307E
+2026-07-26T07:42:19 | SYNC_NOT_FOUND first4=F7DCE02A
+2026-07-26T07:42:20 | CED utc=1785051739 offset=1785033575
+2026-07-26T07:42:20 | INTERLEAVE_ON phases=56 cycle=220950s
+2026-07-26T07:42:20 | SYNC_NOT_FOUND first4=2172529E
+2026-07-26T07:42:21 | TIME_SYNCED utc=1785051740 offset=1785033575
+2026-07-26T07:42:22 | SYNC_OFFSET phase=55 off=1 prev=-1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=0 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=1 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=2 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=3 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=4 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=5 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=6 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=7 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=8 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=9 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=10 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=11 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=12 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=13 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=14 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=15 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=16 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=17 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=18 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=19 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=20 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=21 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=22 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=23 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=24 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=25 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=26 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=27 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=28 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=29 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=30 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=31 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=32 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=33 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=34 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=35 syncOff=1
+2026-07-26T07:42:22 | SYNC_NOT_FOUND first4=D005655C
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=36 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=37 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=38 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=39 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=40 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=41 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=42 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=43 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=44 syncOff=1
+2026-07-26T07:42:22 | APP_CRC_FAIL exp=D020 got=C41B seq=45 syncOff=1
+2026-07-26T07:42:23 | TIME_SYNCED utc=1785051742 offset=1785033575
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=46 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=47 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=48 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=49 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=50 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=51 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=52 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=53 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=54 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=55 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=56 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=57 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=58 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=59 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=60 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=61 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=62 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=63 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=64 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=65 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=66 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=67 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=68 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D000 got=C41B seq=69 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=70 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=71 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D000 got=C41B seq=72 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=73 syncOff=1
+2026-07-26T07:42:23 | APP_CRC_FAIL exp=D020 got=C41B seq=74 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=0 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=1 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=2 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=3 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4000 got=473E seq=4 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=5 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=6 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=7 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=8 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=9 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=10 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=11 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=12 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=13 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=14 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=15 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=16 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=17 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=18 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=19 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=20 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=21 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=22 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=23 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=24 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=25 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=26 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=27 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=28 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=29 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=30 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=31 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=32 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=33 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=34 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=35 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=36 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=37 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=38 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=39 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=40 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=41 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=42 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=43 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=44 syncOff=1
+2026-07-26T07:42:24 | APP_CRC_FAIL exp=4020 got=473E seq=45 syncOff=1
+2026-07-26T07:42:25 | TIME_SYNCED utc=1785051744 offset=1785033575
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=46 syncOff=1
+2026-07-26T07:42:25 | ME_SYNCED utc=1785051744 offset=1785033575
+2026-07-26T07:42:25 | TERLEAVE_ON phases=56 cycle=221100s
+2026-07-26T07:42:25 | _CRC_FAIL exp=4000 got=473E seq=47 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=48 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=49 syncOff=1
+2026-07-26T07:42:25 | RC_FAIL exp=4020 got=473E seq=50 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=51 syncOff=1
+2026-07-26T07:42:25 | P_CRC_FAIL exp=4020 got=473E seq=52 syncOff=1
+2026-07-26T07:42:25 | P_CRC_FAIL exp=4020 got=473E seq=53 syncOff=1
+2026-07-26T07:42:25 | RC_FAIL exp=4020 got=473E seq=54 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=55 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=56 syncOff=1
+2026-07-26T07:42:25 | _FAIL exp=4020 got=473E seq=57 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=58 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=59 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=60 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=61 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=62 syncOff=1
+2026-07-26T07:42:25 | CRC_FAIL exp=4020 got=473E seq=63 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=64 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=65 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=66 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=67 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=68 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=69 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=70 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=71 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=72 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=73 syncOff=1
+2026-07-26T07:42:25 | APP_CRC_FAIL exp=4020 got=473E seq=74 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=0 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=1 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=2 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=3 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=4 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=5 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=6 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=7 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=8 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=9 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=10 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=11 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=12 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=13 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=14 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=15 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=16 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=17 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=18 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=19 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=20 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=21 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=22 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=23 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=24 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=25 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=26 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=27 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=28 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=29 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=30 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=31 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=32 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=33 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=34 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=35 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=36 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=37 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=38 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=39 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=40 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=41 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=42 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=43 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=44 syncOff=1
+2026-07-26T07:42:26 | APP_CRC_FAIL exp=9520 got=13EF seq=45 syncOff=1
+2026-07-26T07:42:27 | TIME_SYNCED utc=1785051746 offset=1785033575
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=46 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=47 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=48 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=49 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=50 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=51 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=52 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=53 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=54 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=55 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=56 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=57 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=58 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=59 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=60 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=61 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=62 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=63 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=64 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=65 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=66 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=67 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=68 syncOff=1
+2026-07-26T07:42:27 | SYNC_NOT_FOUND first4=951C6081
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=69 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=70 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=71 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=72 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=73 syncOff=1
+2026-07-26T07:42:27 | APP_CRC_FAIL exp=9520 got=13EF seq=74 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=6520 got=653D seq=0 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=B220 got=B2FF seq=1 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=DA20 got=DA98 seq=2 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=0D20 got=0D5A seq=3 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=0A20 got=0A56 seq=4 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=DD20 got=DD94 seq=5 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=B520 got=B5F3 seq=6 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=6220 got=6231 seq=7 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=BB20 got=BBEB seq=8 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=6C20 got=6C29 seq=9 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=0420 got=044E seq=10 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=D320 got=D38C seq=11 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=D420 got=D480 seq=12 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=0320 got=0342 seq=13 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=6B20 got=6B25 seq=14 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=BC20 got=BCE7 seq=15 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=C820 got=C8B0 seq=16 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=1F20 got=1F72 seq=17 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=7720 got=7715 seq=18 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=A020 got=A0D7 seq=19 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=A720 got=A7DB seq=20 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=7020 got=7019 seq=21 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=1820 got=187E seq=22 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=CF20 got=CFBC seq=23 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=1620 got=1666 seq=24 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=C120 got=C1A4 seq=25 syncOff=1
+2026-07-26T07:42:28 | SYNC_NOT_FOUND first4=A44024CA
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=A920 got=A9C3 seq=26 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=7E20 got=7E01 seq=27 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=7920 got=790D seq=28 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=AE20 got=AECF seq=29 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=C620 got=C6A8 seq=30 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=1120 got=116A seq=31 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=2E00 got=2E06 seq=32 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=F920 got=F9C4 seq=33 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=9120 got=91A3 seq=34 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=4620 got=4661 seq=35 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=4120 got=416D seq=36 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=9620 got=96AF seq=37 syncOff=1
+2026-07-26T07:42:28 | SYNC_NOT_FOUND first4=AF6807ED
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=FE20 got=FEC8 seq=38 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=2920 got=290A seq=39 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=F020 got=F0D0 seq=40 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=2720 got=2712 seq=41 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=4F20 got=4F75 seq=42 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=9820 got=98B7 seq=43 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=9F20 got=9FBB seq=44 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=4820 got=4879 seq=45 syncOff=1
+2026-07-26T07:42:28 | APP_CRC_FAIL exp=2020 got=201E seq=46 syncOff=1
+2026-07-26T07:42:29 | TIME_SYNCED utc=1785051748 offset=1785033575
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=F720 got=F7DC seq=47 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=8320 got=838B seq=48 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=5420 got=5449 seq=49 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=2720 got=27E0 seq=50 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=F020 got=F022 seq=51 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=F720 got=F72E seq=52 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=2020 got=20EC seq=53 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=4820 got=488B seq=54 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=9F20 got=9F49 seq=55 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=4620 got=4693 seq=56 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=9120 got=9151 seq=57 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=F920 got=F936 seq=58 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=2E20 got=2EF4 seq=59 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=2920 got=29F8 seq=60 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=FE20 got=FE3A seq=61 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=9620 got=965D seq=62 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=4120 got=419F seq=63 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=E820 got=E885 seq=64 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=3F20 got=3F47 seq=65 syncOff=1
+2026-07-26T07:42:29 | TIME_DIFF gps_utc=1785051749 laptop_utc=1785051748 offset=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=8020 got=80E2 seq=67 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=8720 got=87EE seq=68 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=5020 got=502C seq=69 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=3820 got=384B seq=70 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=EF20 got=EF89 seq=71 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=3620 got=3653 seq=72 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=E120 got=E191 seq=73 syncOff=1
+2026-07-26T07:42:29 | APP_CRC_FAIL exp=8920 got=89F6 seq=74 syncOff=1
+2026-07-26T07:42:30 | SYNC_NOT_FOUND first4=F6DD9503
+2026-07-26T07:42:30 | SYNC_NOT_FOUND first4=AC1E6ACF
+2026-07-26T07:42:30 | _SYNCED utc=1785051750 offset=1785033576
+2026-07-26T07:42:30 | ERLEAVE_ON phases=56 cycle=221250s
+2026-07-26T07:42:30 | SYNC_NOT_FOUND first4=50C00400
+2026-07-26T07:42:30 | SYNC_LOST phase=55 consecutive=3 cached_off=1
+2026-07-26T07:42:31 | TIME_SYNCED utc=1785051750 offset=1785033575
+2026-07-26T07:42:32 | SYNC_NOT_FOUND first4=D3BB9EF3
+2026-07-26T07:42:32 | # SHUTDOWN
