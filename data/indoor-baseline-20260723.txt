@@ -1,0 +1,534 @@
+PKT 2 seq=0 rssi=-72 uptime=40870ms
+PKT 3 seq=1 rssi=-71 uptime=40871ms
+PKT 4 seq=1010646591 rssi=-72 uptime=40874ms
+PKT 5 seq=2223343239 rssi=-71 uptime=40878ms
+PKT 100 seq=110 rssi=-71 uptime=40951ms
+PKT 200 seq=211 rssi=-72 uptime=41026ms
+PKT 300 seq=312 rssi=-72 uptime=41101ms
+PKT 400 seq=413 rssi=-72 uptime=41176ms
+RX_END DEADBEEF
+=============================================
+  Window:   14
+  Received: 485 (unique 485, dup 0)
+  TX sent:  500
+  Lost:     15 (3.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 301.7 kbps
+  RSSI: avg=-71.9 dBm min=-107 dBm max=-71 dBm (n=486)
+=============================================
+RANGE_RESULT_RX,window=14,rx=485,unique=485,lost=15,total=500,per=3.00,elapsed_ms=1852,throughput_kbps=301.7,rssi_avg=-71.9,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=39389
+[BRIDGE ALIVE 40s]
+RX_WINDOW 15 START uptime=41782ms listen=30000ms
+PKT 1 seq=1984476050 rssi=-107 uptime=42038ms
+PKT 2 seq=1241665116 rssi=-108 uptime=43005ms
+PKT 3 seq=0 rssi=-71 uptime=43263ms
+PKT 4 seq=1 rssi=-72 uptime=43264ms
+PKT 5 seq=808530483 rssi=-72 uptime=43267ms
+PKT 100 seq=105 rssi=-71 uptime=43341ms
+PKT 200 seq=206 rssi=-71 uptime=43416ms
+PKT 300 seq=307 rssi=-72 uptime=43491ms
+PKT 400 seq=408 rssi=-72 uptime=43566ms
+RX_END DEADBEEF
+=============================================
+  Window:   15
+  Received: 490 (unique 490, dup 0)
+  TX sent:  500
+  Lost:     10 (2.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 304.8 kbps
+  RSSI: avg=-71.9 dBm min=-108 dBm max=-71 dBm (n=491)
+=============================================
+RANGE_RESULT_RX,window=15,rx=490,unique=490,lost=10,total=500,per=2.00,elapsed_ms=1852,throughput_kbps=304.8,rssi_avg=-71.9,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=41782
+RX_WINDOW 16 START uptime=44176ms listen=30000ms
+PKT 1 seq=3992745926 rssi=-107 uptime=44350ms
+PKT 2 seq=1774940393 rssi=-108 uptime=44493ms
+PKT 3 seq=0 rssi=-72 uptime=45657ms
+PKT 4 seq=1 rssi=-72 uptime=45658ms
+PKT 5 seq=976960573 rssi=-71 uptime=45661ms
+PKT 100 seq=105 rssi=-72 uptime=45735ms
+PKT 200 seq=206 rssi=-72 uptime=45810ms
+PKT 300 seq=307 rssi=-72 uptime=45885ms
+PKT 400 seq=408 rssi=-72 uptime=45960ms
+RX_END DEADBEEF
+=============================================
+  Window:   16
+  Received: 490 (unique 490, dup 0)
+  TX sent:  500
+  Lost:     10 (2.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 304.8 kbps
+  RSSI: avg=-71.9 dBm min=-108 dBm max=-71 dBm (n=491)
+=============================================
+RANGE_RESULT_RX,window=16,rx=490,unique=490,lost=10,total=500,per=2.00,elapsed_ms=1852,throughput_kbps=304.8,rssi_avg=-71.9,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=44176
+RX_WINDOW 17 START uptime=46569ms listen=30000ms
+[BRIDGE ALIVE 45s]
+PKT 1 seq=1803897464 rssi=-108 uptime=47114ms
+PKT 2 seq=1615000359 rssi=-108 uptime=47456ms
+PKT 3 seq=521349557 rssi=-107 uptime=47772ms
+PKT 4 seq=2976327544 rssi=-107 uptime=48017ms
+PKT 5 seq=0 rssi=-72 uptime=48050ms
+PKT 100 seq=95 rssi=-72 uptime=48121ms
+PKT 200 seq=196 rssi=-72 uptime=48196ms
+PKT 300 seq=297 rssi=-72 uptime=48271ms
+PKT 400 seq=398 rssi=-72 uptime=48346ms
+PKT 500 seq=499 rssi=-72 uptime=48421ms
+RX_END DEADBEEF
+=============================================
+  Window:   17
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1853 ms
+  THROUGHPUT: 310.8 kbps
+  RSSI: avg=-72.2 dBm min=-108 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=17,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1853,throughput_kbps=310.8,rssi_avg=-72.2,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=46569
+RX_WINDOW 18 START uptime=48966ms listen=30000ms
+PKT 1 seq=2032654773 rssi=-107 uptime=49030ms
+PKT 2 seq=700979395 rssi=-110 uptime=49678ms
+PKT 3 seq=0 rssi=-72 uptime=50444ms
+PKT 4 seq=1 rssi=-72 uptime=50445ms
+PKT 5 seq=1010646591 rssi=-71 uptime=50448ms
+PKT 100 seq=105 rssi=-72 uptime=50522ms
+PKT 200 seq=206 rssi=-72 uptime=50597ms
+PKT 300 seq=307 rssi=-72 uptime=50672ms
+PKT 400 seq=408 rssi=-72 uptime=50747ms
+RX_END DEADBEEF
+=============================================
+  Window:   18
+  Received: 490 (unique 490, dup 0)
+  TX sent:  500
+  Lost:     10 (2.00%)
+  Elapsed:  1849 ms
+  THROUGHPUT: 305.3 kbps
+  RSSI: avg=-71.9 dBm min=-110 dBm max=-71 dBm (n=491)
+=============================================
+RANGE_RESULT_RX,window=18,rx=490,unique=490,lost=10,total=500,per=2.00,elapsed_ms=1849,throughput_kbps=305.3,rssi_avg=-71.9,rssi_min=-110,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=48966
+RX_WINDOW 19 START uptime=51357ms listen=30000ms
+PKT 1 seq=1700144220 rssi=-109 uptime=51361ms
+[BRIDGE ALIVE 50s]
+PKT 2 seq=3703976628 rssi=-108 uptime=52089ms
+PKT 3 seq=0 rssi=-71 uptime=52838ms
+PKT 4 seq=1 rssi=-72 uptime=52839ms
+PKT 5 seq=1010646591 rssi=-72 uptime=52842ms
+PKT 100 seq=105 rssi=-72 uptime=52916ms
+PKT 200 seq=206 rssi=-71 uptime=52991ms
+PKT 300 seq=307 rssi=-72 uptime=53065ms
+PKT 400 seq=408 rssi=-71 uptime=53140ms
+RX_END DEADBEEF
+=============================================
+  Window:   19
+  Received: 490 (unique 490, dup 0)
+  TX sent:  500
+  Lost:     10 (2.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 304.8 kbps
+  RSSI: avg=-72.0 dBm min=-109 dBm max=-71 dBm (n=491)
+=============================================
+RANGE_RESULT_RX,window=19,rx=490,unique=490,lost=10,total=500,per=2.00,elapsed_ms=1852,throughput_kbps=304.8,rssi_avg=-72.0,rssi_min=-109,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=51357
+RX_WINDOW 20 START uptime=53750ms listen=30000ms
+PKT 1 seq=690506522 rssi=-107 uptime=53998ms
+PKT 2 seq=3609795707 rssi=-107 uptime=54081ms
+PKT 3 seq=3514120229 rssi=-108 uptime=54197ms
+PKT 4 seq=696012357 rssi=-107 uptime=54587ms
+PKT 5 seq=0 rssi=-72 uptime=55231ms
+PKT 100 seq=95 rssi=-72 uptime=55302ms
+PKT 200 seq=196 rssi=-72 uptime=55377ms
+PKT 300 seq=297 rssi=-72 uptime=55452ms
+PKT 400 seq=398 rssi=-71 uptime=55527ms
+PKT 500 seq=499 rssi=-71 uptime=55602ms
+RX_END DEADBEEF
+=============================================
+  Window:   20
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1853 ms
+  THROUGHPUT: 310.8 kbps
+  RSSI: avg=-72.1 dBm min=-108 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=20,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1853,throughput_kbps=310.8,rssi_avg=-72.1,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=53750
+RX_WINDOW 21 START uptime=56147ms listen=30000ms
+PKT 1 seq=1869312755 rssi=-107 uptime=56243ms
+PKT 2 seq=2686327891 rssi=-107 uptime=56256ms
+PKT 3 seq=836926555 rssi=-107 uptime=56628ms
+[BRIDGE ALIVE 55s]
+PKT 4 seq=3279849875 rssi=-106 uptime=56732ms
+PKT 5 seq=3549109610 rssi=-106 uptime=56936ms
+PKT 100 seq=91 rssi=-72 uptime=57692ms
+PKT 200 seq=192 rssi=-72 uptime=57767ms
+PKT 300 seq=293 rssi=-72 uptime=57842ms
+PKT 400 seq=394 rssi=-72 uptime=57917ms
+PKT 500 seq=495 rssi=-72 uptime=57992ms
+RX_END DEADBEEF
+=============================================
+  Window:   21
+  Received: 503 (unique 503, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1849 ms
+  THROUGHPUT: 313.4 kbps
+  RSSI: avg=-72.4 dBm min=-107 dBm max=-71 dBm (n=504)
+=============================================
+RANGE_RESULT_RX,window=21,rx=503,unique=503,lost=0,total=500,per=0.00,elapsed_ms=1849,throughput_kbps=313.4,rssi_avg=-72.4,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=56147
+RX_WINDOW 22 START uptime=58537ms listen=30000ms
+PKT 1 seq=4104936906 rssi=-108 uptime=59631ms
+PKT 2 seq=0 rssi=-72 uptime=60018ms
+PKT 3 seq=1 rssi=-72 uptime=60019ms
+PKT 4 seq=1010646591 rssi=-71 uptime=60023ms
+PKT 5 seq=2223343239 rssi=-72 uptime=60027ms
+PKT 100 seq=110 rssi=-72 uptime=60100ms
+PKT 200 seq=211 rssi=-72 uptime=60175ms
+PKT 300 seq=312 rssi=-72 uptime=60250ms
+PKT 400 seq=413 rssi=-72 uptime=60325ms
+RX_END DEADBEEF
+=============================================
+  Window:   22
+  Received: 485 (unique 485, dup 0)
+  TX sent:  500
+  Lost:     15 (3.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 301.7 kbps
+  RSSI: avg=-71.9 dBm min=-108 dBm max=-71 dBm (n=486)
+=============================================
+RANGE_RESULT_RX,window=22,rx=485,unique=485,lost=15,total=500,per=3.00,elapsed_ms=1852,throughput_kbps=301.7,rssi_avg=-71.9,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=58537
+RX_WINDOW 23 START uptime=60931ms listen=30000ms
+PKT 1 seq=2725110566 rssi=-107 uptime=61102ms
+PKT 2 seq=3441013372 rssi=-108 uptime=61194ms
+PKT 3 seq=3318780139 rssi=-108 uptime=61455ms
+PKT 4 seq=3183407948 rssi=-107 uptime=61667ms
+[BRIDGE ALIVE 60s]
+PKT 5 seq=0 rssi=-72 uptime=62412ms
+PKT 100 seq=95 rssi=-72 uptime=62483ms
+PKT 200 seq=196 rssi=-72 uptime=62557ms
+PKT 300 seq=297 rssi=-72 uptime=62632ms
+PKT 400 seq=398 rssi=-72 uptime=62707ms
+PKT 500 seq=499 rssi=-72 uptime=62782ms
+RX_END DEADBEEF
+=============================================
+  Window:   23
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1853 ms
+  THROUGHPUT: 310.8 kbps
+  RSSI: avg=-72.2 dBm min=-108 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=23,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1853,throughput_kbps=310.8,rssi_avg=-72.2,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=60931
+RX_WINDOW 24 START uptime=63327ms listen=30000ms
+PKT 1 seq=1330116539 rssi=-109 uptime=63374ms
+PKT 2 seq=4031398697 rssi=-107 uptime=63530ms
+PKT 3 seq=3247306515 rssi=-107 uptime=63715ms
+PKT 4 seq=714539548 rssi=-107 uptime=64318ms
+PKT 5 seq=0 rssi=-72 uptime=64806ms
+PKT 100 seq=95 rssi=-72 uptime=64876ms
+PKT 200 seq=196 rssi=-72 uptime=64951ms
+PKT 300 seq=297 rssi=-72 uptime=65026ms
+PKT 400 seq=398 rssi=-71 uptime=65101ms
+PKT 500 seq=499 rssi=-71 uptime=65176ms
+RX_END DEADBEEF
+=============================================
+  Window:   24
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1850 ms
+  THROUGHPUT: 311.4 kbps
+  RSSI: avg=-72.1 dBm min=-109 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=24,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1850,throughput_kbps=311.4,rssi_avg=-72.1,rssi_min=-109,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=63327
+RX_WINDOW 25 START uptime=65721ms listen=30000ms
+PKT 1 seq=591124605 rssi=-107 uptime=66063ms
+[BRIDGE ALIVE 65s]
+PKT 2 seq=0 rssi=-72 uptime=67199ms
+PKT 3 seq=1 rssi=-72 uptime=67200ms
+PKT 4 seq=875902519 rssi=-72 uptime=67203ms
+PKT 5 seq=2223343239 rssi=-72 uptime=67207ms
+PKT 100 seq=110 rssi=-72 uptime=67281ms
+PKT 200 seq=211 rssi=-71 uptime=67356ms
+PKT 300 seq=312 rssi=-72 uptime=67431ms
+PKT 400 seq=413 rssi=-72 uptime=67506ms
+RX_END DEADBEEF
+=============================================
+  Window:   25
+  Received: 485 (unique 485, dup 0)
+  TX sent:  500
+  Lost:     15 (3.00%)
+  Elapsed:  1849 ms
+  THROUGHPUT: 302.2 kbps
+  RSSI: avg=-71.9 dBm min=-107 dBm max=-71 dBm (n=486)
+=============================================
+RANGE_RESULT_RX,window=25,rx=485,unique=485,lost=15,total=500,per=3.00,elapsed_ms=1849,throughput_kbps=302.2,rssi_avg=-71.9,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=65721
+RX_WINDOW 26 START uptime=68112ms listen=30000ms
+PKT 1 seq=557152995 rssi=-107 uptime=68203ms
+PKT 2 seq=277304005 rssi=-107 uptime=68292ms
+PKT 3 seq=244245946 rssi=-109 uptime=68937ms
+PKT 4 seq=2188439666 rssi=-108 uptime=69245ms
+PKT 5 seq=0 rssi=-72 uptime=69593ms
+PKT 100 seq=95 rssi=-72 uptime=69663ms
+PKT 200 seq=196 rssi=-72 uptime=69738ms
+PKT 300 seq=297 rssi=-72 uptime=69813ms
+PKT 400 seq=398 rssi=-72 uptime=69888ms
+PKT 500 seq=499 rssi=-71 uptime=69963ms
+RX_END DEADBEEF
+=============================================
+  Window:   26
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 311.0 kbps
+  RSSI: avg=-72.1 dBm min=-109 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=26,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1852,throughput_kbps=311.0,rssi_avg=-72.1,rssi_min=-109,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=68112
+RX_WINDOW 27 START uptime=70508ms listen=30000ms
+PKT 1 seq=2464088980 rssi=-105 uptime=70570ms
+PKT 2 seq=547544280 rssi=-108 uptime=71294ms
+PKT 3 seq=655507048 rssi=-108 uptime=71397ms
+PKT 4 seq=3614192296 rssi=-108 uptime=71440ms
+[BRIDGE ALIVE 70s]
+PKT 5 seq=0 rssi=-72 uptime=71986ms
+PKT 100 seq=95 rssi=-72 uptime=72057ms
+PKT 200 seq=196 rssi=-72 uptime=72132ms
+PKT 300 seq=297 rssi=-72 uptime=72207ms
+PKT 400 seq=398 rssi=-72 uptime=72282ms
+PKT 500 seq=499 rssi=-72 uptime=72357ms
+RX_END DEADBEEF
+=============================================
+  Window:   27
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1850 ms
+  THROUGHPUT: 311.4 kbps
+  RSSI: avg=-72.1 dBm min=-108 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=27,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1850,throughput_kbps=311.4,rssi_avg=-72.1,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=70508
+RX_WINDOW 28 START uptime=72902ms listen=30000ms
+PKT 1 seq=1227627129 rssi=-105 uptime=73246ms
+PKT 2 seq=3051632426 rssi=-107 uptime=73364ms
+PKT 3 seq=2704893613 rssi=-108 uptime=73405ms
+PKT 4 seq=1277625320 rssi=-109 uptime=73451ms
+PKT 5 seq=0 rssi=-72 uptime=74380ms
+PKT 100 seq=95 rssi=-72 uptime=74451ms
+PKT 200 seq=196 rssi=-72 uptime=74525ms
+PKT 300 seq=297 rssi=-72 uptime=74600ms
+PKT 400 seq=398 rssi=-72 uptime=74675ms
+PKT 500 seq=499 rssi=-72 uptime=74750ms
+RX_END DEADBEEF
+=============================================
+  Window:   28
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1850 ms
+  THROUGHPUT: 311.4 kbps
+  RSSI: avg=-72.2 dBm min=-109 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=28,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1850,throughput_kbps=311.4,rssi_avg=-72.2,rssi_min=-109,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=72902
+RX_WINDOW 29 START uptime=75295ms listen=30000ms
+PKT 1 seq=3313570414 rssi=-106 uptime=75374ms
+PKT 2 seq=586189504 rssi=-107 uptime=75549ms
+PKT 3 seq=3609021068 rssi=-107 uptime=75582ms
+PKT 4 seq=1102136925 rssi=-108 uptime=75710ms
+PKT 5 seq=1250728221 rssi=-109 uptime=76140ms
+[BRIDGE ALIVE 75s]
+PKT 100 seq=94 rssi=-72 uptime=76843ms
+PKT 200 seq=195 rssi=-72 uptime=76918ms
+PKT 300 seq=296 rssi=-72 uptime=76993ms
+PKT 400 seq=397 rssi=-72 uptime=77068ms
+PKT 500 seq=498 rssi=-72 uptime=77143ms
+PKT 600 seq=96 rssi=-72 uptime=79238ms
+PKT 700 seq=197 rssi=-72 uptime=79313ms
+PKT 800 seq=298 rssi=-72 uptime=79388ms
+PKT 900 seq=399 rssi=-72 uptime=79463ms
+RX_END DEADBEEF
+=============================================
+  Window:   29
+  Received: 999 (unique 999, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  4243 ms
+  THROUGHPUT: 271.2 kbps
+  RSSI: avg=-72.1 dBm min=-109 dBm max=-71 dBm (n=1000)
+=============================================
+RANGE_RESULT_RX,window=29,rx=999,unique=999,lost=0,total=500,per=0.00,elapsed_ms=4243,throughput_kbps=271.2,rssi_avg=-72.1,rssi_min=-109,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=75295
+RX_WINDOW 30 START uptime=80080ms listen=30000ms
+PKT 1 seq=50849047 rssi=-107 uptime=81392ms
+PKT 2 seq=0 rssi=-72 uptime=81561ms
+PKT 3 seq=1 rssi=-72 uptime=81562ms
+PKT 4 seq=1010646591 rssi=-71 uptime=81565ms
+PKT 5 seq=2223343239 rssi=-72 uptime=81569ms
+PKT 100 seq=110 rssi=-72 uptime=81642ms
+[BRIDGE ALIVE 80s]
+PKT 200 seq=211 rssi=-72 uptime=81717ms
+PKT 300 seq=312 rssi=-72 uptime=81792ms
+PKT 400 seq=413 rssi=-72 uptime=81867ms
+RX_END DEADBEEF
+=============================================
+  Window:   30
+  Received: 485 (unique 485, dup 0)
+  TX sent:  500
+  Lost:     15 (3.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 301.7 kbps
+  RSSI: avg=-72.0 dBm min=-107 dBm max=-71 dBm (n=486)
+=============================================
+RANGE_RESULT_RX,window=30,rx=485,unique=485,lost=15,total=500,per=3.00,elapsed_ms=1852,throughput_kbps=301.7,rssi_avg=-72.0,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=80080
+RX_WINDOW 31 START uptime=82473ms listen=30000ms
+PKT 1 seq=507141065 rssi=-107 uptime=83653ms
+PKT 2 seq=2683350970 rssi=-107 uptime=83848ms
+PKT 3 seq=0 rssi=-72 uptime=83954ms
+PKT 4 seq=1 rssi=-72 uptime=83955ms
+PKT 5 seq=1010646591 rssi=-72 uptime=83959ms
+PKT 100 seq=105 rssi=-72 uptime=84032ms
+PKT 200 seq=206 rssi=-71 uptime=84107ms
+PKT 300 seq=307 rssi=-72 uptime=84182ms
+PKT 400 seq=408 rssi=-72 uptime=84257ms
+RX_END DEADBEEF
+=============================================
+  Window:   31
+  Received: 490 (unique 490, dup 0)
+  TX sent:  500
+  Lost:     10 (2.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 304.8 kbps
+  RSSI: avg=-72.0 dBm min=-107 dBm max=-71 dBm (n=491)
+=============================================
+RANGE_RESULT_RX,window=31,rx=490,unique=490,lost=10,total=500,per=2.00,elapsed_ms=1852,throughput_kbps=304.8,rssi_avg=-72.0,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=82473
+RX_WINDOW 32 START uptime=84867ms listen=30000ms
+PKT 1 seq=3204074177 rssi=-107 uptime=85239ms
+PKT 2 seq=3180601525 rssi=-107 uptime=85425ms
+PKT 3 seq=2684066301 rssi=-107 uptime=86000ms
+PKT 4 seq=0 rssi=-72 uptime=86348ms
+PKT 5 seq=1 rssi=-72 uptime=86349ms
+PKT 100 seq=100 rssi=-72 uptime=86422ms
+PKT 200 seq=201 rssi=-72 uptime=86497ms
+PKT 300 seq=302 rssi=-72 uptime=86572ms
+PKT 400 seq=403 rssi=-72 uptime=86647ms
+[BRIDGE ALIVE 85s]
+RX_END DEADBEEF
+=============================================
+  Window:   32
+  Received: 495 (unique 495, dup 0)
+  TX sent:  500
+  Lost:     5 (1.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 307.9 kbps
+  RSSI: avg=-72.1 dBm min=-107 dBm max=-71 dBm (n=496)
+=============================================
+RANGE_RESULT_RX,window=32,rx=495,unique=495,lost=5,total=500,per=1.00,elapsed_ms=1852,throughput_kbps=307.9,rssi_avg=-72.1,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=84867
+RX_WINDOW 33 START uptime=87261ms listen=30000ms
+PKT 1 seq=3794268939 rssi=-107 uptime=87753ms
+PKT 2 seq=1997987853 rssi=-107 uptime=88110ms
+PKT 3 seq=1532569062 rssi=-109 uptime=88177ms
+PKT 4 seq=0 rssi=-72 uptime=88742ms
+PKT 5 seq=1 rssi=-72 uptime=88743ms
+PKT 100 seq=100 rssi=-72 uptime=88816ms
+PKT 200 seq=201 rssi=-72 uptime=88891ms
+PKT 300 seq=302 rssi=-72 uptime=88966ms
+PKT 400 seq=403 rssi=-71 uptime=89041ms
+RX_END DEADBEEF
+=============================================
+  Window:   33
+  Received: 495 (unique 495, dup 0)
+  TX sent:  500
+  Lost:     5 (1.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 307.9 kbps
+  RSSI: avg=-72.1 dBm min=-109 dBm max=-71 dBm (n=496)
+=============================================
+RANGE_RESULT_RX,window=33,rx=495,unique=495,lost=5,total=500,per=1.00,elapsed_ms=1852,throughput_kbps=307.9,rssi_avg=-72.1,rssi_min=-109,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=87261
+RX_WINDOW 34 START uptime=89654ms listen=30000ms
+PKT 1 seq=2797716959 rssi=-104 uptime=90303ms
+PKT 2 seq=1872728131 rssi=-107 uptime=90687ms
+PKT 3 seq=2436255262 rssi=-106 uptime=90712ms
+PKT 4 seq=0 rssi=-72 uptime=91135ms
+PKT 5 seq=1 rssi=-72 uptime=91136ms
+PKT 100 seq=100 rssi=-71 uptime=91209ms
+PKT 200 seq=201 rssi=-71 uptime=91284ms
+PKT 300 seq=302 rssi=-72 uptime=91359ms
+PKT 400 seq=403 rssi=-72 uptime=91434ms
+RX_END DEADBEEF
+=============================================
+  Window:   34
+  Received: 495 (unique 495, dup 0)
+  TX sent:  500
+  Lost:     5 (1.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 307.9 kbps
+  RSSI: avg=-72.1 dBm min=-107 dBm max=-71 dBm (n=496)
+=============================================
+RANGE_RESULT_RX,window=34,rx=495,unique=495,lost=5,total=500,per=1.00,elapsed_ms=1852,throughput_kbps=307.9,rssi_avg=-72.1,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=89654
+[BRIDGE ALIVE 90s]
+RX_WINDOW 35 START uptime=92048ms listen=30000ms
+PKT 1 seq=685481572 rssi=-108 uptime=92143ms
+PKT 2 seq=516170040 rssi=-108 uptime=92216ms
+PKT 3 seq=2895200242 rssi=-108 uptime=92374ms
+PKT 4 seq=1878787146 rssi=-107 uptime=92641ms
+PKT 5 seq=0 rssi=-72 uptime=93529ms
+PKT 100 seq=95 rssi=-71 uptime=93599ms
+PKT 200 seq=196 rssi=-72 uptime=93674ms
+PKT 300 seq=297 rssi=-71 uptime=93749ms
+PKT 400 seq=398 rssi=-72 uptime=93824ms
+PKT 500 seq=499 rssi=-72 uptime=93899ms
+RX_END DEADBEEF
+=============================================
+  Window:   35
+  Received: 500 (unique 500, dup 0)
+  TX sent:  500
+  Lost:     0 (0.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 311.0 kbps
+  RSSI: avg=-72.2 dBm min=-108 dBm max=-71 dBm (n=501)
+=============================================
+RANGE_RESULT_RX,window=35,rx=500,unique=500,lost=0,total=500,per=0.00,elapsed_ms=1852,throughput_kbps=311.0,rssi_avg=-72.2,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=92048
+RX_WINDOW 36 START uptime=94444ms listen=30000ms
+PKT 1 seq=257571272 rssi=-107 uptime=94610ms
+PKT 2 seq=0 rssi=-72 uptime=95922ms
+PKT 3 seq=1 rssi=-72 uptime=95923ms
+PKT 4 seq=808530483 rssi=-71 uptime=95927ms
+PKT 5 seq=2223343239 rssi=-72 uptime=95930ms
+PKT 100 seq=110 rssi=-72 uptime=96004ms
+PKT 200 seq=211 rssi=-72 uptime=96079ms
+PKT 300 seq=312 rssi=-72 uptime=96154ms
+PKT 400 seq=413 rssi=-72 uptime=96229ms
+RX_END DEADBEEF
+=============================================
+  Window:   36
+  Received: 485 (unique 485, dup 0)
+  TX sent:  500
+  Lost:     15 (3.00%)
+  Elapsed:  1849 ms
+  THROUGHPUT: 302.2 kbps
+  RSSI: avg=-71.9 dBm min=-107 dBm max=-71 dBm (n=486)
+=============================================
+RANGE_RESULT_RX,window=36,rx=485,unique=485,lost=15,total=500,per=3.00,elapsed_ms=1849,throughput_kbps=302.2,rssi_avg=-71.9,rssi_min=-107,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=94444
+[BRIDGE ALIVE 95s]
+RX_WINDOW 37 START uptime=96835ms listen=30000ms
+PKT 1 seq=3662427954 rssi=-107 uptime=96906ms
+PKT 2 seq=3756339265 rssi=-108 uptime=97813ms
+PKT 3 seq=3454437198 rssi=-107 uptime=98026ms
+PKT 4 seq=0 rssi=-72 uptime=98316ms
+PKT 5 seq=1 rssi=-72 uptime=98317ms
+PKT 100 seq=100 rssi=-71 uptime=98390ms
+PKT 200 seq=201 rssi=-72 uptime=98465ms
+PKT 300 seq=302 rssi=-72 uptime=98540ms
+PKT 400 seq=403 rssi=-72 uptime=98615ms
+RX_END DEADBEEF
+=============================================
+  Window:   37
+  Received: 495 (unique 495, dup 0)
+  TX sent:  500
+  Lost:     5 (1.00%)
+  Elapsed:  1852 ms
+  THROUGHPUT: 307.9 kbps
+  RSSI: avg=-72.1 dBm min=-108 dBm max=-71 dBm (n=496)
+=============================================
+RANGE_RESULT_RX,window=37,rx=495,unique=495,lost=5,total=500,per=1.00,elapsed_ms=1852,throughput_kbps=307.9,rssi_avg=-72.1,rssi_min=-108,freq=2440.0,bitrate=2600,pktSize=144,uptime_ms=96835
+RX_WINDOW 38 START uptime=99228ms listen=30000ms
+PKT 1 seq=436127860 rssi=-107 uptime=99461ms
+PKT 2 seq=568510681 rssi=-109 uptime=99613ms
+PKT 3 seq=2406323343 rssi=-108 uptime=99751ms
+PKT 4 seq=0 rssi=-72 uptime=100710ms
+PKT 5 seq=1 rssi=-71 uptime=100711ms

@@ -1,0 +1,3 @@
+00,pktSize=144RX_WINDOW 41 START uptime=124854ms listen=30000ms
+PKT 1 seq=3594669624 rssi=-103 uptime=124973ms
+PKT 2 seq=148606639 rssi=-104 uptime=125193

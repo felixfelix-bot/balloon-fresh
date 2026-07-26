@@ -96,35 +96,51 @@ typedef struct {
 } Phase;
 
 static const Phase phases[] = {
+    // REORDERED: FLRC before SF12 for gentler transitions (matches TX exactly)
     {"HF-LoRa-SF7",   PT_LORA, 2440.0, 1,  7, 0x0F, 1,    0,  50, 15000, 255},
     {"HF-LoRa-SF9",   PT_LORA, 2440.0, 1,  9, 0x0F, 1,    0,  50, 15000, 255},
-    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  15, 30000, 255},  // V4: match TX
-    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000, 255},
-    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000, 255},
-    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000, 255},
+    // FLRC first — gentle transition from SF9, narrow→wide for gradual BW
     {"HF-FLRC-325",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  325, 200,  8000, 255},
+    {"HF-FLRC-650",   PT_FLRC, 2440.0, 1,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"HF-FLRC-1300",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 1300, 200,  8000, 255},
+    {"HF-FLRC-2600",  PT_FLRC, 2440.0, 1,  0, 0x00, 0, 2600, 200,  8000, 255},
+    // SF12 last in HF — 500ms extra gap after SF12→LF transition
+    {"HF-LoRa-SF12",  PT_LORA, 2440.0, 1, 12, 0x0F, 1,    0,  15, 30000, 255},
     {"LF-LoRa-SF7",   PT_LORA,  868.0, 0,  7, 0x05, 1,    0,  50,  8000, 255},
-    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  30, 20000, 255},  // V4: match TX
-    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  10, 50000, 255},  // V4: match TX
-    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000, 255},
-    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000, 255},
-    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"LF-LoRa-SF9",   PT_LORA,  868.0, 0,  9, 0x05, 1,    0,  30, 20000, 255},
+    {"LF-LoRa-SF12",  PT_LORA,  868.0, 0, 12, 0x05, 1,    0,  10, 50000, 255},
     {"LF-FLRC-325",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  325, 200,  8000, 255},
+    {"LF-FLRC-650",   PT_FLRC,  868.0, 0,  0, 0x00, 0,  650, 200,  8000, 255},
+    {"LF-FLRC-1300",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 1300, 200,  8000, 255},
+    {"LF-FLRC-2600",  PT_FLRC,  868.0, 0,  0, 0x00, 0, 2600, 200,  8000, 255},
 };
 static const int NUM_PHASES = sizeof(phases) / sizeof(phases[0]);
 
 // ─── V4: Interleave mode (must match TX exactly) ─────────────────────
 static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 #define NUM_SWEEP_SIZES 4
-static Phase interleavePhases[64];
+static Phase interleavePhases[128];  // V4: increased for channel sweep
 static int   numInterleavePhases = 0;
-static bool  interleaveMode = true;  // Default ON — matches TX firmware (ADR-021)
+static bool  interleaveMode = true;   // V4 WALK: default ON (no serial command needed)
+
+// V4: Channel sweep frequencies — WiFi channels (2.4GHz) + EU 868MHz sub-bands
+static const float SWEEP_FREQS_HF[] = {
+    2412.0, 2417.0, 2422.0, 2427.0, 2432.0, 2437.0,
+    2442.0, 2447.0, 2452.0, 2457.0, 2462.0, 2467.0, 2472.0  // WiFi ch1-ch13
+};
+#define NUM_SWEEP_FREQS_HF 13
+static const float SWEEP_FREQS_LF[] = {
+    863.0, 864.0, 865.0, 866.0, 867.0, 868.0, 869.0, 870.0
+};
+#define NUM_SWEEP_FREQS_LF 8
+
 // V4: Forward-declare cycle time — referenced by SET_INTERLEAVE handler below
 static uint32_t totalCycleSec = 0;
+static uint32_t totalCycleMs = 0;  // V4: ms precision, avoids truncation drift
 
 static void buildInterleaveTable() {
     int idx = 0;
-    static char nameBufs[64][32];
+    static char nameBufs[128][32];
     for (int mode = 0; mode < NUM_PHASES; mode++) {
         const Phase &base = phases[mode];
         for (int s = 0; s < NUM_SWEEP_SIZES; s++) {
@@ -132,7 +148,7 @@ static void buildInterleaveTable() {
             exp = base;
             exp.pktSize = SWEEP_SIZES[s];
             if (base.pktType == PT_FLRC) {
-                exp.pktCount = 100; exp.slotMs = 2000;
+                exp.pktCount = 100; exp.slotMs = 3000;  // V4: match TX, reliable reconfig
             } else {
                 float msPerByte;
                 if (base.rfPath == 1) {
@@ -164,6 +180,31 @@ static void buildInterleaveTable() {
             idx++;
         }
     }
+    
+    // V4: Channel sweep — FLRC-1300-64B at every WiFi channel + 868MHz sub-band
+    for (int f = 0; f < NUM_SWEEP_FREQS_HF; f++) {
+        Phase &exp = interleavePhases[idx];
+        exp = phases[4];  // HF-FLRC-1300 base (phases[4] = HF-FLRC-1300)
+        exp.freqMHz = SWEEP_FREQS_HF[f];
+        exp.pktSize = 64;
+        exp.pktCount = 100;
+        exp.slotMs = 3000;
+        snprintf(nameBufs[idx], 32, "CH-%d-FLRC1300-64", (int)SWEEP_FREQS_HF[f]);
+        exp.name = nameBufs[idx];
+        idx++;
+    }
+    for (int f = 0; f < NUM_SWEEP_FREQS_LF; f++) {
+        Phase &exp = interleavePhases[idx];
+        exp = phases[12];  // LF-FLRC-1300 base (phases[12] = LF-FLRC-1300)
+        exp.freqMHz = SWEEP_FREQS_LF[f];
+        exp.pktSize = 64;
+        exp.pktCount = 100;
+        exp.slotMs = 3000;
+        snprintf(nameBufs[idx], 32, "CH-%d-FLRC1300-64", (int)SWEEP_FREQS_LF[f]);
+        exp.name = nameBufs[idx];
+        idx++;
+    }
+    
     numInterleavePhases = idx;
 }
 
@@ -205,15 +246,18 @@ static void checkSerialTimeSync() {
                 } else if (strncmp(syncBuf, "SET_INTERLEAVE ", 15) == 0) {
                     int val = atoi(syncBuf + 15);
                     interleaveMode = (val != 0);
-                    // currentPhase and totalCycleSec declared later; phase detection handles switch
+                    // Recompute totalCycleSec from correct phase table
+                    totalCycleSec = 0;
+                    totalCycleMs = 0;
                     if (interleaveMode) {
-                        totalCycleSec = 0;  // RESET — must not accumulate across SET_TIME calls
-                        for (int i = 0; i < numInterleavePhases; i++)
+                        for (int i = 0; i < numInterleavePhases; i++) {
                             totalCycleSec += interleavePhases[i].slotMs / 1000;
-                        dualPrintf("INTERLEAVE_ON phases=%d cycle=%lus\n",
-                                    numInterleavePhases, (unsigned long)totalCycleSec);
+                            totalCycleMs += interleavePhases[i].slotMs;
+                        }
+                        dualPrintf("INTERLEAVE_ON phases=%d cycle=%lus (%lums)\n",
+                                    numInterleavePhases, (unsigned long)totalCycleSec,
+                                    (unsigned long)totalCycleMs);
                     } else {
-                        totalCycleSec = 0;
                         for (int i = 0; i < NUM_PHASES; i++)
                             totalCycleSec += phases[i].slotMs / 1000;
                         dualPrintf("INTERLEAVE_OFF phases=%d cycle=%lus\n",
@@ -240,21 +284,28 @@ static void checkSerialTimeSync() {
 static int currentPhase = -1;       // -1 = not started yet (forces init on first loop)
 static uint32_t phaseStartMs = 0;
 
+// V4: TEMPORARILY using truncated formula to match TX firmware (can't flash TX)
+// TODO: When TX can be flashed with ms-precision, switch back to totalCycleMs
+// FIXED: Use ms-precision to match TX (which was upgraded from seconds to ms
+// because seconds-based computation accumulated 15-28s error over 56 phases).
+// TX and RX MUST use identical formula for phase alignment.
 static int computePhaseFromUTC(uint32_t utcSec) {
-    uint32_t cyclePos = utcSec % totalCycleSec;
-    uint32_t acc = 0;
+    if (totalCycleMs == 0) return 0;  // guard against div-by-zero
+    // Convert to milliseconds for precision — identical to TX formula
+    uint32_t cyclePosMs = (utcSec * 1000) % totalCycleMs;
+    uint32_t accMs = 0;
     if (interleaveMode) {
         for (int i = 0; i < numInterleavePhases; i++) {
-            acc += interleavePhases[i].slotMs / 1000;
-            if (cyclePos < acc) return i;
+            accMs += interleavePhases[i].slotMs;  // milliseconds, no truncation!
+            if (cyclePosMs < accMs) return i;
         }
         return numInterleavePhases - 1;
     }
     for (int i = 0; i < NUM_PHASES; i++) {
-        acc += phases[i].slotMs / 1000;
-        if (cyclePos < acc) return i;
+        accMs += phases[i].slotMs;
+        if (cyclePosMs < accMs) return i;
     }
-    return NUM_PHASES - 1;  // fallback
+    return NUM_PHASES - 1;
 }
 
 static const Phase* getPhaseEntry(int idx) {
@@ -528,7 +579,7 @@ static void rfInitForPhaseRX(const Phase &p) {
     { uint8_t c[] = {0x02, 0x07, p.pktType}; rfWriteCmd(c, 3); }
     delay(1);
 
-    // SET_RF_FREQUENCY
+    // SET_RF_FREQUENCY — use phase table freq directly (matches TX)
     rfSetFreq(p.freqMHz);
     delay(1);
 
@@ -539,7 +590,7 @@ static void rfInitForPhaseRX(const Phase &p) {
     // Fix 3: LoRa config debug dump — walk test showed near-zero LoRa packets
     // with noise-floor RSSI. This verifies path/modulation params are correct.
     if (p.pktType == PT_LORA) {
-        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d\n", p.rfPath, p.bwCode, p.sf);
+        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d freq=%.1f\n", p.rfPath, p.bwCode, p.sf, p.freqMHz);
     }
 
     // Calibrate (MANDATORY for RX)
@@ -570,8 +621,9 @@ static void rfInitForPhaseRX(const Phase &p) {
 
     } else {
         // SET_FLRC_MODULATION_PARAMS (0x0248)
+        // CR=3/4 (0x1) + BT=0.5 (0x5) = 0x15 — FEC for error correction
         uint8_t brBw = flrcBitrateToCode(p.flrcBr);
-        { uint8_t c[] = {0x02, 0x48, brBw, 0x25}; rfWriteCmd(c, 4); }
+        { uint8_t c[] = {0x02, 0x48, brBw, 0x15}; rfWriteCmd(c, 4); }
         delay(1);
 
         // SET_FLRC_SYNC_WORD (0x024C)
@@ -579,7 +631,11 @@ static void rfInitForPhaseRX(const Phase &p) {
         delay(1);
 
         // SET_FLRC_PACKET_PARAMS (0x0249)
-        { uint8_t c[] = {0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
+        // byte2: 0x0E = agc_pbl_len=3 (16-bit preamble) | sw_len=2 (32-bit sync word)
+        // byte3: 0x7C = crc=10 (CRC24) | pkt_format=1 (Fixed) | sw_match=111 (Match123)
+        //   was 0x4C (crc=01 CRC16-off, pkt_format=0 Dynamic, sw_match=100 Match1)
+        //   matched TheClams reference: CRC24 + Match123, keep Fixed format
+        { uint8_t c[] = {0x02, 0x49, 0x0E, 0x7C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
         delay(1);
     }
 
@@ -659,7 +715,7 @@ static void emitPhaseResult(int phaseIdx) {
 static void rxPacketPoll(int phaseIdx) {
     const Phase &p = *getPhaseEntry(phaseIdx);
     uint16_t pktSize = p.pktSize;
-    uint8_t rxBuf[256];
+    uint8_t rxBuf[264];  // V4: extra room for chip framing prefix
 
     uint32_t irqPinMask = 1UL << PIN_IRQ;
 
@@ -687,7 +743,11 @@ static void rxPacketPoll(int phaseIdx) {
 
     // RX_DONE — read FIFO FIRST (before RSSI), matching proven code.
     // GET_PACKET_STATUS may reset FIFO read pointer.
-    rfReadRxFifo(rxBuf, pktSize);
+    // V4: read extra bytes to account for chip framing prefix (syncOffset)
+    // syncOffset is typically 0-2, read 8 extra bytes for safety
+    size_t readLen = pktSize + 8;
+    if (readLen > sizeof(rxBuf)) readLen = sizeof(rxBuf);
+    rfReadRxFifo(rxBuf, readLen);
 
     // ─── Sync header search: fast-path then full scan (Phase B) ─────
     // The LR2021 packet engine prepends framing bytes before our payload.
@@ -791,13 +851,23 @@ static void rxPacketPoll(int phaseIdx) {
     // where crcLen = pktSize - 6 (exclude 4 sync + 2 CRC bytes).
     // CRC stored at rxBuf[syncOffset+pktSize-2 : pktSize-1] (big-endian).
     uint16_t crcLen = pktSize - 6;
+    // V4: Bounds check — prevent buffer overread on false sync matches
+    if (gpsOff + crcLen + 2 > readLen) {
+        dualPrintf("SYNC_OOB gpsOff=%d crcLen=%d readLen=%d — skipping\n",
+                   gpsOff, crcLen, readLen);
+        rxGarbageCount++;
+        rfClearRxFifo();
+        rfClearIrq();
+        rfSetRx();
+        return;
+    }
     uint16_t expectedCrc = ((uint16_t)rxBuf[syncOffset + pktSize - 2] << 8)
                          | rxBuf[syncOffset + pktSize - 1];
     uint16_t actualCrc = crc16(&rxBuf[gpsOff], crcLen);
     if (expectedCrc != actualCrc) {
         rxCrcErrors++;
-        dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d\n",
-                   expectedCrc, actualCrc, seq, syncOffset);
+        dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d pSz=%d\n",
+                   expectedCrc, actualCrc, seq, syncOffset, pktSize);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -824,6 +894,23 @@ static void rxPacketPoll(int phaseIdx) {
         return;
     }
 
+    // ─── V4: TX GPS-searching beacon detection ────────────────────
+    // TX sends phaseId=0xFE when it has laptop time but GPS hasn't locked.
+    // Lets RX know TX is alive. Don't count as normal sweep packet.
+    {
+        uint8_t beaconId = rxBuf[gpsOff + 15];
+        if (beaconId == 0xFE) {
+            uint16_t txUptime = ((uint16_t)rxBuf[gpsOff + 16] << 8)
+                              | rxBuf[gpsOff + 17];
+            dualPrintf("TX_ALIVE searching_for_gps sats=%u uptime=%u\n",
+                       txSats, txUptime);
+            rfClearRxFifo();
+            rfClearIrq();
+            rfSetRx();
+            return;
+        }
+    }
+
     if (seq < MAX_SEQ) {
         seenSeq[seq] = true;
     }
@@ -834,6 +921,17 @@ static void rxPacketPoll(int phaseIdx) {
     rxLastTxFw[7] = '\0';
 
     rxReceived++;
+
+    // V4: Read phase ID from packet and sync to TX's actual phase.
+    // This breaks the chicken-and-egg: once any packet decodes, RX jumps
+    // to TX's phase instead of relying on drifting millis() clock.
+    uint8_t txPhaseId = rxBuf[gpsOff + 15];
+    if (txPhaseId != currentPhase && txPhaseId < numInterleavePhases) {
+        dualPrintf("PHASE_SYNC old=%d new=%d (from TX packet)\n", currentPhase, txPhaseId);
+        currentPhase = txPhaseId;
+        const Phase &np = *getPhaseEntry(currentPhase);
+        rfInitForPhaseRX(np);
+    }
 
     // (GPS sanity check moved up to B4 CRC_FALSE_POS block — runs BEFORE
     //  rxReceived++ so impossible values don't count as valid packets.)
@@ -909,6 +1007,24 @@ static void rxPacketPoll(int phaseIdx) {
                       (unsigned long)millis(),
                       txLat, txLon, txSats, txFix, (unsigned long)txUtc,
                       rxLastTxFw);
+        
+        // V4: BER analysis — compare received fill pattern to expected (byte[i]=i&0xFF)
+        // TX fills bytes 29..pktSize-3 with known pattern. We compare bit-for-bit.
+        uint16_t berErrors = 0;
+        uint16_t berTotal = 0;
+        for (int i = 29; i < pktSize - 2; i++) {
+            int rxIdx = syncOffset + i;
+            if (rxIdx < 0 || rxIdx >= 264) continue;
+            uint8_t expected = (uint8_t)(i & 0xFF);
+            uint8_t received = rxBuf[rxIdx];
+            if (received != expected) {
+                berErrors += __builtin_popcount(received ^ expected);
+            }
+            berTotal += 8;
+        }
+        dualPrintf("BER seq=%u bits=%u errs=%u ber=%.2e\n",
+                   seq, berTotal, berErrors,
+                   berTotal > 0 ? (double)berErrors / berTotal : 0.0);
     }
 
     digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
@@ -943,33 +1059,33 @@ void setup() {
     for (int i = 0; i < 64; i++) lastSyncOffset[i] = -1;
     buildInterleaveTable();
 
-    // Compute total cycle seconds for phase drift correction
-    // ADR-021: interleave is default ON, so compute cycle from interleave phases
+    // Compute total cycle seconds for phase computation
+    // MUST match TX: use interleavePhases when interleaveMode==true
     totalCycleSec = 0;
+    totalCycleMs = 0;
     if (interleaveMode) {
         for (int i = 0; i < numInterleavePhases; i++) {
             totalCycleSec += interleavePhases[i].slotMs / 1000;
+            totalCycleMs += interleavePhases[i].slotMs;
         }
     } else {
         for (int i = 0; i < NUM_PHASES; i++) {
             totalCycleSec += phases[i].slotMs / 1000;
+            totalCycleMs += phases[i].slotMs;
         }
     }
 
     dualPrintf("=== MULTI-RADIO RX SWEEP V4 ===\n");
-    dualPrintf("Phases: %d  Cycle: %lus  Interleave: %s (%d phases)\n",
-                interleaveMode ? numInterleavePhases : NUM_PHASES,
-                (unsigned long)totalCycleSec,
-                interleaveMode ? "ON" : "OFF",
-                numInterleavePhases);
-    for (int i = 0; i < (interleaveMode ? numInterleavePhases : NUM_PHASES); i++) {
-        const Phase *p = interleaveMode ? &interleavePhases[i] : &phases[i];
+    dualPrintf("Phases: %d  Cycle: %lus  Interleave: %d phases ready\n",
+                NUM_PHASES, (unsigned long)totalCycleSec, numInterleavePhases);
+    dualPrintf("Send 'SET_INTERLEAVE 1' to enable 56-phase size sweep\n");
+    for (int i = 0; i < NUM_PHASES; i++) {
         dualPrintf("  [%2d] %-16s %s %.0fMHz %dpkts %ds %dB\n",
-                      i, p->name,
-                      p->pktType == PT_LORA ? "LoRa" : "FLRC",
-                      p->freqMHz,
-                      p->pktCount, p->slotMs / 1000,
-                      p->pktSize);
+                      i, phases[i].name,
+                      phases[i].pktType == PT_LORA ? "LoRa" : "FLRC",
+                      phases[i].freqMHz,
+                      phases[i].pktCount, phases[i].slotMs / 1000,
+                      phases[i].pktSize);
     }
 
     dualPrintf("=== AUTO START IN 8s ===\n");
@@ -1036,7 +1152,15 @@ void loop() {
             emitPhaseResult(currentPhase);
         }
 
-        dualPrintf("PHASE_GUARD 500\n");
+        // Transition guard: log bigger gap when modulation or band changes
+        uint32_t guardMs = 500;
+        if (currentPhase >= 0 && phase < numInterleavePhases) {
+            if (interleavePhases[currentPhase].pktType != interleavePhases[phase].pktType ||
+                interleavePhases[currentPhase].rfPath   != interleavePhases[phase].rfPath) {
+                guardMs = 1000;
+            }
+        }
+        dualPrintf("PHASE_GUARD %lu\n", (unsigned long)guardMs);
 
         currentPhase = phase;
         resetRxPhaseState();

@@ -1,47 +1,56 @@
 #!/bin/bash
-# Walk capture script — pushes SET_TIME to RX every 5s + captures full log
-# Usage: ./walk-capture.sh [duration_seconds]
-# Default: 600s (10 min walk). Use 1800 for 30 min.
+# walk-capture.sh — RX capture with periodic laptop re-sync
+# Usage: ./walk-capture.sh /dev/ttyACM4 600
+#   $1 = RX serial port (default: /dev/ttyACM4)
+#   $2 = duration seconds (default: 600)
+#
+# Sends SET_TIME to RX every 10 seconds to eliminate drift.
+# Captures all RX output to timestamped log file.
 
-DURATION=${1:-600}
-PORT=${2:-/dev/ttyACM1}
-OUTDIR=~/repos/balloon-fresh/data/range-tests/20260725
-mkdir -p "$OUTDIR"
-OUTFILE="$OUTDIR/walk-capture-$(date +%H%M%S).log"
+PORT="${1:-/dev/ttyACM4}"
+DURATION="${2:-600}"
+DATE=$(date +%Y%m%d)
+TIME=$(date +%H%M%S)
+DATADIR="$HOME/repos/balloon-fresh/data/range-tests/$DATE"
+OUTFILE="$DATADIR/walk-test-${TIME}.log"
 
-echo "=== WALK CAPTURE ==="
-echo "Duration: ${DURATION}s"
+mkdir -p "$DATADIR"
+stty -F "$PORT" 115200 raw -echo 2>/dev/null
+
+echo "=== Walk Test Capture ==="
 echo "Port: $PORT"
+echo "Duration: ${DURATION}s"
 echo "Output: $OUTFILE"
-echo "SET_TIME pushed every 5s"
+echo "Re-sync interval: 10s"
 echo ""
 
-stty -F "$PORT" 115200 raw -echo
+# Background re-sync loop
+(
+    END=$((SECONDS + DURATION))
+    while [ $SECONDS -lt $END ]; do
+        NOW=$(date +%s)
+        printf "SET_TIME %s\n" "$NOW" > "$PORT"
+        sleep 10
+    done
+) &
+RESYNC_PID=$!
 
-# Start capture in background
-timeout "$DURATION" cat "$PORT" > "$OUTFILE" 2>&1 &
-CATPID=$!
-echo "Capture PID: $CATPID"
+# Capture RX output
+echo "Capture started at $(date)"
+timeout "$DURATION" cat "$PORT" > "$OUTFILE" 2>/dev/null
+echo "Capture ended at $(date)"
 
-# Push SET_TIME every 5s for entire duration
-ELAPSED=0
-while [ "$ELAPSED" -lt "$DURATION" ]; do
-    UTC=$(date +%s)
-    printf "SET_TIME %s\n" "$UTC" > "$PORT"
-    echo "[$(date +%H:%M:%S)] SET_TIME $UTC pushed (${ELAPSED}s elapsed)"
-    sleep 5
-    ELAPSED=$((ELAPSED + 5))
-done
+# Stop re-sync
+kill $RESYNC_PID 2>/dev/null
+wait $RESYNC_PID 2>/dev/null
 
-# Wait for capture to finish
-wait $CATPID 2>/dev/null
-
-LINES=$(wc -l < "$OUTFILE")
-PHASES=$(grep -c "PHASE_RESULT" "$OUTFILE")
-PKTS=$(grep -c "PKT\|TIME_DIFF" "$OUTFILE")
+# Summary
 echo ""
-echo "=== CAPTURE COMPLETE ==="
-echo "Lines: $LINES"
-echo "Phases: $PHASES"
-echo "Packet/TIME_DIFF lines: $PKTS"
-echo "File: $OUTFILE"
+echo "=== Summary ==="
+echo "Lines: $(wc -l < "$OUTFILE")"
+echo "Phase results: $(grep -c 'PHASE_RESULT' "$OUTFILE")"
+echo "CRC errors: $(grep -c 'APP_CRC_FAIL' "$OUTFILE")"
+echo "Sync found: $(grep -c 'SYNC_OFFSET' "$OUTFILE")"
+echo ""
+echo "Decoded phases:"
+grep 'PHASE_RESULT' "$OUTFILE" | grep -v 'rx=0' | head -14

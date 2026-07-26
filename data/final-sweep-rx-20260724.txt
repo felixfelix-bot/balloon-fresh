@@ -1,0 +1,111 @@
+TIME_SYNCED utc=1784890998 offset=1784890693
+PHASE_RESULT 8 LF-LoRa-SF9 rx=0 unique=0 lost=50 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+RX_WINDOW phase=9 listen_ms=110000 slot_ms=50000
+PHASE_START 9 LF-LoRa-SF12
+TIME_SYNCED utc=1784891058 offset=1784890693
+TIME_DIFF gps_utc=3947258730 laptop_utc=1784891118
+TIME_SYNCED utc=1784891118 offset=1784890693
+TIME_DIFF gps_utc=3997590378 laptop_utc=1784891120
+TIME_DIFF gps_utc=4031144810 laptop_utc=1784891123
+TIME_DIFF gps_utc=4081476458 laptop_utc=1784891125
+TIME_DIFF gps_utc=4115030890 laptop_utc=1784891128
+TIME_DIFF gps_utc=4165362538 laptop_utc=1784891130
+TIME_DIFF gps_utc=4198916970 laptop_utc=1784891133
+TIME_DIFF gps_utc=4282803050 laptop_utc=1784891138
+TIME_DIFF gps_utc=38232938 laptop_utc=1784891140
+TIME_DIFF gps_utc=71787370 laptop_utc=1784891143
+PHASE_RESULT 9 LF-LoRa-SF12 rx=13 unique=0 lost=20 per=100.0 rssi_avg=-17 rssi_min=-23 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=71787370
+PHASE_GUARD 500
+RX_WINDOW phase=10 listen_ms=26000 slot_ms=8000
+PHASE_START 10 LF-FLRC-2600
+GPS_BAUD_FAILED — defaulting to 115200
+=== GPS-SYNCED MULTI-RADIO TX SWEEP ===
+Phases: 14  Cycle: 202s  Power: 12.5 dBm
+  [ 0] HF-LoRa-SF7      LoRa 2440MHz BW812 50pkts 15s
+  [ 1] HF-LoRa-SF9      LoRa 2440MHz BW812 50pkts 15s
+  [ 2] HF-LoRa-SF12     LoRa 2440MHz BW812 30pkts 30s
+  [ 3] HF-FLRC-2600     FLRC 2440MHz  200pkts 8s
+  [ 4] HF-FLRC-1300     FLRC 2440MHz  200pkts 8s
+  [ 5] HF-FLRC-650      FLRC 2440MHz  200pkts 8s
+  [ 6] HF-FLRC-325      FLRC 2440MHz  200pkts 8s
+  [ 7] LF-LoRa-SF7      LoRa 868MHz BW250 50pkts 8s
+  [ 8] LF-LoRa-SF9      LoRa 868MHz BW250 50pkts 20s
+  [ 9] LF-LoRa-SF12     LoRa 868MHz BW250 20pkts 50s
+  [10] LF-FLRC-2600     FLRC 868MHz  200pkts 8s
+  [11] LF-FLRC-1300     FLRC 868MHz  200pkts 8s
+  [12] LF-FLRC-650      FLRC 868MHz  200pkts 8s
+  [13] LF-FLRC-325      FLRC 868MHz  200pkts 8s
+=== WAITING FOR GPS TIME (up to 60s) ===
+GPS_BAUD_FAILED — defaulting to 115200
+=== GPS-SYNCED MULTI-RADIO TX SWEEP ===
+Phases: 14  Cycle: 202s  Power: 12.5 dBm
+  [ 0] HF-LoRa-SF7      LoRa 2440MHz BW812 50pkts 15s
+  [ 1] HF-LoRa-SF9      LoRa 2440MHz BW812 50pkts 15s
+  [ 2] HF-LoRa-SF12     LoRa 2440MHz BW812 30pkts 30s
+  [ 3] HF-FLRC-2600     FLRC 2440MHz  200pkts 8s
+  [ 4] HF-FLRC-1300     FLRC 2440MHz  200pkts 8s
+  [ 5] HF-FLRC-650      FLRC 2440MHz  200pkts 8s
+  [ 6] HF-FLRC-325      FLRC 2440MHz  200pkts 8s
+  [ 7] LF-LoRa-SF7      LoRa 868MHz BW250 50pkts 8s
+  [ 8] LF-LoRa-SF9      LoRa 868MHz BW250 50pkts 20s
+  [ 9] LF-LoRa-SF12     LoRa 868MHz BW250 20pkts 50s
+  [10] LF-FLRC-2600     FLRC 868MHz  200pkts 8s
+  [11] LF-FLRC-1300     FLRC 868MHz  200pkts 8s
+  [12] LF-FLRC-650      FLRC 868MHz  200pkts 8s
+  [13] LF-FLRC-325      FLRC 868MHz  200pkts 8s
+=== WAITING FOR GPS TIME (up to 60s) ===
+GPS_BAUD_FAILED — defaulting to 115200
+=== GPS-SYNCED MULTI-RADIO TX SWEEP ===
+Phases: 14  Cycle: 202s  Power: 12.5 dBm
+  [ 0] HF-LoRa-SF7      LoRa 2440MHz BW812 50pkts 15s
+  [ 1] HF-LoRa-SF9      LoRa 2440MHz BW812 50pkts 15s
+  [ 2] HF-LoRa-SF12     LoRa 2440MHz BW812 30pkts 30s
+  [ 3] HF-FLRC-2600     FLRC 2440MHz  200pkts 8s
+  [ 4] HF-FLRC-1300     FLRC 2440MHz  200pkts 8s
+  [ 5] HF-FLRC-650      FLRC 2440MHz  200pkts 8s
+  [ 6] HF-FLRC-325      FLRC 2440MHz  200pkts 8s
+  [ 7] LF-LoRa-SF7      LoRa 868MHz BW250 50pkts 8s
+  [ 8] LF-LoRa-SF9      LoRa 868MHz BW250 50pkts 20s
+  [ 9] LF-LoRa-SF12     LoRa 868MHz BW250 20pkts 50s
+  [10] LF-FLRC-2600     FLRC 868MHz  200pkts 8s
+  [11] LF-FLRC-1300     FLRC 868MHz  200pkts 8s
+  [12] LF-FLRC-650      FLRC 868MHz  200pkts 8s
+  [13] LF-FLRC-325      FLRC 868MHz  200pkts 8s
+=== WAITING FOR GPS TIME (up to 60s) ===
+GPS_BAUD_FAILED — defaulting to 115200
+=== GPS-SYNCED MULTI-RADIO TX SWEEP ===
+Phases: 14  Cycle: 202s  Power: 12.5 dBm
+  [ 0] HF-LoRa-SF7      LoRa 2440MHz BW812 50pkts 15s
+  [ 1] HF-LoRa-SF9      LoRa 2440MHz BW812 50pkts 15s
+  [ 2] HF-LoRa-SF12     LoRa 2440MHz BW812 30pkts 30s
+  [ 3] HF-FLRC-2600     FLRC 2440MHz  200pkts 8s
+  [ 4] HF-FLRC-1300     FLRC 2440MHz  200pkts 8s
+  [ 5] HF-FLRC-650      FLRC 2440MHz  200pkts 8s
+  [ 6] HF-FLRC-325      FLRC 2440MHz  200pkts 8s
+  [ 7] LF-LoRa-SF7      LoRa 868MHz BW250 50pkts 8s
+  [ 8] LF-LoRa-SF9      LoRa 868MHz BW250 50pkts 20s
+  [ 9] LF-LoRa-SF12     LoRa 868MHz BW250 20pkts 50s
+  [10] LF-FLRC-2600     FLRC 868MHz  200pkts 8s
+  [11] LF-FLRC-1300     FLRC 868MHz  200pkts 8s
+  [12] LF-FLRC-650      FLRC 868MHz  200pkts 8s
+  [13] LF-FLRC-325      FLRC 868MHz  200pkts 8s
+=== WAITING FOR GPS TIME (up to 60s) ===
+GPS_BAUD_FAILED — defaulting to 115200
+=== GPS-SYNCED MULTI-RADIO TX SWEEP ===
+Phases: 14  Cycle: 202s  Power: 12.5 dBm
+  [ 0] HF-LoRa-SF7      LoRa 2440MHz BW812 50pkts 15s
+  [ 1] HF-LoRa-SF9      LoRa 2440MHz BW812 50pkts 15s
+  [ 2] HF-LoRa-SF12     LoRa 2440MHz BW812 30pkts 30s
+  [ 3] HF-FLRC-2600     FLRC 2440MHz  200pkts 8s
+  [ 4] HF-FLRC-1300     FLRC 2440MHz  200pkts 8s
+  [ 5] HF-FLRC-650      FLRC 2440MHz  200pkts 8s
+  [ 6] HF-FLRC-325      FLRC 2440MHz  200pkts 8s
+  [ 7] LF-LoRa-SF7      LoRa 868MHz BW250 50pkts 8s
+  [ 8] LF-LoRa-SF9      LoRa 868MHz BW250 50pkts 20s
+  [ 9] LF-LoRa-SF12     LoRa 868MHz BW250 20pkts 50s
+  [10] LF-FLRC-2600     FLRC 868MHz  200pkts 8s
+  [11] LF-FLRC-1300     FLRC 868MHz  200pkts 8s
+  [12] LF-FLRC-650      FLRC 868MHz  200pkts 8s
+  [13] LF-FLRC-325      FLRC 868MHz  200pkts 8s
+=== WAITING FOR GPS TIME (up to 60s) ===

@@ -1,0 +1,1 @@
+timestamp,distance_m,bitrate_kbps,power_dBm,rx_count,unique,lost,total,per_pct,throughput_kbps,rssi_avg,rssi_min,rssi_max,noise_floor,bursts,notes

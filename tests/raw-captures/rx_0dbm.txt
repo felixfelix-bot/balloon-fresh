@@ -1,0 +1,115 @@
+RX_START
+pkt,seq
+1,2129624150
+  HEX: 7E EF 7C 56 51 B2 22 F2
+2,202182159
+  HEX: 0C 0D 0E 0F 10 11 12 13
+3,202182159
+  HEX: 0C 0D 0E 0F 10 11 12 13
+4,18
+5,24
+100,119
+200,219
+300,319
+400,419
+RX_END DEADBEEF
+=============================================
+  Received: 480 (unique 479, dup 1)
+  TX sent:  500 (est total 500)
+  Lost:     20 (4.00%)
+  Elapsed:  334 ms
+  THROUGHPUT: 1460.1 kbps
+=============================================
+RESULT,rx=480,unique=479,lost=20,total=500,per=4.00,elapsed_ms=334,throughput_kbps=1460.1
+RX_START
+pkt,seq
+1,4086317423
+  HEX: F3 90 41 6F 6E 65 20 43
+2,11
+  HEX: 00 00 00 0B 04 05 06 07
+3,15
+  HEX: 00 00 00 0F 04 05 06 07
+4,20
+5,1819111023
+100,120
+200,220
+300,320
+400,420
+RX_END DEADBEEF
+=============================================
+  Received: 479 (unique 479, dup 0)
+  TX sent:  500 (est total 500)
+  Lost:     21 (4.20%)
+  Elapsed:  332 ms
+  THROUGHPUT: 1465.9 kbps
+=============================================
+RESULT,rx=479,unique=479,lost=21,total=500,per=4.20,elapsed_ms=332,throughput_kbps=1465.9
+RX_START
+pkt,seq
+1,632467274
+  HEX: 25 B2 AF 4A BB 10 2A 42
+2,202182159
+  HEX: 0C 0D 0E 0F 10 11 12 13
+3,12
+  HEX: 00 00 00 0C 04 05 06 07
+4,18
+5,23
+100,118
+200,218
+300,318
+400,418
+RX_END DEADBEEF
+=============================================
+  Received: 481 (unique 481, dup 0)
+  TX sent:  500 (est total 500)
+  Lost:     19 (3.80%)
+  Elapsed:  334 ms
+  THROUGHPUT: 1463.2 kbps
+=============================================
+RESULT,rx=481,unique=481,lost=19,total=500,per=3.80,elapsed_ms=334,throughput_kbps=1463.2
+RX_START
+pkt,seq
+1,1161484815
+  HEX: 45 3A DA 0F 89 10 B4 09
+2,11
+  HEX: 00 00 00 0B 04 05 06 07
+3,15
+  HEX: 00 00 00 0F 04 05 06 07
+4,1970698104
+5,1414878807
+100,121
+200,221
+300,321
+400,421
+RX_END DEADBEEF
+=============================================
+  Received: 478 (unique 478, dup 0)
+  TX sent:  500 (est total 500)
+  Lost:     22 (4.40%)
+  Elapsed:  332 ms
+  THROUGHPUT: 1462.8 kbps
+=============================================
+RESULT,rx=478,unique=478,lost=22,total=500,per=4.40,elapsed_ms=332,throughput_kbps=1462.8
+RX_START
+pkt,seq
+1,1073783623
+  HEX: 40 00 A3 47 19 83 3A 57
+2,8
+  HEX: 00 00 00 08 04 05 06 07
+3,12
+  HEX: 00 00 00 0C 04 05 06 07
+4,1212762699
+5,808530483
+100,118
+200,218
+300,318
+400,418
+RX_END DEADBEEF
+=============================================
+  Received: 481 (unique 481, dup 0)
+  TX sent:  500 (est total 500)
+  Lost:     19 (3.80%)
+  Elapsed:  334 ms
+  THROUGHPUT: 1463.2 kbps
+=============================================
+RESULT,rx=481,unique=481,lost=19,total=500,per=3.80,elapsed_ms=334,throughput_kbps=1463.2

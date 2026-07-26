@@ -1,0 +1,27 @@
+=== STARTING RX SWEEP ===
+
+=== CYCLE 0 START uptime=10067 utc=0 ===
+PHASE_START 0 HF-LoRa-SF7
+PHASE_RESULT 0 HF-LoRa-SF7 rx=0 unique=0 lost=50 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+PHASE_START 1 HF-LoRa-SF9
+PHASE_RESULT 1 HF-LoRa-SF9 rx=0 unique=0 lost=50 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+PHASE_START 2 HF-LoRa-SF12
+PHASE_RESULT 2 HF-LoRa-SF12 rx=0 unique=0 lost=30 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0
+PHASE_GUARD 500
+PHASE_START 3 HF-FLRC-2600
+FLRC_RAW32: 217 69 140 57 183 226 111 246 120 171 180 149 46 225 213 216 130 77 138 183 57 172 95 158 15 41 6 88 161 67 149 193
+PKT rx=1 seq=33357 rssi=-53 phase=3 rx_ms=80255 tx_lat=96.54942 tx_lon=-16.04396 sats=43896 fix=180 utc=3588304533
+PKT rx=2 seq=37313 rssi=-54 phase=3 rx_ms=81576 tx_lat=97.61440 tx_lon=-214.42468 sats=37173 fix=101 utc=3327793183
+PKT rx=3 seq=52527 rssi=-54 phase=3 rx_ms=82351 tx_lat=-46.57196 tx_lon=-5.44539 sats=46465 fix=137 utc=2989378740
+PHASE_RESULT 3 HF-FLRC-2600 rx=15 unique=0 lost=200 per=100.0 rssi_avg=-53 rssi_min=-54 crc_err=0 tx_lat=79.60542 tx_lon=-191.87PHASE_GUARD 500
+FLRC_RAW32: 236 131 35 161 2 112 163 31 48 97 110 110 14 61 127 184 110 81 4 33 168 115 11 172 28 226 6 46 251 177 152 114
+PKT rx=2 seq=39885 rssi=-55 phase=4 rx_ms=93125 tx_lat=-88.34000 tx_lon=-103.62865 sats=40292 fix=121 utc=2587936243
+PHASE_RESULT 4 HF-FLRC-1300 rx=17 unique=0 lost=200 per=100.0 rssi_avg=-53 rssi_min=-56 crc_err=0 tx_lat=22.99784 tx_lon=-105.80820 sats=45552 fix=94 utc=752410609
+PHASE_GUARD 500
+PHASE_START 5 HF-FLRC-650
+FLRC_RAW32: 245 169 55 55 226 118 67 194 222 143 181 166 34 145 204 217 133 95 54 98 134 118 187 196 125 224 78 144 25 171 229 120
+PKT rx=1 seq=34143 rssi=-56 phase=5 rx_ms=102576 tx_lat=92.63949 tx_lon=-103.57660 sats=36830 fix=181 utc=3432063654
+PKT rx=2 seq=57444 rssi=-56 phase=5 rx_ms=102608 tx_lat=-155.48730 tx_lon=90.42106 sats=1133 fix=28 utc=3186160438
+PKT rx=3 seq=20323 rssi=-56 phase=5 rx_ms=102728 tx_lat=-93.99803 tx_lon=-151.29796 sats=47335 fix=131 utc=1992192813
