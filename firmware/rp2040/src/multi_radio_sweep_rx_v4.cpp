@@ -727,6 +727,9 @@ static void rxPacketPoll(int phaseIdx) {
     if (irq & 0x00200000) {
         // CRC error
         rxCrcErrors++;
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -735,6 +738,9 @@ static void rxPacketPoll(int phaseIdx) {
 
     if (!(irq & 0x00040000)) {
         // Other IRQ source — clear and re-arm RX
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -793,6 +799,9 @@ static void rxPacketPoll(int phaseIdx) {
                 lastSyncOffset[phaseIdx] = -1;
             }
         }
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -856,6 +865,9 @@ static void rxPacketPoll(int phaseIdx) {
         dualPrintf("SYNC_OOB gpsOff=%d crcLen=%d readLen=%d — skipping\n",
                    gpsOff, crcLen, readLen);
         rxGarbageCount++;
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -868,6 +880,9 @@ static void rxPacketPoll(int phaseIdx) {
         rxCrcErrors++;
         dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d pSz=%d\n",
                    expectedCrc, actualCrc, seq, syncOffset, pktSize);
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -888,6 +903,9 @@ static void rxPacketPoll(int phaseIdx) {
                    pktLatE7/1e7f, pktLonE7/1e7f, txSats, seq, syncOffset);
         rxGarbageCount++;
         // Treat as garbage — do NOT count as a valid packet
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -904,6 +922,9 @@ static void rxPacketPoll(int phaseIdx) {
                               | rxBuf[gpsOff + 17];
             dualPrintf("TX_ALIVE searching_for_gps sats=%u uptime=%u\n",
                        txSats, txUptime);
+            // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+            { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+            delay(1);
             rfClearRxFifo();
             rfClearIrq();
             rfSetRx();
@@ -1029,6 +1050,9 @@ static void rxPacketPoll(int phaseIdx) {
 
     digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
 
+    // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+    { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+    delay(1);
     rfClearRxFifo();
     rfClearIrq();
     rfSetRx();
