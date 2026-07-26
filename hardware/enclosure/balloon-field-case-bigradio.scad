@@ -32,25 +32,37 @@ rp2040_length = 23.0;
 rp2040_width  = 18.0;
 rp2040_thick  = 3.2;
 
-// Board 3: LARGE RADIO MODULE (replaces small NiceRF LR2021)
-// Extra-generous bay for universal fit — no caliper needed yet.
-// LoRa2021F33-2G4 ~40x25mm, EBYTE E28 ~28x24mm.
-radio_bay_length = 48.0;   // Fits up to 48mm (extra headroom)
-radio_bay_width  = 38.0;   // Fits up to 38mm (extra headroom)
-radio_bay_thick  = 10.0;   // Fits PA + shield + SMA + headroom
+// Board 3: LARGE RADIO MODULE — CALIPER MEASURED 2026-07-26
+// LoRa2021F33-2G4 V1.0: 24.05x24.11x3.34mm + pigtail cables + 2x SMA
+radio_length = 24.5;      // Measured: 24.05mm (rounded up)
+radio_width  = 24.5;      // Measured: 24.11mm
+radio_thick  = 3.5;       // Measured: 3.34mm + 0.16 clearance
+radio_pin_pitch = 4.17;   // Measured pin pitch
 
-// Board 4: GPS MAX-M10S — universal bay (same oversized approach)
-gps_bay_length = 38.0;
-gps_bay_width  = 38.0;
-gps_bay_thick  = 8.0;
+// Radio bay — board + clearance for SMA pigtails + wiring
+radio_bay_length = radio_length + 8;   // 32.5mm bay for 24.5mm board
+radio_bay_width  = radio_width + 8;    // 32.5mm bay for 24.5mm board
+radio_bay_thick  = radio_thick + 4;    // 7.5mm for board + SMA pigtail clearance
+
+// Board 4: GPS MAX-M10S — CALIPER MEASURED 2026-07-26
+// 15.16x15.22x8.05mm bare module, wire antenna
+gps_length = 15.5;
+gps_width  = 15.5;
+gps_thick  = 8.5;
+
+// GPS bay — measured module + clearance for tape/wire
+gps_bay_length = gps_length + 6;   // 21.5mm
+gps_bay_width  = gps_width + 6;    // 21.5mm
+gps_bay_thick  = gps_thick + 2;    // 10.5mm
 
 // ---- SMA CONNECTOR PARAMETERS ----
 // Board-mounted SMA bulkhead connectors (LoRa2021F33-2G4 has SMA on short edge)
 sma_hole_d = 6.5;          // SMA bulkhead clearance hole
 sma_nut_d  = 10.0;         // SMA nut diameter (for recess on inside)
 sma_nut_depth = 2.0;       // How deep the nut recess goes
-sma_spacing = 18.0;        // Distance between SMA connector centers
-                              // LoRa2021F33-2G4: ~18mm (adjust with calipers)
+sma_spacing = 13.0;        // Measured pigtail outer: 15.06mm
+                              // SMA connector OD ~6mm, so center-to-center ~12-13mm
+                              // Adjust if inner distance measurement differs
 num_sma = 2;               // 2 SMA connectors (Sub-GHz ANT + 2.4GHz ANT_2G4)
 
 // ---- CASE PARAMETERS ----

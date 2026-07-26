@@ -28,15 +28,15 @@ rp2040_width  = 18.0;
 rp2040_thick  = 3.2;
 
 // Board 3: NiceRF LoRa2021 (LR2021 module)
-lr2021_length = 19.72;
-lr2021_width  = 15.0;
-lr2021_thick  = 2.2;
+lr2021_length = 19.72;   // Module length
+lr2021_width  = 15.0;    // Module width
+lr2021_thick  = 2.2;     // Module PCB thickness
 
-// Board 4: GPS MAX-M10S — UNIVERSAL BAY
-// Extra-generous to fit ANY breakout without caliper verification.
-gps_bay_length = 38.0;   // Fits up to 38mm (covers ALL M10S breakouts + headroom)
-gps_bay_width  = 38.0;   // Fits up to 38mm
-gps_bay_thick  = 8.0;    // Fits ceramic patch + board + LED + headroom
+// Board 4: GPS MAX-M10S — CALIPER MEASURED 2026-07-26
+// Bare module, wire antenna (no ceramic patch)
+gps_length = 15.5;       // Measured: 15.16mm (rounded up for clearance)
+gps_width  = 15.5;       // Measured: 15.22mm
+gps_thick  = 8.5;        // Measured: 8.05mm + 0.5mm clearance
 
 // ---- CASE PARAMETERS ----
 wall          = 2.0;
@@ -72,6 +72,11 @@ $fn = 60;
 // Row 1: ESP32 | gap | LR2021 | gap | RP2040
 row1_length = esp32_length + board_gap + lr2021_length + board_gap + rp2040_length;
 row1_width  = max(esp32_width, lr2021_width, rp2040_width);
+
+// GPS bay — sized to measured module + clearance for tape/wire
+gps_bay_length = gps_length + 6;   // 21.5mm bay for 15.5mm module
+gps_bay_width  = gps_width + 6;   // 21.5mm bay for 15.5mm module
+gps_bay_thick  = gps_thick + 2;   // 10.5mm bay for 8.5mm module
 
 // GPS bay sits alongside the board row
 total_x = row1_length + gps_bay_length + board_gap*2 + inner_clear*2;
