@@ -207,11 +207,13 @@ static void checkSerialTimeSync() {
                     interleaveMode = (val != 0);
                     // currentPhase and totalCycleSec declared later; phase detection handles switch
                     if (interleaveMode) {
+                        totalCycleSec = 0;  // RESET — must not accumulate across SET_TIME calls
                         for (int i = 0; i < numInterleavePhases; i++)
                             totalCycleSec += interleavePhases[i].slotMs / 1000;
                         dualPrintf("INTERLEAVE_ON phases=%d cycle=%lus\n",
                                     numInterleavePhases, (unsigned long)totalCycleSec);
                     } else {
+                        totalCycleSec = 0;
                         for (int i = 0; i < NUM_PHASES; i++)
                             totalCycleSec += phases[i].slotMs / 1000;
                         dualPrintf("INTERLEAVE_OFF phases=%d cycle=%lus\n",
