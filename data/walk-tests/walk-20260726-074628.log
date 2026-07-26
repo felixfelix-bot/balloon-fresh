@@ -1,0 +1,24 @@
+2026-07-26T02:16:28 | # CONNECTED port=/dev/ttyACM1
+2026-07-26T02:16:29 | TIME_DIFF gps_utc=1785032188 laptop_utc=1785032189 offset=-1
+2026-07-26T02:16:29 | PKT rx=3 seq=2 rssi=-25 phase=32 rx_ms=589116 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785032188 tx_fw=unknown
+2026-07-26T02:16:29 | SYNC_NOT_FOUND first4=6240784E
+2026-07-26T02:16:29 | TIME_DIFF gps_utc=1785032189 laptop_utc=1785032189 offset=0
+2026-07-26T02:16:30 | TIME_DIFF gps_utc=1785032189 laptop_utc=1785032190 offset=-1
+2026-07-26T02:16:31 | TIME_SYNCED utc=1785032190 offset=1785031600
+2026-07-26T02:16:31 | TIME_DIFF gps_utc=1785032190 laptop_utc=1785032190 offset=0
+2026-07-26T02:16:31 | PHASE_RESULT 32 LF-LoRa-SF9-32 pktSize=32 rx=6 unique=6 lost=1 per=14.3 rssi_avg=-26 rssi_min=-26 crc_err=0 garbage=2 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785032190 tx_fw=unknown rx_fw=unknown
+2026-07-26T02:16:31 | PHASE_GUARD 500
+2026-07-26T02:16:31 | LORA_CFG path=0 bw=0x05 sf=9
+2026-07-26T02:16:31 | PHASE_START 33 LF-LoRa-SF9-64 pktSize=64
+2026-07-26T02:16:31 | SYNC_OFFSET phase=33 off=0 prev=-1
+2026-07-26T02:16:31 | TIME_DIFF gps_utc=1785032191 laptop_utc=1785032191 offset=0
+2026-07-26T02:16:31 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 255 109 101
+2026-07-26T02:16:31 | PKT rx=1 seq=0 rssi=-25 phase=33 rx_ms=591800 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785032191 tx_fw=unknown
+2026-07-26T02:16:33 | TIME_SYNCED utc=1785032192 offset=1785031600
+2026-07-26T02:16:33 | TIME_DIFF gps_utc=1785032192 laptop_utc=1785032192 offset=0
+2026-07-26T02:16:33 | PKT rx=2 seq=1 rssi=-25 phase=33 rx_ms=592894 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785032192 tx_fw=unknown
+2026-07-26T02:16:34 | PHASE_RESULT 33 LF-LoRa-SF9-64 pktSize=64 rx=2 unique=2 lost=1 per=33.3 rssi_avg=-26 rssi_min=-26 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785032192 tx_fw=unknown rx_fw=unknown
+2026-07-26T02:16:34 | PHASE_GUARD 500
+2026-07-26T02:16:34 | LORA_CFG path=0 bw=0x05 sf=9
+2026-07-26T02:16:34 | PHASE_START 34 LF-LoRa-SF9-128 pktSize=128
+2026-07-26T02:16:35 | TIME_SYNCED utc=1785032194 offset=1785031600
