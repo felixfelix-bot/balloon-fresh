@@ -33,10 +33,10 @@ lr2021_width  = 15.0;
 lr2021_thick  = 2.2;
 
 // Board 4: GPS MAX-M10S — UNIVERSAL BAY
-// Oversized to fit any breakout. Tape/sticky-pad mount.
-gps_bay_length = 32.0;   // Fits up to 32mm board (SparkFun, Adafruit, Pimoroni)
-gps_bay_width  = 32.0;   // Fits up to 32mm board
-gps_bay_thick  = 7.0;    // Fits ceramic patch antenna + board + LED
+// Extra-generous to fit ANY breakout without caliper verification.
+gps_bay_length = 38.0;   // Fits up to 38mm (covers ALL M10S breakouts + headroom)
+gps_bay_width  = 38.0;   // Fits up to 38mm
+gps_bay_thick  = 8.0;    // Fits ceramic patch + board + LED + headroom
 
 // ---- CASE PARAMETERS ----
 wall          = 2.0;
