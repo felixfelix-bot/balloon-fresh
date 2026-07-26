@@ -35,14 +35,15 @@ rp_l = 17.8;
 rp_h = 1.6;
 
 // GPS Module (u-blox MAX-M10S on breakout board)
-// Common breakout sizes:
-//   Generic AliExpress: ~24 x 24mm  (DEFAULT)
-//   SparkFun: 32 x 24mm
+// OVERSIZED to fit ALL common breakouts:
+//   SparkFun: 32 x 24mm (LARGEST — sets our slot size)
 //   Adafruit: 25 x 25mm
+//   Generic AliExpress: ~24 x 24mm
 //   Bare M10S chip: 15.5 x 15.5 x 3.4mm
-gps_w = 24.0;
-gps_l = 24.0;
-gps_h = 3.5;      // board + patch antenna + header pins
+// Blue LED that flashes on GPS fix — leave room for it facing up
+gps_w = 34.0;     // SparkFun 32mm + 2mm clearance
+gps_l = 26.0;     // SparkFun 24mm + 2mm clearance
+gps_h = 4.0;      // board + patch antenna + header pins
 
 /* [Interior Layout] */
 layout = "stacked"; // "stacked" or "sidebyside"
