@@ -791,6 +791,7 @@ static void checkSerialTimeSync() {
                     uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
                     if (ts > 0) {
                         utcOffset = ts - millis() / 1000;
+                        lastCdcSuccessMs = 0;  // disarm CDC watchdog for battery/walk mode
                         outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
                                   (unsigned long)getUtcNow(), (long)utcOffset);
                     }
@@ -1054,6 +1055,11 @@ void setup() {
                 outPrintf("NMEA_RAW: (no data) GPS module not sending on UART1\n");
             }
         }
+        // Boot gate timeout — don't hang forever if no GPS and no SET_TIME
+        if ((millis() - gpsStart) > GPS_FIX_TIMEOUT_MS && !hasLaptopTime()) {
+            outPrintf("GPS_FIX_TIMEOUT %dms — entering GPS-less idle (waiting for SET_TIME)\n", GPS_FIX_TIMEOUT_MS);
+            break;
+        }
         delay(10);
     }
 
@@ -1108,7 +1114,10 @@ void loop() {
 
     // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
     // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
-    if (lastCdcSuccessMs > 0 && (millis() - lastCdcSuccessMs) > CDC_WATCHDOG_MS) {
+    // GUARD: Only fire when USB host IS present (Serial &&). On power bank / walk
+    // test, there's no USB host — Serial.write returns 0 naturally. We must NOT
+    // reboot in that case or we lose utcOffset (laptop time sync) and hang.
+    if (Serial && lastCdcSuccessMs > 0 && (millis() - lastCdcSuccessMs) > CDC_WATCHDOG_MS) {
         // USB CDC is dead. Hardware watchdog reboot to restart USB cleanly.
         // This reboots the RP2040 — firmware restarts, USB re-enumerates,
         // GPS re-acquires in ~30s. No manual BOOTSEL button needed.
