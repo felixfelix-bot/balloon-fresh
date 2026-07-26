@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+markers = [
+    "hw: tests requiring physical boards connected",
+    "walk: full walk simulation tests (long running)",
+]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
