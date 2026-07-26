@@ -790,11 +790,12 @@ static void checkSerialTimeSync() {
                 if (strncmp(syncBuf, "SET_TIME ", 9) == 0) {
                     uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
                     if (ts > 0) {
-                        utcOffset = ts - millis() / 1000;
-                        lastCdcSuccessMs = 0;  // disarm CDC watchdog for battery/walk mode
-                        outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
-                                  (unsigned long)getUtcNow(), (long)utcOffset);
-                    }
+                        if (ts > 0) {
+                            utcOffset = ts - millis() / 1000;
+                            lastCdcSuccessMs = 0;  // Disarm CDC watchdog for battery mode
+                            outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
+                                      (unsigned long)getUtcNow(), (long)utcOffset);
+                        }
                 } else if (strcmp(syncBuf, "FW_QUERY") == 0) {
                     // Firmware identification query — respond with boot banner
                     printBootBanner();
@@ -1011,6 +1012,13 @@ void setup() {
             break;
         }
 
+        // V4: Boot gate timeout — don't hang forever if no GPS and no SET_TIME
+        if ((millis() - gpsStart) > GPS_FIX_TIMEOUT_MS) {
+            outPrintf("GPS_FIX_TIMEOUT %lums — no fix and no SET_TIME, proceeding to main loop\n",
+                      (unsigned long)(millis() - gpsStart));
+            break;
+        }
+
         // Status every 5s (more frequent for debugging)
         uint32_t elapsed = (millis() - gpsStart) / 1000;
         if (elapsed % 5 == 0 && elapsed > 0) {
@@ -1155,6 +1163,67 @@ void loop() {
         gpsPoll();
         delay(50);
         return;
+    }
+
+    // ─── V4: TX BEACON — GPS searching mode ────────────────────────
+    // When we have laptop time but GPS hasn't locked, send a simple beacon
+    // every 5s so RX knows we're alive. LoRa SF7 32B on 2440 MHz (phase 0).
+    // Once GPS locks, normal interleave sweep resumes automatically.
+    if (hasLaptopTime() && !gps.fixValid) {
+        static uint32_t lastBeaconMs = 0;
+
+        if (currentPhase != -2) {
+            outPrintf("BEACON_MODE — GPS searching, sending alive beacon every 5s\n");
+            rfInitForPhase(interleavePhases[0]);  // HF-LoRa-SF7-32 @ 2440 MHz
+            currentPhase = -2;
+        }
+
+        if (lastBeaconMs == 0 || (millis() - lastBeaconMs) >= 5000) {
+            lastBeaconMs = millis();
+            uint32_t uptime = millis() / 1000;
+
+            // Build 32B beacon packet — same layout as normal phase 0
+            uint8_t beacon[32];
+            beacon[0] = 0xA5; beacon[1] = 0x5A;
+            beacon[2] = 0x42; beacon[3] = 0x24;
+            memset(&beacon[4], 0, 8);             // lat=0, lon=0 (no fix)
+            uint16_t bSats = gps.sats;
+            memcpy(&beacon[12], &bSats, 2);       // sats in view
+            beacon[14] = 0;                        // fixQ=0
+            uint32_t bUtc = getUtcNow();
+            memcpy(&beacon[15], &bUtc, 4);        // UTC from laptop time
+            beacon[19] = 0xFE;                     // BEACON phaseId marker
+            beacon[20] = (uint8_t)((uptime >> 8) & 0xFF);
+            beacon[21] = (uint8_t)(uptime & 0xFF);
+            memcpy(&beacon[22], FW_HASH_CHARS, 7);
+            beacon[29] = 29;                        // fill pattern byte
+            uint16_t bCrc = crc16(&beacon[4], 26);  // CRC over bytes 4-29
+            beacon[30] = (uint8_t)(bCrc >> 8);
+            beacon[31] = (uint8_t)(bCrc & 0xFF);
+
+            // Transmit beacon
+            rfClearIrq();
+            rfClearTxFifo();
+            rfWriteTxFifo(beacon, 32);
+            rfSetTx();
+
+            // Wait for TX_DONE (LoRa SF7 32B ~25ms)
+            uint32_t irqPinMask = 1UL << PIN_IRQ;
+            uint32_t txStartB = millis();
+            while ((millis() - txStartB) < 2000) {
+                if (sio_hw->gpio_in & irqPinMask) break;
+                gpsPoll();
+                delay(1);
+            }
+
+            outPrintf("TX_BEACON uptime=%lu sats=%d fix=0\n",
+                      (unsigned long)uptime, gps.sats);
+            digitalWrite(PIN_LED, (uptime & 1) ? HIGH : LOW);
+        }
+
+        gpsPoll();
+        delay(100);
+        return;  // Skip normal sweep while searching for GPS
     }
 
     // Phase change detection
