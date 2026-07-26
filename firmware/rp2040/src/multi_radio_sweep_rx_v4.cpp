@@ -118,7 +118,7 @@ static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 #define NUM_SWEEP_SIZES 4
 static Phase interleavePhases[64];
 static int   numInterleavePhases = 0;
-static bool  interleaveMode = false;
+static bool  interleaveMode = true;  // Default ON — matches TX firmware (ADR-021)
 // V4: Forward-declare cycle time — referenced by SET_INTERLEAVE handler below
 static uint32_t totalCycleSec = 0;
 
@@ -942,22 +942,32 @@ void setup() {
     buildInterleaveTable();
 
     // Compute total cycle seconds for phase drift correction
+    // ADR-021: interleave is default ON, so compute cycle from interleave phases
     totalCycleSec = 0;
-    for (int i = 0; i < NUM_PHASES; i++) {
-        totalCycleSec += phases[i].slotMs / 1000;
+    if (interleaveMode) {
+        for (int i = 0; i < numInterleavePhases; i++) {
+            totalCycleSec += interleavePhases[i].slotMs / 1000;
+        }
+    } else {
+        for (int i = 0; i < NUM_PHASES; i++) {
+            totalCycleSec += phases[i].slotMs / 1000;
+        }
     }
 
     dualPrintf("=== MULTI-RADIO RX SWEEP V4 ===\n");
-    dualPrintf("Phases: %d  Cycle: %lus  Interleave: %d phases ready\n",
-                NUM_PHASES, (unsigned long)totalCycleSec, numInterleavePhases);
-    dualPrintf("Send 'SET_INTERLEAVE 1' to enable 56-phase size sweep\n");
-    for (int i = 0; i < NUM_PHASES; i++) {
+    dualPrintf("Phases: %d  Cycle: %lus  Interleave: %s (%d phases)\n",
+                interleaveMode ? numInterleavePhases : NUM_PHASES,
+                (unsigned long)totalCycleSec,
+                interleaveMode ? "ON" : "OFF",
+                numInterleavePhases);
+    for (int i = 0; i < (interleaveMode ? numInterleavePhases : NUM_PHASES); i++) {
+        const Phase *p = interleaveMode ? &interleavePhases[i] : &phases[i];
         dualPrintf("  [%2d] %-16s %s %.0fMHz %dpkts %ds %dB\n",
-                      i, phases[i].name,
-                      phases[i].pktType == PT_LORA ? "LoRa" : "FLRC",
-                      phases[i].freqMHz,
-                      phases[i].pktCount, phases[i].slotMs / 1000,
-                      phases[i].pktSize);
+                      i, p->name,
+                      p->pktType == PT_LORA ? "LoRa" : "FLRC",
+                      p->freqMHz,
+                      p->pktCount, p->slotMs / 1000,
+                      p->pktSize);
     }
 
     dualPrintf("=== AUTO START IN 8s ===\n");
