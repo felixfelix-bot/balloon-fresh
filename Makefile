@@ -86,8 +86,10 @@ flash-tx: build-tx ## Flash TX board (auto-detect port by serial)
 		udevadm info -q property -n "$$p" 2>/dev/null | grep -q $(TX_SERIAL) && echo "$$p" && break; \
 	done); \
 	if [ -z "$$TX_PORT" ]; then echo "ERROR: TX board not found. Run: make find-ports"; exit 1; fi; \
-	echo "Flashing TX at $$TX_PORT"; \
-	cd $(FW_DIR) && $(PIO) run -e $(TX_ENV) -t upload --upload-port $$TX_PORT
+	echo "Triggering BOOTSEL on TX at $$TX_PORT..."; \
+	$(PYTHON) -c "import serial; s=serial.Serial('$$TX_PORT',1200); s.close()" 2>/dev/null; sleep 2; \
+	echo "Flashing TX..."; \
+	cd $(FW_DIR) && $(PIO) run -e $(TX_ENV) -t upload
 
 flash-rx: build-rx ## Flash RX board (auto-detect port by serial)
 	@RX_PORT=$$(for p in /dev/ttyACM[0-9]; do \
@@ -95,8 +97,10 @@ flash-rx: build-rx ## Flash RX board (auto-detect port by serial)
 		udevadm info -q property -n "$$p" 2>/dev/null | grep -q $(RX_SERIAL) && echo "$$p" && break; \
 	done); \
 	if [ -z "$$RX_PORT" ]; then echo "ERROR: RX board not found. Run: make find-ports"; exit 1; fi; \
-	echo "Flashing RX at $$RX_PORT"; \
-	cd $(FW_DIR) && $(PIO) run -e $(RX_ENV) -t upload --upload-port $$RX_PORT
+	echo "Triggering BOOTSEL on RX at $$RX_PORT..."; \
+	$(PYTHON) -c "import serial; s=serial.Serial('$$RX_PORT',1200); s.close()" 2>/dev/null; sleep 2; \
+	echo "Flashing RX..."; \
+	cd $(FW_DIR) && $(PIO) run -e $(RX_ENV) -t upload
 
 flash-all: flash-tx flash-rx ## Flash BOTH boards (ensures same firmware version)
 
