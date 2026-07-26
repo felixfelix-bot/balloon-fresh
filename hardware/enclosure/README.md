@@ -1,40 +1,64 @@
-# Balloon Field-Test Enclosure v1
+# Balloon Field-Test Enclosure v2
 
-Waterproof 3D-printable case for the 3-board dev setup:
-- ESP32-C3 SuperMini
-- RP2040-Zero  
+Waterproof 3D-printable case for 4 boards:
+- ESP32-C3 SuperMini (Maker Go)
+- RP2040-Zero
 - NiceRF LoRa2021 (LR2021)
+- u-blox MAX-M10S GPS (high-altitude, 80km ceiling)
 
 ## What This Is
 
-This is a **field-test / ground-station enclosure** — NOT a flight enclosure.
-The flight boards go on the balloon (<14g, custom PCB). This box is for the
-dev boards you're currently carrying in cardboard, so you can leave them
-outside on a pole with solar.
+Field-test / ground-station enclosure for the dev boards.
+NOT a flight enclosure — flight boards stay naked (<14g) on the balloon.
+This box replaces the cardboard box for permanent outdoor pole mounting.
 
-## Design
+## Design Features
 
-- **Clamshell**: 2 parts (bottom + lid), bolted with 4x M3 screws
-- **Waterproof**: O-ring groove (2mm cord) compressed between halves
+- **Clamshell**: 2 parts (bottom + lid), 4x M3 screws
+- **Waterproof**: O-ring groove (2mm cord) between halves
 - **Pole mount**: Two strap grooves on bottom for zip-ties / hose clamps
 - **Solar**: Recess on top lid for solar panel
-- **Cable glands**: Two 6mm holes on sides (antenna + solar wires)
-- **Vent**: Small 2mm pressure-equalization hole (cover with Gore patch)
-- **Board mounts**: Standoff posts for all 3 boards, self-tapping M2 screws
+- **Cable glands**: Two 6mm holes on sides (antenna + solar)
+- **GPS sky window**: Cutout in bottom floor for GPS patch antenna
+- **Board mounts**: Standoff posts for all 4 boards
+- **Vent**: 2mm pressure equalization hole (cover with Gore patch)
 
-## Dimensions (before your caliper measurements)
+## Dimensions (v2 — 4 boards)
 
 ```
-Interior: 55.7 x 43.0 x 19.7 mm
-Exterior: 59.7 x 47.0 x 24.7 mm
-Material: ~21g PETG
+Board row: 71.2mm (ESP32 + LR2021 + RP2040 side by side)
+GPS module: 22x20mm in corner
+Interior: 103 x 103 x 24.5 mm
+Exterior: 107 x 107 x 29.5 mm
+GPS antenna window: 20x18mm in bottom floor
 ```
+
+## v2 Changes
+
+- Added u-blox MAX-M10S GPS board (4th board)
+- GPS antenna window cut in bottom floor (patch antenna faces down through case)
+- Larger interior to accommodate all 4 boards
+- Board layout: ESP32 | LR2021 | RP2040 in a row + GPS in corner
+
+## GPS Module Notes
+
+The u-blox MAX-M10S is configured for Airborne <1G mode (UBX-CFG-NAV5
+dynamic model 6) to bypass COCOM 18km altitude limit. Supports up to 80km.
+
+- UART1 RX on ESP32 GPIO1, 9600 baud, NMEA
+- Provides GPS time for phase sync (critical for interleave mode)
+- ~0.6g bare module, ~2g with antenna
+- GPS antenna window lets patch antenna see sky through case bottom
+
+**IMPORTANT**: GPS breakout dimensions are assumed 22x20mm. VERIFY with
+calipers — some M10S breakouts are 25x25mm or 18x18mm. Adjust
+`gps_length` and `gps_width` in the SCAD file.
 
 ## STL Files
 
 | File | Part | Print Time |
 |------|------|------------|
-| `bottom.stl` | Bottom shell with board mounts | ~3h |
+| `bottom.stl` | Bottom shell with board mounts + GPS window | ~4h |
 | `lid.stl` | Top lid with solar recess | ~1h |
 
 ## Print Settings
@@ -44,7 +68,7 @@ Material: PETG or ASA (NOT PLA — UV/heat destroys PLA outdoors)
 Layer:    0.2mm
 Infill:   40%+ (walls need 4+ perimeters for waterproofing)
 Walls:    4 perimeters minimum
-Support:  YES for bottom shell (board standoffs + strap grooves)
+Support:  YES for bottom shell (standoffs + strap grooves + GPS window)
 Nozzle:   0.4mm
 Bed:      80°C (PETG) / 100°C (ASA)
 ```
@@ -53,41 +77,26 @@ Bed:      80°C (PETG) / 100°C (ASA)
 
 | Part | Qty | Notes |
 |------|-----|-------|
-| M3x12mm screws | 4 | Countersink head, goes through lid |
-| M3 nuts | 4 | Sits in hex trap on bottom |
-| 2mm O-ring cord | ~200mm | Or pre-made rectangular gasket |
-| M2x6mm self-tapping | 8-12 | Board mounting (or use double-sided tape) |
-| Zip-ties (heavy duty) | 2 | Pole mounting (or hose clamps for metal pole) |
-| Cable glands (PG7) | 2 | For antenna + solar cable feedthrough |
+| M3x16mm screws | 4 | Countersink head, through lid |
+| M3 nuts | 4 | Hex trap in bottom |
+| 2mm O-ring cord | ~400mm | Rectangular gasket around perimeter |
+| M2x6mm self-tapping | 12-16 | Board mounting |
+| Zip-ties (heavy duty) | 2 | Pole mounting |
+| Cable glands (PG7) | 2 | Antenna + solar feedthrough |
+| Gore vent patch | 1 | Cover vent hole |
 
 ## How to Customize
 
-Open `balloon-field-case.scad` in OpenSCAD (or any text editor).
-Change the board dimensions at the top of the file:
+Open `balloon-field-case.scad` in any text editor. Board dimensions at top:
 
 ```
-esp32_length = 22.52;    // ← measure YOUR board, change this
-esp32_width  = 18.0;     // ← measure YOUR board, change this
+gps_length = 22.0;    // ← MEASURE your GPS breakout, change this
+gps_width  = 20.0;    // ← MEASURE your GPS breakout, change this
 ...
 ```
 
-Then re-render:
+Re-render:
 ```bash
 openscad -o bottom.stl -D 'part="bottom"' balloon-field-case.scad
 openscad -o lid.stl -D 'part="top"' balloon-field-case.scad
 ```
-
-## What Needs Your Input
-
-1. **Measure your boards** — use the digital calipers from inventory
-2. **Which ESP32?** — C3 SuperMini or S3? Different footprint
-3. **Antenna strategy** — external antenna on pole? Or internal with RF-transparent lid?
-4. **Solar panel** — which cells? Integrated on lid or separate panel on pole?
-
-## How This Fits With Current Hardware
-
-| Track | Weight | Enclosure | Status |
-|-------|--------|-----------|--------|
-| Flight board | <14g | None (naked PCB + wings) | In design |
-| Dev board | ~30g | This case | **This design** |
-| Ground station | ~50g | Larger weatherproof box | Future |

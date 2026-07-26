@@ -1,25 +1,39 @@
 // ============================================================
-// Balloon Field-Test Enclosure v1
-// Waterproof clamshell for: ESP32-C3 SuperMini + RP2040-Zero + LR2021
+// Balloon Field-Test Enclosure v2
+// Waterproof clamshell for 4 boards:
+//   ESP32-C3 SuperMini + RP2040-Zero + LR2021 + u-blox MAX-M10S GPS
 // Designed for: outdoor pole mount, solar charging, rain/sun exposure
 // Material: PETG or ASA (NOT PLA — UV/heat will destroy PLA outdoors)
 // ============================================================
 
 // ---- MEASURE YOUR BOARDS AND ADJUST THESE ----
 // Use digital calipers. Accuracy = ±0.5mm is fine.
-esp32_length = 22.52;    // ESP32-C3 SuperMini PCB length (X)
-esp32_width  = 18.0;     // ESP32-C3 SuperMini PCB width  (Y)
+// These are from AGENTS.md + BOM.md inventory. VERIFY with calipers!
+
+// Board 1: ESP32-C3 SuperMini (Maker Go ESP32-C3_Mini_V1)
+esp32_length = 22.52;    // PCB length (X)
+esp32_width  = 18.0;     // PCB width  (Y)
 esp32_thick  = 3.5;      // Thickness including USB-C + components
 
-rp2040_length = 23.0;    // RP2040-Zero PCB length
-rp2040_width  = 18.0;    // RP2040-Zero PCB width
+// Board 2: RP2040-Zero
+rp2040_length = 23.0;    // PCB length
+rp2040_width  = 18.0;    // PCB width
 rp2040_thick  = 3.2;     // Thickness including USB + components
 
-lr2021_length = 19.72;   // NiceRF LoRa2021 module length
-lr2021_width  = 15.0;    // NiceRF LoRa2021 module width
+// Board 3: NiceRF LoRa2021 (LR2021 module)
+lr2021_length = 19.72;   // Module length
+lr2021_width  = 15.0;    // Module width
 lr2021_thick  = 2.2;     // Module PCB thickness
 
-// ---- CASE PARAMETERS (probably don't need to change) ----
+// Board 4: u-blox MAX-M10S GPS
+// Bare LCC module: 15.5x15.5x2.6mm
+// Common breakout: ~22x20mm with ceramic antenna, ~4mm thick
+// ADJUST if your breakout differs!
+gps_length = 22.0;       // GPS breakout board length (X)
+gps_width  = 20.0;       // GPS breakout board width  (Y)
+gps_thick  = 4.0;        // Thickness incl. ceramic patch antenna + module
+
+// ---- CASE PARAMETERS ----
 wall          = 2.0;     // Wall thickness (2mm = waterproof + strong)
 inner_clear   = 2.0;     // Clearance around boards for wiring
 floor_thick   = 2.5;     // Bottom wall thickness
@@ -27,36 +41,43 @@ lid_thick     = 2.5;     // Top wall thickness
 board_gap     = 3.0;     // Gap between boards for airflow/wiring
 
 // O-ring seal
-oring_d    = 2.0;        // O-ring cord diameter (2mm = standard)
-oring_groove_depth = 1.5; // Groove depth (75% compression of cord)
+oring_d    = 2.0;
+oring_groove_depth = 1.5;
 
 // Screws
-screw_d    = 3.2;        // M3 screw clearance hole
+screw_d    = 3.2;        // M3 clearance
 screw_head_d = 6.0;      // M3 countersink head
-screw_boss_d = 7.0;      // Screw boss outer diameter
-num_screws_x = 4;        // Screws along X axis (2 rows)
-num_screws_y = 2;        // Screw rows along Y axis
+screw_boss_d = 7.0;
 
-// Cable gland
-gland_d = 6.0;           // Cable gland hole diameter (for antenna + solar)
+// Cable glands
+gland_d = 6.0;           // Antenna + solar cable feedthrough
 
 // Pole mount
 strap_width  = 22.0;     // Zip-tie / hose clamp width slot
-strap_depth  = 3.0;      // How deep the strap groove is
-strap_count  = 2;        // Number of strap grooves on back
+strap_depth  = 3.0;
+strap_count  = 2;
 
 // Solar panel recess (top lid)
-solar_recess_x = 40.0;   // Recess for solar panel on lid
+solar_recess_x = 40.0;
 solar_recess_y = 40.0;
 solar_recess_depth = 2.0;
 
-$fn = 60; // Circle resolution
+$fn = 60;
 
 // ---- CALCULATED ----
-// Interior needs to fit boards side by side with gaps
-interior_x = max(esp32_length, rp2040_length) + lr2021_length + board_gap*3 + inner_clear*2;
-interior_y = max(esp32_width + rp2040_width + board_gap, lr2021_width) + inner_clear*2;
-interior_z = max(esp32_thick, rp2040_thick) + lr2021_thick + board_gap*2 + 8; // 8mm headroom for wiring
+// Layout: ESP32 | LR2021 | RP2040 stacked in row
+// GPS module goes on a second layer or side pocket
+// Row layout: ESP32 -- gap -- LR2021 -- gap -- RP2040
+row1_length = esp32_length + board_gap + lr2021_length + board_gap + rp2040_length;
+row1_width  = max(esp32_width, lr2021_width, rp2040_width);
+
+// GPS alongside, parallel
+total_x = row1_length + gps_length + board_gap*2 + inner_clear*2;
+total_y = max(row1_width, gps_width + board_gap*2) + inner_clear*2;
+
+interior_x = max(total_x, total_y);  // make roughly square
+interior_y = max(total_x, total_y);
+interior_z = max(esp32_thick, rp2040_thick) + gps_thick + board_gap*3 + 8;
 
 ext_x = interior_x + wall*2;
 ext_y = interior_y + wall*2;
@@ -67,30 +88,28 @@ ext_z = interior_z + floor_thick + lid_thick;
 // ============================================================
 module bottom_shell() {
     difference() {
-        // Outer box with rounded corners
         rounded_box(ext_x, ext_y, interior_z + floor_thick, r=3);
-        
-        // Interior cavity (hollow from top)
         translate([0, 0, floor_thick])
             rounded_box(interior_x, interior_y, interior_z + 1, r=2);
-        
-        // O-ring groove (on top face of bottom shell)
         oring_groove();
-        
-        // Screw holes
         screw_holes_bottom();
         
-        // Cable gland hole (one side)
+        // Cable gland holes (antenna + solar)
         translate([ext_x/2, 0, floor_thick + interior_z/2])
             rotate([-90, 0, 0])
             cylinder(d=gland_d, h=wall*2, center=true);
-        
-        // Second gland hole (opposite side, for solar)
         translate([-ext_x/2, 0, floor_thick + interior_z/2])
             rotate([-90, 0, 0])
             cylinder(d=gland_d, h=wall*2, center=true);
         
-        // Pole mount strap grooves (on bottom face)
+        // GPS antenna window — needs sky view!
+        // Cut thin slot in bottom for GPS patch antenna
+        gps_window_x = gps_length - 2;
+        gps_window_y = gps_width - 2;
+        translate([gps_offset_x(), gps_offset_y(), -0.1])
+            rounded_box(gps_window_x, gps_window_y, floor_thick + 0.3, r=1);
+        
+        // Pole mount strap grooves
         for (i = [0:strap_count-1]) {
             pos = (i - (strap_count-1)/2) * (ext_y / strap_count);
             translate([0, pos, -0.1])
@@ -98,34 +117,31 @@ module bottom_shell() {
         }
     }
     
-    // Board mounting standoffs
     board_standoffs();
 }
+
+// GPS position helper — placed in a corner
+function gps_offset_x() = -(interior_x/2 - gps_length/2 - inner_clear);
+function gps_offset_y() = -(interior_y/2 - gps_width/2 - inner_clear);
 
 // ============================================================
 // TOP LID
 // ============================================================
 module top_lid() {
     difference() {
-        // Lid slab
         translate([0, 0, interior_z + floor_thick])
             rounded_box(ext_x, ext_y, lid_thick, r=3);
         
-        // Solar panel recess (on top of lid)
+        // Solar panel recess
         translate([0, 0, interior_z + floor_thick + lid_thick - solar_recess_depth])
             rounded_box(solar_recess_x, solar_recess_y, solar_recess_depth + 1, r=2);
         
-        // Screw countersink holes
         screw_holes_top();
         
-        // Vent hole for pressure equalization (small, will be covered by Gore patch)
+        // Vent hole (cover with Gore patch)
         translate([ext_x/2 - 8, ext_y/2 - 8, interior_z + floor_thick - 0.1])
             cylinder(d=2, h=lid_thick + 1);
     }
-    
-    // O-ring ridge (mates with groove in bottom)
-    // Actually the groove is in the bottom, lid has flat mating surface
-    // The screws compress lid down onto O-ring
 }
 
 // ============================================================
@@ -133,7 +149,6 @@ module top_lid() {
 // ============================================================
 
 module rounded_box(x, y, z, r=2) {
-    // Box with rounded vertical edges, centered at origin, bottom at z=0
     hull() {
         for (sx = [-1, 1], sy = [-1, 1]) {
             translate([sx*(x/2 - r), sy*(y/2 - r), r])
@@ -145,47 +160,13 @@ module rounded_box(x, y, z, r=2) {
 }
 
 module oring_groove() {
-    // Rectangular O-ring groove on top face of bottom shell
-    // Groove runs along the perimeter of the interior opening
-    groove_x = interior_x + wall;  // slightly larger than interior
+    groove_x = interior_x + wall;
     groove_y = interior_y + wall;
     translate([0, 0, floor_thick + interior_z - oring_groove_depth])
         difference() {
             rounded_box(groove_x + oring_d*2, groove_y + oring_d*2, oring_groove_depth + 1, r=3);
             rounded_box(groove_x, groove_y, oring_groove_depth + 2, r=2);
         }
-}
-
-module screw_holes_bottom() {
-    // M3 clearance holes in the bottom shell for screws
-    // Screws go from top (through lid) into threaded inserts or nuts in bottom
-    positions = screw_positions();
-    for (p = positions) {
-        translate([p[0], p[1], 0])
-            // Nut trap on bottom (hexagonal)
-            translate([0, 0, floor_thick/2])
-                cylinder(d=screw_d, h=floor_thick + 1, center=true, $fn=12);
-    }
-    // Nut traps
-    for (p = positions) {
-        translate([p[0], p[1], -0.1])
-            cylinder(d=6.5, h=2.5, $fn=6); // M3 nut trap
-    }
-}
-
-module screw_holes_top() {
-    // Countersink screw holes in the lid
-    positions = screw_positions();
-    for (p = positions) {
-        translate([p[0], p[1], interior_z + floor_thick])
-            union() {
-                // Clearance hole
-                cylinder(d=screw_d, h=lid_thick + 1, center=false, $fn=12);
-                // Countersink
-                translate([0, 0, lid_thick - 1.5])
-                    cylinder(d1=screw_d, d2=screw_head_d, h=2, $fn=12);
-            }
-    }
 }
 
 function screw_positions() = let(
@@ -196,11 +177,28 @@ function screw_positions() = let(
     [ px, -py], [-px, -py],
 ];
 
+module screw_holes_bottom() {
+    for (p = screw_positions()) {
+        translate([p[0], p[1], floor_thick/2])
+            cylinder(d=screw_d, h=floor_thick + 1, center=true, $fn=12);
+        translate([p[0], p[1], -0.1])
+            cylinder(d=6.5, h=2.5, $fn=6); // M3 nut trap
+    }
+}
+
+module screw_holes_top() {
+    for (p = screw_positions()) {
+        translate([p[0], p[1], interior_z + floor_thick])
+            union() {
+                cylinder(d=screw_d, h=lid_thick + 1, center=false, $fn=12);
+                translate([0, 0, lid_thick - 1.5])
+                    cylinder(d1=screw_d, d2=screw_head_d, h=2, $fn=12);
+            }
+    }
+}
+
 module strap_groove() {
-    // Zip-tie / hose clamp groove on bottom of case
-    // Runs across the bottom perpendicular to pole
-    translate([0, 0, 0])
-        rotate([0, 90, 0])
+    rotate([0, 90, 0])
         difference() {
             cylinder(d=ext_z + strap_depth*2, h=strap_width, center=true, $fn=80);
             cylinder(d=ext_z, h=strap_width + 2, center=true, $fn=80);
@@ -208,39 +206,46 @@ module strap_groove() {
 }
 
 module board_standoffs() {
-    // ESP32-C3 standoffs (4 corners)
-    ex_pos = (lr2021_length/2 + board_gap + esp32_length/2);
-    ey_pos = (esp32_width/2 + inner_clear);
     standoff_h = 3.0;
     standoff_d = 3.0;
-    hole_d = 2.0; // M2 self-tapping
+    hole_d = 2.0;
     
-    // ESP32 mounting posts
+    // Layout: ESP32 and RP2040 side by side, LR2021 between them
+    // ESP32 left third
+    esp32_cx = -(lr2021_length/2 + board_gap + esp32_length/2);
     for (sx = [-1,1], sy = [-1,1]) {
-        translate([ex_pos + sx*(esp32_length/2 - 1.5),
-                   ey_pos + sy*(esp32_width/2 - 1.5),
+        translate([esp32_cx + sx*(esp32_length/2 - 1.5),
+                   sy*(esp32_width/2 - 1.5),
                    floor_thick])
             standoff(standoff_h, standoff_d, hole_d);
     }
     
-    // RP2040 standoffs (other side)
-    rx_pos = -(lr2021_length/2 + board_gap + rp2040_length/2);
-    ry_pos = (rp2040_width/2 + inner_clear);
+    // RP2040 right third
+    rp2040_cx = (lr2021_length/2 + board_gap + rp2040_length/2);
     for (sx = [-1,1], sy = [-1,1]) {
-        translate([rx_pos + sx*(rp2040_length/2 - 1.5),
-                   ry_pos + sy*(rp2040_width/2 - 1.5),
+        translate([rp2040_cx + sx*(rp2040_length/2 - 1.5),
+                   sy*(rp2040_width/2 - 1.5),
                    floor_thick])
             standoff(standoff_h, standoff_d, hole_d);
     }
     
-    // LR2021 standoffs (center, lower layer)
-    lx = 0;
-    ly = -(lr2021_width/2 + inner_clear);
+    // LR2021 center, lower standoffs (sits on floor or low)
     for (sx = [-1,1], sy = [-1,1]) {
-        translate([lx + sx*(lr2021_length/2 - 1.5),
-                   ly + sy*(lr2021_width/2 - 1.5),
+        translate([sx*(lr2021_length/2 - 1.5),
+                   sy*(lr2021_width/2 - 1.5),
                    floor_thick])
             standoff(1.5, 3.0, 2.0);
+    }
+    
+    // GPS module — offset corner, needs sky-facing antenna
+    // Placed near edge with antenna window in bottom shell
+    gx = gps_offset_x();
+    gy = gps_offset_y();
+    for (sx = [-1,1], sy = [-1,1]) {
+        translate([gx + sx*(gps_length/2 - 1.5),
+                   gy + sy*(gps_width/2 - 1.5),
+                   floor_thick])
+            standoff(2.0, 3.0, 2.0);
     }
 }
 
@@ -255,20 +260,11 @@ module standoff(h, od, id) {
 // ============================================================
 // RENDER
 // ============================================================
-// Print both parts separately. Bottom first, then lid.
-// Orient both flat on build plate (already oriented for printing).
-
-// Print comment: set "bottom_shell" or "top_lid" to render the part you want
-// Command line:
-//   openscad -o bottom.stl -D 'part="bottom"' balloon-field-case.scad
-//   openscad -o lid.stl -D 'part="top"' balloon-field-case.scad
-
-part = "both"; // "bottom", "top", or "both"
+part = "both";
 
 if (part == "bottom" || part == "both") {
     bottom_shell();
 }
-
 if (part == "top" || part == "both") {
     top_lid();
 }
