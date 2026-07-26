@@ -60,9 +60,9 @@ gps_bay_thick  = gps_thick + 2;    // 10.5mm
 sma_hole_d = 6.5;          // SMA bulkhead clearance hole
 sma_nut_d  = 10.0;         // SMA nut diameter (for recess on inside)
 sma_nut_depth = 2.0;       // How deep the nut recess goes
-sma_spacing = 13.0;        // Measured pigtail outer: 15.06mm
-                              // SMA connector OD ~6mm, so center-to-center ~12-13mm
-                              // Adjust if inner distance measurement differs
+sma_spacing = 13.92;       // Caliper-measured: outer=15.06, inner=12.78
+                              // Center-to-center = inner + cable_radius
+                              // = 12.78 + (15.06-12.78)/2 = 13.92mm
 num_sma = 2;               // 2 SMA connectors (Sub-GHz ANT + 2.4GHz ANT_2G4)
 
 // ---- CASE PARAMETERS ----
