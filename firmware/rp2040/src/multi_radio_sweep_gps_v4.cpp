@@ -355,25 +355,40 @@ static void parseNMEA(const char *sentence) {
     else if (strstr(sentence, "RMC")) {
         char timeStr[16] = {0};
         char status = 'V';
-        char latStr[16] = {0};
-        char ns = 'N';
-        char lonStr[16] = {0};
-        char ew = 'E';
 
-        int parsed = sscanf(sentence,
-            "$%*2sRMC,%15[^,],%c,%15[^,],%c,%15[^,],%c,",
-            timeStr, &status, latStr, &ns, lonStr, &ew);
+        // ── STEP 1: Always parse time + status ──
+        // RMC ALWAYS contains valid UTC time, even with V status (no fix).
+        // The previous single-sscanf approach tried to parse time AND
+        // position fields in one call. When GPS has no fix, position fields
+        // are EMPTY ($GNRMC,015651.40,V,,,,,...), causing %[^,] to fail on
+        // the empty lat field → sscanf returned 2 (not >=5) → time was NEVER
+        // extracted → TX UTC time froze → phase desync with RX.
+        // Fix: parse time field FIRST with a minimal format that only
+        // touches the always-present fields (time, status).
+        int timeParsed = sscanf(sentence, "$%*2sRMC,%12[^,],%c",
+                                timeStr, &status);
+        if (timeParsed >= 1 && strlen(timeStr) >= 6) {
+            int hh = (timeStr[0]-'0')*10 + (timeStr[1]-'0');
+            int mm = (timeStr[2]-'0')*10 + (timeStr[3]-'0');
+            int ss = (timeStr[4]-'0')*10 + (timeStr[5]-'0');
+            gps.timeSec = (uint32_t)(hh*3600 + mm*60 + ss);
+            gps.hasTime = true;
+        }
 
-        if (parsed >= 5) {
-            if (strlen(timeStr) >= 6) {
-                int hh = (timeStr[0]-'0')*10 + (timeStr[1]-'0');
-                int mm = (timeStr[2]-'0')*10 + (timeStr[3]-'0');
-                int ss = (timeStr[4]-'0')*10 + (timeStr[5]-'0');
-                gps.timeSec = (uint32_t)(hh*3600 + mm*60 + ss);
-                gps.hasTime = true;
-            }
-
-            if (status == 'A') {
+        // ── STEP 2: Parse position ONLY when status == 'A' (valid fix) ──
+        // RMC with V status has empty lat/lon fields — skip them entirely.
+        // This block is independent of time parsing above.
+        if (status == 'A') {
+            char latStr[16] = {0};
+            char ns = 'N';
+            char lonStr[16] = {0};
+            char ew = 'E';
+            // Re-parse with position-inclusive format. A status guarantees
+            // populated lat/lon fields, so this sscanf will succeed.
+            int posParsed = sscanf(sentence,
+                "$%*2sRMC,%*15[^,],%*c,%15[^,],%c,%15[^,],%c,",
+                latStr, &ns, lonStr, &ew);
+            if (posParsed >= 4) {
                 float rawLat = atof(latStr);
                 float rawLon = atof(lonStr);
                 int latDeg = (int)(rawLat / 100);
@@ -387,16 +402,16 @@ static void parseNMEA(const char *sentence) {
                 if (ew == 'W') gps.lon = -gps.lon;
 
                 gps.fixValid = true;
-            } else {
-                gps.fixValid = false;
             }
+        } else {
+            gps.fixValid = false;
         }
 
-        // ── Parse date (DDMMYY) for real Unix epoch ──
-        // ROBUSTNESS FIX: Pattern-match instead of comma-counting.
-        // Handles garbled/merged sentences where dropped characters shift
-        // field positions. Scans the entire (truncated to 160 chars) sentence
-        // for a valid DDMMYY pattern, stopping at '*' checksum boundary.
+        // ── STEP 3: Parse date (DDMMYY) for real Unix epoch ──
+        // Independent of fix status — date field is always present in RMC,
+        // even with V status. extractDatePattern() scans the entire sentence
+        // for a valid DDMMYY pattern, handling garbled/merged sentences.
+        // Runs whenever we have valid time, regardless of position fix.
         if (gps.hasTime) {
             uint8_t  dDay, dMo;
             uint16_t dYear;
@@ -408,6 +423,15 @@ static void parseNMEA(const char *sentence) {
                           (unsigned long)days, (unsigned long)gps.timeSec,
                           (unsigned long)gps.unixTime);
             }
+        }
+
+        // ── DEBUG: log first 5 RMC sentences after boot ──
+        // Verifies time is being parsed even without GPS fix (V status).
+        static int rmcDebugCount = 0;
+        if (rmcDebugCount < 5) {
+            outPrintf("RMC_DEBUG timeSec=%lu hasTime=%d status=%c\n",
+                      (unsigned long)gps.timeSec, gps.hasTime ? 1 : 0, status);
+            rmcDebugCount++;
         }
     }
 }
