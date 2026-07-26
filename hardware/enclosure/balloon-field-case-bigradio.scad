@@ -1,5 +1,6 @@
+// v4: Extra clearance for cable soldering and wire routing
 // ============================================================
-// Balloon Field-Test Enclosure v3-BIGRADIO
+// Balloon Field-Test Enclosure v4-BIGRADIO
 // Variant: Large radio module with board-mounted SMA connectors
 //
 // Waterproof clamshell for:
@@ -40,8 +41,8 @@ radio_thick  = 3.5;       // Measured: 3.34mm + 0.16 clearance
 radio_pin_pitch = 4.17;   // Measured pin pitch
 
 // Radio bay — board + clearance for SMA pigtails + wiring
-radio_bay_length = radio_length + 8;   // 32.5mm bay for 24.5mm board
-radio_bay_width  = radio_width + 8;    // 32.5mm bay for 24.5mm board
+radio_bay_length = radio_length + 14;   // v4: 38.5mm bay — room for SMA pigtails + soldering
+radio_bay_width  = radio_width + 14;    // v4: 38.5mm bay — room for SMA pigtails + soldering
 radio_bay_thick  = radio_thick + 4;    // 7.5mm for board + SMA pigtail clearance
 
 // Board 4: GPS MAX-M10S — CALIPER MEASURED 2026-07-26
@@ -51,8 +52,8 @@ gps_width  = 15.5;
 gps_thick  = 8.5;
 
 // GPS bay — measured module + clearance for tape/wire
-gps_bay_length = gps_length + 6;   // 21.5mm
-gps_bay_width  = gps_width + 6;    // 21.5mm
+gps_bay_length = gps_length + 12;   // v4: 27.5mm — room for soldering + wire routing
+gps_bay_width  = gps_width + 12;    // v4: 27.5mm — room for soldering + wire routing
 gps_bay_thick  = gps_thick + 2;    // 10.5mm
 
 // ---- SMA CONNECTOR PARAMETERS ----
@@ -70,7 +71,7 @@ wall          = 2.0;
 inner_clear   = 2.0;
 floor_thick   = 2.5;
 lid_thick     = 2.5;
-board_gap     = 3.0;
+board_gap     = 7.0;   // v4: +4mm soldering clearance between ESP32/RP2040
 
 // O-ring seal
 oring_d    = 2.0;
@@ -107,7 +108,8 @@ total_y = max(row_width, radio_bay_width, gps_bay_width) + inner_clear*2;
 
 interior_x = max(total_x, total_y) + 4;  // extra room for SMA cables inside
 interior_y = max(total_x, total_y) + 4;
-interior_z = max(esp32_thick, rp2040_thick, radio_bay_thick) + gps_bay_thick + board_gap*3 + 6;
+vert_gap = 3.0;   // vertical stacking gap (horizontal board_gap increased for solder clearance)
+interior_z = max(esp32_thick, rp2040_thick, radio_bay_thick) + gps_bay_thick + vert_gap*3 + 6 + 6;   // v4: +6mm for wire bundles above boards
 
 ext_x = interior_x + wall*2;
 ext_y = interior_y + wall*2;
