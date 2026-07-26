@@ -26,6 +26,25 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: consolidation execution plan + Makefile updates + discoveries sync (2026-07-26) | tags: GENERAL
+- **Commit:** `c03dbb8` by Felix
+- **Files:** Makefile, docs/coordination/DISCOVERIES.md, docs/plans/CONSOLIDATION-EXECUTION.md
+- **Full message:** docs: consolidation execution plan + Makefile updates + discoveries sync
+- **Relevance:** GENERAL
+
+### [balloon-tollgate] docs: discovery sync review 2026-07-26 — both findings informational only (2026-07-26) | tags: GENERAL
+- **Commit:** `5b1518f` by Felix
+- **Files:** docs/STATUS-balloon-tollgate.md
+- **Full message:** docs: discovery sync review 2026-07-26 — both findings informational only
+- **Relevance:** GENERAL
+
+### [balloon-pow] docs: track status + discovery sync acknowledgment — Phase 1 extraction in progr (2026-07-26) | tags: GENERAL
+- **Commit:** `9685bc4` by Felix
+- **Files:** docs/STATUS-balloon-pow.md
+- **Full message:** docs: track status + discovery sync acknowledgment — Phase 1 extraction in progress
+- **Relevance:** GENERAL
+
+
 ### [balloon-hermes] docs: multi-level delegation hierarchy — sub-managers delegate too (2026-07-25) | tags: GENERAL
 - **Commit:** `4566437` by Felix
 - **Files:** AGENTS.md
