@@ -20,16 +20,22 @@ build-rx:
 
 build-both: build-tx build-rx
 
-# ─── Flash targets (via BOOTSEL) ─────────────────────
+# ─── Flash targets (via pio upload, auto-detects port) ──
 .PHONY: flash-tx flash-rx flash-both
 
 flash-tx: build-tx
 	@echo "Flashing TX (serial $(TX_SERIAL))..."
-	@$(TOOLS)/flash_board.sh $(TX_SERIAL) $(TX_UF2)
+	@PORT=$$(python3 $(TOOLS)/port_util.py find --serial $(TX_SERIAL) 2>/dev/null | grep -o '/dev/.*'); \
+	if [ -z "$$PORT" ]; then echo "ERROR: TX board not found"; exit 1; fi; \
+	echo "Found TX at $$PORT"; \
+	pio run -e rp2040-sweep-tx-v4 -t upload --upload-port $$PORT
 
 flash-rx: build-rx
 	@echo "Flashing RX (serial $(RX_SERIAL))..."
-	@$(TOOLS)/flash_board.sh $(RX_SERIAL) $(RX_UF2)
+	@PORT=$$(python3 $(TOOLS)/port_util.py find --serial $(RX_SERIAL) 2>/dev/null | grep -o '/dev/.*'); \
+	if [ -z "$$PORT" ]; then echo "ERROR: RX board not found"; exit 1; fi; \
+	echo "Found RX at $$PORT"; \
+	pio run -e rp2040-sweep-rx-v4 -t upload --upload-port $$PORT
 
 flash-both: flash-tx flash-rx
 	@echo "Both boards flashed."
