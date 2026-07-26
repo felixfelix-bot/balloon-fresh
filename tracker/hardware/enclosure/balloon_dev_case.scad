@@ -42,10 +42,10 @@ gps_h = 8.05;     // measured (includes patch antenna)
 /* [Interior Layout] */
 layout = "stacked"; // "stacked" or "sidebyside"
 
-// Clearance above boards for wires/connectors
-wire_clearance = 14;
-// Margin around boards
-board_margin = 4;
+// Clearance above boards for wires/connectors/soldering
+wire_clearance = 20;
+// Margin around boards — generous for soldering cables
+board_margin = 8;
 
 // Computed interior dimensions
 // Stacked: ESP32+LR2021 on bottom, RP2040+GPS side by side on top

@@ -57,8 +57,10 @@ sma_spacing = 13.92;   // MEASURED center-to-center
 //   Layer 2 (middle): Big LR2021 dev board (radio + PA)
 //   Layer 3 (top):    RP2040 + GPS side by side
 
-wire_clearance = 14;
-board_margin = 4;
+// Clearance above boards for wires/connectors/soldering
+wire_clearance = 20;
+// Margin around boards — generous for soldering cables
+board_margin = 8;
 
 // Interior X: need to fit big radio board width + margin
 interior_x = max(
