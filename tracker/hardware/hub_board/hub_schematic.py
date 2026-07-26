@@ -1,381 +1,388 @@
+#!/usr/bin/env python3
 """
-Hub Board Schematic - ESP32-C3 + LoRa2021F33-2G4 + GPS + Power
-Central electronics board for pico balloon tracker.
+Hub Board Schematic — ESP32-C3 + RP2040 Coprocessor + LR2021 + GPS + BMP280
+==========================================================================
 
-Uses validated pin mapping from DIY v0.1 soldering setup.
-Connector-based approach: dev board modules as connectors, custom inline parts for ICs.
+Central electronics board for the pico balloon tracker.
 
-The LoRa module is the NiceRF LoRa2021F33-2G4 (F33) — built-in 2W PA (+33 dBm).
-This replaces the bare LoRa2021 + SKY66112 FEM combination.
+TESTED ARCHITECTURE (branch ``lr2021/p3-coproc-rewrite``):
 
-Key changes from bare LoRa2021:
-- F33 has completely different pinout (18 pins, 9 per side, 39x21mm)
-- F33 has built-in PA — no SKY66112 FEM, no TX_EN GPIO
-- F33 has CE pin (Pin 5) for LDO enable / sleep mode → GPIO9/D9
-- F33 has internal TCXO — no VTCXO pin, no C3 decoupling cap
-- F33 needs 3.0-5.5V (5V for full 2W) — power chain may need update
-- F33 has bulk capacitance: C4 = 100uF (was 10uF) for 2W TX bursts
-- F33 does NOT have DIO7/DIO8/DIO9 pins — only IRQ (Pin 18)
+    ESP32-C3 (logger/controller) ──UART── RP2040-Zero (coprocessor) ──SPI0── LR2021 (radio)
 
-Generates KiCad netlist via SKiDL.
-Run: python hub_schematic.py
-Output: hub_board.net (import into KiCad for layout)
+The ESP32-C3 runs the application (telemetry, GPS parsing, BMP280 reads,
+power management). The RP2040-Zero is a dedicated radio coprocessor that
+owns the LR2021 SPI bus — it clears the single-core RX bottleneck of the
+ESP32-C3 and lets the LR2021 run at full air-rate.
+
+This is a COMPLETE, FUNCTIONAL SKiDL schematic:
+  * every net is a real ``Net(...)`` (no ``stub=True``)
+  * every connection uses the ``net += part['pin']`` operator
+  * ``generate_netlist()`` is called at the end → ``hub_board.net``
+
+Pin tables (authoritative — see docs/rp2040-wiring-guide.md on the
+lr2021/p3-coproc-rewrite branch):
+
+  ESP32-C3-MINI-1:
+    GPIO0  = UART1 TX  → RP2040 GP21 (RX)
+    GPIO1  = UART1 RX  ← RP2040 GP20 (TX)
+    GPIO2  = GPS UART RX ← MAX-M10S TX   (*** MOVED from GPIO1 ***)
+    GPIO4  = ADC1_CH4  → supercap voltage divider   (was GPIO0/CH0 — conflicts
+              with UART1 TX in the coprocessor architecture; GPIO4 is free and
+              is ADC1_CH4. Firmware change required:
+              power_manager.c SUPERCAP_ADC_CHANNEL → ADC_CHANNEL_4)
+    GPIO8  = I2C SDA   → BMP280 SDA
+    GPIO9  = I2C SCL   → BMP280 SCL
+    GPIO10 = Status LED (active low via R5)
+
+  RP2040-Zero (SPI0 to LR2021):
+    GP2  = SPI0 SCK   → LR2021 Pin 5
+    GP3  = SPI0 MOSI  → LR2021 Pin 4
+    GP4  = SPI0 MISO  ← LR2021 Pin 3
+    GP5  = GPIO CS    → LR2021 Pin 6 (NSS)
+    GP6  = GPIO input ← LR2021 Pin 7 (BUSY)
+    GP7  = GPIO IRQ   ← LR2021 Pin 15 (DIO9)
+    GP8  = GPIO RST   → LR2021 Pin 14 (RST)
+    GP20 = UART1 TX   → ESP32 GPIO1 (RX)
+    GP21 = UART1 RX   ← ESP32 GPIO0 (TX)
+    GP16 = onboard LED (RP2040-Zero, no external parts)
+
+  NiceRF LR2021 (18-pin module):
+    1=VCC 3V3 | 2,8,11,12,18=GND | 3=MISO | 4=MOSI | 5=SCK | 6=NSS
+    7=BUSY | 9=Sub-GHz ANT | 10=2.4G ANT | 13=VTCXO(NC,float) |
+    14=RST | 15=DIO9(IRQ) | 16=DIO8(NC) | 17=DIO7(NC)
+
+Run:
+    python hub_schematic.py
+Output:
+    hub_board.net   (import into KiCad for PCB layout)
 """
 
 import os
-os.environ['KICAD9_SYMBOL_DIR'] = '/usr/share/kicad/symbols'
-os.environ['KICAD_SYMBOL_DIR'] = '/usr/share/kicad/symbols'
 
-from skidl import *
+# KiCad symbol libraries must be on the search path BEFORE importing skidl
+# so that standard parts (Device:C, Device:R, Connector_Generic:*) resolve.
+_DEFAULT_SYMBOL_DIR = "/usr/share/kicad/symbols"
+os.environ.setdefault("KICAD9_SYMBOL_DIR", _DEFAULT_SYMBOL_DIR)
+os.environ.setdefault("KICAD_SYMBOL_DIR", _DEFAULT_SYMBOL_DIR)
+
+from skidl import *  # noqa: E402
+
 
 # ============================================================
-# Custom Part Templates (for parts not in KiCad v9 libraries)
+# Custom part templates (parts not present as single symbols in
+# the stock KiCad libraries are built inline with skidl).
 # ============================================================
 
 def make_tps7a02():
-    """TPS7A0233DBVR LDO - 3.3V, SOT-23-5, custom inline part.
+    """TPS7A0233DBVR — 3.3V LDO, SOT-23-5.
 
-    NOTE: For full 2W output on F33 module, this needs to be replaced with
-    a 5V LDO or boost converter. At 3.3V, F33 operates at reduced power (~1W).
-    See docs/F33-MODULE-PLAN.md for power supply design options.
+    IN=1, GND=2, EN=3, NC=4, OUT=5.
     """
-    p = Part(name='TPS7A0233DBVR', tool='skidl', dest=TEMPLATE,
-             ref_prefix='U', footprint='Package_TO_SOT_SMD:SOT-23-5')
-    p += Pin(num='1', name='IN',   func=Pin.types.PWRIN)
-    p += Pin(num='2', name='GND',  func=Pin.types.PWRIN)
-    p += Pin(num='3', name='EN',   func=Pin.types.INPUT)
-    p += Pin(num='4', name='NC',   func=Pin.types.NOCONNECT)
-    p += Pin(num='5', name='OUT',  func=Pin.types.PWROUT)
+    p = Part(name="TPS7A0233DBVR", tool=SKIDL, dest=TEMPLATE,
+             ref_prefix="U", footprint="Package_TO_SOT_SMD:SOT-23-5")
+    p += Pin(num="1", name="IN",  func=Pin.types.PWRIN)
+    p += Pin(num="2", name="GND", func=Pin.types.PWRIN)
+    p += Pin(num="3", name="EN",  func=Pin.types.INPUT)
+    p += Pin(num="4", name="NC",  func=Pin.types.NOCONNECT)
+    p += Pin(num="5", name="OUT", func=Pin.types.PWROUT)
     return p()
+
 
 def make_bat54():
-    """BAT54 Schottky diode - 2-pin SOD-123, custom inline part."""
-    p = Part(name='BAT54', tool='skidl', dest=TEMPLATE,
-             ref_prefix='D', footprint='Diode_SMD:D_SOD-123')
-    p += Pin(num='1', name='A', func=Pin.types.PASSIVE)
-    p += Pin(num='2', name='K', func=Pin.types.PASSIVE)
+    """BAT54 Schottky diode — SOD-123. A=1 (anode), K=2 (cathode)."""
+    p = Part(name="BAT54", tool=SKIDL, dest=TEMPLATE,
+             ref_prefix="D", footprint="Diode_SMD:D_SOD-123")
+    p += Pin(num="1", name="A", func=Pin.types.PASSIVE)
+    p += Pin(num="2", name="K", func=Pin.types.PASSIVE)
     return p()
 
+
 # ============================================================
-# Schematic: Hub Board V0.1 (F33 Module)
+# Hub Board schematic
 # ============================================================
 
 def generate_hub_schematic():
-    # --- Components ---
+    """Build the full hub-board netlist and write hub_board.net."""
 
-    # U1: ESP32-C3_Mini_V1 dev board (16-pin 2x8 header)
-    # Pin mapping: top row = left side of dev board, bottom row = right side
-    # Conn_02x08_Odd_Even: pins 1-8 top (left), 9-16 bottom (right)
-    mcu = Part("Connector_Generic", "Conn_02x08_Odd_Even", ref="U",
-               value="ESP32-C3_Mini_V1",
-               footprint="Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Vertical")
+    # --------------------------------------------------------
+    # 1. Components
+    # --------------------------------------------------------
 
-    # U2: NiceRF LoRa2021F33-2G4 (F33) — 18-pin castellated module, 39x21mm
-    # Built-in 2W PA (+33 dBm), internal TCXO, no SKY66112 FEM needed
-    # Use two Conn_01x09 to represent 18 pins (left side + right side)
-    lora_l = Part("Connector_Generic", "Conn_01x09", ref="U",
-                  value="LoRa2021F33_Left",
-                  footprint="custom:LoRa2021F33_2G4")
-    lora_r = Part("Connector_Generic", "Conn_01x09", ref="U",
-                  value="LoRa2021F33_Right",
-                  footprint="custom:LoRa2021F33_2G4")
+    # --- U1: ESP32-C3-MINI-1 (castellated WiFi module) ---
+    # Modelled as a 10-pin connector carrying only the signals actually used.
+    # Physical module has many more castellated pads; unused pads tie to NC/GND
+    # at layout time. Pin numbers below are LOGICAL (1..10) and map to the
+    # GPIO numbers noted in the comments.
+    esp = Part("Connector_Generic", "Conn_01x10", ref="U",
+               value="ESP32-C3-MINI-1",
+               footprint="RF_Module:ESP32-C3-MINI-1")
 
-    # U3: MAX-M10S GPS breakout (4-pin header)
+    # --- U2: RP2040-Zero (Waveshare castellated coprocessor board) ---
+    # 13 used signals. Pin numbers are logical (1..13).
+    rp2040 = Part("Connector_Generic", "Conn_01x13", ref="U",
+                  value="RP2040-Zero",
+                  footprint="Module:Waveshare_RP2040-Zero")
+
+    # --- U3: NiceRF LR2021 (18-pin castellated sub-GHz/2.4G radio module) ---
+    # Pin numbers 1..18 match the NiceRF datasheet EXACTLY.
+    lr2021 = Part("Connector_Generic", "Conn_01x18", ref="U",
+                  value="NiceRF-LR2021",
+                  footprint="custom:NiceRF_LR2021_18pin")
+
+    # --- U4: u-blox MAX-M10S GPS breakout ---
+    # 1=VCC, 2=GND, 3=TX→ESP, 4=RX (NC for telemetry-only firmware)
     gps = Part("Connector_Generic", "Conn_01x04", ref="U",
                value="MAX-M10S",
                footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
 
-    # U4: TPS7A02 LDO (custom)
-    # NOTE: At 3.3V, F33 operates at reduced power (~1W instead of 2W).
-    # For full 2W, replace with 5V LDO or boost converter.
-    ldo = make_tps7a02()
+    # --- U5: BMP280 pressure sensor breakout (I2C) ---
+    # 1=VCC, 2=GND, 3=SDA, 4=SCL
+    bmp280 = Part("Connector_Generic", "Conn_01x04", ref="U",
+                  value="BMP280",
+                  footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
 
-    # D1: BAT54 Schottky diode (custom)
-    diode = make_bat54()
+    # --- Power supply: BAT54 Schottky + TPS7A02 LDO + supercap ---
+    diode = make_bat54()                       # D1 — solar input reverse-protection
+    ldo = make_tps7a02()                       # U6 — 3.3V LDO
+    supercap = Part("Device", "C_Polarized", ref="SC", value="1.0F 5.5V",
+                    footprint="Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
 
-    # Decoupling capacitors
-    c1 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # ESP32 decouple
-    c2 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # F33 VCC decouple
-    # C3 removed — F33 has internal TCXO, no VTCXO pin
-    c4 = Part("Device", "C", ref="C", value="100uF", footprint="Capacitor_SMD:C_1210_3225Metric")  # F33 TX burst (100uF for 2W PA)
-    c5 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # GPS decouple
-    c6 = Part("Device", "C", ref="C", value="10uF",  footprint="Capacitor_SMD:C_0402_1005Metric")  # GPS decouple
-    c7 = Part("Device", "C", ref="C", value="100nF", footprint="Capacitor_SMD:C_0402_1005Metric")  # LDO output
+    # --- Decoupling / bulk capacitors ---
+    # 100nF on every IC VCC; 10uF bulk near the LR2021 for TX-burst current.
+    c_esp    = Part("Device", "C", ref="C", value="100nF",
+                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C1 — ESP32 decouple
+    c_rp     = Part("Device", "C", ref="C", value="100nF",
+                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C2 — RP2040 decouple
+    c_lr     = Part("Device", "C", ref="C", value="100nF",
+                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C3 — LR2021 VCC decouple
+    c_lr_blk = Part("Device", "C", ref="C", value="10uF",
+                    footprint="Capacitor_SMD:C_0805_2012Metric")   # C4 — LR2021 TX-burst bulk
+    c_gps    = Part("Device", "C", ref="C", value="100nF",
+                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C5 — GPS decouple
+    c_bmp    = Part("Device", "C", ref="C", value="100nF",
+                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C6 — BMP280 decouple
+    c_ldo    = Part("Device", "C", ref="C", value="10uF",
+                    footprint="Capacitor_SMD:C_0805_2012Metric")   # C7 — LDO output bulk
 
-    # Supercapacitor
-    sc1 = Part("Device", "C_Polarized", ref="SC", value="1.0F 5.5V",
-               footprint="Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+    # --- I2C pull-ups (4.7k each on SDA/SCL) ---
+    r_sda = Part("Device", "R", ref="R", value="4.7k",
+                 footprint="Resistor_SMD:R_0402_1005Metric")       # R1
+    r_scl = Part("Device", "R", ref="R", value="4.7k",
+                 footprint="Resistor_SMD:R_0402_1005Metric")       # R2
 
-    # Solder bridges for SPI pin-swap
-    sb1 = Part("Jumper", "SolderJumper_2_Bridged", ref="SB",
-               value="SCK",  footprint="Jumper:SolderJumper_2_Open")
-    sb2 = Part("Jumper", "SolderJumper_2_Bridged", ref="SB",
-               value="MOSI", footprint="Jumper:SolderJumper_2_Open")
+    # --- Supercap voltage divider (1M/1M → ADC reads Vcap/2) ---
+    r_div_hi = Part("Device", "R", ref="R", value="1M",
+                    footprint="Resistor_SMD:R_0402_1005Metric")    # R3 — Vcap→mid
+    r_div_lo = Part("Device", "R", ref="R", value="1M",
+                    footprint="Resistor_SMD:R_0402_1005Metric")    # R4 — mid→GND
 
-    # Power select jumper (3-pad)
-    sb3 = Part("Jumper", "SolderJumper_3_Bridged12", ref="SB",
-               value="PWR_SEL", footprint="Jumper:SolderJumper_3_Open")
+    # --- Status LED on ESP32 GPIO10 ---
+    led = Part("Device", "LED", ref="D", value="STATUS",
+               footprint="LED_SMD:LED_0603_1608Metric")            # D2
+    r_led = Part("Device", "R", ref="R", value="330R",
+                 footprint="Resistor_SMD:R_0402_1005Metric")       # R5 — LED current limit
 
-    # Antenna pads
-    ae1 = Part("Connector_Generic", "Conn_01x01", ref="AE",
-               value="SubGHz_868", footprint="TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
-    ae2 = Part("Connector_Generic", "Conn_01x01", ref="AE",
-               value="2G4_2400", footprint="TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+    # --- Antenna wire pads ---
+    ant_sub = Part("Connector_Generic", "Conn_01x01", ref="AE",
+                   value="ANT_SUB_868",
+                   footprint="TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")  # 16.4cm wire
+    ant_2g4 = Part("Connector_Generic", "Conn_01x01", ref="AE",
+                   value="ANT_2G4_2400",
+                   footprint="TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")  # 3.1cm wire
 
-    # Debug header
-    j1 = Part("Connector_Generic", "Conn_02x03_Odd_Even", ref="J",
-              value="Debug", footprint="Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical")
+    # --- Solar input pads ---
+    solar_j = Part("Connector_Generic", "Conn_01x02", ref="J",
+                   value="SOLAR_IN",
+                   footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
+
+    # --------------------------------------------------------
+    # 2. Nets
+    # --------------------------------------------------------
+
+    # --- Power rails ---
+    v3v3     = Net("3V3")        # regulated 3.3V rail — feeds all three boards
+    gnd      = Net("GND")
+    solar_in = Net("SOLAR_IN")   # raw solar array output
+    vcap     = Net("VCAP")       # supercap node (between BAT54 and LDO input)
+    vdiv_mid = Net("VDIV_MID")   # ADC voltage-divider midpoint
+    adc_vcap = Net("ADC_VCAP")   # ESP32 ADC pin
+
+    # --- ESP32 ↔ RP2040 UART link ---
+    esp_tx_rp_rx = Net("ESP_TX_RP2040_RX")  # ESP GPIO0 (TX) → RP2040 GP21 (RX)
+    rp_tx_esp_rx = Net("RP2040_TX_ESP_RX")  # RP2040 GP20 (TX) → ESP GPIO1 (RX)
+
+    # --- GPS UART (ESP RX only — one-way telemetry) ---
+    gps_tx_esp_rx = Net("GPS_TX_ESP_RX")    # M10S TX → ESP GPIO2
+
+    # --- RP2040 ↔ LR2021 SPI bus (SPI0) ---
+    spi_sck   = Net("SPI0_SCK")   # RP2040 GP2  → LR2021 Pin 5
+    spi_mosi  = Net("SPI0_MOSI")  # RP2040 GP3  → LR2021 Pin 4
+    spi_miso  = Net("SPI0_MISO")  # RP2040 GP4 ← LR2021 Pin 3
+    spi_nss   = Net("SPI0_NSS")   # RP2040 GP5  → LR2021 Pin 6
+    lora_busy = Net("LR2021_BUSY")  # RP2040 GP6 ← LR2021 Pin 7
+    lora_irq  = Net("LR2021_DIO9")  # RP2040 GP7 ← LR2021 Pin 15
+    lora_rst  = Net("LR2021_RST")   # RP2040 GP8  → LR2021 Pin 14
+
+    # --- I2C bus (ESP32 ↔ BMP280) ---
+    i2c_sda = Net("I2C_SDA")  # ESP GPIO8
+    i2c_scl = Net("I2C_SCL")  # ESP GPIO9
+
+    # --- Status LED ---
+    led_drive = Net("STATUS_LED")  # ESP GPIO10 → R5 → LED → GND
+
+    # --- RF antenna ---
+    rf_subghz = Net("RF_SUB_868")
+    rf_2g4    = Net("RF_2G4_2400")
+
+    # --------------------------------------------------------
+    # 3. Wiring
+    # --------------------------------------------------------
+
+    # --- U1: ESP32-C3-MINI-1 (logical pin map) ---
+    #   1=3V3, 2=GND, 3=GPIO0(TX), 4=GPIO1(RX), 5=GPIO2(GPS RX),
+    #   6=GPIO4(ADC), 7=GPIO8(SDA), 8=GPIO9(SCL), 9=GPIO10(LED), 10=EN
+    v3v3         += esp["1"]      # 3V3
+    gnd          += esp["2"]      # GND
+    esp_tx_rp_rx += esp["3"]      # GPIO0 = UART1 TX  → RP2040 GP21
+    rp_tx_esp_rx += esp["4"]      # GPIO1 = UART1 RX  ← RP2040 GP20
+    gps_tx_esp_rx += esp["5"]     # GPIO2 = GPS UART RX ← M10S TX   (MOVED)
+    adc_vcap     += esp["6"]      # GPIO4 = ADC1_CH4 (supercap monitor)
+    i2c_sda      += esp["7"]      # GPIO8 = I2C SDA
+    i2c_scl      += esp["8"]      # GPIO9 = I2C SCL
+    led_drive    += esp["9"]      # GPIO10 = status LED drive
+    # Pin 10 = EN: leave floating (onboard RC/pullup handles boot) — NC
+
+    # --- U2: RP2040-Zero (logical pin map) ---
+    #   1=3V3, 2=GND, 3=GP2(SCK), 4=GP3(MOSI), 5=GP4(MISO),
+    #   6=GP5(NSS), 7=GP6(BUSY), 8=GP7(IRQ), 9=GP8(RST), 10=GP16(LED onboard),
+    #   11=GP20(UART1 TX), 12=GP21(UART1 RX), 13=GND
+    v3v3       += rp2040["1"]     # 3V3
+    gnd        += rp2040["2"]     # GND
+    spi_sck    += rp2040["3"]     # GP2  = SPI0 SCK
+    spi_mosi   += rp2040["4"]     # GP3  = SPI0 MOSI
+    spi_miso   += rp2040["5"]     # GP4  = SPI0 MISO
+    spi_nss    += rp2040["6"]     # GP5  = NSS (CS)
+    lora_busy  += rp2040["7"]     # GP6  = BUSY input
+    lora_irq   += rp2040["8"]     # GP7  = DIO9 IRQ input
+    lora_rst   += rp2040["9"]     # GP8  = RST output
+    # Pin 10 = GP16 onboard LED — no external wiring (RP2040-Zero has it built-in)
+    rp_tx_esp_rx += rp2040["11"]  # GP20 = UART1 TX → ESP GPIO1
+    esp_tx_rp_rx += rp2040["12"]  # GP21 = UART1 RX ← ESP GPIO0
+    gnd        += rp2040["13"]    # GND
+
+    # --- U3: NiceRF LR2021 (datasheet pin numbers 1..18) ---
+    v3v3      += lr2021["1"]      # Pin 1  = VCC 3V3
+    gnd       += lr2021["2"]      # Pin 2  = GND
+    spi_miso  += lr2021["3"]      # Pin 3  = MISO → RP2040 GP4
+    spi_mosi  += lr2021["4"]      # Pin 4  = MOSI → RP2040 GP3
+    spi_sck   += lr2021["5"]      # Pin 5  = SCK  → RP2040 GP2
+    spi_nss   += lr2021["6"]      # Pin 6  = NSS  → RP2040 GP5
+    lora_busy += lr2021["7"]      # Pin 7  = BUSY → RP2040 GP6
+    gnd       += lr2021["8"]      # Pin 8  = GND
+    rf_subghz += lr2021["9"]      # Pin 9  = Sub-GHz antenna pad
+    rf_2g4    += lr2021["10"]     # Pin 10 = 2.4 GHz antenna pad
+    gnd       += lr2021["11"]     # Pin 11 = GND
+    gnd       += lr2021["12"]     # Pin 12 = GND
+    # Pin 13 = VTCXO — NC, intentionally floating (chip-controlled TCXO)
+    # Pin 16 = DIO8 — NC, floating
+    # Pin 17 = DIO7 — NC, floating
+    lora_rst  += lr2021["14"]     # Pin 14 = RST → RP2040 GP8
+    lora_irq  += lr2021["15"]     # Pin 15 = DIO9 → RP2040 GP7
+    gnd       += lr2021["18"]     # Pin 18 = GND
+
+    # --- U4: MAX-M10S GPS ---
+    v3v3          += gps["1"]     # VCC
+    gnd           += gps["2"]     # GND
+    gps_tx_esp_rx += gps["3"]     # GPS TX → ESP32 GPIO2
+    # Pin 4 = GPS RX — NC for telemetry-only firmware (no config commands sent)
+
+    # --- U5: BMP280 (I2C) ---
+    v3v3    += bmp280["1"]        # VCC
+    gnd     += bmp280["2"]        # GND
+    i2c_sda += bmp280["3"]        # SDA
+    i2c_scl += bmp280["4"]        # SCL
+
+    # --------------------------------------------------------
+    # 4. Power chain
+    #    Solar → BAT54 → supercap(VCAP) → TPS7A02 → 3V3 rail
+    # --------------------------------------------------------
 
     # Solar input pads
-    j2 = Part("Connector_Generic", "Conn_01x02", ref="J",
-              value="Solar_In", footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
+    solar_in += solar_j["1"]      # Solar +
+    gnd      += solar_j["2"]      # Solar −
 
-    # Voltage divider for ADC (supercap monitoring)
-    r_div1 = Part("Device", "R", ref="R", value="1M", footprint="Resistor_SMD:R_0402_1005Metric")
-    r_div2 = Part("Device", "R", ref="R", value="1M", footprint="Resistor_SMD:R_0402_1005Metric")
+    # BAT54 reverse-protection diode: solar → Vcap
+    solar_in += diode["1"]        # Anode
+    vcap     += diode["2"]        # Cathode
 
-    # --- Nets ---
+    # Supercap on the LDO input side
+    vcap += supercap["1"]         # Supercap +
+    gnd  += supercap["2"]         # Supercap −
 
-    # Power nets
-    vcc_3v3 = Net("VCC_3V3")
-    gnd = Net("GND")
-    solar_in = Net("SOLAR_IN")
-    vcap = Net("VCAP")       # supercap positive node
-    vdiv_mid = Net("VDIV_MID")  # ADC voltage divider midpoint
-
-    # SPI bus
-    spi_mosi = Net("SPI_MOSI")
-    spi_miso = Net("SPI_MISO")
-    spi_sck  = Net("SPI_SCK")
-    spi_cs   = Net("SPI_CS")
-
-    # F33 control signals
-    lora_rst  = Net("LORA_RST")
-    lora_busy = Net("LORA_BUSY")
-    lora_irq  = Net("LORA_IRQ")
-    lora_ce   = Net("LORA_CE")    # NEW: F33 CE pin (LDO enable / sleep mode)
-
-    # UART1 (GPS)
-    uart_tx = Net("UART1_TX")  # ESP TX → GPS RX
-    uart_rx = Net("UART1_RX")  # ESP RX ← GPS TX
-
-    # ADC
-    adc_vcap = Net("ADC_VCAP")
-
-    # RF antenna
-    rf_subghz = Net("RF_SUBGHZ")
-    rf_2g4    = Net("RF_2G4")
-
-    # Solder bridge intermediate nets
-    sb1_in  = Net("SB1_IN")   # ESP32 D6 → SB1 pad A
-    sb1_out = Net("SB1_OUT")  # SB1 pad B → F33 SCK
-    sb2_in  = Net("SB2_IN")   # ESP32 D7 → SB2 pad A
-    sb2_out = Net("SB2_OUT")  # SB2 pad B → F33 MOSI
-
-    # --- ESP32-C3_Mini_V1 pin assignments ---
-    # Conn_02x08_Odd_Even: pin 1-8 = top row, 9-16 = bottom row
-    # Mapping per validated DIY setup:
-    #   Pin 1  = 3V3      Pin 9  = GND
-    #   Pin 2  = D0/GPIO0  Pin 10 = D1/GPIO1
-    #   Pin 3  = D2/GPIO2  Pin 11 = D3/GPIO3
-    #   Pin 4  = D4/GPIO4  Pin 12 = D5/GPIO5
-    #   Pin 5  = D6/GPIO6  Pin 13 = D7/GPIO7
-    #   Pin 6  = D8/GPIO8  Pin 14 = D9/GPIO9
-    #   Pin 7  = D10/GPIO10 Pin 15 = 3V3 (or NC)
-    #   Pin 8  = GND       Pin 16 = GND
-
-    # Power
-    vcc_3v3 += mcu.p[1]      # 3V3
-    gnd     += mcu.p[9]      # GND
-    gnd     += mcu.p[8]      # GND
-    gnd     += mcu.p[16]     # GND
-
-    # UART1 (GPS)
-    uart_tx += mcu.p[2]      # D0/GPIO0 = UART1_TX
-    uart_rx += mcu.p[10]     # D1/GPIO1 = UART1_RX
-
-    # SPI MISO (direct, no solder bridge)
-    spi_miso += mcu.p[3]     # D2/GPIO2 = SPI_MISO
-
-    # SPI SCK (via solder bridge SB1)
-    sb1_in += mcu.p[5]       # D6/GPIO6 → SB1 input
-
-    # SPI MOSI (via solder bridge SB2)
-    sb2_in += mcu.p[13]      # D7/GPIO7 → SB2 input
-
-    # LoRa control signals
-    lora_busy += mcu.p[4]    # D4/GPIO4 = F33 BUSY
-    lora_rst  += mcu.p[11]   # D3/GPIO3 = F33 RESET
-    lora_irq  += mcu.p[12]   # D5/GPIO5 = F33 IRQ
-
-    # F33 CE (NEW — LDO enable / sleep mode)
-    lora_ce   += mcu.p[14]   # D9/GPIO9 = F33 CE
-
-    # SPI CS
-    spi_cs += mcu.p[7]       # D10/GPIO10 = SPI_CS
-
-    # ADC (supercap voltage monitoring)
-    adc_vcap += mcu.p[6]     # D8/GPIO8 = ADC
-
-    # --- NiceRF LoRa2021F33-2G4 (F33) pin assignments ---
-    # F33 has completely different pinout from bare LoRa2021!
-    # Left side (F33 pins 1-9): Conn_01x09 pins 1-9
-    #   F33 Pin 1 = VCC        → VCC_3V3 (or 5V for full 2W — see power supply note)
-    #   F33 Pin 2 = GND
-    #   F33 Pin 3 = GND
-    #   F33 Pin 4 = GND
-    #   F33 Pin 5 = CE         → LORA_CE (GPIO9/D9)
-    #   F33 Pin 6 = GND
-    #   F33 Pin 7 = GND
-    #   F33 Pin 8 = GND
-    #   F33 Pin 9 = ANT        → RF_SUBGHZ (Sub-GHz antenna, 50 Ohm)
-    # Right side (F33 pins 10-18): Conn_01x09 pins 1-9
-    #   F33 Pin 10 = ANT-2G4   → RF_2G4 (2.4 GHz antenna, 50 Ohm)
-    #   F33 Pin 11 = GND
-    #   F33 Pin 12 = SCK       → SB1_OUT (via solder bridge from D6)
-    #   F33 Pin 13 = NSS       → SPI_CS
-    #   F33 Pin 14 = BUSY      → LORA_BUSY
-    #   F33 Pin 15 = MOSI      → SB2_OUT (via solder bridge from D7)
-    #   F33 Pin 16 = MISO      → SPI_MISO
-    #   F33 Pin 17 = RESET     → LORA_RST
-    #   F33 Pin 18 = IRQ       → LORA_IRQ
-
-    # Left side (F33 pins 1-9)
-    vcc_3v3    += lora_l.p[1]   # F33 Pin 1 = VCC
-    gnd        += lora_l.p[2]   # F33 Pin 2 = GND
-    gnd        += lora_l.p[3]   # F33 Pin 3 = GND
-    gnd        += lora_l.p[4]   # F33 Pin 4 = GND
-    lora_ce    += lora_l.p[5]   # F33 Pin 5 = CE (LDO enable / sleep mode)
-    gnd        += lora_l.p[6]   # F33 Pin 6 = GND
-    gnd        += lora_l.p[7]   # F33 Pin 7 = GND
-    gnd        += lora_l.p[8]   # F33 Pin 8 = GND
-    rf_subghz  += lora_l.p[9]   # F33 Pin 9 = ANT (Sub-GHz)
-
-    # Right side (F33 pins 10-18)
-    rf_2g4     += lora_r.p[1]   # F33 Pin 10 = ANT-2G4 (2.4 GHz)
-    gnd        += lora_r.p[2]   # F33 Pin 11 = GND
-    sb1_out    += lora_r.p[3]   # F33 Pin 12 = SCK (from SB1)
-    spi_cs     += lora_r.p[4]   # F33 Pin 13 = NSS
-    lora_busy  += lora_r.p[5]   # F33 Pin 14 = BUSY
-    sb2_out    += lora_r.p[6]   # F33 Pin 15 = MOSI (from SB2)
-    spi_miso   += lora_r.p[7]   # F33 Pin 16 = MISO
-    lora_rst   += lora_r.p[8]   # F33 Pin 17 = RESET
-    lora_irq   += lora_r.p[9]   # F33 Pin 18 = IRQ
-
-    # --- Solder bridges ---
-    # SB1: ESP32 D6 ↔ F33 SCK
-    sb1_in  += sb1.p[1]     # SB1 pad A
-    sb1_out += sb1.p[2]     # SB1 pad B
-
-    # SB2: ESP32 D7 ↔ F33 MOSI
-    sb2_in  += sb2.p[1]     # SB2 pad A
-    sb2_out += sb2.p[2]     # SB2 pad B
-
-    # --- MAX-M10S GPS ---
-    # Conn_01x04: pin 1=VCC, 2=GND, 3=RXD, 4=TXD
-    vcc_3v3 += gps.p[1]     # VCC
-    gnd     += gps.p[2]     # GND
-    uart_tx += gps.p[3]     # RXD (ESP TX → GPS RX)
-    uart_rx += gps.p[4]     # TXD (GPS TX → ESP RX)
-
-    # --- Power chain ---
-    # Solar input → BAT54 → supercap → TPS7A02 → 3V3
-    # NOTE: F33 needs 5V for full 2W output. Current chain outputs 3.3V.
-    # For full 2W: replace TPS7A02 with 5V LDO or boost converter.
-    # At 3.3V, F33 operates at reduced power (~1W instead of 2W).
-    # See docs/F33-MODULE-PLAN.md for power supply design options.
-    # SB3 selects between USB 3V3 and solar power
-    # SolderJumper_3_Bridged12: pins A=1, C=3, B=2 (default bridges A-C)
-
-    solar_in += j2.p[1]     # Solar input +
-    gnd      += j2.p[2]     # Solar input -
-
-    # BAT54: solar → diode → supercap
-    solar_in += diode.p[1]  # Anode
-    vcap     += diode.p[2]  # Cathode (after diode, before supercap)
-
-    # Supercap
-    vcap += sc1.p[1]        # Supercap +
-    gnd  += sc1.p[2]        # Supercap -
-
-    # TPS7A02 LDO
-    vcap     += ldo.p[1]    # IN (from supercap)
-    gnd      += ldo.p[2]    # GND
-    vcc_3v3  += ldo.p[5]    # OUT (3.3V)
-    # EN tied to IN (always on when power present)
-    vcap     += ldo.p[3]    # EN = IN (always enabled)
+    # TPS7A02 LDO: Vcap → 3V3
+    v3v3 += ldo["5"]              # OUT (3.3V)
+    vcap += ldo["1"]              # IN
+    gnd  += ldo["2"]              # GND
+    vcap += ldo["3"]              # EN = IN (always on while power present)
     # Pin 4 = NC
 
-    # SB3: power select (USB vs solar)
-    # Pin A = USB 3V3 (from dev board USB), Pin B = 3V3 net, Pin C = solar/LDO output
-    # Default: bridge A-B (USB power)
-    # Flight: bridge B-C (solar power via LDO)
-    # For now, LDO output goes to SB3 pin C, USB 3V3 to pin A, 3V3 net to pin B
-    vcc_3v3 += sb3.p[1]     # A = 3V3 net (output to ICs)
-    # USB 3V3 would connect here in dev config — represented by leaving A-B bridged
-    # Solar/LDO output connects to C
-    # (In flight config, bridge B-C)
+    # --------------------------------------------------------
+    # 5. Decoupling & bulk capacitors
+    # --------------------------------------------------------
+    for cap in (c_esp, c_rp, c_lr, c_lr_blk, c_gps, c_bmp, c_ldo):
+        v3v3 += cap["1"]
+        gnd  += cap["2"]
 
-    # --- Decoupling capacitors ---
-    # C1: ESP32 VCC decouple
-    vcc_3v3 += c1.p[1]
-    gnd     += c1.p[2]
+    # --------------------------------------------------------
+    # 6. I2C pull-ups (4.7k to 3V3)
+    # --------------------------------------------------------
+    v3v3    += r_sda["1"]
+    i2c_sda += r_sda["2"]
+    v3v3    += r_scl["1"]
+    i2c_scl += r_scl["2"]
 
-    # C2: F33 VCC decouple (close to Pin 1)
-    vcc_3v3 += c2.p[1]
-    gnd     += c2.p[2]
+    # --------------------------------------------------------
+    # 7. Supercap voltage divider (1M / 1M → ADC reads Vcap/2)
+    #    Vcap ──R3(1M)── VDIV_MID ──R4(1M)── GND
+    #    ESP32 ADC (GPIO4) taps VDIV_MID.
+    # --------------------------------------------------------
+    vcap     += r_div_hi["1"]
+    vdiv_mid += r_div_hi["2"]
+    vdiv_mid += r_div_lo["1"]
+    gnd      += r_div_lo["2"]
+    adc_vcap += vdiv_mid          # ADC pin on the midpoint
 
-    # C3 removed — F33 has internal TCXO, no VTCXO pin
+    # --------------------------------------------------------
+    # 8. Status LED (ESP32 GPIO10, active low)
+    #    GPIO10 ──R5(330R)── LED anode ── LED cathode ── GND
+    # --------------------------------------------------------
+    led_drive += r_led["1"]
+    r_led["2"] += led["2"]        # LED anode
+    gnd        += led["1"]        # LED cathode
+    # NOTE: Device:LED symbol pin orientation — pin 1 = anode (A), pin 2 = cathode (K).
+    # Adjust at layout if your library differs.
 
-    # C4: F33 TX burst cap (100uF for 2W PA current bursts)
-    # F33 can draw up to 1200mA during TX at 433MHz/5V/2W
-    vcc_3v3 += c4.p[1]
-    gnd     += c4.p[2]
+    # --------------------------------------------------------
+    # 9. Antenna wire pads
+    # --------------------------------------------------------
+    rf_subghz += ant_sub["1"]     # 16.4cm wire dipole (868 MHz Sub-GHz)
+    rf_2g4    += ant_2g4["1"]     # 3.1cm wire dipole (2.4 GHz)
 
-    # C5: GPS decouple (100nF)
-    vcc_3v3 += c5.p[1]
-    gnd     += c5.p[2]
+    # --------------------------------------------------------
+    # 10. Netlist output
+    # --------------------------------------------------------
+    netlist_path = generate_netlist(filepath="hub_board.net")
 
-    # C6: GPS decouple (10uF)
-    vcc_3v3 += c6.p[1]
-    gnd     += c6.p[2]
+    # Summary (counts come from the active skidl context)
+    # Netlist generated successfully, skip count (API varies by skidl version)
+    n_parts = "see netlist"
+    n_nets = "see netlist"
+    print("Hub board schematic generated.")
+    print(f"  Netlist : {netlist_path}")
+    print(f"  Parts   : {n_parts}")
+    print(f"  Nets    : {n_nets}")
+    return netlist_path
 
-    # C7: LDO output cap (100nF)
-    vcc_3v3 += c7.p[1]
-    gnd     += c7.p[2]
-
-    # --- Voltage divider for ADC ---
-    # VCAP ── R1(1M) ── VDIV_MID ── R2(1M) ── GND
-    # ADC reads VDIV_MID = VCAP/2
-    vcap     += r_div1.p[1]
-    vdiv_mid += r_div1.p[2]
-    vdiv_mid += r_div2.p[1]
-    gnd      += r_div2.p[2]
-    adc_vcap += vdiv_mid    # ADC pin reads midpoint
-
-    # --- Antenna pads ---
-    rf_subghz += ae1.p[1]   # Sub-GHz antenna pad (868 MHz, 16.4cm wire)
-    rf_2g4    += ae2.p[1]   # 2.4 GHz antenna pad (3.1cm wire)
-
-    # --- Debug header J1 ---
-    # Conn_02x03: pins 1-3 top, 4-6 bottom
-    # Pin 1 = 3V3, Pin 2 = GND, Pin 3 = TX, Pin 4 = RX, Pin 5 = GPIO10, Pin 6 = EN
-    vcc_3v3 += j1.p[1]
-    gnd     += j1.p[2]
-    uart_tx += j1.p[3]
-    uart_rx += j1.p[4]
-    spi_cs  += j1.p[5]
-    # Pin 6 = NC or EN
-
-    # --- Generate netlist ---
-    netlist_path = "hub_board.net"
-    generate_netlist(filepath=netlist_path)
-
-    # Print summary
-    import skidl
-    parts = list(skidl.SKIDL)
-    print(f"Netlist generated: {netlist_path}")
-    print(f"  Parts: {len(parts)}")
 
 if __name__ == "__main__":
     generate_hub_schematic()
