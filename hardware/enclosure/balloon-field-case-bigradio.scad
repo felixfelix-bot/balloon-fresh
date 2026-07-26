@@ -1,19 +1,21 @@
 // ============================================================
 // Balloon Field-Test Enclosure v3-BIGRADIO
-// Variant: Large radio module (EBYTE E28-2G4M27S or AliExpress LR2021 dev board)
+// Variant: Large radio module with board-mounted SMA connectors
 //
 // Waterproof clamshell for:
-//   ESP32-C3 SuperMini + RP2040-Zero + LARGE LR2021/E28 + u-blox MAX-M10S GPS
+//   ESP32-C3 SuperMini + RP2040-Zero + LoRa2021F33-2G4 (or E28) + GPS
 //
 // Key difference from standard v3:
 //   - Small NiceRF LR2021 (20x15mm) replaced by large radio bay (42x32mm)
-//   - SMA bulkhead connectors through case wall (external antennas)
-//   - Antennas mount OUTSIDE the box
+//   - 2x SMA bulkhead connectors through case wall (board-mounted SMA)
+//   - Antennas screw on from OUTSIDE the box
+//   - Radio board: LoRa2021F33-2G4 V1.0 (2W/+33dBm, AliExpress)
+//     or EBYTE E28-2G4M27S (+27dBm) — both fit
 //
 // Radio bay fits:
+//   - LoRa2021F33-2G4 V1.0 (~40x25mm, 2W, dual SMA, LR2021-based)
 //   - EBYTE E28-2G4M27S (~28x24mm, SX1281 +27dBm)
-//   - AliExpress LR2021 dev board (~40x30mm with PA)
-//   - Any similar large RF module
+//   - Any similar large RF module with edge SMA connectors
 //
 // Material: PETG or ASA (NOT PLA — UV/heat will destroy PLA outdoors)
 // ============================================================
@@ -44,10 +46,13 @@ gps_bay_width  = 32.0;
 gps_bay_thick  = 7.0;
 
 // ---- SMA CONNECTOR PARAMETERS ----
+// Board-mounted SMA bulkhead connectors (LoRa2021F33-2G4 has SMA on short edge)
 sma_hole_d = 6.5;          // SMA bulkhead clearance hole
 sma_nut_d  = 10.0;         // SMA nut diameter (for recess on inside)
 sma_nut_depth = 2.0;       // How deep the nut recess goes
-num_sma = 2;               // 2 SMA connectors (2.4GHz + Sub-GHz)
+sma_spacing = 18.0;        // Distance between SMA connector centers
+                              // LoRa2021F33-2G4: ~18mm (adjust with calipers)
+num_sma = 2;               // 2 SMA connectors (Sub-GHz ANT + 2.4GHz ANT_2G4)
 
 // ---- CASE PARAMETERS ----
 wall          = 2.0;
@@ -149,16 +154,18 @@ module bottom_shell() {
 // ============================================================
 module sma_connectors() {
     // SMA holes on the +X wall (same side as radio bay)
-    // Two holes stacked vertically: 2.4GHz on top, Sub-GHz below
-    sma_spacing = 15.0;
+    // Board-mounted SMAs pass through wall, nut on outside
+    // LoRa2021F33-2G4: ANT and ANT_2G4 on short edge, ~18mm apart
+    sma_y_offset = radio_cy();  // Center on radio bay
     for (i = [0:num_sma-1]) {
-        z_pos = floor_thick + interior_z/2 + (i - (num_sma-1)/2) * sma_spacing;
+        y_pos = sma_y_offset + (i - (num_sma-1)/2) * sma_spacing;
+        z_pos = floor_thick + interior_z/2;
         // Clearance hole through wall
-        translate([ext_x/2, radio_cy(), z_pos])
+        translate([ext_x/2, y_pos, z_pos])
             rotate([0, 90, 0])
             cylinder(d=sma_hole_d, h=wall*3, center=true);
-        // Nut recess on inside of wall
-        translate([ext_x/2 - wall - 0.1, radio_cy(), z_pos])
+        // Nut recess on inside of wall (board SMA nut faces inward)
+        translate([ext_x/2 - wall - 0.1, y_pos, z_pos])
             rotate([0, 90, 0])
             cylinder(d=sma_nut_d, h=sma_nut_depth + 0.1, $fn=6);
     }
