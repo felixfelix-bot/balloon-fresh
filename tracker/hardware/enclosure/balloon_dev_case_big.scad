@@ -26,13 +26,11 @@ esp_l = 18.0;
 esp_h = 1.6;
 
 // BIG LR2021 Development Board (AliExpress, with PA + SMA connectors)
-// Typical AliExpress LR2021 dev boards: ~50-55mm x 30-35mm
-// Has dual SMA connectors (Sub-GHz + 2.4GHz) on one edge
-// Has external PA chip for ~2W (+33dBm) output
-// ADJUST THESE when you have calipers!
-big_radio_w = 52.0;   // ESTIMATE — measure actual board
-big_radio_l = 35.0;   // ESTIMATE — measure actual board
-big_radio_h = 8.0;    // ESTIMATE — board + PA + SMA connector height
+// OVERSIZED to guarantee fit — Felix said "more than enough space"
+// Will tighten when caliper measurements arrive (~4h)
+big_radio_w = 60.0;   // OVERSIZED — generous, trim later with calipers
+big_radio_l = 42.0;   // OVERSIZED — generous, trim later with calipers
+big_radio_h = 10.0;   // OVERSIZED — board + PA + SMA nuts + header pins
 big_radio_pin_spacing = 2.54; // standard 2.54mm header pins
 
 // RP2040 (SuperMini default — change if Pico)
