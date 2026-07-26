@@ -33,17 +33,16 @@ rp2040_width  = 18.0;
 rp2040_thick  = 3.2;
 
 // Board 3: LARGE RADIO MODULE (replaces small NiceRF LR2021)
-// EBYTE E28-2G4M27S: ~28x24mm
-// AliExpress LR2021 dev board: ~40x30mm
-// Bay is oversized for universal fit
-radio_bay_length = 42.0;   // Fits up to 42mm board
-radio_bay_width  = 32.0;   // Fits up to 32mm board
-radio_bay_thick  = 8.0;    // Fits PA + shielding + SMA connectors
+// Extra-generous bay for universal fit — no caliper needed yet.
+// LoRa2021F33-2G4 ~40x25mm, EBYTE E28 ~28x24mm.
+radio_bay_length = 48.0;   // Fits up to 48mm (extra headroom)
+radio_bay_width  = 38.0;   // Fits up to 38mm (extra headroom)
+radio_bay_thick  = 10.0;   // Fits PA + shield + SMA + headroom
 
-// Board 4: GPS MAX-M10S — universal bay (same as v3)
-gps_bay_length = 32.0;
-gps_bay_width  = 32.0;
-gps_bay_thick  = 7.0;
+// Board 4: GPS MAX-M10S — universal bay (same oversized approach)
+gps_bay_length = 38.0;
+gps_bay_width  = 38.0;
+gps_bay_thick  = 8.0;
 
 // ---- SMA CONNECTOR PARAMETERS ----
 // Board-mounted SMA bulkhead connectors (LoRa2021F33-2G4 has SMA on short edge)
