@@ -1019,14 +1019,14 @@ void setup() {
                (unsigned long)totalCycleSec, (unsigned long)totalCycleMs, TX_POWER_DBM);
     outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
 
-    // ── GPS GATE: TX waits for GPS TIME only (position fix is OPTIONAL) ──
+    // ── GPS GATE: TX waits for GPS TIME (phase computation needs it) ──
     // GPS gives time (from satellite ephemeris download) BEFORE position fix.
     // Time arrives in ~10-30s. Position fix takes 1-15 min.
-    // TX starts sweeping as soon as GPS time is available, transmitting
-    // with lat=0,lon=0 until a position fix is acquired.
-    // Bench mode: laptop SET_TIME bypasses (sets hasLaptopTime).
-    outPrintf("=== WAITING FOR GPS TIME (TX blocked until time received) ===\n");
-    outPrintf("=== Position fix OPTIONAL — TX sweeps with lat=0,lon=0 until fix ===\n");
+    // TX computes phase from GPS time immediately, but does NOT transmit
+    // packets until GPS position fix is acquired (Felix requirement —
+    // see FIX GATE in main loop). Bench mode: laptop SET_TIME bypasses.
+    outPrintf("=== WAITING FOR GPS TIME (phase computation needs UTC) ===\n");
+    outPrintf("=== TX will NOT transmit until GPS FIX acquired ===\n");
     outPrintf("=== Bench test: send SET_TIME to override ===\n");
     outPrintf("GPS_DEBUG: UART1 RX=GP1 TX=GP0  LED=GP25(green)  GPS module pin wiring check\n");
     outPrintf("GPS_DEBUG: If no NMEA_RAW lines appear, GPS module is not communicating\n");
@@ -1194,67 +1194,6 @@ void loop() {
 
     int phase = computePhaseFromUTC(timeNow);
 
-    // ─── V4: TX BEACON — GPS searching mode ────────────────────────
-    // When we have laptop time but GPS hasn't locked, send a simple beacon
-    // every 5s so RX knows we're alive. LoRa SF7 32B on 2440 MHz (phase 0).
-    // Once GPS locks, normal interleave sweep resumes automatically.
-    if (hasLaptopTime() && !gps.fixValid) {
-        static uint32_t lastBeaconMs = 0;
-
-        if (currentPhase != -2) {
-            outPrintf("BEACON_MODE — GPS searching, sending alive beacon every 5s\n");
-            rfInitForPhase(interleavePhases[0]);  // HF-LoRa-SF7-32 @ 2440 MHz
-            currentPhase = -2;
-        }
-
-        if (lastBeaconMs == 0 || (millis() - lastBeaconMs) >= 5000) {
-            lastBeaconMs = millis();
-            uint32_t uptime = millis() / 1000;
-
-            // Build 32B beacon packet — same layout as normal phase 0
-            uint8_t beacon[32];
-            beacon[0] = 0xA5; beacon[1] = 0x5A;
-            beacon[2] = 0x42; beacon[3] = 0x24;
-            memset(&beacon[4], 0, 8);             // lat=0, lon=0 (no fix)
-            uint16_t bSats = gps.sats;
-            memcpy(&beacon[12], &bSats, 2);       // sats in view
-            beacon[14] = 0;                        // fixQ=0
-            uint32_t bUtc = getUtcNow();
-            memcpy(&beacon[15], &bUtc, 4);        // UTC from laptop time
-            beacon[19] = 0xFE;                     // BEACON phaseId marker
-            beacon[20] = (uint8_t)((uptime >> 8) & 0xFF);
-            beacon[21] = (uint8_t)(uptime & 0xFF);
-            memcpy(&beacon[22], FW_HASH_CHARS, 7);
-            beacon[29] = 29;                        // fill pattern byte
-            uint16_t bCrc = crc16(&beacon[4], 26);  // CRC over bytes 4-29
-            beacon[30] = (uint8_t)(bCrc >> 8);
-            beacon[31] = (uint8_t)(bCrc & 0xFF);
-
-            // Transmit beacon
-            rfClearIrq();
-            rfClearTxFifo();
-            rfWriteTxFifo(beacon, 32);
-            rfSetTx();
-
-            // Wait for TX_DONE (LoRa SF7 32B ~25ms)
-            uint32_t irqPinMask = 1UL << PIN_IRQ;
-            uint32_t txStartB = millis();
-            while ((millis() - txStartB) < 2000) {
-                if (sio_hw->gpio_in & irqPinMask) break;
-                gpsPoll();
-                delay(1);
-            }
-
-            outPrintf("TX_BEACON uptime=%lu sats=%d fix=0\n",
-                      (unsigned long)uptime, gps.sats);
-            digitalWrite(PIN_LED, (uptime & 1) ? HIGH : LOW);
-        }
-
-        gpsPoll();
-        delay(100);
-        return;  // Skip normal sweep while searching for GPS
-    }
-
     // Phase change detection
     if (phase != currentPhase) {
         // BUG FIX: Abort any TX still in progress from the previous phase.
@@ -1302,37 +1241,22 @@ void loop() {
         return;
     }
 
-    // V4 WALK: GPS fix check with 15s grace period.
-    // If GPS fix drops (walking behind building), TX continues for 15s
-    // using last known time/position. After 15s without fix → STOP.
-    // This prevents phase jumps from momentary GPS dropouts.
-    // Bench test: laptop SET_TIME bypasses GPS requirement entirely.
-    static bool     gpsFixWasValid = false;
-    static uint32_t gpsFixLostMs   = 0;
-    static bool     gpsInGrace     = false;
-    #define GPS_GRACE_MS  30000  // 30 seconds — range test needs tolerance for balcony GPS
-
-    if (gps.fixValid) {
-        gpsFixWasValid = true;
-        gpsInGrace = false;
-    } else if (gpsFixWasValid && !hasLaptopTime()) {
-        if (!gpsInGrace) {
-            gpsFixLostMs = millis();
-            gpsInGrace = true;
-            outPrintf("GPS_FIX_LOST — grace period %ds\n", GPS_GRACE_MS / 1000);
+    // ─── FIX GATE: TX must NOT transmit without GPS fix (Felix requirement) ──
+    // The sweep loop keeps running (phase computation + radio reconfig above)
+    // so TX stays phase-synced and is ready to transmit the moment fix returns.
+    // Last known position is preserved in gps.lat/lon — parseNMEA only updates
+    // those fields on a valid fix. When fix returns, position updates automatically.
+    // Bench mode (laptop SET_TIME) is exempt — allows testing without GPS.
+    if (!gps.fixValid && !hasLaptopTime()) {
+        static uint32_t lastNoFixMsg = 0;
+        if (millis() - lastNoFixMsg > 3000) {
+            outPrintf("NO_FIX_HOLD sats=%d fix=0 — sweep continues, TX gated on fix\n",
+                      gps.sats);
+            lastNoFixMsg = millis();
         }
-        if ((millis() - gpsFixLostMs) > GPS_GRACE_MS) {
-            outPrintf("GPS_GRACE_EXPIRED sats=%d — STOPPING TX\n", gps.sats);
-            gpsPoll();
-            delay(100);
-            return;
-        }
-        // Still in grace period — continue transmitting with last known position
-    } else if (!hasLaptopTime()) {
-        outPrintf("WAIT_GPS sats=%d fix=%d — not transmitting\n", gps.sats, gps.fixValid ? 1 : 0);
         gpsPoll();
-        delay(100);
-        return;
+        delay(50);
+        return;  // Don't transmit without fix — phase detection still runs next loop()
     }
 
     uint16_t pktSize = p.pktSize;
