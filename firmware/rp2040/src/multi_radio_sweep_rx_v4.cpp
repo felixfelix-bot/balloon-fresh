@@ -894,6 +894,23 @@ static void rxPacketPoll(int phaseIdx) {
         return;
     }
 
+    // ─── V4: TX GPS-searching beacon detection ────────────────────
+    // TX sends phaseId=0xFE when it has laptop time but GPS hasn't locked.
+    // Lets RX know TX is alive. Don't count as normal sweep packet.
+    {
+        uint8_t beaconId = rxBuf[gpsOff + 15];
+        if (beaconId == 0xFE) {
+            uint16_t txUptime = ((uint16_t)rxBuf[gpsOff + 16] << 8)
+                              | rxBuf[gpsOff + 17];
+            dualPrintf("TX_ALIVE searching_for_gps sats=%u uptime=%u\n",
+                       txSats, txUptime);
+            rfClearRxFifo();
+            rfClearIrq();
+            rfSetRx();
+            return;
+        }
+    }
+
     if (seq < MAX_SEQ) {
         seenSeq[seq] = true;
     }
