@@ -203,7 +203,7 @@ test: ## Run full pytest suite (includes hardware tests)
 	$(PYTHON) -m pytest tests/ -v --tb=short
 
 test-unit: ## Run unit tests only (no hardware required)
-	$(PYTHON) -m pytest tests/ -v --tb=short -m "not hardware"
+	$(PYTHON) -m pytest tests/test_phase_sync.py tests/test_rmc_parser.py tests/test_c_host.py -v --tb=short -m "not hardware"
 
 test-hardware: ## Run hardware integration tests only (requires boards connected)
 	$(PYTHON) -m pytest tests/ -v --tb=short -m "hardware"
