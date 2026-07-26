@@ -1,5 +1,6 @@
+// v4: Extra clearance for cable soldering and wire routing
 // ============================================================
-// Balloon Field-Test Enclosure v3 — UNIVERSAL GPS BAY
+// Balloon Field-Test Enclosure v4 — UNIVERSAL GPS BAY
 // Waterproof clamshell for 4 boards:
 //   ESP32-C3 SuperMini + RP2040-Zero + LR2021 + ANY MAX-M10S GPS breakout
 //
@@ -43,7 +44,7 @@ wall          = 2.0;
 inner_clear   = 2.0;
 floor_thick   = 2.5;
 lid_thick     = 2.5;
-board_gap     = 3.0;
+board_gap     = 7.0;   // v4: +4mm soldering clearance between ESP32/LR2021/RP2040
 
 // O-ring seal
 oring_d    = 2.0;
@@ -73,10 +74,14 @@ $fn = 60;
 row1_length = esp32_length + board_gap + lr2021_length + board_gap + rp2040_length;
 row1_width  = max(esp32_width, lr2021_width, rp2040_width);
 
-// GPS bay — sized to measured module + clearance for tape/wire
-gps_bay_length = gps_length + 6;   // 21.5mm bay for 15.5mm module
-gps_bay_width  = gps_width + 6;   // 21.5mm bay for 15.5mm module
-gps_bay_thick  = gps_thick + 2;   // 10.5mm bay for 8.5mm module
+// GPS bay — v4: extra clearance for cable soldering + wire routing
+gps_bay_length = gps_length + 12;   // 27.5mm bay for 15.5mm module (+12mm soldering room)
+gps_bay_width  = gps_width + 12;    // 27.5mm bay for 15.5mm module
+gps_bay_thick  = gps_thick + 4;     // 12.5mm for module + wire clearance
+
+// LR2021 bay — v4: extra clearance for soldering + wire routing
+lr2021_bay_length = lr2021_length + 12;   // 31.72mm bay for 19.72mm module
+lr2021_bay_width  = lr2021_width + 12;    // 27.0mm bay for 15.0mm module
 
 // GPS bay sits alongside the board row
 total_x = row1_length + gps_bay_length + board_gap*2 + inner_clear*2;
@@ -84,7 +89,8 @@ total_y = max(row1_width, gps_bay_width) + inner_clear*2;
 
 interior_x = max(total_x, total_y);
 interior_y = max(total_x, total_y);
-interior_z = max(esp32_thick, rp2040_thick) + gps_bay_thick + board_gap*3 + 6;
+vert_gap = 3.0;   // vertical stacking gap (horizontal board_gap increased for solder clearance)
+interior_z = max(esp32_thick, rp2040_thick) + gps_bay_thick + vert_gap*3 + 6 + 6;   // v4: +6mm for wire bundles above boards
 
 ext_x = interior_x + wall*2;
 ext_y = interior_y + wall*2;
