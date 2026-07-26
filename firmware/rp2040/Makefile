@@ -48,6 +48,39 @@ test-hw:
 test-walk:
 	pytest tests/ -m "walk" -v --timeout=600
 
+# ─── Port detection ───────────────────────────────────
+.PHONY: ports find-tx find-rx
+
+ports:
+	@python3 $(TOOLS)/port_util.py list
+
+find-tx:
+	@echo "TX board (serial $(TX_SERIAL)):"
+	@python3 $(TOOLS)/port_util.py find --serial $(TX_SERIAL)
+
+find-rx:
+	@echo "RX board (serial $(RX_SERIAL)):"
+	@python3 $(TOOLS)/port_util.py find --serial $(RX_SERIAL)
+
+# ─── Monitor TX serial output ─────────────────────────
+.PHONY: monitor-tx monitor-rx
+
+monitor-tx:
+	@echo "Monitoring TX (serial $(TX_SERIAL)) — Ctrl+C to stop"
+	@python3 -c "import serial,time,sys; \
+	port=$$(python3 $(TOOLS)/port_util.py find --serial $(TX_SERIAL) 2>/dev/null | grep -o '/dev/.*'); \
+	[port] or (print('TX not found'), sys.exit(1)); \
+	s=serial.Serial(port,115200,timeout=1); \
+	[print(l.decode(errors='replace').strip()) for l in iter(s.readline,b'')]"
+
+monitor-rx:
+	@echo "Monitoring RX (serial $(RX_SERIAL)) — Ctrl+C to stop"
+	@python3 -c "import serial,time,sys; \
+	port=$$(python3 $(TOOLS)/port_util.py find --serial $(RX_SERIAL) 2>/dev/null | grep -o '/dev/.*'); \
+	[port] or (print('RX not found'), sys.exit(1)); \
+	s=serial.Serial(port,115200,timeout=1); \
+	[print(l.decode(errors='replace').strip()) for l in iter(s.readline,b'')]"
+
 # ─── Capture targets ─────────────────────────────────
 .PHONY: capture capture-stop
 
