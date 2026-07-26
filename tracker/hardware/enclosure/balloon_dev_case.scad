@@ -23,27 +23,21 @@ esp_w = 22.52;
 esp_l = 18.0;
 esp_h = 1.6;      // PCB thickness
 
-// NiceRF LR2021 (soldered on top of ESP32)
-lr_w = 19.72;
-lr_l = 15.0;
-lr_h = 2.2;       // module height above PCB
-lr_gap = 2.5;     // solder joint gap under module
+// LR2021 bare module (CALIPER MEASURED 2025-07-26)
+lr_w = 24.05;      // measured
+lr_l = 24.11;      // measured
+lr_h = 3.34;       // measured thickness
+lr_gap = 2.5;      // solder joint gap under module
 
 // RP2040 (DEFAULT: SuperMini form factor — CHANGE if Pico!)
 rp_w = 21.5;
 rp_l = 17.8;
 rp_h = 1.6;
 
-// GPS Module (u-blox MAX-M10S on breakout board)
-// OVERSIZED to fit ALL common breakouts:
-//   SparkFun: 32 x 24mm (LARGEST — sets our slot size)
-//   Adafruit: 25 x 25mm
-//   Generic AliExpress: ~24 x 24mm
-//   Bare M10S chip: 15.5 x 15.5 x 3.4mm
-// Blue LED that flashes on GPS fix — leave room for it facing up
-gps_w = 34.0;     // SparkFun 32mm + 2mm clearance
-gps_l = 26.0;     // SparkFun 24mm + 2mm clearance
-gps_h = 4.0;      // board + patch antenna + header pins
+// GPS Module (u-blox MAX-M10S — CALIPER MEASURED 2025-07-26)
+gps_w = 15.22;    // measured
+gps_l = 15.16;    // measured
+gps_h = 8.05;     // measured (includes patch antenna)
 
 /* [Interior Layout] */
 layout = "stacked"; // "stacked" or "sidebyside"

@@ -25,28 +25,29 @@ esp_w = 22.52;
 esp_l = 18.0;
 esp_h = 1.6;
 
-// BIG LR2021 Development Board (AliExpress, with PA + SMA connectors)
-// OVERSIZED to guarantee fit — Felix said "more than enough space"
-// Will tighten when caliper measurements arrive (~4h)
-big_radio_w = 60.0;   // OVERSIZED — generous, trim later with calipers
-big_radio_l = 42.0;   // OVERSIZED — generous, trim later with calipers
-big_radio_h = 10.0;   // OVERSIZED — board + PA + SMA nuts + header pins
-big_radio_pin_spacing = 2.54; // standard 2.54mm header pins
+// BIG LR2021 Dev Board (CALIPER MEASURED 2025-07-26)
+// Board: 24.05 x 24.11mm, 3.34mm thick
+// SMA pigtail spacing: 13.92mm center-to-center
+// Pin pitch: 4.17mm
+big_radio_w = 28.0;   // 24.05 measured + 4mm clearance for soldering/pins
+big_radio_l = 28.0;   // 24.11 measured + 4mm clearance
+big_radio_h = 6.0;    // 3.34mm board + SMA pigtail connectors + clearance
+big_radio_pin_spacing = 4.17; // measured
 
 // RP2040 (SuperMini default — change if Pico)
 rp_w = 21.5;
 rp_l = 17.8;
 rp_h = 1.6;
 
-// GPS Module (oversized to fit all M10S breakouts)
-gps_w = 34.0;
-gps_l = 26.0;
-gps_h = 4.0;
+// GPS Module (CALIPER MEASURED 2025-07-26)
+gps_w = 15.22;     // measured
+gps_l = 15.16;     // measured
+gps_h = 8.05;      // measured (includes patch antenna)
 
 /* [SMA Connectors] */
 sma_d = 6.5;           // SMA bulkhead hole diameter (standard SMA nut = 6mm)
 sma_count = 2;         // Sub-GHz + 2.4GHz
-sma_spacing = 14;      // distance between SMA connectors
+sma_spacing = 13.92;   // MEASURED center-to-center
 // SMA connectors are on one EDGE of the big radio board
 // We'll route them through the side wall
 
