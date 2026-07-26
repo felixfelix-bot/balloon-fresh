@@ -280,6 +280,35 @@ struct GpsData {
 };
 static GpsData gps = {0, 0, 0, false, 0, false, 0, false};
 
+// ─── GPS time offset for autonomous clock hold ──────────────────────
+// When GPS gives Unix time, we store offset = unixTime - millis()/1000.
+// If GPS time becomes stale (module issue, antenna disconnect), we
+// extrapolate from millis() + offset. RP2040 crystal is accurate enough
+// for phase sync over minutes. This allows TX to keep sweeping even if
+// GPS stops sending NMEA sentences entirely.
+static int32_t  gpsTimeOffset  = 0;    // unix_time = millis()/1000 + gpsTimeOffset
+static uint32_t lastGpsTimeMs  = 0;    // millis() when last GPS unix time was received
+#define GPS_TIME_STALE_MS  10000       // after 10s without GPS update, use offset hold
+
+// Forward declarations — defined later in the file
+static uint32_t getUtcNow();
+static bool     hasLaptopTime();
+
+// Unified time source selector — used by main loop, embedGPS, heartbeat.
+// Priority: fresh GPS > GPS hold (millis+offset) > laptop SET_TIME > degraded.
+static uint32_t getBestUnixTime() {
+    if (gps.hasUnixTime && gps.unixTime > 0 &&
+        (millis() - lastGpsTimeMs) < GPS_TIME_STALE_MS)
+        return gps.unixTime;                    // fresh GPS — primary
+    if (gpsTimeOffset != 0)
+        return millis() / 1000 + gpsTimeOffset; // GPS hold — extrapolate
+    if (hasLaptopTime())
+        return getUtcNow();                     // laptop SET_TIME — bench only
+    if (gps.hasUnixTime)
+        return gps.unixTime;                    // stale GPS — better than 0
+    return gps.timeSec;                         // seconds since midnight (degraded)
+}
+
 // ─── Days-since-1970 helper (Howard Hinnant's civil-from-days algorithm) ──
 static uint32_t daysSinceEpoch(uint16_t year, uint8_t month, uint8_t day) {
     if (month <= 2) { year--; month += 12; }  // Jan/Feb → months 13/14 of prev year
@@ -449,9 +478,13 @@ static void parseNMEA(const char *sentence) {
                 uint32_t days = daysSinceEpoch(dYear, dMo, dDay);
                 gps.unixTime    = days * 86400UL + gps.timeSec;
                 gps.hasUnixTime = true;
-                outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu\n",
+                // Track offset for autonomous clock hold — if GPS time
+                // becomes stale later, we extrapolate from millis().
+                gpsTimeOffset = (int32_t)(gps.unixTime - millis() / 1000);
+                lastGpsTimeMs = millis();
+                outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu offset=%ld\n",
                           (unsigned long)days, (unsigned long)gps.timeSec,
-                          (unsigned long)gps.unixTime);
+                          (unsigned long)gps.unixTime, (long)gpsTimeOffset);
             }
         }
     }
@@ -790,10 +823,9 @@ static void checkSerialTimeSync() {
                 if (strncmp(syncBuf, "SET_TIME ", 9) == 0) {
                     uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
                     if (ts > 0) {
-                        if (ts > 0) {
-                            utcOffset = ts - millis() / 1000;
-                            lastCdcSuccessMs = 0;  // Disarm CDC watchdog for battery mode
-                            outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
+                        utcOffset = ts - millis() / 1000;
+                        lastCdcSuccessMs = 0;  // Disarm CDC watchdog for battery mode
+                        outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
                                       (unsigned long)getUtcNow(), (long)utcOffset);
                         }
                 } else if (strcmp(syncBuf, "FW_QUERY") == 0) {
@@ -850,14 +882,9 @@ static void embedGPS(uint8_t *pkt) {
     uint16_t sats = gps.sats;
     memcpy(&pkt[12], &sats, 2);
     pkt[14] = gps.fixValid ? 1 : 0;
-    // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync.
-    uint32_t unixNow;
-    if (hasLaptopTime())
-        unixNow = getUtcNow();
-    else if (gps.hasUnixTime)
-        unixNow = gps.unixTime;
-    else
-        unixNow = gps.timeSec;   // seconds since midnight (degraded)
+    // Embed Unix epoch time — uses unified time source selector.
+    // Handles: fresh GPS, GPS hold (millis+offset), laptop SET_TIME.
+    uint32_t unixNow = getBestUnixTime();
     memcpy(&pkt[15], &unixNow, 4);  // LE via memcpy
 }
 
@@ -992,16 +1019,20 @@ void setup() {
                (unsigned long)totalCycleSec, (unsigned long)totalCycleMs, TX_POWER_DBM);
     outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
 
-    // ── GPS GATE: TX NEVER transmits without accurate time ──
-    // Walk mode: blocks until GPS fix.
+    // ── GPS GATE: TX waits for GPS TIME only (position fix is OPTIONAL) ──
+    // GPS gives time (from satellite ephemeris download) BEFORE position fix.
+    // Time arrives in ~10-30s. Position fix takes 1-15 min.
+    // TX starts sweeping as soon as GPS time is available, transmitting
+    // with lat=0,lon=0 until a position fix is acquired.
     // Bench mode: laptop SET_TIME bypasses (sets hasLaptopTime).
-    outPrintf("=== WAITING FOR GPS FIX (TX blocked until locked) ===\n");
+    outPrintf("=== WAITING FOR GPS TIME (TX blocked until time received) ===\n");
+    outPrintf("=== Position fix OPTIONAL — TX sweeps with lat=0,lon=0 until fix ===\n");
     outPrintf("=== Bench test: send SET_TIME to override ===\n");
     outPrintf("GPS_DEBUG: UART1 RX=GP1 TX=GP0  LED=GP25(green)  GPS module pin wiring check\n");
     outPrintf("GPS_DEBUG: If no NMEA_RAW lines appear, GPS module is not communicating\n");
     uint32_t gpsStart = millis();
     uint32_t lastNmeaPrint = 0;
-    while (!gps.hasTime || !gps.fixValid) {
+    while (!gps.hasTime) {
         gpsPoll();
         checkSerialTimeSync();  // Process SET_TIME during boot gate
         digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
@@ -1063,11 +1094,6 @@ void setup() {
                 outPrintf("NMEA_RAW: (no data) GPS module not sending on UART1\n");
             }
         }
-        // Boot gate timeout — don't hang forever if no GPS and no SET_TIME
-        if ((millis() - gpsStart) > GPS_FIX_TIMEOUT_MS && !hasLaptopTime()) {
-            outPrintf("GPS_FIX_TIMEOUT %dms — entering GPS-less idle (waiting for SET_TIME)\n", GPS_FIX_TIMEOUT_MS);
-            break;
-        }
         delay(10);
     }
 
@@ -1083,28 +1109,25 @@ void setup() {
         outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f unix=%lu\n",
                    tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon,
                    gps.hasUnixTime ? (unsigned long)gps.unixTime : 0UL);
-        // Compute initial phase from the best available time source
-        uint32_t phaseTime;
-        if (gps.hasUnixTime)
-            phaseTime = gps.unixTime;
-        else
-            phaseTime = gps.timeSec;   // seconds since midnight (degraded)
+        // Compute initial phase from best available time source
+        uint32_t phaseTime = getBestUnixTime();
         currentPhase = computePhaseFromUTC(phaseTime);
         uint32_t cyclePos = phaseTime % totalCycleSec;
         outPrintf("INITIAL_PHASE=%d phaseTime=%lu cycle_pos=%lu source=%s\n",
                    currentPhase, (unsigned long)phaseTime, (unsigned long)cyclePos,
-                   gps.hasUnixTime ? "GPS_UNIX" : "GPS_MIDNIGHT");
+                   gps.hasUnixTime ? "GPS_UNIX" : "GPS_TIME_ONLY");
     } else if (hasLaptopTime()) {
-        // BENCH MODE: No GPS fix, but laptop SET_TIME provides epoch
-        outPrintf("BENCH_MODE unix=%lu — using laptop time (no GPS fix)\n",
+        // BENCH MODE: No GPS time, but laptop SET_TIME provides epoch
+        outPrintf("BENCH_MODE unix=%lu — using laptop time (no GPS)\n",
                    (unsigned long)getUtcNow());
         currentPhase = computePhaseFromUTC(getUtcNow());
         outPrintf("INITIAL_PHASE=%d source=LAPTOP\n", currentPhase);
     } else {
-        // V4: Should never reach here — GPS gate loop handles all cases above.
-        // Safety fallback: enter bench mode with millis() to avoid hard hang.
-        outPrintf("GPS_NO_FIX_LAPTOP_NO_TIME — safety fallback to millis() mode\n");
-        currentPhase = 0;
+        // AUTONOMOUS MODE: No GPS time and no laptop time.
+        // Enter WAITING_FOR_GPS state — main loop will keep polling GPS
+        // and start sweeping as soon as GPS time arrives.
+        outPrintf("WAITING_FOR_GPS_TIME — no time source yet, will poll in main loop\n");
+        currentPhase = -1;  // sentinel: main loop knows to wait for GPS
     }
 
     digitalWrite(PIN_LED, HIGH);
@@ -1134,36 +1157,42 @@ void loop() {
 
     // Heartbeat every 10s
     if (lastHeartbeatMs == 0 || (millis() - lastHeartbeatMs) > HEARTBEAT_INTERVAL_MS) {
-        uint32_t utcNow = 0;
-        if (gps.hasUnixTime && gps.unixTime > 0) utcNow = gps.unixTime;
-        else if (hasLaptopTime()) utcNow = getUtcNow();
-        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu src=%s\n", (unsigned long)millis(),
-                  currentPhase, (unsigned long)utcNow,
-                  (gps.hasUnixTime && gps.unixTime > 0) ? "GPS" :
-                  hasLaptopTime() ? "LAPTOP" : "NONE");
+        uint32_t utcNow = getBestUnixTime();
+        const char *src =
+            (gps.hasUnixTime && gps.unixTime > 0 &&
+             (millis() - lastGpsTimeMs) < GPS_TIME_STALE_MS) ? "GPS" :
+            (gpsTimeOffset != 0) ? "GPS_HOLD" :
+            hasLaptopTime() ? "LAPTOP" : "NONE";
+        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu src=%s fix=%d sats=%d\n",
+                  (unsigned long)millis(), currentPhase, (unsigned long)utcNow,
+                  src, gps.fixValid ? 1 : 0, gps.sats);
         lastHeartbeatMs = millis();
     }
 
-    // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
-    // V4 WALK: GPS time is PRIMARY. Laptop SET_TIME is bench-test backup.
-    // No time source = NO TRANSMIT (strict).
-    int phase;
-    if (gps.hasUnixTime && gps.unixTime > 0) {
-        // GPS real Unix epoch (date + time from RMC) — primary for walk tests
-        phase = computePhaseFromUTC(gps.unixTime);
-    } else if (hasLaptopTime()) {
-        // Unix epoch time from laptop SET_TIME — backup for bench tests only
-        phase = computePhaseFromUTC(getUtcNow());
-    } else {
-        // V4 WALK: No time source. Wait for GPS. Do NOT transmit unsynced.
-        if (currentPhase >= 0) {
-            outPrintf("PHASE_GUARD 500\n");
-            currentPhase = -1;
+    // ─── AUTONOMOUS TIME SOURCE: GPS is primary, laptop is bench backup ──
+    // Fresh GPS time → use directly. Stale GPS (>10s) → extrapolate from
+    // millis() + last GPS offset. Laptop SET_TIME → bench test only.
+    // No time source at all → WAIT for GPS (do not transmit unsynced).
+    uint32_t timeNow = getBestUnixTime();
+    bool hasTimeSource = (gpsTimeOffset != 0) || hasLaptopTime() ||
+                         (gps.hasUnixTime && gps.unixTime > 0);
+
+    if (!hasTimeSource) {
+        // No time source — keep polling GPS, don't transmit unsynced.
+        // This is the WAITING_FOR_GPS state after boot gate timeout.
+        static uint32_t lastWaitMsg = 0;
+        if (millis() - lastWaitMsg > 3000) {
+            outPrintf("WAIT_GPS_TIME sats=%d hasTime=%d hasUnix=%d — polling\n",
+                      gps.sats, gps.hasTime ? 1 : 0, gps.hasUnixTime ? 1 : 0);
+            lastWaitMsg = millis();
         }
+        if (currentPhase >= 0) currentPhase = -1;
         gpsPoll();
         delay(50);
         return;
     }
+
+    int phase = computePhaseFromUTC(timeNow);
 
     // ─── V4: TX BEACON — GPS searching mode ────────────────────────
     // When we have laptop time but GPS hasn't locked, send a simple beacon
