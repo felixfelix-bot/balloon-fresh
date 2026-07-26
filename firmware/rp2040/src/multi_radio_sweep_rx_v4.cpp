@@ -946,8 +946,12 @@ static void rxPacketPoll(int phaseIdx) {
     // V4: Read phase ID from packet and sync to TX's actual phase.
     // This breaks the chicken-and-egg: once any packet decodes, RX jumps
     // to TX's phase instead of relying on drifting millis() clock.
+    // FIX: Only accept FORWARD phase jumps (monotonic) to prevent bounce
+    // at phase boundaries where late packets from previous phase arrive.
     uint8_t txPhaseId = rxBuf[gpsOff + 15];
-    if (txPhaseId != currentPhase && txPhaseId < numInterleavePhases) {
+    bool isForward = (txPhaseId > currentPhase) ||
+                     (currentPhase > numInterleavePhases - 5 && txPhaseId < 5);
+    if (txPhaseId != currentPhase && txPhaseId < numInterleavePhases && isForward) {
         dualPrintf("PHASE_SYNC old=%d new=%d (from TX packet)\n", currentPhase, txPhaseId);
         currentPhase = txPhaseId;
         const Phase &np = *getPhaseEntry(currentPhase);
