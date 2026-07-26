@@ -24,8 +24,8 @@ RX_SERIAL = E663B035973B8332
 # PlatformIO paths
 PIO = pio
 FW_DIR = firmware/rp2040
-TX_ENV = rp2040-sweep-tx
-RX_ENV = rp2040-sweep-rx
+TX_ENV = rp2040-sweep-tx-v4
+RX_ENV = rp2040-sweep-rx-v4
 
 # Python
 PYTHON = python3
