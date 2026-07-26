@@ -148,7 +148,7 @@ static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 
 static Phase interleavePhases[64];
 static int   numInterleavePhases = 0;
-static bool  interleaveMode = false;   // set via SET_INTERLEAVE 1
+static bool  interleaveMode = true;    // DEFAULT ON: matches RX 56-phase interleave on boot
 
 static void buildInterleaveTable() {
     int idx = 0;
@@ -852,25 +852,32 @@ void setup() {
     // V4: Build interleave table (always build so it's ready if enabled)
     buildInterleaveTable();
 
-    // Compute total cycle seconds (base mode)
+    // Compute total cycle seconds based on the default mode
+    // (interleave ON by default → must use interleavePhases, not base phases,
+    //  otherwise computePhaseFromUTC would mod against the wrong cycle length)
+    int numActivePhases = interleaveMode ? numInterleavePhases : NUM_PHASES;
     totalCycleSec = 0;
-    for (int i = 0; i < NUM_PHASES; i++) {
-        totalCycleSec += phases[i].slotMs / 1000;
+    for (int i = 0; i < numActivePhases; i++) {
+        const Phase *ph = getPhaseEntry(i);
+        totalCycleSec += ph->slotMs / 1000;
     }
 
     outPrintf("=== GPS-SYNCED MULTI-RADIO TX SWEEP V4 ===\n");
-    outPrintf("Phases: %d  Cycle: %lus  Power: %.1f dBm  Interleave: OFF\n",
-               NUM_PHASES, (unsigned long)totalCycleSec, TX_POWER_DBM);
-    outPrintf("Interleave mode: %d phases ready. Send 'SET_INTERLEAVE 1' to enable.\n",
-               numInterleavePhases);
-    for (int i = 0; i < NUM_PHASES; i++) {
-        outPrintf("  [%2d] %-16s %s %.0fMHz %s %dpkts %ds %dB\n",
-                      i, phases[i].name,
-                      phases[i].pktType == PT_LORA ? "LoRa" : "FLRC",
-                      phases[i].freqMHz,
-                      phases[i].pktType == PT_LORA ?
-                          (phases[i].bwCode == 0x05 ? "BW250" : "BW812") : "",
-                      phases[i].pktCount, phases[i].slotMs / 1000, phases[i].pktSize);
+    outPrintf("Phases: %d  Cycle: %lus  Power: %.1f dBm  Interleave: %s\n",
+               numActivePhases, (unsigned long)totalCycleSec, TX_POWER_DBM,
+               interleaveMode ? "ON" : "OFF");
+    outPrintf("Interleave mode: %d (interleave=%d). Send 'SET_INTERLEAVE 0' for 14-phase base mode.\n",
+               interleaveMode ? numInterleavePhases : NUM_PHASES,
+               interleaveMode ? 1 : 0);
+    for (int i = 0; i < numActivePhases; i++) {
+        const Phase *ph = getPhaseEntry(i);
+        outPrintf("  [%2d] %-24s %s %.0fMHz %s %dpkts %ds %dB\n",
+                      i, ph->name,
+                      ph->pktType == PT_LORA ? "LoRa" : "FLRC",
+                      ph->freqMHz,
+                      ph->pktType == PT_LORA ?
+                          (ph->bwCode == 0x05 ? "BW250" : "BW812") : "",
+                      ph->pktCount, ph->slotMs / 1000, ph->pktSize);
     }
 
     // ── Non-blocking GPS probe (5s) then start sweeping immediately ──────
