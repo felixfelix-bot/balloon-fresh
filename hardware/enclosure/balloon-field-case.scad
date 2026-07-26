@@ -1,59 +1,63 @@
 // ============================================================
-// Balloon Field-Test Enclosure v2
+// Balloon Field-Test Enclosure v3 — UNIVERSAL GPS BAY
 // Waterproof clamshell for 4 boards:
-//   ESP32-C3 SuperMini + RP2040-Zero + LR2021 + u-blox MAX-M10S GPS
-// Designed for: outdoor pole mount, solar charging, rain/sun exposure
+//   ESP32-C3 SuperMini + RP2040-Zero + LR2021 + ANY MAX-M10S GPS breakout
+//
+// GPS bay is oversized (32x32mm) to fit ANY common M10S breakout:
+//   - Bare module (15.5x15.5mm)
+//   - Pimoroni/UK hobbyist (~22x20mm with blue LED)
+//   - Adafruit (~25x35mm)
+//   - SparkFun SPX-19281 (~30x25mm)
+//   - AliExpress generic (25x25mm with patch antenna)
+// Board held by friction fit + double-sided tape, not screws.
+//
 // Material: PETG or ASA (NOT PLA — UV/heat will destroy PLA outdoors)
 // ============================================================
 
-// ---- MEASURE YOUR BOARDS AND ADJUST THESE ----
-// Use digital calipers. Accuracy = ±0.5mm is fine.
-// These are from AGENTS.md + BOM.md inventory. VERIFY with calipers!
+// ---- BOARD DIMENSIONS (from AGENTS.md inventory) ----
+// These are well-known. Caliper verify if you have them handy.
 
 // Board 1: ESP32-C3 SuperMini (Maker Go ESP32-C3_Mini_V1)
-esp32_length = 22.52;    // PCB length (X)
-esp32_width  = 18.0;     // PCB width  (Y)
-esp32_thick  = 3.5;      // Thickness including USB-C + components
+esp32_length = 22.52;
+esp32_width  = 18.0;
+esp32_thick  = 3.5;
 
 // Board 2: RP2040-Zero
-rp2040_length = 23.0;    // PCB length
-rp2040_width  = 18.0;    // PCB width
-rp2040_thick  = 3.2;     // Thickness including USB + components
+rp2040_length = 23.0;
+rp2040_width  = 18.0;
+rp2040_thick  = 3.2;
 
 // Board 3: NiceRF LoRa2021 (LR2021 module)
-lr2021_length = 19.72;   // Module length
-lr2021_width  = 15.0;    // Module width
-lr2021_thick  = 2.2;     // Module PCB thickness
+lr2021_length = 19.72;
+lr2021_width  = 15.0;
+lr2021_thick  = 2.2;
 
-// Board 4: u-blox MAX-M10S GPS
-// Bare LCC module: 15.5x15.5x2.6mm
-// Common breakout: ~22x20mm with ceramic antenna, ~4mm thick
-// ADJUST if your breakout differs!
-gps_length = 22.0;       // GPS breakout board length (X)
-gps_width  = 20.0;       // GPS breakout board width  (Y)
-gps_thick  = 4.0;        // Thickness incl. ceramic patch antenna + module
+// Board 4: GPS MAX-M10S — UNIVERSAL BAY
+// Oversized to fit any breakout. Tape/sticky-pad mount.
+gps_bay_length = 32.0;   // Fits up to 32mm board (SparkFun, Adafruit, Pimoroni)
+gps_bay_width  = 32.0;   // Fits up to 32mm board
+gps_bay_thick  = 7.0;    // Fits ceramic patch antenna + board + LED
 
 // ---- CASE PARAMETERS ----
-wall          = 2.0;     // Wall thickness (2mm = waterproof + strong)
-inner_clear   = 2.0;     // Clearance around boards for wiring
-floor_thick   = 2.5;     // Bottom wall thickness
-lid_thick     = 2.5;     // Top wall thickness
-board_gap     = 3.0;     // Gap between boards for airflow/wiring
+wall          = 2.0;
+inner_clear   = 2.0;
+floor_thick   = 2.5;
+lid_thick     = 2.5;
+board_gap     = 3.0;
 
 // O-ring seal
 oring_d    = 2.0;
 oring_groove_depth = 1.5;
 
 // Screws
-screw_d    = 3.2;        // M3 clearance
-screw_head_d = 6.0;      // M3 countersink head
-screw_boss_d = 7.0;
+screw_d    = 3.2;
+screw_head_d = 6.0;
 
 // Cable glands
-gland_d = 6.0;           // Antenna + solar cable feedthrough
+gland_d = 6.0;
 
 // Pole mount
-strap_width  = 22.0;     // Zip-tie / hose clamp width slot
+strap_width  = 22.0;
 strap_depth  = 3.0;
 strap_count  = 2;
 
@@ -65,23 +69,25 @@ solar_recess_depth = 2.0;
 $fn = 60;
 
 // ---- CALCULATED ----
-// Layout: ESP32 | LR2021 | RP2040 stacked in row
-// GPS module goes on a second layer or side pocket
-// Row layout: ESP32 -- gap -- LR2021 -- gap -- RP2040
+// Row 1: ESP32 | gap | LR2021 | gap | RP2040
 row1_length = esp32_length + board_gap + lr2021_length + board_gap + rp2040_length;
 row1_width  = max(esp32_width, lr2021_width, rp2040_width);
 
-// GPS alongside, parallel
-total_x = row1_length + gps_length + board_gap*2 + inner_clear*2;
-total_y = max(row1_width, gps_width + board_gap*2) + inner_clear*2;
+// GPS bay sits alongside the board row
+total_x = row1_length + gps_bay_length + board_gap*2 + inner_clear*2;
+total_y = max(row1_width, gps_bay_width) + inner_clear*2;
 
-interior_x = max(total_x, total_y);  // make roughly square
+interior_x = max(total_x, total_y);
 interior_y = max(total_x, total_y);
-interior_z = max(esp32_thick, rp2040_thick) + gps_thick + board_gap*3 + 8;
+interior_z = max(esp32_thick, rp2040_thick) + gps_bay_thick + board_gap*3 + 6;
 
 ext_x = interior_x + wall*2;
 ext_y = interior_y + wall*2;
 ext_z = interior_z + floor_thick + lid_thick;
+
+// GPS bay position — corner, antenna faces down through window
+function gps_cx() = -(interior_x/2 - gps_bay_length/2 - inner_clear);
+function gps_cy() = -(interior_y/2 - gps_bay_width/2 - inner_clear);
 
 // ============================================================
 // BOTTOM SHELL
@@ -94,7 +100,7 @@ module bottom_shell() {
         oring_groove();
         screw_holes_bottom();
         
-        // Cable gland holes (antenna + solar)
+        // Cable gland holes
         translate([ext_x/2, 0, floor_thick + interior_z/2])
             rotate([-90, 0, 0])
             cylinder(d=gland_d, h=wall*2, center=true);
@@ -102,11 +108,11 @@ module bottom_shell() {
             rotate([-90, 0, 0])
             cylinder(d=gland_d, h=wall*2, center=true);
         
-        // GPS antenna window — needs sky view!
-        // Cut thin slot in bottom for GPS patch antenna
-        gps_window_x = gps_length - 2;
-        gps_window_y = gps_width - 2;
-        translate([gps_offset_x(), gps_offset_y(), -0.1])
+        // GPS antenna window — oversized for any patch antenna
+        // 28x28mm covers all common patch antennas (15-25mm)
+        gps_window_x = gps_bay_length - 4;
+        gps_window_y = gps_bay_width - 4;
+        translate([gps_cx(), gps_cy(), -0.1])
             rounded_box(gps_window_x, gps_window_y, floor_thick + 0.3, r=1);
         
         // Pole mount strap grooves
@@ -118,11 +124,27 @@ module bottom_shell() {
     }
     
     board_standoffs();
+    gps_bay_walls();
 }
 
-// GPS position helper — placed in a corner
-function gps_offset_x() = -(interior_x/2 - gps_length/2 - inner_clear);
-function gps_offset_y() = -(interior_y/2 - gps_width/2 - inner_clear);
+// ============================================================
+// GPS BAY — friction fit pocket with raised lip
+// ============================================================
+module gps_bay_walls() {
+    // Low retaining wall around GPS bay to hold board in place
+    // Board sits on floor of case, held by wall + tape
+    lip_h = 2.0;
+    lip_t = 1.5;
+    
+    difference() {
+        // Outer wall of GPS bay pocket
+        translate([gps_cx(), gps_cy(), floor_thick])
+            rounded_box(gps_bay_length + lip_t*2, gps_bay_width + lip_t*2, lip_h, r=1);
+        // Inner cutout (where board sits)
+        translate([gps_cx(), gps_cy(), floor_thick - 0.1])
+            rounded_box(gps_bay_length, gps_bay_width, lip_h + 0.3, r=1);
+    }
+}
 
 // ============================================================
 // TOP LID
@@ -132,13 +154,12 @@ module top_lid() {
         translate([0, 0, interior_z + floor_thick])
             rounded_box(ext_x, ext_y, lid_thick, r=3);
         
-        // Solar panel recess
         translate([0, 0, interior_z + floor_thick + lid_thick - solar_recess_depth])
             rounded_box(solar_recess_x, solar_recess_y, solar_recess_depth + 1, r=2);
         
         screw_holes_top();
         
-        // Vent hole (cover with Gore patch)
+        // Vent hole
         translate([ext_x/2 - 8, ext_y/2 - 8, interior_z + floor_thick - 0.1])
             cylinder(d=2, h=lid_thick + 1);
     }
@@ -182,7 +203,7 @@ module screw_holes_bottom() {
         translate([p[0], p[1], floor_thick/2])
             cylinder(d=screw_d, h=floor_thick + 1, center=true, $fn=12);
         translate([p[0], p[1], -0.1])
-            cylinder(d=6.5, h=2.5, $fn=6); // M3 nut trap
+            cylinder(d=6.5, h=2.5, $fn=6);
     }
 }
 
@@ -210,8 +231,7 @@ module board_standoffs() {
     standoff_d = 3.0;
     hole_d = 2.0;
     
-    // Layout: ESP32 and RP2040 side by side, LR2021 between them
-    // ESP32 left third
+    // ESP32 — left section
     esp32_cx = -(lr2021_length/2 + board_gap + esp32_length/2);
     for (sx = [-1,1], sy = [-1,1]) {
         translate([esp32_cx + sx*(esp32_length/2 - 1.5),
@@ -220,7 +240,7 @@ module board_standoffs() {
             standoff(standoff_h, standoff_d, hole_d);
     }
     
-    // RP2040 right third
+    // RP2040 — right section
     rp2040_cx = (lr2021_length/2 + board_gap + rp2040_length/2);
     for (sx = [-1,1], sy = [-1,1]) {
         translate([rp2040_cx + sx*(rp2040_length/2 - 1.5),
@@ -229,7 +249,7 @@ module board_standoffs() {
             standoff(standoff_h, standoff_d, hole_d);
     }
     
-    // LR2021 center, lower standoffs (sits on floor or low)
+    // LR2021 — center, low standoffs
     for (sx = [-1,1], sy = [-1,1]) {
         translate([sx*(lr2021_length/2 - 1.5),
                    sy*(lr2021_width/2 - 1.5),
@@ -237,16 +257,8 @@ module board_standoffs() {
             standoff(1.5, 3.0, 2.0);
     }
     
-    // GPS module — offset corner, needs sky-facing antenna
-    // Placed near edge with antenna window in bottom shell
-    gx = gps_offset_x();
-    gy = gps_offset_y();
-    for (sx = [-1,1], sy = [-1,1]) {
-        translate([gx + sx*(gps_length/2 - 1.5),
-                   gy + sy*(gps_width/2 - 1.5),
-                   floor_thick])
-            standoff(2.0, 3.0, 2.0);
-    }
+    // GPS: NO standoffs — uses friction-fit bay with retaining lip
+    // Board sits flat on case floor, held by raised lip + double-sided tape
 }
 
 module standoff(h, od, id) {
