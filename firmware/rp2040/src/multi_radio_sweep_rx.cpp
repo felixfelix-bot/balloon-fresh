@@ -200,31 +200,9 @@ static char     rxLastTxFw[8] = {0};  // TX firmware git hash (7 chars + NUL)
 static bool     rxRadioInRxMode = false;   // tracks whether radio is listening
 static uint32_t lastWaitingPrintMs = 0;    // throttle for WAITING_FOR_TIME_SYNC
 
-// ─── Closed-loop phase sync statistics (Phase C) ────────────────────
-// RX has no GPS — uses SET_TIME from laptop as UTC bootstrap.
-// Each valid TX packet carries GPS UTC. We compare it to our local
-// clock and auto-correct if the drift exceeds 5 seconds, creating a
-// closed-loop correction that tracks TX's GPS clock over time.
-#define TIME_CORRECT_THRESHOLD_SEC 5
-#define TIME_STATS_INTERVAL_MS     60000
-static int32_t  timeOffsetMinMs = INT32_MAX;   // minimum offset seen (ms)
-static int32_t  timeOffsetMaxMs = INT32_MIN;   // maximum offset seen (ms)
-static int64_t  timeOffsetSumMs = 0;            // running sum for avg (ms)
-static uint32_t timeOffsetCount = 0;            // number of samples
-static uint32_t timeCorrections = 0;            // number of corrections applied
-static uint32_t lastTimeStatsMs  = 0;           // last TIME_STATS print time
-
-// ─── Sync header self-healing state (Phase B) ──────────────────────
-// Per-phase cache of the last known good sync header offset (B1).
-// -1 = unknown → full scan required on next packet.
-static int8_t  lastSyncOffset[14] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
-// Consecutive sync-not-found count per phase (B3). Reset to 0 on any sync found.
-// >= 3 triggers lastSyncOffset reset (B2): chip framing has changed.
-static uint8_t syncFailCount[14] = {0};
-
 #define TX_POWER_DBM   12.5f   // only for init, not used for RX
-#define LORA_PKT_SIZE  32
-#define FLRC_PKT_SIZE  32
+#define LORA_PKT_SIZE  127
+#define FLRC_PKT_SIZE  255
 
 // ─── Unique sequence tracking ────────────────────────────────────────
 // Max pktCount is 200, so 256-entry bitmap covers all seq values
@@ -611,33 +589,16 @@ static void rxPacketPoll(int phaseIdx) {
     // GET_PACKET_STATUS may reset FIFO read pointer.
     rfReadRxFifo(rxBuf, pktSize);
 
-    // ─── Sync header search: fast-path then full scan (Phase B) ─────
+    // ─── Fix 1: Dynamic sync header search ──────────────────────────
     // The LR2021 packet engine prepends framing bytes before our payload.
     // The sync header (0xA5 0x5A 0x42 0x24) is NOT at byte 0.
     // Walk test evidence: FLRC first bytes 92 103 250 144, LoRa 38 98 16 153.
-    //
-    // B1: Try the last known good offset for this phase FIRST (fast path).
-    //     Avoids scanning the whole buffer on every packet when the offset
-    //     is stable across packets.
-    // B2/B3: If sync is not found for 3 consecutive packets on this phase,
-    //        reset the cached offset — chip framing has changed.
     int syncOffset = -1;
-    if (phaseIdx >= 0 && phaseIdx < 14) {
-        int8_t cached = lastSyncOffset[phaseIdx];
-        if (cached >= 0 && cached <= (int)pktSize - 31 &&
-            rxBuf[cached]   == 0xA5 && rxBuf[cached+1] == 0x5A &&
-            rxBuf[cached+2] == 0x42 && rxBuf[cached+3] == 0x24) {
-            syncOffset = cached;
-        }
-    }
-    if (syncOffset < 0) {
-        // Fast-path miss (or no cached offset) → full scan
-        for (int i = 0; i <= (int)pktSize - 31; i++) {  // need at least 31 bytes after sync (4 sync + 18 gps + 7 fw + 2 crc)
-            if (rxBuf[i] == 0xA5 && rxBuf[i+1] == 0x5A &&
-                rxBuf[i+2] == 0x42 && rxBuf[i+3] == 0x24) {
-                syncOffset = i;
-                break;
-            }
+    for (int i = 0; i <= (int)pktSize - 22; i++) {  // need at least 22 bytes after sync
+        if (rxBuf[i] == 0xA5 && rxBuf[i+1] == 0x5A &&
+            rxBuf[i+2] == 0x42 && rxBuf[i+3] == 0x24) {
+            syncOffset = i;
+            break;
         }
     }
     if (syncOffset < 0) {
@@ -645,30 +606,10 @@ static void rxPacketPoll(int phaseIdx) {
         dualPrintf("SYNC_NOT_FOUND first4=%02X%02X%02X%02X\n",
                    rxBuf[0], rxBuf[1], rxBuf[2], rxBuf[3]);
         rxGarbageCount++;
-        // B2/B3: track consecutive sync failures per phase
-        if (phaseIdx >= 0 && phaseIdx < 14) {
-            syncFailCount[phaseIdx]++;
-            if (syncFailCount[phaseIdx] >= 3 && lastSyncOffset[phaseIdx] >= 0) {
-                dualPrintf("SYNC_LOST phase=%d consecutive=%u cached_off=%d\n",
-                           phaseIdx, syncFailCount[phaseIdx],
-                           (int)lastSyncOffset[phaseIdx]);
-                lastSyncOffset[phaseIdx] = -1;
-            }
-        }
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
         return;
-    }
-    // Sync found — cache offset + reset failure counter (Phase B)
-    if (phaseIdx >= 0 && phaseIdx < 14) {
-        if (lastSyncOffset[phaseIdx] != (int8_t)syncOffset) {
-            dualPrintf("SYNC_OFFSET phase=%d off=%d prev=%d\n",
-                       phaseIdx, syncOffset,
-                       (int)lastSyncOffset[phaseIdx]);
-        }
-        lastSyncOffset[phaseIdx] = (int8_t)syncOffset;
-        syncFailCount[phaseIdx] = 0;
     }
     int gpsOff = syncOffset + 4;  // GPS data starts right after sync header
 
@@ -723,26 +664,6 @@ static void rxPacketPoll(int phaseIdx) {
         return;
     }
 
-    // ─── B4: CRC false positive detection ────────────────────────────
-    // CRC-16 can pass on garbage (16-bit collision, bit-flips in the CRC
-    // bytes themselves, or a sync-header false match at the wrong offset).
-    // Sanity-check decoded GPS values BEFORE counting as a valid packet:
-    //   |latE7| > 90e7  → latitude outside [-90, 90] (impossible)
-    //   |lonE7| > 180e7 → longitude outside [-180, 180] (impossible)
-    //   sats   > 50     → GPS cannot see more than ~32 satellites
-    if (abs(pktLatE7) > 900000000L ||
-        abs(pktLonE7) > 1800000000L ||
-        txSats > 50) {
-        dualPrintf("CRC_FALSE_POS lat=%.5f lon=%.5f sats=%u seq=%u syncOff=%d\n",
-                   pktLatE7/1e7f, pktLonE7/1e7f, txSats, seq, syncOffset);
-        rxGarbageCount++;
-        // Treat as garbage — do NOT count as a valid packet
-        rfClearRxFifo();
-        rfClearIrq();
-        rfSetRx();
-        return;
-    }
-
     if (seq < MAX_SEQ) {
         seenSeq[seq] = true;
     }
@@ -754,8 +675,14 @@ static void rxPacketPoll(int phaseIdx) {
 
     rxReceived++;
 
-    // (GPS sanity check moved up to B4 CRC_FALSE_POS block — runs BEFORE
-    //  rxReceived++ so impossible values don't count as valid packets.)
+    // ─── Fix 1: GPS sanity check ───────────────────────────────────
+    // Catch corrupted payloads that pass CRC but have impossible values.
+    if (abs(pktLatE7) > 90L*10000000L || abs(pktLonE7) > 180L*10000000L || txSats > 50) {
+        dualPrintf("GPS_REJECT lat=%.5f lon=%.5f sats=%u\n",
+                   pktLatE7/1e7f, pktLonE7/1e7f, txSats);
+        rxGarbageCount++;
+        // Count as received but don't trust data
+    }
 
     // Convert E7 to float degrees
     float txLat = pktLatE7 / 1e7f;
@@ -766,39 +693,14 @@ static void rxPacketPoll(int phaseIdx) {
     rxLastTxSats = txSats; rxLastTxFix = txFix;
     rxLastTxUtc = txUtc;
 
-    // ─── Closed-loop phase sync (Phase C) ────────────────
-    // RX has no GPS. Each valid TX packet carries GPS UTC.
-    // Compare with our local epoch and correct if drift exceeds threshold.
-    // This makes RX slowly track toward TX's GPS clock on every valid packet.
+    // ─── Time difference logging (measurement only) ────
+    // GPS time from TX is NOT used for RX phase control.
+    // Laptop time (SET_TIME) is the primary clock.
     if (txUtc > 0 && utcOffset > 0) {
         uint32_t laptopUtc = getUtcNow();
-        int32_t offset = (int32_t)(txUtc - laptopUtc);
-
-        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu offset=%ld\n",
+        dualPrintf("TIME_DIFF gps_utc=%lu laptop_utc=%lu\n",
                       (unsigned long)txUtc,
-                      (unsigned long)laptopUtc,
-                      (long)offset);
-
-        // Track statistics (convert to milliseconds for reporting)
-        int32_t offsetMs = offset * 1000;
-        if (offsetMs < timeOffsetMinMs) timeOffsetMinMs = offsetMs;
-        if (offsetMs > timeOffsetMaxMs) timeOffsetMaxMs = offsetMs;
-        timeOffsetSumMs += offsetMs;
-        timeOffsetCount++;
-
-        // C1: If |offset| > threshold, correct local epoch
-        // utcOffset is uint32_t; modular arithmetic handles negative offset
-        // correctly (uint32_t += int32_t wraps to the right value).
-        if (offset > TIME_CORRECT_THRESHOLD_SEC ||
-            offset < -TIME_CORRECT_THRESHOLD_SEC) {
-            uint32_t oldOffset = utcOffset;
-            utcOffset = utcOffset + (uint32_t)offset;
-            timeCorrections++;
-            dualPrintf("TIME_CORRECT old_offset=%lu new_offset=%lu delta=%ld\n",
-                          (unsigned long)oldOffset,
-                          (unsigned long)utcOffset,
-                          (long)offset);
-        }
+                      (unsigned long)laptopUtc);
     }
 
     // Log first few packets per phase for debugging
@@ -911,21 +813,6 @@ void loop() {
         }
         delay(100);
         return;
-    }
-
-    // ─── Phase C: TIME_STATS every 60 seconds ────
-    // Report min/max/avg clock offset and correction count.
-    if (timeOffsetCount > 0) {
-        if (lastTimeStatsMs == 0) lastTimeStatsMs = millis();
-        if ((millis() - lastTimeStatsMs) >= TIME_STATS_INTERVAL_MS) {
-            int32_t avgMs = (int32_t)(timeOffsetSumMs / (int64_t)timeOffsetCount);
-            dualPrintf("TIME_STATS min=%ldms max=%ldms avg=%ldms corrections=%u\n",
-                          (long)timeOffsetMinMs,
-                          (long)timeOffsetMaxMs,
-                          (long)avgMs,
-                          timeCorrections);
-            lastTimeStatsMs = millis();
-        }
     }
 
     // Compute current phase from UTC — same algorithm as TX
