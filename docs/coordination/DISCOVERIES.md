@@ -26,6 +26,91 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: multi-level delegation hierarchy — sub-managers delegate too (2026-07-25) | tags: GENERAL
+- **Commit:** `4566437` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: multi-level delegation hierarchy — sub-managers delegate too
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: anti-pattern warning + SDR handover (2026-07-25) | tags: GENERAL
+- **Commit:** `fdbe634` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: anti-pattern warning + SDR handover
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: add Board Access Protocol — MANDATORY enforcement section (2026-07-24) | tags: GENERAL
+- **Commit:** `a256fe0` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: add Board Access Protocol — MANDATORY enforcement section
+- **Relevance:** GENERAL
+
+### [balloon-hermes] fix: FLRC byte alignment + app-layer CRC-16 + FIFO clear + sync search (2026-07-24) | tags: RADIO, FIRMWARE
+- **Commit:** `9b740aa` by Felix
+- **Files:** docs/coordination/FLASH-QUEUE.md, firmware/BUILD_COUNTER.txt, firmware/BUILD_MAP.md (+5 more)
+- **Full message:** fix: FLRC byte alignment + app-layer CRC-16 + FIFO clear + sync search
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-hermes] data: walk test results — FLRC packets received but CRC/byte alignment still off (2026-07-24) | tags: RADIO, TEST
+- **Commit:** `b182b81` by Felix
+- **Files:** data/walk-balcony-rx-20260724.txt, data/walk-test-results.png, data/walk_test_20260724/capture_env_outdoor_20260724_180347.csv (+3 more)
+- **Full message:** data: walk test results — FLRC packets received but CRC/byte alignment still off
+- **Relevance:** RADIO, TEST
+
+### [balloon-hermes] data: walk test capture — GPS payload verified on LoRa phases (2026-07-24) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `be354b0` by Felix
+- **Files:** AGENTS.md, data/walk-fix-verified-rx.txt, firmware/rp2040/platformio.ini (+1 more)
+- **Full message:** data: walk test capture — GPS payload verified on LoRa phases
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-hermes] docs: upgrade guardrails — 3 communication channels (status + task + escalation) (2026-07-24) | tags: GENERAL
+- **Commit:** `9b2fc5f` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: upgrade guardrails — 3 communication channels (status + task + escalation)
+- **Relevance:** GENERAL
+
+### [balloon-hermes] data: comprehensive plot + autonomous GPS sweep results (2026-07-24) | tags: TEST
+- **Commit:** `980263f` by Felix
+- **Files:** data/box-mounted-rx-20260724.txt, data/comprehensive_plot_20260724.png, data/generate_summary_plot.py (+8 more)
+- **Full message:** data: comprehensive plot + autonomous GPS sweep results
+- **Relevance:** TEST
+
+### [balloon-hermes] data: save all test captures + results plot to git repo (not /tmp) (2026-07-24) | tags: TEST
+- **Commit:** `72cbd77` by Felix
+- **Files:** data/rx-capture-20260723.txt, data/sweep-rx-debug-20260724.txt, data/sweep-rx-fixed-20260724.txt (+4 more)
+- **Full message:** data: save all test captures + results plot to git repo (not /tmp)
+- **Relevance:** TEST
+
+### [balloon-hermes] docs: mandate BoardSerial wrapper — no raw serial.Serial() on board ports (2026-07-24) | tags: GENERAL
+- **Commit:** `171387d` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: mandate BoardSerial wrapper — no raw serial.Serial() on board ports
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: add BOARD ACCESS mutex lock section to AGENTS.md (2026-07-23) | tags: GENERAL
+- **Commit:** `34eadfe` by Felix
+- **Files:** AGENTS.md
+- **Full message:** docs: add BOARD ACCESS mutex lock section to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: add anti-coordination guardrails to AGENTS.md (2026-07-18) | tags: GENERAL
+- **Commit:** `5cc537e` by c03rad0r
+- **Files:** AGENTS.md
+- **Full message:** docs: add anti-coordination guardrails to AGENTS.md
+- **Relevance:** GENERAL
+
+### [balloon-hermes] chore(data): add range-test-results.csv template (2026-07-18) | tags: TEST
+- **Commit:** `f39fdb9` by c03rad0r
+- **Files:** data/range-test-results.csv
+- **Full message:** chore(data): add range-test-results.csv template
+- **Relevance:** TEST
+
+### [balloon-circuit-design] feat(enclosure): oversized Variant B — guarantee fit without calipers (2026-07-26) | tags: GENERAL
+- **Commit:** `a7e599a` by Felix
+- **Files:** tracker/hardware/enclosure/balloon_dev_case_big.scad, tracker/hardware/enclosure/bottom_big_oversize.stl, tracker/hardware/enclosure/lid_big_oversize.stl (+1 more)
+- **Full message:** feat(enclosure): oversized Variant B — guarantee fit without calipers
+- **Relevance:** GENERAL
+
+
 ### [balloon-circuit-design] feat(enclosure): Variant B — big LR2021 dev board with SMA pass-through (2026-07-26) | tags: RADIO
 - **Commit:** `72b7727` by Felix
 - **Files:** tracker/hardware/enclosure/README_big.md, tracker/hardware/enclosure/balloon_dev_case_big.scad, tracker/hardware/enclosure/bottom_big.stl (+2 more)
