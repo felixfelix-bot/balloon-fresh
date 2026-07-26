@@ -63,8 +63,8 @@ if [ -z "$DISK" ]; then
 fi
 
 echo "Flashing: /dev/$DISK ← $UF2"
-sudo mount -o uid=$(id -u),gid=$(id -g) /dev/${DISK}1 /tmp/rp2040-flash 2>/dev/null || \
-sudo mount /dev/${DISK}1 /tmp/rp2040-flash 2>/dev/null || \
+sudo mount -o uid=$(id -u),gid=$(id -g) /dev/$DISK /tmp/rp2040-flash 2>/dev/null || \
+sudo mount /dev/$DISK /tmp/rp2040-flash 2>/dev/null || \
 sudo mount /dev/$DISK /tmp/rp2040-flash 2>/dev/null
 
 cp "$UF2" /tmp/rp2040-flash/
