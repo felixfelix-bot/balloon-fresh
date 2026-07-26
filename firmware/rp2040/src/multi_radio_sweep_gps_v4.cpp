@@ -1247,11 +1247,25 @@ void loop() {
     // Last known position is preserved in gps.lat/lon — parseNMEA only updates
     // those fields on a valid fix. When fix returns, position updates automatically.
     // Bench mode (laptop SET_TIME) is exempt — allows testing without GPS.
-    if (!gps.fixValid && !hasLaptopTime()) {
+    // ─── GPS FIX GATE (ADR-018): TX NEVER transmits without satellite fix ───
+    // This is UNCONDITIONAL — no laptop exemption. Per Felix's requirement:
+    // "when we don't have a satellite fix, the TX board shouldn't transmit at all."
+    // The sweep loop keeps running (phase computation + radio reconfig above)
+    // so TX stays phase-synced and is ready to transmit the moment fix returns.
+    // Last known position is preserved in gps.lat/lon — parseNMEA only updates
+    // those fields on a valid fix. When fix returns, position updates automatically.
+    if (!gps.fixValid) {
         static uint32_t lastNoFixMsg = 0;
+        static bool hadFix = false;
+        if (gps.fixValid) hadFix = true;
         if (millis() - lastNoFixMsg > 3000) {
-            outPrintf("NO_FIX_HOLD sats=%d fix=0 — sweep continues, TX gated on fix\n",
-                      gps.sats);
+            if (hadFix) {
+                outPrintf("FIX_LOST sats=%d fix=0 — sweep continues, TX gated. Last pos preserved.\n",
+                          gps.sats);
+            } else {
+                outPrintf("NO_FIX_WAIT sats=%d fix=0 — sweep continues, TX gated on fix\n",
+                          gps.sats);
+            }
             lastNoFixMsg = millis();
         }
         gpsPoll();
