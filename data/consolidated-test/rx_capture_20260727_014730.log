@@ -1,0 +1,78 @@
+# rx_capture segment start 2026-07-26T20:17:30.964374+00:00
+# rotation=1800s
+2026-07-26T20:17:30.964436+00:00 TIME_SYNCED utc=1785097049 offset=1785096823
+2026-07-26T20:17:31.979260+00:00 TIME_SYNCED utc=1785097051 offset=1785096824
+PHASE_RESULT 33 LF-LoRa-SF9-64 pktSize=64 rx=0 unique=0 lost=3 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=9 freq=868.0
+PHASE_START 34 LF-LoRa-SF9-128 pktSize=128
+2026-07-26T20:17:34.041415+00:00 PHASE_RESULT 34 LF-LoRa-SF9-128 pktSize=128 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=9 freq=868.0
+PHASE_START 35 LF-LoRa-SF9-255 pktSize=255
+TIME_SYNCED utc=1785097053 offset=1785096823
+PHASE_RESULT 35 LF-LoRa-SF9-255 pktSize=255 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=9 freq=868.0
+2026-07-26T20:17:35.052633+00:00 PHASE_START 34 LF-LoRa-SF9-128 pktSize=128
+PHASE_RESULT 34 LF-LoRa-SF9-128 pktSize=128 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=9 freq=868.0
+PHASE_START 35 LF-LoRa-SF9-255 pktSize=255
+2026-07-26T20:17:40.260858+00:00 PHASE_RESULT 35 LF-LoRa-SF9-255 pktSize=255 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=12 freq=868.0
+PHASE_START 36 LF-LoRa-SF12-32 pktSize=32
+2026-07-26T20:17:41.265288+00:00 TIME_SYNCED utc=1785097060 offset=1785096824
+2026-07-26T20:17:44.378980+00:00 TIME_SYNCED utc=1785097063 offset=1785096823
+2026-07-26T20:17:51.696892+00:00 TIME_SYNCED utc=1785097070 offset=1785096823
+2026-07-26T20:17:54.810472+00:00 TIME_SYNCED utc=1785097073 offset=1785096823
+PHASE_RESULT 36 LF-LoRa-SF12-32 pktSize=32 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=12 freq=868.0
+2026-07-26T20:17:55.814137+00:00 PHASE_START 37 LF-LoRa-SF12-SKIP SKIP pktSize=64
+PHASE_RESULT 37 LF-LoRa-SF12-SKIP pktSize=64 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=12 freq=868.0
+2026-07-26T20:17:56.822580+00:00 PHASE_START 38 LF-LoRa-SF12-SKIP SKIP pktSize=128
+TIME_STATS min=-1000ms max=1000ms avg=-129ms corrections=0
+PHASE_RESULT 38 LF-LoRa-SF12-SKIP pktSize=128 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=12 freq=868.0
+2026-07-26T20:17:57.833511+00:00 PHASE_START 39 LF-LoRa-SF12-SKIP SKIP pktSize=255
+PHASE_RESULT 39 LF-LoRa-SF12-SKIP pktSize=255 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 1000
+PHASE_START 40 LF-FLRC-325-32 pktSize=32
+2026-07-26T20:18:00.940726+00:00 PHASE_RESULT 40 LF-FLRC-325-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 41 LF-FLRC-325-64 pktSize=64
+2026-07-26T20:18:01.955235+00:00 TIME_SYNCED utc=1785097080 offset=1785096823
+2026-07-26T20:18:04.018119+00:00 PHASE_RESULT 41 LF-FLRC-325-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 42 LF-FLRC-325-128 pktSize=128
+TIME_SYNCED utc=1785097083 offset=1785096823
+2026-07-26T20:18:07.140601+00:00 PHASE_RESULT 42 LF-FLRC-325-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 43 LF-FLRC-325-255 pktSize=255
+2026-07-26T20:18:10.250241+00:00 PHASE_RESULT 43 LF-FLRC-325-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 44 LF-FLRC-650-32 pktSize=32
+2026-07-26T20:18:12.310139+00:00 TIME_SYNCED utc=1785097091 offset=1785096824
+PHASE_RESULT 44 LF-FLRC-650-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 45 LF-FLRC-650-64 pktSize=64
+2026-07-26T20:18:14.364736+00:00 TIME_SYNCED utc=1785097093 offset=1785096823
+2026-07-26T20:18:16.419049+00:00 PHASE_RESULT 45 LF-FLRC-650-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 46 LF-FLRC-650-128 pktSize=128
+2026-07-26T20:18:19.532184+00:00 PHASE_RESULT 46 LF-FLRC-650-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 47 LF-FLRC-650-255 pktSize=255
+2026-07-26T20:18:22.639350+00:00 TIME_SYNCED utc=1785097101 offset=1785096824
+PHASE_RESULT 47 LF-FLRC-650-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 48 LF-FLRC-1300-32 pktSize=32
+2026-07-26T20:18:24.707079+00:00 PHASE_RESULT 48 LF-FLRC-1300-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=af8b26a
+PHASE_GUARD 500
+PHASE_START 49 LF-FLRC-1300-64 pktSize=64
+TIME_SYNCED utc=1785097104 offset=1785096824
