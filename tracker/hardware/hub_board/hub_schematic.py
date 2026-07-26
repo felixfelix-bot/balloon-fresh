@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Hub Board Schematic — ESP32-C3 + RP2040 Coprocessor + LR2021 + GPS + BMP280
+Hub Board Schematic — ESP32-C3 + RP2040 Coprocessor + LR2021 + GPS + MS5611
 ==========================================================================
 
 Central electronics board for the pico balloon tracker.
@@ -9,7 +9,7 @@ TESTED ARCHITECTURE (branch ``lr2021/p3-coproc-rewrite``):
 
     ESP32-C3 (logger/controller) ──UART── RP2040-Zero (coprocessor) ──SPI0── LR2021 (radio)
 
-The ESP32-C3 runs the application (telemetry, GPS parsing, BMP280 reads,
+The ESP32-C3 runs the application (telemetry, GPS parsing, MS5611 reads,
 power management). The RP2040-Zero is a dedicated radio coprocessor that
 owns the LR2021 SPI bus — it clears the single-core RX bottleneck of the
 ESP32-C3 and lets the LR2021 run at full air-rate.
@@ -30,8 +30,8 @@ lr2021/p3-coproc-rewrite branch):
               with UART1 TX in the coprocessor architecture; GPIO4 is free and
               is ADC1_CH4. Firmware change required:
               power_manager.c SUPERCAP_ADC_CHANNEL → ADC_CHANNEL_4)
-    GPIO8  = I2C SDA   → BMP280 SDA
-    GPIO9  = I2C SCL   → BMP280 SCL
+    GPIO8  = I2C SDA   → MS5611 SDA
+    GPIO9  = I2C SCL   → MS5611 SCL
     GPIO10 = Status LED (active low via R5)
 
   RP2040-Zero (SPI0 to LR2021):
@@ -136,9 +136,9 @@ def generate_hub_schematic():
                footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
 
     # --- U5: BMP280 pressure sensor breakout (I2C) ---
-    # 1=VCC, 2=GND, 3=SDA, 4=SCL
-    bmp280 = Part("Connector_Generic", "Conn_01x04", ref="U",
-                  value="BMP280",
+    # --- U5: MS5611 high-altitude pressure sensor (I2C, 10-1200 hPa) ---
+    ms5611 = Part("Connector_Generic", "Conn_01x04", ref="U",
+                  value="MS5611",
                   footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
 
     # --- Power supply: BAT54 Schottky + TPS7A02 LDO + supercap ---
@@ -159,8 +159,8 @@ def generate_hub_schematic():
                     footprint="Capacitor_SMD:C_0805_2012Metric")   # C4 — LR2021 TX-burst bulk
     c_gps    = Part("Device", "C", ref="C", value="100nF",
                     footprint="Capacitor_SMD:C_0402_1005Metric")   # C5 — GPS decouple
-    c_bmp    = Part("Device", "C", ref="C", value="100nF",
-                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C6 — BMP280 decouple
+    c_baro    = Part("Device", "C", ref="C", value="100nF",
+                    footprint="Capacitor_SMD:C_0402_1005Metric")   # C6 — MS5611 decouple
     c_ldo    = Part("Device", "C", ref="C", value="10uF",
                     footprint="Capacitor_SMD:C_0805_2012Metric")   # C7 — LDO output bulk
 
@@ -296,11 +296,11 @@ def generate_hub_schematic():
     gps_tx_esp_rx += gps["3"]     # GPS TX → ESP32 GPIO2
     # Pin 4 = GPS RX — NC for telemetry-only firmware (no config commands sent)
 
-    # --- U5: BMP280 (I2C) ---
-    v3v3    += bmp280["1"]        # VCC
-    gnd     += bmp280["2"]        # GND
-    i2c_sda += bmp280["3"]        # SDA
-    i2c_scl += bmp280["4"]        # SCL
+    # --- U5: MS5611 (I2C) ---
+    v3v3    += ms5611["1"]        # VCC
+    gnd     += ms5611["2"]        # GND
+    i2c_sda += ms5611["3"]        # SDA
+    i2c_scl += ms5611["4"]        # SCL
 
     # --------------------------------------------------------
     # 4. Power chain
@@ -329,7 +329,7 @@ def generate_hub_schematic():
     # --------------------------------------------------------
     # 5. Decoupling & bulk capacitors
     # --------------------------------------------------------
-    for cap in (c_esp, c_rp, c_lr, c_lr_blk, c_gps, c_bmp, c_ldo):
+    for cap in (c_esp, c_rp, c_lr, c_lr_blk, c_gps, c_baro, c_ldo):
         v3v3 += cap["1"]
         gnd  += cap["2"]
 
