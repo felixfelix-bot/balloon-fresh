@@ -576,17 +576,29 @@ static void rfClearTxFifo() {
 // force-aborts by sending SET_STANDBY (STDBY_XOSC) before the next
 // phase reconfigures the modem. Called at the TOP of every phase change,
 // BEFORE rfInitForPhase.
+//
+// BUG FIX: The IRQ pin (GP7) is LOW both when TX is mid-transmission AND
+// when the radio is idle with no TX ever started. Without a tracking flag,
+// every phase transition when GPS gates TX (no fix → no TX) triggered a
+// false TX_ABORT. We now track txInProgress so we only abort when a TX was
+// actually started and hasn't completed.
+static volatile bool txInProgress = false;
+
 static void abortTxIfActive() {
+    if (!txInProgress) return;  // No TX was started, nothing to abort
+
     uint32_t irqPinMask = 1UL << PIN_IRQ;
     if (sio_hw->gpio_in & irqPinMask) {
         // TX_DONE already fired — radio returned to fallback mode (STDBY)
+        txInProgress = false;
         return;
     }
-    // TX still in progress — force-abort with SET_STANDBY (STDBY_XOSC)
+    // TX genuinely in progress — force-abort with SET_STANDBY (STDBY_XOSC)
     uint8_t stdby[] = {0x01, 0x28, 0x01};
     rfWriteCmd(stdby, 3);
     outPrintf("TX_ABORT — previous phase TX still active, force SET_STANDBY\n");
     rfClearIrq();   // clear stale IRQ bits from the aborted TX
+    txInProgress = false;
     delay(100);     // guard: let the radio settle before reconfiguration
 }
 
@@ -1343,6 +1355,7 @@ void loop() {
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(txBuf, pktSize);
+    txInProgress = true;   // track TX for abortTxIfActive() phase-safety
     rfSetTx();
 
     // Wait for TX_DONE — poll DIO9 IRQ pin
@@ -1357,7 +1370,7 @@ void loop() {
     // (410ms/byte × 32 + 10ms). The old timeout always expired mid-TX,
     // leaving the radio transmitting into the next phase's time slot.
     while ((millis() - txStartMs) < 16000) {
-        if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
+        if (sio_hw->gpio_in & irqPinMask) { irqFired = true; txInProgress = false; break; }
         // Drain GPS UART every ~65K iterations (~3ms at 125MHz)
         if ((millis() - txStartMs) % 3 == 0) gpsPoll();  // poll GPS ~every 3ms
     }
