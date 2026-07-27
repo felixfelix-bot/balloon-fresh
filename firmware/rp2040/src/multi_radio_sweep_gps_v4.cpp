@@ -504,10 +504,12 @@ static void gpsPoll() {
         } else if (c == '\n' || c == '\r') {
             if (nmeaLen > 6) {
                 nmeaBuf[nmeaLen] = '\0';
+#ifdef DEBUG_NMEA
                 // DEBUG: dump any RMC sentence to see date field
                 if (strstr(nmeaBuf, "RMC")) {
                     outPrintf("NMEA_RMC: %s\n", nmeaBuf);
                 }
+#endif
                 parseNMEA(nmeaBuf);
             }
             nmeaLen = 0;
@@ -576,18 +578,23 @@ static void rfClearTxFifo() {
 // force-aborts by sending SET_STANDBY (STDBY_XOSC) before the next
 // phase reconfigures the modem. Called at the TOP of every phase change,
 // BEFORE rfInitForPhase.
+static bool txInProgress = false;  // tracks whether a TX was initiated this phase
+
 static void abortTxIfActive() {
+    if (!txInProgress) return;  // no TX was started — nothing to abort
     uint32_t irqPinMask = 1UL << PIN_IRQ;
     if (sio_hw->gpio_in & irqPinMask) {
         // TX_DONE already fired — radio returned to fallback mode (STDBY)
+        txInProgress = false;
         return;
     }
     // TX still in progress — force-abort with SET_STANDBY (STDBY_XOSC)
     uint8_t stdby[] = {0x01, 0x28, 0x01};
     rfWriteCmd(stdby, 3);
     outPrintf("TX_ABORT — previous phase TX still active, force SET_STANDBY\n");
-    rfClearIrq();   // clear stale IRQ bits from the aborted TX
-    delay(100);     // guard: let the radio settle before reconfiguration
+    rfClearIrq();
+    delay(100);
+    txInProgress = false;
 }
 
 // ─── App-layer CRC-16 (CCITT 0x1021) ────────────────────────────────
@@ -1066,11 +1073,11 @@ void setup() {
             }
         }
 
+#ifdef DEBUG_NMEA
         // NMEA passthrough: print raw GPS sentences every 3s for debugging
         // Helps verify GPS module is alive and outputting valid data
         if (millis() - lastNmeaPrint > 3000) {
             lastNmeaPrint = millis();
-            // Read any pending NMEA and show first sentence
             if (Serial1.available()) {
                 char nmeaLine[160];
                 int n = 0;
@@ -1083,7 +1090,6 @@ void setup() {
                     }
                 }
                 nmeaLine[n] = '\0';
-                // Trim trailing whitespace
                 while (n > 0 && (nmeaLine[n-1] == '\r' || nmeaLine[n-1] == '\n'))
                     nmeaLine[--n] = '\0';
                 if (n > 5)
@@ -1094,6 +1100,7 @@ void setup() {
                 outPrintf("NMEA_RAW: (no data) GPS module not sending on UART1\n");
             }
         }
+#endif
         delay(10);
     }
 
@@ -1247,30 +1254,22 @@ void loop() {
     // Last known position is preserved in gps.lat/lon — parseNMEA only updates
     // those fields on a valid fix. When fix returns, position updates automatically.
     // Bench mode (laptop SET_TIME) is exempt — allows testing without GPS.
-    // ─── GPS FIX GATE (ADR-018): TX NEVER transmits without satellite fix ───
-    // This is UNCONDITIONAL — no laptop exemption. Per Felix's requirement:
-    // "when we don't have a satellite fix, the TX board shouldn't transmit at all."
-    // The sweep loop keeps running (phase computation + radio reconfig above)
-    // so TX stays phase-synced and is ready to transmit the moment fix returns.
-    // Last known position is preserved in gps.lat/lon — parseNMEA only updates
-    // those fields on a valid fix. When fix returns, position updates automatically.
+    // ─── GPS FIX STATUS (ADR-018 corrected): TX ALWAYS transmits with time ───
+    // GPS time arrives 10-30s after boot. Position fix takes 1-15 min more.
+    // Phase sync only needs TIME, not position. TX proceeds regardless of fix.
+    // Packets carry lat=0/lon=0/fix=0 until position lock, then real GPS coords.
+    // This is the correct behavior per ADR-018 invariant #4:
+    //   "TX transmits with or without GPS position fix (as long as time exists)"
     if (!gps.fixValid) {
         static uint32_t lastNoFixMsg = 0;
-        static bool hadFix = false;
-        if (gps.fixValid) hadFix = true;
-        if (millis() - lastNoFixMsg > 3000) {
-            if (hadFix) {
-                outPrintf("FIX_LOST sats=%d fix=0 — sweep continues, TX gated. Last pos preserved.\n",
-                          gps.sats);
-            } else {
-                outPrintf("NO_FIX_WAIT sats=%d fix=0 — sweep continues, TX gated on fix\n",
-                          gps.sats);
-            }
+        if (millis() - lastNoFixMsg > 5000) {
+            outPrintf("NO_FIX_TX sats=%d fix=0 — transmitting with dummy coords\n",
+                      gps.sats);
             lastNoFixMsg = millis();
         }
         gpsPoll();
-        delay(50);
-        return;  // Don't transmit without fix — phase detection still runs next loop()
+        // Do NOT return — fall through to normal TX path.
+        // GPS fields in packet will show 0,0/fix=0 until real lock.
     }
 
     uint16_t pktSize = p.pktSize;
@@ -1343,6 +1342,7 @@ void loop() {
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(txBuf, pktSize);
+    txInProgress = true;
     rfSetTx();
 
     // Wait for TX_DONE — poll DIO9 IRQ pin
@@ -1371,10 +1371,16 @@ void loop() {
     // Output per-packet log
     int16_t rssiDbm = 0; // TX doesn't have RSSI; placeholder for RX sync
     // V4: include pktSize in per-packet log
-    outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s\n", seqInPhase, rssiDbm,
-              currentPhase, pktSize, FW_GIT_HASH);
+    outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s fix=%d sats=%d\n", seqInPhase, rssiDbm,
+              currentPhase, pktSize, FW_GIT_HASH, gps.fixValid ? 1 : 0, gps.sats);
 
-    digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
+    // LED: toggle on each TX. With GPS fix → fast toggle.
+    // Without fix → slower pattern (every other packet).
+    if (gps.fixValid) {
+        digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
+    } else {
+        digitalWrite(PIN_LED, ((seqInPhase / 3) & 1) ? HIGH : LOW);
+    }
 
     seqInPhase++;
 
