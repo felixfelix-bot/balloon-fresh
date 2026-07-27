@@ -2,11 +2,15 @@
 
 ## Status
 
-Accepted
+Superseded (partial) — 2026-07-27. The original text stated TX should
+NEVER transmit without a GPS satellite fix. This was a misunderstanding.
+Corrected: TX transmits whenever it has valid time (can compute phase),
+regardless of GPS position fix. GPS coordinates are broadcast once
+position lock is acquired.
 
 ## Date
 
-2026-07-26
+2026-07-26 (original), corrected 2026-07-27
 
 ## Related
 
