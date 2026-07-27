@@ -12,6 +12,8 @@
 #include "driver/spi_master.h"
 #include "esp_timer.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
+#include <cstring>
 
 #define LOW    (0x0)
 #define HIGH   (0x1)
@@ -20,6 +22,19 @@
 #define RISING (0x01)
 #define FALLING (0x02)
 #define NOP()  asm volatile ("nop")
+
+
+// SPI clock for the LR2021 radio on GPSPI2 (SPI2_HOST). 40 MHz is the documented
+// target operating frequency for the FLRC speed campaign; the ESP32-C3 GPSPI2
+// controller supports up to 80 MHz but 40 MHz is the reliable ceiling (80 MHz via
+// the /2 divider has been observed as unreliable). At 40 MHz a 255-byte transfer
+// is ~51 us of bus time, which GDMA now pumps without CPU involvement.
+#define ESPHAL_C3_SPI_HZ   (40 * 1000 * 1000)
+
+// Largest single SPI transaction we stage through DMA. Matches the SPI bus
+// max_transfer_sz and comfortably covers a combined WRITE_TX_FIFO
+// (header + 255-byte payload) for the LR2021 radio.
+#define ESPHAL_C3_DMA_BUF_SZ  512
 
 
 class EspHalC3 : public RadioLibHal {
@@ -110,6 +125,27 @@ class EspHalC3 : public RadioLibHal {
       return(this->micros() - start);
     }
 
+    // ------------------------------------------------------------------
+    // SPI / GDMA
+    // ------------------------------------------------------------------
+    // The SPI bus is initialized with SPI_DMA_CH_AUTO, so the ESP-IDF spi_master
+    // driver allocates an ESP32-C3 GDMA channel and uses it for every transfer
+    // larger than 32 bytes. The driver can *itself* make a transfer DMA-native:
+    // by default (no SPI_TRANS_DMA_BUFFER_ALIGN_MANUAL flag) it transparently
+    // reallocs + memcpy()s any non-DMA-capable user buffer into an internal
+    // DMA buffer on every transaction. That per-transaction alloc/copy/free is
+    // pure CPU overhead. To eliminate it we allocate PERSISTENT DMA-capable
+    // staging buffers once in spiBegin() and route synchronous transfers
+    // through them, so the only memcpy left is the unavoidable CPU copy of the
+    // caller's data into DMA memory (no alloc/free churn).
+    //
+    // For true CPU-free transfers, callers use the async path: spiQueueTrans()
+    // hands a descriptor to GDMA and returns immediately while the DMA engine
+    // pumps the bus; the CPU is free to prepare the next packet. Completion is
+    // awaited with spiGetResult() (or, for fire-and-forget TX, via the radio's
+    // BUSY pin). queue_size is set to 8 so up to 8 transactions may be in flight,
+    // enabling the N / N+1 double-buffer pattern.
+    // ------------------------------------------------------------------
     void spiBegin() {
       if (this->spiInitialized) return;
       spi_bus_config_t bus_cfg = {};
@@ -118,7 +154,8 @@ class EspHalC3 : public RadioLibHal {
       bus_cfg.sclk_io_num = this->spiSCK;
       bus_cfg.quadwp_io_num = -1;
       bus_cfg.quadhd_io_num = -1;
-      bus_cfg.max_transfer_sz = 512;
+      bus_cfg.max_transfer_sz = ESPHAL_C3_DMA_BUF_SZ;
+      // SPI_DMA_CH_AUTO: let the driver allocate an ESP32-C3 GDMA channel.
       esp_err_t ret = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
       if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
         ESP_LOGE("HAL", "spi_bus_initialize failed: %s", esp_err_to_name(ret));
@@ -127,16 +164,33 @@ class EspHalC3 : public RadioLibHal {
 
       spi_device_interface_config_t dev_cfg = {};
       dev_cfg.mode = 0;
-      dev_cfg.clock_speed_hz = 18000000;
-      dev_cfg.spics_io_num = -1;
-      dev_cfg.queue_size = 1;
+      dev_cfg.clock_speed_hz = ESPHAL_C3_SPI_HZ;   // 40 MHz target
+      dev_cfg.spics_io_num = -1;                    // NSS is toggled manually by the caller
+      // queue_size 8 enables the async (spi_device_queue_trans) path and the
+      // N / N+1 double-buffer pattern. flags stays 0 so the result queue is
+      // available for spi_device_get_trans_result; set SPI_DEVICE_NO_RETURN_RESULT
+      // instead for pure fire-and-forget TX (saves the result-queue slot).
+      dev_cfg.queue_size = 8;
+      dev_cfg.flags = 0;
+      // cs_ena_pretrans / cs_ena_posttrans are only honored when spics_io_num is
+      // managed by the driver; NSS here is manual, so they are left at the 0 default.
       ret = spi_bus_add_device(SPI2_HOST, &dev_cfg, &this->spiDev);
       if (ret != ESP_OK) {
         ESP_LOGE("HAL", "spi_bus_add_device failed: %s", esp_err_to_name(ret));
         return;
       }
+
+      // Persistent DMA-capable staging buffers (4-byte aligned, internal RAM).
+      this->dmaTxBuf = (uint8_t*)heap_caps_malloc(ESPHAL_C3_DMA_BUF_SZ, MALLOC_CAP_DMA);
+      this->dmaRxBuf = (uint8_t*)heap_caps_malloc(ESPHAL_C3_DMA_BUF_SZ, MALLOC_CAP_DMA);
+      if (!this->dmaTxBuf || !this->dmaRxBuf) {
+        ESP_LOGE("HAL", "DMA staging buffer alloc failed (caps=%zu)", (size_t)ESPHAL_C3_DMA_BUF_SZ);
+      }
+
       this->spiInitialized = true;
-      ESP_LOGI("HAL", "SPI initialized: MOSI=%d MISO=%d SCK=%d", this->spiMOSI, this->spiMISO, this->spiSCK);
+      ESP_LOGI("HAL", "SPI+GDMA init: MOSI=%d MISO=%d SCK=%d %dMHz dma_tx=%p dma_rx=%p qs=%d",
+               this->spiMOSI, this->spiMISO, this->spiSCK,
+               ESPHAL_C3_SPI_HZ / 1000000, this->dmaTxBuf, this->dmaRxBuf, dev_cfg.queue_size);
     }
 
     void spiBeginTransaction() {}
@@ -154,18 +208,67 @@ class EspHalC3 : public RadioLibHal {
       return trans.rx_data[0];
     }
 
+    // Synchronous (RadioLib HAL contract) DMA transfer. Stages caller data through
+    // the persistent DMA-capable buffer so the driver never reallocs internally;
+    // GDMA then pumps the bus. This is blocking (polls the GDMA-done bit) but the
+    // CPU is not bit-banging — for the non-blocking path see spiQueueTrans().
     void spiTransfer(uint8_t* out, size_t len, uint8_t* in) {
       if (len == 0) return;
+      if (len > ESPHAL_C3_DMA_BUF_SZ) len = ESPHAL_C3_DMA_BUF_SZ;   // guard against overrun
+      if (out && this->dmaTxBuf) {
+        memcpy(this->dmaTxBuf, out, len);
+      }
       spi_transaction_t trans = {};
       trans.length = len * 8;
-      trans.tx_buffer = out;
-      trans.rx_buffer = in;
+      trans.tx_buffer = (out && this->dmaTxBuf) ? this->dmaTxBuf : nullptr;
+      trans.rx_buffer = (in && this->dmaRxBuf) ? this->dmaRxBuf : nullptr;
       esp_err_t ret = spi_device_polling_transmit(this->spiDev, &trans);
       if (ret != ESP_OK) {
         ESP_LOGE("HAL", "spiTransfer failed: %s", esp_err_to_name(ret));
-        memset(in, 0xFF, len);
+        if (in) memset(in, 0xFF, len);
+        return;
+      }
+      if (in && this->dmaRxBuf) {
+        memcpy(in, this->dmaRxBuf, len);
       }
     }
+
+    // ------------------------------------------------------------------
+    // Async (queued) DMA API — CPU-free transfers.
+    //
+    // spiQueueTrans(): hand a transaction descriptor to GDMA and return at once.
+    //   The buffers pointed to by trans->tx_buffer / rx_buffer MUST remain valid
+    //   (and DMA-capable) until completion — use the result from spiDmaMalloc()
+    //   or spiGetDmaTxBuf()/spiGetDmaRxBuf(). Up to queue_size descriptors may be
+    //   in flight at once (double-buffer: queue N, fill N+1, then await N).
+    // spiGetResult(): block until a previously queued transaction completes.
+    //   (Not usable if the device was created with SPI_DEVICE_NO_RETURN_RESULT.)
+    // spiPollingTransmit(): thin wrapper for low-latency single transfers when the
+    //   caller has pre-built the spi_transaction_t (used by the SPEED-P2 hot loop).
+    // ------------------------------------------------------------------
+    esp_err_t spiQueueTrans(spi_transaction_t* trans, TickType_t ticks_to_wait = portMAX_DELAY) {
+      return spi_device_queue_trans(this->spiDev, trans, ticks_to_wait);
+    }
+
+    esp_err_t spiGetResult(spi_transaction_t** out_trans, TickType_t ticks_to_wait = portMAX_DELAY) {
+      return spi_device_get_trans_result(this->spiDev, out_trans, ticks_to_wait);
+    }
+
+    esp_err_t spiPollingTransmit(spi_transaction_t* trans) {
+      return spi_device_polling_transmit(this->spiDev, trans);
+    }
+
+    // DMA-capable memory for callers that build their own transaction descriptors
+    // for the async path (must outlive the transfer). Free with spiDmaFree().
+    static uint8_t* spiDmaMalloc(size_t size) {
+      return (uint8_t*)heap_caps_malloc(size, MALLOC_CAP_DMA);
+    }
+    static void spiDmaFree(uint8_t* p) { free(p); }
+
+    // Accessors for the persistent DMA staging buffers (double-buffer fill slot).
+    uint8_t* getDmaTxBuf() { return this->dmaTxBuf; }
+    uint8_t* getDmaRxBuf() { return this->dmaRxBuf; }
+    static constexpr size_t getDmaBufSz() { return ESPHAL_C3_DMA_BUF_SZ; }
 
     void spiEndTransaction() {}
 
@@ -175,11 +278,21 @@ class EspHalC3 : public RadioLibHal {
         this->spiDev = nullptr;
       }
       spi_bus_free(SPI2_HOST);
+      if (this->dmaTxBuf) { free(this->dmaTxBuf); this->dmaTxBuf = nullptr; }
+      if (this->dmaRxBuf) { free(this->dmaRxBuf); this->dmaRxBuf = nullptr; }
       this->spiInitialized = false;
     }
 
     void setCsPin(int8_t pin) { this->csPin = pin; }
     void setBusyPin(int8_t pin) { this->busyPin = pin; }
+
+    // Direct SPI device handle for callers that drive spi_device_polling_transmit /
+    // spi_device_queue_trans themselves, bypassing the per-call spi_transaction_t
+    // rebuild + virtual-call indirection of spiTransfer(). Used by the
+    // zero-overhead raw SPI TX path in bench_main.cpp (runRawTx) on the
+    // feat/radiolib-bypass-tx branch. Exposing the handle lets the hot loop
+    // pre-build transaction structs once and/or queue descriptors to GDMA.
+    spi_device_handle_t getSpiDev() const { return this->spiDev; }
 
   private:
     int8_t spiSCK;
@@ -190,4 +303,7 @@ class EspHalC3 : public RadioLibHal {
     spi_device_handle_t spiDev = nullptr;
     bool spiInitialized = false;
     bool isrInstalled = false;
+    // Persistent DMA-capable staging buffers (allocated in spiBegin, freed in spiEnd).
+    uint8_t* dmaTxBuf = nullptr;
+    uint8_t* dmaRxBuf = nullptr;
 };
