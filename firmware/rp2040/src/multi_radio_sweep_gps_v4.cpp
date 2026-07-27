@@ -95,7 +95,8 @@ static void printBootBanner() {
 #define PIN_GPS_RX  1    // RP2040 RX ← GPS TX (NMEA data)
 #define PIN_GPS_TX  0    // RP2040 TX → GPS RX (optional config)
 #undef PIN_LED
-#define PIN_LED     25
+#define PIN_LED     25   // Standard Pi Pico onboard LED
+#define PIN_LED_ALT 6    // Arduino Nano RP2040 Connect onboard LED
 
 #define SPI_FREQ_HZ  20000000UL
 #define XTAL_MHZ     52.0f
@@ -1002,9 +1003,11 @@ void setup() {
     pinMode(PIN_RST, OUTPUT);
     pinMode(PIN_IRQ, INPUT);
     pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_LED_ALT, OUTPUT);  // Nano RP2040 Connect LED (no-op if not present)
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
     digitalWrite(PIN_LED, LOW);
+    digitalWrite(PIN_LED_ALT, LOW);
 
     spiRf.begin();
 
@@ -1149,6 +1152,17 @@ void loop() {
 
     // GPS still works if module is alive — used for position data in packets
     gpsPoll();
+
+    // ─── VISIBLE LED HEARTBEAT ───────────────────────────────────────
+    // Runs every loop iteration for continuous visible status.
+    // 1Hz = GPS searching for time. 2Hz = has time, TX active, no fix. 5Hz = GPS locked.
+    {
+        uint8_t hz = gps.fixValid ? 5 : (gps.hasTime ? 2 : 1);
+        uint32_t period = 500 / hz;
+        bool ledOn = ((millis() % (period * 2)) < period);
+        digitalWrite(PIN_LED, ledOn ? HIGH : LOW);
+        digitalWrite(PIN_LED_ALT, ledOn ? HIGH : LOW);
+    }
 
     // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
     // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
@@ -1374,12 +1388,15 @@ void loop() {
     outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s fix=%d sats=%d\n", seqInPhase, rssiDbm,
               currentPhase, pktSize, FW_GIT_HASH, gps.fixValid ? 1 : 0, gps.sats);
 
-    // LED: toggle on each TX. With GPS fix → fast toggle.
-    // Without fix → slower pattern (every other packet).
-    if (gps.fixValid) {
-        digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
-    } else {
-        digitalWrite(PIN_LED, ((seqInPhase / 3) & 1) ? HIGH : LOW);
+    // LED heartbeat — visible blink pattern showing board status.
+    // Uses millis() timing so it's VISIBLE to human eye (not microsecond toggles).
+    // 1Hz = GPS searching for time. 2Hz = has time, no fix. 3Hz = GPS locked.
+    {
+        uint8_t hz = gps.fixValid ? 5 : (gps.hasTime ? 2 : 1);
+        uint32_t period = 500 / hz;  // ms per half-cycle
+        bool ledOn = ((millis() % (period * 2)) < period);
+        digitalWrite(PIN_LED, ledOn ? HIGH : LOW);
+        digitalWrite(PIN_LED_ALT, ledOn ? HIGH : LOW);
     }
 
     seqInPhase++;
