@@ -295,11 +295,15 @@ list-captures: ## List capture files in captures/ with timestamps and sizes.
 ## ─── install-framework ────────────────────────────────────────────────
 ## Install the earlephilhower Arduino core for RP2040 (needed for all builds).
 ## Run once if builds fail with "Arduino.h: No such file or directory".
-install-framework: ## Install earlephilhower Arduino-Pico core into PlatformIO.
+install-framework: ## Install earlephilhower Arduino-Pico core + Max Gerhardt platform fork.
+	@echo "Installing Max Gerhardt's platform-raspberrypi fork (earlephilhower support)..."
+	@pio platform install "https://github.com/maxgerhardt/platform-raspberrypi.git" 2>/dev/null || \
+		echo "Platform already installed or installing..."
+	@echo ""
 	@echo "Installing earlephilhower Arduino-Pico framework..."
 	@mkdir -p ~/./.platformio/packages
 	@if [ -d ~/./.platformio/packages/framework-arduinopico ]; then \
-		echo "framework-arduinopico already exists, skipping. Use 'make reinstall-framework' to force."; \
+		echo "framework-arduinopico already exists, skipping."; \
 	else \
 		echo "Cloning arduino-pico (earlephilhower core)..."; \
 		git clone --recursive --depth 1 https://github.com/earlephilhower/arduino-pico.git ~/./.platformio/packages/framework-arduinopico; \
