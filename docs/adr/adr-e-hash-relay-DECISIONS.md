@@ -30,19 +30,35 @@ EHASH_TEMPLATE (0x10), EHASH_NONCE (0x11), EHASH_RESULT (0x12), EHASH_CREDIT (0x
 Ride L3-L6 unchanged. Bypass 500-byte Nostr event limit.
 (Design decision, 2026-07-29)
 
-## STILL OPEN (awaiting decision)
+## RESOLVED (locked 2026-07-29 — Felix answered all)
 
-### O1. Stratum V1 vs V2?
-Recommendation: V1 (Bitaxe-compatible, simpler).
+### D6. Stratum V1 first
+V1 = JSON text, Bitaxe-native. Start with V1. LoRa binary encoding is
+protocol-agnostic — V2 can layer later without touching radio format.
+(Felix, 2026-07-29)
 
-### O2. Share difficulty filtering on ground?
-Recommendation: Local 10× difficulty filter to conserve LoRa bandwidth.
+### D7. Local difficulty filter on ground
+Ground station runs local higher-difficulty filter. Ground station PAYS for
+all its traffic, so filtering reduces its own bandwidth cost. Self-incentivized.
+(Felix, 2026-07-29)
 
-### O3. Template encryption?
-Recommendation: Per-session key, gated by earned credit.
+### D8. Template encrypted, per-session key after payment
+Templates encrypted with per-session key. Miner gets decryption key only after
+paying for the connection (e-hash balance check). No payment = no decryption.
+(Felix, 2026-07-29)
 
-### O4. Balloon internet loss behavior?
-Recommendation: TTL-based template expiry, ground station pauses mining.
+### D9. TTL pause on internet loss + free local relay access
+When balloon loses upstream connection: template TTL expiry, ground station
+pauses mining. During outage, ground station gets free access to the local
+relay (existing mesh services still work, just no upstream pool connectivity).
+(Felix, 2026-07-29)
 
-### O5. Multi-customer credit attribution?
-Per-station worker IDs. Standard stratum multi-worker pattern.
+### D10. Per-nonce e-hash issuance, mint tracks unspent proofs
+Balloon gives ground station e-hash token every time it receives a valid nonce.
+The Cashu MINT (not the balloon) is responsible for tracking unspent proofs /
+double-spend prevention. Per-station worker IDs in EHASH_NONCE for attribution.
+(Felix, 2026-07-29)
+
+## STILL OPEN
+
+None. All questions resolved.
