@@ -554,7 +554,8 @@ static void rfClearIrq() {
 }
 
 static void rfSetTx() {
-    uint8_t cmd[5] = {0x02, 0x0D, 0x00, 0x00, 0x00};
+    // Timeout 0xFFFFFF = max (~262s); 0x000000 = no timeout (TX hangs if IRQ missed). [ESP32 fix]
+    uint8_t cmd[5] = {0x02, 0x0D, 0xFF, 0xFF, 0xFF};
     rfWriteCmd(cmd, 5);
 }
 
@@ -782,8 +783,13 @@ static void rfInitForPhase(const Phase &p) {
         delay(1);
     }
 
-    // SET_PA_CONFIG
-    { uint8_t c[] = {0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10}; rfWriteCmd(c, 7); }
+    // SET_TX_PATH (0x0202) -- MANDATORY before TX. HF=1 (2.4GHz), LF=0 (sub-GHz).
+    // Same opcode as SET_PA_CONFIG, distinguished by payload. [ESP32 lr2021_radio.c:286]
+    { uint8_t c[] = {0x02, 0x02, p.rfPath, 0x00}; rfWriteCmd(c, 4); }
+    delay(1);
+
+    // SET_PA_CONFIG (0x0202) -- HF=0x80, LF=0x00 [LR2021Raw.h setPaConfig/setPaConfigLF]
+    { uint8_t c[] = {0x02, 0x02, (uint8_t)(p.rfPath ? 0x80 : 0x00), 0x00, 0x60, 0x07, 0x10}; rfWriteCmd(c, 7); }
     delay(1);
 
     // SET_TX_PARAMS

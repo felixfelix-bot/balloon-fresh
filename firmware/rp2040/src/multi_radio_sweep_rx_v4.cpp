@@ -406,17 +406,14 @@ static void rfWriteCmd(const uint8_t *cmd, size_t len) {
 }
 
 static uint32_t rfReadIrqStatus() {
+    // MUST be single CS-low transaction: opcode + dummy bytes in one NSS-low
+    // window. Splitting CS toggle between send+read makes the chip forget the
+    // command -> all reads return 0x00 (silent packet drops). [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x17);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
+    spiRf.transfer(0x01); spiRf.transfer(0x17);  // GET_IRQ_STATUS opcode
     uint8_t buf[6] = {0};
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -469,17 +466,12 @@ static uint16_t crc16(const uint8_t *data, size_t len) {
 //   buf[3] = SNR (signed)            → dB = val<128 ? val/4 : (val-256)/4
 //   (verified against RadioLib SX128x source + lr2021-complete-learnings)
 static int16_t rfGetLoraRssi() {
+    // Single CS-low transaction: opcode + dummy bytes read in one window [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x02); spiRf.transfer(0x2A);  // GET_LORA_PACKET_STATUS
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
     uint8_t buf[8];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 8; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -507,18 +499,13 @@ static int16_t rfGetLoraRssi() {
 //   raw = (buf[4] << 1) | ((buf[6] & 0x04) >> 2)
 //   rssiAvg = raw / -2.0  → dBm (float)
 static int16_t rfGetFlrcRssi() {
+    // Single CS-low transaction: opcode + dummy bytes read in one window [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
     // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
     uint8_t buf[7];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
