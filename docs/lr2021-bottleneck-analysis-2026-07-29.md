@@ -251,6 +251,8 @@ This adds an extra CS toggle and an extra BUSY wait per packet read, wasting ~30
 
 Modify the ESP32 RX FIFO read to match the RP2040 pattern: send opcode and read data in a single CS-low session with continuous SCK. No BUSY wait needed between opcode and data read for FIFO reads.
 
+**Status:** Fixed in `esp32_raw_rx.cpp` — `rfReadFifoTwoPhase()` renamed to `rfReadFifo()`, single CS-low session, extra BUSY wait and CS toggle removed.
+
 ---
 
 ## Additional Finding: Pulse Shape Mismatch

@@ -91,6 +91,8 @@ The ESP32 RX FIFO read incorrectly splits the operation into two SPI transaction
 4. Verify RSSI and packet count match baseline
 5. Capture RX throughput after change
 
+**Status:** DONE — `rfReadFifoTwoPhase()` replaced by `rfReadFifo()` which sends opcode 0x00 0x01 and reads status+payload in one CS-low session. ESP32 firmware builds and flashes. RX throughput verification blocked pending radio init debug (both ESP32 boards return status 0x00; see task t_ec14cb66 handoff).
+
 ---
 
 ### Task 0.4: Fix ESP32 SPI Clock 40 MHz → 16 MHz
