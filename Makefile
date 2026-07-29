@@ -145,4 +145,189 @@ identify-ports:
 	@echo ""
 	@RP2_BOOT=$$(lsusb 2>/dev/null | grep "2e8a:0003" | wc -l); \
 	RP2_APP=$$(lsusb 2>/dev/null | grep "2e8a:000a" | wc -l); \
-	echo "  BOOTSEL mode: $$RP2_BOOT boards | App mode: $$RP2_APP boards"
+	@echo "  BOOTSEL mode: $$RP2_BOOT boards | App mode: $$RP2_APP boards"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Logic Analyzer Debugging Targets
+# ═══════════════════════════════════════════════════════════════════════
+
+RP2040_DIR := firmware/rp2040
+CAPTURES_DIR := captures
+# PlatformIO env names use rp2040- prefix (e.g. rp2040-raw-tx, rp2040-cont-tx)
+# Users can pass the full env name or the short name.
+
+.PHONY: flash capture capture-byte capture-batch capture-compare build \
+	analyze list-captures setup help
+
+## ─── flash ───────────────────────────────────────────────────────────
+## Flash RP2040 via picotool (BOOTSEL mode required).
+## Usage: make flash [ENV=rp2040-raw-tx]
+flash: ## Flash RP2040 via picotool. Usage: make flash [ENV=rp2040-raw-tx]
+	@if ! command -v picotool >/dev/null 2>&1; then \
+		echo "ERROR: picotool not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@if [ -z "$(ENV)" ]; then ENV="rp2040-raw-tx"; fi; \
+	UF2="$(RP2040_DIR)/.pio/build/$(ENV)/firmware.uf2"; \
+	if [ ! -f "$$UF2" ]; then \
+		echo "ERROR: Firmware not found at $$UF2"; \
+		echo "Build first: make build ENV=$(ENV)"; \
+		exit 1; \
+	fi; \
+	echo "Flashing $$UF2 to RP2040..."; \
+	if ! picotool info >/dev/null 2>&1; then \
+		echo "ERROR: No RP2040 in BOOTSEL mode detected."; \
+		echo "Hold BOOTSEL button, plug in USB, then retry."; \
+		echo "Check: picotool info"; \
+		exit 1; \
+	fi; \
+	picotool load "$$UF2" && picotool reboot; \
+	echo "Flash OK — RP2040 rebooting."
+
+## ─── capture ──────────────────────────────────────────────────────────
+## Capture SPI signals with sigrok-cli.
+## Usage: make capture [DURATION=1] [OUTPUT=capture.sr]
+capture: ## Capture SPI with sigrok-cli. Usage: make capture [DURATION=1] [OUTPUT=capture.sr]
+	@if ! command -v sigrok-cli >/dev/null 2>&1; then \
+		echo "ERROR: sigrok-cli not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@mkdir -p $(CAPTURES_DIR)
+	@if [ -z "$(DURATION)" ]; then DURATION=1; fi; \
+	if [ -z "$(OUTPUT)" ]; then OUTPUT="capture.sr"; fi; \
+	SAMPLES=$$(echo "$(DURATION) * 24000000" | bc); \
+	echo "Capturing $$DURATION seconds at 24 MHz → $$OUTPUT"; \
+	echo "Channel mapping: CH1=CS, CH2=SCK, CH3=MOSI, CH4=MISO, CH5=BUSY, CH6=IRQ, CH7=RST"; \
+	sigrok-cli --driver=fx2lafw \
+		--config samplerate=24mhz \
+		--samples $$SAMPLES \
+		--triggers ch1=f \
+		--channels ch1,ch2,ch3,ch4,ch5,ch6,ch7 \
+		-o "$$OUTPUT"; \
+	if [ $$? -eq 0 ]; then \
+		echo "Capture saved to $$OUTPUT"; \
+	else \
+		echo "ERROR: Capture failed. Check logic analyzer USB connection."; \
+		echo "Try: sigrok-cli --driver=fx2lafw --scan"; \
+		exit 1; \
+	fi
+
+## ─── capture-byte ─────────────────────────────────────────────────────
+## Build + flash raw_tx (per-byte), then capture.
+capture-byte: ## Build+flash raw_tx, capture. Usage: make capture-byte [DURATION=1]
+	$(MAKE) build ENV=rp2040-raw-tx
+	$(MAKE) flash ENV=rp2040-raw-tx
+	$(MAKE) capture DURATION=$(or $(DURATION),2) OUTPUT=$(CAPTURES_DIR)/byte-transfer.sr
+
+## ─── capture-batch ───────────────────────────────────────────────────
+## Build + flash cont_tx (batch/DMA), then capture.
+capture-batch: ## Build+flash cont_tx, capture. Usage: make capture-batch [DURATION=1]
+	$(MAKE) build ENV=rp2040-cont-tx
+	$(MAKE) flash ENV=rp2040-cont-tx
+	$(MAKE) capture DURATION=$(or $(DURATION),2) OUTPUT=$(CAPTURES_DIR)/batch-transfer.sr
+
+## ─── capture-compare ─────────────────────────────────────────────────
+## Capture both per-byte and batch for comparison.
+capture-compare: ## Capture byte + batch transfers for comparison.
+	$(MAKE) capture-byte DURATION=$(or $(DURATION),2)
+	@echo "=== Now switch firmware to batch mode ==="
+	$(MAKE) capture-batch DURATION=$(or $(DURATION),2)
+	@echo ""
+	@echo "=== Comparison captures ready ==="
+	@ls -lh $(CAPTURES_DIR)/byte-transfer.sr $(CAPTURES_DIR)/batch-transfer.sr 2>/dev/null
+
+## ─── build ───────────────────────────────────────────────────────────
+## Build RP2040 firmware with PlatformIO.
+## Usage: make build [ENV=rp2040-raw-tx]
+build: ## Build firmware. Usage: make build [ENV=rp2040-raw-tx]
+	@if ! command -v pio >/dev/null 2>&1; then \
+		echo "ERROR: PlatformIO (pio) not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@if [ -z "$(ENV)" ]; then ENV="rp2040-raw-tx"; fi; \
+	echo "Building firmware env: $(ENV)"; \
+	cd $(RP2040_DIR) && pio run -e $(ENV)
+
+## ─── analyze ──────────────────────────────────────────────────────────
+## Open a capture file for analysis.
+## Usage: make analyze FILE=captures/byte-transfer.sr
+analyze: ## Open capture for analysis. Usage: make analyze FILE=captures/byte-transfer.sr
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make analyze FILE=captures/byte-transfer.sr"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "ERROR: File not found: $(FILE)"; \
+		echo "List captures: make list-captures"; \
+		exit 1; \
+	fi
+	@if command -v pulseview >/dev/null 2>&1; then \
+		echo "Opening $(FILE) in PulseView..."; \
+		pulseview "$(FILE)" & \
+	else \
+		echo "pulseview not installed. Use sigrok-cli for command-line analysis:"; \
+		echo ""; \
+		echo "  # Decode SPI (CS=ch1, SCK=ch2, MOSI=ch3, MISO=ch4):"; \
+		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4"; \
+		echo ""; \
+		echo "  # Show decoded hex:"; \
+		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4 -A spi=hex"; \
+		echo ""; \
+		echo "  # Show protocol metadata:"; \
+		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4 -A spi"; \
+	fi
+
+## ─── list-captures ───────────────────────────────────────────────────
+## List all capture files with timestamps and sizes.
+list-captures: ## List capture files in captures/ with timestamps and sizes.
+	@echo "=== Capture Files ==="
+	@if [ ! -d $(CAPTURES_DIR) ] || [ -z "$$(ls -A $(CAPTURES_DIR) 2>/dev/null)" ]; then \
+		echo "No captures directory or no files found."; \
+		echo "Run: make capture DURATION=2 OUTPUT=$(CAPTURES_DIR)/test.sr"; \
+	else \
+		ls -lh --time-style=long-iso $(CAPTURES_DIR)/*.sr 2>/dev/null || echo "No .sr files found."; \
+		echo ""; \
+		COUNT=$$(ls $(CAPTURES_DIR)/*.sr 2>/dev/null | wc -l); \
+		TOTAL_SIZE=$$(du -sh $(CAPTURES_DIR) 2>/dev/null | cut -f1); \
+		echo "Total: $$COUNT capture(s), $$TOTAL_SIZE"; \
+	fi
+
+## ─── setup ────────────────────────────────────────────────────────────
+## Run the ansible playbook to install all dependencies.
+setup: ## Install all deps via ansible playbook.
+	@if ! command -v ansible-playbook >/dev/null 2>&1; then \
+		echo "ERROR: ansible-playbook not found. Install with: pip install ansible"; \
+		exit 1; \
+	fi
+	ansible-playbook ansible/setup-debug-env.yml -K
+
+## ─── help ──────────────────────────────────────────────────────────────
+help: ## Show this help message.
+	@echo "Balloon Speed Tests — Logic Analyzer Debugging"
+	@echo ""
+	@echo "Setup:"
+	@echo "  make setup             Install all deps via ansible playbook"
+	@echo ""
+	@echo "Firmware:"
+	@echo "  make build [ENV=rp2040-raw-tx]   Build firmware (default: rp2040-raw-tx)"
+	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
+	@echo ""
+	@echo "Capture (logic analyzer):"
+	@echo "  make capture [DURATION=1] [OUTPUT=capture.sr]  Capture SPI signals"
+	@echo "  make capture-byte [DURATION=2]     Build+flash raw_tx, capture per-byte transfer"
+	@echo "  make capture-batch [DURATION=2]    Build+flash cont_tx, capture batch/DMA transfer"
+	@echo "  make capture-compare [DURATION=2]  Capture both byte+batch for comparison"
+	@echo ""
+	@echo "Analysis:"
+	@echo "  make analyze FILE=captures/byte-transfer.sr  Open capture in pulseview or print sigrok hints"
+	@echo "  make list-captures                 List all .sr files with sizes"
+	@echo ""
+	@echo "Help:"
+	@echo "  make help                Show this message"
+	@echo ""
+	@echo "Available PlatformIO environments (common):"
+	@echo "  rp2040-raw-tx    Per-byte SPI transfer"
+	@echo "  rp2040-cont-tx    Batch/DMA continuous transfer"
+	@echo "  rp2040-raw-tx-pipe   Pipelined transfer"
+	@echo ""
+	@echo "Channel mapping: CH1=CS, CH2=SCK, CH3=MOSI, CH4=MISO, CH5=BUSY, CH6=IRQ, CH7=RST"

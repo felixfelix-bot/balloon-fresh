@@ -1,0 +1,198 @@
+---
+# Ansible playbook: Install logic analyzer debugging dependencies
+# Installs sigrok-cli, picotool, PlatformIO CLI, udev rules, Python packages.
+# Run: ansible-playbook ansible/setup-debug-env.yml -K
+# The -K flag prompts for the sudo password needed for apt installs.
+
+- name: Set up logic analyzer debugging environment
+  hosts: localhost
+  connection: local
+  become: true
+  vars:
+    # Non-root user for pip / PlatformIO installs
+    local_user: "{{ ansible_env.SUDO_USER | default(ansible_env.USER) | default('root') }}"
+    pio_install_dir: "/home/{{ local_user }}/.platformio"
+    pio_venv: "/home/{{ local_user }}/.platformio/penv"
+
+  tasks:
+    # ── Package prerequisites ────────────────────────────────────────────
+    - name: Install apt prerequisites
+      ansible.builtin.apt:
+        name:
+          - build-essential
+          - cmake
+          - git
+          - python3
+          - python3-pip
+          - python3-venv
+          - pkg-config
+          - libglib2.0-dev
+          - libserialport-dev
+          - libusb-1.0-0-dev
+          - libftdi1-dev
+          - libhidapi-dev
+          - libzip-dev
+          - udev
+        state: present
+        update_cache: true
+
+    # ── sigrok suite ──────────────────────────────────────────────────────
+    - name: Install sigrok-cli and libsigrok
+      ansible.builtin.apt:
+        name:
+          - sigrok
+          - sigrok-cli
+          - libsigrok-dev
+          - libsigrok4
+        state: present
+
+    - name: Install pulseview (optional GUI)
+      ansible.builtin.apt:
+        name:
+          - pulseview
+          - libsigrokdecode-dev
+        state: present
+      ignore_errors: true
+      register: pulseview_install
+
+    - name: Report pulseview status
+      ansible.builtin.debug:
+        msg: >-
+          pulseview {{ 'installed' if pulseview_install.changed | default(false) else 'already installed or unavailable' }}
+      when: pulseview_install is defined
+
+    # ── picotool ─────────────────────────────────────────────────────────
+    - name: Install picotool build dependencies
+      ansible.builtin.apt:
+        name:
+          - libusb-1.0-0-dev
+        state: present
+
+    - name: Check if picotool is already installed
+      ansible.builtin.command: which picotool
+      register: picotool_check
+      changed_when: false
+      failed_when: false
+
+    - name: Clone picotool repository
+      ansible.builtin.git:
+        repo: https://github.com/raspberrypi/picotool.git
+        dest: /tmp/picotool
+        depth: 1
+        force: true
+      become: false
+      when: picotool_check.rc != 0
+
+    - name: Build and install picotool
+      ansible.builtin.shell: |
+        cd /tmp/picotool
+        mkdir -p build && cd build
+        cmake ..
+        make -j$(nproc)
+        make install
+      when: picotool_check.rc != 0
+
+    - name: Install picotool udev rules
+      ansible.builtin.copy:
+        dest: /etc/udev/rules.d/99-picotool.rules
+        mode: "0644"
+        content: |
+          # Raspberry Pi Pico (RP2040) BOOTSEL mode — picotool access
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE="0666", GROUP="plugdev"
+          # RP2040 app mode (CDC)
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE="0666", GROUP="plugdev"
+          # RP2040 MicroPython
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0009", MODE="0666", GROUP="plugdev"
+      notify: Reload udev
+
+    # ── udev rules for logic analyzer ────────────────────────────────────
+    - name: Install logic analyzer udev rules
+      ansible.builtin.copy:
+        dest: /etc/udev/rules.d/99-logic-analyzer.rules
+        mode: "0644"
+        content: |
+          # fx2lafw-compatible USB logic analyzers (Saleae Logic / Cellulologic etc.)
+          # Saleae Logic
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="0925", ATTRS{idProduct}=="3881", MODE="0666", GROUP="plugdev"
+          # Cypress FX2 generic
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="0547", ATTRS{idProduct}=="1002", MODE="0666", GROUP="plugdev"
+          # CWAV USBee
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="08a9", ATTRS{idProduct}=="0014", MODE="0666", GROUP="plugdev"
+          # Cellulologic 8-channel 24MHz (typically uses generic VID:PID matching fx2lafw)
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6086", MODE="0666", GROUP="plugdev"
+      notify: Reload udev
+
+    # ── PlatformIO CLI ───────────────────────────────────────────────────
+    - name: Check if PlatformIO is installed
+      ansible.builtin.command: which pio
+      become: false
+      register: pio_check
+      changed_when: false
+      failed_when: false
+
+    - name: Create PlatformIO venv
+      ansible.builtin.command:
+        cmd: "python3 -m venv {{ pio_venv }}"
+        creates: "{{ pio_venv }}/bin/python"
+      become: false
+      when: pio_check.rc != 0
+
+    - name: Install PlatformIO CLI
+      ansible.builtin.command: "{{ pio_venv }}/bin/pip install platformio"
+      become: false
+      when: pio_check.rc != 0
+
+    - name: Create pio symlink in /usr/local/bin
+      ansible.builtin.file:
+        src: "{{ pio_venv }}/bin/pio"
+        dest: /usr/local/bin/pio
+        state: link
+        force: true
+      when: pio_check.rc != 0
+
+    # ── Verify all tools ─────────────────────────────────────────────────
+    - name: Verify sigrok-cli
+      ansible.builtin.command: sigrok-cli --version
+      register: sigrok_ver
+      changed_when: false
+      become: false
+
+    - name: Verify picotool
+      ansible.builtin.command: picotool version
+      register: picotool_ver
+      changed_when: false
+      become: false
+
+    - name: Verify PlatformIO
+      ansible.builtin.command: pio --version
+      register: pio_ver
+      changed_when: false
+      become: false
+
+    - name: Verify pulseview (if installed)
+      ansible.builtin.command: pulseview --version
+      register: pulseview_ver
+      changed_when: false
+      become: false
+      ignore_errors: true
+
+    - name: Verify libsigrokdecode (Python module)
+      ansible.builtin.shell: python3 -c "import libsigrokdecode; print(libsigrokdecode.__version__)" 2>/dev/null || echo "not installed"
+      register: srd_ver
+      changed_when: false
+      become: false
+
+    - name: Print tool versions
+      ansible.builtin.debug:
+        msg:
+          - "=== Installed tool versions ==="
+          - "sigrok-cli: {{ sigrok_ver.stdout_lines[0] | default('unknown') }}"
+          - "picotool: {{ picotool_ver.stdout_lines[0] | default('unknown') }}"
+          - "PlatformIO: {{ pio_ver.stdout | default('unknown') }}"
+          - "pulseview: {{ pulseview_ver.stdout_lines[0] | default('not installed') }}"
+          - "libsigrokdecode: {{ srd_ver.stdout | default('unknown') }}"
+          - "=============================="
+
+  handlers:
+    - name: Reload udev
+      ansible.builtin.shell: udevadm control --reload-rules && udevadm trigger
