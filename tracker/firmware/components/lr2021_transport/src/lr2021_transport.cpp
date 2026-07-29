@@ -152,7 +152,17 @@ TransportError Lr2021Transport::transmit_packet(const uint8_t* data, size_t len)
             radio_->start_rx();
             return TransportError::Ok;
         }
-        // Yield — on host this is a no-op spin
+
+        // Yield to prevent watchdog timeout (fix: 8f93593).
+        // send_packet() already delays 5ms after SET_TX, so TX_DONE is
+        // typically set on the first poll. This vTaskDelay is a safety net.
+#if defined(__has_include)
+#if __has_include(<freertos/FreeRTOS.h>)
+        vTaskDelay(pdMS_TO_TICKS(IRQ_POLL_MS));
+#else
+        // Host mode: busy-wait (mock sets TX_DONE immediately)
+#endif
+#endif
     }
 
     return TransportError::Timeout;

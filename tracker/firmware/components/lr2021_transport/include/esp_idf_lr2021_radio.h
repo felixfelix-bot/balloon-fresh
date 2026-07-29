@@ -109,12 +109,15 @@ private:
     /// Buffer: {0x00, 0x02} + payload.
     void spi_write_tx_fifo(const uint8_t* data, size_t len);
 
-    /// Read from RX FIFO. Sends {0x00, 0x01} opcode, then reads len bytes
-    /// under a single CS assertion.
+    /// Read from RX FIFO. Combines opcode {0x00, 0x01} + response into
+    /// a SINGLE full-duplex SPI transaction under one CS assertion.
+    /// The LR2021 forgets the command if CS goes HIGH between opcode
+    /// and response bytes.
     void spi_read_rx_fifo(uint8_t* buf, size_t len);
 
-    /// Read IRQ status. Sends {0x01, 0x17}, releases CS, waits BUSY,
-    /// re-asserts CS, reads 6 bytes. Parses 32-bit flags from bytes[2:5].
+    /// Read IRQ status. Combines opcode {0x01, 0x17} + 4-byte response
+    /// into a SINGLE full-duplex SPI transaction under one CS assertion.
+    /// Parses 32-bit flags from bytes[2:5].
     /// @param flags_out [out] 32-bit IRQ status word
     /// @return Lr2021Error::Ok on success
     Lr2021Error read_irq_register(uint32_t& flags_out);

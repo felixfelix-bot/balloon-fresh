@@ -162,49 +162,51 @@ void EspHalLr2021Radio::spi_write_tx_fifo(const uint8_t* data, size_t len) {
 void EspHalLr2021Radio::spi_read_rx_fifo(uint8_t* buf, size_t len) {
     wait_busy();
 
-    uint8_t cmd[2] = { 0x00, 0x01 };  // READ_RX_FIFO opcode
+    // Combine opcode + response into ONE full-duplex transaction.
+    // tx = [0x00, 0x01, 0x00, 0x00, ...dummy zeros...]
+    // rx = [skip,   skip,  byte1,  byte2,  ...response...]
+    // CS stays LOW for the entire transaction — the LR2021 forgets the
+    // command if CS goes HIGH between opcode and response (fix: 19f6443).
+    static uint8_t tx_buf[2 + LR2021_MAX_PACKET];
+    static uint8_t rx_buf[2 + LR2021_MAX_PACKET];
+    tx_buf[0] = 0x00;  // READ_RX_FIFO opcode high byte
+    tx_buf[1] = 0x01;  // READ_RX_FIFO opcode low byte
+    memset(tx_buf + 2, 0x00, len);  // dummy zeros to clock response out
 
-    spi_transaction_t t_cmd = {};
-    t_cmd.length = 2 * 8;
-    t_cmd.tx_buffer = cmd;
-    t_cmd.rx_buffer = nullptr;
-
-    spi_transaction_t t_data = {};
-    t_data.length = len * 8;
-    t_data.tx_buffer = nullptr;
-    t_data.rx_buffer = buf;
+    spi_transaction_t t = {};
+    t.length = (2 + len) * 8;  // bits
+    t.tx_buffer = tx_buf;
+    t.rx_buffer = rx_buf;
+    t.flags = 0;  // use tx_buffer/rx_buffer pointers (data > 4 bytes)
 
     cs_low();
-    spi_device_polling_transmit(spi_, &t_cmd);
-    spi_device_polling_transmit(spi_, &t_data);
+    spi_device_polling_transmit(spi_, &t);
     cs_high();
+
+    // Response data starts at byte 2 (after opcode echo on MISO)
+    memcpy(buf, rx_buf + 2, len);
 }
 
 Lr2021Error EspHalLr2021Radio::read_irq_register(uint32_t& flags_out) {
     wait_busy();
 
-    uint8_t cmd[2] = { 0x01, 0x17 };  // GET_IRQ_STATUS opcode
+    // Combine opcode + response into ONE full-duplex transaction.
+    // tx = [0x01, 0x17, 0x00, 0x00, 0x00, 0x00]  (opcode + 4 dummy)
+    // rx = [skip,  skip, flag3, flag2, flag1, flag0]
+    // CS stays LOW for the entire transaction — previously the code raised
+    // CS HIGH between opcode and response, causing the chip to forget the
+    // command and return 0x00 for all reads (fix: 19f6443).
+    uint8_t tx_buf[6] = { 0x01, 0x17, 0x00, 0x00, 0x00, 0x00 };  // GET_IRQ_STATUS + dummy
     uint8_t rx[6] = {0};
 
-    spi_transaction_t t_cmd = {};
-    t_cmd.length = 2 * 8;
-    t_cmd.tx_buffer = cmd;
-
-    spi_transaction_t t_rx = {};
-    t_rx.length = 6 * 8;
-    t_rx.tx_buffer = nullptr;
-    t_rx.rx_buffer = rx;
-
-    // Phase 1: send command
-    cs_low();
-    spi_device_polling_transmit(spi_, &t_cmd);
-    cs_high();
-
-    // Phase 2: wait for BUSY, then read result
-    wait_busy();
+    spi_transaction_t t = {};
+    t.length = 6 * 8;  // bits
+    t.tx_buffer = tx_buf;
+    t.rx_buffer = rx;
+    t.flags = 0;  // use tx_buffer/rx_buffer pointers
 
     cs_low();
-    spi_device_polling_transmit(spi_, &t_rx);
+    spi_device_polling_transmit(spi_, &t);
     cs_high();
 
     // Parse 32-bit flags from bytes[2:5] (bytes[0:1] are status/dummy)
@@ -411,8 +413,12 @@ Lr2021Error EspHalLr2021Radio::send_packet(const uint8_t* data, size_t len) {
     uint8_t cmd_set_tx[] = { 0x02, 0x0D, 0xFF, 0xFF, 0xFF };  // timeout=0xFFFFFF (infinite)
     spi_write(cmd_set_tx, 5);
 
-    // Do NOT wait for TX_DONE here — that's poll_irq's job.
-    // The transport layer will poll check_irq() / get_irq_status().
+    // 4. Fixed delay for TX completion (fix: 8f93593)
+    // FLRC at 2600 kbps takes ~1ms per packet; 5ms is a safe margin.
+    // Replaces tight IRQ polling loop that triggered ESP32 task watchdog
+    // timeout after ~90 minutes of continuous TX.
+    vTaskDelay(pdMS_TO_TICKS(5));
+
     return Lr2021Error::Ok;
 }
 
