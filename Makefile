@@ -1,8 +1,11 @@
 # Balloon Fresh — Hardware Control Makefile
 # Targets for ESP32-C3 BOOTSEL controller and RP2040 firmware management
 
+SHELL := /bin/bash
+
 BOOTSEL_DIR := firmware/esp32-bootsel-controller
 RP2040_DIR := firmware/rp2040
+ESP32_DIR := firmware/esp32-c3-flrc
 PORT ?= /dev/ttyACM1
 
 .DEFAULT_GOAL := help
@@ -516,6 +519,83 @@ debug: ## One-command: build + flash + start TX + capture.
 	echo "Zip ready: $$DIR/$$BASENAME.zip"
 	@echo "Analyze with: make analyze-timing FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
 
+## ─── debug-esp32 (ESP32-C3 one-command workflow) ─────────────────────
+## Build ESP32-C3 firmware with CONTINUOUS_TX, flash via ESP-IDF, auto-start TX, capture.
+## Usage: make debug-esp32 [PORT=/dev/ttyUSB0] [DURATION=1] [OUTPUT=captures/esp32-debug.sr]
+## ESP32 firmware auto-starts TX on boot — no serial RUN command needed.
+## Prerequisites: ESP32-C3 connected, logic analyzer connected, ESP-IDF at ~/esp/esp-idf
+.PHONY: debug-esp32
+debug-esp32: ## ESP32-C3: build (CONTINUOUS_TX) + flash + auto-TX + capture.
+	@echo "=== Balloon Speed Tests — ESP32-C3 Debug Workflow ==="
+	@echo ""
+	@echo "Step 1/4: Building ESP32-C3 firmware (CONTINUOUS_TX)..."
+	@source ~/esp/esp-idf/export.sh 2>/dev/null && \
+		cd $(ESP32_DIR) && \
+		idf.py -DCONTINUOUS_TX=1 $(BUILD_ARGS) build
+	@echo ""
+	@echo "Step 2/4: Detecting ESP32 port + flashing..."
+	@source ~/esp/esp-idf/export.sh 2>/dev/null && \
+		ESP_PORT="$(filter-out /dev/ttyACM1,$(PORT))"; \
+		if [ -z "$$ESP_PORT" ]; then \
+			echo "No explicit PORT — auto-detecting ESP32 (VID 303a)..."; \
+			for p in /dev/ttyACM[0-9] /dev/ttyUSB[0-9]; do \
+				[ -e "$$p" ] || continue; \
+				VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+				echo "  $$p: VID=$$VID"; \
+				if [ "$$VID" = "303a" ]; then ESP_PORT="$$p"; break; fi; \
+			done; \
+		fi; \
+		if [ -z "$$ESP_PORT" ]; then \
+			echo "ERROR: No ESP32 found (VID 303a). Pass PORT=/dev/ttyUSB0 explicitly."; \
+			exit 1; \
+		fi; \
+		echo "Using port: $$ESP_PORT"; \
+		cd $(ESP32_DIR) && idf.py -p $$ESP_PORT flash
+	@echo ""
+	@echo "Step 3/4: Waiting for ESP32 TX to start..."
+	@echo "ESP32 firmware auto-starts TX on boot (no RUN command needed)."
+	@echo "Settling 3s for LA USB re-enumeration..."
+	@sleep 3
+	@echo ""
+	@echo "Step 4/4: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@mkdir -p $(CAPTURES_DIR)
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/esp32-debug.sr); \
+	echo "Capturing to $$OUTPUT ..."; \
+	echo "Channel mapping: D0=CS, D1=SCK, D2=MOSI, D3=MISO, D4=BUSY, D5=IRQ, D6=RST"; \
+	sigrok-cli --driver fx2lafw --config samplerate=24mhz --samples $(or $(DURATION),1)000000 \
+		--channels D0,D1,D2,D3,D4,D5,D6 -o $$OUTPUT 2>&1 || \
+		{ echo "ERROR: sigrok-cli failed. Check logic analyzer is plugged in."; \
+		echo "Try: sigrok-cli --list"; exit 1; }
+	@echo ""
+	@echo "=== Done! ==="
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/esp32-debug.sr); \
+	BASENAME=$$(basename $$OUTPUT .sr); \
+	DIR=$$(cd $$(dirname $$OUTPUT) && pwd); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Zip ready: $$DIR/$$BASENAME.zip"
+
+## ─── sweep-esp32 (ESP32-C3 payload size sweep) ───────────────────────
+## Runs 4 captures with different packet sizes: 32, 64, 128, 255 bytes.
+## Each size rebuilds with -DTX_PKT_SIZE=<N> and re-flashes.
+## Results in captures/esp32-sweep-*.sr
+.PHONY: sweep-esp32
+sweep-esp32: ## ESP32-C3 payload size sweep (32/64/128/255 bytes).
+	@for SIZE in 32 64 128 255; do \
+		echo ""; \
+		echo "========================================"; \
+		echo "ESP32 SWEEP: $${SIZE}-byte packets"; \
+		echo "========================================"; \
+		$(MAKE) debug-esp32 \
+			DURATION=1 \
+			OUTPUT=$(CAPTURES_DIR)/esp32-sweep-$${SIZE}.sr \
+			BUILD_ARGS="-DTX_PKT_SIZE=$${SIZE}" \
+			|| { echo "ESP32 SWEEP FAILED at $${SIZE}-byte step"; exit 1; }; \
+		echo ""; \
+		echo "Waiting 2s before next size..."; \
+		sleep 2; \
+	done
+	@echo ""; echo "=== ESP32 SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/esp32-sweep-*.sr"
+
 ## ─── setup ────────────────────────────────────────────────────────────
 ## Run the ansible playbook to install all dependencies.
 setup: ## Install all deps via ansible playbook.
@@ -589,6 +669,8 @@ help: ## Show this help message.
 	@echo ""
 	@echo "Firmware:"
 	@echo "  make debug [ENV=rp2040-cont-tx] [DURATION=1]  One-command: build+flash+TX+capture"
+	@echo "  make debug-esp32 [PORT=/dev/ttyUSB0]  ESP32-C3: build+flash+auto-TX+capture"
+	@echo "  make sweep-esp32  ESP32-C3 payload size sweep (32/64/128/255 bytes)"
 	@echo "  make build [ENV=rp2040-raw-tx]   Build firmware (default: rp2040-raw-tx)"
 	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
 	@echo ""
