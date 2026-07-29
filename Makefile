@@ -432,7 +432,7 @@ debug: ## One-command: build + flash + start TX + capture.
 	@echo "Capture saved to: $(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
 	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
 	BASENAME=$$(basename $$OUTPUT .sr); \
-	DIR=$$(dirname $$OUTPUT); \
+	DIR=$$(cd $$(dirname $$OUTPUT) && pwd); \
 	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
 	echo "Zip ready: $$DIR/$$BASENAME.zip"
 	@echo "Analyze with: make analyze-timing FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
