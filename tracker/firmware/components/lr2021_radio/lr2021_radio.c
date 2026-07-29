@@ -62,14 +62,15 @@ static void wait_busy(void)
 
 /* ── SPI primitives (ported from main.cpp) ────────────────────────────── */
 
-/* Write command bytes — no read */
+/* Write command bytes — no read
+ * Uses tx_buffer pointer (NOT SPI_TRANS_USE_TXDATA) because some commands
+ * exceed the 4-byte tx_data[] limit (e.g. CALIB_FRONT_END is 10 bytes). */
 static void rf_write_cmd(const uint8_t *cmd, size_t len)
 {
     wait_busy();
 
     spi_transaction_t t = {};
-    t.flags    = SPI_TRANS_USE_TXDATA;
-    t.length   = len * 8;
+    t.length    = len * 8;
     t.tx_buffer = cmd;
     t.rx_buffer = NULL;
 
@@ -107,8 +108,7 @@ static void rf_read_rx_fifo(uint8_t *buf, size_t len)
     uint8_t cmd[2] = { 0x00, 0x01 };  /* READ_RX_FIFO opcode */
 
     spi_transaction_t t_cmd = {};
-    t_cmd.flags    = SPI_TRANS_USE_TXDATA;
-    t_cmd.length   = 2 * 8;
+    t_cmd.length    = 2 * 8;
     t_cmd.tx_buffer = cmd;
     t_cmd.rx_buffer = NULL;
 
@@ -132,8 +132,7 @@ static uint32_t rf_get_irq_status(void)
     uint8_t rx[6] = {0};
 
     spi_transaction_t t_cmd = {};
-    t_cmd.flags    = SPI_TRANS_USE_TXDATA;
-    t_cmd.length   = 2 * 8;
+    t_cmd.length    = 2 * 8;
     t_cmd.tx_buffer = cmd;
 
     spi_transaction_t t_rx = {};
@@ -166,8 +165,7 @@ static int8_t rf_get_rssi(void)
     uint8_t rx[7] = {0};
 
     spi_transaction_t t_cmd = {};
-    t_cmd.flags    = SPI_TRANS_USE_TXDATA;
-    t_cmd.length   = 2 * 8;
+    t_cmd.length    = 2 * 8;
     t_cmd.tx_buffer = cmd;
 
     spi_transaction_t t_rx = {};
@@ -428,14 +426,16 @@ esp_err_t lr2021_radio_init(const lr2021_radio_pins_t *pins)
     devcfg.mode = 0;                /* SPI mode 0 */
     devcfg.spics_io_num = -1;       /* CS manual */
     devcfg.queue_size = 1;
-    devcfg.flags = SPI_DEVICE_HALFDUPLEX;
+    /* Full-duplex mode — some transactions (rf_read_status) use both
+     * tx_buffer and rx_buffer simultaneously, which half-duplex rejects. */
+    devcfg.flags = 0;
 
     ret = spi_bus_add_device(SPI2_HOST, &devcfg, &s_spi);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "SPI device add failed: %s", esp_err_to_name(ret));
         return ret;
     }
-    ESP_LOGI(TAG, "SPI device added: %d MHz, mode 0, half-duplex",
+    ESP_LOGI(TAG, "SPI device added: %d MHz, mode 0, full-duplex",
              LR2021_SPI_CLOCK_HZ / 1000000);
 
     /* Initialize radio with proven FLRC sequence */
