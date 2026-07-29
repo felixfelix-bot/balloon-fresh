@@ -252,44 +252,38 @@ The ground station runs a new L7 component alongside existing Nostr relay:
   should cache last template for a TTL window.
 - **Ground station complexity.** Needs stratum-bridge component (~300-500 lines).
 
-## Open Questions
+## Resolved Design Questions
 
-### O1. Stratum V1 vs V2?
+### D6. Stratum V1 first (RESOLVED)
+V1 = JSON text, Bitaxe-native. Start with V1. LoRa binary encoding is
+protocol-agnostic — V2 can layer later without touching radio format.
 
-V1 = JSON text, Bitaxe-native. V2 = binary, better distribution.
-Recommendation: V1. LoRa encoding is protocol-agnostic.
+### D7. Local difficulty filter on ground (RESOLVED)
+Ground station runs local higher-difficulty filter. Ground station PAYS for
+all its traffic, so filtering reduces its own bandwidth cost. Self-incentivized.
 
-### O2. Share difficulty filtering?
+### D8. Template encrypted, per-session key after payment (RESOLVED)
+Templates encrypted with per-session key. Miner gets decryption key only after
+paying for the connection (e-hash balance check). No payment = no decryption.
 
-Pool sets difficulty. At LoRa bandwidth, can't relay every share.
-Recommendation: Ground station filters to 10× pool difficulty. Fewer shares,
-each more valuable.
+### D9. TTL pause on internet loss + free local relay access (RESOLVED)
+When balloon loses upstream: template TTL expiry, ground station pauses mining.
+During outage, ground station gets free access to the local relay (existing
+mesh services still work, just no upstream pool connectivity).
 
-### O3. Template encryption?
-
-Should templates be plaintext (freeloader sees but can't submit nonces
-without relay) or encrypted (no template without earned credit)?
-Recommendation: Encrypted with per-session key. Credit check before key delivery.
-
-### O4. Balloon internet loss?
-
-When balloon loses upstream connection to e-hash proxy:
-Recommendation: TTL-based expiry. Template carries timestamp. Ground station
-pauses mining after configurable TTL without new template.
-
-### O5. Multi-customer credit accounting?
-
-Multiple ground stations mining under one balloon. How does proxy attribute
-hash rate to specific customers? Per-station worker IDs in nonce submissions.
-Proxy tracks per-worker credits. Standard stratum multi-worker pattern.
+### D10. Per-nonce e-hash issuance, mint tracks unspent proofs (RESOLVED)
+Balloon gives ground station e-hash token every time it receives a valid nonce.
+The Cashu MINT (not the balloon) is responsible for tracking unspent proofs /
+double-spend prevention. Per-station worker IDs in EHASH_NONCE for attribution.
 
 ## Rollout / Implementation Phases
 
-TBD — awaiting O1-O5 decisions. Proposed:
-
-- **Phase A**: Binary encoding spec (EHASH_TEMPLATE + EHASH_NONCE format)
-- **Phase B**: Ground station stratum-bridge prototype (Python on Pi)
-- **Phase C**: Balloon relay module (L7 handler: template relay + nonce relay + credit gate)
+- **Phase A** (DONE): Binary encoding spec (EHASH_TEMPLATE + EHASH_NONCE format)
+  — `mesh-stack/protocol/ehash-spec.md` + `ehash_messages.h`, commit dd8f884
+- **Phase B**: Ground station stratum-bridge prototype (Python on Pi: LR2021 RX
+  → binary decode → JSON mining.notify → TCP server → Bitaxe)
+- **Phase C**: Balloon relay module (L7 handler: template relay + nonce relay
+  + e-hash wallet + credit gate + template encryption per D8)
 - **Phase D**: Integration test (e-hash proxy + balloon relay + ground station + Bitaxe)
 
 ## Notes
