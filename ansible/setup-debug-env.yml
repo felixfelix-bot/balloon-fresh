@@ -1,8 +1,17 @@
 ---
 # Ansible playbook: Install logic analyzer debugging dependencies
-# Installs sigrok-cli, picotool, PlatformIO CLI, udev rules, Python packages.
+# Installs sigrok-cli, picotool (with Pico SDK), PlatformIO CLI,
+# Max Gerhardt platform fork + earlephilhower Arduino core, udev rules.
+#
 # Run: ansible-playbook ansible/setup-debug-env.yml -K
-# The -K flag prompts for the sudo password needed for apt installs.
+#
+# LEARNINGS baked in:
+#   1. No global become: true (causes sudo prompt timeout on Gathering Facts)
+#   2. picotool needs PICO_SDK_PATH (clone pico-sdk first, pass via cmake)
+#   3. Official PIO raspberrypi platform does NOT support board_build.core=earlephilhower
+#      Must use Max Gerhardt's fork: github.com/maxgerhardt/platform-raspberrypi
+#   4. earlephilhower framework-arduinopico must be cloned with --recursive (submodules)
+#   5. tool-picotool-rp2040-earlephilhower needed for upload_protocol=picotool
 
 - name: Set up logic analyzer debugging environment
   hosts: localhost
@@ -10,7 +19,8 @@
   vars:
     local_user: "{{ lookup('env', 'USER') }}"
     pio_install_dir: "/home/{{ local_user }}/.platformio"
-    pio_venv: "/home/{{ local_user }}/.platformio/penv"
+    pio_packages: "/home/{{ local_user }}/.platformio/packages"
+    pico_sdk_dir: "/home/{{ local_user }}/pico-sdk"
 
   tasks:
     # ── Package prerequisites ────────────────────────────────────────────
@@ -62,19 +72,25 @@
           pulseview {{ 'installed' if pulseview_install.changed | default(false) else 'already installed or unavailable' }}
       when: pulseview_install is defined
 
-    # ── picotool ─────────────────────────────────────────────────────────
-    - name: Install picotool build dependencies
-      become: true
-      ansible.builtin.apt:
-        name:
-          - libusb-1.0-0-dev
-        state: present
-
+    # ── picotool (needs Pico SDK) ────────────────────────────────────────
     - name: Check if picotool is already installed
       ansible.builtin.command: which picotool
       register: picotool_check
       changed_when: false
       failed_when: false
+
+    - name: Clone Pico SDK (required by picotool build)
+      ansible.builtin.git:
+        repo: https://github.com/raspberrypi/pico-sdk.git
+        dest: "{{ pico_sdk_dir }}"
+        depth: 1
+      when: picotool_check.rc != 0
+
+    - name: Init Pico SDK submodules
+      ansible.builtin.command:
+        cmd: "git submodule update --init"
+        chdir: "{{ pico_sdk_dir }}"
+      when: picotool_check.rc != 0
 
     - name: Clone picotool repository
       ansible.builtin.git:
@@ -84,17 +100,101 @@
         force: true
       when: picotool_check.rc != 0
 
-    - name: Build and install picotool
+    - name: Build and install picotool (with PICO_SDK_PATH)
       become: true
       ansible.builtin.shell: |
         cd /tmp/picotool
-        mkdir -p build && cd build
-        cmake ..
+        rm -rf build && mkdir build && cd build
+        cmake .. -DPICO_SDK_PATH={{ pico_sdk_dir }}
         make -j$(nproc)
         make install
       when: picotool_check.rc != 0
 
-    - name: Install picotool udev rules
+    # ── PlatformIO CLI ───────────────────────────────────────────────────
+    - name: Check if PlatformIO is installed
+      ansible.builtin.command: which pio
+      register: pio_check
+      changed_when: false
+      failed_when: false
+
+    - name: Create PlatformIO venv
+      ansible.builtin.command:
+        cmd: "python3 -m venv {{ pio_install_dir }}/penv"
+        creates: "{{ pio_install_dir }}/penv/bin/python"
+      when: pio_check.rc != 0
+
+    - name: Install PlatformIO CLI
+      ansible.builtin.command: "{{ pio_install_dir }}/penv/bin/pip install platformio"
+      when: pio_check.rc != 0
+
+    - name: Create pio symlink in /usr/local/bin
+      become: true
+      ansible.builtin.file:
+        src: "{{ pio_install_dir }}/penv/bin/pio"
+        dest: /usr/local/bin/pio
+        state: link
+        force: true
+      when: pio_check.rc != 0
+
+    # ── Max Gerhardt platform fork (NOT official PIO platform) ───────────
+    # The official PIO raspberrypi platform (v1.20.0) does NOT support
+    # board_build.core=earlephilhower. Max Gerhardt's fork does.
+    # Without this, builds fail with "Arduino.h: No such file or directory".
+    - name: Check if Max Gerhardt platform is installed
+      ansible.builtin.stat:
+        path: "{{ pio_install_dir }}/platforms/raspberrypi/.git"
+      register: pico_platform_check
+
+    - name: Install Max Gerhardt platform-raspberrypi fork
+      ansible.builtin.command:
+        cmd: "pio platform install https://github.com/maxgerhardt/platform-raspberrypi.git"
+      when: not pico_platform_check.stat.exists
+      ignore_errors: true
+
+    - name: Verify Max Gerhardt platform version (should be 1.19.x fork)
+      ansible.builtin.shell: |
+        grep -o 'maxgerhardt' {{ pio_install_dir }}/platforms/raspberrypi/platform.json 2>/dev/null || \
+        cat {{ pio_install_dir }}/platforms/raspberrypi/platform.json | head -3
+      register: platform_version
+      changed_when: false
+
+    - name: Warn if official platform detected (not the fork)
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: Max Gerhardt fork not detected. If builds fail with
+          "Arduino.h: No such file or directory", run manually:
+          pio platform install https://github.com/maxgerhardt/platform-raspberrypi.git
+      when: "'maxgerhardt' not in platform_version.stdout"
+
+    # ── earlephilhower Arduino-Pico framework ────────────────────────────
+    # Must be cloned with --recursive (pico-sdk, FreeRTOS, TinyUSB submodules)
+    - name: Check if earlephilhower framework is installed
+      ansible.builtin.stat:
+        path: "{{ pio_packages }}/framework-arduinopico/cores/rp2040/Arduino.h"
+      register: framework_check
+
+    - name: Clone earlephilhower arduino-pico framework (with submodules)
+      ansible.builtin.git:
+        repo: https://github.com/earlephilhower/arduino-pico.git
+        dest: "{{ pio_packages }}/framework-arduinopico"
+        depth: 1
+        recursive: true
+      when: not framework_check.stat.exists
+
+    - name: Check if earlephilhower picotool package is installed
+      ansible.builtin.stat:
+        path: "{{ pio_packages }}/tool-picotool-rp2040-earlephilhower/.git"
+      register: pico_tool_check
+
+    - name: Clone earlephilhower picotool (for upload_protocol=picotool)
+      ansible.builtin.git:
+        repo: https://github.com/earlephilhower/picotool.git
+        dest: "{{ pio_packages }}/tool-picotool-rp2040-earlephilhower"
+        depth: 1
+      when: not pico_tool_check.stat.exists
+
+    # ── udev rules ───────────────────────────────────────────────────────
+    - name: Install RP2040 udev rules (BOOTSEL + CDC + app mode)
       become: true
       ansible.builtin.copy:
         dest: /etc/udev/rules.d/99-picotool.rules
@@ -108,7 +208,6 @@
           SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0009", MODE="0666", GROUP="plugdev"
       notify: Reload udev
 
-    # ── udev rules for logic analyzer ────────────────────────────────────
     - name: Install logic analyzer udev rules
       become: true
       ansible.builtin.copy:
@@ -125,32 +224,6 @@
           # Cellulologic 8-channel 24MHz (typically uses generic VID:PID matching fx2lafw)
           SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6086", MODE="0666", GROUP="plugdev"
       notify: Reload udev
-
-    # ── PlatformIO CLI ───────────────────────────────────────────────────
-    - name: Check if PlatformIO is installed
-      ansible.builtin.command: which pio
-      register: pio_check
-      changed_when: false
-      failed_when: false
-
-    - name: Create PlatformIO venv
-      ansible.builtin.command:
-        cmd: "python3 -m venv {{ pio_venv }}"
-        creates: "{{ pio_venv }}/bin/python"
-      when: pio_check.rc != 0
-
-    - name: Install PlatformIO CLI
-      ansible.builtin.command: "{{ pio_venv }}/bin/pip install platformio"
-      when: pio_check.rc != 0
-
-    - name: Create pio symlink in /usr/local/bin
-      become: true
-      ansible.builtin.file:
-        src: "{{ pio_venv }}/bin/pio"
-        dest: /usr/local/bin/pio
-        state: link
-        force: true
-      when: pio_check.rc != 0
 
     # ── Verify all tools ─────────────────────────────────────────────────
     - name: Verify sigrok-cli
@@ -175,6 +248,11 @@
       changed_when: false
       ignore_errors: true
 
+    - name: Verify earlephilhower framework
+      ansible.builtin.stat:
+        path: "{{ pio_packages }}/framework-arduinopico/cores/rp2040/Arduino.h"
+      register: fw_verify
+
     - name: Print tool versions
       ansible.builtin.debug:
         msg:
@@ -183,7 +261,10 @@
           - "picotool: {{ picotool_ver.stdout_lines[0] | default('unknown') }}"
           - "PlatformIO: {{ pio_ver.stdout | default('unknown') }}"
           - "pulseview: {{ pulseview_ver.stdout_lines[0] | default('not installed') }}"
+          - "earlephilhower Arduino.h: {{ 'OK' if fw_verify.stat.exists else 'MISSING' }}"
+          - "Pico SDK: {{ pico_sdk_dir }}"
           - "=============================="
+          - "Next: cd to repo and run 'make debug ENV=rp2040-raw-tx DURATION=1 OUTPUT=captures/test.sr'"
 
   handlers:
     - name: Reload udev
