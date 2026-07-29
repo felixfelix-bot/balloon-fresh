@@ -136,6 +136,16 @@ config ENABLE_NOSTR_STORE
         Enable Nostr event storage for store-and-forward mesh relay.
         Stores up to 512 events with bloom filter deduplication.
 
+config ENABLE_MESH_RADIO
+    bool "Build mesh_radio_main.c (LR2021 + mesh_adapter test app)"
+    default n
+    depends on ENABLE_MESH
+    help
+        Replaces the default app_main.cpp with mesh_radio_main.c, a standalone
+        test app that wires lr2021_radio (raw SPI) to mesh_adapter for
+        fragmented mesh transport over FLRC 2.4 GHz.
+        When disabled, the normal tracker app (app_main.cpp) is built.
+
 config ENABLE_MESHCORE
     bool "Enable MeshCore community mesh (ESP-IDF integration)"
     default n
