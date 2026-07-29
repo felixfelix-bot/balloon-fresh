@@ -3,21 +3,29 @@
  * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
  * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
  *
- * flrc_range_rx_gps.cpp — FLRC RX with RSSI + GPS extraction
+ * flrc_throughput_tx.cpp — Max-throughput FLRC TX for RP2040 + LR2021
  *
- * Backward compatible: parses GPS fields from TX payload if present.
- * If TX has no GPS (fix=0), still outputs seq + rssi normally.
+ * Continuous back-to-back streaming of 127-byte packets (max SX1280 FLRC).
+ * No burst structure, no gaps, no GPS. Pure throughput test.
  *
- * Output per packet:
- *   With GPS:    PKT,n,seq,rssi,lat,lon,alt,sats,hdop,fix
- *   Without GPS: PKT,n,seq,rssi,0,0,0,0,0,0
+ * Auto-starts 3s after power-up. Streams forever.
  *
- * Based on flrc_range_rx_auto.cpp (verified 2026-07-22).
+ * Payload (127 bytes):
+ *   0-3:   packet sequence (uint32 big-endian)
+ *   4-7:   timestamp ms since boot (uint32 big-endian)
+ *   8-126: fill pattern 0xAA
+ *
+ * Prints throughput stats every 1000 packets:
+ *   total sent, elapsed time, effective kbps
+ *
+ * Based on flrc_range_tx_gps.cpp (verified 2026-07-22).
+ * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
+ *       UART_TX=GP12 UART_RX=GP13 (Serial1, debug)
+ *       LED=GP25  LED_ALT=GP16
  */
 
 #include <Arduino.h>
 #include <SPI.h>
-#include "pico/bootrom.h"
 
 // ─── Pins ────────────────────────────────────────────────────────────
 #define PIN_SCK     2
@@ -32,11 +40,15 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
-// ─── FLRC Config ─────────────────────────────────────────────────────
+// ─── FLRC Config (MUST match RX) ─────────────────────────────────────
 #define FLRC_FREQ_MHZ   2440.0f
-#define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     16000000UL
+#define FLRC_PKT_SIZE   127
+#define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
+
+#define TX_POWER_DBM    12
+#define AUTO_START_MS   3000
+#define STATS_INTERVAL  1000   // print stats every N packets
 
 #define SYNC_WORD_0   0x12
 #define SYNC_WORD_1   0xAD
@@ -47,11 +59,11 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-static inline void rfWaitBusy() {
-    uint32_t timeout = millis() + 50;
-    while (digitalRead(PIN_BUSY) == HIGH) {
-        if (millis() > timeout) return;
-    }
+static inline bool rfWaitBusy() {
+    uint32_t busyMask = 1UL << PIN_BUSY;
+    uint32_t timeout = 100000;
+    while ((sio_hw->gpio_in & busyMask) && --timeout) {}
+    return timeout > 0;
 }
 
 static void rfWriteCmd(const uint8_t *buf, size_t len) {
@@ -59,16 +71,6 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     for (size_t i = 0; i < len; i++) spiRf.transfer(buf[i]);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-}
-
-static void rfReadFifo(uint8_t *buf, size_t len) {
-    rfWaitBusy();
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x00); spiRf.transfer(0x01);
-    for (size_t i = 0; i < len; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
@@ -107,29 +109,20 @@ static void rfClearIrq() {
     rfWriteCmd(cmd, 6);
 }
 
-static void rfSetRx() {
-    uint8_t cmd[5] = { 0x02, 0x0C, 0xFF, 0xFF, 0xFF };
+static void rfSetTx() {
+    uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
     rfWriteCmd(cmd, 5);
 }
 
-static int8_t rfReadRssi() {
+static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x04);
+    spiRf.transfer(0x00);
+    spiRf.transfer(0x02);
+    for (size_t i = 0; i < len; i++) spiRf.transfer(data[i]);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    rfWaitBusy();
-
-    uint8_t buf[4];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    // SX1280/LR2021: PACKET_STATUS buf[0]=status, buf[1]=RSSI (unsigned, negate for dBm)
-    // RadioLib negates this value: RSSI_dBm = -buf[1]
-    return -(int8_t)buf[1];
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
@@ -194,12 +187,17 @@ static bool rawInitRadio() {
     delay(1);
 
     {
-        uint8_t cmd[] = { 0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)FLRC_PKT_SIZE };
+        uint8_t cmd[] = {
+            0x02, 0x49,
+            0x0C, 0x4C, 0x00, (uint8_t)FLRC_PKT_SIZE
+        };
         rfWriteCmd(cmd, 6);
     }
     delay(1);
 
     { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
+    delay(1);
+    { uint8_t cmd[] = { 0x02, 0x03, (uint8_t)(TX_POWER_DBM * 2), 0x04 }; rfWriteCmd(cmd, 4); }
     delay(1);
     { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
@@ -225,86 +223,71 @@ static bool rawInitRadio() {
 
 // ─── State ───────────────────────────────────────────────────────────
 static volatile bool radioReady = false;
-static uint32_t totalReceived = 0;
+static uint32_t totalSent = 0;
+static uint32_t txDoneCount = 0;
+static uint32_t txTimeoutCount = 0;
+static uint32_t streamStartMs = 0;
 
-// ─── Extract GPS from packet ─────────────────────────────────────────
-struct PacketGps {
-    int32_t  lat1e7;
-    int32_t  lon1e7;
-    int16_t  altMeters;
-    uint8_t  satellites;
-    uint8_t  hdopX10;
-    uint8_t  fix;
-};
-
-static PacketGps extractGps(const uint8_t *buf) {
-    PacketGps g;
-    g.lat1e7 = ((int32_t)buf[8] << 24) | ((int32_t)buf[9] << 16) |
-               ((int32_t)buf[10] << 8) | (int32_t)buf[11];
-    g.lon1e7 = ((int32_t)buf[12] << 24) | ((int32_t)buf[13] << 16) |
-               ((int32_t)buf[14] << 8) | (int32_t)buf[15];
-    g.altMeters = (int16_t)(((uint16_t)buf[16] << 8) | buf[17]);
-    g.satellites = buf[18];
-    g.hdopX10 = buf[19];
-    g.fix = buf[24];
-    return g;
-}
-
-// ─── Continuous RX ───────────────────────────────────────────────────
-static void runReceiveContinuous() {
+// ─── Continuous TX streaming ─────────────────────────────────────────
+static void runTransmitContinuous() {
     if (!radioReady) { dualPrintf("ERR: radio not initialized"); return; }
 
-    uint8_t buf[FLRC_PKT_SIZE];
-    dualPrintf("RX_LISTEN_START");
-    rfSetRx();
+    dualPrintf("STREAM_START pkt_size=%d", FLRC_PKT_SIZE);
+
+    uint8_t pkt[FLRC_PKT_SIZE];
+    // Fill pattern 0xAA for bytes 8-126
+    for (int j = 8; j < FLRC_PKT_SIZE; j++) pkt[j] = 0xAA;
+
+    uint32_t irqMask = 1UL << PIN_IRQ;
+    streamStartMs = millis();
 
     while (true) {
-        uint32_t irq = rfReadIrqStatus();
-        if (!(irq & 0x00040000)) {
-            // No packet — check serial
-            static char cmdBuf[64];
-            static size_t cmdLen = 0;
-            while (Serial1.available()) {
-                char c = (char)Serial1.read();
-                if (c == '\n' || c == '\r') {
-                    if (cmdLen > 0) {
-                        cmdBuf[cmdLen] = '\0';
-                        if (strcmp(cmdBuf, "STATS") == 0) {
-                            dualPrintf("STATS rx=%lu", (unsigned long)totalReceived);
-                        }
-                        cmdLen = 0;
-                    }
-                } else if (cmdLen < sizeof(cmdBuf) - 1) {
-                    cmdBuf[cmdLen++] = c;
-                }
-            }
-            continue;
+        // Packet sequence (big-endian)
+        pkt[0] = (uint8_t)(totalSent >> 24);
+        pkt[1] = (uint8_t)(totalSent >> 16);
+        pkt[2] = (uint8_t)(totalSent >> 8);
+        pkt[3] = (uint8_t)(totalSent & 0xFF);
+
+        // Timestamp (ms since boot, big-endian)
+        uint32_t now = millis();
+        pkt[4] = (uint8_t)(now >> 24);
+        pkt[5] = (uint8_t)(now >> 16);
+        pkt[6] = (uint8_t)(now >> 8);
+        pkt[7] = (uint8_t)(now & 0xFF);
+
+        rfClearIrq();
+        rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
+        rfSetTx();
+
+        // Wait for TX_DONE
+        uint32_t spinCount = 0;
+        bool irqFired = false;
+        while (spinCount < 500000) {
+            if (sio_hw->gpio_in & irqMask) { irqFired = true; break; }
+            spinCount++;
         }
 
-        int8_t rssi = rfReadRssi();
-        rfReadFifo(buf, FLRC_PKT_SIZE);
+        if (irqFired) txDoneCount++;
+        else txTimeoutCount++;
 
-        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }
-        rfWaitBusy();
-        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
-        rfClearIrq();
-        rfSetRx();
+        totalSent++;
 
-        uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
-                       ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
+        // Print stats every STATS_INTERVAL packets
+        if (totalSent % STATS_INTERVAL == 0) {
+            uint32_t elapsed = millis() - streamStartMs;
+            float tput = ((float)totalSent * FLRC_PKT_SIZE * 8.0f) / elapsed;
+            dualPrintf("STATS sent=%lu done=%lu to=%lu elapsed_ms=%lu tput_kbps=%.1f",
+                       (unsigned long)totalSent,
+                       (unsigned long)txDoneCount,
+                       (unsigned long)txTimeoutCount,
+                       (unsigned long)elapsed, tput);
+        }
 
-        PacketGps g = extractGps(buf);
-
-        totalReceived++;
-
-        // Output: PKT,n,seq,rssi,lat,lon,alt,sats,hdop,fix
-        dualPrintf("PKT,%lu,%lu,%d,%ld,%ld,%d,%d,%d,%d",
-                   (unsigned long)totalReceived, (unsigned long)seq, (int)rssi,
-                   (long)g.lat1e7, (long)g.lon1e7, (int)g.altMeters,
-                   (int)g.satellites, (int)g.hdopX10, (int)g.fix);
-
-        if (totalReceived % 100 == 0) {
-            digitalWrite(PIN_LED, HIGH); delayMicroseconds(50); digitalWrite(PIN_LED, LOW);
+        // Blink LED every 100 packets
+        if (totalSent % 100 == 0) {
+            digitalWrite(PIN_LED, HIGH);
+            delayMicroseconds(50);
+            digitalWrite(PIN_LED, LOW);
         }
     }
 }
@@ -312,8 +295,6 @@ static void runReceiveContinuous() {
 // ─── Arduino entry points ────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
-    delay(2000);
-    Serial.println("BOOT RX GPS");
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -321,12 +302,14 @@ void setup() {
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
-    for (int i = 0; i < 3; i++) {
-        digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(120);
-        digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
+
+    for (int i = 0; i < 5; i++) {
+        digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(100);
+        digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(100);
     }
 
-    dualPrintf("=== RP2040 FLRC RANGE RX + GPS ===");
+    Serial1.println();
+    Serial1.println("=== RP2040 FLRC THROUGHPUT TX ===");
 
     spiRf.begin();
     pinMode(PIN_CS, OUTPUT);
@@ -338,8 +321,8 @@ void setup() {
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
-        dualPrintf("Auto-start RX in 2s...");
-        delay(2000);
+        dualPrintf("AUTO_START in %dms...", AUTO_START_MS);
+        delay(AUTO_START_MS);
     } else {
         digitalWrite(PIN_LED_ALT, LOW);
         while (true) {
@@ -350,5 +333,5 @@ void setup() {
 }
 
 void loop() {
-    runReceiveContinuous();
+    runTransmitContinuous();
 }

@@ -17,15 +17,6 @@ THEFT PROTECTION (v2):
     - The `release` command requires `--steal` to kill another track's sentinel
       (not just `--force`, which is for releasing locks with no/corrupt metadata).
 
-HARD DEVICE LOCKING (v3 — Phase 2):
-    - On acquire: open an exclusive fd to /dev/ttyACMx BEFORE locking,
-      then chmod 000 the device AFTER flock is acquired.
-    - Lock holder's sentinel keeps the fd open → can still read/write.
-    - ALL other processes get EACCES on open() — cannot cat, pio upload, picotool.
-    - On release: chmod 666 to restore access, close fd, release flock.
-    - Even if a sub-manager bypasses pio-flash.sh, raw tools fail with
-      "Permission denied".
-
 LOCK FILES: ~/.hermes/peripheral_locks/balloon-{tx,rx,board-a,board-b,board-c}.lock
 THEFT LOG:  ~/.hermes/peripheral_locks/board-lock-theft.log
 
@@ -40,11 +31,11 @@ RESOURCES:
 
 USAGE:
     # Acquire TX board (blocks up to 120s)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire tx \
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire tx \\
         --purpose "flash timing diag" --timeout 120
 
     # Acquire both RP2040 boards (for coordinated TX/RX tests)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire both \
+    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py acquire both \\
         --purpose "coordinated throughput test" --timeout 120
 
     # Release
@@ -54,23 +45,18 @@ USAGE:
     # Status (who holds what)
     python3 balloon-board-lock.py status
 
-    # Check if current track holds a specific resource lock (exit 0/1)
-    BALLOON_TRACK=speed-tests python3 balloon-board-lock.py check tx
-
 EXIT CODES:
-    0 = acquired / released / status shown / check passed
-    1 = failed to acquire (timeout or held by other session) / check failed
+    0 = acquired / released / status shown
+    1 = failed to acquire (timeout or held by other session)
     2 = invalid arguments
 """
 
 import ctypes
 import ctypes.util
 import fcntl
-import glob
 import json
 import os
 import signal
-import subprocess
 import sys
 import time
 import argparse
@@ -83,13 +69,6 @@ LOCK_DIR.mkdir(parents=True, exist_ok=True)
 # Linux prctl constants
 PR_SET_PDEATHSIG = 1
 PR_SET_NAME = 15
-
-# Serial number patterns for RP2040 board identification.
-# TX board serial contains "F242D", RX board serial contains "8332".
-BOARD_SERIALS = {
-    "tx": "F242D",
-    "rx": "8332",
-}
 
 
 def _prctl(option, value):
@@ -191,69 +170,6 @@ def _is_locked(path: Path) -> bool:
             os.close(fd)
 
 
-# ─── Hard Device Locking ──────────────────────────────────────────────────
-
-
-def _find_device_path(resource: str) -> str | None:
-    """Find the /dev/ttyACMx device for a resource by USB serial number.
-
-    TX board serial contains "F242D", RX board serial contains "8332".
-    Returns the device path (e.g. "/dev/ttyACM3") or None if not found.
-    """
-    pattern = BOARD_SERIALS.get(resource)
-    if not pattern:
-        return None  # ESP32-S3 boards don't have serial-based mapping yet
-
-    for dev in sorted(glob.glob("/dev/ttyACM*")):
-        try:
-            result = subprocess.run(
-                ["udevadm", "info", "-q", "property", "-n", dev],
-                capture_output=True, text=True, timeout=3,
-            )
-            for line in result.stdout.splitlines():
-                if line.startswith("ID_SERIAL_SHORT=") and pattern in line:
-                    return dev
-        except (subprocess.TimeoutExpired, OSError):
-            continue
-    return None
-
-
-def _chmod_device(path: str, mode: str) -> bool:
-    """Change device file permissions using sudo (devices are root-owned).
-
-    Returns True on success, False on failure.
-    """
-    try:
-        result = subprocess.run(
-            ["sudo", "chmod", mode, path],
-            capture_output=True, timeout=5,
-        )
-        return result.returncode == 0
-    except (subprocess.TimeoutExpired, OSError):
-        return False
-
-
-def _fd_is_valid(fd: int) -> bool:
-    """Check if a file descriptor is still valid (device not unplugged)."""
-    try:
-        os.fstat(fd)
-        return True
-    except OSError:
-        return False
-
-
-def _restore_device_permissions(resource: str, device_path: str | None = None):
-    """Restore device permissions to 666 after lock release.
-
-    Called from release() to ensure devices are accessible even if the
-    sentinel was SIGKILL'd without cleanup.
-    """
-    if not device_path:
-        device_path = _find_device_path(resource)
-    if device_path:
-        _chmod_device(device_path, "666")
-
-
 THEFT_LOG = LOCK_DIR / "board-lock-theft.log"
 
 
@@ -298,19 +214,15 @@ def _sentinel_sigterm_handler(signum, frame):
     # DO NOT exit — ignore the signal
 
 
-def _start_sentinel(fd: int, path: Path, metadata: dict,
-                    device_fd: int | None = None, device_path: str | None = None):
+def _start_sentinel(fd: int, path: Path, metadata: dict):
     """Fork a sentinel daemon that holds the flock and monitors the caller.
 
     The sentinel:
     1. Holds the flock via its inherited fd
-    2. Holds the device fd open (exclusive access)
-    3. chmod 000 the device (blocks all other processes)
-    4. Traps SIGTERM (logs theft, ignores signal)
-    5. Monitors the caller process (Hermes agent PID)
-    6. Exits when the caller dies → fd closes → flock released
-    7. On exit: chmod 666 device, close fds
-    8. Writes metadata to the lock file
+    2. Traps SIGTERM (logs theft, ignores signal)
+    3. Monitors the caller process (Hermes agent PID)
+    4. Exits when the caller dies → fd closes → flock released
+    5. Writes metadata to the lock file
     """
     monitor_pid = metadata.get("monitor_pid", 0)
     resource = metadata.get("resource", "?")
@@ -336,23 +248,9 @@ def _start_sentinel(fd: int, path: Path, metadata: dict,
     os.environ["_BALLOON_LOCK_TRACK"] = track
     signal.signal(signal.SIGTERM, _sentinel_sigterm_handler)
 
-    # ── Hard device lock: chmod 000 AFTER flock acquired ──
-    # The sentinel holds the device fd open, so it can still read/write.
-    # All other processes will get EACCES on open().
-    if device_path:
-        success = _chmod_device(device_path, "000")
-        if success:
-            metadata["device_locked"] = True
-        else:
-            metadata["device_locked"] = False
-            print(f"WARNING: Could not chmod 000 {device_path} — hard lock incomplete",
-                  file=sys.stderr)
-
     # Write metadata to lock file
     metadata["sentinel_pid"] = os.getpid()
     metadata["started"] = datetime.now(timezone.utc).isoformat()
-    metadata["device_path"] = device_path
-    metadata["device_fd"] = device_fd  # Informational — fd number in this process
     try:
         os.lseek(fd, 0, os.SEEK_SET)
         os.ftruncate(fd, 0)
@@ -361,28 +259,14 @@ def _start_sentinel(fd: int, path: Path, metadata: dict,
         pass
 
     # Monitor loop: check if the Hermes process is still alive
-    # Also check if the device is still connected (USB unplug detection)
+    # Also serve as a heartbeat — our existence means the lock is held
     while True:
         time.sleep(10)
         if monitor_pid > 0 and not _pid_alive(monitor_pid):
             # Caller process died → release the lock
             break
-        # Detect USB unplug: if device fd is invalid, device disappeared
-        if device_fd is not None and not _fd_is_valid(device_fd):
-            break
 
-    # ── Cleanup: restore device permissions ──
-    if device_path:
-        _chmod_device(device_path, "666")
-
-    # Close device fd
-    if device_fd is not None:
-        try:
-            os.close(device_fd)
-        except OSError:
-            pass
-
-    # Cleanup: truncate metadata, close lock fd (releases flock)
+    # Cleanup: truncate metadata, close fd (releases flock)
     try:
         os.lseek(fd, 0, os.SEEK_SET)
         os.ftruncate(fd, 0)
@@ -401,17 +285,13 @@ def acquire(resource: str, purpose: str, timeout_s: int) -> int:
     held_fds = []
     held_paths = []
     held_sentinels = []
-    held_device_fds = []
-    held_device_paths = []
 
     deadline = time.monotonic() + timeout_s if timeout_s > 0 else 0
 
     while True:
         all_ok = True
         # Clean up any previous partial acquisitions
-        for fd, spath, spid, dev_fd, dev_path in zip(
-            held_fds, held_paths, held_sentinels, held_device_fds, held_device_paths
-        ):
+        for fd, spath, spid in zip(held_fds, held_paths, held_sentinels):
             if spid:
                 try:
                     os.kill(spid, signal.SIGTERM)
@@ -422,45 +302,15 @@ def acquire(resource: str, purpose: str, timeout_s: int) -> int:
             except OSError:
                 pass
             os.close(fd)
-            if dev_path:
-                _chmod_device(dev_path, "666")
-            if dev_fd is not None:
-                try:
-                    os.close(dev_fd)
-                except OSError:
-                    pass
         held_fds = []
         held_paths = []
         held_sentinels = []
-        held_device_fds = []
-        held_device_paths = []
 
         for r in resources:
             path = _lock_path(r)
 
             # Ensure lock file exists
             path.touch()
-
-            # ── Find and open the device BEFORE locking ──
-            device_path = _find_device_path(r)
-            device_fd = None
-            if device_path:
-                # Restore permissions first (recover from crashed sentinel)
-                _chmod_device(device_path, "666")
-                try:
-                    device_fd = os.open(
-                        device_path,
-                        os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK,
-                    )
-                    print(f"  Opened exclusive fd to {device_path} (fd={device_fd})")
-                except OSError as e:
-                    print(f"WARNING: Could not open {device_path}: {e} — hard lock unavailable",
-                          file=sys.stderr)
-                    device_fd = None
-                    device_path = None
-            else:
-                print(f"  No device found for {r} (not connected?) — advisory lock only",
-                      file=sys.stderr)
 
             fd = os.open(str(path), os.O_RDWR)
 
@@ -471,10 +321,6 @@ def acquire(resource: str, purpose: str, timeout_s: int) -> int:
                 # Check if it's truly locked or just stale metadata
                 all_ok = False
                 os.close(fd)
-                if device_fd is not None:
-                    os.close(device_fd)
-                    if device_path:
-                        _chmod_device(device_path, "666")
 
                 # Read who holds it for the error message
                 data = _read_metadata(path)
@@ -497,32 +343,23 @@ def acquire(resource: str, purpose: str, timeout_s: int) -> int:
                 "monitor_pid": monitor_pid,
                 "acquired": datetime.now(timezone.utc).isoformat(),
             }
-            sentinel_pid = _start_sentinel(fd, path, metadata, device_fd, device_path)
+            sentinel_pid = _start_sentinel(fd, path, metadata)
             held_fds.append(fd)
             held_paths.append(path)
             held_sentinels.append(sentinel_pid)
-            held_device_fds.append(device_fd)
-            held_device_paths.append(device_path)
 
         if all_ok:
             board_list = "+".join(resources)
             print(f"ACQUIRED: {board_list} (purpose: {purpose})")
             print(f"  track={identity['track']} monitor_pid={monitor_pid}")
-            for r, spid, dev_path in zip(resources, held_sentinels, held_device_paths):
-                lock_type = "HARD (chmod 000)" if dev_path else "advisory (flock only)"
-                print(f"  {r}: sentinel PID={spid} lock={lock_type}")
+            for r, spid in zip(resources, held_sentinels):
+                print(f"  {r}: sentinel PID={spid}")
             # Close our parent copies — sentinels hold their own fd copies
             for fd in held_fds:
                 try:
                     os.close(fd)
                 except OSError:
                     pass
-            for dev_fd in held_device_fds:
-                if dev_fd is not None:
-                    try:
-                        os.close(dev_fd)
-                    except OSError:
-                        pass
             return 0
 
         if timeout_s > 0 and time.monotonic() >= deadline:
@@ -547,13 +384,10 @@ def release(resource: str, force: bool, steal: bool) -> int:
         if data is None:
             print(f"FREE: {r} (no lock file)")
             released_any = True
-            # Still try to restore device permissions in case of crash
-            _restore_device_permissions(r)
             continue
 
         sentinel_pid = data.get("sentinel_pid")
         holder_track = data.get("track", "?")
-        device_path = data.get("device_path")
 
         # If another track holds this lock, require explicit --steal
         if holder_track != "unknown" and holder_track != identity["track"]:
@@ -566,12 +400,6 @@ def release(resource: str, force: bool, steal: bool) -> int:
             _log_theft(r, data, "RELEASE_WITH_STEAL",
                        source=f"track={identity['track']} pid={os.getpid()}")
             print(f"STEAL: {r} taken from track={holder_track} (logged)")
-
-        # ── Restore device permissions BEFORE killing sentinel ──
-        # The sentinel may be SIGKILL'd (no cleanup), so we restore here.
-        if device_path:
-            if _chmod_device(device_path, "666"):
-                print(f"  Restored {device_path} → chmod 666")
 
         # Kill the sentinel → fd closes → flock released
         # Sentinels trap SIGTERM, so we use SIGKILL directly
@@ -606,60 +434,12 @@ def release(resource: str, force: bool, steal: bool) -> int:
                 print(f"SKIP: {r} no sentinel PID in metadata (use --force)",
                       file=sys.stderr)
 
-        # Clear metadata
-        try:
-            path.write_text("")
-        except OSError:
-            pass
-
-        # Double-check device permissions are restored
-        _restore_device_permissions(r, device_path)
-
     return 0 if released_any else 1
-
-
-def check(resource: str) -> int:
-    """Check if the current BALLOON_TRACK holds the lock for a resource.
-
-    Exit 0 = lock held by current track (safe to proceed)
-    Exit 1 = lock not held, or held by another track
-    """
-    identity = _identity()
-    resources = _get_resources(resource)
-
-    for r in resources:
-        path = _lock_path(r)
-
-        if not _is_locked(path):
-            print(f"FREE: {r} — no lock held", file=sys.stderr)
-            return 1
-
-        data = _read_metadata(path)
-        if not data:
-            print(f"LOCKED: {r} but no metadata — cannot verify ownership", file=sys.stderr)
-            return 1
-
-        holder_track = data.get("track", "?")
-        sentinel_pid = data.get("sentinel_pid")
-        sentinel_alive = _pid_alive(sentinel_pid) if sentinel_pid else False
-
-        if not sentinel_alive:
-            print(f"STALE: {r} — sentinel dead, lock is orphaned", file=sys.stderr)
-            return 1
-
-        if holder_track == identity["track"]:
-            print(f"OK: {r} locked by track={holder_track} (sentinel={sentinel_pid})")
-        else:
-            print(f"HELD: {r} locked by track={holder_track} (not {identity['track']})",
-                  file=sys.stderr)
-            return 1
-
-    return 0
 
 
 def status() -> int:
     """Print status of all balloon board locks."""
-    print("=== Balloon Board Lock Status (flock + hard device lock) ===")
+    print("=== Balloon Board Lock Status (flock-based) ===")
     for resource in ["tx", "rx", "board-a", "board-b", "board-c"]:
         path = _lock_path(resource)
         locked = _is_locked(path)
@@ -674,10 +454,6 @@ def status() -> int:
                         path.write_text("")
                     except OSError:
                         pass
-                    # Restore device permissions if needed
-                    dev_path = data.get("device_path")
-                    if dev_path:
-                        _chmod_device(dev_path, "666")
             continue
 
         # Lock is held
@@ -685,16 +461,11 @@ def status() -> int:
         purpose = data.get("purpose", "?") if data else "?"
         sentinel_pid = data.get("sentinel_pid", "?") if data else "?"
         acquired = data.get("acquired", "?") if data else "?"
-        device_path = data.get("device_path") if data else None
-        device_locked = data.get("device_locked", False) if data else False
 
         sentinel_alive = _pid_alive(data["sentinel_pid"]) if data and data.get("sentinel_pid") else False
 
         if not sentinel_alive:
             print(f"  {resource.upper()}: LOCKED [ORPHANED — sentinel dead but flock held?!]")
-            # Attempt to restore device permissions for orphaned lock
-            if device_path:
-                _chmod_device(device_path, "666")
         else:
             age = ""
             try:
@@ -703,18 +474,16 @@ def status() -> int:
                 age = f" ({age_min:.1f}min)"
             except Exception:
                 pass
-            hard_lock = f" HARD-LOCKED({device_path})" if device_locked else ""
-            print(f"  {resource.upper()}: LOCKED by track={track}{age}{hard_lock}")
+            print(f"  {resource.upper()}: LOCKED by track={track}{age}")
             print(f"    purpose:      {purpose}")
             print(f"    sentinel:     {sentinel_pid}")
             print(f"    acquired:     {acquired}")
-            if device_path:
-                print(f"    device:       {device_path} (chmod 000)")
 
     print()
 
     # Show connected boards
     print("Connected boards:")
+    import subprocess
     try:
         result = subprocess.run(
             ["sh", "-c",
@@ -767,7 +536,7 @@ def status() -> int:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Balloon board mutex lock (flock + hard device lock) — prevents concurrent board access",
+        description="Balloon board mutex lock (flock-based) — prevents concurrent board access",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -776,13 +545,12 @@ Examples:
   BALLOON_TRACK=range-tests %(prog)s release tx
   %(prog)s release both --force
   %(prog)s status
-  BALLOON_TRACK=speed-tests %(prog)s check tx   # exit 0 if we hold tx lock
         """)
-    parser.add_argument("action", choices=["acquire", "release", "status", "check"],
+    parser.add_argument("action", choices=["acquire", "release", "status"],
                         help="Action to perform")
     parser.add_argument("resource", nargs="?",
                         choices=["tx", "rx", "both", "board-a", "board-b", "board-c", "all-s3", "all"],
-                        help="Which board(s) to lock/unlock/check")
+                        help="Which board(s) to lock/unlock")
     parser.add_argument("--purpose", default="unspecified",
                         help="Why you need the board (shown to other sessions)")
     parser.add_argument("--timeout", type=int, default=120,
@@ -797,15 +565,13 @@ Examples:
         sys.exit(status())
 
     if not args.resource:
-        print("Error: resource (tx/rx/both) required for acquire/release/check", file=sys.stderr)
+        print("Error: resource (tx/rx/both) required for acquire/release", file=sys.stderr)
         sys.exit(2)
 
     if args.action == "acquire":
         sys.exit(acquire(args.resource, args.purpose, args.timeout))
     elif args.action == "release":
         sys.exit(release(args.resource, args.force, args.steal))
-    elif args.action == "check":
-        sys.exit(check(args.resource))
 
 
 if __name__ == "__main__":

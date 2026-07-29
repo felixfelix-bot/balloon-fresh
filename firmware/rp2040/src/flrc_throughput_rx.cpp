@@ -3,21 +3,23 @@
  * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
  * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
  *
- * flrc_range_rx_auto.cpp — FLRC RX with RSSI for outdoor range testing
+ * flrc_throughput_rx.cpp — Max-throughput FLRC RX for RP2040 + LR2021
  *
- * Auto-listens on boot, continuous RX (no timeout), outputs per-packet RSSI.
- * Loops forever. Format optimized for Python logging script.
+ * Continuous RX for 127-byte packets (max SX1280 FLRC).
+ * No GPS. Pure throughput test receiver.
  *
- * Based on flrc_raw_rx.cpp (verified working 2026-07-22).
+ * Auto-listens 2s after boot. Receives forever.
  *
- * Output format per packet:
- *   PKT,n,seq,rssi_dbm
- *   PKT,n,seq,rssi_dbm
- *   ...
- *   (no per-packet hex dump in auto mode — too slow for logging)
+ * Per-packet output (CSV-friendly):
+ *   PKT,n,seq,rssi,bytes_received
  *
+ * Stats every 1000 packets:
+ *   packets received, total bytes, effective kbps, packet loss %, RSSI avg
+ *
+ * Based on flrc_range_rx_gps.cpp (verified 2026-07-22).
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
- *       UART_TX=GP12 UART_RX=GP13  LED=GP25  LED_ALT=GP16
+ *       UART_TX=GP12 UART_RX=GP13 (Serial1, debug)
+ *       LED=GP25  LED_ALT=GP16
  */
 
 #include <Arduino.h>
@@ -39,14 +41,12 @@
 
 // ─── FLRC Config ─────────────────────────────────────────────────────
 #define FLRC_FREQ_MHZ   2440.0f
-#define FLRC_BR         2600
-#define FLRC_PKT_SIZE   255
-#define SPI_FREQ_HZ     16000000UL   // 16MHz RX (20MHz TX is fine, RX uses 16)
+#define FLRC_PKT_SIZE   127
+#define SPI_FREQ_HZ     16000000UL
 #define XTAL_MHZ        52.0f
 
-#define PRINT_EVERY     1   // print EVERY packet in auto mode
+#define STATS_INTERVAL  1000
 
-// Sync word — MUST match TX
 #define SYNC_WORD_0   0x12
 #define SYNC_WORD_1   0xAD
 #define SYNC_WORD_2   0x10
@@ -56,7 +56,6 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
-// ─── SPI helpers ─────────────────────────────────────────────────────
 static inline void rfWaitBusy() {
     uint32_t timeout = millis() + 50;
     while (digitalRead(PIN_BUSY) == HIGH) {
@@ -122,37 +121,26 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
-// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) ─────────────
-// LR2021 native command — NOT SX1280's 0x0104!
-// Returns 5 bytes: [pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
-// RSSI is 9-bit: bits [8:1] from buf[2], bit [0] from buf[4] bit 2
-// Call AFTER RX_DONE, BEFORE clearing IRQ
 static int8_t rfReadRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS = 0x024B
+    spiRf.transfer(0x01); spiRf.transfer(0x04);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
-    uint8_t buf[7];
+    uint8_t buf[4];
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
+    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
-    // LR2021 response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
-    // 9-bit RSSI average: (buf[4] << 1) | ((buf[6] & 0x04) >> 2), then / -2 for dBm
-    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
-    return -(int8_t)(raw / 2);  // Returns dBm (negative)
+    // SX1280/LR2021: PACKET_STATUS buf[0]=status, buf[1]=RSSI (unsigned, negate for dBm)
+    return -(int8_t)buf[1];
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
-static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
-static void dualPrintln() { Serial.println(); Serial1.println(); }
-
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
     va_list args;
@@ -214,19 +202,14 @@ static bool rawInitRadio() {
     delay(1);
 
     {
-        uint8_t cmd[] = {
-            0x02, 0x49,
-            0x0C,
-            0x4C,
-            0x00, (uint8_t)FLRC_PKT_SIZE
-        };
+        uint8_t cmd[] = { 0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)FLRC_PKT_SIZE };
         rfWriteCmd(cmd, 6);
     }
     delay(1);
 
     { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
     delay(1);
-    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }  // Fs fallback
+    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
     { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); }
     delay(1);
@@ -241,7 +224,7 @@ static bool rawInitRadio() {
     dualPrintf("INIT Status=0x%02X IRQ=0x%08lX", st, (unsigned long)irq);
 
     if ((st >> 4) == 0x04 || (st >> 4) == 0x07 || (irq & 0x00020000)) {
-        dualPrintln("RADIO_INIT_OK");
+        dualPrintf("RADIO_INIT_OK");
         return true;
     }
     dualPrintf("RADIO_INIT_FAIL (St=0x%02X)", st);
@@ -251,28 +234,26 @@ static bool rawInitRadio() {
 // ─── State ───────────────────────────────────────────────────────────
 static volatile bool radioReady = false;
 static uint32_t totalReceived = 0;
-static uint32_t totalUnique = 0;
-static uint32_t lastSeq = 0xFFFFFFFF;
-static int16_t rssiSum = 0;
-static int16_t rssiMin = 0;
-static int16_t rssiMax = -128;
+static uint32_t totalBytes = 0;
+static uint32_t rxStartMs = 0;
+static int32_t  rssiSum = 0;
+static uint32_t lastSeq = 0;
+static bool     firstPacket = true;
+static uint32_t missedPackets = 0;
 
-// ─── Continuous RX with RSSI logging ─────────────────────────────────
+// ─── Continuous RX ───────────────────────────────────────────────────
 static void runReceiveContinuous() {
-    if (!radioReady) { dualPrintln("ERR: radio not initialized"); return; }
+    if (!radioReady) { dualPrintf("ERR: radio not initialized"); return; }
 
     uint8_t buf[FLRC_PKT_SIZE];
-
-    dualPrintln("RX_LISTEN_START");
+    dualPrintf("RX_LISTEN_START pkt_size=%d", FLRC_PKT_SIZE);
+    rxStartMs = millis();
     rfSetRx();
 
-    uint32_t lastReportMs = millis();
-
     while (true) {
-        // Poll IRQ
         uint32_t irq = rfReadIrqStatus();
         if (!(irq & 0x00040000)) {
-            // No packet — check for serial commands
+            // No packet — check serial for commands
             static char cmdBuf[64];
             static size_t cmdLen = 0;
             while (Serial1.available()) {
@@ -281,10 +262,16 @@ static void runReceiveContinuous() {
                     if (cmdLen > 0) {
                         cmdBuf[cmdLen] = '\0';
                         if (strcmp(cmdBuf, "STATS") == 0) {
-                            int16_t rssiAvg = (totalReceived > 0) ? (rssiSum / (int16_t)totalReceived) : 0;
-                            dualPrintf("STATS rx=%lu unique=%lu rssi_avg=%d rssi_min=%d rssi_max=%d",
-                                       (unsigned long)totalReceived, (unsigned long)totalUnique,
-                                       rssiAvg, rssiMin, rssiMax);
+                            uint32_t elapsed = millis() - rxStartMs;
+                            float tput = (elapsed > 0) ? ((float)totalBytes * 8.0f) / elapsed : 0.0f;
+                            float lossPct = (totalReceived > 0)
+                                ? (100.0f * missedPackets) / (totalReceived + missedPackets)
+                                : 0.0f;
+                            int8_t avgRssi = (totalReceived > 0) ? (int8_t)(rssiSum / (int32_t)totalReceived) : 0;
+                            dualPrintf("STATS rx=%lu bytes=%lu elapsed_ms=%lu tput_kbps=%.1f loss_pct=%.1f avg_rssi=%d",
+                                       (unsigned long)totalReceived,
+                                       (unsigned long)totalBytes,
+                                       (unsigned long)elapsed, tput, lossPct, (int)avgRssi);
                         }
                         cmdLen = 0;
                     }
@@ -295,38 +282,52 @@ static void runReceiveContinuous() {
             continue;
         }
 
-        // RX_DONE — read RSSI BEFORE clearing IRQ
         int8_t rssi = rfReadRssi();
-
-        // Read packet
         rfReadFifo(buf, FLRC_PKT_SIZE);
 
-        // Clear + re-arm
-        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }  // CLEAR_RX_FIFO
+        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }
         rfWaitBusy();
         { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
         rfClearIrq();
         rfSetRx();
 
-        // Extract seq (bytes 0-3) and burst_id (bytes 4-7)
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
-        uint32_t burstId = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
-                           ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
 
         totalReceived++;
-        if (seq != lastSeq) totalUnique++;
-        lastSeq = seq;
-
+        totalBytes += FLRC_PKT_SIZE;
         rssiSum += rssi;
-        if (rssi < rssiMin) rssiMin = rssi;
-        if (rssi > rssiMax) rssiMax = rssi;
 
-        // Output EVERY packet: PKT,n,seq,rssi
-        dualPrintf("PKT,%lu,%lu,%d",
-                   (unsigned long)totalReceived, (unsigned long)seq, (int)rssi);
+        // Track packet loss via sequence gaps
+        if (!firstPacket) {
+            if (seq > lastSeq + 1) {
+                missedPackets += (seq - lastSeq - 1);
+            }
+        }
+        lastSeq = seq;
+        firstPacket = false;
 
-        // Periodic summary every 100 packets
+        // CSV-friendly per-packet output: PKT,n,seq,rssi,bytes_received
+        dualPrintf("PKT,%lu,%lu,%d,%d",
+                   (unsigned long)totalReceived,
+                   (unsigned long)seq,
+                   (int)rssi,
+                   FLRC_PKT_SIZE);
+
+        // Stats every STATS_INTERVAL packets
+        if (totalReceived % STATS_INTERVAL == 0) {
+            uint32_t elapsed = millis() - rxStartMs;
+            float tput = (elapsed > 0) ? ((float)totalBytes * 8.0f) / elapsed : 0.0f;
+            float lossPct = (totalReceived + missedPackets > 0)
+                ? (100.0f * missedPackets) / (totalReceived + missedPackets)
+                : 0.0f;
+            int8_t avgRssi = (int8_t)(rssiSum / (int32_t)totalReceived);
+            dualPrintf("STATS rx=%lu bytes=%lu elapsed_ms=%lu tput_kbps=%.1f loss_pct=%.1f avg_rssi=%d",
+                       (unsigned long)totalReceived,
+                       (unsigned long)totalBytes,
+                       (unsigned long)elapsed, tput, lossPct, (int)avgRssi);
+        }
+
         if (totalReceived % 100 == 0) {
             digitalWrite(PIN_LED, HIGH); delayMicroseconds(50); digitalWrite(PIN_LED, LOW);
         }
@@ -337,7 +338,7 @@ static void runReceiveContinuous() {
 void setup() {
     Serial.begin(115200);
     delay(2000);
-    Serial.println("BOOT RX AUTO");
+    Serial.println("BOOT RX THROUGHPUT");
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -350,9 +351,7 @@ void setup() {
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
     }
 
-    dualPrintln();
-    dualPrintln("=== RP2040 FLRC RANGE RX AUTO ===");
-    dualPrintln("Continuous RX with RSSI logging");
+    dualPrintf("=== RP2040 FLRC THROUGHPUT RX ===");
 
     spiRf.begin();
     pinMode(PIN_CS, OUTPUT);
@@ -364,11 +363,10 @@ void setup() {
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
-        dualPrintln("Auto-start RX in 2s...");
+        dualPrintf("Auto-start RX in 2s...");
         delay(2000);
     } else {
         digitalWrite(PIN_LED_ALT, LOW);
-        dualPrintln("INIT FAILED");
         while (true) {
             digitalWrite(PIN_LED, HIGH); delay(500);
             digitalWrite(PIN_LED, LOW); delay(500);
@@ -377,6 +375,5 @@ void setup() {
 }
 
 void loop() {
-    // Continuous RX — never returns
     runReceiveContinuous();
 }
