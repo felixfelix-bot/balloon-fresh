@@ -127,7 +127,8 @@ class EspHalC3 : public RadioLibHal {
 
       spi_device_interface_config_t dev_cfg = {};
       dev_cfg.mode = 0;
-      dev_cfg.clock_speed_hz = 18000000;
+      // LR2021 datasheet max SPI clock = 16 MHz; stay within spec.
+      dev_cfg.clock_speed_hz = 16000000;
       dev_cfg.spics_io_num = -1;
       dev_cfg.queue_size = 1;
       ret = spi_bus_add_device(SPI2_HOST, &dev_cfg, &this->spiDev);
@@ -136,7 +137,7 @@ class EspHalC3 : public RadioLibHal {
         return;
       }
       this->spiInitialized = true;
-      ESP_LOGI("HAL", "SPI initialized: MOSI=%d MISO=%d SCK=%d", this->spiMOSI, this->spiMISO, this->spiSCK);
+      ESP_LOGI("HAL", "SPI initialized: MOSI=%d MISO=%d SCK=%d 16MHz", this->spiMOSI, this->spiMISO, this->spiSCK);
     }
 
     void spiBeginTransaction() {}
