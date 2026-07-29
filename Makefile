@@ -347,30 +347,53 @@ reinstall-framework: ## Force reinstall earlephilhower Arduino-Pico core.
 	@$(MAKE) install-framework
 
 ## ─── debug (one-command workflow) ─────────────────────────────────────
-## Install deps, build firmware, flash RP2040, capture SPI signals.
-## Usage: make debug [ENV=rp2040-raw-tx] [DURATION=1] [OUTPUT=captures/debug.sr]
+## Build firmware, flash RP2040, start TX, capture SPI signals.
+## Usage: make debug [ENV=rp2040-cont-tx] [DURATION=1] [OUTPUT=captures/debug.sr]
 ## Prerequisites: RP2040 in BOOTSEL mode (hold button, plug USB), logic analyzer connected.
-debug: ## One-command: build + flash + capture. make debug [ENV=rp2040-raw-tx] [DURATION=1]
+debug: ## One-command: build + flash + start TX + capture.
 	@echo "=== Balloon Speed Tests — One-Command Debug Workflow ==="
 	@echo ""
-	@echo "Step 1/3: Building firmware ($(ENV))..."
-	@cd $(RP2040_DIR) && pio run -e $(or $(ENV),rp2040-raw-tx)
+	@echo "Step 1/4: Building firmware ($(or $(ENV),rp2040-cont-tx))..."
+	@cd $(RP2040_DIR) && pio run -e $(or $(ENV),rp2040-cont-tx)
 	@echo ""
-	@echo "Step 2/3: Flashing RP2040 (hold BOOTSEL button, plug USB)..."
-	@UF2=$$(find $(RP2040_DIR)/.pio/build/$(or $(ENV),rp2040-raw-tx) -name firmware.uf2 2>/dev/null | head -1); \
+	@echo "Step 2/4: Flashing RP2040 (hold BOOTSEL button, plug USB)..."
+	@UF2=$$(find $(RP2040_DIR)/.pio/build/$(or $(ENV),rp2040-cont-tx) -name firmware.uf2 2>/dev/null | head -1); \
 	if [ -z "$$UF2" ]; then \
 		echo "ERROR: No firmware.uf2 found. Build may have failed."; exit 1; \
 	fi; \
 	if ! command -v picotool >/dev/null 2>&1; then \
-		echo "ERROR: picotool not found. Install: cd /tmp && git clone --depth 1 https://github.com/raspberrypi/picotool.git && git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git && cd picotool && mkdir build && cd build && cmake .. -DPICO_SDK_PATH=/tmp/pico-sdk && make -j\$$(nproc) && sudo make install"; exit 1; \
+		echo "ERROR: picotool not found."; exit 1; \
 	fi; \
 	picotool load $$UF2 && picotool reboot || \
-		echo "ERROR: RP2040 not in BOOTSEL mode. Hold BOOTSEL button, plug in USB, then retry."
+		{ echo "ERROR: RP2040 not in BOOTSEL mode. Hold BOOTSEL button, plug in USB, then retry."; exit 1; }
 	@echo ""
-	@echo "Step 3/3: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@echo "Step 3/4: Waiting for RP2040 serial port + starting TX..."
+	@printf "Waiting for serial port"; \
+	PORT=""; \
+	for i in $$(seq 1 20); do \
+		PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+		if [ -n "$$PORT" ]; then break; fi; \
+		printf "."; sleep 0.5; \
+	done; \
+	echo ""; \
+	if [ -z "$$PORT" ]; then \
+		echo "WARNING: No serial port found. TX may not have started."; \
+		echo "Capture will proceed anyway (firmware may auto-start)."; \
+	else \
+		echo "Found $$PORT, sending RUN command..."; \
+		sleep 2; \
+		echo "RUN" | sudo tee $$PORT >/dev/null 2>&1 || \
+			stty -F $$PORT 115200 raw -echo && echo "RUN" > $$PORT 2>/dev/null || \
+			echo "WARNING: Could not send RUN. Firmware may need manual start."; \
+		sleep 1; \
+		echo "TX started."; \
+	fi
+	@echo ""
+	@echo "Step 4/4: Capturing SPI signals ($(or $(DURATION),1)s)..."
 	@mkdir -p $(CAPTURES_DIR)
 	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
 	echo "Capturing to $$OUTPUT ..."; \
+	echo "Channel mapping: D0=CS, D1=SCK, D2=MOSI, D3=MISO, D4=BUSY, D5=IRQ, D6=RST"; \
 	sigrok-cli --driver fx2lafw --config samplerate=24mhz --samples $(or $(DURATION),1)000000 \
 		--channels D0,D1,D2,D3,D4,D5,D6 -o $$OUTPUT 2>&1 || \
 		{ echo "ERROR: sigrok-cli failed. Check logic analyzer is plugged in."; \
@@ -404,7 +427,7 @@ help: ## Show this help message.
 	@echo "  make reinstall-framework  Force reinstall earlephilhower core"
 	@echo ""
 	@echo "Firmware:"
-	@echo "  make debug [ENV=rp2040-raw-tx] [DURATION=1]  One-command: build+flash+capture"
+	@echo "  make debug [ENV=rp2040-cont-tx] [DURATION=1]  One-command: build+flash+TX+capture"
 	@echo "  make build [ENV=rp2040-raw-tx]   Build firmware (default: rp2040-raw-tx)"
 	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
 	@echo ""
