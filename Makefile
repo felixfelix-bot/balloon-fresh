@@ -430,7 +430,12 @@ debug: ## One-command: build + flash + start TX + capture.
 	@echo ""
 	@echo "=== Done! ==="
 	@echo "Capture saved to: $(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
-	@echo "Analyze with: make analyze FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
+	BASENAME=$$(basename $$OUTPUT .sr); \
+	DIR=$$(dirname $$OUTPUT); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Zip ready: $$DIR/$$BASENAME.zip"
+	@echo "Analyze with: make analyze-timing FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
 
 ## ─── setup ────────────────────────────────────────────────────────────
 ## Run the ansible playbook to install all dependencies.
