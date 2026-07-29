@@ -9,12 +9,12 @@
 
 | Payload (bytes) | Packets (41.7ms) | SPI Clock | Bus Duty | Avg Gap | Throughput |
 |----------------|-------------------|-----------|----------|---------|------------|
-| 32             | 426               | 10.35 MHz | 14.0%    | 83.6us  | 1,192 kbps |
-| 64             | — (LA dropped)    | —         | —        | —       | —          |
-| 128            | — (LA dropped)    | —         | —        | —       | —          |
-| 255            | 108               | 10.35 MHz | 19.1%    | 309us   | 1,797 kbps |
+| 32             | 427               | 10.40 MHz | 13.9%    | 84.0us  | 1,203 kbps |
+| 64             | 300               | 10.35 MHz | 16.0%    | 116.1us | 1,435 kbps |
+| 128            | 189               | 10.35 MHz | 17.8%    | 180.6us | 1,657 kbps |
+| 255            | 106               | 10.40 MHz | 18.7%    | 314.6us | 1,745 kbps |
 
-255-byte baseline from separate led-test capture for comparison.
+Baseline bench-rp2040.sr (separate run): 1,760 kbps — consistent within 1%.
 
 ## Key Findings
 
