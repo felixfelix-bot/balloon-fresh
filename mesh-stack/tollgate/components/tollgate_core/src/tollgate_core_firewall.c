@@ -1,5 +1,4 @@
 #include "tollgate_core_firewall.h"
-#include "tollgate_core_dns.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_wifi_ap_get_sta_list.h"
@@ -167,8 +166,6 @@ void tollgate_core_fw_grant(uint32_t client_ip)
     tollgate_core_fw_get_mac_for_ip(client_ip, client->mac, sizeof(client->mac));
     s_client_count++;
 
-    tollgate_core_dns_set_authenticated(client_ip, true);
-
     esp_ip4_addr_t ip_addr = { .addr = client_ip };
     ESP_LOGI(TAG, "Access granted to " IPSTR " mac=%s", IP2STR(&ip_addr),
              client->mac[0] ? client->mac : "unknown");
@@ -183,7 +180,6 @@ void tollgate_core_fw_revoke(uint32_t client_ip)
                      s_clients[i].mac[0] ? s_clients[i].mac : "unknown");
             s_clients[i] = s_clients[s_client_count - 1];
             s_client_count--;
-            tollgate_core_dns_set_authenticated(client_ip, false);
             return;
         }
     }
@@ -191,9 +187,6 @@ void tollgate_core_fw_revoke(uint32_t client_ip)
 
 void tollgate_core_fw_revoke_all(void)
 {
-    for (int i = 0; i < s_client_count; i++) {
-        tollgate_core_dns_set_authenticated(s_clients[i].ip, false);
-    }
     s_client_count = 0;
     ESP_LOGI(TAG, "All client access revoked");
 }
