@@ -448,7 +448,23 @@ setup: ## Install all deps via ansible playbook.
 	@ansible-playbook ansible/setup-debug-env.yml -K --connection=local || \
 		echo "" ; \
 		echo "If ansible sudo prompt timed out, run directly:" ; \
-		echo "  ansible-playbook ansible/setup-debug-env.yml --ask-become-pass --connection=local"
+	@echo "  ansible-playbook ansible/setup-debug-env.yml --ask-become-pass --connection=local"
+
+## ─── sweep (payload size sweep — find throughput sweet spot) ──────────
+## Runs 4 captures with different packet sizes: 32, 64, 128, 255 bytes.
+## Must put RP2040 in BOOTSEL before each. Results in captures/sweep-*.sr
+sweep: ## Payload size sweep. Put RP2040 in BOOTSEL before each size.
+	@for SIZE in 32 64 128 255; do \
+		echo ""; \
+		echo "========================================"; \
+		echo "SWEEP: $${SIZE}-byte packets"; \
+		echo "========================================"; \
+		echo "Hold BOOTSEL, unplug, replug RP2040. Press ENTER when ready."; \
+		read DUMMY; \
+		$(MAKE) debug ENV=rp2040-sweep-$${SIZE} DURATION=1 OUTPUT=$(CAPTURES_DIR)/sweep-$${SIZE}.sr; \
+		$(MAKE) analyze-timing FILE=$(CAPTURES_DIR)/sweep-$${SIZE}.sr; \
+	done
+	@echo ""; echo "=== SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/sweep-*.sr"
 
 ## ─── help ──────────────────────────────────────────────────────────────
 help: ## Show this help message.
