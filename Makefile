@@ -5,6 +5,8 @@ BOOTSEL_DIR := firmware/esp32-bootsel-controller
 RP2040_DIR := firmware/rp2040
 PORT ?= /dev/ttyACM1
 
+.DEFAULT_GOAL := help
+
 .PHONY: bootsel-build bootsel-flash bootsel-diag-flash bootsel-trigger bootsel-flash-rp2040 bootsel-clean bootsel-1200 bootsel-1200-tx bootsel-1200-rx bootsel-1200-both identify-ports
 
 # Build auto-BOOTSEL firmware
