@@ -102,7 +102,7 @@ esp_err_t EspHalLr2021Radio::init_hardware() {
     devcfg.mode = 0;                     // SPI mode 0 (CPOL=0, CPHA=0)
     devcfg.spics_io_num = -1;            // CS handled manually
     devcfg.queue_size = 1;
-    devcfg.flags = SPI_DEVICE_HALFDUPLEX;
+    devcfg.flags = 0;  // full-duplex (half-duplex conflicts with simultaneous TX+RX)
 
     ret = spi_bus_add_device((spi_host_device_t)pins_.spi_host, &devcfg, &spi_);
     if (ret != ESP_OK) {
@@ -130,7 +130,6 @@ void EspHalLr2021Radio::spi_write(const uint8_t* data, size_t len) {
     wait_busy();
 
     spi_transaction_t t = {};
-    t.flags = SPI_TRANS_USE_TXDATA;
     t.length = len * 8;   // bits
     t.tx_buffer = data;
     t.rx_buffer = nullptr;
@@ -166,7 +165,6 @@ void EspHalLr2021Radio::spi_read_rx_fifo(uint8_t* buf, size_t len) {
     uint8_t cmd[2] = { 0x00, 0x01 };  // READ_RX_FIFO opcode
 
     spi_transaction_t t_cmd = {};
-    t_cmd.flags = SPI_TRANS_USE_TXDATA;
     t_cmd.length = 2 * 8;
     t_cmd.tx_buffer = cmd;
     t_cmd.rx_buffer = nullptr;
@@ -189,7 +187,6 @@ Lr2021Error EspHalLr2021Radio::read_irq_register(uint32_t& flags_out) {
     uint8_t rx[6] = {0};
 
     spi_transaction_t t_cmd = {};
-    t_cmd.flags = SPI_TRANS_USE_TXDATA;
     t_cmd.length = 2 * 8;
     t_cmd.tx_buffer = cmd;
 
@@ -271,6 +268,11 @@ Lr2021Error EspHalLr2021Radio::init_sequence(const Lr2021Config& config) {
     // Step 5: SET_RX_PATH (HF path for 2.4 GHz) — MANDATORY
     uint8_t cmd_rxpath[] = { 0x02, 0x01, 0x01, 0x00 };
     spi_write(cmd_rxpath, 4);
+    vTaskDelay(pdMS_TO_TICKS(1));
+
+    // Step 5b: SET_TX_PATH (HF path for 2.4 GHz) — needed for TX
+    uint8_t cmd_txpath[] = { 0x02, 0x02, 0x01, 0x00 };
+    spi_write(cmd_txpath, 4);
     vTaskDelay(pdMS_TO_TICKS(1));
 
     // Step 6: CALIB_FRONT_END — MANDATORY
@@ -406,7 +408,7 @@ Lr2021Error EspHalLr2021Radio::send_packet(const uint8_t* data, size_t len) {
     spi_write_tx_fifo(data, len);
 
     // 3. Trigger TX (SET_TX, 5 bytes)
-    uint8_t cmd_set_tx[] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
+    uint8_t cmd_set_tx[] = { 0x02, 0x0D, 0xFF, 0xFF, 0xFF };  // timeout=0xFFFFFF (infinite)
     spi_write(cmd_set_tx, 5);
 
     // Do NOT wait for TX_DONE here — that's poll_irq's job.
