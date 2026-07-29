@@ -1,0 +1,325 @@
+(export 
+  (version "D")
+  (design
+    (source "wing_schematic.py")
+    (date "07/21/2026 12:56 PM")
+    (tool "SKiDL (2.2.3)")
+    (sheet
+      (number 1)
+      (name "/")
+      (tstamps "/")
+      (title_block
+        (title)
+        (company)
+        (rev)
+        (date)
+        (source "wing_schematic.py")
+        (comment
+          (number "1")
+          (value ""))
+        (comment
+          (number "2")
+          (value ""))
+        (comment
+          (number "3")
+          (value ""))
+        (comment
+          (number "4")
+          (value ""))
+        (comment
+          (number "5")
+          (value ""))
+        (comment
+          (number "6")
+          (value ""))
+        (comment
+          (number "7")
+          (value ""))
+        (comment
+          (number "8")
+          (value ""))
+        (comment
+          (number "9")
+          (value "")))))
+  (components
+    (comp
+      (ref "AE")
+      (value "Yagi_Driven_2.4G")
+      (description "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "ITqAVr7Lmm")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:52"))
+      (libsource
+        (lib "Connector_Generic")
+        (part "Conn_01x02"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "31d9a214-5682-5223-98d7-359f2cc683d1"))
+    (comp
+      (ref "AE1")
+      (value "Yagi_Dir1_2.4G")
+      (description "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "JnAWfiRwTj")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:56"))
+      (libsource
+        (lib "Connector_Generic")
+        (part "Conn_01x01"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "4f3fa18f-8fbc-5e34-acf8-990c3c083262"))
+    (comp
+      (ref "AE2")
+      (value "Yagi_Dir2_2.4G")
+      (description "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "lowqweGe8C")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:59"))
+      (libsource
+        (lib "Connector_Generic")
+        (part "Conn_01x01"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "14462faa-3b9b-566d-af87-b0b74bfaca9d"))
+    (comp
+      (ref "FB1")
+      (value "Ferrite_Bead")
+      (description "")
+      (footprint "Inductor_SMD:L_0402_1005Metric")
+      (fields
+        (field
+          (name "Description"))
+        (field
+          (name "Footprint") "Inductor_SMD:L_0402_1005Metric")
+        (field
+          (name "Datasheet"))
+        (field
+          (name "SKiDL Tag") "amYaxaYTiB")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:48"))
+      (libsource
+        (lib "NO_LIB")
+        (part "Ferrite_Bead"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "4c3fd323-104e-5ffd-8045-81aec7183938"))
+    (comp
+      (ref "J")
+      (value "Wing_Tab")
+      (description "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)")
+      (footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
+      (fields
+        (field
+          (name "Description") "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)")
+        (field
+          (name "Footprint") "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "TJbSBka276")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:33"))
+      (libsource
+        (lib "Connector_Generic")
+        (part "Conn_01x03"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "596206d1-dd44-51d1-b879-2e9de0e68d2d"))
+    (comp
+      (ref "J1")
+      (value "RF_Feed")
+      (description "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "kWT8RNNCAp")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:38"))
+      (libsource
+        (lib "Connector_Generic")
+        (part "Conn_01x01"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "50561bcd-81b6-5c9b-8f02-ec0f16108503"))
+    (comp
+      (ref "SC")
+      (value "52x19mm_0.5V")
+      (description "Single solar cell")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Single solar cell")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "3oKRxDGeMZ")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:24"))
+      (libsource
+        (lib "Device")
+        (part "Solar_Cell"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "9a8420e3-7959-54f7-b5e7-94df1d359547"))
+    (comp
+      (ref "SC1")
+      (value "52x19mm_0.5V")
+      (description "Single solar cell")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Single solar cell")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "QLv06r5vej")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:26"))
+      (libsource
+        (lib "Device")
+        (part "Solar_Cell"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "ccb70aa0-2049-54a1-959d-46d27b6c7f5d"))
+    (comp
+      (ref "SC2")
+      (value "52x19mm_0.5V")
+      (description "Single solar cell")
+      (footprint "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+      (fields
+        (field
+          (name "Description") "Single solar cell")
+        (field
+          (name "Footprint") "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm")
+        (field
+          (name "Datasheet") "~")
+        (field
+          (name "SKiDL Tag") "4PzghpASsf")
+        (field
+          (name "SKiDL Line") "wing_schematic.py:28"))
+      (libsource
+        (lib "Device")
+        (part "Solar_Cell"))
+      (sheetpath
+        (names "/")
+        (tstamps "/"))
+      (component_classes)
+      (tstamps "2ab01058-379a-5077-85a6-a1fe57493bdd")))
+  (nets
+    (net
+      (code 1)
+      (name "GND")
+      (class "Default")
+      (node
+        (ref "AE")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "J")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "SC2")
+        (pin "2")
+        (pintype "PASSIVE")))
+    (net
+      (code 2)
+      (name "RF_SIGNAL")
+      (class "Default")
+      (node
+        (ref "AE")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "J1")
+        (pin "1")
+        (pintype "PASSIVE")))
+    (net
+      (code 3)
+      (name "SOLAR_MID1")
+      (class "Default")
+      (node
+        (ref "SC")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "SC1")
+        (pin "1")
+        (pintype "PASSIVE")))
+    (net
+      (code 4)
+      (name "SOLAR_MID2")
+      (class "Default")
+      (node
+        (ref "SC1")
+        (pin "2")
+        (pintype "PASSIVE"))
+      (node
+        (ref "SC2")
+        (pin "1")
+        (pintype "PASSIVE")))
+    (net
+      (code 5)
+      (name "SOLAR_OUT")
+      (class "Default")
+      (node
+        (ref "J")
+        (pin "1")
+        (pintype "PASSIVE"))
+      (node
+        (ref "SC")
+        (pin "1")
+        (pintype "PASSIVE")))))

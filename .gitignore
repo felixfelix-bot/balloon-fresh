@@ -8,10 +8,18 @@ kanban.db
 **/test_erasure
 nip34.json
 build/
-*.elf
 *.bin
 sdkconfig.old
 # External artifact
 opentollgate_security_scan.sh
 firmware/esp32-c3-flrc/build/
 firmware/esp32-c3-flrc/sdkconfig.old
+
+# ESP-IDF build output directories (build_*)
+mesh-stack/flrc-bench-espidf/build_*/
+*.bak
+
+# SKiDL generated files
+skidl_REPL.erc
+skidl_REPL.log
+*_sklib.py

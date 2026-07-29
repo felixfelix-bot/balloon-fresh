@@ -1,0 +1,30 @@
+{
+  "_description": "FLRC bitrate sweep config — all 4 bitrates at indoor range",
+  "_usage": "python3 tools/test_runner.py sweep --config tools/sweep-config-flrc.json --output-dir results/flrc-sweep/",
+  "tests": [
+    {
+      "name": "flrc-2600",
+      "tx_env": "rp2040-flrc-tx-2600",
+      "rx_env": "rp2040-flrc-rx-2600",
+      "duration": 15
+    },
+    {
+      "name": "flrc-1300",
+      "tx_env": "rp2040-flrc-tx-1300",
+      "rx_env": "rp2040-flrc-rx-1300",
+      "duration": 15
+    },
+    {
+      "name": "flrc-650",
+      "tx_env": "rp2040-flrc-tx-650",
+      "rx_env": "rp2040-flrc-rx-650",
+      "duration": 20
+    },
+    {
+      "name": "flrc-325",
+      "tx_env": "rp2040-flrc-tx-325",
+      "rx_env": "rp2040-flrc-rx-325",
+      "duration": 30
+    }
+  ]
+}

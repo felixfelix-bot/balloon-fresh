@@ -242,16 +242,13 @@ static void runTransmit() {
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // 1. Clear IRQ
-        rfClearIrq();
-
-        // 2. Write TX FIFO
+        // 1. Write TX FIFO
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
-        // 3. Trigger TX
+        // 2. Trigger TX
         rfSetTx();
 
-        // 4. Wait for TX_DONE — IRQ pin HIGH
+        // 3. Wait for TX_DONE — IRQ pin HIGH
         uint32_t spinCount = 0;
         bool irqFired = false;
         while (spinCount < 500000) {
@@ -269,6 +266,11 @@ static void runTransmit() {
 
         if (irqFired) txDoneCount++;
         else txTimeoutCount++;
+
+        // 4. Clear the TX_DONE IRQ after detection, before the next packet.
+        //    rfClearIrq() was previously before WRITE_FIFO; moving it here
+        //    keeps the hot loop IRQ-safe without adding busy-waits.
+        rfClearIrq();
 
         if ((i + 1) % 200 == 0) {
             dualPrintf("TX %d/%d (done=%lu to=%lu)",
