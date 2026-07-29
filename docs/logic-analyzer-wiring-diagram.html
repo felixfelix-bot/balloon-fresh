@@ -163,19 +163,19 @@
 <div class="canvas">
 
   <div class="title">LOGIC ANALYZER WIRING — RP2040 &harr; LR2021 SPI BUS</div>
-  <div class="subtitle">Connect logic analyzer probes to tap SPI signals for per-byte vs batch/DMA transfer debugging</div>
+  <div class="subtitle">8-channel 24 MHz logic analyzer — probe SPI signals to debug per-byte vs batch/DMA transfer</div>
 
   <!-- RP2040 Box -->
   <div id="rp2040" class="device-box">
     <div class="device-label">RP2040 (Pi Pico)</div>
     <div class="device-sublabel">SPI0 — Master</div>
     <ul class="pin-list">
-      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">CS / NSS</span><span class="pin-gpio">GP17</span><span class="pin-ch">CH0</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">GP18</span><span class="pin-ch">CH1</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">GP19</span><span class="pin-ch">CH2</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">GP16</span><span class="pin-ch">CH3</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">GP20</span><span class="pin-ch">CH4</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9/IRQ</span><span class="pin-gpio">GP21</span><span class="pin-ch">CH5</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">CS / NSS</span><span class="pin-gpio">GP17</span><span class="pin-ch">CH1</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">GP18</span><span class="pin-ch">CH2</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">GP19</span><span class="pin-ch">CH3</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">GP16</span><span class="pin-ch">CH4</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">GP20</span><span class="pin-ch">CH5</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9/IRQ</span><span class="pin-gpio">GP21</span><span class="pin-ch">CH6</span></li>
       <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">RESET</span><span class="pin-gpio">GP22</span><span class="pin-ch">—</span></li>
       <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:transparent"></span><span class="pin-name">GND</span><span class="pin-gpio">GND</span><span class="pin-ch">GND</span></li>
     </ul>
@@ -186,30 +186,30 @@
     <div class="device-label">LR2021 Module</div>
     <div class="device-sublabel">NiceRF LoRa2021 — SPI Slave</div>
     <ul class="pin-list">
-      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">NSS</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH0</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH1</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH2</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH3</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH4</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH5</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">NRESET</span><span class="pin-gpio">&larr;</span><span class="pin-ch">—</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">NSS</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH1</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH2</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH3</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH4</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH5</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH6</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">NRESET</span><span class="pin-gpio">&larr;</span><span class="pin-ch">&mdash;</span></li>
       <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:transparent"></span><span class="pin-name">GND</span><span class="pin-gpio">&larr;</span><span class="pin-ch">GND</span></li>
     </ul>
   </div>
 
   <!-- Logic Analyzer Box -->
   <div id="analyzer" class="device-box">
-    <div class="device-label">LOGIC ANALYZER (8-CH)</div>
-    <div class="device-sublabel">Saleae clone / DSLogic / sigrok-compatible &mdash; 1600px viewport</div>
+    <div class="device-label">LOGIC ANALYZER (8-CH 24MHz)</div>
+    <div class="device-sublabel">Cellulologic &mdash; channels labeled CH1-CH8</div>
     <div class="ch-list">
-      <div class="ch-row"><span class="ch-label">CH0</span><span class="ch-signal" style="color:#ff9e64">NSS (CS)</span><span class="ch-status">tap GP17</span></div>
-      <div class="ch-row"><span class="ch-label">CH4</span><span class="ch-signal" style="color:#bb9af7">BUSY</span><span class="ch-status">tap GP20</span></div>
-      <div class="ch-row"><span class="ch-label">CH1</span><span class="ch-signal" style="color:#f7768e">SCK</span><span class="ch-status">tap GP18</span></div>
-      <div class="ch-row"><span class="ch-label">CH5</span><span class="ch-signal" style="color:#e0af68">DIO9 / IRQ</span><span class="ch-status">tap GP21</span></div>
-      <div class="ch-row"><span class="ch-label">CH2</span><span class="ch-signal" style="color:#c3e88d">MOSI</span><span class="ch-status">tap GP19</span></div>
-      <div class="ch-row"><span class="ch-label">CH6</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-status">—</span></div>
-      <div class="ch-row"><span class="ch-label">CH3</span><span class="ch-signal" style="color:#82aaff">MISO</span><span class="ch-status">tap GP16</span></div>
-      <div class="ch-row"><span class="ch-label">CH7</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-status">—</span></div>
+      <div class="ch-row"><span class="ch-label">CH1</span><span class="ch-signal" style="color:#ff9e64">NSS (CS)</span><span class="ch-status">tap GP17</span></div>
+      <div class="ch-row"><span class="ch-label">CH5</span><span class="ch-signal" style="color:#bb9af7">BUSY</span><span class="ch-status">tap GP20</span></div>
+      <div class="ch-row"><span class="ch-label">CH2</span><span class="ch-signal" style="color:#f7768e">SCK</span><span class="ch-status">tap GP18</span></div>
+      <div class="ch-row"><span class="ch-label">CH6</span><span class="ch-signal" style="color:#e0af68">DIO9 / IRQ</span><span class="ch-status">tap GP21</span></div>
+      <div class="ch-row"><span class="ch-label">CH3</span><span class="ch-signal" style="color:#c3e88d">MOSI</span><span class="ch-status">tap GP19</span></div>
+      <div class="ch-row"><span class="ch-label">CH7</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-status">&mdash;</span></div>
+      <div class="ch-row"><span class="ch-label">CH4</span><span class="ch-signal" style="color:#82aaff">MISO</span><span class="ch-status">tap GP16</span></div>
+      <div class="ch-row"><span class="ch-label">CH8</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-status">&mdash;</span></div>
     </div>
     <div style="padding:6px 20px; font-size:11px; color:#5b6a82; border-top:1px solid #222; margin-top:4px;">
       GND &rarr; connect to RP2040 GND &amp; LR2021 GND (common ground required)
@@ -330,12 +330,12 @@
     <text x="800" y="388" text-anchor="middle" fill="#82aaff" font-family="'Courier New',monospace" font-size="12" font-weight="bold" opacity="0.7">GND (common)</text>
 
     <!-- ============ Probe labels ============ -->
-    <text x="480" y="560" fill="#ff9e64" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,480,560)">CH0: NSS</text>
-    <text x="530" y="580" fill="#f7768e" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,530,580)">CH1: SCK</text>
-    <text x="580" y="600" fill="#c3e88d" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,580,600)">CH2: MOSI</text>
-    <text x="630" y="620" fill="#82aaff" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,630,620)">CH3: MISO</text>
-    <text x="680" y="600" fill="#bb9af7" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,680,600)">CH4: BUSY</text>
-    <text x="730" y="580" fill="#e0af68" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,730,580)">CH5: DIO9</text>
+    <text x="480" y="560" fill="#ff9e64" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,480,560)">CH1: NSS</text>
+    <text x="530" y="580" fill="#f7768e" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,530,580)">CH2: SCK</text>
+    <text x="580" y="600" fill="#c3e88d" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,580,600)">CH3: MOSI</text>
+    <text x="630" y="620" fill="#82aaff" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,630,620)">CH4: MISO</text>
+    <text x="680" y="600" fill="#bb9af7" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,680,600)">CH5: BUSY</text>
+    <text x="730" y="580" fill="#e0af68" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,730,580)">CH6: DIO9</text>
 
     <!-- Tap point labels -->
     <text x="490" y="172" fill="#ff9e64" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
@@ -357,8 +357,8 @@
     <!-- ============ Notes box ============ -->
     <rect x="1130" y="420" width="440" height="170" rx="6" fill="#11161e" stroke="#333" stroke-width="1" opacity="0.95"/>
     <text x="1150" y="445" fill="#7dcfff" font-family="'Courier New',monospace" font-size="12" font-weight="bold">DEBUGGING NOTES</text>
-    <text x="1150" y="470" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Sample rate: &ge;24 MHz (8x SPI clk)</text>
-    <text x="1150" y="490" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Trigger: CH0 falling edge (NSS low)</text>
+    <text x="1150" y="470" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Sample rate: 24 MHz (2x SPI clk)</text>
+    <text x="1150" y="490" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Trigger: CH1 falling edge (NSS low)</text>
     <text x="1150" y="510" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Decode: SPI, CPOL=0, CPHA=0</text>
     <text x="1150" y="530" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Compare: per-byte transfer() vs</text>
     <text x="1165" y="548" fill="#5b6a82" font-family="'Courier New',monospace" font-size="11">  batch/DMA transfer timing</text>
