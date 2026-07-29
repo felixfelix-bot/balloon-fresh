@@ -257,7 +257,8 @@ static void set_rx_continuous(void)
 
 static void set_tx(void)
 {
-    uint8_t cmd[5] = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
+    /* Timeout 0xFFFFFF = infinite (TX until complete). 0x000000 disables TX. */
+    uint8_t cmd[5] = { 0x02, 0x0D, 0xFF, 0xFF, 0xFF };
     rf_write_cmd(cmd, 5);
 }
 
@@ -299,6 +300,11 @@ static void init_radio(void)
     /* SET_RX_PATH (HF path for 2.4 GHz) */
     uint8_t cmd_rxpath[] = { 0x02, 0x01, 0x01, 0x00 };
     rf_write_cmd(cmd_rxpath, 4);
+    vTaskDelay(pdMS_TO_TICKS(1));
+
+    /* SET_TX_PATH (HF path) — MANDATORY before TX or chip never transmits */
+    uint8_t cmd_txpath[] = { 0x02, 0x02, 0x01, 0x00 };
+    rf_write_cmd(cmd_txpath, 4);
     vTaskDelay(pdMS_TO_TICKS(1));
 
     /* CALIB_FRONT_END — mandatory before RX */
