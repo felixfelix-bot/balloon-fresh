@@ -496,6 +496,8 @@ debug: ## One-command: build + flash + start TX + capture.
 	fi
 	@echo ""
 	@echo "Step 4/4: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@echo "Settling 3s for LA USB re-enumeration..."
+	@sleep 3
 	@mkdir -p $(CAPTURES_DIR)
 	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
 	echo "Capturing to $$OUTPUT ..."; \
