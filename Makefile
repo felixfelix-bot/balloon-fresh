@@ -266,17 +266,35 @@ analyze: ## Open capture for analysis. Usage: make analyze FILE=captures/byte-tr
 		echo "Opening $(FILE) in PulseView..."; \
 		pulseview "$(FILE)" & \
 	else \
-		echo "pulseview not installed. Use sigrok-cli for command-line analysis:"; \
-		echo ""; \
-		echo "  # Decode SPI (CS=ch1, SCK=ch2, MOSI=ch3, MISO=ch4):"; \
-		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4"; \
-		echo ""; \
-		echo "  # Show decoded hex:"; \
-		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4 -A spi=hex"; \
-		echo ""; \
-		echo "  # Show protocol metadata:"; \
-		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4 -A spi"; \
+		echo "pulseview not installed. Install: sudo apt install pulseview"; \
+		echo "Or use: make decode FILE=$(FILE)"; \
 	fi
+
+## ─── decode ───────────────────────────────────────────────────────────
+## Decode SPI protocol from capture. Usage: make decode FILE=captures/foo.sr
+decode: ## Decode SPI from capture. Usage: make decode FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode FILE=captures/foo.sr"; exit 1; fi
+	@echo "Decoding SPI from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-A spi 2>&1 | grep -v "^spi-1: [01]$$"
+
+## ─── decode-hex ───────────────────────────────────────────────────────
+## Show SPI hex dump. Usage: make decode-hex FILE=captures/foo.sr
+decode-hex: ## SPI hex dump. Usage: make decode-hex FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode-hex FILE=captures/foo.sr"; exit 1; fi
+	@echo "SPI hex dump from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-B spi=mosi 2>&1 | xxd | head -100
+
+## ─── analyze-timing ───────────────────────────────────────────────────
+## Full SPI timing analysis (clock freq, gaps, throughput). Usage: make analyze-timing FILE=captures/foo.sr
+analyze-timing: ## Full SPI timing analysis. Usage: make analyze-timing FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make analyze-timing FILE=captures/foo.sr"; exit 1; fi
+	@python3 scripts/analyze_spi.py "$(FILE)"
 
 ## ─── list-captures ───────────────────────────────────────────────────
 ## List all capture files with timestamps and sizes.
