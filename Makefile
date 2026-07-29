@@ -239,7 +239,7 @@ decode: ## Decode SPI protocol from capture file.
 	@sigrok-cli -i $(FILE) \
 		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
 		-P spi \
-		-A spi=mosi-data,miso-data 2>&1 | head -200
+		-A spi 2>&1 | head -200
 
 ## ─── decode-hex (SPI bytes in hex) ────────────────────────────────────
 ## Show decoded SPI transactions as hex bytes.
