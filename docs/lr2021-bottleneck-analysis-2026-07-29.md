@@ -260,17 +260,17 @@ Not a throughput bottleneck, but a link margin issue discovered during the audit
 | Platform | Pulse Shape | Register Value |
 |----------|-------------|----------------|
 | RP2040   | BT0.5       | 0x05           |
-| ESP32    | BT1.0       | 0x07           |
+| ESP32    | BT0.5       | 0x05           |
 
 The two platforms use different pulse shape filters. Cross-platform TX→RX communication will have degraded link margin because the receiver's matched filter doesn't match the transmitter's pulse shape. Standardizing on BT0.5 (0x05) across both platforms will improve cross-platform link margin.
 
 ### Code References
 
 - RP2040: `flrc_raw_tx.cpp` — BT0.5 (0x05)
-- ESP32: `esp32_raw_tx.cpp:195` — BT1.0 (0x07)
-- ESP32: `esp32_raw_rx.cpp:180` — BT1.0 (0x07)
+- ESP32: `esp32_raw_tx.cpp:195` — BT0.5 (0x05) ✅
+- ESP32: `esp32_raw_rx.cpp:180` — BT0.5 (0x05) ✅
 
----
+Status: unified on BT0.5 across RP2040 and ESP32.
 
 ## Bottleneck Summary Table
 

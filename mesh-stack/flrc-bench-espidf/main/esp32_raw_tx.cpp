@@ -190,9 +190,9 @@ static bool rawInitRadio() {
     vTaskDelay(pdMS_TO_TICKS(5));
     rfWaitBusy();
 
-    // 8. SET_FLRC_MOD_PARAMS — Br2600, Bt1p0: 0x27
+    // 8. SET_FLRC_MOD_PARAMS — Br2600, Bt0p5: 0x25
     {
-        uint8_t cmd[] = {0x02, 0x48, 0x00, 0x27};
+        uint8_t cmd[] = {0x02, 0x48, 0x00, 0x25};
         rfWriteCmd(cmd, 4);
     }
     vTaskDelay(pdMS_TO_TICKS(1));

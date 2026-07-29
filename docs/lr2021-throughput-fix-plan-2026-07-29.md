@@ -118,8 +118,8 @@ The ESP32-C3 SPI is configured at 40 MHz, which is 2.5× the LR2021 datasheet ma
 RP2040 uses BT0.5 (0x05) pulse shape filter while ESP32 uses BT1.0 (0x07). This mismatch degrades cross-platform link margin because the receiver's matched filter doesn't match the transmitter's pulse shape. Standardize on BT0.5 (0x05) across both platforms.
 
 **Files to modify:**
-- `esp32_raw_tx.cpp` line 195 — change pulse shape from 0x07 (BT1.0) to 0x05 (BT0.5)
-- `esp32_raw_rx.cpp` line 180 — change pulse shape from 0x07 (BT1.0) to 0x05 (BT0.5)
+- `esp32_raw_tx.cpp` line 195 — pulse shape is now 0x05 (BT0.5) ✅
+- `esp32_raw_rx.cpp` line 180 — pulse shape is now 0x05 (BT0.5) ✅
 
 **Expected impact:** No throughput change, but improved cross-platform link margin (RP2040 TX → ESP32 RX and vice versa).
 
