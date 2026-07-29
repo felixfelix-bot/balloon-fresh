@@ -114,6 +114,57 @@ uint16_t nostr_event_serialize(const nostr_event_t *event, uint8_t *buf, uint16_
     return pos;
 }
 
+uint16_t nostr_event_deserialize(nostr_event_t *event, const uint8_t *buf, uint16_t buf_len) {
+    if (!event || !buf) return 0;
+
+    /* Minimum header: id(32) + pubkey(32) + created_at(4) + kind(2) + content_len(2) + num_tags(1) = 73 */
+    if (buf_len < 73) return 0;
+
+    uint16_t pos = 0;
+
+    memcpy(event->id, buf + pos, 32); pos += 32;
+    memcpy(event->pubkey, buf + pos, 32); pos += 32;
+
+    /* created_at: 4 bytes big-endian (inverse of serialize) */
+    event->created_at = ((uint32_t)buf[pos] << 24) | ((uint32_t)buf[pos + 1] << 16) |
+                        ((uint32_t)buf[pos + 2] << 8) | (uint32_t)buf[pos + 3];
+    pos += 4;
+
+    /* kind: 2 bytes little-endian (inverse of serialize) */
+    event->kind = (uint16_t)(buf[pos] | (buf[pos + 1] << 8));
+    pos += 2;
+
+    /* content_len: 2 bytes little-endian (inverse of serialize) */
+    event->content_len = (uint16_t)(buf[pos] | (buf[pos + 1] << 8));
+    pos += 2;
+
+    if (event->content_len > NOSTR_MAX_CONTENT) return 0;
+    if (pos + event->content_len + 1 > buf_len) return 0;
+
+    memcpy(event->content, buf + pos, event->content_len);
+    pos += event->content_len;
+
+    event->num_tags = buf[pos++];
+    if (event->num_tags > NOSTR_MAX_TAGS) return 0;
+
+    for (uint8_t i = 0; i < event->num_tags; i++) {
+        if (pos + 2 > buf_len) return 0;
+        event->tags[i].key_len = buf[pos++];
+        event->tags[i].value_len = buf[pos++];
+
+        if (event->tags[i].key_len > 16) return 0;
+        if (event->tags[i].value_len > NOSTR_TAG_MAX_LEN) return 0;
+        if (pos + event->tags[i].key_len + event->tags[i].value_len > buf_len) return 0;
+
+        memcpy(event->tags[i].key, buf + pos, event->tags[i].key_len);
+        pos += event->tags[i].key_len;
+        memcpy(event->tags[i].value, buf + pos, event->tags[i].value_len);
+        pos += event->tags[i].value_len;
+    }
+
+    return pos;
+}
+
 uint32_t nostr_hash_event_id(const nostr_event_t *event) {
     uint32_t h = 0x811C9DC5;
     const uint8_t *p = (const uint8_t *)event;
