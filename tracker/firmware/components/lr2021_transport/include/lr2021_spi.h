@@ -147,37 +147,8 @@ struct PacketStatus {
         : length(0), rssi_dbm(-127), snr_db(-127), crc_ok(true) {}
 };
 
-// ── SPI Command Opcodes (1-byte, Semtech datasheet) ────────────────
-// From lr2021_spi.rs commands module
-
-namespace Lr2021Commands {
-    constexpr uint8_t SET_STANDBY          = 0x00;
-    constexpr uint8_t SET_TX               = 0x03;
-    constexpr uint8_t SET_RX               = 0x08;
-    constexpr uint8_t STOP_TIMER           = 0x0A;
-    constexpr uint8_t SET_RX_TX_FALLBACK   = 0x09;
-    constexpr uint8_t WRITE_REGISTER       = 0x0D;
-    constexpr uint8_t READ_REGISTER        = 0x1B;
-    constexpr uint8_t WRITE_BUFFER         = 0x0E;
-    constexpr uint8_t READ_BUFFER          = 0x1D;
-    constexpr uint8_t CLEAR_IRQ_STATUS     = 0x16;
-    constexpr uint8_t GET_IRQ_STATUS       = 0x17;
-    constexpr uint8_t GET_RX_BUFFER_STATUS = 0x13;
-    constexpr uint8_t GET_PACKET_STATUS    = 0x14;
-}
-
-// ── Register Addresses ─────────────────────────────────────────────
-// From lr2021_spi.rs registers module
-
-namespace Lr2021Registers {
-    constexpr uint16_t PACKET_LENGTH  = 0x903;
-    constexpr uint16_t TX_MODULATION  = 0x880;
-    constexpr uint16_t RX_MODULATION  = 0x884;
-    constexpr uint16_t PLL_FREQ       = 0x88C;
-    constexpr uint16_t TX_POWER       = 0x894;
-    constexpr uint16_t SYNC_WORD_0    = 0x9C8;
-    constexpr uint16_t IRQ_MASK       = 0x914;
-}
+// NOTE: SX1280 1-byte opcodes (Lr2021Commands) and 16-bit register addresses
+// (Lr2021Registers) removed — incompatible with LR2021 2-byte protocol per ADR-020.
 
 // ── 2-Byte SPI Opcodes (from lr2021_esp_hal.rs) ────────────────────
 // Raw 2-byte command opcodes verified on RP2040/ESP32-C3.
