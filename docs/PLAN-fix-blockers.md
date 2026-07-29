@@ -129,7 +129,7 @@ This requires HTTP connectivity to the mint (online mode — which Felix confirm
 
 ### Plan
 
-#### Phase 1: Wire Up spend_proofs() (1-2 hours)
+#### Phase 1: Wire Up spend_proofs() — DONE (commit d3d54ea)
 - Replace `pf_spend_proofs()` stub with call to `nucula_wallet_receive()`
 - Ensure nucula wallet is initialized in `tollgate_balloon_init()`
 - Handle error cases: mint unreachable, invalid token, already spent
@@ -148,12 +148,14 @@ static bool pf_spend_proofs(const char *raw_token_json) {
 }
 ```
 
-#### Phase 2: Initialize nucula Wallet (30 min)
+#### Phase 2: Initialize nucula Wallet — DONE (commit d3d54ea)
 - In `tollgate_balloon_init()`, call `nucula_wallet_init(mint_url)`
 - Add nucula_lib to tollgate_balloon's CMakeLists.txt REQUIRES
 - **Deliverable:** nucula wallet boot sequence
 
-#### Phase 3: Add Payment Error Codes (30 min)
+#### Phase 3: Add Payment Error Codes — DONE (commit d3d54ea)
+- Error codes documented in PAY handler in tollgate_balloon.c
+- Mapping ready for NACK response construction
 - Map nucula errors to TollGate NACK codes:
   - ESP_FAIL → TG_ERR_INVALID_TOKEN
   - ESP_ERR_HTTP_CONNECT → TG_ERR_MINT_UNREACHABLE
