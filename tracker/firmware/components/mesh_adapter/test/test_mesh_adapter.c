@@ -14,6 +14,28 @@ static void mock_send(const uint8_t *frame, uint16_t len) {
     g_last_sent_len = len;
 }
 
+/* Mock symmetric cipher: XOR every byte with 0xAA.
+ * encrypt and decrypt are identical (XOR is its own inverse). */
+static int mock_encrypt(void *ctx, const uint8_t *in, size_t in_len,
+                        uint8_t *out, size_t *out_len) {
+    (void)ctx;
+    for (size_t i = 0; i < in_len; i++) out[i] = in[i] ^ 0xAA;
+    *out_len = in_len;
+    return 0;
+}
+
+static int mock_decrypt(void *ctx, const uint8_t *in, size_t in_len,
+                        uint8_t *out, size_t *out_len) {
+    (void)ctx;
+    for (size_t i = 0; i < in_len; i++) out[i] = in[i] ^ 0xAA;
+    *out_len = in_len;
+    return 0;
+}
+
+/* Non-NULL sentinel so the adapter actually invokes the callbacks
+ * (the .c gates on  fn && ctx  both being non-NULL). */
+static int g_dummy_ctx;
+
 static mesh_frame_queue_t g_queue;
 
 static void reset(void) {
@@ -173,6 +195,49 @@ int main(void) {
     assert(count2 >= count1);
     printf("PASS (%d then %d frames)\n", count1, count2);
 
-    printf("\n=== Results: 8/8 passed ===\n");
+    printf("TEST 9: mesh_adapter with encrypt/decrypt callbacks... ");
+    reset();
+    uint8_t enc_data[150];
+    for (int i = 0; i < 150; i++) enc_data[i] = (uint8_t)(i * 3 + 7);
+
+    /* Re-init with encrypt/decrypt callbacks active */
+    mesh_adapter_config_t enc_config = {
+        .send_fn    = mock_send,
+        .tx_queue   = &g_queue,
+        .encrypt_fn = mock_encrypt,
+        .decrypt_fn = mock_decrypt,
+        .encrypt_ctx = &g_dummy_ctx,
+        .decrypt_ctx = &g_dummy_ctx,
+    };
+    mesh_adapter_init(&enc_config);
+
+    /* TX: plaintext -> encrypt(XOR 0xAA) -> fragment -> frames */
+    r = mesh_adapter_send(enc_data, 150, 80, 0);
+    assert(r == MESH_OK);
+    n = g_queue.frame_count;
+    assert(n > 0);
+
+    uint8_t saved9[MESH_ADAPTER_MAX_FRAMES][256];
+    uint16_t saved9_lens[MESH_ADAPTER_MAX_FRAMES];
+    memcpy(saved9, g_queue.frames, sizeof(g_queue.frames));
+    memcpy(saved9_lens, g_queue.frame_lens, sizeof(g_queue.frame_lens));
+
+    /* RX: frames -> reassemble -> decrypt(XOR 0xAA) -> plaintext */
+    pipeline_rx_reset();
+    pipeline_rx_set_data_len(150);  /* XOR cipher: ciphertext len == plaintext len */
+
+    decoded = 0;
+    out_len = 0;
+    for (int i = 0; i < n; i++) {
+        r = mesh_adapter_receive_frame(saved9[i], saved9_lens[i],
+                                       out, &out_len, sizeof(out));
+        if (r == MESH_OK) { decoded = 1; break; }
+    }
+    assert(decoded);
+    assert(out_len == 150);
+    assert(memcmp(enc_data, out, 150) == 0);
+    printf("PASS (%d frames, XOR roundtrip verified)\n", n);
+
+    printf("\n=== Results: 9/9 passed ===\n");
     return 0;
 }

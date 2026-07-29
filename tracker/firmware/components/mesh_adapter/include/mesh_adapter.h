@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -28,9 +29,21 @@ typedef enum {
     MESH_ERR_NOT_ESTABLISHED = -7,
 } mesh_result_t;
 
+/* Encrypt/decrypt callbacks (set when FIPS sessions are active).
+ * When set, data is encrypted before fragmentation (TX) and
+ * decrypted after reassembly (RX). When NULL, passthrough. */
+typedef int (*mesh_encrypt_fn)(void *ctx, const uint8_t *in, size_t in_len,
+                                uint8_t *out, size_t *out_len);
+typedef int (*mesh_decrypt_fn)(void *ctx, const uint8_t *in, size_t in_len,
+                                uint8_t *out, size_t *out_len);
+
 typedef struct {
     mesh_frame_send_fn send_fn;
     mesh_frame_queue_t *tx_queue;
+    mesh_encrypt_fn    encrypt_fn;   /* optional */
+    mesh_decrypt_fn    decrypt_fn;   /* optional */
+    void              *encrypt_ctx;  /* fips_session_t* for initiator */
+    void              *decrypt_ctx;  /* fips_session_t* for responder */
 } mesh_adapter_config_t;
 
 void mesh_adapter_init(const mesh_adapter_config_t *config);
