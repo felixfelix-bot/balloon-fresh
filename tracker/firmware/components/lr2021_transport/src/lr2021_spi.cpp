@@ -62,6 +62,14 @@ Lr2021Error MockLr2021Radio::check_irq(bool& asserted) {
 #if defined(__has_include)
 #if __has_include(<driver/spi_master.h>) && __has_include(<driver/gpio.h>) && __has_include(<esp_err.h>)
 
+#include "driver/spi_master.h"
+#include "driver/gpio.h"
+#include "esp_timer.h"
+#include "esp_rom_sys.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_log.h"
+
 static const char* TAG = "lr2021_spi";
 
 EspIdfLr2021Radio::EspIdfLr2021Radio()
@@ -186,7 +194,7 @@ Lr2021Error EspIdfLr2021Radio::wait_busy() {
         }
         // Small delay — on ESP-IDF we use ets_delay_us for tight polling
         // Using vTaskDelay(1) would be too coarse (1 tick = 10ms min)
-        ets_delay_us(1);
+        esp_rom_delay_us(1);
     }
     return Lr2021Error::Timeout;
 }
@@ -198,7 +206,7 @@ bool EspIdfLr2021Radio::check_irq_pin() {
 Lr2021Error EspIdfLr2021Radio::hardware_reset() {
     // RST LOW 200us → HIGH, delay 50ms
     gpio_set_level((gpio_num_t)LR2021_PIN_RST, 0);
-    ets_delay_us(200);
+    esp_rom_delay_us(200);
     gpio_set_level((gpio_num_t)LR2021_PIN_RST, 1);
     vTaskDelay(pdMS_TO_TICKS(50));
     return Lr2021Error::Ok;
@@ -241,7 +249,7 @@ uint8_t EspIdfLr2021Radio::bitrate_to_brbw(uint32_t bitrate_kbps) {
 static void build_packet_params(const Lr2021Config& config, uint8_t params[4]) {
     // Byte 0: ((preambleIndex & 0x0F) << 2) | (syncWordLen / 2)
     // preamble=16 → index 3: (3<<2)|2 = 0x0E
-    uint8_t byte0 = 0x0Eu8;
+    uint8_t byte0 = 0x0E;
     // Byte 1: ((syncTx & 0x03) << 6) | ((syncMatch & 0x07) << 3) | (fixedLen<<2) | crc
     uint8_t crc_byte = config.crc_enabled ? 0x01 : 0x00;
     uint8_t byte1 = (1u << 6) | (1u << 3) | (1u << 2) | crc_byte;
