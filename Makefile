@@ -376,25 +376,73 @@ reinstall-framework: ## Force reinstall earlephilhower Arduino-Pico core.
 	@$(MAKE) install-framework
 
 ## ─── debug (one-command workflow) ─────────────────────────────────────
-## Build firmware, flash RP2040, start TX, capture SPI signals.
+## Build firmware, auto-flash RP2040 (1200 baud BOOTSEL), start TX, capture SPI signals.
 ## Usage: make debug [ENV=rp2040-cont-tx] [DURATION=1] [OUTPUT=captures/debug.sr]
-## Prerequisites: RP2040 in BOOTSEL mode (hold button, plug USB), logic analyzer connected.
+## Prerequisites: RP2040 connected via USB, logic analyzer connected.
 debug: ## One-command: build + flash + start TX + capture.
 	@echo "=== Balloon Speed Tests — One-Command Debug Workflow ==="
 	@echo ""
 	@echo "Step 1/4: Building firmware ($(or $(ENV),rp2040-cont-tx))..."
 	@cd $(RP2040_DIR) && pio run -e $(or $(ENV),rp2040-cont-tx)
 	@echo ""
-	@echo "Step 2/4: Flashing RP2040 (hold BOOTSEL button, plug USB)..."
+	@echo "Step 2/4: Flashing RP2040 (auto-BOOTSEL via 1200 baud)..."
 	@UF2=$$(find $(RP2040_DIR)/.pio/build/$(or $(ENV),rp2040-cont-tx) -name firmware.uf2 2>/dev/null | head -1); \
 	if [ -z "$$UF2" ]; then \
 		echo "ERROR: No firmware.uf2 found. Build may have failed."; exit 1; \
 	fi; \
 	if ! command -v picotool >/dev/null 2>&1; then \
-		echo "ERROR: picotool not found."; exit 1; \
+		echo "ERROR: picotool not found. Install: sudo apt install picotool"; exit 1; \
 	fi; \
-	picotool load $$UF2 && picotool reboot || \
-		{ echo "ERROR: RP2040 not in BOOTSEL mode. Hold BOOTSEL button, plug in USB, then retry."; exit 1; }
+	PORT=$$(ls /dev/ttyACM* 2>/dev/null | while read p; do \
+		udevadm info -q property "$$p" 2>/dev/null | grep -q "ID_MODEL_ID=000a" && echo "$$p" && break; \
+	done | head -1); \
+	if [ -z "$$PORT" ]; then \
+		echo "No RP2040 USB CDC port found (PID 000a). Trying all ACM ports..."; \
+		PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	fi; \
+	if [ -z "$$PORT" ]; then \
+		echo "ERROR: No /dev/ttyACM* found. Is the RP2040 plugged in?"; exit 1; \
+	fi; \
+	echo "Triggering BOOTSEL on $$PORT..."; \
+	python3 -c "import serial,time; s=serial.Serial(); s.port='$$PORT'; s.baudrate=1200; s.dtr=False; s.rts=False; \
+		try: s.open(); \
+		except: pass; \
+		try: s.close(); \
+		except: pass; \
+		time.sleep(0.5)" 2>/dev/null; \
+	echo "Waiting for RPI-RP2 drive..."; \
+	OK=""; \
+	for i in $$(seq 1 10); do \
+		if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
+		sleep 1; \
+	done; \
+	if [ -z "$$OK" ]; then \
+		echo "1200 baud failed. Trying stty fallback..."; \
+		stty -F $$PORT 1200 2>/dev/null; sleep 3; \
+		for i in $$(seq 1 10); do \
+			if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
+			sleep 1; \
+		done; \
+	fi; \
+	if [ -z "$$OK" ]; then \
+		echo "ERROR: Could not trigger BOOTSEL."; \
+		echo "Hold the white BOOTSEL button, unplug USB, plug back in while holding."; \
+		echo "Then re-run: make debug ENV=$(or $(ENV),rp2040-cont-tx)"; \
+		exit 1; \
+	fi; \
+	RPIDEV=$$(ls /dev/disk/by-label/RPI-RP2 2>/dev/null | head -1); \
+	RPIBLOCK=$$(readlink -f $$RPIDEV); \
+	echo "RP2040 in BOOTSEL at $$RPIBLOCK"; \
+	FLASHDIR=/tmp/rp2040-flash; \
+	umount $$FLASHDIR 2>/dev/null; \
+	mkdir -p $$FLASHDIR; \
+	sudo mount -o uid=$$(id -u),gid=$$(id -g) $$RPIBLOCK $$FLASHDIR || \
+		sudo mount $$RPIBLOCK $$FLASHDIR; \
+	cp "$$UF2" $$FLASHDIR/ && sync; \
+	umount $$FLASHDIR 2>/dev/null; \
+	echo "Flashed. Waiting for reboot..."; \
+	sleep 3; \
+	picotool reboot 2>/dev/null || true
 	@echo ""
 	@echo "Step 3/4: Waiting for RP2040 serial port + starting TX..."
 	@printf "Waiting for serial port"; \
