@@ -1,0 +1,71 @@
+WARNING: KICAD6_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD8_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD7_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+WARNING: Merging two named nets (VCAP and VRAW) into VCAP. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:500=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:474]
+WARNING: Missing tag on Conn_01x10 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:152.
+WARNING: Random tag _rC2GT7ChZ generated for Conn_01x10.
+WARNING: Missing tag on Conn_01x14 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:158.
+WARNING: Random tag dYs_1HvHwa generated for Conn_01x14.
+WARNING: Missing tag on Conn_01x18 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:165.
+WARNING: Random tag D9jYNPxz_2 generated for Conn_01x18.
+WARNING: Missing tag on Conn_01x04 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:171.
+WARNING: Random tag SC3yoHKREh generated for Conn_01x04.
+WARNING: Missing tag on Conn_01x04 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:176.
+WARNING: Random tag pWQg8NPOCl generated for Conn_01x04.
+WARNING: Missing tag on BAT54 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:133.
+WARNING: Random tag zv3153ntkz generated for BAT54.
+WARNING: Missing tag on TPS7A0233DBVR instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:124.
+WARNING: Random tag g9ctV9kHNr generated for TPS7A0233DBVR.
+WARNING: Missing tag on C_Polarized instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:183.
+WARNING: Random tag oszV_MV1pH generated for C_Polarized.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:188.
+WARNING: Random tag JaItxtmPNj generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:190.
+WARNING: Random tag 56L6Dn5k75 generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:192.
+WARNING: Random tag xwhF6BLrzh generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:194.
+WARNING: Random tag yqo_f5oN4j generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:196.
+WARNING: Random tag ecl1wMMJ9F generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:201.
+WARNING: Random tag wptirgzHQa generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:203.
+WARNING: Random tag FSxX_Folz_ generated for C.
+WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:205.
+WARNING: Random tag Wy_xNa7gVu generated for C.
+WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:209.
+WARNING: Random tag b2DyMszE2t generated for R.
+WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:211.
+WARNING: Random tag oeLJSELdy2 generated for R.
+WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:215.
+WARNING: Random tag 6eWbc5iJcp generated for R.
+WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:217.
+WARNING: Random tag 7mphGoWgDV generated for R.
+WARNING: Missing tag on LED instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:221.
+WARNING: Random tag xKrJOUQgvW generated for LED.
+WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:223.
+WARNING: Random tag GeZVaLggMr generated for R.
+WARNING: Missing tag on Conn_01x02 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:229.
+WARNING: Random tag MbbN6kqXx6 generated for Conn_01x02.
+WARNING: Missing tag on Conn_01x02 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:232.
+WARNING: Random tag hqBXUSbpp5 generated for Conn_01x02.
+WARNING: Missing tag on Conn_01x02 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:237.
+WARNING: Random tag 9L8MvY3eO3 generated for Conn_01x02.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:244.
+WARNING: Random tag vlnUANH8uF generated for Conn_01x01.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:246.
+WARNING: Random tag NrwNshwjw9 generated for Conn_01x01.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:248.
+WARNING: Random tag Vxga4gs8qQ generated for Conn_01x01.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:250.
+WARNING: Random tag _HJIDmRhY9 generated for Conn_01x01.
+WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic_f33.py:252.
+WARNING: Random tag P3gO4RgIY6 generated for Conn_01x01.
+WARNING: Missing tag on  instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241.
+INFO: 65 warnings found while generating netlist.
+INFO: 0 errors found while generating netlist.
+

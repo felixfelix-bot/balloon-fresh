@@ -8,7 +8,6 @@ kanban.db
 **/test_erasure
 nip34.json
 build/
-*.elf
 *.bin
 sdkconfig.old
 # External artifact
@@ -20,3 +19,7 @@ firmware/esp32-c3-flrc/sdkconfig.old
 mesh-stack/flrc-bench-espidf/build_*/
 *.bak
 
+# SKiDL generated files
+skidl_REPL.erc
+skidl_REPL.log
+*_sklib.py
