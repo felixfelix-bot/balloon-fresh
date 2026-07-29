@@ -26,6 +26,13 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-circuit-design] feat(schematic): dual-variant hub board — non-PA + F33 2W PA (2026-07-29) | tags: HARDWARE
+- **Commit:** `2ce15d5` by Felix
+- **Files:** docs/DUAL-VARIANT-DESIGN.md, tracker/hardware/hub_board/hub_board_f33.net, tracker/hardware/hub_board/hub_schematic.log (+5 more)
+- **Full message:** feat(schematic): dual-variant hub board — non-PA + F33 2W PA
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] docs: consolidation execution plan + Makefile updates + discoveries sync (2026-07-26) | tags: GENERAL
 - **Commit:** `c03dbb8` by Felix
 - **Files:** Makefile, docs/coordination/DISCOVERIES.md, docs/plans/CONSOLIDATION-EXECUTION.md

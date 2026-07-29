@@ -1,0 +1,145 @@
+{
+  "test_date": "2026-07-24",
+  "hardware": {
+    "chip": "Semtech LR2021 Gen 4 (NiceRF LoRa2021)",
+    "mcu": "2x Raspberry Pi Pico (RP2040)",
+    "bridge": "2x ESP32-C3 UART bridge",
+    "antenna": "PCB antenna (dev board)",
+    "environment": "indoor, 1-2m line of sight",
+    "frequency_mhz": 2440.0
+  },
+  "flrc_sweep": {
+    "description": "FLRC bitrate sweep, 1000 pkts, 255-byte payload, 12 dBm",
+    "results": [
+      {
+        "bitrate_kbps": 2600,
+        "throughput_kbps": 602.4,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -48.8,
+        "rssi_min_dbm": -104,
+        "efficiency_pct": 23
+      },
+      {
+        "bitrate_kbps": 1300,
+        "throughput_kbps": 495.1,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -50.7,
+        "rssi_min_dbm": -106,
+        "efficiency_pct": 38
+      },
+      {
+        "bitrate_kbps": 650,
+        "throughput_kbps": 317.6,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -57.5,
+        "rssi_min_dbm": -108,
+        "efficiency_pct": 49
+      },
+      {
+        "bitrate_kbps": 325,
+        "throughput_kbps": 195.4,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -51.2,
+        "rssi_min_dbm": -109,
+        "efficiency_pct": 60
+      }
+    ]
+  },
+  "lora_sweep": {
+    "description": "LoRa spreading factor sweep, 200 pkts, 127-byte payload, 12 dBm, BW 812 kHz, CR 4/5",
+    "results": [
+      {
+        "spreading_factor": 7,
+        "tx_rate_kbps": 30.9,
+        "packets_sent": 200,
+        "packets_received": 200,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8
+      },
+      {
+        "spreading_factor": 9,
+        "tx_rate_kbps": 9.7,
+        "packets_sent": 200,
+        "packets_received": 194,
+        "per_pct": 3.0,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8
+      },
+      {
+        "spreading_factor": 12,
+        "tx_rate_kbps": 1.5,
+        "packets_sent": 200,
+        "packets_received": 197,
+        "per_pct": 1.5,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8
+      }
+    ]
+  },
+  "power_sweep": {
+    "description": "TX power sweep, 200 pkts, SF7, BW 812 kHz, CR 4/5, 127-byte payload, indoor 1-2m",
+    "finding": "RSSI unchanged across all power levels — receiver saturated at close range",
+    "results": [
+      {
+        "tx_power_dbm": 0.0,
+        "packets_sent": 200,
+        "packets_fired": 200,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8,
+        "throughput_kbps": 16.7
+      },
+      {
+        "tx_power_dbm": 3.0,
+        "packets_sent": 200,
+        "packets_fired": 200,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8,
+        "throughput_kbps": 13.0
+      },
+      {
+        "tx_power_dbm": 6.0,
+        "packets_sent": 200,
+        "packets_fired": 200,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8,
+        "throughput_kbps": 16.4
+      },
+      {
+        "tx_power_dbm": 12.0,
+        "packets_sent": 200,
+        "packets_fired": 200,
+        "per_pct": 0.0,
+        "rssi_avg_dbm": -8.0,
+        "snr_avg_db": 31.8,
+        "throughput_kbps": 13.1
+      }
+    ]
+  },
+  "bugs_fixed": [
+    {
+      "id": "CR_ENCODING",
+      "commit": "b32f50b",
+      "symptom": "SF9 and SF12 RX received 0 packets",
+      "root_cause": "LORA_CR=5 invalid (range 1-4). SPI encoded (5<<4)=0x50.",
+      "fix": "LORA_CR 5→1 (cr=4/5)"
+    },
+    {
+      "id": "RSSI_SNR_SWAP",
+      "commit": "dca7a84",
+      "symptom": "RSSI always -127 dBm, SNR implausible",
+      "root_cause": "buf[2] and buf[3] swapped in GET_LORA_PACKET_STATUS response",
+      "fix": "buf[2]=RSSI (-val/2), buf[3]=SNR (signed /4)"
+    },
+    {
+      "id": "PER_STATS",
+      "commit": "9352337",
+      "symptom": "PER reported 78% when only 2/200 lost",
+      "root_cause": "resetStats() zeroed received count but maxSeq kept climbing",
+      "fix": "Added cumulativeRx field surviving resetStats()"
+    }
+  ]
+}

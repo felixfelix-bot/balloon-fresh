@@ -197,9 +197,8 @@ static bool rawInitRadio() {
         { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); } delay(1);
 
         // Step 6: SET_FLRC_MODULATION_PARAMS (0x0248)
-        // TheClams: Br2600=0, None=2, Bt1p0=7 → byte3 = (2<<4)|7 = 0x27
-        // Bt1p0 matches reference. Bt0p5=5 also valid but use reference value.
-        { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x27 }; rfWriteCmd(cmd, 4); } delay(1);
+        // Br2600=0, None=2, Bt0p5=5 → byte3 = (2<<4)|5 = 0x25
+        { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); } delay(1);
 
         // Step 7: SET_FLRC_SYNCWORD (0x024C) — 32-bit sync word at slot 1
         // TheClams: 0xCD05CAFE at slot 1

@@ -1,0 +1,10 @@
+BURST 11 DONE mode=1 fired=500 to=0 elapsed=2602ms tput=195.2kbps
+e=127,power=12.5,uptime_ms=58893,path=HF_FLRC,pa_state=ON,bandwidth_khz=325,gps_time=08:23:33,gps_sec=30213,clock=GPS
+BURST 12 START mode=1 gps_time=08:23:33 gps_sec=30213 uptime=63496ms count=500
+BURST 12 DONE mode=1 fired=500 to=0 elapsed=2602ms tput=195.2kbps
+SWEEP_TX_RESULT,mode=1,type=FLRC,freq=2440,bitrate=325,sent=500,fired=500,timeout=0,elapsed_ms=2602,throughput_kbps=195.2,pktSize=127,power=12.5,uptime_ms=63496,path=HF_FLRC,pa_state=ON,bandwidth_khz=325,gps_time=08:23:37,gps_sec=30217,clock=GPS
+[TX HB 68s] mode=1 burst=13 gps_time=08:23:37 gps_sec=30217 clock=GPS
+BURST 13 START mode=1 gps_time=08:23:37 gps_sec=30217 uptime=68099ms count=500
+BURST 13 DONE mode=1 fired=500 to=0 elapsed=2602ms tput=195.2kbps
+SWEEP_TX_RESULT,mode=1,type=FLRC,freq=2440,bitrate=325,sent=500,fired=500,timeout=0,elapsed_ms=2602,throughput_kbps=195.2,pktSize=127,power=12.5,uptime_ms=68099,path=HF_FLRC,pa_state=ON,bandwidth_khz=325,gps_time=08:23:42,gps_sec=30222,clock=GPS
+BURST 14 START mode=1 gps_time=08:23:42 gps_sec=30222 uptime=72702ms count=500
