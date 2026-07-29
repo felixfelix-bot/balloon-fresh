@@ -1,11 +1,13 @@
 # STATUS REPORT: balloon-pre-stretching
-- Current Phase: execution
+- Current Phase: execution (rebased onto consolidated master, deliverables restored)
 - Kanban Telemetry: no board
-- Last Commit: 78c35d1 — feat: pressure test rig firmware + analysis script
-- Immediate Blockers: Hardware not connected to DQ05 (BMP280 + ESP32-C3 not detected on USB/I2C)
-- Dependencies Waiting On: circuit-design (payload weight for balloon count/gas volume), orchestrator (launch coordination)
-- Next 3 Deliverables: Flash firmware to ESP32-C3 when connected, Run DecoGlee batch leak test, Run Yokohama pre-stretching protocol
+- Last Commit: 65453cc — docs: update status — phase execution, rig firmware built
+- Immediate Blockers: BMP280 + ESP32-C3 not wired to DQ05. No helium source sourced yet.
+- Dependencies Waiting On: circuit-design payload weight estimates (V1 non-PA vs V2 F33 2W PA) for balloon count/gas volume calculations
+- Next 3 Deliverables: (1) Update protocol with dual-variant payload weights, (2) Flash pressure rig firmware to ESP32-C3 when connected, (3) Run DecoGlee 18" batch leak test
 - Estimated Integration Readiness: unknown (hardware-dependent)
-- Critical Output: Pre-stretching protocol + leak test methodology + pressure test rig firmware
-- Shared Resources Needed: BMP280 breakout (connect to DQ05), ESP32-C3 (connect via USB), 12V air pump, heat sealer, industrial He 4.6, Yokohama 10-pack
-- Questions for Orchestrator: None
+- Critical Output: Pre-stretching protocol (372 lines) + leak test methodology + pressure test rig firmware (ESP32-C3 + BMP280)
+- Equipment Felix HAS: Yokohama 32" balloons, heat sealer, Kapton tape, GPS module, supercaps, 30x DecoGlee 18" foil, pressure sensor + pump, MS300 scale, calipers
+- Equipment NEEDED: Helium source (party He for shakedown, industrial He 4.6 for Yokohama long-duration), BMP280 breakout wired to ESP32-C3
+- ADR-024: ACKNOWLEDGED — extract-only policy, no source repo modifications
+- Questions for Orchestrator: Need payload weight estimates (grams) from circuit-design for V1 and V2 variants — blocking lift calculations
