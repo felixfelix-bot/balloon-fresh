@@ -243,7 +243,7 @@ class TestMeshAdapter:
                 os.path.join(COMPONENTS, "frag", "include"),
             ],
         )
-        assert "8/8 passed" in out
+        assert "9/9 passed" in out
 
 
 class TestEndToEnd:
