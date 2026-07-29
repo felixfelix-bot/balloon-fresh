@@ -1,7 +1,7 @@
 # ADR-025: Shared Hardware Access — Mandatory flock Mutex for ESP32-C3 + LR2021
 
 **Date:** 2026-07-29
-**Status:** PROPOSED
+**Status:** ACCEPTED
 **Decision Maker:** Felix (operator)
 
 ## Context
