@@ -42,32 +42,59 @@ mining is explicitly NOT.
 ```
   Mining Pool (Internet)
          ↕  Stratum V1 (TCP)
-  ┌──────────────────┐
-  │  E-HASH PROXY     │  (ground-side or cloud, handles pool connection)
-  │  - stratum client │  - converts hash rate to value
-  │  - validates nonces│ - tracks per-customer credits
-  └────────┬─────────┘
-           ↕  Internet (TCP/WSS)
-  ┌────────┴─────────┐
-  │  BALLOON          │  ESP32-C3 + LR2021 (in sky)
-  │  - L7 relay: template DOWN, nonces UP
-  │  - L7 credit check: has customer earned access?
-  │  - NO hashing, NO mining code
-  │  - Rides existing L1-L6 mesh stack unchanged
-  └────────┬─────────┘
-           ↕  LR2021 (LoRa sub-GHz or FLRC 2.4GHz)
-  ┌────────┴─────────┐
-  │  TOLLGATE         │  Ground station (ESP32-C3 or Pi + LR2021)
-  │  CUSTOMER         │  + Bitaxe/ASIC miner
-  │  - mines against  │  - provides hash rate as payment
-  │    relayed template│ - submits nonces up via balloon
-  └──────────────────┘
+  ┌──────────────────────────────────┐
+  │  E-HASH PROXY                      │  (ground-side or cloud)
+  │  - stratum client → pool           │  - validates nonces vs pool
+  │  - collects BTC rewards            │  - mints e-hash tokens (Ecash)
+  │  - sells templates FOR e-hash      │  - buys nonces WITH e-hash
+  └────────┬───────────────┬──────────┘
+      templates DOWN         nonces UP
+      (e-hash payment UP)    (e-hash payment DOWN)
+  ┌────────┴───────────────┴──────────┐
+  │  BALLOON  (ESP32-C3 + LR2021)      │
+  │  - L7 relay: template DOWN, nonces UP│
+  │  - Buys nonces from miner: pays e-hash DOWN
+  │  - Sells nonces to proxy: gets e-hash DOWN from proxy
+  │  - Buys templates from proxy: pays e-hash UP
+  │  - Sells templates to miner: NO CHARGE (miner paid in nonces)
+  │  - Earns spread on both sides       │
+  │  - NO hashing, NO mining code       │
+  │  - Rides existing L1-L6 stack       │
+  └────────┬───────────────┬──────────┘
+      templates DOWN         nonces UP
+      (e-hash payment UP)    (e-hash payment DOWN)
+  ┌────────┴───────────────┴──────────┐
+  │  TOLLGATE CUSTOMER                 │  Ground station + Bitaxe
+  │  - mines against relayed template  │
+  │  - submits nonces UP to balloon    │
+  │  - earns e-hash for nonces         │
+  │  - spends e-hash on internet access│
+  └────────────────────────────────────┘
 ```
 
-The customer wants internet access from the balloon. They pay by mining —
-their hash rate funds the balloon's internet relay service via the e-hash
-proxy. Block templates flow DOWN so the customer can mine. Nonces flow UP
-as proof of work (payment).
+### E-Hash Economy Flow (Bidirectional Ecash at Every Hop)
+
+E-hash is Ecash tokens used as the medium of exchange in the mining-relay
+economy. Value flows in both directions at every hop:
+
+**Nonces flow UP (proof of work):**
+Miner → Balloon → Proxy → Pool
+
+**E-hash payment for nonces flows DOWN:**
+Proxy pays Balloon (e-hash for nonces) → Balloon pays Miner (e-hash for nonces, minus spread)
+
+**Templates/internet data flows DOWN:**
+Proxy → Balloon → Miner
+
+**E-hash payment for internet flows UP:**
+Miner pays Balloon (e-hash for internet access) → Balloon pays Proxy (e-hash for internet, minus spread)
+
+The balloon earns a SPREAD on both transactions:
+- Pays miner X e-hash for nonces, gets X+Y from proxy → keeps Y
+- Charges miner Z e-hash for internet, pays proxy Z-W → keeps W
+
+The miner's cycle: mine → earn e-hash → spend e-hash on internet access →
+repeat. Self-sustaining economy. E-hash all the way down.
 
 ### Bandwidth Budget (LR2021 at 300 km)
 
@@ -146,31 +173,41 @@ Offset  Size  Field
 
 Single fragment. Negligible airtime even at LoRa SF12.
 
-### 4. Credit Model: Hash Rate = Internet Access
+### 4. E-Hash Economy: Bidirectional Ecash at Every Hop
 
-The customer mines to EARN balloon internet access. The e-hash proxy
-tracks credits:
+E-hash = Ecash tokens used as medium of exchange. Every participant earns
+and spends e-hash. The balloon is a middleman earning a spread.
 
-- Customer submits valid nonce → proxy validates against pool
-- Valid share → customer earns credit (internet bytes or time)
-- Balloon relays EHASH_CREDIT updates to ground station
-- Credit balance gates template delivery: zero credit = no new templates
+**Upstream leg (Proxy ↔ Balloon):**
+- Proxy sells templates → balloon pays e-hash UP
+- Balloon delivers nonces → proxy pays e-hash DOWN
 
-This inverts the original Cashu model: instead of paying Ecash for access,
-the customer PAYS IN HASH RATE. The balloon's role is purely transport —
-it relays templates down, nonces up, and credit updates back.
+**Downstream leg (Balloon ↔ Miner):**
+- Balloon delivers templates → miner pays e-hash UP (for internet access)
+- Miner delivers nonces → balloon pays e-hash DOWN (for proof of work)
+
+**Balloon earns spread on both legs.** This is the balloon's business model.
+It is a toll booth on the data highway, paid in Ecash.
+
+The balloon needs a lightweight Ecash wallet (Cashu) to:
+- Receive e-hash from proxy (nonce payments)
+- Send e-hash to proxy (template/internet payments)
+- Send e-hash to miner (nonce payments)
+- Receive e-hash from miner (internet access payments)
+- Track balances per miner (per-station accounting)
 
 The e-hash proxy (upstream, NOT on balloon) handles:
 - Pool stratum connection
-- Share validation
+- Share validation against pool
 - Bitcoin reward collection
-- Credit accounting per customer
+- E-hash token minting (Cashu mint)
+- E-hash distribution to balloon for valid nonces
 
-The balloon only needs to:
-- Relay template messages down
-- Relay nonce messages up
-- Relay credit messages down
-- Gate template delivery on credit > 0
+The balloon handles:
+- Relay: templates DOWN, nonces UP
+- Ecash wallet: receive from proxy, pay miner, receive from miner, pay proxy
+- Per-miner balance tracking (e-hash earned vs spent)
+- Gate template delivery on positive e-hash balance
 
 ### 5. Ground Station: Stratum Bridge Component
 
@@ -187,12 +224,13 @@ The ground station runs a new L7 component alongside existing Nostr relay:
 
 ## Invariants
 
-1. **Balloon never hashes.** No SHA256. No mining code. Pure relay.
+1. **Balloon never hashes.** No SHA256. No mining code. Pure relay + Ecash wallet.
 2. **ADR-024 compliant.** Relay/transport is a balloon function. Mining is NOT.
 3. **Rides existing L1-L6 stack.** No radio, fragmentation, FIPS, or routing changes.
 4. **Binary encoding over LoRa.** Not JSON. Ground station translates binary ↔ JSON.
-5. **Hash rate is the currency.** Customer earns internet by mining, not by paying Ecash.
+5. **E-hash is bidirectional Ecash.** Every hop earns and spends. Balloon earns spread.
 6. **E-hash proxy handles pool logic.** Balloon does NOT connect to pool directly.
+7. **Balloon needs Cashu wallet.** Lightweight, for receiving/sending e-hash tokens.
 
 ## Consequences
 

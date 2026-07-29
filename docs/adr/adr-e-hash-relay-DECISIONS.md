@@ -12,10 +12,12 @@ E-hash proxy (upstream, NOT on balloon) handles pool connection + share
 validation + reward collection + credit accounting. Balloon only relays.
 (Felix, 2026-07-29)
 
-### D3. Hash rate IS the payment
-Customer mines to EARN balloon internet access. Not Ecash-for-templates.
-Hash rate/nonces are the currency. Inverts the Cashu model.
-(Felix, 2026-07-29)
+### D3. E-hash = bidirectional Ecash economy at every hop
+Every participant earns and spends e-hash (Ecash tokens). Miner earns e-hash
+for nonces, spends on internet access. Balloon earns e-hash from proxy for
+nonces, pays proxy e-hash for templates, earns spread on both legs. Proxy
+buys nonces with e-hash, sells templates for e-hash, collects BTC from pool.
+(Felix, 2026-07-29, corrected after two iterations)
 
 ### D4. Correct repo = balloon-fresh
 ADR belongs in balloon-fresh (ESP32-C3 + LR2021 pico balloon project).
