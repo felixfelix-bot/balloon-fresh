@@ -372,7 +372,7 @@ debug: ## One-command: build + flash + capture. make debug [ENV=rp2040-raw-tx] [
 	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
 	echo "Capturing to $$OUTPUT ..."; \
 	sigrok-cli --driver fx2lafw --config samplerate=24mhz --samples $(or $(DURATION),1)000000 \
-		--triggers ch1=f -o $$OUTPUT 2>&1 || \
+		--channels D0,D1,D2,D3,D4,D5,D6 -o $$OUTPUT 2>&1 || \
 		{ echo "ERROR: sigrok-cli failed. Check logic analyzer is plugged in."; \
 		echo "Try: sigrok-cli --list"; exit 1; }
 	@echo ""
