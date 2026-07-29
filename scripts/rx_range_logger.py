@@ -18,7 +18,6 @@ Output files (rotated):
     range_test_YYYYMMDD_HHMMSS.log  — raw serial output with timestamps
     range_test_YYYYMMDD_HHMMSS.csv  — parsed: timestamp,n,seq,rssi
 """
-import serial
 import time
 import sys
 import os
@@ -27,6 +26,18 @@ import signal
 import glob
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
+
+# ─── BoardSerial import ──────────────────────────────────────────────────
+TOOLS_DIR = Path.home() / "repos" / "balloon-fresh" / "tools"
+sys.path.insert(0, str(TOOLS_DIR))
+
+try:
+    from board_serial import BoardSerial
+except ImportError:
+    print("ERROR: Cannot import BoardSerial from", TOOLS_DIR, file=sys.stderr)
+    print("Ensure balloon-fresh repo is cloned.", file=sys.stderr)
+    sys.exit(1)
 
 # ─── Config ──────────────────────────────────────────────────────────
 RX_SERIAL = "E663B035977F242D"
@@ -184,7 +195,7 @@ def run(port, baud, outdir, max_bytes, max_files):
 
     log.info(f"Connecting to {port} @ {baud} baud")
     try:
-        ser = serial.Serial(port, baud, timeout=0.5)
+        ser = BoardSerial(port, baud, timeout=0.5)
     except Exception as e:
         log.error(f"Failed to open {port}: {e}")
         return False  # caller retries
@@ -262,15 +273,10 @@ def run(port, baud, outdir, max_bytes, max_files):
                     last_report = current
                     pkts_last_report = pkt_count
 
-        except serial.SerialException as e:
-            log.error(f"Serial error: {e}")
-            try:
-                ser.close()
-            except Exception:
-                pass
-            return False
-        except OSError as e:
-            log.error(f"OS error: {e}")
+        except (Exception, OSError) as e:
+            # BoardSerial wraps pyserial; SerialException / OSError (port
+            # disappeared, cable pull, board reboot) surfaces here.
+            log.error(f"I/O error: {e}")
             try:
                 ser.close()
             except Exception:
