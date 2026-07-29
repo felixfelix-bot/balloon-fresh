@@ -529,17 +529,19 @@ setup: ## Install all deps via ansible playbook.
 
 ## ─── sweep (payload size sweep — find throughput sweet spot) ──────────
 ## Runs 4 captures with different packet sizes: 32, 64, 128, 255 bytes.
-## Must put RP2040 in BOOTSEL before each. Results in captures/sweep-*.sr
-sweep: ## Payload size sweep. Put RP2040 in BOOTSEL before each size.
+## Auto-triggers BOOTSEL via 1200 baud between iterations. No manual button.
+## Results in captures/sweep-*.sr
+sweep: ## Payload size sweep. Fully automated — no manual BOOTSEL needed.
 	@for SIZE in 32 64 128 255; do \
 		echo ""; \
 		echo "========================================"; \
 		echo "SWEEP: $${SIZE}-byte packets"; \
 		echo "========================================"; \
-		echo "Hold BOOTSEL, unplug, replug RP2040. Press ENTER when ready."; \
-		read DUMMY; \
-		$(MAKE) debug ENV=rp2040-sweep-$${SIZE} DURATION=1 OUTPUT=$(CAPTURES_DIR)/sweep-$${SIZE}.sr; \
-		$(MAKE) analyze-timing FILE=$(CAPTURES_DIR)/sweep-$${SIZE}.sr; \
+		$(MAKE) debug ENV=rp2040-sweep-$${SIZE} DURATION=1 OUTPUT=$(CAPTURES_DIR)/sweep-$${SIZE}.sr || \
+			{ echo "SWEEP FAILED at $${SIZE}-byte step"; exit 1; }; \
+		echo ""; \
+		echo "Waiting 2s before next size..."; \
+		sleep 2; \
 	done
 	@echo ""; echo "=== SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/sweep-*.sr"
 
