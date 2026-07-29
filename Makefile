@@ -514,6 +514,36 @@ sweep: ## Payload size sweep. Put RP2040 in BOOTSEL before each size.
 	done
 	@echo ""; echo "=== SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/sweep-*.sr"
 
+## ─── probe (diagnostic dump for remote debugging) ────────────────────
+## Prints: USB devices, ACM port details, logic analyzer, picotool, RPI-RP2
+probe: ## Dump all USB/serial/device info for remote debugging.
+	@echo "═══ USB DEVICES ═══"
+	@lsusb
+	@echo ""
+	@echo "═══ ACM PORTS ═══"
+	@for dev in /dev/ttyACM[0-9]; do \
+		[ -e "$$dev" ] || continue; \
+		file "$$dev" 2>/dev/null | grep -q "character device" || { echo "$$dev: NOT a char device (REGULAR FILE — see Pitfall #15)"; continue; }; \
+		echo "--- $$dev ---"; \
+		udevadm info -q property "$$dev" 2>/dev/null | grep -E "ID_VENDOR|ID_MODEL|ID_SERIAL|ID_USB_ID|DEVPATH" || echo "  (no udev info)"; \
+	done
+	@echo ""
+	@echo "═══ RPI-RP2 (BOOTSEL) ═══"
+	@ls -la /dev/disk/by-label/RPI-RP2 2>/dev/null || echo "Not in BOOTSEL"
+	@echo ""
+	@echo "═══ PICOTOOL ═══"
+	@which picotool >/dev/null 2>&1 && picotool info 2>&1 || echo "picotool: not found"
+	@echo ""
+	@echo "═══ SIGROK DEVICES ═══"
+	@sigrok-cli --list 2>&1 || echo "sigrok-cli: not found"
+	@echo ""
+	@echo "═══ PYTHON PYSERIAL ═══"
+	@python3 -c "import serial; print('pyserial OK, version:', serial.__version__)" 2>&1
+	@echo ""
+	@echo "═══ GIT BRANCH ═══"
+	@git branch --show-current
+	@git log --oneline -3
+
 ## ─── help ──────────────────────────────────────────────────────────────
 help: ## Show this help message.
 	@echo "Balloon Speed Tests — Logic Analyzer Debugging"
