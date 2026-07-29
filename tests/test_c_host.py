@@ -266,3 +266,19 @@ class TestEndToEnd:
             ],
         )
         assert "4/4 passed" in out
+
+
+class TestBlossomDatagram:
+    def test_blossom_datagram_host(self):
+        out = _compile_and_run_c(
+            os.path.join(
+                COMPONENTS, "blossom_datagram", "test", "test_blossom_datagram.c"
+            ),
+            [
+                os.path.join(COMPONENTS, "blossom_datagram", "blossom_datagram.c"),
+            ],
+            [
+                os.path.join(COMPONENTS, "blossom_datagram", "include"),
+            ],
+        )
+        assert "11/11 passed" in out
