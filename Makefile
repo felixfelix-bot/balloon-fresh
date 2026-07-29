@@ -296,6 +296,15 @@ analyze-timing: ## Full SPI timing analysis. Usage: make analyze-timing FILE=cap
 	@if [ -z "$(FILE)" ]; then echo "Usage: make analyze-timing FILE=captures/foo.sr"; exit 1; fi
 	@python3 scripts/analyze_spi.py "$(FILE)"
 
+## ─── zip-capture ──────────────────────────────────────────────────────
+## Compress capture for sharing. Usage: make zip-capture FILE=captures/foo.sr
+zip-capture: ## Compress capture. Usage: make zip-capture FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make zip-capture FILE=captures/foo.sr"; exit 1; fi
+	@BASENAME=$$(basename $(FILE) .sr); \
+	DIR=$$(dirname $(FILE)); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Created: $$DIR/$$BASENAME.zip"
+
 ## ─── list-captures ───────────────────────────────────────────────────
 ## List all capture files with timestamps and sizes.
 list-captures: ## List capture files in captures/ with timestamps and sizes.
