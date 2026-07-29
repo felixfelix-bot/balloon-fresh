@@ -1,5 +1,5 @@
 set(COMPONENT_REQUIRES
-    RadioLib esp_timer driver bmp280 power_manager telemetry
+    lr2021_transport esp_timer driver bmp280 power_manager telemetry
     antenna_switch sky66112 gps cli
 )
 
@@ -28,6 +28,5 @@ idf_component_register(
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
-    RADIOLIB_DEBUG_SPI=1
-    RADIOLIB_DEBUG_BASIC=1
+    LR2021_SPI_DEBUG=0
 )
