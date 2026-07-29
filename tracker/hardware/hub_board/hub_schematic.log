@@ -1,59 +1,127 @@
-WARNING: KICAD6_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:1023=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:488]
-WARNING: KICAD8_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:1023=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:488]
-WARNING: KICAD7_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:1023=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:488]
+WARNING: KICAD7_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD8_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD6_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
+WARNING: KICAD10_SYMBOL_DIR environment variable is missing, so the default KiCad symbol libraries won't be searched. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap_external>:940=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241]
 WARNING: fp-lib-table file was not found. Component footprints are not available.
 WARNING: fp-lib-table file was not found. Component footprints are not available.
 WARNING: fp-lib-table file was not found. Component footprints are not available.
-WARNING: Merging two named nets (ADC_VCAP and VDIV_MID) into ADC_VCAP. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:374]
+WARNING: fp-lib-table file was not found. Component footprints are not available.
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:116]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:116]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:122]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:122]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:128]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:128]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:134]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:134]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:140]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:140]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:147]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:147]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:152]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:152]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:154]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:154]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:156]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:156]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:158]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:158]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:160]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:160]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:162]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:162]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:164]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:164]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:168]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:168]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:170]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:170]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:174]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:174]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:176]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:176]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:180]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:180]
+ERROR: Can't open file: Device.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:182]
+WARNING: Could not load KiCad schematic library "Device", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:182]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:186]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:186]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:189]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:189]
+ERROR: Can't open file: Connector_Generic.
+ @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:194]
+WARNING: Could not load KiCad schematic library "Connector_Generic", falling back to backup library. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:194]
+WARNING: Merging two named nets (VDIV_MID and ADC_VCAP) into VDIV_MID. @ [/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:388=>/home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:374]
 WARNING: Missing tag on Conn_01x10 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:116.
-WARNING: Random tag EVX4UKCF2V generated for Conn_01x10.
+WARNING: Random tag vSfzwndQ65 generated for Conn_01x10.
 WARNING: Missing tag on Conn_01x13 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:122.
-WARNING: Random tag Pf1aqexehr generated for Conn_01x13.
+WARNING: Random tag m0TQb_UIyu generated for Conn_01x13.
 WARNING: Missing tag on Conn_01x18 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:128.
-WARNING: Random tag 7NdJ1U0eUE generated for Conn_01x18.
+WARNING: Random tag RG3aVGSNB9 generated for Conn_01x18.
 WARNING: Missing tag on Conn_01x04 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:134.
-WARNING: Random tag wKP0L6McbI generated for Conn_01x04.
+WARNING: Random tag EwKXNd_7Dc generated for Conn_01x04.
 WARNING: Missing tag on Conn_01x04 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:140.
-WARNING: Random tag 1M_ZMhWfwR generated for Conn_01x04.
+WARNING: Random tag ZgU8kp6AD2 generated for Conn_01x04.
 WARNING: Missing tag on BAT54 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:97.
-WARNING: Random tag gRedSQ6Iha generated for BAT54.
+WARNING: Random tag QADzh06xtd generated for BAT54.
 WARNING: Missing tag on TPS7A0233DBVR instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:88.
-WARNING: Random tag eT5wYbf9Ms generated for TPS7A0233DBVR.
+WARNING: Random tag pjjk_xEbwS generated for TPS7A0233DBVR.
 WARNING: Missing tag on C_Polarized instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:147.
-WARNING: Random tag _s3FdSSS4A generated for C_Polarized.
+WARNING: Random tag s60A9Loysx generated for C_Polarized.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:152.
-WARNING: Random tag miowVxGsDi generated for C.
+WARNING: Random tag pPvROYronD generated for C.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:154.
-WARNING: Random tag YIiM4mpVkl generated for C.
+WARNING: Random tag a3Th_vKOE5 generated for C.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:156.
-WARNING: Random tag tcmkYxbu48 generated for C.
+WARNING: Random tag 3WgPcST_cn generated for C.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:158.
-WARNING: Random tag DfCQSfglxJ generated for C.
+WARNING: Random tag RyxN7Ju_U1 generated for C.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:160.
-WARNING: Random tag gNfwP4rYPp generated for C.
+WARNING: Random tag TN66bu_Fxp generated for C.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:162.
-WARNING: Random tag samO6OKQ6h generated for C.
+WARNING: Random tag LHa_arK54f generated for C.
 WARNING: Missing tag on C instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:164.
-WARNING: Random tag F3OfrXxq4j generated for C.
+WARNING: Random tag idkthPiLBh generated for C.
 WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:168.
-WARNING: Random tag FxaMbocBKv generated for R.
+WARNING: Random tag BOTgslrIRe generated for R.
 WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:170.
-WARNING: Random tag zrGslLElxg generated for R.
+WARNING: Random tag 6qoaDQMU8s generated for R.
 WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:174.
-WARNING: Random tag WteC6Dtim0 generated for R.
+WARNING: Random tag SZQg43ee23 generated for R.
 WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:176.
-WARNING: Random tag 0pm8rrxWAy generated for R.
+WARNING: Random tag 8CLNS9m2Ld generated for R.
 WARNING: Missing tag on LED instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:180.
-WARNING: Random tag FG6r7gSfPX generated for LED.
+WARNING: Random tag aTYYrH3gP0 generated for LED.
 WARNING: Missing tag on R instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:182.
-WARNING: Random tag 8BsKXvYsIk generated for R.
+WARNING: Random tag DJHqvousTI generated for R.
 WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:186.
-WARNING: Random tag jbvPOGYm28 generated for Conn_01x01.
+WARNING: Random tag Nx0tf67aFL generated for Conn_01x01.
 WARNING: Missing tag on Conn_01x01 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:189.
-WARNING: Random tag GHDv2w1KaT generated for Conn_01x01.
+WARNING: Random tag zGpmhNJTJw generated for Conn_01x01.
 WARNING: Missing tag on Conn_01x02 instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/hub_schematic.py:194.
-WARNING: Random tag skEyXXodBM generated for Conn_01x02.
-WARNING: Missing tag on  instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:488.
-INFO: 53 warnings found while generating netlist.
+WARNING: Random tag fEkDaBQVAV generated for Conn_01x02.
+WARNING: Missing tag on  instantiated at /home/c03rad0r/worktrees/balloon-circuit-design/tracker/hardware/hub_board/<frozen importlib._bootstrap>:241.
+INFO: 54 warnings found while generating netlist.
 INFO: 0 errors found while generating netlist.
 
