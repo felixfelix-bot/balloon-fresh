@@ -212,10 +212,13 @@ capture: ## Capture SPI with sigrok-cli. Usage: make capture [DURATION=1] [OUTPU
 	fi
 
 ## ─── capture-byte ─────────────────────────────────────────────────────
-## Build + flash raw_tx (per-byte), then capture.
-capture-byte: ## Build+flash raw_tx, capture. Usage: make capture-byte [DURATION=1]
-	$(MAKE) build ENV=rp2040-raw-tx
-	$(MAKE) flash ENV=rp2040-raw-tx
+## Build + flash cont_tx (continuous TX), then capture.
+capture-byte: ## Build+flash cont_tx, capture. Usage: make capture-byte [DURATION=1]
+	$(MAKE) build ENV=rp2040-cont-tx
+	$(MAKE) flash ENV=rp2040-cont-tx
+	@echo "=== Send RUN command to start continuous TX ==="
+	@PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	if [ -n "$$PORT" ]; then sleep 2; echo "RUN" > $$PORT; sleep 1; fi
 	$(MAKE) capture DURATION=$(or $(DURATION),2) OUTPUT=$(CAPTURES_DIR)/byte-transfer.sr
 
 ## ─── capture-batch ───────────────────────────────────────────────────
@@ -223,7 +226,31 @@ capture-byte: ## Build+flash raw_tx, capture. Usage: make capture-byte [DURATION
 capture-batch: ## Build+flash cont_tx, capture. Usage: make capture-batch [DURATION=1]
 	$(MAKE) build ENV=rp2040-cont-tx
 	$(MAKE) flash ENV=rp2040-cont-tx
+	@PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	if [ -n "$$PORT" ]; then sleep 2; echo "RUN" > $$PORT; sleep 1; fi
 	$(MAKE) capture DURATION=$(or $(DURATION),2) OUTPUT=$(CAPTURES_DIR)/batch-transfer.sr
+
+## ─── decode (SPI protocol decoder) ────────────────────────────────────
+## Decode SPI bytes from a capture file.
+## Usage: make decode FILE=captures/byte-transfer.sr
+decode: ## Decode SPI protocol from capture file.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode FILE=captures/foo.sr"; exit 1; fi
+	@echo "Decoding SPI from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-A spi=mosi,miso 2>&1 | head -200
+
+## ─── decode-hex (SPI bytes in hex) ────────────────────────────────────
+## Show decoded SPI transactions as hex bytes.
+## Usage: make decode-hex FILE=captures/byte-transfer.sr
+decode-hex: ## Show SPI hex dump from capture.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode-hex FILE=captures/foo.sr"; exit 1; fi
+	@echo "SPI hex dump from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-B spi=mosi 2>&1 | xxd | head -100
 
 ## ─── capture-compare ─────────────────────────────────────────────────
 ## Capture both per-byte and batch for comparison.
@@ -432,8 +459,10 @@ help: ## Show this help message.
 	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
 	@echo ""
 	@echo "Capture (logic analyzer):"
-	@echo "  make capture [DURATION=1] [OUTPUT=capture.sr]  Capture SPI signals"
-	@echo "  make capture-byte [DURATION=2]     Build+flash raw_tx, capture per-byte transfer"
+	@echo "  make capture [DURATION=1] [OUTPUT=x.sr]  Capture SPI signals"
+	@echo "  make decode FILE=captures/foo.sr        Decode SPI commands from capture"
+	@echo "  make decode-hex FILE=captures/foo.sr    Hex dump SPI bytes from capture"
+	@echo "  make capture-byte [DURATION=2]     Build+flash cont_tx, capture byte transfer"
 	@echo "  make capture-batch [DURATION=2]    Build+flash cont_tx, capture batch/DMA transfer"
 	@echo "  make capture-compare [DURATION=2]  Capture both byte+batch for comparison"
 	@echo ""
