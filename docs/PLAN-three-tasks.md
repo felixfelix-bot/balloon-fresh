@@ -1,22 +1,24 @@
-# PLAN: Three Tasks While FIPS Blocked
+# PLAN: Four Tasks — Proto Tests, ESP-IDF Build, GS Client, Mesh Integration
 
-**Date:** 2026-07-29
+**Date:** 2026-07-29 (updated)
 **Author:** balloon-tollgate sub-manager
-**Branch:** balloon-tollgate-extract @ 66cf830
+**Branch:** balloon-tollgate-extract @ 7b1e342
 **Related:** ADR-002, PLAN-fix-blockers.md
 
 ## Overview
 
-Three independent tasks to advance TollGate while FIPS mesh transport is blocked:
+Four tasks to advance TollGate. Blocker 1 (mesh transport) partially resolved
+by balloon-hermes mesh_adapter component — Task D integrates it.
 
 | Task | Name | Duration | Dependencies | Parallelizable |
 |------|------|----------|--------------|----------------|
 | A | Payment proto unit tests | ~1h | None | Yes (with B) |
 | B | ESP-IDF build + flash size check | ~2h | None | Yes (with A) |
 | C | Ground station client design + impl | ~3h | Task A done | After A |
+| D | mesh_adapter integration | ~2h | Task A done | After A (parallel with C) |
 
-**Total wall time with parallelism:** ~4h (A+B parallel, then C)
-**Total sequential time:** ~6h
+**Total wall time with parallelism:** ~5h (A+B parallel → C+D parallel)
+**Total sequential time:** ~8h
 
 ---
 
@@ -356,6 +358,139 @@ const tollgate_client_session_t *tollgate_client_get_session(void);
 
 ---
 
+## TASK D: mesh_adapter Integration
+
+### Goal
+Wire tollgate_balloon to use balloon-hermes' `mesh_adapter` component for
+real mesh transport. This replaces the stub send/recv with actual encrypted
+mesh datagrams, following the dependency-injection pattern established by
+`blossom_datagram`.
+
+### Context
+
+balloon-hermes created (commits 5d17114, 7971810, b60c583):
+- `mesh_adapter` — send/recv + fragmentation + FIPS encrypt/decrypt
+- `blossom_datagram` — reference integration (serialize → inject send callback → handle incoming)
+
+mesh_adapter API:
+```c
+void mesh_adapter_init(const mesh_adapter_config_t *config);
+mesh_result_t mesh_adapter_send(const uint8_t *data, uint16_t data_len,
+                                uint8_t frag_size, uint8_t redundancy);
+mesh_result_t mesh_adapter_receive_frame(const uint8_t *frame, uint16_t frame_len,
+                                         uint8_t *out_data, uint16_t *out_len,
+                                         uint16_t out_size);
+```
+
+### Scope
+
+**D.1: Service multiplexer (`mesh_service_mux`)**
+Multiple L7 services (TollGate, Nostr, Blossom) share one mesh_adapter.
+Need a 1-byte service ID prefix on every datagram:
+
+```c
+#define MESH_SVC_TOLLGATE  0x01
+#define MESH_SVC_NOSTR     0x02
+#define MESH_SVC_BLOSSOM   0x03
+
+// Wrap: [svc_byte(1)] [payload(N)]
+int  mesh_service_mux_wrap(uint8_t svc, const uint8_t *in, uint16_t in_len,
+                            uint8_t *out, uint16_t out_cap);
+// Unwrap: returns svc byte, sets payload ptr + len
+int  mesh_service_mux_unwrap(const uint8_t *data, uint16_t len,
+                              uint8_t *svc_out,
+                              const uint8_t **payload, uint16_t *payload_len);
+```
+
+Files:
+- `mesh-stack/tollgate/components/mesh_service_mux/include/mesh_service_mux.h`
+- `mesh-stack/tollgate/components/mesh_service_mux/src/mesh_service_mux.c`
+- `mesh-stack/tollgate/components/mesh_service_mux/CMakeLists.txt`
+
+**D.2: Wire tollgate_balloon to mesh_adapter**
+Update `tollgate_balloon.c`:
+- Add `mesh_adapter_config_t` with send callback wired to `mesh_adapter_send()`
+- `tollgate_balloon_on_packet()` now called after `mesh_service_mux_unwrap()` filters for `MESH_SVC_TOLLGATE`
+- `tollgate_balloon_send_response()` (new function): wraps response with mux byte → calls `mesh_adapter_send()`
+- Remove `TOLLGATE_BALLOON_PORT` — no port needed, service mux byte replaces port concept
+
+**D.3: Integration callback registration**
+```c
+// Called by main firmware init:
+esp_err_t tollgate_balloon_register_mesh(mesh_adapter_config_t *mesh_cfg);
+// Sets up: mesh_adapter → mux_unwrap → tollgate_balloon_on_packet
+// And: tollgate_balloon response → mux_wrap → mesh_adapter_send
+```
+
+**D.4: Host unit tests**
+- `test_mesh_service_mux.c` — wrap/unwrap roundtrip, all 3 service IDs
+- `test_tollgate_mesh_integration.c` — mock mesh_adapter, verify PAY → ACK flow through mux
+
+### Sub-task Breakdown
+
+| Step | What | Who | Time |
+|------|------|-----|------|
+| D.1 | Create mesh_service_mux component (header + impl + tests) | leaf worker | 30 min |
+| D.2 | Wire tollgate_balloon send path through mux + mesh_adapter | leaf worker | 30 min |
+| D.3 | Wire tollgate_balloon receive path (mux demux → on_packet) | leaf worker | 20 min |
+| D.4 | Write integration test (mock mesh, PAY→ACK through mux) | leaf worker | 30 min |
+| D.5 | Commit + push | leaf worker | 10 min |
+
+### Architecture After Integration
+
+```
+Ground Station                              Balloon
+┌──────────────────┐                       ┌──────────────────────────────────┐
+│ tollgate_client   │                       │ mesh_adapter (from balloon-hermes)│
+│                   │   LR2021 radio        │  ├── encrypt/decrypt (FIPS Noise) │
+│ mesh_adapter_send │─────────────────────>│  ├── fragment/reassemble          │
+│ (encrypt+fragment)│                       │  └── mesh_service_mux_unwrap()    │
+│                   │                       │        ├── SVC_TOLLGATE → on_packet│
+│                   │                       │        ├── SVC_NOSTR → nostr_store │
+│                   │                       │        └── SVC_BLOSSOM → dgram    │
+│                   │<─────────────────────│                                   │
+│  ACK received     │   encrypted frames    │ tollgate_balloon:                 │
+│  via mesh_adapter │                       │  ├── process PAY → nucula swap   │
+│  reassemble       │                       │  ├── grant session               │
+│                   │                       │  └── send ACK via mux→mesh_adapter│
+└──────────────────┘                       └──────────────────────────────────┘
+```
+
+### Worker Profile
+
+| Field | Value |
+|-------|-------|
+| Delegate to | leaf worker (delegate_task) |
+| Model | glm-5.2 |
+| Toolsets | terminal, file |
+| Estimated time | 2h |
+| Background | Yes |
+| Dependencies | Task A complete (proto API verified) |
+
+### Quality Gates
+
+1. **TDD:** mux wrap/unwrap tests written before implementation
+2. **Tests pass:** All mux + integration tests pass in host build
+3. **Docs:** `mesh_service_mux.h` fully documented. Update `tollgate_balloon.h` to reflect mesh registration API
+4. **Atomic commits:**
+   - `feat(mesh_service_mux): service multiplexer for shared mesh transport`
+   - `feat(tollgate_balloon): wire mesh_adapter integration (send + recv paths)`
+   - `test(tollgate): mesh integration tests with mock transport`
+5. **Push:** `git push github balloon-tollgate-extract`
+
+### Deliverable
+- `mesh_service_mux` component (new)
+- `tollgate_balloon.c` updated with mesh_adapter send/recv
+- `tollgate_balloon_register_mesh()` public API
+- 8+ host unit tests, all passing
+- 3 atomic commits, all pushed
+
+### Escalation Triggers
+- If mesh_adapter API differs from what discovery sync showed → re-read the header, adapt
+- If mesh_service_mux design conflicts with blossom_datagram approach → follow blossom_datagram pattern exactly
+
+---
+
 ## Execution Schedule
 
 ### Phase 1: Parallel kick-off (Tasks A + B simultaneously)
@@ -370,14 +505,18 @@ T=0min   └─ Task B dispatched (background, leaf, glm-5.2)
             Est: 90-120 min
 ```
 
-### Phase 2: Task C after A completes
+### Phase 2: Tasks C + D after A completes (parallel)
 
 ```
 T=60min  ┌─ Task A COMPLETE (commit hash: ________)
          │
-T=60min  └─ Task C dispatched (background, leaf, glm-5.2)
-            Ground station client
-            Est: 2.5-3h
+T=60min  ├─ Task C dispatched (background, leaf, glm-5.2)
+         │  Ground station client
+         │  Est: 2.5-3h
+         │
+T=60min  └─ Task D dispatched (background, leaf, glm-5.2)
+            mesh_adapter integration
+            Est: 2h
             Blocked until: Task A done
 ```
 
@@ -387,21 +526,36 @@ T=60min  └─ Task C dispatched (background, leaf, glm-5.2)
 T=120min ┌─ Task B COMPLETE → review size report
          │  Decision: FITS / TOO BIG / NEEDS STRIPPING
          │
+T=120min ┌─ Task D COMPLETE → review mesh integration tests
+         │  Decision: mesh transport wired, PAY→ACK through mux verified
+         │
 T=240min └─ Task C COMPLETE → review client tests
-            All 3 tasks done.
+            All 4 tasks done.
 ```
 
 ### Dependency Graph
 
 ```
-[Task A: Proto Tests] ────────────────┐
-                                      ├──> [Task C: GS Client]
-[Task B: ESP-IDF Build] ──> [Size Report]
+[Task A: Proto Tests] ─────────────────────────┐
+                                               ├──> [Task C: GS Client]
+                                               ├──> [Task D: Mesh Integration]
+[Task B: ESP-IDF Build] ──> [Size Report]      │
                     (independent, parallel with A)
 ```
 
 Tasks A and B have NO interdependency → run simultaneously.
-Task C depends on Task A (uses proto test patterns + proto API verified).
+Tasks C and D both depend on Task A → run in parallel after A completes.
+Tasks C and D are independent of each other (different components).
+
+### Critical Path
+
+```
+A (1h) → D (2h) = 3h  ← critical path (mesh integration unblocks end-to-end)
+A (1h) → C (3h) = 4h  ← longest path
+B (2h)           = 2h  ← independent, finishes early
+```
+
+Wall time: ~4-5h from approval to all 4 tasks complete.
 
 ---
 
@@ -414,6 +568,8 @@ Task C depends on Task A (uses proto test patterns + proto API verified).
 | Payment proto has bugs found by tests | LOW | LOW | That's what tests are for. Fix in proto, re-run |
 | Client state machine too complex | LOW | MEDIUM | Start with minimal state machine (5 states), expand later |
 | ESP-IDF not configured for C3 | LOW | HIGH | sdkconfig.defaults handles this. Already have export.sh |
+| mesh_adapter API changed since discovery | LOW | MEDIUM | Re-read header from ~/repos/balloon-fresh before starting Task D |
+| mesh_service_mux conflicts with blossom_datagram approach | LOW | LOW | Follow blossom_datagram pattern exactly — same dependency injection style |
 
 ---
 
@@ -421,9 +577,11 @@ Task C depends on Task A (uses proto test patterns + proto API verified).
 
 Before dispatching, confirm:
 
-- [ ] Felix approves the plan
+- [ ] Felix approves the plan (4 tasks)
 - [ ] Felix approves Task B running as background build (no flashing, just compile)
 - [ ] Felix OK with nucula C++ in C3 build
 - [ ] Felix OK with Task C client API design (Section C.2)
+- [ ] Felix OK with Task D mesh_service_mux design (1-byte service demux)
+- [ ] Felix OK with removing TOLLGATE_BALLOON_PORT (replaced by mux byte)
 
-Once approved, I dispatch Tasks A + B immediately (parallel), then Task C when A completes.
+Once approved, I dispatch Tasks A + B immediately (parallel), then Tasks C + D when A completes.
