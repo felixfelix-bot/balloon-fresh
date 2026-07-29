@@ -239,7 +239,7 @@ decode: ## Decode SPI protocol from capture file.
 	@sigrok-cli -i $(FILE) \
 		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
 		-P spi \
-		-A spi 2>&1 | head -200
+		-A spi 2>&1 | grep -v "^spi-1: [01]$"
 
 ## ─── decode-hex (SPI bytes in hex) ────────────────────────────────────
 ## Show decoded SPI transactions as hex bytes.
@@ -251,6 +251,18 @@ decode-hex: ## Show SPI hex dump from capture.
 		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
 		-P spi \
 		-B spi=mosi 2>&1 | xxd | head -100
+
+## ─── decode-tx (group SPI bytes into CS-framed transactions) ──────────
+## Show each SPI transaction (CS-low pulse) as a hex byte group.
+## Usage: make decode-tx FILE=captures/foo.sr
+decode-tx: ## Group SPI bytes per CS cycle.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode-tx FILE=captures/foo.sr"; exit 1; fi
+	@echo "SPI transactions from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-B spi=mosi 2>&1 | xxd -p | tr -d '\n' | \
+		sed 's/../0x& /g' | fold -w 48
 
 ## ─── capture-compare ─────────────────────────────────────────────────
 ## Capture both per-byte and batch for comparison.
