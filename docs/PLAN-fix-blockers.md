@@ -11,7 +11,26 @@
 
 ---
 
-## BLOCKER 1: FIPS Mesh UDP Transport API
+## BLOCKER 1 STATUS UPDATE (2026-07-29): PARTIALLY RESOLVED
+
+balloon-hermes created `mesh_adapter` component (commit 5d17114) with:
+- `mesh_adapter_send(data, len, frag_size, redundancy)` — send over mesh
+- `mesh_adapter_receive_frame(frame, len, out, out_len, size)` — receive + reassemble
+- encrypt/decrypt callbacks for FIPS Noise sessions
+- Fragmentation handling built-in
+
+Also created `blossom_datagram` (commit 7971810) — follows the EXACT same
+dependency-injected pattern TollGate should use: serialize message → inject
+send callback wired to mesh_adapter → handle_message() for incoming.
+
+**Integration is now straightforward:**
+1. Wire mesh_adapter_send() as tollgate_balloon's send callback
+2. Route reassembled mesh frames to tollgate_balloon_on_packet()
+3. FIPS session provides sender identity (node ID) for payment tracking
+
+**Remaining work:** Add a 1-byte service demux (so TollGate + Nostr + Blossom
+can share mesh_adapter), and wire the FIPS session context. This is integration
+work, not new API design.
 
 ### Problem
 
