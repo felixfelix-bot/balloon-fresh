@@ -56,19 +56,21 @@
 
 | Option | Description | Ready When | Blockers |
 |--------|------------|-----------|----------|
-| **Tethered** | TX on balloon on a line, 10-50m altitude | Hours after MCU swap | Battery, wire antenna |
-| **Walk test** | TX carried by person, varying distance | Hours after MCU swap | Wire antenna, powerbank fix |
-| **Free flight** | Pico balloon circumnavigation | 2-4 weeks | See procurement list below |
+| **Tethered** | TX on balloon on a line, varying altitude | Hours after MCU swap | Wire antenna, line/cord |
+| **Walk test** | TX carried by person, varying distance | Hours after MCU swap | Wire antenna |
+| **Quadcopter** | TX mounted on quadcopter, varying altitude+distance | Needs quadcopter + mount | Mount, vibration isolation |
+| **Free flight** | Pico balloon circumnavigation | After tethered tests validate reliability | He 4.6 procurement, pre-stretching done |
 
 ### Procurement Blockers (for free flight)
-| Item | Status | Source | ETA |
-|------|--------|--------|-----|
-| Yokohama 36" balloons | NOT OWNED | Japan (€10.60 ea) | Weeks |
-| Industrial He 4.6 | NOT OWNED | Air Liquide ALbee Fly (~€40) | Days |
-| GPS module (MAX-M10S) | NOT OWNED | Amazon/electronics | Days |
-| Supercapacitors (1F 5.5V) | NOT OWNED | Amazon | Days |
-| Heat sealer | NOT OWNED | Amazon (~€15) | Days |
-| Kapton tape | NOT OWNED | Amazon (~€5) | Days |
+| Item | Status | Notes |
+|------|--------|-------|
+| Yokohama 36" balloons | **OWNED** | Felix has them. Pre-stretching pending. |
+| Industrial He 4.6 | Not yet purchased | Premature — get after pre-stretching done. Felix can source locally. |
+| GPS module | **OWNED** | Already in use on TX board (see wiring docs) |
+| Supercapacitors | **OWNED** | Some in inventory. Need to verify suitablity for high altitude + weight. |
+| Heat sealer | **OWNED** | In inventory |
+| Kapton tape | **OWNED** | In inventory |
+| Flight PCB | NOT OWNED | Currently using DIY wire-soldered boards. Handover doc for JLCPCB order in progress (→ balloon-circuit-design). |
 
 ### What We DO Have
 - 30x DecoGlee 18" foil balloons (test-only, 4.8g lift each, 0% circumnavigation with party He)
