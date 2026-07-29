@@ -197,12 +197,11 @@ capture: ## Capture SPI with sigrok-cli. Usage: make capture [DURATION=1] [OUTPU
 	if [ -z "$(OUTPUT)" ]; then OUTPUT="capture.sr"; fi; \
 	SAMPLES=$$(echo "$(DURATION) * 24000000" | bc); \
 	echo "Capturing $$DURATION seconds at 24 MHz → $$OUTPUT"; \
-	echo "Channel mapping: CH1=CS, CH2=SCK, CH3=MOSI, CH4=MISO, CH5=BUSY, CH6=IRQ, CH7=RST"; \
+	echo "Channel mapping: D0=CS, D1=SCK, D2=MOSI, D3=MISO, D4=BUSY, D5=IRQ, D6=RST"; \
 	sigrok-cli --driver=fx2lafw \
 		--config samplerate=24mhz \
 		--samples $$SAMPLES \
-		--triggers ch1=f \
-		--channels ch1,ch2,ch3,ch4,ch5,ch6,ch7 \
+		--channels D0,D1,D2,D3,D4,D5,D6 \
 		-o "$$OUTPUT"; \
 	if [ $$? -eq 0 ]; then \
 		echo "Capture saved to $$OUTPUT"; \
