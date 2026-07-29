@@ -34,7 +34,10 @@ RESOURCES:
     board-a      — ESP32-S3 board A (MAC 94:a9:90:2e:37:7c, TollGate-B96D80)
     board-b      — ESP32-S3 board B (MAC fc:01:2c:c5:50:50, TollGate-C0E9CA)
     board-c      — ESP32-S3 board C (MAC 20:6e:f1:98:d7:08, display board)
+    c3-a         — ESP32-C3 + LR2021 board A (MAC b0:a6:04:00:96:dc, /dev/ttyACM0)
+    c3-b         — ESP32-C3 + LR2021 board B (MAC 88:56:a6:7b:c6:98, /dev/ttyACM1)
     all-s3       — All 3 ESP32-S3 boards (board-a + board-b + board-c)
+    both-c3      — Both ESP32-C3 boards (c3-a + c3-b, for TX/RX tests)
     both         — TX + RX (RP2040 pair)
     all          — All boards (tx + rx + board-a + board-b + board-c)
 
@@ -91,6 +94,13 @@ BOARD_SERIALS = {
     "rx": "8332",
 }
 
+# MAC-based identification for ESP32-C3 + LR2021 boards (ADR-025).
+# ESP32-C3 USB CDC serial = MAC with colons (as reported by udevadm).
+BOARD_MACS = {
+    "c3-a": "B0:A6:04:00:96:DC",   # /dev/ttyACM0
+    "c3-b": "88:56:A6:7B:C6:98",   # /dev/ttyACM1
+}
+
 
 def _prctl(option, value):
     """Call prctl(2) — used for parent-death signal."""
@@ -141,6 +151,8 @@ def _get_resources(resource: str) -> list:
         return ["tx", "rx"]
     if resource == "all-s3":
         return ["board-a", "board-b", "board-c"]
+    if resource == "both-c3":
+        return ["c3-a", "c3-b"]
     if resource == "all":
         return ["tx", "rx", "board-a", "board-b", "board-c"]
     return [resource]
@@ -200,9 +212,10 @@ def _find_device_path(resource: str) -> str | None:
     TX board serial contains "F242D", RX board serial contains "8332".
     Returns the device path (e.g. "/dev/ttyACM3") or None if not found.
     """
-    pattern = BOARD_SERIALS.get(resource)
+    # Check serial-based (RP2040) or MAC-based (ESP32-C3) identification
+    pattern = BOARD_SERIALS.get(resource) or BOARD_MACS.get(resource)
     if not pattern:
-        return None  # ESP32-S3 boards don't have serial-based mapping yet
+        return None  # ESP32-S3 boards don't have serial/MAC-based mapping yet
 
     for dev in sorted(glob.glob("/dev/ttyACM*")):
         try:
@@ -660,7 +673,7 @@ def check(resource: str) -> int:
 def status() -> int:
     """Print status of all balloon board locks."""
     print("=== Balloon Board Lock Status (flock + hard device lock) ===")
-    for resource in ["tx", "rx", "board-a", "board-b", "board-c"]:
+    for resource in ["tx", "rx", "board-a", "board-b", "board-c", "c3-a", "c3-b"]:
         path = _lock_path(resource)
         locked = _is_locked(path)
         data = _read_metadata(path)
@@ -781,7 +794,7 @@ Examples:
     parser.add_argument("action", choices=["acquire", "release", "status", "check"],
                         help="Action to perform")
     parser.add_argument("resource", nargs="?",
-                        choices=["tx", "rx", "both", "board-a", "board-b", "board-c", "all-s3", "all"],
+                        choices=["tx", "rx", "both", "board-a", "board-b", "board-c", "c3-a", "c3-b", "both-c3", "all-s3", "all"],
                         help="Which board(s) to lock/unlock/check")
     parser.add_argument("--purpose", default="unspecified",
                         help="Why you need the board (shown to other sessions)")
