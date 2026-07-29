@@ -252,6 +252,15 @@ decode-hex: ## Show SPI hex dump from capture.
 		-P spi \
 		-B spi=mosi 2>&1 | xxd | head -100
 
+## ─── zip-capture (compress capture for sharing) ───────────────────────
+## Usage: make zip-capture FILE=captures/foo.sr
+zip-capture: ## Compress capture file for sharing.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make zip-capture FILE=captures/foo.sr"; exit 1; fi
+	@BASENAME=$$(basename $(FILE) .sr); \
+	DIR=$$(dirname $(FILE)); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Created: $$DIR/$$BASENAME.zip"
+
 ## ─── decode-tx (group SPI bytes into CS-framed transactions) ──────────
 ## Show each SPI transaction (CS-low pulse) as a hex byte group.
 ## Usage: make decode-tx FILE=captures/foo.sr
