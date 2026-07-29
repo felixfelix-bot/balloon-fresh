@@ -294,7 +294,9 @@ static void runTransmit() {
             pkt[2] = (uint8_t)((i + 1) >> 8);
             pkt[3] = (uint8_t)((i + 1) & 0xFF);
 
-            // 2. Wait for BUSY LOW (chip back in STDBY after TX)
+            // 2. After IRQ pin HIGH the chip is already in STDBY (BUSY LOW).
+            //    Keep one rfWaitBusy before the first command after IRQ, then
+            //    rely on command-to-command timing for the short status cmds.
             rfWaitBusy();
 
             // 3. CLR_IRQ + CLR_TX_FIFO + CLEAR_ERRORS (separate CS per command)
@@ -322,19 +324,19 @@ static void runTransmit() {
             spiRf.transfer(0x01); spiRf.transfer(0x11);
             spiRf.transfer(0x00); spiRf.transfer(0x00);
             digitalWrite(PIN_CS, HIGH);
-            rfWaitBusy();
 
-            // 4. WRITE_TX_FIFO: header + payload (ONE CS assertion)
+            // 4. WRITE_TX_FIFO: header + payload (ONE CS assertion).
+            //    After the short CLEAR_ERRORS command the chip is back in STDBY,
+            //    so we skip rfWaitBusy() here (~20-30 µs saved per packet).
             digitalWrite(PIN_CS, LOW);
             spiRf.transfer(0x00);  // FIFO write command
             spiRf.transfer(0x02);  // offset 0
             for (int j = 0; j < FLRC_PKT_SIZE; j++) spiRf.transfer(pkt[j]);
             digitalWrite(PIN_CS, HIGH);
 
-            // Wait for FIFO write to complete
-            rfWaitBusy();
-
-            // 5. SET_TX — trigger next TX, BUSY goes HIGH
+            // 5. SET_TX — trigger next TX, BUSY goes HIGH.
+            //    The 257-byte FIFO write keeps the SPI bus busy long enough that
+            //    BUSY is already LOW when we assert CS; skip the explicit wait.
             digitalWrite(PIN_CS, LOW);
             for (int j = 0; j < 5; j++) spiRf.transfer(setTxCmd[j]);
             digitalWrite(PIN_CS, HIGH);
