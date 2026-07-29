@@ -2,6 +2,10 @@
  * bootsel_ctrl.cpp — Minimal auto-BOOTSEL trigger (no USB serial JTAG)
  * On boot: immediately force RP2040 into BOOTSEL mode, then idle.
  */
+#include <sdkconfig.h>
+
+#ifdef CONFIG_BENCH_MODE_BOOTSEL_CTRL
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -44,3 +48,5 @@ extern "C" void app_main() {
         vTaskDelay(pdMS_TO_TICKS(900));
     }
 }
+
+#endif
