@@ -31,13 +31,14 @@
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       GPS_RX=GP1 GPS_TX=GP0
- *       LED=GP25
+ *       LED=GP16 (WS2812 NeoPixel on Waveshare RP2040-Zero)
  */
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <stdarg.h>
 #include <hardware/watchdog.h>
+#include <Adafruit_NeoPixel.h>
 
 // ─── Firmware self-identification (injected at build time) ───────────
 // These come from tools/inject_git_version.py via -D flags.
@@ -95,7 +96,17 @@ static void printBootBanner() {
 #define PIN_GPS_RX  1    // RP2040 RX ← GPS TX (NMEA data)
 #define PIN_GPS_TX  0    // RP2040 TX → GPS RX (optional config)
 #undef PIN_LED
-#define PIN_LED     25
+#define PIN_NEOPIXEL 16   // Waveshare RP2040-Zero onboard WS2812
+#define PIN_LED       25   // Standard Pi Pico (fallback, no-op on RP2040-Zero)
+
+// Single NeoPixel on GP16
+Adafruit_NeoPixel statusLED(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+// LED color helpers — show status as visible colors
+void ledColor(uint8_t r, uint8_t g, uint8_t b) {
+    statusLED.setPixelColor(0, statusLED.Color(r, g, b));
+    statusLED.show();
+}
 
 #define SPI_FREQ_HZ  20000000UL
 #define XTAL_MHZ     52.0f
@@ -1009,7 +1020,16 @@ void setup() {
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
-    digitalWrite(PIN_LED, LOW);
+    // Init NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
+    statusLED.begin();
+    statusLED.show();  // Turn off
+    // Boot strobe: blue flash 6x so Felix sees LED working
+    for (int i = 0; i < 6; i++) {
+        ledColor(0, 0, 255);   // Blue
+        delay(100);
+        ledColor(0, 0, 0);     // Off
+        delay(100);
+    }
 
     spiRf.begin();
 
@@ -1048,6 +1068,7 @@ void setup() {
         gpsPoll();
         checkSerialTimeSync();  // Process SET_TIME during boot gate
         digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
+        ledColor(((millis() / 500) & 1) ? 100 : 30, 0, 0);  // Dim red pulse while searching
 
         // Bench override: laptop SET_TIME received
         if (hasLaptopTime()) {
@@ -1154,6 +1175,22 @@ void loop() {
 
     // GPS still works if module is alive — used for position data in packets
     gpsPoll();
+
+    // ─── NEOPIXEL STATUS LED ─────────────────────────────────────────
+    // Red pulse = GPS searching for time. Yellow = has time, TX active, no fix. Green = GPS locked.
+    {
+        if (gps.fixValid) {
+            ledColor(0, 255, 0);   // Green: GPS locked, full operation
+        } else if (gps.hasTime) {
+            // Yellow blink at 2Hz
+            bool on = ((millis() % 500) < 250);
+            ledColor(on ? 255 : 50, on ? 200 : 30, 0);
+        } else {
+            // Red blink at 1Hz
+            bool on = ((millis() % 1000) < 500);
+            ledColor(on ? 255 : 30, 0, 0);
+        }
+    }
 
     // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
     // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
@@ -1387,7 +1424,15 @@ void loop() {
     outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s\n", seqInPhase, rssiDbm,
               currentPhase, pktSize, FW_GIT_HASH);
 
-    digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
+    // NeoPixel status — already handled in main heartbeat above.
+    // Just toggle brightness slightly per TX for feedback.
+    {
+        if (gps.fixValid) {
+            ledColor(0, seqInPhase & 1 ? 255 : 100, 0);  // Green pulse per packet
+        } else {
+            ledColor(seqInPhase & 1 ? 255 : 50, seqInPhase & 1 ? 200 : 30, 0);  // Yellow pulse
+        }
+    }
 
     seqInPhase++;
 
