@@ -6,44 +6,46 @@ balloon-tollgate
 ## Worktree
 ~/worktrees/balloon-tollgate-fresh (balloon-fresh repo)
 Branch: balloon-tollgate-extract
-Last commit: c0274b4
+Last commit: bd40a1f
 
 ## Current Phase
-EXTRACTION — Per ADR-024, extracting Cashu payment + captive portal logic from tollgate-esp32 (READ-ONLY source) into balloon-fresh.
+EXTRACTION COMPLETE — Payment core extracted into balloon-fresh
 
 ## What's Done
-1. ADR-024 understood: source repos READ-ONLY, extract-only into balloon-fresh
-2. Migrated to new worktree: balloon-tollgate-fresh
-3. Master pulled (has speed-tests + circuit-design consolidation)
-4. ADR-001 imported: LR2021 radio as transport, NOT WiFi captive portal
-5. Scope decisions imported: 11 files to extract, 23 dropped (display/mining/marketplace)
-6. tollgate-esp32 branch balloon-tollgate-c3-port has working C3 build proof (1.26MB binary, flashed, WiFi AP confirmed)
-7. AP-first boot fix committed (services start without upstream STA)
+1. ADR-024 understood: source repos READ-ONLY, extract-only
+2. Migrated to balloon-fresh worktree (branch balloon-tollgate-extract)
+3. ADR-001 imported: LR2021 radio as transport (per mesh-stack architecture, TollGate sits at L7 over FIPS mesh UDP transport, NOT direct radio)
+4. Master pulled + rebased (has speed-tests + circuit-design consolidation)
+5. mesh-stack/tollgate/ integration target confirmed by orchestrator
+6. EXTRACTION COMPLETE: 156 C/C++ source files extracted from tollgate-esp32
+   - tollgate_core: 7 payment modules (core, cashu, session, portal, firewall, mint_health, beacon)
+   - tollgate_esp: ESP-IDF platform implementation
+   - nucula_lib: Cashu wallet library + vendored sources
+   - secp256k1: libsecp256k1 dependency
+   - main/: config, identity, nostr_event, mint_health, geohash
+7. EXTRACTION-LOG.md written — complete file-by-file record
+8. NOT extracted (left in source): display, mining, stratum, market, DNS, client mode
 
-## Architecture Decision (ADR-001)
-Balloon TollGate = LR2021 radio transport + Cashu business logic.
-- KEEP: Cashu wallet (nucula), identity, Nostr signing, mint health, geohash
-- SWAP: WiFi AP/STA → LR2021 radio, captive portal HTML → radio payment protocol
-- DROP: display, mining, stratum, PoW, DNS server, HTTP server
+## Architecture (per mesh-stack AGENTS.md)
+TollGate sits at L7 (application layer) over FIPS mesh transport:
+L7: TollGate + Nostr (Cashu payments + async messaging)
+L6: FIPS Noise XK (E2E encryption)
+L5: FIPS mesh routing
+L4: UDP/IP tunnel over FIPS mesh
+L3: Wirehair + fragmentation
+L2: TDMA dual-band scheduler
+L1: LR2021 radio
 
-## Cashu Model
-Online: nucula wallet swaps tokens against real mint. No blind acceptance.
-Offline roadmap: R1 free relay, R2 npub-locked notes, R3 local mint.
-
-## Next Steps
-1. Survey balloon-fresh for existing tollgate/payment directory structure
-2. Extract Cashu payment core (tollgate_core component) into balloon-fresh
-3. Extract captive portal payment logic (adapt for radio transport)
-4. Design radio payment protocol (ADR-002 candidate)
-5. Coordinate with balloon-range-tests for LR2021 driver API
+TollGate sends payment messages as UDP packets through FIPS mesh.
+Does NOT touch LR2021 directly. Uses mesh transport API.
 
 ## Blockers
-1. Need LR2021 driver API from balloon-range-tests/balloon-firmware — what's the TX/RX interface?
-2. Radio payment protocol not designed yet — what does payment grant? (relay time? bandwidth? message quota?)
-3. Felix confirmed: assume online for now, keep simple
+1. Payment protocol over mesh not designed — what does payment grant? (relay time? bandwidth? message quota?)
+2. Integration with tracker/firmware ESP-IDF build not started — need to verify extracted components compile as part of balloon firmware
+3. Host unit tests need migration (86 tests exist in source repo, need to verify they run against extracted code)
 
-## Previous Work (tollgate-esp32, preserved as reference)
-- Tag v-balloon-pre-strip at 5b1518f
-- C3 build: be0fc3d, binary 1.26MB, 50% flash free
-- AP-first fix: 23533e0
-- Commit c0274b4 in balloon-fresh imports the decisions as reference docs
+## Next Steps
+1. Verify extracted tollgate_core compiles standalone (ESP-IDF component build)
+2. Migrate host unit tests from source repo
+3. Design payment protocol over FIPS mesh (ADR-002)
+4. Write platform adapter for balloon (replace WiFi-specific platform calls with mesh transport)
