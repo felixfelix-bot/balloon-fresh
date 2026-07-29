@@ -364,24 +364,31 @@ static void runTransmit() {
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // FAST MODE: batch CLEAR_IRQ + WRITE_FIFO + SET_TX in one CS-low burst
-        // This eliminates 2× rfWaitBusy + 2× CS toggle + 2× beginTransaction per packet
-        // Combined batch: [CLEAR_IRQ(6)] [WRITE_FIFO header(2)] [payload(255)] [SET_TX(5)]
-        static uint8_t batch[6 + 2 + 256 + 5];
-        batch[0] = 0x01; batch[1] = 0x16;  // CLEAR_IRQ
-        batch[2] = 0xFF; batch[3] = 0xFF; batch[4] = 0xFF; batch[5] = 0xFF;
-        batch[6] = 0x00; batch[7] = 0x02;  // WRITE_TX_FIFO header
-        memcpy(batch + 8, pkt, pktSize);
-        batch[8 + pktSize]     = 0x02;  // SET_TX opcode MSB
-        batch[8 + pktSize + 1] = 0x0D;  // SET_TX opcode LSB
-        batch[8 + pktSize + 2] = 0x00;
-        batch[8 + pktSize + 3] = 0x00;
-        batch[8 + pktSize + 4] = 0x00;
+        // FAST MODE: 3 SPI transactions per packet (no status polling)
+        // 1. WRITE_FIFO (CS toggle)
+        // 2. SET_TX (CS toggle)  
+        // 3. CLEAR_IRQ after TX_DONE (CS toggle)
+        // Eliminates status check (02 0D) and register poll (01 16) from baseline
 
+        // Step 1: Write FIFO
         rfWaitBusy();
         spiRf.beginTransaction(spiSettings);
         digitalWrite(PIN_CS, LOW);
-        spiRf.transfer(batch, spiRxJunk, 6 + 2 + pktSize + 5);
+        spiRf.transfer(0x00);  // WRITE_TX_FIFO opcode MSB
+        spiRf.transfer(0x02);  // WRITE_TX_FIFO opcode LSB
+        spiRf.transfer(pkt, pktSize);
+        digitalWrite(PIN_CS, HIGH);
+        spiRf.endTransaction();
+
+        // Step 2: Set TX (triggers transmission)
+        rfWaitBusy();
+        spiRf.beginTransaction(spiSettings);
+        digitalWrite(PIN_CS, LOW);
+        spiRf.transfer(0x02);  // SET_TX opcode MSB
+        spiRf.transfer(0x0D);  // SET_TX opcode LSB
+        spiRf.transfer(0x00);
+        spiRf.transfer(0x00);
+        spiRf.transfer(0x00);
         digitalWrite(PIN_CS, HIGH);
         spiRf.endTransaction();
 
@@ -394,6 +401,16 @@ static void runTransmit() {
 
         if (irqFired) {
             txDoneCount++;
+            // Step 3: Clear IRQ flag so next TX_DONE can fire
+            rfWaitBusy();
+            spiRf.beginTransaction(spiSettings);
+            digitalWrite(PIN_CS, LOW);
+            spiRf.transfer(0x01);  // CLEAR_IRQ opcode MSB
+            spiRf.transfer(0x16);  // CLEAR_IRQ opcode LSB
+            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            digitalWrite(PIN_CS, HIGH);
+            spiRf.endTransaction();
         } else {
             txTimeoutCount++;
         }
