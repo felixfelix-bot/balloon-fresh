@@ -462,6 +462,11 @@ void lr2021_radio_tx(const uint8_t *frame, uint16_t len)
 
     bool was_in_rx = s_in_rx;
 
+    /* Leave RX mode — go to STDBY before TX */
+    uint8_t cmd_stdby[] = { 0x01, 0x28, 0x01 };
+    rf_write_cmd(cmd_stdby, 3);
+    vTaskDelay(pdMS_TO_TICKS(1));
+
     /* Build 255-byte packet: [len_hi][len_lo][payload][zero-pad] */
     static uint8_t pkt[LR2021_PKT_SIZE];
     memset(pkt, 0, sizeof(pkt));
@@ -483,15 +488,10 @@ void lr2021_radio_tx(const uint8_t *frame, uint16_t len)
     /* Trigger TX */
     set_tx();
 
-    /* Wait for TX_DONE — IRQ pin goes HIGH */
-    uint32_t timeout = 500000;
-    while (!irq_high() && --timeout) {
-        /* tight spin */
-    }
-
-    if (timeout == 0) {
-        ESP_LOGW(TAG, "TX timeout (no IRQ) for %u-byte frame", len);
-    }
+    /* FLRC at 2600kbps: 255 bytes = ~0.8ms TX time. Wait 5ms to be safe.
+     * IRQ status polling returns 0x00000000 (SPI read issue with this chip),
+     * so use fixed delay. RF TX verified working via RX on second board. */
+    vTaskDelay(pdMS_TO_TICKS(5));
 
     /* Clear TX IRQ */
     clear_irq(IRQ_ALL);
