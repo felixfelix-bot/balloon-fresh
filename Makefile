@@ -322,16 +322,16 @@ install-framework: ## Install earlephilhower Arduino-Pico core + Max Gerhardt pl
 ## Install udev rules for RP2040 + logic analyzer (requires sudo).
 install-udev: ## Install USB permissions for RP2040 + logic analyzer.
 	@echo "Installing udev rules for RP2040 + logic analyzer..."
-	@sudo bash -c 'cat > /etc/udev/rules.d/99-debug.rules << EOF
-# RP2040 BOOTSEL mode
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", MODE="0666"
-# RP2040 app mode (CDC)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", MODE="0666"
-# Logic analyzer (Saleae/fx2lafw)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="0925", ATTRS{idProduct}=="3881", MODE="0666"
-# Logic analyzer (generic fx2)
-SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6086", MODE="0666"
-EOF'
+	@sudo bash -c 'printf "%s\n" \
+		"# RP2040 BOOTSEL mode" \
+		"SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"2e8a\", ATTRS{idProduct}==\"0003\", MODE=\"0666\"" \
+		"# RP2040 app mode (CDC)" \
+		"SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"2e8a\", ATTRS{idProduct}==\"000a\", MODE=\"0666\"" \
+		"# Logic analyzer (Saleae/fx2lafw)" \
+		"SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"0925\", ATTRS{idProduct}==\"3881\", MODE=\"0666\"" \
+		"# Logic analyzer (generic fx2)" \
+		"SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"1d50\", ATTRS{idProduct}==\"6086\", MODE=\"0666\"" \
+		> /etc/udev/rules.d/99-debug.rules'
 	@sudo udevadm control --reload-rules && sudo udevadm trigger
 	@echo "Done. Unplug and replug USB devices for rules to take effect."
 
