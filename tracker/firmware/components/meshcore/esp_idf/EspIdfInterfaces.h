@@ -1,7 +1,17 @@
 #pragma once
 
+/*
+ * EspIdfInterfaces.h — ESP-IDF platform adapters for MeshCore.
+ *
+ * RadioLib has been removed (ADR-020). The radio adapter now wraps
+ * Lr2021Radio (from lr2021_transport) instead of RadioLib's PhysicalLayer.
+ *
+ * Lr2021MeshRadio maps the mesh::Radio interface to the Lr2021Radio
+ * packet-level API (send_packet / read_packet / start_rx / standby).
+ */
+
 #include <Dispatcher.h>
-#include <RadioLib.h>
+#include "lr2021_spi.h"   /* Lr2021Radio, PacketStatus, IrqSource, Lr2021Error */
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_random.h"
@@ -17,9 +27,15 @@ static const char *MESH_TAG = "MESH";
 
 namespace mesh {
 
-class EspIdfRadio : public Radio {
-    PhysicalLayer* _radio;
-    MainBoard* _board;
+/**
+ * MeshCore radio adapter backed by Lr2021Radio (lr2021_transport).
+ *
+ * Replaces the old EspIdfRadio which wrapped RadioLib's PhysicalLayer.
+ * Maps mesh::Radio methods to the LR2021 packet-level API.
+ */
+class Lr2021MeshRadio : public Radio {
+    Lr2021Radio* _radio;
+    MainBoard*   _board;
     volatile uint8_t _state;
     uint32_t _n_recv, _n_sent, _n_recv_errors;
     int16_t _noise_floor;
@@ -27,11 +43,8 @@ class EspIdfRadio : public Radio {
     uint16_t _num_floor_samples;
     int32_t _floor_sample_sum;
 
-    static volatile uint8_t _isr_state;
-
-    static void IRAM_ATTR _isrFlag() {
-        _isr_state |= STATE_INT_READY;
-    }
+    /* Cached packet status from last recvRaw() */
+    PacketStatus _last_pkt;
 
     void idle() {
         _radio->standby();
@@ -39,11 +52,11 @@ class EspIdfRadio : public Radio {
     }
 
     void startRecv() {
-        int16_t err = _radio->startReceive();
-        if (err == RADIOLIB_ERR_NONE) {
+        _radio->clear_irq();
+        if (_radio->start_rx() == Lr2021Error::Ok) {
             _state = STATE_RX;
         } else {
-            ESP_LOGE(MESH_TAG, "startReceive err: %d", err);
+            ESP_LOGE(MESH_TAG, "start_rx failed");
         }
     }
 
@@ -60,35 +73,38 @@ class EspIdfRadio : public Radio {
     }
 
 public:
-    EspIdfRadio(PhysicalLayer& radio, MainBoard& board)
+    Lr2021MeshRadio(Lr2021Radio& radio, MainBoard& board)
         : _radio(&radio), _board(&board), _state(STATE_IDLE),
           _n_recv(0), _n_sent(0), _n_recv_errors(0),
           _noise_floor(0), _threshold(0),
           _num_floor_samples(0), _floor_sample_sum(0) {}
 
     void begin() override {
-        _radio->setPacketReceivedAction(_isrFlag);
         _state = STATE_IDLE;
         _noise_floor = 0;
         _threshold = 0;
         _num_floor_samples = 0;
         _floor_sample_sum = 0;
+        startRecv();
     }
 
     int recvRaw(uint8_t* bytes, int sz) override {
         int len = 0;
-        if (_state & STATE_INT_READY) {
-            len = _radio->getPacketLength();
-            if (len > 0) {
-                if (len > sz) len = sz;
-                int16_t err = _radio->readData(bytes, len);
-                if (err != RADIOLIB_ERR_NONE) {
-                    ESP_LOGE(MESH_TAG, "readData err: %d", err);
-                    len = 0;
-                    _n_recv_errors++;
-                } else {
+
+        /* Check if IRQ is asserted (packet received) */
+        bool irq = false;
+        _radio->check_irq(irq);
+        if (irq) {
+            PacketStatus status;
+            if (_radio->read_packet(bytes, sz, status) == Lr2021Error::Ok) {
+                len = (int)status.length;
+                _last_pkt = status;
+                if (len > 0) {
                     _n_recv++;
                 }
+            } else {
+                ESP_LOGE(MESH_TAG, "read_packet failed");
+                _n_recv_errors++;
             }
             _state = STATE_IDLE;
         }
@@ -100,7 +116,9 @@ public:
     }
 
     uint32_t getEstAirtimeFor(int len_bytes) override {
-        return _radio->getTimeOnAir(len_bytes) / 1000;
+        /* FLRC 2600 kbps: (len_bytes * 8) / 2600000 seconds → ms */
+        uint32_t us = (uint32_t)((len_bytes * 8ULL * 1000000ULL) / 2600000ULL);
+        return us / 1000 + 1;  /* +1 ms for preamble/sync overhead */
     }
 
     float packetScore(float snr, int packet_len) override {
@@ -109,39 +127,42 @@ public:
 
     bool startSendRaw(const uint8_t* bytes, int len) override {
         _board->onBeforeTransmit();
-        int16_t err = _radio->startTransmit((uint8_t*)bytes, len);
-        if (err == RADIOLIB_ERR_NONE) {
+        _radio->standby();
+        if (_radio->send_packet(bytes, (size_t)len) == Lr2021Error::Ok) {
             _state = STATE_TX_WAIT;
             return true;
         }
-        ESP_LOGE(MESH_TAG, "startTransmit err: %d", err);
+        ESP_LOGE(MESH_TAG, "send_packet failed");
         idle();
         _board->onAfterTransmit();
         return false;
     }
 
     bool isSendComplete() override {
-        if (_state & STATE_INT_READY) {
-            _state = STATE_IDLE;
-            _n_sent++;
-            return true;
+        if (_state == STATE_TX_WAIT) {
+            uint32_t flags = 0;
+            _radio->get_irq_status(flags);
+            if (flags & IrqSource::TX_DONE) {
+                _state = STATE_TX_DONE;
+                _n_sent++;
+                return true;
+            }
         }
         return false;
     }
 
     void onSendFinished() override {
-        _radio->finishTransmit();
+        _radio->clear_irq();
         _board->onAfterTransmit();
         _state = STATE_IDLE;
     }
 
     void loop() override {
+        /* Noise floor sampling (simplified — no RSSI in idle for FLRC) */
         if (_state == STATE_RX && _num_floor_samples < 64) {
-            float rssi = _radio->getRSSI();
-            if (rssi < _noise_floor + 14) {
-                _num_floor_samples++;
-                _floor_sample_sum += (int32_t)rssi;
-            }
+            /* FLRC doesn't expose live RSSI in RX; use last packet RSSI as proxy */
+            _num_floor_samples++;
+            _floor_sample_sum += _last_pkt.rssi_dbm;
         } else if (_num_floor_samples >= 64 && _floor_sample_sum != 0) {
             _noise_floor = _floor_sample_sum / 64;
             if (_noise_floor < -120) _noise_floor = -120;
@@ -158,8 +179,7 @@ public:
     }
 
     void resetAGC() override {
-        if ((_state & STATE_INT_READY) != 0) return;
-        _radio->sleep();
+        _radio->standby();
         _state = STATE_IDLE;
         _noise_floor = 0;
         _num_floor_samples = 0;
@@ -167,18 +187,18 @@ public:
     }
 
     bool isInRecvMode() const override {
-        return (_state & ~STATE_INT_READY) == STATE_RX;
+        return _state == STATE_RX;
     }
 
     bool isReceiving() override {
-        return (_state & STATE_INT_READY) != 0;
+        bool irq = false;
+        _radio->check_irq(irq);
+        return irq;
     }
 
-    float getLastRSSI() const override { return _radio->getRSSI(); }
-    float getLastSNR() const override { return _radio->getSNR(); }
+    float getLastRSSI() const override { return (float)_last_pkt.rssi_dbm; }
+    float getLastSNR() const override { return (float)_last_pkt.snr_db; }
 };
-
-volatile uint8_t EspIdfRadio::_isr_state = STATE_IDLE;
 
 class EspIdfClock : public MillisecondClock {
 public:

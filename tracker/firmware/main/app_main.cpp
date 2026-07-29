@@ -1,3 +1,12 @@
+/*
+ * app_main.cpp — Pico Balloon Tracker firmware
+ *
+ * Radio driver: lr2021_transport (raw 2-byte SPI, per ADR-020)
+ * RadioLib has been completely removed. All radio operations go through
+ * EspHalLr2021Radio (Lr2021Radio interface) and optionally Lr2021Transport
+ * for FIPS stream communication.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +20,8 @@
 #include "driver/i2c.h"
 #include "soc/rtc.h"
 
-#include <RadioLib.h>
-#include "EspHalC3.h"
+#include "esp_idf_lr2021_radio.h"
+#include "lr2021_transport.h"
 
 #ifdef CONFIG_ENABLE_MESHCORE
 #include <Mesh.h>
@@ -60,6 +69,7 @@ static const char *TAG = "TRACKER";
 
 #define LED_GPIO 10
 
+/* LR2021 pin reference (matching lr2021_spi.h defaults / EspHalLr2021Radio) */
 #define LR2021_SCK   6
 #define LR2021_MISO  2
 #define LR2021_MOSI  7
@@ -68,8 +78,9 @@ static const char *TAG = "TRACKER";
 #define LR2021_RST   3
 #define LR2021_DIO9  5
 
-static EspHalC3* hal = nullptr;
-static LR2021* radio = nullptr;
+/* Radio handles — lr2021_transport based (replaces RadioLib) */
+static EspHalLr2021Radio* s_radio = nullptr;
+static Lr2021Transport*   s_transport = nullptr;
 
 #ifdef CONFIG_ENABLE_BMP280
 static bmp280_t bmp;
@@ -82,28 +93,41 @@ static gps_data_t gps_data;
 static RTC_DATA_ATTR uint16_t rtc_seq = 0;
 static RTC_DATA_ATTR bool rtc_first_boot = true;
 
-static bool flag_tx_done = false;
 #ifdef CONFIG_ENABLE_MESH
 static mesh_frame_queue_t s_mesh_tx_queue;
 static int s_mesh_pending = 0;
 #endif
 
-static void IRAM_ATTR on_tx_done(void) {
-    flag_tx_done = true;
+/* ── Radio helpers (polling-based, replaces RadioLib ISR callbacks) ── */
+
+/**
+ * Wait for TX_DONE IRQ with timeout.
+ * Polls the LR2021 IRQ status register until TX_DONE is set or timeout.
+ * @return true if TX completed within timeout, false on timeout.
+ */
+static bool wait_tx_done(uint32_t timeout_ms)
+{
+    if (!s_radio) return false;
+    uint32_t flags = 0;
+    for (uint32_t elapsed = 0; elapsed < timeout_ms; elapsed++) {
+        if (s_radio->get_irq_status(flags) == Lr2021Error::Ok &&
+            (flags & IrqSource::TX_DONE)) {
+            s_radio->clear_irq();
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    s_radio->clear_irq();
+    return false;
 }
 
 #ifdef CONFIG_ENABLE_MESH
-static void mesh_radio_send(const uint8_t *frame, uint16_t len) {
-    if (!radio) return;
-    flag_tx_done = false;
-    int16_t state = radio->startTransmit(frame, len);
-    if (state == RADIOLIB_ERR_NONE) {
-        uint32_t timeout = 0;
-        while (!flag_tx_done && timeout < 10000) {
-            hal->delay(1);
-            timeout++;
-        }
-    }
+static void mesh_radio_send(const uint8_t *frame, uint16_t len)
+{
+    if (!s_radio) return;
+    s_radio->standby();
+    s_radio->send_packet(frame, len);
+    wait_tx_done(10000);
 }
 #endif
 
@@ -126,36 +150,44 @@ static void blink_led(int times)
     }
 }
 
-static int16_t init_radio(void)
+/**
+ * Initialize the LR2021 radio using lr2021_transport (FLRC mode).
+ * Replaces the old RadioLib-based init_radio().
+ */
+static int init_radio(void)
 {
-    hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
-    hal->setCsPin(LR2021_NSS);
-    hal->setBusyPin(LR2021_BUSY);
-    radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
-    radio->irqDioNum = 9;
+    s_radio = new EspHalLr2021Radio();
 
-    ESP_LOGI(TAG, "Initializing LR2021...");
+    ESP_LOGI(TAG, "Initializing LR2021 (FLRC, lr2021_transport)...");
     printf("GPIO states: BUSY(%d)=%d RST(%d)=%d NSS(%d)=%d\n",
-        (int)LR2021_BUSY, (int)gpio_get_level((gpio_num_t)LR2021_BUSY),
-        (int)LR2021_RST, (int)gpio_get_level((gpio_num_t)LR2021_RST),
-        (int)LR2021_NSS, (int)gpio_get_level((gpio_num_t)LR2021_NSS));
+        LR2021_BUSY, (int)gpio_get_level((gpio_num_t)LR2021_BUSY),
+        LR2021_RST, (int)gpio_get_level((gpio_num_t)LR2021_RST),
+        LR2021_NSS, (int)gpio_get_level((gpio_num_t)LR2021_NSS));
     fflush(stdout);
 
-    float freq_mhz = (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f;
-    int16_t state = radio->begin(
-        freq_mhz, 125.0,
-        CONFIG_RADIO_SF, 7,
-        0x12, CONFIG_RADIO_TX_POWER_DBM, 8,
-        0.0f
-    );
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "LR2021 init failed: %d", state);
-        return state;
+    /* FLRC configuration (proven baseline from ADR-020) */
+    Lr2021Config config;
+    config.freq_mhz      = 2440.0f;   /* 2.4 GHz ISM */
+    config.bitrate_kbps  = 2600;       /* FLRC max bitrate */
+    config.tx_power_dbm  = CONFIG_RADIO_TX_POWER_DBM;
+    config.payload_length = LR2021_MAX_PACKET;
+
+    if (s_radio->init(config) != Lr2021Error::Ok) {
+        ESP_LOGE(TAG, "LR2021 init failed");
+        return -1;
     }
 
-    radio->setPacketSentAction(on_tx_done);
-    ESP_LOGI(TAG, "LR2021 OK (868 MHz, SF%d, %d dBm)", CONFIG_RADIO_SF, CONFIG_RADIO_TX_POWER_DBM);
-    return RADIOLIB_ERR_NONE;
+    /* Create FIPS transport (stream send/recv over FLRC packets) */
+    s_transport = new Lr2021Transport(s_radio);
+    TransportError terr = s_transport->init(config);
+    if (terr != TransportError::Ok) {
+        ESP_LOGE(TAG, "LR2021 transport init failed");
+        return -1;
+    }
+
+    ESP_LOGI(TAG, "LR2021 OK (FLRC 2440 MHz, 2600 kbps, %d dBm)",
+             CONFIG_RADIO_TX_POWER_DBM);
+    return 0;
 }
 
 static void deep_sleep(uint32_t seconds)
@@ -164,8 +196,8 @@ static void deep_sleep(uint32_t seconds)
 #ifdef CONFIG_ENABLE_BMP280
     bmp280_sleep(&bmp);
 #endif
-    if (radio) {
-        radio->sleep();
+    if (s_radio) {
+        s_radio->sleep();
     }
 #ifdef CONFIG_ENABLE_FEM
     sky66112_shutdown();
@@ -232,8 +264,8 @@ static void cli_cmd_config(const char *args) {
     (void)args;
     printf("=== Configuration ===\n");
     printf("  Callsign hash: %s\n", CONFIG_CALLSIGN_HASH_HEX);
-    printf("  Frequency: %.1f MHz\n", (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f);
-    printf("  SF: %d\n", CONFIG_RADIO_SF);
+    printf("  Frequency: FLRC 2440 MHz (2.4 GHz ISM)\n");
+    printf("  Bitrate: 2600 kbps\n");
     printf("  TX power: %d dBm\n", CONFIG_RADIO_TX_POWER_DBM);
     printf("  TX interval: %d s\n", CONFIG_TX_INTERVAL_SEC);
     printf("  Low voltage: %d mV\n", CONFIG_LOW_VOLTAGE_MV);
@@ -252,10 +284,11 @@ static void cli_cmd_config(const char *args) {
 static void cli_cmd_radio(const char *args) {
     (void)args;
     printf("=== Radio State ===\n");
-    printf("  Freq: %.1f MHz\n", (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f);
-    printf("  SF: %d, BW: 125 kHz, CR: 4/7\n", CONFIG_RADIO_SF);
+    printf("  Mode: FLRC 2440 MHz, 2600 kbps\n");
     printf("  TX power: %d dBm\n", CONFIG_RADIO_TX_POWER_DBM);
-    printf("  Initialized: %s\n", radio ? "yes" : "no");
+    printf("  Driver: lr2021_transport (ADR-020)\n");
+    printf("  Transport: %s\n", s_transport ? "ready" : "not init");
+    printf("  Initialized: %s\n", s_radio ? "yes" : "no");
 }
 
 static void cli_cmd_restart(const char *args) {
@@ -270,17 +303,9 @@ static void cli_cmd_sleep_now(const char *args) {
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
 }
 
-static bool flag_rx_done = false;
-static int16_t s_rx_rssi = 0;
-static float s_rx_snr = 0;
-
-static void IRAM_ATTR on_rx_done(void) {
-    flag_rx_done = true;
-}
-
 static void cli_cmd_radio_test(const char *args) {
     (void)args;
-    if (!radio) {
+    if (!s_radio) {
         printf("Radio not initialized\n");
         return;
     }
@@ -291,57 +316,51 @@ static void cli_cmd_radio_test(const char *args) {
     uint8_t buf[TELEMETRY_SIZE];
     telemetry_serialize(&pkt, buf);
 
-    flag_tx_done = false;
     printf("TX test packet (%d bytes)... ", TELEMETRY_SIZE);
     fflush(stdout);
-    int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
-    if (state != RADIOLIB_ERR_NONE) {
-        printf("FAIL (err %d)\n", state);
-        return;
-    }
-    uint32_t timeout = 0;
-    while (!flag_tx_done && timeout < 10000) {
-        hal->delay(1);
-        timeout++;
-    }
-    printf("%s\n", flag_tx_done ? "OK" : "TIMEOUT");
+    s_radio->standby();
+    s_radio->send_packet(buf, TELEMETRY_SIZE);
+    printf("%s\n", wait_tx_done(10000) ? "OK" : "TIMEOUT");
 }
 
 static void cli_cmd_radio_recv(const char *args) {
     (void)args;
-    if (!radio) {
+    if (!s_radio) {
         printf("Radio not initialized\n");
         return;
     }
     printf("Listening for 30s...\n");
-    flag_rx_done = false;
-    radio->setPacketReceivedAction(on_rx_done);
-    radio->startReceive();
+    s_radio->start_rx();
+    s_radio->clear_irq();
 
     uint32_t start = xTaskGetTickCount() * portTICK_PERIOD_MS;
     while ((xTaskGetTickCount() * portTICK_PERIOD_MS - start) < 30000) {
-        if (flag_rx_done) {
+        bool irq = false;
+        s_radio->check_irq(irq);
+        if (irq) {
             uint8_t rx_buf[256];
-            int16_t len = radio->readData(rx_buf, sizeof(rx_buf));
-            if (len >= 0) {
-                s_rx_rssi = radio->getRSSI();
-                s_rx_snr = radio->getSNR();
-                printf("RX %d bytes, RSSI: %d dBm, SNR: %.1f dB\n  HEX: ", len, s_rx_rssi, s_rx_snr);
+            PacketStatus status;
+            if (s_radio->read_packet(rx_buf, sizeof(rx_buf), status) == Lr2021Error::Ok
+                && status.length > 0) {
+                int len = (int)status.length;
+                printf("RX %d bytes, RSSI: %d dBm, SNR: %d dB\n  HEX: ",
+                       len, (int)status.rssi_dbm, (int)status.snr_db);
                 for (int i = 0; i < len && i < 64; i++) printf("%02x", rx_buf[i]);
                 printf("\n");
                 if (len == TELEMETRY_SIZE) {
                     telemetry_packet_t *rpkt = (telemetry_packet_t *)rx_buf;
                     if (telemetry_validate(rx_buf, TELEMETRY_SIZE)) {
-                        printf("  Valid telemetry! seq=%d voltage=%dmV\n", rpkt->seq, rpkt->voltage_mv);
+                        printf("  Valid telemetry! seq=%d voltage=%dmV\n",
+                               rpkt->seq, rpkt->voltage_mv);
                     }
                 }
             }
-            flag_rx_done = false;
-            radio->startReceive();
+            s_radio->clear_irq();
+            s_radio->start_rx();
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-    radio->standby();
+    s_radio->standby();
     printf("Listen done\n");
 }
 
@@ -374,7 +393,7 @@ static void setup_cli(void) {
     cli_register_command("restart", "Software restart", cli_cmd_restart);
     cli_register_command("sleep", "Force deep sleep cycle", cli_cmd_sleep_now);
     cli_register_command("radio_test", "Transmit test packet", cli_cmd_radio_test);
-    cli_register_command("radio_recv", "Listen for LoRa packets (30s)", cli_cmd_radio_recv);
+    cli_register_command("radio_recv", "Listen for FLRC packets (30s)", cli_cmd_radio_recv);
     cli_register_command("i2c_scan", "Scan I2C bus for devices", cli_cmd_i2c_scan);
 }
 
@@ -428,7 +447,7 @@ extern "C" void app_main(void)
     printf("> ");
     fflush(stdout);
 
-    if (init_radio() != RADIOLIB_ERR_NONE) {
+    if (init_radio() != 0) {
         ESP_LOGE(TAG, "Radio init failed, sleeping");
         deep_sleep(CONFIG_TX_INTERVAL_SEC);
         return;
@@ -522,7 +541,6 @@ extern "C" void app_main(void)
     telemetry_serialize(&pkt, buf);
 
     ESP_LOGI(TAG, "TX %d bytes (seq %d)...", TELEMETRY_SIZE, rtc_seq);
-    flag_tx_done = false;
 
 #ifdef CONFIG_ENABLE_FEM
     sky66112_tx_enable();
@@ -535,7 +553,7 @@ extern "C" void app_main(void)
     static mesh::EspIdfRNG meshRNG;
     static mesh::EspIdfBoard meshBoard;
     static mesh::EspIdfRTC meshRTC;
-    static mesh::EspIdfRadio meshRadio(*radio, meshBoard);
+    static mesh::Lr2021MeshRadio meshRadio(*s_radio, meshBoard);
     static StaticPoolPacketManager meshPktMgr(8);
     static SimpleMeshTables meshTables;
 
@@ -567,17 +585,10 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "Mesh: %d frames sent", s_mesh_pending);
     }
 #else
-    int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "startTransmit failed: %d", state);
-    } else {
-        uint32_t timeout = 0;
-        while (!flag_tx_done && timeout < 10000) {
-            hal->delay(1);
-            timeout++;
-        }
-        ESP_LOGI(TAG, "%s", flag_tx_done ? "TX complete" : "TX timeout");
-    }
+    s_radio->standby();
+    s_radio->send_packet(buf, TELEMETRY_SIZE);
+    bool tx_ok = wait_tx_done(10000);
+    ESP_LOGI(TAG, "%s", tx_ok ? "TX complete" : "TX timeout");
 #endif
 
 #ifdef CONFIG_ENABLE_FEM
@@ -585,20 +596,17 @@ extern "C" void app_main(void)
 #endif
 
 #ifdef CONFIG_BENCH_TEST_MODE
-    radio->sleep();
+    s_radio->sleep();
     rtc_seq++;
     ESP_LOGI(TAG, "Waiting %ds until next TX...", CONFIG_BENCH_TEST_INTERVAL_SEC);
     for (int i = 0; i < CONFIG_BENCH_TEST_INTERVAL_SEC * 100; i++) {
         cli_process();
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-    int16_t rx_state = radio->standby();
-    if (rx_state != RADIOLIB_ERR_NONE) {
-        ESP_LOGW(TAG, "radio standby failed: %d", rx_state);
-    }
+    s_radio->standby();
     } // end bench test while loop
 #else
-    radio->sleep();
+    s_radio->sleep();
     rtc_seq++;
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
 #endif // CONFIG_BENCH_TEST_MODE
