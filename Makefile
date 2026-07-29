@@ -535,7 +535,7 @@ probe: ## Dump all USB/serial/device info for remote debugging.
 	@which picotool >/dev/null 2>&1 && picotool info 2>&1 || echo "picotool: not found"
 	@echo ""
 	@echo "═══ SIGROK DEVICES ═══"
-	@sigrok-cli --list 2>&1 || echo "sigrok-cli: not found"
+	@sigrok-cli --scan-drivers 2>&1 | head -5 || echo "sigrok-cli: not found"
 	@echo ""
 	@echo "═══ PYTHON PYSERIAL ═══"
 	@python3 -c "import serial; print('pyserial OK, version:', serial.__version__)" 2>&1
