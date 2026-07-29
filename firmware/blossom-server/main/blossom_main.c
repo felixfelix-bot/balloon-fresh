@@ -72,7 +72,7 @@ static esp_err_t start_http_server(void)
     config.max_uri_handlers = 8;
     config.lru_purge_enable = true;
     config.max_resp_headers = 16;
-    config.stack_size = 8192;   /* crypto verification needs extra stack */
+    config.stack_size = 16384;  /* secp256k1 schnorrsig_verify needs ~12KB stack */
 
     /* Increase max URI/hdr length for SHA-256 paths + CORS headers */
     config.uri_match_fn = httpd_uri_match_wildcard;
