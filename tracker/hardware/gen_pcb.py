@@ -549,6 +549,108 @@ def gen_v1():
     for gx, gy in [(10, 5), (35, 5), (20, 30), (40, 35), (5, 35), (15, 20), (30, 15)]:
         traces += via(gx, gy, "GND")
 
+    # === LOCAL DECOUPLING + COMPONENT STUBS ===
+    # 3V3 decoupling caps near LR2021 (C3 at 14.6,30.2 and C4 at 14.45,32.0)
+    traces += seg(14.6, 30.16, 15.1, 30.16, "3V3", 0.25)
+    traces += seg(14.45, 32.0, 14.6, 32.0, "3V3", 0.25)
+    traces += seg(14.6, 32.0, 14.6, 30.16, "3V3", 0.25)
+    # C3/C4 GND pads → GND track to nearest via
+    traces += seg(15.6, 30.16, 15.75, 30.16, "GND", 0.25)
+    traces += seg(15.75, 30.16, 15.75, 32.0, "GND", 0.25)
+    traces += seg(15.75, 32.0, 15.75, 32.0, "GND", 0.25)
+    traces += via(16.5, 31, "GND")
+    traces += seg(15.75, 30.16, 16.5, 31, "GND", 0.25)
+    # R1/C6 pullup 3V3 (at 41.5,30 and 43.5,30)
+    traces += seg(41.5, 30, 43.5, 30, "3V3", 0.25)
+    traces += seg(41.5, 30, 38, 20, "3V3", 0.25)
+    traces += seg(43.5, 30, 44, 29.19, "3V3", 0.25)
+    traces += seg(44, 29.19, 44, 34.27, "3V3", 0.25)  # MS5611 pin1
+    # R2 3V3 pullup (42.5,33)
+    traces += seg(42.5, 33, 44, 33, "3V3", 0.25)
+    # TP3 test point (33,38)
+    traces += seg(33, 38, 33, 35, "3V3", 0.25)
+    traces += via(33, 35, "3V3")
+    traces += seg(33, 35, 38, 35, "3V3", 0.25, "B.Cu")
+    traces += via(38, 35, "3V3")
+    # U5 LDO pin5 (5.95,22.95) to 3V3
+    traces += seg(5.95, 22.95, 5.0, 22.95, "3V3", 0.25)
+    traces += seg(5.0, 22.95, 5.0, 29.19, "3V3", 0.5)
+    traces += seg(5.0, 29.19, 5.97, 29.19, "3V3", 0.5)  # GPS pin1
+
+    # U5 LDO GND pins (5.95,21.05) and C1 GND (6.65,24)
+    traces += seg(5.95, 21.05, 5.0, 21.05, "GND", 0.25)
+    traces += via(5.0, 21.05, "GND")
+    traces += seg(6.65, 24, 6.0, 24, "GND", 0.25)
+    traces += via(6.0, 24, "GND")
+    # BAT54 GND (5.5,15)
+    traces += seg(5.5, 15, 5.5, 14, "GND", 0.25)
+    traces += via(5.5, 14, "GND")
+    # C2 VCAP (4.05,21.05) → U5 VCAP
+    traces += seg(4.05, 21.05, 4.05, 22, "VCAP", 0.25)
+    traces += seg(4.05, 22, 5.95, 22, "VCAP", 0.25)
+    # U5 VCAP pin3 (5.95,22.0) → 3V3 out
+    traces += seg(5.95, 22, 5.95, 22.95, "VCAP", 0.25)
+    # BAT54 cathode VCAP (5.5,18) → VCAP bus
+    traces += seg(5.5, 18, 5.95, 18, "VCAP", 0.25)
+    traces += seg(5.95, 18, 5.95, 22, "VCAP", 0.25)
+    # VCAP to supercap (8,37)
+    traces += seg(8, 18, 8, 37, "VCAP", 0.5)
+    traces += seg(8, 37, 6.25, 37, "VCAP", 0.5)  # SC pin1
+    # VCAP to R3 (2.5,15)
+    traces += seg(2.5, 16, 2.5, 15, "VCAP", 0.25)
+    traces += seg(2.5, 15, 4.5, 15, "VCAP", 0.25)
+    # R3 VDIV_MID (4.5,15) → R4 (5.5,15)
+    traces += seg(4.5, 15, 5.0, 15.81, "VDIV_MID", 0.25)
+    traces += seg(5.0, 15.81, 9.46, 15.81, "VDIV_MID", 0.25)
+    # R4 GND
+    traces += seg(5.5, 15, 5.5, 14, "GND", 0.25)
+
+    # GND pads near LR2021 → via to B.Cu
+    for gx, gy in [(15.095, 21.13), (15.095, 28.87), (34.905, 21.13), (34.905, 22.42), (34.905, 30.16)]:
+        traces += via(gx + 1.0, gy, "GND")
+        traces += seg(gx, gy, gx + 1.0, gy, "GND", 0.25)
+    # ESP32 GND (9.96,3.11) → already has via at (10,5)
+    traces += seg(9.96, 3.11, 10, 3.11, "GND", 0.25)
+    traces += seg(10, 3.11, 10, 5, "GND", 0.25)
+    # RP2040 GND (38.5,3.0)
+    traces += seg(38.5, 3.0, 38.5, 5, "GND", 0.25)
+    # GPS GND (6.5,30) → U3 pin2
+    traces += seg(6.5, 30, 6.0, 31.73, "GND", 0.25)
+    traces += via(6.0, 31.73, "GND")
+    # C5 GND (6.5,30)
+    traces += seg(6.5, 30, 7, 30, "GND", 0.25)
+    traces += via(7, 30, "GND")
+    # C6 GND (44.5,30)
+    traces += seg(44.5, 30, 45, 30, "GND", 0.25)
+    traces += via(45, 30, "GND")
+    # LED cathode GND (15.2,4)
+    traces += seg(15.2, 4, 15.2, 5, "GND", 0.25)
+    # TP GND (37,38)
+    traces += seg(37, 38, 37, 37, "GND", 0.25)
+    traces += via(37, 37, "GND")
+    # Solar GND (3,38.27) and supercap GND (9.75,37)
+    traces += seg(3, 38.27, 3, 37, "GND", 0.5)
+    traces += via(3, 37, "GND")
+    traces += seg(9.75, 37, 10, 37, "GND", 0.5)
+    traces += via(10, 37, "GND")
+    # ESP32 extra GND (9.46,5.65)
+    traces += seg(9.46, 5.65, 10, 5.65, "GND", 0.25)
+    traces += via(10, 5.65, "GND")
+
+    # Test points to SPI bus
+    traces += via(36, 36, "SPI0_SCK")
+    traces += seg(25, 38, 25, 36, "SPI0_SCK", 0.25)
+    traces += seg(25, 36, 36, 36, "SPI0_SCK", 0.25)
+    traces += seg(36, 36, 36, 25, "SPI0_SCK", 0.25, "B.Cu")
+    traces += via(29, 37, "SPI0_MOSI")
+    traces += seg(29, 38, 29, 37, "SPI0_MOSI", 0.25)
+    traces += seg(29, 37, 36.5, 37, "SPI0_MOSI", 0.25, "B.Cu")
+    traces += seg(36.5, 37, 36.5, 26.29, "SPI0_MOSI", 0.25, "B.Cu")
+
+    # MS5611 SDA/SCL pad fixes — pin3 SDA at (44,34.27), pin4 SCL at (44,36.81)
+    traces += seg(44, 33, 44, 34.27, "I2C_SDA", 0.25)
+    traces += seg(44, 35.54, 44, 36.81, "I2C_SCL", 0.25)
+
     out += traces
 
     # Ground pour
