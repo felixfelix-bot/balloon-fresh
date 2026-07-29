@@ -385,7 +385,7 @@ debug: ## One-command: build + flash + start TX + capture.
 	@echo "Step 1/4: Building firmware ($(or $(ENV),rp2040-cont-tx))..."
 	@cd $(RP2040_DIR) && pio run -e $(or $(ENV),rp2040-cont-tx)
 	@echo ""
-	@echo "Step 2/4: Flashing RP2040 (auto-BOOTSEL via 1200 baud)..."
+	@echo "Step 2/4: Flashing RP2040..."
 	@UF2=$$(find $(RP2040_DIR)/.pio/build/$(or $(ENV),rp2040-cont-tx) -name firmware.uf2 2>/dev/null | head -1); \
 	if [ -z "$$UF2" ]; then \
 		echo "ERROR: No firmware.uf2 found. Build may have failed."; exit 1; \
@@ -393,53 +393,77 @@ debug: ## One-command: build + flash + start TX + capture.
 	if ! command -v picotool >/dev/null 2>&1; then \
 		echo "ERROR: picotool not found. Install: sudo apt install picotool"; exit 1; \
 	fi; \
-	PORT=$$(ls /dev/ttyACM* 2>/dev/null | while read p; do \
-		udevadm info -q property "$$p" 2>/dev/null | grep -q "ID_MODEL_ID=000a" && echo "$$p" && break; \
-	done | head -1); \
-	if [ -z "$$PORT" ]; then \
-		echo "No RP2040 USB CDC port found (PID 000a). Trying all ACM ports..."; \
-		PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
-	fi; \
-	if [ -z "$$PORT" ]; then \
-		echo "ERROR: No /dev/ttyACM* found. Is the RP2040 plugged in?"; exit 1; \
-	fi; \
-	echo "Triggering BOOTSEL on $$PORT..."; \
-	python3 -c "import serial,time; s=serial.Serial(); s.port='$$PORT'; s.baudrate=1200; s.dtr=False; s.rts=False; \
-		try: s.open(); \
-		except: pass; \
-		try: s.close(); \
-		except: pass; \
-		time.sleep(0.5)" 2>/dev/null; \
-	echo "Waiting for RPI-RP2 drive..."; \
-	OK=""; \
-	for i in $$(seq 1 10); do \
-		if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
-		sleep 1; \
-	done; \
-	if [ -z "$$OK" ]; then \
-		echo "1200 baud failed. Trying stty fallback..."; \
-		stty -F $$PORT 1200 2>/dev/null; sleep 3; \
+	echo "Firmware: $$UF2"; \
+	BOOTSEL_ALREADY=0; \
+	if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then \
+		echo "RP2040 already in BOOTSEL mode (RPI-RP2 disk found). Skipping 1200 baud."; \
+		BOOTSEL_ALREADY=1; \
+	else \
+		echo "Scanning for RP2040 USB CDC port (PID 000a)..."; \
+		PORT=""; \
+		for p in /dev/ttyACM[0-9]; do \
+			[ -e "$$p" ] || continue; \
+			PID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_MODEL_ID=" | cut -d= -f2); \
+			VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+			SERIAL=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_SERIAL_SHORT=" | cut -d= -f2); \
+			echo "  $$p: VID=$$VID PID=$$PID serial=$$SERIAL"; \
+			if [ "$$PID" = "000a" ] && [ "$$VID" = "2e8a" ]; then PORT="$$p"; fi; \
+		done; \
+		if [ -z "$$PORT" ]; then \
+			echo "No RP2040 CDC port. Trying all ACM ports for 1200 baud..."; \
+			for p in /dev/ttyACM[0-9]; do \
+				[ -e "$$p" ] || continue; \
+				VENDOR=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR=" | cut -d= -f2); \
+				if echo "$$VENDOR" | grep -qi "raspberry\|pico\|2e8a"; then PORT="$$p"; fi; \
+			done; \
+		fi; \
+		if [ -z "$$PORT" ]; then \
+			echo "ERROR: No RP2040 found. Not in BOOTSEL, no CDC port."; \
+			echo "Fix: hold white BOOTSEL button, unplug USB, plug back in while holding."; \
+			exit 1; \
+		fi; \
+		echo "Triggering BOOTSEL on $$PORT via aggressive 1200 baud..."; \
+		python3 -c "import serial,time; s=serial.Serial(); s.port='$$PORT'; s.baudrate=1200; s.dtr=False; s.rts=False; \
+			try: s.open(); \
+			except: pass; \
+			try: s.close(); \
+			except: pass; \
+			time.sleep(0.5)" 2>/dev/null; \
+		echo "Waiting for RPI-RP2 drive..."; \
+		OK=""; \
 		for i in $$(seq 1 10); do \
 			if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
 			sleep 1; \
 		done; \
-	fi; \
-	if [ -z "$$OK" ]; then \
-		echo "ERROR: Could not trigger BOOTSEL."; \
-		echo "Hold the white BOOTSEL button, unplug USB, plug back in while holding."; \
-		echo "Then re-run: make debug ENV=$(or $(ENV),rp2040-cont-tx)"; \
-		exit 1; \
+		if [ -z "$$OK" ]; then \
+			echo "1200 baud failed. Trying stty fallback..."; \
+			stty -F $$PORT 1200 2>/dev/null; sleep 3; \
+			for i in $$(seq 1 10); do \
+				if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
+				sleep 1; \
+			done; \
+		fi; \
+		if [ -z "$$OK" ]; then \
+			echo "ERROR: Could not trigger BOOTSEL."; \
+			echo "Hold the white BOOTSEL button, unplug USB, plug back in while holding."; \
+			echo "Then re-run: make debug ENV=$(or $(ENV),rp2040-cont-tx)"; \
+			exit 1; \
+		fi; \
 	fi; \
 	RPIDEV=$$(ls /dev/disk/by-label/RPI-RP2 2>/dev/null | head -1); \
 	RPIBLOCK=$$(readlink -f $$RPIDEV); \
 	echo "RP2040 in BOOTSEL at $$RPIBLOCK"; \
-	FLASHDIR=/tmp/rp2040-flash; \
-	umount $$FLASHDIR 2>/dev/null; \
-	mkdir -p $$FLASHDIR; \
-	sudo mount -o uid=$$(id -u),gid=$$(id -g) $$RPIBLOCK $$FLASHDIR || \
-		sudo mount $$RPIBLOCK $$FLASHDIR; \
-	cp "$$UF2" $$FLASHDIR/ && sync; \
-	umount $$FLASHDIR 2>/dev/null; \
+	echo "Flashing via picotool..."; \
+	picotool load "$$UF2" 2>&1 || { \
+		echo "picotool load failed, trying UF2 copy..."; \
+		FLASHDIR=/tmp/rp2040-flash; \
+		umount $$FLASHDIR 2>/dev/null; \
+		mkdir -p $$FLASHDIR; \
+		sudo mount -o uid=$$(id -u),gid=$$(id -g) $$RPIBLOCK $$FLASHDIR || \
+			sudo mount $$RPIBLOCK $$FLASHDIR; \
+		cp "$$UF2" $$FLASHDIR/ && sync; \
+		umount $$FLASHDIR 2>/dev/null; \
+	}; \
 	echo "Flashed. Waiting for reboot..."; \
 	sleep 3; \
 	picotool reboot 2>/dev/null || true
@@ -447,8 +471,13 @@ debug: ## One-command: build + flash + start TX + capture.
 	@echo "Step 3/4: Waiting for RP2040 serial port + starting TX..."
 	@printf "Waiting for serial port"; \
 	PORT=""; \
-	for i in $$(seq 1 20); do \
-		PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	for i in $$(seq 1 30); do \
+		for p in /dev/ttyACM[0-9]; do \
+			[ -e "$$p" ] || continue; \
+			PID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_MODEL_ID=" | cut -d= -f2); \
+			VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+			if [ "$$PID" = "000a" ] && [ "$$VID" = "2e8a" ]; then PORT="$$p"; break; fi; \
+		done; \
 		if [ -n "$$PORT" ]; then break; fi; \
 		printf "."; sleep 0.5; \
 	done; \
