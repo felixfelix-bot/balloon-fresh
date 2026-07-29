@@ -82,12 +82,25 @@ int main(void) {
     uint16_t slen = nostr_event_serialize(&evt, buf, sizeof(buf));
     assert(slen > 0);
 
+    /* Deserialize back and verify every field matches the original */
     nostr_event_t evt2;
-    memset(&evt2, 0, sizeof(evt2));
-    memcpy(evt2.id, evt.id, 32);
-    memcpy(evt2.pubkey, evt.pubkey, 32);
+    memset(&evt2, 0xFF, sizeof(evt2));  /* poison to catch missing writes */
+    uint16_t dlen = nostr_event_deserialize(&evt2, buf, slen);
+    assert(dlen == slen);
+    assert(memcmp(evt2.id, evt.id, 32) == 0);
+    assert(memcmp(evt2.pubkey, evt.pubkey, 32) == 0);
+    assert(evt2.created_at == evt.created_at);
+    assert(evt2.kind == evt.kind);
+    assert(evt2.content_len == evt.content_len);
+    assert(memcmp(evt2.content, evt.content, evt.content_len) == 0);
+    assert(evt2.num_tags == evt.num_tags);
+    assert(evt2.tags[0].key_len == evt.tags[0].key_len);
+    assert(evt2.tags[0].value_len == evt.tags[0].value_len);
+    assert(memcmp(evt2.tags[0].key, evt.tags[0].key, evt.tags[0].key_len) == 0);
+    assert(memcmp(evt2.tags[0].value, evt.tags[0].value, evt.tags[0].value_len) == 0);
+
     assert(nostr_hash_event_id(&evt) != 0);
-    printf("PASS (%d bytes serialized)\n", slen);
+    printf("PASS (%d bytes roundtripped)\n", slen);
 
     printf("TEST 7: multiple events with dedup... ");
     nostr_store_init(&store);
