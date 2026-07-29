@@ -23,3 +23,4 @@ mesh-stack/flrc-bench-espidf/build_*/
 skidl_REPL.erc
 skidl_REPL.log
 *_sklib.py
+captures/
