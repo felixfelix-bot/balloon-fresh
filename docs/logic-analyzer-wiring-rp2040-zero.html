@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1600, initial-scale=1.0">
+<title>Logic Analyzer Wiring — RP2040 Zero + LR2021 SPI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1600px; height: 1200px;
+    background: #0a0e14;
+    font-family: 'Courier New', 'Consolas', monospace;
+    color: #c8d3e0;
+    overflow: hidden;
+  }
+  .canvas {
+    position: relative;
+    width: 1600px; height: 1200px;
+    background: #0a0e14;
+  }
+  .title {
+    position: absolute;
+    top: 14px; left: 0; width: 100%;
+    text-align: center;
+    font-size: 20px; font-weight: bold;
+    color: #7dcfff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(125,207,255,0.4);
+  }
+  .subtitle {
+    position: absolute;
+    top: 40px; left: 0; width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: #5b6a82;
+  }
+  .device-box {
+    position: absolute;
+    border: 2px solid;
+    border-radius: 6px;
+    background: #11161e;
+  }
+  .device-label {
+    text-align: center;
+    font-size: 14px; font-weight: bold;
+    padding: 8px 0 4px 0;
+    border-bottom: 1px solid #333;
+    letter-spacing: 1px;
+  }
+  .device-sublabel {
+    text-align: center;
+    font-size: 10px;
+    color: #5b6a82;
+    padding: 3px 0 8px 0;
+    border-bottom: 1px solid #222;
+  }
+  .pin-list { list-style: none; padding: 6px 0; }
+  .pin-row {
+    display: flex; align-items: center;
+    padding: 5px 12px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .pin-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .pin-name { flex: 0 0 70px; font-weight: bold; }
+  .pin-gpio { color: #7dcfff; font-size: 11px; flex: 0 0 55px; }
+  .pin-phys { color: #73daca; font-size: 11px; flex: 0 0 40px; }
+  .pin-ch  { color: #ff9e64; font-size: 11px; flex: 0 0 50px; text-align: right; }
+
+  /* Pinout image container */
+  #pinout-container {
+    position: absolute;
+    left: 480px; top: 60px;
+    width: 540px; height: 331px;
+    border: 2px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+  }
+  #pinout-container img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+  }
+  #pinout-label {
+    position: absolute;
+    left: 480px; top: 394px;
+    width: 540px;
+    text-align: center;
+    font-size: 10px;
+    color: #5b6a82;
+  }
+
+  /* LR2021 box */
+  #lr2021 {
+    right: 40px; top: 60px;
+    width: 240px; height: 360px;
+    border-color: #c3e88d;
+  }
+  #lr2021 .device-label { color: #c3e88d; }
+
+  /* Logic Analyzer box */
+  #analyzer {
+    left: 50%; top: 720px;
+    transform: translateX(-50%);
+    width: 600px; height: 340px;
+    border-color: #ff9e64;
+  }
+  #analyzer .device-label { color: #ff9e64; }
+  .ch-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 20px;
+    padding: 8px 16px;
+  }
+  .ch-row {
+    display: flex; align-items: center;
+    font-size: 12px;
+    padding: 3px 0;
+  }
+  .ch-label {
+    flex: 0 0 40px;
+    font-weight: bold;
+    color: #ff9e64;
+  }
+  .ch-signal { flex: 1; color: #c8d3e0; }
+  .ch-pin { flex: 0 0 70px; text-align: right; font-size: 10px; color: #5b6a82; }
+
+  svg.lines {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1600px; height: 1200px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .legend {
+    position: absolute;
+    bottom: 10px; left: 40px;
+    display: flex; gap: 16px;
+    font-size: 10px;
+    color: #5b6a82;
+    z-index: 10;
+  }
+  .legend-item { display: flex; align-items: center; }
+  .legend-swatch {
+    width: 20px; height: 3px; border-radius: 2px; margin-right: 5px;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title">LOGIC ANALYZER WIRING — RP2040 Zero + LR2021 SPI BUS</div>
+  <div class="subtitle">Cellulologic 8-CH 24MHz — channels CH1-CH8 — actual firmware pins</div>
+
+  <!-- RP2040 Zero Pinout Image -->
+  <div id="pinout-container">
+    <img src="rp2040-zero-pinout.png" alt="RP2040 Zero Pinout">
+  </div>
+  <div id="pinout-label">Waveshare RP2040-Zero pinout (mischianti.org) — highlighted pins are used for LR2021 SPI</div>
+
+  <!-- LR2021 Box -->
+  <div id="lr2021" class="device-box">
+    <div class="device-label">LR2021 Module</div>
+    <div class="device-sublabel">NiceRF LoRa2021 — SPI Slave</div>
+    <ul class="pin-list">
+      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">NSS</span><span class="pin-gpio">&larr; GP5</span><span class="pin-phys">pin7</span><span class="pin-ch">CH1</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">&larr; GP2</span><span class="pin-phys">pin4</span><span class="pin-ch">CH2</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">&larr; GP3</span><span class="pin-phys">pin5</span><span class="pin-ch">CH3</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">&larr; GP4</span><span class="pin-phys">pin6</span><span class="pin-ch">CH4</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">&larr; GP6</span><span class="pin-phys">pin9</span><span class="pin-ch">CH5</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9</span><span class="pin-gpio">&larr; GP7</span><span class="pin-phys">pin10</span><span class="pin-ch">CH6</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">NRESET</span><span class="pin-gpio">&larr; GP8</span><span class="pin-phys">pin11</span><span class="pin-ch">&mdash;</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:transparent"></span><span class="pin-name">GND</span><span class="pin-gpio">&larr; GND</span><span class="pin-phys">pin38</span><span class="pin-ch">GND</span></li>
+    </ul>
+  </div>
+
+  <!-- Logic Analyzer Box -->
+  <div id="analyzer" class="device-box">
+    <div class="device-label">CELLULOLOGIC ANALYZER (8-CH 24MHz)</div>
+    <div class="device-sublabel">Channels labeled CH1-CH8 &mdash; connect GND to RP2040 GND</div>
+    <div class="ch-list">
+      <div class="ch-row"><span class="ch-label">CH1</span><span class="ch-signal" style="color:#ff9e64">NSS (CS)</span><span class="ch-pin">GP5/pin7</span></div>
+      <div class="ch-row"><span class="ch-label">CH5</span><span class="ch-signal" style="color:#bb9af7">BUSY</span><span class="ch-pin">GP6/pin9</span></div>
+      <div class="ch-row"><span class="ch-label">CH2</span><span class="ch-signal" style="color:#f7768e">SCK</span><span class="ch-pin">GP2/pin4</span></div>
+      <div class="ch-row"><span class="ch-label">CH6</span><span class="ch-signal" style="color:#e0af68">DIO9/IRQ</span><span class="ch-pin">GP7/pin10</span></div>
+      <div class="ch-row"><span class="ch-label">CH3</span><span class="ch-signal" style="color:#c3e88d">MOSI</span><span class="ch-pin">GP3/pin5</span></div>
+      <div class="ch-row"><span class="ch-label">CH7</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-pin">&mdash;</span></div>
+      <div class="ch-row"><span class="ch-label">CH4</span><span class="ch-signal" style="color:#82aaff">MISO</span><span class="ch-pin">GP4/pin6</span></div>
+      <div class="ch-row"><span class="ch-label">CH8</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-pin">&mdash;</span></div>
+    </div>
+    <div style="padding:6px 16px; font-size:10px; color:#5b6a82; border-top:1px solid #222; margin-top:4px;">
+      <span style="color:#7dcfff;font-weight:bold">Settings:</span>
+      Sample 24MHz (2x SPI) &bull; Trigger CH1 falling edge &bull; Decode SPI CPOL=0 CPHA=0 &bull; Watch inter-byte gaps, NSS hold time
+    </div>
+  </div>
+
+  <!-- SVG overlay for signal lines and pin markers -->
+  <svg class="lines" viewBox="0 0 1600 1200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="1.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- Pin markers on pinout image (right side, GP2-GP8 area) -->
+    <!-- Pinout image: x=480..1020, y=60..391. Board right side pins ~x=700 -->
+    <!-- Right side pins top-to-bottom: GP0(pin1),GP1(pin2),GP2(pin4),GP3(pin5),GP4(pin6),GP5(pin7),GP6(pin9),GP7(pin10),GP8(pin11) -->
+    <!-- Approximate Y positions for right-side pins in the pinout image -->
+    <!-- The image is 540x331, board occupies most of it. Right pins at x~680 -->
+
+    <!-- Highlight circles on used pins -->
+    <!-- GP2 (pin4) - SCK - 3rd right pin -->
+    <circle cx="700" cy="130" r="8" fill="none" stroke="#f7768e" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="134" fill="#f7768e" font-family="monospace" font-size="11" font-weight="bold">GP2/SCK</text>
+    <!-- GP3 (pin5) - MOSI - 4th right pin -->
+    <circle cx="700" cy="155" r="8" fill="none" stroke="#c3e88d" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="159" fill="#c3e88d" font-family="monospace" font-size="11" font-weight="bold">GP3/MOSI</text>
+    <!-- GP4 (pin6) - MISO - 5th right pin -->
+    <circle cx="700" cy="180" r="8" fill="none" stroke="#82aaff" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="184" fill="#82aaff" font-family="monospace" font-size="11" font-weight="bold">GP4/MISO</text>
+    <!-- GP5 (pin7) - CS/NSS - 6th right pin -->
+    <circle cx="700" cy="205" r="8" fill="none" stroke="#ff9e64" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="209" fill="#ff9e64" font-family="monospace" font-size="11" font-weight="bold">GP5/NSS</text>
+    <!-- GP6 (pin9) - BUSY - 7th right pin -->
+    <circle cx="700" cy="230" r="8" fill="none" stroke="#bb9af7" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="234" fill="#bb9af7" font-family="monospace" font-size="11" font-weight="bold">GP6/BUSY</text>
+    <!-- GP7 (pin10) - IRQ - 8th right pin -->
+    <circle cx="700" cy="255" r="8" fill="none" stroke="#e0af68" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="259" fill="#e0af68" font-family="monospace" font-size="11" font-weight="bold">GP7/IRQ</text>
+    <!-- GP8 (pin11) - RESET - 9th right pin -->
+    <circle cx="700" cy="280" r="8" fill="none" stroke="#73daca" stroke-width="2.5" opacity="0.9"/>
+    <text x="720" y="284" fill="#73daca" font-family="monospace" font-size="11" font-weight="bold">GP8/RST</text>
+
+    <!-- GND pin marker (left side, pin38) -->
+    <circle cx="560" cy="100" r="8" fill="none" stroke="#82aaff" stroke-width="2.5" opacity="0.7" stroke-dasharray="4,2"/>
+    <text x="470" y="104" fill="#82aaff" font-family="monospace" font-size="11" font-weight="bold" opacity="0.8">GND/pin38</text>
+
+    <!-- Signal lines from pinout area to LR2021 box -->
+    <!-- LR2021 box starts at x=1320 (right:40px, width=240px) -->
+    <!-- NSS: from GP5 area (700,205) to LR2021 NSS (1320,100) -->
+    <path d="M708,205 L1100,205 L1100,100 L1320,100" stroke="#ff9e64" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- SCK: from GP2 (700,130) to LR2021 SCK (1320,130) -->
+    <path d="M708,130 L1320,130" stroke="#f7768e" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- MOSI: from GP3 (700,155) to LR2021 MOSI (1320,160) -->
+    <path d="M708,155 L1100,155 L1100,160 L1320,160" stroke="#c3e88d" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- MISO: from GP4 (700,180) to LR2021 MISO (1320,190) -->
+    <path d="M708,180 L1100,180 L1100,190 L1320,190" stroke="#82aaff" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- BUSY: from GP6 (700,230) to LR2021 BUSY (1320,220) -->
+    <path d="M708,230 L1100,230 L1100,220 L1320,220" stroke="#bb9af7" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- DIO9: from GP7 (700,255) to LR2021 DIO9 (1320,250) -->
+    <path d="M708,255 L1100,255 L1100,250 L1320,250" stroke="#e0af68" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- NRESET: from GP8 (700,280) to LR2021 NRESET (1320,280) -->
+    <path d="M708,280 L1320,280" stroke="#73daca" stroke-width="2" fill="none" opacity="0.85"/>
+    <!-- GND: from pin38 (560,100) to LR2021 GND (1320,310) -->
+    <path d="M560,100 L560,50 L1320,50 L1320,310" stroke="#82aaff" stroke-width="1.5" fill="none" opacity="0.6" stroke-dasharray="8,4"/>
+
+    <!-- Tap points on signal lines (where logic analyzer probes connect) -->
+    <!-- Taps at x~900, midway between pinout and LR2021 -->
+    <circle cx="900" cy="130" r="5" fill="#f7768e" stroke="#0a0e14" stroke-width="1.5"/>
+    <circle cx="900" cy="155" r="5" fill="#c3e88d" stroke="#0a0e14" stroke-width="1.5"/>
+    <circle cx="900" cy="180" r="5" fill="#82aaff" stroke="#0a0e14" stroke-width="1.5"/>
+    <circle cx="900" cy="205" r="5" fill="#ff9e64" stroke="#0a0e14" stroke-width="1.5"/>
+    <circle cx="900" cy="230" r="5" fill="#bb9af7" stroke="#0a0e14" stroke-width="1.5"/>
+    <circle cx="900" cy="255" r="5" fill="#e0af68" stroke="#0a0e14" stroke-width="1.5"/>
+
+    <!-- Probe lines from tap points down to logic analyzer channels -->
+    <!-- Analyzer box: x=500..1100 (centered), y=720..1060 -->
+    <!-- Channel positions (top edge of analyzer box): -->
+    <!-- CH1: x=540, CH2: x=590, CH3: x=640, CH4: x=690 -->
+    <!-- CH5: x=840, CH6: x=890, CH7: x=940, CH8: x=990 -->
+
+    <!-- CH1: NSS tap(900,205) -> analyzer CH1(540,720) -->
+    <path d="M900,205 L900,450 L540,450 L540,720" stroke="#ff9e64" stroke-width="1.5" fill="none" opacity="0.8" stroke-dasharray="0"/>
+    <!-- CH2: SCK tap(900,130) -> analyzer CH2(590,720) -->
+    <path d="M900,130 L920,130 L920,460 L590,460 L590,720" stroke="#f7768e" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- CH3: MOSI tap(900,155) -> analyzer CH3(640,720) -->
+    <path d="M900,155 L940,155 L940,470 L640,470 L640,720" stroke="#c3e88d" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- CH4: MISO tap(900,180) -> analyzer CH4(690,720) -->
+    <path d="M900,180 L960,180 L960,480 L690,480 L690,720" stroke="#82aaff" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- CH5: BUSY tap(900,230) -> analyzer CH5(840,720) -->
+    <path d="M900,230 L900,490 L840,490 L840,720" stroke="#bb9af7" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- CH6: DIO9 tap(900,255) -> analyzer CH6(890,720) -->
+    <path d="M900,255 L880,255 L880,500 L890,500 L890,720" stroke="#e0af68" stroke-width="1.5" fill="none" opacity="0.8"/>
+
+    <!-- GND probe: from RP2040 GND to analyzer GND -->
+    <path d="M560,100 L560,530 L790,530 L790,720" stroke="#82aaff" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="8,4"/>
+
+    <!-- Probe labels -->
+    <text x="530" y="650" fill="#ff9e64" font-family="monospace" font-size="10" transform="rotate(-90,530,650)">CH1: NSS</text>
+    <text x="580" y="660" fill="#f7768e" font-family="monospace" font-size="10" transform="rotate(-90,580,660)">CH2: SCK</text>
+    <text x="630" y="670" fill="#c3e88d" font-family="monospace" font-size="10" transform="rotate(-90,630,670)">CH3: MOSI</text>
+    <text x="680" y="680" fill="#82aaff" font-family="monospace" font-size="10" transform="rotate(-90,680,680)">CH4: MISO</text>
+    <text x="830" y="650" fill="#bb9af7" font-family="monospace" font-size="10" transform="rotate(-90,830,650)">CH5: BUSY</text>
+    <text x="880" y="660" fill="#e0af68" font-family="monospace" font-size="10" transform="rotate(-90,880,660)">CH6: DIO9</text>
+
+    <!-- Bus annotation -->
+    <path d="M710,105 L710,90 L1310,90 L1310,105" stroke="#5b6a82" stroke-width="1" fill="none" opacity="0.4"/>
+    <text x="1010" y="85" text-anchor="middle" fill="#5b6a82" font-family="monospace" font-size="10">SPI BUS + CONTROL (7 signals + GND)</text>
+  </svg>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#ff9e64"></div>NSS/CS</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f7768e"></div>SCK</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#c3e88d"></div>MOSI</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#82aaff"></div>MISO</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#bb9af7"></div>BUSY</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#e0af68"></div>DIO9/IRQ</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#73daca"></div>RESET</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#82aaff;opacity:0.5"></div>GND</div>
+  </div>
+
+</div>
+</body>
+</html>
