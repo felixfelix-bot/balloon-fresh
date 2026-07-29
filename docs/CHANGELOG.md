@@ -26,4 +26,5 @@ See `docs/adr/ADR-017-version-tagging-policy.md` for the full policy.
 
 | Version | Date | RP2040 (kbps) | ESP32 (kbps) | Δ RP2040 | Δ ESP32 | Changes | Test Conditions | No Regressions |
 |---------|------|---------------|--------------|----------|---------|---------|-----------------|----------------|
+| v0.2.0-p0.2 | 2026-07-29 | — | 1782 | — | +944 kbps (+113%) | **P0.2**: Remove redundant `CLR_TX_FIFO` + conditional `CLR_ERRORS` from ESP32 RAW_TX hot loop. TX FIFO auto-cleared on TX_DONE; error register cleared only when ERROR/CMD_ERROR IRQ bits are set (timeout recovery path). | Payload: 255 bytes, SPI: 40 MHz, FLRC 2.4 GHz BT0.5 | Build OK; 1000/1000 TX done, 0 timeouts, throughput 1781.7 kbps on 3 consecutive bursts |
 | v0.1.0-baseline | 2026-07-29 | 1377 | 838 | — | — | Starting point before optimization. Baseline FLRC throughput on LR2021 with RadioLib v7.6.0. | Payload: 64 bytes, SPI: 8 MHz, FLRC BW=800 kHz CR=4/8 | Baseline — no prior version to compare |
