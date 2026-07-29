@@ -3,7 +3,7 @@
 Writes S-expression text directly — no pcbnew module needed.
 Outputs valid KiCad 9 PCB files with components, routing, and ground pour."""
 
-import os, textwrap
+import os, textwrap, uuid
 
 OUTDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -433,9 +433,9 @@ def gen_v1():
 
     traces = "\n  ;; === Power traces ===\n"
     # 3V3 from LDO output to ESP32 pin 1
-    traces += seg(5, 22.95, 5, 20)  # LDO out to junction
-    traces += seg(5, 20, 9.46, 20)  # to ESP32 area
-    traces += seg(9.46, 20, 9.46, 3.11)  # up to ESP32 VCC pad
+    traces += seg(5, 22.95, 5, 20, "3V3")  # LDO out to junction
+    traces += seg(5, 20, 9.46, 20, "3V3")  # to ESP32 area
+    traces += seg(9.46, 20, 9.46, 3.11, "3V3")  # up to ESP32 VCC pad
     # 3V3 to RP2040
     traces += seg(5, 20, 38, 20, "3V3", 0.5, "F.Cu")
     traces += seg(38, 20, 38, 3.11, "3V3", 0.5, "F.Cu")
@@ -724,9 +724,69 @@ def gen_v2():
     return filepath
 
 
+def clean_pcb(filepath):
+    """Post-process generated .kicad_pcb: strip comments, fix format for KiCad 9."""
+    import re, uuid as uuidmod
+    with open(filepath) as f:
+        content = f.read()
+
+    # 1. Remove all ; comment lines (KiCad 9 chokes on these)
+    lines = [l for l in content.split('\n') if not l.strip().startswith(';')]
+    content = '\n'.join(lines)
+
+    # 2. Fix version + generator_version
+    content = content.replace('(version 20250114)', '(version 20241229)')
+    if '(generator_version "9.0")' not in content:
+        content = content.replace('(generator "pcbnew")\n', '(generator "pcbnew")\n  (generator_version "9.0")\n')
+
+    # 3. Fix setup section: remove pcbplotparams, add mandatory fields
+    content = re.sub(
+        r'\(setup\n.*?\n  \)',
+        '(setup\n    (pad_to_mask_clearance 0)\n    (allow_soldermask_bridges_in_footprints no)\n    (tenting front back)\n    (aux_axis_origin 0 0)\n    (grid_origin 0 0)\n  )',
+        content, flags=re.DOTALL
+    )
+
+    # 4. Fix UUIDs: replace string-IDs with real UUID v4
+    content = re.sub(
+        r'\(uuid "([^"]{36})"\)',
+        lambda m: f'(uuid "{m.group(1)}")',  # leave real UUIDs alone
+        content
+    )
+    content = re.sub(
+        r'\(uuid "(seg-\d+|via-\d+|edge-\d+|txt-\d+|fp-[a-zA-Z0-9_{}-]+|gnd-pour|pad-[a-zA-Z0-9_-]+|outline-[a-zA-Z0-9_-]+|fab-[a-zA-Z0-9_-]+|crtyd-[a-zA-Z0-9_-]+|fp-ref|fp-val|usb-label|ufl-label)"\)',
+        lambda m: f'(uuid "{uuidmod.uuid4()}")',
+        content
+    )
+
+    # 5. Fix segment net format: (net N "name") -> (net N) inside segments/vias
+    content = re.sub(
+        r'(\(segment .*?\(net \d+) "[^"]*"\)',
+        r'\1)',
+        content
+    )
+    content = re.sub(
+        r'(\(via .*?\(net \d+) "[^"]*"\)',
+        r'\1)',
+        content
+    )
+
+    # 6. Fix zone layers -> layer
+    content = content.replace('(zone (net', '(zone (net')  # no-op safety
+    content = re.sub(
+        r'(\(zone \(net \d+\) \(net_name "[^"]*"\) )\(layers "B\.Cu"\)',
+        r'\1(layer "B.Cu")',
+        content
+    )
+
+    with open(filepath, 'w') as f:
+        f.write(content)
+
+
 if __name__ == "__main__":
     v1 = gen_v1()
     v2 = gen_v2()
-    print("\nDone. Both PCB files generated.")
+    clean_pcb(v1)
+    clean_pcb(v2)
+    print("\nDone. Both PCB files generated + cleaned for KiCad 9.")
     print(f"V1: {v1}")
     print(f"V2: {v2}")
