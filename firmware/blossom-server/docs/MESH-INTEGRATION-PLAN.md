@@ -300,12 +300,10 @@ Week 2:
 
 ---
 
-## Decision Points for Felix
+## Decisions (Felix approved 2026-07-29)
 
-1. **Where does mesh+blossom run?** Blossom-server firmware (add mesh to it) OR tracker firmware (add blossom datagram to it)? Tracker already has mesh scaffolding. Blossom already has storage. Recommendation: **blossom-server firmware** since it already works and has storage.
-
-2. **Datagram protocol format:** Compact binary (1-byte type + SHA + payload) vs JSON-over-mesh? Recommendation: **compact binary** — saves ~40% bandwidth on small payloads.
-
-3. **TDMA vs simple round-robin for MVP?** TDMA is built and tested in host tests but never validated on real hardware. Recommendation: **simple round-robin first**, enable TDMA later. Fewer variables for first hardware test.
-
-4. **Partition layout:** Expand factory to 2MB (recommend) or try to fit mesh+blossom in 1MB (risky, likely impossible)?
+1. **Platform: TRACKER FIRMWARE + blossom datagram adapter.** NOT blossom-server.
+   Tracker already has all mesh wiring scaffolding. Build blossom datagram as a new component.
+2. **Protocol: Compact binary.** 1-byte type + 32-byte SHA + payload. NOT JSON.
+3. **Scheduling: Simple round-robin for MVP.** TDMA code preserved on roadmap for later.
+4. **Partition layout:** TBD — check tracker firmware current partition size.
