@@ -1,6 +1,6 @@
 # Pressure Test Plan
 
-Detailed, actionable plan for electronic leak-rate testing of balloons using the BMP280 + ESP32-C3 rig.
+Detailed, actionable plan for electronic leak-rate testing of balloons using the BMP280 or MS5611 + ESP32-C3 rig.
 
 ---
 
@@ -15,8 +15,10 @@ Quantify the gas leak rate of prepared balloons (DecoGlee 18" foil and Yokohama 
 ### 2.1 Components
 
 - ESP32-C3 (XIAO ESP32C3 or ESP32-C3_Mini_V1)
-- BMP280 breakout board
+- **BMP280** breakout (ground leak testing) OR **MS5611** breakout (flight sensor, full altitude range)
 - Pump + sealed balloon connection
+
+Note: firmware auto-detects sensor at boot. MS5611 covers 10-1200 mbar (full balloon altitude to ~30km), BMP280 covers 300-1100 mbar (ground testing only).
 
 ### 2.2 Signal Path
 
@@ -24,22 +26,22 @@ Quantify the gas leak rate of prepared balloons (DecoGlee 18" foil and Yokohama 
 [Pump] → [Balloon] → [BMP280] → [ESP32-C3] → USB serial → host PC (CSV capture)
 ```
 
-### 2.3 BMP280 ↔ ESP32-C3 Wiring
+### 2.3 Sensor ↔ ESP32-C3 Wiring (BMP280 or MS5611)
 
-| BMP280 pin | ESP32-C3 pin | Notes |
+| Sensor pin | ESP32-C3 pin | Notes |
 |------------|--------------|-------|
 | SDA | GPIO8 | I2C data, internal pull-up |
 | SCL | GPIO9 | I2C clock, internal pull-up |
 | VCC | 3.3 V | do NOT use 5 V |
 | GND | GND | |
 
-I2C address auto-detected (0x76 or 0x77).
+I2C address auto-detected. Firmware probes for BMP280 (0x76/0x77, chip ID 0x58) first, then MS5611 (0x76, PROM read).
 
 ---
 
 ## 3. Firmware Description
 
-The firmware already exists at **`tools/balloon_pressure_test/`** — an ESP-IDF project that logs BMP280 readings over USB serial.
+The firmware already exists at **`tools/balloon_pressure_test/`** — an ESP-IDF project that logs BMP280 or MS5611 readings over USB serial (auto-detects at boot).
 
 - **Build/flash:**
   ```bash
