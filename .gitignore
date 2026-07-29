@@ -15,3 +15,8 @@ sdkconfig.old
 opentollgate_security_scan.sh
 firmware/esp32-c3-flrc/build/
 firmware/esp32-c3-flrc/sdkconfig.old
+
+# ESP-IDF build output directories (build_*)
+mesh-stack/flrc-bench-espidf/build_*/
+*.bak
+
