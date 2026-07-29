@@ -176,7 +176,7 @@
       <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">&larr; GP4</span><span class="pin-phys">pin6</span><span class="pin-ch">CH4</span></li>
       <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">&larr; GP6</span><span class="pin-phys">pin9</span><span class="pin-ch">CH5</span></li>
       <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9</span><span class="pin-gpio">&larr; GP7</span><span class="pin-phys">pin10</span><span class="pin-ch">CH6</span></li>
-      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">NRESET</span><span class="pin-gpio">&larr; GP8</span><span class="pin-phys">pin11</span><span class="pin-ch">&mdash;</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">NRESET</span><span class="pin-gpio">&larr; GP8</span><span class="pin-phys">pin11</span><span class="pin-ch">CH7</span></li>
       <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:transparent"></span><span class="pin-name">GND</span><span class="pin-gpio">&larr; GND</span><span class="pin-phys">pin38</span><span class="pin-ch">GND</span></li>
     </ul>
   </div>
@@ -191,13 +191,13 @@
       <div class="ch-row"><span class="ch-label">CH2</span><span class="ch-signal" style="color:#f7768e">SCK</span><span class="ch-pin">GP2/pin4</span></div>
       <div class="ch-row"><span class="ch-label">CH6</span><span class="ch-signal" style="color:#e0af68">DIO9/IRQ</span><span class="ch-pin">GP7/pin10</span></div>
       <div class="ch-row"><span class="ch-label">CH3</span><span class="ch-signal" style="color:#c3e88d">MOSI</span><span class="ch-pin">GP3/pin5</span></div>
-      <div class="ch-row"><span class="ch-label">CH7</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-pin">&mdash;</span></div>
+      <div class="ch-row"><span class="ch-label">CH7</span><span class="ch-signal" style="color:#73daca">NRESET</span><span class="ch-pin">GP8/pin11</span></div>
       <div class="ch-row"><span class="ch-label">CH4</span><span class="ch-signal" style="color:#82aaff">MISO</span><span class="ch-pin">GP4/pin6</span></div>
       <div class="ch-row"><span class="ch-label">CH8</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-pin">&mdash;</span></div>
     </div>
     <div style="padding:6px 16px; font-size:10px; color:#5b6a82; border-top:1px solid #222; margin-top:4px;">
       <span style="color:#7dcfff;font-weight:bold">Settings:</span>
-      Sample 24MHz (2x SPI) &bull; Trigger CH1 falling edge &bull; Decode SPI CPOL=0 CPHA=0 &bull; Watch inter-byte gaps, NSS hold time
+      Sample 24MHz (2x SPI) &bull; Trigger CH1 falling edge &bull; Decode SPI CPOL=0 CPHA=0 &bull; Watch inter-byte gaps, NSS hold time, RESET glitches
     </div>
   </div>
 
@@ -289,6 +289,10 @@
     <path d="M900,230 L900,490 L840,490 L840,720" stroke="#bb9af7" stroke-width="1.5" fill="none" opacity="0.8"/>
     <!-- CH6: DIO9 tap(900,255) -> analyzer CH6(890,720) -->
     <path d="M900,255 L880,255 L880,500 L890,500 L890,720" stroke="#e0af68" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- CH7: NRESET tap on NRESET line at (1000,280) -> analyzer CH7(940,720) -->
+    <path d="M1000,280 L1000,510 L940,510 L940,720" stroke="#73daca" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- Tap point for NRESET -->
+    <circle cx="1000" cy="280" r="5" fill="#73daca" stroke="#0a0e14" stroke-width="1.5"/>
 
     <!-- GND probe: from RP2040 GND to analyzer GND -->
     <path d="M560,100 L560,530 L790,530 L790,720" stroke="#82aaff" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="8,4"/>
@@ -300,6 +304,7 @@
     <text x="680" y="680" fill="#82aaff" font-family="monospace" font-size="10" transform="rotate(-90,680,680)">CH4: MISO</text>
     <text x="830" y="650" fill="#bb9af7" font-family="monospace" font-size="10" transform="rotate(-90,830,650)">CH5: BUSY</text>
     <text x="880" y="660" fill="#e0af68" font-family="monospace" font-size="10" transform="rotate(-90,880,660)">CH6: DIO9</text>
+    <text x="930" y="670" fill="#73daca" font-family="monospace" font-size="10" transform="rotate(-90,930,670)">CH7: RST</text>
 
     <!-- Bus annotation -->
     <path d="M710,105 L710,90 L1310,90 L1310,105" stroke="#5b6a82" stroke-width="1" fill="none" opacity="0.4"/>
