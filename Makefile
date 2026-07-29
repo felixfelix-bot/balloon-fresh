@@ -292,6 +292,40 @@ list-captures: ## List capture files in captures/ with timestamps and sizes.
 		echo "Total: $$COUNT capture(s), $$TOTAL_SIZE"; \
 	fi
 
+## ─── debug (one-command workflow) ─────────────────────────────────────
+## Install deps, build firmware, flash RP2040, capture SPI signals.
+## Usage: make debug [ENV=rp2040-raw-tx] [DURATION=1] [OUTPUT=captures/debug.sr]
+## Prerequisites: RP2040 in BOOTSEL mode (hold button, plug USB), logic analyzer connected.
+debug: ## One-command: build + flash + capture. make debug [ENV=rp2040-raw-tx] [DURATION=1]
+	@echo "=== Balloon Speed Tests — One-Command Debug Workflow ==="
+	@echo ""
+	@echo "Step 1/3: Building firmware ($(ENV))..."
+	@cd $(RP2040_DIR) && pio run -e $(or $(ENV),rp2040-raw-tx)
+	@echo ""
+	@echo "Step 2/3: Flashing RP2040 (hold BOOTSEL button, plug USB)..."
+	@UF2=$$(find $(RP2040_DIR)/.pio/build/$(or $(ENV),rp2040-raw-tx) -name firmware.uf2 2>/dev/null | head -1); \
+	if [ -z "$$UF2" ]; then \
+		echo "ERROR: No firmware.uf2 found. Build may have failed."; exit 1; \
+	fi; \
+	if ! command -v picotool >/dev/null 2>&1; then \
+		echo "ERROR: picotool not found. Install: cd /tmp && git clone --depth 1 https://github.com/raspberrypi/picotool.git && git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git && cd picotool && mkdir build && cd build && cmake .. -DPICO_SDK_PATH=/tmp/pico-sdk && make -j\$$(nproc) && sudo make install"; exit 1; \
+	fi; \
+	picotool load $$UF2 && picotool reboot || \
+		echo "ERROR: RP2040 not in BOOTSEL mode. Hold BOOTSEL button, plug in USB, then retry."
+	@echo ""
+	@echo "Step 3/3: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@mkdir -p $(CAPTURES_DIR)
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
+	echo "Capturing to $$OUTPUT ..."; \
+	sigrok-cli --driver fx2lafw --config samplerate=24mhz --samples $(or $(DURATION),1)000000 \
+		--triggers ch1=f -o $$OUTPUT 2>&1 || \
+		{ echo "ERROR: sigrok-cli failed. Check logic analyzer is plugged in."; \
+		echo "Try: sigrok-cli --list"; exit 1; }
+	@echo ""
+	@echo "=== Done! ==="
+	@echo "Capture saved to: $(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
+	@echo "Analyze with: make analyze FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
+
 ## ─── setup ────────────────────────────────────────────────────────────
 ## Run the ansible playbook to install all dependencies.
 setup: ## Install all deps via ansible playbook.
@@ -313,6 +347,7 @@ help: ## Show this help message.
 	@echo "  make setup             Install all deps via ansible playbook"
 	@echo ""
 	@echo "Firmware:"
+	@echo "  make debug [ENV=rp2040-raw-tx] [DURATION=1]  One-command: build+flash+capture"
 	@echo "  make build [ENV=rp2040-raw-tx]   Build firmware (default: rp2040-raw-tx)"
 	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
 	@echo ""
