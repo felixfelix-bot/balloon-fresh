@@ -431,28 +431,121 @@ def gen_v1():
         seg_id += 1
         return s
 
-    traces = "\n  ;; === Power traces ===\n"
-    # 3V3 from LDO output to ESP32 pin 1
-    traces += seg(5, 22.95, 5, 20, "3V3")  # LDO out to junction
-    traces += seg(5, 20, 9.46, 20, "3V3")  # to ESP32 area
-    traces += seg(9.46, 20, 9.46, 3.11, "3V3")  # up to ESP32 VCC pad
-    # 3V3 to RP2040
-    traces += seg(5, 20, 38, 20, "3V3", 0.5, "F.Cu")
-    traces += seg(38, 20, 38, 3.11, "3V3", 0.5, "F.Cu")
-    # 3V3 to LR2021 pin 1
-    traces += seg(15.1, 30.16, 15.1, 28, "3V3", 0.5, "F.Cu")
-    traces += seg(15.1, 28, 25, 28, "3V3", 0.5, "F.Cu")
-    traces += seg(25, 28, 25, 25, "3V3", 0.5, "F.Cu")  # to LR2021 center
+    traces = "\n"
+    # === POWER TRACES ===
+    traces += seg(5, 22.95, 5, 20, "3V3", 0.5)
+    traces += seg(5, 20, 9.46, 20, "3V3", 0.5)
+    traces += seg(9.46, 20, 9.46, 3.11, "3V3", 0.5)
+    traces += seg(5, 20, 38, 20, "3V3", 0.5)
+    traces += seg(38, 20, 38, 3.11, "3V3", 0.5)
+    traces += seg(15.1, 30.16, 15.1, 28, "3V3", 0.5)
+    traces += seg(15.1, 28, 25, 28, "3V3", 0.5)
+    traces += seg(25, 28, 25, 25, "3V3", 0.5)
+    # 3V3 to GPS + MS5611
+    traces += seg(5, 20, 5, 29.19, "3V3", 0.5)
+    traces += seg(5, 29.19, 6, 29.19, "3V3", 0.5)
+    traces += seg(44, 29.19, 44, 33, "3V3", 0.5)
 
-    # SPI bus: RP2040 to LR2021
-    traces += "\n  ;; === SPI traces (RP2040 → LR2021) ===\n"
-    # SCK: RP2040 pin3 area → LR2021 pin5
-    traces += seg(38, 3.11, 35, 3.11, "SPI0_SCK")
-    traces += seg(35, 3.11, 35, 25, "SPI0_SCK")
-    traces += seg(35, 25, 25.095, 25, "SPI0_SCK")  # LR2021 pin5 at (25-9.905, 25+0) = (15.095, 25)
+    # VCAP: solar → BAT54 → LDO → supercap
+    traces += seg(3, 35.73, 3, 33, "SOLAR_IN", 0.5)
+    traces += seg(3, 33, 2.5, 18, "SOLAR_IN", 0.5)
+    traces += seg(2.5, 18, 4, 18, "SOLAR_IN", 0.5)  # wait, BAT54 at (4,18)
+    traces += seg(5.5, 18, 8, 18, "VCAP", 0.5)  # BAT54 cathode → VCAP bus
+    traces += seg(8, 18, 8, 37, "VCAP", 0.5)  # to supercap
+    traces += seg(5.95, 22, 5.95, 20, "VCAP", 0.5)  # LDO input
 
-    # Ground vias (stitching F.Cu to B.Cu ground pour)
-    traces += "\n  ;; === Ground vias ===\n"
+    # === SPI BUS (RP2040 → LR2021) ===
+    # SCK: pin3 (38,6.11) → LR2021 pin5 (15.095,25)
+    traces += seg(38, 6.11, 36, 6.11, "SPI0_SCK")
+    traces += seg(36, 6.11, 36, 25, "SPI0_SCK")
+    traces += seg(36, 25, 15.095, 25, "SPI0_SCK")
+    # MOSI: pin4 (38,7.61) → LR2021 pin4 (15.095,26.29)
+    traces += seg(38, 7.61, 36.5, 7.61, "SPI0_MOSI")
+    traces += seg(36.5, 7.61, 36.5, 26.29, "SPI0_MOSI")
+    traces += seg(36.5, 26.29, 15.095, 26.29, "SPI0_MOSI")
+    # MISO: pin5 (38,9.11) → LR2021 pin3 (15.095,27.58)
+    traces += seg(38, 9.11, 37, 9.11, "SPI0_MISO")
+    traces += seg(37, 9.11, 37, 27.58, "SPI0_MISO")
+    traces += seg(37, 27.58, 15.095, 27.58, "SPI0_MISO")
+    # NSS: pin6 (38,10.61) → LR2021 pin6 (15.095,23.71)
+    traces += seg(38, 10.61, 35.5, 10.61, "SPI0_NSS")
+    traces += seg(35.5, 10.61, 35.5, 23.71, "SPI0_NSS")
+    traces += seg(35.5, 23.71, 15.095, 23.71, "SPI0_NSS")
+
+    # === CONTROL SIGNALS ===
+    # BUSY: pin7 (38,12.11) → LR2021 pin7 (15.095,22.42) — route on B.Cu
+    traces += via(33, 12.11, "LR2021_BUSY")
+    traces += seg(38, 12.11, 33, 12.11, "LR2021_BUSY")
+    traces += seg(33, 12.11, 33, 22.42, "LR2021_BUSY", 0.25, "B.Cu")
+    traces += via(33, 22.42, "LR2021_BUSY")
+    traces += seg(33, 22.42, 15.095, 22.42, "LR2021_BUSY")
+    # IRQ (DIO9): pin8 (38,13.61) → LR2021 pin15 (34.905,26.29)
+    traces += seg(38, 13.61, 34.905, 13.61, "LR2021_DIO9")
+    traces += seg(34.905, 13.61, 34.905, 26.29, "LR2021_DIO9")
+    # RST: pin9 (38,15.11) → LR2021 pin14 (34.905,25)
+    traces += seg(38, 15.11, 34.905, 15.11, "LR2021_RST")
+    traces += seg(34.905, 15.11, 34.905, 25, "LR2021_RST")
+
+    # === UART ===
+    # ESP_TX → RP2040: ESP pin3 (9.46,8.19) → RP pin12 (38,19.61)
+    traces += seg(9.46, 8.19, 8, 8.19, "ESP_TX_RP2040_RX")
+    traces += via(8, 8.19, "ESP_TX_RP2040_RX")
+    traces += seg(8, 8.19, 8, 19.61, "ESP_TX_RP2040_RX", 0.25, "B.Cu")
+    traces += via(8, 19.61, "ESP_TX_RP2040_RX")
+    traces += seg(8, 19.61, 38, 19.61, "ESP_TX_RP2040_RX")
+    # RP_TX → ESP: RP pin11 (38,18.11) → ESP pin4 (9.46,10.73)
+    traces += seg(38, 18.11, 33, 18.11, "RP2040_TX_ESP_RX")
+    traces += via(33, 18.11, "RP2040_TX_ESP_RX")
+    traces += seg(33, 18.11, 33, 10.73, "RP2040_TX_ESP_RX", 0.25, "B.Cu")
+    traces += seg(33, 10.73, 9.46, 10.73, "RP2040_TX_ESP_RX", 0.25, "B.Cu")
+    traces += via(9.46, 10.73, "RP2040_TX_ESP_RX")
+    # GPS_TX → ESP: GPS pin3 (6,34.27) → ESP pin5 (9.46,13.27)
+    traces += seg(6, 34.27, 4, 34.27, "GPS_TX_ESP_RX")
+    traces += via(4, 34.27, "GPS_TX_ESP_RX")
+    traces += seg(4, 34.27, 4, 13.27, "GPS_TX_ESP_RX", 0.25, "B.Cu")
+    traces += via(4, 13.27, "GPS_TX_ESP_RX")
+    traces += seg(4, 13.27, 9.46, 13.27, "GPS_TX_ESP_RX")
+
+    # === I2C (ESP32 → MS5611) ===
+    # SDA: ESP pin7 (9.46,18.35) → MS5611 pin3 (44,33)
+    traces += seg(9.46, 18.35, 7, 18.35, "I2C_SDA")
+    traces += via(7, 18.35, "I2C_SDA")
+    traces += seg(7, 18.35, 7, 33, "I2C_SDA", 0.25, "B.Cu")
+    traces += seg(7, 33, 44, 33, "I2C_SDA", 0.25, "B.Cu")
+    traces += via(44, 33, "I2C_SDA")
+    # SCL: ESP pin8 (9.46,20.89) → MS5611 pin4 (44,35.54)
+    traces += seg(9.46, 20.89, 6, 20.89, "I2C_SCL")
+    traces += via(6, 20.89, "I2C_SCL")
+    traces += seg(6, 20.89, 6, 35.54, "I2C_SCL", 0.25, "B.Cu")
+    traces += seg(6, 35.54, 44, 35.54, "I2C_SCL", 0.25, "B.Cu")
+    traces += via(44, 35.54, "I2C_SCL")
+
+    # === STATUS LED ===
+    # ESP pin9 (14.54,20.89) → R5 (18.5,4) → LED (16.8,4)
+    traces += seg(14.54, 20.89, 14.54, 4, "STATUS_LED")
+    traces += seg(14.54, 4, 18, 4, "STATUS_LED")
+    traces += seg(19, 4, 16.8, 4, "LED_ANODE")
+
+    # === VOLTAGE DIVIDER ===
+    # ESP pin6 (9.46,15.81) → R3/R4 junction (3.5,15)
+    traces += seg(9.46, 15.81, 3.5, 15.81, "VDIV_MID")
+    traces += seg(3.5, 15.81, 3.5, 15, "VDIV_MID")
+    # VCAP to R3
+    traces += seg(2.5, 15, 2.5, 16, "VCAP", 0.25)
+    traces += seg(2.5, 16, 8, 16, "VCAP", 0.25)
+
+    # === RF ANTENNA ===
+    # RF_SUB_868: LR2021 pin9 (15.095,19.84) → antenna (48,20)
+    traces += seg(15.095, 19.84, 15.095, 18, "RF_SUB_868", 0.8)
+    traces += seg(15.095, 18, 48, 18, "RF_SUB_868", 0.8)
+    traces += seg(48, 18, 48, 20, "RF_SUB_868", 0.8)
+    # RF_2G4_2400: LR2021 pin10 (34.905,19.84) → antenna (48,25)
+    traces += seg(34.905, 19.84, 34.905, 17, "RF_2G4_2400", 0.8)
+    traces += seg(34.905, 17, 47, 17, "RF_2G4_2400", 0.8)
+    traces += seg(47, 17, 47, 25, "RF_2G4_2400", 0.8)
+    traces += seg(47, 25, 48, 25, "RF_2G4_2400", 0.8)
+
+    # === GROUND STITCHING VIAS ===
     for gx, gy in [(10, 5), (35, 5), (20, 30), (40, 35), (5, 35), (15, 20), (30, 15)]:
         traces += via(gx, gy, "GND")
 
