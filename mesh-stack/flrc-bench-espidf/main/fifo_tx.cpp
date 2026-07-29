@@ -111,6 +111,7 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "NVS initialized");
 
     hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
+    hal->init();
     hal->setCsPin(LR2021_NSS);
     hal->setBusyPin(LR2021_BUSY);
     mod = new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);
