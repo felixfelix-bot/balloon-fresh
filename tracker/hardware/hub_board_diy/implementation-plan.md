@@ -6,7 +6,7 @@ This plan covers all steps from current state (working firmware, verified pin ma
 
 ## Prerequisites (Already Done)
 
-- [x] Firmware compiles successfully with RadioLib v7.6.0 + LR2021
+- [x] Firmware verified with raw LR2021 SPI driver (RadioLib deprecated — ADR-020)
 - [x] ESP32-C3_Mini_V1 dev board pinout verified (see `hardware/footprints/esp32c3-mini-v1.json`)
 - [x] NiceRF LoRa2021 footprint data captured (see `hardware/footprints/nicerf-lora2021.json`)
 - [x] GPIO pin mapping verified: all 9 firmware GPIOs accessible on dev board header
