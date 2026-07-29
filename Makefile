@@ -292,6 +292,36 @@ list-captures: ## List capture files in captures/ with timestamps and sizes.
 		echo "Total: $$COUNT capture(s), $$TOTAL_SIZE"; \
 	fi
 
+## ─── install-framework ────────────────────────────────────────────────
+## Install the earlephilhower Arduino core for RP2040 (needed for all builds).
+## Run once if builds fail with "Arduino.h: No such file or directory".
+install-framework: ## Install earlephilhower Arduino-Pico core into PlatformIO.
+	@echo "Installing earlephilhower Arduino-Pico framework..."
+	@mkdir -p ~/./.platformio/packages
+	@if [ -d ~/./.platformio/packages/framework-arduinopico ]; then \
+		echo "framework-arduinopico already exists, skipping. Use 'make reinstall-framework' to force."; \
+	else \
+		echo "Cloning arduino-pico (earlephilhower core)..."; \
+		git clone --recursive --depth 1 https://github.com/earlephilhower/arduino-pico.git ~/./.platformio/packages/framework-arduinopico; \
+	fi
+	@if [ -d ~/./.platformio/packages/tool-picotool-rp2040-earlephilhower ]; then \
+		echo "tool-picotool-rp2040-earlephilhower already exists, skipping."; \
+	else \
+		echo "Cloning earlephilhower picotool..."; \
+		git clone --depth 1 https://github.com/earlephilhower/picotool.git ~/./.platformio/packages/tool-picotool-rp2040-earlephilhower; \
+	fi
+	@echo ""
+	@echo "Done. Now rebuild:"
+	@echo "  rm -rf $(RP2040_DIR)/.pio"
+	@echo "  make build ENV=rp2040-raw-tx"
+
+## Force reinstall the earlephilhower framework (deletes existing, re-clones).
+reinstall-framework: ## Force reinstall earlephilhower Arduino-Pico core.
+	@echo "Removing existing earlephilhower packages..."
+	@rm -rf ~/./.platformio/packages/framework-arduinopico
+	@rm -rf ~/./.platformio/packages/tool-picotool-rp2040-earlephilhower
+	@$(MAKE) install-framework
+
 ## ─── debug (one-command workflow) ─────────────────────────────────────
 ## Install deps, build firmware, flash RP2040, capture SPI signals.
 ## Usage: make debug [ENV=rp2040-raw-tx] [DURATION=1] [OUTPUT=captures/debug.sr]
@@ -345,6 +375,8 @@ help: ## Show this help message.
 	@echo ""
 	@echo "Setup:"
 	@echo "  make setup             Install all deps via ansible playbook"
+	@echo "  make install-framework Install earlephilhower Arduino core (fix Arduino.h errors)"
+	@echo "  make reinstall-framework  Force reinstall earlephilhower core"
 	@echo ""
 	@echo "Firmware:"
 	@echo "  make debug [ENV=rp2040-raw-tx] [DURATION=1]  One-command: build+flash+capture"
