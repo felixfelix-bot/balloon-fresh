@@ -62,6 +62,7 @@
         name:
           - pulseview
           - libsigrokdecode-dev
+          - sigrok-firmware-fx2lafw
         state: present
       ignore_errors: true
       register: pulseview_install

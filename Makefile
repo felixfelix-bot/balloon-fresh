@@ -295,7 +295,8 @@ list-captures: ## List capture files in captures/ with timestamps and sizes.
 ## ─── install-framework ────────────────────────────────────────────────
 ## Install the earlephilhower Arduino core for RP2040 (needed for all builds).
 ## Run once if builds fail with "Arduino.h: No such file or directory".
-install-framework: ## Install earlephilhower Arduino-Pico core + Max Gerhardt platform fork.
+## Also installs Max Gerhardt platform fork + sigrok firmware.
+install-framework: ## Install earlephilhower core + platform fork + sigrok firmware.
 	@echo "Installing Max Gerhardt's platform-raspberrypi fork (earlephilhower support)..."
 	@pio platform install "https://github.com/maxgerhardt/platform-raspberrypi.git" 2>/dev/null || \
 		echo "Platform already installed or installing..."
@@ -314,6 +315,10 @@ install-framework: ## Install earlephilhower Arduino-Pico core + Max Gerhardt pl
 		echo "Cloning earlephilhower picotool..."; \
 		git clone --depth 1 https://github.com/earlephilhower/picotool.git ~/./.platformio/packages/tool-picotool-rp2040-earlephilhower; \
 	fi
+	@echo ""
+	@echo "Installing sigrok fx2lafw firmware (logic analyzer driver)..."
+	@sudo apt install -y sigrok-firmware-fx2lafw 2>/dev/null || \
+		echo "sigrok-firmware-fx2lafw not found in apt — may need manual install"
 	@echo ""
 	@echo "Done. Now rebuild:"
 	@echo "  rm -rf $(RP2040_DIR)/.pio"
