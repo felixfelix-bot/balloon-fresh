@@ -299,7 +299,11 @@ setup: ## Install all deps via ansible playbook.
 		echo "ERROR: ansible-playbook not found. Install with: pip install ansible"; \
 		exit 1; \
 	fi
-	ansible-playbook ansible/setup-debug-env.yml -K
+	@echo "Installing deps via ansible (will ask for sudo password)..."
+	@ansible-playbook ansible/setup-debug-env.yml -K --connection=local || \
+		echo "" ; \
+		echo "If ansible sudo prompt timed out, run directly:" ; \
+		echo "  ansible-playbook ansible/setup-debug-env.yml --ask-become-pass --connection=local"
 
 ## ─── help ──────────────────────────────────────────────────────────────
 help: ## Show this help message.
