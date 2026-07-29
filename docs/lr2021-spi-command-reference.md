@@ -129,7 +129,7 @@ The SPI opcodes were right all along — the missing init steps were the problem
 4. set_pa_hf()                    → SEL_PA + SET_PA_CONFIG for HF ← WRONG IN OURS
 5. set_tx_params(0, Ramp16u)      → SET_TX_PARAMS: power + ramp
 6. set_packet_type(Flrc)          → SET_PACKET_TYPE: 0x05
-7. set_flrc_modulation(Br2600, None, Bt1p0) → SET_FLRC_MOD_PARAMS
+7. set_flrc_modulation(Br2600, None, Bt0p5) → SET_FLRC_MOD_PARAMS  // 0x25, unified with RP2040
 8. set_flrc_syncword(1, 0xCD05CAFE, true) → SET_FLRC_SYNCWORD
 9. set_flrc_packet(params)        → SET_FLRC_PACKET_PARAMS
 10. set_fallback(Fs)              → SET_RX_TX_FALLBACK: 0x03 (FS mode)
@@ -144,8 +144,8 @@ The SPI opcodes were right all along — the missing init steps were the problem
 | Frequency | 900 MHz | 2440 MHz | Different band |
 | RX Path | LFPath (for 900M) | NONE SET | **MUST set HFPath** |
 | PA | PA LF (for 900M) | Hardcoded | **MUST use PA HF** |
-| Coding Rate | None (0x00) | CR_1_0 (0x02) | Different — both valid |
-| Pulse Shape | Bt1p0 (0x07) | Bt0_5 (0x05) | Different — both valid |
+| Coding Rate | None (0x00) | CR_None (0x20, byte 0x02) | Different — both valid |
+| Pulse Shape | Bt0p5 (0x05) | Bt0_5 (0x05) | ✅ Unified with RP2040 |
 | CRC | Crc24 | Disabled | Different — both valid |
 | Fallback | Fs (0x03) | STBY_RC (0x01) | Minor — Fs better for throughput |
 | DIO pin | DIO7 | DIO9 | Both valid if wiring matches |

@@ -55,18 +55,21 @@ void resetRP2040() {
 String inputBuf = "";
 
 void setup() {
+    // CRITICAL: Drive BOOTSEL + RESET HIGH BEFORE anything else.
+    // During ESP32 boot (~300ms), GPIO8 floats. RP2040 has an internal
+    // pull-up on BOOTSEL, but we minimize the floating window by setting
+    // OUTPUT HIGH as the very first action in setup().
+    pinMode(PIN_BOOTSEL, OUTPUT);
+    digitalWrite(PIN_BOOTSEL, HIGH);
+    pinMode(PIN_RESET, OUTPUT);
+    digitalWrite(PIN_RESET, HIGH);
+
     Serial.begin(115200);
     delay(300);
 
     // UART1: GPIO3=RX (from RP2040 GP12 TX), GPIO2=TX (to RP2040 GP13 RX)
     Serial1.begin(UART_BAUD, SERIAL_8N1, GPIO_NUM_3, GPIO_NUM_2);
     delay(100);
-
-    // Control pins — idle HIGH
-    pinMode(PIN_RESET, OUTPUT);
-    pinMode(PIN_BOOTSEL, OUTPUT);
-    digitalWrite(PIN_RESET, HIGH);
-    digitalWrite(PIN_BOOTSEL, HIGH);
 
     Serial.println();
     Serial.println("=== ESP32 UART Bridge v7 (BOOTSEL) ===");
@@ -75,6 +78,8 @@ void setup() {
 }
 
 unsigned long lastHeartbeat = 0;
+unsigned long lastRP2040Data = 0;  // Watchdog: last time RP2040 sent UART data
+bool watchdogEnabled = true;
 
 void loop() {
     // RP2040 UART → USB Serial
@@ -84,7 +89,23 @@ void loop() {
         int n = Serial1.readBytes(buf, min(avail, (int)sizeof(buf)));
         if (n > 0) {
             Serial.write(buf, n);
+            lastRP2040Data = millis();  // Feed watchdog
         }
+    }
+
+    // RP2040 watchdog: if no UART data for 30s, auto-reset
+    // This recovers from BOOTSEL mode, brownout, or firmware crash
+    if (watchdogEnabled && lastRP2040Data > 0 &&
+        (millis() - lastRP2040Data > 30000)) {
+        Serial.println("[WATCHDOG] RP2040 silent 30s — auto-reset");
+        // Ensure BOOTSEL is HIGH so RP2040 boots into application
+        digitalWrite(PIN_BOOTSEL, HIGH);
+        delay(10);
+        digitalWrite(PIN_RESET, LOW);
+        delay(100);
+        digitalWrite(PIN_RESET, HIGH);
+        lastRP2040Data = millis();  // Reset timer
+        delay(500);  // Wait for RP2040 to boot
     }
 
     // USB → RP2040 + command processing

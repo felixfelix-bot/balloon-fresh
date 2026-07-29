@@ -1,0 +1,62 @@
+{
+  "module": "NiceRF LoRa2021F33-2G4 (F33)",
+  "datasheet_version": "V1.1",
+  "dimensions": {
+    "width_mm": 39.0,
+    "height_mm": 21.0,
+    "thickness_mm": 2.5
+  },
+  "pin_type": "castellated",
+  "pins_per_side": 9,
+  "total_pins": 18,
+  "pin_pitch_mm": 2.0,
+  "pin_offset_from_edge_mm": 1.5,
+  "pin1_marker": "none visible — orientation by pad position",
+  "note": "F33 module has built-in 2W PA (+33 dBm at 433 MHz) and industrial-grade TCXO 0.5ppm. Completely different pinout from bare LoRa2021. 9 pins per side, left side pins 1-9 top-to-bottom, right side pins 10-18 top-to-bottom. Module package 39x21mm per LCSC. Power: 3.0-5.5V, use 5V for full 2W output.",
+  "top_view_left_side_top_to_bottom": [
+    {"pin": 1, "function": "VCC", "type": "power", "note": "3.0-5.5V, use 5V for full 2W output"},
+    {"pin": 2, "function": "GND", "type": "GND"},
+    {"pin": 3, "function": "GND", "type": "GND"},
+    {"pin": 4, "function": "GND", "type": "GND"},
+    {"pin": 5, "function": "CE", "type": "input", "note": "Internal LDO enable. Drive high or float for operation. Pull LOW for sleep mode. 0-3.3V logic"},
+    {"pin": 6, "function": "GND", "type": "GND"},
+    {"pin": 7, "function": "GND", "type": "GND"},
+    {"pin": 8, "function": "GND", "type": "GND"},
+    {"pin": 9, "function": "ANT", "type": "RF", "note": "Sub-GHz antenna (433/868/915 MHz), 50 Ohm"}
+  ],
+  "top_view_right_side_top_to_bottom": [
+    {"pin": 10, "function": "ANT-2G4", "type": "RF", "note": "2.4 GHz antenna, 50 Ohm"},
+    {"pin": 11, "function": "GND", "type": "GND"},
+    {"pin": 12, "function": "SCK", "type": "input", "note": "SPI clock, 0-3.3V"},
+    {"pin": 13, "function": "NSS", "type": "input", "note": "SPI chip select, active low, 0-3.3V"},
+    {"pin": 14, "function": "BUSY", "type": "output", "note": "Status indicator, 0-3.3V"},
+    {"pin": 15, "function": "MOSI", "type": "input", "note": "SPI data input (MCU -> module), 0-3.3V"},
+    {"pin": 16, "function": "MISO", "type": "output", "note": "SPI data output (module -> MCU), 0-3.3V"},
+    {"pin": 17, "function": "RESET", "type": "input", "note": "Reset trigger, 0-3.3V"},
+    {"pin": 18, "function": "IRQ", "type": "output", "note": "Multipurpose digital interface, 0-3.3V"}
+  ],
+  "electrical": {
+    "tx_433mhz_33dbm_5v_ma": 1200,
+    "tx_868_915mhz_30dbm_5v_ma": 800,
+    "tx_2_4ghz_30dbm_5v_ma": 900,
+    "rx_subghz_ma": 8,
+    "rx_2_4ghz_bypass_on_ma": 9,
+    "rx_2_4ghz_bypass_off_ma": 42,
+    "sleep_ua": 20,
+    "output_power_433mhz_dbm": 33,
+    "output_power_868_915mhz_dbm": 30,
+    "output_power_2_4ghz_dbm": 30,
+    "sensitivity_subghz_dbm": -143,
+    "sensitivity_2_4ghz_dbm": -136
+  },
+  "key_differences_from_bare_lora2021": {
+    "pinout": "Completely different. F33: VCC, 7xGND, CE, ANT, ANT-2G4, GND, SCK, NSS, BUSY, MOSI, MISO, RESET, IRQ. Bare LoRa2021: VCC, GND, MISO, MOSI, SCK, NSS, BUSY, GND, ANT, 2.4G, GND, GND, VTCXO, RST, DIO9, DIO8, DIO7, GND",
+    "new_pins": "CE (Pin 5) — LDO enable/sleep control. No equivalent on bare LoRa2021",
+    "removed_pins": "VTCXO (was Pin 13 on bare), DIO7 (was Pin 17), DIO8 (was Pin 16), DIO9 (was Pin 15, replaced by IRQ on Pin 18)",
+    "dimensions": "39x21mm vs 19.81x14.98mm — F33 is ~2x larger",
+    "power": "3.0-5.5V (5V for full 2W) vs 1.8-3.6V (3.3V) on bare LoRa2021",
+    "built_in_pa": "F33 has built-in 2W PA — no SKY66112 FEM needed, no TX_EN GPIO needed",
+    "tcxo": "F33 has industrial-grade TCXO 0.5ppm (internal). Bare LoRa2021 had VTCXO pin"
+  },
+  "layout_top_view_ascii": "          ┌──────────────────────────────────────┐\n   VCC  1 │                                      │ 10 ANT-2G4\n   GND  2 │                                      │ 11 GND\n   GND  3 │                                      │ 12 SCK\n   GND  4 │       LoRa2021F33-2G4                 │ 13 NSS\n    CE  5 │       39x21mm                        │ 14 BUSY\n   GND  6 │       Castellated                    │ 15 MOSI\n   GND  7 │       18-pin                         │ 16 MISO\n   GND  8 │                                      │ 17 RESET\n   ANT  9 │                                      │ 18 IRQ\n          └──────────────────────────────────────┘\n          (Left: pins 1-9 top to bottom)  (Right: pins 10-18 top to bottom)"
+}

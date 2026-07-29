@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1600, initial-scale=1.0">
+<title>Logic Analyzer Wiring Diagram — RP2040 + LR2021 SPI Bus</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1600px; height: 1200px;
+    background: #0a0e14;
+    font-family: 'Courier New', 'Consolas', monospace;
+    color: #c8d3e0;
+    overflow: hidden;
+  }
+  .canvas {
+    position: relative;
+    width: 1600px; height: 1200px;
+    background: #0a0e14;
+  }
+  /* Title */
+  .title {
+    position: absolute;
+    top: 18px; left: 0; width: 100%;
+    text-align: center;
+    font-size: 22px; font-weight: bold;
+    color: #7dcfff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(125,207,255,0.4);
+  }
+  .subtitle {
+    position: absolute;
+    top: 48px; left: 0; width: 100%;
+    text-align: center;
+    font-size: 13px;
+    color: #5b6a82;
+    letter-spacing: 1px;
+  }
+
+  /* Device boxes */
+  .device-box {
+    position: absolute;
+    border: 2px solid;
+    border-radius: 6px;
+    padding: 0;
+    background: #11161e;
+  }
+  .device-label {
+    text-align: center;
+    font-size: 16px; font-weight: bold;
+    padding: 10px 0 6px 0;
+    border-bottom: 1px solid #333;
+    letter-spacing: 1px;
+  }
+  .device-sublabel {
+    text-align: center;
+    font-size: 11px;
+    color: #5b6a82;
+    padding: 4px 0 10px 0;
+    border-bottom: 1px solid #222;
+  }
+  .pin-list { list-style: none; padding: 8px 0; }
+  .pin-row {
+    display: flex; align-items: center;
+    padding: 6px 14px;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .pin-row .pin-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .pin-row .pin-name { flex: 0 0 90px; font-weight: bold; }
+  .pin-row .pin-gpio { color: #7dcfff; font-size: 12px; flex: 0 0 70px; }
+  .pin-row .pin-ch  { color: #ff9e64; font-size: 12px; flex: 0 0 60px; text-align: right; }
+
+  /* RP2040 box */
+  #rp2040 {
+    left: 60px; top: 90px;
+    width: 320px; height: 560px;
+    border-color: #7dcfff;
+  }
+  #rp2040 .device-label { color: #7dcfff; }
+  /* LR2021 box */
+  #lr2021 {
+    right: 60px; top: 90px;
+    width: 300px; height: 560px;
+    border-color: #c3e88d;
+  }
+  #lr2021 .device-label { color: #c3e88d; }
+
+  /* Logic Analyzer box */
+  #analyzer {
+    left: 50%; top: 790px;
+    transform: translateX(-50%);
+    width: 680px; height: 360px;
+    border-color: #ff9e64;
+  }
+  #analyzer .device-label { color: #ff9e64; }
+  .ch-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 30px;
+    padding: 10px 20px;
+  }
+  .ch-row {
+    display: flex; align-items: center;
+    font-size: 13px;
+    padding: 4px 0;
+  }
+  .ch-row .ch-label {
+    flex: 0 0 50px;
+    font-weight: bold;
+    color: #ff9e64;
+  }
+  .ch-row .ch-signal {
+    flex: 1;
+    color: #c8d3e0;
+  }
+  .ch-row .ch-status {
+    flex: 0 0 80px;
+    text-align: right;
+    font-size: 11px;
+    color: #5b6a82;
+  }
+
+  /* SVG overlay for signal lines */
+  svg.lines {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1600px; height: 1200px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Signal color legend */
+  .legend {
+    position: absolute;
+    bottom: 14px; left: 60px;
+    display: flex; gap: 20px;
+    font-size: 11px;
+    color: #5b6a82;
+    z-index: 10;
+  }
+  .legend-item { display: flex; align-items: center; }
+  .legend-swatch {
+    width: 24px; height: 3px; border-radius: 2px; margin-right: 6px;
+  }
+
+  /* GND indicator */
+  .gnd-indicator {
+    position: absolute;
+    font-size: 12px;
+    color: #82aaff;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title">LOGIC ANALYZER WIRING — RP2040 &harr; LR2021 SPI BUS</div>
+  <div class="subtitle">8-channel 24 MHz logic analyzer — probe SPI signals to debug per-byte vs batch/DMA transfer</div>
+
+  <!-- RP2040 Box -->
+  <div id="rp2040" class="device-box">
+    <div class="device-label">RP2040 (Pi Pico)</div>
+    <div class="device-sublabel">SPI0 — Master</div>
+    <ul class="pin-list">
+      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">CS / NSS</span><span class="pin-gpio">GP17</span><span class="pin-ch">CH1</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">GP18</span><span class="pin-ch">CH2</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">GP19</span><span class="pin-ch">CH3</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">GP16</span><span class="pin-ch">CH4</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">GP20</span><span class="pin-ch">CH5</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9/IRQ</span><span class="pin-gpio">GP21</span><span class="pin-ch">CH6</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">RESET</span><span class="pin-gpio">GP22</span><span class="pin-ch">—</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:transparent"></span><span class="pin-name">GND</span><span class="pin-gpio">GND</span><span class="pin-ch">GND</span></li>
+    </ul>
+  </div>
+
+  <!-- LR2021 Box -->
+  <div id="lr2021" class="device-box">
+    <div class="device-label">LR2021 Module</div>
+    <div class="device-sublabel">NiceRF LoRa2021 — SPI Slave</div>
+    <ul class="pin-list">
+      <li class="pin-row"><span class="pin-dot" style="border-color:#ff9e64;background:#ff9e64"></span><span class="pin-name">NSS</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH1</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#f7768e;background:#f7768e"></span><span class="pin-name">SCK</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH2</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#c3e88d;background:#c3e88d"></span><span class="pin-name">MOSI</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH3</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:#82aaff"></span><span class="pin-name">MISO</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH4</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#bb9af7;background:#bb9af7"></span><span class="pin-name">BUSY</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH5</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#e0af68;background:#e0af68"></span><span class="pin-name">DIO9</span><span class="pin-gpio">&larr;</span><span class="pin-ch">CH6</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#73daca;background:#73daca"></span><span class="pin-name">NRESET</span><span class="pin-gpio">&larr;</span><span class="pin-ch">&mdash;</span></li>
+      <li class="pin-row"><span class="pin-dot" style="border-color:#82aaff;background:transparent"></span><span class="pin-name">GND</span><span class="pin-gpio">&larr;</span><span class="pin-ch">GND</span></li>
+    </ul>
+  </div>
+
+  <!-- Logic Analyzer Box -->
+  <div id="analyzer" class="device-box">
+    <div class="device-label">LOGIC ANALYZER (8-CH 24MHz)</div>
+    <div class="device-sublabel">Cellulologic &mdash; channels labeled CH1-CH8</div>
+    <div class="ch-list">
+      <div class="ch-row"><span class="ch-label">CH1</span><span class="ch-signal" style="color:#ff9e64">NSS (CS)</span><span class="ch-status">tap GP17</span></div>
+      <div class="ch-row"><span class="ch-label">CH5</span><span class="ch-signal" style="color:#bb9af7">BUSY</span><span class="ch-status">tap GP20</span></div>
+      <div class="ch-row"><span class="ch-label">CH2</span><span class="ch-signal" style="color:#f7768e">SCK</span><span class="ch-status">tap GP18</span></div>
+      <div class="ch-row"><span class="ch-label">CH6</span><span class="ch-signal" style="color:#e0af68">DIO9 / IRQ</span><span class="ch-status">tap GP21</span></div>
+      <div class="ch-row"><span class="ch-label">CH3</span><span class="ch-signal" style="color:#c3e88d">MOSI</span><span class="ch-status">tap GP19</span></div>
+      <div class="ch-row"><span class="ch-label">CH7</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-status">&mdash;</span></div>
+      <div class="ch-row"><span class="ch-label">CH4</span><span class="ch-signal" style="color:#82aaff">MISO</span><span class="ch-status">tap GP16</span></div>
+      <div class="ch-row"><span class="ch-label">CH8</span><span class="ch-signal" style="color:#5b6a82">unused</span><span class="ch-status">&mdash;</span></div>
+    </div>
+    <div style="padding:6px 20px; font-size:11px; color:#5b6a82; border-top:1px solid #222; margin-top:4px;">
+      GND &rarr; connect to RP2040 GND &amp; LR2021 GND (common ground required)
+    </div>
+  </div>
+
+  <!-- SVG Signal Lines -->
+  <svg class="lines" viewBox="0 0 1600 1200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Arrowhead marker -->
+      <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+        <polygon points="0,0 8,4 0,8" fill="#555" opacity="0.7"/>
+      </marker>
+      <!-- Tap point marker -->
+      <marker id="tap" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+        <circle cx="5" cy="5" r="3" fill="#ff9e64" stroke="#ff9e64" stroke-width="1" opacity="0.8"/>
+      </marker>
+      <!-- Glow filter -->
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="1.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!--
+      RP2040 box: x=60..380, pins start at y~185, spacing ~30px
+      Pin Y positions (center of each pin row, approx):
+        CS/NSS:  185
+        SCK:     215
+        MOSI:    245
+        MISO:    275
+        BUSY:   305
+        DIO9:   335
+        RESET:  365
+        GND:    395
+
+      LR2021 box: x=1220..1520, same pin Y positions
+
+      Analyzer box: x=460..1140 (centered, 680 wide, top=790)
+      Analyzer channel tap points on top edge:
+        CH0: x=510  CH4: x=810
+        CH1: x=560  CH5: x=860
+        CH2: x=610  CH6: x=910
+        CH3: x=660  CH7: x=960
+      Analyzer GND: x=1010, y=790
+    -->
+
+    <!-- ============ Horizontal signal lines: RP2040 -> LR2021 ============ -->
+    <!-- CS/NSS (orange) GP17 -> NSS -->
+    <line x1="380" y1="185" x2="1220" y2="185" stroke="#ff9e64" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="185" x2="1220" y2="185" stroke="#ff9e64" stroke-width="1" opacity="1"/>
+    <!-- SCK (red) GP18 -> SCK -->
+    <line x1="380" y1="215" x2="1220" y2="215" stroke="#f7768e" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="215" x2="1220" y2="215" stroke="#f7768e" stroke-width="1" opacity="1"/>
+    <!-- MOSI (green) GP19 -> MOSI -->
+    <line x1="380" y1="245" x2="1220" y2="245" stroke="#c3e88d" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="245" x2="1220" y2="245" stroke="#c3e88d" stroke-width="1" opacity="1"/>
+    <!-- MISO (blue) GP16 -> MISO -->
+    <line x1="380" y1="275" x2="1220" y2="275" stroke="#82aaff" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="275" x2="1220" y2="275" stroke="#82aaff" stroke-width="1" opacity="1"/>
+    <!-- BUSY (purple) GP20 -> BUSY -->
+    <line x1="380" y1="305" x2="1220" y2="305" stroke="#bb9af7" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="305" x2="1220" y2="305" stroke="#bb9af7" stroke-width="1" opacity="1"/>
+    <!-- DIO9/IRQ (yellow) GP21 -> DIO9 -->
+    <line x1="380" y1="335" x2="1220" y2="335" stroke="#e0af68" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="335" x2="1220" y2="335" stroke="#e0af68" stroke-width="1" opacity="1"/>
+    <!-- NRESET (cyan) GP22 -> NRESET -->
+    <line x1="380" y1="365" x2="1220" y2="365" stroke="#73daca" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
+    <line x1="380" y1="365" x2="1220" y2="365" stroke="#73daca" stroke-width="1" opacity="1"/>
+    <!-- GND (blue, dashed) -->
+    <line x1="380" y1="395" x2="1220" y2="395" stroke="#82aaff" stroke-width="2" stroke-dasharray="8,4" opacity="0.7"/>
+
+    <!-- ============ Tap points (small circles on signal lines) ============ -->
+    <!-- Each tap is at the midpoint where probe goes down to analyzer -->
+    <!-- Taps at x=500 (left side probes) and x=1100 (right side probes) -->
+    <!-- Actually, let's place taps at various x to spread probes -->
+
+    <!-- CS/NSS tap at x=500 -->
+    <circle cx="500" cy="185" r="5" fill="#ff9e64" stroke="#0a0e14" stroke-width="1.5"/>
+    <!-- SCK tap at x=550 -->
+    <circle cx="550" cy="215" r="5" fill="#f7768e" stroke="#0a0e14" stroke-width="1.5"/>
+    <!-- MOSI tap at x=600 -->
+    <circle cx="600" cy="245" r="5" fill="#c3e88d" stroke="#0a0e14" stroke-width="1.5"/>
+    <!-- MISO tap at x=650 -->
+    <circle cx="650" cy="275" r="5" fill="#82aaff" stroke="#0a0e14" stroke-width="1.5"/>
+    <!-- BUSY tap at x=700 -->
+    <circle cx="700" cy="305" r="5" fill="#bb9af7" stroke="#0a0e14" stroke-width="1.5"/>
+    <!-- DIO9 tap at x=750 -->
+    <circle cx="750" cy="335" r="5" fill="#e0af68" stroke="#0a0e14" stroke-width="1.5"/>
+
+    <!-- ============ Probe lines: tap points down to analyzer channels ============ -->
+    <!-- CS/NSS: tap(500,185) -> CH0(510,790) -->
+    <path d="M500,185 L500,760 L510,790" stroke="#ff9e64" stroke-width="1.8" fill="none" opacity="0.85" stroke-dasharray="0"/>
+    <!-- SCK: tap(550,215) -> CH1(560,790) -->
+    <path d="M550,215 L550,770 L560,790" stroke="#f7768e" stroke-width="1.8" fill="none" opacity="0.85"/>
+    <!-- MOSI: tap(600,245) -> CH2(610,790) -->
+    <path d="M600,245 L600,775 L610,790" stroke="#c3e88d" stroke-width="1.8" fill="none" opacity="0.85"/>
+    <!-- MISO: tap(650,275) -> CH3(660,790) -->
+    <path d="M650,275 L650,780 L660,790" stroke="#82aaff" stroke-width="1.8" fill="none" opacity="0.85"/>
+    <!-- BUSY: tap(700,305) -> CH4(810,790) — needs to route right -->
+    <path d="M700,305 L700,750 L810,790" stroke="#bb9af7" stroke-width="1.8" fill="none" opacity="0.85"/>
+    <!-- DIO9: tap(750,335) -> CH5(860,790) -->
+    <path d="M750,335 L750,740 L860,790" stroke="#e0af68" stroke-width="1.8" fill="none" opacity="0.85"/>
+
+    <!-- GND connection: from RP2040 GND(380,395) down to analyzer GND(1010,790) -->
+    <path d="M340,395 L340,760 L1010,790" stroke="#82aaff" stroke-width="2" fill="none" opacity="0.6" stroke-dasharray="8,4"/>
+    <!-- GND from LR2021 to same bus -->
+    <path d="M1260,395 L1260,760 L1010,790" stroke="#82aaff" stroke-width="2" fill="none" opacity="0.6" stroke-dasharray="8,4"/>
+
+    <!-- ============ Signal labels on horizontal lines ============ -->
+    <text x="800" y="178" text-anchor="middle" fill="#ff9e64" font-family="'Courier New',monospace" font-size="12" font-weight="bold">NSS (CS) — GP17</text>
+    <text x="800" y="208" text-anchor="middle" fill="#f7768e" font-family="'Courier New',monospace" font-size="12" font-weight="bold">SCK — GP18</text>
+    <text x="800" y="238" text-anchor="middle" fill="#c3e88d" font-family="'Courier New',monospace" font-size="12" font-weight="bold">MOSI — GP19</text>
+    <text x="800" y="268" text-anchor="middle" fill="#82aaff" font-family="'Courier New',monospace" font-size="12" font-weight="bold">MISO — GP16</text>
+    <text x="800" y="298" text-anchor="middle" fill="#bb9af7" font-family="'Courier New',monospace" font-size="12" font-weight="bold">BUSY — GP20</text>
+    <text x="800" y="328" text-anchor="middle" fill="#e0af68" font-family="'Courier New',monospace" font-size="12" font-weight="bold">DIO9 / IRQ — GP21</text>
+    <text x="800" y="358" text-anchor="middle" fill="#73daca" font-family="'Courier New',monospace" font-size="12" font-weight="bold">NRESET — GP22</text>
+    <text x="800" y="388" text-anchor="middle" fill="#82aaff" font-family="'Courier New',monospace" font-size="12" font-weight="bold" opacity="0.7">GND (common)</text>
+
+    <!-- ============ Probe labels ============ -->
+    <text x="480" y="560" fill="#ff9e64" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,480,560)">CH1: NSS</text>
+    <text x="530" y="580" fill="#f7768e" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,530,580)">CH2: SCK</text>
+    <text x="580" y="600" fill="#c3e88d" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,580,600)">CH3: MOSI</text>
+    <text x="630" y="620" fill="#82aaff" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,630,620)">CH4: MISO</text>
+    <text x="680" y="600" fill="#bb9af7" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,680,600)">CH5: BUSY</text>
+    <text x="730" y="580" fill="#e0af68" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,730,580)">CH6: DIO9</text>
+
+    <!-- Tap point labels -->
+    <text x="490" y="172" fill="#ff9e64" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
+    <text x="540" y="202" fill="#f7768e" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
+    <text x="590" y="232" fill="#c3e88d" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
+    <text x="640" y="262" fill="#82aaff" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
+    <text x="690" y="292" fill="#bb9af7" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
+    <text x="740" y="322" fill="#e0af68" font-family="'Courier New',monospace" font-size="9" text-anchor="middle">tap</text>
+
+    <!-- GND label on probe -->
+    <text x="330" y="580" fill="#82aaff" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,330,580)" opacity="0.7">GND</text>
+    <text x="1250" y="580" fill="#82aaff" font-family="'Courier New',monospace" font-size="11" transform="rotate(-90,1250,580)" opacity="0.7">GND</text>
+
+    <!-- ============ Bus bracket / annotation ============ -->
+    <!-- Bracket showing SPI bus group -->
+    <path d="M395,160 L395,145 L1205,145 L1205,160" stroke="#5b6a82" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <text x="800" y="140" text-anchor="middle" fill="#5b6a82" font-family="'Courier New',monospace" font-size="11">SPI BUS + CONTROL (7 signals + GND)</text>
+
+    <!-- ============ Notes box ============ -->
+    <rect x="1130" y="420" width="440" height="170" rx="6" fill="#11161e" stroke="#333" stroke-width="1" opacity="0.95"/>
+    <text x="1150" y="445" fill="#7dcfff" font-family="'Courier New',monospace" font-size="12" font-weight="bold">DEBUGGING NOTES</text>
+    <text x="1150" y="470" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Sample rate: 24 MHz (2x SPI clk)</text>
+    <text x="1150" y="490" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Trigger: CH1 falling edge (NSS low)</text>
+    <text x="1150" y="510" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Decode: SPI, CPOL=0, CPHA=0</text>
+    <text x="1150" y="530" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Compare: per-byte transfer() vs</text>
+    <text x="1165" y="548" fill="#5b6a82" font-family="'Courier New',monospace" font-size="11">  batch/DMA transfer timing</text>
+    <text x="1150" y="570" fill="#c8d3e0" font-family="'Courier New',monospace" font-size="11">&bull; Watch: inter-byte gaps, NSS hold</text>
+  </svg>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#ff9e64"></div>NSS/CS</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f7768e"></div>SCK</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#c3e88d"></div>MOSI</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#82aaff"></div>MISO</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#bb9af7"></div>BUSY</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#e0af68"></div>DIO9/IRQ</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#73daca"></div>RESET</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#82aaff;opacity:0.5"></div>GND</div>
+  </div>
+
+</div>
+</body>
+</html>

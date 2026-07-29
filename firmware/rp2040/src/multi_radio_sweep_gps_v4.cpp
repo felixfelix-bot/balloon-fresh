@@ -31,14 +31,13 @@
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       GPS_RX=GP1 GPS_TX=GP0
- *       LED=GP16 (WS2812 NeoPixel on Waveshare RP2040-Zero)
+ *       LED=GP25
  */
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <stdarg.h>
 #include <hardware/watchdog.h>
-#include <Adafruit_NeoPixel.h>
 
 // ─── Firmware self-identification (injected at build time) ───────────
 // These come from tools/inject_git_version.py via -D flags.
@@ -96,17 +95,7 @@ static void printBootBanner() {
 #define PIN_GPS_RX  1    // RP2040 RX ← GPS TX (NMEA data)
 #define PIN_GPS_TX  0    // RP2040 TX → GPS RX (optional config)
 #undef PIN_LED
-#define PIN_NEOPIXEL 16   // Waveshare RP2040-Zero onboard WS2812
-#define PIN_LED       25   // Standard Pi Pico (fallback, no-op on RP2040-Zero)
-
-// Single NeoPixel on GP16
-Adafruit_NeoPixel statusLED(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
-
-// LED color helpers — show status as visible colors
-void ledColor(uint8_t r, uint8_t g, uint8_t b) {
-    statusLED.setPixelColor(0, statusLED.Color(r, g, b));
-    statusLED.show();
-}
+#define PIN_LED     25
 
 #define SPI_FREQ_HZ  20000000UL
 #define XTAL_MHZ     52.0f
@@ -515,12 +504,10 @@ static void gpsPoll() {
         } else if (c == '\n' || c == '\r') {
             if (nmeaLen > 6) {
                 nmeaBuf[nmeaLen] = '\0';
-#ifdef DEBUG_NMEA
                 // DEBUG: dump any RMC sentence to see date field
                 if (strstr(nmeaBuf, "RMC")) {
                     outPrintf("NMEA_RMC: %s\n", nmeaBuf);
                 }
-#endif
                 parseNMEA(nmeaBuf);
             }
             nmeaLen = 0;
@@ -589,23 +576,30 @@ static void rfClearTxFifo() {
 // force-aborts by sending SET_STANDBY (STDBY_XOSC) before the next
 // phase reconfigures the modem. Called at the TOP of every phase change,
 // BEFORE rfInitForPhase.
-static bool txInProgress = false;  // tracks whether a TX was initiated this phase
+//
+// BUG FIX: The IRQ pin (GP7) is LOW both when TX is mid-transmission AND
+// when the radio is idle with no TX ever started. Without a tracking flag,
+// every phase transition when GPS gates TX (no fix → no TX) triggered a
+// false TX_ABORT. We now track txInProgress so we only abort when a TX was
+// actually started and hasn't completed.
+static volatile bool txInProgress = false;
 
 static void abortTxIfActive() {
-    if (!txInProgress) return;  // no TX was started — nothing to abort
+    if (!txInProgress) return;  // No TX was started, nothing to abort
+
     uint32_t irqPinMask = 1UL << PIN_IRQ;
     if (sio_hw->gpio_in & irqPinMask) {
         // TX_DONE already fired — radio returned to fallback mode (STDBY)
         txInProgress = false;
         return;
     }
-    // TX still in progress — force-abort with SET_STANDBY (STDBY_XOSC)
+    // TX genuinely in progress — force-abort with SET_STANDBY (STDBY_XOSC)
     uint8_t stdby[] = {0x01, 0x28, 0x01};
     rfWriteCmd(stdby, 3);
     outPrintf("TX_ABORT — previous phase TX still active, force SET_STANDBY\n");
-    rfClearIrq();
-    delay(100);
+    rfClearIrq();   // clear stale IRQ bits from the aborted TX
     txInProgress = false;
+    delay(100);     // guard: let the radio settle before reconfiguration
 }
 
 // ─── App-layer CRC-16 (CCITT 0x1021) ────────────────────────────────
@@ -1015,16 +1009,7 @@ void setup() {
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
-    // Init NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
-    statusLED.begin();
-    statusLED.show();  // Turn off
-    // Boot strobe: blue flash 6x so Felix sees LED working
-    for (int i = 0; i < 6; i++) {
-        ledColor(0, 0, 255);   // Blue
-        delay(100);
-        ledColor(0, 0, 0);     // Off
-        delay(100);
-    }
+    digitalWrite(PIN_LED, LOW);
 
     spiRf.begin();
 
@@ -1063,7 +1048,6 @@ void setup() {
         gpsPoll();
         checkSerialTimeSync();  // Process SET_TIME during boot gate
         digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
-        ledColor(((millis() / 500) & 1) ? 100 : 30, 0, 0);  // Dim red pulse while searching
 
         // Bench override: laptop SET_TIME received
         if (hasLaptopTime()) {
@@ -1094,11 +1078,11 @@ void setup() {
             }
         }
 
-#ifdef DEBUG_NMEA
         // NMEA passthrough: print raw GPS sentences every 3s for debugging
         // Helps verify GPS module is alive and outputting valid data
         if (millis() - lastNmeaPrint > 3000) {
             lastNmeaPrint = millis();
+            // Read any pending NMEA and show first sentence
             if (Serial1.available()) {
                 char nmeaLine[160];
                 int n = 0;
@@ -1111,6 +1095,7 @@ void setup() {
                     }
                 }
                 nmeaLine[n] = '\0';
+                // Trim trailing whitespace
                 while (n > 0 && (nmeaLine[n-1] == '\r' || nmeaLine[n-1] == '\n'))
                     nmeaLine[--n] = '\0';
                 if (n > 5)
@@ -1121,7 +1106,6 @@ void setup() {
                 outPrintf("NMEA_RAW: (no data) GPS module not sending on UART1\n");
             }
         }
-#endif
         delay(10);
     }
 
@@ -1170,22 +1154,6 @@ void loop() {
 
     // GPS still works if module is alive — used for position data in packets
     gpsPoll();
-
-    // ─── NEOPIXEL STATUS LED ─────────────────────────────────────────
-    // Red pulse = GPS searching for time. Yellow = has time, TX active, no fix. Green = GPS locked.
-    {
-        if (gps.fixValid) {
-            ledColor(0, 255, 0);   // Green: GPS locked, full operation
-        } else if (gps.hasTime) {
-            // Yellow blink at 2Hz
-            bool on = ((millis() % 500) < 250);
-            ledColor(on ? 255 : 50, on ? 200 : 30, 0);
-        } else {
-            // Red blink at 1Hz
-            bool on = ((millis() % 1000) < 500);
-            ledColor(on ? 255 : 30, 0, 0);
-        }
-    }
 
     // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
     // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
@@ -1291,22 +1259,30 @@ void loop() {
     // Last known position is preserved in gps.lat/lon — parseNMEA only updates
     // those fields on a valid fix. When fix returns, position updates automatically.
     // Bench mode (laptop SET_TIME) is exempt — allows testing without GPS.
-    // ─── GPS FIX STATUS (ADR-018 corrected): TX ALWAYS transmits with time ───
-    // GPS time arrives 10-30s after boot. Position fix takes 1-15 min more.
-    // Phase sync only needs TIME, not position. TX proceeds regardless of fix.
-    // Packets carry lat=0/lon=0/fix=0 until position lock, then real GPS coords.
-    // This is the correct behavior per ADR-018 invariant #4:
-    //   "TX transmits with or without GPS position fix (as long as time exists)"
+    // ─── GPS FIX GATE (ADR-018): TX NEVER transmits without satellite fix ───
+    // This is UNCONDITIONAL — no laptop exemption. Per Felix's requirement:
+    // "when we don't have a satellite fix, the TX board shouldn't transmit at all."
+    // The sweep loop keeps running (phase computation + radio reconfig above)
+    // so TX stays phase-synced and is ready to transmit the moment fix returns.
+    // Last known position is preserved in gps.lat/lon — parseNMEA only updates
+    // those fields on a valid fix. When fix returns, position updates automatically.
     if (!gps.fixValid) {
         static uint32_t lastNoFixMsg = 0;
-        if (millis() - lastNoFixMsg > 5000) {
-            outPrintf("NO_FIX_TX sats=%d fix=0 — transmitting with dummy coords\n",
-                      gps.sats);
+        static bool hadFix = false;
+        if (gps.fixValid) hadFix = true;
+        if (millis() - lastNoFixMsg > 3000) {
+            if (hadFix) {
+                outPrintf("FIX_LOST sats=%d fix=0 — sweep continues, TX gated. Last pos preserved.\n",
+                          gps.sats);
+            } else {
+                outPrintf("NO_FIX_WAIT sats=%d fix=0 — sweep continues, TX gated on fix\n",
+                          gps.sats);
+            }
             lastNoFixMsg = millis();
         }
         gpsPoll();
-        // Do NOT return — fall through to normal TX path.
-        // GPS fields in packet will show 0,0/fix=0 until real lock.
+        delay(50);
+        return;  // Don't transmit without fix — phase detection still runs next loop()
     }
 
     uint16_t pktSize = p.pktSize;
@@ -1379,7 +1355,7 @@ void loop() {
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(txBuf, pktSize);
-    txInProgress = true;
+    txInProgress = true;   // track TX for abortTxIfActive() phase-safety
     rfSetTx();
 
     // Wait for TX_DONE — poll DIO9 IRQ pin
@@ -1394,7 +1370,7 @@ void loop() {
     // (410ms/byte × 32 + 10ms). The old timeout always expired mid-TX,
     // leaving the radio transmitting into the next phase's time slot.
     while ((millis() - txStartMs) < 16000) {
-        if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
+        if (sio_hw->gpio_in & irqPinMask) { irqFired = true; txInProgress = false; break; }
         // Drain GPS UART every ~65K iterations (~3ms at 125MHz)
         if ((millis() - txStartMs) % 3 == 0) gpsPoll();  // poll GPS ~every 3ms
     }
@@ -1408,18 +1384,10 @@ void loop() {
     // Output per-packet log
     int16_t rssiDbm = 0; // TX doesn't have RSSI; placeholder for RX sync
     // V4: include pktSize in per-packet log
-    outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s fix=%d sats=%d\n", seqInPhase, rssiDbm,
-              currentPhase, pktSize, FW_GIT_HASH, gps.fixValid ? 1 : 0, gps.sats);
+    outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s\n", seqInPhase, rssiDbm,
+              currentPhase, pktSize, FW_GIT_HASH);
 
-    // NeoPixel status — already handled in main heartbeat above.
-    // Just toggle brightness slightly per TX for feedback.
-    {
-        if (gps.fixValid) {
-            ledColor(0, seqInPhase & 1 ? 255 : 100, 0);  // Green pulse per packet
-        } else {
-            ledColor(seqInPhase & 1 ? 255 : 50, seqInPhase & 1 ? 200 : 30, 0);  // Yellow pulse
-        }
-    }
+    digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
 
     seqInPhase++;
 
