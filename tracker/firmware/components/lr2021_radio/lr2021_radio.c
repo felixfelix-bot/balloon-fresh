@@ -123,66 +123,45 @@ static void rf_read_rx_fifo(uint8_t *buf, size_t len)
     cs_high();
 }
 
-/* Read and clear IRQ status — returns 32-bit status word */
+/* Read and clear IRQ status — returns 32-bit status word.
+ * MUST be single CS-low transaction: [opcode_hi, opcode_lo, dummy, dummy, dummy, dummy]
+ * Splitting CS toggle between send+read makes chip forget the command. */
 static uint32_t rf_get_irq_status(void)
 {
     wait_busy();
 
-    uint8_t cmd[2] = { 0x01, 0x17 };  /* GET_IRQ_STATUS */
+    uint8_t tx[6] = { 0x01, 0x17, 0x00, 0x00, 0x00, 0x00 };
     uint8_t rx[6] = {0};
 
-    spi_transaction_t t_cmd = {};
-    t_cmd.length    = 2 * 8;
-    t_cmd.tx_buffer = cmd;
+    spi_transaction_t t = {};
+    t.length    = 6 * 8;
+    t.tx_buffer = tx;
+    t.rx_buffer = rx;
 
-    spi_transaction_t t_rx = {};
-    t_rx.length   = 6 * 8;
-    t_rx.tx_buffer = NULL;
-    t_rx.rx_buffer = rx;
-
-    /* Phase 1: send opcode */
     cs_low();
-    spi_device_polling_transmit(s_spi, &t_cmd);
-    cs_high();
-
-    wait_busy();
-
-    /* Phase 2: read response */
-    cs_low();
-    spi_device_polling_transmit(s_spi, &t_rx);
+    spi_device_polling_transmit(s_spi, &t);
     cs_high();
 
     return ((uint32_t)rx[2] << 24) | ((uint32_t)rx[3] << 16) |
            ((uint32_t)rx[4] << 8) | rx[5];
 }
 
-/* Read FLRC packet status — returns 9-bit RSSI as negative dBm */
+/* Read FLRC packet status — returns 9-bit RSSI as negative dBm.
+ * Single CS-low transaction: opcode + dummy bytes, response in same read. */
 static int8_t rf_get_rssi(void)
 {
     wait_busy();
 
-    uint8_t cmd[2] = { 0x02, 0x4B };  /* GET_FLRC_PACKET_STATUS */
+    uint8_t tx[7] = { 0x02, 0x4B, 0x00, 0x00, 0x00, 0x00, 0x00 };
     uint8_t rx[7] = {0};
 
-    spi_transaction_t t_cmd = {};
-    t_cmd.length    = 2 * 8;
-    t_cmd.tx_buffer = cmd;
+    spi_transaction_t t = {};
+    t.length    = 7 * 8;
+    t.tx_buffer = tx;
+    t.rx_buffer = rx;
 
-    spi_transaction_t t_rx = {};
-    t_rx.length   = 7 * 8;
-    t_rx.tx_buffer = NULL;
-    t_rx.rx_buffer = rx;
-
-    /* Phase 1: send opcode */
     cs_low();
-    spi_device_polling_transmit(s_spi, &t_cmd);
-    cs_high();
-
-    wait_busy();
-
-    /* Phase 2: read response */
-    cs_low();
-    spi_device_polling_transmit(s_spi, &t_rx);
+    spi_device_polling_transmit(s_spi, &t);
     cs_high();
 
     /* 9-bit RSSI assembly: (buf[4] << 1) | ((buf[6] & 0x04) >> 2), then /2, negate */
@@ -190,23 +169,24 @@ static int8_t rf_get_rssi(void)
     return -(int8_t)(raw / 2);
 }
 
-/* Read 1-byte chip status */
+/* Read 1-byte chip status.
+ * Single CS-low transaction: [opcode, dummy], status in rx[1]. */
 static uint8_t rf_read_status(void)
 {
     wait_busy();
 
-    uint8_t tx = 0x00;
-    uint8_t rx_val = 0;
+    uint8_t tx[2] = { 0xC0, 0x00 };
+    uint8_t rx[2] = {0};
 
     spi_transaction_t t = {};
-    t.length    = 8;
-    t.tx_buffer = &tx;
-    t.rx_buffer = &rx_val;
+    t.length    = 2 * 8;
+    t.tx_buffer = tx;
+    t.rx_buffer = rx;
 
     cs_low();
     spi_device_polling_transmit(s_spi, &t);
     cs_high();
-    return rx_val;
+    return rx[1];
 }
 
 /* ── Command helpers ──────────────────────────────────────────────────── */
@@ -540,11 +520,16 @@ void lr2021_radio_poll(void)
 {
     if (!s_inited || !s_in_rx) return;
 
-    /* Check IRQ pin — if not high, no packet */
-    if (!irq_high()) return;
-
-    /* Read the 32-bit IRQ status to confirm RX_DONE */
-    uint32_t irq = rf_get_irq_status();
+    /* Check IRQ pin first (fast path). If not high, try SPI IRQ status
+     * as fallback — some boards don't route DIO9 reliably. */
+    uint32_t irq = 0;
+    if (irq_high()) {
+        irq = rf_get_irq_status();
+    } else {
+        /* SPI fallback: read IRQ status register directly */
+        irq = rf_get_irq_status();
+        if (!(irq & IRQ_RX_DONE)) return;
+    }
 
     if (!(irq & IRQ_RX_DONE)) {
         /* Some other IRQ fired — clear and return */
