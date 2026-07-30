@@ -157,7 +157,13 @@ CAPTURES_DIR := captures
 # Users can pass the full env name or the short name.
 
 .PHONY: flash capture capture-byte capture-batch capture-compare build \
-	analyze list-captures setup help
+	analyze list-captures setup help \
+	esp32-build esp32-flash capture-esp32 decode-esp32
+
+# ESP32 LR2021 firmware (ESP-IDF). Override port with ESP_PORT=/dev/ttyACMx.
+ESP32_FLRC_DIR := firmware/esp32-c3-flrc
+ESP_PORT ?= /dev/ttyACM0
+ESP_IDF_EXPORT := ~/esp/esp-idf/export.sh
 
 ## ─── flash ───────────────────────────────────────────────────────────
 ## Flash RP2040 via picotool (BOOTSEL mode required).
@@ -272,6 +278,66 @@ decode-tx: ## Group SPI bytes per CS cycle.
 		-P spi \
 		-B spi=mosi 2>&1 | xxd -p | tr -d '\n' | \
 		sed 's/../0x& /g' | fold -w 48
+
+## ─── capture-compare ─────────────────────────────────────────────────
+## Capture both per-byte and batch for comparison.
+## (ESP32 equivalents of the RP2040 capture/decode targets live just below.)
+
+# ═══════════════════════════════════════════════════════════════════════
+# ESP32-C3 LR2021 Capture Targets
+# ═══════════════════════════════════════════════════════════════════════
+# Same logic-analyzer parameters and channel map as the RP2040 targets above
+# (fx2lafw, 24 MHz sample, D0=CS D1=SCK D2=MOSI D3=MISO D4=BUSY D5=IRQ D6=RST)
+# so captures from either MCU are directly comparable with the same SPI decoder.
+# Override the serial port with: make capture-esp32 ESP_PORT=/dev/ttyACM0
+# Benchmark plan: docs/PLAN-esp32-vs-rp2040-benchmark.md
+
+## ─── esp32-build ──────────────────────────────────────────────────────
+## Build the ESP32-C3 LR2021 firmware with ESP-IDF.
+## Usage: make esp32-build
+esp32-build: ## Build ESP32-C3 LR2021 firmware (ESP-IDF).
+	@if [ ! -f $(ESP_IDF_EXPORT) ]; then \
+		echo "ERROR: ESP-IDF not found at $(ESP_IDF_EXPORT)"; \
+		echo "Install ESP-IDF v5.4.1 or set ESP_IDF_EXPORT=/path/to/export.sh"; \
+		exit 1; \
+	fi
+	@echo "Building ESP32-C3 LR2021 firmware ($(ESP32_FLRC_DIR))..."
+	@bash -c 'source $(ESP_IDF_EXPORT) && cd $(ESP32_FLRC_DIR) && idf.py build'
+
+## ─── esp32-flash ──────────────────────────────────────────────────────
+## Flash the ESP32-C3 LR2021 firmware.
+## Usage: make esp32-flash [ESP_PORT=/dev/ttyACM0]
+esp32-flash: ## Flash ESP32 firmware. Usage: make esp32-flash [ESP_PORT=/dev/ttyACM0]
+	@if [ ! -f $(ESP_IDF_EXPORT) ]; then \
+		echo "ERROR: ESP-IDF not found at $(ESP_IDF_EXPORT)"; exit 1; \
+	fi
+	@if [ ! -e $(ESP_PORT) ]; then \
+		echo "ERROR: ESP32 serial port $(ESP_PORT) not found."; \
+		echo "List ports: make identify-ports"; \
+		echo "Override: make esp32-flash ESP_PORT=/dev/ttyACMx"; \
+		exit 1; \
+	fi
+	@echo "Flashing ESP32 via $(ESP_PORT)..."
+	@bash -c 'source $(ESP_IDF_EXPORT) && cd $(ESP32_FLRC_DIR) && idf.py -p $(ESP_PORT) flash'
+
+## ─── capture-esp32 ───────────────────────────────────────────────────
+## Build + flash ESP32 cont-TX firmware, then capture SPI.
+## Same LA params/channel map as RP2040 captures.
+## Usage: make capture-esp32 [ESP_PORT=/dev/ttyACM0] [DURATION=1] [OUTPUT=captures/bench-esp32.sr]
+capture-esp32: ## Build+flash ESP32 cont-TX, capture. Usage: make capture-esp32 [ESP_PORT=/dev/ttyACM0] [DURATION=1]
+	$(MAKE) esp32-build
+	$(MAKE) esp32-flash ESP_PORT=$(ESP_PORT)
+	@echo "=== ESP32 firmware running — starting TX (firmware should auto-start) ==="
+	@sleep 2
+	$(MAKE) capture DURATION=$(or $(DURATION),1) \
+		OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/bench-esp32.sr)
+
+## ─── decode-esp32 ────────────────────────────────────────────────────
+## Decode SPI from the ESP32 benchmark capture.
+## Same SPI decoder + pins as the RP2040 decode target.
+## Usage: make decode-esp32 [FILE=captures/bench-esp32.sr]
+decode-esp32: ## Decode SPI from ESP32 capture (defaults to bench-esp32.sr).
+	$(MAKE) decode FILE=$(or $(FILE),$(CAPTURES_DIR)/bench-esp32.sr)
 
 ## ─── capture-compare ─────────────────────────────────────────────────
 ## Capture both per-byte and batch for comparison.
@@ -486,6 +552,12 @@ help: ## Show this help message.
 	@echo "  make capture-byte [DURATION=2]     Build+flash cont_tx, capture byte transfer"
 	@echo "  make capture-batch [DURATION=2]    Build+flash cont_tx, capture batch/DMA transfer"
 	@echo "  make capture-compare [DURATION=2]  Capture both byte+batch for comparison"
+	@echo ""
+	@echo "ESP32 capture (LR2021):"
+	@echo "  make capture-esp32 [ESP_PORT=/dev/ttyACM0] [DURATION=1]  Build+flash+capture ESP32"
+	@echo "  make decode-esp32 [FILE=captures/bench-esp32.sr]        Decode ESP32 SPI capture"
+	@echo "  make esp32-build / esp32-flash  Build / flash ESP32 firmware only"
+	@echo "  Benchmark plan: docs/PLAN-esp32-vs-rp2040-benchmark.md"
 	@echo ""
 	@echo "Analysis:"
 	@echo "  make analyze FILE=captures/byte-transfer.sr  Open capture in pulseview or print sigrok hints"
