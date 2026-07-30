@@ -866,38 +866,61 @@ def gen_v2():
         py = 28 + (9.0 - i * 2.0)
         rt.add_pad(57, py, SMD, SMD, nid[nn])
 
-    # 3V3 POWER BUS on B.Cu
-    rt.place(8.95, 40.95, 8.95, 38, n3, 0.5)  # LDO out
-    rt.via(9.46, 38, n3)
-    rt.place(9.46, 38, 63, 38, n3, 0.5, "B.Cu")  # main trunk
-    rt.via(63, 38, n3)
-    rt.place(63, 38, 63, 6.11, n3, 0.5)  # RP2040 pin1
-    rt.place(9.46, 38, 9.46, 6.11, n3, 0.5)  # ESP32 pin1
-    rt.place(9.46, 38, 6, 38, n3, 0.5)  # to GPS
-    rt.place(6, 38, 6, 41.19, n3, 0.5)
-    rt.place(63, 38, 68, 38, n3, 0.5)  # to MS5611
-    rt.place(68, 38, 68, 41.19, n3, 0.5)
+    # 3V3 POWER BUS on B.Cu (FIX 1: all trunk segments on B.Cu, vias at endpoints)
+    # FIX A: Route vertical at x=7 to avoid ESP32 through-hole pads at x=9.46
+    rt.via(9.46, 6.11, n3)   # ESP32 pin1 (same net, OK on pad)
+    rt.via(63, 6.11, n3)     # RP2040 pin1
+    rt.via(6, 41.19, n3)     # GPS pin1
+    rt.via(68, 41.19, n3)    # MS5611 pin1
+    # FIX 3: LDO output → right first, then up (avoid GND pad at 8.95,39.05)
+    rt.place(8.95, 40.95, 10, 40.95, n3, 0.5)      # F.Cu: LDO pin5 → right
+    rt.via(10, 40.95, n3)                           # transition to B.Cu
+    rt.place(10, 40.95, 10, 38, n3, 0.5, "B.Cu")    # B.Cu: up to trunk
+    # Main trunk on B.Cu at y=38
+    rt.place(10, 38, 7, 38, n3, 0.5, "B.Cu")         # trunk left to ESP32 column
+    rt.place(7, 38, 7, 6.11, n3, 0.5, "B.Cu")        # ESP32 vertical at x=7 (avoid TH pads at x=9.46)
+    rt.place(7, 6.11, 9.46, 6.11, n3, 0.5, "B.Cu")  # to ESP32 pin1 via B.Cu
+    # FIX 4: Route to RP2040 via x=60 (avoid GND pad at 63,39.13)
+    rt.place(10, 38, 60, 38, n3, 0.5, "B.Cu")       # trunk to x=60
+    rt.place(60, 38, 60, 6.11, n3, 0.5, "B.Cu")     # up to RP2040 row on B.Cu
+    rt.place(60, 6.11, 63, 6.11, n3, 0.5, "B.Cu")   # to RP2040 pin1 on B.Cu
+    # GPS branch on B.Cu
+    rt.place(10, 38, 6, 38, n3, 0.5, "B.Cu")         # to GPS on B.Cu
+    rt.place(6, 38, 6, 41.19, n3, 0.5, "B.Cu")       # GPS pin1 on B.Cu
+    # MS5611 branch on B.Cu
+    rt.place(60, 38, 68, 38, n3, 0.5, "B.Cu")        # to MS5611 on B.Cu
+    rt.place(68, 38, 68, 41.19, n3, 0.5, "B.Cu")     # MS5611 pin1 on B.Cu
 
     # VCAP power chain (F33 needs 5V from supercap)
+    # FIX D: Reroute VCAP traces to x=10 to avoid GPS TH pads at x=6 (pins at 41.19,43.73,46.27,48.81)
     rt.place(4, 46.73, 4, 44, nSI, 0.8)
     rt.place(4, 44, 3.5, 40, nSI, 0.8)
-    rt.place(5, 40, 6.5, 40, nVC, 0.8)
-    rt.place(6.5, 40, 6.5, 48, nVC, 0.8)
-    rt.place(6.5, 48, 8.25, 48, nVC, 0.8)
+    rt.place(5, 40, 7.05, 40, nVC, 0.8)
+    # LDO pin1 (VCAP) at (7.05,39.05) → x=10 → down to supercap
+    rt.place(7.05, 39.05, 10, 39.05, nVC, 0.8)
+    rt.place(10, 39.05, 10, 48, nVC, 0.8)
+    rt.place(10, 48, 8.25, 48, nVC, 0.8)
     # F33 VCC (pin1 at 18,37) → VCAP bus
     rt.place(18, 37, 16.4, 37, nVC, 0.8)
     rt.place(16.4, 37, 16.4, 19, nVC, 0.8)
     rt.place(16.4, 19, 17.15, 19, nVC, 0.8)
 
     # GND stitching vias (not mesh — zone pour handles GND)
-    for gx, gy in [(15,10),(60,10),(30,50),(70,50),(5,50),(40,45),
-                   (19,35),(19,33),(19,31),(19,27),(19,25),(19,23),
-                   (56,31),(20,37),(50,37)]:
+    # FIX 2: (56,31)→(56,28); (57,31) removed (was on SPI0_NSS pad)
+    # FIX B: (60,10)→(55,10) to avoid 3V3 trunk at x=60
+    # FIX C: x=19 GND vias at (19,31),(19,27) → moved to (22,31),(22,27) to avoid F33 GND stubs
+    for gx, gy in [(15,10),(55,10),(30,50),(70,50),(5,50),(40,45),
+                   (19,35),(19,33),(22,31),(22,27),(19,25),(19,23),
+                   (56,28),(20,37),(50,37)]:
         rt.via(gx, gy, nG)
     # F33 GND pad stubs
     for gy in [35,33,31,27,25,23]:
         rt.place(18, gy, 19, gy, nG, 0.5)
-    rt.place(57, 31, 56, 31, nG, 0.5)
+    # Extended stubs for moved vias at (22,31) and (22,27)
+    rt.place(19, 31, 22, 31, nG, 0.5)
+    rt.place(19, 27, 22, 27, nG, 0.5)
+    # FIX: F33 right GND pad (57,35) → GND via at (56,28)
+    rt.place(57, 35, 56, 28, nG, 0.5)
 
     # SIGNAL ROUTING on F.Cu
     # CE: F33 pin5 (18,29) → RP pin11 (63, 15+(-8.89+10*2.54)=15+16.51=31.51)
