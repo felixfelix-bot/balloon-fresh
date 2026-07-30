@@ -3,7 +3,8 @@
 Writes S-expression text directly — no pcbnew module needed.
 Outputs valid KiCad 9 PCB files with components, routing, and ground pour."""
 
-import os, textwrap
+import os, textwrap, uuid
+from router import Router
 
 OUTDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -416,47 +417,165 @@ def gen_v1():
   )
 '''
 
-    # === KEY TRACES (power + critical signal paths) ===
-    # These are the most important traces. Unrouted nets can be added later or in KiCad GUI.
-    seg_id = 1
-    def seg(x1, y1, x2, y2, net_name, width=0.25, layer="F.Cu"):
-        nonlocal seg_id
-        s = f'  (segment (start {x1:.2f} {y1:.2f}) (end {x2:.2f} {y2:.2f}) (width {width}) (layer "{layer}") (net {nid[net_name]} "{net_name}") (uuid "seg-{seg_id:03d}"))\n'
-        seg_id += 1
-        return s
+    # === CLEARANCE-AWARE ROUTING (uses Router class) ===
+    rt = Router(W, H, clearance=0.3)
+    n3 = nid["3V3"]; nG = nid["GND"]; nSK = nid["SPI0_SCK"]
+    nMO = nid["SPI0_MOSI"]; nMI = nid["SPI0_MISO"]; nNS = nid["SPI0_NSS"]
+    nBY = nid["LR2021_BUSY"]; nRST = nid["LR2021_RST"]; nD9 = nid["LR2021_DIO9"]
+    nSDA = nid["I2C_SDA"]; nSCL = nid["I2C_SCL"]
+    nRS = nid["RF_SUB_868"]; nR4 = nid["RF_2G4_2400"]
+    nET = nid["ESP_TX_RP2040_RX"]; nRT = nid["RP2040_TX_ESP_RX"]; nGT = nid["GPS_TX_ESP_RX"]
+    nVD = nid["VDIV_MID"]; nLED = nid["STATUS_LED"]; nLA = nid["LED_ANODE"]
+    nVC = nid["VCAP"]; nSI = nid["SOLAR_IN"]
 
-    def via(x, y, net_name):
-        nonlocal seg_id
-        s = f'  (via (at {x:.2f} {y:.2f}) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net {nid[net_name]} "{net_name}") (uuid "via-{seg_id:03d}"))\n'
-        seg_id += 1
-        return s
+    # --- Register component pads as obstacles ---
+    TH = 1.7  # through-hole pad size
+    SMD = 0.5  # SMD pad size
+    # ESP32 pads
+    esp_pads = [(9.46,3.11,n3),(9.46,5.65,nG),(9.46,8.19,nET),(9.46,10.73,nRT),
+                (9.46,13.27,nGT),(9.46,15.81,nVD),(9.46,18.35,nSDA),(9.46,20.89,nSCL),
+                (14.54,20.89,nLED),(14.54,18.35,0)]
+    for px,py,pn in esp_pads:
+        if pn: rt.add_pad(px,py,TH,TH,pn)
+    # RP2040 pads
+    rp_pads = [(38,3.11,n3),(38,4.61,nG),(38,6.11,nSK),(38,7.61,nMO),
+               (38,9.11,nMI),(38,10.61,nNS),(38,12.11,nBY),(38,13.61,nD9),
+               (38,15.11,nRST),(38,18.11,nRT),(38,19.61,nET),(38,21.11,nG)]
+    for px,py,pn in rp_pads:
+        rt.add_pad(px,py,TH,TH,pn)
+    # LR2021 pads (left x=15.095, right x=34.905)
+    # Pin order: pin1 at BOTTOM (y=30.16), pin9 at TOP (y=19.84)
+    lr_left = [(15.095,30.16,n3),(15.095,28.87,nG),(15.095,27.58,nMI),
+               (15.095,26.29,nMO),(15.095,25.0,nSK),(15.095,23.71,nNS),
+               (15.095,22.42,nBY),(15.095,21.13,nG),(15.095,19.84,nRS)]
+    lr_right = [(34.905,30.16,nG),(34.905,28.87,nG),(34.905,27.58,0),
+                (34.905,26.29,nD9),(34.905,25.0,nRST),(34.905,23.71,0),
+                (34.905,22.42,nG),(34.905,21.13,nG),(34.905,19.84,nR4)]
+    for px,py,pn in lr_left+lr_right:
+        if pn: rt.add_pad(px,py,SMD,SMD,pn)
 
-    traces = "\n  ;; === Power traces ===\n"
-    # 3V3 from LDO output to ESP32 pin 1
-    traces += seg(5, 22.95, 5, 20)  # LDO out to junction
-    traces += seg(5, 20, 9.46, 20)  # to ESP32 area
-    traces += seg(9.46, 20, 9.46, 3.11)  # up to ESP32 VCC pad
-    # 3V3 to RP2040
-    traces += seg(5, 20, 38, 20, "3V3", 0.5, "F.Cu")
-    traces += seg(38, 20, 38, 3.11, "3V3", 0.5, "F.Cu")
-    # 3V3 to LR2021 pin 1
-    traces += seg(15.1, 30.16, 15.1, 28, "3V3", 0.5, "F.Cu")
-    traces += seg(15.1, 28, 25, 28, "3V3", 0.5, "F.Cu")
-    traces += seg(25, 28, 25, 25, "3V3", 0.5, "F.Cu")  # to LR2021 center
+    # --- 3V3 POWER BUS on B.Cu ---
+    # Main trunk at y=5, connects ESP32 3V3 → RP2040 3V3 → LR2021 3V3
+    rt.place(9.46,3.11, 9.46,5, n3, 0.5)  # ESP32 → B.Cu entry
+    rt.via(9.46,5, n3)
+    rt.place(9.46,5, 38,5, n3, 0.5, "B.Cu")  # main trunk
+    rt.via(38,5, n3)
+    rt.place(38,5, 38,3.11, n3, 0.5)  # → RP2040
+    # Branch to LR2021
+    rt.via(25,5, n3)
+    rt.place(25,5, 25,19.84, n3, 0.5, "B.Cu")
+    rt.place(25,19.84, 15.095,19.84, n3, 0.5)
+    # Branch to GPS (6,29.19)
+    rt.via(12,5, n3)
+    rt.place(12,5, 12,29.19, n3, 0.5, "B.Cu")
+    rt.place(12,29.19, 6,29.19, n3, 0.5)
+    # Branch to MS5611/R1/R2 (44,29-35)
+    rt.via(42,5, n3)
+    rt.place(42,5, 42,29.19, n3, 0.5, "B.Cu")
+    rt.place(42,29.19, 44,29.19, n3, 0.5)
+    rt.place(44,29.19, 44,33, n3, 0.5)
+    rt.place(42.5,33, 44,33, n3, 0.25)
+    rt.place(41.5,30, 43.5,30, n3, 0.25)
+    # Decoupling caps
+    rt.place(14.6,30.16, 15.1,30.16, n3, 0.25)
+    rt.place(14.45,32.0, 14.6,32.0, n3, 0.25)
+    rt.place(14.6,32.0, 14.6,30.16, n3, 0.25)
+    # U5 LDO output → 3V3
+    rt.place(5.95,22.95, 5.0,22.95, n3, 0.25)
+    rt.place(5.0,22.95, 5.0,29.19, n3, 0.5)
+    rt.place(5.0,29.19, 6,29.19, n3, 0.5)
+    # TP3
+    rt.place(33,38, 33,35, n3, 0.25)
 
-    # SPI bus: RP2040 to LR2021
-    traces += "\n  ;; === SPI traces (RP2040 → LR2021) ===\n"
-    # SCK: RP2040 pin3 area → LR2021 pin5
-    traces += seg(38, 3.11, 35, 3.11, "SPI0_SCK")
-    traces += seg(35, 3.11, 35, 25, "SPI0_SCK")
-    traces += seg(35, 25, 25.095, 25, "SPI0_SCK")  # LR2021 pin5 at (25-9.905, 25+0) = (15.095, 25)
+    # --- GND connections on B.Cu (stubs only, zone pour fills the rest) ---
+    # GND stitching vias (NOT full mesh lines — those conflict with 3V3 bus)
+    for gx,gy in [(10,5),(20,5),(30,5),(40,5),(10,15),(20,15),(30,15),
+                  (10,25),(20,25),(30,25),(5,35),(15,35),(25,35),(35,35),(45,35)]:
+        rt.via(gx,gy, nG)
+    # GND pad → nearest via stubs
+    rt.place(9.46,5.65, 10,5.65, nG, 0.25); rt.via(10,5.65, nG)
+    rt.place(9.96,3.11, 10,3.11, nG, 0.25); rt.place(10,3.11, 10,5, nG, 0.25)
+    rt.place(38.5,3.0, 40,3.0, nG, 0.25); rt.place(40,3.0, 40,5, nG, 0.25)
+    rt.place(15.095,21.13, 15.5,20.5, nG, 0.25); rt.via(15.5,20.5, nG)
+    rt.place(15.095,28.87, 15.5,29.5, nG, 0.25); rt.via(15.5,29.5, nG)
+    rt.place(34.905,21.13, 34.5,20.5, nG, 0.25); rt.via(34.5,20.5, nG)
+    rt.place(34.905,22.42, 34.5,23.0, nG, 0.25); rt.via(34.5,23.0, nG)
+    rt.place(34.905,30.16, 34.5,30.5, nG, 0.25); rt.via(34.5,30.5, nG)
+    rt.place(5.95,21.05, 5.0,21.05, nG, 0.25); rt.via(5.0,21.05, nG)
+    rt.place(6.65,24, 6.0,24, nG, 0.25); rt.via(6.0,24, nG)
+    rt.place(5.5,15, 5.5,14, nG, 0.25); rt.via(5.5,14, nG)
+    rt.place(44.5,30, 45,30, nG, 0.25); rt.via(45,30, nG)
+    rt.place(15.2,4, 15.2,5, nG, 0.25)
+    rt.place(37,38, 37,37, nG, 0.25); rt.via(37,37, nG)
+    rt.place(3,38.27, 3,37, nG, 0.5); rt.via(3,37, nG)
+    rt.place(9.75,37, 10,37, nG, 0.5); rt.via(10,37, nG)
+    rt.place(6.5,30, 7,30, nG, 0.25); rt.via(7,30, nG)
+    rt.place(6,31.73, 5,35, nG, 0.25); rt.via(5,35, nG)
+    rt.place(15.6,30.16, 16,30, nG, 0.25); rt.via(16,30, nG)
 
-    # Ground vias (stitching F.Cu to B.Cu ground pour)
-    traces += "\n  ;; === Ground vias ===\n"
-    for gx, gy in [(10, 5), (35, 5), (20, 30), (40, 35), (5, 35), (15, 20), (30, 15)]:
-        traces += via(gx, gy, "GND")
+    # --- VCAP / SOLAR power chain ---
+    rt.place(3,35.73, 3,33, nSI, 0.5)
+    rt.place(3,33, 2.5,18, nSI, 0.5)
+    rt.place(2.5,18, 4,18, nSI, 0.5)
+    rt.place(5.5,18, 8,18, nVC, 0.5)
+    rt.place(8,18, 8,37, nVC, 0.5)
+    rt.place(8,37, 6.25,37, nVC, 0.5)
+    rt.place(5.95,22, 5.95,18, nVC, 0.25)
+    rt.place(5.95,18, 5.5,18, nVC, 0.25)
+    rt.place(4.05,21.05, 4.05,22, nVC, 0.25)
+    rt.place(4.05,22, 5.95,22, nVC, 0.25)
+    rt.place(5.95,22, 5.95,22.95, nVC, 0.25)
+    rt.place(2.5,16, 2.5,15, nVC, 0.25)
+    rt.place(2.5,15, 4.5,15, nVC, 0.25)
 
-    out += traces
+    # --- SIGNAL ROUTING on F.Cu ---
+    # SPI bus (RP2040 → LR2021) — pad coords: pin5 SCK=(15.095,25), pin4 MOSI=(15.095,26.29),
+    # pin3 MISO=(15.095,27.58), pin6 NSS=(15.095,23.71)
+    rt.connect(38,6.11, 15.095,25.0, nSK, 0.25)
+    rt.connect(38,7.61, 15.095,26.29, nMO, 0.25)
+    rt.connect(38,9.11, 15.095,27.58, nMI, 0.25)
+    rt.connect(38,10.61, 15.095,23.71, nNS, 0.25)
+    # Control signals — pin7 BUSY=(15.095,22.42), DIO9=right pin (34.905,26.29), RST=right (34.905,25.0)
+    rt.connect(38,12.11, 15.095,22.42, nBY, 0.25)
+    rt.connect(38,13.61, 34.905,26.29, nD9, 0.25)
+    rt.connect(38,15.11, 34.905,25.0, nRST, 0.25)
+    # UART
+    rt.connect(9.46,8.19, 38,19.61, nET, 0.25)
+    rt.connect(38,18.11, 9.46,10.73, nRT, 0.25)
+    rt.connect(6,34.27, 9.46,13.27, nGT, 0.25)
+    # I2C
+    rt.connect(9.46,18.35, 44,33, nSDA, 0.25)
+    rt.connect(9.46,20.89, 44,35.54, nSCL, 0.25)
+    rt.place(44,33, 44,34.27, nSDA, 0.25)
+    rt.place(44,35.54, 44,36.81, nSCL, 0.25)
+    # Status LED
+    rt.place(14.54,20.89, 14.54,4, nLED, 0.25)
+    rt.place(14.54,4, 18,4, nLED, 0.25)
+    rt.place(19,4, 16.8,4, nLA, 0.25)
+    # Voltage divider
+    rt.place(9.46,15.81, 3.5,15.81, nVD, 0.25)
+    rt.place(3.5,15.81, 3.5,15, nVD, 0.25)
+    rt.place(4.5,15, 5.0,15.81, nVD, 0.25)
+    # RF antenna traces
+    rt.place(15.095,19.84, 15.095,18, nRS, 0.8)
+    rt.place(15.095,18, 48,18, nRS, 0.8)
+    rt.place(48,18, 48,20, nRS, 0.8)
+    rt.place(34.905,19.84, 34.905,17, nR4, 0.8)
+    rt.place(34.905,17, 47,17, nR4, 0.8)
+    rt.place(47,17, 47,25, nR4, 0.8)
+    rt.place(47,25, 48,25, nR4, 0.8)
+    # VCAP bus on F.Cu (local)
+    rt.place(2.5,16, 8,16, nVC, 0.25)
+
+    stats = rt.summary()
+    print(f"  Router: {stats['segments']} segments, {stats['vias']} vias, "
+          f"{stats['warnings']} warnings ({stats['forced_count']} forced, "
+          f"{stats['blocked_count']} blocked)")
+    if rt.warnings:
+        for w in rt.warnings[:5]:
+            print(f"    {w}")
+
+    out += rt.emit()
 
     # Ground pour
     out += "\n  ;; === Ground pour ===\n"
@@ -470,7 +589,7 @@ def gen_v1():
     print(f"V1 PCB written: {filepath} ({len(out)} bytes)")
     print(f"  Board: {W}x{H}mm, 2-layer, 0.6mm")
     print(f"  Nets: {len(nets)}")
-    print(f"  Traces: {seg_id-1}")
+    print(f"  Traces: {len(rt.segments)} ({len(rt.vias)} vias)")
     return filepath
 
 # ============================================================
@@ -571,7 +690,7 @@ def gen_v2():
     rp_pads = ""
     for i, netname in enumerate(rp_nets):
         pin = i + 1
-        y = -8.89 + i * 1.5
+        y = -8.89 + i * 2.54
         pad_type = "rect" if pin == 1 else "oval"
         net_str = f' (net {nid[netname]} "{netname}")' if netname else ""
         rp_pads += f'    (pad "{pin}" thru_hole {pad_type} (at 0 {y:.2f}) (size 1.7 1.7) (drill 0.8) (layers "*.Cu" "*.Mask"){net_str})\n'
@@ -710,6 +829,189 @@ def gen_v2():
   )
 '''
 
+    # === CLEARANCE-AWARE ROUTING (uses Router class) ===
+    rt = Router(W, H, clearance=0.25)
+    n3 = nid["3V3"]; nG = nid["GND"]; nSK = nid["SPI0_SCK"]
+    nMO = nid["SPI0_MOSI"]; nMI = nid["SPI0_MISO"]; nNS = nid["SPI0_NSS"]
+    nBY = nid["LR2021_BUSY"]; nRST = nid["LR2021_RST"]; nIRQ = nid["LR2021_IRQ"]
+    nCE = nid["LR2021_CE"]; nSDA = nid["I2C_SDA"]; nSCL = nid["I2C_SCL"]
+    nRS = nid["RF_SUB_868"]; nR4 = nid["RF_2G4_2400"]
+    nET = nid["ESP_TX_RP2040_RX"]; nRT = nid["RP2040_TX_ESP_RX"]; nGT = nid["GPS_TX_ESP_RX"]
+    nVD = nid["VDIV_MID"]; nLED = nid["STATUS_LED"]; nVC = nid["VCAP"]; nSI = nid["SOLAR_IN"]
+
+    # Register component pads as obstacles
+    TH = 1.7; SMD = 0.5
+    # ESP32 at (12,15) — pads at x=12-2.54=9.46
+    esp_nets = ["3V3","GND","ESP_TX_RP2040_RX","RP2040_TX_ESP_RX","GPS_TX_ESP_RX",
+                "VDIV_MID","I2C_SDA","I2C_SCL","STATUS_LED"]
+    for i, nn in enumerate(esp_nets):
+        px = 9.46 if i < 8 else 14.54
+        py = 15 + (-8.89 + i * 2.54) if i < 8 else 15 + 8.89
+        rt.add_pad(px, py, TH, TH, nid[nn])
+    # RP2040 at (63,15) — NOW 2.54mm pitch
+    rp_nets2 = ["3V3","GND","SPI0_SCK","SPI0_MOSI","SPI0_MISO","SPI0_NSS",
+                "LR2021_BUSY","LR2021_IRQ","LR2021_RST",None,"LR2021_CE",
+                "RP2040_TX_ESP_RX","ESP_TX_RP2040_RX","GND"]
+    for i, nn in enumerate(rp_nets2):
+        py = 15 + (-8.89 + i * 2.54)
+        if nn: rt.add_pad(63, py, TH, TH, nid[nn])
+    # F33 left pads at x=18, right at x=57, pitch 2.0mm
+    f33_left_nets = ["VCAP","GND","GND","GND","LR2021_CE","GND","GND","GND","RF_SUB_868"]
+    f33_right_nets = ["RF_2G4_2400","GND","SPI0_SCK","SPI0_NSS","LR2021_BUSY",
+                      "SPI0_MOSI","SPI0_MISO","LR2021_RST","LR2021_IRQ"]
+    for i, nn in enumerate(f33_left_nets):
+        py = 28 + (9.0 - i * 2.0)
+        rt.add_pad(18, py, SMD, SMD, nid[nn])
+    for i, nn in enumerate(f33_right_nets):
+        py = 28 + (9.0 - i * 2.0)
+        rt.add_pad(57, py, SMD, SMD, nid[nn])
+
+    # 3V3 POWER BUS on B.Cu (FIX 1: all trunk segments on B.Cu, vias at endpoints)
+    # FIX A: Route vertical at x=7 to avoid ESP32 through-hole pads at x=9.46
+    rt.via(9.46, 6.11, n3)   # ESP32 pin1 (same net, OK on pad)
+    rt.via(63, 6.11, n3)     # RP2040 pin1
+    rt.via(6, 41.19, n3)     # GPS pin1
+    # FIX 3: LDO output → right first, then up (avoid GND pad at 8.95,39.05)
+    rt.place(8.95, 40.95, 12, 40.95, n3, 0.5)     # F.Cu: LDO pin5 → right to x=12
+    rt.via(12, 40.95, n3)                           # transition to B.Cu
+    rt.place(12, 40.95, 12, 38, n3, 0.5, "B.Cu")    # B.Cu: up to trunk (x=12, not x=10)
+    # 3V3 trunk on B.Cu at x=12 (VCAP bus at x=10, 2mm separation)
+    rt.place(12, 38, 7, 38, n3, 0.5, "B.Cu")        # trunk left to ESP32 column
+    rt.via(7, 38, n3)
+    rt.place(7, 38, 7, 6.11, n3, 0.5, "B.Cu")       # ESP32 vertical at x=7
+    rt.via(7, 6.11, n3)
+    rt.place(7, 6.11, 9.46, 6.11, n3, 0.5)          # to ESP32 pin1 on F.Cu
+
+    rt.place(12, 38, 60, 38, n3, 0.5, "B.Cu")       # trunk to x=60
+    rt.place(60, 38, 60, 6.11, n3, 0.5, "B.Cu")     # up to RP2040 row on B.Cu
+    rt.via(60, 6.11, n3)
+    rt.place(60, 6.11, 63, 6.11, n3, 0.5)           # to RP2040 pin1 on F.Cu
+
+    rt.via(6, 38, n3)
+    rt.place(12, 38, 6, 38, n3, 0.5, "B.Cu")        # to GPS on B.Cu
+    rt.place(6, 38, 6, 41.19, n3, 0.5, "B.Cu")      # GPS pin1 on B.Cu
+    rt.via(6, 41.19, n3)
+
+    rt.place(60, 38, 68, 38, n3, 0.5, "B.Cu")       # to MS5611 on B.Cu
+    rt.place(68, 38, 68, 41.19, n3, 0.5, "B.Cu")    # MS5611 pin1 on B.Cu
+    rt.via(68, 41.19, n3)
+
+    # VCAP power chain (F33 needs 5V from supercap)
+    # FIX: VCAP traces on B.Cu to avoid F.Cu pad conflicts
+    rt.place(4, 46.73, 4, 44, nSI, 0.8)
+    rt.place(4, 44, 3.5, 40, nSI, 0.8)
+    # BAT54 cathode → via → B.Cu VCAP bus
+    rt.via(5, 40, nVC)
+    rt.place(5, 40, 10, 40, nVC, 0.8, "B.Cu")
+    # LDO pin1 (VCAP) at (7.05,39.05) → via → B.Cu
+    rt.via(7.05, 39.05, nVC)
+    rt.place(7.05, 39.05, 10, 39.05, nVC, 0.8, "B.Cu")
+    # B.Cu VCAP bus at x=10, down to supercap
+    rt.place(10, 40, 10, 48, nVC, 0.8, "B.Cu")
+    rt.via(8.25, 48, nVC)
+    rt.place(10, 48, 8.25, 48, nVC, 0.8, "B.Cu")
+    # F33 VCC (pin1 at 18,37) → via → B.Cu
+    rt.via(18, 37, nVC)
+    rt.place(18, 37, 14, 37, nVC, 0.8, "B.Cu")
+    rt.place(14, 37, 14, 19, nVC, 0.8, "B.Cu")
+    rt.via(17.15, 19, nVC)
+    rt.place(14, 19, 17.15, 19, nVC, 0.8, "B.Cu")
+
+    # GND stitching vias (not mesh — zone pour handles GND)
+    # FIX 2: (56,31)→(56,28); (57,31) removed (was on SPI0_NSS pad)
+    # FIX B: (60,10)→(55,10) to avoid 3V3 trunk at x=60
+    # FIX C: x=19 GND vias at (19,31),(19,27) → moved to (22,31),(22,27) to avoid F33 GND stubs
+    for gx, gy in [(15,10),(55,10),(30,50),(70,50),(5,50),(40,45),
+                   (19,35),(19,33),(22,31),(22,27),(19,25),(19,23),
+                   (56,28),(20,37),(50,37)]:
+        rt.via(gx, gy, nG)
+    # F33 GND pad stubs
+    for gy in [35,33,31,27,25,23]:
+        rt.place(18, gy, 19, gy, nG, 0.5)
+    # Extended stubs for moved vias at (22,31) and (22,27)
+    rt.place(19, 31, 22, 31, nG, 0.5)
+    rt.place(19, 27, 22, 27, nG, 0.5)
+    # FIX: F33 right GND pad (57,35) → GND via at (55,37) (avoid SCK pad at 57,33)
+    rt.place(57, 35, 55, 37, nG, 0.5)
+
+    # SIGNAL ROUTING on F.Cu
+    # CE: F33 pin5 (18,29) → RP pin11 (63, 15+(-8.89+10*2.54)=15+16.51=31.51)
+    rt.connect(18, 29, 63, 31.51, nCE, 0.25)
+    # RF traces (fat, short)
+    rt.place(18, 21, 18, 17, nRS, 0.8)
+    rt.place(18, 17, 2, 17, nRS, 0.8)
+    # FIX: route RF_SUB at x=2 not x=4 to avoid SMA J1 GND pads at (4,25.5) and (4,30.5)
+    rt.place(2, 17, 2, 28, nRS, 0.8)
+    rt.place(2, 28, 4, 28, nRS, 0.8)
+    # FIX: RF_2G4 route down from (57,37) → right at y=35 (avoid SCK pad at 57,33)
+    rt.place(57, 37, 57, 35, nR4, 0.8)
+    rt.place(57, 35, 72, 35, nR4, 0.8)
+    # FIX: route at x=72 to avoid SMA J2 GND pads at (71,30.5)
+    rt.place(72, 35, 72, 28, nR4, 0.8)
+    rt.place(72, 28, 73, 28, nR4, 0.8)
+    # SPI: F33 right → RP2040 (use B.Cu for long runs)
+    # SCK: F33 pin12 (57,33) → RP pin3 (63, 15+(-8.89+2*2.54)=15-3.81=11.19)
+    rt.connect(57, 33, 63, 11.19, nSK, 0.25)
+    # NSS: F33 pin13 (57,31) → RP pin6 (63, 15+(-8.89+5*2.54)=15+3.81=18.81)
+    rt.connect(57, 31, 63, 18.81, nNS, 0.25)
+    # BUSY: F33 pin14 (57,29) → RP pin7 (63, 15+(-8.89+6*2.54)=15+6.35=21.35)
+    rt.connect(57, 29, 63, 21.35, nBY, 0.25)
+    # MOSI: F33 pin15 (57,27) → RP pin4 (63, 15+(-8.89+3*2.54)=15-1.27=13.73)
+    rt.connect(57, 27, 63, 13.73, nMO, 0.25)
+    # MISO: F33 pin16 (57,25) → RP pin5 (63, 15+(-8.89+4*2.54)=15+1.27=16.27)
+    rt.connect(57, 25, 63, 16.27, nMI, 0.25)
+    # RST: F33 pin17 (57,23) → RP pin9 (63, 15+(-8.89+8*2.54)=15+11.43=26.43)
+    rt.connect(57, 23, 63, 26.43, nRST, 0.25)
+    # IRQ: F33 pin18 (57,21) → RP pin8 (63, 15+(-8.89+7*2.54)=15+8.89=23.89)
+    rt.connect(57, 21, 63, 23.89, nIRQ, 0.25)
+    # UART (route on B.Cu to avoid crossing RF traces on F.Cu)
+    # ESP_TX → RP_RX: ESP pin3 (9.46,11.19) → RP pin13 (63, 36.59)
+    rt.via(9.46, 11.19, nET)
+    rt.place(9.46, 11.19, 63, 11.19, nET, 0.25, "B.Cu")
+    rt.place(63, 11.19, 63, 36.59, nET, 0.25, "B.Cu")
+    rt.via(63, 36.59, nET)
+    # RP_TX → ESP: RP pin12 (63, 34.05) → ESP pin4 (9.46,13.73)
+    rt.via(63, 34.05, nRT)
+    rt.place(63, 34.05, 8, 34.05, nRT, 0.25, "B.Cu")
+    rt.place(8, 34.05, 8, 13.73, nRT, 0.25, "B.Cu")
+    rt.place(8, 13.73, 9.46, 13.73, nRT, 0.25, "B.Cu")
+    rt.via(9.46, 13.73, nRT)
+    # GPS_TX → ESP: GPS pin3 (6,46.27) → ESP pin5 (9.46,16.27)
+    rt.via(6, 46.27, nGT)
+    rt.place(6, 46.27, 3, 46.27, nGT, 0.25, "B.Cu")
+    rt.place(3, 46.27, 3, 16.27, nGT, 0.25, "B.Cu")
+    rt.place(3, 16.27, 9.46, 16.27, nGT, 0.25, "B.Cu")
+    rt.via(9.46, 16.27, nGT)
+    # I2C (route on B.Cu, offset from pad columns)
+    # SDA: ESP pin7 (9.46,21.35) → MS pin3 (68,46.27)
+    rt.via(9.46, 21.35, nSDA)
+    rt.place(9.46, 21.35, 65, 21.35, nSDA, 0.25, "B.Cu")
+    rt.place(65, 21.35, 65, 46.27, nSDA, 0.25, "B.Cu")
+    rt.place(65, 46.27, 68, 46.27, nSDA, 0.25, "B.Cu")
+    rt.via(68, 46.27, nSDA)
+    # SCL: ESP pin8 (9.46,23.89) → MS pin4 (68,48.81)
+    # FIX: route at y=25 not y=23.89 to avoid IRQ pad at (63,23.89)
+    rt.via(9.46, 23.89, nSCL)
+    rt.place(9.46, 23.89, 9.46, 25, nSCL, 0.25, "B.Cu")
+    rt.place(9.46, 25, 66, 25, nSCL, 0.25, "B.Cu")
+    rt.place(66, 25, 66, 48.81, nSCL, 0.25, "B.Cu")
+    rt.place(66, 48.81, 68, 48.81, nSCL, 0.25, "B.Cu")
+    rt.via(68, 48.81, nSCL)
+    # STATUS LED
+    rt.place(14.54, 23.89, 14.54, 5, nLED, 0.25)
+    rt.place(14.54, 5, 18, 5, nLED, 0.25)
+    # VDIV
+    rt.place(9.46, 18.81, 3, 18.81, nVD, 0.25)
+
+    stats = rt.summary()
+    print(f"  F33 Router: {stats['segments']} segments, {stats['vias']} vias, "
+          f"{stats['warnings']} warnings")
+    if rt.warnings:
+        for w in rt.warnings[:5]:
+            print(f"    {w}")
+
+    out += rt.emit()
+
     # Ground pour + close
     out += ground_pour(W, H, nid["GND"])
     out += ")\n"
@@ -721,12 +1023,73 @@ def gen_v2():
     print(f"  Board: {W}x{H}mm, 2-layer, 0.8mm")
     print(f"  F33 module: 39x21mm at center")
     print(f"  SMA connectors: 2x edge-mount (sub-GHz + 2.4GHz)")
+    print(f"  Traces: {len(rt.segments)} ({len(rt.vias)} vias)")
     return filepath
+
+
+def clean_pcb(filepath):
+    """Post-process generated .kicad_pcb: strip comments, fix format for KiCad 9."""
+    import re, uuid as uuidmod
+    with open(filepath) as f:
+        content = f.read()
+
+    # 1. Remove all ; comment lines (KiCad 9 chokes on these)
+    lines = [l for l in content.split('\n') if not l.strip().startswith(';')]
+    content = '\n'.join(lines)
+
+    # 2. Fix version + generator_version
+    content = content.replace('(version 20250114)', '(version 20241229)')
+    if '(generator_version "9.0")' not in content:
+        content = content.replace('(generator "pcbnew")\n', '(generator "pcbnew")\n  (generator_version "9.0")\n')
+
+    # 3. Fix setup section: remove pcbplotparams, add mandatory fields
+    content = re.sub(
+        r'\(setup\n.*?\n  \)',
+        '(setup\n    (pad_to_mask_clearance 0)\n    (allow_soldermask_bridges_in_footprints no)\n    (tenting front back)\n    (aux_axis_origin 0 0)\n    (grid_origin 0 0)\n  )',
+        content, flags=re.DOTALL
+    )
+
+    # 4. Fix UUIDs: replace string-IDs with real UUID v4
+    content = re.sub(
+        r'\(uuid "([^"]{36})"\)',
+        lambda m: f'(uuid "{m.group(1)}")',  # leave real UUIDs alone
+        content
+    )
+    content = re.sub(
+        r'\(uuid "(seg-\d+|via-\d+|edge-\d+|txt-\d+|fp-[a-zA-Z0-9_{}-]+|gnd-pour|pad-[a-zA-Z0-9_-]+|outline-[a-zA-Z0-9_-]+|fab-[a-zA-Z0-9_-]+|crtyd-[a-zA-Z0-9_-]+|fp-ref|fp-val|usb-label|ufl-label)"\)',
+        lambda m: f'(uuid "{uuidmod.uuid4()}")',
+        content
+    )
+
+    # 5. Fix segment net format: (net N "name") -> (net N) inside segments/vias
+    content = re.sub(
+        r'(\(segment .*?\(net \d+) "[^"]*"\)',
+        r'\1)',
+        content
+    )
+    content = re.sub(
+        r'(\(via .*?\(net \d+) "[^"]*"\)',
+        r'\1)',
+        content
+    )
+
+    # 6. Fix zone layers -> layer
+    content = content.replace('(zone (net', '(zone (net')  # no-op safety
+    content = re.sub(
+        r'(\(zone \(net \d+\) \(net_name "[^"]*"\) )\(layers "B\.Cu"\)',
+        r'\1(layer "B.Cu")',
+        content
+    )
+
+    with open(filepath, 'w') as f:
+        f.write(content)
 
 
 if __name__ == "__main__":
     v1 = gen_v1()
     v2 = gen_v2()
-    print("\nDone. Both PCB files generated.")
+    clean_pcb(v1)
+    clean_pcb(v2)
+    print("\nDone. Both PCB files generated + cleaned for KiCad 9.")
     print(f"V1: {v1}")
     print(f"V2: {v2}")
