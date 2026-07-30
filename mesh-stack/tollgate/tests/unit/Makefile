@@ -15,6 +15,9 @@ TG_CORE_INC := $(REPO_ROOT)/components/tollgate_core/include
 TG_BALLOON_SRC := $(REPO_ROOT)/components/tollgate_balloon/src
 TG_BALLOON_INC := $(REPO_ROOT)/components/tollgate_balloon/include
 
+MUX_SRC := $(REPO_ROOT)/components/mesh_service_mux/src
+MUX_INC := $(REPO_ROOT)/components/mesh_service_mux/include
+
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-sign-compare \
           -std=gnu17 -g -O0 \
@@ -49,7 +52,8 @@ TG_CORE_FULL_SRCS := $(TG_CORE_SRC)/tollgate_core_cashu.c \
 # Tests we ship in this tree
 TESTS := test_geohash test_identity test_nostr_event test_cashu test_session \
          test_firewall_sandbox test_beacon test_mint_health test_mint_health_core \
-         test_portal test_payment_proto
+         test_portal test_payment_proto \
+         test_mesh_service_mux test_tollgate_mesh_integration
 
 .PHONY: all test clean $(TESTS)
 
@@ -126,6 +130,21 @@ test_portal: test_portal.c $(TG_CORE_SRC)/tollgate_core_portal.c $(TG_CORE_SRC)/
 
 test_payment_proto: test_payment_proto.c $(TG_BALLOON_SRC)/tollgate_payment_proto.c
 	$(CC) $(CFLAGS) -I $(TG_BALLOON_INC) $^ -o $@ $(LDFLAGS)
+
+# --- mesh_service_mux unit tests ---
+
+test_mesh_service_mux: test_mesh_service_mux.c $(MUX_SRC)/mesh_service_mux.c
+	$(CC) $(CFLAGS) -I $(MUX_INC) $^ -o $@ $(LDFLAGS)
+
+# --- tollgate_balloon mesh integration (mux + balloon + mock transport) ---
+
+test_tollgate_mesh_integration: test_tollgate_mesh_integration.c \
+	$(TG_BALLOON_SRC)/tollgate_balloon.c \
+	$(TG_BALLOON_SRC)/tollgate_payment_proto.c \
+	$(MUX_SRC)/mesh_service_mux.c \
+	stubs/nucula_wallet_stub.c
+	$(CC) $(CFLAGS) -I $(TG_BALLOON_INC) -I $(MUX_INC) \
+	-include stubs/esp_log.h $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(TESTS) $(SECP256K1_OBJ)
