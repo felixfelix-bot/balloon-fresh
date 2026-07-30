@@ -83,7 +83,7 @@ static uint64_t    pf_zero_u64(void) { return 0; }
 static void        pf_nop(void) {}
 static double      pf_zero_dbl(void) { return 0.0; }
 
-static const tollgate_platform_t s_balloon_platform = {
+static const tollgate_platform_t s_balloon_platform __attribute__((unused)) = {
     .get_price_sats         = pf_get_price_sats,
     .get_step_ms            = pf_get_step_ms,
     .get_mint_url           = pf_get_mint_url,
