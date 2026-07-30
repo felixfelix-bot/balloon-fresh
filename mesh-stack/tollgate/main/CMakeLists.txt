@@ -7,5 +7,5 @@
 idf_component_register(
     SRCS "main.c"
     INCLUDE_DIRS "."
-    REQUIRES tollgate_balloon
+    REQUIRES tollgate_balloon radio_adapter
 )
