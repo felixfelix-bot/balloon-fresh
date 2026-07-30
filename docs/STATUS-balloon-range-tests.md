@@ -70,6 +70,7 @@ differs between bitrate windows at same distance. If identical → switch not wo
 
 - **2026-07-30**: circuit-design — clearance-aware routing rewrite + DRC analysis tooling [PROTOCOL, TEST]. Informational. Relevant when custom PCBs arrive: F33 variant (2W PA, +33 dBm) will need separate range characterization vs dev boards. DRC-clean routing = can rule out PCB shorts as RF degradation cause. No action needed now — current boards are RP2040 dev boards.
 - **2026-07-30**: balloon-hermes 47-finding batch. 2 actionable: (1) RP2040 SPI baseline 1760kbps at 10.40MHz — confirms SPI ceiling for sweep firmware. (2) 255B optimal payload — our 127B packets are fine for range testing (shorter = better PER at weak signal). 40+ ESP-IDF findings NOT applicable (RP2040 uses raw SPI, not lr2021_transport). No code changes needed.
+- **2026-07-30**: circuit-design/hermes — V1+F33 full signal routing (SPI/UART/I2C/RF/PA), DRC tooling. Informational. Relevant when custom PCBs arrive: F33 PA variant needs separate range test. V1 SPI trace quality affects 20MHz signal integrity. No action needed now.
 
 ## Next Steps (Physical — Operator Required)
 
