@@ -14,6 +14,9 @@ sdkconfig.old
 opentollgate_security_scan.sh
 firmware/esp32-c3-flrc/build/
 firmware/esp32-c3-flrc/sdkconfig.old
+firmware/esp32-c3-flrc/sdkconfig
+firmware/esp32-c3-flrc/sdkconfig.rx
+firmware/esp32-c3-flrc/main/Kconfig.projbuild
 
 # ESP-IDF build output directories (build_*)
 mesh-stack/flrc-bench-espidf/build_*/
@@ -24,12 +27,15 @@ skidl_REPL.erc
 skidl_REPL.log
 *_sklib.py
 
-# Build artifacts
+# FIPS build artifacts
 tracker/firmware/radio_test/sdkconfig
 tracker/firmware/radio_test/sdkconfig.defaults
-firmware/esp32-c3-flrc/sdkconfig
-firmware/esp32-c3-flrc/sdkconfig.rx
-firmware/esp32-c3-flrc/main/Kconfig.projbuild
 tracker/firmware/dependencies.lock
 **/test_fips_fragmented
 **/test_lr2021
+
+# Tollgate build artifacts (ESP-IDF sdkconfig, compiled test binaries)
+mesh-stack/tollgate/sdkconfig
+mesh-stack/tollgate/tests/unit/test_*
+!mesh-stack/tollgate/tests/unit/test_*.c
+!mesh-stack/tollgate/tests/unit/test_*.h
