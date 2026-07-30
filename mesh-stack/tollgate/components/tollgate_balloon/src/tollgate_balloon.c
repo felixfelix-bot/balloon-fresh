@@ -17,6 +17,7 @@
 
 #include "tollgate_balloon.h"
 #include "tollgate_payment_proto.h"
+#include "mesh_service_mux.h"
 #include "tollgate_core.h"
 #include "nucula_wallet.h"
 #include "esp_err.h"
@@ -105,6 +106,52 @@ static const tollgate_platform_t s_balloon_platform __attribute__((unused)) = {
     .get_hashrate           = pf_zero_dbl,
 };
 
+/* --- Mesh transport integration (dependency injection) --- */
+
+/*
+ * Injected send callback.  When the balloon has a response to send
+ * (ACK/NACK/INFO) it wraps the tollgate protocol message with
+ * mesh_service_mux (SVC_TOLLGATE) and hands the result to this callback.
+ * The integrator wires this to mesh_adapter_send().
+ */
+static tollgate_mesh_send_fn s_mesh_send = NULL;
+
+/*
+ * Internal helper: serialise a tollgate protocol message, wrap it with
+ * the TOLLGATE service tag, and push it through the registered send
+ * callback.  No-op if no send callback has been registered.
+ */
+static void send_mesh_msg(tollgate_msg_type_t type, uint16_t seq,
+                           const char *payload_data, uint16_t payload_len)
+{
+    if (!s_mesh_send) {
+        ESP_LOGW(TAG, "send_mesh_msg: no mesh send callback registered");
+        return;
+    }
+
+    /* Encode tollgate protocol message: [hdr(8)] [payload] */
+    uint8_t proto_buf[sizeof(tollgate_msg_hdr_t) + TOLLGATE_MAX_TOKEN_LEN];
+    int proto_len = tollgate_proto_encode(proto_buf, (uint16_t)sizeof(proto_buf),
+                                           type, seq,
+                                           payload_data, payload_len);
+    if (proto_len < 0) {
+        ESP_LOGE(TAG, "send_mesh_msg: proto_encode failed (%d)", proto_len);
+        return;
+    }
+
+    /* Wrap with service mux: [svc(1)] [proto_buf] */
+    uint8_t mesh_buf[sizeof(proto_buf) + 1];
+    int mesh_len = mesh_service_mux_wrap(MESH_SVC_TOLLGATE,
+                                          proto_buf, (uint16_t)proto_len,
+                                          mesh_buf, (uint16_t)sizeof(mesh_buf));
+    if (mesh_len < 0) {
+        ESP_LOGE(TAG, "send_mesh_msg: mux_wrap failed (%d)", mesh_len);
+        return;
+    }
+
+    s_mesh_send(mesh_buf, (uint16_t)mesh_len);
+}
+
 /* --- Public API --- */
 
 esp_err_t tollgate_balloon_init(const char *nsec_hex,
@@ -185,31 +232,50 @@ esp_err_t tollgate_balloon_on_packet(const char *src_node_id,
         ESP_LOGI(TAG, "PAY from %s: token_len=%u", src_node_id, copy_len);
 
         /*
-         * Payment flow:
-         * 1. Extract token from JSON payload {"token":"cashuA..."}
-         *    (For v1, accept raw token string directly if no JSON wrapper)
-         * 2. Map src_node_id → internal client_id
-         * 3. Call tollgate_core_process_payment() which will:
-         *    a. Decode Cashu token via tollgate_core_cashu_decode_token()
-         *    b. Check proof states via mint HTTP /v1/checkstate
-         *    c. Call pf_spend_proofs() → nucula_wallet_receive() (real swap!)
-         *    d. Grant session on success
-         * 4. Build + send ACK or NACK via mesh
+         * Payment flow (wired):
+         * 1. Token is in json_buf (raw token string or JSON wrapper)
+         * 2. Call pf_spend_proofs() → nucula_wallet_receive() (real swap!)
+         * 3. On success: build + send ACK with session info
+         * 4. On failure: build + send NACK with error code
          *
-         * Error codes (tollgate_nack_payload_t):
-         *   TG_ERR_INVALID_TOKEN    — malformed Cashu token
-         *   TG_ERR_SWAP_FAILED      — nucula swap/receive failed
-         *   TG_ERR_MINT_UNREACHABLE — can't contact mint (offline)
-         *   TG_ERR_ALREADY_PAID     — session already active
+         * TODO: session management (generate real session_id, expiry)
          */
-        ESP_LOGW(TAG, "PAY handler: mesh transport not yet wired — "
-                 "core_process_payment needs IP mapping + UDP response path");
-        /* TODO: Implement when FIPS mesh transport available */
+        bool paid = pf_spend_proofs(json_buf);
+
+        if (paid) {
+            tollgate_ack_payload_t ack;
+            memset(&ack, 0, sizeof(ack));
+            ack.session_id  = 1;   /* TODO: real session from tollgate_core */
+            ack.expires_unix = 0;  /* TODO: real expiry */
+            ack.quota_bytes  = 0;  /* time-based, unlimited bytes */
+            ack.price_sats   = s_price_sats;
+
+            send_mesh_msg(TG_MSG_ACK, hdr.seq,
+                          (const char *)&ack, (uint16_t)sizeof(ack));
+            ESP_LOGI(TAG, "ACK sent (session=%u, price=%u sats)",
+                     ack.session_id, ack.price_sats);
+        } else {
+            tollgate_nack_payload_t nack;
+            memset(&nack, 0, sizeof(nack));
+            nack.error_code = TG_ERR_SWAP_FAILED;
+            strncpy(nack.message, "swap failed", sizeof(nack.message) - 1);
+
+            send_mesh_msg(TG_MSG_NACK, hdr.seq,
+                          (const char *)&nack, (uint16_t)sizeof(nack));
+            ESP_LOGW(TAG, "NACK sent: swap failed");
+        }
         break;
     }
     case TG_MSG_STATUS: {
         ESP_LOGI(TAG, "STATUS request from %s", src_node_id);
-        /* TODO: Build + send INFO response with pricing */
+
+        char *info_json = tollgate_proto_build_info_json(
+            s_price_sats, s_step_ms, s_mint_url, 0);
+        if (info_json) {
+            uint16_t json_len = (uint16_t)strlen(info_json);
+            send_mesh_msg(TG_MSG_INFO, hdr.seq, info_json, json_len);
+            free(info_json);
+        }
         break;
     }
     default:
@@ -218,6 +284,47 @@ esp_err_t tollgate_balloon_on_packet(const char *src_node_id,
     }
 
     return ESP_OK;
+}
+
+/* ── Mesh transport integration ─────────────────────────────────── */
+
+void tollgate_balloon_register_mesh(tollgate_mesh_send_fn send_fn)
+{
+    s_mesh_send = send_fn;
+    ESP_LOGI(TAG, "Mesh transport %s", send_fn ? "registered" : "deregistered");
+}
+
+void tollgate_balloon_on_mesh_frame(const char *src_node_id,
+                                     const uint8_t *data,
+                                     uint16_t len)
+{
+    if (!data || len < 1) {
+        ESP_LOGW(TAG, "on_mesh_frame: empty frame");
+        return;
+    }
+
+    /* Unwrap the 1-byte service mux tag */
+    uint8_t svc;
+    const uint8_t *payload;
+    uint16_t payload_len;
+
+    int rc = mesh_service_mux_unwrap(data, len, &svc, &payload, &payload_len);
+    if (rc != MESH_MUX_OK) {
+        ESP_LOGW(TAG, "on_mesh_frame: mux_unwrap failed (%d)", rc);
+        return;
+    }
+
+    /* Service filtering: only handle TOLLGATE packets.
+     * Other services (NOSTR, BLOSSOM) are silently ignored here —
+     * the integrator routes them to their respective handlers. */
+    if (svc != MESH_SVC_TOLLGATE) {
+        ESP_LOGD(TAG, "on_mesh_frame: ignoring svc=0x%02x (not TOLLGATE)", svc);
+        return;
+    }
+
+    /* Route to the tollgate packet handler */
+    tollgate_balloon_on_packet(src_node_id ? src_node_id : "mesh",
+                                payload, payload_len);
 }
 
 void tollgate_balloon_tick(void)
