@@ -159,21 +159,6 @@ tracks:
       ordering. Schematic capture (SKiDL + KiCad), PCB layout, DRC compliance,
       Gerber generation. Depends on radio pin assignments from balloon-hermes.
 
-  - name: balloon-multiwan-bonding
-    display_name: "MPTCP Multi-WAN Bonding (tollgate opt-in)"
-    signal_group_id: "b+l26xLzkcNfrEr+zOau4LPk4KxNefJiSv+8KW9r2ao="
-    worktree: ~/repos/tollgate-module-basic-go/
-    kanban_board: null
-    status_file: docs/STATUS-balloon-multiwan-bonding.md
-    depends_on: [balloon-tollgate]
-    blocks: []
-    phase: assessment-pending
-    notes: >
-      MPTCP multi-WAN bonding as opt-in feature in tollgate-module-basic-go.
-      GL-MT6000 target hardware. VPS1 as MPTCP server endpoint (tg-mptcp-server).
-      Roadmap: per-megabyte bonding server payments via tollgate protocol.
-      Investigate MPTCP-over-FIPS feasibility.
-
 # Shared resources that need allocation decisions
 shared_resources:
   - name: "ESP32-S3 boards (3x Board A/B/C)"
