@@ -1,0 +1,31 @@
+{
+  "name": "ESP32-C3 LR2021 SPI Bench Capture",
+  "description": "Logic Analyzer config for ESP32-C3 to LR2021 SPI at 20MHz",
+  "gpio_mapping": {
+    "D0": {"label": "MOSI (GPIO7)"},
+    "D1": {"label": "MISO (GPIO2)"},
+    "D2": {"label": "SCK (GPIO6)"},
+    "D3": {"label": "CS/NSS (GPIO10)"},
+    "D4": {"label": "BUSY (GPIO4)"},
+    "D5": {"label": "DIO9/IRQ (GPIO5)"},
+    "GND": {"label": "GND"}
+  },
+  "capture_settings": {
+    "sample_rate_hz": 50000000,
+    "capture_duration_sec": 2,
+    "trigger": "falling_edge on D3 (CS LOW)",
+    "trigger_pre_pct": 10
+  },
+  "spi_analyzer": {
+    "MOSI": "D0", "MISO": "D1", "SCK": "D2", "CS": "D3",
+    "bit_order": "MSB", "clock_idle": "low", "data_valid_edge": "rising",
+    "cs_polarity": "active_low", "bits_per_transfer": 8
+  },
+  "comparison_baseline": {
+    "rp2040_spi_actual_mhz": 10.40,
+    "rp2040_throughput_kbps": 1760,
+    "rp2040_payload_bytes": 127,
+    "esp32_spi_configured_mhz": 20.0,
+    "esp32_expected_throughput": "1800-2500 kbps"
+  }
+}
