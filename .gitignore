@@ -39,3 +39,5 @@ mesh-stack/tollgate/sdkconfig
 mesh-stack/tollgate/tests/unit/test_*
 !mesh-stack/tollgate/tests/unit/test_*.c
 !mesh-stack/tollgate/tests/unit/test_*.h
+
+captures/

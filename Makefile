@@ -1,9 +1,14 @@
 # Balloon Fresh — Hardware Control Makefile
 # Targets for ESP32-C3 BOOTSEL controller and RP2040 firmware management
 
+SHELL := /bin/bash
+
 BOOTSEL_DIR := firmware/esp32-bootsel-controller
 RP2040_DIR := firmware/rp2040
+ESP32_DIR := firmware/esp32-c3-flrc
 PORT ?= /dev/ttyACM1
+
+.DEFAULT_GOAL := help
 
 .PHONY: bootsel-build bootsel-flash bootsel-diag-flash bootsel-trigger bootsel-flash-rp2040 bootsel-clean bootsel-1200 bootsel-1200-tx bootsel-1200-rx bootsel-1200-both identify-ports
 
@@ -264,17 +269,44 @@ analyze: ## Open capture for analysis. Usage: make analyze FILE=captures/byte-tr
 		echo "Opening $(FILE) in PulseView..."; \
 		pulseview "$(FILE)" & \
 	else \
-		echo "pulseview not installed. Use sigrok-cli for command-line analysis:"; \
-		echo ""; \
-		echo "  # Decode SPI (CS=ch1, SCK=ch2, MOSI=ch3, MISO=ch4):"; \
-		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4"; \
-		echo ""; \
-		echo "  # Show decoded hex:"; \
-		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4 -A spi=hex"; \
-		echo ""; \
-		echo "  # Show protocol metadata:"; \
-		echo "  sigrok-cli -i $(FILE) -P spi:cs=ch1:clk=ch2:mosi=ch3:miso=ch4 -A spi"; \
+		echo "pulseview not installed. Install: sudo apt install pulseview"; \
+		echo "Or use: make decode FILE=$(FILE)"; \
 	fi
+
+## ─── decode ───────────────────────────────────────────────────────────
+## Decode SPI protocol from capture. Usage: make decode FILE=captures/foo.sr
+decode: ## Decode SPI from capture. Usage: make decode FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode FILE=captures/foo.sr"; exit 1; fi
+	@echo "Decoding SPI from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-A spi 2>&1 | grep -v "^spi-1: [01]$$"
+
+## ─── decode-hex ───────────────────────────────────────────────────────
+## Show SPI hex dump. Usage: make decode-hex FILE=captures/foo.sr
+decode-hex: ## SPI hex dump. Usage: make decode-hex FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode-hex FILE=captures/foo.sr"; exit 1; fi
+	@echo "SPI hex dump from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-B spi=mosi 2>&1 | xxd | head -100
+
+## ─── analyze-timing ───────────────────────────────────────────────────
+## Full SPI timing analysis (clock freq, gaps, throughput). Usage: make analyze-timing FILE=captures/foo.sr
+analyze-timing: ## Full SPI timing analysis. Usage: make analyze-timing FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make analyze-timing FILE=captures/foo.sr"; exit 1; fi
+	@python3 scripts/analyze_spi.py "$(FILE)"
+
+## ─── zip-capture ──────────────────────────────────────────────────────
+## Compress capture for sharing. Usage: make zip-capture FILE=captures/foo.sr
+zip-capture: ## Compress capture. Usage: make zip-capture FILE=captures/foo.sr
+	@if [ -z "$(FILE)" ]; then echo "Usage: make zip-capture FILE=captures/foo.sr"; exit 1; fi
+	@BASENAME=$$(basename $(FILE) .sr); \
+	DIR=$$(dirname $(FILE)); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Created: $$DIR/$$BASENAME.zip"
 
 ## ─── list-captures ───────────────────────────────────────────────────
 ## List all capture files with timestamps and sizes.
@@ -347,31 +379,108 @@ reinstall-framework: ## Force reinstall earlephilhower Arduino-Pico core.
 	@$(MAKE) install-framework
 
 ## ─── debug (one-command workflow) ─────────────────────────────────────
-## Build firmware, flash RP2040, start TX, capture SPI signals.
+## Build firmware, auto-flash RP2040 (1200 baud BOOTSEL), start TX, capture SPI signals.
 ## Usage: make debug [ENV=rp2040-cont-tx] [DURATION=1] [OUTPUT=captures/debug.sr]
-## Prerequisites: RP2040 in BOOTSEL mode (hold button, plug USB), logic analyzer connected.
+## Prerequisites: RP2040 connected via USB, logic analyzer connected.
 debug: ## One-command: build + flash + start TX + capture.
 	@echo "=== Balloon Speed Tests — One-Command Debug Workflow ==="
 	@echo ""
 	@echo "Step 1/4: Building firmware ($(or $(ENV),rp2040-cont-tx))..."
 	@cd $(RP2040_DIR) && pio run -e $(or $(ENV),rp2040-cont-tx)
 	@echo ""
-	@echo "Step 2/4: Flashing RP2040 (hold BOOTSEL button, plug USB)..."
+	@echo "Step 2/4: Flashing RP2040..."
 	@UF2=$$(find $(RP2040_DIR)/.pio/build/$(or $(ENV),rp2040-cont-tx) -name firmware.uf2 2>/dev/null | head -1); \
 	if [ -z "$$UF2" ]; then \
 		echo "ERROR: No firmware.uf2 found. Build may have failed."; exit 1; \
 	fi; \
 	if ! command -v picotool >/dev/null 2>&1; then \
-		echo "ERROR: picotool not found."; exit 1; \
+		echo "ERROR: picotool not found. Install: sudo apt install picotool"; exit 1; \
 	fi; \
-	picotool load $$UF2 && picotool reboot || \
-		{ echo "ERROR: RP2040 not in BOOTSEL mode. Hold BOOTSEL button, plug in USB, then retry."; exit 1; }
+	echo "Firmware: $$UF2"; \
+	BOOTSEL_ALREADY=0; \
+	if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then \
+		echo "RP2040 already in BOOTSEL mode (RPI-RP2 disk found). Skipping 1200 baud."; \
+		BOOTSEL_ALREADY=1; \
+	else \
+		echo "Scanning for RP2040 USB CDC port (PID 000a)..."; \
+		PORT=""; \
+		for p in /dev/ttyACM[0-9]; do \
+			[ -e "$$p" ] || continue; \
+			PID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_MODEL_ID=" | cut -d= -f2); \
+			VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+			SERIAL=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_SERIAL_SHORT=" | cut -d= -f2); \
+			echo "  $$p: VID=$$VID PID=$$PID serial=$$SERIAL"; \
+			if [ "$$PID" = "000a" ] && [ "$$VID" = "2e8a" ]; then PORT="$$p"; fi; \
+		done; \
+		if [ -z "$$PORT" ]; then \
+			echo "No RP2040 CDC port. Trying all ACM ports for 1200 baud..."; \
+			for p in /dev/ttyACM[0-9]; do \
+				[ -e "$$p" ] || continue; \
+				VENDOR=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR=" | cut -d= -f2); \
+				if echo "$$VENDOR" | grep -qi "raspberry\|pico\|2e8a"; then PORT="$$p"; fi; \
+			done; \
+		fi; \
+		if [ -z "$$PORT" ]; then \
+			echo "ERROR: No RP2040 found. Not in BOOTSEL, no CDC port."; \
+			echo "Fix: hold white BOOTSEL button, unplug USB, plug back in while holding."; \
+			exit 1; \
+		fi; \
+		echo "Triggering BOOTSEL on $$PORT via aggressive 1200 baud..."; \
+		python3 -c "import serial,time; s=serial.Serial(); s.port='$$PORT'; s.baudrate=1200; s.dtr=False; s.rts=False; \
+			try: s.open(); \
+			except: pass; \
+			try: s.close(); \
+			except: pass; \
+			time.sleep(0.5)" 2>/dev/null; \
+		echo "Waiting for RPI-RP2 drive..."; \
+		OK=""; \
+		for i in $$(seq 1 10); do \
+			if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
+			sleep 1; \
+		done; \
+		if [ -z "$$OK" ]; then \
+			echo "1200 baud failed. Trying stty fallback..."; \
+			stty -F $$PORT 1200 2>/dev/null; sleep 3; \
+			for i in $$(seq 1 10); do \
+				if ls /dev/disk/by-label/RPI-RP2 >/dev/null 2>&1; then OK=1; break; fi; \
+				sleep 1; \
+			done; \
+		fi; \
+		if [ -z "$$OK" ]; then \
+			echo "ERROR: Could not trigger BOOTSEL."; \
+			echo "Hold the white BOOTSEL button, unplug USB, plug back in while holding."; \
+			echo "Then re-run: make debug ENV=$(or $(ENV),rp2040-cont-tx)"; \
+			exit 1; \
+		fi; \
+	fi; \
+	RPIDEV=$$(ls /dev/disk/by-label/RPI-RP2 2>/dev/null | head -1); \
+	RPIBLOCK=$$(readlink -f $$RPIDEV); \
+	echo "RP2040 in BOOTSEL at $$RPIBLOCK"; \
+	echo "Flashing via picotool..."; \
+	picotool load "$$UF2" 2>&1 || { \
+		echo "picotool load failed, trying UF2 copy..."; \
+		FLASHDIR=/tmp/rp2040-flash; \
+		umount $$FLASHDIR 2>/dev/null; \
+		mkdir -p $$FLASHDIR; \
+		sudo mount -o uid=$$(id -u),gid=$$(id -g) $$RPIBLOCK $$FLASHDIR || \
+			sudo mount $$RPIBLOCK $$FLASHDIR; \
+		cp "$$UF2" $$FLASHDIR/ && sync; \
+		umount $$FLASHDIR 2>/dev/null; \
+	}; \
+	echo "Flashed. Waiting for reboot..."; \
+	sleep 3; \
+	picotool reboot 2>/dev/null || true
 	@echo ""
 	@echo "Step 3/4: Waiting for RP2040 serial port + starting TX..."
 	@printf "Waiting for serial port"; \
 	PORT=""; \
-	for i in $$(seq 1 20); do \
-		PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	for i in $$(seq 1 30); do \
+		for p in /dev/ttyACM[0-9]; do \
+			[ -e "$$p" ] || continue; \
+			PID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_MODEL_ID=" | cut -d= -f2); \
+			VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+			if [ "$$PID" = "000a" ] && [ "$$VID" = "2e8a" ]; then PORT="$$p"; break; fi; \
+		done; \
 		if [ -n "$$PORT" ]; then break; fi; \
 		printf "."; sleep 0.5; \
 	done; \
@@ -390,6 +499,8 @@ debug: ## One-command: build + flash + start TX + capture.
 	fi
 	@echo ""
 	@echo "Step 4/4: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@echo "Settling 3s for LA USB re-enumeration..."
+	@sleep 3
 	@mkdir -p $(CAPTURES_DIR)
 	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
 	echo "Capturing to $$OUTPUT ..."; \
@@ -401,7 +512,89 @@ debug: ## One-command: build + flash + start TX + capture.
 	@echo ""
 	@echo "=== Done! ==="
 	@echo "Capture saved to: $(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
-	@echo "Analyze with: make analyze FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr); \
+	BASENAME=$$(basename $$OUTPUT .sr); \
+	DIR=$$(cd $$(dirname $$OUTPUT) && pwd); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Zip ready: $$DIR/$$BASENAME.zip"
+	@echo "Analyze with: make analyze-timing FILE=$(or $(OUTPUT),$(CAPTURES_DIR)/debug.sr)"
+
+## ─── debug-esp32 (ESP32-C3 one-command workflow) ─────────────────────
+## Build ESP32-C3 firmware with CONTINUOUS_TX, flash via ESP-IDF, auto-start TX, capture.
+## Usage: make debug-esp32 [PORT=/dev/ttyUSB0] [DURATION=1] [OUTPUT=captures/esp32-debug.sr]
+## ESP32 firmware auto-starts TX on boot — no serial RUN command needed.
+## Prerequisites: ESP32-C3 connected, logic analyzer connected, ESP-IDF at ~/esp/esp-idf
+.PHONY: debug-esp32
+debug-esp32: ## ESP32-C3: build (CONTINUOUS_TX) + flash + auto-TX + capture.
+	@echo "=== Balloon Speed Tests — ESP32-C3 Debug Workflow ==="
+	@echo ""
+	@echo "Step 1/4: Building ESP32-C3 firmware (CONTINUOUS_TX)..."
+	@source ~/esp/esp-idf/export.sh 2>/dev/null && \
+		cd $(ESP32_DIR) && \
+		idf.py -DCONTINUOUS_TX=1 $(BUILD_ARGS) build
+	@echo ""
+	@echo "Step 2/4: Detecting ESP32 port + flashing..."
+	@source ~/esp/esp-idf/export.sh 2>/dev/null && \
+		ESP_PORT="$(filter-out /dev/ttyACM1,$(PORT))"; \
+		if [ -z "$$ESP_PORT" ]; then \
+			echo "No explicit PORT — auto-detecting ESP32 (VID 303a)..."; \
+			for p in /dev/ttyACM[0-9] /dev/ttyUSB[0-9]; do \
+				[ -e "$$p" ] || continue; \
+				VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+				echo "  $$p: VID=$$VID"; \
+				if [ "$$VID" = "303a" ]; then ESP_PORT="$$p"; break; fi; \
+			done; \
+		fi; \
+		if [ -z "$$ESP_PORT" ]; then \
+			echo "ERROR: No ESP32 found (VID 303a). Pass PORT=/dev/ttyUSB0 explicitly."; \
+			exit 1; \
+		fi; \
+		echo "Using port: $$ESP_PORT"; \
+		cd $(ESP32_DIR) && idf.py -p $$ESP_PORT flash
+	@echo ""
+	@echo "Step 3/4: Waiting for ESP32 TX to start..."
+	@echo "ESP32 firmware auto-starts TX on boot (no RUN command needed)."
+	@echo "Settling 3s for LA USB re-enumeration..."
+	@sleep 3
+	@echo ""
+	@echo "Step 4/4: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@mkdir -p $(CAPTURES_DIR)
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/esp32-debug.sr); \
+	echo "Capturing to $$OUTPUT ..."; \
+	echo "Channel mapping: D0=CS, D1=SCK, D2=MOSI, D3=MISO, D4=BUSY, D5=IRQ, D6=RST"; \
+	sigrok-cli --driver fx2lafw --config samplerate=24mhz --samples $(or $(DURATION),1)000000 \
+		--channels D0,D1,D2,D3,D4,D5,D6 -o $$OUTPUT 2>&1 || \
+		{ echo "ERROR: sigrok-cli failed. Check logic analyzer is plugged in."; \
+		echo "Try: sigrok-cli --list"; exit 1; }
+	@echo ""
+	@echo "=== Done! ==="
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/esp32-debug.sr); \
+	BASENAME=$$(basename $$OUTPUT .sr); \
+	DIR=$$(cd $$(dirname $$OUTPUT) && pwd); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Zip ready: $$DIR/$$BASENAME.zip"
+
+## ─── sweep-esp32 (ESP32-C3 payload size sweep) ───────────────────────
+## Runs 4 captures with different packet sizes: 32, 64, 128, 255 bytes.
+## Each size rebuilds with -DTX_PKT_SIZE=<N> and re-flashes.
+## Results in captures/esp32-sweep-*.sr
+.PHONY: sweep-esp32
+sweep-esp32: ## ESP32-C3 payload size sweep (32/64/128/255 bytes).
+	@for SIZE in 32 64 128 255; do \
+		echo ""; \
+		echo "========================================"; \
+		echo "ESP32 SWEEP: $${SIZE}-byte packets"; \
+		echo "========================================"; \
+		$(MAKE) debug-esp32 \
+			DURATION=1 \
+			OUTPUT=$(CAPTURES_DIR)/esp32-sweep-$${SIZE}.sr \
+			BUILD_ARGS="-DTX_PKT_SIZE=$${SIZE}" \
+			|| { echo "ESP32 SWEEP FAILED at $${SIZE}-byte step"; exit 1; }; \
+		echo ""; \
+		echo "Waiting 2s before next size..."; \
+		sleep 2; \
+	done
+	@echo ""; echo "=== ESP32 SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/esp32-sweep-*.sr"
 
 ## ─── setup ────────────────────────────────────────────────────────────
 ## Run the ansible playbook to install all dependencies.
@@ -414,7 +607,55 @@ setup: ## Install all deps via ansible playbook.
 	@ansible-playbook ansible/setup-debug-env.yml -K --connection=local || \
 		echo "" ; \
 		echo "If ansible sudo prompt timed out, run directly:" ; \
-		echo "  ansible-playbook ansible/setup-debug-env.yml --ask-become-pass --connection=local"
+	@echo "  ansible-playbook ansible/setup-debug-env.yml --ask-become-pass --connection=local"
+
+## ─── sweep (payload size sweep — find throughput sweet spot) ──────────
+## Runs 4 captures with different packet sizes: 32, 64, 128, 255 bytes.
+## Auto-triggers BOOTSEL via 1200 baud between iterations. No manual button.
+## Results in captures/sweep-*.sr
+sweep: ## Payload size sweep. Fully automated — no manual BOOTSEL needed.
+	@for SIZE in 32 64 128 255; do \
+		echo ""; \
+		echo "========================================"; \
+		echo "SWEEP: $${SIZE}-byte packets"; \
+		echo "========================================"; \
+		$(MAKE) debug ENV=rp2040-sweep-$${SIZE} DURATION=1 OUTPUT=$(CAPTURES_DIR)/sweep-$${SIZE}.sr || \
+			{ echo "SWEEP FAILED at $${SIZE}-byte step"; exit 1; }; \
+		echo ""; \
+		echo "Waiting 2s before next size..."; \
+		sleep 2; \
+	done
+	@echo ""; echo "=== SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/sweep-*.sr"
+
+## ─── probe (diagnostic dump for remote debugging) ────────────────────
+## Prints: USB devices, ACM port details, logic analyzer, picotool, RPI-RP2
+probe: ## Dump all USB/serial/device info for remote debugging.
+	@echo "═══ USB DEVICES ═══"
+	@lsusb
+	@echo ""
+	@echo "═══ ACM PORTS ═══"
+	@for dev in /dev/ttyACM[0-9]; do \
+		[ -e "$$dev" ] || continue; \
+		file "$$dev" 2>/dev/null | grep -q "character device" || { echo "$$dev: NOT a char device (REGULAR FILE — see Pitfall #15)"; continue; }; \
+		echo "--- $$dev ---"; \
+		udevadm info -q property "$$dev" 2>/dev/null | grep -E "ID_VENDOR|ID_MODEL|ID_SERIAL|ID_USB_ID|DEVPATH" || echo "  (no udev info)"; \
+	done
+	@echo ""
+	@echo "═══ RPI-RP2 (BOOTSEL) ═══"
+	@ls -la /dev/disk/by-label/RPI-RP2 2>/dev/null || echo "Not in BOOTSEL"
+	@echo ""
+	@echo "═══ PICOTOOL ═══"
+	@which picotool >/dev/null 2>&1 && picotool info 2>&1 || echo "picotool: not found"
+	@echo ""
+	@echo "═══ SIGROK DEVICES ═══"
+	@sigrok-cli --scan-drivers 2>&1 | head -5 || echo "sigrok-cli: not found"
+	@echo ""
+	@echo "═══ PYTHON PYSERIAL ═══"
+	@python3 -c "import serial; print('pyserial OK, version:', serial.__version__)" 2>&1
+	@echo ""
+	@echo "═══ GIT BRANCH ═══"
+	@git branch --show-current
+	@git log --oneline -3
 
 ## ─── help ──────────────────────────────────────────────────────────────
 help: ## Show this help message.
@@ -428,6 +669,8 @@ help: ## Show this help message.
 	@echo ""
 	@echo "Firmware:"
 	@echo "  make debug [ENV=rp2040-cont-tx] [DURATION=1]  One-command: build+flash+TX+capture"
+	@echo "  make debug-esp32 [PORT=/dev/ttyUSB0]  ESP32-C3: build+flash+auto-TX+capture"
+	@echo "  make sweep-esp32  ESP32-C3 payload size sweep (32/64/128/255 bytes)"
 	@echo "  make build [ENV=rp2040-raw-tx]   Build firmware (default: rp2040-raw-tx)"
 	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
 	@echo ""
