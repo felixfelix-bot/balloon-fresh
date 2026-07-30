@@ -15,6 +15,9 @@ TG_CORE_INC := $(REPO_ROOT)/components/tollgate_core/include
 TG_BALLOON_SRC := $(REPO_ROOT)/components/tollgate_balloon/src
 TG_BALLOON_INC := $(REPO_ROOT)/components/tollgate_balloon/include
 
+TG_CLIENT_SRC := $(REPO_ROOT)/components/tollgate_client/src
+TG_CLIENT_INC := $(REPO_ROOT)/components/tollgate_client/include
+
 MUX_SRC := $(REPO_ROOT)/components/mesh_service_mux/src
 MUX_INC := $(REPO_ROOT)/components/mesh_service_mux/include
 
