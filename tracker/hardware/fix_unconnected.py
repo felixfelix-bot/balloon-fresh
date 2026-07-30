@@ -129,19 +129,33 @@ def fix_board(drc_file, pcb_file, board_name):
     print(f"  Written to {pcb_file}")
     return True
 
-# Main
+# Main - uses latest DRC output
 hw_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Find latest DRC files
+def latest_drc(prefix):
+    """Find the most recent DRC file for a board."""
+    candidates = sorted(
+        [f for f in os.listdir(hw_dir) if f.startswith(prefix) and f.endswith('.txt')],
+        key=lambda f: os.path.getmtime(os.path.join(hw_dir, f)),
+        reverse=True
+    )
+    return candidates[0] if candidates else None
+
+v1_drc = latest_drc('drc_v1')
+f33_drc = latest_drc('drc_f33')
+print(f"Using DRC files: V1={v1_drc}, F33={f33_drc}")
 
 # Fix V1
 v1_ok = fix_board(
-    os.path.join(hw_dir, 'drc_v1_baseline.txt'),
+    os.path.join(hw_dir, v1_drc),
     os.path.join(hw_dir, 'hub_board_v1.kicad_pcb'),
     'V1'
 )
 
 # Fix F33
 f33_ok = fix_board(
-    os.path.join(hw_dir, 'drc_f33_baseline.txt'),
+    os.path.join(hw_dir, f33_drc),
     os.path.join(hw_dir, 'hub_board_f33.kicad_pcb'),
     'F33'
 )
