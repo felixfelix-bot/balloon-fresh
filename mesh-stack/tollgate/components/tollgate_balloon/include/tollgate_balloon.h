@@ -76,6 +76,37 @@ esp_err_t tollgate_balloon_on_packet(const char *src_node_id,
                                       const uint8_t *data,
                                       uint16_t len);
 
+/* ── Mesh transport integration (dependency injection) ──────────── */
+
+/*
+ * Send callback type.  The integrator wires this to a wrapper around
+ * mesh_adapter_send().  When tollgate_balloon has a response to send
+ * (ACK/NACK/INFO), it serialises the tollgate protocol message, wraps it
+ * with mesh_service_mux (SVC_TOLLGATE), and calls this callback.
+ */
+typedef void (*tollgate_mesh_send_fn)(const uint8_t *data, uint16_t len);
+
+/*
+ * Register the mesh transport send callback.
+ * Must be called before any packets arrive if responses are expected.
+ * Pass NULL to deregister.
+ */
+void tollgate_balloon_register_mesh(tollgate_mesh_send_fn send_fn);
+
+/*
+ * Called by the integrator when mesh_adapter delivers a reassembled frame.
+ * Unwraps the 1-byte service mux tag and routes SVC_TOLLGATE packets to
+ * tollgate_balloon_on_packet().  Frames for other services (NOSTR, BLOSSOM)
+ * are silently ignored — they should be routed to their respective handlers.
+ *
+ * @param src_node_id  Sender mesh node ID (hex, null-terminated)
+ * @param data         Raw mesh frame (service-mux-wrapped)
+ * @param len          Frame length
+ */
+void tollgate_balloon_on_mesh_frame(const char *src_node_id,
+                                     const uint8_t *data,
+                                     uint16_t len);
+
 /*
  * Periodic tick — call from main loop (1Hz).
  * Expires sessions, checks mint health, sends beacons.
