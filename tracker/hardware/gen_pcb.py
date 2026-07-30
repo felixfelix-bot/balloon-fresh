@@ -690,7 +690,7 @@ def gen_v2():
     rp_pads = ""
     for i, netname in enumerate(rp_nets):
         pin = i + 1
-        y = -8.89 + i * 1.5
+        y = -8.89 + i * 2.54
         pad_type = "rect" if pin == 1 else "oval"
         net_str = f' (net {nid[netname]} "{netname}")' if netname else ""
         rp_pads += f'    (pad "{pin}" thru_hole {pad_type} (at 0 {y:.2f}) (size 1.7 1.7) (drill 0.8) (layers "*.Cu" "*.Mask"){net_str})\n'
@@ -829,170 +829,128 @@ def gen_v2():
   )
 '''
 
-    # === SIGNAL ROUTING ===
-    seg_id2 = 1
-    def seg2(x1, y1, x2, y2, net_name, width=0.25, layer="F.Cu"):
-        nonlocal seg_id2
-        s = f'  (segment (start {x1:.2f} {y1:.2f}) (end {x2:.2f} {y2:.2f}) (width {width}) (layer "{layer}") (net {nid[net_name]} "{net_name}") (uuid "seg-{seg_id2:03d}"))\n'
-        seg_id2 += 1
-        return s
-    def via2(x, y, net_name):
-        nonlocal seg_id2
-        s = f'  (via (at {x:.2f} {y:.2f}) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net {nid[net_name]} "{net_name}") (uuid "via-{seg_id2:03d}"))\n'
-        seg_id2 += 1
-        return s
+    # === CLEARANCE-AWARE ROUTING (uses Router class) ===
+    rt = Router(W, H, clearance=0.25)
+    n3 = nid["3V3"]; nG = nid["GND"]; nSK = nid["SPI0_SCK"]
+    nMO = nid["SPI0_MOSI"]; nMI = nid["SPI0_MISO"]; nNS = nid["SPI0_NSS"]
+    nBY = nid["LR2021_BUSY"]; nRST = nid["LR2021_RST"]; nIRQ = nid["LR2021_IRQ"]
+    nCE = nid["LR2021_CE"]; nSDA = nid["I2C_SDA"]; nSCL = nid["I2C_SCL"]
+    nRS = nid["RF_SUB_868"]; nR4 = nid["RF_2G4_2400"]
+    nET = nid["ESP_TX_RP2040_RX"]; nRT = nid["RP2040_TX_ESP_RX"]; nGT = nid["GPS_TX_ESP_RX"]
+    nVD = nid["VDIV_MID"]; nLED = nid["STATUS_LED"]; nVC = nid["VCAP"]; nSI = nid["SOLAR_IN"]
 
-    t = "\n"
-    # F33 pad absolute positions (center 37.5,28):
-    # Left pins at x=37.5-19.5=18, pitch 2.0mm, pin1 y=28+9=37
-    f33_left_x = 18.0
-    # Right pins at x=37.5+19.5=57, pin10 y=28+9=37
-    f33_right_x = 57.0
+    # Register component pads as obstacles
+    TH = 1.7; SMD = 0.5
+    # ESP32 at (12,15) — pads at x=12-2.54=9.46
+    esp_nets = ["3V3","GND","ESP_TX_RP2040_RX","RP2040_TX_ESP_RX","GPS_TX_ESP_RX",
+                "VDIV_MID","I2C_SDA","I2C_SCL","STATUS_LED"]
+    for i, nn in enumerate(esp_nets):
+        px = 9.46 if i < 8 else 14.54
+        py = 15 + (-8.89 + i * 2.54) if i < 8 else 15 + 8.89
+        rt.add_pad(px, py, TH, TH, nid[nn])
+    # RP2040 at (63,15) — NOW 2.54mm pitch
+    rp_nets2 = ["3V3","GND","SPI0_SCK","SPI0_MOSI","SPI0_MISO","SPI0_NSS",
+                "LR2021_BUSY","LR2021_IRQ","LR2021_RST",None,"LR2021_CE",
+                "RP2040_TX_ESP_RX","ESP_TX_RP2040_RX","GND"]
+    for i, nn in enumerate(rp_nets2):
+        py = 15 + (-8.89 + i * 2.54)
+        if nn: rt.add_pad(63, py, TH, TH, nid[nn])
+    # F33 left pads at x=18, right at x=57, pitch 2.0mm
+    f33_left_nets = ["VCAP","GND","GND","GND","LR2021_CE","GND","GND","GND","RF_SUB_868"]
+    f33_right_nets = ["RF_2G4_2400","GND","SPI0_SCK","SPI0_NSS","LR2021_BUSY",
+                      "SPI0_MOSI","SPI0_MISO","LR2021_RST","LR2021_IRQ"]
+    for i, nn in enumerate(f33_left_nets):
+        py = 28 + (9.0 - i * 2.0)
+        rt.add_pad(18, py, SMD, SMD, nid[nn])
+    for i, nn in enumerate(f33_right_nets):
+        py = 28 + (9.0 - i * 2.0)
+        rt.add_pad(57, py, SMD, SMD, nid[nn])
 
-    # F33 VCC (pin1, left, y=37) → VCAP bus (FAT: 0.8mm for 1.2A PA current)
-    t += seg2(f33_left_x, 37, 16.4, 37, "VCAP", 0.8)
-    t += seg2(16.4, 37, 16.4, 19, "VCAP", 0.8)
-    t += seg2(16.4, 19, 17.15, 19, "VCAP", 0.8)  # to C8/C9/C10 bulk caps
-    # F33 GND pins (left pins 2,3,4,6,7,8 at y=35,33,31,27,25,23) → vias
-    for gy in [35, 33, 31, 27, 25, 23]:
-        t += via2(f33_left_x + 1, gy, "GND")
-        t += seg2(f33_left_x, gy, f33_left_x + 1, gy, "GND", 0.5)
-    # F33 GND pins right (11 at y=31)
-    t += via2(f33_right_x - 1, 31, "GND")
-    t += seg2(f33_right_x, 31, f33_right_x - 1, 31, "GND", 0.5)
+    # 3V3 POWER BUS on B.Cu
+    rt.place(8.95, 40.95, 8.95, 38, n3, 0.5)  # LDO out
+    rt.via(9.46, 38, n3)
+    rt.place(9.46, 38, 63, 38, n3, 0.5, "B.Cu")  # main trunk
+    rt.via(63, 38, n3)
+    rt.place(63, 38, 63, 6.11, n3, 0.5)  # RP2040 pin1
+    rt.place(9.46, 38, 9.46, 6.11, n3, 0.5)  # ESP32 pin1
+    rt.place(9.46, 38, 6, 38, n3, 0.5)  # to GPS
+    rt.place(6, 38, 6, 41.19, n3, 0.5)
+    rt.place(63, 38, 68, 38, n3, 0.5)  # to MS5611
+    rt.place(68, 38, 68, 41.19, n3, 0.5)
 
-    # CE: F33 pin5 (left, y=29) → RP2040 pin11 (63, 15+(-8.89+10*1.5)=15+6.11=21.11)
-    t += seg2(f33_left_x, 29, 14, 29, "LR2021_CE")
-    t += via2(14, 29, "LR2021_CE")
-    t += seg2(14, 29, 14, 21.11, "LR2021_CE", 0.25, "B.Cu")
-    t += via2(14, 21.11, "LR2021_CE")
-    t += seg2(14, 21.11, 63, 21.11, "LR2021_CE")
+    # VCAP power chain (F33 needs 5V from supercap)
+    rt.place(4, 46.73, 4, 44, nSI, 0.8)
+    rt.place(4, 44, 3.5, 40, nSI, 0.8)
+    rt.place(5, 40, 6.5, 40, nVC, 0.8)
+    rt.place(6.5, 40, 6.5, 48, nVC, 0.8)
+    rt.place(6.5, 48, 8.25, 48, nVC, 0.8)
+    # F33 VCC (pin1 at 18,37) → VCAP bus
+    rt.place(18, 37, 16.4, 37, nVC, 0.8)
+    rt.place(16.4, 37, 16.4, 19, nVC, 0.8)
+    rt.place(16.4, 19, 17.15, 19, nVC, 0.8)
 
-    # RF_SUB_868: F33 pin9 (left, y=21) → SMA J1 (4, 28)
-    t += seg2(f33_left_x, 21, f33_left_x, 17, "RF_SUB_868", 0.8)
-    t += seg2(f33_left_x, 17, 4, 17, "RF_SUB_868", 0.8)
-    t += seg2(4, 17, 4, 28, "RF_SUB_868", 0.8)
-    # RF_2G4: F33 pin10 (right, y=37) → SMA J2 (73, 28)
-    t += seg2(f33_right_x, 37, f33_right_x, 33, "RF_2G4_2400", 0.8)
-    t += seg2(f33_right_x, 33, 71, 33, "RF_2G4_2400", 0.8)
-    t += seg2(71, 33, 71, 28, "RF_2G4_2400", 0.8)
-    t += seg2(71, 28, 73, 28, "RF_2G4_2400", 0.8)
+    # GND stitching vias (not mesh — zone pour handles GND)
+    for gx, gy in [(15,10),(60,10),(30,50),(70,50),(5,50),(40,45),
+                   (19,35),(19,33),(19,31),(19,27),(19,25),(19,23),
+                   (56,31),(20,37),(50,37)]:
+        rt.via(gx, gy, nG)
+    # F33 GND pad stubs
+    for gy in [35,33,31,27,25,23]:
+        rt.place(18, gy, 19, gy, nG, 0.5)
+    rt.place(57, 31, 56, 31, nG, 0.5)
 
-    # SPI: F33 right pins → RP2040
-    # SCK: F33 pin12 (right, y=33) → RP pin3 (63, 15+(-8.89+2*1.5)=9.61)
-    t += seg2(f33_right_x, 33, 60, 33, "SPI0_SCK")
-    t += via2(60, 33, "SPI0_SCK")
-    t += seg2(60, 33, 60, 9.61, "SPI0_SCK", 0.25, "B.Cu")
-    t += via2(60, 9.61, "SPI0_SCK")
-    t += seg2(60, 9.61, 63, 9.61, "SPI0_SCK")
-    # NSS: F33 pin13 (right, y=31) → RP pin6 (63, 10.61... wait recompute)
-    # RP2040: pin1 y=-8.89, pin6 y=-8.89+5*1.5=-1.39, abs=15-1.39=13.61
-    t += seg2(f33_right_x, 31, 59, 31, "SPI0_NSS")
-    t += via2(59, 31, "SPI0_NSS")
-    t += seg2(59, 31, 59, 13.61, "SPI0_NSS", 0.25, "B.Cu")
-    t += via2(59, 13.61, "SPI0_NSS")
-    t += seg2(59, 13.61, 63, 13.61, "SPI0_NSS")
-    # BUSY: F33 pin14 (right, y=29) → RP pin7 (63, 15+0.11=15.11)
-    t += seg2(f33_right_x, 29, 58, 29, "LR2021_BUSY")
-    t += via2(58, 29, "LR2021_BUSY")
-    t += seg2(58, 29, 58, 15.11, "LR2021_BUSY", 0.25, "B.Cu")
-    t += via2(58, 15.11, "LR2021_BUSY")
-    t += seg2(58, 15.11, 63, 15.11, "LR2021_BUSY")
-    # MOSI: F33 pin15 (right, y=27) → RP pin4 (63, 15-4.39=10.61... wait)
-    # RP pin4: y=-8.89+3*1.5=-4.39, abs=15-4.39=10.61
-    t += seg2(f33_right_x, 27, 57, 27, "SPI0_MOSI")
-    t += via2(57, 27, "SPI0_MOSI")
-    t += seg2(57, 27, 57, 10.61, "SPI0_MOSI", 0.25, "B.Cu")
-    t += via2(57, 10.61, "SPI0_MOSI")
-    t += seg2(57, 10.61, 63, 10.61, "SPI0_MOSI")
-    # MISO: F33 pin16 (right, y=25) → RP pin5 (63, 15-2.89=12.11)
-    t += seg2(f33_right_x, 25, 56, 25, "SPI0_MISO")
-    t += via2(56, 25, "SPI0_MISO")
-    t += seg2(56, 25, 56, 12.11, "SPI0_MISO", 0.25, "B.Cu")
-    t += via2(56, 12.11, "SPI0_MISO")
-    t += seg2(56, 12.11, 63, 12.11, "SPI0_MISO")
-    # RST: F33 pin17 (right, y=23) → RP pin9 (63, 15+3.11=18.11... wait)
-    # RP pin9: y=-8.89+8*1.5=3.11, abs=15+3.11=18.11
-    t += seg2(f33_right_x, 23, 55, 23, "LR2021_RST")
-    t += via2(55, 23, "LR2021_RST")
-    t += seg2(55, 23, 55, 18.11, "LR2021_RST", 0.25, "B.Cu")
-    t += via2(55, 18.11, "LR2021_RST")
-    t += seg2(55, 18.11, 63, 18.11, "LR2021_RST")
-    # IRQ: F33 pin18 (right, y=21) → RP pin8 (63, 15+1.61=16.61)
-    t += seg2(f33_right_x, 21, 54, 21, "LR2021_IRQ")
-    t += via2(54, 21, "LR2021_IRQ")
-    t += seg2(54, 21, 54, 16.61, "LR2021_IRQ", 0.25, "B.Cu")
-    t += via2(54, 16.61, "LR2021_IRQ")
-    t += seg2(54, 16.61, 63, 16.61, "LR2021_IRQ")
-
-    # UART: ESP32 ↔ RP2040
-    # ESP_TX → RP_RX: ESP pin3 (9.46,11.19) → RP pin13 (63, 15+7.61=22.61... wait)
-    # RP pin13: y=-8.89+12*1.5=9.11, abs=15+9.11=24.11
-    t += seg2(9.46, 11.19, 8, 11.19, "ESP_TX_RP2040_RX")
-    t += via2(8, 11.19, "ESP_TX_RP2040_RX")
-    t += seg2(8, 11.19, 8, 24.11, "ESP_TX_RP2040_RX", 0.25, "B.Cu")
-    t += via2(8, 24.11, "ESP_TX_RP2040_RX")
-    t += seg2(8, 24.11, 63, 24.11, "ESP_TX_RP2040_RX")
-    # RP_TX → ESP: RP pin12 (63, 15+7.61=22.61... wait)
-    # RP pin12: y=-8.89+11*1.5=7.61, abs=15+7.61=22.61
-    t += seg2(63, 22.61, 52, 22.61, "RP2040_TX_ESP_RX")
-    t += via2(52, 22.61, "RP2040_TX_ESP_RX")
-    t += seg2(52, 22.61, 52, 13.73, "RP2040_TX_ESP_RX", 0.25, "B.Cu")
-    t += seg2(52, 13.73, 9.46, 13.73, "RP2040_TX_ESP_RX", 0.25, "B.Cu")
-    t += via2(9.46, 13.73, "RP2040_TX_ESP_RX")
-    # GPS_TX → ESP: GPS pin3 (6, 45+1.27=46.27... wait GPS center 45, pin3 at -3.81+2*2.54=1.27, abs=46.27)
-    # Hmm, GPS center (6,45), pin3 y offset=1.27, so abs=(6,46.27)
-    t += seg2(6, 46.27, 4, 46.27, "GPS_TX_ESP_RX")
-    t += via2(4, 46.27, "GPS_TX_ESP_RX")
-    t += seg2(4, 46.27, 4, 16.27, "GPS_TX_ESP_RX", 0.25, "B.Cu")
-    t += via2(4, 16.27, "GPS_TX_ESP_RX")
-    t += seg2(4, 16.27, 9.46, 16.27, "GPS_TX_ESP_RX")
-
-    # I2C: ESP32 → MS5611
-    # SDA: ESP pin7 (9.46, 15+6.35=21.35) → MS pin3 (68, 45+1.27=46.27)
-    t += seg2(9.46, 21.35, 7, 21.35, "I2C_SDA")
-    t += via2(7, 21.35, "I2C_SDA")
-    t += seg2(7, 21.35, 7, 46.27, "I2C_SDA", 0.25, "B.Cu")
-    t += seg2(7, 46.27, 68, 46.27, "I2C_SDA", 0.25, "B.Cu")
-    t += via2(68, 46.27, "I2C_SDA")
-    # SCL: ESP pin8 (9.46, 15+8.89=23.89) → MS pin4 (68, 45+3.81=48.81)
-    t += seg2(9.46, 23.89, 6, 23.89, "I2C_SCL")
-    t += via2(6, 23.89, "I2C_SCL")
-    t += seg2(6, 23.89, 6, 48.81, "I2C_SCL", 0.25, "B.Cu")
-    t += seg2(6, 48.81, 68, 48.81, "I2C_SCL", 0.25, "B.Cu")
-    t += via2(68, 48.81, "I2C_SCL")
-
-    # POWER: 3V3 to ESP32, RP2040, GPS, MS5611
-    t += seg2(8.95, 40.95, 8.95, 38, "3V3", 0.5)  # LDO out
-    t += seg2(8.95, 38, 9.46, 38, "3V3", 0.5)
-    t += seg2(9.46, 38, 9.46, 21.35, "3V3", 0.5)  # up to ESP32 area
-    t += seg2(9.46, 21.35, 9.46, 6.11, "3V3", 0.5)  # ESP32 pin1
-    t += seg2(9.46, 38, 63, 38, "3V3", 0.5)  # horizontal to RP2040
-    t += seg2(63, 38, 63, 6.11, "3V3", 0.5)  # up to RP pin1
-    t += seg2(9.46, 38, 6, 38, "3V3", 0.5)  # to GPS area
-    t += seg2(6, 38, 6, 41.19, "3V3", 0.5)  # GPS pin1
-    t += seg2(63, 38, 68, 38, "3V3", 0.5)  # to MS5611
-    t += seg2(68, 38, 68, 41.19, "3V3", 0.5)  # MS pin1
-
-    # VCAP power: solar → BAT54 → LDO → supercap → F33
-    t += seg2(4, 46.73, 4, 44, "SOLAR_IN", 0.8)  # solar pin1
-    t += seg2(4, 44, 3.5, 40, "SOLAR_IN", 0.8)  # to BAT54 anode
-    t += seg2(5, 40, 6.5, 40, "VCAP", 0.8)  # BAT54 cathode → VCAP
-    t += seg2(6.5, 40, 6.5, 48, "VCAP", 0.8)  # to supercap
-    t += seg2(6.5, 48, 8.25, 48, "VCAP", 0.8)  # SC pin1
-
+    # SIGNAL ROUTING on F.Cu
+    # CE: F33 pin5 (18,29) → RP pin11 (63, 15+(-8.89+10*2.54)=15+16.51=31.51)
+    rt.connect(18, 29, 63, 31.51, nCE, 0.25)
+    # RF traces (fat, short)
+    rt.place(18, 21, 18, 17, nRS, 0.8)
+    rt.place(18, 17, 4, 17, nRS, 0.8)
+    rt.place(4, 17, 4, 28, nRS, 0.8)
+    rt.place(57, 37, 57, 33, nR4, 0.8)
+    rt.place(57, 33, 71, 33, nR4, 0.8)
+    rt.place(71, 33, 71, 28, nR4, 0.8)
+    rt.place(71, 28, 73, 28, nR4, 0.8)
+    # SPI: F33 right → RP2040 (use B.Cu for long runs)
+    # SCK: F33 pin12 (57,33) → RP pin3 (63, 15+(-8.89+2*2.54)=15-3.81=11.19)
+    rt.connect(57, 33, 63, 11.19, nSK, 0.25)
+    # NSS: F33 pin13 (57,31) → RP pin6 (63, 15+(-8.89+5*2.54)=15+3.81=18.81)
+    rt.connect(57, 31, 63, 18.81, nNS, 0.25)
+    # BUSY: F33 pin14 (57,29) → RP pin7 (63, 15+(-8.89+6*2.54)=15+6.35=21.35)
+    rt.connect(57, 29, 63, 21.35, nBY, 0.25)
+    # MOSI: F33 pin15 (57,27) → RP pin4 (63, 15+(-8.89+3*2.54)=15-1.27=13.73)
+    rt.connect(57, 27, 63, 13.73, nMO, 0.25)
+    # MISO: F33 pin16 (57,25) → RP pin5 (63, 15+(-8.89+4*2.54)=15+1.27=16.27)
+    rt.connect(57, 25, 63, 16.27, nMI, 0.25)
+    # RST: F33 pin17 (57,23) → RP pin9 (63, 15+(-8.89+8*2.54)=15+11.43=26.43)
+    rt.connect(57, 23, 63, 26.43, nRST, 0.25)
+    # IRQ: F33 pin18 (57,21) → RP pin8 (63, 15+(-8.89+7*2.54)=15+8.89=23.89)
+    rt.connect(57, 21, 63, 23.89, nIRQ, 0.25)
+    # UART
+    # ESP_TX → RP_RX: ESP pin3 (9.46,11.19) → RP pin13 (63, 15+(-8.89+12*2.54)=15+21.59=36.59)
+    rt.connect(9.46, 11.19, 63, 36.59, nET, 0.25)
+    # RP_TX → ESP: RP pin12 (63, 15+(-8.89+11*2.54)=15+19.05=34.05) → ESP pin4 (9.46,13.73)
+    rt.connect(63, 34.05, 9.46, 13.73, nRT, 0.25)
+    # GPS_TX → ESP: GPS pin3 (6,46.27) → ESP pin5 (9.46,16.27)
+    rt.connect(6, 46.27, 9.46, 16.27, nGT, 0.25)
+    # I2C
+    # SDA: ESP pin7 (9.46,21.35) → MS pin3 (68,46.27)
+    rt.connect(9.46, 21.35, 68, 46.27, nSDA, 0.25)
+    # SCL: ESP pin8 (9.46,23.89) → MS pin4 (68,48.81)
+    rt.connect(9.46, 23.89, 68, 48.81, nSCL, 0.25)
     # STATUS LED
-    t += seg2(14.54, 23.89, 14.54, 5, "STATUS_LED")
-    t += seg2(14.54, 5, 18, 5, "STATUS_LED")
-
+    rt.place(14.54, 23.89, 14.54, 5, nLED, 0.25)
+    rt.place(14.54, 5, 18, 5, nLED, 0.25)
     # VDIV
-    t += seg2(9.46, 18.81, 3, 18.81, "VDIV_MID", 0.25)
+    rt.place(9.46, 18.81, 3, 18.81, nVD, 0.25)
 
-    # GND stitching vias
-    for gx, gy in [(15, 10), (60, 10), (30, 50), (70, 50), (5, 50), (40, 45)]:
-        t += via2(gx, gy, "GND")
+    stats = rt.summary()
+    print(f"  F33 Router: {stats['segments']} segments, {stats['vias']} vias, "
+          f"{stats['warnings']} warnings")
+    if rt.warnings:
+        for w in rt.warnings[:5]:
+            print(f"    {w}")
 
-    out += t
+    out += rt.emit()
 
     # Ground pour + close
     out += ground_pour(W, H, nid["GND"])
@@ -1005,6 +963,7 @@ def gen_v2():
     print(f"  Board: {W}x{H}mm, 2-layer, 0.8mm")
     print(f"  F33 module: 39x21mm at center")
     print(f"  SMA connectors: 2x edge-mount (sub-GHz + 2.4GHz)")
+    print(f"  Traces: {len(rt.segments)} ({len(rt.vias)} vias)")
     return filepath
 
 
