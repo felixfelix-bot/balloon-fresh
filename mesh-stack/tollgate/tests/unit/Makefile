@@ -12,6 +12,9 @@ SECP256K1_CFG := $(REPO_ROOT)/components/secp256k1
 TG_CORE_SRC := $(REPO_ROOT)/components/tollgate_core/src
 TG_CORE_INC := $(REPO_ROOT)/components/tollgate_core/include
 
+TG_BALLOON_SRC := $(REPO_ROOT)/components/tollgate_balloon/src
+TG_BALLOON_INC := $(REPO_ROOT)/components/tollgate_balloon/include
+
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-sign-compare \
           -std=gnu17 -g -O0 \
@@ -46,7 +49,7 @@ TG_CORE_FULL_SRCS := $(TG_CORE_SRC)/tollgate_core_cashu.c \
 # Tests we ship in this tree
 TESTS := test_geohash test_identity test_nostr_event test_cashu test_session \
          test_firewall_sandbox test_beacon test_mint_health test_mint_health_core \
-         test_portal
+         test_portal test_payment_proto
 
 .PHONY: all test clean $(TESTS)
 
@@ -118,6 +121,11 @@ test_mint_health_core: test_mint_health_core.c $(TG_CORE_SRC)/tollgate_core_mint
 
 test_portal: test_portal.c $(TG_CORE_SRC)/tollgate_core_portal.c $(TG_CORE_SRC)/tollgate_core_session.c $(TG_CORE_SRC)/tollgate_core_firewall.c
 	$(CC) $(CFLAGS) $(TG_CORE_OBJS_CFLAGS) $^ -o $@ $(LDFLAGS)
+
+# --- tollgate_balloon payment protocol test ---
+
+test_payment_proto: test_payment_proto.c $(TG_BALLOON_SRC)/tollgate_payment_proto.c
+	$(CC) $(CFLAGS) -I $(TG_BALLOON_INC) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(TESTS) $(SECP256K1_OBJ)
