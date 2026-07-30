@@ -3,7 +3,7 @@
 - Kanban Telemetry: no board
 - Last Commit: 65453cc — docs: update status — phase execution, rig firmware built
 - Immediate Blockers: BMP280 + ESP32-C3 not wired to DQ05. No helium source sourced yet.
-- Dependencies Waiting On: circuit-design payload weight estimates (V1 non-PA vs V2 F33 2W PA) for balloon count/gas volume calculations — BOARD DESIGN NOW FROZEN (Gerbers+JLCPCB ready per discovery sync 2026-07-30), weights calculable from final BOM
+- Dependencies: Payload weight estimates DONE (261f618). See docs/PAYLOAD-WEIGHT-ESTIMATES.md. Key: minimal tracker ~8g (PASS <9g), mesh V1 ~11.6g with thin-film solar (PASS <14g). Standard 2g solar cells make both targets unreachable.
 - Next 3 Deliverables: (1) Update protocol with dual-variant payload weights, (2) Flash pressure rig firmware to ESP32-C3 when connected, (3) Run DecoGlee 18" batch leak test
 - Estimated Integration Readiness: unknown (hardware-dependent)
 - Critical Output: Pre-stretching protocol (372 lines) + leak test methodology + pressure test rig firmware (ESP32-C3 + BMP280)
