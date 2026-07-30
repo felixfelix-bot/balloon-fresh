@@ -41,3 +41,5 @@ mesh-stack/tollgate/tests/unit/test_*
 !mesh-stack/tollgate/tests/unit/test_*.h
 
 captures/
+tracker/firmware/bench_test/build/
+tracker/firmware/bench_test/sdkconfig
