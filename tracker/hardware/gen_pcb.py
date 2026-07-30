@@ -4,6 +4,7 @@ Writes S-expression text directly — no pcbnew module needed.
 Outputs valid KiCad 9 PCB files with components, routing, and ground pour."""
 
 import os, textwrap, uuid
+from router import Router
 
 OUTDIR = os.path.dirname(os.path.abspath(__file__))
 
