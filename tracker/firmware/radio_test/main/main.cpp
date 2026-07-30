@@ -139,9 +139,26 @@ static void run_rx(EspHalLr2021Radio& radio) {
            TEST_PAYLOAD_LEN);
 
     uint32_t received = 0;
+    uint32_t heartbeat = 0;
 
     while (true) {
-        // Poll IRQ status register
+        // Poll IRQ PIN directly (GPIO5/DIO9) — NOT SPI status register.
+        // Proven firmware uses pin polling: SPI status reads require BUSY low,
+        // which may not happen during continuous RX mode.
+        if (!gpio_get_level((gpio_num_t)5)) {
+            // Heartbeat every 2 seconds
+            if ((heartbeat % 2000) == 0 && heartbeat > 0) {
+                printf("DBG: irq_pin=%d busy=%d\n",
+                       gpio_get_level((gpio_num_t)5),
+                       gpio_get_level((gpio_num_t)4));
+            }
+            heartbeat++;
+            vTaskDelay(pdMS_TO_TICKS(1));
+            continue;
+        }
+
+        // IRQ pin HIGH — packet received (or other IRQ source)
+        // NOW safe to read status register via SPI
         uint32_t flags = 0;
         radio.get_irq_status(flags);
 

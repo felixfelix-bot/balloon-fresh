@@ -120,9 +120,23 @@ esp_err_t EspHalLr2021Radio::init_hardware() {
 // ════════════════════════════════════════════════════════════════════
 
 void EspHalLr2021Radio::wait_busy() {
-    uint32_t timeout = LR2021_BUSY_TIMEOUT_ITER;
-    while (busy_high() && --timeout) {
-        esp_rom_delay_us(1);
+    // Hybrid wait: tight spin for fast commands, yield to FreeRTOS for calibration.
+    // Pure esp_rom_delay_us loop starves FreeRTOS watchdog during CALIB_FRONT_END.
+    const uint32_t SPIN_THRESHOLD = 200;
+    const uint32_t MAX_DELAY_MS = 500;
+    uint32_t spin = 0;
+    uint32_t ms = 0;
+    while (busy_high()) {
+        if (spin < SPIN_THRESHOLD) {
+            esp_rom_delay_us(1);
+            spin++;
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(1));
+            if (++ms >= MAX_DELAY_MS) {
+                ESP_LOGE(TAG, "BUSY timeout after %lu ms", (unsigned long)MAX_DELAY_MS);
+                break;
+            }
+        }
     }
 }
 
@@ -389,6 +403,11 @@ Lr2021Error EspHalLr2021Radio::start_rx() {
     // Clear IRQ
     uint8_t cmd_clr_irq[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
     spi_write(cmd_clr_irq, 6);
+    vTaskDelay(pdMS_TO_TICKS(1));
+
+    // Clear RX FIFO — stale data can prevent new packet detection.
+    uint8_t cmd_clr_rxfifo[] = { 0x01, 0x1E };
+    spi_write(cmd_clr_rxfifo, 2);
     vTaskDelay(pdMS_TO_TICKS(1));
 
     // Enter continuous RX
