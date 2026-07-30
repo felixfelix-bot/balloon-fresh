@@ -417,242 +417,165 @@ def gen_v1():
   )
 '''
 
-    # === KEY TRACES (power + critical signal paths) ===
-    # These are the most important traces. Unrouted nets can be added later or in KiCad GUI.
-    seg_id = 1
-    def seg(x1, y1, x2, y2, net_name, width=0.25, layer="F.Cu"):
-        nonlocal seg_id
-        s = f'  (segment (start {x1:.2f} {y1:.2f}) (end {x2:.2f} {y2:.2f}) (width {width}) (layer "{layer}") (net {nid[net_name]} "{net_name}") (uuid "seg-{seg_id:03d}"))\n'
-        seg_id += 1
-        return s
+    # === CLEARANCE-AWARE ROUTING (uses Router class) ===
+    rt = Router(W, H, clearance=0.3)
+    n3 = nid["3V3"]; nG = nid["GND"]; nSK = nid["SPI0_SCK"]
+    nMO = nid["SPI0_MOSI"]; nMI = nid["SPI0_MISO"]; nNS = nid["SPI0_NSS"]
+    nBY = nid["LR2021_BUSY"]; nRST = nid["LR2021_RST"]; nD9 = nid["LR2021_DIO9"]
+    nSDA = nid["I2C_SDA"]; nSCL = nid["I2C_SCL"]
+    nRS = nid["RF_SUB_868"]; nR4 = nid["RF_2G4_2400"]
+    nET = nid["ESP_TX_RP2040_RX"]; nRT = nid["RP2040_TX_ESP_RX"]; nGT = nid["GPS_TX_ESP_RX"]
+    nVD = nid["VDIV_MID"]; nLED = nid["STATUS_LED"]; nLA = nid["LED_ANODE"]
+    nVC = nid["VCAP"]; nSI = nid["SOLAR_IN"]
 
-    def via(x, y, net_name):
-        nonlocal seg_id
-        s = f'  (via (at {x:.2f} {y:.2f}) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net {nid[net_name]} "{net_name}") (uuid "via-{seg_id:03d}"))\n'
-        seg_id += 1
-        return s
+    # --- Register component pads as obstacles ---
+    TH = 1.7  # through-hole pad size
+    SMD = 0.5  # SMD pad size
+    # ESP32 pads
+    esp_pads = [(9.46,3.11,n3),(9.46,5.65,nG),(9.46,8.19,nET),(9.46,10.73,nRT),
+                (9.46,13.27,nGT),(9.46,15.81,nVD),(9.46,18.35,nSDA),(9.46,20.89,nSCL),
+                (14.54,20.89,nLED),(14.54,18.35,0)]
+    for px,py,pn in esp_pads:
+        if pn: rt.add_pad(px,py,TH,TH,pn)
+    # RP2040 pads
+    rp_pads = [(38,3.11,n3),(38,4.61,nG),(38,6.11,nSK),(38,7.61,nMO),
+               (38,9.11,nMI),(38,10.61,nNS),(38,12.11,nBY),(38,13.61,nD9),
+               (38,15.11,nRST),(38,18.11,nRT),(38,19.61,nET),(38,21.11,nG)]
+    for px,py,pn in rp_pads:
+        rt.add_pad(px,py,TH,TH,pn)
+    # LR2021 pads (left x=15.095, right x=34.905)
+    # Pin order: pin1 at BOTTOM (y=30.16), pin9 at TOP (y=19.84)
+    lr_left = [(15.095,30.16,n3),(15.095,28.87,nG),(15.095,27.58,nMI),
+               (15.095,26.29,nMO),(15.095,25.0,nSK),(15.095,23.71,nNS),
+               (15.095,22.42,nBY),(15.095,21.13,nG),(15.095,19.84,nRS)]
+    lr_right = [(34.905,30.16,nG),(34.905,28.87,nG),(34.905,27.58,0),
+                (34.905,26.29,nD9),(34.905,25.0,nRST),(34.905,23.71,0),
+                (34.905,22.42,nG),(34.905,21.13,nG),(34.905,19.84,nR4)]
+    for px,py,pn in lr_left+lr_right:
+        if pn: rt.add_pad(px,py,SMD,SMD,pn)
 
-    traces = "\n"
-    # === POWER TRACES ===
-    traces += seg(5, 22.95, 5, 20, "3V3", 0.5)
-    traces += seg(5, 20, 9.46, 20, "3V3", 0.5)
-    traces += seg(9.46, 20, 9.46, 3.11, "3V3", 0.5)
-    traces += seg(5, 20, 38, 20, "3V3", 0.5)
-    traces += seg(38, 20, 38, 3.11, "3V3", 0.5)
-    traces += seg(15.1, 30.16, 15.1, 28, "3V3", 0.5)
-    traces += seg(15.1, 28, 25, 28, "3V3", 0.5)
-    traces += seg(25, 28, 25, 25, "3V3", 0.5)
-    # 3V3 to GPS + MS5611
-    traces += seg(5, 20, 5, 29.19, "3V3", 0.5)
-    traces += seg(5, 29.19, 6, 29.19, "3V3", 0.5)
-    traces += seg(44, 29.19, 44, 33, "3V3", 0.5)
+    # --- 3V3 POWER BUS on B.Cu ---
+    # Main trunk at y=5, connects ESP32 3V3 → RP2040 3V3 → LR2021 3V3
+    rt.place(9.46,3.11, 9.46,5, n3, 0.5)  # ESP32 → B.Cu entry
+    rt.via(9.46,5, n3)
+    rt.place(9.46,5, 38,5, n3, 0.5, "B.Cu")  # main trunk
+    rt.via(38,5, n3)
+    rt.place(38,5, 38,3.11, n3, 0.5)  # → RP2040
+    # Branch to LR2021
+    rt.via(25,5, n3)
+    rt.place(25,5, 25,19.84, n3, 0.5, "B.Cu")
+    rt.place(25,19.84, 15.095,19.84, n3, 0.5)
+    # Branch to GPS (6,29.19)
+    rt.via(12,5, n3)
+    rt.place(12,5, 12,29.19, n3, 0.5, "B.Cu")
+    rt.place(12,29.19, 6,29.19, n3, 0.5)
+    # Branch to MS5611/R1/R2 (44,29-35)
+    rt.via(42,5, n3)
+    rt.place(42,5, 42,29.19, n3, 0.5, "B.Cu")
+    rt.place(42,29.19, 44,29.19, n3, 0.5)
+    rt.place(44,29.19, 44,33, n3, 0.5)
+    rt.place(42.5,33, 44,33, n3, 0.25)
+    rt.place(41.5,30, 43.5,30, n3, 0.25)
+    # Decoupling caps
+    rt.place(14.6,30.16, 15.1,30.16, n3, 0.25)
+    rt.place(14.45,32.0, 14.6,32.0, n3, 0.25)
+    rt.place(14.6,32.0, 14.6,30.16, n3, 0.25)
+    # U5 LDO output → 3V3
+    rt.place(5.95,22.95, 5.0,22.95, n3, 0.25)
+    rt.place(5.0,22.95, 5.0,29.19, n3, 0.5)
+    rt.place(5.0,29.19, 6,29.19, n3, 0.5)
+    # TP3
+    rt.place(33,38, 33,35, n3, 0.25)
 
-    # VCAP: solar → BAT54 → LDO → supercap
-    traces += seg(3, 35.73, 3, 33, "SOLAR_IN", 0.5)
-    traces += seg(3, 33, 2.5, 18, "SOLAR_IN", 0.5)
-    traces += seg(2.5, 18, 4, 18, "SOLAR_IN", 0.5)  # wait, BAT54 at (4,18)
-    traces += seg(5.5, 18, 8, 18, "VCAP", 0.5)  # BAT54 cathode → VCAP bus
-    traces += seg(8, 18, 8, 37, "VCAP", 0.5)  # to supercap
-    traces += seg(5.95, 22, 5.95, 20, "VCAP", 0.5)  # LDO input
+    # --- GND connections on B.Cu (stubs only, zone pour fills the rest) ---
+    # GND stitching vias (NOT full mesh lines — those conflict with 3V3 bus)
+    for gx,gy in [(10,5),(20,5),(30,5),(40,5),(10,15),(20,15),(30,15),
+                  (10,25),(20,25),(30,25),(5,35),(15,35),(25,35),(35,35),(45,35)]:
+        rt.via(gx,gy, nG)
+    # GND pad → nearest via stubs
+    rt.place(9.46,5.65, 10,5.65, nG, 0.25); rt.via(10,5.65, nG)
+    rt.place(9.96,3.11, 10,3.11, nG, 0.25); rt.place(10,3.11, 10,5, nG, 0.25)
+    rt.place(38.5,3.0, 40,3.0, nG, 0.25); rt.place(40,3.0, 40,5, nG, 0.25)
+    rt.place(15.095,21.13, 15.5,20.5, nG, 0.25); rt.via(15.5,20.5, nG)
+    rt.place(15.095,28.87, 15.5,29.5, nG, 0.25); rt.via(15.5,29.5, nG)
+    rt.place(34.905,21.13, 34.5,20.5, nG, 0.25); rt.via(34.5,20.5, nG)
+    rt.place(34.905,22.42, 34.5,23.0, nG, 0.25); rt.via(34.5,23.0, nG)
+    rt.place(34.905,30.16, 34.5,30.5, nG, 0.25); rt.via(34.5,30.5, nG)
+    rt.place(5.95,21.05, 5.0,21.05, nG, 0.25); rt.via(5.0,21.05, nG)
+    rt.place(6.65,24, 6.0,24, nG, 0.25); rt.via(6.0,24, nG)
+    rt.place(5.5,15, 5.5,14, nG, 0.25); rt.via(5.5,14, nG)
+    rt.place(44.5,30, 45,30, nG, 0.25); rt.via(45,30, nG)
+    rt.place(15.2,4, 15.2,5, nG, 0.25)
+    rt.place(37,38, 37,37, nG, 0.25); rt.via(37,37, nG)
+    rt.place(3,38.27, 3,37, nG, 0.5); rt.via(3,37, nG)
+    rt.place(9.75,37, 10,37, nG, 0.5); rt.via(10,37, nG)
+    rt.place(6.5,30, 7,30, nG, 0.25); rt.via(7,30, nG)
+    rt.place(6,31.73, 5,35, nG, 0.25); rt.via(5,35, nG)
+    rt.place(15.6,30.16, 16,30, nG, 0.25); rt.via(16,30, nG)
 
-    # === SPI BUS (RP2040 → LR2021) ===
-    # SCK: pin3 (38,6.11) → LR2021 pin5 (15.095,25)
-    traces += seg(38, 6.11, 36, 6.11, "SPI0_SCK")
-    traces += seg(36, 6.11, 36, 25, "SPI0_SCK")
-    traces += seg(36, 25, 15.095, 25, "SPI0_SCK")
-    # MOSI: pin4 (38,7.61) → LR2021 pin4 (15.095,26.29)
-    traces += seg(38, 7.61, 36.5, 7.61, "SPI0_MOSI")
-    traces += seg(36.5, 7.61, 36.5, 26.29, "SPI0_MOSI")
-    traces += seg(36.5, 26.29, 15.095, 26.29, "SPI0_MOSI")
-    # MISO: pin5 (38,9.11) → LR2021 pin3 (15.095,27.58)
-    traces += seg(38, 9.11, 37, 9.11, "SPI0_MISO")
-    traces += seg(37, 9.11, 37, 27.58, "SPI0_MISO")
-    traces += seg(37, 27.58, 15.095, 27.58, "SPI0_MISO")
-    # NSS: pin6 (38,10.61) → LR2021 pin6 (15.095,23.71)
-    traces += seg(38, 10.61, 35.5, 10.61, "SPI0_NSS")
-    traces += seg(35.5, 10.61, 35.5, 23.71, "SPI0_NSS")
-    traces += seg(35.5, 23.71, 15.095, 23.71, "SPI0_NSS")
+    # --- VCAP / SOLAR power chain ---
+    rt.place(3,35.73, 3,33, nSI, 0.5)
+    rt.place(3,33, 2.5,18, nSI, 0.5)
+    rt.place(2.5,18, 4,18, nSI, 0.5)
+    rt.place(5.5,18, 8,18, nVC, 0.5)
+    rt.place(8,18, 8,37, nVC, 0.5)
+    rt.place(8,37, 6.25,37, nVC, 0.5)
+    rt.place(5.95,22, 5.95,18, nVC, 0.25)
+    rt.place(5.95,18, 5.5,18, nVC, 0.25)
+    rt.place(4.05,21.05, 4.05,22, nVC, 0.25)
+    rt.place(4.05,22, 5.95,22, nVC, 0.25)
+    rt.place(5.95,22, 5.95,22.95, nVC, 0.25)
+    rt.place(2.5,16, 2.5,15, nVC, 0.25)
+    rt.place(2.5,15, 4.5,15, nVC, 0.25)
 
-    # === CONTROL SIGNALS ===
-    # BUSY: pin7 (38,12.11) → LR2021 pin7 (15.095,22.42) — route on B.Cu
-    traces += via(33, 12.11, "LR2021_BUSY")
-    traces += seg(38, 12.11, 33, 12.11, "LR2021_BUSY")
-    traces += seg(33, 12.11, 33, 22.42, "LR2021_BUSY", 0.25, "B.Cu")
-    traces += via(33, 22.42, "LR2021_BUSY")
-    traces += seg(33, 22.42, 15.095, 22.42, "LR2021_BUSY")
-    # IRQ (DIO9): pin8 (38,13.61) → LR2021 pin15 (34.905,26.29)
-    traces += seg(38, 13.61, 34.905, 13.61, "LR2021_DIO9")
-    traces += seg(34.905, 13.61, 34.905, 26.29, "LR2021_DIO9")
-    # RST: pin9 (38,15.11) → LR2021 pin14 (34.905,25)
-    traces += seg(38, 15.11, 34.905, 15.11, "LR2021_RST")
-    traces += seg(34.905, 15.11, 34.905, 25, "LR2021_RST")
+    # --- SIGNAL ROUTING on F.Cu ---
+    # SPI bus (RP2040 → LR2021) — pad coords: pin5 SCK=(15.095,25), pin4 MOSI=(15.095,26.29),
+    # pin3 MISO=(15.095,27.58), pin6 NSS=(15.095,23.71)
+    rt.connect(38,6.11, 15.095,25.0, nSK, 0.25)
+    rt.connect(38,7.61, 15.095,26.29, nMO, 0.25)
+    rt.connect(38,9.11, 15.095,27.58, nMI, 0.25)
+    rt.connect(38,10.61, 15.095,23.71, nNS, 0.25)
+    # Control signals — pin7 BUSY=(15.095,22.42), DIO9=right pin (34.905,26.29), RST=right (34.905,25.0)
+    rt.connect(38,12.11, 15.095,22.42, nBY, 0.25)
+    rt.connect(38,13.61, 34.905,26.29, nD9, 0.25)
+    rt.connect(38,15.11, 34.905,25.0, nRST, 0.25)
+    # UART
+    rt.connect(9.46,8.19, 38,19.61, nET, 0.25)
+    rt.connect(38,18.11, 9.46,10.73, nRT, 0.25)
+    rt.connect(6,34.27, 9.46,13.27, nGT, 0.25)
+    # I2C
+    rt.connect(9.46,18.35, 44,33, nSDA, 0.25)
+    rt.connect(9.46,20.89, 44,35.54, nSCL, 0.25)
+    rt.place(44,33, 44,34.27, nSDA, 0.25)
+    rt.place(44,35.54, 44,36.81, nSCL, 0.25)
+    # Status LED
+    rt.place(14.54,20.89, 14.54,4, nLED, 0.25)
+    rt.place(14.54,4, 18,4, nLED, 0.25)
+    rt.place(19,4, 16.8,4, nLA, 0.25)
+    # Voltage divider
+    rt.place(9.46,15.81, 3.5,15.81, nVD, 0.25)
+    rt.place(3.5,15.81, 3.5,15, nVD, 0.25)
+    rt.place(4.5,15, 5.0,15.81, nVD, 0.25)
+    # RF antenna traces
+    rt.place(15.095,19.84, 15.095,18, nRS, 0.8)
+    rt.place(15.095,18, 48,18, nRS, 0.8)
+    rt.place(48,18, 48,20, nRS, 0.8)
+    rt.place(34.905,19.84, 34.905,17, nR4, 0.8)
+    rt.place(34.905,17, 47,17, nR4, 0.8)
+    rt.place(47,17, 47,25, nR4, 0.8)
+    rt.place(47,25, 48,25, nR4, 0.8)
+    # VCAP bus on F.Cu (local)
+    rt.place(2.5,16, 8,16, nVC, 0.25)
 
-    # === UART ===
-    # ESP_TX → RP2040: ESP pin3 (9.46,8.19) → RP pin12 (38,19.61)
-    traces += seg(9.46, 8.19, 8, 8.19, "ESP_TX_RP2040_RX")
-    traces += via(8, 8.19, "ESP_TX_RP2040_RX")
-    traces += seg(8, 8.19, 8, 19.61, "ESP_TX_RP2040_RX", 0.25, "B.Cu")
-    traces += via(8, 19.61, "ESP_TX_RP2040_RX")
-    traces += seg(8, 19.61, 38, 19.61, "ESP_TX_RP2040_RX")
-    # RP_TX → ESP: RP pin11 (38,18.11) → ESP pin4 (9.46,10.73)
-    traces += seg(38, 18.11, 33, 18.11, "RP2040_TX_ESP_RX")
-    traces += via(33, 18.11, "RP2040_TX_ESP_RX")
-    traces += seg(33, 18.11, 33, 10.73, "RP2040_TX_ESP_RX", 0.25, "B.Cu")
-    traces += seg(33, 10.73, 9.46, 10.73, "RP2040_TX_ESP_RX", 0.25, "B.Cu")
-    traces += via(9.46, 10.73, "RP2040_TX_ESP_RX")
-    # GPS_TX → ESP: GPS pin3 (6,34.27) → ESP pin5 (9.46,13.27)
-    traces += seg(6, 34.27, 4, 34.27, "GPS_TX_ESP_RX")
-    traces += via(4, 34.27, "GPS_TX_ESP_RX")
-    traces += seg(4, 34.27, 4, 13.27, "GPS_TX_ESP_RX", 0.25, "B.Cu")
-    traces += via(4, 13.27, "GPS_TX_ESP_RX")
-    traces += seg(4, 13.27, 9.46, 13.27, "GPS_TX_ESP_RX")
+    stats = rt.summary()
+    print(f"  Router: {stats['segments']} segments, {stats['vias']} vias, "
+          f"{stats['warnings']} warnings ({stats['forced_count']} forced, "
+          f"{stats['blocked_count']} blocked)")
+    if rt.warnings:
+        for w in rt.warnings[:5]:
+            print(f"    {w}")
 
-    # === I2C (ESP32 → MS5611) ===
-    # SDA: ESP pin7 (9.46,18.35) → MS5611 pin3 (44,33)
-    traces += seg(9.46, 18.35, 7, 18.35, "I2C_SDA")
-    traces += via(7, 18.35, "I2C_SDA")
-    traces += seg(7, 18.35, 7, 33, "I2C_SDA", 0.25, "B.Cu")
-    traces += seg(7, 33, 44, 33, "I2C_SDA", 0.25, "B.Cu")
-    traces += via(44, 33, "I2C_SDA")
-    # SCL: ESP pin8 (9.46,20.89) → MS5611 pin4 (44,35.54)
-    traces += seg(9.46, 20.89, 6, 20.89, "I2C_SCL")
-    traces += via(6, 20.89, "I2C_SCL")
-    traces += seg(6, 20.89, 6, 35.54, "I2C_SCL", 0.25, "B.Cu")
-    traces += seg(6, 35.54, 44, 35.54, "I2C_SCL", 0.25, "B.Cu")
-    traces += via(44, 35.54, "I2C_SCL")
-
-    # === STATUS LED ===
-    # ESP pin9 (14.54,20.89) → R5 (18.5,4) → LED (16.8,4)
-    traces += seg(14.54, 20.89, 14.54, 4, "STATUS_LED")
-    traces += seg(14.54, 4, 18, 4, "STATUS_LED")
-    traces += seg(19, 4, 16.8, 4, "LED_ANODE")
-
-    # === VOLTAGE DIVIDER ===
-    # ESP pin6 (9.46,15.81) → R3/R4 junction (3.5,15)
-    traces += seg(9.46, 15.81, 3.5, 15.81, "VDIV_MID")
-    traces += seg(3.5, 15.81, 3.5, 15, "VDIV_MID")
-    # VCAP to R3
-    traces += seg(2.5, 15, 2.5, 16, "VCAP", 0.25)
-    traces += seg(2.5, 16, 8, 16, "VCAP", 0.25)
-
-    # === RF ANTENNA ===
-    # RF_SUB_868: LR2021 pin9 (15.095,19.84) → antenna (48,20)
-    traces += seg(15.095, 19.84, 15.095, 18, "RF_SUB_868", 0.8)
-    traces += seg(15.095, 18, 48, 18, "RF_SUB_868", 0.8)
-    traces += seg(48, 18, 48, 20, "RF_SUB_868", 0.8)
-    # RF_2G4_2400: LR2021 pin10 (34.905,19.84) → antenna (48,25)
-    traces += seg(34.905, 19.84, 34.905, 17, "RF_2G4_2400", 0.8)
-    traces += seg(34.905, 17, 47, 17, "RF_2G4_2400", 0.8)
-    traces += seg(47, 17, 47, 25, "RF_2G4_2400", 0.8)
-    traces += seg(47, 25, 48, 25, "RF_2G4_2400", 0.8)
-
-    # === GROUND STITCHING VIAS ===
-    for gx, gy in [(10, 5), (35, 5), (20, 30), (40, 35), (5, 35), (15, 20), (30, 15)]:
-        traces += via(gx, gy, "GND")
-
-    # === LOCAL DECOUPLING + COMPONENT STUBS ===
-    # 3V3 decoupling caps near LR2021 (C3 at 14.6,30.2 and C4 at 14.45,32.0)
-    traces += seg(14.6, 30.16, 15.1, 30.16, "3V3", 0.25)
-    traces += seg(14.45, 32.0, 14.6, 32.0, "3V3", 0.25)
-    traces += seg(14.6, 32.0, 14.6, 30.16, "3V3", 0.25)
-    # C3/C4 GND pads → GND track to nearest via
-    traces += seg(15.6, 30.16, 15.75, 30.16, "GND", 0.25)
-    traces += seg(15.75, 30.16, 15.75, 32.0, "GND", 0.25)
-    traces += seg(15.75, 32.0, 15.75, 32.0, "GND", 0.25)
-    traces += via(16.5, 31, "GND")
-    traces += seg(15.75, 30.16, 16.5, 31, "GND", 0.25)
-    # R1/C6 pullup 3V3 (at 41.5,30 and 43.5,30)
-    traces += seg(41.5, 30, 43.5, 30, "3V3", 0.25)
-    traces += seg(41.5, 30, 38, 20, "3V3", 0.25)
-    traces += seg(43.5, 30, 44, 29.19, "3V3", 0.25)
-    traces += seg(44, 29.19, 44, 34.27, "3V3", 0.25)  # MS5611 pin1
-    # R2 3V3 pullup (42.5,33)
-    traces += seg(42.5, 33, 44, 33, "3V3", 0.25)
-    # TP3 test point (33,38)
-    traces += seg(33, 38, 33, 35, "3V3", 0.25)
-    traces += via(33, 35, "3V3")
-    traces += seg(33, 35, 38, 35, "3V3", 0.25, "B.Cu")
-    traces += via(38, 35, "3V3")
-    # U5 LDO pin5 (5.95,22.95) to 3V3
-    traces += seg(5.95, 22.95, 5.0, 22.95, "3V3", 0.25)
-    traces += seg(5.0, 22.95, 5.0, 29.19, "3V3", 0.5)
-    traces += seg(5.0, 29.19, 5.97, 29.19, "3V3", 0.5)  # GPS pin1
-
-    # U5 LDO GND pins (5.95,21.05) and C1 GND (6.65,24)
-    traces += seg(5.95, 21.05, 5.0, 21.05, "GND", 0.25)
-    traces += via(5.0, 21.05, "GND")
-    traces += seg(6.65, 24, 6.0, 24, "GND", 0.25)
-    traces += via(6.0, 24, "GND")
-    # BAT54 GND (5.5,15)
-    traces += seg(5.5, 15, 5.5, 14, "GND", 0.25)
-    traces += via(5.5, 14, "GND")
-    # C2 VCAP (4.05,21.05) → U5 VCAP
-    traces += seg(4.05, 21.05, 4.05, 22, "VCAP", 0.25)
-    traces += seg(4.05, 22, 5.95, 22, "VCAP", 0.25)
-    # U5 VCAP pin3 (5.95,22.0) → 3V3 out
-    traces += seg(5.95, 22, 5.95, 22.95, "VCAP", 0.25)
-    # BAT54 cathode VCAP (5.5,18) → VCAP bus
-    traces += seg(5.5, 18, 5.95, 18, "VCAP", 0.25)
-    traces += seg(5.95, 18, 5.95, 22, "VCAP", 0.25)
-    # VCAP to supercap (8,37)
-    traces += seg(8, 18, 8, 37, "VCAP", 0.5)
-    traces += seg(8, 37, 6.25, 37, "VCAP", 0.5)  # SC pin1
-    # VCAP to R3 (2.5,15)
-    traces += seg(2.5, 16, 2.5, 15, "VCAP", 0.25)
-    traces += seg(2.5, 15, 4.5, 15, "VCAP", 0.25)
-    # R3 VDIV_MID (4.5,15) → R4 (5.5,15)
-    traces += seg(4.5, 15, 5.0, 15.81, "VDIV_MID", 0.25)
-    traces += seg(5.0, 15.81, 9.46, 15.81, "VDIV_MID", 0.25)
-    # R4 GND
-    traces += seg(5.5, 15, 5.5, 14, "GND", 0.25)
-
-    # GND pads near LR2021 → via to B.Cu
-    for gx, gy in [(15.095, 21.13), (15.095, 28.87), (34.905, 21.13), (34.905, 22.42), (34.905, 30.16)]:
-        traces += via(gx + 1.0, gy, "GND")
-        traces += seg(gx, gy, gx + 1.0, gy, "GND", 0.25)
-    # ESP32 GND (9.96,3.11) → already has via at (10,5)
-    traces += seg(9.96, 3.11, 10, 3.11, "GND", 0.25)
-    traces += seg(10, 3.11, 10, 5, "GND", 0.25)
-    # RP2040 GND (38.5,3.0)
-    traces += seg(38.5, 3.0, 38.5, 5, "GND", 0.25)
-    # GPS GND (6.5,30) → U3 pin2
-    traces += seg(6.5, 30, 6.0, 31.73, "GND", 0.25)
-    traces += via(6.0, 31.73, "GND")
-    # C5 GND (6.5,30)
-    traces += seg(6.5, 30, 7, 30, "GND", 0.25)
-    traces += via(7, 30, "GND")
-    # C6 GND (44.5,30)
-    traces += seg(44.5, 30, 45, 30, "GND", 0.25)
-    traces += via(45, 30, "GND")
-    # LED cathode GND (15.2,4)
-    traces += seg(15.2, 4, 15.2, 5, "GND", 0.25)
-    # TP GND (37,38)
-    traces += seg(37, 38, 37, 37, "GND", 0.25)
-    traces += via(37, 37, "GND")
-    # Solar GND (3,38.27) and supercap GND (9.75,37)
-    traces += seg(3, 38.27, 3, 37, "GND", 0.5)
-    traces += via(3, 37, "GND")
-    traces += seg(9.75, 37, 10, 37, "GND", 0.5)
-    traces += via(10, 37, "GND")
-    # ESP32 extra GND (9.46,5.65)
-    traces += seg(9.46, 5.65, 10, 5.65, "GND", 0.25)
-    traces += via(10, 5.65, "GND")
-
-    # Test points to SPI bus
-    traces += via(36, 36, "SPI0_SCK")
-    traces += seg(25, 38, 25, 36, "SPI0_SCK", 0.25)
-    traces += seg(25, 36, 36, 36, "SPI0_SCK", 0.25)
-    traces += seg(36, 36, 36, 25, "SPI0_SCK", 0.25, "B.Cu")
-    traces += via(29, 37, "SPI0_MOSI")
-    traces += seg(29, 38, 29, 37, "SPI0_MOSI", 0.25)
-    traces += seg(29, 37, 36.5, 37, "SPI0_MOSI", 0.25, "B.Cu")
-    traces += seg(36.5, 37, 36.5, 26.29, "SPI0_MOSI", 0.25, "B.Cu")
-
-    # MS5611 SDA/SCL pad fixes — pin3 SDA at (44,34.27), pin4 SCL at (44,36.81)
-    traces += seg(44, 33, 44, 34.27, "I2C_SDA", 0.25)
-    traces += seg(44, 35.54, 44, 36.81, "I2C_SCL", 0.25)
-
-    out += traces
+    out += rt.emit()
 
     # Ground pour
     out += "\n  ;; === Ground pour ===\n"
@@ -666,7 +589,7 @@ def gen_v1():
     print(f"V1 PCB written: {filepath} ({len(out)} bytes)")
     print(f"  Board: {W}x{H}mm, 2-layer, 0.6mm")
     print(f"  Nets: {len(nets)}")
-    print(f"  Traces: {seg_id-1}")
+    print(f"  Traces: {len(rt.segments)} ({len(rt.vias)} vias)")
     return filepath
 
 # ============================================================
