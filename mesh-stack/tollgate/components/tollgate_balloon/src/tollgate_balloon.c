@@ -253,7 +253,7 @@ esp_err_t tollgate_balloon_on_packet(const char *src_node_id,
             send_mesh_msg(TG_MSG_ACK, hdr.seq,
                           (const char *)&ack, (uint16_t)sizeof(ack));
             ESP_LOGI(TAG, "ACK sent (session=%u, price=%u sats)",
-                     ack.session_id, ack.price_sats);
+                     (unsigned)ack.session_id, (unsigned)ack.price_sats);
         } else {
             tollgate_nack_payload_t nack;
             memset(&nack, 0, sizeof(nack));
