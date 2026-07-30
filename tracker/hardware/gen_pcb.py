@@ -789,7 +789,7 @@ def gen_v2():
     # F33 bulk decoupling: 100µF (1206) + 10µF (0805) + 100nF (0402)
     out += f'''
   (footprint "Capacitor_SMD:C_1206_3216Metric" (layer "F.Cu") (uuid "fp-cblk")
-    (at 18 37)
+  (at 22 37)
     (property "Reference" "C8" (at 0 -1.5) (layer "F.SilkS") (effects (font (size 0.6 0.6) (thickness 0.1))))
     (property "Value" "100uF" (at 0 1.5) (layer "F.Fab") (effects (font (size 0.6 0.6) (thickness 0.1))))
     (pad "1" smd rect (at -1.6 0) (size 1.5 1.6) (layers "F.Cu" "F.Paste" "F.Mask") (net {nid["VCAP"]} "VCAP"))
@@ -901,8 +901,8 @@ def gen_v2():
     rt.place(4, 46.73, 4, 44, nSI, 0.8)
     rt.place(4, 44, 3.5, 40, nSI, 0.8)
     # BAT54 cathode → via → B.Cu VCAP bus
-    rt.via(5, 40, nVC)
-    rt.place(5, 40, 10, 40, nVC, 0.8, "B.Cu")
+    rt.via(6.5, 40, nVC)
+    rt.place(6.5, 40, 10, 40, nVC, 0.8, "B.Cu")
     # LDO pin1 (VCAP) at (7.05,39.05) → via → B.Cu
     rt.via(7.05, 39.05, nVC)
     rt.place(7.05, 39.05, 10, 39.05, nVC, 0.8, "B.Cu")
@@ -912,17 +912,17 @@ def gen_v2():
     rt.place(10, 48, 8.25, 48, nVC, 0.8, "B.Cu")
     # F33 VCC (pin1 at 18,37) → via → B.Cu
     rt.via(18, 37, nVC)
-    rt.place(18, 37, 14, 37, nVC, 0.8, "B.Cu")
-    rt.place(14, 37, 14, 19, nVC, 0.8, "B.Cu")
+    rt.place(18, 37, 15, 37, nVC, 0.8, "B.Cu")
+    rt.place(15, 37, 15, 19, nVC, 0.8, "B.Cu")
     rt.via(17.15, 19, nVC)
-    rt.place(14, 19, 17.15, 19, nVC, 0.8, "B.Cu")
+    rt.place(15, 19, 17.15, 19, nVC, 0.8, "B.Cu")
 
     # GND stitching vias (not mesh — zone pour handles GND)
     # FIX 2: (56,31)→(56,28); (57,31) removed (was on SPI0_NSS pad)
     # FIX B: (60,10)→(55,10) to avoid 3V3 trunk at x=60
     # FIX C: x=19 GND vias at (19,31),(19,27) → moved to (22,31),(22,27) to avoid F33 GND stubs
     for gx, gy in [(15,10),(55,10),(30,50),(70,50),(5,50),(40,45),
-                   (19,35),(19,33),(22,31),(22,27),(19,25),(19,23),
+                   (19,35),(19,33),(22,31),(22,27),(28,25),(19,23),
                    (56,28),(20,37),(50,37)]:
         rt.via(gx, gy, nG)
     # F33 GND pad stubs
@@ -931,24 +931,27 @@ def gen_v2():
     # Extended stubs for moved vias at (22,31) and (22,27)
     rt.place(19, 31, 22, 31, nG, 0.5)
     rt.place(19, 27, 22, 27, nG, 0.5)
+    rt.place(19, 25, 28, 25, nG, 0.5)
     # FIX: F33 right GND pad (57,35) → GND via at (55,37) (avoid SCK pad at 57,33)
     rt.place(57, 35, 55, 37, nG, 0.5)
 
     # SIGNAL ROUTING on F.Cu
-    # CE: F33 pin5 (18,29) → RP pin11 (63, 15+(-8.89+10*2.54)=15+16.51=31.51)
-    rt.connect(18, 29, 63, 31.51, nCE, 0.25)
+    # CE: F33 pin5 (18,29) → RP pin11 (63,31.51) — route on B.Cu to avoid NSS pad
+    rt.via(18, 29, nCE)
+    rt.place(18, 29, 49, 29, nCE, 0.25, "B.Cu")
+    rt.place(49, 29, 49, 31.51, nCE, 0.25, "B.Cu")
+    rt.via(49, 31.51, nCE)
+    rt.place(49, 31.51, 63, 31.51, nCE, 0.25)
     # RF traces (fat, short)
-    rt.place(18, 21, 18, 17, nRS, 0.8)
-    rt.place(18, 17, 2, 17, nRS, 0.8)
-    # FIX: route RF_SUB at x=2 not x=4 to avoid SMA J1 GND pads at (4,25.5) and (4,30.5)
+    rt.place(18, 21, 15, 21, nRS, 0.8)
+    rt.place(15, 21, 15, 17, nRS, 0.8)
+    rt.place(15, 17, 2, 17, nRS, 0.8)
     rt.place(2, 17, 2, 28, nRS, 0.8)
     rt.place(2, 28, 4, 28, nRS, 0.8)
-    # FIX: RF_2G4 route down from (57,37) → right at y=35 (avoid SCK pad at 57,33)
-    rt.place(57, 37, 57, 35, nR4, 0.8)
-    rt.place(57, 35, 72, 35, nR4, 0.8)
-    # FIX: route at x=72 to avoid SMA J2 GND pads at (71,30.5)
-    rt.place(72, 35, 72, 28, nR4, 0.8)
-    rt.place(72, 28, 73, 28, nR4, 0.8)
+    # FIX: RF_2G4 route right immediately from pin10 (avoid GND pad at 57,35)
+    rt.place(57, 37, 73, 37, nR4, 0.8)
+    rt.place(73, 37, 73, 28, nR4, 0.8)
+    rt.place(73, 28, 73, 28, nR4, 0.8)  # to SMA J2
     # SPI: F33 right → RP2040 (use B.Cu for long runs)
     # SCK: F33 pin12 (57,33) → RP pin3 (63, 15+(-8.89+2*2.54)=15-3.81=11.19)
     rt.connect(57, 33, 63, 11.19, nSK, 0.25)
@@ -967,9 +970,9 @@ def gen_v2():
     # UART (route on B.Cu to avoid crossing RF traces on F.Cu)
     # ESP_TX → RP_RX: ESP pin3 (9.46,11.19) → RP pin13 (63, 36.59)
     rt.via(9.46, 11.19, nET)
-    rt.place(9.46, 11.19, 63, 11.19, nET, 0.25, "B.Cu")
-    rt.place(63, 11.19, 63, 36.59, nET, 0.25, "B.Cu")
-    rt.via(63, 36.59, nET)
+    rt.place(9.46, 11.19, 58, 11.19, nET, 0.25, "B.Cu")
+    rt.place(58, 11.19, 58, 36.59, nET, 0.25, "B.Cu")
+    rt.via(58, 36.59, nET)
     # RP_TX → ESP: RP pin12 (63, 34.05) → ESP pin4 (9.46,13.73)
     rt.via(63, 34.05, nRT)
     rt.place(63, 34.05, 8, 34.05, nRT, 0.25, "B.Cu")
@@ -978,9 +981,9 @@ def gen_v2():
     rt.via(9.46, 13.73, nRT)
     # GPS_TX → ESP: GPS pin3 (6,46.27) → ESP pin5 (9.46,16.27)
     rt.via(6, 46.27, nGT)
-    rt.place(6, 46.27, 3, 46.27, nGT, 0.25, "B.Cu")
-    rt.place(3, 46.27, 3, 16.27, nGT, 0.25, "B.Cu")
-    rt.place(3, 16.27, 9.46, 16.27, nGT, 0.25, "B.Cu")
+    rt.place(6, 46.27, 2, 46.27, nGT, 0.25, "B.Cu")
+    rt.place(2, 46.27, 2, 16.27, nGT, 0.25, "B.Cu")
+    rt.place(2, 16.27, 9.46, 16.27, nGT, 0.25, "B.Cu")
     rt.via(9.46, 16.27, nGT)
     # I2C (route on B.Cu, offset from pad columns)
     # SDA: ESP pin7 (9.46,21.35) → MS pin3 (68,46.27)
