@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "tollgate_balloon.h"
+#include "radio_adapter.h"
 
 static const char *TAG = "main";
 
@@ -36,6 +37,16 @@ void app_main(void)
                  esp_err_to_name(ret));
     } else {
         ESP_LOGI(TAG, "tollgate_balloon_init OK");
+    }
+
+    /* Connect the LR2021 radio to the mesh stack.
+     * Non-fatal: if no radio hardware is present, tollgate still works. */
+    esp_err_t radio_ret = radio_adapter_init();
+    if (radio_ret != ESP_OK) {
+        ESP_LOGW(TAG, "radio_adapter_init returned %s (expected without hardware)",
+                 esp_err_to_name(radio_ret));
+    } else {
+        ESP_LOGI(TAG, "radio_adapter_init OK — mesh radio connected");
     }
 
     /* Idle — no real work in this skeleton. */

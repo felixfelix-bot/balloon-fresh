@@ -5,7 +5,12 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Pull in the standalone components under components/. main/ is auto-discovered.
-set(EXTRA_COMPONENT_DIRS "components")
+# Also pull in tracker/firmware/components/ for lr2021_transport, mesh_adapter,
+# pipeline, erasure, frag (radio hardware + mesh fragmentation layers).
+set(EXTRA_COMPONENT_DIRS
+    "components"
+    "../../tracker/firmware/components"
+)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(tollgate-balloon-test)
