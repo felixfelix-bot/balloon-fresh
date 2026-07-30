@@ -84,80 +84,6 @@ static uint8_t fifoCmd[2 + 255];
 // Dummy RX buffer for write-only transfers (nullptr crashes on some cores)
 static uint8_t spiRxJunk[257];
 
-// ─── NeoPixel (WS2812 on GP16 — Waveshare RP2040-Zero) ───────────────
-// Color states for visual firmware status:
-//   BLUE   = boot/init
-//   GREEN  = radio ready, waiting for RUN
-//   RED    = init FAILED
-//   YELLOW = TX running
-//   OFF    = TX stopped
-#define NEO_PIN       PIN_LED_ALT  // GP16
-#define NEO_POWER     (10)   // brightness 0-255
-
-static inline void neoPixelWrite(uint8_t r, uint8_t g, uint8_t b) {
-    // Minimal WS2812 bitbang — no library needed
-    // WS2812 timing: T0H=400ns, T0L=850ns, T1H=800ns, T1L=450ns
-    // RP2040 at 133MHz: 1 cycle = 7.5ns
-    uint32_t grb = ((uint32_t)g << 16) | ((uint32_t)r << 8) | b;
-    noInterrupts();
-    for (int i = 23; i >= 0; i--) {
-        bool bit = (grb >> i) & 1;
-        if (bit) {
-            sio_hw->gpio_set = (1UL << NEO_PIN);   // high
-            __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            ); // ~800ns high
-            sio_hw->gpio_clr = (1UL << NEO_PIN);   // low
-            __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            ); // ~450ns low
-        } else {
-            sio_hw->gpio_set = (1UL << NEO_PIN);   // high
-            __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            ); // ~400ns high
-            sio_hw->gpio_clr = (1UL << NEO_PIN);   // low
-            __asm volatile ("nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            "nop; nop; nop; nop; nop; nop; nop; nop;"
-                            ); // ~850ns low
-        }
-    }
-    interrupts();
-    delayMicroseconds(60);  // WS2812 reset
-}
-
-static void neoSetBlue()   { neoPixelWrite(0, 0, NEO_POWER); }
-static void neoSetGreen()  { neoPixelWrite(0, NEO_POWER, 0); }
-static void neoSetRed()    { neoPixelWrite(NEO_POWER, 0, 0); }
-static void neoSetYellow() { neoPixelWrite(NEO_POWER, NEO_POWER, 0); }
-static void neoSetOff()    { neoPixelWrite(0, 0, 0); }
-
 static volatile bool radioReady = false;
 
 // ─── Runtime config (mutable via serial) ──────────────────────────────
@@ -407,7 +333,8 @@ static void runTransmit() {
     uint32_t count = cfgCount;
     uint32_t durationMs = cfgDurationSec > 0 ? (cfgDurationSec * 1000) : 0;
 
-    neoSetYellow();  // TX running
+    digitalWrite(PIN_LED, HIGH);
+    digitalWrite(PIN_LED_ALT, HIGH);
 
     dualPrintf("CONT_TX START bitrate=%d pktSize=%d count=%lu duration_ms=%lu power=%.1f",
                cfgBitrate, pktSize, (unsigned long)count,
@@ -437,11 +364,33 @@ static void runTransmit() {
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // OPT 1+2: Skip rfClearTxFifo() (auto-cleared on TX_DONE)
-        //         Skip rfClearIrq() (poll IRQ pin, clear once at start)
-        // OPT 3: REVERTED — LR2021 needs CS HIGH between commands to parse opcodes
-        rfWriteTxFifo(pkt, pktSize);
-        rfSetTx();
+        // FAST MODE: 3 SPI transactions per packet (no status polling)
+        // 1. WRITE_FIFO (CS toggle)
+        // 2. SET_TX (CS toggle)  
+        // 3. CLEAR_IRQ after TX_DONE (CS toggle)
+        // Eliminates status check (02 0D) and register poll (01 16) from baseline
+
+        // Step 1: Write FIFO
+        rfWaitBusy();
+        spiRf.beginTransaction(spiSettings);
+        digitalWrite(PIN_CS, LOW);
+        spiRf.transfer(0x00);  // WRITE_TX_FIFO opcode MSB
+        spiRf.transfer(0x02);  // WRITE_TX_FIFO opcode LSB
+        spiRf.transfer(pkt, pktSize);
+        digitalWrite(PIN_CS, HIGH);
+        spiRf.endTransaction();
+
+        // Step 2: Set TX (triggers transmission)
+        rfWaitBusy();
+        spiRf.beginTransaction(spiSettings);
+        digitalWrite(PIN_CS, LOW);
+        spiRf.transfer(0x02);  // SET_TX opcode MSB
+        spiRf.transfer(0x0D);  // SET_TX opcode LSB
+        spiRf.transfer(0x00);
+        spiRf.transfer(0x00);
+        spiRf.transfer(0x00);
+        digitalWrite(PIN_CS, HIGH);
+        spiRf.endTransaction();
 
         uint32_t spinCount = 0;
         bool irqFired = false;
@@ -452,10 +401,18 @@ static void runTransmit() {
 
         if (irqFired) {
             txDoneCount++;
-            rfClearIrq();  // Clear IRQ after detecting, not before
+            // Step 3: Clear IRQ flag so next TX_DONE can fire
+            rfWaitBusy();
+            spiRf.beginTransaction(spiSettings);
+            digitalWrite(PIN_CS, LOW);
+            spiRf.transfer(0x01);  // CLEAR_IRQ opcode MSB
+            spiRf.transfer(0x16);  // CLEAR_IRQ opcode LSB
+            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            digitalWrite(PIN_CS, HIGH);
+            spiRf.endTransaction();
         } else {
             txTimeoutCount++;
-            rfClearIrq();  // Clear any stuck IRQ
         }
 
         // Progress print
@@ -494,8 +451,8 @@ static void runTransmit() {
                (unsigned long)txTimeoutCount, (unsigned long)elapsed, tput,
                cfgBitrate, pktSize, cfgPower, cfgFreq);
 
-    neoSetGreen();  // TX done, ready for more
-
+    digitalWrite(PIN_LED, LOW);
+    digitalWrite(PIN_LED_ALT, LOW);
 }
 
 // ─── Serial command processing ──────────────────────────────────────
@@ -579,15 +536,13 @@ void setup() {
     delay(100);
 
     pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_LED_ALT, OUTPUT);
 
-    // NeoPixel init — BLUE = booting
-    neoSetBlue();
-
-    // 3s countdown — BLUE blink
+    // 3s countdown blink
     for (int i = 0; i < 6; i++) {
-        neoSetBlue();
+        digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH);
         delay(250);
-        neoSetOff();
+        digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);
         delay(250);
     }
 
@@ -606,7 +561,7 @@ void setup() {
     radioReady = rawInitRadio();
 
     if (radioReady) {
-        neoSetGreen();  // Radio ready
+        digitalWrite(PIN_LED_ALT, HIGH);
         if (autoStart) {
             dualPrintln("AUTO TX STARTING in 3s — type STOP to abort");
             delay(3000);
@@ -615,12 +570,11 @@ void setup() {
             dualPrintln("READY — type RUN to start TX");
         }
     } else {
-        neoSetRed();  // Init failed
         dualPrintln("INIT FAILED — retrying...");
         delay(2000);
         radioReady = rawInitRadio();
         if (radioReady) {
-            neoSetGreen();  // 2nd init success
+            digitalWrite(PIN_LED_ALT, HIGH);
             if (autoStart) {
                 dualPrintln("AUTO TX STARTING (2nd init) in 3s");
                 delay(3000);
@@ -629,13 +583,7 @@ void setup() {
                 dualPrintln("READY (2nd init) — type RUN to start TX");
             }
         } else {
-            // Solid RED — stuck in failure
-            while (true) {
-                neoSetRed();
-                delay(500);
-                neoSetOff();
-                delay(500);
-            }
+            dualPrintln("INIT FAILED TWICE — stuck");
         }
     }
 }

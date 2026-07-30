@@ -30,6 +30,7 @@
 #include <SPI.h>
 #include <stdarg.h>
 #include <string.h>
+#include <Adafruit_NeoPixel.h>
 
 // ─── Firmware self-identification (injected at build time) ───────────
 #ifndef FW_GIT_HASH
@@ -73,7 +74,20 @@ static void printBootBanner() {
 #define PIN_IRQ     7
 #define PIN_RST     8
 #undef PIN_LED
-#define PIN_LED     25
+#define PIN_NEOPIXEL 16   // Waveshare RP2040-Zero onboard WS2812
+#define PIN_LED       25   // Standard Pi Pico (fallback, no-op on RP2040-Zero)
+
+// Single NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
+Adafruit_NeoPixel statusLED(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+// LED color helper — show status as visible colors
+void ledColor(uint8_t r, uint8_t g, uint8_t b) {
+    statusLED.setPixelColor(0, statusLED.Color(r, g, b));
+    statusLED.show();
+}
+
+// Timestamp of last valid packet received (for green LED status)
+static uint32_t lastPacketMs = 0;
 
 #define SPI_FREQ_HZ  20000000UL
 #define XTAL_MHZ     52.0f
@@ -392,17 +406,14 @@ static void rfWriteCmd(const uint8_t *cmd, size_t len) {
 }
 
 static uint32_t rfReadIrqStatus() {
+    // MUST be single CS-low transaction: opcode + dummy bytes in one NSS-low
+    // window. Splitting CS toggle between send+read makes the chip forget the
+    // command -> all reads return 0x00 (silent packet drops). [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x17);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
+    spiRf.transfer(0x01); spiRf.transfer(0x17);  // GET_IRQ_STATUS opcode
     uint8_t buf[6] = {0};
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -455,17 +466,12 @@ static uint16_t crc16(const uint8_t *data, size_t len) {
 //   buf[3] = SNR (signed)            → dB = val<128 ? val/4 : (val-256)/4
 //   (verified against RadioLib SX128x source + lr2021-complete-learnings)
 static int16_t rfGetLoraRssi() {
+    // Single CS-low transaction: opcode + dummy bytes read in one window [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x02); spiRf.transfer(0x2A);  // GET_LORA_PACKET_STATUS
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
     uint8_t buf[8];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 8; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -493,18 +499,13 @@ static int16_t rfGetLoraRssi() {
 //   raw = (buf[4] << 1) | ((buf[6] & 0x04) >> 2)
 //   rssiAvg = raw / -2.0  → dBm (float)
 static int16_t rfGetFlrcRssi() {
+    // Single CS-low transaction: opcode + dummy bytes read in one window [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
     // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
     uint8_t buf[7];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -1052,7 +1053,9 @@ static void rxPacketPoll(int phaseIdx) {
                    berTotal > 0 ? (double)berErrors / berTotal : 0.0);
     }
 
-    digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
+    // NeoPixel status — green pulse on each received packet
+    lastPacketMs = millis();
+    ledColor(0, 255, 0);   // Green: packet received
 
     // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
     { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
@@ -1080,6 +1083,17 @@ void setup() {
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
     digitalWrite(PIN_LED, LOW);
+
+    // Init NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
+    statusLED.begin();
+    statusLED.show();  // Turn off
+    // Boot strobe: blue flash 6x — confirms firmware is alive
+    for (int i = 0; i < 6; i++) {
+        ledColor(0, 0, 255);   // Blue
+        delay(100);
+        ledColor(0, 0, 0);     // Off
+        delay(100);
+    }
 
     spiRf.begin();
 
@@ -1117,11 +1131,11 @@ void setup() {
     }
 
     dualPrintf("=== AUTO START IN 8s ===\n");
-    // LED blink countdown
+    // NeoPixel countdown — yellow blink during startup delay
     for (int i = 8; i > 0; i--) {
         dualPrintf("  Starting in %d...\n", i);
-        digitalWrite(PIN_LED, HIGH); delay(400);
-        digitalWrite(PIN_LED, LOW);  delay(600);
+        ledColor(255, 200, 0);  delay(400);  // Yellow
+        ledColor(0, 0, 0);       delay(600);  // Off
     }
     dualPrintf("=== STARTING RX SWEEP ===\n");
 }
@@ -1147,6 +1161,9 @@ void loop() {
 
     // If we don't have UTC time yet, wait for it
     if (utcOffset == 0) {
+        // Red blink while waiting for time sync
+        bool on = ((millis() % 1000) < 500);
+        ledColor(on ? 255 : 30, 0, 0);
         if (lastWaitingPrintMs == 0 || (millis() - lastWaitingPrintMs) >= 5000) {
             dualPrintf("WAITING_FOR_TIME_SYNC uptime=%lu\n", (unsigned long)millis());
             lastWaitingPrintMs = millis();
@@ -1215,6 +1232,18 @@ void loop() {
 
     // Still in the same phase — poll for ONE packet (non-blocking)
     rxPacketPoll(phase);
+
+    // ─── NEOPIXEL STATUS LED ─────────────────────────────────────────
+    // Green = packet received recently. Yellow = RX active, waiting.
+    {
+        if (lastPacketMs > 0 && (millis() - lastPacketMs) < 1000) {
+            ledColor(0, 255, 0);   // Green: actively receiving
+        } else {
+            // Yellow blink at 2Hz while listening
+            bool on = ((millis() % 500) < 250);
+            ledColor(on ? 255 : 30, on ? 200 : 20, 0);
+        }
+    }
 
     // No delay needed — rxPacketPoll returns instantly if no IRQ.
     // loop() is called again immediately, recomputing phase from UTC.
