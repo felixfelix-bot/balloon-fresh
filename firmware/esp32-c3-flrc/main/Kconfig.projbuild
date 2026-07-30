@@ -1,0 +1,31 @@
+menu "FLRC Continuous TX"
+
+    config FLRC_CONT_TX
+        bool "Use continuous TX firmware (main_cont_tx.cpp)"
+        default n
+        help
+            Enable to compile main_cont_tx.cpp instead of main.cpp.
+            This firmware sends packets back-to-back in a continuous loop
+            for throughput benchmarking.
+
+            Disable for the standard TX+RX combined firmware (main.cpp).
+
+choice FLRC_CONT_TX_PAYLOAD
+    prompt "Continuous TX payload size (bytes)"
+    default FLRC_CONT_TX_PAYLOAD_255
+    depends on FLRC_CONT_TX
+    help
+        Select the packet payload size for continuous TX mode.
+        Must match the RX board's expected packet size.
+
+config FLRC_CONT_TX_PAYLOAD_32
+    bool "32 bytes"
+config FLRC_CONT_TX_PAYLOAD_64
+    bool "64 bytes"
+config FLRC_CONT_TX_PAYLOAD_128
+    bool "128 bytes"
+config FLRC_CONT_TX_PAYLOAD_255
+    bool "255 bytes (max FLRC payload)"
+endchoice
+
+endmenu
