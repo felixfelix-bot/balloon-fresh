@@ -76,6 +76,8 @@ differs between bitrate windows at same distance. If identical → switch not wo
   (2) retry-c3-acquire.sh pattern: poll board-lock status every 90s, acquire when free, then flash+test. Adapting for range-test board acquisition.
   (3) Walk test plots exist (RSSI/PER/throughput vs distance, log-scale). These are reference baseline for outdoor sweep comparison.
 
+- **2026-08-01**: balloon-hermes — P1B.1-FIX: SPI TX debugging for raw FLRC transmission [SPI, RADIO, PROTOCOL]. Commit `822cdf0`. Impact: **NO DATA VALIDITY ISSUE** — the missing `SET_FLRC_PACKET_PARAMS (0x0249)` bug was in the ESP-IDF bench code (`mesh-stack/flrc-bench-espidf/main/esp32_raw_tx.cpp`). Our RP2040 firmware already has `0x0249` in 11+ files. ESP32-C3 bench firmware already has `0x0249` at line 247. Walk test data VALID. ACTIONABLE for technique adoption: TX debugging approach (GPIO CS toggle during RAWTX, FIFO WriteBuffer→ReadBuffer verification, BUSY pin low→high→low transition check, IRQ bit 0 TX-done polling) could improve outdoor sweep reliability — add TX verification to RP2040 firmware to detect silent TX failures.
+
 ## Next Steps (Physical — Operator Required)
 
 1. Flash sweep firmware on both boards (rp2040-range-tx-sweep + rp2040-range-rx-sweep)
