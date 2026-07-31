@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """P1B comprehensive A/B test: RadioLib vs Raw SPI, DELAY sweep, bitrate sweep.
 Auto-detects port assignment. Keeps ports open for entire test suite.
-Usage: python3 -u tests/p1b_ab_test.py
+Usage: python3 -u tests/p1b_ab_test.py [--reset-between-tests]
 """
-import serial, time, re, json, os, sys
+import serial, time, re, json, os, sys, argparse
 
 # Auto-detect ESP32 ports (skip RP2040 at ACM1)
 ESP_PORTS = sorted([f"/dev/ttyACM{i}" for i in range(2, 10) if os.path.exists(f"/dev/ttyACM{i}")])
@@ -15,11 +15,59 @@ PYP = "/home/c03rad0r/.espressif/python_env/idf5.4_py3.13_env/bin/python3"
 RESULTS_DIR = "tests/results/phase1b"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='P1B A/B Test Runner')
+parser.add_argument('--reset-between-tests', action='store_true', 
+                    help='Reset device between test groups to prevent USB CDC port re-enumeration')
+args = parser.parse_args()
+
 def open_port(port):
     s = serial.Serial()
     s.port = port; s.baudrate = 115200; s.dtr = False; s.rts = False; s.timeout = 0.5
     s.open()
     return s
+
+def open_port_with_retry(port, max_retries=3):
+    """Open serial port with retry logic for USB CDC re-enumeration issues"""
+    for attempt in range(max_retries):
+        try:
+            s = serial.Serial()
+            s.port = port; s.baudrate = 115200; s.dtr = False; s.rts = False; s.timeout = 0.5
+            s.open()
+            return s
+        except serial.SerialException as e:
+            if "tcsetattr" in str(e) or "device disconnected" in str(e):
+                print(f"  Serial open failed (attempt {attempt + 1}/{max_retries}): {e}", flush=True)
+                if attempt < max_retries - 1:
+                    time.sleep(2)  # Wait for USB to re-enumerate
+                    continue
+            else:
+                raise  # Re-raise other serial exceptions immediately
+    raise serial.SerialException(f"Failed to open port {port} after {max_retries} attempts")
+
+def reset_device(port):
+    """Reset device using DTR toggle"""
+    try:
+        s = serial.Serial()
+        s.port = port; s.baudrate = 115200; s.timeout = 0.5
+        s.open()
+        print(f"  Resetting device on {port} using DTR toggle...", flush=True)
+        s.dtr = True  # Assert DTR (typically causes reset)
+        time.sleep(0.1)
+        s.dtr = False  # Deassert DTR
+        s.close()
+        time.sleep(2)  # Wait for device to reboot and USB to re-enumerate
+    except Exception as e:
+        print(f"  Reset failed: {e}", flush=True)
+
+def re_detect_ports():
+    """Re-detect ESP32 ports after reset"""
+    print("  Re-detecting ESP32 ports after reset...", flush=True)
+    global ESP_PORTS
+    ESP_PORTS = sorted([f"/dev/ttyACM{i}" for i in range(2, 10) if os.path.exists(f"/dev/ttyACM{i}")])
+    if len(ESP_PORTS) < 2:
+        raise RuntimeError(f"Need 2 ESP32 serial ports after reset. Found: {ESP_PORTS}")
+    return ESP_PORTS
 
 def cmd(s, c, w=0.3):
     s.write((c + "\n").encode()); time.sleep(w)
@@ -73,6 +121,7 @@ print("=" * 70, flush=True)
 print("P1B COMPREHENSIVE A/B TEST", flush=True)
 print(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}", flush=True)
 print(f"Ports: {ESP_PORTS}", flush=True)
+print(f"Reset between tests: {'Enabled' if args.reset_between_tests else 'Disabled'}", flush=True)
 print("=" * 70, flush=True)
 
 # === AUTO-DETECT PORT ASSIGNMENT ===
@@ -80,7 +129,8 @@ print("\n--- Detecting TX/RX assignment ---", flush=True)
 port_a, port_b = ESP_PORTS[0], ESP_PORTS[1]
 
 # Try A=TX, B=RX first
-sa = open_port(port_a); sb = open_port(port_b)
+sa = open_port_with_retry(port_a)
+sb = open_port_with_retry(port_b)
 time.sleep(5)  # Wait for boot
 sa.read(65536); sb.read(65536)
 
@@ -93,7 +143,8 @@ else:
     print(f"  ❌ No packets. Trying reversed...", flush=True)
     sa.close(); sb.close()
     time.sleep(1)
-    sa = open_port(port_b); sb = open_port(port_a)
+    sa = open_port_with_retry(port_b)
+    sb = open_port_with_retry(port_a)
     time.sleep(5)
     sa.read(65536); sb.read(65536)
     r = run_single_test(sa, sb, 'MODE FLRC', 'RUN', 2600, 64, 10, 20)
@@ -120,9 +171,21 @@ for delay in [10, 5, 2, 1, 0]:
     r['mode'] = 'RadioLib'
     group1.append(r)
     status = '✅' if r['received'] > 0 else '❌'
-    print(f"  {status} DELAY={delay}ms: {r['received']}/{r['total_sent_by_tx']} pkts, "
+    print(f"  {status} DELAY={delay}ms: {r['received']}/{r['total_sent_by_tx']} pkts, " \
           f"{r['throughput']:.1f} kbps, PER={r['per']:.1f}%, {r['ms_per_pkt']:.2f}ms/pkt", flush=True)
     time.sleep(1)
+
+# Reset between test groups if enabled
+if args.reset_between_tests:
+    print("\n--- Resetting devices between test groups ---", flush=True)
+    reset_device(tx_port)
+    re_detect_ports()
+    # Re-open ports with new assignments
+    sa = open_port_with_retry(tx_port)
+    sb = open_port_with_retry(rx_port)
+    time.sleep(5)
+    sa.read(65536); sb.read(65536)
+    print(f"  Reopened ports: TX={tx_port}, RX={rx_port}", flush=True)
 
 # ============================================================
 # GROUP 2: Raw SPI DELAY sweep (bypass)
@@ -137,9 +200,21 @@ for delay in [10, 5, 2, 1, 0]:
     r['mode'] = 'RawSPI'
     group2.append(r)
     status = '✅' if r['received'] > 0 else '❌'
-    print(f"  {status} DELAY={delay}ms: {r['received']}/{r['total_sent_by_tx']} pkts, "
+    print(f"  {status} DELAY={delay}ms: {r['received']}/{r['total_sent_by_tx']} pkts, " \
           f"{r['throughput']:.1f} kbps, PER={r['per']:.1f}%, {r['ms_per_pkt']:.2f}ms/pkt", flush=True)
     time.sleep(1)
+
+# Reset between test groups if enabled
+if args.reset_between_tests:
+    print("\n--- Resetting devices between test groups ---", flush=True)
+    reset_device(tx_port)
+    re_detect_ports()
+    # Re-open ports with new assignments
+    sa = open_port_with_retry(tx_port)
+    sb = open_port_with_retry(rx_port)
+    time.sleep(5)
+    sa.read(65536); sb.read(65536)
+    print(f"  Reopened ports: TX={tx_port}, RX={rx_port}", flush=True)
 
 # ============================================================
 # GROUP 3: RadioLib bitrate sweep (DELAY=0, 255B)
@@ -154,9 +229,21 @@ for br in [2600, 1300, 650, 325]:
     r['mode'] = 'RadioLib'
     group3.append(r)
     status = '✅' if r['received'] > 0 else '❌'
-    print(f"  {status} BR={br}: {r['received']}/{r['total_sent_by_tx']} pkts, "
+    print(f"  {status} BR={br}: {r['received']}/{r['total_sent_by_tx']} pkts, " \
           f"{r['throughput']:.1f} kbps, PER={r['per']:.1f}%", flush=True)
     time.sleep(1)
+
+# Reset between test groups if enabled
+if args.reset_between_tests:
+    print("\n--- Resetting devices between test groups ---", flush=True)
+    reset_device(tx_port)
+    re_detect_ports()
+    # Re-open ports with new assignments
+    sa = open_port_with_retry(tx_port)
+    sb = open_port_with_retry(rx_port)
+    time.sleep(5)
+    sa.read(65536); sb.read(65536)
+    print(f"  Reopened ports: TX={tx_port}, RX={rx_port}", flush=True)
 
 # ============================================================
 # GROUP 4: Raw SPI bitrate sweep (DELAY=0, 255B)
@@ -171,9 +258,21 @@ for br in [2600, 1300, 650, 325]:
     r['mode'] = 'RawSPI'
     group4.append(r)
     status = '✅' if r['received'] > 0 else '❌'
-    print(f"  {status} BR={br}: {r['received']}/{r['total_sent_by_tx']} pkts, "
+    print(f"  {status} BR={br}: {r['received']}/{r['total_sent_by_tx']} pkts, " \
           f"{r['throughput']:.1f} kbps, PER={r['per']:.1f}%", flush=True)
     time.sleep(1)
+
+# Reset between test groups if enabled
+if args.reset_between_tests:
+    print("\n--- Resetting devices between test groups ---", flush=True)
+    reset_device(tx_port)
+    re_detect_ports()
+    # Re-open ports with new assignments
+    sa = open_port_with_retry(tx_port)
+    sb = open_port_with_retry(rx_port)
+    time.sleep(5)
+    sa.read(65536); sb.read(65536)
+    print(f"  Reopened ports: TX={tx_port}, RX={rx_port}", flush=True)
 
 # ============================================================
 # GROUP 5: Payload size sweep (RadioLib vs RawSPI, DELAY=0, BR=2600)
@@ -189,9 +288,21 @@ for size in [20, 64, 128, 255]:
         r['mode'] = label
         group5.append(r)
         status = '✅' if r['received'] > 0 else '❌'
-        print(f"  {status} {label} SIZE={size}: {r['received']}/{r['total_sent_by_tx']} pkts, "
+        print(f"  {status} {label} SIZE={size}: {r['received']}/{r['total_sent_by_tx']} pkts, " \
               f"{r['throughput']:.1f} kbps", flush=True)
         time.sleep(1)
+
+# Reset after final test group if enabled (before closing ports)
+if args.reset_between_tests:
+    print("\n--- Final device reset ---", flush=True)
+    reset_device(tx_port)
+    re_detect_ports()
+    # Re-open ports with new assignments
+    sa = open_port_with_retry(tx_port)
+    sb = open_port_with_retry(rx_port)
+    time.sleep(5)
+    sa.read(65536); sb.read(65536)
+    print(f"  Reopened ports: TX={tx_port}, RX={rx_port}", flush=True)
 
 sa.close(); sb.close()
 
