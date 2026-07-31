@@ -26,6 +26,1024 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-range-tests] docs: discovery sync — V1+F33 PCB routing findings (informational) (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `b2b4233` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync — V1+F33 PCB routing findings (informational)
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] docs(pcb): F33 short analysis + V1 BOM/CPL for JLCPCB — gerbers complete (2026-07-30) | tags: HARDWARE
+- **Commit:** `7302dba` by Felix
+- **Files:** docs/F33-SHORT-ANALYSIS.md, tracker/hardware/gerbers_v1/bom_v1.csv, tracker/hardware/gerbers_v1/cpl_v1.csv
+- **Full message:** docs(pcb): F33 short analysis + V1 BOM/CPL for JLCPCB — gerbers complete
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 surgical short fixes — C8 move, lane shifts, CE/GND/RF reroutes —  (2026-07-30) | tags: SPI, HARDWARE
+- **Commit:** `8340255` by Felix
+- **Files:** tracker/hardware/drc_f33_v7.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 surgical short fixes — C8 move, lane shifts, CE/GND/RF reroutes — shorts 15→16 (SPI rt.connect remains)
+- **Relevance:** SPI, HARDWARE
+
+
+### [balloon-hermes] plan: post-merge integration — 5 workstreams with quality gates (2026-07-30) | tags: GENERAL
+- **Commit:** `29ad722` by Felix
+- **Files:** docs/coordination/PLAN-POST-MERGE-INTEGRATION.md
+- **Full message:** plan: post-merge integration — 5 workstreams with quality gates
+- **Relevance:** GENERAL
+
+### [balloon-hermes] chore(pcb): commit stale F33 DRC intermediate reports (2026-07-30) | tags: HARDWARE
+- **Commit:** `f5aaae5` by Felix
+- **Files:** tracker/hardware/drc_f33_v3.txt, tracker/hardware/drc_f33_v4.txt
+- **Full message:** chore(pcb): commit stale F33 DRC intermediate reports
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `512fb0c` by Felix
+- **Files:** tracker/hardware/drc_f33_v5.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19 (2026-07-30) | tags: HARDWARE
+- **Commit:** `ac3f1d6` by Felix
+- **Files:** tracker/hardware/drc_f33_v2.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27 (2026-07-30) | tags: HARDWARE
+- **Commit:** `24f978f` by Felix
+- **Files:** tracker/hardware/drc_f33_fixed.txt, tracker/hardware/gen_pcb.py
+- **Full message:** fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] chore(pcb): commit DRC V1 final2 report (2026-07-30) | tags: HARDWARE
+- **Commit:** `08b474d` by Felix
+- **Files:** tracker/hardware/drc_v1_final2.txt
+- **Full message:** chore(pcb): commit DRC V1 final2 report
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `9b96c92` by Felix
+- **Files:** tracker/hardware/drc_v1_router.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] refactor(pcb): import Router class into gen_pcb.py (2026-07-30) | tags: HARDWARE
+- **Commit:** `f11e3fc` by Felix
+- **Files:** tracker/hardware/gen_pcb.py
+- **Full message:** refactor(pcb): import Router class into gen_pcb.py
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(router): clearance-aware Router class — 33/33 tests pass (2026-07-30) | tags: GENERAL
+- **Commit:** `b634f47` by Felix
+- **Files:** tracker/hardware/router.py, tracker/hardware/test_router.py
+- **Full message:** feat(router): clearance-aware Router class — 33/33 tests pass
+- **Relevance:** GENERAL
+
+### [balloon-hermes] plan: clearance-aware routing rewrite + DRC analysis tooling (2026-07-30) | tags: PROTOCOL, TEST
+- **Commit:** `2222b8f` by Felix
+- **Files:** docs/PLAN-ROUTING-REWRITE.md, tracker/hardware/drc_f33_baseline.txt, tracker/hardware/drc_v1_baseline.txt (+3 more)
+- **Full message:** plan: clearance-aware routing rewrite + DRC analysis tooling
+- **Relevance:** PROTOCOL, TEST
+
+### [balloon-hermes] feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean (2026-07-30) | tags: HARDWARE
+- **Commit:** `f473512` by Felix
+- **Files:** tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr, tracker/hardware/gerbers_f33/hub_board_f33-B_Cu.gbl (+45 more)
+- **Full message:** feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `40f974f` by Felix
+- **Files:** tracker/hardware/drc_f33_check.txt, tracker/hardware/drc_v1_check.txt, tracker/hardware/fix_unconnected.py (+2 more)
+- **Full message:** fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power (2026-07-29) | tags: SPI, HARDWARE, PROTOCOL
+- **Commit:** `e6e5a63` by Felix
+- **Files:** tracker/hardware/drc_f33.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power
+- **Relevance:** SPI, HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected (2026-07-29) | tags: HARDWARE
+- **Commit:** `c04001c` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+23 more)
+- **Full message:** feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF (2026-07-29) | tags: SPI, HARDWARE
+- **Commit:** `d56b6b0` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF
+- **Relevance:** SPI, HARDWARE
+
+### [balloon-hermes] feat(pcb): pick-and-place files + multi-layer SVG render (2026-07-29) | tags: HARDWARE
+- **Commit:** `caede48` by Felix
+- **Files:** tracker/hardware/gerbers_f33/pos_f33.csv, tracker/hardware/gerbers_v1/pos_v1.csv, tracker/hardware/hub_board_v1_render.svg
+- **Full message:** feat(pcb): pick-and-place files + multi-layer SVG render
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(pcb): JLCPCB Gerbers generated for both hub board variants (2026-07-29) | tags: HARDWARE
+- **Commit:** `94b6da0` by Felix
+- **Files:** tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr (+46 more)
+- **Full message:** feat(pcb): JLCPCB Gerbers generated for both hub board variants
+- **Relevance:** HARDWARE
+
+### [balloon-pow] docs: acknowledge discovery sync — 56 findings analyzed for PoW relevance (2026-07-30) | tags: GENERAL
+- **Commit:** `7553aac` by Felix
+- **Files:** docs/STATUS-balloon-pow.md
+- **Full message:** docs: acknowledge discovery sync — 56 findings analyzed for PoW relevance
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] docs: discovery sync — 47 findings assessed, 2 actionable (RP2040 SPI baseline), (2026-07-30) | tags: SPI, FIRMWARE, TEST
+- **Commit:** `02b464d` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync — 47 findings assessed, 2 actionable (RP2040 SPI baseline), rest ESP-IDF only
+- **Relevance:** SPI, FIRMWARE, TEST
+
+### [balloon-range-tests] plan: post-merge integration — 5 workstreams with quality gates (2026-07-30) | tags: GENERAL
+- **Commit:** `29ad722` by Felix
+- **Files:** docs/coordination/PLAN-POST-MERGE-INTEGRATION.md
+- **Full message:** plan: post-merge integration — 5 workstreams with quality gates
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] chore(pcb): commit stale F33 DRC intermediate reports (2026-07-30) | tags: HARDWARE
+- **Commit:** `f5aaae5` by Felix
+- **Files:** tracker/hardware/drc_f33_v3.txt, tracker/hardware/drc_f33_v4.txt
+- **Full message:** chore(pcb): commit stale F33 DRC intermediate reports
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `512fb0c` by Felix
+- **Files:** tracker/hardware/drc_f33_v5.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-range-tests] fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19 (2026-07-30) | tags: HARDWARE
+- **Commit:** `ac3f1d6` by Felix
+- **Files:** tracker/hardware/drc_f33_v2.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27 (2026-07-30) | tags: HARDWARE
+- **Commit:** `24f978f` by Felix
+- **Files:** tracker/hardware/drc_f33_fixed.txt, tracker/hardware/gen_pcb.py
+- **Full message:** fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] chore(pcb): commit DRC V1 final2 report (2026-07-30) | tags: HARDWARE
+- **Commit:** `08b474d` by Felix
+- **Files:** tracker/hardware/drc_v1_final2.txt
+- **Full message:** chore(pcb): commit DRC V1 final2 report
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `9b96c92` by Felix
+- **Files:** tracker/hardware/drc_v1_router.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-range-tests] refactor(pcb): import Router class into gen_pcb.py (2026-07-30) | tags: HARDWARE
+- **Commit:** `f11e3fc` by Felix
+- **Files:** tracker/hardware/gen_pcb.py
+- **Full message:** refactor(pcb): import Router class into gen_pcb.py
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] feat(router): clearance-aware Router class — 33/33 tests pass (2026-07-30) | tags: GENERAL
+- **Commit:** `b634f47` by Felix
+- **Files:** tracker/hardware/router.py, tracker/hardware/test_router.py
+- **Full message:** feat(router): clearance-aware Router class — 33/33 tests pass
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] plan: clearance-aware routing rewrite + DRC analysis tooling (2026-07-30) | tags: PROTOCOL, TEST
+- **Commit:** `2222b8f` by Felix
+- **Files:** docs/PLAN-ROUTING-REWRITE.md, tracker/hardware/drc_f33_baseline.txt, tracker/hardware/drc_v1_baseline.txt (+3 more)
+- **Full message:** plan: clearance-aware routing rewrite + DRC analysis tooling
+- **Relevance:** PROTOCOL, TEST
+
+### [balloon-range-tests] feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean (2026-07-30) | tags: HARDWARE
+- **Commit:** `f473512` by Felix
+- **Files:** tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr, tracker/hardware/gerbers_f33/hub_board_f33-B_Cu.gbl (+45 more)
+- **Full message:** feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `40f974f` by Felix
+- **Files:** tracker/hardware/drc_f33_check.txt, tracker/hardware/drc_v1_check.txt, tracker/hardware/fix_unconnected.py (+2 more)
+- **Full message:** fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-range-tests] feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power (2026-07-29) | tags: SPI, HARDWARE, PROTOCOL
+- **Commit:** `e6e5a63` by Felix
+- **Files:** tracker/hardware/drc_f33.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power
+- **Relevance:** SPI, HARDWARE, PROTOCOL
+
+### [balloon-range-tests] feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected (2026-07-29) | tags: HARDWARE
+- **Commit:** `c04001c` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+23 more)
+- **Full message:** feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF (2026-07-29) | tags: SPI, HARDWARE
+- **Commit:** `d56b6b0` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF
+- **Relevance:** SPI, HARDWARE
+
+### [balloon-range-tests] feat(pcb): pick-and-place files + multi-layer SVG render (2026-07-29) | tags: HARDWARE
+- **Commit:** `caede48` by Felix
+- **Files:** tracker/hardware/gerbers_f33/pos_f33.csv, tracker/hardware/gerbers_v1/pos_v1.csv, tracker/hardware/hub_board_v1_render.svg
+- **Full message:** feat(pcb): pick-and-place files + multi-layer SVG render
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] feat(pcb): JLCPCB Gerbers generated for both hub board variants (2026-07-29) | tags: HARDWARE
+- **Commit:** `94b6da0` by Felix
+- **Files:** tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr (+46 more)
+- **Full message:** feat(pcb): JLCPCB Gerbers generated for both hub board variants
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] docs: discovery sync ack — board design frozen, weights calculable (2026-07-30) | tags: GENERAL
+- **Commit:** `1e8bade` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync ack — board design frozen, weights calculable
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] plan: post-merge integration — 5 workstreams with quality gates (2026-07-30) | tags: GENERAL
+- **Commit:** `29ad722` by Felix
+- **Files:** docs/coordination/PLAN-POST-MERGE-INTEGRATION.md
+- **Full message:** plan: post-merge integration — 5 workstreams with quality gates
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] chore(pcb): commit stale F33 DRC intermediate reports (2026-07-30) | tags: HARDWARE
+- **Commit:** `f5aaae5` by Felix
+- **Files:** tracker/hardware/drc_f33_v3.txt, tracker/hardware/drc_f33_v4.txt
+- **Full message:** chore(pcb): commit stale F33 DRC intermediate reports
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `512fb0c` by Felix
+- **Files:** tracker/hardware/drc_f33_v5.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19 (2026-07-30) | tags: HARDWARE
+- **Commit:** `ac3f1d6` by Felix
+- **Files:** tracker/hardware/drc_f33_v2.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27 (2026-07-30) | tags: HARDWARE
+- **Commit:** `24f978f` by Felix
+- **Files:** tracker/hardware/drc_f33_fixed.txt, tracker/hardware/gen_pcb.py
+- **Full message:** fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] chore(pcb): commit DRC V1 final2 report (2026-07-30) | tags: HARDWARE
+- **Commit:** `08b474d` by Felix
+- **Files:** tracker/hardware/drc_v1_final2.txt
+- **Full message:** chore(pcb): commit DRC V1 final2 report
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `9b96c92` by Felix
+- **Files:** tracker/hardware/drc_v1_router.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] refactor(pcb): import Router class into gen_pcb.py (2026-07-30) | tags: HARDWARE
+- **Commit:** `f11e3fc` by Felix
+- **Files:** tracker/hardware/gen_pcb.py
+- **Full message:** refactor(pcb): import Router class into gen_pcb.py
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] feat(router): clearance-aware Router class — 33/33 tests pass (2026-07-30) | tags: GENERAL
+- **Commit:** `b634f47` by Felix
+- **Files:** tracker/hardware/router.py, tracker/hardware/test_router.py
+- **Full message:** feat(router): clearance-aware Router class — 33/33 tests pass
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] plan: clearance-aware routing rewrite + DRC analysis tooling (2026-07-30) | tags: PROTOCOL, TEST
+- **Commit:** `2222b8f` by Felix
+- **Files:** docs/PLAN-ROUTING-REWRITE.md, tracker/hardware/drc_f33_baseline.txt, tracker/hardware/drc_v1_baseline.txt (+3 more)
+- **Full message:** plan: clearance-aware routing rewrite + DRC analysis tooling
+- **Relevance:** PROTOCOL, TEST
+
+### [balloon-circuit-design] feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean (2026-07-30) | tags: HARDWARE
+- **Commit:** `f473512` by Felix
+- **Files:** tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr, tracker/hardware/gerbers_f33/hub_board_f33-B_Cu.gbl (+45 more)
+- **Full message:** feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `40f974f` by Felix
+- **Files:** tracker/hardware/drc_f33_check.txt, tracker/hardware/drc_v1_check.txt, tracker/hardware/fix_unconnected.py (+2 more)
+- **Full message:** fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power (2026-07-29) | tags: SPI, HARDWARE, PROTOCOL
+- **Commit:** `e6e5a63` by Felix
+- **Files:** tracker/hardware/drc_f33.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power
+- **Relevance:** SPI, HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected (2026-07-29) | tags: HARDWARE
+- **Commit:** `c04001c` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+23 more)
+- **Full message:** feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF (2026-07-29) | tags: SPI, HARDWARE
+- **Commit:** `d56b6b0` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF
+- **Relevance:** SPI, HARDWARE
+
+### [balloon-circuit-design] feat(pcb): pick-and-place files + multi-layer SVG render (2026-07-29) | tags: HARDWARE
+- **Commit:** `caede48` by Felix
+- **Files:** tracker/hardware/gerbers_f33/pos_f33.csv, tracker/hardware/gerbers_v1/pos_v1.csv, tracker/hardware/hub_board_v1_render.svg
+- **Full message:** feat(pcb): pick-and-place files + multi-layer SVG render
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] feat(pcb): JLCPCB Gerbers generated for both hub board variants (2026-07-29) | tags: HARDWARE
+- **Commit:** `94b6da0` by Felix
+- **Files:** tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr (+46 more)
+- **Full message:** feat(pcb): JLCPCB Gerbers generated for both hub board variants
+- **Relevance:** HARDWARE
+
+
+### [balloon-hermes] docs: discovery sync ack — board design frozen, weights calculable (2026-07-30) | tags: GENERAL
+- **Commit:** `1e8bade` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync ack — board design frozen, weights calculable
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: discovery sync acknowledgment — circuit-design routing rewrite [informatio (2026-07-30) | tags: PROTOCOL
+- **Commit:** `9cc74c0` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync acknowledgment — circuit-design routing rewrite [informational]
+- **Relevance:** PROTOCOL
+
+### [balloon-hermes] chore: update AGENTS.md to balloon-tollgate identity (2026-07-29) | tags: GENERAL
+- **Commit:** `b1effd4` by Felix
+- **Files:** AGENTS.md
+- **Full message:** chore: update AGENTS.md to balloon-tollgate identity
+- **Relevance:** GENERAL
+
+### [balloon-hermes] fix: RX watchdog crash + IRQ pin polling for packet reception (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `9bcbf1a` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/radio_test/main/main.cpp
+- **Full message:** fix: RX watchdog crash + IRQ pin polling for packet reception
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-hermes] fix: combine SPI reads into single CS-low txn + fix watchdog crash (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `c0a92a9` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/components/lr2021_transport/src/lr2021_transport.cpp (+1 more)
+- **Full message:** fix: combine SPI reads into single CS-low txn + fix watchdog crash
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-hermes] fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b) (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `fc386b3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/sdkconfig.defaults
+- **Full message:** fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b)
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-hermes] refactor: replace RadioLib with lr2021_transport in firmware (ADR-020) (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `477b6d6` by Felix
+- **Files:** tracker/firmware/components/meshcore/esp_idf/EspIdfInterfaces.h, tracker/firmware/main/CMakeLists.txt, tracker/firmware/main/app_main.cpp
+- **Full message:** refactor: replace RadioLib with lr2021_transport in firmware (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-hermes] feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO) (2026-07-30) | tags: SPI, RADIO, FIRMWARE, HARDWARE
+- **Commit:** `f4dddd0` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp (+1 more)
+- **Full message:** feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO)
+- **Relevance:** SPI, RADIO, FIRMWARE, HARDWARE
+
+### [balloon-hermes] docs: SPI layout constraints for LR2021 at 20MHz (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `b9712e5` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/SPI-LAYOUT-CONSTRAINTS.md
+- **Full message:** docs: SPI layout constraints for LR2021 at 20MHz
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-hermes] refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020) (2026-07-29) | tags: RADIO, FIRMWARE
+- **Commit:** `a59a758` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/lr2021_spi.h
+- **Full message:** refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-hermes] docs: Phase 2 plan — hardware adapter + cross-track finding resolution (2026-07-29) | tags: GENERAL
+- **Commit:** `a416b38` by Felix
+- **Files:** docs/PLAN-phase2-hardware-adapter-2026-07-29.md
+- **Full message:** docs: Phase 2 plan — hardware adapter + cross-track finding resolution
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat: encrypted multi-frame transport over LR2021 (Phase 3 host test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `4f864b5` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/test/Makefile, tracker/firmware/components/fips_radio_bridge/test/test_fips_fragmented.cpp
+- **Full message:** feat: encrypted multi-frame transport over LR2021 (Phase 3 host test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-hermes] feat: FIPS Noise IK handshake over LR2021 transport (host integration test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `d0cb398` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/CMakeLists.txt, tracker/firmware/components/fips_radio_bridge/include/fips_radio_bridge.h, tracker/firmware/components/fips_radio_bridge/src/fips_radio_bridge.cpp (+3 more)
+- **Full message:** feat: FIPS Noise IK handshake over LR2021 transport (host integration test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-hermes] feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-ID (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `75ffda3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/lr2021_framing.h, tracker/firmware/components/lr2021_transport/include/lr2021_spi.h (+6 more)
+- **Full message:** feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-IDF port)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-hermes] Revert "feat(coordination): add balloon-multiwan-bonding as 10th track" (2026-07-30) | tags: GENERAL
+- **Commit:** `dedb5bd` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** Revert "feat(coordination): add balloon-multiwan-bonding as 10th track"
+- **Relevance:** GENERAL
+
+### [balloon-hermes] data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI (2026-07-30) | tags: SPI, RADIO, TEST
+- **Commit:** `a31f971` by Felix
+- **Files:** .gitignore, captures/bench-rp2040.sr, docs/rp2040-baseline-results.md
+- **Full message:** data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI
+- **Relevance:** SPI, RADIO, TEST
+
+### [balloon-hermes] docs+feat: SPI timing findings + payload size sweep targets (2026-07-29) | tags: SPI
+- **Commit:** `af2457f` by Felix
+- **Files:** Makefile, docs/spi-timing-analysis.md, firmware/rp2040/platformio.ini
+- **Full message:** docs+feat: SPI timing findings + payload size sweep targets
+- **Relevance:** SPI
+
+### [balloon-range-tests] docs: discovery sync acknowledgment — circuit-design routing rewrite [informatio (2026-07-30) | tags: PROTOCOL
+- **Commit:** `9cc74c0` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync acknowledgment — circuit-design routing rewrite [informational]
+- **Relevance:** PROTOCOL
+
+### [balloon-range-tests] chore: update AGENTS.md to balloon-tollgate identity (2026-07-29) | tags: GENERAL
+- **Commit:** `b1effd4` by Felix
+- **Files:** AGENTS.md
+- **Full message:** chore: update AGENTS.md to balloon-tollgate identity
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] fix: RX watchdog crash + IRQ pin polling for packet reception (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `9bcbf1a` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/radio_test/main/main.cpp
+- **Full message:** fix: RX watchdog crash + IRQ pin polling for packet reception
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-range-tests] fix: combine SPI reads into single CS-low txn + fix watchdog crash (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `c0a92a9` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/components/lr2021_transport/src/lr2021_transport.cpp (+1 more)
+- **Full message:** fix: combine SPI reads into single CS-low txn + fix watchdog crash
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-range-tests] fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b) (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `fc386b3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/sdkconfig.defaults
+- **Full message:** fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b)
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-range-tests] refactor: replace RadioLib with lr2021_transport in firmware (ADR-020) (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `477b6d6` by Felix
+- **Files:** tracker/firmware/components/meshcore/esp_idf/EspIdfInterfaces.h, tracker/firmware/main/CMakeLists.txt, tracker/firmware/main/app_main.cpp
+- **Full message:** refactor: replace RadioLib with lr2021_transport in firmware (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-range-tests] feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO) (2026-07-30) | tags: SPI, RADIO, FIRMWARE, HARDWARE
+- **Commit:** `f4dddd0` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp (+1 more)
+- **Full message:** feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO)
+- **Relevance:** SPI, RADIO, FIRMWARE, HARDWARE
+
+### [balloon-range-tests] docs: SPI layout constraints for LR2021 at 20MHz (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `b9712e5` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/SPI-LAYOUT-CONSTRAINTS.md
+- **Full message:** docs: SPI layout constraints for LR2021 at 20MHz
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-range-tests] refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020) (2026-07-29) | tags: RADIO, FIRMWARE
+- **Commit:** `a59a758` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/lr2021_spi.h
+- **Full message:** refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-range-tests] docs: Phase 2 plan — hardware adapter + cross-track finding resolution (2026-07-29) | tags: GENERAL
+- **Commit:** `a416b38` by Felix
+- **Files:** docs/PLAN-phase2-hardware-adapter-2026-07-29.md
+- **Full message:** docs: Phase 2 plan — hardware adapter + cross-track finding resolution
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] feat: encrypted multi-frame transport over LR2021 (Phase 3 host test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `4f864b5` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/test/Makefile, tracker/firmware/components/fips_radio_bridge/test/test_fips_fragmented.cpp
+- **Full message:** feat: encrypted multi-frame transport over LR2021 (Phase 3 host test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-range-tests] feat: FIPS Noise IK handshake over LR2021 transport (host integration test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `d0cb398` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/CMakeLists.txt, tracker/firmware/components/fips_radio_bridge/include/fips_radio_bridge.h, tracker/firmware/components/fips_radio_bridge/src/fips_radio_bridge.cpp (+3 more)
+- **Full message:** feat: FIPS Noise IK handshake over LR2021 transport (host integration test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-range-tests] feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-ID (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `75ffda3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/lr2021_framing.h, tracker/firmware/components/lr2021_transport/include/lr2021_spi.h (+6 more)
+- **Full message:** feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-IDF port)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-range-tests] Revert "feat(coordination): add balloon-multiwan-bonding as 10th track" (2026-07-30) | tags: GENERAL
+- **Commit:** `dedb5bd` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** Revert "feat(coordination): add balloon-multiwan-bonding as 10th track"
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] feat(coordination): add balloon-multiwan-bonding as 10th track (2026-07-30) | tags: GENERAL
+- **Commit:** `49aff2d` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** feat(coordination): add balloon-multiwan-bonding as 10th track
+- **Relevance:** GENERAL
+
+### [balloon-range-tests] data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI (2026-07-30) | tags: SPI, RADIO, TEST
+- **Commit:** `a31f971` by Felix
+- **Files:** .gitignore, captures/bench-rp2040.sr, docs/rp2040-baseline-results.md
+- **Full message:** data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI
+- **Relevance:** SPI, RADIO, TEST
+
+### [balloon-range-tests] feat(nostr): rewrite nostr_store to flash-backed design (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `423e1f8` by Felix
+- **Files:** tracker/firmware/components/nostr_store/include/nostr_store.h, tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c (+1 more)
+- **Full message:** feat(nostr): rewrite nostr_store to flash-backed design
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-range-tests] docs(nostr): extraction plan for store-and-forward on ESP32-C3 (2026-07-29) | tags: PROTOCOL
+- **Commit:** `041c231` by Felix
+- **Files:** AGENTS.md, docs/STATUS-balloon-nostr.md
+- **Full message:** docs(nostr): extraction plan for store-and-forward on ESP32-C3
+- **Relevance:** PROTOCOL
+
+### [balloon-range-tests] feat(mesh_adapter): wire encrypt/decrypt callbacks for FIPS integration (2026-07-29) | tags: FIRMWARE, TEST
+- **Commit:** `5d17114` by Felix
+- **Files:** tests/test_c_host.py, tracker/firmware/components/mesh_adapter/include/mesh_adapter.h, tracker/firmware/components/mesh_adapter/mesh_adapter.c (+1 more)
+- **Full message:** feat(mesh_adapter): wire encrypt/decrypt callbacks for FIPS integration
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-range-tests] feat(blossom_datagram): new component — bridge mesh datagram to blob storage (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `7971810` by Felix
+- **Files:** tests/test_c_host.py, tracker/firmware/components/blossom_datagram/CMakeLists.txt, tracker/firmware/components/blossom_datagram/blossom_datagram.c (+2 more)
+- **Full message:** feat(blossom_datagram): new component — bridge mesh datagram to blob storage
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-range-tests] build(mesh_adapter): add CMakeLists.txt — was only mesh component missing one (2026-07-29) | tags: FIRMWARE, PROTOCOL
+- **Commit:** `b60c583` by Felix
+- **Files:** tracker/firmware/components/mesh_adapter/CMakeLists.txt
+- **Full message:** build(mesh_adapter): add CMakeLists.txt — was only mesh component missing one
+- **Relevance:** FIRMWARE, PROTOCOL
+
+### [balloon-range-tests] feat(nostr_store): implement nostr_event_deserialize() (2026-07-29) | tags: FIRMWARE, TEST
+- **Commit:** `e3c1575` by Felix
+- **Files:** tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c
+- **Full message:** feat(nostr_store): implement nostr_event_deserialize()
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-range-tests] docs+feat: SPI timing findings + payload size sweep targets (2026-07-29) | tags: SPI
+- **Commit:** `af2457f` by Felix
+- **Files:** Makefile, docs/spi-timing-analysis.md, firmware/rp2040/platformio.ini
+- **Full message:** docs+feat: SPI timing findings + payload size sweep targets
+- **Relevance:** SPI
+
+### [balloon-pre-stretching] docs: discovery sync ack — board design frozen, weights calculable (2026-07-30) | tags: GENERAL
+- **Commit:** `1e8bade` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync ack — board design frozen, weights calculable
+- **Relevance:** GENERAL
+
+### [balloon-pre-stretching] docs: discovery sync acknowledgment — circuit-design routing rewrite [informatio (2026-07-30) | tags: PROTOCOL
+- **Commit:** `9cc74c0` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync acknowledgment — circuit-design routing rewrite [informational]
+- **Relevance:** PROTOCOL
+
+### [balloon-pre-stretching] chore: update AGENTS.md to balloon-tollgate identity (2026-07-29) | tags: GENERAL
+- **Commit:** `b1effd4` by Felix
+- **Files:** AGENTS.md
+- **Full message:** chore: update AGENTS.md to balloon-tollgate identity
+- **Relevance:** GENERAL
+
+### [balloon-pre-stretching] fix: RX watchdog crash + IRQ pin polling for packet reception (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `9bcbf1a` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/radio_test/main/main.cpp
+- **Full message:** fix: RX watchdog crash + IRQ pin polling for packet reception
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-pre-stretching] fix: combine SPI reads into single CS-low txn + fix watchdog crash (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `c0a92a9` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/components/lr2021_transport/src/lr2021_transport.cpp (+1 more)
+- **Full message:** fix: combine SPI reads into single CS-low txn + fix watchdog crash
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-pre-stretching] fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b) (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `fc386b3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/sdkconfig.defaults
+- **Full message:** fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b)
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-pre-stretching] refactor: replace RadioLib with lr2021_transport in firmware (ADR-020) (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `477b6d6` by Felix
+- **Files:** tracker/firmware/components/meshcore/esp_idf/EspIdfInterfaces.h, tracker/firmware/main/CMakeLists.txt, tracker/firmware/main/app_main.cpp
+- **Full message:** refactor: replace RadioLib with lr2021_transport in firmware (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-pre-stretching] feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO) (2026-07-30) | tags: SPI, RADIO, FIRMWARE, HARDWARE
+- **Commit:** `f4dddd0` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp (+1 more)
+- **Full message:** feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO)
+- **Relevance:** SPI, RADIO, FIRMWARE, HARDWARE
+
+### [balloon-pre-stretching] docs: SPI layout constraints for LR2021 at 20MHz (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `b9712e5` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/SPI-LAYOUT-CONSTRAINTS.md
+- **Full message:** docs: SPI layout constraints for LR2021 at 20MHz
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-pre-stretching] refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020) (2026-07-29) | tags: RADIO, FIRMWARE
+- **Commit:** `a59a758` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/lr2021_spi.h
+- **Full message:** refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-pre-stretching] docs: Phase 2 plan — hardware adapter + cross-track finding resolution (2026-07-29) | tags: GENERAL
+- **Commit:** `a416b38` by Felix
+- **Files:** docs/PLAN-phase2-hardware-adapter-2026-07-29.md
+- **Full message:** docs: Phase 2 plan — hardware adapter + cross-track finding resolution
+- **Relevance:** GENERAL
+
+### [balloon-pre-stretching] feat: encrypted multi-frame transport over LR2021 (Phase 3 host test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `4f864b5` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/test/Makefile, tracker/firmware/components/fips_radio_bridge/test/test_fips_fragmented.cpp
+- **Full message:** feat: encrypted multi-frame transport over LR2021 (Phase 3 host test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-pre-stretching] feat: FIPS Noise IK handshake over LR2021 transport (host integration test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `d0cb398` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/CMakeLists.txt, tracker/firmware/components/fips_radio_bridge/include/fips_radio_bridge.h, tracker/firmware/components/fips_radio_bridge/src/fips_radio_bridge.cpp (+3 more)
+- **Full message:** feat: FIPS Noise IK handshake over LR2021 transport (host integration test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-pre-stretching] feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-ID (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `75ffda3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/lr2021_framing.h, tracker/firmware/components/lr2021_transport/include/lr2021_spi.h (+6 more)
+- **Full message:** feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-IDF port)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-pre-stretching] Revert "feat(coordination): add balloon-multiwan-bonding as 10th track" (2026-07-30) | tags: GENERAL
+- **Commit:** `dedb5bd` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** Revert "feat(coordination): add balloon-multiwan-bonding as 10th track"
+- **Relevance:** GENERAL
+
+### [balloon-pre-stretching] feat(coordination): add balloon-multiwan-bonding as 10th track (2026-07-30) | tags: GENERAL
+- **Commit:** `49aff2d` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** feat(coordination): add balloon-multiwan-bonding as 10th track
+- **Relevance:** GENERAL
+
+### [balloon-pre-stretching] data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI (2026-07-30) | tags: SPI, RADIO, TEST
+- **Commit:** `a31f971` by Felix
+- **Files:** .gitignore, captures/bench-rp2040.sr, docs/rp2040-baseline-results.md
+- **Full message:** data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI
+- **Relevance:** SPI, RADIO, TEST
+
+### [balloon-pre-stretching] feat(nostr): rewrite nostr_store to flash-backed design (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `423e1f8` by Felix
+- **Files:** tracker/firmware/components/nostr_store/include/nostr_store.h, tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c (+1 more)
+- **Full message:** feat(nostr): rewrite nostr_store to flash-backed design
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-pre-stretching] docs(nostr): extraction plan for store-and-forward on ESP32-C3 (2026-07-29) | tags: PROTOCOL
+- **Commit:** `041c231` by Felix
+- **Files:** AGENTS.md, docs/STATUS-balloon-nostr.md
+- **Full message:** docs(nostr): extraction plan for store-and-forward on ESP32-C3
+- **Relevance:** PROTOCOL
+
+### [balloon-pre-stretching] feat(mesh_adapter): wire encrypt/decrypt callbacks for FIPS integration (2026-07-29) | tags: FIRMWARE, TEST
+- **Commit:** `5d17114` by Felix
+- **Files:** tests/test_c_host.py, tracker/firmware/components/mesh_adapter/include/mesh_adapter.h, tracker/firmware/components/mesh_adapter/mesh_adapter.c (+1 more)
+- **Full message:** feat(mesh_adapter): wire encrypt/decrypt callbacks for FIPS integration
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-pre-stretching] feat(blossom_datagram): new component — bridge mesh datagram to blob storage (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `7971810` by Felix
+- **Files:** tests/test_c_host.py, tracker/firmware/components/blossom_datagram/CMakeLists.txt, tracker/firmware/components/blossom_datagram/blossom_datagram.c (+2 more)
+- **Full message:** feat(blossom_datagram): new component — bridge mesh datagram to blob storage
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-pre-stretching] build(mesh_adapter): add CMakeLists.txt — was only mesh component missing one (2026-07-29) | tags: FIRMWARE, PROTOCOL
+- **Commit:** `b60c583` by Felix
+- **Files:** tracker/firmware/components/mesh_adapter/CMakeLists.txt
+- **Full message:** build(mesh_adapter): add CMakeLists.txt — was only mesh component missing one
+- **Relevance:** FIRMWARE, PROTOCOL
+
+### [balloon-pre-stretching] feat(nostr_store): implement nostr_event_deserialize() (2026-07-29) | tags: FIRMWARE, TEST
+- **Commit:** `e3c1575` by Felix
+- **Files:** tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c
+- **Full message:** feat(nostr_store): implement nostr_event_deserialize()
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-pre-stretching] docs+feat: SPI timing findings + payload size sweep targets (2026-07-29) | tags: SPI
+- **Commit:** `af2457f` by Felix
+- **Files:** Makefile, docs/spi-timing-analysis.md, firmware/rp2040/platformio.ini
+- **Full message:** docs+feat: SPI timing findings + payload size sweep targets
+- **Relevance:** SPI
+
+### [balloon-circuit-design] chore(pcb): commit stale F33 DRC intermediate reports (2026-07-30) | tags: HARDWARE
+- **Commit:** `51d1aa6` by Felix
+- **Files:** tracker/hardware/drc_f33_v3.txt, tracker/hardware/drc_f33_v4.txt
+- **Full message:** chore(pcb): commit stale F33 DRC intermediate reports
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `7b5f46e` by Felix
+- **Files:** tracker/hardware/drc_f33_v5.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19 (2026-07-30) | tags: HARDWARE
+- **Commit:** `b511ef7` by Felix
+- **Files:** tracker/hardware/drc_f33_v2.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27 (2026-07-30) | tags: HARDWARE
+- **Commit:** `95eafe6` by Felix
+- **Files:** tracker/hardware/drc_f33_fixed.txt, tracker/hardware/gen_pcb.py
+- **Full message:** fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] chore(pcb): commit DRC V1 final2 report (2026-07-30) | tags: HARDWARE
+- **Commit:** `6e53882` by Felix
+- **Files:** tracker/hardware/drc_v1_final2.txt
+- **Full message:** chore(pcb): commit DRC V1 final2 report
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `a22662a` by Felix
+- **Files:** tracker/hardware/drc_v1_router.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): V1 clearance-aware routing — shorts 86→59, crossings 65→0
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] refactor(pcb): import Router class into gen_pcb.py (2026-07-30) | tags: HARDWARE
+- **Commit:** `1e876b3` by Felix
+- **Files:** tracker/hardware/gen_pcb.py
+- **Full message:** refactor(pcb): import Router class into gen_pcb.py
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] feat(router): clearance-aware Router class — 33/33 tests pass (2026-07-30) | tags: GENERAL
+- **Commit:** `e3b5464` by Felix
+- **Files:** tracker/hardware/router.py, tracker/hardware/test_router.py
+- **Full message:** feat(router): clearance-aware Router class — 33/33 tests pass
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] plan: clearance-aware routing rewrite + DRC analysis tooling (2026-07-30) | tags: PROTOCOL, TEST
+- **Commit:** `75fb76e` by Felix
+- **Files:** docs/PLAN-ROUTING-REWRITE.md, tracker/hardware/drc_f33_baseline.txt, tracker/hardware/drc_v1_baseline.txt (+3 more)
+- **Full message:** plan: clearance-aware routing rewrite + DRC analysis tooling
+- **Relevance:** PROTOCOL, TEST
+
+### [balloon-circuit-design] feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean (2026-07-30) | tags: HARDWARE
+- **Commit:** `e5f960a` by Felix
+- **Files:** tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr, tracker/hardware/gerbers_f33/hub_board_f33-B_Cu.gbl (+45 more)
+- **Full message:** feat(pcb): Gerbers + JLCPCB order package — both boards DRC clean
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `bfb9bc5` by Felix
+- **Files:** tracker/hardware/drc_f33_check.txt, tracker/hardware/drc_v1_check.txt, tracker/hardware/fix_unconnected.py (+2 more)
+- **Full message:** fix(pcb): both boards 0 unconnected — auto-generated GND mesh + stub bridges
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power (2026-07-29) | tags: SPI, HARDWARE, PROTOCOL
+- **Commit:** `9b80dfc` by Felix
+- **Files:** tracker/hardware/drc_f33.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V2 F33 full signal routing — SPI/UART/I2C/RF/PA power
+- **Relevance:** SPI, HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected (2026-07-29) | tags: HARDWARE
+- **Commit:** `fb7a7e2` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+23 more)
+- **Full message:** feat(pcb): V1 local decoupling + GND stubs — 160 traces, 31 unconnected
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF (2026-07-29) | tags: SPI, HARDWARE
+- **Commit:** `f37f443` by Felix
+- **Files:** tracker/hardware/drc_v1.txt, tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_v1/hub_board_v1-B_Adhesive.gba (+24 more)
+- **Full message:** feat(pcb): V1 all signal nets routed — 84 traces, SPI/UART/I2C/RF
+- **Relevance:** SPI, HARDWARE
+
+### [balloon-circuit-design] feat(pcb): pick-and-place files + multi-layer SVG render (2026-07-29) | tags: HARDWARE
+- **Commit:** `b4ea9b6` by Felix
+- **Files:** tracker/hardware/gerbers_f33/pos_f33.csv, tracker/hardware/gerbers_v1/pos_v1.csv, tracker/hardware/hub_board_v1_render.svg
+- **Full message:** feat(pcb): pick-and-place files + multi-layer SVG render
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] feat(pcb): JLCPCB Gerbers generated for both hub board variants (2026-07-29) | tags: HARDWARE
+- **Commit:** `9e4e121` by Felix
+- **Files:** tracker/hardware/gen_pcb.py, tracker/hardware/gerbers_f33/hub_board_f33-B_Adhesive.gba, tracker/hardware/gerbers_f33/hub_board_f33-B_Courtyard.gbr (+46 more)
+- **Full message:** feat(pcb): JLCPCB Gerbers generated for both hub board variants
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] docs: discovery sync ack — board design frozen, weights calculable (2026-07-30) | tags: GENERAL
+- **Commit:** `1e8bade` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync ack — board design frozen, weights calculable
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] docs: discovery sync acknowledgment — circuit-design routing rewrite [informatio (2026-07-30) | tags: PROTOCOL
+- **Commit:** `9cc74c0` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync acknowledgment — circuit-design routing rewrite [informational]
+- **Relevance:** PROTOCOL
+
+### [balloon-circuit-design] chore: update AGENTS.md to balloon-tollgate identity (2026-07-29) | tags: GENERAL
+- **Commit:** `b1effd4` by Felix
+- **Files:** AGENTS.md
+- **Full message:** chore: update AGENTS.md to balloon-tollgate identity
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] fix: RX watchdog crash + IRQ pin polling for packet reception (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `9bcbf1a` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/radio_test/main/main.cpp
+- **Full message:** fix: RX watchdog crash + IRQ pin polling for packet reception
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-circuit-design] fix: combine SPI reads into single CS-low txn + fix watchdog crash (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `c0a92a9` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/components/lr2021_transport/src/lr2021_transport.cpp (+1 more)
+- **Full message:** fix: combine SPI reads into single CS-low txn + fix watchdog crash
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-circuit-design] fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b) (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `fc386b3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp, tracker/firmware/sdkconfig.defaults
+- **Full message:** fix: port 5 SPI crash fixes from balloon-hermes lr2021_radio.c (5bf933b)
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-circuit-design] refactor: replace RadioLib with lr2021_transport in firmware (ADR-020) (2026-07-30) | tags: RADIO, FIRMWARE
+- **Commit:** `477b6d6` by Felix
+- **Files:** tracker/firmware/components/meshcore/esp_idf/EspIdfInterfaces.h, tracker/firmware/main/CMakeLists.txt, tracker/firmware/main/app_main.cpp
+- **Full message:** refactor: replace RadioLib with lr2021_transport in firmware (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-circuit-design] feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO) (2026-07-30) | tags: SPI, RADIO, FIRMWARE, HARDWARE
+- **Commit:** `f4dddd0` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/esp_idf_lr2021_radio.h, tracker/firmware/components/lr2021_transport/src/esp_idf_lr2021_radio.cpp (+1 more)
+- **Full message:** feat: EspHalLr2021Radio — ESP-IDF raw SPI adapter for LR2021 (20MHz direct GPIO)
+- **Relevance:** SPI, RADIO, FIRMWARE, HARDWARE
+
+### [balloon-circuit-design] docs: SPI layout constraints for LR2021 at 20MHz (2026-07-30) | tags: SPI, RADIO, FIRMWARE
+- **Commit:** `b9712e5` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/SPI-LAYOUT-CONSTRAINTS.md
+- **Full message:** docs: SPI layout constraints for LR2021 at 20MHz
+- **Relevance:** SPI, RADIO, FIRMWARE
+
+### [balloon-circuit-design] refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020) (2026-07-29) | tags: RADIO, FIRMWARE
+- **Commit:** `a59a758` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/lr2021_spi.h
+- **Full message:** refactor: remove dead SX1280 opcode namespaces from lr2021_spi.h (ADR-020)
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-circuit-design] docs: Phase 2 plan — hardware adapter + cross-track finding resolution (2026-07-29) | tags: GENERAL
+- **Commit:** `a416b38` by Felix
+- **Files:** docs/PLAN-phase2-hardware-adapter-2026-07-29.md
+- **Full message:** docs: Phase 2 plan — hardware adapter + cross-track finding resolution
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] feat: encrypted multi-frame transport over LR2021 (Phase 3 host test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `4f864b5` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/test/Makefile, tracker/firmware/components/fips_radio_bridge/test/test_fips_fragmented.cpp
+- **Full message:** feat: encrypted multi-frame transport over LR2021 (Phase 3 host test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-circuit-design] feat: FIPS Noise IK handshake over LR2021 transport (host integration test) (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `d0cb398` by Felix
+- **Files:** tracker/firmware/components/fips_radio_bridge/CMakeLists.txt, tracker/firmware/components/fips_radio_bridge/include/fips_radio_bridge.h, tracker/firmware/components/fips_radio_bridge/src/fips_radio_bridge.cpp (+3 more)
+- **Full message:** feat: FIPS Noise IK handshake over LR2021 transport (host integration test)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-circuit-design] feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-ID (2026-07-29) | tags: RADIO, FIRMWARE, TEST
+- **Commit:** `75ffda3` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/CMakeLists.txt, tracker/firmware/components/lr2021_transport/include/lr2021_framing.h, tracker/firmware/components/lr2021_transport/include/lr2021_spi.h (+6 more)
+- **Full message:** feat: extract LR2021 transport layer from microfips to balloon-fresh (C++ ESP-IDF port)
+- **Relevance:** RADIO, FIRMWARE, TEST
+
+### [balloon-circuit-design] Revert "feat(coordination): add balloon-multiwan-bonding as 10th track" (2026-07-30) | tags: GENERAL
+- **Commit:** `dedb5bd` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** Revert "feat(coordination): add balloon-multiwan-bonding as 10th track"
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] feat(coordination): add balloon-multiwan-bonding as 10th track (2026-07-30) | tags: GENERAL
+- **Commit:** `49aff2d` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** feat(coordination): add balloon-multiwan-bonding as 10th track
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI (2026-07-30) | tags: SPI, RADIO, TEST
+- **Commit:** `a31f971` by Felix
+- **Files:** .gitignore, captures/bench-rp2040.sr, docs/rp2040-baseline-results.md
+- **Full message:** data: RP2040 baseline capture + results — 1760kbps at 10.40MHz SPI
+- **Relevance:** SPI, RADIO, TEST
+
+### [balloon-circuit-design] feat(nostr): rewrite nostr_store to flash-backed design (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `423e1f8` by Felix
+- **Files:** tracker/firmware/components/nostr_store/include/nostr_store.h, tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c (+1 more)
+- **Full message:** feat(nostr): rewrite nostr_store to flash-backed design
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-circuit-design] docs(nostr): extraction plan for store-and-forward on ESP32-C3 (2026-07-29) | tags: PROTOCOL
+- **Commit:** `041c231` by Felix
+- **Files:** AGENTS.md, docs/STATUS-balloon-nostr.md
+- **Full message:** docs(nostr): extraction plan for store-and-forward on ESP32-C3
+- **Relevance:** PROTOCOL
+
+### [balloon-circuit-design] feat(mesh_adapter): wire encrypt/decrypt callbacks for FIPS integration (2026-07-29) | tags: FIRMWARE, TEST
+- **Commit:** `5d17114` by Felix
+- **Files:** tests/test_c_host.py, tracker/firmware/components/mesh_adapter/include/mesh_adapter.h, tracker/firmware/components/mesh_adapter/mesh_adapter.c (+1 more)
+- **Full message:** feat(mesh_adapter): wire encrypt/decrypt callbacks for FIPS integration
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-circuit-design] feat(blossom_datagram): new component — bridge mesh datagram to blob storage (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `7971810` by Felix
+- **Files:** tests/test_c_host.py, tracker/firmware/components/blossom_datagram/CMakeLists.txt, tracker/firmware/components/blossom_datagram/blossom_datagram.c (+2 more)
+- **Full message:** feat(blossom_datagram): new component — bridge mesh datagram to blob storage
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-circuit-design] build(mesh_adapter): add CMakeLists.txt — was only mesh component missing one (2026-07-29) | tags: FIRMWARE, PROTOCOL
+- **Commit:** `b60c583` by Felix
+- **Files:** tracker/firmware/components/mesh_adapter/CMakeLists.txt
+- **Full message:** build(mesh_adapter): add CMakeLists.txt — was only mesh component missing one
+- **Relevance:** FIRMWARE, PROTOCOL
+
+### [balloon-circuit-design] feat(nostr_store): implement nostr_event_deserialize() (2026-07-29) | tags: FIRMWARE, TEST
+- **Commit:** `e3c1575` by Felix
+- **Files:** tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c
+- **Full message:** feat(nostr_store): implement nostr_event_deserialize()
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-circuit-design] docs+feat: SPI timing findings + payload size sweep targets (2026-07-29) | tags: SPI
+- **Commit:** `af2457f` by Felix
+- **Files:** Makefile, docs/spi-timing-analysis.md, firmware/rp2040/platformio.ini
+- **Full message:** docs+feat: SPI timing findings + payload size sweep targets
+- **Relevance:** SPI
+
+
+### [balloon-hermes] feat(coordination): add balloon-multiwan-bonding as 10th track (2026-07-30) | tags: GENERAL
+- **Commit:** `49aff2d` by Felix
+- **Files:** docs/coordination/TRACKS-REGISTRY.yaml
+- **Full message:** feat(coordination): add balloon-multiwan-bonding as 10th track
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat(nostr): rewrite nostr_store to flash-backed design (2026-07-29) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `423e1f8` by Felix
+- **Files:** tracker/firmware/components/nostr_store/include/nostr_store.h, tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c (+1 more)
+- **Full message:** feat(nostr): rewrite nostr_store to flash-backed design
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-hermes] docs(nostr): extraction plan for store-and-forward on ESP32-C3 (2026-07-29) | tags: PROTOCOL
+- **Commit:** `041c231` by Felix
+- **Files:** AGENTS.md, docs/STATUS-balloon-nostr.md
+- **Full message:** docs(nostr): extraction plan for store-and-forward on ESP32-C3
+- **Relevance:** PROTOCOL
+
+### [balloon-circuit-design] chore(pcb): commit stale F33 DRC intermediate reports (2026-07-30) | tags: HARDWARE
+- **Commit:** `60db9f0` by Felix
+- **Files:** tracker/hardware/drc_f33_v3.txt, tracker/hardware/drc_f33_v4.txt
+- **Full message:** chore(pcb): commit stale F33 DRC intermediate reports
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15 (2026-07-30) | tags: HARDWARE, PROTOCOL
+- **Commit:** `32aaefa` by Felix
+- **Files:** tracker/hardware/drc_f33_v5.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 B.Cu routing for power+UART+I2C — shorts 44→15, crossings 14→15
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-circuit-design] fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19 (2026-07-30) | tags: HARDWARE
+- **Commit:** `d8fecdd` by Felix
+- **Files:** tracker/hardware/drc_f33_v2.txt, tracker/hardware/gen_pcb.py, tracker/hardware/hub_board_f33.kicad_pcb (+1 more)
+- **Full message:** fix(pcb): F33 power bus to B.Cu + GND via relocation — shorts 27→19
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27 (2026-07-30) | tags: HARDWARE
+- **Commit:** `5df08e6` by Felix
+- **Files:** tracker/hardware/drc_f33_fixed.txt, tracker/hardware/gen_pcb.py
+- **Full message:** fix(pcb): F33 Router integration + U1 pad pitch fix — shorts 44→27
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] chore(pcb): commit DRC V1 final2 report (2026-07-30) | tags: HARDWARE
+- **Commit:** `5418d25` by Felix
+- **Files:** tracker/hardware/drc_v1_final2.txt
+- **Full message:** chore(pcb): commit DRC V1 final2 report
+- **Relevance:** HARDWARE
+
+
 ### [balloon-circuit-design] feat(schematic): dual-variant hub board — non-PA + F33 2W PA (2026-07-29) | tags: HARDWARE
 - **Commit:** `2ce15d5` by Felix
 - **Files:** docs/DUAL-VARIANT-DESIGN.md, tracker/hardware/hub_board/hub_board_f33.net, tracker/hardware/hub_board/hub_schematic.log (+5 more)

@@ -41,3 +41,6 @@ mesh-stack/tollgate/tests/unit/test_*
 !mesh-stack/tollgate/tests/unit/test_*.h
 
 captures/
+
+# Graphify build cache
+graphify-out/
