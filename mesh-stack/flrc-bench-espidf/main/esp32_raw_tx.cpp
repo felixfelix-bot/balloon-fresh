@@ -35,6 +35,9 @@ static const char *TAG = "RAWTX";
 #define PIN_RST     3
 #define PIN_DIO9    5
 #define PIN_LED     8
+// Debug pins for SPI TX debugging
+#define PIN_DEBUG_CS   9  // GPIO to monitor CS state during transactions
+#define PIN_DEBUG_DIO  11 // GPIO to monitor DIO9 state
 
 // ─── FLRC Config (MUST match RX) ─────────────────────────────────────
 #define FLRC_FREQ_MHZ   2440.0f
@@ -62,9 +65,18 @@ static inline void rfWaitBusy() {
 
 static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
+    
+    // Debug: Toggle CS debug pin before NSS goes low
+    gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 1);
+    ESP_LOGD(TAG, "SPI_TX: Pre-CS (cmd=%02X len=%zu)", buf[0], len);
+    
     gpio_set_level((gpio_num_t)PIN_NSS, 0);
     hal->spiTransfer(const_cast<uint8_t*>(buf), len, nullptr);
+    
+    // Debug: Toggle CS debug pin after NSS goes high  
     gpio_set_level((gpio_num_t)PIN_NSS, 1);
+    gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 0);
+    ESP_LOGD(TAG, "SPI_TX: Post-CS (cmd=%02X completed)", buf[0]);
 }
 
 static uint8_t rfReadStatus() {
@@ -109,7 +121,26 @@ static void rfClearTxFifo() {
 
 static void rfSetTx() {
     uint8_t cmd[] = {0x02, 0x0D, 0x00, 0x00, 0x00};
+    
+    // Debug: Monitor BUSY pin before and during SetTx command
+    int busy_before = gpio_get_level((gpio_num_t)PIN_BUSY);
+    ESP_LOGD(TAG, "SPI_TX: Pre-SetTx (busy=%d)", busy_before);
+    
     rfWriteCmd(cmd, 5);
+    
+    // Debug: Monitor BUSY pin after SetTx and wait for transition
+    int busy_after = gpio_get_level((gpio_num_t)PIN_BUSY);
+    ESP_LOGD(TAG, "SPI_TX: Post-SetTx (busy=%d)", busy_after);
+    
+    // Wait for BUSY to go low (radio ready to transmit)
+    uint32_t timeout = esp_timer_get_time() + 10000; // 10ms timeout
+    while (gpio_get_level((gpio_num_t)PIN_BUSY) == 1 && esp_timer_get_time() < timeout) {
+        // Busy wait for BUSY to go low
+    }
+    
+    int busy_final = gpio_get_level((gpio_num_t)PIN_BUSY);
+    uint32_t elapsed = esp_timer_get_time() - (timeout - 10000);
+    ESP_LOGD(TAG, "SPI_TX: SetTx complete (busy=%d, wait_us=%lu)", busy_final, (unsigned long)elapsed);
 }
 
 static void rfSetRx() {
@@ -119,11 +150,44 @@ static void rfSetRx() {
 
 static void rfWriteTxFifo(const uint8_t *data, size_t len) {
     rfWaitBusy();
-    gpio_set_level((gpio_num_t)PIN_NSS, 0);
+    
+    // Debug: Monitor DIO9 state before FIFO write
+    int dio9_state_before = gpio_get_level((gpio_num_t)PIN_DIO9);
+    ESP_LOGD(TAG, "SPI_TX: Pre-FIFO (dio9=%d len=%zu)", dio9_state_before, len);
+    
+    gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 1);
     uint8_t cmd[] = {0x00, 0x02};
     hal->spiTransfer(cmd, 2, nullptr);
     hal->spiTransfer(const_cast<uint8_t*>(data), len, nullptr);
     gpio_set_level((gpio_num_t)PIN_NSS, 1);
+    gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 0);
+    
+    // Debug: Verify FIFO contents by reading back
+    uint8_t verify_buf[32]; // Read first 32 bytes for verification
+    if (len <= 32) {
+        rfWaitBusy();
+        gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 1);
+        uint8_t read_cmd[] = {0x00, 0x01};
+        hal->spiTransfer(read_cmd, 2, nullptr);
+        hal->spiTransfer(nullptr, len, verify_buf);
+        gpio_set_level((gpio_num_t)PIN_NSS, 1);
+        gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 0);
+        
+        // Compare written vs read data
+        bool match = true;
+        for (size_t i = 0; i < len && i < 32; i++) {
+            if (verify_buf[i] != data[i]) {
+                ESP_LOGE(TAG, "FIFO_VERIFY_FAIL: offset %zu wrote=0x%02X read=0x%02X", 
+                         i, data[i], verify_buf[i]);
+                match = false;
+            }
+        }
+        ESP_LOGD(TAG, "FIFO_VERIFY: %s (len=%zu)", match ? "PASS" : "FAIL", len);
+    }
+    
+    // Debug: Monitor DIO9 state after FIFO write
+    int dio9_state_after = gpio_get_level((gpio_num_t)PIN_DIO9);
+    ESP_LOGD(TAG, "SPI_TX: Post-FIFO (dio9=%d)", dio9_state_after);
 }
 
 static uint32_t frfValue(float freqMhz) {
@@ -196,6 +260,21 @@ static bool rawInitRadio() {
         rfWriteCmd(cmd, 6);
     }
     vTaskDelay(pdMS_TO_TICKS(1));
+    
+    // ADD: SET_FLRC_PACKET_PARAMS (0x0249) - missing in original implementation
+    {
+        uint8_t cmd[] = {
+            0x02, 0x49,  // SET_FLRC_PACKET_PARAMS command
+            0x00,        // FLRC packet params offset (0x00)
+            0x0C,        // Preamble: 12 (8 symbols * 1.5us = 12us)
+            0x4C,        // Sync: 0x4C (SwTx=1, Match1, Fixed, CRC_OFF)
+            (uint8_t)FLRC_PKT_SIZE,  // Packet length (LSB)
+            (uint8_t)(FLRC_PKT_SIZE >> 8)  // Packet length (MSB)
+        };
+        rfWriteCmd(cmd, 7);
+        ESP_LOGI(TAG, "DEBUG: Added SET_FLRC_PACKET_PARAMS (0x0249) call");
+    }
+    vTaskDelay(pdMS_TO_TICKS(1));
 
     { uint8_t cmd[] = {0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10}; rfWriteCmd(cmd, 7); }
     vTaskDelay(pdMS_TO_TICKS(1));
@@ -254,10 +333,37 @@ static void runTransmit() {
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
         rfSetTx();
 
+        // Debug: Monitor DIO9 and poll IRQ for TX completion
         uint32_t timeout = esp_timer_get_time() + 50000;
         bool txDone = false;
+        uint32_t poll_count = 0;
+        
         while (esp_timer_get_time() < timeout) {
-            if (gpio_get_level((gpio_num_t)PIN_DIO9) == 1) { txDone = true; break; }
+            int dio9_state = gpio_get_level((gpio_num_t)PIN_DIO9);
+            poll_count++;
+            
+            // Poll IRQ status every 10 iterations to avoid too much overhead
+            if (poll_count % 10 == 0) {
+                uint32_t irqStatus = rfReadIrqStatus();
+                ESP_LOGD(TAG, "SPI_TX: IRQ poll %lu: dio9=%d IRQ=0x%08lX", 
+                         (unsigned long)poll_count, dio9_state, (unsigned long)irqStatus);
+                
+                // Check for TX-done bit (bit 0 in IRQ status)
+                if (irqStatus & 0x00000001) {
+                    ESP_LOGD(TAG, "SPI_TX: TX-done detected via IRQ!");
+                    txDone = true;
+                    break;
+                }
+            }
+            
+            if (dio9_state == 1) {
+                ESP_LOGD(TAG, "SPI_TX: TX-done detected via DIO9!");
+                txDone = true;
+                break;
+            }
+            
+            // Small delay to prevent busy-waiting too aggressively
+            esp_rom_delay_us(10);
         }
 
         // Recover on the rare timeout/error path only. TX FIFO auto-clears on
@@ -345,6 +451,14 @@ extern "C" void app_main() {
     csConf.mode = GPIO_MODE_OUTPUT;
     gpio_config(&csConf);
     gpio_set_level((gpio_num_t)PIN_NSS, 1);
+
+    // Configure debug GPIO pins for monitoring
+    gpio_config_t debugConf = {};
+    debugConf.pin_bit_mask = (1ULL << PIN_DEBUG_CS) | (1ULL << PIN_DEBUG_DIO);
+    debugConf.mode = GPIO_MODE_OUTPUT;
+    gpio_config(&debugConf);
+    gpio_set_level((gpio_num_t)PIN_DEBUG_CS, 0);
+    gpio_set_level((gpio_num_t)PIN_DEBUG_DIO, 0);
 
     gpio_config_t busyConf = {};
     busyConf.pin_bit_mask = (1ULL << PIN_BUSY);
