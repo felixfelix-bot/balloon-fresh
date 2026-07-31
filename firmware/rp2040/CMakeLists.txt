@@ -49,3 +49,24 @@ target_link_libraries(pio_rx_smoketest
 
 pico_enable_stdio_usb(pio_rx_smoketest 1)
 pico_add_extra_outputs(pio_rx_smoketest)   # .uf2 / .elf / .map / .dis
+
+# ---------------------------------------------------------------------------
+# P4.1 — DMA-chaining / zero-copy FLRC TX (no Arduino core, no .pio).
+# Isolates the chained-DMA + zero-copy ring mechanism against the RP2040
+# hardware SPI peripheral. Builds even where pioasm is unavailable.
+#   make -j$(nproc) dma_chain_tx    # -> dma_chain_tx.uf2
+# ---------------------------------------------------------------------------
+add_executable(dma_chain_tx
+    src/flrc_dma_chain_tx.cpp
+)
+target_include_directories(dma_chain_tx PRIVATE src)
+target_link_libraries(dma_chain_tx
+    pico_stdlib
+    hardware_spi
+    hardware_dma
+    hardware_irq
+    hardware_gpio
+    hardware_clocks
+)
+pico_enable_stdio_usb(dma_chain_tx 1)
+pico_add_extra_outputs(dma_chain_tx)   # .uf2 / .elf / .map / .dis
