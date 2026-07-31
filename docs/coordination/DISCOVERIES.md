@@ -26,6 +26,20 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-range-tests] docs: discovery sync — walk test logs + retry script findings (2026-07-31) (2026-07-31) | tags: TEST
+- **Commit:** `59913ee` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync — walk test logs + retry script findings (2026-07-31)
+- **Relevance:** TEST
+
+
+### [balloon-hermes] chore: state snapshot — walk test logs, retry script, discoveries update (2026-0 (2026-07-31) | tags: TEST
+- **Commit:** `66f94a9` by Felix
+- **Files:** .gitignore, data/walk-tests/walk-20260727-021153.log, data/walk-tests/walk-20260727-032657.log (+18 more)
+- **Full message:** chore: state snapshot — walk test logs, retry script, discoveries update (2026-07-31)
+- **Relevance:** TEST
+
+
 ### [balloon-range-tests] docs: discovery sync — V1+F33 PCB routing findings (informational) (2026-07-30) | tags: HARDWARE, PROTOCOL
 - **Commit:** `b2b4233` by Felix
 - **Files:** docs/STATUS-balloon-range-tests.md
