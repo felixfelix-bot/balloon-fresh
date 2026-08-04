@@ -1,0 +1,65 @@
+name: Host Unit Tests
+
+# Runs all host-side C/C++ unit test suites on every push and PR.
+# Test suites:
+#   - nostr_store    (7 tests)    — tracker/firmware/components/nostr_store
+#   - tollgate       (~350 tests) — mesh-stack/tollgate/tests/unit (Makefile, 13 binaries)
+#   - ehash-relay    (65 tests)   — mesh-stack/ehash-relay/test
+#   - stratorelay    (11 tests)   — tracker/firmware/components/stratorelay/test
+# Any failing suite fails the entire job.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ make libmbedtls-dev libcjson-dev
+
+      # ── Suite 1: nostr_store (7 tests) ──────────────────────────
+      - name: Build & run nostr_store tests
+        run: |
+          cd tracker/firmware/components/nostr_store
+          cc -Wall -Wextra -O2 -I include \
+            -o /tmp/test_nostr_store \
+            nostr_store.c test/test_nostr_store.c
+          /tmp/test_nostr_store
+
+      # ── Suite 2: tollgate (~350 tests across 13 binaries) ───────
+      - name: Build & run tollgate unit tests
+        run: |
+          cd mesh-stack/tollgate/tests/unit
+          make clean
+          make
+          make test
+
+      # ── Suite 3: ehash-relay (65 tests) ─────────────────────────
+      - name: Build & run ehash-relay tests
+        run: |
+          cd mesh-stack/ehash-relay
+          gcc -std=c11 -Wall -I include/ -I ../protocol/ \
+            test/test_ehash_relay.c \
+            ehash_relay.c \
+            ehash_crypto.c \
+            ehash_messages.c \
+            ehash_upstream.c \
+            ehash_radio_stub.c \
+            -o /tmp/test_relay
+          /tmp/test_relay
+
+      # ── Suite 4: stratorelay (11 tests) ─────────────────────────
+      - name: Build & run stratorelay tests
+        run: |
+          g++ -std=c++17 -Wall \
+            -I tracker/firmware/components/stratorelay \
+            tracker/firmware/components/stratorelay/test/test_stratorelay.cpp \
+            -o /tmp/test_stratorelay
+          /tmp/test_stratorelay
