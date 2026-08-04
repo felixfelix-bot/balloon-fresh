@@ -78,6 +78,24 @@ differs between bitrate windows at same distance. If identical → switch not wo
 
 - **2026-08-01**: balloon-hermes — P1B.1-FIX: SPI TX debugging for raw FLRC transmission [SPI, RADIO, PROTOCOL]. Commit `822cdf0`. Impact: **NO DATA VALIDITY ISSUE** — the missing `SET_FLRC_PACKET_PARAMS (0x0249)` bug was in the ESP-IDF bench code (`mesh-stack/flrc-bench-espidf/main/esp32_raw_tx.cpp`). Our RP2040 firmware already has `0x0249` in 11+ files. ESP32-C3 bench firmware already has `0x0249` at line 247. Walk test data VALID. ACTIONABLE for technique adoption: TX debugging approach (GPIO CS toggle during RAWTX, FIFO WriteBuffer→ReadBuffer verification, BUSY pin low→high→low transition check, IRQ bit 0 TX-done polling) could improve outdoor sweep reliability — add TX verification to RP2040 firmware to detect silent TX failures.
 
+## Discovery Sync — 2026-08-05 (4 findings from balloon-hermes)
+
+- **GPIO10 collision fix (commit f926dc9)** — `CRITICAL` `ADOPTED`
+  - **Assessment**: Adopted via cherry-pick into this track (commit 311913f). LR2021 NSS was on GPIO10 conflicting with the NeoPixel status LED on the same pin. The dual-drive caused an unreliable SPI bus — **previous RSSI data collected before this fix may have been affected by SPI CS contention** (intermittent corruption when LED drive fought NSS). LED now on GPIO18, FEM_TX now on GPIO19 (Kconfig default updated). Firmware `app_main.cpp` confirmed: `#define LED_GPIO 18` with move-comment; `FEM_TX_PIN` Kconfig default = 19.
+  - **GPIO audit result**: Searched all `*.py`, `*.c`, `*.cpp`, `*.h` under `tracker/`, `data/`, `tools/` for stale GPIO10 (LED) and GPIO1 (old FEM_TX) references:
+    - **Firmware**: ✅ Clean. `app_main.cpp` LED=GPIO18, FEM_TX=GPIO19. LR2021 NSS correctly stays on GPIO10.
+    - **GPIO1 / FEM_TX**: ✅ Clean. All GPIO1 references are UART1_RX (GPS), not FEM_TX. No stale FEM_TX-on-GPIO1 found. FEM_TX_PIN is Kconfig-driven (default 19).
+    - **STALE — schematic generators**: ⚠️ `tracker/hardware/hub_board/hub_schematic.py` and `hub_schematic_f33.py` still hardcode GPIO10 as the status LED (7 and 6 references respectively). These Python scripts generate KiCad schematics — **not runtime firmware**, so no RSSI impact, but any future board fabrication from these scripts would reintroduce the collision. Should be updated to GPIO18/GPIO19 when these scripts are next used.
+
+- **FLRC fixes + board lock tooling (commit 0292aec)** — `PARTIALLY ADOPTED` `TEST` `TOOLING`
+  - **Assessment**: Board lock tooling (hard device lock v3) already in use on this track via `balloon-board-lock.py` — no new adoption needed. FLRC byte alignment fix from earlier sync (commit 9b740aa) already noted in tollgate track's discovery log; our RP2040 firmware already had correct `0x0249` packet params. No additional action needed.
+
+- **secp256k1 smoke test (commit 0829953)** — `INFORMATIONAL` `BUILD`
+  - **Assessment**: secp256k1 (libsecp256k1 via nucula wallet submodule) now builds successfully in the tracker ESP-IDF firmware. Not directly relevant to range test methodology (RSSI/PER/distance sweeps). Noted for future: when unified firmware is used for range tests, Nostr identity derivation will be available. No range-test impact.
+
+- **Mesh baseline build verified (commit 8aaa0bb)** — `INFORMATIONAL` `BUILD`
+  - **Assessment**: Unified/mesh firmware builds clean on ESP32-S3. Relevant when the orchestrator approves board access for Phase 2 raw ping test — the raw ping methodology may use unified firmware instead of standalone sweep firmware. No action needed until board access is granted.
+
 ## Next Steps (Physical — Operator Required)
 
 1. Flash sweep firmware on both boards (rp2040-range-tx-sweep + rp2040-range-rx-sweep)
