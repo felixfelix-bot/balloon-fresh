@@ -1,95 +1,74 @@
-# Ground Station Receiver Assessment
+# Integration Assessment — balloon-speed-tests
 
-**Date**: 2026-05-21
-**Status**: 2 bugs found, fixes pending
+**Date:** 2026-08-05
+**Assessor:** balloon-hermes orchestrator (delegated)
+**Track scope:** LR2021 FLRC throughput benchmarking and TX optimization
 
-## Current State
+---
 
-The ground station receiver firmware is at `tracker/ground-station/receiver/`. Code is complete but has 2 bugs preventing correct operation. RadioLib has not been fetched yet (needs `idf.py reconfigure`).
+## Track Scope and Components
 
-### Directory Structure
+Deliver **maximum sustained throughput benchmarks** for the LR2021 FLRC radio
+and characterize the TX optimization path from baseline to peak performance.
+Produces the throughput data that informs mesh capacity planning.
 
-```
-tracker/ground-station/receiver/
-  CMakeLists.txt                    (project-level)
-  sdkconfig.defaults                (ESP32-C3, 80 MHz, size opt)
-  main/
-    CMakeLists.txt                  (component registration)
-    gs_main.cpp                     (application, 117 lines)
-    EspHalC3.h                      (RadioLib HAL, 259 lines, identical to tracker)
-    idf_component.yml               (RadioLib v7.6.0 dependency)
-  components/
-    telemetry -> ../../firmware/components/telemetry  (symlink)
-```
+**Components:**
+- `firmware/rp2040/src/flrc_raw_tx.cpp` — RP2040 raw SPI TX (PROVEN: 1377 kbps)
+- `firmware/esp32-c3-flrc/` — ESP32-C3 TX+RX (PROVEN WORKING)
+- `firmware/esp32_raw_tx.cpp` — ESP32 continuous TX for throughput benchmarking
+- `firmware/esp32_batched_tx.cpp` — batched SPI TX (clearIrq+FIFO+setTx in one burst)
+- `scripts/goodput_measure.py` — goodput measurement for LR2021 throughput
+- `docs/PLAN-esp32-vs-rp2040-benchmark.md` — benchmark comparison plan
+- `docs/SPEED-P0P2P3-HW-VERIFICATION-PLAN.md` — 4 speed-record branch mapping
+- Sigrok SPI decode pipeline (capture-byte, decode-tx, transaction grouping)
 
-### What Works
-- Project structure is valid ESP-IDF layout
-- RadioLib dependency declared correctly (`idf_component.yml`)
-- EspHalC3.h is correct and identical to tracker version
-- Telemetry component properly symlinked
-- sdkconfig.defaults appropriate (80 MHz, SPI ISR in IRAM, -Os)
-- Radio config matches tracker (868 MHz, BW125, SF9, CR4/7, sync 0x12, +22 dBm)
-- `irqDioNum = 9` correct for NiceRF LoRa2021 DIO9
-- JSON output format is well-designed (all fields + RSSI/SNR)
+## What Works (Proven, Tested)
 
-## Bugs Found
+- ✅ **Raw SPI 2-byte opcode protocol proven on both platforms:**
+  - RP2040 TX: 1377 kbps verified end-to-end throughput
+  - 0% packet loss at 1000/1000 packets
+  - Full dual-band support (2.4 GHz + sub-GHz 915 MHz)
+- ✅ **4 speed-record branches mapped and verified:**
+  - SPEED-P0 (`44ad093`): packet params fix
+  - SPEED-P2 (`67c0552`): RadioLib bypass
+  - SPEED-P3 (`45b57ab`): FLRC_MAX + sweep params
+  - MERGE-FIX (`dc9d2e2`): P3 + shaping fix (PRIMARY TARGET)
+- ✅ **Batched SPI TX** — clearIrq+FIFO+setTx in one burst for reduced overhead
+- ✅ **Goodput measurement script** — ready for automated benchmarking
+- ✅ **Sigrok SPI decode pipeline** — capture, decode, transaction grouping
+- ✅ **ESP32 capture targets** — Makefile targets for ESP32-C3 LR2021 capture/decode
+- ✅ **Discovery sync adopted** — P1B.1-FIX SPI TX debugging techniques (SET_FLRC_PACKET_PARAMS already present)
 
-### P0: `readData()` Return Value Misuse
+## What Doesn't Work (Blockers)
 
-**File**: `main/gs_main.cpp:99,104`
-**Severity**: Critical — no telemetry will ever be displayed
+- ❌ **ESP32-C3 vs RP2040 benchmark not yet executed** — plan exists but no
+     head-to-head throughput comparison data collected
+- ❌ **Sustained throughput under real mesh conditions untested** — benchmarks
+     are point-to-point TX, not through FIPS mesh stack with fragmentation
+- ❌ **No goodput data at range** — all measurements are bench distance. Need
+     range-tests track data to characterize throughput vs distance tradeoff
+- ⚠️ **Continuous TX firmware may cause thermal issues** at +22 dBm with PA
+     enabled — not yet characterized for sustained operation
 
-RadioLib's `LR11x0::readData()` returns `RADIOLIB_ERR_NONE` (value `0`) on success, NOT the number of bytes read. The comparison `len == TELEMETRY_SIZE` (28) is always false.
+## C3 Portability Assessment
 
-```cpp
-// BROKEN (line 99):
-int16_t len = radio->readData(buf, TELEMETRY_SIZE);
-// BROKEN (line 104):
-if (len == TELEMETRY_SIZE) {  // Always false — len is 0 on success
-```
+**✅ EXCELLENT — proven on ESP32-C3 already:**
 
-**Fix**:
-```cpp
-int16_t state = radio->readData(buf, TELEMETRY_SIZE);
-if (state == RADIOLIB_ERR_NONE) {
-```
+- ESP32-C3 firmware (`esp32-c3-flrc/`) uses identical raw SPI 2-byte opcode protocol
+- Both TX and RX proven working on ESP32-C3 hardware
+- Batched SPI TX technique is platform-agnostic (SPI burst optimization)
+- Goodput measurement script works with any serial-connected platform
+- No RP2040-specific dependencies in the benchmark methodology
 
-### P1: Callback Registration Order
+**Note:** ESP32-C3 clock is 160 MHz vs RP2040's 133 MHz — may actually achieve
+higher SPI throughput. Benchmark comparison will quantify this.
 
-**File**: `main/gs_main.cpp:85,91`
-**Severity**: Medium — first received packet silently lost
+## What's Next
 
-`startReceive()` is called before `setPacketReceivedAction()`. If a packet arrives between these two calls, the IRQ fires but no ISR is registered.
-
-**Fix**: Swap lines 85-91 — register ISR first, then start receive.
-
-### P2: RadioLib Not Fetched
-
-`managed_components/` does not exist. Must run `idf.py reconfigure` before `idf.py build`.
-
-### P3: Absolute Symlink
-
-The telemetry symlink uses an absolute path. Should be relative for portability:
-```
-../../firmware/components/telemetry
-```
-
-## Build Steps (After Fixes)
-
-```bash
-source ~/esp/esp-idf/export.sh
-cd tracker/ground-station/receiver
-idf.py reconfigure    # Fetch RadioLib
-idf.py build
-idf.py -p /dev/ttyACM0 flash monitor
-```
-
-## Implementation Tasks
-
-- [x] Fix P0: change `readData()` return value check to `state == RADIOLIB_ERR_NONE`
-- [x] Fix P1: swap `setPacketReceivedAction()` before `startReceive()`
-- [x] Fix P3: change symlink to relative path
-- [x] Run `idf.py reconfigure` to fetch RadioLib
-- [x] Run `idf.py build` to verify compilation — **BUILD SUCCESS** (181 KB binary, 82% partition free)
-- [ ] Flash to second ESP32-C3_Mini_V1
-- [ ] Bench test: tracker TX → ground station RX
+1. **Execute SPEED-P0P2P3 verification plan** — benchmark all 4 branches against
+   MERGE-FIX to identify the optimal TX configuration
+2. **Run ESP32-C3 vs RP2040 head-to-head** — the core deliverable
+3. **Measure sustained throughput** — 10+ minute continuous TX with goodput logging
+4. **Characterize thermal behavior** at +22 dBm sustained operation
+5. **Correlate with range-tests** — throughput vs distance using outdoor data
+6. **Feed results into mesh capacity planning** — throughput informs MultiWAN sizing
