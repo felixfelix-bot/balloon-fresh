@@ -67,7 +67,7 @@ extern "C" {
 
 static const char *TAG = "TRACKER";
 
-#define LED_GPIO 10
+#define LED_GPIO 18  /* moved from GPIO10 (was colliding with LR2021 NSS) */
 
 /* LR2021 pin reference (matching lr2021_spi.h defaults / EspHalLr2021Radio) */
 #define LR2021_SCK   6
