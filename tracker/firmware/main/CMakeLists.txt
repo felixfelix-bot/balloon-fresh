@@ -24,7 +24,7 @@ idf_component_register(
     SRCS "app_main.cpp"
     INCLUDE_DIRS "."
     REQUIRES ${COMPONENT_REQUIRES}
-    PRIV_REQUIRES meshcore
+    PRIV_REQUIRES meshcore mesh_adapter
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
