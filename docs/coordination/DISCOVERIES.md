@@ -26,6 +26,33 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: consultant project review — comprehensive status of all 9 tracks for exter (2026-08-05) | tags: GENERAL
+- **Commit:** `ba82e1e` by Felix
+- **Files:** docs/coordination/CONSULTANT-PROJECT-REVIEW.md
+- **Full message:** docs: consultant project review — comprehensive status of all 9 tracks for external review
+- **Relevance:** GENERAL
+
+
+### [balloon-range-tests] docs: discovery sync — P1B.1-FIX SPI TX debugging assessment [SPI, RADIO, PROTOC (2026-08-01) | tags: SPI
+- **Commit:** `49012e2` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync — P1B.1-FIX SPI TX debugging assessment [SPI, RADIO, PROTOCOL]
+- **Relevance:** SPI
+
+### [balloon-speed-tests] docs: acknowledge discovery sync — P1B.1-FIX SPI TX debugging findings assessed (2026-08-01) | tags: SPI
+- **Commit:** `a3519bd` by Felix
+- **Files:** docs/STATUS-balloon-speed-tests.md
+- **Full message:** docs: acknowledge discovery sync — P1B.1-FIX SPI TX debugging findings assessed
+- **Relevance:** SPI
+
+
+### [balloon-hermes] P1B.1-FIX: Add comprehensive SPI TX debugging for raw FLRC transmission (2026-08-01) | tags: SPI, RADIO, PROTOCOL
+- **Commit:** `822cdf0` by Felix
+- **Files:** docs/SPEED-P0P2P3-HW-VERIFICATION-PLAN.md, docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json (+2 more)
+- **Full message:** P1B.1-FIX: Add comprehensive SPI TX debugging for raw FLRC transmission
+- **Relevance:** SPI, RADIO, PROTOCOL
+
+
 ### [balloon-range-tests] docs: discovery sync — walk test logs + retry script findings (2026-07-31) (2026-07-31) | tags: TEST
 - **Commit:** `59913ee` by Felix
 - **Files:** docs/STATUS-balloon-range-tests.md

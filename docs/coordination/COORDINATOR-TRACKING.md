@@ -46,3 +46,11 @@ Tracks that need bootstrapping before they can produce assessments:
 
 1. balloon-pre-stretching — no deps, can start immediately
 2. balloon-circuit-design — depends on balloon-hermes radio pin assignments (available in AGENTS.md)
+
+## 2026-08-01: SPI TX Discovery Sync — RESOLVED
+
+Both range-tests and speed-tests assessed P1B.1-FIX (commit 822cdf0).
+
+- **range-tests:** Walk test data VALID. Bug was in ESP-IDF bench code only, not RP2040 firmware. Adopting TX debug techniques for outdoor sweep.
+- **speed-tests:** `0x0249` already present in their code. 4 speed branches mapped. Adopted debug techniques.
+- **Outcome:** No data invalidated. No coordination needed. Both tracks self-managing.
