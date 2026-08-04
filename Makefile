@@ -756,6 +756,46 @@ walk-test: ## Start robust walk capture on RX board (runs until Ctrl+C)
 	echo "Starting walk capture on RX at $$RX_PORT (Ctrl+C to stop)"; \
 	$(PYTHON) $(TOOLS_DIR)/walk_capture.py 7200 $$RX_PORT
 
+##@ Board Lock Targets
+## Hardware mutex system for preventing concurrent board access
+.PHONY: lock-acquire lock-release lock-check lock-status lock-tx lock-rx lock-both
+
+lock-acquire: ## Acquire lock for specified board(s). Usage: make lock-acquire BOARD=tx
+	@if [ -z "$(BOARD)" ]; then echo "Usage: make lock-acquire BOARD=tx|rx|both|esp32-tx|esp32-rx|esp32-both"; exit 1; fi
+	@echo "Acquiring lock for $(BOARD)..."
+	@BALLOON_TRACK=tollgate python3 $(TOOLS_DIR)/board-lock.py acquire $(BOARD) --purpose "$(PURPOSE=hardware testing)" --timeout $(TIMEOUT=60)
+
+lock-release: ## Release lock for specified board(s). Usage: make lock-release BOARD=tx
+	@if [ -z "$(BOARD)" ]; then echo "Usage: make lock-release BOARD=tx|rx|both|esp32-tx|esp32-rx|esp32-both"; exit 1; fi
+	@echo "Releasing lock for $(BOARD)..."
+	@BALLOON_TRACK=tollgate python3 $(TOOLS_DIR)/board-lock.py release $(BOARD)
+
+lock-check: ## Check if current track holds lock for specified board(s). Usage: make lock-check BOARD=tx
+	@if [ -z "$(BOARD)" ]; then echo "Usage: make lock-check BOARD=tx|rx|both|esp32-tx|esp32-rx|esp32-both"; exit 1; fi
+	@BALLOON_TRACK=tollgate python3 $(TOOLS_DIR)/board-lock.py check $(BOARD)
+
+lock-status: ## Show status of all board locks
+	@python3 $(TOOLS_DIR)/board-lock.py status
+
+# Convenience targets for common boards
+lock-tx: ## Acquire TX board lock
+	$(MAKE) lock-acquire BOARD=tx
+
+lock-rx: ## Acquire RX board lock  
+	$(MAKE) lock-acquire BOARD=rx
+
+lock-both: ## Acquire both TX and RX board locks
+	$(MAKE) lock-acquire BOARD=both
+
+lock-esp32-tx: ## Acquire ESP32 TX board lock
+	$(MAKE) lock-acquire BOARD=esp32-tx
+
+lock-esp32-rx: ## Acquire ESP32 RX board lock
+	$(MAKE) lock-acquire BOARD=esp32-rx
+
+lock-esp32-both: ## Acquire both ESP32 board locks
+	$(MAKE) lock-acquire BOARD=esp32-both
+
 ##@ Testing
 .PHONY: test test-unit test-hardware
 test: ## Run full pytest suite (includes hardware tests)
