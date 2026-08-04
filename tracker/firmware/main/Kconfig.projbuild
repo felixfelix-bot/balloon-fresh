@@ -128,6 +128,16 @@ config ENABLE_TDMA
         Enable TDMA time-slot scheduling. Requires GPS PPS for discipline.
         Slots alternate between TX, RX, sleep, and beacon.
 
+config ENABLE_RELAY_MODE
+    bool "Enable relay mode (continuous store-and-forward, no deep sleep)"
+    default n
+    select ENABLE_MESH
+    select ENABLE_NOSTR_STORE
+    help
+        Enable FreeRTOS relay mode: radio_task (IRQ RX) + app_task (secp verify +
+        nostr_store) + main loop (telemetry + CLI). Replaces TX-sleep with
+        continuous operation for store-and-forward relay.
+
 config ENABLE_NOSTR_STORE
     bool "Enable Nostr event store (for mesh relay)"
     default n
