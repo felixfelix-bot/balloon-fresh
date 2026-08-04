@@ -1,95 +1,67 @@
-# Ground Station Receiver Assessment
+# Integration Assessment — balloon-pow (E-Hash Mining Relay)
 
-**Date**: 2026-05-21
-**Status**: 2 bugs found, fixes pending
+**Date:** 2026-08-05
+**Assessor:** balloon-hermes orchestrator (delegated)
+**Track scope:** Proof-of-work mining relay over LoRa mesh (e-hash transport layer)
 
-## Current State
+---
 
-The ground station receiver firmware is at `tracker/ground-station/receiver/`. Code is complete but has 2 bugs preventing correct operation. RadioLib has not been fetched yet (needs `idf.py reconfigure`).
+## Track Scope and Components
 
-### Directory Structure
+Deliver a **balloon-side e-hash relay** that transports Bitcoin mining work
+templates (downlink) and nonce submissions (uplink) over the FIPS/LoRa mesh
+stack. The balloon is a pure L7 transport node — it **never hashes** (ADR-025 D1).
 
-```
-tracker/ground-station/receiver/
-  CMakeLists.txt                    (project-level)
-  sdkconfig.defaults                (ESP32-C3, 80 MHz, size opt)
-  main/
-    CMakeLists.txt                  (component registration)
-    gs_main.cpp                     (application, 117 lines)
-    EspHalC3.h                      (RadioLib HAL, 259 lines, identical to tracker)
-    idf_component.yml               (RadioLib v7.6.0 dependency)
-  components/
-    telemetry -> ../../firmware/components/telemetry  (symlink)
-```
+**Components:**
+- `mesh-stack/ehash-bridge/` — Python codec (`ehash_codec.py`) for stratum proxy ↔ binary
+- `mesh-stack/ehash-relay/` — C component (ESP-IDF + host testable)
+  - `ehash_relay.c` / `ehash_relay.h` — main relay logic
+  - `ehash_crypto.c` / `ehash_crypto.h` — template encryption (D8)
+  - `ehash_messages.c` — binary message encode/decode (reuses `ehash_messages.h`)
+  - `ehash_upstream.c` / `ehash_upstream.h` — proxy connection (mock TCP/stratum)
+  - `ehash_radio_stub.c` — radio abstraction for host testing
+  - `test/test_ehash_relay.c` — host unit tests (gcc)
+- `mesh-stack/protocol/ehash-spec.md` — binary wire format spec (ADR-025 Phase A)
+- `mesh-stack/protocol/ehash_messages.h` — packed message structs
 
-### What Works
-- Project structure is valid ESP-IDF layout
-- RadioLib dependency declared correctly (`idf_component.yml`)
-- EspHalC3.h is correct and identical to tracker version
-- Telemetry component properly symlinked
-- sdkconfig.defaults appropriate (80 MHz, SPI ISR in IRAM, -Os)
-- Radio config matches tracker (868 MHz, BW125, SF9, CR4/7, sync 0x12, +22 dBm)
-- `irqDioNum = 9` correct for NiceRF LoRa2021 DIO9
-- JSON output format is well-designed (all fields + RSSI/SNR)
+## What Works (Proven, Tested)
 
-## Bugs Found
+- ✅ Binary wire format fully specified (ADR-025, 4 message types: TEMPLATE, NONCE, RESULT, CREDIT)
+- ✅ Little-endian encoding, 1-byte L7 type tag envelope
+- ✅ Radio layer abstracted behind callbacks (`ehash_radio_tx/rx`) — builds on both ESP-IDF and host
+- ✅ Host unit tests compile and run with gcc (`test_ehash_relay.c`)
+- ✅ Message sizes are small: NONCE=21B, RESULT=7B, CREDIT=16B, TEMPLATE=55–823B
+- ✅ Template encryption (D8), per-nonce credit issuance (D10), TTL tracking (D9) designed
 
-### P0: `readData()` Return Value Misuse
+## What Doesn't Work (Blockers)
 
-**File**: `main/gs_main.cpp:99,104`
-**Severity**: Critical — no telemetry will ever be displayed
+- ❌ **Not integrated with real LR2021 driver.** Uses `ehash_radio_stub.c` — a
+     mock. Needs wiring to the proven raw SPI 2-byte opcode driver.
+- ❌ **No stratum proxy implementation.** `ehash_upstream.c` uses mock TCP.
+     Needs a real stratum `mining.notify`/`mining.submit` bridge.
+- ❌ **No hardware validation.** No end-to-end test (proxy → balloon → miner →
+     nonce → credit) on actual ESP32-C3 + LR2021 hardware.
+- ⚠️ **Template broadcast scheduling not designed.** 823B templates need
+     Wirehair fragmentation (L3). Timing/TDMA slot allocation TBD.
 
-RadioLib's `LR11x0::readData()` returns `RADIOLIB_ERR_NONE` (value `0`) on success, NOT the number of bytes read. The comparison `len == TELEMETRY_SIZE` (28) is always false.
+## C3 Portability Assessment
 
-```cpp
-// BROKEN (line 99):
-int16_t len = radio->readData(buf, TELEMETRY_SIZE);
-// BROKEN (line 104):
-if (len == TELEMETRY_SIZE) {  // Always false — len is 0 on success
-```
+**✅ GOOD — fits comfortably on ESP32-C3:**
 
-**Fix**:
-```cpp
-int16_t state = radio->readData(buf, TELEMETRY_SIZE);
-if (state == RADIOLIB_ERR_NONE) {
-```
+- All messages are small (7–823 bytes), well within LoRa packet limits
+- Relay is L7 transport only — no hashing, minimal CPU/memory
+- Radio abstraction means same code runs on host (test) and C3 (deploy)
+- Binary format uses native C3 little-endian byte order (no conversion)
+- Estimated RAM footprint: <4 KB working set (session state + message buffers)
 
-### P1: Callback Registration Order
+**Concern:** 823-byte template at the top of the range needs fragmentation. The
+L3 Wirehair layer must be available before e-hash can transport full templates.
 
-**File**: `main/gs_main.cpp:85,91`
-**Severity**: Medium — first received packet silently lost
+## What's Next
 
-`startReceive()` is called before `setPacketReceivedAction()`. If a packet arrives between these two calls, the IRQ fires but no ISR is registered.
-
-**Fix**: Swap lines 85-91 — register ISR first, then start receive.
-
-### P2: RadioLib Not Fetched
-
-`managed_components/` does not exist. Must run `idf.py reconfigure` before `idf.py build`.
-
-### P3: Absolute Symlink
-
-The telemetry symlink uses an absolute path. Should be relative for portability:
-```
-../../firmware/components/telemetry
-```
-
-## Build Steps (After Fixes)
-
-```bash
-source ~/esp/esp-idf/export.sh
-cd tracker/ground-station/receiver
-idf.py reconfigure    # Fetch RadioLib
-idf.py build
-idf.py -p /dev/ttyACM0 flash monitor
-```
-
-## Implementation Tasks
-
-- [x] Fix P0: change `readData()` return value check to `state == RADIOLIB_ERR_NONE`
-- [x] Fix P1: swap `setPacketReceivedAction()` before `startReceive()`
-- [x] Fix P3: change symlink to relative path
-- [x] Run `idf.py reconfigure` to fetch RadioLib
-- [x] Run `idf.py build` to verify compilation — **BUILD SUCCESS** (181 KB binary, 82% partition free)
-- [ ] Flash to second ESP32-C3_Mini_V1
-- [ ] Bench test: tracker TX → ground station RX
+1. Replace `ehash_radio_stub.c` with real LR2021 driver integration
+2. Implement stratum proxy (Python or Go) with `mining.notify` → e-hash TEMPLATE
+3. Flash e-hash relay to ESP32-C3, verify message round-trip over LoRa
+4. End-to-end test: proxy → balloon → miner → nonce → credit
+5. Design TDMA slot allocation for template broadcast vs nonce uplink
+6. Validate Wirehair fragmentation with 823B templates
