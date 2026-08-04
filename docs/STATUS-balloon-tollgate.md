@@ -63,3 +63,33 @@ Ground Station                   Balloon (L7: TollGate)
 3. Implement nucula wallet spend_proofs()
 4. Write unit tests for payment protocol encode/decode
 5. Design ground station TollGate client (separate deliverable)
+
+## Discovery Sync — 2026-08-05
+
+Acknowledged 3 new findings from balloon-hermes. Assessment:
+
+1. **relay mode build fixes (TransportError scope, API alignment)** — MEDIUM
+   - nostr_store.h changes relevant: my plan flagged `nostr_event_deserialize()` missing
+   - API alignment in nostr_store affects blossom BUD-11 auth path
+   - Will verify nostr_event_deserialize() implementation status when merging
+
+2. **FreeRTOS relay task architecture (radio_task, app_task, queue-based RX)** — MEDIUM
+   - app_task does secp256k1 Schnorr verify + nostr_store — exactly what blossom needs
+   - Queue-based RX architecture defines blossom message dispatch path
+   - My blossom server will integrate as consumer on app_task queue
+   - CONFIG_ENABLE_RELAY_MODE guards — blossom mesh wiring goes under this flag
+
+3. **mesh baseline build verified + secp measurement + tollgate payment tests** — CRITICAL
+   - **ADOPTED**: factory partition 1MB→2MB (matches balloon-hermes commit 8aaa0bb)
+   - **RESOLVED GAP**: mesh_adapter CMakeLists.txt now EXISTS — my plan gap #1 fixed
+   - CONFIG_ENABLE_MESH=y builds clean at 227KB, 78% free flash — mesh fits comfortably
+   - secp256k1 measurement test on ESP32-C3 confirms crypto feasible for blossom auth
+   - 119 tollgate payment tests (91+ pass) validates payment protocol I depend on
+
+### My Integration Plan Gap Status (updated)
+- Gap #1 (mesh_adapter no CMakeLists) → **RESOLVED** by balloon-hermes
+- Gap #2 (fips_transport not wired) → still open, balloon-hermes working on it
+- Gap #3 (nostr_event_deserialize missing) → **CHECK** — relay mode fixes may have addressed
+- Gap #4 (esp-now-firmware deleted) → informational, not blocking blossom
+- Gap #5 (all mesh flags disabled) → **PARTIALLY RESOLVED** — CONFIG_ENABLE_MESH verified building
+- Gap #6 (blossom has no mesh awareness) → **MY TASK** — still my responsibility
