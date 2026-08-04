@@ -1,6 +1,6 @@
 set(COMPONENT_REQUIRES
     lr2021_transport esp_timer driver bmp280 power_manager telemetry
-    antenna_switch sky66112 gps cli
+    antenna_switch sky66112 gps cli secp256k1
 )
 
 if(CONFIG_ENABLE_MESH)
