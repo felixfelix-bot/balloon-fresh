@@ -88,8 +88,8 @@ static const char *TAG = "TRACKER";
 #define LR2021_DIO9  5
 
 /* Radio handles — lr2021_transport based (replaces RadioLib) */
-static EspHalLr2021Radio* s_radio = nullptr;
-static Lr2021Transport*   s_transport = nullptr;
+EspHalLr2021Radio* s_radio = nullptr;
+Lr2021Transport*   s_transport = nullptr;
 
 #ifdef CONFIG_ENABLE_BMP280
 static bmp280_t bmp;
