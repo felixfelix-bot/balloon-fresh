@@ -191,8 +191,8 @@ static void init_radio() {
     rf_write_cmd(cmd_clr_err, 4);
     vTaskDelay(pdMS_TO_TICKS(1));
 
-    // SET_STANDBY (STDBY_XOSC)
-    uint8_t cmd_stdby[] = { 0x01, 0x28, 0x01 };
+    // SET_STANDBY (STDBY_RC — NOT XOSC, per RadioLib + RP2040 fix)
+    uint8_t cmd_stdby[] = { 0x01, 0x28, 0x00 };
     rf_write_cmd(cmd_stdby, 3);
     vTaskDelay(pdMS_TO_TICKS(5));
 
@@ -270,7 +270,7 @@ static void init_radio() {
     rf_write_cmd(cmd_dio, 4);
     vTaskDelay(pdMS_TO_TICKS(1));
 
-    // DIO IRQ config: TX_DONE (bit 11 = 0x00000800)
+    // DIO IRQ config: TX_DONE (bit 19 = 0x00080000)
     uint8_t cmd_irqcfg_tx[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 };
     rf_write_cmd(cmd_irqcfg_tx, 7);
     vTaskDelay(pdMS_TO_TICKS(1));
@@ -293,6 +293,10 @@ static void run_tx() {
 
     uint8_t cmd_clr_irq[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };
     uint8_t cmd_set_tx[]  = { 0x02, 0x0D, 0x00, 0x00, 0x00 };
+    // CLEAR_ERRORS — prevents PA_OCP_OVP accumulation between TX cycles (RP2040 fix)
+    uint8_t cmd_clr_err[] = { 0x01, 0x11, 0x00, 0x00 };
+    // DIO_IRQ_CONFIG re-set — TX_DONE (bit 19) mapped to DIO9 (RP2040 fix)
+    uint8_t cmd_irqcfg[]  = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 };
 
     int64_t start_us = esp_timer_get_time();
     uint32_t tx_done_count = 0;
@@ -304,16 +308,22 @@ static void run_tx() {
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // 1. Clear IRQ
+        // 1. Clear errors — prevent PA_OCP_OVP accumulation (RP2040 fix)
+        rf_write_cmd(cmd_clr_err, 4);
+
+        // 2. Re-set DIO IRQ config — TX_DONE → DIO9 (RP2040 fix)
+        rf_write_cmd(cmd_irqcfg, 7);
+
+        // 3. Clear IRQ
         rf_write_cmd(cmd_clr_irq, 6);
 
-        // 2. Write TX FIFO (THIS IS THE KEY TEST — batch transfer via spi_master)
+        // 4. Write TX FIFO (batch transfer via spi_master DMA)
         rf_write_tx_fifo(pkt, FLRC_PKT_SIZE);
 
-        // 3. Trigger TX
+        // 5. Trigger TX
         rf_write_cmd(cmd_set_tx, 5);
 
-        // 4. Wait for TX_DONE — IRQ pin HIGH
+        // 6. Wait for TX_DONE — IRQ pin HIGH
         uint32_t timeout = 500000;
         while (!irq_high() && --timeout) {}
 
