@@ -37,7 +37,7 @@ config ENABLE_FEM
 
 config FEM_TX_PIN
     int "FEM TX_EN GPIO pin"
-    default 1
+    default 19
     depends on ENABLE_FEM
 
 config FEM_RX_PIN
