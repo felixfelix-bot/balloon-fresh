@@ -63,6 +63,15 @@ extern "C" {
 #ifdef CONFIG_ENABLE_NOSTR_STORE
 #include "nostr_store.h"
 #endif
+#ifdef CONFIG_ENABLE_RELAY_MODE
+#include "relay_types.h"
+extern "C" {
+    void radio_task(void *arg);
+    void app_task(void *arg);
+}
+extern QueueHandle_t g_rx_queue;
+extern QueueHandle_t g_tx_queue;
+#endif
 }
 
 static const char *TAG = "TRACKER";
@@ -493,6 +502,89 @@ extern "C" void app_main(void)
     }
     gps_sleep();
 #endif
+
+#ifdef CONFIG_ENABLE_RELAY_MODE
+    /*
+     * RELAY MODE — continuous store-and-forward operation.
+     * Creates radio_task and app_task, main loop does telemetry + CLI.
+     * No deep sleep — relay must stay alive for RX.
+     */
+    ESP_LOGI(TAG, "=== RELAY MODE (store-and-forward) ===");
+    ESP_LOGI(TAG, "Free heap before tasks: %lu", (unsigned long)esp_get_free_heap_size());
+
+    /* Create queues */
+    g_rx_queue = xQueueCreate(RELAY_RX_QUEUE_LEN, sizeof(relay_packet_t));
+    g_tx_queue = xQueueCreate(RELAY_TX_QUEUE_LEN, sizeof(relay_packet_t));
+    if (!g_rx_queue || !g_tx_queue) {
+        ESP_LOGE(TAG, "FATAL: queue creation failed");
+        deep_sleep(60);
+        return;
+    }
+
+    /* Create tasks: radio_task (HIGH, 4KB), app_task (MEDIUM, 8KB) */
+    BaseType_t r1 = xTaskCreate(radio_task, "radio_task", 4096, NULL,
+                                configMAX_PRIORITIES - 1, NULL);
+    BaseType_t r2 = xTaskCreate(app_task, "app_task", 8192, NULL,
+                                configMAX_PRIORITIES - 2, NULL);
+    if (r1 != pdPASS || r2 != pdPASS) {
+        ESP_LOGE(TAG, "FATAL: task creation failed (r1=%d r2=%d)", r1, r2);
+        deep_sleep(60);
+        return;
+    }
+
+    ESP_LOGI(TAG, "Tasks created. Free heap: %lu", (unsigned long)esp_get_free_heap_size());
+    ESP_LOGI(TAG, "Entering relay main loop (telemetry every %ds)...", CONFIG_TX_INTERVAL_SEC);
+
+    /* Main loop for relay mode: telemetry + CLI */
+    uint32_t relay_seq = rtc_seq;
+    while (true) {
+        relay_seq++;
+
+        /* Read sensors */
+        cap_mv = power_manager_read_supercap_mv();
+        float temp = 0, pressure = 0, altitude = 0;
+#ifdef CONFIG_ENABLE_BMP280
+        bmp280_wakeup(&bmp);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        bmp280_read(&bmp, &temp, &pressure, &altitude);
+        bmp280_sleep(&bmp);
+#endif
+
+        /* Compose telemetry */
+        telemetry_packet_t tpkt;
+        memset(&tpkt, 0, sizeof(tpkt));
+        tpkt.callsign_hash = (uint32_t)strtoul(CONFIG_CALLSIGN_HASH_HEX, NULL, 16);
+#ifdef CONFIG_ENABLE_GPS
+        if (gps_data.fix) {
+            tpkt.latitude_deg1e5 = (uint32_t)(gps_data.latitude);
+            tpkt.longitude_deg1e5 = (int32_t)(gps_data.longitude);
+            tpkt.altitude_m = (uint16_t)gps_data.altitude_m;
+            tpkt.sats = gps_data.sats;
+            tpkt.flags |= TELEMETRY_FLAG_GPS_VALID;
+        }
+#endif
+        tpkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+        telemetry_fill(&tpkt, temp, pressure, (float)tpkt.altitude_m, cap_mv, relay_seq);
+
+        /* Queue telemetry for radio_task to TX */
+        relay_packet_t tx_pkt;
+        memset(&tx_pkt, 0, sizeof(tx_pkt));
+        tx_pkt.data[0] = RELAY_TYPE_TELEMETRY;
+        telemetry_serialize(&tpkt, tx_pkt.data + 1);
+        tx_pkt.len = TELEMETRY_SIZE + 1;
+        xQueueSend(g_tx_queue, &tx_pkt, pdMS_TO_TICKS(100));
+
+        ESP_LOGI(TAG, "Telemetry queued (seq=%lu, heap=%lu)",
+                 (unsigned long)relay_seq, (unsigned long)esp_get_free_heap_size());
+
+        /* CLI + sleep interval */
+        for (int i = 0; i < CONFIG_TX_INTERVAL_SEC * 10; i++) {
+            cli_process();
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    }
+    /* UNREACHED — relay mode runs forever */
+#endif /* CONFIG_ENABLE_RELAY_MODE */
 
 #ifdef CONFIG_BENCH_TEST_MODE
     ESP_LOGI(TAG, "=== BENCH TEST MODE (TX every %ds) ===", CONFIG_BENCH_TEST_INTERVAL_SEC);
