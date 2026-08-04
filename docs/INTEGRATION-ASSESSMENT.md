@@ -1,95 +1,70 @@
-# Ground Station Receiver Assessment
+# Integration Assessment — balloon-range-tests
 
-**Date**: 2026-05-21
-**Status**: 2 bugs found, fixes pending
+**Date:** 2026-08-05
+**Assessor:** balloon-hermes orchestrator (delegated)
+**Track scope:** Outdoor LR2021 FLRC range testing with adaptive bitrate sweep
 
-## Current State
+---
 
-The ground station receiver firmware is at `tracker/ground-station/receiver/`. Code is complete but has 2 bugs preventing correct operation. RadioLib has not been fetched yet (needs `idf.py reconfigure`).
+## Track Scope and Components
 
-### Directory Structure
+Deliver **outdoor range test data** characterizing LR2021 FLRC performance
+across bitrates, distances, and environments. Produces the empirical link-budget
+data that informs mesh architecture decisions.
 
-```
-tracker/ground-station/receiver/
-  CMakeLists.txt                    (project-level)
-  sdkconfig.defaults                (ESP32-C3, 80 MHz, size opt)
-  main/
-    CMakeLists.txt                  (component registration)
-    gs_main.cpp                     (application, 117 lines)
-    EspHalC3.h                      (RadioLib HAL, 259 lines, identical to tracker)
-    idf_component.yml               (RadioLib v7.6.0 dependency)
-  components/
-    telemetry -> ../../firmware/components/telemetry  (symlink)
-```
+**Components:**
+- `firmware/rp2040/` — 14 PlatformIO environments (TX/RX at 6 bitrates + sweep variants)
+  - `flrc_range_tx_sweep.cpp` — auto-switches bitrate at window boundaries
+  - `flrc_range_rx_sweep.cpp` — re-arms RX after each switch, full RSSI+PER
+  - `gps_time.h/cpp` — NMEA parser + PPS interrupt + millis() fallback
+  - `sweep_scheduler.h/cpp` — 4-mode state machine, 12-min cycle
+- `firmware/esp32-c3-flrc/` — ESP32-C3 bench test firmware for RP2040 comparison
+- `tools/walk_capture.py` — walk test automation (continuous RX capture)
+- `tools/sweep_config.py` — payload sweep config generator (32/64/128/255B)
 
-### What Works
-- Project structure is valid ESP-IDF layout
-- RadioLib dependency declared correctly (`idf_component.yml`)
-- EspHalC3.h is correct and identical to tracker version
-- Telemetry component properly symlinked
-- sdkconfig.defaults appropriate (80 MHz, SPI ISR in IRAM, -Os)
-- Radio config matches tracker (868 MHz, BW125, SF9, CR4/7, sync 0x12, +22 dBm)
-- `irqDioNum = 9` correct for NiceRF LoRa2021 DIO9
-- JSON output format is well-designed (all fields + RSSI/SNR)
+## What Works (Proven, Tested)
 
-## Bugs Found
+- ✅ **5 critical bugs fixed and verified on hardware:**
+  - RX FIFO race (GPIO IRQ poll replaces SPI poll — 8+ session bug dead)
+  - RSSI measurement (LR2021 cmd 0x024B replaces SX1280 0x022A)
+  - PER calculation (cumulative DEADBEEF tracking, multi-burst window)
+  - Packet size mismatch (rx-auto 144→127B matching TX)
+  - Noise floor measurement (auto at RX boot via RSSI_INST 0x020B)
+- ✅ **Verified indoor performance (~30cm):** -60 dBm RSSI, 43 dB SNR, 0% PER, 219 kbps
+- ✅ **Adaptive bitrate sweep firmware** — works without GPS (millis fallback),
+     auto-upgrades to UTC sync when GPS soldered
+- ✅ **14 firmware environments all compile clean**
+- ✅ **Walk test automation** — continuous RX capture script ready
+- ✅ **Cross-track learnings adopted** from speed-tests (FLRC efficiency, LoRa bug fixes)
 
-### P0: `readData()` Return Value Misuse
+## What Doesn't Work (Blockers)
 
-**File**: `main/gs_main.cpp:99,104`
-**Severity**: Critical — no telemetry will ever be displayed
+- ❌ **Runtime bitrate switching UNTESTED** — #1 risk. First attempt at runtime
+     FLRC bitrate changes on LR2021. Radio may need full re-init of all
+     registers, not just MOD_PARAMS.
+- ❌ **No outdoor test data yet** — all measurements are indoor bench (~30cm).
+     The entire point of this track is outdoor range characterization.
+- ❌ **No GPS hardware soldered** — firmware has GPS support but no physical GPS
+     module connected to the RP2040 boards.
 
-RadioLib's `LR11x0::readData()` returns `RADIOLIB_ERR_NONE` (value `0`) on success, NOT the number of bytes read. The comparison `len == TELEMETRY_SIZE` (28) is always false.
+## C3 Portability Assessment
 
-```cpp
-// BROKEN (line 99):
-int16_t len = radio->readData(buf, TELEMETRY_SIZE);
-// BROKEN (line 104):
-if (len == TELEMETRY_SIZE) {  // Always false — len is 0 on success
-```
+**✅ GOOD — firmware is platform-agnostic by design:**
 
-**Fix**:
-```cpp
-int16_t state = radio->readData(buf, TELEMETRY_SIZE);
-if (state == RADIOLIB_ERR_NONE) {
-```
+- Primary platform is RP2040 (PIO build), but ESP32-C3 bench firmware exists
+  (commit d361cf9) and uses the same raw SPI 2-byte opcode protocol
+- Sweep scheduler and GPS time module are pure C++ — portable to ESP-IDF
+- Radio driver abstraction is identical between platforms
+- No platform-specific dependencies beyond SPI + GPIO
 
-### P1: Callback Registration Order
+**Concern:** ESP32-C3 has less RAM than RP2040 (258 KB vs 264 KB), but the
+sweep firmware's working set is <20 KB. No issue.
 
-**File**: `main/gs_main.cpp:85,91`
-**Severity**: Medium — first received packet silently lost
+## What's Next
 
-`startReceive()` is called before `setPacketReceivedAction()`. If a packet arrives between these two calls, the IRQ fires but no ISR is registered.
-
-**Fix**: Swap lines 85-91 — register ISR first, then start receive.
-
-### P2: RadioLib Not Fetched
-
-`managed_components/` does not exist. Must run `idf.py reconfigure` before `idf.py build`.
-
-### P3: Absolute Symlink
-
-The telemetry symlink uses an absolute path. Should be relative for portability:
-```
-../../firmware/components/telemetry
-```
-
-## Build Steps (After Fixes)
-
-```bash
-source ~/esp/esp-idf/export.sh
-cd tracker/ground-station/receiver
-idf.py reconfigure    # Fetch RadioLib
-idf.py build
-idf.py -p /dev/ttyACM0 flash monitor
-```
-
-## Implementation Tasks
-
-- [x] Fix P0: change `readData()` return value check to `state == RADIOLIB_ERR_NONE`
-- [x] Fix P1: swap `setPacketReceivedAction()` before `startReceive()`
-- [x] Fix P3: change symlink to relative path
-- [x] Run `idf.py reconfigure` to fetch RadioLib
-- [x] Run `idf.py build` to verify compilation — **BUILD SUCCESS** (181 KB binary, 82% partition free)
-- [ ] Flash to second ESP32-C3_Mini_V1
-- [ ] Bench test: tracker TX → ground station RX
+1. **Verify runtime bitrate switching** — flash sweep firmware, confirm RSSI/PER
+   differs between bitrate windows at same distance. If identical → switch broken.
+2. **Outdoor walk test** — execute the walk test procedure with sweep firmware
+3. **Solder GPS module** to at least one RP2040 for UTC-timestamped sweep data
+4. **Characterize range vs bitrate tradeoff** — the core deliverable
+5. **Feed results into mesh link budget** — outdoor data informs ADR-010 (adaptive TX)
