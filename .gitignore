@@ -44,3 +44,7 @@ captures/
 
 # Graphify build cache
 graphify-out/
+*.pyc
+build_pio*/
+graphify-out/cache/
+__pycache__/
