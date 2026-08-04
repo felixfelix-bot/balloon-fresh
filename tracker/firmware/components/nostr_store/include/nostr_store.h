@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NOSTR_EVENT_ID_SIZE    32
 #define NOSTR_PUBKEY_SIZE      32
 #define NOSTR_SIG_SIZE         64
@@ -122,3 +126,7 @@ uint16_t nostr_event_deserialize(nostr_event_t *event, const uint8_t *buf, uint1
 
 /* FNV-1a hash over the event struct (for quick comparisons) */
 uint32_t nostr_hash_event_id(const nostr_event_t *event);
+
+#ifdef __cplusplus
+}
+#endif
