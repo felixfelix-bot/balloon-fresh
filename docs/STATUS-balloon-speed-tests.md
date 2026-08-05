@@ -84,3 +84,14 @@
 
 ### 14. pre-stretching discovery sync — commit (line 95) | HARDWARE, TEST
 - **Assessed:** Informational. Pre-stretching track assessed same findings independently.
+
+## Discovery Sync Batch 4 (2026-08-05) — 3 findings
+
+### 15. V1-FAST board smoke test — commit (balloon-hermes) | HARDWARE, TEST
+- **Assessed:** N/A. PCB pipeline DRC smoke test for V1-FAST board. No speed-tests impact.
+
+### 16. Range-tests V1 GPIO fix — commit (balloon-range-tests) | HARDWARE, TEST
+- **Assessed:** N/A. Same GPIO10 collision fix range-tests adopted (batch 1 sync). Already assessed N/A for speed-test boards.
+
+### 17. Range-tests integration test plan — commit (balloon-range-tests) | HARDWARE, TEST
+- **Assessed:** Informational. Range-tests assessed same Phase 2-4 integration plan.
