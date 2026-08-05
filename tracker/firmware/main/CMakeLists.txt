@@ -24,8 +24,14 @@ if(CONFIG_ENABLE_MESHCORE)
     message(STATUS "MeshCore enabled, adding meshcore to REQUIRES")
 endif()
 
+set(APP_SRCS "app_main.cpp" "radio_task.cpp" "app_task.cpp")
+
+if(CONFIG_ENABLE_TOLLGATE)
+    list(APPEND APP_SRCS "tollgate_payment_proto.c")
+endif()
+
 idf_component_register(
-    SRCS "app_main.cpp" "radio_task.cpp" "app_task.cpp"
+    SRCS ${APP_SRCS}
     INCLUDE_DIRS "."
     REQUIRES ${COMPONENT_REQUIRES}
     PRIV_REQUIRES meshcore mesh_adapter nostr_store secp256k1
