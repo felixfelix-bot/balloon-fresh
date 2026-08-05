@@ -62,6 +62,9 @@ extern "C" {
 #endif
 #ifdef CONFIG_ENABLE_NOSTR_STORE
 #include "nostr_store.h"
+/* Accessor for the file-static nostr_store in app_task.cpp — avoids creating
+ * a second store (index + bloom filter are per-instance). */
+extern "C" nostr_store_t *app_task_get_store(void);
 #endif
 #ifdef CONFIG_ENABLE_RELAY_MODE
 #include "relay_types.h"
@@ -392,6 +395,84 @@ static void cli_cmd_i2c_scan(const char *args) {
     printf("Scan complete: %d device(s) found\n", found);
 }
 
+#ifdef CONFIG_ENABLE_NOSTR_STORE
+/*
+ * nostr_dump — dump stored Nostr events from the flash-backed nostr_store.
+ *
+ * Uses app_task_get_store() to access the SAME store instance that app_task
+ * populates — avoids creating a second store (which would have a separate
+ * index and bloom filter).
+ *
+ * Output format (one line per event):
+ *   [idx] kind=<kind> ts=<created_at> len=<content_len> pub=<16 hex> <content>
+ *
+ * Content is truncated to 80 chars.  Pubkey is shown as first 16 hex chars.
+ * Supports optional count arg: `nostr_dump 10` dumps first 10 events.
+ */
+static void cli_cmd_nostr_dump(const char *args) {
+    nostr_store_t *store = app_task_get_store();
+    if (!store) {
+        printf("nostr_store not ready (app_task not started or store disabled)\n");
+        return;
+    }
+
+    uint16_t count = nostr_store_count(store);
+    if (count == 0) {
+        printf("Nostr store: 0 events\n");
+        return;
+    }
+
+    /* Optional count limit for pagination */
+    uint16_t limit = count;
+    if (args && *args) {
+        long n = strtol(args, NULL, 10);
+        if (n > 0 && (uint16_t)n < limit) {
+            limit = (uint16_t)n;
+        }
+    }
+
+    printf("=== Nostr Store: %u events (showing %u) ===\n", count, limit);
+    for (uint16_t i = 0; i < limit; i++) {
+        nostr_event_t event;
+        memset(&event, 0, sizeof(event));
+
+        if (nostr_store_get(store, i, &event) != 0) {
+            printf("[%u] READ ERROR\n", i);
+            continue;
+        }
+
+        /* Truncate content to 80 chars for terminal readability */
+        char content_preview[81];
+        uint16_t show_len = event.content_len;
+        if (show_len > 80) show_len = 80;
+        memcpy(content_preview, event.content, show_len);
+        /* Replace non-printable chars with '.' for safe terminal output */
+        for (uint16_t c = 0; c < show_len; c++) {
+            if (content_preview[c] < 0x20 || content_preview[c] > 0x7E) {
+                content_preview[c] = '.';
+            }
+        }
+        content_preview[show_len] = '\0';
+
+        /* Pubkey: first 16 hex chars (8 bytes) */
+        char pub_hex[17];
+        for (int b = 0; b < 8; b++) {
+            snprintf(pub_hex + b * 2, 3, "%02x", event.pubkey[b]);
+        }
+        pub_hex[16] = '\0';
+
+        printf("[%u] kind=%u ts=%lu len=%u pub=%s %s%s\n",
+               i,
+               (unsigned)event.kind,
+               (unsigned long)event.created_at,
+               (unsigned)event.content_len,
+               pub_hex,
+               content_preview,
+               event.content_len > 80 ? "..." : "");
+    }
+}
+#endif /* CONFIG_ENABLE_NOSTR_STORE */
+
 static void setup_cli(void) {
     cli_init();
     cli_register_command("status", "System status (uptime, heap, voltage)", cli_cmd_status);
@@ -404,6 +485,10 @@ static void setup_cli(void) {
     cli_register_command("radio_test", "Transmit test packet", cli_cmd_radio_test);
     cli_register_command("radio_recv", "Listen for FLRC packets (30s)", cli_cmd_radio_recv);
     cli_register_command("i2c_scan", "Scan I2C bus for devices", cli_cmd_i2c_scan);
+#ifdef CONFIG_ENABLE_NOSTR_STORE
+    cli_register_command("nostr_dump", "Dump stored Nostr events (optional count arg)",
+                          cli_cmd_nostr_dump);
+#endif
 }
 
 extern "C" void app_main(void)

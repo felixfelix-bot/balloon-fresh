@@ -39,6 +39,23 @@ static const char *TAG = "APP_TASK";
 extern QueueHandle_t g_rx_queue;
 extern QueueHandle_t g_tx_queue;
 
+#ifdef CONFIG_ENABLE_NOSTR_STORE
+/*
+ * File-static nostr_store instance.
+ * Previously a local variable inside app_task(); moved to file-static scope so
+ * the CLI `nostr_dump` command in app_main.cpp can access the SAME store via
+ * app_task_get_store().  Must not create a second store — the index and bloom
+ * filter are per-instance.
+ */
+static nostr_store_t s_nostr_store;
+static bool s_nostr_store_ready = false;
+
+extern "C" nostr_store_t *app_task_get_store(void)
+{
+    return s_nostr_store_ready ? &s_nostr_store : NULL;
+}
+#endif /* CONFIG_ENABLE_NOSTR_STORE */
+
 extern "C" void app_task(void *arg)
 {
     (void)arg;
@@ -53,9 +70,11 @@ extern "C" void app_task(void *arg)
         ESP_LOGI(TAG, "secp256k1 context created (heap=%lu after)", (unsigned long)esp_get_free_heap_size());
     }
 
-    /* Initialize nostr_store */
-    nostr_store_t store;
-    nostr_store_init(&store, "/littlefs/nostr");
+    /* Initialize nostr_store (file-static, shared with CLI via app_task_get_store) */
+    nostr_store_init(&s_nostr_store, "/littlefs/nostr");
+    s_nostr_store_ready = true;
+    ESP_LOGI(TAG, "nostr_store ready (dir=/littlefs/nostr, heap=%lu)",
+             (unsigned long)esp_get_free_heap_size());
 #endif
 
     relay_packet_t pkt;
@@ -83,7 +102,7 @@ extern "C" void app_task(void *arg)
                  * Current nostr_store schema has no signature field — events are
                  * stored without sig verification for V1 integration testing.
                  * Consultant advised: verify at transport layer, not store layer. */
-                nostr_store_add(&store, &event);
+                nostr_store_add(&s_nostr_store, &event);
                 ESP_LOGI(TAG, "Nostr event stored (kind=%d)", event.kind);
             } else {
                 ESP_LOGW(TAG, "Nostr event deserialize failed");
