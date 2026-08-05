@@ -165,6 +165,15 @@ Ground Station                   Balloon (L7: TollGate)
   the balloon CLI. Good for end-to-end testing when hardware is available.
 - **Action:** None. Document for reference.
 
+## Discovery Sync (2026-08-05 batch 4) — 7 findings, all HARDWARE/PCB
+
+### Findings 12-18: V2-ADC/V1-FAST board creation + A* routing + pinout + auto-routing pipeline
+- **Commits:** Multiple (V2-ADC, V1-FAST board creation, A* routing, smoke test, pinout verification, LLM auto-routing docs, feasibility verification)
+- **Relevance:** NONE for tollgate. All PCB design + auto-routing tooling.
+- **Impact on tollgate:** Zero. We have no hardware design scope. ESP32-C3 pinout
+  changes are tracker-hardware-specific. Our payment protocol is transport-agnostic.
+- **Action:** None.
+
 ## Next Steps
 1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
