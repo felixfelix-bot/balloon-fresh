@@ -522,51 +522,102 @@ def _via(board, net, x, y):
     board.Add(v)
 
 
+def rip_freerouting_tracks(board, net_names=None):
+    """Remove ALL FreeRouting tracks/vias (or only those on the given nets) so
+    our manual routes are the only signal tracks — no cross-layer conflicts."""
+    keep = set(net_names) if net_names else None
+    removed = 0
+    for t in list(board.GetTracks()):
+        if keep is not None:
+            net = t.GetNetname() if hasattr(t, 'GetNetname') else None
+            if net not in keep:
+                continue
+        board.Remove(t)
+        removed += 1
+    return removed
+
+
 def add_manual_routes(board):
-    """Route the nets FreeRouting could not complete. F.Cu for short/local
-    nets in clear corridors; B.Cu (via-in-pad both ends) for cross-body nets."""
+    """Full manual signal routing (circuit-breaker path). FreeRouting is ripped
+    first, so these are the ONLY signal tracks. Strategy:
+      * F.Cu for nets that stay in the left half / short stubs, using a vertical
+        "bus" in the X=10..12.5 corridor between U1 and the LR2021 left pins,
+        plus dedicated left-edge lanes (X<2.5) to reach U1's left-column GPIOs.
+      * B.Cu for cross-body nets (would have to cross the LR2021 module),
+        running along clear edge lanes Y<4 (no pads or power vias there).
+    Power (GND/3V3) is NOT routed here — the internal planes + power vias do it."""
     F = pcbnew.F_Cu
     B = pcbnew.B_Cu
     W = 0.25
     n = board.FindNet
     added = [0]
 
-    def route(netname, layer, pts):
+    def R(netname, layer, pts):
         _seg(board, n(netname), layer, pts, W)
         added[0] += 1
 
-    def broute(netname, pad_pts):
+    def BR(netname, pad_pts, lane_pts):
+        # via-in-pad at each endpoint (F.Cu pad -> via -> B.Cu), B.Cu between
         netobj = n(netname)
         for (x, y) in pad_pts:
             _via(board, netobj, x, y)
-        _seg(board, netobj, B, pad_pts, W)
+        _seg(board, netobj, B, lane_pts, W)
         added[0] += 1
 
-    # VCAP (F.Cu, power island) — dips under U4 GND pad at (4.0,24.25)
-    route("VCAP", F, [(1.5, 28.0), (1.5, 24.25)])
-    route("VCAP", F, [(1.5, 24.25), (3.05, 24.25)])
-    route("VCAP", F, [(3.05, 24.25), (3.05, 23.5), (4.95, 23.5), (4.95, 24.25)])
-    route("VCAP", F, [(4.95, 24.25), (8.5, 24.25), (8.5, 25.0)])
-    route("VCAP", F, [(3.5, 22.0), (3.5, 23.5)])
-    # SOLAR_IN (F.Cu)
-    route("SOLAR_IN", F, [(6.5, 25.0), (9.0, 25.0), (9.0, 28.0)])
-    # SPI: U1 bottom GPIO6/7 -> LR2021 left pins 5/4 (F.Cu, below U1)
-    route("SPI_SCK", F, [(5.25, 18.0), (5.25, 19.5), (11.0, 19.5), (11.0, 15.0), (13.1, 15.0)])
-    route("SPI_MOSI", F, [(6.75, 18.0), (6.75, 20.0), (10.5, 20.0), (10.5, 13.0), (13.1, 13.0)])
-    # SPI_MISO via B.Cu (F.Cu would cross U1 GPIO0/GPIO1 pads)
-    broute("SPI_MISO", [(2.5, 14.4), (11.5, 11.0), (13.1, 11.0)])
-    # LR2021_BUSY: GPIO4 -> pin7 (F.Cu, top corridor)
-    route("LR2021_BUSY", F, [(2.5, 16.8), (2.5, 21.0), (13.1, 21.0), (13.1, 19.0)])
-    # GPS_RX: GPIO1 -> GPS pin3 (F.Cu, left edge)
-    route("GPS_RX", F, [(2.5, 13.2), (1.4, 13.2), (1.4, 5.0), (6.7, 5.0)])
-    # cross-body nets on B.Cu (via-in-pad)
-    broute("LR2021_RST", [(2.5, 15.6), (32.9, 15.0)])
-    broute("LR2021_DIO9", [(2.5, 18.0), (32.9, 13.0)])
-    # FEM control + LED: U1 right side -> bottom-center (F.Cu)
-    route("FEM_TX", F, [(9.5, 18.0), (12.0, 18.0), (12.0, 6.0), (26.5, 6.0), (26.5, 4.0)])
-    route("FEM_RX", F, [(9.5, 12.0), (12.0, 12.0), (12.0, 6.8), (29.5, 6.8), (29.5, 4.0)])
-    route("LED", F, [(9.5, 16.5), (15.0, 16.5), (15.0, 6.0), (19.5, 6.0), (19.5, 4.0)])
+    # ===== F.Cu: power island =====
+    R("VCAP", F, [(1.5, 28.0), (1.5, 24.25), (3.05, 24.25)])
+    R("VCAP", F, [(3.05, 24.25), (3.05, 23.5), (4.95, 23.5), (4.95, 24.25)])
+    R("VCAP", F, [(4.95, 24.25), (8.5, 24.25), (8.5, 25.0)])
+    R("VCAP", F, [(3.5, 22.0), (3.5, 23.5)])
+    R("SOLAR_IN", F, [(6.5, 25.0), (6.5, 26.5), (9.0, 26.5), (9.0, 28.0)])
+    R("VDIV_MID", F, [(11.5, 25.0), (12.5, 25.0), (12.5, 21.0), (10.5, 21.0), (10.5, 22.0)])
+
+    # ===== F.Cu: RF antenna stubs (short, dedicated) =====
+    R("RF_SUB_868", F, [(13.1, 7.0), (13.0, 5.2), (13.0, 4.0)])
+    R("RF_2G4_2400", F, [(32.9, 23.0), (32.5, 24.5), (32.0, 24.5), (32.0, 26.0)])
+
+    # ===== F.Cu: LED local =====
+    R("LED_ANODE", F, [(20.5, 4.0), (20.0, 4.0), (20.0, 3.2), (18.0, 3.2), (18.0, 4.0), (17.5, 4.0)])
+    # LED: GPIO18(9.5,16.5) -> R_LED.1(19.5,4.0) — runs along clear top-of-U1 lane Y=10.8 then down
+    R("LED", F, [(9.5, 16.5), (9.7, 16.5), (9.7, 10.8), (17.0, 10.8), (17.0, 3.4), (19.5, 3.4), (19.5, 4.0)])
+
+    # ===== F.Cu: GPS (left-edge lanes, below GPS module) =====
+    R("GPS_RX", F, [(2.5, 13.2), (0.8, 13.2), (0.8, 3.4), (6.7, 3.4), (6.7, 5.0)])
+    R("GPS_TX", F, [(2.5, 12.0), (1.4, 12.0), (1.4, 4.4), (8.0, 4.4), (8.0, 5.0)])
+
+    # ===== F.Cu: SPI bus + LR2021_BUSY via left corridor verticals =====
+    # SPI_SCK: GPIO6(5.25,18) -> pin5(13.1,15), drops below U1 first
+    R("SPI_SCK", F, [(5.25, 18.0), (5.25, 19.0), (10.0, 19.0), (10.0, 15.0), (13.1, 15.0)])
+    # SPI_MOSI: GPIO7(6.75,18) -> pin4(13.1,13)
+    R("SPI_MOSI", F, [(6.75, 18.0), (6.75, 19.6), (10.5, 19.6), (10.5, 13.0), (13.1, 13.0)])
+    # SPI_NSS: GPIO10(9.5,15) -> pin6(13.1,17)
+    R("SPI_NSS", F, [(9.5, 15.0), (11.0, 15.0), (11.0, 17.0), (13.1, 17.0)])
+    # SPI_MISO: GPIO2(2.5,14.4) -> R_PD.2(11.5,11) -> pin3(13.1,11), left-edge lane X=1.0
+    R("SPI_MISO", F, [(2.5, 14.4), (1.0, 14.4), (1.0, 10.0), (11.5, 10.0), (11.5, 11.0), (13.1, 11.0)])
+    # LR2021_BUSY: GPIO4(2.5,16.8) -> pin7(13.1,19), left-edge lane X=1.7, corridor X=12.0
+    R("LR2021_BUSY", F, [(2.5, 16.8), (1.7, 16.8), (1.7, 10.6), (12.0, 10.6), (12.0, 19.0), (13.1, 19.0)])
+
+    # ===== B.Cu: cross-body nets along clear Y<4 lanes (no pads / power vias) =====
+    # LR2021_RST: GPIO3(2.5,15.6) -> pin14(32.9,15.0)
+    BR("LR2021_RST", [(2.5, 15.6), (32.9, 15.0)],
+       [(2.5, 15.6), (1.2, 15.6), (1.2, 2.0), (33.8, 2.0), (33.8, 15.0), (32.9, 15.0)])
+    # LR2021_DIO9: GPIO5(2.5,18.0) -> pin13(32.9,13.0), lane Y=2.6
+    BR("LR2021_DIO9", [(2.5, 18.0), (32.9, 13.0)],
+       [(2.5, 18.0), (1.8, 18.0), (1.8, 2.6), (34.0, 2.6), (34.0, 13.0), (32.9, 13.0)])
+    # FEM_TX: GPIO19(9.5,18) -> FEM.TX(26.5,4), lane Y=3.2 then up to FEM
+    BR("FEM_TX", [(9.5, 18.0), (26.5, 4.0)],
+       [(9.5, 18.0), (9.3, 18.0), (9.3, 3.2), (26.5, 3.2), (26.5, 4.0)])
+    # FEM_RX: GPIO8(9.5,12) -> FEM.RX(29.5,4), lane Y=2.9
+    BR("FEM_RX", [(9.5, 12.0), (29.5, 4.0)],
+       [(9.5, 12.0), (9.0, 12.0), (9.0, 2.9), (29.5, 2.9), (29.5, 4.0)])
+
     return added[0]
+
+
+MANUAL_NETS = {"VCAP", "SOLAR_IN", "VDIV_MID", "SPI_SCK", "SPI_MOSI", "SPI_MISO",
+               "SPI_NSS", "LR2021_BUSY", "LR2021_RST", "LR2021_DIO9",
+               "GPS_TX", "GPS_RX", "FEM_TX", "FEM_RX", "LED", "LED_ANODE",
+               "RF_SUB_868", "RF_2G4_2400"}
 
 
 # ============================================================
@@ -702,8 +753,10 @@ def main():
 
     # ---- STEP 6: MANUAL ROUTES + FIX RF WIDTHS + FILL ZONES ----
     print("\nSTEP 6: Manual routes + RF widths + fill zones")
+    ripped = rip_freerouting_tracks(board2, MANUAL_NETS)
+    print(f"  Ripped FreeRouting tracks for manual nets: {ripped}")
     nman = add_manual_routes(board2)
-    print(f"  Manual routes added: {nman}")
+    print(f"  Manual routes added (B.Cu): {nman}")
     rf_nets = {n for n, p in C3_NETS.items() if p["width"] == TRACK_RF}
     rf_codes = set()
     for k, v in board2.GetNetInfo().NetsByName().items():

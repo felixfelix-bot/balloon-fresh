@@ -344,6 +344,15 @@ Same base gates + **inter-MCU net check:** every C3↔RP2040 net must appear on 
 
 Gates are **hard stops.** A variant does not advance to the next stage until its gate passes. Evidence (the report file) is committed to git.
 
+### 4.0 Gate 0 — PLACEMENT (MUST PASS BEFORE ROUTING)
+
+After placing all components, BEFORE any routing or track creation:
+Run overlap detection script. If ANY component bounding boxes overlap
+(with 0.5mm margin), FIX PLACEMENT before proceeding to routing.
+Components must have minimum 2mm gap between bounding boxes.
+
+**Added after v1 had 13 shorting items from overlapping footprints.**
+
 ### 4.1 Stage 1 Gates (per variant)
 
 | # | Gate | Check command | Pass criterion |
