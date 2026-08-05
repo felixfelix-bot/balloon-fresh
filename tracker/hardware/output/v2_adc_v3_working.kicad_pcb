@@ -352,7 +352,7 @@
 	(footprint ""
 		(layer "F.Cu")
 		(uuid "2156375c-04ea-45bd-83be-333435cbcbef")
-		(at 10 24)
+		(at 14 24)
 		(property "Reference" "C2"
 			(at 0 0 0)
 			(layer "F.SilkS")
@@ -1832,12 +1832,44 @@
 		(uuid "f660ce56-3c6b-41e3-b131-6d955a5d1732")
 	)
 	(via
+		(at 3.3 28)
+		(size 0.6)
+		(drill 0.3)
+		(layers "F.Cu" "B.Cu")
+		(net 2)
+		(uuid "2993d3b0-2c3d-487b-95b6-41529258ad32")
+	)
+	(via
+		(at 3.3 28)
+		(size 0.6)
+		(drill 0.3)
+		(layers "F.Cu" "B.Cu")
+		(net 2)
+		(uuid "2cc601c9-4e54-42ea-94db-c28a9f5d3270")
+	)
+	(via
+		(at 5 31.05)
+		(size 0.6)
+		(drill 0.3)
+		(layers "F.Cu" "B.Cu")
+		(net 2)
+		(uuid "6c788b5d-5639-40fe-8184-99b93a484846")
+	)
+	(via
 		(at 5.0019 31.0531)
 		(size 0.6)
 		(drill 0.3)
 		(layers "F.Cu" "B.Cu")
 		(net 2)
 		(uuid "aab4a963-b9ac-4959-b525-ec35fdd77fde")
+	)
+	(via
+		(at 5 31.05)
+		(size 0.6)
+		(drill 0.3)
+		(layers "F.Cu" "B.Cu")
+		(net 2)
+		(uuid "ecd362ee-3bb3-4250-b0e8-39df69d33bd8")
 	)
 	(segment
 		(start 4.27 37)
@@ -1878,6 +1910,14 @@
 		(layer "B.Cu")
 		(net 2)
 		(uuid "6f6dd6b9-2aec-4c7b-a5a0-4759abac753e")
+	)
+	(segment
+		(start 3.3 28)
+		(end 5 31.05)
+		(width 0.25)
+		(layer "B.Cu")
+		(net 2)
+		(uuid "fde90286-91b8-438f-a053-209a7eb50cbe")
 	)
 	(segment
 		(start 12.2632 15.5)
