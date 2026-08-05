@@ -373,11 +373,9 @@ def get_v1_fast_components() -> list:
         pads=make_esp32c3_pads(gpio_nets),
     ))
 
-    # U2: LR2021 at (24, 22.5) -- closer to U1 (12,12) than original (25,25).
-    # Left SPI pins at x=14.1; gap between pin1(y=14.5)/pin2(y=16.5) straddles
-    # U1's GPIO row at y=15.5 (0.3mm clearance each side). Clears power island.
+    # U2: LR2021 at (25, 25)
     comps.append(ComponentDef(
-        ref="U2", x=24.0, y=22.5, value="LR2021F33",
+        ref="U2", x=25.0, y=25.0, value="LR2021F33",
         pads=make_lr2021_pads(),
     ))
 
