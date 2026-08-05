@@ -161,7 +161,23 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - Action: Note pinout for future hardware reference. No code change.
 
 ### Summary (Batch 4)
-- All 3 findings are hardware/PCB focused — LOW to MODERATE relevance to e-hash software relay
+- All 3 findings hardware/PCB focused — LOW to MODERATE relevance to e-hash software relay
 - Key takeaway: ESP32-C3 MINI-1 pinout verified, confirms deployment platform assumptions
 - No blockers, no code changes needed
 - No cross-track coordination needed
+
+---
+
+## Discovery Sync Acknowledgment (2026-08-06, Batch 5)
+
+### 1 New Finding Analyzed
+
+**1. [balloon-hermes] Gate 0 placement check before routing — no component overlap [FIRMWARE, HARDWARE, PROTOCOL]**
+- Relevance: NIL
+- PCB auto-route pipeline quality gate: verify component placement has zero overlap before running A* router. Pure PCB tooling.
+- e-hash relay is L7 software. No GPIO, no placement, no routing dependency.
+- No action.
+
+### Summary (Batch 5)
+- PCB tooling finding. No e-hash relevance.
+- No blockers, no code changes.
