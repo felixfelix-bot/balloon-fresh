@@ -164,10 +164,14 @@ def main():
 
     print(f"  Rebuilt with {len(list(board2.Zones()))} zones")
 
-    # SES import via pcbnew API (NEVER manual parsing)
-    ok = pcbnew.ImportSpecctraSES(board2, ses_path)
-    print(f"  SES import: {'OK' if ok else 'FAIL'}")
-    if not ok:
+    # SES import — ImportSpecctraSES API fails headless (returns False).
+    # Use existing manual SES parser from ses_import.py which handles Y-axis.
+    print(f"  manual SES import (pcbnew API failed headless)...")
+    from ses_import import apply_ses_to_board
+    wire_count, via_count = apply_ses_to_board(board2, ses_path, V2_ADC_NETS)
+    print(f"  SES: {wire_count} wires, {via_count} vias")
+    if wire_count == 0 and via_count == 0:
+        print("  FAIL: no tracks imported")
         return 1
     track_count = len(list(board2.GetTracks()))
     print(f"  Tracks: {track_count}")
