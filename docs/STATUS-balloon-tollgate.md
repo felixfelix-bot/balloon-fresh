@@ -136,6 +136,35 @@ Ground Station                   Balloon (L7: TollGate)
   payment protocol encode/decode path too. Currently informational.
 - **Action:** None. Monitor when tollgate components get linked into tracker build.
 
+## Discovery Sync (2026-08-05 batch 3) — 3 findings from balloon-hermes
+
+### Finding 9: tollgate_payment_proto.h created in tracker + tollgate_send_pay CLI (65a46fd) — FIRMWARE, PROTOCOL, TEST
+- **Relevance:** CRITICAL — tracker now has a copy of our payment protocol header.
+- **Result:** balloon-hermes created `tracker/firmware/main/tollgate_payment_proto.h` +
+  `.c` with 83 host unit tests. Wire-compatible with our version (identical enum
+  values, struct layouts, function signatures). Self-contained (no ESP-IDF deps).
+  CLI command `tollgate_send_pay` implemented — builds PAY msg, queues to tx_queue.
+- **Impact on tollgate:** Our protocol header IS the source of truth. Tracker's copy
+  is a faithful port. Verified: TG_MSG_PAY/ACK/NACK/STATUS/INFO/REVOKE enum values
+  match, tollgate_msg_hdr_t layout matches (8 bytes packed), tollgate_ack_payload_t
+  matches, tollgate_nack_payload_t matches, tollgate_proto_encode/decode signatures
+  match. Only differences: tracker version is self-contained (doesn't include
+  tollgate_balloon.h), omits tollgate_proto_build_info_json (has own builder).
+- **Action:** None required. Wire format confirmed compatible.
+
+### Finding 10: relay_send_nostr CLI command (108c2b9) — PROTOCOL, TEST
+- **Relevance:** Informational. Tracker CLI for Nostr event relay.
+- **Impact on tollgate:** None directly. Nostr relay CLI is for store-and-forward
+  testing. TollGate PAY/ACK messages use relay type tags, not raw Nostr events.
+- **Action:** None.
+
+### Finding 11: CLI command audit (9b79760) — PROTOCOL
+- **Relevance:** Informational. Audit document tracking 5 CLI commands.
+- **Impact on tollgate:** tollgate_send_pay was 1 of 5 commands — now IMPLEMENTED
+  in tracker. This means ground station operators can test TollGate payments from
+  the balloon CLI. Good for end-to-end testing when hardware is available.
+- **Action:** None. Document for reference.
+
 ## Next Steps
 1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
