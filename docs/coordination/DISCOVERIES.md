@@ -26,6 +26,73 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] feat: C3 flight PCB — collision-aware routing (80 tracks, 26 vias), real gerbers (2026-08-06) | tags: HARDWARE, PROTOCOL
+- **Commit:** `eacc32e` by Felix
+- **Files:** tracker/hardware/output/c3_router.py, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Adhesive.gba, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Courtyard.gbr (+46 more)
+- **Full message:** feat: C3 flight PCB — collision-aware routing (80 tracks, 26 vias), real gerbers exported
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] docs: PCB worker coordination protocol — single worker per file, quality gates (2026-08-06) | tags: HARDWARE
+- **Commit:** `af29d3f` by Felix
+- **Files:** docs/coordination/PCB-WORKER-COORDINATION.md
+- **Full message:** docs: PCB worker coordination protocol — single worker per file, quality gates
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: C3 flight PCB — 20 footprints, 41 tracks, 4-layer, 0.6mm (DRC needs fixing (2026-08-05) | tags: HARDWARE
+- **Commit:** `c2efedd` by Felix
+- **Files:** tracker/hardware/output/v_c3_4layer.dsn, tracker/hardware/output/v_c3_4layer.kicad_pcb, tracker/hardware/output/v_c3_4layer.kicad_pro (+23 more)
+- **Full message:** feat: C3 flight PCB — 20 footprints, 41 tracks, 4-layer, 0.6mm (DRC needs fixing)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: C3 flight PCB — 20 footprints placed by K2.7, routing incomplete (timeout) (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `71a2ba4` by Felix
+- **Files:** tracker/hardware/output/v_c3_4layer.dsn, tracker/hardware/output/v_c3_4layer.kicad_pcb, tracker/hardware/output/v_c3_4layer.kicad_pro (+17 more)
+- **Full message:** wip: C3 flight PCB — 20 footprints placed by K2.7, routing incomplete (timeout)
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] fix: dedent placed symbols in C3 schematic (K2.7 found 2-tab→1-tab issue) (2026-08-05) | tags: HARDWARE
+- **Commit:** `d8ae8e4` by Felix
+- **Files:** test_sch-erc.rpt, test_trunc-erc.rpt, tracker/hardware/output/PRE-LAYOUT-C3.md (+10 more)
+- **Full message:** fix: dedent placed symbols in C3 schematic (K2.7 found 2-tab→1-tab issue)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix: C3 schematic now loads in kicad-cli — removed invalid hierarchical_sheet_in (2026-08-05) | tags: HARDWARE
+- **Commit:** `81a286a` by Felix
+- **Files:** tracker/hardware/schematics/v_c3_flight.kicad_sch
+- **Full message:** fix: C3 schematic now loads in kicad-cli — removed invalid hierarchical_sheet_instances field
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] consultant(v2): revised PCB plan — 3 new show-stoppers found (2026-08-05) | tags: HARDWARE
+- **Commit:** `30d80b8` by Felix
+- **Files:** docs/coordination/CONSULTANT-REVISED-PLAN-V2.md
+- **Full message:** consultant(v2): revised PCB plan — 3 new show-stoppers found
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: PCB model selection lessons — GLM 5.2 validated for PCB design, two-stage  (2026-08-05) | tags: HARDWARE
+- **Commit:** `89a4672` by Felix
+- **Files:** docs/coordination/PCB-MODEL-LESSONS-LEARNED.md
+- **Full message:** docs: PCB model selection lessons — GLM 5.2 validated for PCB design, two-stage workflow defined
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: two-stage PCB pipeline plan — GLM 5.2 generate, Kimi K2.7 verify (2026-08-05) | tags: HARDWARE
+- **Commit:** `6e785d7` by Felix
+- **Files:** tracker/hardware/PCB-TWO-STAGE-PLAN.md
+- **Full message:** docs: two-stage PCB pipeline plan — GLM 5.2 generate, Kimi K2.7 verify
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] persist: C3 schematic + symbols + project file committed (2026-08-05) | tags: HARDWARE
+- **Commit:** `18529e6` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, tracker/hardware/run_4layer.py, tracker/hardware/schematics/v_c3_flight.kicad_pro (+8 more)
+- **Full message:** persist: C3 schematic + symbols + project file committed
+- **Relevance:** HARDWARE
+
+### [balloon-pre-stretching] docs: discovery sync batch 6 — ADR-028 three-variant PCB, weight estimates at ri (2026-08-05) | tags: HARDWARE
+- **Commit:** `ee5f1e0` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 6 — ADR-028 three-variant PCB, weight estimates at risk
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] consultant(C3-P7): REJECT sign-off — C3 flight board does not exist (2026-08-05) | tags: GENERAL
 - **Commit:** `084e580` by Felix
 - **Files:** tracker/hardware/C3-SIGNOFF.md
