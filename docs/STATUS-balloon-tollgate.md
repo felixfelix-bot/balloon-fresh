@@ -136,3 +136,43 @@ Acknowledged 3 new findings from balloon-hermes. Assessment:
    - 2/5 CLI commands existed before this session. Now 4/5 implemented (relay_send_nostr + tollgate_send_pay done).
    - Remaining: nostr_dump (low priority, 1-2h) — needs store refactor. Not blocking blossom.
    - **Impact**: No action needed. Shows relay pipeline CLI tooling is maturing rapidly.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: consultant V6 + PCB routing)
+
+4 findings assessed. 1 CRITICAL for blossom architecture.
+
+1. **Consultant V6: PCB is ESP32-C3, not S3 (commit 1b0fe93)** — `CRITICAL` `ARCHITECTURE-CHANGING`
+   - V1 PCB uses ESP32-C3-Mini-1. GPIO18/19 (LED/FEM_TX) don't exist on C3 header — USB D-/D+ pins.
+   - My blossom server runs on ESP32-C3. Tracker firmware also builds for C3 (227KB, 78% flash free).
+   - **ARCHITECTURE QUESTION**: Does blossom run on the SAME C3 as tracker (single-MCU), or separate C3 (dual-MCU)?
+   - My integration plan assumes separate C3 boards. If single-MCU, plan changes significantly:
+     - Blossom HTTP server + tracker mesh stack share same flash/RAM
+     - 78% free flash on 2MB = ~1.5MB available. Blossom is ~1350 lines, likely <100KB compiled.
+     - RAM is the concern: blossom needs HTTP server stack + secp256k1 context + LittleFS buffers
+   - **ACTION**: Needs orchestrator decision. See escalation below.
+
+2. **LLM auto-routing pipeline (commit c542afb)** — `INFORMATIONAL` for blossom
+   - PCB auto-routing tooling. Not relevant to blossom firmware.
+
+3. **Auto-routing feasibility verified (commit ee9b6ba)** — `INFORMATIONAL` for blossom
+   - python3.14+pcbnew works, kicad-cli DRC works. PCB tooling pipeline. Not blossom-relevant.
+
+4. **balloon-speed-tests batch 3 (commit 3c08869)** — `INFORMATIONAL`
+   - 5 findings all N/A. PCB, tollgate, nostr CLI — already covered above.
+
+### ESCALATION: Blossom deployment architecture needs orchestrator decision
+
+ORCHESTRATOR: The consultant V6 review confirms V1 flight board is ESP32-C3. My blossom server also targets C3. Two options:
+
+**Option A — Single-MCU (blossom on tracker C3):**
+- Pros: One board, lower weight, simpler power budget, no inter-MCU link needed
+- Cons: Shared RAM/flash, potential WiFi+radio coexistence issues, no isolation
+- Flash budget: tracker 227KB + blossom ~100KB = ~330KB of 2MB. OK.
+- RAM budget: needs measurement. Blossom HTTP server + secp256k1 + LittleFS + mesh stack may exceed C3's 400KB SRAM.
+
+**Option B — Dual-MCU (blossom on separate C3, tracker on own C3/S3):**
+- Pros: Isolation, independent debugging, no resource contention
+- Cons: Extra weight, extra power, inter-MCU link (UART/SPI) adds complexity
+- This is my current plan assumption.
+
+Recommendation: Depends on RAM measurement. If blossom+mesh fits in 400KB SRAM, Option A is simpler for V1. Need RAM budget analysis.
