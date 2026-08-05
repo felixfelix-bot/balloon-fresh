@@ -41,6 +41,33 @@ from full_pipeline import (
 from freerouting_pipeline import set_board_design_rules, patch_dsn_rules, run_freerouting
 from ses_import import apply_ses_to_board
 
+
+def patch_dsn_c3(dsn_path):
+    """Extend the shared DSN patch: mark In1.Cu / In2.Cu as (type power) so
+    FreeRouting treats them as plane layers and routes signals ONLY on F.Cu/B.Cu.
+    Without this, FreeRouting lays signal tracks on the internal plane layers and
+    the SES importer (which only knows F.Cu/B.Cu) collapses them onto F.Cu -> shorts.
+    Also bumps track width to a manufacturable 0.20mm."""
+    with open(dsn_path, 'r') as f:
+        content = f.read()
+    # power-type for the plane layers
+    content = content.replace(
+        '(layer In1.Cu\n      (type signal)',
+        '(layer In1.Cu\n      (type power)')
+    content = content.replace(
+        '(layer In2.Cu\n      (type signal)',
+        '(layer In2.Cu\n      (type power)')
+    # keep F.Cu / B.Cu as signal, bump widths to 0.20mm if still tiny
+    content = content.replace(
+        '(rule\n      (width 200)\n      (clearance 200)\n      (clearance 50 (type smd_smd))\n    )',
+        '(rule\n      (width 2000)\n      (clearance 200)\n      (clearance 50 (type smd_smd))\n    )')
+    content = content.replace(
+        '(rule\n        (width 200)\n        (clearance 200)\n      )',
+        '(rule\n        (width 2000)\n        (clearance 200)\n      )')
+    with open(dsn_path, 'w') as f:
+        f.write(content)
+    print("  Patched DSN: In1/In2 -> (type power), width 0.20mm")
+
 # ============================================================
 # BOARD SPEC
 # ============================================================
@@ -328,44 +355,54 @@ def create_board_outline_c3(board):
 
 
 def build_board(output_path):
-    """Create fresh 4-layer board with outline + nets + footprints + GND/3V3 planes."""
+    """Create fresh 4-layer board with outline + nets + footprints + design rules.
+    NOTE: zones (GND/3V3 planes) are NOT created here — they must be added INLINE
+    in the caller's scope (see add_planes_inline) and kept alive until after
+    SaveBoard. Creating SHAPE_POLY_SET / ZONE inside a function and letting the
+    Python proxies fall out of scope causes a SWIG-lifetime segfault in
+    SaveBoard (documented in run_4layer.py)."""
     board = pcbnew.NewBoard(output_path)
     board.SetCopperLayerCount(4)
     create_board_outline_c3(board)
     nets_by_name = create_nets(board, C3_NETS)
     for comp in get_c3_components():
         create_footprint(board, comp, nets_by_name)
+    set_board_design_rules(board)
+    return board
 
-    # GND plane on In1.Cu (solid, full board)
+
+def add_planes_inline(board):
+    """Add full-board GND (In1.Cu) + 3V3 (In2.Cu) solid zones. Returns the
+    zone + poly proxy objects — the CALLER must hold the returned references
+    until after pcbnew.SaveBoard() to avoid the SWIG-lifetime segfault."""
     zone_gnd = pcbnew.ZONE(board)
     zone_gnd.SetLayer(pcbnew.In1_Cu)
-    poly = pcbnew.SHAPE_POLY_SET()
-    poly.NewOutline()
-    poly.Append(int(pcbnew.FromMM(0)), int(pcbnew.FromMM(0)))
-    poly.Append(int(pcbnew.FromMM(BOARD_W)), int(pcbnew.FromMM(0)))
-    poly.Append(int(pcbnew.FromMM(BOARD_W)), int(pcbnew.FromMM(BOARD_H)))
-    poly.Append(int(pcbnew.FromMM(0)), int(pcbnew.FromMM(BOARD_H)))
-    zone_gnd.SetOutline(poly)
+    poly_g = pcbnew.SHAPE_POLY_SET()
+    poly_g.NewOutline()
+    poly_g.Append(0, 0)
+    poly_g.Append(pcbnew.FromMM(BOARD_W), 0)
+    poly_g.Append(pcbnew.FromMM(BOARD_W), pcbnew.FromMM(BOARD_H))
+    poly_g.Append(0, pcbnew.FromMM(BOARD_H))
+    zone_gnd.SetOutline(poly_g)
     zone_gnd.SetNet(board.FindNet('GND'))
-    zone_gnd.SetFillMode(0)  # solid fill
+    zone_gnd.SetFillMode(0)
     board.Add(zone_gnd)
 
-    # 3V3 plane on In2.Cu
     zone_3v3 = pcbnew.ZONE(board)
     zone_3v3.SetLayer(pcbnew.In2_Cu)
-    poly2 = pcbnew.SHAPE_POLY_SET()
-    poly2.NewOutline()
-    poly2.Append(int(pcbnew.FromMM(0)), int(pcbnew.FromMM(0)))
-    poly2.Append(int(pcbnew.FromMM(BOARD_W)), int(pcbnew.FromMM(0)))
-    poly2.Append(int(pcbnew.FromMM(BOARD_W)), int(pcbnew.FromMM(BOARD_H)))
-    poly2.Append(int(pcbnew.FromMM(0)), int(pcbnew.FromMM(BOARD_H)))
-    zone_3v3.SetOutline(poly2)
+    poly_3 = pcbnew.SHAPE_POLY_SET()
+    poly_3.NewOutline()
+    poly_3.Append(0, 0)
+    poly_3.Append(pcbnew.FromMM(BOARD_W), 0)
+    poly_3.Append(pcbnew.FromMM(BOARD_W), pcbnew.FromMM(BOARD_H))
+    poly_3.Append(0, pcbnew.FromMM(BOARD_H))
+    zone_3v3.SetOutline(poly_3)
     zone_3v3.SetNet(board.FindNet('3V3'))
     zone_3v3.SetFillMode(0)
     board.Add(zone_3v3)
 
-    set_board_design_rules(board)
-    return board
+    # return ALL proxies so the caller keeps them alive through SaveBoard
+    return zone_gnd, poly_g, zone_3v3, poly_3
 
 
 # ============================================================
@@ -385,16 +422,21 @@ def run_quality_gates(pcb_path, drc_result):
     has_gnd_zone = any(z.GetLayer() == pcbnew.In1_Cu for z in b.Zones())
     has_3v3_zone = any(z.GetLayer() == pcbnew.In2_Cu for z in b.Zones())
 
-    # F.Cu gerber non-empty (>10 aperture draws)
+    # F.Cu gerber non-empty: count aperture definitions + draw/flash operations.
     fcu_gerber = None
     for fn in os.listdir(GERBER_DIR) if os.path.isdir(GERBER_DIR) else []:
-        if "F_Cu" in fn and fn.endswith(".gbr"):
+        if "F_Cu" in fn and (fn.endswith(".gbr") or fn.endswith(".gtl")):
             fcu_gerber = os.path.join(GERBER_DIR, fn)
             break
     fcu_apertures = 0
+    fcu_bytes = 0
     if fcu_gerber and os.path.exists(fcu_gerber):
+        fcu_bytes = os.path.getsize(fcu_gerber)
         with open(fcu_gerber, 'r', errors='ignore') as f:
-            fcu_apertures = sum(1 for line in f if line.startswith("D") and line.strip()[-1:] == "*")
+            for line in f:
+                # aperture definitions (%ADD...) and draw/flash mode tokens
+                if line.startswith('%AD') or 'D01*' in line or 'D03*' in line:
+                    fcu_apertures += 1
 
     gates = {
         "[1] >=17 footprints": fp_count >= 17,
@@ -442,6 +484,8 @@ def main():
     # ---- STEP 2: BUILD BOARD + ZONES ----
     print("\nSTEP 2: Build board (NewBoard, 4 layers, footprints, GND/3V3 planes)")
     board = build_board(OUT_PCB)
+    # zones created HERE (main scope) — keep refs alive through SaveBoard
+    zg, pg, z3, p3 = add_planes_inline(board)
     fp_before = len(list(board.Footprints()))
     zones_before = len(list(board.Zones()))
     print(f"  Before save: {fp_before} footprints, {zones_before} zones")
@@ -464,7 +508,7 @@ def main():
     print(f"  DSN export: {'OK' if ok else 'FAIL'} "
           f"({os.path.getsize(dsn_path) if ok and os.path.exists(dsn_path) else 0} bytes)")
     if ok:
-        patch_dsn_rules(dsn_path)
+        patch_dsn_c3(dsn_path)
 
     # ---- STEP 4: FREEROUTING ----
     fr_ok = False
@@ -475,6 +519,8 @@ def main():
     # ---- STEP 5: REBUILD + IMPORT SES ----
     print("\nSTEP 5: Rebuild board + import SES tracks")
     board2 = build_board(OUT_PCB)
+    # zones inline again (refs alive through SaveBoard in step 7)
+    zg2, pg2, z32, p32 = add_planes_inline(board2)
     fp2 = len(list(board2.Footprints()))
     print(f"  Rebuilt: {fp2} footprints, {len(list(board2.Zones()))} zones")
     wire_count = via_count = 0
