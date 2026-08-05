@@ -138,6 +138,15 @@ config ENABLE_RELAY_MODE
         nostr_store) + main loop (telemetry + CLI). Replaces TX-sleep with
         continuous operation for store-and-forward relay.
 
+config ENABLE_TOLLGATE
+    bool "Enable TollGate payment processing (Cashu e-cash over mesh)"
+    default n
+    depends on ENABLE_RELAY_MODE
+    help
+        Enable TollGate payment message handling in app_task. Decodes PAY
+        messages from ground stations, validates Cashu tokens, and sends ACK
+        responses with session info. Requires relay mode for continuous RX.
+
 config ENABLE_NOSTR_STORE
     bool "Enable Nostr event store (for mesh relay)"
     default n
