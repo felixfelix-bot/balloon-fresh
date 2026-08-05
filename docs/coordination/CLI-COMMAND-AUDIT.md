@@ -14,10 +14,10 @@
 | 1 | `radio_test` | EXISTS | main/app_main.cpp:315 (handler), :404 (registration) |
 | 2 | `radio_recv` | EXISTS | main/app_main.cpp:335 (handler), :405 (registration) |
 | 3 | `relay_send_nostr` | MISSING | — |
-| 4 | `nostr_dump` | MISSING | — |
+| 4 | `nostr_dump` | IMPLEMENTED | main/app_main.cpp:402 (handler), :490 (registration) |
 | 5 | `tollgate_send_pay` | MISSING | — |
 
-**2 of 5 commands exist. 3 commands need to be implemented.**
+**3 of 5 commands exist/implemented. 2 commands need to be implemented.**
 
 ---
 
@@ -77,36 +77,30 @@
 
 ---
 
-### 4. nostr_dump — MISSING
+### 4. nostr_dump — IMPLEMENTED
 
 **Purpose:** Dump all stored Nostr events from the nostr_store to serial output.
 
-**Estimated implementation time:** 1-2 hours
+**Status:** Implemented (kanban task t_c27101f0).
 
-**Complexity:** Low
+**Handler:** `cli_cmd_nostr_dump()` at `main/app_main.cpp:402`
+**Registration:** `main/app_main.cpp:490`
+**Help text:** "Dump stored Nostr events (optional count arg)"
+
+**Implementation details:**
+- **Store scoping refactor:** `nostr_store_t` moved from local var in `app_task()` to file-static `s_nostr_store` in `app_task.cpp`. Accessor function `app_task_get_store()` (extern "C") returns pointer to the store, or NULL if not yet initialized.
+- **Handler logic:** Calls `nostr_store_count()` to get N, loops i=0..N-1 calling `nostr_store_get(store, i, &event)`.
+- **Output format:** `[idx] kind=<kind> ts=<created_at> len=<content_len> pub=<16 hex chars> <content>`
+- **Content truncation:** Content shown up to 80 chars, with "..." suffix if longer. Non-printable bytes (outside 0x20-0x7E) replaced with '.' for safe terminal output.
+- **Pagination:** Optional count arg (e.g., `nostr_dump 10` limits to first 10 events).
+- **Guard:** `#ifdef CONFIG_ENABLE_NOSTR_STORE` around handler, registration, and accessor.
 
 **Dependencies:**
-- `nostr_store` component (EXISTS) — provides `nostr_store_count()`, `nostr_store_get()`, `nostr_event_t`
-- The `nostr_store_t` instance is local to `app_task.cpp` (line 57-58): `nostr_store_t store; nostr_store_init(&store, "/littlefs/nostr");`
-- **BLOCKER:** The store instance is a local variable inside `app_task()`. It is not accessible from `app_main.cpp` where CLI commands live. Either:
-  - (a) Move the store to a global/static scope, or
-  - (b) Add an accessor function in app_task.cpp that returns a pointer to the store, or
-  - (c) Create a separate store instance in the CLI command (but this would have a separate index — bad).
-- `CONFIG_ENABLE_NOSTR_STORE` must be set (currently `y`)
+- `nostr_store` component (EXISTS) — `nostr_store_count()`, `nostr_store_get()`, `nostr_event_t`
+- `CONFIG_ENABLE_NOSTR_STORE=y` in sdkconfig (set)
+- LittleFS mounted before app_task starts (handled by app_main boot sequence)
 
-**Implementation sketch:**
-1. Refactor: make `nostr_store_t` static in `app_task.cpp` or move to `app_main.cpp` with extern access
-2. Add `cli_cmd_nostr_dump()` handler in `app_main.cpp`
-3. Call `nostr_store_count()` to get N
-4. Loop `i = 0..N-1`, call `nostr_store_get(store, i, &event)`
-5. Print: index, kind, created_at, content_len, content (truncated to 80 chars), pubkey hex (first 16 chars)
-6. Register with `cli_register_command("nostr_dump", ...)`
-7. Guard with `#ifdef CONFIG_ENABLE_NOSTR_STORE`
-
-**Pitfalls:**
-- Store instance scoping is the main challenge. Must not create a second store — the index and bloom filter are per-instance.
-- `nostr_store_get()` reads from flash (LittleFS). If the filesystem isn't mounted, it will fail. LittleFS is mounted in app_main before tasks start — should be fine.
-- Output could be large (256 events max). Consider adding a pagination or count limit argument.
+**Test:** `main/test/test_nostr_dump.c` — 6 host-side tests covering empty store, single event format, FIFO order, content truncation, pagination, and non-printable content sanitization. All pass.
 
 ---
 
