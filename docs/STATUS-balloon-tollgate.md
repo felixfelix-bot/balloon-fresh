@@ -213,3 +213,12 @@ No action for blossom. PCB hardware track scope only.
    - No blossom impact.
 
 Note: C3 flight PCB progression confirms my architecture escalation is still relevant and unanswered.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: PCB placement gates)
+
+2 findings. Both INFORMATIONAL — PCB QA process improvements.
+
+1. **Gate 2.5 placement overlap check** — `INFORMATIONAL`. PCB QA gate before routing.
+2. **Gate 0 placement check** — `INFORMATIONAL`. Component overlap check before routing.
+
+No blossom firmware impact. PCB design process scope only.
