@@ -96,6 +96,38 @@ differs between bitrate windows at same distance. If identical → switch not wo
 - **Mesh baseline build verified (commit 8aaa0bb)** — `INFORMATIONAL` `BUILD`
   - **Assessment**: Unified/mesh firmware builds clean on ESP32-S3. Relevant when the orchestrator approves board access for Phase 2 raw ping test — the raw ping methodology may use unified firmware instead of standalone sweep firmware. No action needed until board access is granted.
 
+## Discovery Sync — 2026-08-05 (6 findings from balloon-hermes, batch 2)
+
+- **Integration test plan Phases 2-4 (commit 2cbf7cd)** — `ACTIONABLE` `HARDWARE`
+  - **TAGS**: INTEGRATION, HARDWARE-PREP, PCB-GPIO
+  - **Assessment**: Phase 2 = two-board raw ping, NO RSSI/distance measurement. Phases 2-4 are benchtop functional validation only. Range-tests scope (outdoor sweeps) NOT covered in integration plan — our track defines separately.
+  - **ACTION**: PCB GPIO fix items — must verify jumper wires match fixed pin table (LED=GPIO18, FEM_TX=GPIO19, NSS=GPIO10 exclusively) before any outdoor sweep. ACTIONABLE for hardware prep.
+
+- **radio_task non-blocking loop (commit 4e7722c)** — `NOT APPLICABLE` `FUTURE`
+  - **TAGS**: ARCHITECTURE, UNIFIED-FIRMWARE
+  - **Assessment**: Cherry-pick CONFLICT — radio_task.cpp doesn't exist in range-tests branch (that's unified firmware only). Our standalone sweep firmware uses different architecture. NOT APPLICABLE to current range-tests code.
+  - **ACTION**: Will be relevant when migrating to unified firmware. No action needed now.
+
+- **Signature field in nostr_event_t (commit bc3bd5b)** — `INFORMATIONAL` `PROTOCOL`
+  - **TAGS**: NOSTR, SIGNING
+  - **Assessment**: Nostr event signing not part of RSSI/distance measurement methodology.
+  - **ACTION**: No action needed.
+
+- **Host-side relay pipeline test (commit 4e86174)** — `INFORMATIONAL` `TEST`
+  - **TAGS**: RELAY, PROTOCOL-TEST
+  - **Assessment**: No-hardware protocol test, not range methodology.
+  - **ACTION**: No action needed.
+
+- **SPI timing comparison status (commit b6c2146)** — `INFORMATIONAL` `SPEED-TESTS`
+  - **TAGS**: SPI, TIMING, CROSS-TRACK
+  - **Assessment**: C3 vs RP2040 SPI timing — relevant to speed-tests track. We already benchmarked SPI in our RP2040 comparison work.
+  - **ACTION**: No action needed — already covered in our track.
+
+- **Phase 6 SPI timing plan (commit 4d53713)** — `INFORMATIONAL` `SPEED-TESTS`
+  - **TAGS**: SPI, LOGIC-ANALYZER, CROSS-TRACK
+  - **Assessment**: Logic analyzer comparison — speed-tests scope.
+  - **ACTION**: No action needed.
+
 ## Next Steps (Physical — Operator Required)
 
 1. Flash sweep firmware on both boards (rp2040-range-tx-sweep + rp2040-range-rx-sweep)
