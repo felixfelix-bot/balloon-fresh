@@ -34,6 +34,9 @@ static void make_event(nostr_event_t *evt, uint8_t id_byte, const char *content)
     memset(evt, 0, sizeof(*evt));
     memset(evt->id, id_byte, NOSTR_EVENT_ID_SIZE);
     memset(evt->pubkey, 0xAA, NOSTR_PUBKEY_SIZE);
+    /* Fill sig with a recognizable pattern so roundtrip can verify byte-exact */
+    for (int i = 0; i < NOSTR_SIG_SIZE; i++)
+        evt->sig[i] = (uint8_t)(id_byte ^ (i & 0xFF));
     evt->created_at = 1000 + id_byte;
     evt->kind = 1;
     evt->content_len = (uint16_t)strlen(content);
@@ -93,6 +96,8 @@ int main(void)
     assert(r == 0);
     assert(got.id[0] == 0x42);
     assert(got.created_at == 1000 + 0x42);
+    assert(got.sig[0] == (uint8_t)(0x42 ^ 0));
+    assert(got.sig[63] == (uint8_t)(0x42 ^ 63));
     assert(got.kind == 1);
     assert(memcmp(got.content, "Hello from balloon!", 19) == 0);
     assert(got.content_len == 19);
@@ -160,6 +165,7 @@ int main(void)
     assert(dlen == slen);
     assert(memcmp(evt2.id, evt.id, 32) == 0);
     assert(memcmp(evt2.pubkey, evt.pubkey, 32) == 0);
+    assert(memcmp(evt2.sig, evt.sig, NOSTR_SIG_SIZE) == 0);
     assert(evt2.created_at == evt.created_at);
     assert(evt2.kind == evt.kind);
     assert(evt2.content_len == evt.content_len);

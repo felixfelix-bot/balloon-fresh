@@ -61,8 +61,8 @@ bool nostr_bloom_check(const nostr_bloom_t *bloom, const uint8_t *data, uint16_t
 
 uint16_t nostr_event_serialize(const nostr_event_t *event, uint8_t *buf, uint16_t buf_size)
 {
-    /* fixed header: 32 + 32 + 4 + 2 + 2 = 72 bytes */
-    uint16_t needed = 72 + event->content_len + 1;
+    /* fixed header: 32 + 32 + 64 + 4 + 2 + 2 = 136 bytes */
+    uint16_t needed = 136 + event->content_len + 1;
     for (uint8_t i = 0; i < event->num_tags; i++)
         needed += (uint16_t)(2 + event->tags[i].key_len + event->tags[i].value_len);
 
@@ -72,6 +72,7 @@ uint16_t nostr_event_serialize(const nostr_event_t *event, uint8_t *buf, uint16_
 
     memcpy(buf + pos, event->id, 32);       pos += 32;
     memcpy(buf + pos, event->pubkey, 32);   pos += 32;
+    memcpy(buf + pos, event->sig, NOSTR_SIG_SIZE);  pos += NOSTR_SIG_SIZE;
 
     /* created_at — big-endian */
     buf[pos++] = (uint8_t)(event->created_at >> 24);
@@ -105,13 +106,14 @@ uint16_t nostr_event_deserialize(nostr_event_t *event, const uint8_t *buf, uint1
 {
     if (!event || !buf) return 0;
 
-    /* Minimum header: id(32) + pubkey(32) + created_at(4) + kind(2) + content_len(2) + num_tags(1) = 73 */
-    if (buf_len < 73) return 0;
+    /* Minimum header: id(32) + pubkey(32) + sig(64) + created_at(4) + kind(2) + content_len(2) + num_tags(1) = 137 */
+    if (buf_len < 137) return 0;
 
     uint16_t pos = 0;
 
     memcpy(event->id, buf + pos, 32); pos += 32;
     memcpy(event->pubkey, buf + pos, 32); pos += 32;
+    memcpy(event->sig, buf + pos, NOSTR_SIG_SIZE); pos += NOSTR_SIG_SIZE;
 
     /* created_at: 4 bytes big-endian (inverse of serialize) */
     event->created_at = ((uint32_t)buf[pos] << 24) | ((uint32_t)buf[pos + 1] << 16) |
