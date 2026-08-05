@@ -379,21 +379,21 @@ def get_v1_fast_components() -> list:
         pads=make_lr2021_pads(),
     ))
 
-    # U3: GPS (MAX-M10S) at (6, 33)
+    # U3: GPS (MAX-M10S) at (4, 28) -- moved closer to U1 GPIO1 for shorter GPS_RX
     comps.append(ComponentDef(
-        ref="U3", x=6.0, y=33.0, value="MAX-M10S",
+        ref="U3", x=4.0, y=28.0, value="MAX-M10S",
         pads=make_gps_pads(),
     ))
 
-    # U4: TPS7A02 LDO at (5, 22)
+    # U4: TPS7A02 LDO at (8, 18) -- clustered with D1 and C_CAP for power island
     comps.append(ComponentDef(
-        ref="U4", x=5.0, y=22.0, value="TPS7A02",
+        ref="U4", x=8.0, y=18.0, value="TPS7A02",
         pads=make_ldo_pads(),
     ))
 
-    # D1: BAT54 diode at (4, 18)
+    # D1: BAT54 diode at (6, 18) -- next to U4 in power island
     comps.append(ComponentDef(
-        ref="D1", x=4.0, y=18.0, value="BAT54",
+        ref="D1", x=6.0, y=18.0, value="BAT54",
         pads=make_diode_pads(),
     ))
 
@@ -439,15 +439,15 @@ def get_v1_fast_components() -> list:
         pads=make_ufl_pads("RF_2G4_2400"),
     ))
 
-    # C1: 10uF 0603 (LDO input cap) at (8, 22)
+    # C1: 10uF 0603 (LDO input cap) at (10, 20) -- tighter to U4 IN pin
     comps.append(ComponentDef(
-        ref="C1", x=8.0, y=22.0, value="10uF",
+        ref="C1", x=10.0, y=20.0, value="10uF",
         pads=make_cap_pads("VCAP", "GND"),
     ))
 
-    # C2: 10uF 0603 (LDO output cap) at (7, 24)
+    # C2: 10uF 0603 (LDO output cap) at (10, 22) -- tighter to U4 OUT pin
     comps.append(ComponentDef(
-        ref="C2", x=7.0, y=24.0, value="10uF",
+        ref="C2", x=10.0, y=22.0, value="10uF",
         pads=make_cap_pads("3V3", "GND"),
     ))
 

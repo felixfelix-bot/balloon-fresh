@@ -1,4 +1,4 @@
-(pcb /tmp/clean_export.dsn
+(pcb "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/v1_clean_export.dsn"
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)
@@ -298,7 +298,7 @@
       (pins U-6 R3-2 R4-1)
     )
     (net STATUS_LED
-      (pins U-9 R5-1 TP5-1)
+      (pins R5-1 TP5-1)
     )
     (net LED_ANODE
       (pins D2-2 R5-2)
