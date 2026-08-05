@@ -38,11 +38,36 @@ No kanban task or other delegate may touch this file until the owner completes.
 Gate 0 (PRE): Model available? curl test before dispatch
 Gate 1: Schematic loads in kicad-cli (exit 0)
 Gate 2: ERC < 10 violations
+Gate 2.5 (PLACEMENT): All footprints inside board outline, 0 courtyard overlaps,
+     0 shorting_items BEFORE any routing. Run kicad-cli pcb drc and verify
+     shorting_items=0 before routing phase begins. If placement fails this gate,
+     DO NOT ROUTE — fix placement first.
 Gate 3: PCB has > 10 footprints (NOT EMPTY)
 Gate 4: DRC < 20 violations, 0 shorting_items
 Gate 5: F_Cu.gtl > 1KB, B_Cu.gbl > 1KB
 Gate 6: Board thickness = 0.6mm
+Gate 7: All footprints within board outline (max X < board_width, max Y < board_height)
 ```
+
+### Gate 2.5 — Placement Overlap Check (CRITICAL)
+
+This gate is enforced AFTER placement, BEFORE routing. The board must pass
+this gate with ZERO routing (no tracks). If the placement itself creates
+shorts, no amount of routing will fix it.
+
+Check command:
+```python
+# After placement, before routing:
+# 1. Verify no footprint extends beyond board outline
+# 2. Run kicad-cli pcb drc — shorting_items must be 0
+# 3. courtyards_overlap must be 0
+```
+
+LESSON LEARNED (2026-08-05):
+- U1 (ESP32-C3, 28.6mm wide) and U2 (LR2021) physically overlapped
+- ANT1 extended 4.5mm past board edge
+- Multiple components outside 45x35mm outline
+- Routing cannot fix placement problems — shorts come from overlapping pads
 
 ### Dispatch mechanism selection:
 - **delegate_task (background)**: When I need the result to continue
