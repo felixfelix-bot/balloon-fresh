@@ -4,81 +4,12 @@
       "description": "Front solder mask aperture bridges items with different nets",
       "items": [
         {
-          "description": "Pad 1 [VCAP] of C1 on F.Cu",
-          "pos": {
-            "x": 9.5,
-            "y": 20.0
-          },
-          "uuid": "f0fc39cf-5ef7-498b-a58a-4cb6c0d2f27b"
-        },
-        {
-          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
-          "pos": {
-            "x": 10.1,
-            "y": 20.0
-          },
-          "uuid": "1373e722-dc4a-47a9-bb0c-456c3cb33178"
-        }
-      ],
-      "severity": "error",
-      "type": "solder_mask_bridge"
-    },
-    {
-      "description": "Front solder mask aperture bridges items with different nets",
-      "items": [
-        {
-          "description": "Pad 2 [GND] of C1 on F.Cu",
-          "pos": {
-            "x": 10.5,
-            "y": 20.0
-          },
-          "uuid": "248f3b9c-e98f-4543-958c-322a0b90f9d8"
-        },
-        {
-          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
-          "pos": {
-            "x": 10.1,
-            "y": 20.0
-          },
-          "uuid": "1373e722-dc4a-47a9-bb0c-456c3cb33178"
-        }
-      ],
-      "severity": "error",
-      "type": "solder_mask_bridge"
-    },
-    {
-      "description": "Front solder mask aperture bridges items with different nets",
-      "items": [
-        {
-          "description": "Pad GPIO6 [SPI_SCK] of U1 on F.Cu",
-          "pos": {
-            "x": 10.5,
-            "y": 15.5
-          },
-          "uuid": "d1dff6de-76ed-4930-91b3-d096dd1bb8d2"
-        },
-        {
-          "description": "Pad 3 [SPI_MISO] of U2 on F.Cu",
-          "pos": {
-            "x": 10.1,
-            "y": 16.0
-          },
-          "uuid": "935bccbf-9030-4486-afeb-5f66f67054b2"
-        }
-      ],
-      "severity": "error",
-      "type": "solder_mask_bridge"
-    },
-    {
-      "description": "Front solder mask aperture bridges items with different nets",
-      "items": [
-        {
           "description": "Pad 1 [3V3] of C2 on F.Cu",
           "pos": {
             "x": 9.5,
             "y": 22.0
           },
-          "uuid": "ecd91f7b-b73c-4ce4-b26b-d42f2ebe0fdd"
+          "uuid": "c65622c1-eb82-4600-a115-4b0f703555be"
         },
         {
           "description": "Pad 6 [SPI_NSS] of U2 on F.Cu",
@@ -86,7 +17,7 @@
             "x": 10.1,
             "y": 22.0
           },
-          "uuid": "a954f48a-c9ef-480e-a335-2603574bfb98"
+          "uuid": "44e4fa44-a1dd-492b-9cc9-c7133bed8d49"
         }
       ],
       "severity": "error",
@@ -101,7 +32,7 @@
             "x": 10.5,
             "y": 22.0
           },
-          "uuid": "12f90a20-7b0b-4be4-9e58-82963b4f4757"
+          "uuid": "90da2899-2f30-4598-8779-4921fcdda89d"
         },
         {
           "description": "Pad 6 [SPI_NSS] of U2 on F.Cu",
@@ -109,80 +40,80 @@
             "x": 10.1,
             "y": 22.0
           },
-          "uuid": "a954f48a-c9ef-480e-a335-2603574bfb98"
+          "uuid": "44e4fa44-a1dd-492b-9cc9-c7133bed8d49"
         }
       ],
       "severity": "error",
       "type": "solder_mask_bridge"
     },
     {
-      "description": "Items shorting two nets (nets VCAP and SPI_SCK)",
+      "description": "Front solder mask aperture bridges items with different nets",
       "items": [
-        {
-          "description": "Pad 1 [VCAP] of C1 on F.Cu",
-          "pos": {
-            "x": 9.5,
-            "y": 20.0
-          },
-          "uuid": "f0fc39cf-5ef7-498b-a58a-4cb6c0d2f27b"
-        },
-        {
-          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
-          "pos": {
-            "x": 10.1,
-            "y": 20.0
-          },
-          "uuid": "1373e722-dc4a-47a9-bb0c-456c3cb33178"
-        }
-      ],
-      "severity": "error",
-      "type": "shorting_items"
-    },
-    {
-      "description": "Items shorting two nets (nets GND and SPI_SCK)",
-      "items": [
-        {
-          "description": "Pad 2 [GND] of C1 on F.Cu",
-          "pos": {
-            "x": 10.5,
-            "y": 20.0
-          },
-          "uuid": "248f3b9c-e98f-4543-958c-322a0b90f9d8"
-        },
-        {
-          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
-          "pos": {
-            "x": 10.1,
-            "y": 20.0
-          },
-          "uuid": "1373e722-dc4a-47a9-bb0c-456c3cb33178"
-        }
-      ],
-      "severity": "error",
-      "type": "shorting_items"
-    },
-    {
-      "description": "Items shorting two nets (nets SPI_SCK and SPI_MISO)",
-      "items": [
-        {
-          "description": "Pad GPIO6 [SPI_SCK] of U1 on F.Cu",
-          "pos": {
-            "x": 10.5,
-            "y": 15.5
-          },
-          "uuid": "d1dff6de-76ed-4930-91b3-d096dd1bb8d2"
-        },
         {
           "description": "Pad 3 [SPI_MISO] of U2 on F.Cu",
           "pos": {
             "x": 10.1,
             "y": 16.0
           },
-          "uuid": "935bccbf-9030-4486-afeb-5f66f67054b2"
+          "uuid": "d9948af5-7997-473e-a833-cd2ee5112dc4"
+        },
+        {
+          "description": "Pad GPIO6 [SPI_SCK] of U1 on F.Cu",
+          "pos": {
+            "x": 10.5,
+            "y": 15.5
+          },
+          "uuid": "47b9ad74-e19c-4dd6-90f0-187857f2b823"
         }
       ],
       "severity": "error",
-      "type": "shorting_items"
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
+          "pos": {
+            "x": 10.1,
+            "y": 20.0
+          },
+          "uuid": "1b25c02f-e2b3-4300-b3af-3976a67720ad"
+        },
+        {
+          "description": "Pad 1 [VCAP] of C1 on F.Cu",
+          "pos": {
+            "x": 9.5,
+            "y": 20.0
+          },
+          "uuid": "3c306134-4cbc-43da-af5f-8371fb249d07"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
+          "pos": {
+            "x": 10.1,
+            "y": 20.0
+          },
+          "uuid": "1b25c02f-e2b3-4300-b3af-3976a67720ad"
+        },
+        {
+          "description": "Pad 2 [GND] of C1 on F.Cu",
+          "pos": {
+            "x": 10.5,
+            "y": 20.0
+          },
+          "uuid": "7cd09b7a-354c-47f8-a828-b3ea0beb4860"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
     },
     {
       "description": "Items shorting two nets (nets 3V3 and SPI_NSS)",
@@ -193,7 +124,7 @@
             "x": 9.5,
             "y": 22.0
           },
-          "uuid": "ecd91f7b-b73c-4ce4-b26b-d42f2ebe0fdd"
+          "uuid": "c65622c1-eb82-4600-a115-4b0f703555be"
         },
         {
           "description": "Pad 6 [SPI_NSS] of U2 on F.Cu",
@@ -201,7 +132,7 @@
             "x": 10.1,
             "y": 22.0
           },
-          "uuid": "a954f48a-c9ef-480e-a335-2603574bfb98"
+          "uuid": "44e4fa44-a1dd-492b-9cc9-c7133bed8d49"
         }
       ],
       "severity": "error",
@@ -216,7 +147,7 @@
             "x": 10.5,
             "y": 22.0
           },
-          "uuid": "12f90a20-7b0b-4be4-9e58-82963b4f4757"
+          "uuid": "90da2899-2f30-4598-8779-4921fcdda89d"
         },
         {
           "description": "Pad 6 [SPI_NSS] of U2 on F.Cu",
@@ -224,7 +155,76 @@
             "x": 10.1,
             "y": 22.0
           },
-          "uuid": "a954f48a-c9ef-480e-a335-2603574bfb98"
+          "uuid": "44e4fa44-a1dd-492b-9cc9-c7133bed8d49"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_MISO and SPI_SCK)",
+      "items": [
+        {
+          "description": "Pad 3 [SPI_MISO] of U2 on F.Cu",
+          "pos": {
+            "x": 10.1,
+            "y": 16.0
+          },
+          "uuid": "d9948af5-7997-473e-a833-cd2ee5112dc4"
+        },
+        {
+          "description": "Pad GPIO6 [SPI_SCK] of U1 on F.Cu",
+          "pos": {
+            "x": 10.5,
+            "y": 15.5
+          },
+          "uuid": "47b9ad74-e19c-4dd6-90f0-187857f2b823"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_SCK and VCAP)",
+      "items": [
+        {
+          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
+          "pos": {
+            "x": 10.1,
+            "y": 20.0
+          },
+          "uuid": "1b25c02f-e2b3-4300-b3af-3976a67720ad"
+        },
+        {
+          "description": "Pad 1 [VCAP] of C1 on F.Cu",
+          "pos": {
+            "x": 9.5,
+            "y": 20.0
+          },
+          "uuid": "3c306134-4cbc-43da-af5f-8371fb249d07"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_SCK and GND)",
+      "items": [
+        {
+          "description": "Pad 5 [SPI_SCK] of U2 on F.Cu",
+          "pos": {
+            "x": 10.1,
+            "y": 20.0
+          },
+          "uuid": "1b25c02f-e2b3-4300-b3af-3976a67720ad"
+        },
+        {
+          "description": "Pad 2 [GND] of C1 on F.Cu",
+          "pos": {
+            "x": 10.5,
+            "y": 20.0
+          },
+          "uuid": "7cd09b7a-354c-47f8-a828-b3ea0beb4860"
         }
       ],
       "severity": "error",
@@ -241,7 +241,7 @@
             "x": 1.5998,
             "y": 28.4002
           },
-          "uuid": "50eaaf6c-3f23-48b3-acf2-4aeeec69fe38"
+          "uuid": "f78ae31f-6f0c-493c-857a-c55523513851"
         },
         {
           "description": "Pad 1 [3V3] of C2 on F.Cu",
@@ -249,7 +249,7 @@
             "x": 9.5,
             "y": 22.0
           },
-          "uuid": "ecd91f7b-b73c-4ce4-b26b-d42f2ebe0fdd"
+          "uuid": "c65622c1-eb82-4600-a115-4b0f703555be"
         }
       ],
       "severity": "error",
@@ -264,7 +264,7 @@
             "x": 8.95,
             "y": 18.75
           },
-          "uuid": "d930ae1e-df18-4286-9d5c-9ff4ade2c64d"
+          "uuid": "812394f2-756f-4f9f-9ea5-10ae4882061c"
         },
         {
           "description": "Pad 1 [3V3] of C2 on F.Cu",
@@ -272,7 +272,7 @@
             "x": 9.5,
             "y": 22.0
           },
-          "uuid": "ecd91f7b-b73c-4ce4-b26b-d42f2ebe0fdd"
+          "uuid": "c65622c1-eb82-4600-a115-4b0f703555be"
         }
       ],
       "severity": "error",
@@ -287,7 +287,7 @@
             "x": 8.95,
             "y": 18.75
           },
-          "uuid": "d930ae1e-df18-4286-9d5c-9ff4ade2c64d"
+          "uuid": "812394f2-756f-4f9f-9ea5-10ae4882061c"
         },
         {
           "description": "Track [3V3] on F.Cu, length 0.7509 mm",
@@ -295,7 +295,7 @@
             "x": 10.8509,
             "y": 12.0
           },
-          "uuid": "276b732b-abd3-45f1-8c21-ca2d3fe97bc1"
+          "uuid": "527612f4-061a-4548-bf16-9c7b1936ab2e"
         }
       ],
       "severity": "error",
@@ -305,12 +305,12 @@
       "description": "Missing connection between items",
       "items": [
         {
-          "description": "Pad VCC [3V3] of U1 on F.Cu",
+          "description": "Track [3V3] on F.Cu, length 0.0972 mm",
           "pos": {
-            "x": 15.5,
-            "y": 8.25
+            "x": 15.4313,
+            "y": 8.1813
           },
-          "uuid": "3c95f870-c2e9-4244-be5e-e82e49b71c16"
+          "uuid": "8db96741-4fd1-48ad-bbe0-c5c38ae5855f"
         },
         {
           "description": "Pad VCC [3V3] of FEM on F.Cu",
@@ -318,7 +318,7 @@
             "x": 40.0,
             "y": 25.0
           },
-          "uuid": "ebe515f1-97ea-47e2-921f-ab42ab6a52bb"
+          "uuid": "70498fe8-5741-453e-a207-efb8ec0fd37e"
         }
       ],
       "severity": "error",
@@ -328,12 +328,12 @@
       "description": "Missing connection between items",
       "items": [
         {
-          "description": "Track [GND] on F.Cu, length 0.9192 mm",
+          "description": "Track [GND] on F.Cu, length 0.8519 mm",
           "pos": {
-            "x": 4.15,
+            "x": 5.0019,
             "y": 31.35
           },
-          "uuid": "0df4e1b6-1e70-40c3-bd7f-d324c317f36b"
+          "uuid": "25af419f-fb6c-4d31-9dec-43e22bad8b2c"
         },
         {
           "description": "Pad 2 [GND] of U3 on F.Cu",
@@ -341,7 +341,7 @@
             "x": 3.3,
             "y": 28.0
           },
-          "uuid": "2b79c969-de1b-4d6d-afea-538b18a87592"
+          "uuid": "d301cce1-e22a-4dbe-93af-63f74827036a"
         }
       ],
       "severity": "error",
@@ -356,7 +356,7 @@
             "x": 8.0,
             "y": 17.25
           },
-          "uuid": "727fa813-ac51-4677-b219-1f629d2dbaff"
+          "uuid": "896c96f3-053e-4780-aaf9-ab9b138f0d4c"
         },
         {
           "description": "Pad 2 [GND] of C1 on F.Cu",
@@ -364,7 +364,7 @@
             "x": 10.5,
             "y": 20.0
           },
-          "uuid": "248f3b9c-e98f-4543-958c-322a0b90f9d8"
+          "uuid": "7cd09b7a-354c-47f8-a828-b3ea0beb4860"
         }
       ],
       "severity": "error",
@@ -374,12 +374,12 @@
       "description": "Missing connection between items",
       "items": [
         {
-          "description": "Track [GND] on F.Cu, length 2.9796 mm",
+          "description": "Track [GND] on F.Cu, length 4.9529 mm",
           "pos": {
-            "x": 12.0617,
-            "y": 28.9462
+            "x": 9.9548,
+            "y": 31.0531
           },
-          "uuid": "9de2280e-9fe6-4c5e-8d96-adf594aa08be"
+          "uuid": "de770f7f-52fd-4d31-b716-0b623afbc359"
         },
         {
           "description": "PTH pad 2 [GND] of C_CAP",
@@ -387,7 +387,7 @@
             "x": 12.5,
             "y": 37.0
           },
-          "uuid": "17eff1b9-98c2-4a4f-b162-9ee17608f04a"
+          "uuid": "9e7479a5-c839-4a33-882d-01cb39068a87"
         }
       ],
       "severity": "error",
@@ -397,12 +397,12 @@
       "description": "Missing connection between items",
       "items": [
         {
-          "description": "Track [GND] on F.Cu, length 0.1414 mm",
+          "description": "Pad 2 [GND] of U2 on F.Cu",
           "pos": {
-            "x": 10.0,
-            "y": 13.9
+            "x": 10.1,
+            "y": 14.0
           },
-          "uuid": "65c1be1f-d65f-4708-bebb-7a81d5149269"
+          "uuid": "251dfb53-2d14-4481-9d3e-c48d49986b29"
         },
         {
           "description": "Pad 2 [GND] of U4 on F.Cu",
@@ -410,7 +410,7 @@
             "x": 8.0,
             "y": 17.25
           },
-          "uuid": "727fa813-ac51-4677-b219-1f629d2dbaff"
+          "uuid": "896c96f3-053e-4780-aaf9-ab9b138f0d4c"
         }
       ],
       "severity": "error",
@@ -425,7 +425,7 @@
             "x": 10.5,
             "y": 20.0
           },
-          "uuid": "248f3b9c-e98f-4543-958c-322a0b90f9d8"
+          "uuid": "7cd09b7a-354c-47f8-a828-b3ea0beb4860"
         },
         {
           "description": "Pad 2 [GND] of C2 on F.Cu",
@@ -433,7 +433,7 @@
             "x": 10.5,
             "y": 22.0
           },
-          "uuid": "12f90a20-7b0b-4be4-9e58-82963b4f4757"
+          "uuid": "90da2899-2f30-4598-8779-4921fcdda89d"
         }
       ],
       "severity": "error",
@@ -448,7 +448,7 @@
             "x": 10.5,
             "y": 22.0
           },
-          "uuid": "12f90a20-7b0b-4be4-9e58-82963b4f4757"
+          "uuid": "90da2899-2f30-4598-8779-4921fcdda89d"
         },
         {
           "description": "Track [GND] on F.Cu, length 1.9617 mm",
@@ -456,7 +456,7 @@
             "x": 12.0617,
             "y": 26.0
           },
-          "uuid": "8ef6568e-e109-4852-9e73-306bdd2cb53d"
+          "uuid": "a80dd0b0-23ac-46a1-841a-a500f2ff8bf9"
         }
       ],
       "severity": "error",
@@ -471,15 +471,15 @@
             "x": 15.5,
             "y": 9.75
           },
-          "uuid": "4bc5dc25-29c1-4407-b1b3-bf3ef72659bd"
+          "uuid": "afc0496e-8ac9-4121-88b5-c4813aafe04c"
         },
         {
-          "description": "Pad 1 [GND] of R_PD on F.Cu",
+          "description": "Track [GND] on F.Cu, length 0.9000 mm",
           "pos": {
             "x": 10.0,
-            "y": 13.0
+            "y": 13.9
           },
-          "uuid": "f2cbd0cf-1a98-4965-93e9-b39f9fa44763"
+          "uuid": "d5426af0-d4be-49cb-9e84-64825a3f68d6"
         }
       ],
       "severity": "error",
@@ -494,7 +494,7 @@
             "x": 41.5,
             "y": 25.0
           },
-          "uuid": "0d2b1c43-a784-4887-850d-08facd780558"
+          "uuid": "4520228b-9539-401a-bfc0-a6a9b914488b"
         },
         {
           "description": "Track [GND] on F.Cu, length 2.6000 mm",
@@ -502,7 +502,7 @@
             "x": 29.9,
             "y": 24.0
           },
-          "uuid": "4a461ecf-eb5e-425b-9b77-e4f4bfac6ea4"
+          "uuid": "c98ef49c-59ae-4f03-82f2-1a3faf860dea"
         }
       ],
       "severity": "error",
@@ -517,7 +517,7 @@
             "x": 44.5,
             "y": 30.0
           },
-          "uuid": "0cf7033c-a9c1-4341-9890-3c237db4af09"
+          "uuid": "d83e49c4-7db7-4b18-8086-23ecd0407f5e"
         },
         {
           "description": "Pad GND [GND] of FEM on F.Cu",
@@ -525,7 +525,7 @@
             "x": 41.5,
             "y": 25.0
           },
-          "uuid": "0d2b1c43-a784-4887-850d-08facd780558"
+          "uuid": "4520228b-9539-401a-bfc0-a6a9b914488b"
         }
       ],
       "severity": "error",
@@ -540,7 +540,7 @@
             "x": 10.1,
             "y": 20.0
           },
-          "uuid": "1373e722-dc4a-47a9-bb0c-456c3cb33178"
+          "uuid": "1b25c02f-e2b3-4300-b3af-3976a67720ad"
         },
         {
           "description": "Pad GPIO6 [SPI_SCK] of U1 on F.Cu",
@@ -548,7 +548,7 @@
             "x": 10.5,
             "y": 15.5
           },
-          "uuid": "d1dff6de-76ed-4930-91b3-d096dd1bb8d2"
+          "uuid": "47b9ad74-e19c-4dd6-90f0-187857f2b823"
         }
       ],
       "severity": "error",
@@ -563,7 +563,7 @@
             "x": 10.1,
             "y": 16.0
           },
-          "uuid": "935bccbf-9030-4486-afeb-5f66f67054b2"
+          "uuid": "d9948af5-7997-473e-a833-cd2ee5112dc4"
         },
         {
           "description": "Pad 2 [SPI_MISO] of R_PD on F.Cu",
@@ -571,7 +571,7 @@
             "x": 11.0,
             "y": 13.0
           },
-          "uuid": "5773007e-99b9-4567-b4ac-883f560d04d1"
+          "uuid": "07fbbf7a-dca8-4bda-84ce-58a3735a3019"
         }
       ],
       "severity": "error",
@@ -586,7 +586,7 @@
             "x": 11.0,
             "y": 13.0
           },
-          "uuid": "5773007e-99b9-4567-b4ac-883f560d04d1"
+          "uuid": "07fbbf7a-dca8-4bda-84ce-58a3735a3019"
         },
         {
           "description": "Pad GPIO2 [SPI_MISO] of U1 on F.Cu",
@@ -594,7 +594,7 @@
             "x": 8.5,
             "y": 11.25
           },
-          "uuid": "b1a97c78-6363-4672-9bb6-43868d650d57"
+          "uuid": "4a089230-07c6-4454-b066-f7604a283f8a"
         }
       ],
       "severity": "error",
@@ -609,7 +609,7 @@
             "x": 10.1,
             "y": 22.0
           },
-          "uuid": "a954f48a-c9ef-480e-a335-2603574bfb98"
+          "uuid": "44e4fa44-a1dd-492b-9cc9-c7133bed8d49"
         },
         {
           "description": "Pad GPIO10 [SPI_NSS] of U1 on F.Cu",
@@ -617,7 +617,7 @@
             "x": 16.5,
             "y": 15.5
           },
-          "uuid": "1cc362f1-f36c-4223-a15d-3bf24c3ec6d2"
+          "uuid": "da1249c2-acfa-45f3-a143-64ed0b21ed03"
         }
       ],
       "severity": "error",
@@ -632,7 +632,7 @@
             "x": 8.5,
             "y": 14.25
           },
-          "uuid": "8ddac855-e716-4d79-b8fe-398fb81e25b2"
+          "uuid": "c8f1c914-da1d-4c22-83f7-600923f8b43d"
         },
         {
           "description": "Pad 7 [LR2021_BUSY] of U2 on F.Cu",
@@ -640,7 +640,7 @@
             "x": 10.1,
             "y": 24.0
           },
-          "uuid": "a58e592d-a354-403f-82e3-c79d0353ddb8"
+          "uuid": "40b36852-dc7d-45f4-a64e-b9c034a38197"
         }
       ],
       "severity": "error",
@@ -655,7 +655,7 @@
             "x": 8.5,
             "y": 15.75
           },
-          "uuid": "dd9a8029-e122-4efb-a604-781a337d0db9"
+          "uuid": "8f99f858-afec-4066-8f64-2e4ab3fc1c5c"
         },
         {
           "description": "Pad 13 [LR2021_DIO9] of U2 on F.Cu",
@@ -663,7 +663,7 @@
             "x": 29.9,
             "y": 18.0
           },
-          "uuid": "629b9077-192f-437b-9e4a-4244074251d8"
+          "uuid": "1f931bbf-6835-4bf7-beb1-99d9ff305e5e"
         }
       ],
       "severity": "error",
@@ -678,7 +678,7 @@
             "x": 15.0,
             "y": 15.5
           },
-          "uuid": "7b4428e0-03bb-4417-8e49-fc6c8a94baee"
+          "uuid": "805898a0-6c1a-4550-b890-63024501a083"
         },
         {
           "description": "Pad 1 [STATUS_LED] of R_LED on F.Cu",
@@ -686,7 +686,7 @@
             "x": 19.5,
             "y": 6.0
           },
-          "uuid": "69878e8b-1d63-4b45-8701-d6ad420e89ae"
+          "uuid": "553bdf21-a5a9-4878-b377-ff1c2bc6eb43"
         }
       ],
       "severity": "error",
@@ -701,7 +701,7 @@
             "x": 7.5,
             "y": 37.0
           },
-          "uuid": "25c6336e-df0d-495e-9508-ef83c1fdf0ab"
+          "uuid": "0f7e817a-a7fe-4416-ba0f-5bf0f8528177"
         },
         {
           "description": "Pad 1 [VCAP] of C1 on F.Cu",
@@ -709,7 +709,7 @@
             "x": 9.5,
             "y": 20.0
           },
-          "uuid": "f0fc39cf-5ef7-498b-a58a-4cb6c0d2f27b"
+          "uuid": "3c306134-4cbc-43da-af5f-8371fb249d07"
         }
       ],
       "severity": "error",
@@ -724,7 +724,7 @@
             "x": 8.95,
             "y": 17.25
           },
-          "uuid": "fa03d15e-2063-497f-9f2e-4aeee957bc53"
+          "uuid": "0f95dca1-d788-433e-925d-446b5f05fb51"
         },
         {
           "description": "Track [VCAP] on F.Cu, length 0.0707 mm",
@@ -732,7 +732,7 @@
             "x": 7.0,
             "y": 17.3
           },
-          "uuid": "9bb49bb3-7d16-4ae7-8f32-f087b5c79160"
+          "uuid": "4d4c65f5-7966-45c0-a4eb-076bd561a477"
         }
       ],
       "severity": "error",
@@ -747,7 +747,7 @@
             "x": 9.5,
             "y": 20.0
           },
-          "uuid": "f0fc39cf-5ef7-498b-a58a-4cb6c0d2f27b"
+          "uuid": "3c306134-4cbc-43da-af5f-8371fb249d07"
         },
         {
           "description": "Pad 3 [VCAP] of U4 on F.Cu",
@@ -755,7 +755,7 @@
             "x": 8.95,
             "y": 17.25
           },
-          "uuid": "fa03d15e-2063-497f-9f2e-4aeee957bc53"
+          "uuid": "0f95dca1-d788-433e-925d-446b5f05fb51"
         }
       ],
       "severity": "error",
@@ -770,7 +770,7 @@
             "x": 10.1,
             "y": 28.0
           },
-          "uuid": "7966a201-dd04-45e0-b840-ec9dcef53004"
+          "uuid": "46df136b-9af7-452a-aebb-72e961ce3c79"
         },
         {
           "description": "Pad 1 [RF_SUB_868] of ANT1 on F.Cu",
@@ -778,7 +778,7 @@
             "x": 46.0,
             "y": 25.0
           },
-          "uuid": "01cf70fe-7e12-47d9-932b-7599f2180984"
+          "uuid": "c9a23e13-309a-4891-bb04-de823a3c8ee6"
         }
       ],
       "severity": "error",
@@ -793,7 +793,7 @@
             "x": 29.9,
             "y": 28.0
           },
-          "uuid": "2e9a2ce7-0249-452b-9421-b51216ab7160"
+          "uuid": "4cd7c1c9-57b1-4ad7-9771-c19cdd2d84d1"
         },
         {
           "description": "Pad 1 [RF_2G4_2400] of ANT2 on F.Cu",
@@ -801,7 +801,7 @@
             "x": 46.0,
             "y": 30.0
           },
-          "uuid": "35847c4c-ca63-479f-973f-8b07f71084f4"
+          "uuid": "d7989fd4-bac8-44b1-9409-e8b2083edbb6"
         }
       ],
       "severity": "error",
@@ -816,7 +816,7 @@
             "x": 1.8751,
             "y": 32.6249
           },
-          "uuid": "64826769-2fc4-4c58-a668-b2e3f7c93c6f"
+          "uuid": "3a0a7703-1314-4be9-9a88-efb4c35f702f"
         },
         {
           "description": "Pad 2 [VDIV_MID] of R_DIV1 on F.Cu",
@@ -824,7 +824,7 @@
             "x": 3.5,
             "y": 30.0
           },
-          "uuid": "ae533188-7e33-478b-94fc-883178b950a1"
+          "uuid": "e202115a-6ff0-4e72-bba3-084be1e34802"
         }
       ],
       "severity": "error",
