@@ -26,6 +26,110 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-range-tests] docs: discovery sync — 4 findings assessed, GPIO10 fix adopted, FLRC/secp/mesh i (2026-08-05) | tags: RADIO, PROTOCOL
+- **Commit:** `df9982c` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync — 4 findings assessed, GPIO10 fix adopted, FLRC/secp/mesh informational
+- **Relevance:** RADIO, PROTOCOL
+
+### [balloon-range-tests] fix: adopt GPIO10 collision fix (LED→GPIO18, FEM_TX→GPIO19) from balloon-hermes (2026-08-05) | tags: GENERAL
+- **Commit:** `311913f` by Felix
+- **Files:** tracker/firmware/main/Kconfig.projbuild, tracker/firmware/main/app_main.cpp
+- **Full message:** fix: adopt GPIO10 collision fix (LED→GPIO18, FEM_TX→GPIO19) from balloon-hermes
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: discovery sync 2026-08-05 — FLRC fixes synced, GPIO10 N/A, secp informatio (2026-08-05) | tags: RADIO
+- **Commit:** `b6b4588` by Felix
+- **Files:** docs/STATUS-balloon-speed-tests.md
+- **Full message:** docs: discovery sync 2026-08-05 — FLRC fixes synced, GPIO10 N/A, secp informational
+- **Relevance:** RADIO
+
+
+### [balloon-hermes] fix: relay mode build fixes — TransportError scope, API alignment (2026-08-05) | tags: FIRMWARE, PROTOCOL
+- **Commit:** `489123b` by Felix
+- **Files:** tracker/firmware/components/nostr_store/include/nostr_store.h, tracker/firmware/main/CMakeLists.txt, tracker/firmware/main/app_main.cpp (+3 more)
+- **Full message:** fix: relay mode build fixes — TransportError scope, API alignment
+- **Relevance:** FIRMWARE, PROTOCOL
+
+### [balloon-hermes] feat: FreeRTOS relay task architecture — radio_task, app_task, queue-based RX (2026-08-05) | tags: PROTOCOL
+- **Commit:** `1f4fbef` by Felix
+- **Files:** tracker/firmware/main/Kconfig.projbuild, tracker/firmware/main/app_main.cpp, tracker/firmware/main/app_task.cpp (+2 more)
+- **Full message:** feat: FreeRTOS relay task architecture — radio_task, app_task, queue-based RX
+- **Relevance:** PROTOCOL
+
+### [balloon-hermes] build: add secp256k1 component to tracker firmware (smoke test) (2026-08-05) | tags: FIRMWARE, TEST
+- **Commit:** `0829953` by Felix
+- **Files:** tracker/firmware/CMakeLists.txt, tracker/firmware/external/secp256k1, tracker/firmware/main/CMakeLists.txt
+- **Full message:** build: add secp256k1 component to tracker firmware (smoke test)
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-hermes] docs: FreeRTOS task architecture design — radio_task, app_task, main_task (2026-08-05) | tags: GENERAL
+- **Commit:** `ce75512` by Felix
+- **Files:** docs/coordination/ARCHITECTURE-FREERTOS-TASKS.md
+- **Full message:** docs: FreeRTOS task architecture design — radio_task, app_task, main_task
+- **Relevance:** GENERAL
+
+### [balloon-hermes] fix: GPIO10 collision (LED vs LR2021 NSS) + GPS/FEM GPIO1 collision (2026-08-05) | tags: RADIO
+- **Commit:** `f926dc9` by Felix
+- **Files:** tracker/firmware/main/Kconfig.projbuild, tracker/firmware/main/app_main.cpp
+- **Full message:** fix: GPIO10 collision (LED vs LR2021 NSS) + GPS/FEM GPIO1 collision
+- **Relevance:** RADIO
+
+### [balloon-hermes] plan: integration plan V2 — consultant corrections applied (2026-08-05) | tags: GENERAL
+- **Commit:** `def9fbc` by Felix
+- **Files:** docs/coordination/INTEGRATION-PLAN-V2.md
+- **Full message:** plan: integration plan V2 — consultant corrections applied
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: consultant review V2 — 3 critical findings, revised integration plan (2026-08-05) | tags: GENERAL
+- **Commit:** `774aff9` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V2.md
+- **Full message:** docs: consultant review V2 — 3 critical findings, revised integration plan
+- **Relevance:** GENERAL
+
+### [balloon-hermes] plan: integration plan for first unified balloon firmware image (2026-08-05) | tags: GENERAL
+- **Commit:** `57acb98` by Felix
+- **Files:** docs/coordination/INTEGRATION-PLAN-FIRST-UNIFIED-IMAGE.md
+- **Full message:** plan: integration plan for first unified balloon firmware image
+- **Relevance:** GENERAL
+
+### [balloon-hermes] chore: commit pending track work — FLRC fixes, board lock tooling, coordination  (2026-08-05) | tags: RADIO
+- **Commit:** `0292aec` by Felix
+- **Files:** BOARD_LOCK_DELIVERABLES.md, FLRC_RP2040_FIXES_SUMMARY.md, Makefile (+9 more)
+- **Full message:** chore: commit pending track work — FLRC fixes, board lock tooling, coordination docs
+- **Relevance:** RADIO
+
+### [balloon-hermes] docs: comprehensive consultant review package — all 9 tracks assessed, 210 tests (2026-08-05) | tags: GENERAL
+- **Commit:** `c9b92aa` by Felix
+- **Files:** docs/coordination/CONSULTANT-PROJECT-REVIEW.md
+- **Full message:** docs: comprehensive consultant review package — all 9 tracks assessed, 210 tests, secp measured
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat: mesh baseline build verified + secp measurement test + tollgate payment te (2026-08-05) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `8aaa0bb` by Felix
+- **Files:** firmware/blossom-server/partitions.csv, firmware/tests/secp_test/CMakeLists.txt, firmware/tests/secp_test/main/CMakeLists.txt (+5 more)
+- **Full message:** feat: mesh baseline build verified + secp measurement test + tollgate payment tests
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-hermes] docs: autonomous execution plan v2 — consultant corrections applied, 5 tasks rem (2026-08-05) | tags: GENERAL
+- **Commit:** `e5e7a34` by Felix
+- **Files:** docs/coordination/PLAN-AUTONOMOUS-EXECUTION.md
+- **Full message:** docs: autonomous execution plan v2 — consultant corrections applied, 5 tasks removed/rescoped
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: consultant review of autonomous execution plan — 5 tasks redundant, condit (2026-08-05) | tags: GENERAL
+- **Commit:** `c661f62` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW.md
+- **Full message:** docs: consultant review of autonomous execution plan — 5 tasks redundant, conditional go
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: autonomous execution plan — host-side work requiring no Felix action (2026-08-05) | tags: GENERAL
+- **Commit:** `1ed42ba` by Felix
+- **Files:** docs/coordination/PLAN-AUTONOMOUS-EXECUTION.md
+- **Full message:** docs: autonomous execution plan — host-side work requiring no Felix action
+- **Relevance:** GENERAL
+
+
 ### [balloon-hermes] docs: consultant project review — comprehensive status of all 9 tracks for exter (2026-08-05) | tags: GENERAL
 - **Commit:** `ba82e1e` by Felix
 - **Files:** docs/coordination/CONSULTANT-PROJECT-REVIEW.md
