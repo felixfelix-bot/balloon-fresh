@@ -2,9 +2,10 @@
 
 **Date:** 2026-08-05  
 **Author:** Senior PCB Design Automation Engineer  
-**Status:** READY FOR CONSULTANT REVIEW  
+**Status:** CONSULTANT-REVIEWED — READY FOR EXECUTION  
 **Branch:** `autonomous/mesh-baseline`  
-**Repo:** `~/repos/balloon-fresh`
+**Repo:** `~/repos/balloon-fresh`  
+**Review:** `CONSULTANT-PLAN-REVIEW-V7.md` (2026-08-05, APPROVE-WITH-CHANGES)
 
 ---
 
@@ -12,7 +13,7 @@
 
 This plan covers the complete pipeline from the current state (Freerouting DSN output with 96 wires, 19/20 nets routed) to a JLCPCB-orderable PCB with minimum DRC violations. The primary blocker is 181 zero-length tracks from a broken DSN→KiCad import. Once fixed, the remaining violations are a mix of routing issues (clearance, edge clearance, shorts) and pre-existing design issues (footprint mismatch, text height/thickness, solder mask bridge).
 
-**Starting state:** 405 DRC violations, 68 unconnected  
+**Starting state:** 405 DRC violations, 68 unconnected (pad-to-pad connection points across multiple nets; 1 unrouted net is RF_SUB_868)  
 **Target state:** <50 DRC violations (all non-fatal), 0 unconnected, gerbers exported
 
 ---
@@ -143,6 +144,8 @@ mkdir -p $GERBER_DIR
 ---
 
 ## Phase 1: Fix DSN→KiCad Track Import (30 min)
+
+**Worker:** `worker-balloon`
 
 ### Problem
 
@@ -539,6 +542,7 @@ for t, c in types.most_common():
 
 ## Phase 2: DRC Violation Reduction (90 min)
 
+**Worker:** `worker-balloon`  
 **Target:** <50 violations, all non-fatal (no shorts, no clearance on signal nets)
 
 ### 2.1 Categorize Remaining Violations
@@ -952,7 +956,55 @@ print(f'Non-fatal violations: {len(non_fatal)}')
 
 ---
 
+## Quality Gates
+
+Each phase has a mandatory quality gate that must pass before proceeding to the next phase. `worker-inspector` reviews DRC output after Phase 2 and Phase 4.
+
+### Gate 1: After Phase 1 (DSN Import Fix)
+- **Reviewer:** `worker-balloon` (self-check)
+- DRC must be < 230 violations (track_dangling eliminated)
+- Zero-length tracks filtered (~181 removed)
+- `hub_board_v1_final.kicad_pcb` saved successfully
+
+### Gate 2: After Phase 2 (DRC Reduction)
+- **Reviewer:** `worker-inspector` (mandatory review)
+- DRC must be < 50 violations
+- `shorting_items` = 0
+- `clearance` violations = 0
+- No fatal violations (shorts/clearance on signal nets)
+
+### Gate 3: After Phase 3 (RF Antenna Trace)
+- **Reviewer:** `worker-balloon` (self-check)
+- `RF_SUB_868` connected (0 unconnected items for this net)
+- DRC unchanged from Phase 2 (no new violations from RF trace)
+- RF trace is on F.Cu, 0.8mm wide
+
+### Gate 4: After Phase 4 (Gerber Export)
+- **Reviewer:** `worker-inspector` (mandatory review)
+- All Gerber files exist and are > 100 bytes
+- Final DRC < 50 violations, 0 fatal
+- `hub_board_v1_gerbers.zip` created
+- JLCPCB order-ready confirmed
+
+### Gate 5: After Phase 5 (Firmware GPIO)
+- **Reviewer:** `worker-balloon` (self-check)
+- `idf.py build` succeeds without errors
+- LED on GPIO9 (verified in source)
+- FEM disabled (CONFIG_ENABLE_FEM=n, FEM_TX_PIN=-1, FEM_RX_PIN=-1)
+- ADC guarded: `SUPERCAP_MONITORING` not defined, ADC reads compiled out
+- GPS TX on GPIO0 verified unaffected
+
+### Gate 6: After Phase 6 (Commit & Push)
+- **Reviewer:** `worker-balloon` (self-check)
+- `git status` clean (all changes committed)
+- Pushed to `github/autonomous/mesh-baseline`
+- Commit message includes GPIO change summary and ADC resolution
+
+---
+
 ## Phase 3: RF Antenna Trace — Manual Routing (30 min)
+
+**Worker:** `worker-balloon`
 
 ### 3.1 Identify RF Trace Path
 
@@ -961,6 +1013,8 @@ The `RF_SUB_868` net connects the LR2021 module's sub-GHz antenna output (pad 9)
 - On F.Cu (top layer, same side as LR2021)
 - 0.8mm wide (impedance control for 868 MHz)
 - No vias (direct connection on top layer)
+
+**Impedance note:** 0.8mm trace on 0.6mm 2-layer board ≈ 50Ω microstrip (assuming ~0.3mm dielectric). Verify with JLCPCB stackup or mark as non-controlled impedance stub for V1.
 
 ### 3.2 Find Pad Coordinates
 
@@ -1123,6 +1177,8 @@ if rf_shorts:
 
 ## Phase 4: Gerber Export & JLCPCB Readiness (20 min)
 
+**Worker:** `worker-balloon`
+
 ### 4.1 Export Gerbers
 
 ```bash
@@ -1252,6 +1308,8 @@ echo "Upload this zip to JLCPCB: https://jlcpcb.com/"
 
 ## Phase 5: Firmware Pin Define Update (30 min)
 
+**Worker:** `worker-balloon` (with `#ifdef SUPERCAP_MONITORING` guard for ADC code)
+
 ### 5.1 Files Requiring Changes
 
 The following firmware files contain GPIO pin definitions that must be updated to match the new PCB GPIO assignments:
@@ -1263,12 +1321,12 @@ The following firmware files contain GPIO pin definitions that must be updated t
 | `tracker/firmware/main/app_main.cpp` | `"Scanning I2C bus (SDA=8, SCL=9)..."` | Remove or update | I2C dropped |
 | `tracker/firmware/main/app_main.cpp` | `sky66112_init(CONFIG_FEM_TX_PIN, CONFIG_FEM_RX_PIN)` | Already guarded by `CONFIG_ENABLE_FEM` | Verify CONFIG_ENABLE_FEM=n |
 | `tracker/firmware/main/Kconfig.projbuild` | `config FEM_TX_PIN default 19` | Remove or set to -1 | No GPIO19 on C3 |
-| `tracker/firmware/main/Kconfig.projbuild` | `config FEM_RX_PIN default 0` | Remove or set to -1 | FEM removed |
+| `tracker/firmware/main/Kconfig.projbuild` | `config FEM_RX_PIN default 0` | `default -1` | GPIO0 is GPS TX — must not use for FEM |
 | `tracker/firmware/main/Kconfig.projbuild` | `config ENABLE_BMP280 default y` | `default n` | BMP280 dropped for V1 |
 | `tracker/firmware/radio_test/main/main.cpp` | `#define LED_PIN 8` | `#define LED_PIN 9` | LED moved to GPIO9 |
 | `tracker/firmware/components/bmp280/bmp280.c` | Uses SDA/SCL pins passed from caller | No change needed (guarded by CONFIG_ENABLE_BMP280) | Already conditional |
 | `tracker/firmware/components/sky66112/sky66112.c` | Uses CONFIG_FEM_TX_PIN/RX_PIN | No change needed (guarded by CONFIG_ENABLE_FEM) | Already conditional |
-| `tracker/firmware/components/power_manager/power_manager.c` | `ADC_CHANNEL_0` on ADC_UNIT_1 | ⚠️ Verify pin mapping | See note below |
+| `tracker/firmware/components/power_manager/power_manager.c` | `ADC_CHANNEL_0` on ADC_UNIT_1 | Guard with `#ifdef SUPERCAP_MONITORING`, disable for V1 | ADC1_CH0=GPIO0=GPS TX conflict. No free ADC pin. |
 
 ### 5.2 Detailed Changes
 
@@ -1354,6 +1412,9 @@ config FEM_RX_PIN
     int "FEM RX_EN GPIO pin"
     default -1
     depends on ENABLE_FEM
+    help
+        GPIO0 is GPS TX — must NOT be used for FEM. Set to -1 to disable.
+        FEM removed for V1 flight.
 ```
 
 #### 5.2.3 `tracker/firmware/radio_test/main/main.cpp`
@@ -1369,28 +1430,32 @@ config FEM_RX_PIN
 
 #### 5.2.4 `tracker/firmware/components/power_manager/power_manager.c`
 
-**⚠️ CAVEAT — ADC Pin Mapping:**
+**⛔ RESOLVED — ADC Pin Conflict (Consultant Review V7, BLOCKER C1):**
 
-The power manager uses `ADC_CHANNEL_0` on `ADC_UNIT_1`. On the ESP32-C3, ADC1 Channel 0 maps to **GPIO0**, which is used for GPS UART TX. The FLIGHT-BOARD-PLAN specifies ADC on GPIO8, but GPIO8 is ADC1 Channel 0 on some ESP32-C3 variants and NOT an ADC pin on others.
+The power manager uses `ADC_CHANNEL_0` on `ADC_UNIT_1`. On the ESP32-C3, ADC1 Channel 0 maps to **GPIO0**, which is GPS UART TX. **GPIO8 is NOT ADC-capable on the ESP32-C3** — ADC1 only supports GPIO0-GPIO4 (channels 0-4), and all are allocated to GPS or LR2021 SPI.
 
-**Worker action:** Verify the ESP32-C3 ADC channel-to-GPIO mapping:
-```bash
-# Check ESP-IDF ADC channel definitions
-grep -r "ADC1.*CHANNEL.*0" /home/c03rad0r/.espressif/esp-idf/components/hal/include/
-# Or check the datasheet: ESP32-C3 ADC1 channels are GPIO0-GPIO4
+**Decision: DISABLE supercap monitoring for V1 flight.** Guard all ADC reads with `#ifdef SUPERCAP_MONITORING` and set `SUPERCAP_ADC_CHANNEL` to an unused/invalid state.
+
+**Worker action:**
+```c
+// In power_manager.c — wrap ADC code with #ifdef guard:
+//
+// #ifdef SUPERCAP_MONITORING
+//     // ADC read code here — only compiled if SUPERCAP_MONITORING is defined
+//     adc_oneshot_read(adc_handle, SUPERCAP_ADC_CHANNEL, &adc_raw);
+// #else
+//     // Supercap monitoring disabled for V1 flight
+//     // ADC1_CH0 (GPIO0) conflicts with GPS TX — no free ADC pin available
+//     ESP_LOGI(TAG, "Supercap monitoring disabled (V1: no free ADC pin)");
+// #endif
+//
+// Do NOT define SUPERCAP_MONITORING in CMakeLists.txt or sdkconfig for V1.
+// Set SUPERCAP_ADC_CHANNEL to -1 (unused) to prevent accidental reads.
 ```
 
-If `ADC_CHANNEL_0` maps to GPIO0 (conflicting with GPS TX), the power manager needs to use a different channel or the ADC pin needs to move. This is a **consultant decision** — flag it for review. The PCB assigns ADC to GPIO8, which may require `ADC1_CHANNEL_4` (GPIO4) or a different approach.
-
-**Possible fix if GPIO8 is not an ADC pin:**
-```c
-// Option A: Move ADC to GPIO4 (ADC1_CH4) — but GPIO4 is LR2021 BUSY
-// Option B: Use ADC2 (if available, but shared with WiFi)
-// Option C: Drop ADC for V1 (sacrifice supercap monitoring)
-// Option D: Verify that ESP32-C3 Mini V1 module exposes ADC on a usable pin
-
-// CONSULTANT: Verify which GPIO can actually do ADC on the C3 Mini V1 module
-// and update both the PCB net assignment and the firmware ADC channel.
+```bash
+# Verify SUPERCAP_MONITORING is NOT defined in build config:
+grep -r "SUPERCAP_MONITORING" tracker/firmware/ || echo "Confirmed: SUPERCAP_MONITORING not defined (V1 flies without supercap telemetry)"
 ```
 
 ### 5.3 Build Verification
@@ -1440,6 +1505,8 @@ grep -A1 'ENABLE_FEM' main/Kconfig.projbuild | head -5
 
 ## Phase 6: Commit & Push (10 min)
 
+**Worker:** `worker-balloon`
+
 ### 6.1 Stage All Changes
 
 ```bash
@@ -1473,12 +1540,17 @@ git commit -m "feat(pcb): auto-route hub board v1 with Freerouting + fix GPIO as
 - Export gerbers for JLCPCB ordering (2-layer, 0.6mm, 50×40mm)
 - Firmware: LED GPIO18→GPIO9, disable BMP280/FEM for V1 flight
 - Firmware: FEM_TX_PIN default -1 (GPIO19 doesn't exist on C3)
+- Firmware: FEM_RX_PIN default -1 (GPIO0 is GPS TX, must not use for FEM)
+- Firmware: Supercap monitoring disabled — ADC1_CH0=GPIO0 conflicts with GPS TX
+  ADC reads guarded with #ifdef SUPERCAP_MONITORING (V2 will redesign pinmap)
 
-GPIO changes (consultant-approved):
+GPIO changes (consultant-approved per REVIEW-V7):
 - LED: GPIO18→GPIO9 (sacrifice I2C SDA, drop BMP280)
-- FEM_TX: Remove (no GPIO19 on C3 Mini-1, no FEM for V1)
+- FEM_TX: Set to -1 (no GPIO19 on C3 Mini-1, no FEM for V1)
+- FEM_RX: Set to -1 (GPIO0 is GPS TX, must not conflict)
 - I2C_SCL: Remove (not enough pins for I2C)
-- Keep: ADC on GPIO8, GPS on GPIO0/1, SPI on GPIO2/3/4/5/6/7/10"
+- ADC/Supercap: DISABLED for V1 (GPIO8 NOT ADC-capable, GPIO0-4 all allocated)
+  See V2 Board Planning section for future supercap monitoring approach"
 ```
 
 ### 6.3 Push
@@ -1491,16 +1563,16 @@ git push origin autonomous/mesh-baseline
 
 ## Time Estimates & Dependencies
 
-| Phase | Task | Duration | Dependencies | Parallelizable? |
-|-------|------|----------|-------------|----------------|
-| Prereq | Toolchain verification | 10 min | None | No |
-| Phase 1 | Fix DSN→KiCad track import | 30 min | Prereq | No |
-| Phase 2 | DRC violation reduction | 90 min | Phase 1 | No |
-| Phase 3 | RF antenna trace (manual) | 30 min | Phase 2 | No |
-| Phase 4 | Gerber export | 20 min | Phase 3 | No |
-| Phase 5 | Firmware pin defines | 30 min | None (can start during Phase 2) | ✅ Yes |
-| Phase 6 | Commit & push | 10 min | All phases | No |
-| **Total** | | **~3.5 hours** | | |
+| Phase | Task | Duration | Worker | Quality Gate | Dependencies | Parallelizable? |
+|-------|------|----------|--------|-------------|-------------|----------------|
+| Prereq | Toolchain verification | 10 min | worker-balloon | — | None | No |
+| Phase 1 | Fix DSN→KiCad track import | 30 min | worker-balloon | Gate 1: DRC <230, track_dangling=0 | Prereq | No |
+| Phase 2 | DRC violation reduction | 90 min | worker-balloon | Gate 2 (inspector): DRC <50, 0 shorts, 0 clearance | Phase 1 | No |
+| Phase 3 | RF antenna trace (manual) | 30 min | worker-balloon | Gate 3: RF_SUB_868 connected, DRC unchanged | Phase 2 | No |
+| Phase 4 | Gerber export | 20 min | worker-balloon | Gate 4 (inspector): Gerbers exist, final DRC <50, JLCPCB-ready | Phase 3 | No |
+| Phase 5 | Firmware pin defines | 30 min | worker-balloon | Gate 5: Build OK, LED on GPIO9, FEM disabled, ADC guarded | None (can start during Phase 2) | ✅ Yes |
+| Phase 6 | Commit & push | 10 min | worker-balloon | Gate 6: git clean, pushed to github | All phases | No |
+| **Total** | | **~3.5 hours** | | | | |
 
 **Critical path:** Prereq → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 6  
 **Parallel:** Phase 5 (firmware) can run during Phase 2 (DRC reduction)
@@ -1639,7 +1711,8 @@ board.Add(via)
 - [ ] `ENABLE_BMP280` default changed from y → n in `Kconfig.projbuild`
 - [ ] `FEM_TX_PIN` default changed from 19 → -1 in `Kconfig.projbuild`
 - [ ] `idf.py build` succeeds without errors
-- [ ] ADC pin mapping verified or flagged for consultant review
+- [ ] ADC conflict resolved: supercap monitoring disabled (SUPERCAP_MONITORING not defined, ADC reads guarded with `#ifdef`)
+- [ ] GPS TX on GPIO0 verified unaffected (no ADC reads on ADC1_CH0)
 
 ### Phase 6 Complete
 - [ ] All changes staged with `git add`
@@ -1681,7 +1754,7 @@ board.Add(via)
 | GPIO5 | LR2021_IRQ | LR2021 DIO9 interrupt | U2 pin 15 | Flight-critical |
 | GPIO6 | SPI_SCK | LR2021 SPI clock | U2 pin 5 | Flight-critical |
 | GPIO7 | SPI_MOSI | LR2021 SPI MOSI | U2 pin 4 | Flight-critical |
-| GPIO8 | ADC | Supercap voltage divider | — | ⚠️ Verify ADC channel mapping |
+| GPIO8 | — | Unassigned (was planned for ADC) | — | ⛔ GPIO8 NOT ADC-capable on ESP32-C3. V1 flies without supercap telemetry. See V2 Board Planning. |
 | GPIO9 | STATUS_LED | Status LED | TP5/D2 | **CHANGED** (was I2C SDA) |
 | GPIO10 | SPI_NSS | LR2021 SPI chip select | U2 pin 6 | Flight-critical |
 
@@ -1722,5 +1795,33 @@ Violations that **MUST be fixed** before ordering:
 | `copper_edge_clearance` | 58 | Tracks too close to edge | **Phase 2.2** |
 | `shorting_items` | 15 | Track collisions | **Phase 2.3** |
 | `clearance` | 8 | Track-to-track spacing | **Phase 2.4** |
-| `unconnected_items` | 68 | Incomplete routing | **Phase 2.5 + Phase 3** |
+| `unconnected_items` | 68 | Incomplete routing (pad-to-pad connections across multiple nets) | **Phase 2.5 + Phase 3** |
 | **Total must-fix** | **330** | | |
+
+---
+
+## V2 Board Planning (Future Task — Not Blocking V1)
+
+The following items are deferred to V2 board revision. **V1 flies without supercap telemetry.** V2 is a future task and does NOT block V1 execution.
+
+### V2 Pin Map Redesign
+- **Problem:** ESP32-C3 ADC1 only supports GPIO0-GPIO4 (channels 0-4). All are allocated to GPS UART (GPIO0/1) or LR2021 SPI (GPIO2-4). There is no free ADC-capable pin for supercap voltage monitoring.
+- **V2 approach:** Redesign the pinmap to include an ADC-capable pin for supercap monitoring. Options:
+  - Free up a GPIO0-4 pin by reassigning its function to a higher GPIO
+  - Use a different C3 module variant that exposes additional ADC pins
+  - Add an external I2C ADC (e.g., ADS1115) on the I2C bus (requires freeing SDA/SCL pins)
+
+### V2 Supercap Monitoring
+- If using internal ADC: assign `SUPERCAP_ADC_CHANNEL` to the freed ADC1 channel, define `SUPERCAP_MONITORING` in CMakeLists.txt
+- If using external ADS1115: implement I2C ADC read in `power_manager.c`, connect ADS1115 to I2C bus alongside any other I2C sensors
+- Re-enable `SUPERCAP_MONITORING` define in build config
+
+### V2 I2C Bus
+- If BMP280 or other I2C sensors are re-added, SDA/SCL pins must be reassigned (GPIO9 is LED in V1)
+- Consider using GPIO8 (currently unassigned) for I2C SDA if it can be freed from other functions
+
+### V2 FEM (SKY66112)
+- If FEM is re-enabled, FEM_TX_PIN and FEM_RX_PIN must use valid, non-conflicting GPIOs
+- Current defaults of -1 prevent accidental conflicts
+
+**Status:** V2 is a future design task. Do NOT block V1 execution on any V2 items.
