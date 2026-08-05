@@ -199,3 +199,17 @@ Recommendation: Depends on RAM measurement. If blossom+mesh fits in 400KB SRAM, 
 4. **finish_2layer.py one-shot tool** — `INFORMATIONAL`. Power routing + outline + gerber automation.
 
 No action for blossom. PCB hardware track scope only.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: C3 flight PCB)
+
+2 findings. Both INFORMATIONAL for blossom firmware. BUT confirms C3 flight path.
+
+1. **C3 flight PCB — collision-aware routing, gerbers exported (commit eacc32e)** — `INFORMATIONAL`
+   - 80 tracks, 26 vias, gerbers exported. C3-specific flight board design.
+   - Confirms V1 flight is ESP32-C3 path. Reinforces my pending architecture escalation.
+
+2. **C3 flight PCB — footprint placement WIP (commit 71a2ba4)** — `INFORMATIONAL`
+   - 20 footprints placed, routing incomplete. Earlier iteration of above.
+   - No blossom impact.
+
+Note: C3 flight PCB progression confirms my architecture escalation is still relevant and unanswered.
