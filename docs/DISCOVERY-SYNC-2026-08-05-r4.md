@@ -29,3 +29,14 @@ No action required.
 | 9 | V2-ADC routing WIP + finish_routing.py | HARDWARE, PROTOCOL | NONE — PCB tooling |
 
 No action required.
+
+## Addendum 2 — 4 more findings (PCB routing pipeline)
+
+| # | Finding | Tags | FIPS Impact |
+|---|---------|------|-------------|
+| 10 | 4-layer scripts + DSN/SES files | HARDWARE, PROTOCOL | NONE — PCB tooling |
+| 11 | kimi-k3 2-layer power routing scripts | HARDWARE, PROTOCOL | NONE — PCB tooling |
+| 12 | V2-ADC 2-layer FINAL gerbers | HARDWARE, PROTOCOL | NONE — PCB tooling |
+| 13 | finish_2layer.py one-shot routing | HARDWARE, PROTOCOL | NONE — PCB tooling |
+
+No action required. PCB manufacturing pipeline. Zero FIPS scope.
