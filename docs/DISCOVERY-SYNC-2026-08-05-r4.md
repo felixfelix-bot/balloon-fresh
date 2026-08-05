@@ -21,3 +21,11 @@ Entirely PCB design + hardware tooling findings. Zero FIPS firmware/transport/pr
 One useful confirmation: ESP32-C3 MINI-1 pinout verified — our LR2021 SPI pin assignments (from lr2021_spi.h) are all valid on the MINI-1 module. GPIO8 LED choice confirmed safe (no ADC needed for FIPS).
 
 No action required.
+## Addendum — 2 more findings (V2-ADC routing scripts)
+
+| # | Finding | Tags | FIPS Impact |
+|---|---------|------|-------------|
+| 8 | V2-ADC board regenerate + routing scripts | HARDWARE, PROTOCOL | NONE — PCB tooling |
+| 9 | V2-ADC routing WIP + finish_routing.py | HARDWARE, PROTOCOL | NONE — PCB tooling |
+
+No action required.
