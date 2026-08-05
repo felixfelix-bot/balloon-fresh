@@ -195,8 +195,14 @@ Ground Station                   Balloon (L7: TollGate)
 - **Impact on tollgate:** Zero.
 - **Action:** None.
 
+## Discovery Sync (2026-08-05 batch 8) — 2 findings, both HARDWARE/PCB
+
+### Findings 27-28: PCB placement overlap check gates (Gate 0, Gate 2.5)
+- **Relevance:** NONE for tollgate. PCB QA workflow.
+- **Impact on tollgate:** Zero.
+- **Action:** None.
+
 ## Next Steps
-1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
 3. Implement nucula wallet spend_proofs()
 4. Write unit tests for payment protocol encode/decode
