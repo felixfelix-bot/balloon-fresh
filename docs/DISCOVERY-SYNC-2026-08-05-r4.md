@@ -40,3 +40,12 @@ No action required.
 | 13 | finish_2layer.py one-shot routing | HARDWARE, PROTOCOL | NONE — PCB tooling |
 
 No action required. PCB manufacturing pipeline. Zero FIPS scope.
+
+## Addendum 3 — 2 more findings (C3 flight PCB)
+
+| # | Finding | Tags | FIPS Impact |
+|---|---------|------|-------------|
+| 14 | C3 flight PCB routing — 80 tracks, 26 vias | HARDWARE, PROTOCOL | NONE — PCB manufacturing |
+| 15 | C3 flight PCB WIP — 20 footprints, routing incomplete | HARDWARE, PROTOCOL | NONE — PCB manufacturing |
+
+No action required.
