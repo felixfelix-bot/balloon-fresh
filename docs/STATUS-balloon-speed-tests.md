@@ -95,3 +95,14 @@
 
 ### 17. Range-tests integration test plan — commit (balloon-range-tests) | HARDWARE, TEST
 - **Assessed:** Informational. Range-tests assessed same Phase 2-4 integration plan.
+
+## Discovery Sync Batch 5 (2026-08-05) — 3 findings
+
+### 18. 2-LAYER V2-ADC board + gerbers — commit (balloon-hermes) | HARDWARE, TEST
+- **Assessed:** N/A. PCB layout work for tracker V2-ADC board. No speed-tests impact.
+
+### 19. FreeRouting DSN artifacts + DRC snapshots — commit (balloon-hermes) | HARDWARE, TEST
+- **Assessed:** N/A. PCB routing tooling artifacts. No speed-tests impact.
+
+### 20. ESP32-C3 GPIO5/GPIO6 pad collision — commit (balloon-hermes) | HARDWARE, TEST
+- **Assessed:** N/A. PCB footprint pad collision on tracker board. Speed-test boards use breakout wiring (GPIO5=IRQ, GPIO6=SCK), not tracker PCB. Pin assignments unaffected.
