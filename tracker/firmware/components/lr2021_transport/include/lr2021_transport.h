@@ -136,14 +136,16 @@ public:
     /**
      * Receive data from the transport (stream interface).
      * Drains up to buf_len bytes from the RX framer. If no data is buffered,
-     * waits for the next packet (polls IRQ up to RADIO_TIMEOUT_MS).
+     * waits for the next packet (polls IRQ up to timeout_ms).
      *
-     * @param buf      Output buffer
-     * @param buf_len  Size of output buffer
-     * @param n_out    [out] Number of bytes received
+     * @param buf        Output buffer
+     * @param buf_len    Size of output buffer
+     * @param n_out      [out] Number of bytes received
+     * @param timeout_ms Maximum time to wait for data (default: RADIO_TIMEOUT_MS)
      * @return TransportError::Ok on success, Timeout if no data received
      */
-    TransportError recv(uint8_t* buf, size_t buf_len, size_t* n_out);
+    TransportError recv(uint8_t* buf, size_t buf_len, size_t* n_out,
+                        uint32_t timeout_ms = RADIO_TIMEOUT_MS);
 
     /**
      * Flush any pending TX data as a (possibly short) packet.
