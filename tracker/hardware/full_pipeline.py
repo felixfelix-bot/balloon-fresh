@@ -590,7 +590,11 @@ def create_footprint(board: pcbnew.BOARD, comp: ComponentDef,
             pad.SetDrillSize(pcbnew.VECTOR2I_MM(0.5, 0.5))
         else:
             pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
-            pad.SetLayer(pad_def.layer)
+            # KiCad 9: SetLayer() alone does not work for SMD pads.
+            # Must use SetLayerSet() with an LSET containing the target layer.
+            lset = pcbnew.LSET()
+            lset.AddLayer(pad_def.layer)
+            pad.SetLayerSet(lset)
 
         # Assign net
         if pad_def.net in nets_by_name:
@@ -711,25 +715,39 @@ def parse_board(board: pcbnew.BOARD, net_defs: dict) -> dict:
 # ============================================================
 
 def default_routing_strategy(nets: dict) -> list:
-    """Route power first (widest tracks), then short signal nets, then long ones."""
-    power_nets = []
-    signal_nets = []
-
+    """Route easy nets first (few pads, short distance), then power nets.
+    This prevents long power traces from blocking short signal routes."""
+    all_nets = []
     for code, net in nets.items():
-        if net.net_name in ("3V3", "GND", "VCC", "VBAT", "VCAP"):
-            power_nets.append(code)
-        else:
-            signal_nets.append(code)
+        # Compute total pad span (max distance between any 2 pads)
+        max_dist = 0
+        if len(net.pads) >= 2:
+            for i in range(len(net.pads)):
+                for j in range(i + 1, len(net.pads)):
+                    d = math.sqrt((net.pads[i].x_mm - net.pads[j].x_mm)**2 +
+                                  (net.pads[i].y_mm - net.pads[j].y_mm)**2)
+                    max_dist = max(max_dist, d)
+        all_nets.append((code, len(net.pads), max_dist))
 
-    signal_nets.sort(key=lambda c: len(nets[c].pads))
-    return power_nets + signal_nets
+    # Sort by: fewest pads first, then shortest span first
+    all_nets.sort(key=lambda t: (t[1], t[2]))
+    return [t[0] for t in all_nets]
 
 
 def assign_layers(nets: dict):
-    """Assign layers: power on B.Cu, signals on F.Cu."""
+    """Assign layers based on where the pads actually are.
+    SMD pads are on F_Cu, so most nets route on F_Cu.
+    Only route GND on B_Cu if it has thru-hole pads that are on both layers.
+    For prototype: route everything on F_Cu to avoid needing vias."""
     for code, net in nets.items():
-        if net.net_name in ("3V3", "GND"):
+        if net.net_name == "GND":
+            # GND has many thru-hole pads (ANT, SOLAR, C_CAP) on both layers
+            # Route on B_Cu to provide a ground plane effect
             net.layer = B_CU
+            net.width_mm = TRACK_WIDTH_POWER_MM
+        elif net.net_name == "3V3":
+            # 3V3 pads are all SMD on F_Cu — route on F_Cu
+            net.layer = F_CU
             net.width_mm = TRACK_WIDTH_POWER_MM
         elif net.net_name in ("VCAP", "SOLAR_IN"):
             net.layer = F_CU
@@ -779,29 +797,38 @@ class GridRouter:
                 self.block_pad(pad, net.net_code)
 
     def unblock_net_pads(self, net: NetInfo):
-        """Unblock pads belonging to this net so A* can route to them."""
+        """Unblock pads belonging to this net so A* can route to/from them.
+        Must unblock the SAME area that block_pad blocked (including the
+        1-cell margin), otherwise A* start/goal cells are surrounded by
+        a ring of blocked cells and no path can escape."""
         for pad in net.pads:
             layer = pad.layer if not pad.is_thru else net.layer
             layers = [F_CU, B_CU] if pad.is_thru else [layer]
             for layer_key in layers:
-                x0 = int((pad.x_mm - pad.width_mm / 2) / self.grid_mm)
-                x1 = int((pad.x_mm + pad.width_mm / 2) / self.grid_mm)
-                y0 = int((pad.y_mm - pad.height_mm / 2) / self.grid_mm)
-                y1 = int((pad.y_mm + pad.height_mm / 2) / self.grid_mm)
+                x0 = int((pad.x_mm - pad.width_mm / 2 - self.grid_mm) / self.grid_mm)
+                x1 = int((pad.x_mm + pad.width_mm / 2 + self.grid_mm) / self.grid_mm)
+                y0 = int((pad.y_mm - pad.height_mm / 2 - self.grid_mm) / self.grid_mm)
+                y1 = int((pad.y_mm + pad.height_mm / 2 + self.grid_mm) / self.grid_mm)
                 for x in range(max(0, x0), min(self.grid_w, x1)):
                     for y in range(max(0, y0), min(self.grid_h, y1)):
                         self.blocked[layer_key].discard((x, y))
 
-    def a_star(self, start, goal, layer) -> Optional[list]:
-        """A* pathfinding on the grid. Returns list of (x,y) grid cells or None."""
+    def a_star(self, start, goal, layer, max_explore=200000) -> Optional[list]:
+        """A* pathfinding on the grid. Returns list of (x,y) grid cells or None.
+        Uses 8-directional movement (orthogonal + diagonal) for better routing."""
         blocked = self.blocked[layer]
 
         def heuristic(a, b):
-            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+            # Octile distance for 8-directional movement
+            dx = abs(a[0] - b[0])
+            dy = abs(a[1] - b[1])
+            return max(dx, dy) + (1.414 - 1) * min(dx, dy)
 
         open_set = [(0, start)]
         came_from = {}
         g_score = {start: 0}
+        closed = set()
+        explored = 0
 
         while open_set:
             _, current = heapq.heappop(open_set)
@@ -814,7 +841,16 @@ class GridRouter:
                 path.reverse()
                 return path
 
-            for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            if current in closed:
+                continue
+            closed.add(current)
+            explored += 1
+            if explored > max_explore:
+                return None
+
+            # 8 directions: orthogonal (cost 1) + diagonal (cost ~1.414)
+            for dx, dy, cost in [(0, 1, 1), (0, -1, 1), (1, 0, 1), (-1, 0, 1),
+                                  (1, 1, 1.414), (1, -1, 1.414), (-1, 1, 1.414), (-1, -1, 1.414)]:
                 neighbor = (current[0] + dx, current[1] + dy)
                 if neighbor[0] < 0 or neighbor[0] >= self.grid_w:
                     continue
@@ -822,8 +858,14 @@ class GridRouter:
                     continue
                 if neighbor in blocked:
                     continue
+                # For diagonal moves, prevent cutting through blocked corners
+                if dx != 0 and dy != 0:
+                    if (current[0] + dx, current[1]) in blocked or (current[0], current[1] + dy) in blocked:
+                        continue
 
-                tentative_g = g_score[current] + 1
+                tentative_g = g_score[current] + cost
+                if neighbor in closed:
+                    continue
                 if neighbor not in g_score or tentative_g < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g
@@ -833,7 +875,9 @@ class GridRouter:
         return None
 
     def route_net(self, net: NetInfo) -> bool:
-        """Route a single net using A* with nearest-neighbor pad ordering."""
+        """Route a single net using A* with nearest-neighbor pad ordering.
+        On pair failure, skip that pair and try the next — partial routing
+        is better than no routing. Net is marked routed if >=1 pair succeeds."""
         if len(net.pads) < 2:
             return True
 
@@ -842,6 +886,7 @@ class GridRouter:
         pads = list(net.pads)
         routed_pads = [pads[0]]
         unrouted = pads[1:]
+        failed_pairs = 0
 
         while unrouted:
             best_dist = float('inf')
@@ -868,9 +913,12 @@ class GridRouter:
                 if path is not None:
                     route_layer = other_layer
                 else:
-                    print(f"  FAIL: net '{net.net_name}' "
+                    print(f"  SKIP: net '{net.net_name}' "
                           f"({src_pad.ref}.{src_pad.pad_num} -> {dst_pad.ref}.{dst_pad.pad_num})")
-                    return False
+                    failed_pairs += 1
+                    # Remove this destination from unrouted and try remaining
+                    unrouted.remove(dst_pad)
+                    continue
             else:
                 route_layer = net.layer
 
@@ -887,12 +935,22 @@ class GridRouter:
             routed_pads.append(dst_pad)
             unrouted.remove(dst_pad)
 
-        net.routed = True
-        print(f"  OK: '{net.net_name}' ({len(net.segments)} segments)")
-        return True
+        if net.segments:
+            net.routed = True
+            unconn = failed_pairs
+            if unconn > 0:
+                print(f"  OK: '{net.net_name}' ({len(net.segments)} segments, {unconn} pair(s) skipped)")
+            else:
+                print(f"  OK: '{net.net_name}' ({len(net.segments)} segments)")
+            return True
+        else:
+            print(f"  FAIL: net '{net.net_name}' — no pairs routable")
+            return False
 
     def _block_segment(self, p1, p2, layer):
-        """Block grid cells along a segment with clearance."""
+        """Block grid cells along a segment with clearance.
+        Use a 1-cell corridor (not 3-cell) to avoid saturating the grid
+        on a 500x400 board with 17 nets."""
         x0, y0 = p1
         x1, y1 = p2
         dx = abs(x1 - x0)
@@ -901,8 +959,9 @@ class GridRouter:
         for i in range(steps + 1):
             x = x0 + (x1 - x0) * i // steps
             y = y0 + (y1 - y0) * i // steps
-            for ox in range(-self.clearance_cells, self.clearance_cells + 1):
-                for oy in range(-self.clearance_cells, self.clearance_cells + 1):
+            # Only block the cell itself + immediate neighbors (3x3 max)
+            for ox in range(-1, 2):
+                for oy in range(-1, 2):
                     cx, cy = x + ox, y + oy
                     if 0 <= cx < self.grid_w and 0 <= cy < self.grid_h:
                         self.blocked[layer].add((cx, cy))
