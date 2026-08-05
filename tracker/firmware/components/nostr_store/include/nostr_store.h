@@ -39,6 +39,7 @@ extern "C" {
 typedef struct {
     uint8_t id[NOSTR_EVENT_ID_SIZE];
     uint8_t pubkey[NOSTR_PUBKEY_SIZE];
+    uint8_t sig[NOSTR_SIG_SIZE];
     uint32_t created_at;
     uint16_t kind;
     uint16_t content_len;
@@ -114,7 +115,7 @@ bool     nostr_store_is_duplicate(const nostr_store_t *store, const uint8_t *id)
 /* Serialization (binary — matches flash file format)                 */
 /*                                                                    */
 /* Layout:                                                            */
-/*   [32 id][32 pubkey][4 created_at BE][2 kind LE][2 clen LE]       */
+/*   [32 id][32 pubkey][64 sig][4 created_at BE][2 kind LE][2 clen LE] */
 /*   [clen bytes content][1 num_tags]                                 */
 /*   per tag: [1 key_len][1 val_len][key bytes][val bytes]            */
 /*                                                                    */
