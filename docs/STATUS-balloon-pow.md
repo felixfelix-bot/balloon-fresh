@@ -58,9 +58,43 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - **"119 tollgate payment tests (91+ pass)"** — tollgate payment protocol parallel to my e-hash credit system. Test patterns (encode/decode round-trip, edge cases) are reusable.
 - Action: (a) Verify e-hash relay integrates cleanly into 227KB mesh baseline. (b) Study tollgate payment test patterns for e-hash credit test design.
 
-### Summary
-- Finding 3 is most actionable: mesh baseline builds + fits my relay
-- Finding 2 has future relevance for credit signing
+### Summary (Batch 1)
+- Finding 3 most actionable: mesh baseline builds + fits relay
+- Finding 2 future relevance for credit signing
 - Finding 1 not applicable to e-hash transport
-- No blockers created by these findings
+- No blockers, no cross-track coordination needed
+
+---
+
+## Discovery Sync Acknowledgment (2026-08-05, Batch 2)
+
+### 2 New Findings Analyzed
+
+**1. [balloon-hermes] radio_task non-blocking loop — short recv timeout + tx_queue poll [RADIO, FIRMWARE]**
+- Commit: 4e7722c
+- Relevance: HIGH
+- `lr2021_transport::recv()` now accepts `timeout_ms` parameter (was hardcoded 5000ms)
+- radio_task loop: TX queue poll (non-blocking, priority) → RX recv with 100ms timeout → no vTaskDelay needed
+- **Direct impact on e-hash relay:**
+  - My ehash_radio_stub.c mock will be replaced with real LR2021 driver. The recv() timeout API change affects my radio abstraction interface.
+  - The TX-priority-then-RX-short-timeout pattern is exactly what e-hash relay needs: nonce uplink (TX) should preempt template downlink (RX)
+  - When I wire ehash_radio_rx() to real driver, I should use short timeout (100ms) not block indefinitely
+- Action: Update ehash_radio_stub.h recv signature to include timeout_ms parameter. Mirror the tx_queue priority pattern in e-hash relay task loop.
+
+**2. [balloon-hermes] signature field added to nostr_event_t — Schnorr verification [FIRMWARE, TEST]**
+- Commit: bc3bd5b
+- Relevance: MODERATE
+- nostr_event_t now carries `sig[64]` (BIP-340 Schnorr). Serialize header: 72→136 bytes.
+- Tests verify byte-exact sig roundtrip with recognizable fill pattern.
+- **Impact on e-hash relay:**
+  - Per ADR-025 D1: balloon never hashes, never verifies signatures. So sig field doesn't change e-hash relay logic.
+  - BUT: if e-hash CREDIT messages are later wrapped as Nostr events for store-and-forward, the sig field is now available in the serialization format.
+  - Test pattern (fill sig with `id_byte ^ (i & 0xFF)`, assert byte-exact roundtrip) is directly reusable for e-hash message tests.
+  - Serialization approach (fixed-size field in header, update min header size) is a pattern to follow if adding optional sig to e-hash CREDIT messages.
+- Action: No code change now. Reference test pattern for e-hash credit message tests. Note sig field availability if credits go over Nostr store-and-forward.
+
+### Summary (Batch 2)
+- Finding 1 (radio_task non-blocking): HIGH — directly affects e-hash radio abstraction interface design
+- Finding 2 (nostr sig field): MODERATE — future credit signing path + test pattern reference
+- No blockers created
 - No cross-track coordination needed — findings used independently
