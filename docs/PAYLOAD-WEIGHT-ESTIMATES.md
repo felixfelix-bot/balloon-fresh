@@ -102,94 +102,86 @@ Spec: 52 × 19 mm cells, ~0.5V 400mA each, ~2g each.
 
 ## 5. Total Payload Weight — Configurations
 
-### A. Minimal Tracker (V1 Board, no RP2040, no solar/supercap)
+> **UPDATE 2026-08-05:** Original V1 board (dual-MCU: C3+RP2040) is OBSOLETE.
+> Replaced by V1-FAST (16 components, no ADC) and V2-ADC (18 components, supercap
+> voltage divider on GPIO0). Both 50×40mm, single-MCU (ESP32-C3 only), no RP2040,
+> no baro. All weights below updated to reflect single-MCU architecture.
+
+### A. Minimal Tracker (V1-FAST Board, no solar/supercap, battery)
 
 GPS-tracking-only pico balloon. Battery-powered for short flights.
 
 | Item | Weight |
 |------|--------|
-| V1 PCB (finished) | 2.5 g |
+| V1-FAST PCB (50×40mm finished) | 2.5 g |
 | SMD parts + solder paste | 0.19 g |
 | ESP32-C3-Mini-1 (U1) | 2.5 g |
 | LR2021 bare radio module | 1.2 g |
 | MAX-M10S GPS, bare (U3) | 0.4 g |
-| MS5611 baro, bare (U4) | 0.03 g |
 | Antenna wire (868 MHz) | 0.2 g |
 | 40mAh LiPo battery (backup) | 1.0 g |
 | **Total** | **~8.0 g** |
 | **Target: < 9g** | **✅ PASS — 1.0g margin** |
 
-### B. Minimal Tracker (V1 Board, with solar + supercap)
+> No RP2040, no baro. Lightest practical configuration.
 
-Solar-powered for multi-day flights. No RP2040 coprocessor.
+### B. Solar Tracker (V2-ADC Board, solar + supercap, no battery)
+
+Solar-powered tracker with supercap voltage monitoring via ADC (GPIO0).
 
 | Item | Weight |
 |------|--------|
-| V1 PCB (finished) | 2.5 g |
-| SMD parts + solder paste | 0.19 g |
+| V2-ADC PCB (50×40mm finished) | 2.5 g |
+| SMD parts + solder paste (incl. R_DIV1/R_DIV2 0402) | 0.20 g |
 | ESP32-C3-Mini-1 (U1) | 2.5 g |
 | LR2021 bare radio module | 1.2 g |
 | MAX-M10S GPS, bare (U3) | 0.4 g |
-| MS5611 baro, bare (U4) | 0.03 g |
 | 1F 5.5V supercap (SC) | 1.8 g |
 | Antenna wire (868 MHz) | 0.2 g |
 | Solar array (4 thin-film cells) | 1.6 g |
 | **Total (thin-film cells)** | **~10.4 g** |
 | **Total (standard 2g cells)** | **~16.4 g** |
-| **Target: < 9g** | **❌ FAIL** — over by 1.4g (thin-film) or 7.4g (standard) |
+| **Target: < 14g** | **✅ PASS** with thin-film (3.6g margin) |
 
-> **Finding:** The minimal tracker with solar exceeds the 9g target even with thin-film cells. Options: (1) drop to battery-only (Config A), (2) use 2 cells instead of 4 (~9.6g, still borderline), (3) use bare ESP32-C3 chip instead of dev module (saves ~1.5g).
+> V2-ADC adds 2× 100kΩ 0402 resistors (~5mg) for supercap voltage divider — negligible weight.
 
-### C. Mesh V1 (Full Hub Board, solar-powered)
+### C. Solar Tracker (V1-FAST Board, solar + supercap)
 
-Complete mesh relay node: ESP32-C3 + RP2040 + LR2021 + GPS + baro + supercap + solar.
+Same as B but V1-FAST board (no ADC — no supercap voltage monitoring).
 
 | Item | Weight |
 |------|--------|
-| V1 PCB (finished) | 2.5 g |
+| V1-FAST PCB (finished) | 2.5 g |
 | SMD parts + solder paste | 0.19 g |
 | ESP32-C3-Mini-1 (U1) | 2.5 g |
-| RP2040-Zero (U2) | 1.2 g |
 | LR2021 bare radio module | 1.2 g |
 | MAX-M10S GPS, bare (U3) | 0.4 g |
-| MS5611 baro, bare (U4) | 0.03 g |
 | 1F 5.5V supercap (SC) | 1.8 g |
 | Antenna wire (868 MHz) | 0.2 g |
 | Solar array (4 thin-film cells) | 1.6 g |
-| **Total (thin-film cells)** | **~11.6 g** |
-| **Total (standard 2g cells, 4 cells)** | **~17.6 g** |
-| **Target: < 14g** | **✅ PASS** with thin-film (2.4g margin) |
+| **Total (thin-film cells)** | **~10.4 g** |
+| **Target: < 14g** | **✅ PASS — 3.6g margin** |
 
-> **Finding:** Mesh V1 passes the 14g target with thin-film solar cells but **fails with standard 2g cells**. Cell choice is the critical swing factor.
+> Config C (mesh V1, dual-MCU with RP2040) is OBSOLETE — single-MCU only.
+> Without RP2040, no mesh relay capability. But ~1.2g lighter than old estimate.
 
-### D. Mesh V1 with Standard Solar Cells (2 cells minimum)
+### D. Heavy-Lift Reference (V2 F33 PA) — Ground Station Only
 
-Reduced solar (2 cells instead of 4) with standard 2g cells.
-
-| Item | Weight |
-|------|--------|
-| Board + all modules + supercap + antenna (as Config C) | 10.0 g |
-| Solar array (2 standard cells) | 4.0 g |
-| **Total** | **~14.0 g** |
-| **Target: < 14g** | **⚠️ RIGHT AT LIMIT — 0g margin** |
-
-### E. V2 (F33 PA) — Ground Station / Heavy-Lift
-
-For reference. V2 is not a pico balloon target.
+For reference. F33 PA board is not a pico balloon target.
 
 | Item | Weight |
 |------|--------|
-| V2 PCB (finished) | 7.0 g |
+| V2 PCB (75×55mm finished) | 7.0 g |
 | SMD parts (F33 support) | 0.25 g |
 | ESP32-C3-Mini-1 | 2.5 g |
-| RP2040-Zero | 1.2 g |
 | LR2021F33 2W PA module | 4.0 g |
 | MAX-M10S GPS, bare | 0.4 g |
-| MS5611 baro, bare | 0.03 g |
 | 1F 5.5V supercap | 1.8 g |
 | 2× SMA connectors + pigtails | 3.0 g |
-| **Total (no solar)** | **~20.2 g** |
-| **With solar (4 thin-film cells)** | **~21.8 g** |
+| **Total (no solar)** | **~19.0 g** |
+| **With solar (4 thin-film cells)** | **~20.6 g** |
+
+> No RP2040 in single-MCU architecture. ~1.2g lighter than old V2 estimate.
 
 ---
 
@@ -197,11 +189,10 @@ For reference. V2 is not a pico balloon target.
 
 | Config | Board | Solar | Est. Weight | Target | Verdict |
 |--------|-------|-------|------------|--------|---------|
-| A: Minimal tracker (battery) | V1 | None (LiPo) | **~8.0 g** | < 9g | ✅ PASS |
-| B: Minimal tracker (solar) | V1 | 4 thin-film | **~10.4 g** | < 9g | ❌ FAIL |
-| C: Mesh V1 (thin-film solar) | V1 | 4 thin-film | **~11.6 g** | < 14g | ✅ PASS |
-| D: Mesh V1 (standard cells, 2) | V1 | 2 standard | **~14.0 g** | < 14g | ⚠️ AT LIMIT |
-| E: V2 F33 PA (ground station) | V2 | 4 thin-film | **~21.8 g** | N/A | Reference |
+| A: Minimal tracker (battery) | V1-FAST | None (LiPo) | **~8.0 g** | < 9g | ✅ PASS |
+| B: Solar tracker (V2-ADC) | V2-ADC | 4 thin-film | **~10.4 g** | < 14g | ✅ PASS (3.6g margin) |
+| C: Solar tracker (V1-FAST) | V1-FAST | 4 thin-film | **~10.4 g** | < 14g | ✅ PASS (3.6g margin) |
+| D: V2 F33 PA (ground station) | V2/F33 | 4 thin-film | **~20.6 g** | N/A | Reference |
 
 ---
 
