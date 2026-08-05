@@ -43,7 +43,7 @@ extern "C" void radio_task(void *arg)
     UBaseType_t watermark_start = uxTaskGetStackHighWaterMark(NULL);
 
     while (1) {
-        /* Priority 1: TX anything in the queue */
+        /* Priority 1: TX anything in the queue (non-blocking) */
         if (xQueueReceive(g_tx_queue, &tx_pkt, 0) == pdTRUE) {
             if (s_transport) {
                 ESP_LOGD(TAG, "TX %u bytes", tx_pkt.len);
@@ -53,11 +53,12 @@ extern "C" void radio_task(void *arg)
             continue;  /* Check tx_queue again before RX */
         }
 
-        /* Priority 2: RX — poll for incoming data */
+        /* Priority 2: RX — poll with short timeout so tx_queue is serviced
+         * within 100ms even when no packets arrive. */
         if (s_transport) {
             size_t n_out = 0;
             TransportError err =
-                s_transport->recv(rx_pkt.data, RELAY_PACKET_MAX_SIZE, &n_out);
+                s_transport->recv(rx_pkt.data, RELAY_PACKET_MAX_SIZE, &n_out, 100);
 
             if (err == TransportError::Ok && n_out > 0) {
                 rx_pkt.len = n_out;
@@ -72,7 +73,9 @@ extern "C" void radio_task(void *arg)
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(10));  /* Yield to other tasks */
+        /* recv() with 100ms timeout yields during its internal poll loop.
+         * No additional vTaskDelay needed — the loop immediately re-checks
+         * tx_queue (priority) after recv() returns. */
     }
 
     (void)watermark_start;
