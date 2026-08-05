@@ -21,4 +21,5 @@
 - Discovery Sync batch 7 (2026-08-06): 10 findings on C3 flight PCB. Board exists (commit eacc32e): 4-layer 0.6mm, 50×40mm, 20 footprints (ESP32-C3-WROOM-02, RFM9XW radio, MAX-M10S GPS, BMP280, U.FL×2, SOT-23-5, LED, diode, caps, resistors). NOT DRC-clean (56 real violations, 22 unconnected).
 - WEIGHT REVISON (good news): ADR-028 worst-case overstated. C3 flight PCB is 0.6mm (not 0.8mm) → ~2.8g PCB. Uses RFM9XW (not LR2021F33) → ~1.8g vs 4.0g. BMP280 on-board → 0.03g. Net: Balloon-C3 payload ~9-10g with thin-film solar — PASSES 14g target with 4-5g margin.
 - PAYLOAD-WEIGHT-ESTIMATES.md revision deferred until PCB is DRC-clean and variant is confirmed by orchestrator.
+- Discovery Sync batch 8 (2026-08-06): 7 findings on C3 PCB routing progress. Placement breakthrough: 0 shorting_items, 0 solder_mask_bridge. Layer fix: 8→1 shorting_items. Board specs unchanged — INFORMATIONAL only. Weight estimates from batch 7 hold (~9-10g payload, PASSES 14g).
 - Questions for Orchestrator: Which ADR-028 variant targets pico balloon flight? C3 single-MCU looks viable weight-wise. Dual-MCU still at risk.
