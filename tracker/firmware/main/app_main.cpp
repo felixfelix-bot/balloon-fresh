@@ -75,6 +75,9 @@ extern "C" {
 extern QueueHandle_t g_rx_queue;
 extern QueueHandle_t g_tx_queue;
 #endif
+#ifdef CONFIG_ENABLE_TOLLGATE
+#include "tollgate_payment_proto.h"
+#endif
 }
 
 static const char *TAG = "TRACKER";
@@ -376,6 +379,102 @@ static void cli_cmd_radio_recv(const char *args) {
     printf("Listen done\n");
 }
 
+#if defined(CONFIG_ENABLE_RELAY_MODE) && defined(CONFIG_ENABLE_NOSTR_STORE)
+/*
+ * relay_send_nostr — CLI command to serialize a Nostr event and queue it
+ * for radio TX via g_tx_queue.
+ *
+ * Usage:
+ *   relay_send_nostr                  → sends a hardcoded test event
+ *   relay_send_nostr <kind> <content> → sends event with given kind + content
+ *
+ * The event is serialized with nostr_event_serialize() into pkt.data+1
+ * (skipping the 1-byte type tag), prefixed with RELAY_TYPE_NOSTR_EVENT,
+ * and queued to g_tx_queue. radio_task will TX it over FLRC.
+ *
+ * V1 limitation: nostr_event_t has no signature field populated — events
+ * are sent without Schnorr signatures. Remote relay stores without sig
+ * verification (see app_task.cpp). Sig verification is a V2 task.
+ *
+ * Content is limited to ~374 bytes (RELAY_PACKET_MAX_SIZE - 1 - 137 bytes
+ * of fixed serialization overhead). NOSTR_MAX_CONTENT is 480 but the relay
+ * packet cap (511) is the binding constraint.
+ */
+static void cli_cmd_relay_send_nostr(const char *args) {
+    if (!g_tx_queue) {
+        printf("relay_send_nostr: relay mode not active (g_tx_queue NULL)\n");
+        return;
+    }
+
+    /* Build the Nostr event */
+    nostr_event_t evt;
+    memset(&evt, 0, sizeof(evt));
+
+    /* Deterministic test ID + pubkey (V1: no real sig) */
+    for (int i = 0; i < NOSTR_EVENT_ID_SIZE; i++) evt.id[i] = (uint8_t)(0x10 + i);
+    for (int i = 0; i < NOSTR_PUBKEY_SIZE; i++) evt.pubkey[i] = 0xAB;
+    evt.created_at = (uint32_t)(esp_timer_get_time() / 1000000);
+    evt.kind = 1;
+    evt.num_tags = 0;
+
+    /* Parse args: optional "<kind> <content>" or just "<content>" */
+    if (args && *args) {
+        /* Try to parse a leading integer as kind */
+        char *endp = NULL;
+        long parsed_kind = strtol(args, &endp, 10);
+        if (endp != args && *endp == ' ') {
+            /* kind followed by content */
+            evt.kind = (uint16_t)parsed_kind;
+            endp++;  /* skip space */
+            size_t clen = strlen(endp);
+            if (clen > NOSTR_MAX_CONTENT) clen = NOSTR_MAX_CONTENT;
+            evt.content_len = (uint16_t)clen;
+            memcpy(evt.content, endp, clen);
+        } else {
+            /* No leading integer — treat entire arg as content with kind=1 */
+            size_t clen = strlen(args);
+            if (clen > NOSTR_MAX_CONTENT) clen = NOSTR_MAX_CONTENT;
+            evt.content_len = (uint16_t)clen;
+            memcpy(evt.content, args, clen);
+        }
+    } else {
+        /* No args — hardcoded test content */
+        const char *test_content = "balloon relay test event";
+        evt.content_len = (uint16_t)strlen(test_content);
+        memcpy(evt.content, test_content, evt.content_len);
+    }
+
+    /* Serialize into relay packet (skip type tag byte at [0]) */
+    relay_packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.data[0] = RELAY_TYPE_NOSTR_EVENT;
+
+    uint16_t slen = nostr_event_serialize(&evt, pkt.data + 1,
+                                           RELAY_PACKET_MAX_SIZE - 1);
+    if (slen == 0) {
+        printf("relay_send_nostr: serialize failed (content too big for relay packet)\n");
+        printf("  content_len=%u, max serialized=%d, relay payload max=%d\n",
+               evt.content_len, RELAY_PACKET_MAX_SIZE - 1, RELAY_PACKET_MAX_SIZE - 1);
+        return;
+    }
+
+    pkt.len = (size_t)(slen + 1);
+    pkt.timestamp = 0;
+    pkt.rssi = 0;
+
+    /* Queue for radio_task to TX */
+    if (xQueueSend(g_tx_queue, &pkt, pdMS_TO_TICKS(100)) != pdTRUE) {
+        printf("relay_send_nostr: TX queue full (dropped %u bytes)\n",
+               (unsigned)pkt.len);
+        return;
+    }
+
+    printf("relay_send_nostr: queued %u bytes (kind=%u, content=%u bytes, serialized=%u)\n",
+           (unsigned)pkt.len, evt.kind, evt.content_len, slen);
+    printf("  → radio_task will TX via FLRC transport\n");
+}
+#endif /* CONFIG_ENABLE_RELAY_MODE && CONFIG_ENABLE_NOSTR_STORE */
+
 static void cli_cmd_i2c_scan(const char *args) {
     (void)args;
     printf("Scanning I2C bus (SDA=8, SCL=9)...\n");
@@ -473,6 +572,82 @@ static void cli_cmd_nostr_dump(const char *args) {
 }
 #endif /* CONFIG_ENABLE_NOSTR_STORE */
 
+#ifdef CONFIG_ENABLE_TOLLGATE
+/*
+ * tollgate_send_pay — encode a TollGate PAY message and queue it for
+ * radio TX via g_tx_queue.
+ *
+ * Wire format in the relay packet:
+ *   data[0]    = RELAY_TYPE_TOLLGATE_PAY (0x02)
+ *   data[1..]  = tollgate_proto_encode(TG_MSG_PAY, seq, payload, len)
+ *
+ * Args (optional): "<token_string>"
+ *   - If provided, the token string is used as the PAY payload (raw bytes).
+ *   - If omitted, a minimal test payload "{\"token\":\"test\"}" is used.
+ *
+ * The PAY message is encoded with the real tollgate_proto_encode() from
+ * tollgate_payment_proto.c (ADR-002 wire format).
+ */
+static uint32_t s_tollgate_seq = 0;
+
+static void cli_cmd_tollgate_send_pay(const char *args) {
+    if (!g_tx_queue) {
+        printf("tollgate_send_pay: relay mode not active (g_tx_queue NULL)\n");
+        return;
+    }
+
+    /* Payload: use args as token, or default test payload */
+    const char *payload;
+    uint16_t payload_len;
+
+    if (args && *args) {
+        payload = args;
+        payload_len = (uint16_t)strlen(args);
+    } else {
+        payload = "{\"token\":\"test\"}";
+        payload_len = (uint16_t)strlen(payload);
+    }
+
+    /* Check it fits in the relay packet (minus 1 type tag + 8 header) */
+    if (payload_len > RELAY_PACKET_MAX_SIZE - 1 - sizeof(tollgate_msg_hdr_t)) {
+        printf("tollgate_send_pay: payload too long (%u > %d max)\n",
+               payload_len,
+               RELAY_PACKET_MAX_SIZE - 1 - (int)sizeof(tollgate_msg_hdr_t));
+        return;
+    }
+
+    /* Build the relay packet */
+    relay_packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.data[0] = RELAY_TYPE_TOLLGATE_PAY;
+
+    s_tollgate_seq++;
+    int enc_len = tollgate_proto_encode(pkt.data + 1,
+                                         RELAY_PACKET_MAX_SIZE - 1,
+                                         TG_MSG_PAY, (uint16_t)s_tollgate_seq,
+                                         payload, payload_len);
+    if (enc_len < 0) {
+        printf("tollgate_send_pay: proto_encode failed (payload too big?)\n");
+        return;
+    }
+
+    pkt.len = (size_t)(enc_len + 1);  /* +1 for the type tag byte */
+    pkt.timestamp = 0;
+    pkt.rssi = 0;
+
+    /* Queue for radio_task to TX */
+    if (xQueueSend(g_tx_queue, &pkt, pdMS_TO_TICKS(100)) != pdTRUE) {
+        printf("tollgate_send_pay: TX queue full (dropped %u bytes)\n",
+               (unsigned)pkt.len);
+        return;
+    }
+
+    printf("tollgate_send_pay: queued %u bytes (seq=%u, payload=%u bytes, enc=%d)\n",
+           (unsigned)pkt.len, (unsigned)s_tollgate_seq, payload_len, enc_len);
+    printf("  → radio_task will TX via FLRC transport\n");
+}
+#endif /* CONFIG_ENABLE_TOLLGATE */
+
 static void setup_cli(void) {
     cli_init();
     cli_register_command("status", "System status (uptime, heap, voltage)", cli_cmd_status);
@@ -484,10 +659,17 @@ static void setup_cli(void) {
     cli_register_command("sleep", "Force deep sleep cycle", cli_cmd_sleep_now);
     cli_register_command("radio_test", "Transmit test packet", cli_cmd_radio_test);
     cli_register_command("radio_recv", "Listen for FLRC packets (30s)", cli_cmd_radio_recv);
+#if defined(CONFIG_ENABLE_RELAY_MODE) && defined(CONFIG_ENABLE_NOSTR_STORE)
+    cli_register_command("relay_send_nostr", "Serialize + queue Nostr event for radio TX", cli_cmd_relay_send_nostr);
+#endif
     cli_register_command("i2c_scan", "Scan I2C bus for devices", cli_cmd_i2c_scan);
 #ifdef CONFIG_ENABLE_NOSTR_STORE
     cli_register_command("nostr_dump", "Dump stored Nostr events (optional count arg)",
                           cli_cmd_nostr_dump);
+#endif
+#ifdef CONFIG_ENABLE_TOLLGATE
+    cli_register_command("tollgate_send_pay", "Send TollGate PAY message (optional token arg)",
+                          cli_cmd_tollgate_send_pay);
 #endif
 }
 
