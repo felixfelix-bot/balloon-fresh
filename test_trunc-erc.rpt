@@ -1,0 +1,483 @@
+ERC report (2026-08-05T23:23:40+0530, Encoding UTF8)
+Report includes: Errors, Warnings
+
+***** Sheet /
+[label_dangling]: Label not connected to anything
+    ; error
+    @(40.00 mm, 37.00 mm): Label 'SOLAR_IN'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(40.00 mm, 40.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(40.00 mm, 50.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(60.00 mm, 40.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(65.00 mm, 37.00 mm): Label 'VCAP'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(60.00 mm, 50.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(75.00 mm, 40.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(75.00 mm, 50.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(85.00 mm, 40.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(75.00 mm, 60.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(85.00 mm, 50.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(78.00 mm, 65.00 mm): Label 'VDIV_MID'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(75.00 mm, 70.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(75.00 mm, 75.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(100.00 mm, 40.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(75.00 mm, 78.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(100.00 mm, 50.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(100.00 mm, 55.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(115.00 mm, 40.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(115.00 mm, 50.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(115.00 mm, 55.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(130.00 mm, 25.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(125.00 mm, 49.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(125.00 mm, 52.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(130.00 mm, 40.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 34.00 mm): Label 'STATUS_LED'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 40.00 mm): Label 'LR2021_DIO9'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(140.00 mm, 20.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 43.00 mm): Label 'LR2021_BUSY'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(140.00 mm, 25.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 46.00 mm): Label 'LR2021_RST'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 49.00 mm): Label 'SPI_MISO'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 52.00 mm): Label 'GPS_RX'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(135.00 mm, 58.00 mm): Label 'EN'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(140.00 mm, 80.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(150.00 mm, 60.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(140.00 mm, 85.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(140.00 mm, 88.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(150.00 mm, 75.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 31.00 mm): Label 'I2C_SCL'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 34.00 mm): Label 'I2C_SDA'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(150.00 mm, 78.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 40.00 mm): Label 'FEM_TX'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 43.00 mm): Label 'UART0_RX'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 46.00 mm): Label 'UART0_TX'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 49.00 mm): Label 'SPI_NSS'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 52.00 mm): Label 'SPI_MOSI'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(165.00 mm, 55.00 mm): Label 'SPI_SCK'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(160.00 mm, 80.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(175.00 mm, 43.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(175.00 mm, 46.00 mm): Label 'BOOT'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(160.00 mm, 85.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(160.00 mm, 88.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(175.00 mm, 58.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(180.00 mm, 60.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(190.00 mm, 49.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(190.00 mm, 52.00 mm): Label 'SPARE2'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(190.00 mm, 55.00 mm): Label 'SPARE1'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(190.00 mm, 58.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(195.00 mm, 60.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 42.22 mm): Symbol U2 Pin 1 [3V3, Power input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 44.76 mm): Symbol U2 Pin 2 [GND, Power input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 47.30 mm): Symbol U2 Pin 3 [MISO, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 49.84 mm): Symbol U2 Pin 4 [MOSI, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 52.38 mm): Symbol U2 Pin 5 [SCK, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 54.92 mm): Symbol U2 Pin 6 [NSS, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 57.46 mm): Symbol U2 Pin 7 [BUSY, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 60.00 mm): Symbol U2 Pin 8 [GND, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 62.54 mm): Symbol U2 Pin 9 [RF_SUB, Output, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 65.08 mm): Symbol U2 Pin 10 [GND, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 67.62 mm): Symbol U2 Pin 11 [GND, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 70.16 mm): Symbol U2 Pin 12 [NC, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 72.70 mm): Symbol U2 Pin 13 [DIO9, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 75.24 mm): Symbol U2 Pin 14 [RST, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(207.30 mm, 77.78 mm): Symbol U2 Pin 15 [NC, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(215.00 mm, 75.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(215.00 mm, 78.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(232.70 mm, 42.22 mm): Symbol U2 Pin 16 [GND, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(232.70 mm, 44.76 mm): Symbol U2 Pin 17 [GND, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(232.70 mm, 47.30 mm): Symbol U2 Pin 18 [RF_2G4, Output, Line]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(235.00 mm, 52.00 mm): Label 'RF_2G4_2400'
+[label_dangling]: Label not connected to anything
+    ; error
+    @(235.00 mm, 55.00 mm): Label 'RF_SUB_868'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(250.00 mm, 45.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(250.00 mm, 50.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(250.00 mm, 55.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(250.00 mm, 60.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(265.00 mm, 49.00 mm): Label 'GPS_TX'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(275.00 mm, 75.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(275.00 mm, 78.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(280.00 mm, 60.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(315.00 mm, 58.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(315.00 mm, 64.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(320.00 mm, 60.00 mm): Pin 1 [???, ?]
+[label_dangling]: Label not connected to anything
+    ; error
+    @(335.00 mm, 52.00 mm): Label 'FEM_RX'
+[pin_not_connected]: Pin not connected
+    ; error
+    @(335.00 mm, 58.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(335.00 mm, 64.00 mm): Pin 1 [???, ?]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(340.00 mm, 60.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(40.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(40.00 mm, 50.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(60.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(60.00 mm, 50.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.00 mm, 50.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(85.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.00 mm, 60.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(85.00 mm, 50.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.00 mm, 70.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.00 mm, 75.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(100.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.00 mm, 78.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(100.00 mm, 50.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(100.00 mm, 55.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(115.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(115.00 mm, 50.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(115.00 mm, 55.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(130.00 mm, 25.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(125.00 mm, 49.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(125.00 mm, 52.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(130.00 mm, 40.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(140.00 mm, 20.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(140.00 mm, 25.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(140.00 mm, 80.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 60.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(140.00 mm, 85.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(140.00 mm, 88.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 75.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 78.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(160.00 mm, 80.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(175.00 mm, 43.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(160.00 mm, 85.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(160.00 mm, 88.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(175.00 mm, 58.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(180.00 mm, 60.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(190.00 mm, 49.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(190.00 mm, 58.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(195.00 mm, 60.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(207.30 mm, 42.22 mm): Symbol U2 Pin 1 [3V3, Power input, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(215.00 mm, 75.00 mm): Pin 1 [???, ?]
+[footprint_link_issues]: Footprint 'NiceRF_Lora1276-C1' not found in library 'RF_Module'.
+    ; warning
+    @(220.00 mm, 60.00 mm): Symbol U2 [LR2021F33]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'balloon-custom'
+    ; warning
+    @(220.00 mm, 60.00 mm): Symbol U2 [LR2021F33]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(215.00 mm, 78.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(250.00 mm, 45.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(250.00 mm, 50.00 mm): Pin 1 [???, ?]
+[footprint_link_issues]: Footprint 'U.FL_Molex_MCRF_73412-0110' not found in library 'Connector_Coaxial'.
+    ; warning
+    @(250.00 mm, 50.00 mm): Symbol ANT2 [U.FL]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(250.00 mm, 55.00 mm): Pin 1 [???, ?]
+[footprint_link_issues]: Footprint 'U.FL_Molex_MCRF_73412-0110' not found in library 'Connector_Coaxial'.
+    ; warning
+    @(250.00 mm, 55.00 mm): Symbol ANT1 [U.FL]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(250.00 mm, 60.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(275.00 mm, 75.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(275.00 mm, 78.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(280.00 mm, 60.00 mm): Pin 1 [???, ?]
+[footprint_link_issues]: Footprint 'ublox_MAX-M10' not found in library 'RF_GPS'.
+    ; warning
+    @(280.00 mm, 60.00 mm): Symbol U3 [MAX-M10S]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(315.00 mm, 58.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(315.00 mm, 64.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(320.00 mm, 60.00 mm): Pin 1 [???, ?]
+[footprint_link_issues]: Footprint 'Bosch_LGA-8_2.5x2.0mm_P0.65mm' not found in library 'Package_LGA'.
+    ; warning
+    @(320.00 mm, 60.00 mm): Symbol U5 [BMP280]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(335.00 mm, 58.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(335.00 mm, 64.00 mm): Pin 1 [???, ?]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(340.00 mm, 60.00 mm): Pin 1 [???, ?]
+[footprint_link_issues]: Footprint 'QFN-16-1EP_3x3mm_P0.5mm' not found in library 'Package_DFN_QFN'.
+    ; warning
+    @(340.00 mm, 60.00 mm): Symbol FEM [OPA340]
+
+ ** ERC messages: 159  Errors 97  Warnings 62
