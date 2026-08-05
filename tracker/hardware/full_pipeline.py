@@ -469,9 +469,12 @@ def get_v1_fast_components() -> list:
 def get_v2_adc_components() -> list:
     """V2-ADC: 18 components, 18 nets, with ADC voltage divider."""
     # ESP32-C3 GPIO to net mapping for V2-ADC
-    # FEM_TX moves from GPIO19 to GPIO0
+    # Corrected per PINOUT_VERIFICATION.md (t_00b20081):
+    #   GPIO0 = ADC1_CH0 — used for VDIV_MID (was GPS TX, disabled)
+    #   GPIO8 = NO ADC channel — strapping pin, leave unused
+    #   GPIO19 = FEM_TX stays here (does NOT move to GPIO0)
     gpio_nets = {
-        0: "FEM_TX",      # was GPS TX, now FEM_TX (redirected)
+        0: "VDIV_MID",    # ADC1_CH0 — supercap voltage divider midpoint
         1: "GPS_RX",      # GPS UART RX
         2: "SPI_MISO",    # SPI MISO (needs pull-down)
         3: "LR2021_RST",
@@ -479,11 +482,11 @@ def get_v2_adc_components() -> list:
         5: "LR2021_DIO9",
         6: "SPI_SCK",
         7: "SPI_MOSI",
-        8: "VDIV_MID",    # ADC voltage divider midpoint
+        8: "",            # strapping pin, NO ADC — leave unused
         9: "STATUS_LED",
         10: "SPI_NSS",
-        18: "",           # available but unused
-        19: "",           # freed (was FEM_TX, now on GPIO0)
+        18: "",           # available but unused (USB_D-)
+        19: "FEM_TX",     # stays on GPIO19 (USB_D+, used as GPIO when USB disabled)
         "VCC": "3V3",
         "GND": "GND",
     }
@@ -1016,6 +1019,8 @@ def main():
                         help="Gerber output directory (optional)")
     parser.add_argument("--max-iterations", type=int, default=10,
                         help="Max DRC iterations (default: 10)")
+    parser.add_argument("--create-only", action="store_true",
+                        help="Only create board with footprints, skip routing/DRC")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -1039,6 +1044,15 @@ def main():
     board = create_fn(args.output)
     pcbnew.SaveBoard(args.output, board)
     print(f"  Board created with {len(list(board.Footprints()))} footprints")
+
+    if args.create_only:
+        print("\n--create-only: skipping routing/DRC. Board saved.")
+        # Print summary stats
+        nets = parse_board(board, net_defs)
+        print(f"  Nets: {len(nets)}")
+        print(f"  Pads: {sum(len(n.pads) for n in nets.values())}")
+        print(f"  Footprints: {len(list(board.Footprints()))}")
+        return 0
 
     # Parse the board to get nets and pads
     nets = parse_board(board, net_defs)
