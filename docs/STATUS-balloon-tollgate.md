@@ -115,3 +115,24 @@ Acknowledged 3 new findings from balloon-hermes. Assessment:
    - **Gap #3 RESOLVED**: `nostr_event_deserialize()` now fully implemented in `nostr_store.c:105` and correct return check in `app_task.cpp:81`.
    - **Blossom impact**: Blossom BUD-11 auth uses same `nostr_event_deserialize()` path for event verification. The bug would have caused blossom to silently drop all incoming Nostr events from the relay pipeline. Now safe.
    - **Test methodology adoption**: host-side pipeline test (gcc, no hardware, mock radio → real nostr_store) is directly applicable to blossom. Will adopt this pattern for blossom-mesh integration testing.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: payment proto + CLI commands)
+
+3 findings assessed. All HIGH relevance to blossom.
+
+1. **tollgate_payment_proto.h + tollgate_send_pay CLI (commit 65a46fd)** — `CRITICAL` `WIRE-COMPATIBLE`
+   - Standalone payment protocol header in tracker firmware, wire-compatible with my tollgate_balloon adapter
+   - **VERIFIED**: My mesh-stack/tollgate/ code uses identical `tollgate_msg_hdr_t` (8 bytes packed), `TG_MSG_PAY/ACK/NACK/STATUS/INFO/REVOKE`, `tollgate_proto_encode/decode`
+   - 83 host unit tests pass on their side, my 119 tests pass on my side — both independently validate same wire format
+   - CLI `tollgate_send_pay` queues PAY to g_tx_queue via `RELAY_TYPE_TOLLGATE_PAY` tag — this is the TX path blossom will receive from
+   - **Impact**: Blossom can now receive PAY messages from tracker CLI. Protocol layer fully aligned.
+
+2. **relay_send_nostr CLI command (commit 108c2b9)** — `HIGH`
+   - CLI builds nostr_event_t, serializes, tags `RELAY_TYPE_NOSTR_EVENT`, queues to g_tx_queue
+   - 9/9 host tests pass (default/custom/tags/large/oversized/empty/multi-queue/queue-full/round-trip)
+   - **Impact**: This is the Nostr event TX path. Blossom server will receive these events via radio→rx_queue→app_task pipeline. Validates end-to-end Nostr relay path.
+
+3. **CLI command audit (commit 9b79760)** — `INFORMATIONAL`
+   - 2/5 CLI commands existed before this session. Now 4/5 implemented (relay_send_nostr + tollgate_send_pay done).
+   - Remaining: nostr_dump (low priority, 1-2h) — needs store refactor. Not blocking blossom.
+   - **Impact**: No action needed. Shows relay pipeline CLI tooling is maturing rapidly.
