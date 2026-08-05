@@ -93,3 +93,14 @@ Acknowledged 3 new findings from balloon-hermes. Assessment:
 - Gap #4 (esp-now-firmware deleted) → informational, not blocking blossom
 - Gap #5 (all mesh flags disabled) → **PARTIALLY RESOLVED** — CONFIG_ENABLE_MESH verified building
 - Gap #6 (blossom has no mesh awareness) → **MY TASK** — still my responsibility
+
+## Discovery Sync — 2026-08-05 (balloon-range-tests)
+
+1 finding from balloon-range-tests assessed:
+
+1. **GPIO10 collision fix (commit f926dc9, cherry-picked by range-tests as 311913f)** — `INFORMATIONAL` for blossom
+   - LED was on GPIO10 conflicting with LR2021 NSS on tracker ESP32-S3. Moved LED→GPIO18, FEM_TX→GPIO19.
+   - Blossom C3 firmware has **ZERO GPIO10 references** — verified. No collision possible.
+   - No action needed. Blossom runs on separate C3, not the tracker S3 board.
+
+2. **FLRC byte alignment, secp256k1, mesh baseline** — already assessed in prior sync above. No new findings.
