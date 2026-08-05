@@ -582,3 +582,42 @@ This plan succeeds when ALL of the following are true:
 - [ ] Zero use of kimi-k3:cloud anywhere in the pipeline
 
 **End of plan.**
+
+---
+
+## APPENDIX A — CURRENT STATUS (2026-08-06)
+
+> Living section. Updated as the pipeline progresses. Supersedes the time-bound
+> estimates in §6 milestones while execution is ongoing.
+
+### Where we are right now
+
+| Phase | Variant | Status | Notes |
+|-------|---------|--------|-------|
+| Phase 1 — Placement | C3 | ✅ COMPLETE | 0 shorting_items, 0 solder_mask_bridge. 55×45mm, 4-layer. |
+| Phase 2 — Routing | C3 | 🔄 IN PROGRESS | Kimi K2.7 routing signals on F.Cu/B.Cu; GND+3V3 internal planes. |
+| Phase 3 — Verify | C3 | ⏳ PENDING | DRC + gerber export + visual check after routing converges. |
+| Phase 1 — Placement | S3 | ⏳ PENDING | After C3 validates the pipeline. |
+| Phase 1 — Placement | C3+RP2040 | ⏳ PENDING | After S3; most complex variant (adds RP2040 + inter-MCU UART). |
+
+### Active configuration
+
+- **Model for all spatial work:** kimi-k2.7-code (local ollama, free, unlimited)
+  - Replaces the original GLM-5.2-generates + Kimi-K2.7-verifies split from §1.2.
+  - Local Kimi K2.7 now handles BOTH generation AND verification — see Lesson 11
+    in `docs/PCB-LESSONS-LEARNED-2026-08-05.md`.
+  - **No cloud credit is being consumed for PCB spatial work.**
+- **Board:** 55×45mm, 4-layer (F.Cu / In1.GND / In2.3V3 / B.Cu), 0.6mm thickness.
+  - Original plan called for 50×40mm @ 1.6mm. Expanded to 55×45mm after 35×30mm
+    and 45×35mm both failed placement (Lesson 9). Thickness revised to 0.6mm
+    for pico-balloon weight budget.
+- **Gate 0:** ENFORCED — placement verified before routing begins (Lesson 8).
+  This is the single biggest change from the original plan and the reason
+  Phase 1 placement passed clean on the first structured attempt.
+- **kimi-k3:cloud:** Still forbidden (§5). Still quota-exhausted. Not used.
+
+### Variants remaining
+
+1. **Balloon-C3** — placement done, routing in progress. First to JLCPCB.
+2. **Balloon-S3** — queued after C3 validates the pipeline end-to-end.
+3. **Balloon-C3+RP2040** — queued after S3. Adds RP2040 footprint and inter-MCU UART net.
