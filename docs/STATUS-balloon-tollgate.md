@@ -98,6 +98,44 @@ Ground Station                   Balloon (L7: TollGate)
 - **Our blockers unchanged:** still need FIPS mesh UDP transport API, nucula wallet
   integration, node ID↔IP mapping. No new blockers from these findings.
 
+## Discovery Sync (2026-08-05 batch 2) — 3 findings from balloon-hermes
+
+### Finding 5: radio_task non-blocking loop (4e7722c) — RADIO, FIRMWARE
+- **Relevance:** Informational. LoRa radio task scheduling.
+- **Impact on tollgate:** None. We have no LR2021 radio; APSTA WiFi only.
+- **Action:** None.
+
+### Finding 6: signature field in nostr_event_t — enables Schnorr verification (bc3bd5b) — FIRMWARE, TEST
+- **Relevance:** MEDIUM. nostr_store now stores signature for Schnorr verification.
+- **Impact on tollgate:** Our tollgate_core already does Schnorr signing via
+  nostr_event.c (secp256k1_schnorrsig_sign32). The tracker's nostr_store adding
+  signature storage/verification is complementary — when tollgate messages
+  flow through the relay pipeline, signatures will be preserved + verifiable.
+  No code change needed in tollgate — our nostr_event.c already includes sig.
+- **Action:** None. Confirms our approach is correct.
+
+### Finding 7 (bonus): tollgate API alignment fix (cb49869) — GENERAL
+- **Relevance:** CRITICAL — validates API contract between tracker + tollgate.
+- **Result:** balloon-hermes fixed function/type names in tracker app_task.cpp:
+  - tollgate_msg_header_t → tollgate_msg_hdr_t ✓ (matches our API)
+  - tollgate_msg_decode → tollgate_proto_decode ✓
+  - tollgate_msg_encode → tollgate_proto_encode ✓
+  - TOLLGATE_MSG_ACK → TG_MSG_ACK ✓
+  - tollgate_msg_t → tollgate_ack_payload_t ✓
+  - Added CONFIG_ENABLE_TOLLGATE Kconfig flag (depends on ENABLE_RELAY_MODE)
+- **Impact on tollgate:** API contract CONFIRMED. Tracker integration code now
+  uses our actual function names. Build verified clean. Our extraction API is
+  the source of truth — tracker was corrected to match us.
+- **Action:** None required. Our API names are canonical.
+
+### Finding 8 (bonus): host-side relay pipeline integration test (4e86174) — PROTOCOL, TEST
+- **Relevance:** MEDIUM. No-hardware test of relay pipeline.
+- **Impact on tollgate:** Test exercises nostr_store → app_task relay path.
+  TollGate PAY/ACK messages flow through this pipeline. When our tollgate
+  components are linked into the tracker build, this test will exercise our
+  payment protocol encode/decode path too. Currently informational.
+- **Action:** None. Monitor when tollgate components get linked into tracker build.
+
 ## Next Steps
 1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
