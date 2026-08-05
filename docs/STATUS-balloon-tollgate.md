@@ -181,8 +181,14 @@ Ground Station                   Balloon (L7: TollGate)
 - **Impact on tollgate:** Zero.
 - **Action:** None.
 
+## Discovery Sync (2026-08-05 batch 6) — 4 findings, all HARDWARE/PCB
+
+### Findings 21-24: V2-ADC 2-layer routing + gerbers + power routing scripts
+- **Relevance:** NONE for tollgate. PCB design tooling.
+- **Impact on tollgate:** Zero.
+- **Action:** None.
+
 ## Next Steps
-1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
 3. Implement nucula wallet spend_proofs()
 4. Write unit tests for payment protocol encode/decode
