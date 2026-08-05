@@ -54,21 +54,38 @@ def create_board_v2_adc_4layer(output_path: str) -> pcbnew.BOARD:
 
 
 def add_power_planes(board: pcbnew.BOARD):
-    """Add GND plane on In1.Cu and 3V3 plane on In2.Cu covering full board."""
-    for net_name, layer in [('GND', IN1_CU), ('3V3', IN2_CU)]:
-        zone = pcbnew.ZONE(board)
-        zone.SetLayer(layer)
-        poly = pcbnew.SHAPE_POLY_SET()
-        poly.NewOutline()
-        poly.Append(0, 0)
-        poly.Append(pcbnew.FromMM(BOARD_WIDTH_MM), 0)
-        poly.Append(pcbnew.FromMM(BOARD_WIDTH_MM), pcbnew.FromMM(BOARD_HEIGHT_MM))
-        poly.Append(0, pcbnew.FromMM(BOARD_HEIGHT_MM))
-        zone.SetOutline(poly)
-        zone.SetNet(board.FindNet(net_name))
-        zone.SetFillMode(0)  # solid fill
-        board.Add(zone)
-        print(f"  Added {net_name} zone on layer {layer}")
+    """Add GND plane on In1.Cu and 3V3 plane on In2.Cu covering full board.
+    Avoid loop pattern — SWIG objects have lifetime issues when poly goes
+    out of scope. Use explicit variables for each zone."""
+    # GND plane on In1.Cu
+    zone_gnd = pcbnew.ZONE(board)
+    zone_gnd.SetLayer(IN1_CU)
+    poly_gnd = pcbnew.SHAPE_POLY_SET()
+    poly_gnd.NewOutline()
+    poly_gnd.Append(0, 0)
+    poly_gnd.Append(pcbnew.FromMM(BOARD_WIDTH_MM), 0)
+    poly_gnd.Append(pcbnew.FromMM(BOARD_WIDTH_MM), pcbnew.FromMM(BOARD_HEIGHT_MM))
+    poly_gnd.Append(0, pcbnew.FromMM(BOARD_HEIGHT_MM))
+    zone_gnd.SetOutline(poly_gnd)
+    zone_gnd.SetNet(board.FindNet('GND'))
+    zone_gnd.SetFillMode(0)  # solid fill
+    board.Add(zone_gnd)
+    print(f"  Added GND zone on layer {IN1_CU}")
+
+    # 3V3 plane on In2.Cu
+    zone_3v3 = pcbnew.ZONE(board)
+    zone_3v3.SetLayer(IN2_CU)
+    poly_3v3 = pcbnew.SHAPE_POLY_SET()
+    poly_3v3.NewOutline()
+    poly_3v3.Append(0, 0)
+    poly_3v3.Append(pcbnew.FromMM(BOARD_WIDTH_MM), 0)
+    poly_3v3.Append(pcbnew.FromMM(BOARD_WIDTH_MM), pcbnew.FromMM(BOARD_HEIGHT_MM))
+    poly_3v3.Append(0, pcbnew.FromMM(BOARD_HEIGHT_MM))
+    zone_3v3.SetOutline(poly_3v3)
+    zone_3v3.SetNet(board.FindNet('3V3'))
+    zone_3v3.SetFillMode(0)  # solid fill
+    board.Add(zone_3v3)
+    print(f"  Added 3V3 zone on layer {IN2_CU}")
 
 
 def fill_zones(board: pcbnew.BOARD):
