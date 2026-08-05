@@ -736,20 +736,11 @@ def default_routing_strategy(nets: dict) -> list:
 
 def assign_layers(nets: dict):
     """Assign layers based on where the pads actually are.
-    SMD pads are on F_Cu, so most nets route on F_Cu.
-    Only route GND on B_Cu if it has thru-hole pads that are on both layers.
-    For prototype: route everything on F_Cu to avoid needing vias."""
+    For prototype: route ALL nets on F_Cu since all SMD pads are on F_Cu
+    and the A* router doesn't support via transitions.
+    GND has some thru-hole pads but routing on F_Cu connects all pads."""
     for code, net in nets.items():
-        if net.net_name == "GND":
-            # GND has many thru-hole pads (ANT, SOLAR, C_CAP) on both layers
-            # Route on B_Cu to provide a ground plane effect
-            net.layer = B_CU
-            net.width_mm = TRACK_WIDTH_POWER_MM
-        elif net.net_name == "3V3":
-            # 3V3 pads are all SMD on F_Cu — route on F_Cu
-            net.layer = F_CU
-            net.width_mm = TRACK_WIDTH_POWER_MM
-        elif net.net_name in ("VCAP", "SOLAR_IN"):
+        if net.net_name in ("3V3", "GND", "VCAP", "SOLAR_IN"):
             net.layer = F_CU
             net.width_mm = TRACK_WIDTH_POWER_MM
         elif net.net_name in ("RF_SUB_868", "RF_2G4_2400"):
