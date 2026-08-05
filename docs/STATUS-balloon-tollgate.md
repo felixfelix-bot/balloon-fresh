@@ -174,6 +174,13 @@ Ground Station                   Balloon (L7: TollGate)
   changes are tracker-hardware-specific. Our payment protocol is transport-agnostic.
 - **Action:** None.
 
+## Discovery Sync (2026-08-05 batch 5) — 2 findings, both HARDWARE/PCB
+
+### Findings 19-20: V2-ADC board regeneration + routing attempts
+- **Relevance:** NONE for tollgate. PCB design + routing scripts.
+- **Impact on tollgate:** Zero.
+- **Action:** None.
+
 ## Next Steps
 1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
