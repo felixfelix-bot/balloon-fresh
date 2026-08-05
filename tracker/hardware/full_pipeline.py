@@ -92,7 +92,7 @@ V1_FAST_NETS = {
     "RF_2G4_2400":  {"width": TRACK_WIDTH_RF_MM, "layer": F_CU},
 }
 
-# V2-ADC adds VDIV_MID and changes FEM_TX to GPIO0
+# V2-ADC adds VDIV_MID net; GPIO0 used for ADC (ADC1_CH0), FEM_TX stays on GPIO19
 V2_ADC_NETS = dict(V1_FAST_NETS)
 V2_ADC_NETS["VDIV_MID"] = {"width": TRACK_WIDTH_SIGNAL_MM, "layer": F_CU}
 
@@ -499,9 +499,8 @@ def get_v2_adc_components() -> list:
         pads=make_esp32c3_pads(gpio_nets),
     )
 
-    # Remove the FEM component from V1 position since FEM_TX is now on GPIO0
-    # Actually keep FEM but the net is the same, just routed from GPIO0
-    # The FEM component stays, only the C3 pad changes
+    # FEM component stays unchanged — FEM_TX net is the same, just routed
+    # from GPIO19 (unchanged from V1-FAST) instead of GPIO0
 
     # R_DIV1: 100k 0402 at (3, 30) -- voltage divider top (3V3 to midpoint)
     comps.append(ComponentDef(
