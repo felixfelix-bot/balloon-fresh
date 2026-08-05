@@ -95,10 +95,10 @@ extern "C" void app_task(void *arg)
 #ifdef CONFIG_ENABLE_TOLLGATE
         case RELAY_TYPE_TOLLGATE_PAY: {
             /* Decode PAY → send ACK back */
-            tollgate_msg_header_t hdr;
+            tollgate_msg_hdr_t hdr;
             const uint8_t *payload = NULL;
 
-            if (tollgate_msg_decode(pkt.data + 1, pkt.len - 1, &hdr, &payload) == 0) {
+            if (tollgate_proto_decode(pkt.data + 1, pkt.len - 1, &hdr, &payload) >= 0) {
                 ESP_LOGI(TAG, "TollGate PAY received (seq=%u)", hdr.seq);
 
                 /* Build ACK response */
@@ -106,12 +106,15 @@ extern "C" void app_task(void *arg)
                 memset(&ack_pkt, 0, sizeof(ack_pkt));
                 ack_pkt.data[0] = RELAY_TYPE_TOLLGATE_ACK;
 
-                tollgate_msg_t ack_msg;
-                memset(&ack_msg, 0, sizeof(ack_msg));
-                ack_msg.type = TOLLGATE_MSG_ACK;
-                ack_msg.seq = hdr.seq;
+                tollgate_ack_payload_t ack_payload;
+                memset(&ack_payload, 0, sizeof(ack_payload));
+                ack_payload.price_sats = 0;  /* TODO: real price from config */
 
-                int ack_len = tollgate_msg_encode(&ack_msg, ack_pkt.data + 1, RELAY_PACKET_MAX_SIZE - 1);
+                int ack_len = tollgate_proto_encode(ack_pkt.data + 1,
+                                                     RELAY_PACKET_MAX_SIZE - 1,
+                                                     TG_MSG_ACK, hdr.seq,
+                                                     (const char *)&ack_payload,
+                                                     sizeof(ack_payload));
                 if (ack_len > 0) {
                     ack_pkt.len = ack_len + 1;
                     xQueueSend(g_tx_queue, &ack_pkt, pdMS_TO_TICKS(100));
