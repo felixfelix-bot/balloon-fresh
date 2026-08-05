@@ -373,9 +373,9 @@ def get_v1_fast_components() -> list:
         pads=make_esp32c3_pads(gpio_nets),
     ))
 
-    # U2: LR2021 at (25, 25)
+    # U2: LR2021 at (20, 20) -- moved closer to U1 for shorter SPI/control signals
     comps.append(ComponentDef(
-        ref="U2", x=25.0, y=25.0, value="LR2021F33",
+        ref="U2", x=20.0, y=20.0, value="LR2021F33",
         pads=make_lr2021_pads(),
     ))
 
@@ -397,21 +397,21 @@ def get_v1_fast_components() -> list:
         pads=make_diode_pads(),
     ))
 
-    # LED1: 0603 LED at (16, 4)
+    # LED1: 0603 LED at (22, 6) -- moved out of F.Cu routing corridor
     comps.append(ComponentDef(
-        ref="LED1", x=16.0, y=4.0, value="LED-0603",
+        ref="LED1", x=22.0, y=6.0, value="LED-0603",
         pads=make_led_pads(),
     ))
 
-    # R_LED: 330 ohm 0402 at (19, 4)
+    # R_LED: 330 ohm 0402 at (20, 6) -- out of F.Cu corridor, next to LED1
     comps.append(ComponentDef(
-        ref="R_LED", x=19.0, y=4.0, value="330R",
+        ref="R_LED", x=20.0, y=6.0, value="330R",
         pads=make_resistor_pads("STATUS_LED", "LED_ANODE"),
     ))
 
-    # R_PD: 10k pull-down 0402 at (10, 14)
+    # R_PD: 10k pull-down 0402 at (10.5, 13) -- tucked under U1 corner
     comps.append(ComponentDef(
-        ref="R_PD", x=10.0, y=14.0, value="10k",
+        ref="R_PD", x=10.5, y=13.0, value="10k",
         pads=make_resistor_pads("GND", "SPI_MISO"),
     ))
 
