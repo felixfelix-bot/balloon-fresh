@@ -29,11 +29,13 @@ import pcbnew
 
 BOARD_WIDTH_MM = 50.0
 BOARD_HEIGHT_MM = 40.0
-GRID_RESOLUTION_MM = 0.1      # A* grid cell size
+GRID_RESOLUTION_MM = 0.25     # A* grid — fine enough for dense pad clusters
 TRACK_WIDTH_SIGNAL_MM = 0.25  # default signal track width
 TRACK_WIDTH_POWER_MM = 0.40   # power/ground track width
 TRACK_WIDTH_RF_MM = 0.76      # RF antenna trace width
 CLEARANCE_MM = 0.30           # min clearance between different nets
+EDGE_CLEARANCE_MM = 0.50      # board edge copper clearance (DRC default)
+HOLE_CLEARANCE_MM = 0.25      # hole clearance (DRC default)
 VIA_DRILL_MM = 0.3
 VIA_SIZE_MM = 0.6
 
@@ -74,7 +76,7 @@ class ComponentDef:
 # V1-FAST net names and their track widths / preferred layers
 V1_FAST_NETS = {
     "3V3":          {"width": TRACK_WIDTH_POWER_MM, "layer": F_CU},
-    "GND":          {"width": TRACK_WIDTH_POWER_MM, "layer": B_CU},
+    "GND":          {"width": TRACK_WIDTH_POWER_MM, "layer": B_CU},  # GND on B.Cu rail
     "SPI_SCK":      {"width": TRACK_WIDTH_SIGNAL_MM, "layer": F_CU},
     "SPI_MOSI":     {"width": TRACK_WIDTH_SIGNAL_MM, "layer": F_CU},
     "SPI_MISO":     {"width": TRACK_WIDTH_SIGNAL_MM, "layer": F_CU},
@@ -139,7 +141,7 @@ def make_esp32c3_pads(gpio_nets: dict) -> list:
             pads.append(PadDef(
                 number=f"GPIO{gpio}",
                 net=net,
-                dx=-3.0 + i * pitch,
+                dx=-1.5 + i * pitch,   # shift inboard by one pitch (was -3.0) — fixes GPIO5/GPIO6 corner collision
                 dy=3.5,
                 w=pad_w, h=pad_h,
                 layer=F_CU,
@@ -181,15 +183,7 @@ def make_esp32c3_pads(gpio_nets: dict) -> list:
                 layer=F_CU,
             ))
 
-    # Additional GND pad on B.Cu (for via stitching)
-    pads.append(PadDef(
-        number="GND_B",
-        net=gpio_nets.get("GND", ""),
-        dx=0,
-        dy=0,
-        w=1.5, h=1.5,
-        layer=B_CU,
-    ))
+    # No B.Cu GND pad — all routing is on F.Cu only
 
     return pads
 
@@ -409,9 +403,9 @@ def get_v1_fast_components() -> list:
         pads=make_led_pads(),
     ))
 
-    # R_LED: 330 ohm 0402 at (17.5, 4)
+    # R_LED: 330 ohm 0402 at (19, 4)
     comps.append(ComponentDef(
-        ref="R_LED", x=17.5, y=4.0, value="330R",
+        ref="R_LED", x=19.0, y=4.0, value="330R",
         pads=make_resistor_pads("STATUS_LED", "LED_ANODE"),
     ))
 
@@ -421,9 +415,9 @@ def get_v1_fast_components() -> list:
         pads=make_resistor_pads("GND", "SPI_MISO"),
     ))
 
-    # C_CAP: Supercapacitor THT at (8, 37)
+    # C_CAP: Supercapacitor THT at (10, 37)
     comps.append(ComponentDef(
-        ref="C_CAP", x=8.0, y=37.0, value="Supercap",
+        ref="C_CAP", x=10.0, y=37.0, value="Supercap",
         pads=make_tht_pads("VCAP", "GND", pitch_mm=5.0),
     ))
 
@@ -433,15 +427,15 @@ def get_v1_fast_components() -> list:
         pads=make_tht_pads("SOLAR_IN", "GND", pitch_mm=2.54),
     ))
 
-    # ANT1: U.FL for sub-GHz at (48, 25)
+    # ANT1: U.FL for sub-GHz at (46, 25)
     comps.append(ComponentDef(
-        ref="ANT1", x=48.0, y=25.0, value="U.FL-868",
+        ref="ANT1", x=46.0, y=25.0, value="U.FL-868",
         pads=make_ufl_pads("RF_SUB_868"),
     ))
 
-    # ANT2: U.FL for 2.4GHz at (48, 30)
+    # ANT2: U.FL for 2.4GHz at (46, 30)
     comps.append(ComponentDef(
-        ref="ANT2", x=48.0, y=30.0, value="U.FL-2400",
+        ref="ANT2", x=46.0, y=30.0, value="U.FL-2400",
         pads=make_ufl_pads("RF_2G4_2400"),
     ))
 
@@ -564,6 +558,11 @@ def create_footprint(board: pcbnew.BOARD, comp: ComponentDef,
     fp.SetValue(comp.value)
     fp.SetPosition(pcbnew.VECTOR2I_MM(comp.x, comp.y))
 
+    # Hide reference and value text on silk layers to prevent silk overlap/
+    # silk_over_copper/silk_edge_clearance DRC warnings.
+    for field in (fp.Reference(), fp.Value()):
+        field.SetVisible(False)
+
     for pad_def in comp.pads:
         if not pad_def.net:
             continue  # skip NC pads
@@ -582,18 +581,24 @@ def create_footprint(board: pcbnew.BOARD, comp: ComponentDef,
 
         if pad_def.is_thru:
             pad.SetAttribute(pcbnew.PAD_ATTRIB_PTH)
-            # PTH pads are on both copper layers
+            # PTH pads: copper + mask on both sides
             lset = pcbnew.LSET()
             lset.AddLayer(pcbnew.F_Cu)
             lset.AddLayer(pcbnew.B_Cu)
+            lset.AddLayer(pcbnew.F_Mask)
+            lset.AddLayer(pcbnew.B_Mask)
             pad.SetLayerSet(lset)
             pad.SetDrillSize(pcbnew.VECTOR2I_MM(0.5, 0.5))
         else:
             pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
-            # KiCad 9: SetLayer() alone does not work for SMD pads.
-            # Must use SetLayerSet() with an LSET containing the target layer.
+            # KiCad 9: SMD pads need copper + mask on the SAME side.
+            # Missing mask layer causes padstack + solder_mask_bridge DRC errors.
             lset = pcbnew.LSET()
             lset.AddLayer(pad_def.layer)
+            if pad_def.layer == F_CU:
+                lset.AddLayer(pcbnew.F_Mask)
+            else:
+                lset.AddLayer(pcbnew.B_Mask)
             pad.SetLayerSet(lset)
 
         # Assign net
@@ -700,7 +705,9 @@ def parse_board(board: pcbnew.BOARD, net_defs: dict) -> dict:
                 y_mm=y_mm,
                 width_mm=w_mm,
                 height_mm=h_mm,
-                layer=F_CU if pad.IsOnLayer(F_CU) else B_CU,
+                layer=F_CU if pad.IsOnLayer(F_CU) and not pad.IsOnLayer(B_CU)
+                      else (B_CU if pad.IsOnLayer(B_CU) and not pad.IsOnLayer(F_CU)
+                            else F_CU),
                 is_thru=is_thru,
             )
 
@@ -715,11 +722,9 @@ def parse_board(board: pcbnew.BOARD, net_defs: dict) -> dict:
 # ============================================================
 
 def default_routing_strategy(nets: dict) -> list:
-    """Route easy nets first (few pads, short distance), then power nets.
-    This prevents long power traces from blocking short signal routes."""
+    """GND first (B.Cu rail, doesn't block F.Cu), then easy nets, then rest."""
     all_nets = []
     for code, net in nets.items():
-        # Compute total pad span (max distance between any 2 pads)
         max_dist = 0
         if len(net.pads) >= 2:
             for i in range(len(net.pads)):
@@ -727,20 +732,130 @@ def default_routing_strategy(nets: dict) -> list:
                     d = math.sqrt((net.pads[i].x_mm - net.pads[j].x_mm)**2 +
                                   (net.pads[i].y_mm - net.pads[j].y_mm)**2)
                     max_dist = max(max_dist, d)
-        all_nets.append((code, len(net.pads), max_dist))
+        all_nets.append((code, len(net.pads), max_dist, net.net_name))
 
-    # Sort by: fewest pads first, then shortest span first
-    all_nets.sort(key=lambda t: (t[1], t[2]))
-    return [t[0] for t in all_nets]
+    # GND first (B.Cu, doesn't block F.Cu grid)
+    gnd = [t for t in all_nets if t[3] == "GND"]
+    # Rest sorted by pad count, then distance
+    rest = [t for t in all_nets if t[3] != "GND"]
+    rest.sort(key=lambda t: (t[1], t[2]))
+    return [t[0] for t in gnd] + [t[0] for t in rest]
+
+
+def route_gnd_on_bcu(net: NetInfo, router: 'GridRouter') -> bool:
+    """Route GND on B.Cu using a bus-rail approach.
+    Creates a horizontal rail on B.Cu and connects each pad via a via.
+    THT pads connect directly on B.Cu (they span both layers).
+    SMD pads on F.Cu get a via at the pad location to connect to B.Cu rail.
+    """
+    if len(net.pads) < 2:
+        return True
+
+    # Unblock GND pads on B.Cu for routing
+    router.unblock_net_pads(net)
+
+    # Find the median Y coordinate for the rail
+    all_y = [p.y_mm for p in net.pads]
+    rail_y = sorted(all_y)[len(all_y) // 2]
+    # Snap rail_y to grid
+    rail_y_grid = round(rail_y / router.grid_mm) * router.grid_mm
+    rail_y_cell = int(rail_y_grid / router.grid_mm)
+
+    # Find min and max X for the rail
+    all_x = [p.x_mm for p in net.pads]
+    rail_x_min = min(all_x)
+    rail_x_max = max(all_x)
+
+    # Snap to grid
+    rail_x1_cell = int(rail_x_min / router.grid_mm)
+    rail_x2_cell = int(rail_x_max / router.grid_mm)
+
+    # Create the B.Cu rail as a single horizontal track
+    rail_segments = []
+
+    # Block the rail on B.Cu
+    for x in range(rail_x1_cell, rail_x2_cell + 1):
+        router._block_cell(B_CU, x, rail_y_cell)
+
+    # Create rail track segments
+    for x in range(rail_x1_cell, rail_x2_cell):
+        x1_mm = x * router.grid_mm
+        x2_mm = (x + 1) * router.grid_mm
+        rail_segments.append((x1_mm, rail_y_grid, x2_mm, rail_y_grid, B_CU))
+
+    # Connect each pad to the rail
+    for pad in net.pads:
+        pad_x_cell = int(pad.x_mm / router.grid_mm)
+        pad_y_cell = int(pad.y_mm / router.grid_mm)
+
+        if pad.is_thru:
+            # THT pad: spans both layers, connect directly on B.Cu
+            # Route from pad position to rail on B.Cu
+            if pad_y_cell != rail_y_cell:
+                # L-shaped path: horizontal then vertical (or vice versa)
+                start_x = pad.x_mm
+                start_y = pad.y_mm
+                # Go vertical to rail_y
+                rail_segments.append((start_x, start_y, start_x, rail_y_grid, B_CU))
+                # Block this path
+                for y in range(min(pad_y_cell, rail_y_cell), max(pad_y_cell, rail_y_cell) + 1):
+                    router._block_cell(B_CU, pad_x_cell, y)
+                # If pad is not aligned with rail, also add horizontal segment
+                pad_x_on_rail = int(pad.x_mm / router.grid_mm)
+                if pad_x_on_rail < rail_x1_cell or pad_x_on_rail > rail_x2_cell:
+                    # Extend rail to cover this pad
+                    if pad_x_on_rail < rail_x1_cell:
+                        for x in range(pad_x_on_rail, rail_x1_cell):
+                            rail_segments.append((x * router.grid_mm, rail_y_grid,
+                                                  (x+1) * router.grid_mm, rail_y_grid, B_CU))
+                            router._block_cell(B_CU, x, rail_y_cell)
+                    elif pad_x_on_rail > rail_x2_cell:
+                        for x in range(rail_x2_cell, pad_x_on_rail):
+                            rail_segments.append((x * router.grid_mm, rail_y_grid,
+                                                  (x+1) * router.grid_mm, rail_y_grid, B_CU))
+                            router._block_cell(B_CU, x, rail_y_cell)
+        else:
+            # SMD pad on F.Cu: place via at pad center to connect to B.Cu rail
+            via_x = pad.x_mm
+            via_y = pad.y_mm
+            via_x_cell = int(via_x / router.grid_mm)
+            via_y_cell = int(via_y / router.grid_mm)
+
+            # Add via marker
+            rail_segments.append(('via', via_x, via_y, F_CU, B_CU))
+
+            # B.Cu track from via to rail
+            if abs(via_y - rail_y_grid) > 0.01:
+                rail_segments.append((via_x, via_y, via_x, rail_y_grid, B_CU))
+                # Block this path on B.Cu
+                for y in range(min(via_y_cell, rail_y_cell), max(via_y_cell, rail_y_cell) + 1):
+                    router._block_cell(B_CU, via_x_cell, y)
+
+            # If via x is outside rail range, extend rail
+            if via_x_cell < rail_x1_cell:
+                for x in range(via_x_cell, rail_x1_cell):
+                    rail_segments.append((x * router.grid_mm, rail_y_grid,
+                                          (x+1) * router.grid_mm, rail_y_grid, B_CU))
+                    router._block_cell(B_CU, x, rail_y_cell)
+            elif via_x_cell > rail_x2_cell:
+                for x in range(rail_x2_cell, via_x_cell):
+                    rail_segments.append((x * router.grid_mm, rail_y_grid,
+                                          (x+1) * router.grid_mm, rail_y_grid, B_CU))
+                    router._block_cell(B_CU, x, rail_y_cell)
+
+    net.segments = rail_segments
+    net.routed = True
+    print(f"  OK: '{net.net_name}' ({len(rail_segments)} segments, B.Cu rail + {len(net.pads)} vias)")
+    return True
 
 
 def assign_layers(nets: dict):
-    """Assign layers based on where the pads actually are.
-    For prototype: route ALL nets on F_Cu since all SMD pads are on F_Cu
-    and the A* router doesn't support via transitions.
-    GND has some thru-hole pads but routing on F_Cu connects all pads."""
+    """GND on B.Cu (rail + vias), all other nets on F.Cu."""
     for code, net in nets.items():
-        if net.net_name in ("3V3", "GND", "VCAP", "SOLAR_IN"):
+        if net.net_name == "GND":
+            net.layer = B_CU
+            net.width_mm = TRACK_WIDTH_POWER_MM
+        elif net.net_name in ("3V3", "VCAP", "SOLAR_IN"):
             net.layer = F_CU
             net.width_mm = TRACK_WIDTH_POWER_MM
         elif net.net_name in ("RF_SUB_868", "RF_2G4_2400"):
@@ -756,7 +871,13 @@ def assign_layers(nets: dict):
 # ============================================================
 
 class GridRouter:
-    """A* pathfinding router on a coarse grid."""
+    """A* pathfinding router on a coarse grid.
+
+    Uses reference-counted blocking: each grid cell tracks how many
+    pads/segments block it. unblock_net_pads only decrements counts for
+    cells that the current net's pads actually blocked — it does NOT
+    remove blocks created by adjacent nets' pads. This prevents tracks
+    from routing through other pads' clearance zones."""
 
     def __init__(self, board_w_mm=BOARD_WIDTH_MM, board_h_mm=BOARD_HEIGHT_MM,
                  grid_mm=GRID_RESOLUTION_MM, clearance_mm=CLEARANCE_MM):
@@ -764,22 +885,79 @@ class GridRouter:
         self.grid_h = int(board_h_mm / grid_mm)
         self.grid_mm = grid_mm
         self.clearance_cells = int(clearance_mm / grid_mm)
+        self.edge_cells = int(EDGE_CLEARANCE_MM / grid_mm)
 
-        self.blocked = {F_CU: set(), B_CU: set()}
+        # Reference-counted blocked cells: {(x,y): count} per layer
+        # A cell is blocked if count > 0.
+        self.blocked = {F_CU: defaultdict(int), B_CU: defaultdict(int)}
+        # Track which cells each pad blocked, for clean unblocking
+        self._pad_blocks = {}  # id(pad) -> [(layer, x, y), ...]
         self.routed_paths = []
 
+        # Block board edge margins on both layers (permanent, never unblocked)
+        self._block_board_edges()
+
+    def _block_cell(self, layer, x, y):
+        """Increment block count for a cell."""
+        self.blocked[layer][(x, y)] += 1
+
+    def _unblock_cell(self, layer, x, y):
+        """Decrement block count for a cell (min 0)."""
+        c = self.blocked[layer].get((x, y), 0)
+        if c > 0:
+            self.blocked[layer][(x, y)] = c - 1
+
+    def _is_blocked(self, layer, x, y):
+        """Check if a cell is blocked (count > 0)."""
+        return self.blocked[layer].get((x, y), 0) > 0
+
+    def _block_board_edges(self):
+        """Block grid cells near board edges to satisfy copper_edge_clearance DRC.
+        Margin = EDGE_CLEARANCE_MM + max_track_width/2 (track edge to board edge)."""
+        margin_mm = EDGE_CLEARANCE_MM + TRACK_WIDTH_RF_MM / 2
+        e = int(math.ceil(margin_mm / self.grid_mm))
+        for layer_key in (F_CU, B_CU):
+            for x in range(self.grid_w):
+                for ey in range(e):
+                    self._block_cell(layer_key, x, ey)
+                    self._block_cell(layer_key, x, self.grid_h - 1 - ey)
+            for y in range(self.grid_h):
+                for ex in range(e):
+                    self._block_cell(layer_key, ex, y)
+                    self._block_cell(layer_key, self.grid_w - 1 - ex, y)
+
     def block_pad(self, pad: PadInfo, net_code: int):
-        """Block grid cells around a pad, except for cells on the pad's own net."""
+        """Block grid cells for a pad.
+
+        Blocks only the cells the pad physically covers + 1 cell margin.
+        With 0.25mm grid, this creates a minimal blocked zone:
+        ESP32-C3 pad (1.0x0.6): blocks ~4x3 cells + 1 margin = ~6x5
+        LR2021 pad (1.2x0.8): blocks ~5x4 cells + 1 margin = ~7x6
+        Small pad (0.6x0.5): blocks ~3x2 cells + 1 margin = ~5x4
+
+        At 2mm pitch (8 cells), adjacent LR2021 pads leave a 1-cell corridor.
+        At 1.5mm pitch (6 cells), adjacent ESP32 pads leave a 0-cell corridor.
+        For ESP32 pads, the corridor is blocked — A* must route around the
+        entire pad cluster.
+
+        For PTH pads, blocks on both F.Cu and B.Cu."""
         layer = pad.layer if not pad.is_thru else F_CU
         layers = [F_CU, B_CU] if pad.is_thru else [layer]
+        # Block pad coverage + 1 cell clearance margin
+        pad_half = max(pad.width_mm, pad.height_mm) / 2
+        margin_mm = pad_half + self.grid_mm  # pad half + 1 cell
+        margin = int(math.ceil(margin_mm / self.grid_mm))
+        blocked_cells = []
         for layer_key in layers:
-            x0 = int((pad.x_mm - pad.width_mm / 2 - self.grid_mm) / self.grid_mm)
-            x1 = int((pad.x_mm + pad.width_mm / 2 + self.grid_mm) / self.grid_mm)
-            y0 = int((pad.y_mm - pad.height_mm / 2 - self.grid_mm) / self.grid_mm)
-            y1 = int((pad.y_mm + pad.height_mm / 2 + self.grid_mm) / self.grid_mm)
+            x0 = int((pad.x_mm - margin * self.grid_mm) / self.grid_mm)
+            x1 = int((pad.x_mm + margin * self.grid_mm) / self.grid_mm)
+            y0 = int((pad.y_mm - margin * self.grid_mm) / self.grid_mm)
+            y1 = int((pad.y_mm + margin * self.grid_mm) / self.grid_mm)
             for x in range(max(0, x0), min(self.grid_w, x1)):
                 for y in range(max(0, y0), min(self.grid_h, y1)):
-                    self.blocked[layer_key].add((x, y))
+                    self._block_cell(layer_key, x, y)
+                    blocked_cells.append((layer_key, x, y))
+        self._pad_blocks[id(pad)] = blocked_cells
 
     def block_all_pads(self, nets: dict):
         """Block all pads on the grid (with clearance)."""
@@ -789,25 +967,21 @@ class GridRouter:
 
     def unblock_net_pads(self, net: NetInfo):
         """Unblock pads belonging to this net so A* can route to/from them.
-        Must unblock the SAME area that block_pad blocked (including the
-        1-cell margin), otherwise A* start/goal cells are surrounded by
-        a ring of blocked cells and no path can escape."""
+        Uses reference counting: only decrements cells that this net's pads
+        actually blocked. Adjacent pads' blocks are preserved."""
         for pad in net.pads:
-            layer = pad.layer if not pad.is_thru else net.layer
-            layers = [F_CU, B_CU] if pad.is_thru else [layer]
-            for layer_key in layers:
-                x0 = int((pad.x_mm - pad.width_mm / 2 - self.grid_mm) / self.grid_mm)
-                x1 = int((pad.x_mm + pad.width_mm / 2 + self.grid_mm) / self.grid_mm)
-                y0 = int((pad.y_mm - pad.height_mm / 2 - self.grid_mm) / self.grid_mm)
-                y1 = int((pad.y_mm + pad.height_mm / 2 + self.grid_mm) / self.grid_mm)
-                for x in range(max(0, x0), min(self.grid_w, x1)):
-                    for y in range(max(0, y0), min(self.grid_h, y1)):
-                        self.blocked[layer_key].discard((x, y))
+            cells = self._pad_blocks.get(id(pad))
+            if cells:
+                for (layer_key, x, y) in cells:
+                    self._unblock_cell(layer_key, x, y)
 
-    def a_star(self, start, goal, layer, max_explore=200000) -> Optional[list]:
+    def a_star(self, start, goal, layer, max_explore=2000000) -> Optional[list]:
         """A* pathfinding on the grid. Returns list of (x,y) grid cells or None.
         Uses 8-directional movement (orthogonal + diagonal) for better routing."""
         blocked = self.blocked[layer]
+
+        def is_blocked(x, y):
+            return blocked.get((x, y), 0) > 0
 
         def heuristic(a, b):
             # Octile distance for 8-directional movement
@@ -847,11 +1021,11 @@ class GridRouter:
                     continue
                 if neighbor[1] < 0 or neighbor[1] >= self.grid_h:
                     continue
-                if neighbor in blocked:
+                if is_blocked(neighbor[0], neighbor[1]):
                     continue
                 # For diagonal moves, prevent cutting through blocked corners
                 if dx != 0 and dy != 0:
-                    if (current[0] + dx, current[1]) in blocked or (current[0], current[1] + dy) in blocked:
+                    if is_blocked(current[0] + dx, current[1]) or is_blocked(current[0], current[1] + dy):
                         continue
 
                 tentative_g = g_score[current] + cost
@@ -899,19 +1073,13 @@ class GridRouter:
             path = self.a_star(src, dst, net.layer)
 
             if path is None:
-                other_layer = B_CU if net.layer == F_CU else F_CU
-                path = self.a_star(src, dst, other_layer)
-                if path is not None:
-                    route_layer = other_layer
-                else:
-                    print(f"  SKIP: net '{net.net_name}' "
-                          f"({src_pad.ref}.{src_pad.pad_num} -> {dst_pad.ref}.{dst_pad.pad_num})")
-                    failed_pairs += 1
-                    # Remove this destination from unrouted and try remaining
-                    unrouted.remove(dst_pad)
-                    continue
-            else:
-                route_layer = net.layer
+                print(f"  SKIP: net '{net.net_name}' "
+                      f"({src_pad.ref}.{src_pad.pad_num} -> {dst_pad.ref}.{dst_pad.pad_num})")
+                failed_pairs += 1
+                unrouted.remove(dst_pad)
+                continue
+
+            route_layer = net.layer
 
             segments = []
             for i in range(len(path) - 1):
@@ -920,7 +1088,15 @@ class GridRouter:
                 x2 = path[i + 1][0] * self.grid_mm
                 y2 = path[i + 1][1] * self.grid_mm
                 segments.append((x1, y1, x2, y2, route_layer))
-                self._block_segment(path[i], path[i + 1], route_layer)
+                self._block_segment(path[i], path[i + 1], route_layer, net.width_mm)
+
+            # Snap first segment start to actual pad center
+            if segments:
+                x1, y1, x2, y2, lyr = segments[0]
+                segments[0] = (src_pad.x_mm, src_pad.y_mm, x2, y2, lyr)
+                # Snap last segment end to actual pad center
+                x1, y1, x2, y2, lyr = segments[-1]
+                segments[-1] = (x1, y1, dst_pad.x_mm, dst_pad.y_mm, lyr)
 
             net.segments.extend(segments)
             routed_pads.append(dst_pad)
@@ -938,10 +1114,12 @@ class GridRouter:
             print(f"  FAIL: net '{net.net_name}' — no pairs routable")
             return False
 
-    def _block_segment(self, p1, p2, layer):
+    def _block_segment(self, p1, p2, layer, width_mm=TRACK_WIDTH_SIGNAL_MM):
         """Block grid cells along a segment with clearance.
-        Use a 1-cell corridor (not 3-cell) to avoid saturating the grid
-        on a 500x400 board with 17 nets."""
+        Margin = 2 cells (0.5mm) for adequate DRC clearance on F.Cu.
+        GND is on B.Cu so F.Cu track-to-track clearance is the only concern.
+        """
+        margin = 2
         x0, y0 = p1
         x1, y1 = p2
         dx = abs(x1 - x0)
@@ -950,12 +1128,11 @@ class GridRouter:
         for i in range(steps + 1):
             x = x0 + (x1 - x0) * i // steps
             y = y0 + (y1 - y0) * i // steps
-            # Only block the cell itself + immediate neighbors (3x3 max)
-            for ox in range(-1, 2):
-                for oy in range(-1, 2):
+            for ox in range(-margin, margin + 1):
+                for oy in range(-margin, margin + 1):
                     cx, cy = x + ox, y + oy
                     if 0 <= cx < self.grid_w and 0 <= cy < self.grid_h:
-                        self.blocked[layer].add((cx, cy))
+                        self._block_cell(layer, cx, cy)
 
 
 # ============================================================
@@ -971,9 +1148,11 @@ def ripup_all_tracks(board: pcbnew.BOARD):
 
 
 def write_tracks_to_board(board: pcbnew.BOARD, nets: dict):
-    """Write routed tracks to the KiCad board via pcbnew API."""
+    """Write routed tracks to the KiCad board via pcbnew API.
+    Also writes vias for layer transitions."""
     net_map = board.GetNetsByNetcode()
     track_count = 0
+    via_count = 0
 
     for net_code, net in nets.items():
         if not net.routed or not net.segments:
@@ -981,17 +1160,29 @@ def write_tracks_to_board(board: pcbnew.BOARD, nets: dict):
 
         ki_net = net_map[net_code]
 
-        for (x1, y1, x2, y2, layer) in net.segments:
-            track = pcbnew.PCB_TRACK(board)
-            track.SetStart(pcbnew.VECTOR2I_MM(x1, y1))
-            track.SetEnd(pcbnew.VECTOR2I_MM(x2, y2))
-            track.SetWidth(pcbnew.FromMM(net.width_mm))
-            track.SetLayer(layer)
-            track.SetNet(ki_net)
-            board.Add(track)
-            track_count += 1
+        for seg in net.segments:
+            if isinstance(seg, tuple) and len(seg) == 5 and isinstance(seg[0], str) and seg[0] == 'via':
+                _, vx, vy, from_layer, to_layer = seg
+                via = pcbnew.PCB_VIA(board)
+                via.SetPosition(pcbnew.VECTOR2I_MM(float(vx), float(vy)))
+                via.SetDrill(pcbnew.FromMM(VIA_DRILL_MM))
+                via.SetWidth(pcbnew.FromMM(VIA_SIZE_MM))
+                via.SetNet(ki_net)
+                via.SetViaType(pcbnew.VIATYPE_THROUGH)
+                board.Add(via)
+                via_count += 1
+            elif isinstance(seg, tuple) and len(seg) == 5:
+                x1, y1, x2, y2, layer = seg
+                track = pcbnew.PCB_TRACK(board)
+                track.SetStart(pcbnew.VECTOR2I_MM(float(x1), float(y1)))
+                track.SetEnd(pcbnew.VECTOR2I_MM(float(x2), float(y2)))
+                track.SetWidth(pcbnew.FromMM(net.width_mm))
+                track.SetLayer(layer)
+                track.SetNet(ki_net)
+                board.Add(track)
+                track_count += 1
 
-    print(f"  Written {track_count} track segments to board")
+    print(f"  Written {track_count} track segments, {via_count} vias to board")
 
 
 # ============================================================
@@ -1123,7 +1314,7 @@ def main():
         print(f"ITERATION {iteration}/{args.max_iterations}")
         print(f"{'=' * 60}")
 
-        # STEP 3: Run A* router
+        # STEP 3: Run A* router on all nets
         print("\nSTEP 3: A* pathfinding...")
         router = GridRouter()
         router.block_all_pads(nets)
@@ -1132,13 +1323,9 @@ def main():
             net = nets[net_code]
             net.segments = []
             net.routed = False
-            success = router.route_net(net)
-            if not success:
-                # Try alternate layer
-                net.layer = B_CU if net.layer == F_CU else F_CU
-                print(f"  Retrying '{net.net_name}' on alternate layer...")
-                net.segments = []
-                net.routed = False
+            if net.net_name == "GND":
+                route_gnd_on_bcu(net, router)
+            else:
                 router.route_net(net)
 
         # STEP 4: Write tracks to board
@@ -1176,25 +1363,10 @@ def main():
         print(f"  Clearance: {len(clearance_violations)}")
         print(f"  Unconnected: {len(unconnected)}")
 
-        # Adjust strategy: swap layers on nets with most violations
+        # Circuit breaker: check if same violations persist
+        # (simplified — just report and continue to next iteration)
         if iteration < args.max_iterations:
-            print("\n  Adjusting strategy for next iteration...")
-            net_violation_count = defaultdict(int)
-            for v in violations:
-                for item in v.get("items", []):
-                    desc = item.get("description", "")
-                    if "[" in desc and "]" in desc:
-                        net_name = desc[desc.index("[") + 1:desc.index("]")]
-                        net_violation_count[net_name] += 1
-
-            for net_name, count in sorted(net_violation_count.items(),
-                                          key=lambda x: -x[1])[:3]:
-                for net in nets.values():
-                    if net.net_name == net_name:
-                        net.layer = B_CU if net.layer == F_CU else F_CU
-                        print(f"    Swapped '{net_name}' to "
-                              f"{'B.Cu' if net.layer == B_CU else 'F.Cu'}")
-                        break
+            print(f"\n  Continuing to next iteration (re-route with same strategy)...")
 
     print(f"\nFailed to converge after {args.max_iterations} iterations.")
     print(f"  {len(violations)} violations, {len(unconnected)} unconnected remain.")

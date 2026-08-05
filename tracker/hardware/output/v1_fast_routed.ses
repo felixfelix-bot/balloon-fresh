@@ -1,0 +1,120 @@
+(session "v1_fast_routed"
+  (base_design "v1_fast_routed")
+  (placement
+    (resolution um 10)
+    (component 
+      (place FEM 400000 -250000 front 0)
+    )
+    (component ::1
+      (place C2 70000 -240000 front 0)
+      (place C1 80000 -220000 front 0)
+    )
+    (component ::2
+      (place ANT2 460000 -300000 front 0)
+      (place ANT1 460000 -250000 front 0)
+    )
+    (component ::3
+      (place SOLAR 30000 -370000 front 0)
+    )
+    (component ::4
+      (place "C_CAP" 100000 -370000 front 0)
+    )
+    (component ::5
+      (place "R_PD" 100000 -140000 front 0)
+      (place "R_LED" 190000 -40000 front 0)
+    )
+    (component ::6
+      (place LED1 160000 -40000 front 0)
+    )
+    (component ::7
+      (place D1 40000 -180000 front 0)
+    )
+    (component ::8
+      (place U4 50000 -220000 front 0)
+    )
+    (component ::9
+      (place U3 60000 -330000 front 0)
+    )
+    (component ::10
+      (place U2 250000 -250000 front 0)
+    )
+    (component ::11
+      (place U1 120000 -120000 front 0)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "9.0.8+dfsg-1")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (wire
+          (path F.Cu 20000
+            349000 -190000
+            349000 -170000
+          )
+        )
+        (wire
+          (path B.Cu 20000
+            445000 -300000
+            445000 -250000
+          )
+        )
+        (wire
+          (path B.Cu 20000
+            475000 -300000
+            445000 -300000
+          )
+        )
+        (wire
+          (path B.Cu 20000
+            475000 -250000
+            475000 -300000
+          )
+        )
+        (wire
+          (path F.Cu 7998
+            369016 -310000
+            369016 -290000
+          )
+        )
+        (wire
+          (path F.Cu 7998
+            349000 -290000
+            369016 -290000
+          )
+        )
+        (wire
+          (path F.Cu 7998
+            349000 -310000
+            369016 -310000
+          )
+        )
+      )
+    )
+  )
+)
