@@ -189,6 +189,7 @@ Ground Station                   Balloon (L7: TollGate)
 - **Action:** None.
 
 ## Next Steps
+1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
 3. Implement nucula wallet spend_proofs()
 4. Write unit tests for payment protocol encode/decode
