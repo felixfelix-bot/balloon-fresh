@@ -126,3 +126,42 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - Potential concern: relay type tag enum space needs e-hash entries — flag to orchestrator if integration conflict arises
 - No blockers created
 - No cross-track coordination needed — findings used independently
+
+---
+
+## Discovery Sync Acknowledgment (2026-08-05, Batch 4)
+
+### 3 New Findings Analyzed
+
+**1. [balloon-hermes] V2-ADC board created — supercap ADC [POWER, FIRMWARE, HARDWARE]**
+- Commit: bc8aa63
+- Relevance: LOW
+- V2-ADC board adds supercap monitoring via ADC. e-hash relay is pure L7 software — no GPIO/ADC dependency.
+- Confirms ESP32-C3 as deployment target (already assumed in assessment).
+- No action.
+
+**2. [balloon-hermes] V1-FAST board created — minimal, no ADC [FIRMWARE, HARDWARE]**
+- Commit: 8c46d99
+- Relevance: LOW
+- V1-FAST is the stripped production board. Same as V2-ADC — hardware design, no impact on e-hash software.
+- No action.
+
+**3. [balloon-hermes] ESP32-C3 MINI-1 pinout verification + V2-ADC pinmap [FIRMWARE, HARDWARE]**
+- Commit: 4b7203b
+- Relevance: MODERATE
+- Critical corrections to C3 MINI-1 understanding:
+  - GPIO8 has NO ADC channel (V2-ADC plan was broken, corrected to GPIO0/ADC1_CH0)
+  - GPIO18/GPIO19 ARE broken out on MINI-1 (pins 26/27) — usable when USB disabled
+  - GPIO0 is NOT a strapping pin on C3 (unlike ESP32/S3) — safe for ADC/GPIO
+  - Strapping pins: GPIO2 (float), GPIO8 (float), GPIO9 (weak pull-up)
+- **Impact on e-hash relay:**
+  - e-hash relay is L7 software, no direct GPIO dependency. But if relay needs a status LED or debug pin in future, this pinout is the reference.
+  - SPI pins for LR2021 are already allocated by tracker firmware. e-hash relay uses radio via transport abstraction — no pin awareness needed.
+  - Confirms C3 MINI-1 as module — my assessment's C3 portability analysis (78% free, <4KB RAM) applies to this exact module.
+- Action: Note pinout for future hardware reference. No code change.
+
+### Summary (Batch 4)
+- All 3 findings are hardware/PCB focused — LOW to MODERATE relevance to e-hash software relay
+- Key takeaway: ESP32-C3 MINI-1 pinout verified, confirms deployment platform assumptions
+- No blockers, no code changes needed
+- No cross-track coordination needed
