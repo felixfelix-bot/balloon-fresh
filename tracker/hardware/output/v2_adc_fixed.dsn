@@ -34,15 +34,15 @@
     (component ""
       (place R_DIV2 3000.000000 -32000.000000 front 0.000000 (PN 100k))
       (place R_DIV1 3000.000000 -30000.000000 front 0.000000 (PN 100k))
-      (place R_PD 10000.000000 -14000.000000 front 0.000000 (PN 10k))
-      (place R_LED 19000.000000 -4000.000000 front 0.000000 (PN 330R))
+      (place R_PD 10500.000000 -13000.000000 front 0.000000 (PN 10k))
+      (place R_LED 20000.000000 -6000.000000 front 0.000000 (PN 330R))
     )
     (component ::1
       (place FEM 40000.000000 -25000.000000 front 0.000000 (PN FEM))
     )
     (component ::2
-      (place C2 7000.000000 -24000.000000 front 0.000000 (PN 10uF))
-      (place C1 8000.000000 -22000.000000 front 0.000000 (PN 10uF))
+      (place C2 10000.000000 -22000.000000 front 0.000000 (PN 10uF))
+      (place C1 10000.000000 -20000.000000 front 0.000000 (PN 10uF))
     )
     (component ::3
       (place ANT2 46000.000000 -30000.000000 front 0.000000 (PN "U.FL-2400"))
@@ -55,16 +55,16 @@
       (place C_CAP 10000.000000 -37000.000000 front 0.000000 (PN Supercap))
     )
     (component ::6
-      (place LED1 16000.000000 -4000.000000 front 0.000000 (PN "LED-0603"))
+      (place LED1 22000.000000 -6000.000000 front 0.000000 (PN "LED-0603"))
     )
     (component ::7
-      (place D1 4000.000000 -18000.000000 front 0.000000 (PN BAT54))
+      (place D1 6000.000000 -18000.000000 front 0.000000 (PN BAT54))
     )
     (component ::8
-      (place U4 5000.000000 -22000.000000 front 0.000000 (PN TPS7A02))
+      (place U4 8000.000000 -18000.000000 front 0.000000 (PN TPS7A02))
     )
     (component ::9
-      (place U3 6000.000000 -33000.000000 front 0.000000 (PN "MAX-M10S"))
+      (place U3 4000.000000 -28000.000000 front 0.000000 (PN "MAX-M10S"))
     )
     (component ::10
       (place U2 25000.000000 -25000.000000 front 0.000000 (PN LR2021F33))
