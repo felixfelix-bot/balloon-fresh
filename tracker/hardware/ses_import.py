@@ -125,9 +125,9 @@ def parse_ses_file(ses_path: str):
                     'points': points
                 })
 
-        # Parse vias
+        # Parse vias (match any via span, e.g. Via[0-1], Via[0-3], Via[1-2])
         via_pattern = re.compile(
-            r'\(via\s+"Via\[0-1\]_600:300_um"\s+(-?\d+)\s+(-?\d+)\s*\)'
+            r'\(via\s+"Via\[\d+-\d+\]_\d+:\d+_um"\s+(-?\d+)\s+(-?\d+)\s*\)'
         )
         for via_match in via_pattern.finditer(net_content):
             x = ses_to_nm_x(int(via_match.group(1)))

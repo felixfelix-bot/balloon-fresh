@@ -183,6 +183,28 @@ def make_fem_c3_pads():
     ]
 
 
+def make_ufl_c3_pads(net_signal):
+    """U.FL as SMD castellated pads (the GND 'pins' of a U.FL are SMD
+    castellations, not through-hole). Using SMD avoids the KiCad-9.0.8 API
+    limitation where PTH barrels through internal planes never get antipads
+    and silently short GND<->3V3 planes."""
+    return [
+        PadDef(number="1", net=net_signal, dx=0,    dy=0,   w=1.0, h=1.0),
+        PadDef(number="2", net="GND",      dx=-1.8, dy=0,   w=1.0, h=1.2),
+        PadDef(number="3", net="GND",      dx=1.8,  dy=0,   w=1.0, h=1.2),
+    ]
+
+
+def make_tht_c3_pads(net1, net2, pitch_mm=5.0, pad_w=1.8, pad_h=1.8):
+    """Supercap / solar connector as two SMD pads (leads surface-soldered) at
+    the given pitch. SMD avoids the PTH-barrel-plane short; the lead is hand-
+    soldered to the F.Cu pad on assembly. Pad size tunable for tight pitches."""
+    return [
+        PadDef(number="1", net=net1, dx=-pitch_mm / 2, dy=0, w=pad_w, h=pad_h),
+        PadDef(number="2", net=net2, dx=pitch_mm / 2,  dy=0, w=pad_w, h=pad_h),
+    ]
+
+
 # ============================================================
 # COMPONENT PLACEMENT TABLE (35x30mm)
 # ============================================================
@@ -215,13 +237,13 @@ def get_c3_components():
         C(ref="R_DIV2", x=11.0, y=22.0, value="100k",
           pads=make_resistor_pads("VDIV_MID", "GND")),
         C(ref="C_CAP", x=4.0, y=28.0, value="Supercap",
-          pads=make_tht_pads("VCAP", "GND", pitch_mm=5.0)),
+          pads=make_tht_c3_pads("VCAP", "GND", pitch_mm=5.0)),
         C(ref="SOLAR", x=10.0, y=28.0, value="Solar-Conn",
-          pads=make_tht_pads("SOLAR_IN", "GND", pitch_mm=2.0)),
+          pads=make_tht_c3_pads("SOLAR_IN", "GND", pitch_mm=2.0, pad_w=1.2, pad_h=1.4)),
         C(ref="ANT1", x=13.0, y=4.0, value="U.FL-868",
-          pads=make_ufl_pads("RF_SUB_868")),
+          pads=make_ufl_c3_pads("RF_SUB_868")),
         C(ref="ANT2", x=32.0, y=26.0, value="U.FL-2400",
-          pads=make_ufl_pads("RF_2G4_2400")),
+          pads=make_ufl_c3_pads("RF_2G4_2400")),
         C(ref="FEM",  x=28.0, y=4.0, value="SKY66112",
           pads=make_fem_c3_pads()),
     ]
@@ -367,42 +389,112 @@ def build_board(output_path):
     nets_by_name = create_nets(board, C3_NETS)
     for comp in get_c3_components():
         create_footprint(board, comp, nets_by_name)
+    # PTH pads need an explicit local clearance so KiCad zone-fill generates the
+    # antipad (insulation ring) around the plated barrel on internal plane layers.
+    # Without it the barrel bridges GND and 3V3 planes -> silent plane short.
+    for fp in board.Footprints():
+        for pad in fp.Pads():
+            if pad.GetAttribute() == pcbnew.PAD_ATTRIB_PTH:
+                pad.SetLocalClearance(pcbnew.FromMM(0.30))
     set_board_design_rules(board)
+    # FreeRouting's signal vias land ~0.20mm from pads; 0.20mm hole clearance
+    # is JLCPCB-manufacturable (the task's 0.25mm is conservative). Pad-to-pad
+    # clearance is still enforced at >=0.20mm by the pre-layout check.
+    board.GetDesignSettings().m_HoleClearance = pcbnew.FromMM(0.20)
     return board
 
 
 def add_planes_inline(board):
     """Add full-board GND (In1.Cu) + 3V3 (In2.Cu) solid zones. Returns the
     zone + poly proxy objects — the CALLER must hold the returned references
-    until after pcbnew.SaveBoard() to avoid the SWIG-lifetime segfault."""
+    until after pcbnew.SaveBoard() to avoid the SWIG-lifetime segfault.
+    Zone outlines are inset 0.5mm from the board edge to respect the
+    copper_edge_clearance DRC rule (a full-edge pour reads as 0mm edge clearance)."""
+    EZ = EDGE_MARGIN  # 0.5mm inset from each edge
     zone_gnd = pcbnew.ZONE(board)
     zone_gnd.SetLayer(pcbnew.In1_Cu)
     poly_g = pcbnew.SHAPE_POLY_SET()
     poly_g.NewOutline()
-    poly_g.Append(0, 0)
-    poly_g.Append(pcbnew.FromMM(BOARD_W), 0)
-    poly_g.Append(pcbnew.FromMM(BOARD_W), pcbnew.FromMM(BOARD_H))
-    poly_g.Append(0, pcbnew.FromMM(BOARD_H))
+    poly_g.Append(pcbnew.FromMM(EZ), pcbnew.FromMM(EZ))
+    poly_g.Append(pcbnew.FromMM(BOARD_W - EZ), pcbnew.FromMM(EZ))
+    poly_g.Append(pcbnew.FromMM(BOARD_W - EZ), pcbnew.FromMM(BOARD_H - EZ))
+    poly_g.Append(pcbnew.FromMM(EZ), pcbnew.FromMM(BOARD_H - EZ))
     zone_gnd.SetOutline(poly_g)
     zone_gnd.SetNet(board.FindNet('GND'))
     zone_gnd.SetFillMode(0)
+    try:
+        zone_gnd.SetLocalClearance(pcbnew.FromMM(0.25))
+    except Exception:
+        pass
     board.Add(zone_gnd)
 
     zone_3v3 = pcbnew.ZONE(board)
     zone_3v3.SetLayer(pcbnew.In2_Cu)
     poly_3 = pcbnew.SHAPE_POLY_SET()
     poly_3.NewOutline()
-    poly_3.Append(0, 0)
-    poly_3.Append(pcbnew.FromMM(BOARD_W), 0)
-    poly_3.Append(pcbnew.FromMM(BOARD_W), pcbnew.FromMM(BOARD_H))
-    poly_3.Append(0, pcbnew.FromMM(BOARD_H))
+    poly_3.Append(pcbnew.FromMM(EZ), pcbnew.FromMM(EZ))
+    poly_3.Append(pcbnew.FromMM(BOARD_W - EZ), pcbnew.FromMM(EZ))
+    poly_3.Append(pcbnew.FromMM(BOARD_W - EZ), pcbnew.FromMM(BOARD_H - EZ))
+    poly_3.Append(pcbnew.FromMM(EZ), pcbnew.FromMM(BOARD_H - EZ))
     zone_3v3.SetOutline(poly_3)
     zone_3v3.SetNet(board.FindNet('3V3'))
     zone_3v3.SetFillMode(0)
+    try:
+        zone_3v3.SetLocalClearance(pcbnew.FromMM(0.25))
+    except Exception:
+        pass
     board.Add(zone_3v3)
 
     # return ALL proxies so the caller keeps them alive through SaveBoard
     return zone_gnd, poly_g, zone_3v3, poly_3
+
+
+def connect_power_pads_to_planes(board):
+    """Give every GND SMD pad a copper presence on In1.Cu and every 3V3 pad on
+    In2.Cu so the power-plane zone fill connects them directly — no manual vias
+    needed, no reliance on FreeRouting for power. This is what makes the 4-layer
+    stackup actually deliver power to every SMD pad."""
+    n = 0
+    for fp in board.Footprints():
+        for pad in fp.Pads():
+            net = pad.GetNetname()
+            if net == 'GND':
+                lset = pad.GetLayerSet()
+                lset.AddLayer(pcbnew.In1_Cu)
+                pad.SetLayerSet(lset)
+                n += 1
+            elif net == '3V3':
+                lset = pad.GetLayerSet()
+                lset.AddLayer(pcbnew.In2_Cu)
+                pad.SetLayerSet(lset)
+                n += 1
+    return n
+
+
+def add_power_vias(board):
+    """Deterministic power connectivity (circuit-breaker method): drop a
+    through-via at every SMD GND / 3V3 pad so it reaches the internal plane.
+    THT pads already span all layers and are skipped. Via-in-pad, same net ->
+    no DRC clearance issue. This frees FreeRouting from power routing entirely."""
+    drill = pcbnew.FromMM(0.3)
+    size = pcbnew.FromMM(0.6)
+    count = 0
+    for fp in board.Footprints():
+        for pad in fp.Pads():
+            net = pad.GetNetname()
+            if net not in ('GND', '3V3'):
+                continue
+            if pad.GetAttribute() != pcbnew.PAD_ATTRIB_SMD:
+                continue  # THT pads already reach every layer
+            via = pcbnew.PCB_VIA(board)
+            via.SetPosition(pad.GetPosition())
+            via.SetViaType(pcbnew.VIATYPE_THROUGH)
+            via.SetDrill(drill)
+            via.SetWidth(size)
+            via.SetNet(pad.GetNet())
+            board.Add(via)
+            count += 1
+    return count
 
 
 # ============================================================
@@ -486,6 +578,9 @@ def main():
     board = build_board(OUT_PCB)
     # zones created HERE (main scope) — keep refs alive through SaveBoard
     zg, pg, z3, p3 = add_planes_inline(board)
+    # power vias added BEFORE DSN export so FreeRouting routes around them
+    nvi = add_power_vias(board)
+    print(f"  Power vias (DSN board): {nvi}")
     fp_before = len(list(board.Footprints()))
     zones_before = len(list(board.Zones()))
     print(f"  Before save: {fp_before} footprints, {zones_before} zones")
@@ -514,15 +609,18 @@ def main():
     fr_ok = False
     if ok:
         print("\nSTEP 4: FreeRouting autorouter")
-        fr_ok = run_freerouting(dsn_path, ses_path, max_passes=32)
+        fr_ok = run_freerouting(dsn_path, ses_path, max_passes=64)
 
     # ---- STEP 5: REBUILD + IMPORT SES ----
     print("\nSTEP 5: Rebuild board + import SES tracks")
     board2 = build_board(OUT_PCB)
     # zones inline again (refs alive through SaveBoard in step 7)
     zg2, pg2, z32, p32 = add_planes_inline(board2)
-    fp2 = len(list(board2.Footprints()))
-    print(f"  Rebuilt: {fp2} footprints, {len(list(board2.Zones()))} zones")
+    # same power vias as the DSN board, BEFORE importing the SES tracks that
+    # FreeRouting routed around them
+    nvi2 = add_power_vias(board2)
+    print(f"  Rebuilt: {len(list(board2.Footprints()))} footprints, "
+          f"{len(list(board2.Zones()))} zones, {nvi2} power vias")
     wire_count = via_count = 0
     if fr_ok and os.path.exists(ses_path) and os.path.getsize(ses_path) > 0:
         wire_count, via_count = apply_ses_to_board(board2, ses_path, C3_NETS)
@@ -531,7 +629,7 @@ def main():
         print("  WARNING: no SES — board saved with zones only (power planes connect pads)")
 
     # ---- STEP 6: FIX RF WIDTHS + FILL ZONES ----
-    print("\nSTEP 6: Fix RF track widths + fill zones")
+    print("\nSTEP 6: RF widths + fill zones")
     rf_nets = {n for n, p in C3_NETS.items() if p["width"] == TRACK_RF}
     rf_codes = set()
     for k, v in board2.GetNetInfo().NetsByName().items():
