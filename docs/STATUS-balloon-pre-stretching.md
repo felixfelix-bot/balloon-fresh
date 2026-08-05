@@ -10,4 +10,5 @@
 - Equipment Felix HAS: Yokohama 32" balloons, heat sealer, Kapton tape, GPS module, supercaps, 30x DecoGlee 18" foil, pressure sensor + pump, MS300 scale, calipers
 - Equipment NEEDED: Helium source (party He for shakedown, industrial He 4.6 for Yokohama long-duration), BMP280 breakout wired to ESP32-C3
 - ADR-024: ACKNOWLEDGED — extract-only policy, no source repo modifications
+- Discovery Sync (2026-08-05): 2 findings from balloon-hermes assessed — both INFORMATIONAL. (1) Integration test plan Phases 2-4: LR2021 radio testing on S3, no overlap with pressure test rig (BMP280 on GPIO8/GPIO9 I2C). (2) V1 PCB GPIO fix: LED→GPIO18, FEM_TX→GPIO19 — 2 net label changes only, no board dimension/weight impact. Payload weight estimates remain valid.
 - Questions for Orchestrator: Need payload weight estimates (grams) from circuit-design for V1 and V2 variants — blocking lift calculations
