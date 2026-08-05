@@ -43,3 +43,27 @@
 
 ### 4. Mesh baseline build verified + secp measurement + tollgate payment tests — commit 8aaa0bb | FIRMWARE, PROTOCOL, TEST
 - **Assessed:** Informational. Speed-tests scope is throughput optimization only. No action.
+
+## Discovery Sync Batch 2 (2026-08-05) — 6 findings from balloon-hermes
+
+### 5. Integration test plan + PCB GPIO fix plan — commit 2cbf7cd | HARDWARE, TEST
+- **Assessed:** Phase 6 (logic analyzer C3 vs RP2040 SPI timing) is DIRECTLY in speed-tests scope.
+- **Action:** Cherry-picked CONTINUOUS_TX firmware feature (aaa6aef) into speed-tests worktree. Applied FLRC fixes to continuous TX function. Ready for LA capture when orchestrator approves board access.
+
+### 6. radio_task non-blocking loop — commit 4e7722c | RADIO, FIRMWARE
+- **Assessed:** Informational. Tracker relay-mode radio_task uses lr2021_transport layer, not my raw SPI benchmark firmware. Different code path. The non-blocking pattern (100ms recv timeout + tx_queue poll) is good architecture but not applicable to throughput benchmarks which run single-purpose TX.
+
+### 7. signature field in nostr_event_t — commit bc3bd5b | FIRMWARE, TEST
+- **Assessed:** Not applicable. Speed-tests firmware has no Nostr event handling.
+
+### 8. host-side relay pipeline integration test — commit 4e86174 | PROTOCOL, TEST
+- **Assessed:** Not applicable. Relay pipeline tests are for tracker firmware, not throughput benchmarks.
+
+### 9. SPI timing comparison status + Phase 6 plan — commits 4c5fa95, 4d53713, b6c2146 | SPI
+- **Assessed:** CRITICAL — Phase 6 IS speed-tests work. RP2040 baseline complete (10.4 MHz SCK, 18.3% bus duty, 1754 kbps). C3 has zero LA captures.
+- **Action taken:**
+  - Cherry-picked CONTINUOUS_TX mode (commit 7861c3c)
+  - Applied FLRC fixes to continuous TX function
+  - Firmware ready for LA capture: `idf.py -DCONTINUOUS_TX=1 build` + flash
+- **BLOCKER:** Need orchestrator approval for board access to flash C3 + capture with logic analyzer
+- **Next:** When boards available, run `make debug-esp32` (builds + flashes + captures in one command)
