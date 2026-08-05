@@ -230,7 +230,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "v1_fast_routed.kicad_pro",
+    "filename": "v2_adc_freerouted2.kicad_pro",
     "version": 3
   },
   "net_settings": {

@@ -26,6 +26,194 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-speed-tests] docs: discovery sync batch 4 — 3 findings all N/A (PCB smoke test, GPIO fix, int (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `8a0eda9` by Felix
+- **Files:** docs/STATUS-balloon-speed-tests.md
+- **Full message:** docs: discovery sync batch 4 — 3 findings all N/A (PCB smoke test, GPIO fix, integration plan)
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-pre-stretching] docs: discovery sync batch 3 — V1-FAST/V2-ADC replace V1, payload weights update (2026-08-05) | tags: GENERAL
+- **Commit:** `d65fd70` by Felix
+- **Files:** docs/PAYLOAD-WEIGHT-ESTIMATES.md, docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 3 — V1-FAST/V2-ADC replace V1, payload weights updated for single-MCU
+- **Relevance:** GENERAL
+
+
+### [balloon-hermes] feat: V1-FAST board A* routed — all nets traced (2026-08-05) | tags: HARDWARE
+- **Commit:** `17fb9f5` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/v1_fast_routed.kicad_pcb
+- **Full message:** feat: V1-FAST board A* routed — all nets traced
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: V2-ADC board A* routed — all 18 nets traced (2026-08-05) | tags: HARDWARE
+- **Commit:** `e749005` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/v1_fast_routed.kicad_pcb, tracker/hardware/output/v2_adc_routed.kicad_pcb (+2 more)
+- **Full message:** feat: V2-ADC board A* routed — all 18 nets traced
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: V2-ADC board created — 18 nets, 18 components, supercap ADC (2026-08-05) | tags: POWER, FIRMWARE, HARDWARE
+- **Commit:** `bc8aa63` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/v2_adc_board.kicad_pcb, tracker/hardware/output/v2_adc_board.kicad_prl (+1 more)
+- **Full message:** feat: V2-ADC board created — 18 nets, 18 components, supercap ADC
+- **Relevance:** POWER, FIRMWARE, HARDWARE
+
+### [balloon-hermes] feat: V1-FAST board created — 15 nets, 16 components, no ADC (2026-08-05) | tags: FIRMWARE, HARDWARE
+- **Commit:** `8c46d99` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/v1_fast_board.kicad_pcb, tracker/hardware/output/v1_fast_board.kicad_prl (+1 more)
+- **Full message:** feat: V1-FAST board created — 15 nets, 16 components, no ADC
+- **Relevance:** FIRMWARE, HARDWARE
+
+### [balloon-hermes] test: V1-FAST board smoke test — pipeline creates board, DRC runs (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `d57e9cb` by Felix
+- **Files:** tracker/hardware/output/v1_fast_routed.kicad_pcb, tracker/hardware/output/v1_fast_smoke_drc.json
+- **Full message:** test: V1-FAST board smoke test — pipeline creates board, DRC runs
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-hermes] feat: PCB auto-route pipeline — NewBoard, A* router, DRC loop (2026-08-05) | tags: HARDWARE
+- **Commit:** `cba398f` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/v1_fast_routed.kicad_pcb, tracker/hardware/output/v1_fast_routed.kicad_prl (+4 more)
+- **Full message:** feat: PCB auto-route pipeline — NewBoard, A* router, DRC loop
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: ESP32-C3 MINI-1 pinout verification + V2-ADC pinmap (2026-08-05) | tags: FIRMWARE, HARDWARE
+- **Commit:** `4b7203b` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, hub_board_v1-drc.rpt, tracker/firmware/dependencies.lock (+5 more)
+- **Full message:** docs: ESP32-C3 MINI-1 pinout verification + V2-ADC pinmap
+- **Relevance:** FIRMWARE, HARDWARE
+
+### [balloon-hermes] Consultant re-review V2: all 5 blockers + 11 major issues verified fixed — APPRO (2026-08-05) | tags: HARDWARE
+- **Commit:** `3e86997` by Felix
+- **Files:** docs/coordination/PCB-PLAN-CONSULTANT-REVIEW-V2.md
+- **Full message:** Consultant re-review V2: all 5 blockers + 11 major issues verified fixed — APPROVED
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: PCB execution plan V2 — all 5 blockers + 11 major issues fixed, dual-board (2026-08-05) | tags: HARDWARE
+- **Commit:** `032716e` by Felix
+- **Files:** docs/coordination/PCB-AUTO-ROUTE-EXECUTION-PLAN-V2.md
+- **Full message:** docs: PCB execution plan V2 — all 5 blockers + 11 major issues fixed, dual-board V1+V2, quality gates in task bodies
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs(coordination): patch PCB autoroute plan with consultant V7 feedback (2026-08-05) | tags: HARDWARE
+- **Commit:** `d05f3d1` by Felix
+- **Files:** docs/coordination/PCB-AUTOROUTE-EXECUTION-PLAN.md
+- **Full message:** docs(coordination): patch PCB autoroute plan with consultant V7 feedback
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: consultant plan review V7 — APPROVE-WITH-CHANGES, ADC conflict blocker (2026-08-05) | tags: GENERAL
+- **Commit:** `126eca0` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V7.md
+- **Full message:** docs: consultant plan review V7 — APPROVE-WITH-CHANGES, ADC conflict blocker
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: consultant review of PCB plan — 5 blockers, 11 major, verdict: NEEDS REVIS (2026-08-05) | tags: HARDWARE
+- **Commit:** `f934821` by Felix
+- **Files:** docs/coordination/PCB-PLAN-CONSULTANT-REVIEW.md
+- **Full message:** docs: consultant review of PCB plan — 5 blockers, 11 major, verdict: NEEDS REVISION
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: PCB auto-route execution plan — 6 phases, 3.5h estimate, worker-ready (2026-08-05) | tags: HARDWARE
+- **Commit:** `c6211fe` by Felix
+- **Files:** docs/coordination/PCB-AUTOROUTE-EXECUTION-PLAN.md
+- **Full message:** docs: PCB auto-route execution plan — 6 phases, 3.5h estimate, worker-ready
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: PCB auto-route execution plan — 8 phases, worker assignments, quality gate (2026-08-05) | tags: HARDWARE
+- **Commit:** `903da45` by Felix
+- **Files:** docs/coordination/PCB-AUTO-ROUTE-EXECUTION-PLAN.md
+- **Full message:** docs: PCB auto-route execution plan — 8 phases, worker assignments, quality gates
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: clean PCB (tracks stripped) + DSN export pipeline for Freerouting (2026-08-05) | tags: HARDWARE
+- **Commit:** `1aebc5f` by Felix
+- **Files:** tracker/hardware/fix_pcb_and_route.py, tracker/hardware/hub_board_v1_clean.kicad_pcb
+- **Full message:** wip: clean PCB (tracks stripped) + DSN export pipeline for Freerouting
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: Python auto-router script for V1 PCB (format fix needed) (2026-08-05) | tags: HARDWARE
+- **Commit:** `ccdb1b0` by Felix
+- **Files:** tracker/hardware/auto_route_v1.py
+- **Full message:** wip: Python auto-router script for V1 PCB (format fix needed)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: LLM auto-routing pipeline — A* hybrid, full Python code, 2.5h to gerbers (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `c542afb` by Felix
+- **Files:** docs/coordination/LLM-AUTO-ROUTING-PIPELINE.md
+- **Full message:** docs: LLM auto-routing pipeline — A* hybrid, full Python code, 2.5h to gerbers
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] docs: auto-routing feasibility — VERIFIED, python3.14+pcbnew works, kicad-cli DR (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `ee9b6ba` by Felix
+- **Files:** docs/coordination/AUTO-ROUTING-FEASIBILITY.md
+- **Full message:** docs: auto-routing feasibility — VERIFIED, python3.14+pcbnew works, kicad-cli DRC works, pipeline feasible
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] docs: consultant unified board analysis — YES one board works, GPIO9 for LED (2026-08-05) | tags: GENERAL
+- **Commit:** `4884069` by Felix
+- **Files:** tracker/hardware/CONSULTANT-UNIFIED-BOARD-ANALYSIS.md
+- **Full message:** docs: consultant unified board analysis — YES one board works, GPIO9 for LED
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: unified PCB review — two separate boards recommended over unified (2026-08-05) | tags: HARDWARE
+- **Commit:** `0a74046` by Felix
+- **Files:** docs/coordination/UNIFIED-PCB-DESIGN-REVIEW.md
+- **Full message:** docs: unified PCB review — two separate boards recommended over unified
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: consultant V6 progress review + dual-board strategy — PCB GPIO mismatch fo (2026-08-05) | tags: HARDWARE
+- **Commit:** `1b0fe93` by Felix
+- **Files:** docs/coordination/CONSULTANT-PROGRESS-REVIEW-V6.md
+- **Full message:** docs: consultant V6 progress review + dual-board strategy — PCB GPIO mismatch found
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: dual-board strategy — single-MCU V2 for first flight, dual-MCU V1-fix for  (2026-08-05) | tags: PROTOCOL
+- **Commit:** `22dcdc0` by Felix
+- **Files:** tracker/hardware/DUAL-BOARD-STRATEGY.md
+- **Full message:** docs: dual-board strategy — single-MCU V2 for first flight, dual-MCU V1-fix for mesh V2
+- **Relevance:** PROTOCOL
+
+### [balloon-hermes] docs: consultant review V6 — architecture mismatch, single-MCU PCB redesign reco (2026-08-05) | tags: HARDWARE
+- **Commit:** `7309f57` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V6.md
+- **Full message:** docs: consultant review V6 — architecture mismatch, single-MCU PCB redesign recommended, 2-worker limit
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: progress report V6 for consultant — 39 commits, PCB architecture mismatch  (2026-08-05) | tags: HARDWARE
+- **Commit:** `f506d33` by Felix
+- **Files:** docs/coordination/PROGRESS-REPORT-V6.md
+- **Full message:** docs: progress report V6 for consultant — 39 commits, PCB architecture mismatch critical
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] docs: discovery sync batch 3 — 5 findings, V1 PCB GPIO fix adopted, 3 CLI inform (2026-08-05) | tags: HARDWARE
+- **Commit:** `655d094` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync batch 3 — 5 findings, V1 PCB GPIO fix adopted, 3 CLI informational
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] fix(pcb): V1 GPIO fix — remove STATUS_LED from GPIO10, add FEM_TX net + test poi (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `c06cef5` by Felix
+- **Files:** tracker/hardware/V1-PCB-GPIO-FIX.md, tracker/hardware/gerbers_v1_fixed/hub_board_v1-B_Adhesive.gba, tracker/hardware/gerbers_v1_fixed/hub_board_v1-B_Courtyard.gbr (+23 more)
+- **Full message:** fix(pcb): V1 GPIO fix — remove STATUS_LED from GPIO10, add FEM_TX net + test points
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-range-tests] docs: integration test plan + PCB GPIO fix plan — Phases 2-4 and V1 PCB prep (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `bd46945` by Felix
+- **Files:** docs/coordination/INTEGRATION-TEST-PLAN.md, docs/pcb/V1-PCB-GPIO-FIX.md
+- **Full message:** docs: integration test plan + PCB GPIO fix plan — Phases 2-4 and V1 PCB prep
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-speed-tests] docs: discovery sync batch 3 — 5 findings all N/A (PCB, tollgate, nostr CLI) (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `3c08869` by Felix
+- **Files:** docs/STATUS-balloon-speed-tests.md
+- **Full message:** docs: discovery sync batch 3 — 5 findings all N/A (PCB, tollgate, nostr CLI)
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-pre-stretching] docs: discovery sync batch 2 — PCB architecture mismatch found, escalating to or (2026-08-05) | tags: HARDWARE
+- **Commit:** `e6a14f5` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 2 — PCB architecture mismatch found, escalating to orchestrator
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] fix(pcb): V1 GPIO fix — remove STATUS_LED from GPIO10, add FEM_TX net + test poi (2026-08-05) | tags: HARDWARE, TEST
 - **Commit:** `698a039` by Felix
 - **Files:** tracker/hardware/V1-PCB-GPIO-FIX.md, tracker/hardware/gerbers_v1_fixed/hub_board_v1-B_Adhesive.gba, tracker/hardware/gerbers_v1_fixed/hub_board_v1-B_Courtyard.gbr (+23 more)
