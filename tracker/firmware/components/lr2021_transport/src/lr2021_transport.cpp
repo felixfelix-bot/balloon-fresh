@@ -72,7 +72,8 @@ TransportError Lr2021Transport::send(const uint8_t* data, size_t len) {
     return TransportError::Ok;
 }
 
-TransportError Lr2021Transport::recv(uint8_t* buf, size_t buf_len, size_t* n_out) {
+TransportError Lr2021Transport::recv(uint8_t* buf, size_t buf_len, size_t* n_out,
+                                     uint32_t timeout_ms) {
     if (!initialized_)
         return TransportError::NotInitialized;
 
@@ -83,9 +84,9 @@ TransportError Lr2021Transport::recv(uint8_t* buf, size_t buf_len, size_t* n_out
         return TransportError::Ok;
     }
 
-    // No data buffered — poll IRQ up to RADIO_TIMEOUT_MS
+    // No data buffered — poll IRQ up to timeout_ms
     uint32_t elapsed = 0;
-    while (elapsed < RADIO_TIMEOUT_MS) {
+    while (elapsed < timeout_ms) {
         // Poll IRQ pin
         bool asserted = false;
         if (radio_->check_irq(asserted) != Lr2021Error::Ok)
