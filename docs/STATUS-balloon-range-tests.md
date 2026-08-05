@@ -128,6 +128,28 @@ differs between bitrate windows at same distance. If identical → switch not wo
   - **Assessment**: Logic analyzer comparison — speed-tests scope.
   - **ACTION**: No action needed.
 
+## Discovery Sync — 2026-08-05 (5 findings, batch 3)
+
+1. V1 PCB GPIO fix (698a039) | tags: HARDWARE, TEST
+   - ASSESSMENT: ADOPTED via cherry-pick. Removes STATUS_LED from GPIO10 in schematic, adds FEM_TX net + test points. Fixes stale schematic scripts I flagged in 12h pulse. Fixed gerbers now in range-tests branch.
+   - ACTION: None. Schematic now matches firmware. Verify jumper wires against fixed gerbers before next outdoor sweep.
+
+2. tollgate_payment_proto.h + CLI (t_999528b6) | tags: FIRMWARE, PROTOCOL, TEST
+   - ASSESSMENT: INFORMATIONAL. TollGate payment protocol not used in range test methodology.
+   - ACTION: None.
+
+3. relay_send_nostr CLI (t_9b570899) | tags: PROTOCOL, TEST
+   - ASSESSMENT: INFORMATIONAL. Nostr relay CLI command, not range methodology.
+   - ACTION: None.
+
+4. nostr_dump CLI (t_c27101f0) | tags: TEST
+   - ASSESSMENT: INFORMATIONAL. Debug CLI for Nostr event dump. Could be useful when debugging mesh during outdoor tests.
+   - ACTION: None, noted for future debugging.
+
+5. balloon-pre-stretching discovery sync ack | tags: HARDWARE, TEST
+   - ASSESSMENT: INFORMATIONAL. Peer track acknowledging PCB GPIO fix, same findings we already adopted.
+   - ACTION: None.
+
 ## Next Steps (Physical — Operator Required)
 
 1. Flash sweep firmware on both boards (rp2040-range-tx-sweep + rp2040-range-rx-sweep)
