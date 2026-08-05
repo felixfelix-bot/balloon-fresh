@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "balloon_symbols") (type "KiCad") (uri "${KIPRJMOD}/balloon_symbols.kicad_sym") (options "") (descr "Balloon board custom symbols"))
+)

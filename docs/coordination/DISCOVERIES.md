@@ -26,6 +26,121 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] consultant(C3-P7): REJECT sign-off — C3 flight board does not exist (2026-08-05) | tags: GENERAL
+- **Commit:** `084e580` by Felix
+- **Files:** tracker/hardware/C3-SIGNOFF.md
+- **Full message:** consultant(C3-P7): REJECT sign-off — C3 flight board does not exist
+- **Relevance:** GENERAL
+
+### [balloon-hermes] wip: commit all PCB work — 4layer scripts, routing outputs, DSN/SES files (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `14b63d0` by Felix
+- **Files:** tracker/hardware/create_4layer.py, tracker/hardware/output/v2_adc_4layer.dsn, tracker/hardware/output/v2_adc_4layer.kicad_pro (+30 more)
+- **Full message:** wip: commit all PCB work — 4layer scripts, routing outputs, DSN/SES files
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] docs: comprehensive PCB execution plan — 3 variants, quality gates, scheduling (2026-08-05) | tags: HARDWARE
+- **Commit:** `7128449` by Felix
+- **Files:** tracker/hardware/PCB-EXECUTION-PLAN.md
+- **Full message:** docs: comprehensive PCB execution plan — 3 variants, quality gates, scheduling
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs(coordination): PCB master execution plan — 3 variants, 7 phases, 6 gates (2026-08-05) | tags: HARDWARE
+- **Commit:** `30b8a94` by Felix
+- **Files:** docs/coordination/PCB-MASTER-EXECUTION-PLAN.md
+- **Full message:** docs(coordination): PCB master execution plan — 3 variants, 7 phases, 6 gates
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: schematic plan for 3 board variants (C3, S3, C3+RP2040) (2026-08-05) | tags: HARDWARE
+- **Commit:** `d6c7457` by Felix
+- **Files:** docs/coordination/SCHEMATIC-PLAN-3VARIANTS.md
+- **Full message:** docs: schematic plan for 3 board variants (C3, S3, C3+RP2040)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: schematic design plan — C3, S3, C3+RP2040 variants (2026-08-05) | tags: HARDWARE
+- **Commit:** `1a16e3e` by Felix
+- **Files:** tracker/hardware/SCHEMATIC-PLAN.md
+- **Full message:** docs: schematic design plan — C3, S3, C3+RP2040 variants
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: V2-ADC FreeRouting-only output — 0 violations, 22 unconnected (circuit bre (2026-08-05) | tags: HARDWARE
+- **Commit:** `27ba1af` by Felix
+- **Files:** tracker/hardware/output/v2_adc_fixed.kicad_pcb, tracker/hardware/output/v2_adc_fixed.ses, tracker/hardware/output/v2_adc_fixed_drc.json
+- **Full message:** feat: V2-ADC FreeRouting-only output — 0 violations, 22 unconnected (circuit breaker tripped)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: pre-extracted GPIO data for schematic planning task (2026-08-05) | tags: HARDWARE
+- **Commit:** `424296b` by Felix
+- **Files:** docs/coordination/schematic-task-context.md
+- **Full message:** docs: pre-extracted GPIO data for schematic planning task
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: persist kimi-k3 partial work — 8th timeout on delegate_task (300s limit) (2026-08-05) | tags: HARDWARE
+- **Commit:** `39459f2` by Felix
+- **Files:** tracker/hardware/create_4layer.py, tracker/hardware/full_pipeline.py, tracker/hardware/output/v2_adc_4layer.kicad_pcb (+6 more)
+- **Full message:** wip: persist kimi-k3 partial work — 8th timeout on delegate_task (300s limit)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] persist: kimi-k3 power routing scripts + inspection tools (2-layer power routing (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `46d8214` by Felix
+- **Files:** check_layers.py, find_unconnected.py, inspect_board.py (+5 more)
+- **Full message:** persist: kimi-k3 power routing scripts + inspection tools (2-layer power routing abandoned — needs 4-layer)
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] consultant: strategic review — 3 show-stoppers found (MCU mismatch, false 'all p (2026-08-05) | tags: GENERAL
+- **Commit:** `d7e658a` by Felix
+- **Files:** docs/coordination/CONSULTANT-STRATEGIC-REVIEW.md
+- **Full message:** consultant: strategic review — 3 show-stoppers found (MCU mismatch, false 'all power' claim, FEM not removed)
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: comprehensive project status summary for consultant review (2026-08-05) | tags: GENERAL
+- **Commit:** `c97752f` by Felix
+- **Files:** docs/coordination/PROJECT-STATUS-SUMMARY.md
+- **Full message:** docs: comprehensive project status summary for consultant review
+- **Relevance:** GENERAL
+
+### [balloon-hermes] chore: commit remaining kimi-k3 artifacts + DRC verification doc (2026-08-05) | tags: HARDWARE
+- **Commit:** `a9e91ee` by Felix
+- **Files:** tracker/hardware/output/v2_2LAYER_FINAL.kicad_prl, tracker/hardware/output/v2_adc_fixed.dsn, tracker/hardware/output/v2_adc_fixed.kicad_pcb (+6 more)
+- **Full message:** chore: commit remaining kimi-k3 artifacts + DRC verification doc
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix: V2-ADC 2-layer FINAL — outline+gerbers, 0 violations, 16 unconnected (power (2026-08-05) | tags: HARDWARE
+- **Commit:** `dd03b60` by Felix
+- **Files:** tracker/hardware/output/gerbers_v2_2layer/v2_2LAYER_FINAL-B_Adhesive.gba, tracker/hardware/output/gerbers_v2_2layer/v2_2LAYER_FINAL-B_Courtyard.gbr, tracker/hardware/output/gerbers_v2_2layer/v2_2LAYER_FINAL-B_Cu.gbl (+23 more)
+- **Full message:** fix: V2-ADC 2-layer FINAL — outline+gerbers, 0 violations, 16 unconnected (power nets)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] verify(inspection): V2-ADC DRC final verification — FAILS 3/4 gates, not fab-rea (2026-08-05) | tags: GENERAL
+- **Commit:** `6a11077` by Felix
+- **Files:** tracker/hardware/DRC_FINAL_VERIFICATION.md, tracker/hardware/output/v2_adc_v3_clean_VERIFY_DRC.json
+- **Full message:** verify(inspection): V2-ADC DRC final verification — FAILS 3/4 gates, not fab-ready
+- **Relevance:** GENERAL
+
+### [balloon-hermes] fix: V2-ADC 2-layer FINAL — outline+power routing+gerbers (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `0170f56` by Felix
+- **Files:** tracker/hardware/output/gerbers_v2_2layer/v2_2LAYER_FINAL-B_Adhesive.gba, tracker/hardware/output/gerbers_v2_2layer/v2_2LAYER_FINAL-B_Courtyard.gbr, tracker/hardware/output/gerbers_v2_2layer/v2_2LAYER_FINAL-B_Cu.gbl (+22 more)
+- **Full message:** fix: V2-ADC 2-layer FINAL — outline+power routing+gerbers
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] chore: add finish_2layer.py — one-shot power routing + outline + gerbers script (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `b262804` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, tracker/hardware/finish_2layer.py, tracker/hardware/output/v2_2LAYER_FINAL.kicad_pcb (+6 more)
+- **Full message:** chore: add finish_2layer.py — one-shot power routing + outline + gerbers script
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-speed-tests] docs: discovery sync batch 5 — 3 PCB findings all N/A (2-layer board, DSN, pad c (2026-08-05) | tags: HARDWARE
+- **Commit:** `35b818e` by Felix
+- **Files:** docs/STATUS-balloon-speed-tests.md
+- **Full message:** docs: discovery sync batch 5 — 3 PCB findings all N/A (2-layer board, DSN, pad collision)
+- **Relevance:** HARDWARE
+
+### [balloon-pre-stretching] docs: discovery sync batch 5 — V2-ADC not order-ready, PCB delay continues (2026-08-05) | tags: HARDWARE
+- **Commit:** `9d7097a` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 5 — V2-ADC not order-ready, PCB delay continues
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] wip: V2-ADC 2LAYER_FINISH — kimi-k3 working copy from fixed2 (2026-08-05) | tags: HARDWARE
 - **Commit:** `81e3f27` by Felix
 - **Files:** tracker/hardware/output/v2_2LAYER_FINISH.kicad_pcb
