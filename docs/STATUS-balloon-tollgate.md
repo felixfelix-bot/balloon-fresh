@@ -188,6 +188,13 @@ Ground Station                   Balloon (L7: TollGate)
 - **Impact on tollgate:** Zero.
 - **Action:** None.
 
+## Discovery Sync (2026-08-05 batch 7) — 2 findings, both HARDWARE/PCB
+
+### Findings 25-26: C3 flight PCB routing
+- **Relevance:** NONE for tollgate. PCB footprint placement + routing.
+- **Impact on tollgate:** Zero.
+- **Action:** None.
+
 ## Next Steps
 1. Wait for test migration worker result
 2. Wait for FIPS mesh transport API from balloon-fips
