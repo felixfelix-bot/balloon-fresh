@@ -89,7 +89,7 @@ Acknowledged 3 new findings from balloon-hermes. Assessment:
 ### My Integration Plan Gap Status (updated)
 - Gap #1 (mesh_adapter no CMakeLists) → **RESOLVED** by balloon-hermes
 - Gap #2 (fips_transport not wired) → still open, balloon-hermes working on it
-- Gap #3 (nostr_event_deserialize missing) → **CHECK** — relay mode fixes may have addressed
+- Gap #3 (nostr_event_deserialize missing) → **RESOLVED** — implemented + bug fixed (f11ddd6)
 - Gap #4 (esp-now-firmware deleted) → informational, not blocking blossom
 - Gap #5 (all mesh flags disabled) → **PARTIALLY RESOLVED** — CONFIG_ENABLE_MESH verified building
 - Gap #6 (blossom has no mesh awareness) → **MY TASK** — still my responsibility
@@ -104,3 +104,14 @@ Acknowledged 3 new findings from balloon-hermes. Assessment:
    - No action needed. Blossom runs on separate C3, not the tracker S3 board.
 
 2. **FLRC byte alignment, secp256k1, mesh baseline** — already assessed in prior sync above. No new findings.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: relay pipeline test)
+
+1 finding assessed. **CRITICAL** for blossom integration.
+
+1. **Host-side relay pipeline integration test (commit 4e86174 + bugfix f11ddd6)** — `CRITICAL` `RESOLVES GAP #3`
+   - 12 tests covering full relay pipeline: radio(mock)→rx_queue→app_task→nostr_store
+   - **Bug found AND fixed**: `app_task.cpp` checked `nostr_event_deserialize() == 0` but function returns bytes consumed (>0) on success. Events were NEVER stored on real firmware. Fixed in `f11ddd6` to `> 0`.
+   - **Gap #3 RESOLVED**: `nostr_event_deserialize()` now fully implemented in `nostr_store.c:105` and correct return check in `app_task.cpp:81`.
+   - **Blossom impact**: Blossom BUD-11 auth uses same `nostr_event_deserialize()` path for event verification. The bug would have caused blossom to silently drop all incoming Nostr events from the relay pipeline. Now safe.
+   - **Test methodology adoption**: host-side pipeline test (gcc, no hardware, mock radio → real nostr_store) is directly applicable to blossom. Will adopt this pattern for blossom-mesh integration testing.
