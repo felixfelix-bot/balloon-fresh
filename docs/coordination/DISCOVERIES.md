@@ -26,6 +26,127 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] wip: V2-ADC 2LAYER_FINISH — kimi-k3 working copy from fixed2 (2026-08-05) | tags: HARDWARE
+- **Commit:** `81e3f27` by Felix
+- **Files:** tracker/hardware/output/v2_2LAYER_FINISH.kicad_pcb
+- **Full message:** wip: V2-ADC 2LAYER_FINISH — kimi-k3 working copy from fixed2
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: 2-LAYER V2-ADC board — BEST RESULT: 0v/16uc/0s + gerbers exported (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `5080893` by Felix
+- **Files:** tracker/hardware/freerouting_pipeline.py, tracker/hardware/output/v2_adc_2layer_gerbers.zip, tracker/hardware/output/v2_adc_2layer_gerbers/v2_adc_fixed2-B_Adhesive.gba (+59 more)
+- **Full message:** feat: 2-LAYER V2-ADC board — BEST RESULT: 0v/16uc/0s + gerbers exported
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-hermes] persist: V2-ADC fixed4 DRC results + project files (2026-08-05) | tags: HARDWARE
+- **Commit:** `3dd9372` by Felix
+- **Files:** tracker/hardware/output/v2_adc_fixed4.kicad_pro, tracker/hardware/output/v2_adc_fixed4_drc.json
+- **Full message:** persist: V2-ADC fixed4 DRC results + project files
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: V2-ADC fixed4 — 0 unconnected, 1 violation (missing outline) (2026-08-05) | tags: HARDWARE
+- **Commit:** `0d4c668` by Felix
+- **Files:** tracker/hardware/freerouting_pipeline.py, tracker/hardware/output/v2_adc_fixed4.dsn, tracker/hardware/output/v2_adc_fixed4.kicad_pcb (+2 more)
+- **Full message:** wip: V2-ADC fixed4 — 0 unconnected, 1 violation (missing outline)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] chore: regenerate clean V2-ADC board + all routing scripts committed (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `7f610c0` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/v2_adc_v3_clean.dsn, tracker/hardware/output/v2_adc_v3_clean.kicad_pcb (+4 more)
+- **Full message:** chore: regenerate clean V2-ADC board + all routing scripts committed
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat: V2-ADC v3 gerbers exported — ready for JLCPCB (22 unconnected, needs GUI f (2026-08-05) | tags: HARDWARE
+- **Commit:** `c60cb84` by Felix
+- **Files:** tracker/hardware/output/v2_adc_v3_gerbers.zip, tracker/hardware/output/v2_adc_v3_gerbers/v2_adc_v3-B_Adhesive.gba, tracker/hardware/output/v2_adc_v3_gerbers/v2_adc_v3-B_Courtyard.gbr (+24 more)
+- **Full message:** feat: V2-ADC v3 gerbers exported — ready for JLCPCB (22 unconnected, needs GUI finish)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: V2-ADC v3 board — kimi-k3 FreeRouting output, 0 violations, 22 unconnected (2026-08-05) | tags: HARDWARE
+- **Commit:** `eb6b72a` by Felix
+- **Files:** tracker/hardware/output/v2_adc_clean2.kicad_pcb, tracker/hardware/output/v2_adc_fixed3.kicad_pcb, tracker/hardware/output/v2_adc_fixed3.ses (+2 more)
+- **Full message:** feat: V2-ADC v3 board — kimi-k3 FreeRouting output, 0 violations, 22 unconnected
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: PCB task pipeline — kimi-k3 owns all spatial work, consultant gates (2026-08-05) | tags: HARDWARE
+- **Commit:** `acb3369` by Felix
+- **Files:** docs/coordination/PCB-TASK-PIPELINE.md
+- **Full message:** docs: PCB task pipeline — kimi-k3 owns all spatial work, consultant gates
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] consultant: V2-ADC board review — NEEDS CHANGES (board is empty) (2026-08-05) | tags: GENERAL
+- **Commit:** `4ad6de1` by Consultant Reviewer
+- **Files:** docs/coordination/CONSULTANT-FINAL-BOARD-REVIEW.md
+- **Full message:** consultant: V2-ADC board review — NEEDS CHANGES (board is empty)
+- **Relevance:** GENERAL
+
+### [balloon-hermes] persist: remaining kimi-k3 scripts + SES files + DRC results (2026-08-05) | tags: HARDWARE
+- **Commit:** `eedf267` by Felix
+- **Files:** tracker/hardware/output/v2_adc_clean2.kicad_pcb, tracker/hardware/output/v2_adc_fixed3_drc.json, tracker/hardware/surgical_route.py
+- **Full message:** persist: remaining kimi-k3 scripts + SES files + DRC results
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: V2-ADC board DRC-CLEAN — 0 violations, 0 unconnected, gerbers exported (2026-08-05) | tags: HARDWARE
+- **Commit:** `ac666a6` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/output/gerbers_v2/v2_adc_JLCPCB_READY-B_Adhesive.gba, tracker/hardware/output/gerbers_v2/v2_adc_JLCPCB_READY-B_Courtyard.gbr (+48 more)
+- **Full message:** feat: V2-ADC board DRC-CLEAN — 0 violations, 0 unconnected, gerbers exported
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: V1 SES import (175v/26uc), V2 FIXED2 (0v/16uc) — best V2 board yet (2026-08-05) | tags: HARDWARE
+- **Commit:** `d8d9072` by Felix
+- **Files:** tracker/hardware/full_pipeline.py, tracker/hardware/iterative_router.py, tracker/hardware/output/v1_clean_export.dsn (+17 more)
+- **Full message:** wip: V1 SES import (175v/26uc), V2 FIXED2 (0v/16uc) — best V2 board yet
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: V2-ADC FreeRouting output — 0 violations, 21 unconnected (85% routed) (2026-08-05) | tags: HARDWARE
+- **Commit:** `cc48f4f` by Felix
+- **Files:** tracker/hardware/output/v2_adc_fab_candidate.kicad_pcb, tracker/hardware/output/v2_adc_final_drc.json, tracker/hardware/output/v2_adc_gerbers.zip (+26 more)
+- **Full message:** feat: V2-ADC FreeRouting output — 0 violations, 21 unconnected (85% routed)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] wip: V2-ADC routing attempts + finish_routing.py (coordinate fix in progress) (2026-08-05) | tags: HARDWARE, PROTOCOL
+- **Commit:** `15ee739` by Felix
+- **Files:** tracker/hardware/finish_routing.py, tracker/hardware/output/v2_adc_clean.dsn, tracker/hardware/output/v2_adc_clean.kicad_pcb (+15 more)
+- **Full message:** wip: V2-ADC routing attempts + finish_routing.py (coordinate fix in progress)
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] wip: Freerouting DSN pipeline — 241 tracks imported, GND zone fill, coordinate i (2026-08-05) | tags: HARDWARE
+- **Commit:** `65b3f8c` by Felix
+- **Files:** tracker/hardware/import_freerouting_final.py, tracker/hardware/output/v1_clean_export.dsn, tracker/hardware/output/v1_final_drc.json (+2 more)
+- **Full message:** wip: Freerouting DSN pipeline — 241 tracks imported, GND zone fill, coordinate investigation
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] persist: FreeRouting DSN artifacts + DRC snapshots + merged board from /tmp (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `83be7ba` by Felix
+- **Files:** tracker/hardware/import_freerouting_final.py, tracker/hardware/output/drc_snapshots/v1_fast_detail.json, tracker/hardware/output/drc_snapshots/v1_fast_routed_best.json (+18 more)
+- **Full message:** persist: FreeRouting DSN artifacts + DRC snapshots + merged board from /tmp
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-hermes] review: independent DRC verification — BOTH BOARDS FAIL (circuit breaker) (2026-08-05) | tags: GENERAL
+- **Commit:** `422d1d9` by Felix
+- **Files:** tracker/hardware/DRC_VERIFICATION_REPORT.md, tracker/hardware/output/v1_fast_verify.json, tracker/hardware/output/v2_adc_verify.json
+- **Full message:** review: independent DRC verification — BOTH BOARDS FAIL (circuit breaker)
+- **Relevance:** GENERAL
+
+### [balloon-hermes] fix: ESP32-C3 GPIO5/GPIO6 pad collision — shift bottom row inboard by one pitch (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `c4f5ed7` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, docs/coordination/PCB-REMAINING-ISSUES-ANALYSIS.md, test (+49 more)
+- **Full message:** fix: ESP32-C3 GPIO5/GPIO6 pad collision — shift bottom row inboard by one pitch
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-hermes] docs: DRC consultant strategy — pad collision bug found, A* loop is deterministi (2026-08-05) | tags: HARDWARE
+- **Commit:** `a7dab62` by Felix
+- **Files:** docs/coordination/PCB-DRC-CONSULTANT-STRATEGY.md
+- **Full message:** docs: DRC consultant strategy — pad collision bug found, A* loop is deterministic no-op, FreeRouting-only recommended
+- **Relevance:** HARDWARE
+
+### [balloon-pre-stretching] docs: discovery sync batch 4 — speed-tests PCB finding N/A, acknowledged (2026-08-05) | tags: HARDWARE
+- **Commit:** `bc2d1d7` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 4 — speed-tests PCB finding N/A, acknowledged
+- **Relevance:** HARDWARE
+
+
 ### [balloon-speed-tests] docs: discovery sync batch 4 — 3 findings all N/A (PCB smoke test, GPIO fix, int (2026-08-05) | tags: HARDWARE, TEST
 - **Commit:** `8a0eda9` by Felix
 - **Files:** docs/STATUS-balloon-speed-tests.md
