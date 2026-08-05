@@ -373,9 +373,9 @@ def get_v1_fast_components() -> list:
         pads=make_esp32c3_pads(gpio_nets),
     ))
 
-    # U2: LR2021 at (20, 20) -- moved closer to U1 for shorter SPI/control signals
+    # U2: LR2021 at (25, 25)
     comps.append(ComponentDef(
-        ref="U2", x=20.0, y=20.0, value="LR2021F33",
+        ref="U2", x=25.0, y=25.0, value="LR2021F33",
         pads=make_lr2021_pads(),
     ))
 
