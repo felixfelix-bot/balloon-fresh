@@ -72,23 +72,23 @@ def patch_dsn_rules(dsn_path: str):
     # Resolution um 10: 1 unit = 0.1um = 100nm
     # Use TIGHT clearance for FreeRouting routing (it needs this to find paths)
     # We'll fix DRC violations in post-processing
-    # Original: width 200 (0.02mm), clearance 200 (0.02mm)
-    # Use 1500 (0.15mm) width for narrower tracks through congested pad areas
+    # Original: width 200 (0.02mm), clearance 200 (0.02mm) — keep these tight
+    # Just bump width to 2000 (0.20mm) for manufacturable tracks
     content = content.replace(
         '(rule\n      (width 200)\n      (clearance 200)\n      (clearance 50 (type smd_smd))\n    )',
-        '(rule\n      (width 1500)\n      (clearance 150)\n      (clearance 50 (type smd_smd))\n    )'
+        '(rule\n      (width 2000)\n      (clearance 200)\n      (clearance 50 (type smd_smd))\n    )'
     )
 
-    # Patch class rules (net class) — 0.15mm width, tight clearance
+    # Patch class rules (net class) — bump width to 0.20mm, keep tight clearance
     content = content.replace(
         '(rule\n        (width 200)\n        (clearance 200)\n      )',
-        '(rule\n        (width 1500)\n        (clearance 150)\n      )'
+        '(rule\n        (width 2000)\n        (clearance 200)\n      )'
     )
 
     with open(dsn_path, 'w') as f:
         f.write(content)
 
-    print(f"  Patched DSN rules: width=0.15mm, clearance=0.015mm (tight for routing)")
+    print(f"  Patched DSN rules: width=0.20mm (tight clearance preserved for routing)")
 
 
 def export_dsn(board: pcbnew.BOARD, dsn_path: str) -> bool:
