@@ -49,3 +49,12 @@ No action required. PCB manufacturing pipeline. Zero FIPS scope.
 | 15 | C3 flight PCB WIP — 20 footprints, routing incomplete | HARDWARE, PROTOCOL | NONE — PCB manufacturing |
 
 No action required.
+
+## Addendum 4 — 2 more findings (PCB placement quality gates)
+
+| # | Finding | Tags | FIPS Impact |
+|---|---------|------|-------------|
+| 16 | Gate 2.5 placement overlap check | HARDWARE, PROTOCOL | NONE — PCB QA process |
+| 17 | Gate 0 placement check before routing | FIRMWARE, HARDWARE, PROTOCOL | NONE — PCB QA process |
+
+No action required.
