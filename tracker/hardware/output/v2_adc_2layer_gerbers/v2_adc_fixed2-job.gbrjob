@@ -5,12 +5,12 @@
       "Application": "Pcbnew",
       "Version": "9.0.8+dfsg-1"
     },
-    "CreationDate": "2026-08-05T20:27:48+05:30"
+    "CreationDate": "2026-08-05T20:29:13+05:30"
   },
   "GeneralSpecs": {
     "ProjectId": {
-      "Name": "v2_adc_v3",
-      "GUID": "76325f61-6463-45f7-9633-2e6b69636164",
+      "Name": "v2_adc_fixed2",
+      "GUID": "76325f61-6463-45f6-9669-786564322e6b",
       "Revision": "rev?"
     },
     "Size": {
@@ -27,112 +27,112 @@
       "PadToPad": 0.2,
       "PadToTrack": 0.2,
       "TrackToTrack": 0.2,
-      "MinLineWidth": 0.25
+      "MinLineWidth": 0.3998
     }
   ],
   "FilesAttributes": [
     {
-      "Path": "v2_adc_v3-F_Cu.gtl",
+      "Path": "v2_adc_fixed2-F_Cu.gtl",
       "FileFunction": "Copper,L1,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-B_Cu.gbl",
+      "Path": "v2_adc_fixed2-B_Cu.gbl",
       "FileFunction": "Copper,L2,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-F_Adhesive.gta",
+      "Path": "v2_adc_fixed2-F_Adhesive.gta",
       "FileFunction": "Glue,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-B_Adhesive.gba",
+      "Path": "v2_adc_fixed2-B_Adhesive.gba",
       "FileFunction": "Glue,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-F_Paste.gtp",
+      "Path": "v2_adc_fixed2-F_Paste.gtp",
       "FileFunction": "SolderPaste,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-B_Paste.gbp",
+      "Path": "v2_adc_fixed2-B_Paste.gbp",
       "FileFunction": "SolderPaste,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-F_Silkscreen.gto",
+      "Path": "v2_adc_fixed2-F_Silkscreen.gto",
       "FileFunction": "Legend,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-B_Silkscreen.gbo",
+      "Path": "v2_adc_fixed2-B_Silkscreen.gbo",
       "FileFunction": "Legend,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-F_Mask.gts",
+      "Path": "v2_adc_fixed2-F_Mask.gts",
       "FileFunction": "SolderMask,Top",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "v2_adc_v3-B_Mask.gbs",
+      "Path": "v2_adc_fixed2-B_Mask.gbs",
       "FileFunction": "SolderMask,Bot",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "v2_adc_v3-User_Drawings.gbr",
+      "Path": "v2_adc_fixed2-User_Drawings.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_Comments.gbr",
+      "Path": "v2_adc_fixed2-User_Comments.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_Eco1.gbr",
+      "Path": "v2_adc_fixed2-User_Eco1.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_Eco2.gbr",
+      "Path": "v2_adc_fixed2-User_Eco2.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-Edge_Cuts.gm1",
+      "Path": "v2_adc_fixed2-Edge_Cuts.gm1",
       "FileFunction": "Profile",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-F_Fab.gbr",
+      "Path": "v2_adc_fixed2-F_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-B_Fab.gbr",
+      "Path": "v2_adc_fixed2-B_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_1.gbr",
+      "Path": "v2_adc_fixed2-User_1.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_2.gbr",
+      "Path": "v2_adc_fixed2-User_2.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_3.gbr",
+      "Path": "v2_adc_fixed2-User_3.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "v2_adc_v3-User_4.gbr",
+      "Path": "v2_adc_fixed2-User_4.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     }
