@@ -26,6 +26,146 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] fix(pcb): V1 GPIO fix — remove STATUS_LED from GPIO10, add FEM_TX net + test poi (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `698a039` by Felix
+- **Files:** tracker/hardware/V1-PCB-GPIO-FIX.md, tracker/hardware/gerbers_v1_fixed/hub_board_v1-B_Adhesive.gba, tracker/hardware/gerbers_v1_fixed/hub_board_v1-B_Courtyard.gbr (+23 more)
+- **Full message:** fix(pcb): V1 GPIO fix — remove STATUS_LED from GPIO10, add FEM_TX net + test points
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-hermes] feat: create tollgate_payment_proto.h + implement tollgate_send_pay CLI (t_99952 (2026-08-05) | tags: FIRMWARE, PROTOCOL, TEST
+- **Commit:** `65a46fd` by Felix
+- **Files:** docs/coordination/CLI-COMMAND-AUDIT.md, tracker/firmware/main/CMakeLists.txt, tracker/firmware/main/test/test_relay_pipeline.c (+4 more)
+- **Full message:** feat: create tollgate_payment_proto.h + implement tollgate_send_pay CLI (t_999528b6)
+- **Relevance:** FIRMWARE, PROTOCOL, TEST
+
+### [balloon-hermes] feat: implement relay_send_nostr CLI command (t_9b570899) (2026-08-05) | tags: PROTOCOL, TEST
+- **Commit:** `108c2b9` by Felix
+- **Files:** docs/coordination/CLI-COMMAND-AUDIT.md, tracker/firmware/main/app_main.cpp, tracker/firmware/main/test/test_relay_send_nostr.c
+- **Full message:** feat: implement relay_send_nostr CLI command (t_9b570899)
+- **Relevance:** PROTOCOL, TEST
+
+### [balloon-hermes] Implement nostr_dump CLI command (t_c27101f0) (2026-08-05) | tags: TEST
+- **Commit:** `b093ac8` by Felix
+- **Files:** docs/coordination/CLI-COMMAND-AUDIT.md, tracker/firmware/main/app_main.cpp, tracker/firmware/main/app_task.cpp (+1 more)
+- **Full message:** Implement nostr_dump CLI command (t_c27101f0)
+- **Relevance:** TEST
+
+### [balloon-hermes] docs: consultant review V5 — tollgate proto found, merge conflict warning, resou (2026-08-05) | tags: GENERAL
+- **Commit:** `1e26813` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V5.md
+- **Full message:** docs: consultant review V5 — tollgate proto found, merge conflict warning, resource guidance
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: worker status report + CLI audit findings for consultant review (2026-08-05) | tags: GENERAL
+- **Commit:** `aca3f36` by Felix
+- **Files:** docs/coordination/WORKER-STATUS-CONSULTANT-REPORT.md
+- **Full message:** docs: worker status report + CLI audit findings for consultant review
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: CLI command audit — 2/5 exist, 3 missing (relay_send_nostr, nostr_dump, to (2026-08-05) | tags: PROTOCOL
+- **Commit:** `9b79760` by Felix
+- **Files:** docs/coordination/CLI-COMMAND-AUDIT.md
+- **Full message:** docs: CLI command audit — 2/5 exist, 3 missing (relay_send_nostr, nostr_dump, tollgate_send_pay)
+- **Relevance:** PROTOCOL
+
+### [balloon-hermes] docs: integration plan V3 — PCB first, FIPS second, CLI audit, rollback plan (2026-08-05) | tags: HARDWARE
+- **Commit:** `f156ef7` by Felix
+- **Files:** docs/coordination/INTEGRATION-PLAN-V3.md
+- **Full message:** docs: integration plan V3 — PCB first, FIPS second, CLI audit, rollback plan
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: consultant review V4 — 3 plans assessed, PCB priority first (2026-08-05) | tags: HARDWARE
+- **Commit:** `6684c26` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V4.md
+- **Full message:** docs: consultant review V4 — 3 plans assessed, PCB priority first
+- **Relevance:** HARDWARE
+
+### [balloon-range-tests] docs: discovery sync batch 2 — 6 findings, integration plan actionable, radio_ta (2026-08-05) | tags: GENERAL
+- **Commit:** `301f414` by Felix
+- **Files:** docs/STATUS-balloon-range-tests.md
+- **Full message:** docs: discovery sync batch 2 — 6 findings, integration plan actionable, radio_task N/A
+- **Relevance:** GENERAL
+
+### [balloon-speed-tests] docs: discovery sync batch 2 — Phase 6 LA comparison is speed-tests scope, CONTI (2026-08-05) | tags: GENERAL
+- **Commit:** `ab7c6f0` by Felix
+- **Files:** docs/STATUS-balloon-speed-tests.md
+- **Full message:** docs: discovery sync batch 2 — Phase 6 LA comparison is speed-tests scope, CONTINUOUS_TX ready
+- **Relevance:** GENERAL
+
+### [balloon-pre-stretching] docs: discovery sync — integration test plan + PCB GPIO fix assessed, both infor (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `1238273` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync — integration test plan + PCB GPIO fix assessed, both informational
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-circuit-design] docs: consultant PCB review — V1/F33 DRC analysis, GPIO fix assessment, architec (2026-08-05) | tags: HARDWARE
+- **Commit:** `502d33f` by Felix
+- **Files:** docs/CONSULTANT-PCB-REVIEW.md, tracker/hardware/drc_f33_fresh.txt, tracker/hardware/drc_v1_fresh.txt
+- **Full message:** docs: consultant PCB review — V1/F33 DRC analysis, GPIO fix assessment, architecture mismatch found
+- **Relevance:** HARDWARE
+
+
+### [balloon-hermes] docs: integration test plan + PCB GPIO fix plan — Phases 2-4 and V1 PCB prep (2026-08-05) | tags: HARDWARE, TEST
+- **Commit:** `2cbf7cd` by Felix
+- **Files:** docs/coordination/INTEGRATION-TEST-PLAN.md, docs/pcb/V1-PCB-GPIO-FIX.md
+- **Full message:** docs: integration test plan + PCB GPIO fix plan — Phases 2-4 and V1 PCB prep
+- **Relevance:** HARDWARE, TEST
+
+### [balloon-hermes] fix: radio_task non-blocking loop — short recv timeout + tx_queue poll (2026-08-05) | tags: RADIO, FIRMWARE
+- **Commit:** `4e7722c` by Felix
+- **Files:** tracker/firmware/components/lr2021_transport/include/lr2021_transport.h, tracker/firmware/components/lr2021_transport/src/lr2021_transport.cpp, tracker/firmware/main/radio_task.cpp
+- **Full message:** fix: radio_task non-blocking loop — short recv timeout + tx_queue poll
+- **Relevance:** RADIO, FIRMWARE
+
+### [balloon-hermes] fix: inverted nostr_event_deserialize return check — events were never stored (2026-08-05) | tags: GENERAL
+- **Commit:** `f11ddd6` by Felix
+- **Files:** tracker/firmware/main/app_task.cpp
+- **Full message:** fix: inverted nostr_event_deserialize return check — events were never stored
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: consultant review V3 — 5 bugs found, 3 fixed, no-hardware work identified (2026-08-05) | tags: GENERAL
+- **Commit:** `c351b26` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V3.md
+- **Full message:** docs: consultant review V3 — 5 bugs found, 3 fixed, no-hardware work identified
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat: add signature field to nostr_event_t — enables Schnorr verification (2026-08-05) | tags: FIRMWARE, TEST
+- **Commit:** `bc3bd5b` by Felix
+- **Files:** tracker/firmware/components/nostr_store/include/nostr_store.h, tracker/firmware/components/nostr_store/nostr_store.c, tracker/firmware/components/nostr_store/test/test_nostr_store.c
+- **Full message:** feat: add signature field to nostr_event_t — enables Schnorr verification
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-hermes] fix: tollgate API alignment — correct function names, add Kconfig flag (2026-08-05) | tags: GENERAL
+- **Commit:** `cb49869` by Felix
+- **Files:** tracker/firmware/main/Kconfig.projbuild, tracker/firmware/main/app_task.cpp
+- **Full message:** fix: tollgate API alignment — correct function names, add Kconfig flag
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: consultant review V3 — 5 code bugs found, 3 no-hardware actions identified (2026-08-05) | tags: GENERAL
+- **Commit:** `4f30f5b` by Felix
+- **Files:** docs/coordination/CONSULTANT-PLAN-REVIEW-V3.md
+- **Full message:** docs: consultant review V3 — 5 code bugs found, 3 no-hardware actions identified
+- **Relevance:** GENERAL
+
+### [balloon-hermes] test: host-side relay pipeline integration test — no hardware needed (2026-08-05) | tags: PROTOCOL, TEST
+- **Commit:** `4e86174` by Felix
+- **Files:** tracker/firmware/main/test/test_relay_pipeline.c
+- **Full message:** test: host-side relay pipeline integration test — no hardware needed
+- **Relevance:** PROTOCOL, TEST
+
+### [balloon-hermes] docs: SPI timing comparison status + discovery sync updates (2026-08-05) | tags: SPI
+- **Commit:** `b6c2146` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md
+- **Full message:** docs: SPI timing comparison status + discovery sync updates
+- **Relevance:** SPI
+
+### [balloon-hermes] plan: add Phase 6 — logic analyzer C3 vs RP2040 SPI timing comparison (2026-08-05) | tags: SPI
+- **Commit:** `4d53713` by Felix
+- **Files:** docs/coordination/INTEGRATION-PLAN-V2.md
+- **Full message:** plan: add Phase 6 — logic analyzer C3 vs RP2040 SPI timing comparison
+- **Relevance:** SPI
+
+
 ### [balloon-range-tests] docs: discovery sync — 4 findings assessed, GPIO10 fix adopted, FLRC/secp/mesh i (2026-08-05) | tags: RADIO, PROTOCOL
 - **Commit:** `df9982c` by Felix
 - **Files:** docs/STATUS-balloon-range-tests.md
