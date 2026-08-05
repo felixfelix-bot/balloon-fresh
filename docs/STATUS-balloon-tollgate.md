@@ -188,3 +188,14 @@ Recommendation: Depends on RAM measurement. If blossom+mesh fits in 400KB SRAM, 
 2. **V2-ADC routing WIP (commit 3dd9372)** — `INFORMATIONAL`
    - Routing attempts + finish_routing.py coordinate fix. PCB design tooling.
    - No blossom impact.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: V2-ADC PCB batch 2)
+
+4 findings. All INFORMATIONAL — PCB design iterations, no blossom firmware impact.
+
+1. **4-layer PCB scripts + DSN/SES files** — `INFORMATIONAL`. PCB tooling.
+2. **kimi-k3 power routing scripts + inspection tools** — `INFORMATIONAL`. 2-layer power routing automation.
+3. **V2-ADC 2-layer FINAL: outline+power+gerbers** — `INFORMATIONAL`. Board ready for fabrication.
+4. **finish_2layer.py one-shot tool** — `INFORMATIONAL`. Power routing + outline + gerber automation.
+
+No action for blossom. PCB hardware track scope only.
