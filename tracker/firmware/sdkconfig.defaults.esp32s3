@@ -78,3 +78,6 @@ CONFIG_ENABLE_BMP280=y
 
 # ── Antenna switch disabled ──
 # CONFIG_ENABLE_ANTENNA_SWITCH is not set
+
+# ── TollGate payment processing (relay mode required, already set above) ──
+CONFIG_ENABLE_TOLLGATE=y

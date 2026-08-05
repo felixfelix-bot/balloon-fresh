@@ -11,6 +11,7 @@
  * Build & run:
  *   gcc -Wall -O2 -I main -I components/nostr_store/include \
  *       -o /tmp/test_relay main/test/test_relay_pipeline.c \
+ *       main/tollgate_payment_proto.c \
  *       components/nostr_store/nostr_store.c && /tmp/test_relay
  *
  * Pass condition: all tests print PASS, exit code 0.
@@ -72,68 +73,14 @@ static int mock_queue_receive(mock_queue_t *q, relay_packet_t *out)
 }
 
 /* ------------------------------------------------------------------ */
-/* Mock tollgate protocol (tollgate_payment_proto.h doesn't exist yet) */
+/* TollGate payment protocol — uses the REAL tollgate_payment_proto.h  */
 /*                                                                    */
-/* Minimal encode/decode matching the usage in app_task.cpp.           */
-/* When the real header is written, these tests can be updated to     */
-/* include it and call the real functions.                            */
+/* The header now exists at main/tollgate_payment_proto.h with        */
+/* encode/decode functions matching ADR-002. The mock has been removed */
+/* and all tests now exercise the real protocol implementation.       */
 /* ------------------------------------------------------------------ */
 
-#define TOLLGATE_MSG_PAY  0x01
-#define TOLLGATE_MSG_ACK  0x02
-
-typedef struct {
-    uint8_t  type;
-    uint32_t seq;
-} tollgate_msg_header_t;
-
-typedef struct {
-    uint8_t  type;
-    uint32_t seq;
-    uint8_t  payload[256];
-    uint16_t payload_len;
-} tollgate_msg_t;
-
-/* Encode: [1 type][4 seq BE][2 payload_len LE][payload] */
-static int tollgate_msg_encode(const tollgate_msg_t *msg, uint8_t *buf, size_t buf_size)
-{
-    size_t needed = 1 + 4 + 2 + msg->payload_len;
-    if (buf_size < needed) return -1;
-
-    size_t pos = 0;
-    buf[pos++] = msg->type;
-    buf[pos++] = (uint8_t)(msg->seq >> 24);
-    buf[pos++] = (uint8_t)(msg->seq >> 16);
-    buf[pos++] = (uint8_t)(msg->seq >> 8);
-    buf[pos++] = (uint8_t)(msg->seq);
-    buf[pos++] = (uint8_t)(msg->payload_len & 0xFF);
-    buf[pos++] = (uint8_t)((msg->payload_len >> 8) & 0xFF);
-    memcpy(buf + pos, msg->payload, msg->payload_len);
-    pos += msg->payload_len;
-
-    return (int)pos;
-}
-
-/* Decode: returns 0 on success, fills hdr and sets *payload pointer */
-static int tollgate_msg_decode(const uint8_t *buf, size_t buf_len,
-                               tollgate_msg_header_t *hdr,
-                               const uint8_t **payload)
-{
-    if (buf_len < 7) return -1;
-
-    size_t pos = 0;
-    hdr->type = buf[pos++];
-    hdr->seq  = ((uint32_t)buf[pos] << 24) | ((uint32_t)buf[pos+1] << 16) |
-                ((uint32_t)buf[pos+2] << 8) | (uint32_t)buf[pos+3];
-    pos += 4;
-
-    uint16_t plen = (uint16_t)(buf[pos] | (buf[pos+1] << 8));
-    pos += 2;
-
-    if (pos + plen > buf_len) return -1;
-    *payload = buf + pos;
-    return 0;
-}
+#include "tollgate_payment_proto.h"
 
 /* ------------------------------------------------------------------ */
 /* App task dispatch logic — extracted from app_task.cpp              */
@@ -180,22 +127,24 @@ static void app_task_process_packet(app_task_ctx_t *ctx, const relay_packet_t *p
     }
 
     case RELAY_TYPE_TOLLGATE_PAY: {
-        tollgate_msg_header_t hdr;
+        tollgate_msg_hdr_t hdr;
         const uint8_t *payload = NULL;
 
-        if (tollgate_msg_decode(pkt->data + 1, pkt->len - 1, &hdr, &payload) == 0) {
+        if (tollgate_proto_decode(pkt->data + 1, (uint16_t)(pkt->len - 1), &hdr, &payload) > 0) {
             /* Build ACK response (matches app_task.cpp logic) */
             relay_packet_t ack_pkt;
             memset(&ack_pkt, 0, sizeof(ack_pkt));
             ack_pkt.data[0] = RELAY_TYPE_TOLLGATE_ACK;
 
-            tollgate_msg_t ack_msg;
-            memset(&ack_msg, 0, sizeof(ack_msg));
-            ack_msg.type = TOLLGATE_MSG_ACK;
-            ack_msg.seq = hdr.seq;
+            tollgate_ack_payload_t ack;
+            memset(&ack, 0, sizeof(ack));
+            ack.price_sats = 0;  /* TODO: real price from config */
 
-            int ack_len = tollgate_msg_encode(&ack_msg, ack_pkt.data + 1,
-                                              RELAY_PACKET_MAX_SIZE - 1);
+            int ack_len = tollgate_proto_encode(ack_pkt.data + 1,
+                                                 RELAY_PACKET_MAX_SIZE - 1,
+                                                 TG_MSG_ACK, hdr.seq,
+                                                 (const char *)&ack,
+                                                 (uint16_t)sizeof(ack));
             if (ack_len > 0) {
                 ack_pkt.len = (size_t)(ack_len + 1);
                 mock_queue_send(ctx->tx_queue, &ack_pkt);
@@ -254,13 +203,11 @@ static void build_tollgate_pay_packet(relay_packet_t *pkt, uint32_t seq)
     memset(pkt, 0, sizeof(*pkt));
     pkt->data[0] = RELAY_TYPE_TOLLGATE_PAY;
 
-    tollgate_msg_t pay_msg;
-    memset(&pay_msg, 0, sizeof(pay_msg));
-    pay_msg.type = TOLLGATE_MSG_PAY;
-    pay_msg.seq = seq;
-    pay_msg.payload_len = 0;
-
-    int enc_len = tollgate_msg_encode(&pay_msg, pkt->data + 1, RELAY_PACKET_MAX_SIZE - 1);
+    /* Encode PAY with empty payload (matches app_task.cpp test pattern) */
+    int enc_len = tollgate_proto_encode(pkt->data + 1,
+                                         RELAY_PACKET_MAX_SIZE - 1,
+                                         TG_MSG_PAY, (uint16_t)seq,
+                                         NULL, 0);
     assert(enc_len > 0);
     pkt->len = (size_t)(enc_len + 1);
     pkt->timestamp = 0;
@@ -421,10 +368,10 @@ int main(void)
     assert(ack_pkt.data[0] == RELAY_TYPE_TOLLGATE_ACK);
 
     /* Decode ACK message */
-    tollgate_msg_header_t ack_hdr;
+    tollgate_msg_hdr_t ack_hdr;
     const uint8_t *ack_payload = NULL;
-    assert(tollgate_msg_decode(ack_pkt.data + 1, ack_pkt.len - 1, &ack_hdr, &ack_payload) == 0);
-    assert(ack_hdr.type == TOLLGATE_MSG_ACK);
+    assert(tollgate_proto_decode(ack_pkt.data + 1, (uint16_t)(ack_pkt.len - 1), &ack_hdr, &ack_payload) > 0);
+    assert(ack_hdr.type == TG_MSG_ACK);
     assert(ack_hdr.seq == 42);
 
     /* tx_queue should now be empty */
@@ -452,10 +399,10 @@ int main(void)
         assert(mock_queue_receive(&tx_queue, &a) == 0);
         assert(a.data[0] == RELAY_TYPE_TOLLGATE_ACK);
 
-        tollgate_msg_header_t h;
+        tollgate_msg_hdr_t h;
         const uint8_t *pl = NULL;
-        assert(tollgate_msg_decode(a.data + 1, a.len - 1, &h, &pl) == 0);
-        assert(h.type == TOLLGATE_MSG_ACK);
+        assert(tollgate_proto_decode(a.data + 1, (uint16_t)(a.len - 1), &h, &pl) > 0);
+        assert(h.type == TG_MSG_ACK);
         assert(h.seq == seq);
     }
 
@@ -560,10 +507,10 @@ int main(void)
     int ack_count = 0;
     while (mock_queue_receive(&tx_queue, &ack_pkt) == 0) {
         assert(ack_pkt.data[0] == RELAY_TYPE_TOLLGATE_ACK);
-        tollgate_msg_header_t h;
+        tollgate_msg_hdr_t h;
         const uint8_t *pl = NULL;
-        assert(tollgate_msg_decode(ack_pkt.data + 1, ack_pkt.len - 1, &h, &pl) == 0);
-        assert(h.type == TOLLGATE_MSG_ACK);
+        assert(tollgate_proto_decode(ack_pkt.data + 1, (uint16_t)(ack_pkt.len - 1), &h, &pl) > 0);
+        assert(h.type == TG_MSG_ACK);
         assert(h.seq >= 200 && h.seq < 204);
         ack_count++;
     }

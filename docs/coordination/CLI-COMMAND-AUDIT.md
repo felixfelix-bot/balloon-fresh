@@ -15,9 +15,9 @@
 | 2 | `radio_recv` | EXISTS | main/app_main.cpp:335 (handler), :405 (registration) |
 | 3 | `relay_send_nostr` | IMPLEMENTED | main/app_main.cpp:403 (handler), :587 (registration) |
 | 4 | `nostr_dump` | IMPLEMENTED | main/app_main.cpp:402 (handler), :490 (registration) |
-| 5 | `tollgate_send_pay` | IMPLEMENTED (uncommitted WIP) | main/app_main.cpp (handler), setup_cli() (registration) |
+| 5 | `tollgate_send_pay` | IMPLEMENTED | main/app_main.cpp (handler), setup_cli() (registration) |
 
-**4 of 5 commands implemented (tollgate uncommitted). 1 command missing.**
+**5 of 5 commands implemented.**
 
 ---
 
@@ -143,7 +143,7 @@
 ### Current Kconfig State (sdkconfig)
 - `CONFIG_ENABLE_RELAY_MODE=y` — relay mode active
 - `CONFIG_ENABLE_NOSTR_STORE=y` — nostr store active
-- `CONFIG_ENABLE_TOLLGATE` — **not set** — tollgate code is #ifdef'd out
+- `CONFIG_ENABLE_TOLLGATE=y` — tollgate code is now compiled in (sdkconfig.defaults.esp32s3)
 
 ### Component Availability
 | Component | Status | Relevant API |
@@ -152,7 +152,7 @@
 | `secp256k1` | EXISTS, built | Schnorr verification (used in app_task for sig verify) |
 | `stratorelay` | EXISTS, built | Cluster-head election, NodeTable — NOT the relay pipeline |
 | `fips_radio_bridge` | EXISTS, built | FIPS framing over radio |
-| `tollgate_payment_proto` | **DOES NOT EXIST** | Header missing, referenced but not created |
+| `tollgate_payment_proto` | CREATED | `main/tollgate_payment_proto.h` + `.c` — standalone, wire-compatible with tollgate component |
 
 ---
 
