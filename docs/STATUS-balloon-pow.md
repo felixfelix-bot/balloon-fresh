@@ -98,3 +98,31 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - Finding 2 (nostr sig field): MODERATE — future credit signing path + test pattern reference
 - No blockers created
 - No cross-track coordination needed — findings used independently
+
+---
+
+## Discovery Sync Acknowledgment (2026-08-05, Batch 3)
+
+### 1 New Finding Analyzed
+
+**1. [balloon-hermes] tollgate_payment_proto.h + tollgate_send_pay CLI [FIRMWARE, PROTOCOL, TEST]**
+- Commit: 65a46fd
+- Relevance: HIGH
+- Standalone tollgate payment protocol header created: 8-byte packed header (version, type, seq, payload_len, reserved), 6 message types (PAY/ACK/NACK/STATUS/INFO/REVOKE)
+- Self-contained, no ESP-IDF deps, host-testable with gcc
+- Wire-compatible with mesh-stack/tollgate/components/tollgate_balloon/ (ADR-002)
+- Test migrated from mock encode/decode to REAL protocol functions
+- **Direct impact on e-hash relay:**
+  - TollGate PAY/ACK/NACK pattern is structurally parallel to e-hash CREDIT system
+  - My e-hash messages use 1-byte L7 type tag envelope (per ehash-spec.md) vs tollgate 8-byte packed header. Both are L7 protocols over the same relay pipeline.
+  - The relay_pipeline test pattern (mock → real proto migration) is exactly what I need when replacing ehash_radio_stub.c with real LR2021 driver
+  - `tollgate_proto_encode/decode` API design (buf + buf_len + type + seq + payload) is a good reference for `ehash_msg_encode/decode` consistency
+  - The 1-byte relay type tag prefix (RELAY_TYPE_TOLLGATE_PAY etc.) means e-hash messages need their own relay type tags (RELAY_TYPE_EHASH_TEMPLATE, RELAY_TYPE_EHASH_NONCE, etc.) — must coordinate relay type enum space
+  - Packed struct + `__attribute__((packed))` pattern matches my ehash_messages.h approach
+- Action: (a) Review tollgate_payment_proto.h encode/decode API for consistency with ehash_messages.c. (b) Ensure e-hash relay type tags don't collide with tollgate tags in relay pipeline. (c) Follow mock→real test migration pattern when wiring real LR2021 driver.
+
+### Summary (Batch 3)
+- Finding 1 (tollgate payment proto): HIGH — parallel L7 protocol, shared relay pipeline, test pattern reference
+- Potential concern: relay type tag enum space needs e-hash entries — flag to orchestrator if integration conflict arises
+- No blockers created
+- No cross-track coordination needed — findings used independently
