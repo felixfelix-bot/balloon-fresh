@@ -128,3 +128,70 @@ before creating kanban tasks.
 | Pin conflicts | Plan didn't match firmware | Verified from app_main.cpp source |
 | 8x timeouts | 300s delegate_task limit | 1800s permanent config change |
 | Wrong model for task | Assumed "spatial = Kimi" | Two-stage: GLM gen, Kimi verify |
+
+---
+
+## 8. PLACEMENT BEFORE ROUTING (breakthrough)
+
+**What happened:** Previous attempts routed immediately after placing components, producing 13 shorting items from overlapping footprints that no amount of DRC iteration could fix — the components were physically colliding.
+
+**Root cause:** Placement and routing were treated as a single combined step. No verification gate existed between "components placed" and "tracks routed." Overlapping footprints propagated shorts into the routing; the router then dutifully connected them — creating copper bridges between components that should never have touched.
+
+**Fix:** Gate 0 placement check inserted BEFORE any routing (see §4.0 of PCB-TWO-STAGE-PLAN.md). Rules enforced:
+- 0.5mm margin on every component bounding box
+- 2mm minimum gap between bounding boxes
+- Placement must pass before any track creation
+
+**Result:** Phase 1 placement PASSED with `shorting_items: 0`, `solder_mask_bridge: 0`. Board expanded to 55×45mm to give components adequate room.
+
+**Lesson:** Placement and routing are SEPARATE phases. Never route on unverified placement. A placement gate catches footprint collisions before they become intractable routing failures.
+
+---
+
+## 9. BOARD SIZE MATTERS
+
+**What happened:** Attempted to fit 17 components on 35×30mm and 45×35mm boards. Both too small — components could not be placed without bounding-box overlap.
+
+**Root cause:** Over-constrained board size driven by pico-balloon weight optimization. For 17 components including QFN32 (ESP32-C3-MINI-1), LR2021 module, GPS (MAX-M10S), and assorted passives, 35×30mm and 45×35mm simply do not provide enough area for 2mm-gap placement.
+
+**Fix:** Board expanded to 55×45mm. Adequate spacing for QFN32 + LR2021 module + GPS + passives, all with 2mm minimum gaps.
+
+**Lesson:** Don't over-constrain board size. For a pico balloon, weight savings from a smaller PCB are marginal vs the risk of routing failure (13+ shorts, weeks of DRC iteration). The PCB is ~3g; the difference between 45×35mm and 55×45mm is well under 1g. Not worth the routing pain.
+
+---
+
+## 10. PHASED EXECUTION WORKS
+
+**What happened:** Single-pass "generate the whole board" tasks repeatedly failed at different stages with no clean recovery point. A mistake in placement wasn't discovered until routing failed, by which point everything had to be redone.
+
+**Fix:** Task broken into three gated phases:
+- **Phase 1 (Placement):** components placed, Gate 0 passed
+- **Phase 2 (Routing):** tracks/vias created on F.Cu/B.Cu with GND+3V3 internal planes
+- **Phase 3 (Verify):** DRC + gerber export + visual check
+
+Each phase has its own quality gate. The worker can be told "stop after placement, verify, then continue" — giving clean checkpoints where errors are caught and fixed in isolation.
+
+**Lesson:** Complex tasks succeed when broken into gated phases with verification between them. A single "make the board" prompt gives the model no place to recover from an early-stage mistake. A phased prompt lets placement errors get fixed before they poison routing.
+
+---
+
+## 11. KIMI K2.7 (LOCAL) IS SUFFICIENT FOR PCB WORK
+
+**What happened:** kimi-k3:cloud quota was exhausted and the model was unavailable. PCB work appeared blocked — the original plan (ADR-028, PCB-EXECUTION-PLAN.md) had hardcoded kimi-k3:cloud as the ONLY model for all schematic and board layout work.
+
+**Root cause:** Single-model dependency on a quota-limited cloud API. When quota ran out, the entire pipeline stalled with no fallback.
+
+**Fix:** kimi-k2.7-code (local ollama, free, unlimited) was assigned the placement task. It successfully placed all 17 components with 0 bounding-box overlaps on a 55×45mm board.
+
+**Lesson:** Local models can handle PCB generation when given proper structure (phases, gates, pre-layout math). The bottleneck was never the model — it was the lack of structure. With phased execution and explicit Gate 0 placement checks, kimi-k2.7-code matches or exceeds what kimi-k3:cloud produced unstructured. No cloud credit needed for spatial reasoning work.
+
+---
+
+## Summary Table — Items 8-11
+
+| Problem | Root Cause | Fix |
+|---------|-----------|-----|
+| 13 shorting items from overlapping footprints | Routing done on unverified placement | Gate 0: placement check before any routing |
+| 35×30mm and 45×35mm boards too small for 17 components | Over-constrained board size for weight | Expanded to 55×45mm; weight delta negligible |
+| Single-pass board generation failures with no recovery | No checkpoints between placement/routing/verify | Three gated phases with verification between each |
+| Pipeline blocked when kimi-k3:cloud quota exhausted | Single-model dependency on cloud API | kimi-k2.7-code (local, free) handles PCB work when given structure |
