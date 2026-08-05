@@ -176,3 +176,15 @@ ORCHESTRATOR: The consultant V6 review confirms V1 flight board is ESP32-C3. My 
 - This is my current plan assumption.
 
 Recommendation: Depends on RAM measurement. If blossom+mesh fits in 400KB SRAM, Option A is simpler for V1. Need RAM budget analysis.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: V2-ADC PCB routing)
+
+2 findings. Both INFORMATIONAL — pure PCB hardware work, no blossom firmware impact.
+
+1. **V2-ADC board regeneration (commit 81e3f27)** — `INFORMATIONAL`
+   - Clean V2-ADC board + routing scripts committed. PCB design iteration.
+   - No blossom impact — this is circuit-design track scope.
+
+2. **V2-ADC routing WIP (commit 3dd9372)** — `INFORMATIONAL`
+   - Routing attempts + finish_routing.py coordinate fix. PCB design tooling.
+   - No blossom impact.
