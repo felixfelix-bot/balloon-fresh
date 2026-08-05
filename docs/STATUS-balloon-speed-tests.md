@@ -67,3 +67,20 @@
   - Firmware ready for LA capture: `idf.py -DCONTINUOUS_TX=1 build` + flash
 - **BLOCKER:** Need orchestrator approval for board access to flash C3 + capture with logic analyzer
 - **Next:** When boards available, run `make debug-esp32` (builds + flashes + captures in one command)
+
+## Discovery Sync Batch 3 (2026-08-05) — 5 findings
+
+### 10. V1 PCB GPIO fix (gerbers) — commit 698a039 | HARDWARE, TEST
+- **Assessed:** N/A. Same GPIO10 collision already assessed in batch 1. Speed-test boards use different pinout (GPIO10=NSS, GPIO8=LED, no FEM). PCB gerbers are for tracker V1 board.
+
+### 11. tollgate_payment_proto.h + CLI — commit 65a46fd | FIRMWARE, PROTOCOL, TEST
+- **Assessed:** N/A. TollGate payment logic, not throughput firmware.
+
+### 12. relay_send_nostr CLI — commit 108c2b9 | PROTOCOL, TEST
+- **Assessed:** N/A. Nostr relay command in tracker firmware.
+
+### 13. nostr_dump CLI — commit b093ac8 | TEST
+- **Assessed:** N/A. Nostr debug dump command.
+
+### 14. pre-stretching discovery sync — commit (line 95) | HARDWARE, TEST
+- **Assessed:** Informational. Pre-stretching track assessed same findings independently.
