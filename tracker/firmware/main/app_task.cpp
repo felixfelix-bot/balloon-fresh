@@ -78,7 +78,7 @@ extern "C" void app_task(void *arg)
             memset(&event, 0, sizeof(event));
 
             /* Offset +1 to skip the type tag byte */
-            if (nostr_event_deserialize(&event, pkt.data + 1, pkt.len - 1) == 0) {
+            if (nostr_event_deserialize(&event, pkt.data + 1, pkt.len - 1) > 0) {
                 /* TODO V2: verify Schnorr signature once nostr_event_t has a sig field.
                  * Current nostr_store schema has no signature field — events are
                  * stored without sig verification for V1 integration testing.
