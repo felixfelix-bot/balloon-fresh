@@ -26,6 +26,62 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-pre-stretching] docs: discovery sync batch 8 — C3 PCB routing progress, no weight impact (2026-08-06) | tags: HARDWARE, PROTOCOL
+- **Commit:** `3939109` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 8 — C3 PCB routing progress, no weight impact
+- **Relevance:** HARDWARE, PROTOCOL
+
+
+### [balloon-hermes] fix: C3 flight PCB layer assignment — 8→1 shorting_items, 55→44 violations (2026-08-06) | tags: HARDWARE
+- **Commit:** `cbde266` by Felix
+- **Files:** tracker/hardware/fix_crossings.py, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Adhesive.gba, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Courtyard.gbr (+29 more)
+- **Full message:** fix: C3 flight PCB layer assignment — 8→1 shorting_items, 55→44 violations
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat: C3 flight PCB routed on clean placement — 89 tracks, 55 DRC (8 shorts) (2026-08-06) | tags: HARDWARE
+- **Commit:** `69851c9` by Felix
+- **Files:** tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Adhesive.gba, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Courtyard.gbr, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Cu.gbl (+26 more)
+- **Full message:** feat: C3 flight PCB routed on clean placement — 89 tracks, 55 DRC (8 shorts)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: lessons 8-11 + current plan status — placement-first breakthrough, Kimi K2 (2026-08-06) | tags: HARDWARE
+- **Commit:** `b7225f4` by Felix
+- **Files:** docs/PCB-LESSONS-LEARNED-2026-08-05.md, tracker/hardware/PCB-TWO-STAGE-PLAN.md
+- **Full message:** docs: lessons 8-11 + current plan status — placement-first breakthrough, Kimi K2.7 local works
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: PCB session learnings — root causes, fixes, pipeline state, quality gates (2026-08-06) | tags: HARDWARE
+- **Commit:** `208c264` by Felix
+- **Files:** docs/coordination/PCB-SESSION-LEARNINGS-20260806.md
+- **Full message:** docs: PCB session learnings — root causes, fixes, pipeline state, quality gates
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix: C3 flight PCB placement — 0 shorting_items, 0 solder_mask_bridge (Gate 2.5  (2026-08-06) | tags: HARDWARE
+- **Commit:** `4c713b3` by Felix
+- **Files:** tracker/hardware/fix_placement.py, tracker/hardware/fix_placement_v2.py, tracker/hardware/output/v_c3_flight_final.kicad_pcb
+- **Full message:** fix: C3 flight PCB placement — 0 shorting_items, 0 solder_mask_bridge (Gate 2.5 PASS)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: add Gate 2.5 placement overlap check — no routing until placement is clean (2026-08-06) | tags: HARDWARE, PROTOCOL
+- **Commit:** `3e1f8fa` by Felix
+- **Files:** docs/coordination/PCB-WORKER-COORDINATION.md
+- **Full message:** docs: add Gate 2.5 placement overlap check — no routing until placement is clean
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] docs: add Gate 0 placement check before routing — no component overlap allowed (2026-08-06) | tags: FIRMWARE, HARDWARE, PROTOCOL
+- **Commit:** `44cf7de` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json, tracker/hardware/PCB-TWO-STAGE-PLAN.md (+23 more)
+- **Full message:** docs: add Gate 0 placement check before routing — no component overlap allowed
+- **Relevance:** FIRMWARE, HARDWARE, PROTOCOL
+
+### [balloon-pre-stretching] docs: discovery sync batch 7 — C3 flight PCB exists, weight estimates improved (2026-08-06) | tags: HARDWARE
+- **Commit:** `8681cab` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 7 — C3 flight PCB exists, weight estimates improved
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] feat: C3 flight PCB — collision-aware routing (80 tracks, 26 vias), real gerbers (2026-08-06) | tags: HARDWARE, PROTOCOL
 - **Commit:** `eacc32e` by Felix
 - **Files:** tracker/hardware/output/c3_router.py, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Adhesive.gba, tracker/hardware/output/gerbers_v_c3_final/v_c3_flight_final-B_Courtyard.gbr (+46 more)
