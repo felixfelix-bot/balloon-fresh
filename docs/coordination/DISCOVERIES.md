@@ -26,6 +26,37 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] feat(pcb): clean placement 80x60mm + 4-layer routing — 0 overlaps, 10 DRC violat (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `ab7e0f7` by Felix
+- **Files:** tracker/hardware/output/replace_footprints.py, tracker/hardware/output/replace_footprints_v2.py, tracker/hardware/output/route_clean.py (+2 more)
+- **Full message:** feat(pcb): clean placement 80x60mm + 4-layer routing — 0 overlaps, 10 DRC violations
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): v3 router — per-segment via hopping + relaxed fallback (2026-08-07) | tags: HARDWARE
+- **Commit:** `241367b` by Felix
+- **Files:** tracker/hardware/output/route_4layer_v3.py
+- **Full message:** feat(pcb): v3 router — per-segment via hopping + relaxed fallback
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(hardware): v2 4-layer router — 0 crossings, 0 shorts, improved via placemen (2026-08-07) | tags: GENERAL
+- **Commit:** `29f03ad` by Felix
+- **Files:** tracker/hardware/output/route_4layer_v3.py
+- **Full message:** feat(hardware): v2 4-layer router — 0 crossings, 0 shorts, improved via placement
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat(pcb): 4-layer conversion with GND/3V3 power planes + collision-aware routin (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `2812b63` by Felix
+- **Files:** tracker/hardware/output/route_4layer.py, tracker/hardware/output/route_4layer_v2.py, tracker/hardware/output/v_c3_flight_4layer_routed.kicad_pcb
+- **Full message:** feat(pcb): 4-layer conversion with GND/3V3 power planes + collision-aware routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(hardware): 4-layer board with In1.Cu GND plane, In2.Cu 3V3 plane, signals o (2026-08-07) | tags: HARDWARE
+- **Commit:** `fb02a9b` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json, tracker/hardware/drc_4layer.txt (+7 more)
+- **Full message:** feat(hardware): 4-layer board with In1.Cu GND plane, In2.Cu 3V3 plane, signals on F.Cu/B.Cu
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] docs: auto-sync discoveries batch 9 (2026-08-06) | tags: GENERAL
 - **Commit:** `314faa7` by Felix
 - **Files:** docs/coordination/DISCOVERIES.md
