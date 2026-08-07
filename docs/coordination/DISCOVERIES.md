@@ -26,6 +26,13 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] docs: auto-sync discoveries batch 9 (2026-08-06) | tags: GENERAL
+- **Commit:** `314faa7` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md
+- **Full message:** docs: auto-sync discoveries batch 9
+- **Relevance:** GENERAL
+
+
 ### [balloon-pre-stretching] docs: discovery sync batch 8 — C3 PCB routing progress, no weight impact (2026-08-06) | tags: HARDWARE, PROTOCOL
 - **Commit:** `3939109` by Felix
 - **Files:** docs/STATUS-balloon-pre-stretching.md
