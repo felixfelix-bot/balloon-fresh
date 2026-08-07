@@ -202,6 +202,14 @@ Ground Station                   Balloon (L7: TollGate)
 - **Impact on tollgate:** Zero.
 - **Action:** None.
 
+## Discovery Sync (2026-08-07 batch 9) — 6 findings, all HARDWARE/PCB
+
+### Findings 29-34: ROADMAP v5, routing plan v7.1, PCB routing iterations v4/v5/v6, DRC fixes, grid placement, 4-layer routing
+- **Commits:** Multiple (ROADMAP v5, plan v7.1, checkpoint 482f480, DRC fix 960a8fa, grid placement 959be27, 4-layer routing ab7e0f7)
+- **Relevance:** NONE for tollgate. All PCB design, placement, routing, DRC.
+- **Impact on tollgate:** Zero. Payment protocol is transport-agnostic. No PCB scope.
+- **Action:** None.
+
 ## Next Steps
 2. Wait for FIPS mesh transport API from balloon-fips
 3. Implement nucula wallet spend_proofs()
