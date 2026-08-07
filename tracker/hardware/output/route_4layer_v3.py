@@ -1,12 +1,20 @@
 #!/usr/bin/python3.14
-"""4-Layer PCB routing script (v2) for balloon tracker board.
+"""4-Layer PCB routing script (v3) for balloon tracker board.
 
-Improvements over v1:
+Improvements over v2:
+  - Per-segment via hopping: try_route_offset_mixed does 3-segment offset
+    routing where EACH segment independently picks F.Cu or B.Cu (2^3 = 8 combos
+    per offset value).  Vias placed at every layer transition.  This lets a
+    net hop layers mid-route to dodge obstacles that block single-layer offset.
+  - Pass 5 in route_connection: tries all offset × layer-combination combos.
+  - Pass 6 (relaxed): if still unrouted after all strategies, accepts the
+    minimum-collision route from any earlier pass (collision-tolerated).
+
+Inherited from v2:
   - Liang-Barsky segment-rectangle intersection for accurate pad collision detection
   - Pad bbox from GetPosition() + GetSize() with proper rotation handling
   - Layer distribution: try BOTH F.Cu and B.Cu per net, pick the one with fewer collisions
   - Manhattan routing only (H-V or V-H), no diagonal fallback
-  - No collision-fallback routing — if it can't route collision-free, skip
   - Cleaner structure, better DRC summary
 """
 import sys
@@ -14,10 +22,11 @@ sys.path.insert(0, '/usr/lib/python3/dist-packages')
 import pcbnew
 import math
 import os
+import itertools
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 INPUT  = '/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/v_c3_flight_final.kicad_pcb'
-OUTPUT = '/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/v_c3_flight_4layer_routed.kicad_pcb'
+OUTPUT = '/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/v_c3_flight_4layer_routed_v3.kicad_pcb'
 
 # ─── Constants (all in nm) ─────────────────────────────────────────────────────
 TRACK_WIDTH   = 250000   # 0.25mm
@@ -459,6 +468,80 @@ def try_route_offset(layer, start, end, netcode, start_layers, end_layers, patte
     return best if best else (None, None, 999999)
 
 
+def try_route_offset_mixed(start, end, netcode, start_layers, end_layers, pattern):
+    """Try 3-segment Manhattan offset routing with PER-SEGMENT layer choice.
+
+    Each of the 3 segments independently picks F.Cu or B.Cu (2^n combos,
+    where n is the number of non-degenerate segments).  Vias are placed at
+    every layer transition between consecutive segments.
+
+    Returns (segments, vias, collision_count) or (None, None, 999999).
+    """
+    sx, sy = start
+    ex, ey = end
+    if (sx, sy) == (ex, ey):
+        return [], [], 0
+
+    best = None
+    best_collisions = 999999
+
+    for offset in (1500000, 2500000, 3500000, -1500000, -2500000, -3500000, 4500000, -4500000):
+        # Same geometry as try_route_offset
+        if pattern == 'HV':
+            mid1 = (ex, sy + offset)
+            mid2 = (ex, ey)
+        else:
+            mid1 = (sx + offset, ey)
+            mid2 = (sx, ey)
+
+        # Build raw segment endpoints (filter degenerate zero-length segments)
+        raw_points = [(sx, sy), mid1, mid2, (ex, ey)]
+        raw_segs = []
+        for i in range(3):
+            a = raw_points[i]
+            b = raw_points[i + 1]
+            if a != b:
+                raw_segs.append((a, b))
+
+        if not raw_segs:
+            continue
+
+        num_segs = len(raw_segs)
+
+        # Try every viable layer combination (each segment independently F.Cu/B.Cu)
+        for combo in itertools.product((F_CU, B_CU), repeat=num_segs):
+            # Respect endpoint layer constraints
+            if combo[0] not in start_layers:
+                continue
+            if combo[-1] not in end_layers:
+                continue
+
+            # Determine via positions at layer transitions between consecutive segments
+            via_positions = []
+            for i in range(num_segs - 1):
+                if combo[i] != combo[i + 1]:
+                    via_positions.append(raw_segs[i][1])  # shared endpoint = transition point
+
+            # Check all via positions are valid
+            via_ok = all(via_at_pos_ok(v, netcode) for v in via_positions)
+            if not via_ok:
+                continue
+
+            # Count collisions across all segments on their respective layers
+            total = 0
+            for i in range(num_segs):
+                total += count_all_collisions(combo[i], raw_segs[i][0], raw_segs[i][1], netcode)
+
+            if total < best_collisions:
+                segs = [(combo[i], raw_segs[i][0], raw_segs[i][1]) for i in range(num_segs)]
+                best = (segs, list(via_positions), total)
+                best_collisions = total
+
+    if best:
+        return best
+    return None, None, 999999
+
+
 def route_connection(board, start, end, netcode, start_is_tht, end_is_tht,
                      start_layer, end_layer, preferred='HV'):
     """Route a single connection with layer distribution.
@@ -548,8 +631,27 @@ def route_connection(board, start, end, netcode, start_is_tht, end_is_tht,
                     best = (segs, [mid2])
                     best_collisions = total
 
-    # No collision-free route found; return best attempt if it exists
-    # (We skip non-zero-collision routes — better to leave unrouted than cause shorts)
+    # ── Pass 5: Per-segment via hopping (3-segment offset, independent layer per segment) ──
+    for pattern in patterns:
+        segs, vias, collisions = try_route_offset_mixed(
+            (sx, sy), (ex, ey), netcode, start_layers, end_layers, pattern)
+        if segs is None:
+            continue
+        if collisions == 0:
+            return segs, vias
+        if collisions < best_collisions:
+            best = (segs, vias)
+            best_collisions = collisions
+
+    # ── Pass 6: Relaxed routing — accept minimum-collision route from any strategy ──
+    # If we still haven't found a collision-free path, accept the least-bad option
+    # rather than leaving the net unrouted.  These are logged as collision-tolerated.
+    if best is not None and best_collisions < 999999:
+        print(f'    COLLISION-TOLERATED: net={netcode} {start}->{end} '
+              f'({best_collisions} collisions accepted)')
+        return best
+
+    # No route found at all
     return None, None
 
 
@@ -645,9 +747,8 @@ def add_power_zone(board, netname, layer_id, layer_name, bx0, by0, bw, bh):
 
 def main():
     print('=' * 72)
-    print('4-Layer PCB Routing Script v2')
-    print('Improvements: Liang-Barsky pad collision, layer distribution,')
-    print('              Manhattan-only routing, no collision fallback')
+    print('4-Layer PCB Routing Script v3')
+    print('Improvements: per-segment via hopping, relaxed collision-tolerated routing')
     print('=' * 72)
 
     # ── Step 1: Load board ─────────────────────────────────────────────────────
@@ -804,7 +905,7 @@ def main():
 
     # ── Step 8: DRC report ──────────────────────────────────────────────────────
     print('\n[8] Running DRC')
-    drc_report_path = '/tmp/drc_4layer_v2_report.txt'
+    drc_report_path = '/tmp/drc_4layer_v3_report.txt'
     try:
         board2 = pcbnew.LoadBoard(OUTPUT)
         result = pcbnew.WriteDRCReport(board2, drc_report_path, 0, True)
@@ -857,7 +958,7 @@ def main():
                 ]):
                     other_errors += 1
 
-        print(f'\n    ─── DRC Summary (v2) ───')
+        print(f'\n    ─── DRC Summary (v3) ───')
         print(f'    tracks_crossing:           {tracks_crossing}')
         print(f'    unconnected_items:          {unconnected_items}')
         print(f'    shorting_items:             {shorting_items}')
