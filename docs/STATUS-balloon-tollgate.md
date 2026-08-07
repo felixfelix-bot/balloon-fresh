@@ -222,3 +222,17 @@ Note: C3 flight PCB progression confirms my architecture escalation is still rel
 2. **Gate 0 placement check** — `INFORMATIONAL`. Component overlap check before routing.
 
 No blossom firmware impact. PCB design process scope only.
+
+## Discovery Sync — 2026-08-07 (balloon-hermes: C3 flight PCB 4-layer routing)
+
+2 findings. Both INFORMATIONAL — pure PCB hardware iterations.
+
+1. **Clean placement 80x60mm + 4-layer routing (commit ab7e0f7)** — `INFORMATIONAL`
+   - 0 overlaps, 10 DRC violations. Footprint replacement + routing scripts.
+   - No blossom impact — PCB mechanical work, MCU type unchanged (C3).
+
+2. **4-layer conversion with GND/3V3 power planes (commit 2812b63)** — `INFORMATIONAL`
+   - In1.Cu GND plane, In2.Cu 3V3 plane, signals on F.Cu/B.Cu. Collision-aware routing.
+   - No blossom impact — signal integrity improvement, no firmware interface changes.
+
+C3 flight path already confirmed. Architecture escalation (single vs dual MCU) still unanswered but these PCB iterations don't affect it either way.
