@@ -26,6 +26,151 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-pre-stretching] docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informat (2026-08-08) | tags: PROTOCOL
+- **Commit:** `350b1e3` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informational
+- **Relevance:** PROTOCOL
+
+
+### [balloon-pre-stretching] docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informat (2026-08-08) | tags: PROTOCOL
+- **Commit:** `350b1e3` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informational
+- **Relevance:** PROTOCOL
+
+
+### [balloon-pre-stretching] docs: discovery sync batch 12 — FreeROUTING hung, no weight impact, informationa (2026-08-08) | tags: GENERAL
+- **Commit:** `773f824` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 12 — FreeROUTING hung, no weight impact, informational
+- **Relevance:** GENERAL
+
+### [balloon-circuit-design] feat(router): diagonal 45° routing capability for PCB v7 (2026-08-08) | tags: HARDWARE, PROTOCOL
+- **Commit:** `cbdd656` by Felix
+- **Files:** tracker/hardware/route_diagonal.py
+- **Full message:** feat(router): diagonal 45° routing capability for PCB v7
+- **Relevance:** HARDWARE, PROTOCOL
+
+
+### [balloon-hermes] wip(pcb): 9/16 signal nets routed, FreeROUTING hung — need diagonal router (2026-08-08) | tags: HARDWARE
+- **Commit:** `dcb3778` by Felix
+- **Files:** tracker/hardware/output/route_v7_signals.py, tracker/hardware/output/v7_routed.dsn, tracker/hardware/output/v_c3_flight_v7_routed.kicad_pcb
+- **Full message:** wip(pcb): 9/16 signal nets routed, FreeROUTING hung — need diagonal router
+- **Relevance:** HARDWARE
+
+
+### [balloon-pre-stretching] docs: discovery sync batch 11 — circuit-design adopts ROADMAP v5, informational (2026-08-07) | tags: GENERAL
+- **Commit:** `5e50b18` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 11 — circuit-design adopts ROADMAP v5, informational
+- **Relevance:** GENERAL
+
+
+### [balloon-pre-stretching] docs: discovery sync batch 10 — ROADMAP v5, 30 footprints, weight questions open (2026-08-07) | tags: HARDWARE
+- **Commit:** `9925142` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 10 — ROADMAP v5, 30 footprints, weight questions open
+- **Relevance:** HARDWARE
+
+### [balloon-circuit-design] docs: adopt ROADMAP v5 two-stage architecture + critical PCB lessons from discov (2026-08-07) | tags: HARDWARE
+- **Commit:** `c296754` by Felix
+- **Files:** docs/DISCOVERY-ADOPTION-ROADMAP-V5.md
+- **Full message:** docs: adopt ROADMAP v5 two-stage architecture + critical PCB lessons from discovery sync
+- **Relevance:** HARDWARE
+
+
+### [balloon-hermes] plan(pcb): worker profile architecture — kimi-k2.7-code for spatial, quality-gat (2026-08-07) | tags: HARDWARE
+- **Commit:** `4754c73` by Felix
+- **Files:** tracker/hardware/PCB-WORKER-ARCHITECTURE.md
+- **Full message:** plan(pcb): worker profile architecture — kimi-k2.7-code for spatial, quality-gated tasks
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(pcb): Phase 1A — RF 50Ω + power + thermal vias + GND stitching (2026-08-07) | tags: HARDWARE
+- **Commit:** `4c1befe` by Felix
+- **Files:** tracker/hardware/output/phase1a_rf_power.py, tracker/hardware/output/v_c3_flight_rf_power.kicad_pcb, tracker/hardware/output/v_c3_flight_rf_power.kicad_pro
+- **Full message:** feat(pcb): Phase 1A — RF 50Ω + power + thermal vias + GND stitching
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: ROADMAP v5 restructured — two-stage blocking gates (placement→routing) (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `440a975` by Felix
+- **Files:** tracker/hardware/ROADMAP-v5-pcb.md, tracker/hardware/drc_r3.txt, tracker/hardware/drc_v5_routed.txt (+10 more)
+- **Full message:** docs: ROADMAP v5 restructured — two-stage blocking gates (placement→routing)
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): Phase 0 PASS — placement verified, caps near ICs (2026-08-07) | tags: HARDWARE
+- **Commit:** `1e47714` by Felix
+- **Files:** tracker/hardware/output/fix_placement_p0_v3.py, tracker/hardware/output/v_c3_flight_p0fixed.kicad_pcb, tracker/hardware/output/v_c3_flight_p0fixed.kicad_pro (+1 more)
+- **Full message:** feat(pcb): Phase 0 PASS — placement verified, caps near ICs
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(hardware): P2V via placement — 20 collision-aware vias, edge-to-edge cleara (2026-08-07) | tags: HARDWARE
+- **Commit:** `7e0e18b` by Felix
+- **Files:** tracker/hardware/drc_v5_vias.txt, tracker/hardware/output/v5_vias.kicad_pcb, tracker/hardware/output/v5_vias.kicad_pro (+1 more)
+- **Full message:** feat(hardware): P2V via placement — 20 collision-aware vias, edge-to-edge clearance
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(hardware): P2Z zones added — GND on In1.Cu, 3V3 on In2.Cu (clean, no duplic (2026-08-07) | tags: HARDWARE
+- **Commit:** `6e5d29f` by Felix
+- **Files:** tracker/hardware/drc_v5_zones.txt, tracker/hardware/output/v5_zones.kicad_pcb, tracker/hardware/output/v5_zones.kicad_prl (+4 more)
+- **Full message:** feat(hardware): P2Z zones added — GND on In1.Cu, 3V3 on In2.Cu (clean, no duplicates)
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] feat(hardware): P1 placement verified — 30 footprints, 0 pad overlaps, snapshot  (2026-08-07) | tags: HARDWARE
+- **Commit:** `f459f5d` by Felix
+- **Files:** tracker/hardware/output/v5_placed.kicad_pcb, tracker/hardware/output/v5_placed.kicad_pro
+- **Full message:** feat(hardware): P1 placement verified — 30 footprints, 0 pad overlaps, snapshot saved
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] docs: ROADMAP v5 PCB plan with adversarial review findings (2026-08-07) | tags: HARDWARE
+- **Commit:** `1e497fd` by Felix
+- **Files:** tracker/hardware/ROADMAP-v5-pcb.md
+- **Full message:** docs: ROADMAP v5 PCB plan with adversarial review findings
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] plan(pcb): consultant-reviewed routing plan v7.1 — placement-gated, RF-aware (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `ffb67e2` by Felix
+- **Files:** tracker/hardware/PCB-ROUTING-PLAN-v7.md
+- **Full message:** plan(pcb): consultant-reviewed routing plan v7.1 — placement-gated, RF-aware
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] checkpoint: PCB routing iterations — v4/v5/v6 boards, scripts, DRC reports (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `482f480` by Felix
+- **Files:** tracker/hardware/drc_clean.txt, tracker/hardware/drc_novias.txt, tracker/hardware/hub_board_v1_routed_clean.kicad_pcb (+13 more)
+- **Full message:** checkpoint: PCB routing iterations — v4/v5/v6 boards, scripts, DRC reports
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] wip(pcb): DRC fix attempt — connected all nets but power routing too aggressive (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `960a8fa` by Felix
+- **Files:** tracker/hardware/output/fix_all_drc_v6.py, tracker/hardware/output/v_c3_flight_v6.kicad_pcb
+- **Full message:** wip(pcb): DRC fix attempt — connected all nets but power routing too aggressive
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] fix(pcb): zone keepout flags + connectivity rebuild (2026-08-07) | tags: HARDWARE
+- **Commit:** `b4e1fde` by Felix
+- **Files:** tracker/hardware/output/fix_zones_and_route.py, tracker/hardware/output/v_c3_flight_final_clean.kicad_pcb, tracker/hardware/output/v_c3_flight_v5.kicad_pcb
+- **Full message:** fix(pcb): zone keepout flags + connectivity rebuild
+- **Relevance:** HARDWARE
+
+### [balloon-hermes] fix(hardware): grid placement — 0 pad overlaps, 30 footprints, clean slate for r (2026-08-07) | tags: HARDWARE, PROTOCOL
+- **Commit:** `959be27` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, tracker/hardware/analyze_board.py, tracker/hardware/analyze_pad_bbox.py (+13 more)
+- **Full message:** fix(hardware): grid placement — 0 pad overlaps, 30 footprints, clean slate for routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-pre-stretching] docs: discovery sync batch 9 — 4-layer routing maturation, 80x60mm weight flag (2026-08-07) | tags: PROTOCOL
+- **Commit:** `43519e8` by Felix
+- **Files:** docs/STATUS-balloon-pre-stretching.md
+- **Full message:** docs: discovery sync batch 9 — 4-layer routing maturation, 80x60mm weight flag
+- **Relevance:** PROTOCOL
+
+### [balloon-circuit-design] docs: adopt 4-layer PCB stackup findings from discovery sync — V0.1 plan update (2026-08-07) | tags: HARDWARE
+- **Commit:** `c95d761` by Felix
+- **Files:** docs/DISCOVERY-ADOPTION-4LAYER.md
+- **Full message:** docs: adopt 4-layer PCB stackup findings from discovery sync — V0.1 plan update
+- **Relevance:** HARDWARE
+
+
 ### [balloon-hermes] feat(pcb): clean placement 80x60mm + 4-layer routing — 0 overlaps, 10 DRC violat (2026-08-07) | tags: HARDWARE, PROTOCOL
 - **Commit:** `ab7e0f7` by Felix
 - **Files:** tracker/hardware/output/replace_footprints.py, tracker/hardware/output/replace_footprints_v2.py, tracker/hardware/output/route_clean.py (+2 more)
