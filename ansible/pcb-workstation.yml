@@ -1,328 +1,76 @@
 ---
-# ═══════════════════════════════════════════════════════════════════════
-# Ansible Playbook: PCB Workstation Setup
-# Installs KiCad 9 + PCB design/fabrication toolchain on Ubuntu/Debian
-#
-# Usage:
-#   ansible-playbook -i localhost, ansible/pcb-workstation.yml -K
-#   (prompts for sudo password)
-#
-# Targets: Ubuntu 24.04 / Debian 12 (also works on Linux Mint)
-# Idempotent: safe to re-run, only applies changes when needed
-# ═══════════════════════════════════════════════════════════════════════
+# Ansible playbook: Install KiCad + PCB design tools on Ubuntu/Debian
+# Target: Ubuntu 24.04 / Debian 12 (auto-detected)
+# Usage: ansible-playbook ansible/pcb-workstation.yml -K
+#        (run on local machine: add -i localhost, -c local if no inventory)
 
-- name: PCB Design Workstation — KiCad 9 + Fabrication Toolchain
+- name: Install PCB workstation tools
   hosts: localhost
   connection: local
   become: true
-  gather_facts: true
-
   vars:
-    # ── KiCad version (change to "9.0" for stable release PPA) ──
     kicad_version: "9.0"
-    kicad_ppa_repo: "ppa:kicad/kicad-{{ kicad_version }}-releases"
-
-    # ── Python packages for KiCad automation ──
-    kicad_pip_packages:
-      - kikit              # KiCad automation toolkit (panelization, fabrication, DRC)
-      - pcbnew-transition  # compatibility layer for pcbnew scripting API
-
-    # ── InteractiveBOM (IBOM) install method ──
-    # Clone from GitHub — more reliable than pip for latest KiCad 9 support
-    ibom_install_dir: /opt/InteractiveHtmlBom
-    ibom_repo: https://github.com/openscopeproject/InteractiveHtmlBom.git
-
-    # ── 3D viewer preference ──
-    # FreeCAD is heavier but more capable; meshlab is lighter
-    prefer_freecad: false
-
-    # ── User (detected at runtime, override here if needed) ──
-    local_user: "{{ lookup('env', 'USER') }}"
-
-  # ═════════════════════════════════════════════════════════════════════
-  # PRE-TASKS: OS detection
-  # ═════════════════════════════════════════════════════════════════════
-  pre_tasks:
-
-    - name: Detect distribution
-      ansible.builtin.setup:
-        gather_subset:
-          - os_family
-          - distribution
-          - distribution_version
-          - distribution_major_version
-
-    - name: Show detected OS
-      ansible.builtin.debug:
-        msg: >-
-          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
-          (family: {{ ansible_os_family }})
-
-    - name: Abort on unsupported OS
-      ansible.builtin.fail:
-        msg: >-
-          This playbook supports Debian/Ubuntu/Mint. Detected:
-          {{ ansible_distribution }} ({{ ansible_os_family }}).
-          Use Flatpak or snap for other distros.
-      when: ansible_os_family != "Debian"
-
-  # ═════════════════════════════════════════════════════════════════════
-  # TASKS
-  # ═════════════════════════════════════════════════════════════════════
   tasks:
 
-    # ─────────────────────────────────────────────────────────────
-    # 1. KiCad PPA (Ubuntu only — Debian uses backports or official repos)
-    # ─────────────────────────────────────────────────────────────
+    - name: Detect OS distribution
+      ansible.builtin.setup:
+        filter: ansible_distribution*
 
-    - name: Install prerequisite packages for PPA management (Ubuntu)
-      ansible.builtin.apt:
-        name:
-          - software-properties-common
-          - apt-transport-https
-          - ca-certificates
-          - gnupg
+    - name: Add KiCad PPA (Ubuntu)
+      ansible.builtin.apt_repository:
+        repo: "ppa:kicad/kicad-{{ kicad_version }}-releases"
         state: present
       when: ansible_distribution == "Ubuntu"
 
-    - name: Add KiCad {{ kicad_version }} PPA (Ubuntu)
+    - name: Add KiCad repo (Debian)
       ansible.builtin.apt_repository:
-        repo: "{{ kicad_ppa_repo }}"
+        repo: "deb https://downloads.kicad.org/kicad-{{ kicad_version }}-releases debian bookworm main"
         state: present
-        update_cache: true
-      when: ansible_distribution == "Ubuntu"
-
-    - name: Add KiCad backports repository (Debian 12)
-      ansible.builtin.apt_repository:
-        repo: "deb http://deb.debian.org/debian bookworm-backports main"
-        state: present
-        update_cache: true
       when: ansible_distribution == "Debian"
 
-    # ─────────────────────────────────────────────────────────────
-    # 2. Core packages: KiCad + viewers + git + Python
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Install KiCad 9 and symbol/footprint/3D libraries
+    - name: Update apt cache
       ansible.builtin.apt:
-        name:
-          - kicad                    # main package (CLI + GUI)
-          - kicad-symbols             # symbol libraries
-          - kicad-footprints          # footprint libraries
-          - kicad-packages3d          # 3D model libraries
-          - kicad-templates           # project templates
-          - kicad-demos               # example projects
-        state: latest
-      when: ansible_distribution == "Ubuntu"
+        update_cache: true
 
-    - name: Install KiCad from backports (Debian)
+    - name: Install KiCad and PCB tools
       ansible.builtin.apt:
         name:
           - kicad
           - kicad-symbols
           - kicad-footprints
-          - kicad-packages3d
           - kicad-templates
-        state: latest
-        default_release: bookworm-backports
-      when: ansible_distribution == "Debian"
-
-    - name: Install Gerber viewer (gerbv)
-      ansible.builtin.apt:
-        name: gerbv
-        state: present
-
-    - name: Install additional Gerber viewer (gerbolyze)
-      ansible.builtin.apt:
-        name: gerbolyze
-        state: present
-      ignore_errors: true  # not always available, optional
-
-    - name: Install git for board file version control
-      ansible.builtin.apt:
-        name: git
-        state: present
-
-    - name: Install Python 3 + pip + venv
-      ansible.builtin.apt:
-        name:
+          - kicad-packages3d
+          - gerbv
+          - git
           - python3
           - python3-pip
           - python3-venv
-          - python3-dev      # needed for compiling pip packages
-          - python3-gi       # GObject introspection (kikit dep)
-          - libcairo2-dev    # Cairo (kikit SVG rendering dep)
+          - meshlab
+          - freecad
         state: present
 
-    # ─────────────────────────────────────────────────────────────
-    # 3. Optional PCB editors
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Install pcb-rnd (advanced PCB editor, optional)
-      ansible.builtin.apt:
-        name: pcb-rnd
+    - name: Install KiCad automation tools via pip
+      ansible.builtin.pip:
+        name:
+          - kikit
+          - interactive_bom
         state: present
-      ignore_errors: true  # not in all distro repos
-
-    - name: Install pcb (gEDA PCB editor, fallback)
-      ansible.builtin.apt:
-        name: pcb
-        state: present
-      ignore_errors: true
-
-    # ─────────────────────────────────────────────────────────────
-    # 4. 3D model viewers (FreeCAD or meshlab)
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Install FreeCAD (3D CAD viewer)
-      ansible.builtin.apt:
-        name: freecad
-        state: present
-      when: prefer_freecad | bool
-
-    - name: Install meshlab (3D mesh viewer, lighter)
-      ansible.builtin.apt:
-        name: meshlab
-        state: present
-      when: not (prefer_freecad | bool)
-
-    - name: Install openscad (parametric 3D, for custom enclosures)
-      ansible.builtin.apt:
-        name: openscad
-        state: present
-      ignore_errors: true  # optional
-
-    # ─────────────────────────────────────────────────────────────
-    # 5. KiCad Python automation: kikit
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Create KiCad Python venv
-      ansible.builtin.command:
-        cmd: python3 -m venv /opt/kicad-venv
-        creates: /opt/kicad-venv/bin/activate
-
-    - name: Upgrade pip in venv
-      ansible.builtin.command:
-        cmd: /opt/kicad-venv/bin/pip install --upgrade pip
-      changed_when: false  # safe to re-run
-
-    - name: Install kikit and dependencies in venv
-      ansible.builtin.command:
-        cmd: /opt/kicad-venv/bin/pip install {{ item }}
-      loop: "{{ kicad_pip_packages }}"
-      changed_when: false  # pip handles idempotency internally
-
-    - name: Create kikit wrapper symlink
-      ansible.builtin.file:
-        src: /opt/kicad-venv/bin/kikit
-        dest: /usr/local/bin/kikit
-        state: link
-        force: true
-
-    # ─────────────────────────────────────────────────────────────
-    # 6. InteractiveBOM (IBOM) — generates interactive HTML BOMs
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Clone InteractiveHtmlBom
-      ansible.builtin.git:
-        repo: "{{ ibom_repo }}"
-        dest: "{{ ibom_install_dir }}"
-        depth: 1
-        update: true  # always pull latest on re-run
-
-    - name: Install InteractiveBom Python dependencies
-      ansible.builtin.command:
-        cmd: /opt/kicad-venv/bin/pip install -r requirements.txt
-        chdir: "{{ ibom_install_dir }}"
-      changed_when: false
-
-    - name: Make generate_interactive_bom executable
-      ansible.builtin.file:
-        path: "{{ ibom_install_dir }}/generate_interactive_bom.py"
-        mode: "0755"
-
-    - name: Create IBOM wrapper script
-      ansible.builtin.copy:
-        dest: /usr/local/bin/ibom
-        mode: "0755"
-        content: |
-          #!/bin/bash
-          exec /opt/kicad-venv/bin/python {{ ibom_install_dir }}/generate_interactive_bom.py "$@"
-
-    # ─────────────────────────────────────────────────────────────
-    # 7. KiCad configuration directories
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Create KiCad config directory
-      ansible.builtin.file:
-        path: "/home/{{ local_user }}/.config/kicad/{{ kicad_version }}"
-        state: directory
-        owner: "{{ local_user }}"
-        group: "{{ local_user }}"
-        mode: "0755"
-
-    - name: Create KiCad user footprint directory
-      ansible.builtin.file:
-        path: "/home/{{ local_user }}/.local/share/kicad/{{ kicad_version }}/footprints"
-        state: directory
-        owner: "{{ local_user }}"
-        group: "{{ local_user }}"
-        mode: "0755"
-        recurse: true
-
-    # ─────────────────────────────────────────────────────────────
-    # 8. MIME associations (nice-to-have)
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Associate .kicad_pcb files with KiCad
-      ansible.builtin.shell: |
-        xdg-mime default kicad.desktop application/x-kicad-pcb || true
-        xdg-mime default kicad.desktop application/x-kicad-sch || true
-        update-desktop-database -q || true
+        extra_args: "--break-system-packages"
       become: false
-      ignore_errors: true
 
-    # ─────────────────────────────────────────────────────────────
-    # 9. Verification
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Verify KiCad CLI is available
+    - name: Verify KiCad installation
       ansible.builtin.command: kicad-cli --version
       register: kicad_check
-      ignore_errors: true
       changed_when: false
 
-    - name: Verify kikit is available
-      ansible.builtin.command: kikit --version
-      register: kikit_check
-      ignore_errors: true
-      changed_when: false
-
-    - name: Verify gerbv is available
-      ansible.builtin.command: gerbv --version
-      register: gerbv_check
-      ignore_errors: true
-      changed_when: false
-
-    - name: Verify git is available
-      ansible.builtin.command: git --version
-      register: git_check
-      ignore_errors: true
-      changed_when: false
-
-    # ─────────────────────────────────────────────────────────────
-    # POST: Summary
-    # ─────────────────────────────────────────────────────────────
-
-    - name: Print installation summary
+    - name: Show KiCad version
       ansible.builtin.debug:
-        msg:
-          - "══════ PCB WORKSTATION SETUP COMPLETE ══════"
-          - "KiCad:  {{ kicad_check.stdout | default('NOT FOUND — check install') }}"
-          - "KiKit:  {{ kikit_check.stdout | default('NOT FOUND — check venv') }}"
-          - "gerbv:  {{ gerbv_check.stdout_lines[0] | default('NOT FOUND') }}"
-          - "git:    {{ git_check.stdout | default('NOT FOUND') }}"
-          - "IBOM:   /usr/local/bin/ibom"
-          - "kikit:  /usr/local/bin/kikit"
-          - "venv:   /opt/kicad-venv"
-          - "═══════════════════════════════════════════"
+        msg: "KiCad installed: {{ kicad_check.stdout }}"
+
+  post_tasks:
+    - name: Done
+      ansible.builtin.debug:
+        msg: |
+          PCB workstation ready. Open KiCad, then open:
+          v_c3_flight_v7_routed.kicad_pcb
+          Route the 6 unrouted nets per ROUTING-HANDOVER.md
