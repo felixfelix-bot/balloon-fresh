@@ -1,0 +1,106 @@
+---
+# Ansible playbook: Install KiCad 9 + tools for manual PCB routing
+# Usage: ansible-playbook -i inventory.ini install-kicad.yml -K
+# Target: Ubuntu/Debian/Mint Linux (desktop)
+- name: Install KiCad 9 and PCB design tools
+  hosts: localhost
+  connection: local
+  become: true
+  vars:
+    kicad_version: "9.0"
+    user: "{{ lookup('env', 'USER') }}"
+  tasks:
+
+  - name: Detect OS family
+    ansible.builtin.setup:
+      gather_subset:
+        - os_family
+        - distribution
+
+  - name: Add KiCad PPA (Ubuntu)
+    ansible.builtin.apt_repository:
+      repo: "ppa:kicad/kicad-{{ kicad_version }}-releases"
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Update apt cache
+    ansible.builtin.apt:
+      update_cache: true
+    when: ansible_os_family == "Debian"
+
+  - name: Install KiCad 9
+    ansible.builtin.apt:
+      name:
+        - kicad
+        - kicad-symbols
+        - kicad-footprints
+        - kicad-packages3d
+        - kicad-templates
+      state: latest
+    when: ansible_os_family == "Debian"
+
+  - name: Install gerber viewer and manufacturing tools
+    ansible.builtin.apt:
+      name:
+        - gerbv
+        - gtkwave
+      state: present
+    when: ansible_os_family == "Debian"
+
+  - name: Install Flatpak (fallback for non-Debian)
+    ansible.builtin.package:
+      name: flatpak
+      state: present
+    when: ansible_os_family != "Debian"
+
+  - name: Add Flathub repo
+    community.general.flatpak_remote:
+      name: flathub
+      state: present
+      url: https://flathub.org/repo/flathub.flatpakrepo
+    when: ansible_os_family != "Debian"
+
+  - name: Install KiCad via Flatpak (non-Debian fallback)
+    community.general.flatpak:
+      name: org.kicad.KiCad
+      state: present
+    when: ansible_os_family != "Debian"
+
+  - name: Install KiCad CLI tools for DRC verification
+    ansible.builtin.apt:
+      name:
+        - python3
+        - python3-pip
+      state: present
+    when: ansible_os_family == "Debian"
+
+  - name: Install pcbnew Python bindings (KiCad 9)
+    ansible.builtin.apt:
+      name:
+        - python3-kicad
+      state: present
+    when: ansible_os_family == "Debian"
+
+  - name: Create KiCad config directory
+    ansible.builtin.file:
+      path: "/home/{{ user }}/.config/kicad/{{ kicad_version }}"
+      state: directory
+      owner: "{{ user }}"
+      group: "{{ user }}"
+      mode: "0755"
+
+  - name: Set KiCad as default for .kicad_pcb files
+    ansible.builtin.shell: |
+      xdg-mime default kicad.desktop application/x-kicad-pcb || true
+      update-desktop-database || true
+    become: false
+    ignore_errors: true
+
+  - name: Verify KiCad installation
+    ansible.builtin.command: kicad-cli --version
+    register: kicad_version_check
+    ignore_errors: true
+
+  - name: Show KiCad version
+    ansible.builtin.debug:
+      msg: "KiCad installed: {{ kicad_version_check.stdout | default('check manually') }}"
