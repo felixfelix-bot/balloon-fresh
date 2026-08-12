@@ -1,0 +1,12 @@
+{
+  "board": {"design_settings": {"defaults": {}, "meta": {"version": 2}}},
+  "boards": [],
+  "cvpcb": {"equivalence_files": []},
+  "libraries": {"pinned_footprint_libs": [], "pinned_symbol_libs": []},
+  "meta": {"filename": "v_c3_rp2040.kicad_pro", "version": 3},
+  "net_settings": {"classes": [{"bus_width": 12, "clearance": 0.2, "name": "Default", "priority": 2147483647, "track_width": 0.25, "via_diameter": 0.6, "via_drill": 0.3, "wire_width": 6}], "meta": {"version": 4}},
+  "pcbnew": {"last_paths": {}, "page_layout_descr_file": ""},
+  "schematic": {"legacy_lib_dir": "", "legacy_lib_list": []},
+  "sheets": [["", "v_c3_rp2040", ""]],
+  "text_variables": {}
+}
