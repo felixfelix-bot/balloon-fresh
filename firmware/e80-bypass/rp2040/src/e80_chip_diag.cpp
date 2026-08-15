@@ -20,7 +20,7 @@
 #include <stdarg.h>
 
 #define E80_HOST_RP2040
-#include "../common/e80_pinmap.h"
+#include "e80_pinmap.h"
 
 #ifndef E80_SPI_HZ
 #define E80_SPI_HZ 1000000UL
@@ -50,7 +50,7 @@ static SPISettings spiSettings(E80_SPI_HZ, MSBFIRST, SPI_MODE0);
 #define E80_DELAY_US(us)  delayMicroseconds(us)
 #define E80_DELAY_MS(ms)  delay(ms)
 
-#include "../common/e80_lr20xx_raw.h"
+#include "e80_lr20xx_raw.h"
 
 // ─── Hard reset (wiring doc §6 bring-up order: RST low → high → settle) ──
 static void rfHardReset() {
