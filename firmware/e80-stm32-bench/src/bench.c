@@ -33,6 +33,7 @@ void Error_Handler(void);
 
 SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart1;
+static IWDG_HandleTypeDef hiwdg; /* TX-hang watchdog defense 3 (bench_safety.h) */
 
 /* ---- Bench session state ---------------------------------------------------- */
 
@@ -738,10 +739,18 @@ static void radio_task(void)
 
 int main(void)
 {
+    bool wdg_reset;
+
     __disable_irq();
 
     HAL_Init();
     SystemClock_Config();
+
+    /* Capture the IWDG reset flag BEFORE anything else could clear it, then
+     * clear it so the banner only reports resets from THIS firmware. */
+    wdg_reset = (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST) != RESET);
+    __HAL_RCC_CLEAR_RESET_FLAGS();
+
     MX_GPIO_Init();
     MX_SPI1_Init();
     MX_USART1_Init();
@@ -751,6 +760,11 @@ int main(void)
 
     console_putln("");
     console_putln("E80 BENCH FW v1.1 (STM32F103C8 + LR2021) - 'HELP' for commands");
+    if (wdg_reset)
+    {
+        console_putln("WDG RESET (IWDG TIMEOUT - PREVIOUS SESSION DIED, CHECK "
+                      "CONSOLE LOG ABOVE 'ERR TX-TIMEOUT' / OPERATOR NOTES)");
+    }
 
 #if E80_BENCH_BOOT_TX_INHIBITED
     /* Safety default: bring the radio up once with the vendor init sequence
@@ -775,8 +789,20 @@ int main(void)
 
     bench_stats_reset(&stats);
 
+    /* TX-hang watchdog defense 3: independent LSI watchdog. Window math in
+     * bench_safety.h — 3.000 s nominal, 2.0-4.0 s across the F103 LSI
+     * 30-60 kHz spread. Starts the countdown (IWDG cannot be stopped except
+     * by reset); every superloop pass kicks it below. */
+    hiwdg.Instance               = IWDG;
+    hiwdg.Init.Prescaler         = IWDG_PRESCALER_64; /* PR reg 4, /64 */
+    hiwdg.Init.Reload            = BENCH_IWDG_RELOAD; /* 1874 */
+    if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+        Error_Handler();
+
     while (1)
     {
+        HAL_IWDG_Refresh(&hiwdg); /* superloop is non-blocking -> always healthy */
+
         char* line = console_getline();
         if (line != NULL)
         {
