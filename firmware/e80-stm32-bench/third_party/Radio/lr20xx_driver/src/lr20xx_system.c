@@ -37,7 +37,8 @@
  * --- DEPENDENCIES ------------------------------------------------------------
  */
 
-#include <stdlib.h>
+/* LOCAL CHANGE (e80-stm32-bench): <stdlib.h> (absent under arm-none-eabi newlib-nano) replaced by <stddef.h> - only NULL was used. */
+#include <stddef.h>
 #include "lr20xx_system.h"
 #include "lr20xx_hal.h"
 #include "lr20xx_workarounds.h"

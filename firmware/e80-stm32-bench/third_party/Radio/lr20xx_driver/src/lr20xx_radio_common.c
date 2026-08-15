@@ -41,7 +41,7 @@
 #include "lr20xx_regmem.h"
 #include "lr20xx_workarounds.h"
 #include "lr20xx_hal.h"
-#include <stdlib.h>
+/* LOCAL CHANGE (e80-stm32-bench): <stdlib.h> (absent under arm-none-eabi newlib-nano) removed - NULL already comes from <stddef.h> below. */
 #include <stddef.h>
 
 /*
