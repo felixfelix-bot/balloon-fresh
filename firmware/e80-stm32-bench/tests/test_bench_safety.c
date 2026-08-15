@@ -41,8 +41,9 @@ static void test_lora_airtime_exact(void)
      * num = 8*255 - 4*12 + 28 + 16 = 2036 bits; LDRO-on denom 4*(12-2)=40
      * -> ceil(2036/40)=51 code blocks * (1+4) = 255 + 8 = 263 symbols.
      * Quarter-symbols: 8*4 (preamble) + 17 (4.25 SFD) + 263*4 = 1101.
-     * Tsym = 2^12 / 125 kHz = 32768 us -> 1101 * 32768 / 4 = 9,017,792 us. */
-    CHECK(bench_safety_lora_airtime_us(12, 125000, 255) == 9017792U);
+     * Tsym = 2^12 / 125 kHz = 32768 us -> 1101 * 32768 / 4 = 9,019,392 us.
+     * (263 payload symbols cross-checks against SX126x calculators.) */
+    CHECK(bench_safety_lora_airtime_us(12, 125000, 255) == 9019392U);
 
     /* SF7 / BW125 / 16 B: num = 144; LDRO-on denom 20 -> ceil(7.2)=8 *5 = 40
      * + 8 = 48 symbols; q = 32 + 17 + 192 = 241; Tsym = 1024 us
@@ -94,9 +95,9 @@ static void test_tx_timeout_bounds(void)
     /* SF7/BW125/16 B: airtime 61,696 us -> 62 ms -> 62*2+50 = 174 ms. */
     CHECK(bench_safety_tx_timeout_ms(BENCH_MOD_LORA, 7, 125000, 0, 16) == 174U);
 
-    /* Bench worst case SF12/BW125/255 B: 9018 ms -> 18,086 ms. */
+    /* Bench worst case SF12/BW125/255 B: 9020 ms -> 18,090 ms. */
     CHECK(bench_safety_tx_timeout_ms(BENCH_MOD_LORA, 12, 125000, 0, 255) ==
-          18086U);
+          18090U);
 }
 
 static void test_tx_timeout_never_overflows_driver_convert(void)
@@ -156,8 +157,8 @@ static void test_iwdg_timeout_ms(void)
     CHECK(bench_safety_iwdg_timeout_ms(6, 4095, 40000) == 26215U);
 
     /* Divider sanity: PR=1 is /8. */
-    CHECK(bench_safety_iwdg_timeout_ms(1, 0, 40000) == 1U);      /* 0.1 ms -> 1 */
-    CHECK(bench_safety_iwdg_timeout_ms(1, 3999, 40000) == 1000U); /* 4000*8/40000 */
+    CHECK(bench_safety_iwdg_timeout_ms(1, 0, 40000) == 1U);       /* 0.1 ms -> 1 */
+    CHECK(bench_safety_iwdg_timeout_ms(1, 3999, 40000) == 800U);  /* 4000*8/40000 */
 }
 
 static void test_iwdg_bench_window_2_to_4_s(void)
