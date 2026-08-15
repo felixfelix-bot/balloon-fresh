@@ -85,6 +85,30 @@ uint32_t bench_safety_iwdg_timeout_ms(uint8_t iwdg_pr, uint16_t reload,
 #define BENCH_IWDG_PR_REG 4u   /* IWDG_PRESCALER_64 */
 #define BENCH_IWDG_RELOAD 1874u
 
+/* ---- FLASH command: ROM-bootloader jump plan ------------------------------- */
+
+/* The IWDG cannot be stopped once started (only a reset stops it), and the
+ * STM32F1 ROM bootloader does NOT feed it: jumping with the IWDG running
+ * would reset the MCU mid stm32flash write — an unrecoverable app corrupt.
+ * Therefore the firmware starts the IWDG LATE, at the FIRST 'ARM TX' (the
+ * TX burst is the real hang risk the IWDG protects against), and 'FLASH'
+ * refuses to jump once the IWDG is running. */
+
+typedef enum bench_flash_plan_e
+{
+    BENCH_FLASH_JUMP = 0, /* IWDG never started since power-on: jump is safe */
+    BENCH_FLASH_REFUSE_WDG_ACTIVE, /* IWDG running: power-cycle required */
+} bench_flash_plan_t;
+
+/* Decision for the FLASH command given the IWDG-since-power-on state. */
+bench_flash_plan_t bench_safety_flash_plan(bool iwdg_started);
+
+/* Exact console reply line for each plan (host flash flow greps for these). */
+const char* bench_safety_flash_reply(bench_flash_plan_t plan);
+
+/* Exact 'boot=' field appended to the ID? line (what FLASH would do now). */
+const char* bench_safety_boot_field(bool iwdg_started);
+
 #ifdef __cplusplus
 }
 #endif

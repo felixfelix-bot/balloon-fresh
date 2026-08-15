@@ -105,3 +105,22 @@ uint32_t bench_safety_iwdg_timeout_ms(uint8_t iwdg_pr, uint16_t reload,
 
     return ceil_div_u32(((uint32_t)reload + 1U) * divider * 1000U, lsi_hz);
 }
+
+/* ---- FLASH command: ROM-bootloader jump plan -------------------------------- */
+
+bench_flash_plan_t bench_safety_flash_plan(bool iwdg_started)
+{
+    return iwdg_started ? BENCH_FLASH_REFUSE_WDG_ACTIVE : BENCH_FLASH_JUMP;
+}
+
+const char* bench_safety_flash_reply(bench_flash_plan_t plan)
+{
+    if (plan == BENCH_FLASH_JUMP)
+        return "OK JUMPING TO BOOTLOADER";
+    return "ERR POWER-CYCLE FIRST (WATCHDOG ACTIVE)";
+}
+
+const char* bench_safety_boot_field(bool iwdg_started)
+{
+    return iwdg_started ? "boot=powercycle-first(wdg-active)" : "boot=jump-ok";
+}

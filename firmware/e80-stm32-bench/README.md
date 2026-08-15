@@ -23,23 +23,29 @@ v1.3.1 (vendored, demo-proven on this exact hardware) + minimal STM32F1 HAL.
   radio goes to sleep (same end state as `STOP`). Layer 2: a superloop
   backstop (chip timeout x2 + 50 ms) force-aborts even if the IRQ is lost.
   Layer 3: the STM32 IWDG (2-4 s window) resets a wedged host; the boot
-  banner then prints `WDG RESET`.
+  banner then prints `WDG RESET`. The IWDG starts at the first `ARM TX`
+  (not at boot) so `FLASH` can drop into the ROM bootloader without an
+  unfed watchdog resetting mid-write.
+- **Headless re-flash**: `FLASH` jumps to the ROM bootloader (system memory
+  0x1FFFF000). Refused with `ERR POWER-CYCLE FIRST (WATCHDOG ACTIVE)` once
+  the IWDG has started; `ID?` shows the verdict as `boot=jump-ok` /
+  `boot=powercycle-first(wdg-active)`. See [FLASHING.md](FLASHING.md).
 - Antennas confirmed attached (SMA ports). Keep TX-inhibit regardless.
 
 ## Build
 
 ```bash
 # host tests (parser, stats math incl. Wilson 95% CI, payload gen, TX-hang
-# watchdog math: airtime/chip-timeout/backstop/IWDG)
-make test-host          # 4/4 must pass
+# watchdog math: airtime/chip-timeout/backstop/IWDG, FLASH jump plan)
+make test-host          # 5/5 must pass
 
 # cross build (arm-none-eabi-gcc + CMake)
 make                    # -> build-fw/e80_bench{.bin,.hex,.map}
 arm-none-eabi-size build-fw/e80_bench
 ```
 
-Size (2026-08-16, with TX-hang watchdog): text 18476 + data 116 = **18,592 B
-flash (28% of 64K)**, bss **2,692 B RAM (13% of 20K)**.
+Size (2026-08-16, with FLASH + IWDG late start): text 19136 + data 116 =
+**19,252 B flash (29% of 64K)**, bss **2,692 B RAM (14% of 20K)**.
 
 ## Console
 
@@ -48,13 +54,14 @@ USART1 over USB (CH340), 115200 8N1 (921600 tolerated). Line-based,
 
 Asynchronous lines (no command in flight): `TX DONE (RADIO ASLEEP)` after a
 completed burst, `ERR TX-TIMEOUT SEQ=<n>` when the TX-hang watchdog aborted
-a stuck burst (burst over, radio asleep, re-`START` to retry), and the boot
-banner line `WDG RESET ...` when the previous session was cut short by the
-STM32 IWDG.
+a stuck burst (burst over, radio asleep, re-`START` to retry), the one-time
+`NOTE IWDG STARTED ...` line after the first `ARM TX` (watchdog armed for
+the rest of the power cycle), and the boot banner line `WDG RESET ...` when
+the previous session was cut short by the STM32 IWDG.
 
 | Command | Meaning |
 |---|---|
-| `ID?` | chip/driver, role, mod, freq, band, PA, power cap |
+| `ID?` | chip/driver, role, mod, freq, band, PA, power cap, `boot=` field |
 | `ROLE TX\|RX\|NONE` | set role (TX needs separate ARM) |
 | `ARM TX` | second step of TX enable |
 | `MOD loRa <sf5-12> <bw125\|250\|500>` | LoRa |
@@ -65,6 +72,7 @@ STM32 IWDG.
 | `START N=<pkts> LEN=<6-511> GAP=<us>` | TX burst / RX expected-length arm |
 | `STAT?` | sent/recv/PER + Wilson 95% CI/RSSI/SNR/elapsed/kbps |
 | `STOP` | abort run |
+| `FLASH` | jump to ROM bootloader (refuses if IWDG active) |
 | `BAND OVERRIDE <pin>` | out-of-band freq unlock (logged) |
 
 ## Bench run (host side)
@@ -105,6 +113,8 @@ tools/e80_bench_ctl.py --tx /dev/ttyUSB3 --rx /dev/ttyUSB4 \
 
 ## Flashing
 
-See [FLASHING.md](FLASHING.md) — stock dump FIRST, stm32flash over the CH340
-UART, BOOT0 manual entry (hold RESET, release on sync). Not yet executed on
-hardware; live-probe verification of the entry method still pending.
+See [FLASHING.md](FLASHING.md). First flash on stock fw: stock dump FIRST,
+stm32flash over the CH340 UART, BOOT0 manual entry (hold RESET, release on
+sync). Every later re-flash (v1.2+): send `FLASH` at 115200, then
+`stm32flash -w -v` — fully headless; `ID?` `boot=` field says whether the
+board will jump or needs a power-cycle first.

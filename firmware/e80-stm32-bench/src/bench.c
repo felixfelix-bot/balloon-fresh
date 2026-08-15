@@ -13,8 +13,13 @@
  *   - TX-hang watchdog (bench_safety.h): chip TX timeout (set_tx) aborts a
  *     stuck TX on the radio itself; superloop backstop catches a lost IRQ;
  *     STM32 IWDG resets a wedged host and the banner reports 'WDG RESET'.
+ *     The IWDG starts LATE (first 'ARM TX') so 'FLASH' can drop into the ROM
+ *     bootloader without an unfed watchdog resetting mid-write.
  *   - FREQ only accepts 863-870 MHz (EU SRD) unless "BAND OVERRIDE <pin>" was accepted
  *     (pin logged on accept). Band/freq are echoed in "ID?".
+ *   - "FLASH" jumps to the STM32F1 ROM bootloader (system memory, 0x1FFFF000)
+ *     for headless re-flash — refused with 'ERR POWER-CYCLE FIRST' once the
+ *     IWDG has started (it cannot be stopped and the ROM code never feeds it).
  */
 
 #include "main.h"
@@ -67,6 +72,12 @@ static uint32_t tx_chip_to_ms = 100; /* chip TX timeout programmed for it */
 static bool     tx_wait_irq  = false;
 static uint8_t  tx_buf[E80_BENCH_MAX_PAYLOAD];
 static bool     session_active = false;
+
+/* TX-hang watchdog defense 3 (bench_safety.h): the IWDG starts at the FIRST
+ * 'ARM TX' — never at boot — so 'FLASH' can jump to the ROM bootloader on a
+ * fresh power cycle without the unfed watchdog resetting the MCU mid-write
+ * (unrecoverable app corrupt). Once set, it stays set until power-cycle. */
+static bool     iwdg_active = false;
 
 /* ---- Time ------------------------------------------------------------------- */
 
@@ -226,10 +237,70 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
 void Error_Handler(void)
 {
+    /* Note: with the IWDG now starting at first ARM TX (FLASH-safety
+     * reorder), a fatal error BEFORE that point hangs here instead of
+     * resetting — accepted trade-off: those failures are boot-time init
+     * faults with no session to lose, while an early IWDG would kill the
+     * FLASH -> ROM bootloader path and brick re-flashing mid-write. After
+     * the first ARM TX the IWDG turns this hang into 'WDG RESET' again. */
     __disable_irq();
     while (1)
     {
     }
+}
+
+/* ---- ROM bootloader jump (FLASH command) ------------------------------------ */
+
+/* STM32F1 system memory: ROM bootloader at 0x1FFFF000 (NOT the 0x00000000
+ * alias — this app runs with flash mapped at 0x00000000, so the real system
+ * address must be used). vector[0] = initial MSP, vector[1] = entry point. */
+#define E80_ROM_BOOTLOADER_BASE 0x1FFFF000UL
+
+/* Leaves the console silent and never returns. Only called when the IWDG
+ * was never started since power-on (bench_safety_flash_plan guards it). */
+static void jump_to_rom_bootloader(void)
+{
+    /* console TX is blocking (console.c), so the 'OK JUMPING TO BOOTLOADER'
+     * reply is fully on the wire; ~100 ms settle for the CH340 / host read
+     * side before the console goes silent. Must run while SysTick ticks. */
+    HAL_Delay(100);
+
+    __disable_irq();
+
+    /* Quiesce what the app owns so the ROM starts from a clean slate:
+     * console UART, radio SPI (NSS idles high), radio EXTI + UART IRQs,
+     * SysTick. The radio was already parked asleep (PA unkeyed). */
+    HAL_UART_DeInit(&huart1);
+    HAL_SPI_DeInit(&hspi1);
+    HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
+    HAL_SuspendTick();
+
+    /* Standard F1 jump: MSP <- vector[0], PC <- vector[1]. The ROM waits
+     * for the 0x7F sync byte indefinitely (no timeout), so there is no race
+     * with the host starting stm32flash afterwards. */
+    __set_MSP(*(volatile uint32_t*)E80_ROM_BOOTLOADER_BASE);
+    ((void (*)(void))(*(volatile uint32_t*)(E80_ROM_BOOTLOADER_BASE + 4U)))();
+
+    for (;;) { } /* not reached */
+}
+
+/* ---- IWDG late start (FLASH-safety reorder) --------------------------------- */
+
+/* Start the IWDG at the FIRST successful 'ARM TX' (bench_safety.h: 2-4 s
+ * window across the F103 LSI spread). Once started it cannot be stopped
+ * except by reset — from this moment on, FLASH refuses to jump and the
+ * board must be power-cycled before re-flashing. */
+static void iwdg_start_once(void)
+{
+    if (iwdg_active)
+        return;
+    hiwdg.Instance       = IWDG;
+    hiwdg.Init.Prescaler = IWDG_PRESCALER_64; /* PR reg 4, /64 */
+    hiwdg.Init.Reload    = BENCH_IWDG_RELOAD; /* 1874 -> 2-4 s window */
+    if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+        Error_Handler();
+    iwdg_active = true;
 }
 
 /* ---- Radio helpers ----------------------------------------------------------- */
@@ -317,7 +388,7 @@ static void reply_err(const char* reason)
 
 static void print_id(void)
 {
-    console_put("ID E80BENCH v1.1 role=");
+    console_put("ID E80BENCH v1.2 role=");
     console_put(role == BENCH_ROLE_TX ? "TX" : role == BENCH_ROLE_RX ? "RX" : "NONE");
     console_put(tx_armed ? " armed=1" : " armed=0");
     if (cfg.mod == BENCH_MOD_LORA)
@@ -343,6 +414,8 @@ static void print_id(void)
     console_put(".");
     console_put_u32(radio_bench_chip_minor);
     console_put(radio_bench_is_asleep() ? " radio=asleep" : " radio=awake");
+    console_put(" ");
+    console_put(bench_safety_boot_field(iwdg_active));
     console_putln("");
 }
 
@@ -365,10 +438,14 @@ static void handle_cmd(const bench_cmd_t* c)
         break;
 
     case BENCH_CMD_HELP:
-        console_putln("CMDS: ID? | ROLE TX|RX|NONE | ARM TX | MOD loRa <sf5-12> <bw125|250|500> | "
-                      "MOD flrc <br_kbps 260..2600> <dbm0-10> | FREQ <hz> | PA <dbm> | "
-                      "POWER MODE OUTDOOR <pin> | "
-                      "START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | BAND OVERRIDE <pin>");
+        /* Chunked: console_put truncates a single call at 95 chars, so the
+         * old single-literal HELP line was cut off mid-list on the wire. */
+        console_put("CMDS: ID? | ROLE TX|RX|NONE | ARM TX | MOD loRa <sf5-12> <bw125|250|500> | ");
+        console_put("MOD flrc <br_kbps 260..2600> <dbm0-10> | FREQ <hz> | PA <dbm> | ");
+        console_put("POWER MODE OUTDOOR <pin> | ");
+        console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
+        console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin>");
+        console_putln("");
         break;
 
     case BENCH_CMD_ROLE:
@@ -413,6 +490,11 @@ static void handle_cmd(const bench_cmd_t* c)
         }
         tx_armed = true;
         console_putln("OK ARMED (TX ENABLED)");
+        /* IWDG late start (first ARM TX only): from here on a wedged host
+         * resets (WDG RESET banner) — and FLASH requires a power-cycle. */
+        iwdg_start_once();
+        if (iwdg_active)
+            console_putln("NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE");
         break;
 
     case BENCH_CMD_MOD:
@@ -647,6 +729,24 @@ static void handle_cmd(const bench_cmd_t* c)
         console_putln("OK STOP (RADIO ASLEEP)");
         break;
 
+    case BENCH_CMD_FLASH:
+    {
+        bench_flash_plan_t plan = bench_safety_flash_plan(iwdg_active);
+        console_putln(bench_safety_flash_reply(plan));
+        if (plan == BENCH_FLASH_JUMP)
+        {
+            /* Park the radio first (STDBY -> sleep: PA unkeyed, NSS high).
+             * No burst can be in flight: START requires ARM TX, and any
+             * successful ARM TX would have refused the jump above. */
+            radio_sleep_now();
+            jump_to_rom_bootloader(); /* never returns */
+        }
+        /* Refused: IWDG running since an ARM TX — operator must power-cycle
+         * (the ROM bootloader would not feed the IWDG; a WDG reset during
+         * a write can brick the app unrecoverably). */
+        break;
+    }
+
     default:
         reply_err(bench_cmd_err_str(c->err));
         break;
@@ -759,7 +859,7 @@ int main(void)
     __enable_irq();
 
     console_putln("");
-    console_putln("E80 BENCH FW v1.1 (STM32F103C8 + LR2021) - 'HELP' for commands");
+    console_putln("E80 BENCH FW v1.2 (STM32F103C8 + LR2021) - 'HELP' for commands");
     if (wdg_reset)
     {
         console_putln("WDG RESET (IWDG TIMEOUT - PREVIOUS SESSION DIED, CHECK "
@@ -789,19 +889,19 @@ int main(void)
 
     bench_stats_reset(&stats);
 
-    /* TX-hang watchdog defense 3: independent LSI watchdog. Window math in
-     * bench_safety.h — 3.000 s nominal, 2.0-4.0 s across the F103 LSI
-     * 30-60 kHz spread. Starts the countdown (IWDG cannot be stopped except
-     * by reset); every superloop pass kicks it below. */
-    hiwdg.Instance               = IWDG;
-    hiwdg.Init.Prescaler         = IWDG_PRESCALER_64; /* PR reg 4, /64 */
-    hiwdg.Init.Reload            = BENCH_IWDG_RELOAD; /* 1874 */
-    if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
-        Error_Handler();
+    /* TX-hang watchdog defense 3 starts LATE — at the first 'ARM TX'
+     * (see iwdg_start_once) — NOT here at boot: the IWDG cannot be stopped
+     * once started and the ROM bootloader does not feed it, so starting it
+     * here would make every 'FLASH' jump reset the MCU mid-write (bricking
+     * the app). Until the first ARM TX the board simply stays flashable
+     * headlessly; after it, FLASH refuses ('ERR POWER-CYCLE FIRST').
+     * Window math in bench_safety.h — 3.000 s nominal, 2.0-4.0 s across
+     * the F103 LSI 30-60 kHz spread; every superloop pass kicks it below. */
 
     while (1)
     {
-        HAL_IWDG_Refresh(&hiwdg); /* superloop is non-blocking -> always healthy */
+        if (iwdg_active)
+            HAL_IWDG_Refresh(&hiwdg); /* superloop is non-blocking -> healthy */
 
         char* line = console_getline();
         if (line != NULL)
