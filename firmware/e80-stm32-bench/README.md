@@ -15,13 +15,23 @@ v1.3.1 (vendored, demo-proven on this exact hardware) + minimal STM32F1 HAL.
   +22 dBm for outdoor range sessions (logged).
 - **TX inhibited at boot**: radio asleep, TX requires two-step `ROLE TX` then
   `ARM TX`.
+- **TX-hang watchdog**: a stuck TX cannot key the PA indefinitely. Layer 1:
+  every packet is sent with an LR2021 chip TX timeout
+  (2x worst-case airtime + 50 ms, floor 100 ms — bench worst case SF12/BW125/
+  255 B = 18.1 s) so the radio itself falls back to STDBY (PA unkeyed) and
+  raises TIMEOUT; the burst aborts with `ERR TX-TIMEOUT SEQ=<n>` and the
+  radio goes to sleep (same end state as `STOP`). Layer 2: a superloop
+  backstop (chip timeout x2 + 50 ms) force-aborts even if the IRQ is lost.
+  Layer 3: the STM32 IWDG (2-4 s window) resets a wedged host; the boot
+  banner then prints `WDG RESET`.
 - Antennas confirmed attached (SMA ports). Keep TX-inhibit regardless.
 
 ## Build
 
 ```bash
-# host tests (parser, stats math incl. Wilson 95% CI, payload gen)
-make test-host          # 3/3 must pass
+# host tests (parser, stats math incl. Wilson 95% CI, payload gen, TX-hang
+# watchdog math: airtime/chip-timeout/backstop/IWDG)
+make test-host          # 4/4 must pass
 
 # cross build (arm-none-eabi-gcc + CMake)
 make                    # -> build-fw/e80_bench{.bin,.hex,.map}
@@ -35,6 +45,12 @@ bss **2,680 B RAM (13% of 20K)**.
 
 USART1 over USB (CH340), 115200 8N1 (921600 tolerated). Line-based,
 `OK ...` / `ERR <reason>` replies.
+
+Asynchronous lines (no command in flight): `TX DONE (RADIO ASLEEP)` after a
+completed burst, `ERR TX-TIMEOUT SEQ=<n>` when the TX-hang watchdog aborted
+a stuck burst (burst over, radio asleep, re-`START` to retry), and the boot
+banner line `WDG RESET ...` when the previous session was cut short by the
+STM32 IWDG.
 
 | Command | Meaning |
 |---|---|

@@ -10,6 +10,9 @@
  * SAFETY (from the gated characterization plan):
  *   - Boot default: radio ASLEEP and TX INHIBITED (E80_BENCH_BOOT_TX_INHIBITED).
  *   - TX requires the explicit two-step "ROLE TX" then "ARM TX".
+ *   - TX-hang watchdog (bench_safety.h): chip TX timeout (set_tx) aborts a
+ *     stuck TX on the radio itself; superloop backstop catches a lost IRQ;
+ *     STM32 IWDG resets a wedged host and the banner reports 'WDG RESET'.
  *   - FREQ only accepts 863-870 MHz (EU SRD) unless "BAND OVERRIDE <pin>" was accepted
  *     (pin logged on accept). Band/freq are echoed in "ID?".
  */
@@ -17,6 +20,7 @@
 #include "main.h"
 #include "bench_cmd.h"
 #include "bench_payload.h"
+#include "bench_safety.h"
 #include "bench_stats.h"
 #include "console.h"
 #include "radio_bench.h"
@@ -57,6 +61,8 @@ static uint16_t tx_len       = 255;
 static uint32_t tx_gap_us    = 5000;
 static uint32_t tx_seq       = 0;
 static uint32_t tx_t_done_us = 0;
+static uint32_t tx_t_start_us = 0;   /* micros() when the in-flight packet started */
+static uint32_t tx_chip_to_ms = 100; /* chip TX timeout programmed for it */
 static bool     tx_wait_irq  = false;
 static uint8_t  tx_buf[E80_BENCH_MAX_PAYLOAD];
 static bool     session_active = false;
@@ -267,6 +273,39 @@ static void radio_sleep_now(void)
     state = BSTATE_IDLE;
 }
 
+/* ---- TX-hang watchdog (see bench_safety.h for the layered design) ---------- */
+
+/* Send tx_buf as the next burst packet with the chip TX timeout armed. */
+static void tx_send_current(void)
+{
+    /* Defense 1 — chip TX timeout: worst-case airtime * 2 + slack, so the
+     * LR2021 itself ends a stuck TX (PA unkeyed) even if the host wedges. */
+    tx_chip_to_ms = bench_safety_tx_timeout_ms(cfg.mod, cfg.sf, cfg.bw_hz,
+                                               cfg.br_bps, tx_len);
+    radio_critical_begin();
+    stats.tx_attempted++;
+    radio_bench_tx_packet(tx_buf, tx_len, tx_chip_to_ms);
+    radio_critical_end();
+    tx_wait_irq   = true;
+    tx_t_start_us = bench_micros();
+}
+
+/* TX-timeout abort: burst over, radio to STDBY then asleep (PA unkeyed),
+ * session stopped — the same end state as STOP, plus the ERR line the
+ * operator/host sees in the console log. If BUSY is stuck high the SPI
+ * below spins with IRQs off; the IWDG then resets the board and the boot
+ * banner reports 'WDG RESET' (defense 3). */
+static void tx_abort_timeout(void)
+{
+    radio_sleep_now(); /* forces STDBY first while state == TX_BURST */
+    tx_wait_irq = false;
+    stats.t_stop_us = bench_micros();
+    session_active = false;
+    console_put("ERR TX-TIMEOUT SEQ=");
+    console_put_u32(tx_seq);
+    console_putln("");
+}
+
 /* ---- Command replies ---------------------------------------------------------- */
 
 static void reply_err(const char* reason)
@@ -277,7 +316,7 @@ static void reply_err(const char* reason)
 
 static void print_id(void)
 {
-    console_put("ID E80BENCH v1.0 role=");
+    console_put("ID E80BENCH v1.1 role=");
     console_put(role == BENCH_ROLE_TX ? "TX" : role == BENCH_ROLE_RX ? "RX" : "NONE");
     console_put(tx_armed ? " armed=1" : " armed=0");
     if (cfg.mod == BENCH_MOD_LORA)
@@ -534,13 +573,10 @@ static void handle_cmd(const bench_cmd_t* c)
         radio_ensure_awake();
         radio_critical_begin();
         radio_bench_apply_cfg(&cfg);
-        bench_payload_build(tx_buf, tx_len, tx_seq);
-        stats.tx_attempted = 1;
-        radio_bench_tx_packet(tx_buf, tx_len);
         radio_critical_end();
-
-        state     = BSTATE_TX_BURST;
-        tx_wait_irq = true;
+        bench_payload_build(tx_buf, tx_len, tx_seq);
+        state = BSTATE_TX_BURST; /* set before TX starts: the IRQ path may fire */
+        tx_send_current();
         stats.t_start_us = bench_micros();
         console_put("OK START n=");
         console_put_u32(tx_total);
@@ -622,6 +658,16 @@ static void radio_task(void)
 {
     rb_evt_t e;
 
+    /* Defense 2 — superloop backstop: no TX_DONE/TIMEOUT serviced within the
+     * window (EXTI lost, mailbox drop) -> force-abort the burst. */
+    if (state == BSTATE_TX_BURST && tx_wait_irq &&
+        bench_safety_tx_backstop_fired(tx_t_start_us, bench_micros(),
+                                       tx_chip_to_ms))
+    {
+        tx_abort_timeout();
+        return;
+    }
+
     /* TX pacing */
     if (state == BSTATE_TX_BURST && !tx_wait_irq)
     {
@@ -643,11 +689,7 @@ static void radio_task(void)
         {
             tx_seq++;
             bench_payload_build(tx_buf, tx_len, tx_seq);
-            radio_critical_begin();
-            stats.tx_attempted++;
-            radio_bench_tx_packet(tx_buf, tx_len);
-            radio_critical_end();
-            tx_wait_irq = true;
+            tx_send_current();
         }
     }
 
@@ -660,6 +702,12 @@ static void radio_task(void)
             stats.tx_done++;
             tx_t_done_us = bench_micros();
             tx_wait_irq = false;
+            break;
+
+        case RB_EVT_TX_TIMEOUT:
+            /* Defense 1 tripped: the LR2021 already unkeyed the PA. */
+            if (state == BSTATE_TX_BURST)
+                tx_abort_timeout();
             break;
 
         case RB_EVT_RX_OK:
@@ -702,7 +750,7 @@ int main(void)
     __enable_irq();
 
     console_putln("");
-    console_putln("E80 BENCH FW v1.0 (STM32F103C8 + LR2021) - 'HELP' for commands");
+    console_putln("E80 BENCH FW v1.1 (STM32F103C8 + LR2021) - 'HELP' for commands");
 
 #if E80_BENCH_BOOT_TX_INHIBITED
     /* Safety default: bring the radio up once with the vendor init sequence

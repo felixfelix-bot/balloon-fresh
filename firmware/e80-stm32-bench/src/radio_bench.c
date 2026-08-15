@@ -93,6 +93,10 @@ volatile uint8_t radio_bench_chip_minor = 0;
 static volatile bool     radio_asleep   = false;
 static volatile uint16_t rx_pld_for_irq = 255;
 
+/* True from set_tx() until TX_DONE/TIMEOUT IRQ — lets the IRQ path tell a
+ * TX overrun apart from an RX timeout on the shared TIMEOUT IRQ bit. */
+static volatile bool tx_active = false;
+
 /* Event mailbox (single slot; drops counted when the superloop stalls) */
 static volatile rb_evt_t evt_slot;
 static volatile uint8_t  evt_pending = 0;
@@ -278,9 +282,13 @@ int radio_bench_rx_arm(uint16_t rx_pld_len)
     return 0;
 }
 
-int radio_bench_tx_packet(const uint8_t* buf, uint16_t len)
+int radio_bench_tx_packet(const uint8_t* buf, uint16_t len, uint32_t tx_timeout_ms)
 {
-    lr20xx_system_set_dio_irq_cfg(E80_CONTEXT, LR20XX_SYSTEM_DIO_8, LR20XX_SYSTEM_IRQ_TX_DONE);
+    /* TX overrun defense: TIMEOUT IRQ enabled alongside TX_DONE so the chip
+     * itself ends a stuck TX (fallback STDBY_RC set by apply_cfg unkeys the
+     * PA) even if the host never notices. */
+    lr20xx_system_set_dio_irq_cfg(E80_CONTEXT, LR20XX_SYSTEM_DIO_8,
+                                  LR20XX_SYSTEM_IRQ_TX_DONE | LR20XX_SYSTEM_IRQ_TIMEOUT);
 
     lr20xx_system_clear_irq_status(E80_CONTEXT, LR20XX_SYSTEM_IRQ_ALL_MASK);
 
@@ -297,7 +305,8 @@ int radio_bench_tx_packet(const uint8_t* buf, uint16_t len)
 
     lr20xx_radio_fifo_write_tx(E80_CONTEXT, buf, len);
 
-    lr20xx_radio_common_set_tx(E80_CONTEXT, 0);
+    tx_active = true;
+    lr20xx_radio_common_set_tx(E80_CONTEXT, tx_timeout_ms);
 
     return 0;
 }
@@ -344,9 +353,20 @@ void radio_bench_irq(void)
 
     if ((radio_irq & LR20XX_SYSTEM_IRQ_TIMEOUT) == LR20XX_SYSTEM_IRQ_TIMEOUT)
     {
-        rb_evt_t e = { .type = RB_EVT_RX_TIMEOUT };
-        evt_push(&e);
-        radio_bench_rx_arm(rx_pld_for_irq);
+        if (tx_active)
+        {
+            /* Chip TX timeout: the LR2021 already left TX (fallback STDBY_RC,
+             * PA unkeyed). Abort the burst — do NOT re-arm RX here. */
+            tx_active = false;
+            rb_evt_t e = { .type = RB_EVT_TX_TIMEOUT };
+            evt_push(&e);
+        }
+        else
+        {
+            rb_evt_t e = { .type = RB_EVT_RX_TIMEOUT };
+            evt_push(&e);
+            radio_bench_rx_arm(rx_pld_for_irq);
+        }
     }
     else if (radio_irq & LR20XX_SYSTEM_IRQ_LORA_HEADER_ERROR)
     {
@@ -397,6 +417,7 @@ void radio_bench_irq(void)
     }
     else if ((radio_irq & LR20XX_SYSTEM_IRQ_TX_DONE) == LR20XX_SYSTEM_IRQ_TX_DONE)
     {
+        tx_active = false;
         rb_evt_t e = { .type = RB_EVT_TX_DONE };
         evt_push(&e);
     }

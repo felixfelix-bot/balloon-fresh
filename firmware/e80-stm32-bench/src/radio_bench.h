@@ -53,6 +53,8 @@ typedef enum rb_evt_type_e
     RB_EVT_RX_CRC,
     RB_EVT_RX_TIMEOUT,
     RB_EVT_TX_DONE,
+    RB_EVT_TX_TIMEOUT, /* LR2021 chip TX timeout: radio already fell back to
+                        * STDBY (PA unkeyed); burst must be aborted */
     RB_EVT_RX_OTHER,
 } rb_evt_type_t;
 
@@ -76,8 +78,12 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg);
 /** Demo radio_rx() sequence with continuous RX. Radio must be awake. */
 int radio_bench_rx_arm(uint16_t rx_pld_len);
 
-/** Demo radio_tx_custom() sequence for one packet. */
-int radio_bench_tx_packet(const uint8_t* buf, uint16_t len);
+/** Demo radio_tx_custom() sequence for one packet, with a chip-level TX
+ *  timeout (ms, see bench_safety_tx_timeout_ms). On overrun the LR2021
+ *  raises the TIMEOUT IRQ and falls back to STDBY_RC (fallback mode set by
+ *  apply_cfg), unkeying the PA even if the host MCU is wedged. Radio must
+ *  be awake. */
+int radio_bench_tx_packet(const uint8_t* buf, uint16_t len, uint32_t tx_timeout_ms);
 
 /** Demo radio_sleep() (warm sleep, RAM retention). */
 void radio_bench_sleep(void);
