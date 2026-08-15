@@ -1,8 +1,14 @@
 # FLASHING — E80 STM32F103C8T6 bench firmware
 
-COMPILE-ONLY document (procedures verified against RM0008 + the stm32flash
-flow; no board access yet). Do not flash until the bench plan's flash gate is
-explicitly cleared.
+> **⚠ LIVE VERDICT 2026-08-16: UART ROM-ISP entry is IMPOSSIBLE on stock
+> hardware.** BOOT0 is strapped to GND (10 k, no jumper/pad anywhere) and
+> there is no CH340 DTR/RTS auto-download circuit. Verified at bench:
+> sync-spam + repeated RESET = NO-SYNC both boards. The manual method
+> below is DEAD for first flash on stock fw. First flash must go via SWD
+> (see `docs/E80-FLASH-ACCESS-FINDINGS.md`); after bench fw ≥ v1.2 is
+> installed, the headless `FLASH` command below works for all re-flashes.
+> Do NOT write random bytes to the ports while stock fw runs — it
+> transmits them over LoRa at 850 MHz (out of PT band).
 
 ## What gets flashed
 
