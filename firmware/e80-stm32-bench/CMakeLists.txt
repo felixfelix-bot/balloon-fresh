@@ -22,6 +22,7 @@ add_executable(e80_bench
     ${TP}/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c
     ${TP}/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c
     ${TP}/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c
+    ${TP}/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_iwdg.c
     # LR2021 driver - only the engines the bench uses
     ${TP}/Radio/lr20xx_driver/src/lr20xx_system.c
     ${TP}/Radio/lr20xx_driver/src/lr20xx_regmem.c

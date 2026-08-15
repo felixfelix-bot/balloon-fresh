@@ -38,8 +38,8 @@ make                    # -> build-fw/e80_bench{.bin,.hex,.map}
 arm-none-eabi-size build-fw/e80_bench
 ```
 
-Size (2026-08-16): text 17704 + data 112 = **17,816 B flash (27% of 64K)**,
-bss **2,680 B RAM (13% of 20K)**.
+Size (2026-08-16, with TX-hang watchdog): text 18476 + data 116 = **18,592 B
+flash (28% of 64K)**, bss **2,692 B RAM (13% of 20K)**.
 
 ## Console
 

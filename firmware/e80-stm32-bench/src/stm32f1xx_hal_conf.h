@@ -25,6 +25,7 @@ extern "C" {
 #define HAL_UART_MODULE_ENABLED
 #define HAL_DMA_MODULE_ENABLED /* SPI/UART handles embed DMA_HandleTypeDef */
 #define HAL_CORTEX_MODULE_ENABLED
+#define HAL_IWDG_MODULE_ENABLED /* TX-hang watchdog defense 3 (bench_safety.h) */
 /* HAL_EXTI_MODULE_ENABLED not needed: GPIO EXTI handling lives in HAL_GPIO. */
 
 /* Oscillator values in Hz ---------------------------------------------------*/
@@ -83,6 +84,9 @@ extern "C" {
 #endif
 #ifdef HAL_CORTEX_MODULE_ENABLED
 #include "stm32f1xx_hal_cortex.h"
+#endif
+#ifdef HAL_IWDG_MODULE_ENABLED
+#include "stm32f1xx_hal_iwdg.h"
 #endif
 
 /* Exported macros ------------------------------------------------------------*/
