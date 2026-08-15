@@ -112,11 +112,10 @@ N=10^4 (~90 s) — ties this campaign to the indoor 255 B bench baseline.
 
 - Single trigger per stop: ONE host command per board runs the full 4-mod
   matrix + anchor back-to-back; operators touch nothing until the stop
-  completes. Requires extending `tools/e80_bench_ctl.py` with
-  `--matrix flrc650,flrc2600,sf7,sf12 --csv <file>` and a
-  `--band-override` passthrough (the current tool gates freq to 863–870
-  host-side and runs FLRC-650 single-shot only) — follow-up task before
-  field day.
+  completes. Implemented in `tools/e80_bench_ctl.py`:
+  `--matrix flrc650,flrc2600,sf7,sf12 --csv <file> --band-override`
+  (host tests: `tools/test_e80_bench_ctl.py`, dry-run is the rehearsal
+  surface).
 - Sync: T0 exchanged by phone at each stop; the cell schedule is
   time-driven on both hosts from T0; RX arms LEN/N per cell from schedule.
 - Auto-CSV: append-only per site, one row per cell:

@@ -56,10 +56,36 @@ USART1 over USB (CH340), 115200 8N1 (921600 tolerated). Line-based,
 ```bash
 tools/e80_bench_ctl.py --dry-run                 # inspect command script
 tools/e80_bench_ctl.py --tx /dev/ttyUSB3 --rx /dev/ttyUSB4
+python3 -m unittest test_e80_bench_ctl -v        # host tests (no hardware)
 ```
 
 Default run: FLRC-650, 868.0 MHz, 1000 x 255 B, +10 dBm. Prints
 PER/Wilson-CI/throughput table from both boards' `STAT?`.
+
+Range campaign (docs/RANGE-TEST-PLAN.md §5) — single trigger per stop,
+schedule-synced from T0, append-only CSV:
+
+```bash
+tools/e80_bench_ctl.py --tx /dev/ttyUSB3 --rx /dev/ttyUSB4 \
+    --matrix flrc650,flrc2600,sf7,sf12 --csv range/siteA_S3_r2.csv \
+    --site siteA --stop S3 --dist-m 200 --repeat 2 \
+    --freq 915000000 --dbm 22 --band-override \
+    --gps-tx 52.0123,4.0456 --gps-rx 52.0234,4.0123 \
+    --h-tx 1.5 --h-rx 1.5 --ground grass --weather "12C clear" \
+    --t0 "2026-08-30 14:05:00"            # add --dry-run to rehearse
+```
+
+- LEN=51 uniform, GAP 5000 us FLRC / 1000 us LoRa, N per plan §3 regime
+  (10^4 when the previous stop's same-mod Wilson ci_hi <= 2 %, else 10^3;
+  SF12 capped at 10^3) — read back from the --csv of earlier stops.
+- LEN=255 FLRC-650 anchor cell appended per stop (skip: `--no-anchor`).
+- `--band-override` unlocks 410-960 MHz (pin 2026) and verifies the
+  `band=`/`pcap=` echo via `ID?` before any TX; +dbm above 10 additionally
+  issues `POWER MODE OUTDOOR 2026`. Without it, 863-870 MHz is enforced
+  host-side (firmware mirrors).
+- Ctrl-C mid-run sends STOP to both boards and marks the stop ABORTED in
+  the CSV (plan §4 stop-path). Cells that overrun their schedule slot by
+  >120 s abort the stop (TX burst stuck = diagnose, don't continue).
 
 ## Flashing
 
