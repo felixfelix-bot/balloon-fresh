@@ -138,6 +138,14 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
         out->id = BENCH_CMD_STOP;
         return BENCH_CMD_OK;
     }
+    if (bench_strcaseeq(tokens[0], "FLASH"))
+    {
+        /* No arguments: the jump decision depends only on the IWDG state. */
+        if (ntok != 1)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        out->id = BENCH_CMD_FLASH;
+        return BENCH_CMD_OK;
+    }
     if (bench_strcaseeq(tokens[0], "HELP") || bench_strcaseeq(tokens[0], "?"))
     {
         if (ntok != 1)
