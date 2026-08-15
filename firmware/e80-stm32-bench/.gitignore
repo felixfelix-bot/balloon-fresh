@@ -1,0 +1,4 @@
+build-fw/
+build-host/
+*.o
+E80_stock_dump_*.bin
