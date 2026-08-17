@@ -386,9 +386,17 @@ static void reply_err(const char* reason)
     console_putln(reason);
 }
 
+/* Build identity: the convenience Makefile stamps -DFW_GIT_SHA=<sha7> from
+ * git HEAD at build time (CMake falls back to its own git query). */
+#ifndef FW_GIT_SHA
+#define FW_GIT_SHA unknown
+#endif
+#define E80_STR_(x) #x
+#define E80_STR(x)  E80_STR_(x)
+
 static void print_id(void)
 {
-    console_put("ID E80BENCH v1.2 role=");
+    console_put("ID E80BENCH v1.2 fw=" E80_STR(FW_GIT_SHA) " role=");
     console_put(role == BENCH_ROLE_TX ? "TX" : role == BENCH_ROLE_RX ? "RX" : "NONE");
     console_put(tx_armed ? " armed=1" : " armed=0");
     if (cfg.mod == BENCH_MOD_LORA)
@@ -714,6 +722,10 @@ static void handle_cmd(const bench_cmd_t* c)
             elapsed));
         console_put(" rssi_avg_dbm=");
         console_put_dec1(bench_stats_rssi_avg_half_dbm(&stats) * 5); /* half-dBm -> 0.1 dBm */
+        console_put(" rssi_min_dbm=");
+        console_put_dec1(bench_stats_rssi_min_half_dbm(&stats) * 5); /* clamped -128.0..127.0 */
+        console_put(" rssi_max_dbm=");
+        console_put_dec1(bench_stats_rssi_max_half_dbm(&stats) * 5);
         console_put(" snr_avg_db=");
         console_put_dec1(bench_stats_snr_avg_cdb(&stats) / 10);
         console_put(" drops=");
@@ -815,6 +827,7 @@ static void radio_task(void)
             stats.rx_ok++;
             stats.rx_bytes += e.len;
             stats.rssi_sum_half += e.rssi_half_dbm;
+            bench_stats_note_rssi(&stats, e.rssi_half_dbm);
             stats.snr_sum_qdb += e.snr_qdb;
             if (!stats.rx_seq_valid)
             {

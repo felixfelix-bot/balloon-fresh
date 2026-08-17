@@ -61,7 +61,7 @@ the previous session was cut short by the STM32 IWDG.
 
 | Command | Meaning |
 |---|---|
-| `ID?` | chip/driver, role, mod, freq, band, PA, power cap, `boot=` field |
+| `ID?` | build sha (`fw=<sha7>`, stamped at compile from git HEAD), chip/driver, role, mod, freq, band, PA, power cap, `boot=` field |
 | `ROLE TX\|RX\|NONE` | set role (TX needs separate ARM) |
 | `ARM TX` | second step of TX enable |
 | `MOD loRa <sf5-12> <bw125\|250\|500>` | LoRa |
@@ -70,7 +70,7 @@ the previous session was cut short by the STM32 IWDG.
 | `PA <dbm>` | TX power, capped +10 (indoor) |
 | `POWER MODE OUTDOOR <pin>` | unlock +22 dBm (outdoor sessions, logged) |
 | `START N=<pkts> LEN=<6-511> GAP=<us>` | TX burst / RX expected-length arm |
-| `STAT?` | sent/recv/PER + Wilson 95% CI/RSSI/SNR/elapsed/kbps |
+| `STAT?` | sent/recv/PER + Wilson 95% CI/RSSI avg+min+max/SNR/elapsed/kbps |
 | `STOP` | abort run |
 | `FLASH` | jump to ROM bootloader (refuses if IWDG active) |
 | `BAND OVERRIDE <pin>` | out-of-band freq unlock (logged) |

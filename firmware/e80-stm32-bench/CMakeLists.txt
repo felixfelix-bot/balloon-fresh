@@ -57,6 +57,23 @@ target_compile_definitions(e80_bench PRIVATE
     USE_HAL_DRIVER
 )
 
+# Firmware identity (ID? fw=<sha7>). Preferred value comes from the
+# convenience Makefile (-DFW_GIT_SHA=<sha7>); when configuring with bare
+# CMake, query git here, and fall back to "unknown" outside a repo.
+if(NOT DEFINED FW_GIT_SHA)
+    execute_process(
+        COMMAND git -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse --short=7 HEAD
+        OUTPUT_VARIABLE FW_GIT_SHA
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(NOT FW_GIT_SHA)
+        set(FW_GIT_SHA "unknown")
+    endif()
+endif()
+message(STATUS "FW_GIT_SHA=${FW_GIT_SHA}")
+target_compile_definitions(e80_bench PRIVATE FW_GIT_SHA=${FW_GIT_SHA})
+
 target_link_options(e80_bench PRIVATE
     -Wl,--gc-sections
     -Wl,-Map=${CMAKE_BINARY_DIR}/e80_bench.map

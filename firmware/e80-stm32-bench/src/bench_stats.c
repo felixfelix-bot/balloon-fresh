@@ -20,6 +20,9 @@ void bench_stats_reset(bench_stats_t* s)
     s->t_start_us = 0;
     s->t_stop_us = 0;
     s->rssi_sum_half = 0;
+    s->rssi_min = 0;
+    s->rssi_max = 0;
+    s->rssi_valid = false;
     s->snr_sum_qdb = 0;
 }
 
@@ -118,6 +121,48 @@ int32_t bench_stats_rssi_avg_half_dbm(const bench_stats_t* s)
     if (s->rx_ok == 0)
         return 0;
     return s->rssi_sum_half / (int32_t)s->rx_ok;
+}
+
+void bench_stats_note_rssi(bench_stats_t* s, int16_t rssi_half_dbm)
+{
+    if (!s->rssi_valid)
+    {
+        s->rssi_min = rssi_half_dbm;
+        s->rssi_max = rssi_half_dbm;
+        s->rssi_valid = true;
+        return;
+    }
+    if (rssi_half_dbm < s->rssi_min)
+        s->rssi_min = rssi_half_dbm;
+    if (rssi_half_dbm > s->rssi_max)
+        s->rssi_max = rssi_half_dbm;
+}
+
+/* Trackers store raw samples; the printable range is clamped here so the
+ * STAT line can never emit an RSSI outside -128.0..+127.0 dBm (int8 dBm). */
+#define RSSI_HALF_MIN (-256) /* -128.0 dBm */
+#define RSSI_HALF_MAX (254)  /* +127.0 dBm */
+
+int32_t bench_stats_rssi_min_half_dbm(const bench_stats_t* s)
+{
+    if (!s->rssi_valid)
+        return 0;
+    if (s->rssi_min < RSSI_HALF_MIN)
+        return RSSI_HALF_MIN;
+    if (s->rssi_min > RSSI_HALF_MAX)
+        return RSSI_HALF_MAX;
+    return s->rssi_min;
+}
+
+int32_t bench_stats_rssi_max_half_dbm(const bench_stats_t* s)
+{
+    if (!s->rssi_valid)
+        return 0;
+    if (s->rssi_max < RSSI_HALF_MIN)
+        return RSSI_HALF_MIN;
+    if (s->rssi_max > RSSI_HALF_MAX)
+        return RSSI_HALF_MAX;
+    return s->rssi_max;
 }
 
 int32_t bench_stats_snr_avg_cdb(const bench_stats_t* s)
