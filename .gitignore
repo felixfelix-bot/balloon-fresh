@@ -44,3 +44,4 @@ captures/
 tracker/firmware/bench_test/build/
 tracker/firmware/bench_test/sdkconfig
 firmware/rp2040/host-tests/test_stats
+firmware/rp2040/host-tests/test_safety
