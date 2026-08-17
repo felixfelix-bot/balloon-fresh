@@ -9,9 +9,11 @@ CXX      ?= g++
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Werror -O2 -g
 SRC_DIR   = ../src
 
+# Header-only modules: test_X.cpp compiles alone (no src TU to link).
+
 # --- test targets (add new test_*.cpp here) --------------------------------
 
-TESTS = test_stats test_safety test_cmd
+TESTS = test_stats test_safety test_cmd test_bw_codes
 
 # `all` is declared below; make it the default goal so a bare `make` builds
 # every test (the first explicit rule would otherwise become the default).
@@ -25,6 +27,10 @@ test_safety: test_safety.cpp $(SRC_DIR)/flrc_range_host_safety.cpp
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^ -lm
 
 test_cmd: test_cmd.cpp $(SRC_DIR)/flrc_range_host_cmd.cpp
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^
+
+# BW-1: header-only shared table (lr2021_bw_codes.h) — no src TU to link.
+test_bw_codes: test_bw_codes.cpp
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^
 
 # --- catch-all ------------------------------------------------------------
