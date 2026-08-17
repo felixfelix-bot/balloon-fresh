@@ -1,0 +1,5 @@
+# Range test RX overlay — layered on top of sdkconfig.defaults (later files win).
+CONFIG_BENCH_MODE_RANGE_RX=y
+# GPS disabled for indoor bring-up: no MAX-M10S wired on c3-b yet.
+# Phone GPS covers distance logging later. Component stays in tree, code compiled out.
+CONFIG_RANGE_TEST_GPS=n

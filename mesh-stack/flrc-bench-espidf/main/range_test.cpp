@@ -18,6 +18,17 @@
 
 #ifdef CONFIG_RANGE_TEST_GPS
 #include "gps.h"
+#else
+// GPS compiled out (CONFIG_RANGE_TEST_GPS=n): provide a compatible gps_data_t
+// so the RX logging path compiles unchanged. Fields stay zeroed via memset.
+typedef struct {
+    bool fix;
+    int32_t latitude;
+    int32_t longitude;
+    uint16_t altitude_m;
+    uint8_t sats;
+    float hdop;
+} gps_data_t;
 #endif
 
 #if defined(CONFIG_BENCH_MODE_RANGE_TX)

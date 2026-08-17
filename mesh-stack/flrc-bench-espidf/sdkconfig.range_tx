@@ -1,0 +1,2 @@
+# Range test TX overlay — layered on top of sdkconfig.defaults (later files win).
+CONFIG_BENCH_MODE_RANGE_TX=y
