@@ -34,6 +34,14 @@ struct RangeWindow {
     uint16_t sync_delay_ms;
 };
 
+// CR ENCODING — LR2021-raw values, do NOT "fix"/normalize (correct here,
+// would be WRONG for the SX128x class API):
+//   LoRa: coding-rate DENOMINATOR 4..8, driver writes cr-4 into the modem
+//         (LR2021_config.cpp setCodingRate, RADIOLIB_CHECK_RANGE(cr,4,8));
+//         cr=5 is CR 4/5, cr=7 is CR 4/7.
+//   FLRC: raw register code 0x00=1/2, 0x01=3/4, 0x02=1/0, (0x03=2/3)
+//         (LR2021_commands.h:505-508).
+// Applies to cr fields in range_windows[] AND range_scan_modes[] below.
 static const RangeWindow range_windows[] = {
     { "L12-868",     RANGE_LORA, 868.0f,  0,    12, 125.0f, 5,     22, 28,  20, 1000, 8,  2000 },
     { "L9-868",      RANGE_LORA, 868.0f,  0,    9,  125.0f, 5,     22, 28,  20, 1000, 8,  2000 },
@@ -43,11 +51,15 @@ static const RangeWindow range_windows[] = {
     { "L12-2G4",     RANGE_LORA, 2450.0f, 0,    12, 125.0f, 5,     12, 28,  20, 1000, 8,  2000 },
     { "L9-2G4",      RANGE_LORA, 2450.0f, 0,    9,  125.0f, 5,     12, 28,  20, 1000, 8,  2000 },
     { "L7-2G4",      RANGE_LORA, 2450.0f, 0,    7,  125.0f, 5,     12, 28,  20, 500,  8,  2000 },
-    { "F260-868",    RANGE_FLRC, 868.0f,  260,  0,  0.0f,   0x00,  22, 50,  50, 100,  16, 500  },
-    { "F650-868",    RANGE_FLRC, 868.0f,  650,  0,  0.0f,   0x01,  22, 50,  50, 50,   16, 500  },
-    { "F1300-868",   RANGE_FLRC, 868.0f,  1300, 0,  0.0f,   0x02,  22, 100, 100, 10,  16, 500  },
-    { "F1300C34-868",RANGE_FLRC, 868.0f,  1300, 0,  0.0f,   0x01,  22, 100, 100, 10,  16, 500  },
-    { "F2600-868",   RANGE_FLRC, 868.0f,  2600, 0,  0.0f,   0x02,  22, 100, 100, 10,  16, 500  },
+    // FLRC-868 sync dwell 500->1500ms (N1, gap G2): scan cycle is 16x5s=80s
+    // after this card, so a 2.5s sync phase gives only ~9% catch/pass;
+    // 5x1500ms raises it to ~15% (sync phase is dead air anyway).
+    // 2G4 FLRC trio unchanged per N1 card scope.
+    { "F260-868",    RANGE_FLRC, 868.0f,  260,  0,  0.0f,   0x00,  22, 50,  50, 100,  16, 1500 },
+    { "F650-868",    RANGE_FLRC, 868.0f,  650,  0,  0.0f,   0x01,  22, 50,  50, 50,   16, 1500 },
+    { "F1300-868",   RANGE_FLRC, 868.0f,  1300, 0,  0.0f,   0x02,  22, 100, 100, 10,  16, 1500 },
+    { "F1300C34-868",RANGE_FLRC, 868.0f,  1300, 0,  0.0f,   0x01,  22, 100, 100, 10,  16, 1500 },
+    { "F2600-868",   RANGE_FLRC, 868.0f,  2600, 0,  0.0f,   0x02,  22, 100, 100, 10,  16, 1500 },
     { "F260-2G4",    RANGE_FLRC, 2450.0f, 260,  0,  0.0f,   0x00,  12, 50,  50, 100,  16, 500  },
     { "F1300-2G4",   RANGE_FLRC, 2450.0f, 1300, 0,  0.0f,   0x02,  12, 100, 100, 10,  16, 500  },
     { "F2600-2G4",   RANGE_FLRC, 2450.0f, 2600, 0,  0.0f,   0x02,  12, 100, 100, 10,  16, 500  },
@@ -119,12 +131,15 @@ struct RangeScanMode {
 static const RangeScanMode range_scan_modes[] = {
     { RANGE_FLRC, 868.0f,  2600, 0, 0.0f,   0x02, 22 },
     { RANGE_FLRC, 868.0f,  1300, 0, 0.0f,   0x02, 22 },
+    { RANGE_FLRC, 868.0f,  1300, 0, 0.0f,   0x01, 22 },  // F1300C34-868 (FLRC CR 3/4)
     { RANGE_FLRC, 868.0f,  650,  0, 0.0f,   0x01, 22 },
     { RANGE_FLRC, 868.0f,  260,  0, 0.0f,   0x00, 22 },
     { RANGE_FLRC, 2450.0f, 2600, 0, 0.0f,   0x02, 12 },
     { RANGE_FLRC, 2450.0f, 1300, 0, 0.0f,   0x02, 12 },
     { RANGE_FLRC, 2450.0f, 260,  0, 0.0f,   0x00, 12 },
-    { RANGE_LORA, 868.0f,  0,    9, 125.0f, 5,    22 },
+    { RANGE_LORA, 868.0f,  0,    9,  500.0f, 5,    22 },  // L9W-868 (SF9 BW500)
+    { RANGE_LORA, 868.0f,  0,    9,  125.0f, 5,    22 },
+    { RANGE_LORA, 868.0f,  0,    9,  125.0f, 7,    22 },  // L9CR7-868 (SF9 CR 4/7)
     { RANGE_LORA, 868.0f,  0,    12, 125.0f, 5,    22 },
     { RANGE_LORA, 868.0f,  0,    7,  125.0f, 5,    22 },
     { RANGE_LORA, 2450.0f, 0,    9,  125.0f, 5,    12 },
