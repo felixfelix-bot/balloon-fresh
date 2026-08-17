@@ -2,6 +2,9 @@
  * @file    flrc_range_host_radio.h
  * @brief   FW-5a: LR2021 radio backend TX — band matrix + init/reinit
  *          command sequences + chip TX timeout ticks.
+ *          FW-5b: RX side — continuous-RX arm sequence, FIX-3 IRQ
+ *          classification, packet read, and FLRC/LoRa packet-status
+ *          RSSI/SNR assembly with the minor-2 int8-wrap fix.
  *
  * Split design so the SAME sequence code runs in firmware and in host
  * unit tests:
@@ -34,6 +37,38 @@
  *   - ms->ticks ............... vendored lr20xx_driver
  *                              lr20xx_radio_common_convert_time_in_ms_to_
  *                              rtc_step(): ticks = ms * 32768 / 1000
+ *
+ * FW-5b RX provenance (task t_41b23f6c):
+ *   - startReceive / SET_RX ... src/flrc_range_rx_sweep.cpp rfSetRx()
+ *                              ({02 0C FF FF FF} — 5 bytes, extra byte is
+ *                              a CMD_ERROR) + runReceive() pre-arm
+ *   - FIX-3 IRQ discipline .... src/flrc_range_rx_v2.cpp L388-445: read +
+ *                              classify IRQ status, and on EVERY path
+ *                              (RX_DONE / CRC error / other) drain the
+ *                              FIFO + clear IRQ + re-arm SET_RX
+ *   - RX DIO wiring ........... src/flrc_range_rx_v2.cpp L316
+ *                              ({01 15 09 00 04 00 00} = RX_DONE bit18
+ *                              -> DIO9; full_init wires TX_DONE bit19)
+ *   - FLRC packet status ...... src/flrc_range_rx_sweep.cpp L158-180:
+ *                              GET_FLRC_PACKET_STATUS 0x024B, 7 phase-2
+ *                              bytes, 9-bit raw = (b[4]<<1)|(b[6].bit2)
+ *   - LoRa packet status ...... GET_PACKET_STATUS 0x022A — NOT in the
+ *                              raw-SPI corpus; bound to the vendored
+ *                              lr20xx_driver lr20xx_radio_lora_get_packet_
+ *                              status() (+ E80 radio_bench.c L387-396): 8
+ *                              phase-2 bytes, rssi = -(int16)b[5], snr =
+ *                              signed b[4] quarter-dB, len = b[3]. Driver
+ *                              rbuffer = phase-2 read minus the 2 status
+ *                              bytes (verified against the FLRC 0x024B
+ *                              mapping above).
+ *   - Instantaneous RSSI ...... src/flrc_range_rx_sweep.cpp L182-204:
+ *                              GET_RSSI_INST 0x020B, 2 phase-2 bytes,
+ *                              9-bit raw = (b[0]<<1)|(b[1]>>7)
+ *
+ * Known provenance delta (deliberate, REV-2 minor-2): rx_sweep/v2 return
+ * -(int8_t)(raw/2), which WRAPS POSITIVE once raw/2 > 127 (9-bit RSSI
+ * reaches -255.5 dBm). This module computes in int16 and clamps to
+ * [-127, 0] so BENCH_RADIO_RSSI_INVALID (-128) stays a clean sentinel.
  *
  * Band rule (B1): is_hf = freq_hz > 1.5 GHz. The sweep backend hardwires
  * the HF values (RX_PATH 0x01, FE|0x8000, PA select 0x80); every band-
@@ -145,6 +180,66 @@ void bench_radio_emit_full_init(const bench_radio_cfg_t *cfg,
 void bench_radio_emit_reinit(const bench_radio_cfg_t *cfg,
                              bench_radio_cmd_sink_t sink, void *user);
 
+/* ---- RX frames + packet-status assembly (FW-5b, pure) --------------------- */
+
+/* SET_RX {02 0C t23..16 t15..8 t7..0} — 5 bytes total, NOT 6 (an extra
+ * byte is a CMD_ERROR; rx_sweep rfSetRx). startReceive provenance is the
+ * continuous listen: 0xFFFFFF timeout, host STOP ends the session. */
+#define BENCH_RADIO_RX_CONTINUOUS_TICKS 0xFFFFFFUL
+void bench_radio_set_rx_bytes(uint32_t timeout_ticks, uint8_t out[5]);
+
+/* CLEAR_RX_FIFO {01 1E} (TX counterpart 0x011F — rfClearTxFifo). */
+void bench_radio_clear_rx_fifo_bytes(uint8_t out[2]);
+
+/* DIO9 line wiring via CFG_DIO_IRQ: RX maps RX_DONE (bit 18), TX maps
+ * TX_DONE (bit 19). full_init/reinit leave the line on TX_DONE, so an RX
+ * session must re-map on entry (and TX must restore it — done lazily in
+ * bench_radio_send_packet). */
+void bench_radio_rx_dio_irq_bytes(uint8_t out[7]);
+void bench_radio_tx_dio_irq_bytes(uint8_t out[7]);
+
+/* startReceive arm sequence (v2 FIX-3 pre-arm + RX DIO remap):
+ *   DIO remap -> CLEAR_IRQ -> CLEAR_RX_FIFO -> SET_RX continuous
+ * (4 frames). */
+void bench_radio_emit_start_rx(bench_radio_cmd_sink_t sink, void *user);
+
+/* IRQ status bits (flrc_range_rx_v2.cpp FIX-3 classification). */
+#define BENCH_RADIO_IRQ_RX_DONE 0x00040000UL
+#define BENCH_RADIO_IRQ_CRC_ERR 0x00200000UL
+
+/* No-reading sentinel: -128 = none / UNCALIBRATED (REV-2 minor-2). */
+#define BENCH_RADIO_RSSI_INVALID ((int8_t)-128)
+
+typedef enum {
+    BENCH_RX_IRQ_NONE = 0,
+    BENCH_RX_IRQ_PKT_OK,  /* RX_DONE without CRC error */
+    BENCH_RX_IRQ_CRC_ERR, /* CRC error — wins over RX_DONE (v2 order) */
+    BENCH_RX_IRQ_OTHER,   /* anything else: timeout, spurious, ... */
+} bench_rx_irq_class_t;
+
+/* FIX-3 classification order: CRC error first, then RX_DONE, else OTHER. */
+bench_rx_irq_class_t bench_radio_classify_rx_irq(uint32_t irq_status);
+
+/* FLRC GET_FLRC_PACKET_STATUS 0x024B — the full 7 phase-2 bytes
+ * [stat_msb stat_lsb len_msb len_lsb rssiAvg rssiSync flags].
+ * 9-bit assembly: raw9 = (b[4]<<1) | b[6].bit2, rssi = -raw9/2 computed
+ * in int16 and clamped to [-127, 0] (minor-2 wrap fix). len = 16-bit
+ * pktLen field. */
+int8_t bench_radio_flrc_rssi_dbm(const uint8_t pkt_status[7]);
+uint16_t bench_radio_flrc_pkt_len(const uint8_t pkt_status[7]);
+
+/* LoRa GET_PACKET_STATUS 0x022A — the full 8 phase-2 bytes
+ * [stat_msb stat_lsb crc/cr len snr rssi rssi_signal flags].
+ * rssi = -(int16)b[5] clamped to [-127, 0]; snr = signed b[4] in
+ * quarter-dB; len = b[3] (explicit-header payload length). */
+int8_t bench_radio_lora_rssi_dbm(const uint8_t pkt_status[8]);
+int8_t bench_radio_lora_snr_qdb(const uint8_t pkt_status[8]);
+uint8_t bench_radio_lora_pkt_len(const uint8_t pkt_status[8]);
+
+/* GET_RSSI_INST 0x020B — [rssiMsb rssiLsb], 9-bit raw9 = (b[0]<<1) |
+ * (b[1]>>7), rssi = -raw9/2 with the same wrap fix. */
+int8_t bench_radio_rssi_inst_dbm(const uint8_t resp[2]);
+
 /* ---- Hardware layer (firmware only) --------------------------------------- */
 
 #ifndef BENCH_RADIO_HOST_TEST
@@ -163,9 +258,40 @@ void bench_radio_reinit(const bench_radio_cfg_t *cfg);
 /* Burst-spin TX of one packet (flrc_range_tx_sweep.cpp L378-398):
  * CLEAR_IRQ -> CLEAR_TX_FIFO -> WRITE_TX_FIFO -> SET_TX(ticks from
  * cfg->tx_timeout_ms) -> spin on the IRQ pin. Returns true if the IRQ
- * line fired within the spin budget. */
+ * line fired within the spin budget. If the last operation was RX, the
+ * DIO9 map is lazily restored to TX_DONE first. */
 bool bench_radio_send_packet(const bench_radio_cfg_t *cfg,
                              const uint8_t *pkt, uint16_t len);
+
+/* ---- RX hardware (FW-5b) -------------------------------------------------- */
+
+/* One serviced RX event: len = payload bytes copied into the caller's
+ * buffer (PKT_OK only), rssi_dbm = BENCH_RADIO_RSSI_INVALID when not
+ * read, snr_qdb LoRa-only (0 for FLRC). */
+typedef struct {
+    bench_rx_irq_class_t irq_class;
+    uint16_t len;
+    int8_t   rssi_dbm;
+    int8_t   snr_qdb;
+} bench_rx_event_t;
+
+/* Arm continuous RX: emit_start_rx over SPI (re-maps DIO9 to RX_DONE). */
+void bench_radio_start_rx(void);
+
+/* STOP semantics (REV-2): leave RX -> STDBY_RC {02 00 01}. */
+void bench_radio_standby(void);
+
+/* Instantaneous RSSI (noise-floor sampling; no packet needed). */
+int8_t bench_radio_read_rssi_inst(void);
+
+/* One RX service step for the FW-8 poll loop — call when the IRQ line is
+ * high, or on a tick to self-heal. Reads+clears IRQ status, classifies
+ * (FIX-3 order), and on PKT_OK reads packet status (FLRC 0x024B / LoRa
+ * 0x022A per cfg->mod) then READ_RX_FIFO(len). On EVERY path (PKT_OK /
+ * CRC_ERR / OTHER) it ends with CLEAR_RX_FIFO + CLEAR_IRQ + SET_RX
+ * re-arm, so a serviced-but-undrained FIFO can never stall the chain. */
+bench_rx_event_t bench_radio_rx_service(const bench_radio_cfg_t *cfg,
+                                        uint8_t *buf, uint16_t buf_cap);
 
 #endif /* !BENCH_RADIO_HOST_TEST */
 

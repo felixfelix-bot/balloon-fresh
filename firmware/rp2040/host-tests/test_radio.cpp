@@ -354,6 +354,118 @@ static void test_no_hf_hardwire_on_lf() {
     }
 }
 
+/* ── 7. RX frames (FW-5b) ──────────────────────────────────────────── */
+
+static void test_set_rx_bytes() {
+    /* rx_sweep rfSetRx: {02 0C FF FF FF} — 5 bytes total, NOT 6. */
+    uint8_t b[5];
+    bench_radio_set_rx_bytes(BENCH_RADIO_RX_CONTINUOUS_TICKS, b);
+    CHECK(b[0] == 0x02 && b[1] == 0x0C);
+    CHECK(b[2] == 0xFF && b[3] == 0xFF && b[4] == 0xFF);
+    /* explicit tick value passes through big-endian */
+    bench_radio_set_rx_bytes(0x010203UL, b);
+    CHECK(b[2] == 0x01 && b[3] == 0x02 && b[4] == 0x03);
+}
+
+static void test_clear_rx_fifo_bytes() {
+    /* CLEAR_RX_FIFO {01 1E} (TX counterpart 0x011F — rfClearTxFifo). */
+    uint8_t b[2];
+    bench_radio_clear_rx_fifo_bytes(b);
+    CHECK(b[0] == 0x01 && b[1] == 0x1E);
+}
+
+static void test_rx_tx_dio_irq_bytes() {
+    /* RX: RX_DONE bit18 -> DIO9 (flrc_range_rx_v2.cpp L316).
+     * TX: TX_DONE bit19 -> DIO9 (FW-5a full_init frame 15). */
+    uint8_t r[7], t[7];
+    bench_radio_rx_dio_irq_bytes(r);
+    bench_radio_tx_dio_irq_bytes(t);
+    const uint8_t expR[] = {0x01, 0x15, 0x09, 0x00, 0x04, 0x00, 0x00};
+    const uint8_t expT[] = {0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00};
+    CHECK(memcmp(r, expR, 7) == 0);
+    CHECK(memcmp(t, expT, 7) == 0);
+}
+
+static void test_emit_start_rx() {
+    /* startReceive = v2 FIX-3 pre-arm + the RX DIO remap (full_init wires
+     * TX_DONE, so entering RX must re-map the line):
+     *   DIO remap -> CLEAR_IRQ -> CLEAR_RX_FIFO -> SET_RX continuous. */
+    Rec r;
+    bench_radio_emit_start_rx(Rec::sink, &r);
+    CHECK(r.count() == 4);
+    expect(r, 0, "rx dio remap", {0x01, 0x15, 0x09, 0x00, 0x04, 0x00, 0x00}, 1);
+    expect(r, 1, "clear irq", {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF}, 1);
+    expect(r, 2, "clear rx fifo", {0x01, 0x1E}, 1);
+    expect(r, 3, "set rx continuous", {0x02, 0x0C, 0xFF, 0xFF, 0xFF}, 2);
+}
+
+/* ── 8. RX IRQ classification (v2 FIX-3 order) ────────────────────── */
+
+static void test_classify_rx_irq() {
+    CHECK(bench_radio_classify_rx_irq(0x00040000UL) == BENCH_RX_IRQ_PKT_OK);
+    CHECK(bench_radio_classify_rx_irq(0x00200000UL) == BENCH_RX_IRQ_CRC_ERR);
+    /* CRC wins over RX_DONE when both set — v2 checks bit21 first */
+    CHECK(bench_radio_classify_rx_irq(0x00240000UL) == BENCH_RX_IRQ_CRC_ERR);
+    CHECK(bench_radio_classify_rx_irq(0x00080000UL) == BENCH_RX_IRQ_OTHER);
+    CHECK(bench_radio_classify_rx_irq(0x00000000UL) == BENCH_RX_IRQ_OTHER);
+}
+
+/* ── 9. packet-status assembly (both mods) + int8 wrap fix ────────── */
+
+static void test_flrc_rssi_assembly() {
+    /* -70 dBm: rssiAvg byte 70, no half-dB bit (rx_sweep L169-179 shape) */
+    uint8_t s[7] = {0, 0, 0, 51, 70, 68, 0x00};
+    CHECK(bench_radio_flrc_rssi_dbm(s) == -70);
+    CHECK(bench_radio_flrc_pkt_len(s) == 51);
+    /* 0 dBm floor */
+    uint8_t z[7] = {0, 0, 0, 0, 0, 0, 0};
+    CHECK(bench_radio_flrc_rssi_dbm(z) == 0);
+    /* minor-2 wrap vector: raw9 = 0x139 -> exact -156.5 dBm truncates to
+     * -156, clamped to -127. The sweep's -(int8_t)(raw/2) returned +100. */
+    uint8_t w[7] = {0, 0, 0, 51, 0x9C, 0x9A, 0x04};
+    CHECK(bench_radio_flrc_rssi_dbm(w) == -127);
+    CHECK(bench_radio_flrc_rssi_dbm(w) < 0); /* never positive garbage */
+    /* half-dB bit set on an even byte: raw9 odd -> truncates to the byte */
+    uint8_t h[7] = {0, 0, 0, 51, 70, 68, 0x04};
+    CHECK(bench_radio_flrc_rssi_dbm(h) == -70);
+}
+
+static void test_lora_pkt_status_assembly() {
+    /* lr20xx GET_PACKET_STATUS 0x022A, 8 phase-2 bytes
+     * [stat stat crc/cr len snr rssi rssi_sig flags]; driver view minus
+     * the 2 status bytes. rssi = -(int16)byte[5], snr = byte[4] qdB. */
+    uint8_t s[8] = {0, 0, 0x11, 51, 0xF2, 70, 70, 0x02};
+    CHECK(bench_radio_lora_rssi_dbm(s) == -70);
+    CHECK(bench_radio_lora_snr_qdb(s) == -14);
+    CHECK(bench_radio_lora_pkt_len(s) == 51);
+    /* wrap vector: raw 156 -> -156 clamps to -127 (never +100 garbage) */
+    uint8_t w[8] = {0, 0, 0x11, 51, 0, 156, 156, 0};
+    CHECK(bench_radio_lora_rssi_dbm(w) == -127);
+    CHECK(bench_radio_lora_rssi_dbm(w) < 0);
+    /* 0 dBm floor */
+    uint8_t z[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    CHECK(bench_radio_lora_rssi_dbm(z) == 0);
+}
+
+static void test_rssi_inst_assembly() {
+    /* GET_RSSI_INST 0x020B: [rssiMsb rssiLsb], 9-bit
+     * (buf[0]<<1 | buf[1]>>7), same wrap fix (rx_sweep L184-204). */
+    uint8_t a[2] = {70, 0x00};
+    CHECK(bench_radio_rssi_inst_dbm(a) == -70);
+    uint8_t b[2] = {0x9C, 0x80};
+    CHECK(bench_radio_rssi_inst_dbm(b) == -127);
+    CHECK(bench_radio_rssi_inst_dbm(b) < 0);
+    uint8_t z[2] = {0, 0};
+    CHECK(bench_radio_rssi_inst_dbm(z) == 0);
+}
+
+static void test_rssi_sentinel() {
+    /* REV-2 minor-2: -128 is reserved for "no reading / UNCALIBRATED";
+     * every assembly clamps to [-127, 0] so it can never collide. */
+    CHECK(BENCH_RADIO_RSSI_INVALID == -128);
+    CHECK((int8_t)BENCH_RADIO_RSSI_INVALID < (int8_t)-127);
+}
+
 int main() {
     test_band_matrix_lf();
     test_band_matrix_hf();
@@ -370,6 +482,15 @@ int main() {
     test_reinit_flrc();
     test_reinit_lora();
     test_no_hf_hardwire_on_lf();
+    test_set_rx_bytes();
+    test_clear_rx_fifo_bytes();
+    test_rx_tx_dio_irq_bytes();
+    test_emit_start_rx();
+    test_classify_rx_irq();
+    test_flrc_rssi_assembly();
+    test_lora_pkt_status_assembly();
+    test_rssi_inst_assembly();
+    test_rssi_sentinel();
 
     if (failures == 0) {
         printf("test_radio: ALL PASS\n");

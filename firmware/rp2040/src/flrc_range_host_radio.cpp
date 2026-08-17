@@ -233,6 +233,97 @@ void bench_radio_emit_reinit(const bench_radio_cfg_t *cfg,
     sink(user, clear, sizeof clear, 1);
 }
 
+/* ---- RX frames + classification + status assembly (FW-5b) ----------------- */
+
+void bench_radio_set_rx_bytes(uint32_t timeout_ticks, uint8_t out[5]) {
+    out[0] = 0x02;
+    out[1] = 0x0C;
+    out[2] = (uint8_t)(timeout_ticks >> 16);
+    out[3] = (uint8_t)(timeout_ticks >> 8);
+    out[4] = (uint8_t)timeout_ticks;
+}
+
+void bench_radio_clear_rx_fifo_bytes(uint8_t out[2]) {
+    out[0] = 0x01;
+    out[1] = 0x1E;
+}
+
+void bench_radio_rx_dio_irq_bytes(uint8_t out[7]) {
+    /* RX_DONE bit18 -> DIO9 (flrc_range_rx_v2.cpp L316). */
+    out[0] = 0x01; out[1] = 0x15; out[2] = 0x09; out[3] = 0x00;
+    out[4] = 0x04; out[5] = 0x00; out[6] = 0x00;
+}
+
+void bench_radio_tx_dio_irq_bytes(uint8_t out[7]) {
+    /* TX_DONE bit19 -> DIO9 (FW-5a full_init frame 15). */
+    out[0] = 0x01; out[1] = 0x15; out[2] = 0x09; out[3] = 0x00;
+    out[4] = 0x08; out[5] = 0x00; out[6] = 0x00;
+}
+
+void bench_radio_emit_start_rx(bench_radio_cmd_sink_t sink, void *user) {
+    /* full_init/reinit left the line on TX_DONE; entering RX re-maps it,
+     * then the v2 FIX-3 pre-arm: CLEAR_IRQ -> CLEAR_RX_FIFO -> SET_RX. */
+    uint8_t dio[7];
+    bench_radio_rx_dio_irq_bytes(dio);
+    sink(user, dio, sizeof dio, 1);
+
+    uint8_t irq[6] = {0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF};
+    sink(user, irq, sizeof irq, 1);
+
+    uint8_t fifo[2];
+    bench_radio_clear_rx_fifo_bytes(fifo);
+    sink(user, fifo, sizeof fifo, 1); /* v2: delay(1) after the drain */
+
+    uint8_t rx[5];
+    bench_radio_set_rx_bytes(BENCH_RADIO_RX_CONTINUOUS_TICKS, rx);
+    sink(user, rx, sizeof rx, 2); /* sweep settle delay(2) after SET_RX */
+}
+
+bench_rx_irq_class_t bench_radio_classify_rx_irq(uint32_t irq_status) {
+    if (irq_status & BENCH_RADIO_IRQ_CRC_ERR) return BENCH_RX_IRQ_CRC_ERR;
+    if (irq_status & BENCH_RADIO_IRQ_RX_DONE) return BENCH_RX_IRQ_PKT_OK;
+    return BENCH_RX_IRQ_OTHER;
+}
+
+/* minor-2 int8 wrap fix: -raw9/2 in int16 math, clamped to [-127, 0].
+ * rx_sweep's -(int8_t)(raw/2) turned raw9 >= 0x100 into POSITIVE garbage
+ * (raw9 = 0x139 -> +100 "dBm"). */
+static int8_t rssi_wrap_fixed(uint16_t raw9) {
+    int16_t dbm = -(int16_t)(raw9 / 2);
+    if (dbm < -127) dbm = -127;
+    if (dbm > 0) dbm = 0;
+    return (int8_t)dbm;
+}
+
+int8_t bench_radio_flrc_rssi_dbm(const uint8_t s[7]) {
+    uint16_t raw9 = ((uint16_t)s[4] << 1) | (uint8_t)((s[6] & 0x04u) >> 2);
+    return rssi_wrap_fixed(raw9);
+}
+
+uint16_t bench_radio_flrc_pkt_len(const uint8_t s[7]) {
+    return ((uint16_t)s[2] << 8) | (uint16_t)s[3];
+}
+
+int8_t bench_radio_lora_rssi_dbm(const uint8_t s[8]) {
+    int16_t dbm = -(int16_t)s[5];
+    if (dbm < -127) dbm = -127;
+    if (dbm > 0) dbm = 0;
+    return (int8_t)dbm;
+}
+
+int8_t bench_radio_lora_snr_qdb(const uint8_t s[8]) {
+    return (int8_t)s[4];
+}
+
+uint8_t bench_radio_lora_pkt_len(const uint8_t s[8]) {
+    return s[3];
+}
+
+int8_t bench_radio_rssi_inst_dbm(const uint8_t s[2]) {
+    uint16_t raw9 = ((uint16_t)s[0] << 1) | (uint8_t)(s[1] >> 7);
+    return rssi_wrap_fixed(raw9);
+}
+
 /* ---- Hardware layer (firmware only) -------------------------------------- */
 
 #ifndef BENCH_RADIO_HOST_TEST
@@ -259,6 +350,11 @@ static SPISettings spiSettings(RADIO_SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 /* Single-batch FIFO frame buffer (header 2 + payload 255) + dummy RX. */
 static uint8_t fifoCmd[2 + 255];
 static uint8_t spiRxJunk[257];
+
+/* Dual-role DIO9 wiring (FW-5b): true while the line maps RX_DONE (set by
+ * bench_radio_start_rx). Cleared by full_init and by the lazy restore in
+ * bench_radio_send_packet, which re-maps TX_DONE before its IRQ spin. */
+static bool dioWiredRx = false;
 
 static inline bool rfWaitBusy() {
     uint32_t busyMask = 1UL << RADIO_PIN_BUSY;
@@ -361,6 +457,8 @@ bool bench_radio_full_init(const bench_radio_cfg_t *cfg) {
     digitalWrite(RADIO_PIN_RST, HIGH);
     delay(50);
 
+    dioWiredRx = false; /* full_init frame 15 maps TX_DONE */
+
     bench_radio_emit_full_init(cfg, hwSink, NULL);
 
     /* rawInitRadio verdict: STBY_RC(3)/FS(4)/RX(7) chip mode or TX IRQ bit. */
@@ -375,6 +473,15 @@ void bench_radio_reinit(const bench_radio_cfg_t *cfg) {
 
 bool bench_radio_send_packet(const bench_radio_cfg_t *cfg,
                              const uint8_t *pkt, uint16_t len) {
+    /* Dual-role wiring: after an RX session the line still maps RX_DONE —
+     * restore TX_DONE so the spin below can actually see TX complete. */
+    if (dioWiredRx) {
+        uint8_t dio[7];
+        bench_radio_tx_dio_irq_bytes(dio);
+        rfWriteCmd(dio, 7);
+        dioWiredRx = false;
+    }
+
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(pkt, len);
@@ -388,6 +495,104 @@ bool bench_radio_send_packet(const bench_radio_cfg_t *cfg,
         spinCount++;
     }
     return false;
+}
+
+/* ---- RX hardware (FW-5b) -------------------------------------------------- */
+
+/* Two-phase register read (rfReadIrqStatus / rfReadRssi pattern): send
+ * the 2-byte opcode, release CS, wait BUSY, then read n payload bytes —
+ * the phase-2 bytes INCLUDE the 2 status bytes, exactly as rx_sweep. */
+static void rfReadReg2Phase(uint8_t op0, uint8_t op1, uint8_t *dst, size_t n) {
+    uint8_t cmd[2] = {op0, op1};
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(RADIO_PIN_CS, LOW);
+    spiRf.transfer(cmd, spiRxJunk, 2);
+    digitalWrite(RADIO_PIN_CS, HIGH);
+    spiRf.endTransaction();
+    rfWaitBusy();
+
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(RADIO_PIN_CS, LOW);
+    for (size_t i = 0; i < n; i++) dst[i] = spiRf.transfer(0x00);
+    digitalWrite(RADIO_PIN_CS, HIGH);
+    spiRf.endTransaction();
+}
+
+/* READ_RX_FIFO (rx_sweep rfReadFifo L110-121): opcode {00 01} + payload
+ * in ONE CS-low window — no toggle between opcode and data, no status
+ * bytes. */
+static void rfReadFifo(uint8_t *dst, uint16_t len) {
+    rfWaitBusy();
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(RADIO_PIN_CS, LOW);
+    uint8_t hdr[2] = {0x00, 0x01};
+    spiRf.transfer(hdr, spiRxJunk, 2);
+    for (uint16_t i = 0; i < len; i++) dst[i] = spiRf.transfer(0x00);
+    digitalWrite(RADIO_PIN_CS, HIGH);
+    spiRf.endTransaction();
+}
+
+void bench_radio_start_rx(void) {
+    bench_radio_emit_start_rx(hwSink, NULL);
+    dioWiredRx = true;
+}
+
+void bench_radio_standby(void) {
+    uint8_t cmd[3] = {0x02, 0x00, 0x01}; /* STBY_RC (reinit frame 0) */
+    rfWriteCmd(cmd, 3);
+    delay(1);
+}
+
+int8_t bench_radio_read_rssi_inst(void) {
+    uint8_t b[2];
+    rfReadReg2Phase(0x02, 0x0B, b, sizeof b); /* GET_RSSI_INST */
+    return bench_radio_rssi_inst_dbm(b);
+}
+
+bench_rx_event_t bench_radio_rx_service(const bench_radio_cfg_t *cfg,
+                                        uint8_t *buf, uint16_t buf_cap) {
+    bench_rx_event_t ev;
+    ev.irq_class = BENCH_RX_IRQ_OTHER;
+    ev.len = 0;
+    ev.rssi_dbm = BENCH_RADIO_RSSI_INVALID;
+    ev.snr_qdb = 0;
+
+    /* GET_AND_CLEAR_IRQ_STATUS — read + classify (FIX-3 order). */
+    uint32_t irq = rfReadIrqStatus();
+    ev.irq_class = bench_radio_classify_rx_irq(irq);
+
+    if (ev.irq_class == BENCH_RX_IRQ_PKT_OK) {
+        uint16_t len;
+        if (cfg->mod == BENCH_MOD_FLRC) {
+            uint8_t st[7];
+            rfReadReg2Phase(0x02, 0x4B, st, sizeof st); /* FLRC status */
+            ev.rssi_dbm = bench_radio_flrc_rssi_dbm(st);
+            /* Fixed-len FLRC (all corpus RX fw): trust cfg->pkt_len unless
+             * the chip reports a sane nonzero length at or below it. */
+            len = bench_radio_flrc_pkt_len(st);
+            if (len == 0 || len > cfg->pkt_len) len = cfg->pkt_len;
+        } else {
+            uint8_t st[8];
+            rfReadReg2Phase(0x02, 0x2A, st, sizeof st); /* LoRa status */
+            ev.rssi_dbm = bench_radio_lora_rssi_dbm(st);
+            ev.snr_qdb = bench_radio_lora_snr_qdb(st);
+            len = bench_radio_lora_pkt_len(st); /* explicit-header len */
+        }
+        if (len > buf_cap) len = buf_cap;
+        rfReadFifo(buf, len);
+        ev.len = len;
+    }
+    /* FIX-3: EVERY serviced IRQ ends drained, cleared, re-armed — an
+     * undrained FIFO stalls the RX chain (V2 lesson). */
+    uint8_t cf[2];
+    bench_radio_clear_rx_fifo_bytes(cf);
+    rfWriteCmd(cf, 2);
+    rfClearIrq();
+    uint8_t srx[5];
+    bench_radio_set_rx_bytes(BENCH_RADIO_RX_CONTINUOUS_TICKS, srx);
+    rfWriteCmd(srx, 5);
+    return ev;
 }
 
 #endif /* !BENCH_RADIO_HOST_TEST */
