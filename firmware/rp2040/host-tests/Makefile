@@ -11,7 +11,7 @@ SRC_DIR   = ../src
 
 # --- test targets (add new test_*.cpp here) --------------------------------
 
-TESTS = test_stats test_safety
+TESTS = test_stats test_safety test_cmd
 
 # Pattern: test_X links test_X.cpp + any needed src TUs
 test_stats: test_stats.cpp $(SRC_DIR)/flrc_range_host_stats.cpp
@@ -19,6 +19,9 @@ test_stats: test_stats.cpp $(SRC_DIR)/flrc_range_host_stats.cpp
 
 test_safety: test_safety.cpp $(SRC_DIR)/flrc_range_host_safety.cpp
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^ -lm
+
+test_cmd: test_cmd.cpp $(SRC_DIR)/flrc_range_host_cmd.cpp
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^
 
 # --- catch-all ------------------------------------------------------------
 
