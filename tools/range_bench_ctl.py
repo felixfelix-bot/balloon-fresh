@@ -139,6 +139,356 @@ class VirtualClock:
 
 
 # ---------------------------------------------------------------------------
+# HS-3: Port resolution, FakeBoard, BoardCtl (protocol §1)
+# ---------------------------------------------------------------------------
+
+# BoardSerial is the mandatory serial wrapper (tools/board_serial.py).
+# Imported lazily so pure tests using FakeBoard don't require pyserial.
+try:
+    from board_serial import BoardSerial  # noqa: F401
+except Exception:  # pragma: no cover — pyserial / board_serial not available
+    BoardSerial = None
+
+
+def resolve_port(port):
+    """Resolve a serial port path to a usable device path.
+
+    /dev/serial/by-id/ paths are stable across replug — returned as-is.
+    Raw /dev/ttyXXX paths are also returned as-is (already usable).
+    None/empty → None.
+    """
+    if not port:
+        return None
+    return port
+
+
+# §1 protocol constants (mirrors firmware flrc_range_host.cpp)
+
+_FLRC_VALID_BR_KBPS = {260, 325, 520, 650, 1040, 1300, 2080, 2600}
+_LORA_VALID_SF = set(range(5, 13))           # 5–12
+_LORA_VALID_BW_KHZ = {125, 250, 500}
+_FREQ_MIN_HZ = 863_000_000
+_FREQ_MAX_HZ = 870_000_000
+_PA_MIN_DBM = -18
+_PA_MAX_DBM = 22
+_PA_INDOOR_CAP_DBM = INDOOR_CAP_DBM          # 10
+_LEN_MIN = 8
+_LEN_MAX = 255
+_N_MIN = 1
+_N_MAX = 1_000_000
+_GAP_MIN_US = 100
+_GAP_MAX_US = 100_000_000
+_UNLOCK_PIN = UNLOCK_PIN                    # 2026
+
+
+class FakeBoard:
+    """Test double implementing the §1 console protocol for offline tests.
+
+    Simulates the RP2040 range-host firmware: parses commands, updates a
+    world-state dict, and returns protocol-correct replies.  Used by
+    BoardCtlTests and FakeBoardTests without any hardware.
+    """
+
+    BANNER = "ID range-host v1 role=NONE tx_inhibited=1"
+
+    def __init__(self, port, world):
+        self.port = port
+        self.world = world
+        self.log = []
+        # Determine which side this board controls
+        self.side = "tx" if "tx" in world else "rx"
+        self._banner_pending = True
+
+    @property
+    def st(self):
+        """Shorthand for this board's state dict in the world."""
+        return self.world[self.side]
+
+    # -- serial-like interface ----------------------------------------------
+
+    def drain(self):
+        """Drain/discard any pending boot banner data (no-op sim)."""
+        self._banner_pending = False
+
+    def close(self):
+        """Close the board connection (simulated — just logs)."""
+        self.log.append("CLOSE")
+
+    # -- protocol command interface -----------------------------------------
+
+    def _send(self, command):
+        """Log a command, process it, and return the reply string."""
+        self.log.append(command)
+        cmd = command.strip().upper()
+        return self._handle(cmd)
+
+    def cmd(self, command, expect_ok=True):
+        """Send command, return reply.  Raise RuntimeError on ERR when
+        expect_ok is True (default).  With expect_ok=False, return the
+        ERR reply string without raising."""
+        reply = self._send(command)
+        if expect_ok and reply.startswith("ERR"):
+            raise RuntimeError(reply)
+        return reply
+
+    def query(self, command):
+        """Send command and return reply without raising on ERR."""
+        return self._send(command)
+
+    def stat(self):
+        """Query STAT? and return the reply string."""
+        return self.query("STAT?")
+
+    # -- §1 protocol handler ------------------------------------------------
+
+    def _handle(self, cmd):
+        """Process a §1 command string (uppercased) and return reply."""
+        st = self.st
+        parts = cmd.split()
+        if not parts:
+            return "ERR UNKNOWN"
+
+        op = parts[0]
+
+        # ID? ---------------------------------------------------------------
+        if op == "ID?":
+            return "ID range-host v1 role={} tx_inhibited=1".format(st["role"])
+
+        # ROLE TX / RX / NONE ------------------------------------------------
+        if op == "ROLE":
+            if len(parts) < 2 or parts[1] not in ("TX", "RX", "NONE"):
+                return "ERR ARG"
+            st["role"] = parts[1]
+            return "OK ROLE {}".format(parts[1])
+
+        # MOD FLRC <br_kbps> / MOD LORA <sf> <bw_khz> -------------------------
+        if op == "MOD":
+            if len(parts) < 2:
+                return "ERR ARG"
+            if parts[1] == "FLRC":
+                if len(parts) < 3:
+                    return "ERR ARG"
+                try:
+                    br_kbps = int(parts[2])
+                except ValueError:
+                    return "ERR ARG"
+                if br_kbps not in _FLRC_VALID_BR_KBPS:
+                    return "ERR RANGE"
+                br_bps = br_kbps * 1000
+                st["mod"] = "FLRC"
+                st["br"] = br_bps
+                return "OK MOD FLRC br_hz={}".format(br_bps)
+            if parts[1] == "LORA":
+                if len(parts) < 4:
+                    return "ERR ARG"
+                try:
+                    sf = int(parts[2])
+                    bw_khz = int(parts[3])
+                except ValueError:
+                    return "ERR ARG"
+                if sf not in _LORA_VALID_SF:
+                    return "ERR RANGE"
+                if bw_khz not in _LORA_VALID_BW_KHZ:
+                    return "ERR RANGE"
+                st["mod"] = "LORA"
+                return "OK MOD LORA sf={} bw_hz={}".format(sf, bw_khz * 1000)
+            return "ERR ARG"
+
+        # FREQ <hz> ----------------------------------------------------------
+        if op == "FREQ":
+            if len(parts) < 2:
+                return "ERR ARG"
+            try:
+                freq = int(parts[1])
+            except ValueError:
+                return "ERR ARG"
+            if freq < _FREQ_MIN_HZ or freq > _FREQ_MAX_HZ:
+                return "ERR RANGE"
+            st["freq"] = freq
+            return "OK FREQ {}".format(freq)
+
+        # PA <dbm> -----------------------------------------------------------
+        if op == "PA":
+            if len(parts) < 2:
+                return "ERR ARG"
+            try:
+                dbm = int(parts[1])
+            except ValueError:
+                return "ERR ARG"
+            if dbm < _PA_MIN_DBM or dbm > _PA_MAX_DBM:
+                return "ERR RANGE"
+            if dbm > _PA_INDOOR_CAP_DBM and not st.get("power_outdoor", False):
+                return "ERR POWER-LOCKED"
+            st["dbm"] = dbm
+            return "OK PA {}".format(dbm)
+
+        # LEN <bytes> --------------------------------------------------------
+        if op == "LEN":
+            if len(parts) < 2:
+                return "ERR ARG"
+            try:
+                length = int(parts[1])
+            except ValueError:
+                return "ERR ARG"
+            if length < _LEN_MIN or length > _LEN_MAX:
+                return "ERR RANGE"
+            st["len"] = length
+            return "OK LEN {}".format(length)
+
+        # N <count> ----------------------------------------------------------
+        if op == "N":
+            if len(parts) < 2:
+                return "ERR ARG"
+            try:
+                n = int(parts[1])
+            except ValueError:
+                return "ERR ARG"
+            if n < _N_MIN or n > _N_MAX:
+                return "ERR RANGE"
+            st["n"] = n
+            return "OK N {}".format(n)
+
+        # GAP <us> ------------------------------------------------------------
+        if op == "GAP":
+            if len(parts) < 2:
+                return "ERR ARG"
+            try:
+                gap = int(parts[1])
+            except ValueError:
+                return "ERR ARG"
+            if gap < _GAP_MIN_US or gap > _GAP_MAX_US:
+                return "ERR RANGE"
+            st["gap_us"] = gap
+            return "OK GAP {}".format(gap)
+
+        # POWER MODE OUTDOOR <pin> -------------------------------------------
+        if (op == "POWER" and len(parts) >= 4
+                and parts[1] == "MODE" and parts[2] == "OUTDOOR"):
+            try:
+                pin = int(parts[3])
+            except ValueError:
+                return "ERR ARG"
+            if pin != UNLOCK_PIN:
+                return "ERR ARG"
+            st["power_outdoor"] = True
+            return "OK POWER OUTDOOR"
+
+        # START --------------------------------------------------------------
+        if op == "START":
+            if st["role"] not in ("TX", "RX"):
+                return "ERR INHIBITED"
+            st["state"] = "RUN"
+            if st["role"] == "TX":
+                return "OK START n={} len={} gap_us={}".format(
+                    st["n"], st["len"], st["gap_us"])
+            return "OK START RX"
+
+        # STOP ---------------------------------------------------------------
+        if op == "STOP":
+            st["state"] = "IDLE"
+            return "OK STOP"
+
+        # STAT? --------------------------------------------------------------
+        if op == "STAT?":
+            return self._format_stat()
+
+        # REBOOT -------------------------------------------------------------
+        if op == "REBOOT":
+            st["role"] = "NONE"
+            st["state"] = "IDLE"
+            self._banner_pending = True
+            return "OK REBOOT"
+
+        # HELP / ? -----------------------------------------------------------
+        if op == "HELP" or op == "?":
+            return ("OK HELP ROLE MOD FREQ PA LEN N GAP POWER START STOP "
+                    "STAT? REBOOT HELP")
+
+        return "ERR UNKNOWN {}".format(cmd)
+
+    def _format_stat(self):
+        """Format a §1 STAT? reply line from the current state."""
+        st = self.st
+        return ("STAT role={} mod={} br_hz={} freq_hz={} dbm={} len={} n={} "
+                "gap_us={} sent={} sent_ok={} rx={} crc_err={} state={}".format(
+                    st["role"], st["mod"], st["br"], st["freq"], st["dbm"],
+                    st["len"], st["n"], st["gap_us"],
+                    st["sent"], st["sent_ok"], st["rx"], st["crc_err"],
+                    st["state"]))
+
+
+class BoardCtl:
+    """Wraps a board (FakeBoard or BoardSerial-adapter) with §1 protocol
+    conveniences.
+
+    - open():       drain boot banner, ID? handshake, role check
+    - cmd():        send command, raise on ERR (expect_ok=True by default)
+    - query():      send command, return reply (never raises)
+    - stat():       query STAT? and return reply
+    - reboot():     send REBOOT, drain new banner, re-handshake
+    - close():      close the board
+    """
+
+    def __init__(self, board):
+        self.board = board
+        self.info = None
+
+    def open(self, expected_role=None):
+        """Drain boot banner, send ID? handshake, parse and check role.
+
+        Returns a dict with parsed ID? fields (at minimum 'role').
+        Raises RuntimeError if expected_role is given and doesn't match.
+        """
+        self.board.drain()
+        reply = self.board.query("ID?")
+        self.info = self._parse_id(reply)
+        if expected_role is not None:
+            actual = self.info.get("role", "?")
+            if actual != expected_role:
+                raise RuntimeError(
+                    "board role mismatch: expected {}, got {}".format(
+                        expected_role, actual))
+        return self.info
+
+    @staticmethod
+    def _parse_id(reply):
+        """Parse 'ID range-host v1 role=NONE tx_inhibited=1' into a dict."""
+        info = {"ID": reply}
+        for token in reply.split():
+            if "=" in token:
+                k, v = token.split("=", 1)
+                info[k] = v
+        return info
+
+    def cmd(self, command, expect_ok=True):
+        """Send command via board.cmd(), return reply."""
+        return self.board.cmd(command, expect_ok=expect_ok)
+
+    def query(self, command):
+        """Send query via board.query(), return reply."""
+        return self.board.query(command)
+
+    def stat(self):
+        """Query STAT? and return the reply string."""
+        return self.board.stat()
+
+    def reboot(self):
+        """Send REBOOT, drain new boot banner, re-handshake with ID?.
+
+        The board resets role to NONE on REBOOT.  We drain the new banner,
+        do a quick liveness ID? check, then a full open() re-handshake.
+        """
+        self.board.cmd("REBOOT")
+        self.board.drain()
+        self.board.query("ID?")   # liveness check after reset
+        return self.open()         # full re-handshake (drain + ID? + role)
+
+    def close(self):
+        """Close the board connection."""
+        self.board.close()
+
+
+# ---------------------------------------------------------------------------
 # CLI scaffold (full argument set; wiring in HS-1b+)
 # ---------------------------------------------------------------------------
 
