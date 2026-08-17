@@ -1,5 +1,9 @@
 # HANDOFF — E80 bench: next steps from here (2026-08-16)
 
+> **SUPERSEDED (2026-08-18):** the SWD-disable theory below is disproven — vendor
+> firmware calls only `__HAL_AFIO_REMAP_SWJ_NOJTAG()` (SWD stays enabled). Current
+> state of play: `docs/E80-SWD-DIAGNOSIS-2026-08-18.md`. UART control tool: `tools/e80ctl.py`.
+
 Read `docs/E80-FLASH-ACCESS-FINDINGS.md` first (why we're here).
 State: investigation DONE, SWD path CHOSEN, host tools READY.
 Blocked ONLY on: identifying + wiring the 4 unlabeled debug pads.
