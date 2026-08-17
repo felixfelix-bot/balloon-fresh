@@ -134,6 +134,176 @@ class NRegimeTests(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# HS-1b: matrix cells + T0 stop schedule + freq gate
+# ---------------------------------------------------------------------------
+
+class MatrixCellTests(unittest.TestCase):
+    """make_cell / build_matrix_cells — cells v1 (plan §3, grill B2, M4)."""
+
+    def test_default_matrix_plus_anchor(self):
+        cells = m.build_matrix_cells(make_args(matrix=m.MATRIX_KEYS), [])
+        self.assertEqual([c["key"] for c in cells],
+                         ["flrc650", "flrc2600", "sf7", "sf12", "flrc650"])
+        self.assertEqual([c["len_bytes"] for c in cells],
+                         [51, 51, 51, 51, 255])
+        self.assertEqual([c["gap_us"] for c in cells],
+                         [5000, 5000, 1000, 1000, 5000])
+        self.assertEqual([c["n"] for c in cells],
+                         [10000, 10000, 10000, 1000, 10000])
+        self.assertTrue(cells[-1]["anchor"])
+        self.assertFalse(cells[0]["anchor"])
+
+    def test_no_anchor(self):
+        cells = m.build_matrix_cells(
+            make_args(matrix=["sf7"], anchor=False), [])
+        self.assertEqual(len(cells), 1)
+
+    def test_explicit_length_respected(self):
+        # single-shot CSV rows carry the actual payload length
+        self.assertEqual(m.make_cell("flrc650", 1000, length=255)["len_bytes"],
+                         255)
+        self.assertEqual(m.make_cell("flrc650", 1000)["len_bytes"], 51)
+
+    def test_edge_regime_from_prior_rows(self):
+        rows = [dict(mod=k, len="51", per_ci_hi="5.0")
+                for k in m.MATRIX_KEYS]
+        cells = m.build_matrix_cells(
+            make_args(matrix=m.MATRIX_KEYS), rows)
+        self.assertEqual([c["n"] for c in cells],
+                         [1000, 1000, 1000, 1000, 10000])
+
+    def test_expected_s_formula(self):
+        c = m.make_cell("sf7", 100)
+        self.assertAlmostEqual(
+            c["expected_s"],
+            100 * (m.airtime_s("sf7", 51) + 1000 / 1e6))
+
+    def test_lf_flrc_cells_flagged_pending_b2(self):
+        # grill B2: LF-FLRC unproven on this module until the HW-B2 smoke
+        for key in ("flrc650", "flrc2600"):
+            cell = m.make_cell(key, 1000)
+            self.assertEqual(cell["feasible"], "pending", key)
+            self.assertEqual(cell["band"], "lf", key)
+
+    def test_lora_cells_feasible_ok(self):
+        for key in ("sf7", "sf12"):
+            cell = m.make_cell(key, 1000)
+            self.assertEqual(cell["feasible"], "ok", key)
+            self.assertEqual(cell["band"], "lf", key)
+
+    def test_hf_cells_listed_but_not_in_default_matrix(self):
+        for key in m.HF_KEYS:
+            self.assertIn(key, m.MOD_DEFS)
+            self.assertNotIn(key, m.MATRIX_KEYS)
+            self.assertEqual(m.MOD_DEFS[key]["band"], "hf")
+
+    def test_hf_cell_excluded_from_v1_matrix(self):
+        with self.assertRaises(ValueError) as cm:
+            m.build_matrix_cells(
+                make_args(matrix=["hf_flrc2600"], anchor=False), [])
+        self.assertIn("HF", str(cm.exception))
+
+    def test_unknown_mod_rejected(self):
+        with self.assertRaises(ValueError):
+            m.build_matrix_cells(
+                make_args(matrix=["wcdma"], anchor=False), [])
+
+
+class ScheduleTests(unittest.TestCase):
+    """parse_t0 / build_stop_schedule (T0 + margin, rx_lead, guard, settle)."""
+
+    def _cells(self):
+        return m.build_matrix_cells(
+            make_args(matrix=["flrc650", "sf7"]), [])
+
+    def test_first_start_is_t0_plus_margin(self):
+        cells = self._cells()
+        t0 = m.parse_t0("2026-08-30 14:05:00")
+        sched = m.build_stop_schedule(cells, t0, t0_margin_s=120, guard_s=20)
+        self.assertEqual(sched[0]["start"], t0 + 120)
+
+    def test_rx_arm_leads_start_by_rx_lead(self):
+        cells = self._cells()
+        t0 = 1_700_000_000.0
+        sched = m.build_stop_schedule(cells, t0, 120, 20, rx_lead_s=30)
+        for entry in sched:
+            self.assertEqual(entry["rx_arm"], entry["start"] - 30)
+
+    def test_monotonic_ordering(self):
+        cells = self._cells()
+        t0 = m.parse_t0("2026-08-30 14:05:00")
+        sched = m.build_stop_schedule(cells, t0, 120, 20, rx_lead_s=10)
+        starts = [e["start"] for e in sched]
+        arms = [e["rx_arm"] for e in sched]
+        self.assertTrue(all(b > a for a, b in zip(starts, starts[1:])))
+        self.assertTrue(all(b > a for a, b in zip(arms, arms[1:])))
+
+    def test_spacing_covers_expected_guard_settle(self):
+        cells = self._cells()
+        t0 = m.parse_t0("2026-08-30 14:05:00")
+        sched = m.build_stop_schedule(cells, t0, 120, 20)
+        self.assertGreaterEqual(sched[1]["start"] - sched[0]["start"],
+                                cells[0]["expected_s"] + 20 + 5)  # settle=5
+
+    def test_keys_follow_cell_order(self):
+        cells = self._cells()
+        sched = m.build_stop_schedule(cells, 0.0, 0, 0)
+        self.assertEqual([e["key"] for e in sched],
+                         [c["key"] for c in cells])
+
+    def test_parse_t0_formats(self):
+        self.assertEqual(m.parse_t0("2026-08-30 14:05:00"),
+                         m.parse_t0("2026-08-30T14:05:00"))
+        with self.assertRaises(ValueError):
+            m.parse_t0("tomorrow")
+
+    def test_fmt_offset(self):
+        t0 = 1_700_000_000
+        self.assertEqual(m.fmt_offset(t0 + 3661, t0), "T0+01:01:01")
+        # negative offsets clamp to zero (never print T0-…)
+        self.assertEqual(m.fmt_offset(t0 - 5, t0), "T0+00:00:00")
+
+    def test_fmt_hms(self):
+        self.assertEqual(m.fmt_hms(125), "02:05")
+
+
+class FreqGateTests(unittest.TestCase):
+    """freq_gate — EU SRD 863-870 MHz hard clamp v1 (plan §1, §5)."""
+
+    def test_eu_default_accepts_868(self):
+        ok, msg = m.freq_gate(868000000)
+        self.assertTrue(ok)
+        self.assertEqual(msg, "")
+
+    def test_band_edges_accepted(self):
+        for hz in (863000000, 870000000):
+            ok, _ = m.freq_gate(hz)
+            self.assertTrue(ok, hz)
+
+    def test_below_band_rejected(self):
+        ok, msg = m.freq_gate(862999999)
+        self.assertFalse(ok)
+        self.assertIn("863-870", msg)
+
+    def test_above_band_rejected(self):
+        ok, msg = m.freq_gate(870000001)
+        self.assertFalse(ok)
+
+    def test_hf_2g4_rejected_v1(self):
+        # HF cells are listed in MOD_DEFS but the 2.4 GHz path is out of
+        # scope v1 — the gate must reject it
+        ok, msg = m.freq_gate(2400000000)
+        self.assertFalse(ok)
+        self.assertIn("863-870", msg)
+
+    def test_915_rejected_no_override_path(self):
+        # unlike E80, v1 has no --band-override: hard clamp only
+        ok, msg = m.freq_gate(915000000)
+        self.assertFalse(ok)
+        self.assertIn("no override", msg)
+
+
+# ---------------------------------------------------------------------------
 # HS-3: FakeBoard + BoardCtl tests (protocol §1 simulation, no hardware)
 # ---------------------------------------------------------------------------
 
