@@ -13,6 +13,10 @@ SRC_DIR   = ../src
 
 TESTS = test_stats test_safety test_cmd
 
+# `all` is declared below; make it the default goal so a bare `make` builds
+# every test (the first explicit rule would otherwise become the default).
+.DEFAULT_GOAL := all
+
 # Pattern: test_X links test_X.cpp + any needed src TUs
 test_stats: test_stats.cpp $(SRC_DIR)/flrc_range_host_stats.cpp
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^ -lm
