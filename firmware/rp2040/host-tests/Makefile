@@ -13,7 +13,7 @@ SRC_DIR   = ../src
 
 # --- test targets (add new test_*.cpp here) --------------------------------
 
-TESTS = test_stats test_safety test_cmd test_bw_codes
+TESTS = test_stats test_safety test_cmd test_bw_codes test_radio
 
 # `all` is declared below; make it the default goal so a bare `make` builds
 # every test (the first explicit rule would otherwise become the default).
@@ -32,6 +32,11 @@ test_cmd: test_cmd.cpp $(SRC_DIR)/flrc_range_host_cmd.cpp
 # BW-1: header-only shared table (lr2021_bw_codes.h) — no src TU to link.
 test_bw_codes: test_bw_codes.cpp
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^
+
+# FW-5a: radio backend + band matrix. Links the safety TU too — the test
+# asserts set_tx ticks derive from the FW-4 chip-timeout function.
+test_radio: test_radio.cpp $(SRC_DIR)/flrc_range_host_radio.cpp $(SRC_DIR)/flrc_range_host_safety.cpp
+	$(CXX) $(CXXFLAGS) -DBENCH_RADIO_HOST_TEST -I$(SRC_DIR) -o $@ $^
 
 # --- catch-all ------------------------------------------------------------
 
