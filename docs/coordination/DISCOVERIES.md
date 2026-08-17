@@ -26,6 +26,51 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] feat: C3 flight PCB gerbers exported to gerbers_v_c3/ (2026-08-13) | tags: HARDWARE
+- **Commit:** `b7ef5c1` by Felix
+- **Files:** tracker/hardware/output/gerbers_v_c3/v_c3_flight_final-B_Adhesive.gba, tracker/hardware/output/gerbers_v_c3/v_c3_flight_final-B_Courtyard.gbr, tracker/hardware/output/gerbers_v_c3/v_c3_flight_final-B_Cu.gbl (+25 more)
+- **Full message:** feat: C3 flight PCB gerbers exported to gerbers_v_c3/
+- **Relevance:** HARDWARE
+
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `f97f60e` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `711fe2d` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip, tracker/hardware/output/pcb-handoff/ROUTING-HANDOVER.md (+14 more)
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(hardware): PCB handoff zip + ansible install playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `30cd382` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json, tracker/hardware/ansible/install-kicad.yml (+11 more)
+- **Full message:** feat(hardware): PCB handoff zip + ansible install playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `f97f60e` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `711fe2d` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip, tracker/hardware/output/pcb-handoff/ROUTING-HANDOVER.md (+14 more)
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(hardware): PCB handoff zip + ansible install playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `30cd382` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json, tracker/hardware/ansible/install-kicad.yml (+11 more)
+- **Full message:** feat(hardware): PCB handoff zip + ansible install playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+
 ### [balloon-pre-stretching] docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informat (2026-08-08) | tags: PROTOCOL
 - **Commit:** `350b1e3` by Felix
 - **Files:** docs/STATUS-balloon-pre-stretching.md
