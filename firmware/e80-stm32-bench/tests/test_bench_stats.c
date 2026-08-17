@@ -175,6 +175,50 @@ static void test_averages(void)
     CHECK(bench_stats_snr_avg_cdb(&s) == -375);
 }
 
+static void test_rssi_minmax(void)
+{
+    bench_stats_t s;
+
+    /* no packet noted -> getters return 0 (same convention as rssi_avg) */
+    bench_stats_reset(&s);
+    CHECK(bench_stats_rssi_min_half_dbm(&s) == 0);
+    CHECK(bench_stats_rssi_max_half_dbm(&s) == 0);
+
+    /* first packet initializes BOTH trackers (no zero-sentinel bug: a
+     * first packet weaker than 0 dBm must not leave max stuck at 0) */
+    bench_stats_reset(&s);
+    bench_stats_note_rssi(&s, -90); /* -45.0 dBm */
+    CHECK(bench_stats_rssi_min_half_dbm(&s) == -90);
+    CHECK(bench_stats_rssi_max_half_dbm(&s) == -90);
+
+    /* monotonic updates: new max, new min, in-range sample changes nothing */
+    bench_stats_note_rssi(&s, -61);  /* -30.5 dBm -> new max */
+    bench_stats_note_rssi(&s, -120); /* -60.0 dBm -> new min */
+    bench_stats_note_rssi(&s, -100); /* inside [min,max] -> no change */
+    CHECK(bench_stats_rssi_min_half_dbm(&s) == -120);
+    CHECK(bench_stats_rssi_max_half_dbm(&s) == -61);
+
+    /* boundary values pass through unclamped: half-dBm -256..+254
+     * == -128.0..+127.0 dBm (printable int8 dBm range) */
+    bench_stats_reset(&s);
+    bench_stats_note_rssi(&s, -256);
+    bench_stats_note_rssi(&s, 254);
+    CHECK(bench_stats_rssi_min_half_dbm(&s) == -256);
+    CHECK(bench_stats_rssi_max_half_dbm(&s) == 254);
+
+    /* out-of-range samples clamp at the getters, not the trackers */
+    bench_stats_reset(&s);
+    bench_stats_note_rssi(&s, 260);  /* +130.0 dBm: impossible, clamp */
+    bench_stats_note_rssi(&s, -400); /* -200.0 dBm: impossible, clamp */
+    CHECK(bench_stats_rssi_min_half_dbm(&s) == -256);
+    CHECK(bench_stats_rssi_max_half_dbm(&s) == 254);
+
+    /* reset clears validity again */
+    bench_stats_reset(&s);
+    CHECK(bench_stats_rssi_min_half_dbm(&s) == 0);
+    CHECK(bench_stats_rssi_max_half_dbm(&s) == 0);
+}
+
 int main(void)
 {
     test_isqrt();
@@ -183,6 +227,7 @@ int main(void)
     test_kbps();
     test_elapsed_wrap();
     test_averages();
+    test_rssi_minmax();
 
     if (failures == 0)
     {
