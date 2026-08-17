@@ -11,13 +11,18 @@ Console protocol v1 (plan §1):
     (Serial) and UART (Serial1 -> ESP32 bridge).  Every reply echoed on both.
 
 HS-1a scope: scaffold + pure helpers (airtime_s, n_for_mod, VirtualClock).
-    Matrix cells, schedule, freq_gate, parse_stat, CsvLog, BoardSerial,
-    session runner, and dry-run arrive in HS-1b / HS-2+.
+HS-1b scope: matrix cells (make_cell / build_matrix_cells — LF cells v1 with
+    the grill-B2 feasible=pending flag on LF-FLRC, HF cells listed but
+    excluded from the default matrix), T0 stop schedule (parse_t0 /
+    build_stop_schedule with rx_lead + guard / fmt_offset / fmt_hms), and
+    freq_gate (EU SRD 863-870 MHz hard clamp v1 — no override).
+    parse_stat, CsvLog, session runner, and dry-run arrive in HS-2+.
 
-Usage (scaffold — full CLI wired in HS-1b+):
+Usage (scaffold — full CLI wired in HS-4+):
     python3 tools/range_bench_ctl.py --dry-run --matrix flrc650,sf7
 """
 import argparse
+import datetime
 import sys
 
 # ---------------------------------------------------------------------------
@@ -43,16 +48,31 @@ CSV_COLUMNS = [
 # FLRC bitrates (bps) — LR2021 FLRC modes per Semtech datasheet.
 # LoRa BW=125 kHz = 125_000 Hz (BW code from BW-1: vendored lr20xx_driver).
 MOD_DEFS: dict = {
+    # --- LF path (EU SRD 863-870 MHz) ---
+    # feasible: "pending" = LF-FLRC unproven on this module until the HW-B2
+    # first-cell smoke passes (grill B2); LoRa LF is proven hardware-default.
     "flrc650":  dict(kind="flrc", mod_lines=["MOD FLRC 650 {dbm}"],
-                     gap_us=5000, label="FLRC-650"),
+                     gap_us=5000, label="FLRC-650", band="lf",
+                     feasible="pending"),
     "flrc2600": dict(kind="flrc", mod_lines=["MOD FLRC 2600 {dbm}"],
-                     gap_us=5000, label="FLRC-2600"),
+                     gap_us=5000, label="FLRC-2600", band="lf",
+                     feasible="pending"),
     "sf7":      dict(kind="lora", mod_lines=["MOD LORA 7 125", "PA {dbm}"],
-                     gap_us=1000, label="LoRa-SF7"),
+                     gap_us=1000, label="LoRa-SF7", band="lf",
+                     feasible="ok"),
     "sf12":     dict(kind="lora", mod_lines=["MOD LORA 12 125", "PA {dbm}"],
-                     gap_us=1000, label="LoRa-SF12"),
+                     gap_us=1000, label="LoRa-SF12", band="lf",
+                     feasible="ok"),
+    # --- HF path (2.4 GHz, listed for completeness; excluded from v1 matrix) ---
+    "hf_flrc2600": dict(kind="flrc", mod_lines=["MOD FLRC 2600 {dbm}"],
+                        gap_us=5000, label="HF-FLRC-2600", band="hf",
+                        feasible="pending"),
+    "hf_flrc1300": dict(kind="flrc", mod_lines=["MOD FLRC 1300 {dbm}"],
+                        gap_us=5000, label="HF-FLRC-1300", band="hf",
+                        feasible="pending"),
 }
 MATRIX_KEYS = ["flrc650", "flrc2600", "sf7", "sf12"]
+HF_KEYS = ["hf_flrc2600", "hf_flrc1300"]
 
 N_HI_DEFAULT = 10_000             # S0 / low-PER regime (plan §3)
 N_LO_DEFAULT = 1_000              # high-PER edge regime
@@ -63,7 +83,8 @@ MATRIX_LEN = 51
 CI_HI_NHI_PCT = 2.0               # Wilson ci_hi threshold for the 10^4 regime
 
 # FLRC bitrate lookup (bps) — keyed by mod name.
-_FLRC_BR = {"flrc650": 650_000, "flrc2600": 2_600_000}
+_FLRC_BR = {"flrc650": 650_000, "flrc2600": 2_600_000,
+            "hf_flrc2600": 2_600_000, "hf_flrc1300": 1_300_000}
 
 # LoRa (sf, bw_hz) lookup — keyed by mod name.
 _LORA_PARAMS = {"sf7": (7, 125_000), "sf12": (12, 125_000)}
@@ -136,6 +157,112 @@ class VirtualClock:
 
     def sleep(self, d):
         self.t += max(0.0, d)
+
+
+# ---------------------------------------------------------------------------
+# HS-1b: matrix cells, T0 stop schedule, freq gate
+# ---------------------------------------------------------------------------
+
+def make_cell(mod_key, n, length=None, anchor=False):
+    """Build one MatrixCell dict (plan §3) from a MOD_DEFS entry.
+
+    anchor=True forces the LEN=255 FLRC-650 comparability anchor; otherwise
+    LEN defaults to the matrix payload length (51 B).  Carries band and the
+    grill-B2 feasibility flag through for the runner / CSV layer.
+    """
+    d = MOD_DEFS[mod_key]
+    len_bytes = ANCHOR_LEN if anchor else (MATRIX_LEN if length is None
+                                           else length)
+    return dict(key=mod_key, label=d["label"], anchor=anchor,
+                band=d["band"], feasible=d["feasible"],
+                mod_lines=list(d["mod_lines"]),
+                gap_us=d["gap_us"], n=n,
+                len_bytes=len_bytes,
+                expected_s=n * (airtime_s(mod_key, len_bytes)
+                                + d["gap_us"] / 1e6))
+
+
+def build_matrix_cells(args, prior_rows):
+    """Cell list for one stop: requested mods (LEN=51) + optional anchor.
+
+    Each matrix mod's N comes from the plan §3 N-regime (n_for_mod) fed with
+    prior CSV rows; the anchor always runs N=10^4.  HF-band mods are listed
+    in MOD_DEFS but rejected here — the 2.4 GHz path is out of scope for
+    firmware v1 (plan §5).
+    """
+    cells = []
+    for key in args.matrix:
+        if key not in MOD_DEFS:
+            raise ValueError(
+                "unknown mod {!r} (default matrix: {})".format(
+                    key, ",".join(MATRIX_KEYS)))
+        if MOD_DEFS[key]["band"] == "hf":
+            raise ValueError(
+                "HF cell {!r} excluded from v1 matrix (2.4 GHz path out of "
+                "scope; firmware v1 is LF-only)".format(key))
+        cells.append(make_cell(key, n_for_mod(key, prior_rows)))
+    if args.anchor:
+        cells.append(make_cell(ANCHOR_KEY, N_HI_DEFAULT, anchor=True))
+    return cells
+
+
+def parse_t0(s):
+    """Parse --t0 into a local-time epoch.  Accepts 'YYYY-MM-DD HH:MM:SS'
+    and the ISO 'T' form."""
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.datetime.strptime(s, fmt).timestamp()
+        except ValueError:
+            continue
+    raise ValueError(
+        "bad --t0 {!r}; want 'YYYY-MM-DD HH:MM:SS' local time".format(s))
+
+
+def build_stop_schedule(cells, t0_epoch, t0_margin_s, guard_s,
+                        rx_lead_s=0.0, settle_s=5.0):
+    """Absolute per-cell schedule anchored at T0 (plan §5).
+
+    Returns one dict per cell, in cell order:
+        {"key": <mod key>, "start": <epoch>, "rx_arm": <epoch>}
+
+    start  — epoch when this cell's TX burst begins.  First cell starts at
+             T0 + t0_margin_s; each subsequent cell at the previous start +
+             expected_s + settle_s + guard_s.
+    rx_arm — start - rx_lead_s: the epoch when the RX board must already be
+             listening (runner sets ROLE RX + START here).  Pass the CLI
+             --rx-lead value; defaults to 0 (arm at TX start).
+    """
+    entries = []
+    t = t0_epoch + t0_margin_s
+    for c in cells:
+        entries.append(dict(key=c["key"], start=t, rx_arm=t - rx_lead_s))
+        t += c["expected_s"] + settle_s + guard_s
+    return entries
+
+
+def fmt_offset(epoch, t0_epoch):
+    """T0+HH:MM:SS relative to T0; negative offsets clamp to zero."""
+    s = int(max(0, epoch - t0_epoch))
+    return "T0+{:02d}:{:02d}:{:02d}".format(s // 3600, (s % 3600) // 60,
+                                            s % 60)
+
+
+def fmt_hms(seconds):
+    """MM:SS for schedule tables."""
+    s = int(seconds)
+    return "{:02d}:{:02d}".format(s // 60, s % 60)
+
+
+def freq_gate(freq_hz):
+    """Host-side mirror of the firmware FREQ gate (plan §1): EU SRD
+    863-870 MHz LF path, hard clamp for v1 — no band override (plan §5).
+
+    Returns (ok, message); message is "" when ok.
+    """
+    if not (BAND_MIN_HZ <= freq_hz <= BAND_MAX_HZ):
+        return False, ("freq {} Hz outside EU SRD 863-870 MHz (LF path, "
+                       "hard clamp v1, no override)".format(freq_hz))
+    return True, ""
 
 
 # ---------------------------------------------------------------------------
