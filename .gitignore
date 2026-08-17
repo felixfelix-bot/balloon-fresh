@@ -47,3 +47,4 @@ firmware/rp2040/host-tests/test_stats
 firmware/rp2040/host-tests/test_safety
 firmware/rp2040/host-tests/test_cmd
 firmware/rp2040/host-tests/test_bw_codes
+firmware/rp2040/host-tests/test_radio
