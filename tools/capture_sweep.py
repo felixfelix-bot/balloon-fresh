@@ -86,7 +86,7 @@ def main():
     parser.add_argument("--duration", type=int, default=300, help="Capture duration in seconds (default: 300)")
     parser.add_argument("--distance", type=float, required=True, help="TX-RX distance in meters")
     parser.add_argument("--los", default="N", choices=["Y", "N"], help="Line of sight")
-    parser.add_argument("--baud", type=int, default=115200, help="Baud rate (default: 115200)")
+    parser.add_argument("--baud", type=int, default=2000000, help="Baud rate (default: 2000000)")
     parser.add_argument("--append", "-a", action="store_true", help="Append to existing CSV")
     parser.add_argument("--rx-only", action="store_true", help="Only capture RX-side results")
     parser.add_argument("--gps-port", default="", help="GPS serial port for time correlation")

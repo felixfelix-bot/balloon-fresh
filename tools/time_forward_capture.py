@@ -10,7 +10,7 @@ Usage: python3 time_forward_capture.py [duration_seconds]
 import serial, time, sys, threading, os
 
 DURATION = int(sys.argv[1]) if len(sys.argv) > 1 else 170
-BAUD = 115200
+BAUD = 2000000
 
 # Auto-detect ports by serial number
 TX_PORT = None
