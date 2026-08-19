@@ -56,7 +56,7 @@ static bool             tx_armed    = false; /* set by ARM TX */
 static bool             band_override = false;
 static bool             power_outdoor = false; /* +22 dBm unlock; default +10 cap */
 static radio_bench_cfg_t cfg        = {
-    .mod = BENCH_MOD_LORA, .sf = 8, .bw_hz = 125000, .br_bps = 650000,
+    .mod = BENCH_MOD_LORA, .sf = 8, .cr = 5, .bw_hz = 125000, .br_bps = 650000,
     .txpow_dbm = E80_BENCH_TXPOW_CAP_INDOOR_DBM, .freq_hz = E80_BENCH_FREQ_DEFAULT_HZ,
 };
 
@@ -540,6 +540,7 @@ static void handle_cmd(const bench_cmd_t* c)
         {
             cfg.mod   = BENCH_MOD_LORA;
             cfg.sf    = c->sf;
+            cfg.cr    = 5; /* LoRa default: coding rate 4/5 */
             cfg.bw_hz = c->bw_hz;
             console_put("OK MOD lora sf=");
             console_put_u32(cfg.sf);
@@ -551,6 +552,7 @@ static void handle_cmd(const bench_cmd_t* c)
         {
             cfg.mod    = BENCH_MOD_FLRC;
             cfg.br_bps = c->br_bps;
+            cfg.cr     = 1; /* FLRC default: coding rate 3/4 */
             console_put("OK MOD flrc br=");
             console_put_u32(cfg.br_bps);
             console_put(" pa=");
@@ -744,6 +746,8 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_dec1(bench_stats_rssi_max_half_dbm(&stats) * 5);
         console_put(" snr_avg_db=");
         console_put_dec1(bench_stats_snr_avg_cdb(&stats) / 10);
+        console_put(" cr=");
+        console_put_u32(cfg.cr);
         console_put(" drops=");
         console_put_u32(radio_bench_evt_drops());
         console_putln("");
@@ -918,9 +922,6 @@ int main(void)
 
     bench_stats_reset(&stats);
 
-#ifndef HOST_TEST
-int main(void)
-{
     /* TX-hang watchdog defense 3 starts LATE
      * once started and the ROM bootloader does not feed it, so starting it
      * here would make every 'FLASH' jump reset the MCU mid-write (bricking
@@ -929,6 +930,7 @@ int main(void)
      * Window math in bench_safety.h — 3.000 s nominal, 2.0-4.0 s across
      * the F103 LSI 30-60 kHz spread; every superloop pass kicks it below. */
 
+#ifndef HOST_TEST
     while (1)
     {
         if (iwdg_active)
@@ -949,8 +951,10 @@ int main(void)
         }
         radio_task();
     }
-}
+#else
+    return 0;
 #endif
+}
 
 /* ---- Test helpers (host unit tests only, no radio/HAL deps) ---------------- */
 

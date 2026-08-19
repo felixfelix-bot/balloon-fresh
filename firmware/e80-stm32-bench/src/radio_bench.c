@@ -75,6 +75,7 @@ static const uint8_t flrc_syncword[LR20XX_RADIO_FLRC_SYNCWORD_LENGTH] = { 0x2D, 
 static radio_bench_cfg_t cur_cfg = {
     .mod       = BENCH_MOD_LORA,
     .sf        = 8,
+    .cr        = 5,
     .bw_hz     = 125000,
     .br_bps    = 650000,
     .txpow_dbm = E80_BENCH_TXPOW_CAP_INDOOR_DBM,
@@ -139,6 +140,32 @@ static lr20xx_radio_flrc_br_bw_t br_to_enum(uint32_t br_bps)
     case 325000:  return LR20XX_RADIO_FLRC_BR_0_325_BW_0_357;
     case 260000:  return LR20XX_RADIO_FLRC_BR_0_260_BW_0_307;
     default:      return LR20XX_RADIO_FLRC_BR_0_650_BW_0_740;
+    }
+}
+
+/* LoRa coding rate: cfg->cr is the denominator (5=4/5, 6=4/6, 7=4/7, 8=4/8). */
+static lr20xx_radio_lora_cr_t lora_cr_to_enum(uint8_t cr)
+{
+    switch (cr)
+    {
+    case 5: return LR20XX_RADIO_LORA_CR_4_5;
+    case 6: return LR20XX_RADIO_LORA_CR_4_6;
+    case 7: return LR20XX_RADIO_LORA_CR_4_7;
+    case 8: return LR20XX_RADIO_LORA_CR_4_8;
+    default: return LR20XX_RADIO_LORA_CR_4_5;
+    }
+}
+
+/* FLRC coding rate: cfg->cr is the register code (0=1/2, 1=3/4, 2=uncoded, 3=2/3). */
+static lr20xx_radio_flrc_cr_t flrc_cr_to_enum(uint8_t cr)
+{
+    switch (cr)
+    {
+    case 0: return LR20XX_RADIO_FLRC_CR_1_2;
+    case 1: return LR20XX_RADIO_FLRC_CR_3_4;
+    case 2: return LR20XX_RADIO_FLRC_CR_NONE;
+    case 3: return LR20XX_RADIO_FLRC_CR_2_3;
+    default: return LR20XX_RADIO_FLRC_CR_3_4;
     }
 }
 
@@ -211,7 +238,7 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
 
         lora_mod_params.bw = bw_to_enum(cfg->bw_hz);
         lora_mod_params.sf = sf_to_enum(cfg->sf);
-        lora_mod_params.cr = LR20XX_RADIO_LORA_CR_4_5;
+        lora_mod_params.cr = lora_cr_to_enum(cfg->cr);
         lora_mod_params.ppm = LR20XX_RADIO_LORA_NO_PPM;
         lr20xx_radio_lora_set_modulation_params(E80_CONTEXT, &lora_mod_params);
     }
@@ -224,6 +251,7 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
         lr20xx_radio_flrc_set_syncword(E80_CONTEXT, 1, flrc_syncword);
 
         flrc_mod_params.br_bw = br_to_enum(cfg->br_bps);
+        flrc_mod_params.cr    = flrc_cr_to_enum(cfg->cr);
         lr20xx_radio_flrc_set_modulation_params(E80_CONTEXT, &flrc_mod_params);
     }
 
