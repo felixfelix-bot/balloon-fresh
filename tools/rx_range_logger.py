@@ -14,8 +14,12 @@ writes a SESSION_START header to the CSV, and injects the session_id
 into every PKT line's session_id field.
 
 Usage:
-    python3 rx_range_logger.py /dev/ttyACM0 [--baud 115200] [--out data/]
+    python3 rx_range_logger.py /dev/ttyACM0 [--baud 2000000] [--out data/]
     python3 rx_range_logger.py /dev/ttyACM0 --skip-fw-check
+    python3 rx_range_logger.py /dev/ttyACM0 --board c3 --baud 115200
+
+HOST-2: Default baud is 2,000,000 for E80.  Use --board c3 to auto-select
+115200 for C3/RP2040 (USB CDC, baud is cosmetic).
 
 Output: data/range_test_<timestamp>.csv with columns:
     timestamp_iso, session_id, config_id, replicate, seq, ts_ms,
@@ -88,12 +92,22 @@ def is_phantom_rssi(rssi):
 def main():
     parser = argparse.ArgumentParser(description='LR2021 FLRC range test RX logger')
     parser.add_argument('port', help='Serial port (e.g. /dev/ttyACM0)')
-    parser.add_argument('--baud', type=int, default=115200)
+    parser.add_argument('--baud', type=int, default=None,
+                        help='Baud rate (default: 2000000 for E80, 115200 for C3/RP2040)')
+    parser.add_argument('--board', choices=['e80', 'c3', 'rp2040'], default='e80',
+                        help='Board type for baud auto-select (default: e80)')
     parser.add_argument('--out', default='data', help='Output directory')
     parser.add_argument('--duration', type=int, default=0, help='Stop after N seconds (0=forever)')
     parser.add_argument('--skip-fw-check', action='store_true',
                         help='Skip firmware hash gate (not recommended)')
     args = parser.parse_args()
+
+    # HOST-2: Auto-select baud based on board type if not explicitly set
+    if args.baud is None:
+        if args.board == 'e80':
+            args.baud = 2000000
+        else:
+            args.baud = 115200  # C3/RP2040 use USB CDC, baud is cosmetic
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)

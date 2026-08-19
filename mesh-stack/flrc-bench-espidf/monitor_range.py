@@ -56,10 +56,20 @@ def find_port(arg_port):
 def main():
     parser = argparse.ArgumentParser(description="Range test monitor (23-field PKT)")
     parser.add_argument("--port", help="Serial port (auto-detect if omitted)")
-    parser.add_argument("--baud", type=int, default=115200, help="Baud rate")
+    parser.add_argument("--baud", type=int, default=None,
+                        help="Baud rate (default: 2000000 for E80, 115200 for C3/RP2040)")
+    parser.add_argument("--board", choices=['e80', 'c3', 'rp2040'], default='e80',
+                        help="Board type for baud auto-select (default: e80)")
     parser.add_argument("--skip-fw-check", action="store_true",
                         help="Skip firmware hash gate (not recommended)")
     args = parser.parse_args()
+
+    # HOST-2: Auto-select baud based on board type if not explicitly set
+    if args.baud is None:
+        if args.board == 'e80':
+            args.baud = 2000000
+        else:
+            args.baud = 115200  # C3/RP2040 use USB CDC, baud is cosmetic
 
     port = find_port(args.port)
     ser = serial.Serial(port, args.baud, timeout=0.5)
