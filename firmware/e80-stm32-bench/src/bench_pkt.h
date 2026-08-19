@@ -74,19 +74,16 @@ int bench_pkt_format(char* buf, int bufsz,
                      int crc_ok);
 
 /**
- * @brief Format a CONFIG_START transition marker line (E80-8/O4).
+ * @brief Format a CONFIG_START marker line.
  *
- * Output format: CONFIG_START,<config_id>,<replicate>,<ts_ms>
- *
- * Emitted when the firmware receives a CONFIG command, so the host
- * capture tool can segment captures by configuration window.
+ * Emitted when the firmware receives a CONFIG command, allowing the
+ * host capture tool to segment captures by configuration window.
  *
  * @param buf      Output buffer (NUL-terminated on return).
  * @param bufsz    Size of buf in bytes.
- * @param ctx      Session/config context (config_id, replicate used).
- * @param ts_ms    Firmware timestamp in milliseconds (bench_micros()/1000).
+ * @param ctx      Session/config context (uses config_id and replicate).
+ * @param ts_ms    Timestamp in milliseconds.
  * @return Number of bytes that would be written (excluding NUL).
- *         If >= bufsz, the output was truncated but buf is NUL-terminated.
  */
 int bench_pkt_config_start(char* buf, int bufsz,
                            const bench_pkt_ctx_t* ctx,
