@@ -138,8 +138,3 @@ static const RangeScanMode range_scan_modes[] = {
 };
 
 #define RANGE_SCAN_MODE_COUNT (sizeof(range_scan_modes) / sizeof(range_scan_modes[0]))
-
-/* --- Harmonized PKT line: session/config metadata (set via serial commands) --- */
-static char session_id[64] = "";   /* SESSION <id> sets this */
-static char config_id[32] = "";    /* CONFIG <id> <replicate> sets this */
-static uint16_t replicate_num = 0; /* CONFIG <id> <replicate> sets this */
