@@ -62,10 +62,10 @@ typedef enum rb_evt_type_e
 typedef struct rb_evt_s
 {
     rb_evt_type_t type;
-    uint16_t len;
-    uint32_t seq;             /* TX sequence header (RX_OK only)  */
-    int16_t  rssi_half_dbm;   /* RSSI in 0.5 dBm units (dBm*2)    */
-    int8_t   snr_qdb;         /* 0.25 dB units, LoRa only         */
+    uint16_t len;             /* RX_OK: payload bytes read. RX_CRC: 0 */
+    uint32_t seq;             /* RX_OK: TX sequence header. RX_CRC: 0 (unreliable) */
+    int16_t  rssi_half_dbm;   /* RSSI in 0.5 dBm units (RX_OK and RX_CRC) */
+    int8_t   snr_qdb;         /* 0.25 dB units, LoRa only (RX_OK and RX_CRC) */
 } rb_evt_t;
 
 /** Full demo init sequence. Leaves radio in STDBY_RC, caches chip version.

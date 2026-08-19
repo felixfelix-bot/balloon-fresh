@@ -39,6 +39,7 @@ add_executable(e80_bench
     src/bench_cmd.c
     src/bench_stats.c
     src/bench_payload.c
+    src/bench_pkt.c
     src/bench_safety.c
     src/radio_bench.c
 )
