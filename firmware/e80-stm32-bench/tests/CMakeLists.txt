@@ -34,6 +34,8 @@ target_include_directories(test_bench_config PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 add_bench_test(test_console)  # includes console.c directly via #include — needs HAL stubs
 target_include_directories(test_console PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stubs)
 
+add_bench_test(test_bench_pkt ${SRC_DIR}/bench_pkt.c)
+
 # Radio bench cfg test: needs radio_bench.h (lr20xx type headers are header-only).
 add_bench_test(test_radio_bench_cfg)
 target_include_directories(test_radio_bench_cfg PRIVATE

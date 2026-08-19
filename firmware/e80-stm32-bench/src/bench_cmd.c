@@ -311,6 +311,25 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
         return BENCH_CMD_OK;
     }
 
+    if (bench_strcaseeq(tokens[0], "SESSION"))
+    {
+        /* SESSION <id> */
+        if (ntok != 2 || !bench_parse_u32(tokens[1], &out->session_id))
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_SESSION;
+        return BENCH_CMD_OK;
+    }
+    if (bench_strcaseeq(tokens[0], "CONFIG"))
+    {
+        /* CONFIG <id> <replicate> */
+        if (ntok != 3 ||
+            !bench_parse_u32(tokens[1], &out->config_id) ||
+            !bench_parse_u32(tokens[2], &out->replicate))
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_CONFIG;
+        return BENCH_CMD_OK;
+    }
+
     return (out->err = BENCH_CMD_E_UNKNOWN);
 }
 
