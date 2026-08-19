@@ -1,0 +1,26 @@
+=== E80 FLRC Throughput Matrix v6 Results (2026-08-19) ===
+N=200, GAP=10000us, freq=869850000, PA=10dBm (indoor)
+
+Rate  Len  TXsent  RXgot  CRC   TXkbps  RSSI    el_s  Status
+260   64     200      ?     ?      31      ?      3.2   ⚠️ RX stat parse fail
+260   128    200      0   200      54    0.0     3.7   ❌ All CRC errors
+260   255    200    200     0      84   -27.5    4.8   ✅ PERFECT
+650   64     200      0   200      35    0.0     2.8   ❌ All CRC errors
+650   128    ---      ---   ---    ---    ---     ---   ❌ IWDG reset (MOD ERR ARG)
+650   255    200    200     0     115   -28.0    3.5   ✅ PERFECT
+1300  64     ---      ---   ---    ---    ---     ---   ❌ IWDG reset (MOD ERR ARG)
+1300  128    ---      ---   ---    ---    ---     ---   ❌ IWDG reset
+1300  255    ---      ---   ---    ---    ---     ---   ❌ IWDG reset (MOD ERR ARG)
+
+CLEAN DATA POINTS (all tests combined):
+Rate  Len  TXsent  RXgot  CRC   TXkbps  RSSI    Source
+260   255   200    200     0      84   -27.5   v6 (this run)
+650   255   200    200     0     115   -28.0   v6 (this run)
+650   255   200    200     0      16   -28.0   v5 (earlier)
+1300  64    200    200     0      74   -16.0   manual (earlier)
+2600  128   200    200     0       8   -15.5   v5 (earlier)
+
+PATTERN: 255B payloads work consistently across rates.
+64B and 128B get CRC errors (200/200 CRC fail) at 260 and 650 kbps.
+1300 kbps tests killed by IWDG before completing.
+Likely: IWDG resets TX board after first ARM TX; subsequent MOD commands hit watchdog-active state.
