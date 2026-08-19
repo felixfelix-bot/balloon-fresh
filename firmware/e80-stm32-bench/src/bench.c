@@ -251,6 +251,22 @@ void Error_Handler(void)
 
 /* ---- ROM bootloader jump (FLASH command) ------------------------------------ */
 
+/*
+ * Override HAL_Delay to NOT depend on SysTick interrupts.
+ * On STM32F1, if SWD halt poisons SysTick IRQ, HAL_Delay loops forever.
+ * Use a simple cycle-count spin loop instead (72 MHz -> ~7200 cycles/ms
+ * with 2 cycles per loop iteration).
+ */
+void HAL_Delay(uint32_t ms)
+{
+    volatile uint32_t count;
+    while (ms--)
+    {
+        count = 7200;
+        while (count--) { __NOP(); }
+    }
+}
+
 /* STM32F1 system memory: ROM bootloader at 0x1FFFF000 (NOT the 0x00000000
  * alias — this app runs with flash mapped at 0x00000000, so the real system
  * address must be used). vector[0] = initial MSP, vector[1] = entry point. */
