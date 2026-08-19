@@ -31,6 +31,10 @@ void console_init(void)
 
 void console_uart_irq(void)
 {
+    /* Clear ORE first — if overrun occurred, RXNE may be stale and
+     * the USART won't receive new bytes until ORE is cleared. */
+    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
+        __HAL_UART_CLEAR_OREFLAG(&huart1);
     while (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
     {
         char c = (char)(huart1.Instance->DR & 0xFF);
@@ -40,6 +44,8 @@ void console_uart_irq(void)
             rx_ring[rx_head] = c;
             rx_head = next;
         }
+        if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
+            __HAL_UART_CLEAR_OREFLAG(&huart1);
     }
 }
 
@@ -47,6 +53,27 @@ char* console_getline(void)
 {
     if (line_ready)
         return NULL; /* caller must consume previous line first (it won't) */
+
+    /* Polling fallback: if the USART1 RXNE interrupt didn't fire (known
+     * STM32F1 NVIC issue after SWD reset), drain pending bytes here.
+     * Also clear ORE (Overrun Error) — if multiple bytes arrived while the
+     * CPU was halted by SWD, ORE sets and blocks all further RX. */
+    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
+    {
+        __HAL_UART_CLEAR_OREFLAG(&huart1);
+    }
+    while (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
+    {
+        char c = (char)(huart1.Instance->DR & 0xFF);
+        uint8_t next = (uint8_t)((rx_head + 1) % CONSOLE_RX_RING_SIZE);
+        if (next != rx_tail)
+        {
+            rx_ring[rx_head] = c;
+            rx_head = next;
+        }
+        if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
+            __HAL_UART_CLEAR_OREFLAG(&huart1);
+    }
 
     while (rx_tail != rx_head)
     {
