@@ -54,8 +54,8 @@ The bench firmware jumps itself into the ROM bootloader — no RESET button,
 no operator at the bench:
 
 ```bash
-# 1) Order the jump over the console (115200 8N1):
-python3 -c "import serial,time; s=serial.Serial('/dev/ttyUSB3',115200,timeout=2); \
+# 1) Order the jump over the console (2,000,000 8N1):
+python3 -c "import serial,time; s=serial.Serial('/dev/ttyUSB3',2000000,timeout=2); \
 time.sleep(1); s.write(b'FLASH\r\n'); time.sleep(1); \
 print(s.read(256).decode(errors='replace'))"
 # Expect: OK JUMPING TO BOOTLOADER   (console then goes silent)
