@@ -673,7 +673,6 @@ static void handle_cmd(const bench_cmd_t* c)
         tx_total  = c->n_pkts;
         tx_len    = (uint16_t)c->len_bytes;
         tx_gap_us = c->gap_us;
-        tx_seq    = 0;
         tx_wait_irq = false;
 
         bench_stats_reset(&stats);
