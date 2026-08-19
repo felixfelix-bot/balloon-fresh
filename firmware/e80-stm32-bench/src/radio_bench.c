@@ -404,7 +404,29 @@ void radio_bench_irq(void)
     }
     else if (radio_irq & LR20XX_SYSTEM_IRQ_CRC_ERROR)
     {
-        rb_evt_t e = { .type = RB_EVT_RX_CRC };
+        /* E80-7: Extract RSSI from packet status even on CRC failure.
+         * The LR2021 measures RSSI before the CRC check, so the value
+         * is valid in the packet status register. Seq is unreliable for
+         * CRC-failed packets (payload may be corrupt), so leave it 0. */
+        rb_evt_t e = { .type = RB_EVT_RX_CRC, .seq = 0, .len = 0 };
+
+        if (cur_cfg.mod == BENCH_MOD_LORA)
+        {
+            lr20xx_radio_lora_packet_status_t st;
+            lr20xx_radio_lora_get_packet_status(E80_CONTEXT, &st);
+            e.rssi_half_dbm = (int16_t)(2 * st.rssi_pkt_in_dbm
+                                        - (st.rssi_pkt_half_dbm_count ? 1 : 0));
+            e.snr_qdb = st.snr_pkt_raw;
+        }
+        else
+        {
+            lr20xx_radio_flrc_pkt_status_t st;
+            lr20xx_radio_flrc_get_pkt_status(E80_CONTEXT, &st);
+            e.rssi_half_dbm = (int16_t)(2 * st.rssi_avg_in_dbm
+                                        - (st.rssi_avg_half_dbm_count ? 1 : 0));
+            e.snr_qdb = 0; /* FLRC has no SNR estimate */
+        }
+
         evt_push(&e);
         radio_bench_rx_arm(rx_pld_for_irq);
     }
