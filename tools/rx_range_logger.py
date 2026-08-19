@@ -60,7 +60,7 @@ from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start  # noqa: E402
 
 # Session manager (HOST-3)
-from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt, send_session_command  # noqa: E402
+from session_manager import generate_session_id, format_session_start, format_session_command, inject_session_id_into_pkt  # noqa: E402
 
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
@@ -171,10 +171,11 @@ def main():
     print(f"[SESSION] {session_id}")
 
     # Send SESSION command to firmware so it includes the session_id in PKT lines
-    if not send_session_command(ser, session_id):
-        print("[SESSION] WARNING: Failed to send SESSION command to firmware")
-    else:
+    try:
+        ser.write(format_session_command(session_id).encode('ascii'))
         print("[SESSION] SESSION command sent to firmware")
+    except Exception as e:
+        print(f"[SESSION] WARNING: Failed to send SESSION command to firmware: {e}")
 
     print("Ctrl+C to stop\n")
 
@@ -185,7 +186,8 @@ def main():
 
     with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
         writer = csv.writer(csvfile)
-        # Write SESSION_START as a comment line before the CSV header
+        # Write SESSION header and SESSION_START comment line before CSV header
+        csvfile.write(f"# SESSION {session_id}\n")
         csvfile.write(f"# {session_header}")
         writer.writerow(PKT_CSV_COLUMNS)
 

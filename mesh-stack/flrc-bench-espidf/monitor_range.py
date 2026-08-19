@@ -26,6 +26,9 @@ sys.path.insert(0, str(TOOLS_DIR))
 from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 from firmware_hash_gate import parse_fw_hash, validate_fw_hash  # noqa: E402
 
+# Session manager (HOST-3)
+from session_manager import generate_session_id, format_session_command, inject_session_id_into_pkt  # noqa: E402
+
 PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + ['raw_line']
 
 # How long to wait for a boot banner on startup (seconds)
@@ -114,6 +117,17 @@ def main():
     else:
         print("[FW GATE] SKIPPED (--skip-fw-check)", file=sys.stderr)
 
+    # ── HOST-3: Session ID injection ────────────────────────────────
+    session_id = generate_session_id()
+    print(f"[SESSION] {session_id}", file=sys.stderr)
+
+    # Send SESSION command to firmware before capture
+    try:
+        ser.write(format_session_command(session_id).encode('ascii'))
+        print("[SESSION] SESSION command sent to firmware", file=sys.stderr)
+    except Exception as e:
+        print(f"[SESSION] WARNING: Failed to send SESSION command: {e}", file=sys.stderr)
+
     ts = time.strftime("%Y%m%d_%H%M%S")
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pkt_path = os.path.join(base_dir, f"range_packets_{ts}.csv")
@@ -125,6 +139,7 @@ def main():
     sum_writer = csv.writer(sum_file)
 
     # Write headers
+    pkt_file.write(f"# SESSION {session_id}\n")
     pkt_writer.writerow(PKT_CSV_COLUMNS)
     sum_writer.writerow([
         'timestamp', 'loop', 'window_id', 'window_name', 'mode',
@@ -167,6 +182,9 @@ def main():
                     now = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
                     pkt = parse_pkt_line(line)
                     if pkt:
+                        # HOST-3: Inject session_id into PKT line
+                        line = inject_session_id_into_pkt(line, session_id)
+                        pkt['session_id'] = session_id
                         row = [now] + [str(pkt[f]) for f in PKT_FIELDS] + [line]
                         pkt_writer.writerow(row)
                         pkt_count += 1
