@@ -188,3 +188,46 @@ SWD diagnostic scripts at `/home/c03rad0r/uart_*.py` — used for NVIC/DR debugg
 **Author:** Hermes Agent (manager profile)  
 **Operator:** Felix (c03rad0r)  
 **Session:** 2026-08-19, balloon-hermes Signal group
+## 9. v6 Matrix Results (Final Run)
+
+### Test v6 Parameters
+- Same as above but: PA=10dBm (indoor, no outdoor unlock), GAP= key (not GAP_US=), no ARM RX (ROLE RX is sufficient), 4s wait per test
+
+### v6 Results
+
+| Rate (kbps) | Len (B) | TX Sent | RX Got | CRC Err | TX kbps | RSSI (dBm) | Status |
+|:-----------:|:-------:|:-------:|:------:|:-------:|:-------:|:----------:|:------:|
+| 260 | 64 | 200 | ? | ? | 31 | ? | RX stat parse fail |
+| 260 | 128 | 200 | 0 | 200 | 54 | 0.0 | All CRC errors |
+| 260 | 255 | 200 | 200 | 0 | 84 | -27.5 | PERFECT |
+| 650 | 64 | 200 | 0 | 200 | 35 | 0.0 | All CRC errors |
+| 650 | 128 | - | - | - | - | - | IWDG reset |
+| 650 | 255 | 200 | 200 | 0 | 115 | -28.0 | PERFECT |
+| 1300 | 64 | - | - | - | - | - | IWDG reset |
+| 1300 | 128 | - | - | - | - | - | IWDG reset |
+| 1300 | 255 | - | - | - | - | - | IWDG reset |
+
+### Key Pattern Discovered
+- 255B payloads consistently produce 200/200 with 0 CRC errors across rates
+- 64B and 128B payloads at 260/650 kbps get 200 TX sent but RX sees 200 CRC errors
+- This suggests a payload length / coding rate mismatch at shorter payloads
+- IWDG kills the TX board after first test (watchdog stays active across ROLE changes)
+
+### All Clean Data Points (5 total)
+
+| Rate (kbps) | Len (B) | TX kbps | RSSI (dBm) | Source |
+|:-----------:|:-------:|:-------:|:----------:|:------:|
+| 260 | 255 | 84 | -27.5 | v6 |
+| 650 | 255 | 115 | -28.0 | v6 |
+| 1300 | 64 | 74 | -16.0 | manual |
+| 2600 | 128 | 8 | -15.5 | v5 |
+
+### Firmware Command Syntax (confirmed from source code)
+- `MOD flrc <rate_kbps> <dbm>` — rate must be one of: 260, 325, 520, 650, 1040, 1300, 2080, 2600
+- `FREQ <hz>` — frequency in Hz
+- `PA <dbm>` — 0-10 indoor, 0-22 after POWER MODE OUTDOOR 2026
+- `POWER MODE OUTDOOR 2026` — unlocks +22 dBm (pin=2026)
+- `ROLE TX|RX|NONE` — RX is continuous, no ARM needed
+- `ARM TX` — enables TX (starts IWDG 2-4s window)
+- `START N=<pkts> LEN=<6-511> GAP=<us>` — key is GAP, not GAP_US
+- `STAT?` — query statistics
