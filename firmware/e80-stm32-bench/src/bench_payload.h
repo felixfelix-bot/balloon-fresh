@@ -30,6 +30,9 @@ void bench_payload_build(uint8_t* buf, uint32_t len, uint32_t seq);
 /** Extract the TX sequence number from a received payload (host + fw). */
 uint32_t bench_payload_seq(const uint8_t* buf);
 
+/** Read the current TX sequence counter (host + fw). */
+uint32_t bench_get_tx_seq(void);
+
 /** Extract the length field (host + fw). */
 uint16_t bench_payload_len_field(const uint8_t* buf);
 

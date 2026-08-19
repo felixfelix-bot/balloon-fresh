@@ -919,8 +919,10 @@ int main(void)
 
     bench_stats_reset(&stats);
 
-    /* TX-hang watchdog defense 3 starts LATE — at the first 'ARM TX'
-     * (see iwdg_start_once) — NOT here at boot: the IWDG cannot be stopped
+#ifndef HOST_TEST
+int main(void)
+{
+    /* TX-hang watchdog defense 3 starts LATE
      * once started and the ROM bootloader does not feed it, so starting it
      * here would make every 'FLASH' jump reset the MCU mid-write (bricking
      * the app). Until the first ARM TX the board simply stays flashable
@@ -948,4 +950,12 @@ int main(void)
         }
         radio_task();
     }
+}
+#endif
+
+/* ---- Test helpers (host unit tests only, no radio/HAL deps) ---------------- */
+
+uint32_t bench_get_tx_seq(void)
+{
+    return tx_seq;
 }

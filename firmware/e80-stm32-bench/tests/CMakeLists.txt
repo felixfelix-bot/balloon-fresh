@@ -21,6 +21,8 @@ add_bench_test(test_bench_stats ${SRC_DIR}/bench_stats.c)
 target_link_libraries(test_bench_stats m)
 add_bench_test(test_bench_cmd ${SRC_DIR}/bench_cmd.c)
 add_bench_test(test_bench_payload ${SRC_DIR}/bench_payload.c)
+add_bench_test(test_bench_seq ${SRC_DIR}/bench_payload.c)  # tests payload stamping
+target_include_directories(test_bench_seq PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stubs)
 add_bench_test(test_bench_safety ${SRC_DIR}/bench_safety.c)
 add_bench_test(test_bench_flash ${SRC_DIR}/bench_cmd.c ${SRC_DIR}/bench_safety.c)
 add_bench_test(test_bench_config)
