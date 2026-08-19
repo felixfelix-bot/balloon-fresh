@@ -26,6 +26,7 @@
 #include "bench_banner.h"
 #include "bench_cmd.h"
 #include "bench_payload.h"
+#include "bench_pkt.h"
 #include "bench_safety.h"
 #include "bench_stats.h"
 #include "console.h"
@@ -73,6 +74,9 @@ static uint32_t tx_chip_to_ms = 100; /* chip TX timeout programmed for it */
 static bool     tx_wait_irq  = false;
 static uint8_t  tx_buf[E80_BENCH_MAX_PAYLOAD];
 static bool     session_active = false;
+
+/* Per-packet output context (set by SESSION/CONFIG commands) */
+static bench_pkt_ctx_t pkt_ctx = { .session_id = 0, .config_id = 0, .replicate = 0 };
 
 /* TX-hang watchdog defense 3 (bench_safety.h): the IWDG starts at the FIRST
  * 'ARM TX' — never at boot — so 'FLASH' can jump to the ROM bootloader on a
@@ -748,6 +752,12 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_dec1(bench_stats_snr_avg_cdb(&stats) / 10);
         console_put(" cr=");
         console_put_u32(cfg.cr);
+        console_put(" session=");
+        console_put_u32(pkt_ctx.session_id);
+        console_put(" config=");
+        console_put_u32(pkt_ctx.config_id);
+        console_put(" replicate=");
+        console_put_u32(pkt_ctx.replicate);
         console_put(" drops=");
         console_put_u32(radio_bench_evt_drops());
         console_putln("");
@@ -778,6 +788,23 @@ static void handle_cmd(const bench_cmd_t* c)
          * a write can brick the app unrecoverably). */
         break;
     }
+
+    case BENCH_CMD_SESSION:
+        pkt_ctx.session_id = c->session_id;
+        console_put("OK SESSION ");
+        console_put_u32(pkt_ctx.session_id);
+        console_putln("");
+        break;
+
+    case BENCH_CMD_CONFIG:
+        pkt_ctx.config_id = c->config_id;
+        pkt_ctx.replicate = c->replicate;
+        console_put("OK CONFIG ");
+        console_put_u32(pkt_ctx.config_id);
+        console_put(" ");
+        console_put_u32(pkt_ctx.replicate);
+        console_putln("");
+        break;
 
     default:
         reply_err(bench_cmd_err_str(c->err));
@@ -856,10 +883,51 @@ static void radio_task(void)
             }
             if (e.seq > stats.rx_last_seq)
                 stats.rx_last_seq = e.seq;
+
+            /* Per-packet PKT line (E80-6/M3+M4+M5) */
+            {
+                bench_pkt_evt_t pe = {
+                    .seq            = e.seq,
+                    .len            = e.len,
+                    .rssi_half_dbm  = e.rssi_half_dbm,
+                    .snr_qdb        = e.snr_qdb,
+                    .mod            = (cfg.mod == BENCH_MOD_LORA)
+                                      ? BENCH_PKT_MOD_LORA : BENCH_PKT_MOD_FLRC,
+                    .sf             = cfg.sf,
+                    .bw_hz          = cfg.bw_hz,
+                    .freq_hz         = cfg.freq_hz,
+                    .txpow_dbm      = cfg.txpow_dbm,
+                };
+                char pktbuf[160];
+                bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 1);
+                console_put(pktbuf);
+                console_putln("");
+            }
             break;
 
         case RB_EVT_RX_CRC:
             stats.rx_crc_err++;
+
+            /* Per-packet PKT line for CRC failures (E80-6/M3+M4+M5).
+             * E80-7: rssi_half_dbm populated in the CRC event path. */
+            {
+                bench_pkt_evt_t pe = {
+                    .seq            = 0,
+                    .len            = 0,
+                    .rssi_half_dbm  = e.rssi_half_dbm,
+                    .snr_qdb        = 0,
+                    .mod            = (cfg.mod == BENCH_MOD_LORA)
+                                      ? BENCH_PKT_MOD_LORA : BENCH_PKT_MOD_FLRC,
+                    .sf             = cfg.sf,
+                    .bw_hz          = cfg.bw_hz,
+                    .freq_hz         = cfg.freq_hz,
+                    .txpow_dbm      = cfg.txpow_dbm,
+                };
+                char pktbuf[160];
+                bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 0);
+                console_put(pktbuf);
+                console_putln("");
+            }
             break;
 
         default:
