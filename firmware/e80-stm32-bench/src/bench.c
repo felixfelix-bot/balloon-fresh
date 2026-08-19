@@ -473,7 +473,8 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("MOD flrc <br_kbps 260..2600> <dbm0-10> | FREQ <hz> | PA <dbm> | ");
         console_put("POWER MODE OUTDOOR <pin> | ");
         console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
-        console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin>");
+        console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> | ");
+        console_put("SESSION <id> | CONFIG <id> <replicate>");
         console_putln("");
         break;
 
@@ -804,6 +805,15 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put(" ");
         console_put_u32(pkt_ctx.replicate);
         console_putln("");
+        /* CONFIG_START transition marker (E80-8/O4):
+         * CONFIG_START,<config_id>,<replicate>,<ts_ms> */
+        {
+            char cs_buf[48];
+            int cs_n = bench_pkt_config_start(cs_buf, sizeof(cs_buf),
+                                              &pkt_ctx, bench_micros() / 1000U);
+            if (cs_n > 0)
+                console_putln(cs_buf);
+        }
         break;
 
     default:
@@ -897,6 +907,8 @@ static void radio_task(void)
                     .bw_hz          = cfg.bw_hz,
                     .freq_hz         = cfg.freq_hz,
                     .txpow_dbm      = cfg.txpow_dbm,
+                    .cr             = cfg.cr,
+                    .ts_ms          = bench_micros() / 1000U,
                 };
                 char pktbuf[160];
                 bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 1);
@@ -922,6 +934,8 @@ static void radio_task(void)
                     .bw_hz          = cfg.bw_hz,
                     .freq_hz         = cfg.freq_hz,
                     .txpow_dbm      = cfg.txpow_dbm,
+                    .cr             = cfg.cr,
+                    .ts_ms          = bench_micros() / 1000U,
                 };
                 char pktbuf[160];
                 bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 0);
