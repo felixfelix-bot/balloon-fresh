@@ -4,6 +4,7 @@
  */
 
 #include "bench_cmd.h"
+#include "radio_bench.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -247,6 +248,16 @@ static void test_parse_helpers(void)
     CHECK(!bench_parse_i8("--1", &i));
 }
 
+static void test_radio_config_has_cr_field(void)
+{
+    radio_bench_cfg_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.cr = 5; /* LoRa 4/5 */
+    CHECK(cfg.cr == 5);
+    cfg.cr = 1; /* FLRC 3/4 */
+    CHECK(cfg.cr == 1);
+}
+
 int main(void)
 {
     test_basic_commands();
@@ -257,6 +268,7 @@ int main(void)
     test_pa();
     test_token_overflow();
     test_parse_helpers();
+    test_radio_config_has_cr_field();
 
     if (failures == 0)
     {

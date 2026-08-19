@@ -40,6 +40,7 @@ typedef struct radio_bench_cfg_s
 {
     bench_mod_t mod;       /* BENCH_MOD_LORA or BENCH_MOD_FLRC */
     uint8_t    sf;         /* LoRa SF 5..12 (demo default SF8)  */
+    uint8_t    cr;         /* Coding rate. LoRa: denominator (5=4/5, 7=4/7). FLRC: register code (0=1/2, 1=3/4, 2=uncoded). */
     uint32_t   bw_hz;      /* LoRa BW (demo default 125 kHz)    */
     uint32_t   br_bps;     /* FLRC bitrate (bench default 650k) */
     int8_t     txpow_dbm;  /* PA setting in dBm (max 22)        */
