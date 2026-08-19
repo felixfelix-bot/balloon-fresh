@@ -39,6 +39,8 @@ typedef enum bench_cmd_id_e
     BENCH_CMD_STOP,          /* STOP */
     BENCH_CMD_FLASH,         /* FLASH — jump to the STM32F1 ROM bootloader */
     BENCH_CMD_HELP,          /* HELP */
+    BENCH_CMD_SESSION,       /* SESSION <id> — set session_id for PKT lines */
+    BENCH_CMD_CONFIG,        /* CONFIG <id> <replicate> — set config_id/replicate */
 } bench_cmd_id_t;
 
 typedef enum bench_role_e
@@ -83,6 +85,10 @@ typedef struct bench_cmd_s
     uint32_t len_bytes;
     uint32_t gap_us;
     bool     has_n, has_len, has_gap;
+
+    uint32_t session_id;  /* SESSION <id> */
+    uint32_t config_id;   /* CONFIG <id> <replicate> */
+    uint32_t replicate;   /* CONFIG <id> <replicate> */
 } bench_cmd_t;
 
 /**
