@@ -2,42 +2,75 @@
 
 Generates and injects a unique session_id into capture sessions.
 
-The session_id is a UUID4 string that identifies a single capture run.
-It is written to the output file as a ``SESSION_START`` header line and
-injected into every PKT line's ``session_id`` field (field 1 after
-``PKT,``).
+The session_id format is ``YYYYMMDDHHMMSS-<8hex>`` — a timestamp followed by
+8 hex characters derived from a UUID4.  This makes it human-readable while
+still being globally unique.
 
 Usage:
-    from tools.session_manager import generate_session_id, format_session_start
+    from tools.session_manager import (
+        generate_session_id,
+        format_session_command,
+        format_config_command,
+    )
 
     session_id = generate_session_id()
-    header = format_session_start(session_id)
-    # write header to CSV, then inject session_id into each PKT line
+    # Send "SESSION <id>\\r\\n" to firmware before capture
+    ser.write(format_session_command(session_id).encode())
+    # Print "# SESSION <id>" header to output
+    print(f"# SESSION {session_id}")
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 def generate_session_id() -> str:
-    """Generate a unique session_id (UUID4 string).
+    """Generate a unique session_id.
 
     Returns:
-        A string like ``"550e8400-e29b-41d4-a716-446655440000"``.
+        A string in the format ``YYYYMMDDHHMMSS-<8hex>``, e.g.
+        ``"20260820143022-a1b2c3d4"``.
     """
-    return str(uuid.uuid4())
+    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+    short_hex = uuid.uuid4().hex[:8]
+    return f"{ts}-{short_hex}"
+
+
+def format_session_command(session_id: str) -> str:
+    """Format the SESSION command to send to firmware.
+
+    Args:
+        session_id: The session_id string from generate_session_id().
+
+    Returns:
+        A command string ``"SESSION {session_id}\\r\\n"``.
+    """
+    return f"SESSION {session_id}\r\n"
+
+
+def format_config_command(config_id: str, replicate: int) -> str:
+    """Format the CONFIG command to send to firmware.
+
+    Args:
+        config_id: The configuration identifier (e.g. "F2600").
+        replicate: The replicate number.
+
+    Returns:
+        A command string ``"CONFIG {config_id} {replicate}\\r\\n"``.
+    """
+    return f"CONFIG {config_id} {replicate}\r\n"
 
 
 def format_session_start(session_id: str) -> str:
-    """Format the SESSION_START header line.
+    """Format the SESSION_START header line for CSV output.
 
     Args:
-        session_id: The session UUID string from generate_session_id().
+        session_id: The session_id string from generate_session_id().
 
     Returns:
-        A line in the format ``SESSION_START,<uuid>,<iso-timestamp>\\n``
-        where the timestamp is a UTC ISO-8601 string.
+        A line in the format ``SESSION_START,<id>,<iso-timestamp>\\n``.
     """
+    from datetime import timezone
     ts = datetime.now(timezone.utc).isoformat()
     return f"SESSION_START,{session_id},{ts}\n"
 
@@ -53,7 +86,7 @@ def inject_session_id_into_pkt(line: str, session_id: str) -> str:
         line: A raw serial output line.  If it starts with ``PKT,``,
               the session_id field is replaced.  Other lines are
               returned unchanged.
-        session_id: The session UUID to inject.
+        session_id: The session_id to inject.
 
     Returns:
         The modified line with the session_id injected, or the
@@ -69,27 +102,3 @@ def inject_session_id_into_pkt(line: str, session_id: str) -> str:
 
     # Reconstruct: PKT,<session_id>,<rest>
     return f"PKT,{session_id},{parts[1]}"
-
-
-def send_session_command(serial_port, session_id: str) -> bool:
-    """Send a SESSION command to the firmware to set the session identifier.
-
-    The firmware's serial command handler parses lines matching::
-
-        SESSION <id>
-
-    and stores the id for inclusion in subsequent PKT lines.
-
-    Args:
-        serial_port: An open serial port object with a ``write`` method.
-        session_id: The session UUID string from generate_session_id().
-
-    Returns:
-        True if the command was written successfully, False on error.
-    """
-    cmd = f"SESSION {session_id}\r\n"
-    try:
-        serial_port.write(cmd.encode("utf-8"))
-        return True
-    except Exception:
-        return False
