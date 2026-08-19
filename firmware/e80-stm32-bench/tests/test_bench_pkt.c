@@ -81,6 +81,8 @@ static void test_basic(void)
         .bw_hz          = 125000,
         .freq_hz         = 868000000UL,
         .txpow_dbm      = 10,
+        .cr             = 5,
+        .ts_ms          = 12345,
     };
 
     int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 1 /* crc_ok */);

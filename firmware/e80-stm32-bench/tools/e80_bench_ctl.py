@@ -38,7 +38,7 @@ import re
 import sys
 import time
 
-BAUD = 115200
+BAUD = 2000000
 PARITY = "N"
 STOPBITS = 1
 

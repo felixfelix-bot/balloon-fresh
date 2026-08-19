@@ -76,3 +76,18 @@ int bench_pkt_format(char* buf, int bufsz,
      * If n >= bufsz the output was truncated but buf is NUL-terminated. */
     return n;
 }
+
+int bench_pkt_config_start(char* buf, int bufsz,
+                           const bench_pkt_ctx_t* ctx,
+                           uint32_t ts_ms)
+{
+    /* CONFIG_START,<config_id>,<replicate>,<ts_ms>
+     * (E80-8/O4: transition marker for host-side capture segmentation) */
+    int n = snprintf(buf, (size_t)bufsz,
+        "CONFIG_START,%lu,%lu,%lu",
+        (unsigned long)ctx->config_id,
+        (unsigned long)ctx->replicate,
+        (unsigned long)ts_ms);
+
+    return n;
+}

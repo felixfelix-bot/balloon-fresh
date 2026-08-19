@@ -53,6 +53,8 @@ typedef struct bench_pkt_evt_s
     uint32_t      bw_hz;          /* LoRa bandwidth in Hz           */
     uint32_t      freq_hz;        /* RF frequency                   */
     int8_t        txpow_dbm;      /* TX power setting               */
+    uint8_t       cr;             /* Coding rate (LoRa denom 5-8, FLRC code 0-3) */
+    uint32_t      ts_ms;          /* Timestamp in milliseconds      */
 } bench_pkt_evt_t;
 
 /**
@@ -61,7 +63,7 @@ typedef struct bench_pkt_evt_s
  * @param buf      Output buffer (NUL-terminated on return).
  * @param bufsz    Size of buf in bytes.
  * @param ctx      Session/config context (session_id, config_id, replicate).
- * @param evt      Packet data (seq, len, rssi, snr, mod, sf, bw, freq, txpow).
+ * @param evt      Packet data (seq, len, rssi, snr, mod, sf, bw, freq, txpow, cr, ts_ms).
  * @param crc_ok   1 = CRC valid (RX_OK), 0 = CRC failed (RX_CRC).
  * @return Number of bytes that would be written (excluding NUL).
  *         If >= bufsz, the output was truncated but buf is NUL-terminated.
@@ -70,6 +72,25 @@ int bench_pkt_format(char* buf, int bufsz,
                      const bench_pkt_ctx_t* ctx,
                      const bench_pkt_evt_t* evt,
                      int crc_ok);
+
+/**
+ * @brief Format a CONFIG_START transition marker line (E80-8/O4).
+ *
+ * Output format: CONFIG_START,<config_id>,<replicate>,<ts_ms>
+ *
+ * Emitted when the firmware receives a CONFIG command, so the host
+ * capture tool can segment captures by configuration window.
+ *
+ * @param buf      Output buffer (NUL-terminated on return).
+ * @param bufsz    Size of buf in bytes.
+ * @param ctx      Session/config context (config_id, replicate used).
+ * @param ts_ms    Firmware timestamp in milliseconds (bench_micros()/1000).
+ * @return Number of bytes that would be written (excluding NUL).
+ *         If >= bufsz, the output was truncated but buf is NUL-terminated.
+ */
+int bench_pkt_config_start(char* buf, int bufsz,
+                           const bench_pkt_ctx_t* ctx,
+                           uint32_t ts_ms);
 
 #ifdef __cplusplus
 }

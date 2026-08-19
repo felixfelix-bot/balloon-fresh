@@ -36,6 +36,9 @@ target_include_directories(test_console PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stub
 
 add_bench_test(test_bench_pkt ${SRC_DIR}/bench_pkt.c)
 
+# CONFIG_START transition marker test (E80-8/O4): portable, no STM32 deps.
+add_bench_test(test_bench_config_start ${SRC_DIR}/bench_pkt.c)
+
 # Radio bench cfg test: needs radio_bench.h (lr20xx type headers are header-only).
 add_bench_test(test_radio_bench_cfg)
 target_include_directories(test_radio_bench_cfg PRIVATE
