@@ -69,3 +69,27 @@ def inject_session_id_into_pkt(line: str, session_id: str) -> str:
 
     # Reconstruct: PKT,<session_id>,<rest>
     return f"PKT,{session_id},{parts[1]}"
+
+
+def send_session_command(serial_port, session_id: str) -> bool:
+    """Send a SESSION command to the firmware to set the session identifier.
+
+    The firmware's serial command handler parses lines matching::
+
+        SESSION <id>
+
+    and stores the id for inclusion in subsequent PKT lines.
+
+    Args:
+        serial_port: An open serial port object with a ``write`` method.
+        session_id: The session UUID string from generate_session_id().
+
+    Returns:
+        True if the command was written successfully, False on error.
+    """
+    cmd = f"SESSION {session_id}\r\n"
+    try:
+        serial_port.write(cmd.encode("utf-8"))
+        return True
+    except Exception:
+        return False
