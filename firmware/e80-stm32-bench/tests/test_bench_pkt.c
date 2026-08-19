@@ -160,6 +160,8 @@ static void test_truncation_safe(void)
         .bw_hz          = 500000,
         .freq_hz         = 868000000UL,
         .txpow_dbm      = 22,
+        .cr             = 8,
+        .ts_ms          = 99999,
     };
 
     /* Must not crash, must NUL-terminate even if truncated */

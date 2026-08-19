@@ -805,13 +805,12 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put(" ");
         console_put_u32(pkt_ctx.replicate);
         console_putln("");
-        /* CONFIG_START transition marker (E80-8/O4):
-         * CONFIG_START,<config_id>,<replicate>,<ts_ms> */
+        /* CONFIG_START marker for host-side log parsing (E80-8/O4) */
         {
-            char cs_buf[48];
-            int cs_n = bench_pkt_config_start(cs_buf, sizeof(cs_buf),
-                                              &pkt_ctx, bench_micros() / 1000U);
-            if (cs_n > 0)
+            char cs_buf[64];
+            int cn = bench_pkt_config_start(cs_buf, sizeof(cs_buf), &pkt_ctx,
+                                            bench_micros() / 1000U);
+            if (cn > 0)
                 console_putln(cs_buf);
         }
         break;

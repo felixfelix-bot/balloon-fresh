@@ -8,9 +8,10 @@
  * Field mapping:
  *   rssi_dbm  = rssi_half_dbm / 2
  *   snr_db    = snr_qdb / 4
- *   ts_ms     = 0 (caller-side timestamp correlation via STAT? timer)
+ *   ts_ms     = evt->ts_ms (set by caller from bench_micros()/1000)
  *   mod       = "LORA" or "FLRC"
  *   bw_khz    = bw_hz / 1000
+ *   cr        = evt->cr (LoRa denominator 5-8, FLRC code 0-3)
  *   GPS fields = 0 (no GPS on bench board)
  *   bit_err / bytes_bad = 0 (no per-bit analysis on radio chip)
  */
@@ -40,14 +41,12 @@ int bench_pkt_format(char* buf, int bufsz,
      * consistency. The host tool ignores it for FLRC. */
     uint32_t sf = evt->sf;
 
-    /* Coding rate: LoRa CR 4/5 is the bench default, FLRC CR 3/4.
-     * Emit as integer (4 for 4/5, 3 for 3/4). */
-    uint32_t cr = (evt->mod == BENCH_PKT_MOD_LORA) ? 4 : 3;
+    /* Coding rate: emit the stored value from the event (LoRa: denominator
+     * 5-8, FLRC: register code 0-3). The host tooling interprets it. */
+    uint32_t cr = evt->cr;
 
-    /* Timestamp: the caller (firmware bench.c) doesn't pass a timestamp
-     * through the event — the PKT line uses 0 for now. The host-side
-     * tool can correlate by the STAT? elapsed timer. */
-    uint32_t ts_ms = 0;
+    /* Timestamp from the event (caller sets bench_micros()/1000). */
+    uint32_t ts_ms = evt->ts_ms;
 
     /* PKT,<session>,<config>,<replicate>,<seq>,<ts_ms>,<rssi>,<snr>,
      * <crc_ok>,<bit_err>,<bytes_bad>,<freq_hz>,<mod>,<sf>,<bw_khz>,
