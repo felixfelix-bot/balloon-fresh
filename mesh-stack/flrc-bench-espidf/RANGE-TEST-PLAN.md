@@ -80,6 +80,22 @@ If git is unavailable during build, the banner shows `FW_HASH=unknown`.
 - [ ] Flash both boards and bench verify all 16 windows
 - [ ] Commit and push
 
+## Sequence Counter (uint32, no inter-window reset)
+
+The TX sequence counter was widened from `uint16_t` to `uint32_t` in C3-2 (M6).
+Key changes:
+- The counter is declared **outside** the window for-loop and the outer `while(true)` loop,
+  so it never resets between windows or across loop iterations.
+- Previously `uint16_t p` reset to 0 at the start of each window and wrapped at 65535.
+- Now `seqCounter` (uint32_t) increments monotonically across all windows and loops,
+  encoded as 4-byte big-endian in `buf[0..3]` and used as PRBS15 seed.
+- The RX side already decoded the 4-byte big-endian sequence (line ~454 in range_test.cpp),
+  so no RX-side changes were needed.
+- TX log now includes `(seq starts at N)` showing the starting sequence number per window.
+
+This enables unambiguous packet identification across long-range test sessions where
+total packet count exceeds 65535 (~190 pkts/loop × 350+ loops).
+
 ## Deferred
 - [ ] Wire GPS to RX board (GPIO1)
 - [ ] City driving test campaign

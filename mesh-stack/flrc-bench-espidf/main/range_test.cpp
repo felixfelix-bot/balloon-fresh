@@ -104,6 +104,7 @@ static void runRangeTx() {
 
     uint32_t loopCount = 0;
     uint8_t resultCount = 0;
+    uint32_t seqCounter = 0;  /* persistent sequence counter — never resets across windows or loops */
 
     while (true) {
         loopCount++;
@@ -128,19 +129,20 @@ static void runRangeTx() {
                 vTaskDelay(pdMS_TO_TICKS(w->sync_delay_ms));
             }
 
-            ESP_LOGI(TAG, "Sending %d pkts, size=%d, delay=%dms", w->pkt_count, w->pkt_size, w->tx_delay_ms);
+            ESP_LOGI(TAG, "Sending %d pkts, size=%d, delay=%dms (seq starts at %lu)",
+                     w->pkt_count, w->pkt_size, w->tx_delay_ms, (unsigned long)seqCounter);
 
             uint8_t buf[255];
             uint16_t sent = 0;
             uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
 
-            for (uint16_t p = 0; p < w->pkt_count; p++) {
-                buf[0] = (p >> 24) & 0xFF;
-                buf[1] = (p >> 16) & 0xFF;
-                buf[2] = (p >> 8) & 0xFF;
-                buf[3] = p & 0xFF;
+            for (uint32_t p = 0; p < w->pkt_count; p++, seqCounter++) {
+                buf[0] = (seqCounter >> 24) & 0xFF;
+                buf[1] = (seqCounter >> 16) & 0xFF;
+                buf[2] = (seqCounter >> 8) & 0xFF;
+                buf[3] = seqCounter & 0xFF;
                 if (w->pkt_size > 4) {
-                    prbs15_fill(buf + 4, w->pkt_size - 4, p);
+                    prbs15_fill(buf + 4, w->pkt_size - 4, seqCounter);
                 }
                 state = radio->transmit(buf, w->pkt_size);
                 if (state == RADIOLIB_ERR_NONE) sent++;
