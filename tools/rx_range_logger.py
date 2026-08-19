@@ -5,8 +5,17 @@ Reads serial output from rp2040-range-rx-auto firmware, logs to CSV.
 Validates RSSI values — flags phantom data (constant 36, 0, or -127).
 Now parses the harmonized 23-field PKT format.
 
+HOST-1/M2: Firmware hash gate — refuses to start capture unless the
+boot banner contains a valid FW_HASH=<7hexchars>.  Use --skip-fw-check
+to bypass (not recommended for production captures).
+
+HOST-3: Session ID injection — generates a UUID4 session_id on startup,
+writes a SESSION_START header to the CSV, and injects the session_id
+into every PKT line's session_id field.
+
 Usage:
     python3 rx_range_logger.py /dev/ttyACM0 [--baud 115200] [--out data/]
+    python3 rx_range_logger.py /dev/ttyACM0 --skip-fw-check
 
 Output: data/range_test_<timestamp>.csv with columns:
     timestamp_iso, session_id, config_id, replicate, seq, ts_ms,
@@ -43,6 +52,12 @@ except ImportError:
 # 23-field PKT parser
 from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 
+# Firmware hash gate (HOST-1/M2)
+from firmware_hash_gate import validate_fw_hash, extract_fw_hash  # noqa: E402
+
+# Session manager (HOST-3)
+from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt  # noqa: E402
+
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
 
@@ -50,6 +65,9 @@ PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + ['raw_line']
 
 # Regex patterns (non-PKT lines)
 RESULT_PATTERN = re.compile(r'RANGE_RESULT_RX,(.+)')
+
+# How long to wait for a boot banner on startup (seconds)
+BOOT_BANNER_TIMEOUT = 10.0
 
 
 def parse_result_fields(kv_str):
@@ -73,6 +91,8 @@ def main():
     parser.add_argument('--baud', type=int, default=115200)
     parser.add_argument('--out', default='data', help='Output directory')
     parser.add_argument('--duration', type=int, default=0, help='Stop after N seconds (0=forever)')
+    parser.add_argument('--skip-fw-check', action='store_true',
+                        help='Skip firmware hash gate (not recommended)')
     args = parser.parse_args()
 
     out_dir = Path(args.out)
@@ -86,6 +106,52 @@ def main():
     print(f"Logging {args.port} -> {csv_path}")
     print(f"Raw output -> {raw_path}")
     print(f"Duration: {'forever' if args.duration == 0 else f'{args.duration}s'}")
+
+    # ── HOST-1/M2: Firmware hash gate ──────────────────────────────
+    # On startup, read serial lines for up to BOOT_BANNER_TIMEOUT seconds
+    # looking for a boot banner with FW_HASH.  Refuse to start capture
+    # if the banner does not contain a valid FW_HASH=<7hexchars>.
+    fw_hash = None
+    if not args.skip_fw_check:
+        print(f"\nWaiting for boot banner (timeout {BOOT_BANNER_TIMEOUT:.0f}s)…")
+        buf = ''
+        gate_start = time.time()
+        while (time.time() - gate_start) < BOOT_BANNER_TIMEOUT:
+            data = ser.read(256)
+            if not data:
+                continue
+            text = data.decode('ascii', errors='replace')
+            buf += text
+            # Check each complete line for FW_HASH
+            while '\n' in buf:
+                line, buf = buf.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+                if validate_fw_hash(line):
+                    fw_hash = extract_fw_hash(line)
+                    print(f"[FW GATE] Valid FW_HASH={fw_hash} — capture authorised.")
+                    break
+            if fw_hash:
+                break
+
+        if not fw_hash:
+            print("[FW GATE] ERROR: No valid FW_HASH found in boot banner!")
+            print("[FW GATE] Refusing to start capture. Flash firmware with FW_HASH")
+            print("[FW GATE] or use --skip-fw-check to bypass (not recommended).")
+            ser.close()
+            sys.exit(1)
+    else:
+        print("[FW GATE] SKIPPED (--skip-fw-check)")
+
+    # ── HOST-3: Session ID injection ────────────────────────────────
+    # Generate a unique session_id for this capture session.
+    # Write a SESSION_START header line to the CSV and inject the
+    # session_id into every PKT line's session_id field.
+    session_id = generate_session_id()
+    session_header = format_session_start(session_id)
+    print(f"[SESSION] {session_id}")
+
     print("Ctrl+C to stop\n")
 
     pkt_count = 0
@@ -95,6 +161,8 @@ def main():
 
     with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
         writer = csv.writer(csvfile)
+        # Write SESSION_START as a comment line before the CSV header
+        csvfile.write(f"# {session_header}")
         writer.writerow(PKT_CSV_COLUMNS)
 
         buf = ''
@@ -128,6 +196,10 @@ def main():
                         if phantom_count <= 5 or phantom_count % 100 == 0:
                             print(f"  [WARN] Phantom RSSI={rssi} on seq={pkt['seq']} "
                                   f"(count={phantom_count}) — firmware bug?")
+
+                    # HOST-3: Inject session_id into PKT line and parsed dict
+                    line = inject_session_id_into_pkt(line, session_id)
+                    pkt['session_id'] = session_id
 
                     row = [now] + [str(pkt[f]) for f in PKT_FIELDS] + [line]
                     writer.writerow(row)
