@@ -20,12 +20,16 @@ import csv
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Shared PKT parser from tools/
+# Shared PKT parser + firmware hash gate from tools/
 TOOLS_DIR = Path(__file__).resolve().parent.parent.parent / "tools"
 sys.path.insert(0, str(TOOLS_DIR))
 from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
+from firmware_hash_gate import parse_fw_hash, validate_fw_hash  # noqa: E402
 
 PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + ['raw_line']
+
+# How long to wait for a boot banner on startup (seconds)
+BOOT_BANNER_TIMEOUT = 10.0
 
 
 def auto_detect_port():
@@ -53,10 +57,52 @@ def main():
     parser = argparse.ArgumentParser(description="Range test monitor (23-field PKT)")
     parser.add_argument("--port", help="Serial port (auto-detect if omitted)")
     parser.add_argument("--baud", type=int, default=115200, help="Baud rate")
+    parser.add_argument("--skip-fw-check", action="store_true",
+                        help="Skip firmware hash gate (not recommended)")
     args = parser.parse_args()
 
     port = find_port(args.port)
     ser = serial.Serial(port, args.baud, timeout=0.5)
+
+    # ── HOST-1/M2: Firmware hash gate ──────────────────────────────
+    # On startup, read serial lines for up to BOOT_BANNER_TIMEOUT seconds
+    # looking for a boot banner with FW_HASH.  Refuse to start capture
+    # if the banner does not contain a valid FW_HASH=<7hexchars>.
+    fw_hash = None
+    if not args.skip_fw_check:
+        print(f"\nWaiting for boot banner (timeout {BOOT_BANNER_TIMEOUT:.0f}s)…", file=sys.stderr)
+        buf = ''
+        gate_start = time.time()
+        while (time.time() - gate_start) < BOOT_BANNER_TIMEOUT:
+            data = ser.read(256)
+            if not data:
+                continue
+            text = data.decode('ascii', errors='replace')
+            buf += text
+            while '\n' in buf:
+                line, buf = buf.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+                candidate = parse_fw_hash(line)
+                if candidate:
+                    if validate_fw_hash(candidate):
+                        fw_hash = candidate
+                        print(f"[FW GATE] Valid FW_HASH={fw_hash} — capture authorised.", file=sys.stderr)
+                        break
+                    else:
+                        print(f"[FW GATE] Found FW_HASH={candidate} but invalid (too short or 'unknown').", file=sys.stderr)
+            if fw_hash:
+                break
+
+        if not fw_hash:
+            print("[FW GATE] ERROR: No valid FW_HASH found in boot banner!", file=sys.stderr)
+            print("[FW GATE] Refusing to start capture. Flash firmware with FW_HASH", file=sys.stderr)
+            print("[FW GATE] or use --skip-fw-check to bypass (not recommended).", file=sys.stderr)
+            ser.close()
+            sys.exit(1)
+    else:
+        print("[FW GATE] SKIPPED (--skip-fw-check)", file=sys.stderr)
 
     ts = time.strftime("%Y%m%d_%H%M%S")
     base_dir = os.path.dirname(os.path.abspath(__file__))

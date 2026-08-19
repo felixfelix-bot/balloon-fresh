@@ -53,7 +53,7 @@ except ImportError:
 from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 
 # Firmware hash gate (HOST-1/M2)
-from firmware_hash_gate import validate_fw_hash, extract_fw_hash  # noqa: E402
+from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start  # noqa: E402
 
 # Session manager (HOST-3)
 from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt  # noqa: E402
@@ -128,10 +128,14 @@ def main():
                 line = line.strip()
                 if not line:
                     continue
-                if validate_fw_hash(line):
-                    fw_hash = extract_fw_hash(line)
-                    print(f"[FW GATE] Valid FW_HASH={fw_hash} — capture authorised.")
-                    break
+                candidate = parse_fw_hash(line)
+                if candidate:
+                    if validate_fw_hash(candidate):
+                        fw_hash = candidate
+                        print(f"[FW GATE] Valid FW_HASH={fw_hash} — capture authorised.")
+                        break
+                    else:
+                        print(f"[FW GATE] Found FW_HASH={candidate} but invalid (too short or 'unknown').")
             if fw_hash:
                 break
 
