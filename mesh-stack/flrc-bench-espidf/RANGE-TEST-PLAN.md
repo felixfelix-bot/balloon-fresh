@@ -53,8 +53,21 @@ and parameter combinations. TX fixed at high point, RX mobile in car with GPS + 
 - Firmware already supports GPS, compiles with GPS code
 - Without GPS wired: fix=0, all GPS fields=0 in CSV
 
+## Boot Banner
+
+On startup, the firmware prints a boot banner to serial log:
+```
+I (xxx) range_test: === LR2021 Range Test v1.0 FW_HASH=<sha7> ===
+```
+The `FW_HASH` is the 7-character git short SHA of the firmware build, injected
+at compile time via CMake (`execute_process(git rev-parse --short HEAD)` →
+`add_compile_definitions(FW_GIT_SHA=...)`). This allows correlating serial
+output with the exact firmware commit for field testing.
+
+If git is unavailable during build, the banner shows `FW_HASH=unknown`.
+
 ## Implementation Checklist
-- [ ] Create RANGE-TEST-PLAN.md
+- [x] Create RANGE-TEST-PLAN.md
 - [ ] Fix gpio_install_isr_service double-init in EspHalC3.h
 - [ ] Copy GPS component from tracker firmware
 - [ ] Create range_test.h (16 window definitions)
