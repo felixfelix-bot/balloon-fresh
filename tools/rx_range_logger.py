@@ -60,7 +60,7 @@ from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start  # noqa: E402
 
 # Session manager (HOST-3)
-from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt  # noqa: E402
+from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt, send_session_command  # noqa: E402
 
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
@@ -169,6 +169,12 @@ def main():
     session_id = generate_session_id()
     session_header = format_session_start(session_id)
     print(f"[SESSION] {session_id}")
+
+    # Send SESSION command to firmware so it includes the session_id in PKT lines
+    if not send_session_command(ser, session_id):
+        print("[SESSION] WARNING: Failed to send SESSION command to firmware")
+    else:
+        print("[SESSION] SESSION command sent to firmware")
 
     print("Ctrl+C to stop\n")
 

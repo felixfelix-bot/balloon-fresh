@@ -35,6 +35,9 @@ TOOLS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS_DIR))
 from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 
+# Session manager (HOST-3)
+from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt, send_session_command  # noqa: E402
+
 PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + [
     'distance_m', 'environment', 'notes', 'raw_line',
 ]
@@ -101,12 +104,27 @@ def main():
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # ── HOST-3: Session ID injection ────────────────────────────────
+    # Generate a unique session_id, send it to firmware via SESSION command,
+    # and inject it into all PKT lines and output metadata.
+    session_id = generate_session_id()
+    session_header = format_session_start(session_id)
+    print(f"[SESSION] {session_id}")
+
+    # Send SESSION command to firmware so it includes the session_id in PKT lines
+    if not send_session_command(ser, session_id):
+        print("[SESSION] WARNING: Failed to send SESSION command to firmware")
+    else:
+        print("[SESSION] SESSION command sent to firmware")
+
     pkt_count = 0
     cycle_count = 0
     start_time = time.time()
 
     with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
         writer = csv.writer(csvfile)
+        # Write SESSION_START header before the CSV column header
+        csvfile.write(f"# {session_header}")
         writer.writerow(PKT_CSV_COLUMNS)
 
         mode_label = f"WALK (base={args.base_lat},{args.base_lon})" if args.walk \
@@ -152,6 +170,10 @@ def main():
                     # Harmonized 23-field PKT line
                     pkt = parse_pkt_line(line)
                     if pkt:
+                        # HOST-3: Inject session_id into PKT line and parsed dict
+                        line = inject_session_id_into_pkt(line, session_id)
+                        pkt['session_id'] = session_id
+
                         # Compute distance
                         distance_m = args.distance
                         if args.walk and args.base_lat is not None and args.base_lon is not None:
