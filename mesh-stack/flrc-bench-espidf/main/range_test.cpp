@@ -2,6 +2,10 @@
 
 #if defined(CONFIG_BENCH_MODE_RANGE_TX) || defined(CONFIG_BENCH_MODE_RANGE_RX)
 
+#ifndef FW_GIT_SHA
+#define FW_GIT_SHA "unknown"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -477,7 +481,7 @@ static void runRangeRx() {
 #endif
 
 extern "C" void app_main() {
-    ESP_LOGI(TAG, "=== LR2021 Range Test v1.0 ===");
+    ESP_LOGI(TAG, "=== LR2021 Range Test v1.0 FW_HASH=%s ===", FW_GIT_SHA);
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
