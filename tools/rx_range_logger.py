@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""
-rx_range_logger.py — Serial RX logger for LR2021 FLRC range tests
+"""rx_range_logger.py — Serial RX logger for LR2021 FLRC range tests
 
 Reads serial output from rp2040-range-rx-auto firmware, logs to CSV.
 Validates RSSI values — flags phantom data (constant 36, 0, or -127).
+Now parses the harmonized 23-field PKT format.
 
 Usage:
     python3 rx_range_logger.py /dev/ttyACM0 [--baud 115200] [--out data/]
 
 Output: data/range_test_<timestamp>.csv with columns:
-    timestamp, line_type, seq, rssi, raw_line
+    timestamp_iso, session_id, config_id, replicate, seq, ts_ms,
+    rssi_dbm, snr_db, crc_ok, bit_err, bytes_bad, freq_hz, mod, sf,
+    bw_khz, cr, power_dbm, pkt_size, gps_fix, gps_lat, gps_lon,
+    gps_alt, gps_sats, gps_hdop, raw_line
 """
 
 import argparse
@@ -37,11 +40,15 @@ except ImportError:
     # Fall back to raw serial if board_serial not available
     Serial = serial.Serial
 
+# 23-field PKT parser
+from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
+
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
 
-# Regex patterns
-PKT_PATTERN = re.compile(r'PKT (\d+) seq=(\d+) rssi=(-?\d+)')
+PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + ['raw_line']
+
+# Regex patterns (non-PKT lines)
 RESULT_PATTERN = re.compile(r'RANGE_RESULT_RX,(.+)')
 
 
@@ -88,9 +95,7 @@ def main():
 
     with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['timestamp', 'type', 'seq', 'rssi', 'burst', 'rx',
-                         'unique', 'lost', 'per', 'throughput_kbps',
-                         'rssi_avg', 'rssi_min', 'bitrate', 'raw'])
+        writer.writerow(PKT_CSV_COLUMNS)
 
         buf = ''
         while True:
@@ -114,50 +119,37 @@ def main():
 
                 now = datetime.now().isoformat(timespec='milliseconds')
 
-                # Per-packet line
-                m = PKT_PATTERN.search(line)
-                if m:
-                    pkt_num = int(m.group(1))
-                    seq = int(m.group(2))
-                    rssi = int(m.group(3))
-
+                # Harmonized 23-field PKT line
+                pkt = parse_pkt_line(line)
+                if pkt:
+                    rssi = pkt['rssi_dbm']
                     if is_phantom_rssi(rssi):
                         phantom_count += 1
                         if phantom_count <= 5 or phantom_count % 100 == 0:
-                            print(f"  [WARN] Phantom RSSI={rssi} on pkt {pkt_num} "
+                            print(f"  [WARN] Phantom RSSI={rssi} on seq={pkt['seq']} "
                                   f"(count={phantom_count}) — firmware bug?")
 
-                    writer.writerow([now, 'PKT', seq, rssi, '', '', '', '',
-                                     '', '', '', '', '', line])
+                    row = [now] + [str(pkt[f]) for f in PKT_FIELDS] + [line]
+                    writer.writerow(row)
                     pkt_count += 1
                     if pkt_count % 100 == 0:
-                        print(f"  PKT {pkt_count} seq={seq} rssi={rssi}")
+                        print(f"  PKT {pkt_count} seq={pkt['seq']} rssi={rssi}")
                     continue
 
                 # Result summary line
                 m = RESULT_PATTERN.search(line)
                 if m:
                     fields = parse_result_fields(m.group(1))
-                    rssi_avg = float(fields.get('rssi_avg', 0))
+                    rssi_avg_s = fields.get('rssi_avg', '0')
+                    rssi_avg = float(rssi_avg_s) if rssi_avg_s else 0.0
 
-                    if is_phantom_rssi(int(rssi_avg)):
+                    if is_phantom_rssi(int(rssi_avg) if rssi_avg else 0):
                         print(f"  [WARN] Phantom rssi_avg={rssi_avg} in RESULT "
                               f"— RSSI still broken!")
 
-                    writer.writerow([
-                        now, 'RESULT', '',
-                        int(rssi_avg) if rssi_avg else '',
-                        fields.get('burst', fields.get('window', '')),
-                        fields.get('rx', ''),
-                        fields.get('unique', ''),
-                        fields.get('lost', ''),
-                        fields.get('per', ''),
-                        fields.get('throughput_kbps', ''),
-                        rssi_avg,
-                        fields.get('rssi_min', ''),
-                        fields.get('bitrate', ''),
-                        line
-                    ])
+                    # Write RESULT as a sparse PKT-like row with empty PKT fields
+                    row = [now] + [''] * len(PKT_FIELDS) + [line]
+                    writer.writerow(row)
                     result_count += 1
                     print(f"\n  RESULT #{result_count}: rx={fields.get('rx', '?')} "
                           f"unique={fields.get('unique', '?')} "
