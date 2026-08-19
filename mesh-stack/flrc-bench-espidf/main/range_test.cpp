@@ -433,7 +433,30 @@ static void runRangeRx() {
             }
 
             if (state != RADIOLIB_ERR_NONE) {
-                if (inWindow) rxCrcErrors++;
+                /* C3-4/M7: Log CRC-failed packets with RSSI instead of just counting */
+                if (inWindow) {
+                    rxCrcErrors++;
+                    float crc_rssi = radio->getRSSI(false);
+                    int16_t crc_rssi_i = (int16_t)crc_rssi;
+                    rssiSum += crc_rssi_i;
+                    rssiCount++;
+                    if (crc_rssi_i < rssiMin) rssiMin = crc_rssi_i;
+                    if (crc_rssi_i > rssiMax) rssiMax = crc_rssi_i;
+
+                    uint32_t ts_ms = (uint32_t)(esp_timer_get_time() / 1000ULL);
+                    uint32_t freq_hz = (uint32_t)(curWin.freq * 1000000.0f);
+                    uint32_t bw_khz = (uint32_t)curWin.bw;
+                    const char *modStr = (curWin.mode == RANGE_FLRC) ? "FLRC" : "LORA";
+                    /* seq=0 because CRC failure means buffer contents may be corrupt */
+                    printf("PKT,%s,%s,%u,0,%lu,%d,0,0,0,0,%lu,%s,%u,%u,%u,%d,%u,%d,%d,%d,%d,%d,%.1f\r\n",
+                           session_id, config_id, (unsigned)replicate_num,
+                           (unsigned long)ts_ms, crc_rssi_i,
+                           (unsigned long)freq_hz, modStr,
+                           (unsigned)curWin.sf, bw_khz, (unsigned)curWin.cr,
+                           (int)curWin.power, (unsigned)curWin.pkt_size,
+                           0, 0, 0, 0, 0, 0.0f);
+                    fflush(stdout);
+                }
                 radio->standby();
                 radio->startReceive();
                 continue;
