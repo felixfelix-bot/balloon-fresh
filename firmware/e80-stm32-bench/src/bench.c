@@ -23,6 +23,7 @@
  */
 
 #include "main.h"
+#include "bench_banner.h"
 #include "bench_cmd.h"
 #include "bench_payload.h"
 #include "bench_safety.h"
@@ -188,7 +189,7 @@ static void MX_SPI1_Init(void)
 static void MX_USART1_Init(void)
 {
     huart1.Instance          = USART1;
-    huart1.Init.BaudRate     = E80_BENCH_BAUD_DEFAULT; /* 115200; RX is IRQ-buffered so 921600 also works */
+    huart1.Init.BaudRate     = E80_BENCH_BAUD_DEFAULT; /* 2,000,000; RX is IRQ-buffered */
     huart1.Init.WordLength   = UART_WORDLENGTH_8B;
     huart1.Init.StopBits     = UART_STOPBITS_1;
     huart1.Init.Parity       = UART_PARITY_NONE;
@@ -888,7 +889,7 @@ int main(void)
     __enable_irq();
 
     console_putln("");
-    console_putln("E80 BENCH FW v1.2 (STM32F103C8 + LR2021) - 'HELP' for commands");
+    console_putln(BENCH_BOOT_BANNER);
     if (wdg_reset)
     {
         console_putln("WDG RESET (IWDG TIMEOUT - PREVIOUS SESSION DIED, CHECK "
