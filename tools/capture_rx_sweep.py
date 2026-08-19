@@ -22,7 +22,7 @@ def main():
     ap.add_argument("--tx", default=None, help="TX serial port (optional monitor)")
     ap.add_argument("--duration", type=int, default=300)
     ap.add_argument("--out", required=True, help="Output .log file path")
-    ap.add_argument("--baud", type=int, default=115200)
+    ap.add_argument("--baud", type=int, default=2000000)
     ap.add_argument("--sync-interval", type=float, default=10.0)
     args = ap.parse_args()
 

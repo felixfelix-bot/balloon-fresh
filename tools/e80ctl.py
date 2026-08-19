@@ -55,7 +55,7 @@ def sleep_exit():
     return bytes([0xC1, 0x03, 0x00])
 
 
-def send(port, frame, expect_echo=True, timeout=1.0, baud=115200):
+def send(port, frame, expect_echo=True, timeout=1.0, baud=2000000):
     s = serial.Serial(port, baud, timeout=timeout)
     try:
         s.reset_input_buffer()
@@ -143,7 +143,7 @@ def main():
         print(f"sent {len(data)} bytes (transparent TX)")
         return
     if a.cmd == "listen":
-        s = serial.Serial(a.port, 115200, timeout=1)
+        s = serial.Serial(a.port, 2000000, timeout=1)
         print(f"listening {a.duration}s on {a.port} …")
         t0 = time.time()
         try:

@@ -33,7 +33,7 @@ Usage
     python3 walk_capture.py 1800                    # run for 30 min
     python3 walk_capture.py 1800 /dev/ttyACM1       # duration + port override
     python3 walk_capture.py --port /dev/ttyACM1     # port only, run forever
-    python3 walk_capture.py --baud 115200 --outdir ./my-out --quiet
+    python3 walk_capture.py --baud 2000000 --outdir ./my-out --quiet
 
 Output
 ------
@@ -66,7 +66,7 @@ except ImportError:
 
 # ─── Configuration ──────────────────────────────────────────────────────
 RX_SERIAL = "E663B035973B8332"            # RP2040 #1 (RX board) USB serial
-DEFAULT_BAUD = 115200                      # USB CDC — baud is cosmetic
+DEFAULT_BAUD = 2000000                      # USB CDC — baud is cosmetic
 DEFAULT_OUTDIR = os.path.expanduser(
     "~/repos/balloon-fresh/data/walk-tests"
 )

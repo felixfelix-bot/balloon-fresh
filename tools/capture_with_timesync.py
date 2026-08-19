@@ -23,7 +23,7 @@ def main():
     outfile = sys.argv[2]
     duration = int(sys.argv[3]) if len(sys.argv) > 3 else 300
     
-    ser = serial.Serial(port, 115200, timeout=0.1)
+    ser = serial.Serial(port, 2000000, timeout=0.1)
     
     # Send initial SET_TIME
     ts = int(time.time())
@@ -64,7 +64,7 @@ def main():
                     pass
                 time.sleep(1)
                 try:
-                    ser = serial.Serial(port, 115200, timeout=0.1)
+                    ser = serial.Serial(port, 2000000, timeout=0.1)
                 except:
                     print(f"[{time.strftime('%H:%M:%S')}] Reopen failed")
                     continue

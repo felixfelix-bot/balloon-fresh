@@ -10,7 +10,7 @@ import sys, os, time, threading, re
 DURATION = int(sys.argv[1]) if len(sys.argv) > 1 else 300
 RX_PORT = '/dev/ttyACM1'
 TX_PORT = '/dev/ttyACM3'
-BAUD = 115200
+BAUD = 2000000
 OUTDIR = os.path.expanduser('~/repos/balloon-fresh/data/range-tests/20260725')
 os.makedirs(OUTDIR, exist_ok=True)
 OUTFILE = os.path.join(OUTDIR, f'walk-py-synced-{time.strftime("%H%M%S")}.log')
