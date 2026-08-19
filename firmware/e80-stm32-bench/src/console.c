@@ -19,7 +19,7 @@ static uint16_t line_len = 0;
 static volatile uint8_t line_ready = 0;
 
 /* TX staging (console_put* append here, console_flush sends) */
-static char     tx_buf[96];
+static char     tx_buf[160];
 static uint16_t tx_len = 0;
 
 void console_init(void)

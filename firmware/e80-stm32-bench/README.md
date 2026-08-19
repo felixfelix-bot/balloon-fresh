@@ -36,20 +36,21 @@ v1.3.1 (vendored, demo-proven on this exact hardware) + minimal STM32F1 HAL.
 
 ```bash
 # host tests (parser, stats math incl. Wilson 95% CI, payload gen, TX-hang
-# watchdog math: airtime/chip-timeout/backstop/IWDG, FLASH jump plan)
-make test-host          # 5/5 must pass
+# watchdog math: airtime/chip-timeout/backstop/IWDG, FLASH jump plan,
+# console TX buffer sizing, config constant pinning)
+make test-host          # 9 tests: all pass (E80-3 enlarged tx_buf 96→160)
 
 # cross build (arm-none-eabi-gcc + CMake)
 make                    # -> build-fw/e80_bench{.bin,.hex,.map}
 arm-none-eabi-size build-fw/e80_bench
 ```
 
-Size (2026-08-16, with FLASH + IWDG late start): text 19136 + data 116 =
-**19,252 B flash (29% of 64K)**, bss **2,692 B RAM (14% of 20K)**.
+Size (2026-08-20, fw=FW_HASH in boot banner): text 19488 + data 116 =
+**19,604 B flash (29% of 64K)**, bss **2,764 B RAM (14% of 20K)**.
 
 ## Console
 
-USART1 over USB (CH340), 115200 8N1 (921600 tolerated). Line-based,
+USART1 over USB (CH340), 2,000,000 8N1. Line-based,
 `OK ...` / `ERR <reason>` replies.
 
 Asynchronous lines (no command in flight): `TX DONE (RADIO ASLEEP)` after a
@@ -57,7 +58,8 @@ completed burst, `ERR TX-TIMEOUT SEQ=<n>` when the TX-hang watchdog aborted
 a stuck burst (burst over, radio asleep, re-`START` to retry), the one-time
 `NOTE IWDG STARTED ...` line after the first `ARM TX` (watchdog armed for
 the rest of the power cycle), and the boot banner line `WDG RESET ...` when
-the previous session was cut short by the STM32 IWDG.
+the previous session was cut short by the STM32 IWDG.  The boot banner also
+reports the git build hash as `fw=FW_HASH=<sha7>` (matching the `ID?` reply).
 
 | Command | Meaning |
 |---|---|
