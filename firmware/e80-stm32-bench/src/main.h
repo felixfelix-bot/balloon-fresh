@@ -59,9 +59,10 @@ extern "C" {
  * TX requires the two-step ROLE TX + ARM TX command sequence at runtime. */
 #define E80_BENCH_BOOT_TX_INHIBITED 1
 
-/* Default console: USART1 115200 8N1. The RX path is interrupt-driven with a
- * ring buffer, so 921600 baud line traffic is also handled without overrun. */
-#define E80_BENCH_BAUD_DEFAULT 115200U
+/* Default console: USART1 2,000,000 8N1. CH340 supports 2 Mbps,
+ * STM32F103 USART1 supports up to 4.5 Mbps. The RX path is
+ * interrupt-driven with a ring buffer. */
+#define E80_BENCH_BAUD_DEFAULT 2000000U
 
 /* Radio default: 868.0 MHz (EU SRD 863-870). */
 #define E80_BENCH_FREQ_DEFAULT_HZ 868000000UL
