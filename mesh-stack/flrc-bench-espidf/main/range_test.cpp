@@ -2,6 +2,10 @@
 
 #if defined(CONFIG_BENCH_MODE_RANGE_TX) || defined(CONFIG_BENCH_MODE_RANGE_RX)
 
+#ifndef FW_GIT_SHA
+#define FW_GIT_SHA "unknown"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -100,6 +104,7 @@ static void runRangeTx() {
 
     uint32_t loopCount = 0;
     uint8_t resultCount = 0;
+    uint32_t seqCounter = 0;  /* persistent sequence counter — never resets across windows or loops */
 
     while (true) {
         loopCount++;
@@ -124,19 +129,20 @@ static void runRangeTx() {
                 vTaskDelay(pdMS_TO_TICKS(w->sync_delay_ms));
             }
 
-            ESP_LOGI(TAG, "Sending %d pkts, size=%d, delay=%dms", w->pkt_count, w->pkt_size, w->tx_delay_ms);
+            ESP_LOGI(TAG, "Sending %d pkts, size=%d, delay=%dms (seq starts at %lu)",
+                     w->pkt_count, w->pkt_size, w->tx_delay_ms, (unsigned long)seqCounter);
 
             uint8_t buf[255];
             uint16_t sent = 0;
             uint32_t startMs = (uint32_t)(esp_timer_get_time() / 1000ULL);
 
-            for (uint16_t p = 0; p < w->pkt_count; p++) {
-                buf[0] = (p >> 24) & 0xFF;
-                buf[1] = (p >> 16) & 0xFF;
-                buf[2] = (p >> 8) & 0xFF;
-                buf[3] = p & 0xFF;
+            for (uint32_t p = 0; p < w->pkt_count; p++, seqCounter++) {
+                buf[0] = (seqCounter >> 24) & 0xFF;
+                buf[1] = (seqCounter >> 16) & 0xFF;
+                buf[2] = (seqCounter >> 8) & 0xFF;
+                buf[3] = seqCounter & 0xFF;
                 if (w->pkt_size > 4) {
-                    prbs15_fill(buf + 4, w->pkt_size - 4, p);
+                    prbs15_fill(buf + 4, w->pkt_size - 4, seqCounter);
                 }
                 state = radio->transmit(buf, w->pkt_size);
                 if (state == RADIOLIB_ERR_NONE) sent++;
@@ -347,7 +353,7 @@ static void runRangeRx() {
                     } else {
                         radio->setPacketReceivedAction(onRxIrq);
                         radio->startReceive();
-                        const char *modeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LoRa";
+                        const char *modeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LORA";
                         ESP_LOGI(TAG, ">>> Window %d: %s (%s %.1fMHz BR%d SF%d BW%.0f CR%d pwr=%d sz=%d cnt=%d)",
                                  mWinId, curWin.name, modeStr, curWin.freq, curWin.bitrate,
                                  curWin.sf, curWin.bw, curWin.cr, curWin.power,
@@ -369,7 +375,7 @@ static void runRangeRx() {
                              curWinId, (unsigned long)rxReceived, (unsigned long)rxTotalSent,
                              perPct, berPct, avgRssi, tput);
 
-                    const char *modeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LoRa";
+                    const char *modeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LORA";
                     printf("RESULT,%lu,%d,%s,%s,%.1f,%d,%d,%.0f,%d,%d,%d,%lu,%lu,%lu,%.1f,%.6f,%.0f,%d,%d,%lu,%.1f,%d,%d,%d,%d,%d,%.1f\n",
                            (unsigned long)loopCount, curWinId, curWin.name, modeStr,
                            curWin.freq, curWin.bitrate, curWin.sf, curWin.bw, curWin.cr, curWin.power,
@@ -447,24 +453,49 @@ static void runRangeRx() {
                 gps_data_t pktGps = {};
                 gpsReadCached(&pktGps);
 
+                const char *modeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LORA";
                 uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                                ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
+                uint32_t ts_ms = (uint32_t)(esp_timer_get_time() / 1000ULL);
+                int16_t snr_db = 0;
+                if (curWin.mode == RANGE_LORA) {
+                    snr_db = (int16_t)radio->getSNR();
+                }
+                int crc_ok = 1; /* already past the CRC-error handler above */
+                uint32_t freq_hz = (uint32_t)(curWin.freq * 1000000.0f);
+                uint32_t bw_khz = (uint32_t)curWin.bw; /* already in kHz */
+                uint16_t bitErr = 0;
+                uint16_t bytesBad = 0;
                 if ((size_t)len > 4 && curWin.pkt_size > 4) {
-                    uint16_t bytesBad = 0;
-                    uint16_t bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
+                    bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
                     bitErrors += bitErr;
                     bitsChecked += (len - 4) * 8;
                     if (bytesBad > 0) payloadCorrupt++;
                 }
-
-                const char *modeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LoRa";
-                printf("PKT,%lu,%d,%s,%s,%.1f,%d,%d,%.0f,%d,%d,%d,%u,%.1f,%d,%d,%d,%d,%d,%.1f\n",
-                       (unsigned long)loopCount, curWinId, curWin.name, modeStr,
-                       curWin.freq, curWin.bitrate, curWin.sf, curWin.bw, curWin.cr, curWin.power,
-                       curWin.pkt_size,
-                       (unsigned)seq, rssi,
-                       (int)pktGps.fix, (int)pktGps.latitude, (int)pktGps.longitude,
-                       (int)pktGps.altitude_m, (int)pktGps.sats, pktGps.hdop);
+                printf("PKT,%s,%s,%hu,%lu,%u,%d,%d,%d,%u,%u,%u,%s,%u,%u,%u,%d,%u,%d,%d,%d,%d,%d,%.1f\r\n",
+                       session_id,           // 1. session_id
+                       config_id,            // 2. config_id
+                       replicate_num,        // 3. replicate
+                       (unsigned long)seq,    // 4. seq
+                       ts_ms,                // 5. ts_ms
+                       rssi_i,               // 6. rssi_dbm
+                       (int)snr_db,          // 7. snr_db
+                       crc_ok,               // 8. crc_ok
+                       (unsigned)bitErr,      // 9. bit_err
+                       (unsigned)bytesBad,    // 10. bytes_bad
+                       freq_hz,              // 11. freq_hz
+                       modeStr,              // 12. mod ("LORA"/"FLRC")
+                       (unsigned)curWin.sf,   // 13. sf (0 for FLRC)
+                       bw_khz,              // 14. bw_khz
+                       (unsigned)curWin.cr,   // 15. cr
+                       (int)curWin.power,     // 16. power_dbm
+                       (unsigned)curWin.pkt_size, // 17. pkt_size
+                       (int)pktGps.fix,      // 18. gps_fix
+                       (int)pktGps.latitude,  // 19. gps_lat
+                       (int)pktGps.longitude, // 20. gps_lon
+                       (int)pktGps.altitude_m, // 21. gps_alt
+                       (int)pktGps.sats,      // 22. gps_sats
+                       pktGps.hdop);          // 23. gps_hdop
                 fflush(stdout);
             }
 
@@ -474,10 +505,63 @@ static void runRangeRx() {
     }
 }
 
+/* --- Serial command handler for SESSION/CONFIG (harmonized 23-field PKT) --- */
+#define CMD_BUF_SIZE 128
+static char rxCmdBuf[CMD_BUF_SIZE];
+static uint16_t rxCmdIdx = 0;
+
+static void processRangeCommand(char *cmd) {
+    /* SESSION <id> — set session identifier for PKT lines */
+    if (strncmp(cmd, "SESSION ", 8) == 0) {
+        strncpy(session_id, cmd + 8, sizeof(session_id) - 1);
+        session_id[sizeof(session_id) - 1] = '\0';
+        printf("OK SESSION SET\r\n");
+        fflush(stdout);
+        return;
+    }
+    /* CONFIG <id> <replicate> — set config id + replicate number, emit CONFIG_START */
+    if (strncmp(cmd, "CONFIG ", 7) == 0) {
+        char cid[32] = "";
+        unsigned repl = 0;
+        if (sscanf(cmd + 7, "%31s %u", cid, &repl) >= 1) {
+            strncpy(config_id, cid, sizeof(config_id) - 1);
+            config_id[sizeof(config_id) - 1] = '\0';
+            replicate_num = (uint16_t)repl;
+            printf("OK CONFIG SET\r\n");
+            printf("CONFIG_START,%s,%u,%u\r\n", config_id, (unsigned)replicate_num,
+                   (unsigned)(esp_timer_get_time() / 1000));
+            fflush(stdout);
+        } else {
+            printf("ERR CONFIG SYNTAX\r\n");
+            fflush(stdout);
+        }
+        return;
+    }
+}
+
+static void stdin_read_task(void *arg) {
+    while (true) {
+        int c = fgetc(stdin);
+        if (c != EOF) {
+            if (c == '\n' || c == '\r') {
+                if (rxCmdIdx > 0) {
+                    rxCmdBuf[rxCmdIdx] = '\0';
+                    processRangeCommand(rxCmdBuf);
+                    rxCmdIdx = 0;
+                }
+            } else if (rxCmdIdx < CMD_BUF_SIZE - 1) {
+                rxCmdBuf[rxCmdIdx++] = (char)c;
+            }
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+    }
+}
+
 #endif
 
 extern "C" void app_main() {
-    ESP_LOGI(TAG, "=== LR2021 Range Test v1.0 ===");
+    ESP_LOGI(TAG, "=== LR2021 Range Test v1.0 FW_HASH=%s ===", FW_GIT_SHA);
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
@@ -487,6 +571,9 @@ extern "C" void app_main() {
     mod = new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);
     radio = new LR2021(mod);
     radio->irqDioNum = 9;
+
+    /* Start serial command handler for SESSION/CONFIG commands */
+    xTaskCreate(stdin_read_task, "cmd", 4096, NULL, 5, NULL);
 
 #if RANGE_ROLE_TX
     runRangeTx();
