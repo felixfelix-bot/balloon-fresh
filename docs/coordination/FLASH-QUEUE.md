@@ -7,7 +7,7 @@
 
 | track | board | purpose | requested_time | approved_by | duration | status |
 |-------|-------|---------|----------------|-------------|----------|--------|
-| _(empty — no pending flash requests)_ | | | | | | |
+| balloon-range-tests | E80 #1+#2 | PRBS-15 harmonization: E80 flashed+verified, C3 not connected | 2026-08-20T09:00Z | felix (orchestrator) | 8m | DONE (PARTIAL) |
 
 ## Rules
 
