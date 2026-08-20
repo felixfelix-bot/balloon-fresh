@@ -36,6 +36,7 @@ add_executable(e80_bench
     src/bench.c
     src/stm32f1xx_it.c
     src/console.c
+    src/buffer.c
     src/bench_cmd.c
     src/bench_stats.c
     src/bench_payload.c

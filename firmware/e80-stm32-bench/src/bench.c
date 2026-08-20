@@ -29,6 +29,7 @@
 #include "bench_pkt.h"
 #include "bench_safety.h"
 #include "bench_stats.h"
+#include "buffer.h"
 #include "console.h"
 #include "prbs.h"
 #include "radio_bench.h"
@@ -76,6 +77,13 @@ static bool     tx_wait_irq  = false;
 static uint8_t  tx_buf[E80_BENCH_MAX_PAYLOAD];
 static bool     session_active = false;
 static bool     prbs_verify_enabled = true; /* PRBS-15 RX verification (PRBS ON|OFF) */
+
+/* TX payload source (tx-buffer-spec): a staged buffer wins over PRBS.
+ * src is latched at START (buf_len()>0 then) and the offset is
+ * session-local: packet k of size L reads offset k*L, wrapping at the
+ * 4096-byte arena boundary inside buf_read. */
+static bool     tx_src_buf = false;
+static uint32_t tx_buf_off = 0;
 
 /* Per-packet output context (set by SESSION/CONFIG commands) */
 static bench_pkt_ctx_t pkt_ctx = { .session_id = 0, .config_id = 0, .replicate = 0 };
@@ -447,6 +455,8 @@ static void print_id(void)
     console_put(radio_bench_is_asleep() ? " radio=asleep" : " radio=awake");
     console_put(" ");
     console_put(bench_safety_boot_field(iwdg_active));
+    console_put(" buf=");
+    console_put_u32(buf_len());
     console_putln("");
 }
 
@@ -477,7 +487,8 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
         console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> | ");
         console_put("SESSION <id> | CONFIG <id> <replicate> | ");
-        console_put("PRBS9 ON|OFF | PRBS ON|OFF");
+        console_put("PRBS9 ON|OFF | PRBS ON|OFF | ");
+        console_put("BUF CLEAR | BUF LOAD <n> <crc16_hex> | BUF STATUS");
         console_putln("");
         break;
 
@@ -691,7 +702,14 @@ static void handle_cmd(const bench_cmd_t* c)
         radio_critical_begin();
         radio_bench_apply_cfg(&cfg);
         radio_critical_end();
-        bench_payload_build(tx_buf, tx_len, tx_seq);
+        /* Payload source (tx-buffer-spec): staged buffer chunks (wrap at
+         * the 4096-B arena) iff one is loaded; else PRBS as before. */
+        tx_src_buf = (buf_len() > 0);
+        tx_buf_off = 0;
+        if (tx_src_buf)
+            buf_read(tx_buf_off, tx_buf, tx_len);
+        else
+            bench_payload_build(tx_buf, tx_len, tx_seq);
         state = BSTATE_TX_BURST; /* set before TX starts: the IRQ path may fire */
         tx_send_current();
         stats.t_start_us = bench_micros();
@@ -701,6 +719,7 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_u32(tx_len);
         console_put(" gap_us=");
         console_put_u32(tx_gap_us);
+        console_put(tx_src_buf ? " src=BUF" : " src=PRBS");
         console_putln("");
         break;
     }
@@ -766,6 +785,8 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_u32(radio_bench_evt_drops());
         console_put(" gap_us=");
         console_put_u32(tx_gap_us);
+        console_put(" buf=");
+        console_put_u32(buf_len());
         console_putln("");
         break;
     }
@@ -776,6 +797,42 @@ static void handle_cmd(const bench_cmd_t* c)
         session_active = false;
         console_putln("OK STOP (RADIO ASLEEP)");
         break;
+
+    case BENCH_CMD_BUF_CLEAR:
+        buf_clear();
+        console_putln("OK BUF 0");
+        break;
+
+    case BENCH_CMD_BUF_STATUS:
+        console_put("BUF len=");
+        console_put_u32(buf_len());
+        console_put(" crc=");
+        console_put_u16_hex4(buf_crc16());
+        console_put(" drops=");
+        console_put_u32(buf_drops());
+        console_putln("");
+        break;
+
+    case BENCH_CMD_BUF_LOAD:
+    {
+        /* Reject matrix BEFORE entering the binary phase (tx-buffer-spec):
+         * role==RX, TX burst active, TX armed. STOP does NOT clear armed;
+         * only a role change does. Rejected loads stay in line mode. */
+        buf_load_gate_t gate = buf_load_gate(role == BENCH_ROLE_RX,
+                                             state == BSTATE_TX_BURST,
+                                             tx_armed);
+        if (gate != BUF_LOAD_OK)
+        {
+            console_putln(buf_load_gate_reply(gate));
+            return;
+        }
+        /* Enter the binary receive phase (console.c): 'OK BINARY <n>' ack,
+         * n raw payload bytes, final 'OK BUF <n> 1' / 'ERR CRC' /
+         * 'ERR TIMEOUT'. The superloop polls it and keeps feeding IWDG. */
+        console_binary_start((uint16_t)c->buf_load_n, c->buf_load_crc,
+                             HAL_GetTick());
+        break;
+    }
 
     case BENCH_CMD_FLASH:
     {
@@ -901,7 +958,13 @@ static void radio_task(void)
         if ((uint32_t)(now - tx_t_done_us) >= tx_gap_us)
         {
             tx_seq++;
-            bench_payload_build(tx_buf, tx_len, tx_seq);
+            if (tx_src_buf)
+            {
+                tx_buf_off += tx_len; /* next chunk: k*L, wraps in buf_read */
+                buf_read(tx_buf_off, tx_buf, tx_len);
+            }
+            else
+                bench_payload_build(tx_buf, tx_len, tx_seq);
             tx_send_current();
         }
     }
@@ -1075,17 +1138,28 @@ int main(void)
         if (iwdg_active)
             HAL_IWDG_Refresh(&hiwdg); /* superloop is non-blocking -> healthy */
 
-        char* line = console_getline();
-        if (line != NULL)
+        if (console_binary_active())
         {
-            bench_cmd_t cmd;
-            if (bench_cmd_parse(line, &cmd) == BENCH_CMD_OK)
+            /* BUF LOAD binary phase: consume payload bytes + enforce the
+             * 1.0 s idle timeout. Line assembly is suspended while active;
+             * the IWDG feed above still runs every pass (spec rule 2 —
+             * IWDG is sticky after the first ARM TX). */
+            console_binary_poll(HAL_GetTick());
+        }
+        else
+        {
+            char* line = console_getline();
+            if (line != NULL)
             {
-                handle_cmd(&cmd);
-            }
-            else
-            {
-                reply_err(bench_cmd_err_str(cmd.err));
+                bench_cmd_t cmd;
+                if (bench_cmd_parse(line, &cmd) == BENCH_CMD_OK)
+                {
+                    handle_cmd(&cmd);
+                }
+                else
+                {
+                    reply_err(bench_cmd_err_str(cmd.err));
+                }
             }
         }
         radio_task();
