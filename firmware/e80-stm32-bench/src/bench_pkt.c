@@ -13,7 +13,7 @@
  *   bw_khz    = bw_hz / 1000
  *   cr        = evt->cr (LoRa denominator 5-8, FLRC code 0-3)
  *   GPS fields = 0 (no GPS on bench board)
- *   bit_err / bytes_bad = 0 (no per-bit analysis on radio chip)
+ *   bit_err / bytes_bad = from PRBS-15 verification (evt fields)
  */
 
 #include "bench_pkt.h"
@@ -54,7 +54,7 @@ int bench_pkt_format(char* buf, int bufsz,
      * <gps_sats>,<gps_hdop>
      */
     int n = snprintf(buf, (size_t)bufsz,
-        "PKT,%lu,%lu,%lu,%lu,%lu,%d,%d,%d,0,0,%lu,%s,%lu,%lu,%lu,%d,%u,0,0,0,0,0,0",
+        "PKT,%lu,%lu,%lu,%lu,%lu,%d,%d,%d,%u,%u,%lu,%s,%lu,%lu,%lu,%d,%u,0,0,0,0,0,0",
         (unsigned long)ctx->session_id,
         (unsigned long)ctx->config_id,
         (unsigned long)ctx->replicate,
@@ -63,6 +63,8 @@ int bench_pkt_format(char* buf, int bufsz,
         rssi_dbm,
         snr_db,
         crc_ok,
+        (unsigned)evt->bit_err,
+        (unsigned)evt->bytes_bad,
         (unsigned long)evt->freq_hz,
         mod_str,
         (unsigned long)sf,

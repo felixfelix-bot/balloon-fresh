@@ -24,8 +24,8 @@ add_bench_test(test_bench_cmd ${SRC_DIR}/bench_cmd.c)
 target_include_directories(test_bench_cmd PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
-add_bench_test(test_bench_payload ${SRC_DIR}/bench_payload.c)
-add_bench_test(test_bench_seq ${SRC_DIR}/bench_payload.c)  # tests payload stamping
+add_bench_test(test_bench_payload ${SRC_DIR}/bench_payload.c ${SRC_DIR}/prbs.c)
+add_bench_test(test_bench_seq ${SRC_DIR}/bench_payload.c ${SRC_DIR}/prbs.c)  # tests payload stamping
 target_include_directories(test_bench_seq PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stubs)
 add_bench_test(test_bench_safety ${SRC_DIR}/bench_safety.c)
 add_bench_test(test_bench_flash ${SRC_DIR}/bench_cmd.c ${SRC_DIR}/bench_safety.c)
