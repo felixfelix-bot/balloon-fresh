@@ -62,3 +62,24 @@ add_bench_test(test_bench_prbs9 ${SRC_DIR}/bench_cmd.c)
 target_include_directories(test_bench_prbs9 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
+
+# ---- TX payload buffer (task BUF-T1, TDD): parser surface + buffer module ----
+add_bench_test(test_buf_cmd ${SRC_DIR}/bench_cmd.c)
+target_include_directories(test_buf_cmd PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
+
+add_bench_test(test_buffer ${SRC_DIR}/buffer.c)
+
+# Console binary receive framing: real console.c over an injected UART
+# (stubs/host_uart.h: RX byte injection + TX transcript capture).
+add_bench_test(test_console_binary ${SRC_DIR}/buffer.c)
+target_include_directories(test_console_binary PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stubs)
+
+# Golden CRC vectors shared C <-> Python (tx-buffer-spec): the Python side
+# must agree with tests/test_buffer.c bit-for-bit.
+find_program(HOST_PYTHON3 NAMES python3)
+if(HOST_PYTHON3)
+    add_test(NAME test_crc16_golden_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_crc16_golden.py)
+endif()

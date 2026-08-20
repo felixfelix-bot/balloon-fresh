@@ -43,6 +43,9 @@ typedef enum bench_cmd_id_e
     BENCH_CMD_CONFIG,        /* CONFIG <id> <replicate> — set config_id/replicate */
     BENCH_CMD_PRBS9,         /* PRBS9 ON|OFF — chip-level PRBS9 TX test mode */
     BENCH_CMD_PRBS,          /* PRBS ON|OFF — toggle PRBS-15 RX verification */
+    BENCH_CMD_BUF_CLEAR,     /* BUF CLEAR — drop the staged TX buffer (len=0) */
+    BENCH_CMD_BUF_LOAD,      /* BUF LOAD <n> <crc16_hex> — binary payload receive */
+    BENCH_CMD_BUF_STATUS,    /* BUF STATUS — staged len/crc report */
 } bench_cmd_id_t;
 
 typedef enum bench_role_e
@@ -93,6 +96,9 @@ typedef struct bench_cmd_s
     uint32_t replicate;   /* CONFIG <id> <replicate> */
     bool     prbs9_enable; /* PRBS9 ON|OFF */
     bool     prbs_enable;  /* PRBS ON|OFF — enable PRBS-15 RX verification */
+
+    uint32_t buf_load_n;   /* BUF LOAD <n>: payload byte count (1..4096) */
+    uint16_t buf_load_crc; /* BUF LOAD <n> <crc16_hex>: expected CCITT-FALSE CRC */
 } bench_cmd_t;
 
 /**
