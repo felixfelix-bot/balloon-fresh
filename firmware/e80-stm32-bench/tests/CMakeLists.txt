@@ -47,3 +47,6 @@ target_include_directories(test_radio_bench_cfg PRIVATE
 
 # Banner test: only needs the bench_banner.h header from SRC_DIR.
 add_bench_test(test_bench_banner)
+
+# PRBS15 fill/verify tests (TDD).
+add_bench_test(test_prbs ${SRC_DIR}/prbs.c)
