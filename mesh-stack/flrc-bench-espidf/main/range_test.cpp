@@ -433,7 +433,40 @@ static void runRangeRx() {
             }
 
             if (state != RADIOLIB_ERR_NONE) {
-                if (inWindow) rxCrcErrors++;
+                if (inWindow) {
+                    rxCrcErrors++;
+
+                    /* C3-4: log CRC-failed packets with RSSI (crc_ok=0) */
+                    float crcRssi = radio->getRSSI(false);
+                    int16_t crcRssi_i = (int16_t)crcRssi;
+                    int16_t crcSnr = 0;
+                    if (curWin.mode == RANGE_LORA) {
+                        crcSnr = (int16_t)radio->getSNR();
+                    }
+                    const char *crcModeStr = curWin.mode == RANGE_FLRC ? "FLRC" : "LORA";
+                    uint32_t crcTs = (uint32_t)(esp_timer_get_time() / 1000ULL);
+                    uint32_t crcFreqHz = (uint32_t)(curWin.freq * 1000000.0f);
+                    uint32_t crcBwKhz = (uint32_t)curWin.bw;
+                    printf("PKT,%s,%s,%hu,%u,%u,%d,%d,0,0,0,%u,%s,%u,%u,%u,%d,%u,0,0,0,0,0,0.0\r\n",
+                           session_id,               // 1. session_id
+                           config_id,                // 2. config_id
+                           replicate_num,            // 3. replicate
+                           0U,                       // 4. seq (unknown — CRC failed)
+                           crcTs,                    // 5. ts_ms
+                           crcRssi_i,                // 6. rssi_dbm
+                           (int)crcSnr,              // 7. snr_db
+                           /* 8. crc_ok=0, 9. bit_err=0, 10. bytes_bad=0 hardcoded above */
+                           crcFreqHz,                // 11. freq_hz
+                           crcModeStr,               // 12. mod
+                           (unsigned)curWin.sf,      // 13. sf
+                           crcBwKhz,                 // 14. bw_khz
+                           (unsigned)curWin.cr,      // 15. cr
+                           (int)curWin.power,        // 16. power_dbm
+                           (unsigned)curWin.pkt_size, // 17. pkt_size
+                           /* 18-23. gps_fix..gps_hdop hardcoded 0 above */
+                           );
+                    fflush(stdout);
+                }
                 radio->standby();
                 radio->startReceive();
                 continue;
