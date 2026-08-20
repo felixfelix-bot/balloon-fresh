@@ -40,6 +40,9 @@ static Module *mod = nullptr;
 static LR2021 *radio = nullptr;
 static volatile bool rxFlag = false;
 
+/* PRBS-15 mode gate: ON by default for autonomous test suite */
+static bool prbs_enabled = true;
+
 #if !AUTO_ROLE_TX
 static void IRAM_ATTR onRxIrq(void) { rxFlag = true; }
 #endif
@@ -110,7 +113,11 @@ static void runAutoTx() {
             buf[2] = (p >> 8) & 0xFF;
             buf[3] = p & 0xFF;
             if (t->pkt_size > 4) {
-                prbs15_fill(buf + 4, t->pkt_size - 4, p);
+                if (prbs_enabled) {
+                    prbs15_fill(buf + 4, t->pkt_size - 4, p);
+                } else {
+                    memset(buf + 4, 0, t->pkt_size - 4);
+                }
             }
             state = radio->transmit(buf, t->pkt_size);
             if (state == RADIOLIB_ERR_NONE) {
@@ -299,12 +306,18 @@ static void runAutoRx() {
                                ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
                 if ((size_t)len > 4 && currentTest.pkt_size > 4) {
                     uint16_t bytesBad = 0;
-                    uint16_t bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
-                    if (bitErr > 0) {
-                        rxPayloadCorrupt++;
-                        rxBitErrors += bitErr;
+                    uint16_t bitErr = 0;
+                    if (prbs_enabled) {
+                        bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
+                        if (bitErr > 0) {
+                            rxPayloadCorrupt++;
+                            rxBitErrors += bitErr;
+                        }
+                        rxBitsChecked += (len - 4) * 8;
+                    } else {
+                        bitErr = 0;
+                        bytesBad = 0;
                     }
-                    rxBitsChecked += (len - 4) * 8;
                 }
 
                 if (rxReceived % 25 == 0) {
