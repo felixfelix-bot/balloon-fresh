@@ -4,6 +4,7 @@
  */
 
 #include "bench_cmd.h"
+#include "buffer.h" /* BUF_CAPACITY (macro-only dependency; no link dep) */
 
 #include <stddef.h>
 
@@ -94,6 +95,33 @@ static bench_cmd_err_t split_tokens(const char* line, char tokens[][E80_CMD_ARG_
     }
     *ntok = n;
     return BENCH_CMD_OK;
+}
+
+/* BUF LOAD crc field: 1-4 hex digits, case-insensitive, no 0x prefix.
+ * Rejections (>4 digits, non-hex) are BENCH_CMD_E_ARG at the parse layer. */
+static bool bench_parse_hex16(const char* s, uint16_t* out)
+{
+    if (s == NULL || *s == '\0')
+        return false;
+    uint32_t v = 0;
+    int digits = 0;
+    for (const char* p = s; *p != '\0'; p++)
+    {
+        char c = *p;
+        if (c >= '0' && c <= '9')
+            c = (char)(c - '0');
+        else if (c >= 'a' && c <= 'f')
+            c = (char)(c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F')
+            c = (char)(c - 'A' + 10);
+        else
+            return false;
+        if (++digits > 4)
+            return false; /* "12345" etc. */
+        v = (v << 4) | (uint32_t)(uint8_t)c;
+    }
+    *out = (uint16_t)v;
+    return true;
 }
 
 bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
@@ -358,6 +386,43 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
             return (out->err = BENCH_CMD_E_ARG);
         out->id = BENCH_CMD_PRBS;
         return BENCH_CMD_OK;
+    }
+
+    if (bench_strcaseeq(tokens[0], "BUF"))
+    {
+        /* TX buffer: BUF CLEAR | BUF STATUS | BUF LOAD <n> <crc16_hex>
+         * (tx-buffer-spec). The reject MATRIX (role RX / burst / armed) is
+         * runtime state — checked in bench.c's handler, not here. */
+        if (ntok < 2)
+            return (out->err = BENCH_CMD_E_SYNTAX); /* bare "BUF" */
+        if (bench_strcaseeq(tokens[1], "CLEAR"))
+        {
+            if (ntok != 2)
+                return (out->err = BENCH_CMD_E_SYNTAX); /* "BUF CLEAR X" */
+            out->id = BENCH_CMD_BUF_CLEAR;
+            return BENCH_CMD_OK;
+        }
+        if (bench_strcaseeq(tokens[1], "STATUS"))
+        {
+            if (ntok != 2)
+                return (out->err = BENCH_CMD_E_SYNTAX); /* "BUF STATUS 1" */
+            out->id = BENCH_CMD_BUF_STATUS;
+            return BENCH_CMD_OK;
+        }
+        if (bench_strcaseeq(tokens[1], "LOAD"))
+        {
+            if (ntok != 4)
+                return (out->err = BENCH_CMD_E_SYNTAX); /* missing/extra args */
+            if (!bench_parse_u32(tokens[2], &out->buf_load_n))
+                return (out->err = BENCH_CMD_E_ARG); /* non-numeric / u32 overflow */
+            if (out->buf_load_n == 0 || out->buf_load_n > BUF_CAPACITY)
+                return (out->err = BENCH_CMD_E_RANGE); /* 1..4096 */
+            if (!bench_parse_hex16(tokens[3], &out->buf_load_crc))
+                return (out->err = BENCH_CMD_E_ARG); /* not 1-4 hex digits */
+            out->id = BENCH_CMD_BUF_LOAD;
+            return BENCH_CMD_OK;
+        }
+        return (out->err = BENCH_CMD_E_ARG); /* "BUF FOO": known word, bad subcommand */
     }
 
     return (out->err = BENCH_CMD_E_UNKNOWN);
