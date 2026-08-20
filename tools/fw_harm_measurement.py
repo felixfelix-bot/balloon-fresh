@@ -235,6 +235,16 @@ def compute_summary_stats(packets: list, bad_field_counts: list) -> dict:
     mod_types = list(set(p.get("mod", "") for p in packets if p.get("mod")))
     mod_types.sort()
 
+    # PRBS bit error statistics
+    bit_err_values = [p["bit_err"] for p in packets if "bit_err" in p]
+    bytes_bad_values = [p["bytes_bad"] for p in packets if "bytes_bad" in p]
+    total_bit_errors = sum(bit_err_values)
+    total_bytes_bad = sum(bytes_bad_values)
+    packets_with_errors = sum(1 for be in bit_err_values if be > 0)
+    crc_ok_packets = [p for p in packets if p.get("crc_ok", 0) == 1]
+    crc_ok_bit_err = [p["bit_err"] for p in crc_ok_packets if "bit_err" in p]
+    crc_ok_bytes_bad = [p["bytes_bad"] for p in crc_ok_packets if "bytes_bad" in p]
+
     return {
         "total_packets": total,
         "total_raw_lines": total_raw,
@@ -254,6 +264,16 @@ def compute_summary_stats(packets: list, bad_field_counts: list) -> dict:
         "unique_config_count": len(config_ids),
         "mod_types": mod_types,
         "per_config_breakdown": per_config,
+        "prbs": {
+            "total_bit_errors": total_bit_errors,
+            "total_bytes_bad": total_bytes_bad,
+            "packets_with_errors": packets_with_errors,
+            "packets_with_errors_pct": round(100.0 * packets_with_errors / total, 2) if total > 0 else 0.0,
+            "bit_err_stats": compute_stats(bit_err_values),
+            "bytes_bad_stats": compute_stats(bytes_bad_values),
+            "crc_ok_bit_errors": sum(crc_ok_bit_err),
+            "crc_ok_bytes_bad": sum(crc_ok_bytes_bad),
+        },
     }
 
 
@@ -341,6 +361,23 @@ def format_human_report(summary: dict, session_id: str, fw_hash: str | None,
     lines.append(f"Count:       {ts['count']}")
     lines.append(f"Monotonic:   {'YES' if ts['monotonic'] else 'NO'}")
     lines.append(f"Violations:  {ts['violations']}")
+    lines.append("")
+
+    lines.append("-" * 40)
+    lines.append("PRBS BIT ERROR STATISTICS")
+    lines.append("-" * 40)
+    prbs = summary.get("prbs", {})
+    lines.append(f"Total bit errors:   {prbs.get('total_bit_errors', 0)}")
+    lines.append(f"Total bytes bad:    {prbs.get('total_bytes_bad', 0)}")
+    lines.append(f"Packets w/ errors: {prbs.get('packets_with_errors', 0)} ({prbs.get('packets_with_errors_pct', 0.0)}%)")
+    be_stats = prbs.get("bit_err_stats", {})
+    if be_stats.get("count", 0) > 0:
+        lines.append(f"Bit err/pkt:        min={be_stats['min']} max={be_stats['max']} mean={be_stats['mean']} std={be_stats['std']}")
+    bb_stats = prbs.get("bytes_bad_stats", {})
+    if bb_stats.get("count", 0) > 0:
+        lines.append(f"Bytes bad/pkt:      min={bb_stats['min']} max={bb_stats['max']} mean={bb_stats['mean']} std={bb_stats['std']}")
+    lines.append(f"CRC-OK bit errors:  {prbs.get('crc_ok_bit_errors', 0)}")
+    lines.append(f"CRC-OK bytes bad:   {prbs.get('crc_ok_bytes_bad', 0)}")
     lines.append("")
 
     lines.append("-" * 40)
@@ -595,6 +632,10 @@ def main():
     print(f"  Seq dups:   {summary['seq_continuity']['duplicates']}")
     print(f"  Configs:    {summary['unique_config_count']}")
     print(f"  Field OK:   {'YES' if summary['field_count_ok'] else 'NO'}")
+    prbs = summary.get("prbs", {})
+    print(f"  Bit errors: {prbs.get('total_bit_errors', 0)}")
+    print(f"  Bytes bad:  {prbs.get('total_bytes_bad', 0)}")
+    print(f"  Pkt w/err:  {prbs.get('packets_with_errors', 0)} ({prbs.get('packets_with_errors_pct', 0.0)}%)")
     print(f"  Report:     {args.output}")
     print("=" * 70)
 
