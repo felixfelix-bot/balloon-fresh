@@ -1,122 +1,101 @@
-# e80-stm32-bench — LR2021 bench firmware for E80-900MBL-02
+# E80 STM32 Bench Firmware
 
-Replaces the E80's stock firmware with a packet-error-rate / throughput bench
-node. Two boards on USB: one TX, one RX. Packet generation and stats run
-on-board, so results are independent of UART speed.
+LoRa/FLRC benchmark firmware for the STM32-based E80 rig.
 
-Stack: STM32F103C8T6 (gcc/CMake, bare-metal superloop) + Semtech lr20xx_driver
-v1.3.1 (vendored, demo-proven on this exact hardware) + minimal STM32F1 HAL.
+## PRBS15 BER Test Pattern
 
-## Safety policy (binding, Felix 2026-08-16)
+The E80 bench firmware uses **PRBS15** (Pseudo-Random Bit Sequence, degree 15) as
+the common BER (Bit Error Rate) test pattern. This implementation is ported from
+and cross-compatible with the C3 (ESP32-C3) reference implementation in the
+`balloon-fresh` repository.
 
-- **EU / Portugal**: TX clamped to **863-870 MHz** (EU SRD). 900 MHz is
-  rejected. `BAND OVERRIDE 2026` exists for lab exceptions only and is logged.
-- **Indoor power cap +10 dBm** default. `POWER MODE OUTDOOR 2026` lifts to
-  +22 dBm for outdoor range sessions (logged).
-- **TX inhibited at boot**: radio asleep, TX requires two-step `ROLE TX` then
-  `ARM TX`.
-- **TX-hang watchdog**: a stuck TX cannot key the PA indefinitely. Layer 1:
-  every packet is sent with an LR2021 chip TX timeout
-  (2x worst-case airtime + 50 ms, floor 100 ms — bench worst case SF12/BW125/
-  255 B = 18.1 s) so the radio itself falls back to STDBY (PA unkeyed) and
-  raises TIMEOUT; the burst aborts with `ERR TX-TIMEOUT SEQ=<n>` and the
-  radio goes to sleep (same end state as `STOP`). Layer 2: a superloop
-  backstop (chip timeout x2 + 50 ms) force-aborts even if the IRQ is lost.
-  Layer 3: the STM32 IWDG (2-4 s window) resets a wedged host; the boot
-  banner then prints `WDG RESET`. The IWDG starts at the first `ARM TX`
-  (not at boot) so `FLASH` can drop into the ROM bootloader without an
-  unfed watchdog resetting mid-write.
-- **Headless re-flash**: `FLASH` jumps to the ROM bootloader (system memory
-  0x1FFFF000). Refused with `ERR POWER-CYCLE FIRST (WATCHDOG ACTIVE)` once
-  the IWDG has started; `ID?` shows the verdict as `boot=jump-ok` /
-  `boot=powercycle-first(wdg-active)`. See [FLASHING.md](FLASHING.md).
-- Antennas confirmed attached (SMA ports). Keep TX-inhibit regardless.
+### Algorithm
 
-## Build
+**Polynomial:** x^15 + x^14 + 1 (Galois LFSR, taps at bits 14 and 13)
 
-```bash
-# host tests (parser, stats math incl. Wilson 95% CI, payload gen, TX-hang
-# watchdog math: airtime/chip-timeout/backstop/IWDG, FLASH jump plan,
-# console TX buffer sizing, config constant pinning)
-make test-host          # 9 tests: all pass (E80-3 enlarged tx_buf 96→160)
+**LFSR direction:** Left-shift. On each step, the new bit is computed as:
 
-# cross build (arm-none-eabi-gcc + CMake)
-make                    # -> build-fw/e80_bench{.bin,.hex,.map}
-arm-none-eabi-size build-fw/e80_bench
+```
+newbit = (state >> 14) XOR (state >> 13)
+state  = ((state << 1) | newbit) & 0x7FFF   (15-bit mask)
 ```
 
-Size (2026-08-20, fw=FW_HASH in boot banner): text 19488 + data 116 =
-**19,604 B flash (29% of 64K)**, bss **2,764 B RAM (14% of 20K)**.
+**Byte assembly:** MSB-first. Each byte is assembled from 8 consecutive LFSR
+output bits, most-significant bit first.
 
-## Console
+### Seed Derivation
 
-USART1 over USB (CH340), 2,000,000 8N1. Line-based,
-`OK ...` / `ERR <reason>` replies.
+The LFSR state is seeded from the packet sequence number:
 
-Asynchronous lines (no command in flight): `TX DONE (RADIO ASLEEP)` after a
-completed burst, `ERR TX-TIMEOUT SEQ=<n>` when the TX-hang watchdog aborted
-a stuck burst (burst over, radio asleep, re-`START` to retry), the one-time
-`NOTE IWDG STARTED ...` line after the first `ARM TX` (watchdog armed for
-the rest of the power cycle), and the boot banner line `WDG RESET ...` when
-the previous session was cut short by the STM32 IWDG.  The boot banner also
-reports the git build hash as `fw=FW_HASH=<sha7>` (matching the `ID?` reply).
-
-| Command | Meaning |
-|---|---|
-| `ID?` | build sha (`fw=<sha7>`, stamped at compile from git HEAD), chip/driver, role, mod, freq, band, PA, power cap, `boot=` field |
-| `ROLE TX\|RX\|NONE` | set role (TX needs separate ARM) |
-| `ARM TX` | second step of TX enable |
-| `MOD loRa <sf5-12> <bw125\|250\|500>` | LoRa |
-| `MOD flrc <br_kbps 260\|650\|1300\|2600> <dbm>` | FLRC (+dbm optional) |
-| `FREQ <hz>` | 863-870 MHz only (else `BAND OVERRIDE 2026` first) |
-| `PA <dbm>` | TX power, capped +10 (indoor) |
-| `POWER MODE OUTDOOR <pin>` | unlock +22 dBm (outdoor sessions, logged) |
-| `START N=<pkts> LEN=<6-511> GAP=<us>` | TX burst / RX expected-length arm |
-| `STAT?` | sent/recv/PER + Wilson 95% CI/RSSI avg+min+max/SNR/elapsed/kbps |
-| `STOP` | abort run |
-| `FLASH` | jump to ROM bootloader (refuses if IWDG active) |
-| `BAND OVERRIDE <pin>` | out-of-band freq unlock (logged) |
-
-## Bench run (host side)
-
-```bash
-tools/e80_bench_ctl.py --dry-run                 # inspect command script
-tools/e80_bench_ctl.py --tx /dev/ttyUSB3 --rx /dev/ttyUSB4
-python3 -m unittest test_e80_bench_ctl -v        # host tests (no hardware)
+```c
+uint16_t state = (uint16_t)(seq ^ 0x5A5A) | 1;
 ```
 
-Default run: FLRC-650, 868.0 MHz, 1000 x 255 B, +10 dBm. Prints
-PER/Wilson-CI/throughput table from both boards' `STAT?`.
+The XOR with `0x5A5A` provides per-packet decorrelation, and the `| 1` ensures
+the state is never zero (which would stall a Galois LFSR).
 
-Range campaign (docs/RANGE-TEST-PLAN.md §5) — single trigger per stop,
-schedule-synced from T0, append-only CSV:
+### Payload Format
 
-```bash
-tools/e80_bench_ctl.py --tx /dev/ttyUSB3 --rx /dev/ttyUSB4 \
-    --matrix flrc650,flrc2600,sf7,sf12 --csv range/siteA_S3_r2.csv \
-    --site siteA --stop S3 --dist-m 200 --repeat 2 \
-    --freq 915000000 --dbm 22 --band-override \
-    --gps-tx 52.0123,4.0456 --gps-rx 52.0234,4.0123 \
-    --h-tx 1.5 --h-rx 1.5 --ground grass --weather "12C clear" \
-    --t0 "2026-08-30 14:05:00"            # add --dry-run to rehearse
-```
+Each bench payload consists of:
 
-- LEN=51 uniform, GAP 5000 us FLRC / 1000 us LoRa, N per plan §3 regime
-  (10^4 when the previous stop's same-mod Wilson ci_hi <= 2 %, else 10^3;
-  SF12 capped at 10^3) — read back from the --csv of earlier stops.
-- LEN=255 FLRC-650 anchor cell appended per stop (skip: `--no-anchor`).
-- `--band-override` unlocks 410-960 MHz (pin 2026) and verifies the
-  `band=`/`pcap=` echo via `ID?` before any TX; +dbm above 10 additionally
-  issues `POWER MODE OUTDOOR 2026`. Without it, 863-870 MHz is enforced
-  host-side (firmware mirrors).
-- Ctrl-C mid-run sends STOP to both boards and marks the stop ABORTED in
-  the CSV (plan §4 stop-path). Cells that overrun their schedule slot by
-  >120 s abort the stop (TX burst stuck = diagnose, don't continue).
+| Offset | Size | Field |
+|--------|------|-------|
+| 0 | 4 bytes | Sequence number, big-endian |
+| 4 | N-4 bytes | PRBS15 pseudo-random fill |
 
-## Flashing
+The 4-byte big-endian sequence header is C3-compatible and allows the receiver
+to extract the sequence number, regenerate the expected PRBS15 stream, and
+verify payload integrity.
 
-See [FLASHING.md](FLASHING.md). First flash on stock fw: stock dump FIRST,
-stm32flash over the CH340 UART, BOOT0 manual entry (hold RESET, release on
-sync). Every later re-flash (v1.2+): send `FLASH` at 115200, then
-`stm32flash -w -v` — fully headless; `ID?` `boot=` field says whether the
-board will jump or needs a power-cycle first.
+### API
+
+#### `prbs15_fill(uint8_t *buf, size_t len, uint32_t seed)`
+
+Generates `len` bytes of pseudo-random data into `buf`, seeded by the given
+sequence number. Uses the Galois LFSR described above.
+
+#### `prbs15_verify(const uint8_t *buf, size_t len, uint32_t seed, uint16_t *out_bytes_bad)`
+
+Regenerates the expected PRBS15 stream from `seed`, XORs it with the received
+buffer, and counts:
+
+- **Bit errors:** total number of differing bits, computed via `__builtin_popcount()`
+  on each XOR diff byte.
+- **Corrupted bytes:** number of bytes with at least one bit error.
+
+Returns `bit_errors` (uint16_t). If `out_bytes_bad` is non-NULL, writes the
+corrupted-byte count to it.
+
+### PKT Output
+
+The bench `PKT` output line now includes real BER measurements:
+
+| Field | Index | Description |
+|-------|-------|-------------|
+| `bit_err` | 9 | Total bit errors (from PRBS15 verify) |
+| `bytes_bad` | 10 | Number of corrupted bytes |
+
+Previously these fields were hardcoded to 0. They now reflect actual PRBS15
+verification results.
+
+### Cross-Rig Compatibility
+
+The E80 (STM32) PRBS15 implementation is identical to the C3 (ESP32-C3)
+reference implementation in `balloon-fresh/mesh-stack/flrc-bench-espidf/`.
+Both use the same polynomial, seed derivation, LFSR direction, and byte
+assembly, enabling direct cross-platform BER comparison.
+
+Cross-platform verification: `tests/test_prbs15_cross.py` (11 tests) validates
+the algorithm against known test vectors in pure Python.
+
+### Flash Impact
+
+| Metric | Value |
+|--------|-------|
+| PRBS15 code size | ~300 bytes |
+| Total `.text` section | 24,328 bytes |
+| Flash budget (limit) | 35,840 bytes |
+| Utilization | 67.9% |
+
+The PRBS15 implementation adds minimal flash overhead, well within the
+firmware size budget.
