@@ -4,6 +4,8 @@ Tests the create_session() and persist_session() functions, plus a
 regression check on inject_session_id_into_pkt().
 Also tests the CLI / central-session-store functions: new_session,
 set_session, current_session, and the _cli() entry point.
+Also tests the session lifecycle functions: start_session,
+get_session_status, end_session, and duplicate session handling.
 """
 
 import json
@@ -18,6 +20,10 @@ from tools.session_manager import (
     current_session,
     load_current_session,
     save_current_session,
+    start_session,
+    get_session_status,
+    end_session,
+    list_sessions,
     _cli,
 )
 
@@ -150,6 +156,191 @@ class TestCentralSessionStore:
         assert a != b
         # The file should hold the most recent one
         assert current_session(filepath=path) == b
+
+
+class TestSessionLifecycle:
+    """Tests for the session lifecycle: start_session, get_session_status,
+    end_session, list_sessions, and duplicate session handling."""
+
+    def test_start_session_creates_valid_id(self, tmp_path):
+        """start_session() returns metadata with a valid session_id."""
+        path = str(tmp_path / "sessions.json")
+        meta = start_session(filepath=path)
+        assert isinstance(meta, dict)
+        assert "session_id" in meta
+        assert isinstance(meta["session_id"], str)
+        assert len(meta["session_id"]) > 0
+        assert meta["status"] == "active"
+        assert "start_time" in meta
+        assert meta["end_time"] is None
+
+    def test_start_session_with_config(self, tmp_path):
+        """start_session(config=...) stores the config in metadata."""
+        path = str(tmp_path / "sessions.json")
+        cfg = {"config_id": "F2600", "replicate": 2}
+        meta = start_session(config=cfg, filepath=path)
+        assert meta["config"] == cfg
+
+    def test_get_session_status(self, tmp_path):
+        """get_session_status() retrieves the metadata for a started session."""
+        path = str(tmp_path / "sessions.json")
+        meta = start_session(filepath=path)
+        sid = meta["session_id"]
+        status = get_session_status(sid, filepath=path)
+        assert status is not None
+        assert status["session_id"] == sid
+        assert status["status"] == "active"
+
+    def test_get_session_status_not_found(self, tmp_path):
+        """get_session_status() returns None for unknown session_id."""
+        path = str(tmp_path / "sessions.json")
+        assert get_session_status("nonexistent-id", filepath=path) is None
+
+    def test_end_session(self, tmp_path):
+        """end_session() sets status to 'ended' and records end_time."""
+        path = str(tmp_path / "sessions.json")
+        meta = start_session(filepath=path)
+        sid = meta["session_id"]
+        ended = end_session(sid, filepath=path)
+        assert ended is not None
+        assert ended["status"] == "ended"
+        assert ended["end_time"] is not None
+        # Verify persisted
+        status = get_session_status(sid, filepath=path)
+        assert status["status"] == "ended"
+
+    def test_end_session_not_found(self, tmp_path):
+        """end_session() returns None for unknown session_id."""
+        path = str(tmp_path / "sessions.json")
+        assert end_session("nonexistent-id", filepath=path) is None
+
+    def test_duplicate_session_handling(self, tmp_path):
+        """Multiple start_session() calls create unique sessions in the registry."""
+        path = str(tmp_path / "sessions.json")
+        meta1 = start_session(filepath=path)
+        meta2 = start_session(filepath=path)
+        assert meta1["session_id"] != meta2["session_id"]
+        # Both should be retrievable
+        assert get_session_status(meta1["session_id"], filepath=path) is not None
+        assert get_session_status(meta2["session_id"], filepath=path) is not None
+        # Registry should contain both
+        sessions = list_sessions(filepath=path)
+        assert len(sessions) == 2
+
+    def test_end_only_affects_target_session(self, tmp_path):
+        """Ending one session does not affect other active sessions."""
+        path = str(tmp_path / "sessions.json")
+        meta1 = start_session(filepath=path)
+        meta2 = start_session(filepath=path)
+        end_session(meta1["session_id"], filepath=path)
+        # Session 1 ended, session 2 still active
+        assert get_session_status(meta1["session_id"], filepath=path)["status"] == "ended"
+        assert get_session_status(meta2["session_id"], filepath=path)["status"] == "active"
+
+    def test_list_sessions_sorted(self, tmp_path):
+        """list_sessions() returns sessions sorted by start_time descending."""
+        path = str(tmp_path / "sessions.json")
+        start_session(filepath=path)
+        start_session(filepath=path)
+        sessions = list_sessions(filepath=path)
+        assert len(sessions) == 2
+        # Most recent first
+        assert sessions[0]["start_time"] >= sessions[1]["start_time"]
+
+    def test_persistence_across_calls(self, tmp_path):
+        """Sessions persist across separate _load_sessions calls."""
+        path = str(tmp_path / "sessions.json")
+        meta = start_session(filepath=path)
+        # Simulate a "new process" by just calling get_session_status again
+        status = get_session_status(meta["session_id"], filepath=path)
+        assert status is not None
+        assert status["session_id"] == meta["session_id"]
+
+
+class TestCLILifecycle:
+    """Tests for the CLI subcommands: start, status, end, list."""
+
+    def test_cli_start(self, tmp_path, capsys, monkeypatch):
+        """`start` subcommand prints a valid session_id."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        rc = _cli(["start"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        sid = captured.out.strip()
+        assert len(sid) > 0
+        # Should be persisted in the registry
+        assert get_session_status(sid, filepath=path) is not None
+
+    def test_cli_start_with_config(self, tmp_path, capsys, monkeypatch):
+        """`start --config-id` stores the config."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        rc = _cli(["start", "--config-id", "F2600"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        sid = captured.out.strip()
+        status = get_session_status(sid, filepath=path)
+        assert status["config"] == {"config_id": "F2600"}
+
+    def test_cli_status(self, tmp_path, capsys, monkeypatch):
+        """`status <id>` prints the session metadata as JSON."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        meta = start_session(filepath=path)
+        rc = _cli(["status", meta["session_id"]])
+        assert rc == 0
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert data["session_id"] == meta["session_id"]
+
+    def test_cli_status_not_found(self, tmp_path, capsys, monkeypatch):
+        """`status <id>` returns rc=1 for unknown session."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        rc = _cli(["status", "nonexistent"])
+        assert rc == 1
+
+    def test_cli_end(self, tmp_path, capsys, monkeypatch):
+        """`end <id>` ends the session and prints updated metadata."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        meta = start_session(filepath=path)
+        rc = _cli(["end", meta["session_id"]])
+        assert rc == 0
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert data["status"] == "ended"
+        assert data["end_time"] is not None
+
+    def test_cli_end_not_found(self, tmp_path, capsys, monkeypatch):
+        """`end <id>` returns rc=1 for unknown session."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        rc = _cli(["end", "nonexistent"])
+        assert rc == 1
+
+    def test_cli_list_empty(self, tmp_path, capsys, monkeypatch):
+        """`list` with no sessions prints '(no sessions)'."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        rc = _cli(["list"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        assert "(no sessions)" in captured.out
+
+    def test_cli_list_with_sessions(self, tmp_path, capsys, monkeypatch):
+        """`list` shows all sessions."""
+        path = str(tmp_path / "sessions.json")
+        monkeypatch.setenv("BALLOON_SESSIONS_FILE", path)
+        start_session(filepath=path)
+        start_session(filepath=path)
+        rc = _cli(["list"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        # Should have 2 lines (plus possible newline)
+        lines = [l for l in captured.out.strip().split("\n") if l.strip()]
+        assert len(lines) == 2
 
 
 class TestCLI:

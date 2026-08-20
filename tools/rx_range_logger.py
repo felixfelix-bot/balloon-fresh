@@ -60,7 +60,14 @@ from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
 from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start  # noqa: E402
 
 # Session manager (HOST-3)
-from session_manager import generate_session_id, format_session_start, format_session_command, inject_session_id_into_pkt  # noqa: E402
+from session_manager import (  # noqa: E402
+    generate_session_id,
+    start_session,
+    end_session,
+    format_session_start,
+    format_session_command,
+    inject_session_id_into_pkt,
+)
 
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
@@ -185,10 +192,12 @@ def main():
         print("[FW GATE] SKIPPED (--skip-fw-check)")
 
     # ── HOST-3: Session ID injection ────────────────────────────────
-    # Generate a unique session_id for this capture session.
-    # Write a SESSION_START header line to the CSV and inject the
-    # session_id into every PKT line's session_id field.
-    session_id = generate_session_id()
+    # Start a new capture session with lifecycle tracking.
+    # This generates a unique session_id, registers it in the sessions
+    # registry (~/.balloon/sessions.json) with status "active", and
+    # writes a SESSION_START header to the CSV.
+    session_meta = start_session()
+    session_id = session_meta["session_id"]
     session_header = format_session_start(session_id)
     print(f"[SESSION] {session_id}")
 
@@ -280,12 +289,20 @@ def main():
 
     elapsed = time.time() - start_time
     print(f"\n=== Session complete ===")
+    print(f"Session ID: {session_id}")
     print(f"Duration: {elapsed:.0f}s")
     print(f"Packets logged: {pkt_count}")
     print(f"Result summaries: {result_count}")
     print(f"Phantom RSSI warnings: {phantom_count}")
     print(f"CSV: {csv_path}")
     print(f"Raw: {raw_path}")
+
+    # HOST-3: Mark session as ended in the lifecycle registry
+    try:
+        end_session(session_id)
+        print(f"[SESSION] Ended session {session_id}")
+    except Exception as e:
+        print(f"[SESSION] WARNING: Failed to end session: {e}")
 
     if phantom_count > 0:
         print(f"\n[!] {phantom_count} phantom RSSI values detected!")
