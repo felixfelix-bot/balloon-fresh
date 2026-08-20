@@ -356,3 +356,41 @@ class TestSummaryStats:
         assert summary["snr"]["count"] == 0
         assert summary["seq_continuity"]["total"] == 0
         assert summary["field_count_ok"] is True
+
+    def test_prbs_summary_present(self):
+        """Summary includes PRBS bit error statistics."""
+        packets = [parse_pkt_line(l) for l in [
+            "PKT,sess,cfg-A,0,1,100,-80,5,1,12,3,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0",
+            "PKT,sess,cfg-A,0,2,200,-82,6,1,0,0,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0",
+            "PKT,sess,cfg-A,0,3,300,-90,0,0,0,0,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0",
+            "PKT,sess,cfg-A,0,4,400,-75,8,1,45,10,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0",
+        ]]
+        packets = [p for p in packets if p is not None]
+        summary = compute_summary_stats(packets, [])
+        assert "prbs" in summary
+        prbs = summary["prbs"]
+        assert prbs["total_bit_errors"] == 57  # 12 + 0 + 0 + 45
+        assert prbs["total_bytes_bad"] == 13    # 3 + 0 + 0 + 10
+        assert prbs["packets_with_errors"] == 2  # 2 packets have bit_err > 0
+        assert prbs["packets_with_errors_pct"] == 50.0  # 2 out of 4
+
+    def test_prbs_summary_empty(self):
+        """Empty packet list has zeroed PRBS stats."""
+        summary = compute_summary_stats([], [])
+        assert "prbs" in summary
+        assert summary["prbs"]["total_bit_errors"] == 0
+        assert summary["prbs"]["total_bytes_bad"] == 0
+        assert summary["prbs"]["packets_with_errors"] == 0
+
+    def test_prbs_summary_crc_ok_only(self):
+        """CRC-OK bit errors exclude CRC-failed packets."""
+        packets = [parse_pkt_line(l) for l in [
+            "PKT,sess,cfg-A,0,1,100,-80,5,1,12,3,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0",
+            "PKT,sess,cfg-A,0,2,200,-82,0,0,0,0,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0",
+        ]]
+        packets = [p for p in packets if p is not None]
+        summary = compute_summary_stats(packets, [])
+        prbs = summary["prbs"]
+        # Only the first packet has crc_ok=1 and bit_err=12
+        assert prbs["crc_ok_bit_errors"] == 12
+        assert prbs["crc_ok_bytes_bad"] == 3
