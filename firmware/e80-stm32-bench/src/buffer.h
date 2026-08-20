@@ -83,6 +83,11 @@ uint16_t buf_crc16(void);
 /** Ring/binary-receive drop counter (diagnostic, surfaced in BUF STATUS). */
 uint32_t buf_drops(void);
 
+/** Count a console-ring drop during the binary phase (BUF-T2, additive).
+ *  Diagnostic only — the end-of-load CRC is the real overflow detector
+ *  (spec rule 6); this feeds BUF STATUS "drops=". */
+void buf_note_drop(void);
+
 /* ---- Binary load staging (driven by the console binary phase) -------------- */
 
 /** Arm staging for an n-byte binary receive. Rejects n==0 / n>BUF_CAPACITY. */
