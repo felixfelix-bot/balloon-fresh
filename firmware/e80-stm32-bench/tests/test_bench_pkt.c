@@ -7,6 +7,7 @@
  *   - CRC failure packet (crc_ok=0, E80-7 RSSI extraction)
  *   - truncation safety (small buffer does not overflow)
  *   - CRC event with real RSSI (E80-7)
+ *   - bit_err / bytes_bad fields from PRBS-15 verification (in evt struct)
  *
  * Format (23 fields):
  * PKT,<session_id>,<config_id>,<replicate>,<seq>,<ts_ms>,<rssi_dbm>,
@@ -83,6 +84,8 @@ static void test_basic(void)
         .txpow_dbm      = 10,
         .cr             = 5,
         .ts_ms          = 12345,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
     };
 
     int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 1 /* crc_ok */);
@@ -113,9 +116,7 @@ static void test_crc_fail(void)
     bench_pkt_ctx_t ctx = { .session_id = 1, .config_id = 1, .replicate = 0 };
     char buf[256];
 
-    /* CRC failure event — rssi_half_dbm should still be populated (E80-7).
-     * For now the radio may return rssi=0 on CRC fail, but the PKT line
-     * must still be emitted with crc_ok=0. */
+    /* CRC failure event — rssi_half_dbm should still be populated (E80-7). */
     bench_pkt_evt_t evt = {
         .seq            = 0,
         .len            = 0,
@@ -126,6 +127,8 @@ static void test_crc_fail(void)
         .bw_hz          = 125000,
         .freq_hz         = 868000000UL,
         .txpow_dbm      = 10,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
     };
 
     int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 0 /* crc_ok */);
@@ -162,6 +165,8 @@ static void test_truncation_safe(void)
         .txpow_dbm      = 22,
         .cr             = 8,
         .ts_ms          = 99999,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
     };
 
     /* Must not crash, must NUL-terminate even if truncated */
@@ -183,13 +188,10 @@ static void test_truncation_safe(void)
 
 static void test_crc_rssi_extraction(void)
 {
-    /* E80-7: CRC-failed packets should have RSSI populated in the event.
-     * This test verifies that bench_pkt_format() correctly outputs the
-     * rssi value from a CRC event with rssi_half_dbm populated. */
+    /* E80-7: CRC-failed packets should have RSSI populated in the event. */
     bench_pkt_ctx_t ctx = { .session_id = 5, .config_id = 2, .replicate = 1 };
     char buf[256];
 
-    /* CRC event with a real RSSI value (populated by E80-7 radio_bench.c) */
     bench_pkt_evt_t evt = {
         .seq            = 0,
         .len            = 0,
@@ -200,6 +202,8 @@ static void test_crc_rssi_extraction(void)
         .bw_hz          = 125000,
         .freq_hz         = 868000000UL,
         .txpow_dbm      = 10,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
     };
 
     int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 0);
@@ -210,12 +214,42 @@ static void test_crc_rssi_extraction(void)
     printf("  rssi:   %s\n", buf);
 }
 
+static void test_bit_err_bytes_bad(void)
+{
+    /* PRBS-15 verification: bit_err=5, bytes_bad=3 should appear in PKT line */
+    bench_pkt_ctx_t ctx = { .session_id = 1, .config_id = 1, .replicate = 0 };
+    char buf[256];
+
+    bench_pkt_evt_t evt = {
+        .seq            = 42,
+        .len            = 64,
+        .rssi_half_dbm  = -100,
+        .snr_qdb        = 40,
+        .mod            = BENCH_PKT_MOD_LORA,
+        .sf             = 8,
+        .bw_hz          = 125000,
+        .freq_hz         = 868000000UL,
+        .txpow_dbm      = 10,
+        .cr             = 5,
+        .ts_ms          = 1000,
+        .bit_err        = 5,
+        .bytes_bad      = 3,
+    };
+
+    int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 1);
+    CHECK(n > 0);
+    CHECK(strstr(buf, ",5,3,") != NULL);  /* bit_err=5, bytes_bad=3 */
+
+    printf("  biterr: %s\n", buf);
+}
+
 int main(void)
 {
     test_basic();
     test_crc_fail();
     test_truncation_safe();
     test_crc_rssi_extraction();
+    test_bit_err_bytes_bad();
 
     if (failures == 0)
     {

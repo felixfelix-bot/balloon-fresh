@@ -459,8 +459,10 @@ void radio_bench_irq(void)
 
         radio_bench_rx_buf_len = e.len;
         if (e.len >= 4)
-            e.seq = (uint32_t)radio_bench_rx_buf[0] | ((uint32_t)radio_bench_rx_buf[1] << 8) |
-                    ((uint32_t)radio_bench_rx_buf[2] << 16) | ((uint32_t)radio_bench_rx_buf[3] << 24);
+            e.seq = ((uint32_t)radio_bench_rx_buf[0] << 24) |
+                    ((uint32_t)radio_bench_rx_buf[1] << 16) |
+                    ((uint32_t)radio_bench_rx_buf[2] << 8)  |
+                    (uint32_t)radio_bench_rx_buf[3];
 
         evt_push(&e);
         radio_bench_rx_arm(rx_pld_for_irq);

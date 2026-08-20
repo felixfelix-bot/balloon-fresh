@@ -55,6 +55,8 @@ typedef struct bench_pkt_evt_s
     int8_t        txpow_dbm;      /* TX power setting               */
     uint8_t       cr;             /* Coding rate (LoRa denom 5-8, FLRC code 0-3) */
     uint32_t      ts_ms;          /* Timestamp in milliseconds      */
+    uint16_t      bit_err;        /* PRBS15 bit error count         */
+    uint16_t      bytes_bad;      /* PRBS15 mismatched byte count   */
 } bench_pkt_evt_t;
 
 /**

@@ -30,6 +30,7 @@
 #include "bench_safety.h"
 #include "bench_stats.h"
 #include "console.h"
+#include "prbs.h"
 #include "radio_bench.h"
 
 #include <stddef.h>
@@ -895,6 +896,13 @@ static void radio_task(void)
 
             /* Per-packet PKT line (E80-6/M3+M4+M5) */
             {
+                uint16_t bytes_bad = 0;
+                uint16_t bit_err = 0;
+                if (e.len > BENCH_PAYLOAD_HDR_LEN)
+                    bit_err = prbs15_verify(radio_bench_rx_buf + BENCH_PAYLOAD_HDR_LEN,
+                                            e.len - BENCH_PAYLOAD_HDR_LEN,
+                                            e.seq, &bytes_bad);
+
                 bench_pkt_evt_t pe = {
                     .seq            = e.seq,
                     .len            = e.len,
@@ -908,6 +916,8 @@ static void radio_task(void)
                     .txpow_dbm      = cfg.txpow_dbm,
                     .cr             = cfg.cr,
                     .ts_ms          = bench_micros() / 1000U,
+                    .bit_err        = bit_err,
+                    .bytes_bad      = bytes_bad,
                 };
                 char pktbuf[160];
                 bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 1);
@@ -935,6 +945,8 @@ static void radio_task(void)
                     .txpow_dbm      = cfg.txpow_dbm,
                     .cr             = cfg.cr,
                     .ts_ms          = bench_micros() / 1000U,
+                    .bit_err        = 0,
+                    .bytes_bad      = 0,
                 };
                 char pktbuf[160];
                 bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 0);

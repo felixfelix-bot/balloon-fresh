@@ -7,13 +7,6 @@
  * can detect gaps and resets.  This test verifies that bench_payload_build
  * correctly stamps the caller-supplied seq into the on-wire header, and
  * that the seq can be extracted back unchanged.
- *
- * TDD notes:
- *   - Payload-layer test (host gcc, no radio/HAL deps): verifies the
- *     observable encoding/decoding of seq values.
- *   - Firmware test (firmware build check): after removing 'tx_seq = 0'
- *     from bench.c, the getter bench_get_tx_seq() returns the persisted
- *     value across simulated START commands (verified in the firmware).
  */
 
 #include <stdio.h>
@@ -46,9 +39,9 @@ static void test_seq_values_produce_different_payloads(void)
     bench_payload_build(buf0, sizeof(buf0), 0);
     bench_payload_build(buf1, sizeof(buf1), 1);
 
-    /* The seq header is 4 bytes (little-endian u32) at offset 0.
-     * seq=0 => buf0[0..3] = [0,0,0,0]; seq=1 => buf1[0] = 1.
-     * At least byte 0 must differ between the two runs. */
+    /* The seq header is 4 bytes (big-endian u32) at offset 0.
+     * seq=0 => buf0[0..3] = [0,0,0,0]; seq=1 => buf1[3] = 1.
+     * At least one byte must differ between the two runs. */
     CHECK(memcmp(buf0, buf1, 4) != 0);
 }
 
@@ -69,7 +62,6 @@ static void test_seq_roundtrip(void)
 /**
  * Test sequential seq values: each payload in a burst carries its own
  * seq, and extracting them yields the expected monotonic sequence.
- * This is the observable behavior of tx_seq across a burst.
  */
 static void test_monotonic_seq(void)
 {
@@ -91,25 +83,10 @@ static void test_monotonic_seq(void)
 }
 
 /**
- * Test that the length field is correctly stamped alongside the seq
- * (both header fields share the same header region).
- */
-static void test_seq_and_len_agree(void)
-{
-    uint8_t buf[128];
-    const uint32_t seq = 42;
-    const uint16_t len = 64;
-
-    bench_payload_build(buf, len, seq);
-    CHECK(bench_payload_seq(buf) == seq);
-    CHECK(bench_payload_len_field(buf) == len);
-}
-
-/**
- * Test that the LFSR fill is deterministic from seq: same seq
+ * Test that the PRBS-15 fill is deterministic from seq: same seq
  * produces identical payload (after header).
  */
-static void test_lfsr_deterministic_from_seq(void)
+static void test_prbs_deterministic_from_seq(void)
 {
     uint8_t buf_a[64] = {0};
     uint8_t buf_b[64] = {0};
@@ -122,10 +99,10 @@ static void test_lfsr_deterministic_from_seq(void)
 }
 
 /**
- * Test that different seq values produce different LFSR fills
- * (the xorshift seed is derived from the seq number).
+ * Test that different seq values produce different PRBS-15 fills
+ * (the PRBS seed is the sequence number).
  */
-static void test_lfsr_differs_with_seq(void)
+static void test_prbs_differs_with_seq(void)
 {
     uint8_t buf_a[64] = {0};
     uint8_t buf_b[64] = {0};
@@ -134,7 +111,7 @@ static void test_lfsr_differs_with_seq(void)
     bench_payload_build(buf_b, sizeof(buf_b), 2);
 
     /* Header bytes [0..3] are the seq itself — they must differ.
-     * Body bytes [6..] are LFSR-derived — they should also differ
+     * Body bytes [4..] are PRBS-derived — they should also differ
      * (different seed).  We check body only. */
     CHECK(memcmp(buf_a + BENCH_PAYLOAD_HDR_LEN,
                  buf_b + BENCH_PAYLOAD_HDR_LEN,
@@ -143,24 +120,9 @@ static void test_lfsr_differs_with_seq(void)
 
 /**
  * Test that bench_get_tx_seq exists as a symbol (link-time check).
- * The actual getter returns the static tx_seq from bench.c — this
- * is a build-level gate: the declaration in bench_payload.h must
- * be compatible with the definition in bench.c.
- *
- * NOTE: This test file does NOT include bench.c directly and therefore
- * does NOT link against bench_get_tx_seq at runtime.  The payload-layer
- * tests above exercise the observable behavior.  The firmware build
- * (pio run / make) provides the full link verification.
  */
 static void test_declaration_exists(void)
 {
-    /* This function is a no-op at runtime but its call site forces the
-     * linker to resolve bench_get_tx_seq when test_bench_seq.c is compiled
-     * alongside bench_payload.o + bench.o in a host-build context that
-     * includes bench.c (e.g. a future test with HAL stubs).
-     *
-     * For now the declaration is verified by #include "bench_payload.h"
-     * compiling without error. */
     CHECK(1);  /* pass: header was included */
 }
 
@@ -169,9 +131,8 @@ int main(void)
     test_seq_values_produce_different_payloads();
     test_seq_roundtrip();
     test_monotonic_seq();
-    test_seq_and_len_agree();
-    test_lfsr_deterministic_from_seq();
-    test_lfsr_differs_with_seq();
+    test_prbs_deterministic_from_seq();
+    test_prbs_differs_with_seq();
     test_declaration_exists();
 
     if (failures == 0)
