@@ -47,6 +47,9 @@ static Module *mod = nullptr;
 static LR2021 *radio = nullptr;
 static volatile bool rxFlag = false;
 
+/* PRBS-15 mode gate: ON by default for range test, can be toggled via PRBS command */
+static bool prbs_enabled = true;
+
 #if !RANGE_ROLE_TX
 static void IRAM_ATTR onRxIrq(void) { rxFlag = true; }
 #endif
@@ -142,7 +145,11 @@ static void runRangeTx() {
                 buf[2] = (seqCounter >> 8) & 0xFF;
                 buf[3] = seqCounter & 0xFF;
                 if (w->pkt_size > 4) {
-                    prbs15_fill(buf + 4, w->pkt_size - 4, seqCounter);
+                    if (prbs_enabled) {
+                        prbs15_fill(buf + 4, w->pkt_size - 4, seqCounter);
+                    } else {
+                        memset(buf + 4, 0, w->pkt_size - 4);
+                    }
                 }
                 state = radio->transmit(buf, w->pkt_size);
                 if (state == RADIOLIB_ERR_NONE) sent++;
@@ -490,10 +497,15 @@ static void runRangeRx() {
                 uint16_t bitErr = 0;
                 uint16_t bytesBad = 0;
                 if ((size_t)len > 4 && curWin.pkt_size > 4) {
-                    bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
-                    bitErrors += bitErr;
-                    bitsChecked += (len - 4) * 8;
-                    if (bytesBad > 0) payloadCorrupt++;
+                    if (prbs_enabled) {
+                        bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
+                        bitErrors += bitErr;
+                        bitsChecked += (len - 4) * 8;
+                        if (bytesBad > 0) payloadCorrupt++;
+                    } else {
+                        bitErr = 0;
+                        bytesBad = 0;
+                    }
                 }
                 printf("PKT,%s,%s,%hu,%lu,%u,%d,%d,%d,%u,%u,%u,%s,%u,%u,%u,%d,%u,%d,%d,%d,%d,%d,%.1f\r\n",
                        session_id,           // 1. session_id
@@ -558,6 +570,14 @@ static void processRangeCommand(char *cmd) {
             printf("ERR CONFIG SYNTAX\r\n");
             fflush(stdout);
         }
+        return;
+    }
+    /* PRBS ON|OFF — toggle PRBS-15 mode at runtime */
+    if (strncmp(cmd, "PRBS ", 5) == 0) {
+        if (strcmp(cmd + 5, "ON") == 0) { prbs_enabled = true; printf("OK PRBS ON\r\n"); }
+        else if (strcmp(cmd + 5, "OFF") == 0) { prbs_enabled = false; printf("OK PRBS OFF\r\n"); }
+        else printf("ERR PRBS SYNTAX\r\n");
+        fflush(stdout);
         return;
     }
 }
