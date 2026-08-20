@@ -33,6 +33,7 @@
 #include <SPI.h>
 #include <stdarg.h>
 #include <string.h>
+#include "prbs.h"
 
 // ─── Firmware self-identification (injected at build time) — M1 ───────
 #ifndef FW_GIT_HASH
@@ -49,6 +50,13 @@
 static char     session_id[40] = "";
 static char     config_id[32]  = "";
 static uint16_t replicate_num  = 0;
+
+// ─── PRBS-15 mode gate: ON by default for range test (BER measurement) ──
+static bool prbs_enabled = true;
+
+// PRBS payload starts at byte 29 (after sync 0-3, GPS 4-28)
+// and ends at pktSize-3 (before 2-byte CRC at pktSize-2..pktSize-1)
+#define PRBS_START 29
 
 // ─── M6: Non-resetting uint32 seq counter ─────────────────────────────
 // Persists across phase changes — does NOT reset in resetRxPhaseState().
@@ -277,6 +285,17 @@ static void processCommand(const char *cmd) {
                 totalCycleSec += phases[i].slotMs / 1000;
             dualPrintf("INTERLEAVE_OFF phases=%d cycle=%lus\n",
                        NUM_PHASES, (unsigned long)totalCycleSec);
+        }
+    } else if (strncmp(cmd, "PRBS ", 5) == 0) {
+        // PRBS ON|OFF — toggle PRBS-15 BER verification mode
+        if (strcmp(cmd + 5, "ON") == 0 || strcmp(cmd + 5, "1") == 0) {
+            prbs_enabled = true;
+            dualPrintf("OK PRBS ON\r\n");
+        } else if (strcmp(cmd + 5, "OFF") == 0 || strcmp(cmd + 5, "0") == 0) {
+            prbs_enabled = false;
+            dualPrintf("OK PRBS OFF\r\n");
+        } else {
+            dualPrintf("ERR PRBS SYNTAX (use: PRBS ON|OFF)\r\n");
         }
     }
 }
@@ -1007,18 +1026,15 @@ static void rxPacketPoll(int phaseIdx) {
         }
     }
 
-    // BER analysis for first few packets
-    uint16_t berErrors = 0;
-    uint16_t berTotal = 0;
-    for (int i = 29; i < pktSize - 2; i++) {
-        int rxIdx = syncOffset + i;
-        if (rxIdx < 0 || rxIdx >= 264) continue;
-        uint8_t expected = (uint8_t)(i & 0xFF);
-        uint8_t received = rxBuf[rxIdx];
-        if (received != expected) {
-            berErrors += __builtin_popcount(received ^ expected);
-        }
-        berTotal += 8;
+    // BER analysis using PRBS-15 verification
+    uint16_t bit_err = 0;
+    uint16_t bytes_bad = 0;
+    if (prbs_enabled && pktSize > PRBS_START + 2) {
+        size_t payloadLen = pktSize - PRBS_START - 2;
+        // PRBS seed = seq (matches TX's seqInPhase)
+        uint32_t prbsSeed = (uint32_t)seq;
+        bit_err = prbs15_verify(&rxBuf[syncOffset + PRBS_START], payloadLen,
+                                prbsSeed, &bytes_bad);
     }
 
     // M6: Increment non-resetting uint32 seq counter
@@ -1041,8 +1057,8 @@ static void rxPacketPoll(int phaseIdx) {
         rssi_dbm,
         snr_db,
         1,              // crc_ok=1
-        berErrors,      // bit_err
-        0,              // bytes_bad (computed separately if needed)
+        bit_err,        // bit_err (from PRBS-15 verification)
+        bytes_bad,      // bytes_bad (from PRBS-15 verification)
         freq_hz,
         modStr,
         p.sf, bw_khz, p.cr,
@@ -1060,9 +1076,9 @@ static void rxPacketPoll(int phaseIdx) {
                       (unsigned long)millis(),
                       rxLastTxLat, rxLastTxLon, txSats, txFix, (unsigned long)txUtc,
                       rxLastTxFw);
-        dualPrintf("BER seq=%u bits=%u errs=%u ber=%.2e\n",
-                   seq, berTotal, berErrors,
-                   berTotal > 0 ? (double)berErrors / berTotal : 0.0);
+        dualPrintf("BER seq=%u bit_err=%u bytes_bad=%u prbs=%s\n",
+                   seq, bit_err, bytes_bad,
+                   prbs_enabled ? "ON" : "OFF");
     }
 
     digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
@@ -1116,7 +1132,7 @@ void setup() {
     dualPrintf("FW_HASH=%s  Phases: %d  Cycle: %lus  Interleave: %d phases\n",
                 FW_GIT_HASH, NUM_PHASES, (unsigned long)totalCycleSec,
                 numInterleavePhases);
-    dualPrintf("Commands: SESSION <id>, CONFIG <id> <n>, SET_TIME <ts>, FW_QUERY\n");
+    dualPrintf("Commands: SESSION <id>, CONFIG <id> <n>, SET_TIME <ts>, FW_QUERY, PRBS ON|OFF\n");
     for (int i = 0; i < NUM_PHASES; i++) {
         dualPrintf("  [%2d] %-16s %s %.0fMHz %dpkts %ds %dB\n",
                       i, phases[i].name,
