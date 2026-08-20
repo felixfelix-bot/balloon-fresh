@@ -51,6 +51,12 @@ add_bench_test(test_bench_banner)
 # PRBS15 fill/verify tests (TDD).
 add_bench_test(test_prbs ${SRC_DIR}/prbs.c)
 
+# PRBS-15 wiring tests: TX fill, RX verify, CRC-failed, CONFIG PRBS ON/OFF.
+add_bench_test(test_prbs_wiring ${SRC_DIR}/bench_payload.c ${SRC_DIR}/prbs.c ${SRC_DIR}/bench_cmd.c ${SRC_DIR}/bench_pkt.c)
+target_include_directories(test_prbs_wiring PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
+
 # PRBS9 hardware TX test mode command tests (TDD).
 add_bench_test(test_bench_prbs9 ${SRC_DIR}/bench_cmd.c)
 target_include_directories(test_bench_prbs9 PRIVATE

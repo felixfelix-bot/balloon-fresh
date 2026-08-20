@@ -330,6 +330,36 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
         return BENCH_CMD_OK;
     }
 
+    if (bench_strcaseeq(tokens[0], "PRBS9"))
+    {
+        /* PRBS9 ON|OFF — chip-level PRBS9 TX test mode */
+        if (ntok != 2)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        if (bench_strcaseeq(tokens[1], "ON"))
+            out->prbs9_enable = true;
+        else if (bench_strcaseeq(tokens[1], "OFF"))
+            out->prbs9_enable = false;
+        else
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_PRBS9;
+        return BENCH_CMD_OK;
+    }
+
+    if (bench_strcaseeq(tokens[0], "PRBS"))
+    {
+        /* PRBS ON|OFF — toggle PRBS-15 RX verification */
+        if (ntok != 2)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        if (bench_strcaseeq(tokens[1], "ON"))
+            out->prbs_enable = true;
+        else if (bench_strcaseeq(tokens[1], "OFF"))
+            out->prbs_enable = false;
+        else
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_PRBS;
+        return BENCH_CMD_OK;
+    }
+
     return (out->err = BENCH_CMD_E_UNKNOWN);
 }
 

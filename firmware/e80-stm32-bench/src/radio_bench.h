@@ -112,6 +112,9 @@ extern volatile uint8_t radio_bench_chip_minor;
 /** Number of IRQ events dropped because the superloop did not drain them. */
 uint32_t radio_bench_evt_drops(void);
 
+/** Set the LR2021 TX_TEST_MODE register (PRBS9 / NORMAL). */
+void radio_bench_set_tx_test_mode(lr20xx_radio_common_tx_test_mode_t mode);
+
 #ifdef __cplusplus
 }
 #endif

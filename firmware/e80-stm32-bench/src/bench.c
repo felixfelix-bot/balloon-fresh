@@ -75,6 +75,7 @@ static uint32_t tx_chip_to_ms = 100; /* chip TX timeout programmed for it */
 static bool     tx_wait_irq  = false;
 static uint8_t  tx_buf[E80_BENCH_MAX_PAYLOAD];
 static bool     session_active = false;
+static bool     prbs_verify_enabled = true; /* PRBS-15 RX verification (PRBS ON|OFF) */
 
 /* Per-packet output context (set by SESSION/CONFIG commands) */
 static bench_pkt_ctx_t pkt_ctx = { .session_id = 0, .config_id = 0, .replicate = 0 };
@@ -475,7 +476,8 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("POWER MODE OUTDOOR <pin> | ");
         console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
         console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> | ");
-        console_put("SESSION <id> | CONFIG <id> <replicate>");
+        console_put("SESSION <id> | CONFIG <id> <replicate> | ");
+        console_put("PRBS9 ON|OFF | PRBS ON|OFF");
         console_putln("");
         break;
 
@@ -816,6 +818,45 @@ static void handle_cmd(const bench_cmd_t* c)
         }
         break;
 
+    case BENCH_CMD_PRBS9:
+    {
+        /* Safety: cannot enable PRBS9 TX test mode while TX is armed
+         * (would corrupt an active burst). OFF is always allowed. */
+        if (c->prbs9_enable && tx_armed)
+        {
+            reply_err("TX ARMED (STOP OR DISARM FIRST)");
+            return;
+        }
+        /* Safety: cannot enable while a TX burst is in flight */
+        if (c->prbs9_enable && state == BSTATE_TX_BURST)
+        {
+            reply_err("TX BURST ACTIVE (STOP FIRST)");
+            return;
+        }
+        radio_ensure_awake();
+        radio_critical_begin();
+        if (c->prbs9_enable)
+        {
+            radio_bench_set_tx_test_mode(
+                LR20XX_RADIO_COMMON_TX_TEST_MODE_PRBS9);
+        }
+        else
+        {
+            radio_bench_set_tx_test_mode(
+                LR20XX_RADIO_COMMON_TX_TEST_MODE_NORMAL);
+        }
+        radio_critical_end();
+        console_put("OK PRBS9 ");
+        console_putln(c->prbs9_enable ? "ON" : "OFF");
+        break;
+    }
+
+    case BENCH_CMD_PRBS:
+        prbs_verify_enabled = c->prbs_enable;
+        console_put("OK PRBS ");
+        console_putln(c->prbs_enable ? "ON" : "OFF");
+        break;
+
     default:
         reply_err(bench_cmd_err_str(c->err));
         break;
@@ -898,7 +939,7 @@ static void radio_task(void)
             {
                 uint16_t bytes_bad = 0;
                 uint16_t bit_err = 0;
-                if (e.len > BENCH_PAYLOAD_HDR_LEN)
+                if (prbs_verify_enabled && e.len > BENCH_PAYLOAD_HDR_LEN)
                     bit_err = prbs15_verify(radio_bench_rx_buf + BENCH_PAYLOAD_HDR_LEN,
                                             e.len - BENCH_PAYLOAD_HDR_LEN,
                                             e.seq, &bytes_bad);

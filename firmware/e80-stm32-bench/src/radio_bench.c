@@ -352,6 +352,11 @@ void radio_bench_wakeup(void)
     radio_asleep = false;
 }
 
+void radio_bench_set_tx_test_mode(lr20xx_radio_common_tx_test_mode_t mode)
+{
+    lr20xx_radio_common_set_tx_test_mode(E80_CONTEXT, mode);
+}
+
 bool radio_bench_is_asleep(void)
 {
     return radio_asleep;
