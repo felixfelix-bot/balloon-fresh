@@ -38,6 +38,7 @@
 #include <SPI.h>
 #include <stdarg.h>
 #include <hardware/watchdog.h>
+#include "prbs.h"
 
 // ─── Firmware self-identification (injected at build time) ───────────
 // These come from tools/inject_git_version.py via -D flags.
@@ -150,6 +151,14 @@ static const uint16_t SWEEP_SIZES[] = {32, 64, 128, 255};
 static Phase interleavePhases[128];  // V4: increased for channel sweep
 static int   numInterleavePhases = 0;
 static bool  interleaveMode = true;   // V4: DEFAULT ON — no serial command needed for walk
+
+// PRBS-15 mode gate: ON by default for range test (BER measurement)
+// OFF for throughput testing (PRBS fill costs ~5-10ms on 255B)
+static bool prbs_enabled = true;
+
+// PRBS payload starts at byte 29 (after sync 0-3, GPS 4-28)
+// and ends at pktSize-3 (before 2-byte CRC at pktSize-2..pktSize-1)
+#define PRBS_START 29
 
 // V4: Channel sweep frequencies — WiFi channels (2.4GHz) + EU 868MHz sub-bands
 static const float SWEEP_FREQS_HF[] = {
@@ -818,6 +827,16 @@ static void checkSerialTimeSync() {
                         outPrintf("INTERLEAVE_OFF phases=%d cycle=%lus\n",
                                    NUM_PHASES, (unsigned long)totalCycleSec);
                     }
+                } else if (strncmp(syncBuf, "PRBS ", 5) == 0) {
+                    if (strcmp(syncBuf + 5, "ON") == 0) {
+                        prbs_enabled = true;
+                        outPrintf("PRBS_ENABLED\n");
+                    } else if (strcmp(syncBuf + 5, "OFF") == 0) {
+                        prbs_enabled = false;
+                        outPrintf("PRBS_DISABLED\n");
+                    } else {
+                        outPrintf("ERR PRBS SYNTAX (use: PRBS ON|OFF)\n");
+                    }
                 }
                 syncLen = 0;
             }
@@ -1227,9 +1246,14 @@ void loop() {
     uint16_t pktSize = p.pktSize;
     uint8_t txBuf[256];
 
-    // V4: fill bytes 29 to pktSize-1 with known pattern for BER analysis
+    // V4/PRBS-6: fill bytes 29 to pktSize-3 with PRBS-15 pattern seeded by seq
     // (start at 29 to cover bytes between FW hash end and CRC start)
-    for (int i = 29; i < pktSize; i++) txBuf[i] = (uint8_t)(i & 0xFF);
+    // When PRBS OFF: zero fill (for throughput testing without BER measurement)
+    if (prbs_enabled && pktSize > PRBS_START + 2) {
+        prbs15_fill(&txBuf[PRBS_START], pktSize - PRBS_START - 2, seqInPhase);
+    } else {
+        memset(&txBuf[PRBS_START], 0, pktSize - PRBS_START - 2);
+    }
 
     // Check if we still have time in this phase
     uint32_t elapsedInPhase = millis() - phaseStartMs;

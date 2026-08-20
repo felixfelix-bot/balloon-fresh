@@ -266,3 +266,27 @@ class TestEndToEnd:
             ],
         )
         assert "4/4 passed" in out
+
+
+class TestRp2040PRBS:
+    def test_rp2040_prbs(self):
+        rp2040_src = os.path.join(REPO_ROOT, "firmware", "rp2040", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "test_rp2040_prbs.cpp"),
+            [os.path.join(rp2040_src, "prbs.cpp")],
+            [rp2040_src],
+            cxx=True,
+        )
+        assert "8/8 passed" in out
+
+
+class TestRp2040PRBS6Wiring:
+    def test_rp2040_prbs6_wiring(self):
+        rp2040_src = os.path.join(REPO_ROOT, "firmware", "rp2040", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "test_rp2040_prbs6_wiring.cpp"),
+            [os.path.join(rp2040_src, "prbs.cpp")],
+            [rp2040_src],
+            cxx=True,
+        )
+        assert "8/8 passed" in out
