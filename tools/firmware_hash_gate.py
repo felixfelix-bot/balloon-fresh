@@ -142,29 +142,27 @@ def main(argv=None):
     """CLI: verify a firmware file's SHA256 hash before flashing.
 
     Usage:
-        python -m tools.firmware_hash_gate --firmware <path> --expected-hash <sha256>
+        python3 tools/firmware_hash_gate.py <firmware.bin> <expected_hash>
 
     Exit codes:
         0 — hash matches
-        1 — hash mismatch or file not found
+        1 — hash mismatch, file not found, or invalid arguments
     """
     parser = argparse.ArgumentParser(
         description="Verify firmware binary SHA256 hash before flashing."
     )
     parser.add_argument(
-        "--firmware",
-        required=True,
+        "firmware",
         help="Path to firmware binary file",
     )
     parser.add_argument(
-        "--expected-hash",
-        required=True,
+        "expected_hash",
         help="Expected SHA256 hex digest (64 hex chars)",
     )
     args = parser.parse_args(argv)
 
     if not os.path.isfile(args.firmware):
-        print("ERROR: file not found")
+        print(f"ERROR: file not found: {args.firmware}")
         sys.exit(1)
 
     if check(args.firmware, args.expected_hash):
