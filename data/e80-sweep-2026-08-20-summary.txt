@@ -1,0 +1,39 @@
+E80 LoRa Sweep Measurement — 2026-08-21 01:16:22
+Firmware: fw=e79f0c0
+TX: /dev/ttyUSB3, RX: /dev/ttyUSB4, baud=2000000
+Each config: N=50, LEN=64, PRBS-15, GAP=10ms
+
+Cfg SF  BW PA  TX  RX CRC   RSSI   SNR  BER Loss%
+--------------------------------------------------
+  0  7 125 10   0   0   0      0     0    0 100.0
+  1  8 125 10   0   0   0      0     0    0 100.0
+  2  9 125 10   0   0   0      0     0    0 100.0
+  3 10 125 10   0   0   0      0     0    0 100.0
+  4 11 125 10   0   0   0      0     0    0 100.0
+  5 12 125 10   0   0   0      0     0    0 100.0
+  6  7 250 10   0   0   0      0     0    0 100.0
+  7  8 250 10   0   0   0      0     0    0 100.0
+  8  9 250 10   0   0   0      0     0    0 100.0
+  9  7 500 10   0   0   0      0     0    0 100.0
+ 10  8 500 10   0   0   0      0     0    0 100.0
+ 11  7 125  0   0   0   0      0     0    0 100.0
+ 12  8 125  0   0   0   0      0     0    0 100.0
+ 13  9 125  0   0   0   0      0     0    0 100.0
+
+Configs with bit_err > 0: 0
+
+Configs with packet loss: 14
+  SF7 BW125 PA=10: 0/50 received (100.0% loss)
+  SF8 BW125 PA=10: 0/50 received (100.0% loss)
+  SF9 BW125 PA=10: 0/50 received (100.0% loss)
+  SF10 BW125 PA=10: 0/50 received (100.0% loss)
+  SF11 BW125 PA=10: 0/50 received (100.0% loss)
+  SF12 BW125 PA=10: 0/50 received (100.0% loss)
+  SF7 BW250 PA=10: 0/50 received (100.0% loss)
+  SF8 BW250 PA=10: 0/50 received (100.0% loss)
+  SF9 BW250 PA=10: 0/50 received (100.0% loss)
+  SF7 BW500 PA=10: 0/50 received (100.0% loss)
+  SF8 BW500 PA=10: 0/50 received (100.0% loss)
+  SF7 BW125 PA=0: 0/50 received (100.0% loss)
+  SF8 BW125 PA=0: 0/50 received (100.0% loss)
+  SF9 BW125 PA=0: 0/50 received (100.0% loss)

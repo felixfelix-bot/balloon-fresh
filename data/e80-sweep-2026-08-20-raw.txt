@@ -1,0 +1,4 @@
+E80 LoRa Sweep — 2026-08-21 01:16:22
+Firmware: fw=e79f0c0, TX=/dev/ttyUSB3, RX=/dev/ttyUSB4, baud=2000000
+Each config: 50 packets, 64B payload, PRBS-15, 10ms gap
+
