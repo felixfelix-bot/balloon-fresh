@@ -100,7 +100,29 @@ def main():
     parser.add_argument('--duration', type=int, default=0, help='Stop after N seconds (0=forever)')
     parser.add_argument('--skip-fw-check', action='store_true',
                         help='Skip firmware hash gate (not recommended)')
+    parser.add_argument('--firmware-path', default=None,
+                        help='Path to firmware binary for SHA256 pre-check (optional)')
+    parser.add_argument('--expected-hash', default=None,
+                        help='Expected SHA256 hex digest for firmware file (optional)')
     args = parser.parse_args()
+
+    # ── HOST-1/M2: Optional firmware file SHA256 pre-check ──────────
+    # If both --firmware-path and --expected-hash are provided, verify
+    # the firmware binary's SHA256 BEFORE opening the serial port.
+    # If mismatch or file missing, abort immediately.
+    if args.firmware_path and args.expected_hash:
+        from firmware_hash_gate import check as fw_file_check
+        print(f"[FW FILE GATE] Checking {args.firmware_path}…")
+        if not fw_file_check(args.firmware_path, args.expected_hash):
+            print("[FW FILE GATE] ERROR: firmware file hash mismatch or file not found!")
+            print(f"[FW FILE GATE] Expected SHA256: {args.expected_hash}")
+            sys.exit(1)
+        print("[FW FILE GATE] OK: firmware file hash matches.")
+    elif args.firmware_path or args.expected_hash:
+        print("[FW FILE GATE] WARNING: --firmware-path and --expected-hash must both "
+              "be provided to enable file-hash checking. Skipping file-hash gate.")
+    else:
+        pass  # No file-hash gate requested — serial-banner gate still runs
 
     # HOST-2: Auto-select baud based on board type if not explicitly set
     if args.baud is None:

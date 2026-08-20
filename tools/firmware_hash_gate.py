@@ -2,9 +2,16 @@
 
 Parses FW_HASH from firmware boot banners and ID? responses,
 validates the hash, and formats SESSION_START headers.
+
+Also provides SHA256 file-hash verification (check()) and a CLI
+entry point (main()) for standalone pre-flash integrity checks.
 """
 
+import argparse
+import hashlib
+import os
 import re
+import sys
 from datetime import datetime, timezone
 
 # Patterns for extracting firmware hash
@@ -102,3 +109,71 @@ def query_firmware_hash(serial_port, timeout_s: float = 5.0) -> str | None:
             break
 
     return None
+
+
+# ── SHA256 file-hash verification ──────────────────────────────────
+
+def check(firmware_path: str, expected_hash: str) -> bool:
+    """Verify a firmware binary file's SHA256 hash against an expected value.
+
+    Args:
+        firmware_path: Path to the firmware binary file.
+        expected_hash: Expected SHA256 hex digest (64 hex chars).
+
+    Returns:
+        True if the file's SHA256 matches expected_hash, False otherwise.
+        Returns False if the file does not exist.
+    """
+    if not os.path.isfile(firmware_path):
+        return False
+
+    sha256 = hashlib.sha256()
+    with open(firmware_path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            sha256.update(chunk)
+
+    actual_hash = sha256.hexdigest()
+    return actual_hash.lower() == expected_hash.lower()
+
+
+# ── CLI entry point ────────────────────────────────────────────────
+
+def main(argv=None):
+    """CLI: verify a firmware file's SHA256 hash before flashing.
+
+    Usage:
+        python -m tools.firmware_hash_gate --firmware <path> --expected-hash <sha256>
+
+    Exit codes:
+        0 — hash matches
+        1 — hash mismatch or file not found
+    """
+    parser = argparse.ArgumentParser(
+        description="Verify firmware binary SHA256 hash before flashing."
+    )
+    parser.add_argument(
+        "--firmware",
+        required=True,
+        help="Path to firmware binary file",
+    )
+    parser.add_argument(
+        "--expected-hash",
+        required=True,
+        help="Expected SHA256 hex digest (64 hex chars)",
+    )
+    args = parser.parse_args(argv)
+
+    if not os.path.isfile(args.firmware):
+        print("ERROR: file not found")
+        sys.exit(1)
+
+    if check(args.firmware, args.expected_hash):
+        print("OK: firmware hash matches")
+        sys.exit(0)
+    else:
+        print("ERROR: hash mismatch")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
