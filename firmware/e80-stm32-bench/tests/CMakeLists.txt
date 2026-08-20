@@ -31,7 +31,7 @@ add_bench_test(test_bench_safety ${SRC_DIR}/bench_safety.c)
 add_bench_test(test_bench_flash ${SRC_DIR}/bench_cmd.c ${SRC_DIR}/bench_safety.c)
 add_bench_test(test_bench_config)
 target_include_directories(test_bench_config PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stubs)
-add_bench_test(test_console)  # includes console.c directly via #include — needs HAL stubs
+add_bench_test(test_console ${SRC_DIR}/buffer.c)  # includes console.c directly via #include — needs HAL stubs; buffer.c since BUF-T2 (console binary phase calls buf_*)
 target_include_directories(test_console PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stubs)
 
 add_bench_test(test_bench_pkt ${SRC_DIR}/bench_pkt.c)

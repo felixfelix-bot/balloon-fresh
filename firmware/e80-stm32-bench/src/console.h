@@ -36,6 +36,7 @@ void console_putln(const char* s);
 void console_put_u32(uint32_t v);
 void console_put_i32(int32_t v);
 void console_put_u32_hex8(uint32_t v);
+void console_put_u16_hex4(uint16_t v); /* 4 uppercase hex digits (BUF STATUS crc=) */
 
 /** "value/10 . value%10" fixed-point print for 1-decimal values
  *  scaled by 10 (e.g. 123 -> "12.3"); handles negatives. */
