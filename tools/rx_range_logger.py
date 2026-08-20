@@ -46,6 +46,16 @@ except ImportError:
     FirmwareHashGate = None
     HashMismatchError = Exception
 
+# Session manager (HOST-3) — unique session IDs for capture runs
+try:
+    from session_manager import SessionManager, generate_session_id, validate_session_id
+except ImportError:
+    print("WARNING: session_manager not found — session_id injection "
+          "disabled", file=sys.stderr)
+    SessionManager = None
+    generate_session_id = None
+    validate_session_id = None
+
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
 
@@ -82,6 +92,13 @@ def main():
     parser.add_argument('--fw-verify-timeout', type=float, default=5.0,
                         help='Timeout in seconds for firmware hash verification '
                              '(default: 5.0)')
+    parser.add_argument('--session-id', default=None,
+                        help='Explicit session ID for this capture run. '
+                             'If not provided, a new one is auto-generated. '
+                             'Use --no-session to disable session_id injection.')
+    parser.add_argument('--no-session', action='store_true',
+                        help='Disable session_id injection (no session column '
+                             'in CSV, no session prefix in filenames).')
     args = parser.parse_args()
 
     # Firmware hash gate (HOST-1)
@@ -119,9 +136,30 @@ def main():
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Session ID injection (HOST-3)
+    session_id = None
+    if not args.no_session and SessionManager is not None:
+        if args.session_id:
+            if not validate_session_id(args.session_id):
+                print(f"[session] ERROR: Invalid session ID format: "
+                      f"{args.session_id}", file=sys.stderr)
+                sys.exit(1)
+            session_id = args.session_id
+        else:
+            session_id = generate_session_id()
+        print(f"[session] Session ID: {session_id}")
+    elif args.session_id and (args.no_session or SessionManager is None):
+        print("[session] WARNING: --session-id provided but session_id "
+              "injection is disabled — ignoring.", file=sys.stderr)
+
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    csv_path = out_dir / f'range_test_{timestamp}.csv'
-    raw_path = out_dir / f'range_test_{timestamp}.raw'
+    if session_id:
+        # Include session_id in output filenames for traceability
+        csv_path = out_dir / f'range_test_{timestamp}_{session_id}.csv'
+        raw_path = out_dir / f'range_test_{timestamp}_{session_id}.raw'
+    else:
+        csv_path = out_dir / f'range_test_{timestamp}.csv'
+        raw_path = out_dir / f'range_test_{timestamp}.raw'
 
     ser = Serial(args.port, args.baud, timeout=1.0)
     print(f"Logging {args.port} -> {csv_path}")
@@ -136,9 +174,15 @@ def main():
 
     with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['timestamp', 'type', 'seq', 'rssi', 'burst', 'rx',
-                         'unique', 'lost', 'per', 'throughput_kbps',
-                         'rssi_avg', 'rssi_min', 'bitrate', 'raw'])
+        if session_id:
+            writer.writerow(['session_id', 'timestamp', 'type', 'seq', 'rssi',
+                             'burst', 'rx', 'unique', 'lost', 'per',
+                             'throughput_kbps', 'rssi_avg', 'rssi_min',
+                             'bitrate', 'raw'])
+        else:
+            writer.writerow(['timestamp', 'type', 'seq', 'rssi', 'burst', 'rx',
+                             'unique', 'lost', 'per', 'throughput_kbps',
+                             'rssi_avg', 'rssi_min', 'bitrate', 'raw'])
 
         buf = ''
         while True:
@@ -175,8 +219,11 @@ def main():
                             print(f"  [WARN] Phantom RSSI={rssi} on pkt {pkt_num} "
                                   f"(count={phantom_count}) — firmware bug?")
 
-                    writer.writerow([now, 'PKT', seq, rssi, '', '', '', '',
-                                     '', '', '', '', '', line])
+                    writer.writerow([
+                        session_id or '',
+                        now, 'PKT', seq, rssi, '', '', '', '',
+                        '', '', '', '', '', line
+                    ])
                     pkt_count += 1
                     if pkt_count % 100 == 0:
                         print(f"  PKT {pkt_count} seq={seq} rssi={rssi}")
@@ -193,6 +240,7 @@ def main():
                               f"— RSSI still broken!")
 
                     writer.writerow([
+                        session_id or '',
                         now, 'RESULT', '',
                         int(rssi_avg) if rssi_avg else '',
                         fields.get('burst', fields.get('window', '')),
@@ -216,6 +264,8 @@ def main():
 
     elapsed = time.time() - start_time
     print(f"\n=== Session complete ===")
+    if session_id:
+        print(f"Session ID: {session_id}")
     print(f"Duration: {elapsed:.0f}s")
     print(f"Packets logged: {pkt_count}")
     print(f"Result summaries: {result_count}")
