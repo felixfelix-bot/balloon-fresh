@@ -243,6 +243,55 @@ static void test_bit_err_bytes_bad(void)
     printf("  biterr: %s\n", buf);
 }
 
+static void test_crc_snr_passthrough(void)
+{
+    /* N1 bug: The IRQ handler (radio_bench.c:424) populates e.snr_qdb
+     * from the LoRa packet status even on CRC failure. bench.c must
+     * pass that value through to the PKT line instead of zeroing it.
+     *
+     * This test simulates a CRC-failed LoRa packet where the chip
+     * measured SNR = 7.5 dB (snr_qdb = 30). The PKT line must show
+     * snr_db = 7 (30/4 = 7), NOT snr_db = 0. */
+    bench_pkt_ctx_t ctx = { .session_id = 9, .config_id = 1, .replicate = 0 };
+    char buf[256];
+
+    bench_pkt_evt_t evt = {
+        .seq            = 0,
+        .len            = 0,
+        .rssi_half_dbm  = -90,   /* -45.0 dBm — populated by E80-7 */
+        .snr_qdb        = 30,   /* 7.5 dB — populated by IRQ handler (N1 fix) */
+        .mod            = BENCH_PKT_MOD_LORA,
+        .sf             = 12,
+        .bw_hz          = 125000,
+        .freq_hz         = 868000000UL,
+        .txpow_dbm      = 10,
+        .cr             = 5,
+        .ts_ms          = 5000,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
+    };
+
+    int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 0 /* crc_ok */);
+    CHECK(n > 0);
+
+    /* crc_ok = 0 */
+    CHECK(strstr(buf, "PKT,9,1,0,0,") != NULL);
+
+    /* rssi_dbm = -90/2 = -45 */
+    CHECK(strstr(buf, ",-45,") != NULL);
+
+    /* snr_db = 30/4 = 7 (integer division) — NOT 0 */
+    /* The PKT line format: ...,rssi_dbm,snr_db,crc_ok,...
+     * With rssi=-45, snr should be 7, not 0. */
+    CHECK(strstr(buf, ",-45,7,0,") != NULL);  /* rssi=-45, snr=7, crc_ok=0 */
+
+    /* Explicitly check snr_db is NOT 0 */
+    CHECK(strstr(buf, ",-45,0,0,") == NULL);  /* would indicate the bug */
+
+    printf("  snr_pt: %s\n", buf);
+}
+
+
 int main(void)
 {
     test_basic();
@@ -250,6 +299,7 @@ int main(void)
     test_truncation_safe();
     test_crc_rssi_extraction();
     test_bit_err_bytes_bad();
+    test_crc_snr_passthrough();
 
     if (failures == 0)
     {
