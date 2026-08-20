@@ -782,6 +782,27 @@ static bool hasLaptopTime() {
     return utcOffset > 0;
 }
 
+// ─── PRBS-9 hardware test mode (LR2021 TX_TEST_MODE register) ──────────
+// When enabled, the LR2021 chip generates PRBS-9 modulation internally,
+// bypassing the FIFO data. This is a hardware-level test mode, distinct
+// from the software PRBS-15 payload fill (prbs_enabled).
+static bool prbs9_enabled = false;
+
+// LR2021 TX_TEST_MODE opcodes (from lr20xx driver: SET_TX_TEST_MODE = 0x020E)
+#define LR20XX_TX_TEST_MODE_NORMAL  0x00
+#define LR20XX_TX_TEST_MODE_PRBS9   0x03
+
+static void rfSetTxTestMode(uint8_t mode) {
+    uint8_t cmd[3] = {0x02, 0x0E, mode};
+    rfWriteCmd(cmd, 3);
+}
+
+// Safety check: is TX currently in flight (IRQ pin LOW = TX active)?
+static bool isTxActive() {
+    uint32_t irqPinMask = 1UL << PIN_IRQ;
+    return !(sio_hw->gpio_in & irqPinMask);
+}
+
 // Non-blocking: check Serial for SET_TIME command
 static void checkSerialTimeSync() {
     if (!Serial.available()) return;
@@ -836,6 +857,28 @@ static void checkSerialTimeSync() {
                         outPrintf("PRBS_DISABLED\n");
                     } else {
                         outPrintf("ERR PRBS SYNTAX (use: PRBS ON|OFF)\n");
+                    }
+                } else if (strncmp(syncBuf, "CONFIG PRBS9 ", 13) == 0) {
+                    // CONFIG PRBS9 ON|OFF — hardware PRBS-9 test mode via LR2021 register
+                    // Safety: cannot enable while TX is in flight (IRQ pin LOW = TX active)
+                    if (strcmp(syncBuf + 13, "ON") == 0) {
+                        if (isTxActive()) {
+                            outPrintf("ERR PRBS9 TX_ACTIVE (STOP FIRST)\n");
+                        } else {
+                            rfSetTxTestMode(LR20XX_TX_TEST_MODE_PRBS9);
+                            prbs9_enabled = true;
+                            outPrintf("OK PRBS9 ON\n");
+                        }
+                    } else if (strcmp(syncBuf + 13, "OFF") == 0) {
+                        if (isTxActive()) {
+                            outPrintf("ERR PRBS9 TX_ACTIVE (STOP FIRST)\n");
+                        } else {
+                            rfSetTxTestMode(LR20XX_TX_TEST_MODE_NORMAL);
+                            prbs9_enabled = false;
+                            outPrintf("OK PRBS9 OFF\n");
+                        }
+                    } else {
+                        outPrintf("ERR PRBS9 SYNTAX (use: CONFIG PRBS9 ON|OFF)\n");
                     }
                 }
                 syncLen = 0;
