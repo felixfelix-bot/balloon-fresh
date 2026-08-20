@@ -1,13 +1,20 @@
-"""Tests for M2 firmware-hash gate — parse, validate, and format session start."""
+"""Tests for M2 firmware-hash gate — parse, validate, format, check, and CLI."""
 
 import hashlib
 import os
 import subprocess
 import sys
-import tempfile
 
 import pytest
-from tools.firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start
+from tools.firmware_hash_gate import (
+    check,
+    format_session_start,
+    parse_fw_hash,
+    validate_fw_hash,
+)
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GATE_SCRIPT = os.path.join(REPO_ROOT, "tools", "firmware_hash_gate.py")
 
 
 class TestParseFwHash:
@@ -72,7 +79,6 @@ class TestCheckFileHash:
         content = b"firmware-binary-content-for-testing"
         fw_file.write_bytes(content)
         expected = hashlib.sha256(content).hexdigest()
-        from tools.firmware_hash_gate import check
         assert check(str(fw_file), expected) is True
 
     def test_check_mismatching_hash_fails(self, tmp_path):
@@ -80,42 +86,67 @@ class TestCheckFileHash:
         fw_file = tmp_path / "firmware.bin"
         fw_file.write_bytes(b"actual firmware content")
         wrong_hash = "0" * 64  # clearly wrong
-        from tools.firmware_hash_gate import check
         assert check(str(fw_file), wrong_hash) is False
 
     def test_check_missing_file_fails(self):
-        """Call check() with non-existent path — assert it returns False or raises."""
-        from tools.firmware_hash_gate import check
+        """Call check() with non-existent path — assert it returns False."""
         missing_path = "/tmp/nonexistent_firmware_12345678.bin"
-        # check() returns False for missing files (graceful handling)
         assert check(missing_path, "0" * 64) is False
 
 
 class TestCliMain:
-    """Tests for main() CLI — argparse-based firmware hash checker."""
+    """Tests for the CLI: python3 tools/firmware_hash_gate.py <firmware.bin> <expected_hash>"""
 
-    def test_cli_match_exits_zero(self, tmp_path):
-        """Run the CLI with --firmware and --expected-hash that match, assert exit code 0."""
+    def test_cli_valid_hash_match_exits_zero(self, tmp_path):
+        """Valid hash match → exit 0."""
         fw_file = tmp_path / "firmware.bin"
         content = b"cli-test-firmware-content"
         fw_file.write_bytes(content)
         expected = hashlib.sha256(content).hexdigest()
         result = subprocess.run(
-            [sys.executable, "-m", "tools.firmware_hash_gate",
-             "--firmware", str(fw_file), "--expected-hash", expected],
+            [sys.executable, GATE_SCRIPT, str(fw_file), expected],
             capture_output=True, text=True
         )
         assert result.returncode == 0
         assert "OK" in result.stdout
 
-    def test_cli_mismatch_exits_one(self, tmp_path):
-        """Run the CLI with mismatching hash, assert exit code 1."""
+    def test_cli_hash_mismatch_exits_one(self, tmp_path):
+        """Hash mismatch → exit 1."""
         fw_file = tmp_path / "firmware.bin"
         fw_file.write_bytes(b"some firmware content")
         result = subprocess.run(
-            [sys.executable, "-m", "tools.firmware_hash_gate",
-             "--firmware", str(fw_file), "--expected-hash", "0" * 64],
+            [sys.executable, GATE_SCRIPT, str(fw_file), "0" * 64],
             capture_output=True, text=True
         )
         assert result.returncode == 1
         assert "mismatch" in result.stdout.lower()
+
+    def test_cli_missing_file_exits_one(self, tmp_path):
+        """Missing firmware file → exit 1."""
+        missing = tmp_path / "does_not_exist.bin"
+        result = subprocess.run(
+            [sys.executable, GATE_SCRIPT, str(missing), "0" * 64],
+            capture_output=True, text=True
+        )
+        assert result.returncode == 1
+        assert "not found" in result.stdout.lower()
+
+    def test_cli_invalid_arguments_no_args_exits_nonzero(self):
+        """No arguments → argparse error, exit non-zero."""
+        result = subprocess.run(
+            [sys.executable, GATE_SCRIPT],
+            capture_output=True, text=True
+        )
+        assert result.returncode != 0
+        # argparse prints usage/error to stderr
+        assert "usage:" in result.stderr.lower() or "error" in result.stderr.lower()
+
+    def test_cli_invalid_arguments_one_arg_exits_nonzero(self, tmp_path):
+        """Only one argument (missing expected_hash) → argparse error, exit non-zero."""
+        fw_file = tmp_path / "firmware.bin"
+        fw_file.write_bytes(b"content")
+        result = subprocess.run(
+            [sys.executable, GATE_SCRIPT, str(fw_file)],
+            capture_output=True, text=True
+        )
+        assert result.returncode != 0
