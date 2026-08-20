@@ -20,8 +20,10 @@ Usage:
     print(f"# SESSION {session_id}")
 """
 
+import json
+import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def generate_session_id() -> str:
@@ -102,3 +104,40 @@ def inject_session_id_into_pkt(line: str, session_id: str) -> str:
 
     # Reconstruct: PKT,<session_id>,<rest>
     return f"PKT,{session_id},{parts[1]}"
+
+
+def create_session(config=None, output_dir=None) -> dict:
+    """Create a new capture session with metadata.
+
+    Generates a unique session_id, builds a metadata dict, and optionally
+    persists it to a JSON file.
+
+    Args:
+        config: Optional configuration dict to store in the session metadata.
+        output_dir: Optional directory path. If provided, the metadata is
+                    written to ``<output_dir>/session_<session_id>.json``.
+
+    Returns:
+        A metadata dict with keys: ``session_id``, ``start_time``, ``config``.
+    """
+    session_id = generate_session_id()
+    metadata = {
+        "session_id": session_id,
+        "start_time": datetime.now(timezone.utc).isoformat(),
+        "config": config,
+    }
+    if output_dir is not None:
+        filepath = os.path.join(output_dir, f"session_{session_id}.json")
+        persist_session(metadata, filepath)
+    return metadata
+
+
+def persist_session(metadata: dict, filepath: str) -> None:
+    """Write session metadata to a JSON file (pretty-printed).
+
+    Args:
+        metadata: The session metadata dict to persist.
+        filepath: The full path to the output JSON file.
+    """
+    with open(filepath, "w") as f:
+        json.dump(metadata, f, indent=2, sort_keys=True)
