@@ -1,1 +1,0 @@
-PKT,session_id,config_id,replicate,seq,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,bytes_bad,freq_hz,mod,sf,bw_khz,cr,power_dbm,pkt_size,gps_fix,gps_lat,gps_lon,gps_alt,gps_sats,gps_hdop
