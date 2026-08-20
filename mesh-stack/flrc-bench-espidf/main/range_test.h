@@ -3,6 +3,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Session context (set by host commands via serial)
+static char session_id[64] = "";
+static char config_id[32] = "";
+static uint16_t replicate_num = 0;
+
 #define RANGE_WINDOW_COUNT 16
 #define RANGE_SYNC_COUNT 5
 #define RANGE_END_COUNT 3
