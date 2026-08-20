@@ -973,13 +973,16 @@ static void radio_task(void)
             stats.rx_crc_err++;
 
             /* Per-packet PKT line for CRC failures (E80-6/M3+M4+M5).
-             * E80-7: rssi_half_dbm populated in the CRC event path. */
+             * E80-7: rssi_half_dbm populated in the CRC event path.
+             * N1 fix: snr_qdb is also populated by the IRQ handler
+             * (radio_bench.c:424) — the chip measures signal strength
+             * regardless of CRC status. Pass it through instead of zeroing. */
             {
                 bench_pkt_evt_t pe = {
                     .seq            = 0,
                     .len            = 0,
                     .rssi_half_dbm  = e.rssi_half_dbm,
-                    .snr_qdb        = 0,
+                    .snr_qdb        = e.snr_qdb,
                     .mod            = (cfg.mod == BENCH_MOD_LORA)
                                       ? BENCH_PKT_MOD_LORA : BENCH_PKT_MOD_FLRC,
                     .sf             = cfg.sf,
