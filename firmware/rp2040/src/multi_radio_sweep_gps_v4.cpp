@@ -67,7 +67,7 @@ static uint32_t lastHeartbeatMs = 0;
 #define HEARTBEAT_INTERVAL_MS 10000
 
 static void outPrintf(const char* fmt, ...) {
-    char buf[300];
+    char buf[512];
     va_list args;
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
@@ -280,6 +280,8 @@ static uint32_t totalCycleSec = 0;
 struct GpsData {
     float    lat;
     float    lon;
+    float    alt;        // MSL altitude (meters) — from GGA field 9
+    float    hdop;       // horizontal dilution of precision — from GGA field 8
     uint16_t sats;
     bool     fixValid;
     uint32_t timeSec;   // seconds since midnight UTC
@@ -287,7 +289,14 @@ struct GpsData {
     uint32_t unixTime;    // true Unix epoch seconds (date + time from RMC)
     bool     hasUnixTime; // GPS gave us a complete date+time → real Unix epoch
 };
-static GpsData gps = {0, 0, 0, false, 0, false, 0, false};
+static GpsData gps = {0, 0, 0, 0, 0, false, 0, false, 0, false};
+
+// ─── Harmonized PKT session/config state (M3) ────────────────────────
+// session_id and config_id are set via serial commands (SESSION/CONFIG).
+// replicate tracks repeated runs of the same config.
+static char     sessionId[32] = "";   // set by SESSION <id> command
+static char     configId[32]  = "";   // set by CONFIG <id> command
+static uint32_t replicate    = 0;   // incremented on CONFIG_START
 
 // ─── Days-since-1970 helper (Howard Hinnant's civil-from-days algorithm) ──
 static uint32_t daysSinceEpoch(uint16_t year, uint8_t month, uint8_t day) {
@@ -368,8 +377,8 @@ static void parseNMEA(const char *sentence) {
         int nsat = 0;
 
         int parsed = sscanf(sentence,
-            "$%*2sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,",
-            timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat);
+            "$%*2sGGA,%15[^,],%15[^,],%c,%15[^,],%c,%d,%d,%f,%f,",
+            timeStr, latStr, &ns, lonStr, &ew, &fix, &nsat, &gps.hdop, &gps.alt);
 
         // GGA: $GNGGA,hhmmss.ss,llll.ll,N,yyyyy.yy,E,f,nn,...
         // With no fix: $GNGGA,hhmmss.ss,,,,,0,00,...
@@ -806,7 +815,7 @@ static bool isTxActive() {
 // Non-blocking: check Serial for SET_TIME command
 static void checkSerialTimeSync() {
     if (!Serial.available()) return;
-    static char syncBuf[64];
+    static char syncBuf[128];
     static int syncLen = 0;
     while (Serial.available()) {
         char c = Serial.read();
@@ -848,6 +857,18 @@ static void checkSerialTimeSync() {
                         outPrintf("INTERLEAVE_OFF phases=%d cycle=%lus\n",
                                    NUM_PHASES, (unsigned long)totalCycleSec);
                     }
+                } else if (strncmp(syncBuf, "SESSION ", 8) == 0) {
+                    // SESSION <id> — set session identifier for PKT lines
+                    strncpy(sessionId, syncBuf + 8, sizeof(sessionId) - 1);
+                    sessionId[sizeof(sessionId) - 1] = '\0';
+                    outPrintf("SESSION_SET %s\n", sessionId);
+                } else if (strncmp(syncBuf, "CONFIG ", 7) == 0) {
+                    // CONFIG <id> — set config identifier and bump replicate
+                    strncpy(configId, syncBuf + 7, sizeof(configId) - 1);
+                    configId[sizeof(configId) - 1] = '\0';
+                    replicate++;
+                    outPrintf("CONFIG_SET %s replicate=%lu\n",
+                              configId, (unsigned long)replicate);
                 } else if (strncmp(syncBuf, "PRBS ", 5) == 0) {
                     if (strcmp(syncBuf + 5, "ON") == 0) {
                         prbs_enabled = true;
@@ -960,8 +981,11 @@ static void formatUTCTime(uint32_t sec, char *buf, size_t buflen) {
 
 // ─── TX state ────────────────────────────────────────────────────────
 static int currentPhase = -1;
-static uint16_t seqInPhase = 0;
+// M6: seqInPhase is static uint32_t and NEVER resets (monotonic across phases)
+static uint32_t seqInPhase = 0;
 static uint32_t phaseStartMs = 0;
+// Per-phase packet counter (resets on phase change, used for slot timing)
+static uint16_t pktsSentInPhase = 0;
 
 // ─── Setup ───────────────────────────────────────────────────────────
 void setup() {
@@ -1225,13 +1249,20 @@ void loop() {
             }
         }
         currentPhase = phase;
-        seqInPhase = 0;
+        // M6: seqInPhase is NOT reset here — it's a monotonic uint32 counter
+        pktsSentInPhase = 0;  // reset per-phase packet counter for slot timing
         phaseStartMs = millis();
 
         const Phase &p = *getPhaseEntry(phase);
         rfInitForPhase(p);
         delay(50);
         gpsPoll();  // drain GPS UART after ~100ms of SPI radio init
+
+        // O4: Emit CONFIG_START when switching configurations
+        outPrintf("CONFIG_START,%s,%lu,%lu\n",
+                  configId[0] ? configId : p.name,
+                  (unsigned long)replicate,
+                  (unsigned long)millis());
 
         char tbuf[16] = "NO_GPS";
         if (gps.hasTime) formatUTCTime(gps.timeSec, tbuf, sizeof(tbuf));
@@ -1292,8 +1323,9 @@ void loop() {
     // V4/PRBS-6: fill bytes 29 to pktSize-3 with PRBS-15 pattern seeded by seq
     // (start at 29 to cover bytes between FW hash end and CRC start)
     // When PRBS OFF: zero fill (for throughput testing without BER measurement)
+    // Use pktsSentInPhase for PRBS seed so RX can correlate within each phase
     if (prbs_enabled && pktSize > PRBS_START + 2) {
-        prbs15_fill(&txBuf[PRBS_START], pktSize - PRBS_START - 2, seqInPhase);
+        prbs15_fill(&txBuf[PRBS_START], pktSize - PRBS_START - 2, pktsSentInPhase);
     } else {
         memset(&txBuf[PRBS_START], 0, pktSize - PRBS_START - 2);
     }
@@ -1319,8 +1351,8 @@ void loop() {
         return;
     }
 
-    // Check if we've sent all packets
-    if (seqInPhase >= p.pktCount) {
+    // Check if we've sent all packets (per-phase counter)
+    if (pktsSentInPhase >= p.pktCount) {
         // Sent all packets, wait for phase to end
         gpsPoll();
         delay(10);
@@ -1343,8 +1375,8 @@ void loop() {
     txBuf[3] = 0x24;
     embedGPS(txBuf);
     txBuf[19] = (uint8_t)currentPhase;
-    txBuf[20] = (uint8_t)(seqInPhase >> 8);
-    txBuf[21] = (uint8_t)(seqInPhase & 0xFF);
+    txBuf[20] = (uint8_t)(pktsSentInPhase >> 8);
+    txBuf[21] = (uint8_t)(pktsSentInPhase & 0xFF);
     // Append 7-char firmware git hash so RX can verify TX build compatibility
     memcpy(&txBuf[22], FW_HASH_CHARS, 7);
 
@@ -1386,18 +1418,47 @@ void loop() {
                   (unsigned long)(millis() - txStartMs), currentPhase);
     }
 
-    // Output per-packet log
-    int16_t rssiDbm = 0; // TX doesn't have RSSI; placeholder for RX sync
-    // V4: include pktSize in per-packet log
-    outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s\n", seqInPhase, rssiDbm,
-              currentPhase, pktSize, FW_GIT_HASH);
+    // Output per-packet log — M3+M4+M5: 23-field harmonized PKT format
+    // TX-side: rssi_dbm=0, snr_db=0 (TX doesn't receive), crc_ok=1 (valid TX)
+    //          bit_err=0, bytes_bad=0 (no RX errors on TX side)
+    // M5: All config fields from the phase config table (freq_hz, mod, sf, bw_khz, cr, power_dbm, pkt_size)
+    uint32_t freqHz = (uint32_t)(p.freqMHz * 1e6f);
+    const char* modStr = (p.pktType == PT_LORA) ? "LORA" : "FLRC";
+    // Map bwCode to kHz: 0x0F=812, 0x05=250, 0x06=500, 0x0D=203.125, 0x0E=406.25
+    uint16_t bwKhz = 0;
+    if (p.bwCode == 0x0F)      bwKhz = 812;
+    else if (p.bwCode == 0x05) bwKhz = 250;
+    else if (p.bwCode == 0x06) bwKhz = 500;
+    else if (p.bwCode == 0x0D) bwKhz = 203;
+    else if (p.bwCode == 0x0E) bwKhz = 406;
+    outPrintf("PKT,%s,%s,%lu,%lu,%lu,0,0,1,0,0,%lu,%s,%u,%u,%u,%d,%u,%d,%.5f,%.5f,%.1f,%u,%.1f\n",
+              sessionId,
+              configId[0] ? configId : p.name,
+              (unsigned long)replicate,
+              (unsigned long)seqInPhase,
+              (unsigned long)millis(),
+              (unsigned long)freqHz,
+              modStr,
+              p.sf,
+              bwKhz,
+              p.cr,
+              (int)TX_POWER_DBM,
+              pktSize,
+              gps.fixValid ? 1 : 0,
+              gps.fixValid ? gps.lat : 0.0f,
+              gps.fixValid ? gps.lon : 0.0f,
+              gps.fixValid ? gps.alt : 0.0f,
+              gps.sats,
+              gps.fixValid ? gps.hdop : 0.0f);
 
-    digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
+    digitalWrite(PIN_LED, (pktsSentInPhase & 1) ? HIGH : LOW);
 
+    // M6: seqInPhase is monotonic (never resets), pktsSentInPhase resets per phase
     seqInPhase++;
+    pktsSentInPhase++;
 
-    // Spread packets across slot
-    uint32_t targetTime = (uint32_t)seqInPhase * (uint32_t)p.slotMs / (uint32_t)p.pktCount;
+    // Spread packets across slot (use per-phase counter for timing)
+    uint32_t targetTime = (uint32_t)pktsSentInPhase * (uint32_t)p.slotMs / (uint32_t)p.pktCount;
     elapsedInPhase = millis() - phaseStartMs;
     if (elapsedInPhase < targetTime) {
         // Wait, but keep polling GPS
