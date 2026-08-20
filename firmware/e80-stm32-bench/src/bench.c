@@ -764,6 +764,8 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_u32(pkt_ctx.replicate);
         console_put(" drops=");
         console_put_u32(radio_bench_evt_drops());
+        console_put(" gap_us=");
+        console_put_u32(tx_gap_us);
         console_putln("");
         break;
     }

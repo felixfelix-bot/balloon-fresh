@@ -34,9 +34,21 @@ Ctrl-C at any time sends STOP to both boards and marks the stop ABORTED.
 import argparse
 import csv
 import datetime
+import os
 import re
 import sys
 import time
+
+# Firmware hash gate (M2)
+_TOOLS_DIR = os.path.expanduser("~/repos/balloon-fresh/tools")
+if _TOOLS_DIR not in sys.path:
+    sys.path.insert(0, _TOOLS_DIR)
+try:
+    from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start
+except ImportError:
+    parse_fw_hash = None
+    validate_fw_hash = None
+    fmt_session_start = None
 
 BAUD = 2000000
 PARITY = "N"
@@ -73,6 +85,58 @@ ANCHOR_KEY = "flrc650"
 ANCHOR_LEN = 255
 MATRIX_LEN = 51
 CI_HI_NHI_PCT = 2.0              # Wilson ci_hi threshold for the 10^4 regime
+
+BOOT_BANNER_TIMEOUT = 10.0  # seconds to wait for FW_HASH in boot banner
+
+
+def firmware_hash_gate(board, port_label, skip=False):
+    """M2: Read boot banner lines from a freshly opened board, look for
+    FW_HASH=<7+hexchars>, refuse to proceed if missing/invalid.
+
+    Returns the validated hash string, or None if skipped.
+    Returns False if the gate FAILED (no valid hash found).
+    """
+    if skip or parse_fw_hash is None:
+        print("[FW GATE] SKIPPED (--skip-fw-check or firmware_hash_gate not available)")
+        return None
+
+    print("[FW GATE] Waiting for boot banner on {} (timeout {:.0f}s)…".format(
+        port_label, BOOT_BANNER_TIMEOUT))
+    buf = ""
+    gate_start = time.time()
+    while (time.time() - gate_start) < BOOT_BANNER_TIMEOUT:
+        data = board.ser.read(256)
+        if not data:
+            continue
+        text = data.decode("ascii", errors="replace")
+        buf += text
+        while "\n" in buf:
+            line, buf = buf.split("\n", 1)
+            line = line.strip()
+            if not line:
+                continue
+            candidate = parse_fw_hash(line)
+            if candidate:
+                if validate_fw_hash(candidate):
+                    print("[FW GATE] Valid FW_HASH={} on {} — authorised.".format(
+                        candidate, port_label))
+                    return candidate
+                else:
+                    print("[FW GATE] Found FW_HASH={} but invalid (too short or 'unknown').".format(
+                        candidate))
+    print("[FW GATE] ERROR: No valid FW_HASH found in boot banner on {}!".format(port_label))
+    print("[FW GATE] Refusing to proceed. Flash firmware with FW_HASH or use --skip-fw-check.")
+    return False  # False = gate failed (distinct from None = skipped)
+
+
+def write_session_start_header(log, tx_fw, rx_fw, operator="?", rig="?"):
+    """Write a SESSION_START comment header to the campaign CSV."""
+    if fmt_session_start is not None:
+        log._comment(fmt_session_start(tx_fw or "unknown", rx_fw or "unknown",
+                                       operator, rig))
+    else:
+        log._comment("SESSION_START tx_fw={} rx_fw={}".format(
+            tx_fw or "unknown", rx_fw or "unknown"))
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +298,7 @@ def parse_stat(reply):
     out["rssi"] = _f("rssi_avg_dbm", "rssi")
     out["snr"] = _f("snr_avg_db", "snr")
     out["drops"] = int(_f("drops") or 0)
+    out["gap_us"] = int(_f("gap_us") or 0)
     return out
 
 
@@ -397,11 +462,22 @@ def run(args):
 
     print("-- RX board (arm first) --")
     rx = BoardSerial(args.rx)
+    rx_fw = firmware_hash_gate(rx, args.rx, skip=args.skip_fw_check)
+    if rx_fw is False:
+        rx.close()
+        sys.exit("ERROR: FW hash gate failed on RX board")
+    rx.drain()
     for c in rx_cmds:
         rx.cmd(c)
 
     print("-- TX board --")
     tx = BoardSerial(args.tx)
+    tx_fw = firmware_hash_gate(tx, args.tx, skip=args.skip_fw_check)
+    if tx_fw is False:
+        tx.close()
+        rx.close()
+        sys.exit("ERROR: FW hash gate failed on TX board")
+    tx.drain()
     for c in tx_cmds:
         tx.cmd(c, timeout=max(30.0, args.n * (args.length * 8 / 650e3) + 30))
 
@@ -429,6 +505,9 @@ def run(args):
     if args.csv:
         cell = make_cell("flrc650", args.n, length=args.length)
         log = CsvLog(args.csv)
+        write_session_start_header(log, tx_fw, rx_fw,
+                                   operator=os.environ.get("USER", "?"),
+                                   rig="e80-bench")
         log.cell_row(args, cell, rx_stat, parse_stat(tx.stat()))
         print("CSV row appended: {}".format(args.csv))
 
@@ -494,11 +573,22 @@ def run_matrix(args, board_cls=None, sleep_fn=time.sleep, now_fn=time.time):
     rx = board_cls(args.rx)
     tx = None
     try:
+        rx_fw = firmware_hash_gate(rx, args.rx, skip=args.skip_fw_check)
+        if rx_fw is False:
+            raise RuntimeError("FW hash gate failed on RX board")
+        rx.drain()
         print("-- RX pre-flight --")
         _, id_rx = preflight(rx, args, "RX", power_unlock)
         tx = board_cls(args.tx)
         print("-- TX pre-flight --")
+        tx_fw = firmware_hash_gate(tx, args.tx, skip=args.skip_fw_check)
+        if tx_fw is False:
+            raise RuntimeError("FW hash gate failed on TX board")
+        tx.drain()
         _, id_tx = preflight(tx, args, "TX", power_unlock)
+        write_session_start_header(log, tx_fw, rx_fw,
+                                   operator=os.environ.get("USER", "?"),
+                                   rig="e80-bench")
         log.stop_meta(args, id_tx=id_tx, id_rx=id_rx,
                       t0_str=datetime.datetime.fromtimestamp(t0).isoformat())
 
@@ -674,6 +764,8 @@ def main():
                     help="seconds RX arms before cell start (default 10)")
     ap.add_argument("--settle", type=int, default=2,
                     help="post-burst settle seconds before RX STAT? (default 2)")
+    ap.add_argument("--skip-fw-check", action="store_true",
+                    help="skip firmware hash gate (not recommended)")
     args = ap.parse_args()
 
     if args.matrix:
