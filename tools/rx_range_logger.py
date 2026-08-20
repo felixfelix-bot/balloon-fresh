@@ -37,6 +37,15 @@ except ImportError:
     # Fall back to raw serial if board_serial not available
     Serial = serial.Serial
 
+# Firmware hash gate (HOST-1) — prevents logging with mismatched firmware
+try:
+    from firmware_hash_gate import FirmwareHashGate, HashMismatchError
+except ImportError:
+    print("WARNING: firmware_hash_gate not found — firmware hash "
+          "verification disabled", file=sys.stderr)
+    FirmwareHashGate = None
+    HashMismatchError = Exception
+
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
 
@@ -66,7 +75,46 @@ def main():
     parser.add_argument('--baud', type=int, default=115200)
     parser.add_argument('--out', default='data', help='Output directory')
     parser.add_argument('--duration', type=int, default=0, help='Stop after N seconds (0=forever)')
+    parser.add_argument('--fw-hash', default=None,
+                        help='Expected firmware git hash (7-char, e.g. "abc123d"). '
+                             'If set, the logger queries the board via FW_QUERY '
+                             'and refuses to capture if the hash does not match.')
+    parser.add_argument('--fw-verify-timeout', type=float, default=5.0,
+                        help='Timeout in seconds for firmware hash verification '
+                             '(default: 5.0)')
     args = parser.parse_args()
+
+    # Firmware hash gate (HOST-1)
+    if args.fw_hash and FirmwareHashGate is not None:
+        gate = FirmwareHashGate(expected_hash=args.fw_hash)
+        print(f"[gate] Verifying firmware hash: expecting {args.fw_hash}")
+        # Open serial temporarily for the hash query
+        verify_ser = Serial(args.port, args.baud, timeout=1.0)
+        try:
+            try:
+                verified = gate.verify_from_serial(verify_ser,
+                                                   timeout=args.fw_verify_timeout)
+            except HashMismatchError as e:
+                print(f"[gate] FAIL: {e}", file=sys.stderr)
+                print("[gate] Aborting capture — firmware hash mismatch. "
+                      "Reflash the correct firmware before logging.",
+                      file=sys.stderr)
+                sys.exit(1)
+        finally:
+            verify_ser.close()
+
+        if not verified:
+            print(f"[gate] FAIL: No FW_BOOT response from board within "
+                  f"{args.fw_verify_timeout}s — cannot verify firmware.",
+                  file=sys.stderr)
+            print("[gate] Aborting capture. Firmware hash verification is "
+                  "required but the board did not respond.", file=sys.stderr)
+            sys.exit(1)
+        print(f"[gate] OK: Firmware hash verified — safe to capture.")
+    elif args.fw_hash:
+        print("[gate] WARNING: --fw-hash specified but firmware_hash_gate "
+              "module not available — proceeding without verification",
+              file=sys.stderr)
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
