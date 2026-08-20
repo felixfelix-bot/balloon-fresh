@@ -62,7 +62,7 @@ extern "C" {
 /* Default console: USART1 2,000,000 8N1. CH340 supports 2 Mbps,
  * STM32F103 USART1 supports up to 4.5 Mbps. The RX path is
  * interrupt-driven with a ring buffer. */
-#define E80_BENCH_BAUD_DEFAULT 2000000U
+#define E80_BENCH_BAUD_DEFAULT 115200U
 
 /* Radio default: 868.0 MHz (EU SRD 863-870). */
 #define E80_BENCH_FREQ_DEFAULT_HZ 868000000UL
