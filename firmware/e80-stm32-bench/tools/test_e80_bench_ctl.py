@@ -26,7 +26,7 @@ def make_args(**kw):
         csv=None, band_override=True, site="siteA", stop="S3", dist_m="200",
         repeat=2, gps_tx="52.01,4.04", gps_rx="52.02,4.01", h_tx="1.5",
         h_rx="1.5", ground="grass", weather="12C clear", t0=None,
-        t0_margin=120, guard=20, rx_lead=10, settle=2,
+        t0_margin=120, guard=20, rx_lead=10, settle=2, skip_fw_check=True,
     )
     base.update(kw)
     return argparse.Namespace(**base)
