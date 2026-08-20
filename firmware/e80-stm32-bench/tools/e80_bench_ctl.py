@@ -39,10 +39,12 @@ import re
 import sys
 import time
 
-# Firmware hash gate (M2)
-_TOOLS_DIR = os.path.expanduser("~/repos/balloon-fresh/tools")
-if _TOOLS_DIR not in sys.path:
-    sys.path.insert(0, _TOOLS_DIR)
+# Firmware hash gate (M2) — local copy in tools/
+_TOOLS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools")
+# When running from firmware/e80-stm32-bench/tools/, the repo tools/ dir is two levels up
+_REPO_TOOLS = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools")
+if _REPO_TOOLS not in sys.path:
+    sys.path.insert(0, _REPO_TOOLS)
 try:
     from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start
 except ImportError:
