@@ -12,9 +12,9 @@ Gates (kanban t_dd4e516b, FLASH-QUEUE approved row):
   G3  after BUF CLEAR, START replies 'OK START ... src=PRBS'
 
 Binary-phase rules (docs/plans/tx-buffer-spec.md):
-  - Command lines use CRLF consistently.  The firmware drains the UART
-    RXNE register and swallows the pending '\n' in console_binary_start()
-    BEFORE entering the binary phase, so no '\n' leaks into the payload.
+  - Command line ends with a BARE CR (no LF): getline() consumes the CR,
+    so nothing is left for console_binary_start()'s single CR/LF swallow
+    -> no race between the swallow and the first payload byte.
   - Dedicated non-retrying loader: once 'OK BINARY <n>' is seen there is
     NO reset_input_buffer and NO retry — a corrupted load fails loudly.
   - Idle timeout 1.0 s between payload bytes; firmware is silent between
@@ -75,6 +75,10 @@ class Console:
         self.write_raw(line.encode() + b"\r\n")
         return self.readline()
 
+    def cmd_cr_only(self, line: str) -> None:
+        """BUF LOAD preamble: bare CR so the swallow has nothing to eat."""
+        self.write_raw(line.encode() + b"\r")
+
     def readline(self, timeout: float = 3.0) -> str:
         """One console line (stripped); raises on timeout."""
         deadline = time.monotonic() + timeout
@@ -123,10 +127,7 @@ def buf_load(con: Console, payload: bytes) -> str:
     """One full load cycle. NO retry, NO input flush after the preamble."""
     n = len(payload)
     crc = crc16_ccitt_false(payload)
-    # CRLF is safe: console_binary_start() drains RXNE and swallows the
-    # '\n' before entering the binary phase.  The NVIC guard prevents ISR
-    # /polling duplicate-byte races that corrupted the ring on bare-CR.
-    con.write_raw(f"BUF LOAD {n} {crc:04X}\r\n".encode())
+    con.cmd_cr_only(f"BUF LOAD {n} {crc:04X}")
     ack = con.expect("OK BINARY ", timeout=3.0)
     if ack != f"OK BINARY {n}":
         raise Fail(f"bad ack {ack!r}")
@@ -141,7 +142,7 @@ def buf_load(con: Console, payload: bytes) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", default="/dev/ttyUSB4")
+    ap.add_argument("--port", default="/dev/ttyUSB3")
     ap.add_argument("--baud", type=int, default=115200)
     ap.add_argument("--loads", type=int, default=10)
     ap.add_argument("--size", type=int, default=4096)
@@ -163,16 +164,10 @@ def main() -> int:
         print(f"FAIL: no bench banner on ID?: {ident!r}")
         return 1
     print(f"board: {ident}")
-    # Skip ROLE NONE if already NONE — ID? does a radio wake/sleep cycle,
-    # and calling radio_sleep_now() again on an already-asleep radio can
-    # hang the SPI bus (firmware bug, not under test here).
-    if "role=NONE" not in ident:
-        line = con.cmd("ROLE NONE")
-        if not line.startswith("OK ROLE NONE"):
-            print(f"FAIL: ROLE NONE -> {line!r}")
-            return 1
-    else:
-        print("pre-state: role already NONE (skipping redundant ROLE NONE)")
+    line = con.cmd("ROLE NONE")
+    if not line.startswith("OK ROLE NONE"):
+        print(f"FAIL: ROLE NONE -> {line!r}")
+        return 1
 
     # --- G1: 10/10 full-capacity random loads ------------------------------
     st = ""
