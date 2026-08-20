@@ -41,6 +41,7 @@ typedef enum bench_cmd_id_e
     BENCH_CMD_HELP,          /* HELP */
     BENCH_CMD_SESSION,       /* SESSION <id> — set session_id for PKT lines */
     BENCH_CMD_CONFIG,        /* CONFIG <id> <replicate> — set config_id/replicate */
+    BENCH_CMD_PRBS9,         /* PRBS9 ON|OFF — chip-level PRBS9 TX test mode */
 } bench_cmd_id_t;
 
 typedef enum bench_role_e
@@ -89,6 +90,7 @@ typedef struct bench_cmd_s
     uint32_t session_id;  /* SESSION <id> */
     uint32_t config_id;   /* CONFIG <id> <replicate> */
     uint32_t replicate;   /* CONFIG <id> <replicate> */
+    bool     prbs9_enable; /* PRBS9 ON|OFF */
 } bench_cmd_t;
 
 /**
