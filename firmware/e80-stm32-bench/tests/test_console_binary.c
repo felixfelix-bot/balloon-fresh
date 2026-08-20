@@ -184,6 +184,11 @@ static void test_idle_timeout(void)
     CHECK(line != NULL);
     if (line)
         CHECK(strcmp(line, "STAT?") == 0);
+
+    /* T1 harness fix (BUF-T2): consume the line like a firmware handler
+     * reply would (see test_line_mode_untouched) — else line_ready stays
+     * set and the next test's getline returns NULL. Wire-silent. */
+    console_put("");
 }
 
 /* ---- Idle timeout with zero bytes ever received ------------------------------ */
@@ -214,6 +219,14 @@ static void test_line_mode_untouched(void)
     CHECK(line != NULL);
     if (line)
         CHECK(strcmp(line, "STAT?") == 0);
+
+    /* T1 harness fix (BUF-T2): in firmware every handled line gets a reply,
+     * and console_put marks the line consumed. This test has no reply, so
+     * line_ready stayed set and the NEXT test's getline returned NULL (the
+     * getline contract: "caller must consume previous line first"). Consume
+     * it exactly like the handler would — console_put("") emits zero bytes
+     * and only clears the pending-line flag. */
+    console_put("");
 }
 
 int main(void)
