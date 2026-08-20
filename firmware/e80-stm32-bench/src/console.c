@@ -171,3 +171,29 @@ void console_put_dec1(int32_t value_x10)
     HAL_UART_Transmit(&huart1, (const uint8_t*)".", 1, 100);
     console_put_u32((uint32_t)(value_x10 % 10));
 }
+
+/* ---- Binary payload receive phase --------------------------------------------
+ * TDD RED STUBS: no-op bodies so the T1 host suite links and FAILS (RED).
+ * Task BUF-T2 implements the real state machine here (GREEN). */
+void console_binary_start(uint16_t n, uint16_t expected_crc, uint32_t now_ms)
+{
+    (void)n;
+    (void)expected_crc;
+    (void)now_ms; /* RED stub */
+}
+
+bool console_binary_active(void)
+{
+    return false; /* RED stub */
+}
+
+console_bin_state_t console_binary_poll(uint32_t now_ms)
+{
+    (void)now_ms;
+    return CONSOLE_BIN_IDLE; /* RED stub */
+}
+
+console_bin_state_t console_binary_state(void)
+{
+    return CONSOLE_BIN_IDLE; /* RED stub */
+}
