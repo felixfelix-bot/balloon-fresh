@@ -10,7 +10,7 @@ from datetime import datetime
 
 TX_PORT = "/dev/ttyUSB3"
 RX_PORT = "/dev/ttyUSB4"
-BAUD = 2000000
+BAUD = 115200
 FREQ = 868000000
 
 SWEEPS = [
