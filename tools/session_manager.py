@@ -141,3 +141,154 @@ def persist_session(metadata: dict, filepath: str) -> None:
     """
     with open(filepath, "w") as f:
         json.dump(metadata, f, indent=2, sort_keys=True)
+
+
+# ── Central session store ────────────────────────────────────────────────
+# The "current" session is persisted to a central JSON file so that multiple
+# capture tools can share the same session_id without re-generating it.
+
+DEFAULT_SESSION_FILE = os.path.expanduser("~/.balloon/session.json")
+
+
+def _default_session_file() -> str:
+    """Return the default central session file path (~/.balloon/session.json).
+
+    Honors the BALLOON_SESSION_FILE environment variable if set, to support
+    tests and isolated environments.
+    """
+    return os.environ.get("BALLOON_SESSION_FILE", DEFAULT_SESSION_FILE)
+
+
+def save_current_session(session_id: str, filepath: str | None = None) -> str:
+    """Persist the current session_id to the central session file.
+
+    Creates the parent directory if it does not exist.
+
+    Args:
+        session_id: The session_id to save as current.
+        filepath: Optional override for the session file path. If None, uses
+                  the default (~/.balloon/session.json or $BALLOON_SESSION_FILE).
+
+    Returns:
+        The path the session was written to.
+    """
+    path = filepath or _default_session_file()
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    data = {
+        "session_id": session_id,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+    return path
+
+
+def load_current_session(filepath: str | None = None) -> str | None:
+    """Read the current session_id from the central session file.
+
+    Args:
+        filepath: Optional override for the session file path. If None, uses
+                  the default (~/.balloon/session.json or $BALLOON_SESSION_FILE).
+
+    Returns:
+        The current session_id string, or None if no session file exists.
+    """
+    path = filepath or _default_session_file()
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return data.get("session_id")
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def new_session(filepath: str | None = None) -> str:
+    """Generate a new session_id and save it as the current session.
+
+    Args:
+        filepath: Optional override for the session file path.
+
+    Returns:
+        The newly generated session_id.
+    """
+    session_id = generate_session_id()
+    save_current_session(session_id, filepath)
+    return session_id
+
+
+def set_session(session_id: str, filepath: str | None = None) -> str:
+    """Set the current session_id to an explicit value.
+
+    Args:
+        session_id: The session_id to set as current.
+        filepath: Optional override for the session file path.
+
+    Returns:
+        The session_id that was set.
+    """
+    save_current_session(session_id, filepath)
+    return session_id
+
+
+def current_session(filepath: str | None = None) -> str | None:
+    """Return the current session_id (alias for load_current_session)."""
+    return load_current_session(filepath)
+
+
+def _cli(argv=None) -> int:
+    """CLI entry point for session management.
+
+    Usage:
+        python -m tools.session_manager --new-session
+        python -m tools.session_manager --current-session
+        python -m tools.session_manager --set-session <id>
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="session_manager",
+        description="Manage capture session IDs (HOST-3).",
+    )
+    grp = parser.add_mutually_exclusive_group(required=True)
+    grp.add_argument(
+        "--new-session",
+        action="store_true",
+        help="Generate a new session_id and set it as current.",
+    )
+    grp.add_argument(
+        "--current-session",
+        action="store_true",
+        help="Print the current session_id (from ~/.balloon/session.json).",
+    )
+    grp.add_argument(
+        "--set-session",
+        metavar="ID",
+        help="Set the current session_id to the given value.",
+    )
+    args = parser.parse_args(argv)
+
+    if args.new_session:
+        sid = new_session()
+        print(sid)
+        return 0
+    if args.current_session:
+        sid = load_current_session()
+        if sid is not None:
+            print(sid)
+            return 0
+        print("(no current session)", file=__import__("sys").stderr)
+        return 1
+    if args.set_session is not None:
+        set_session(args.set_session)
+        print(args.set_session)
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_cli())
