@@ -443,17 +443,19 @@ const char* bench_cmd_err_str(bench_cmd_err_t e)
 
 /* ---- START per-mod LEN gate (FIX-T2) ---------------------------------- */
 
-/* TDD RED STUB: wrong on purpose so the truth-table test fails before the
- * GREEN implementation lands. Returns "" (never NULL) so strcmp-based
- * assertions crash nowhere. */
 bool bench_start_len_ok(bench_mod_t mod, uint32_t len)
 {
-    (void)mod;
-    (void)len;
-    return true;
+    switch (mod)
+    {
+    case BENCH_MOD_FLRC:
+        return len <= BENCH_START_LEN_MAX_FLRC;
+    default:
+        /* BENCH_MOD_LORA and anything unexpected: conservative 255 cap. */
+        return len <= BENCH_START_LEN_MAX_LORA;
+    }
 }
 
 const char* bench_start_len_err_str(void)
 {
-    return "";
+    return "LEN (MAX 255 LORA / 511 FLRC)";
 }
