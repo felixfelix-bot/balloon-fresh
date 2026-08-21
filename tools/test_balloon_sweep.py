@@ -370,20 +370,24 @@ class CsvJoinabilityTests(unittest.TestCase):
         self.assertEqual(rd[0], bs.PKT_FIELDS)
         body = rd[1:]
         # every PKT row joins to a known (session, config) block
-        keys = {(int(r_[4]), int(r_[5])) for r_ in body}   # session, config
+        keys = {(int(r_[3]), int(r_[4])) for r_ in body}   # session, config
         self.assertTrue(keys <= {(2608211756, 0), (2608211756, 1)})
         # cross-board join key: STAT session == PKT session
         stat = r["stats"][-1]
         self.assertEqual(stat["session"], 2608211756)
         self.assertIn((stat["session"], stat["config"]), keys)
-        # pkt_idx strictly increasing within a config block
+        # pkt_idx strictly increasing within a config block over OK rows
+        # (spec S3: CRC-fail rows carry seq=0 and stay out of the sequence)
         seen = {}
         for r_ in body:
-            key = (int(r_[4]), int(r_[5]))
-            pkt_idx = int(r_[2])
-            if key in seen:
-                self.assertGreater(pkt_idx, seen[key])
-            seen[key] = pkt_idx
+            key = (int(r_[3]), int(r_[4]))
+            pkt_idx, crc_ok = int(r_[2]), int(r_[9])
+            if crc_ok == 1:
+                if key in seen:
+                    self.assertGreater(pkt_idx, seen[key])
+                seen[key] = pkt_idx
+            else:
+                self.assertEqual(pkt_idx, 0)   # spec S3: CRC-fail -> seq 0
         # row values round-trip: session/config/pkt_idx/ts/pcrc16 present
         first = dict(zip(bs.PKT_FIELDS, body[0]))
         self.assertEqual(first["session"], "2608211756")
