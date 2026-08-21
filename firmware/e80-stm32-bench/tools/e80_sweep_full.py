@@ -352,6 +352,20 @@ def build_configs():
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=f,
                          plen=64, gap=gap, label=f"SF8 BW125 @ {f/1e6:.3f}MHz"))
+    # G. FLRC LEN matrix @ BR650 pa5 — large-packet coverage (operator priority
+    #    2026-08-21: >256 B sizes thoroughly covered; 511 = FLRC fw max, legal
+    #    ONLY in FLRC — LoRa silicon cap is 255). gap 40 ms: console pressure
+    #    headroom for 511 B PKT lines @ 115200 baud (drops watch item).
+    FLRC_LEN_MATRIX = [16, 64, 128, 192, 255, 256, 300, 384, 448, 511]
+    for plen in FLRC_LEN_MATRIX:
+        cfgs.append(dict(mod="flrc", br=650, pa=5, freq=DEFAULT_FREQ,
+                         plen=plen, gap=40000,
+                         label=f"FLRC 650k pa5 L{plen}"))
+    # G2. large-packet x BR interaction (does 511 hold at higher BR?)
+    for br, plen in ((1300, 384), (1300, 511), (2600, 511)):
+        cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ,
+                         plen=plen, gap=40000,
+                         label=f"FLRC {br}k pa5 L{plen}"))
     return cfgs
 
 
@@ -363,6 +377,10 @@ PKT_FIELDS = ["idx", "label", "pkt_idx", "session", "config", "replicate",
 
 
 def main():
+    # --only <substring>: run only configs whose label contains the substring
+    only = None
+    if len(sys.argv) > 2 and sys.argv[1] == "--only":
+        only = sys.argv[2]
     ts = datetime.now()
     session_id = int(ts.strftime("%y%m%d%H%M"))
     print(f"E80 FULL Sweep — {ts.isoformat()}  session={session_id}", flush=True)
@@ -372,7 +390,9 @@ def main():
     print(f"Ports: TX={tx_port} RX={rx_port}", flush=True)
 
     cfgs = build_configs()
-    print(f"Configs: {len(cfgs)}", flush=True)
+    if only:
+        cfgs = [c for c in cfgs if only.lower() in c["label"].lower()]
+    print(f"Configs: {len(cfgs)}{f' (filter={only!r})' if only else ''}", flush=True)
     print("=" * 90, flush=True)
 
     ts_str = ts.strftime("%Y%m%d-%H%M%S")
