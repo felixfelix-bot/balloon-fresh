@@ -201,6 +201,36 @@ static void test_start(void)
     CHECK(c.err == BENCH_CMD_E_ARG);
 }
 
+static void test_start_len_truth_table(void)
+{
+    /* FIX-T2: per-modulation START LEN cap — RX branch must gate exactly like
+     * TX (docs/rca-fix-plan-20260821.md BUG 1, "cosmetic parity" fix).
+     * Truth table LEN {6,255,256,511,512} x {LORA, FLRC}. */
+    struct
+    {
+        bench_mod_t mod;
+        uint32_t    len;
+        bool        want;
+    } rows[] = {
+        { BENCH_MOD_LORA,   6, true  }, /* parser min */
+        { BENCH_MOD_LORA, 255, true  }, /* LoRa silicon limit (uint8_t pkt param) */
+        { BENCH_MOD_LORA, 256, false },
+        { BENCH_MOD_LORA, 511, false }, /* parses fine (<=511) but illegal for LoRa */
+        { BENCH_MOD_LORA, 512, false }, /* parser already rejects; belt+braces */
+        { BENCH_MOD_FLRC,   6, true  },
+        { BENCH_MOD_FLRC, 255, true  },
+        { BENCH_MOD_FLRC, 256, true  },
+        { BENCH_MOD_FLRC, 511, true  }, /* FLRC max */
+        { BENCH_MOD_FLRC, 512, false },
+    };
+    for (unsigned i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+        CHECK(bench_start_len_ok(rows[i].mod, rows[i].len) == rows[i].want);
+
+    /* Exact on-wire ERR reason — both the RX and TX START branches emit this
+     * string verbatim via reply_err(); pin it so the two can never drift. */
+    CHECK(strcmp(bench_start_len_err_str(), "LEN (MAX 255 LORA / 511 FLRC)") == 0);
+}
+
 static void test_pa(void)
 {
     bench_cmd_t c;
@@ -265,6 +295,7 @@ int main(void)
     test_freq_band();
     test_mod();
     test_start();
+    test_start_len_truth_table();
     test_pa();
     test_token_overflow();
     test_parse_helpers();

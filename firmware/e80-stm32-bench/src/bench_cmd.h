@@ -122,6 +122,28 @@ bool bench_parse_u32(const char* s, uint32_t* out);
 /** Parse int8 (allows leading '-'); returns false on garbage. */
 bool bench_parse_i8(const char* s, int8_t* out);
 
+/**
+ * START per-modulation LEN caps (docs/rca-fix-plan-20260821.md BUG 1):
+ * LoRa payloads are capped at 255 B (uint8_t pkt-param silicon limit in the
+ * lr20xx driver), FLRC at 511 B.
+ */
+#define BENCH_START_LEN_MAX_LORA 255u
+#define BENCH_START_LEN_MAX_FLRC 511u
+
+/**
+ * @brief Per-modulation START LEN gate — true iff LEN=<len> is legal for <mod>.
+ *
+ * FIX-T2 parity rule: BOTH the TX and the RX START branches must reject with
+ * the same predicate, so both boards answer identically to an out-of-cap LEN.
+ */
+bool bench_start_len_ok(bench_mod_t mod, uint32_t len);
+
+/**
+ * @brief Exact ERR reason string for a per-mod LEN violation
+ *        ("LEN (MAX 255 LORA / 511 FLRC)"). Single source for both branches.
+ */
+const char* bench_start_len_err_str(void);
+
 #ifdef __cplusplus
 }
 #endif

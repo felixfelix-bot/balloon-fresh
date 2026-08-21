@@ -440,3 +440,20 @@ const char* bench_cmd_err_str(bench_cmd_err_t e)
     }
     return "?";
 }
+
+/* ---- START per-mod LEN gate (FIX-T2) ---------------------------------- */
+
+/* TDD RED STUB: wrong on purpose so the truth-table test fails before the
+ * GREEN implementation lands. Returns "" (never NULL) so strcmp-based
+ * assertions crash nowhere. */
+bool bench_start_len_ok(bench_mod_t mod, uint32_t len)
+{
+    (void)mod;
+    (void)len;
+    return true;
+}
+
+const char* bench_start_len_err_str(void)
+{
+    return "";
+}
