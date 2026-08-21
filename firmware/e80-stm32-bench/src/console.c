@@ -58,11 +58,15 @@ char* console_getline(void)
     /* Polling fallback: if the USART1 RXNE interrupt didn't fire (known
      * STM32F1 NVIC issue after SWD reset), drain pending bytes here.
      * Also clear ORE (Overrun Error) — if multiple bytes arrived while the
-     * CPU was halted by SWD, ORE sets and blocks all further RX. */
+     * CPU was halted by SWD, ORE sets and blocks all further RX.
+     * CRITICAL: disable the USART1 NVIC IRQ during the drain to prevent a
+     * race where the ISR reads DR between our RXNE check and DR read,
+     * producing a stale duplicate byte that corrupts binary payloads. */
     if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
     {
         __HAL_UART_CLEAR_OREFLAG(&huart1);
     }
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
     while (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
     {
         char c = (char)(huart1.Instance->DR & 0xFF);
@@ -75,6 +79,7 @@ char* console_getline(void)
         if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
             __HAL_UART_CLEAR_OREFLAG(&huart1);
     }
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
 
     while (rx_tail != rx_head)
     {
@@ -211,7 +216,32 @@ void console_binary_start(uint16_t n, uint16_t expected_crc, uint32_t now_ms)
     /* Swallow the line terminator's pending tail (the '\n' after a '\r'
      * getline already consumed) WITHOUT counting it against the n payload
      * bytes. Exactly one byte: the payload itself may start with CR/LF
-     * (no escaping in the framing) and must not be eaten. */
+     * (no escaping in the framing) and must not be eaten.
+     *
+     * CRITICAL: drain the UART RXNE register into the ring BEFORE checking
+     * for the pending '\n'.  If the host sent CRLF as a single burst, the
+     * '\r' was consumed by getline but the '\n' may still be in the UART DR
+     * register (ISR hasn't fired yet, or getline's own RXNE poll exited
+     * after reading '\r' and before '\n' arrived).  Without this drain, the
+     * '\n' would be missed here and later consumed as the first payload
+     * byte — a 1-byte shift that corrupts every CRC. */
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
+    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
+        __HAL_UART_CLEAR_OREFLAG(&huart1);
+    while (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
+    {
+        char c = (char)(huart1.Instance->DR & 0xFF);
+        uint8_t next = (uint8_t)((rx_head + 1) % CONSOLE_RX_RING_SIZE);
+        if (next != rx_tail)
+        {
+            rx_ring[rx_head] = c;
+            rx_head = next;
+        }
+        if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
+            __HAL_UART_CLEAR_OREFLAG(&huart1);
+    }
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
+
     if (rx_tail != rx_head &&
         (rx_ring[rx_tail] == '\r' || rx_ring[rx_tail] == '\n'))
     {
@@ -248,7 +278,11 @@ console_bin_state_t console_binary_poll(uint32_t now_ms)
     /* Drain ISR-pending bytes into the ring first — same fallback path as
      * console_getline, so the binary phase works with the IRQ off (host
      * tests inject here) and with it on. Payload order is preserved: ring
-     * bytes are strictly older than freshly flagged RXNE bytes. */
+     * bytes are strictly older than freshly flagged RXNE bytes.
+     * CRITICAL: disable the USART1 NVIC IRQ during the drain to prevent a
+     * race where the ISR reads DR between our RXNE check and DR read,
+     * producing a stale duplicate byte that corrupts binary payloads. */
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
     while (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
     {
         char c = (char)(huart1.Instance->DR & 0xFF);
@@ -265,6 +299,7 @@ console_bin_state_t console_binary_poll(uint32_t now_ms)
         if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE))
             __HAL_UART_CLEAR_OREFLAG(&huart1);
     }
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
 
     /* Consume payload bytes from the ring; each byte restarts the idle clock. */
     while (bin_remain > 0 && rx_tail != rx_head)

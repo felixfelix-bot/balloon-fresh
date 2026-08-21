@@ -37,7 +37,7 @@ typedef struct { uint32_t dummy; } GPIO_TypeDef;
 #define GPIOB ((GPIO_TypeDef*)0x40010C00)
 
 /* IRQ numbers. */
-typedef enum { EXTI1_IRQn = 23, EXTI2_IRQn = 24 } IRQn_Type;
+typedef enum { EXTI1_IRQn = 23, EXTI2_IRQn = 24, USART1_IRQn = 37 } IRQn_Type;
 
 /* UART types — enough for console.c to compile. */
 typedef struct
@@ -65,5 +65,9 @@ extern void   __HAL_UART_CLEAR_FLAG(UART_HandleTypeDef*, uint32_t);
 extern void   __HAL_UART_ENABLE_IT(UART_HandleTypeDef*, uint32_t);
 extern uint32_t __HAL_UART_GET_FLAG(UART_HandleTypeDef*, uint32_t);
 extern void   __HAL_UART_CLEAR_OREFLAG(UART_HandleTypeDef*);
+
+/* NVIC stubs — no-op on host. */
+static inline void HAL_NVIC_DisableIRQ(IRQn_Type irq) { (void)irq; }
+static inline void HAL_NVIC_EnableIRQ(IRQn_Type irq)  { (void)irq; }
 
 #endif /* HOST_STUB_STM32F1XX_HAL_H */
