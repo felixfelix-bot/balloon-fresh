@@ -1,6 +1,6 @@
 /**
  * @file    test_bench_pkt.c
- * @brief   Host unit tests: per-packet PKT line formatter (23-field format).
+ * @brief   Host unit tests: per-packet PKT line formatter (24-field format).
  *
  * Verifies the bench_pkt_format() output for:
  *   - basic RX_OK packet (crc_ok=1)
@@ -8,12 +8,13 @@
  *   - truncation safety (small buffer does not overflow)
  *   - CRC event with real RSSI (E80-7)
  *   - bit_err / bytes_bad fields from PRBS-15 verification (in evt struct)
+ *   - pcrc16 field 24: payload CRC16 decimal, trailing position (BUF-T5a)
  *
- * Format (23 fields):
+ * Format (24 fields):
  * PKT,<session_id>,<config_id>,<replicate>,<seq>,<ts_ms>,<rssi_dbm>,
  * <snr_db>,<crc_ok>,<bit_err>,<bytes_bad>,<freq_hz>,<mod>,<sf>,
  * <bw_khz>,<cr>,<power_dbm>,<pkt_size>,<gps_fix>,<gps_lat>,<gps_lon>,
- * <gps_alt>,<gps_sats>,<gps_hdop>
+ * <gps_alt>,<gps_sats>,<gps_hdop>,<pcrc16>
  */
 
 #include "bench_pkt.h"
@@ -48,7 +49,7 @@ static int count_fields(const char* line)
     return count;
 }
 
-/* Count data fields after the "PKT," prefix (should be 23). */
+/* Count data fields after the "PKT," prefix (should be 24). */
 static int count_data_fields(const char* line)
 {
     if (line == NULL || strncmp(line, "PKT,", 4) != 0)
@@ -94,8 +95,8 @@ static void test_basic(void)
     /* Verify prefix */
     CHECK(strncmp(buf, "PKT,", 4) == 0);
 
-    /* Verify 23 data fields (total 24 including PKT prefix) */
-    CHECK(count_data_fields(buf) == 23);
+    /* Verify 24 data fields (total 25 including PKT prefix) */
+    CHECK(count_data_fields(buf) == 24);
 
     /* Verify key field values */
     CHECK(strstr(buf, "PKT,42,7,3,1234,") != NULL);  /* session,config,replicate,seq */
@@ -137,8 +138,8 @@ static void test_crc_fail(void)
     /* Verify prefix */
     CHECK(strncmp(buf, "PKT,", 4) == 0);
 
-    /* Verify 23 data fields (total 24 including PKT prefix) */
-    CHECK(count_data_fields(buf) == 23);
+    /* Verify 24 data fields (total 25 including PKT prefix) */
+    CHECK(count_data_fields(buf) == 24);
 
     /* crc_ok = 0 */
     CHECK(strstr(buf, "PKT,1,1,0,0,") != NULL);  /* session,config,replicate,seq=0 */
@@ -291,6 +292,79 @@ static void test_crc_snr_passthrough(void)
     printf("  snr_pt: %s\n", buf);
 }
 
+static void test_pcrc16_field(void)
+{
+    /* BUF-T5a: field 24 (pcrc16) is the CRC-16/CCITT-FALSE of the received
+     * payload, appended after gps_hdop. Verify it appears as the last
+     * comma-separated field, as a decimal integer. */
+    bench_pkt_ctx_t ctx = { .session_id = 1, .config_id = 1, .replicate = 0 };
+    char buf[256];
+
+    bench_pkt_evt_t evt = {
+        .seq            = 100,
+        .len            = 64,
+        .rssi_half_dbm  = -100,
+        .snr_qdb        = 40,
+        .mod            = BENCH_PKT_MOD_LORA,
+        .sf             = 8,
+        .bw_hz          = 125000,
+        .freq_hz         = 868000000UL,
+        .txpow_dbm      = 10,
+        .cr             = 5,
+        .ts_ms          = 2000,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
+        .pcrc16         = 0x29B1,   /* golden vector for "123456789" */
+    };
+
+    int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 1);
+    CHECK(n > 0);
+    CHECK(count_data_fields(buf) == 24);
+
+    /* pcrc16 = 0x29B1 = 10673 decimal — must be the LAST field */
+    CHECK(strstr(buf, ",10673") != NULL);
+
+    /* Verify it is truly the trailing field (line ends with 10673) */
+    const char* p = strrchr(buf, ',');
+    CHECK(p != NULL);
+    CHECK(strcmp(p + 1, "10673") == 0);
+
+    printf("  pcrc16: %s\n", buf);
+}
+
+static void test_pcrc16_zero_on_crc_fail(void)
+{
+    /* BUF-T5a: CRC-failed packets have pcrc16=0 (no payload read). */
+    bench_pkt_ctx_t ctx = { .session_id = 1, .config_id = 1, .replicate = 0 };
+    char buf[256];
+
+    bench_pkt_evt_t evt = {
+        .seq            = 0,
+        .len            = 0,
+        .rssi_half_dbm  = -86,
+        .snr_qdb        = 0,
+        .mod            = BENCH_PKT_MOD_FLRC,
+        .sf             = 8,
+        .bw_hz          = 125000,
+        .freq_hz         = 868000000UL,
+        .txpow_dbm      = 10,
+        .bit_err        = 0,
+        .bytes_bad      = 0,
+        .pcrc16         = 0,
+    };
+
+    int n = bench_pkt_format(buf, sizeof(buf), &ctx, &evt, 0);
+    CHECK(n > 0);
+    CHECK(count_data_fields(buf) == 24);
+
+    /* Line must end with ,0 (pcrc16=0) */
+    const char* p = strrchr(buf, ',');
+    CHECK(p != NULL);
+    CHECK(strcmp(p + 1, "0") == 0);
+
+    printf("  pcrc0:  %s\n", buf);
+}
+
 
 int main(void)
 {
@@ -300,6 +374,8 @@ int main(void)
     test_crc_rssi_extraction();
     test_bit_err_bytes_bad();
     test_crc_snr_passthrough();
+    test_pcrc16_field();
+    test_pcrc16_zero_on_crc_fail();
 
     if (failures == 0)
     {

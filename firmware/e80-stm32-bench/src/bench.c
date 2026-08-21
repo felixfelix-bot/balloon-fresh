@@ -1034,6 +1034,7 @@ static void radio_task(void)
                         .ts_ms          = bench_micros() / 1000U,
                         .bit_err        = bit_err,
                         .bytes_bad      = bytes_bad,
+                        .pcrc16         = crc16_ccitt_false(radio_bench_rx_buf, e.len),
                     };
                     char pktbuf[160];
                     bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 1);
@@ -1069,6 +1070,7 @@ static void radio_task(void)
                     .ts_ms          = bench_micros() / 1000U,
                     .bit_err        = 0,
                     .bytes_bad      = 0,
+                    .pcrc16         = 0, /* no payload read on CRC failure */
                 };
                 char pktbuf[160];
                 bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 0);

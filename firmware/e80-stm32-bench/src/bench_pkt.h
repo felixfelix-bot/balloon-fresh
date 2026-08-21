@@ -3,12 +3,16 @@
  * @brief   Per-packet PKT line formatter for the E80 bench firmware.
  *
  * Emits one CSV line per received packet (RX_OK and RX_CRC) in the
- * 23-field format consumed by the host-side analysis tooling:
+ * 24-field format consumed by the host-side analysis tooling:
  *
  *   PKT,<session_id>,<config_id>,<replicate>,<seq>,<ts_ms>,<rssi_dbm>,
  *   <snr_db>,<crc_ok>,<bit_err>,<bytes_bad>,<freq_hz>,<mod>,<sf>,
  *   <bw_khz>,<cr>,<power_dbm>,<pkt_size>,<gps_fix>,<gps_lat>,<gps_lon>,
- *   <gps_alt>,<gps_sats>,<gps_hdop>
+ *   <gps_alt>,<gps_sats>,<gps_hdop>,<pcrc16>
+ *
+ * Field 24 (pcrc16): CRC-16/CCITT-FALSE over the received payload bytes
+ * (radio_bench_rx_buf[0..len-1]). 0 for CRC-failed packets (no payload
+ * read). APPEND ONLY — never reorder existing fields (BUF-T5a).
  *
  * Portable (no STM32 deps, no floats): compiled into both the firmware
  * and the host unit tests.
@@ -57,6 +61,7 @@ typedef struct bench_pkt_evt_s
     uint32_t      ts_ms;          /* Timestamp in milliseconds      */
     uint16_t      bit_err;        /* PRBS15 bit error count         */
     uint16_t      bytes_bad;      /* PRBS15 mismatched byte count   */
+    uint16_t      pcrc16;         /* CRC-16/CCITT-FALSE over RX payload (BUF-T5a) */
 } bench_pkt_evt_t;
 
 /**

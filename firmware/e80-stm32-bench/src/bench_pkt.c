@@ -2,7 +2,7 @@
  * @file    bench_pkt.c
  * @brief   Per-packet PKT line formatter for the E80 bench firmware.
  *
- * Portable (no STM32 deps, no floats): uses snprintf to build the 23-field
+ * Portable (no STM32 deps, no floats): uses snprintf to build the 24-field
  * CSV line. Compiled into both the firmware and the host unit tests.
  *
  * Field mapping:
@@ -51,10 +51,10 @@ int bench_pkt_format(char* buf, int bufsz,
     /* PKT,<session>,<config>,<replicate>,<seq>,<ts_ms>,<rssi>,<snr>,
      * <crc_ok>,<bit_err>,<bytes_bad>,<freq_hz>,<mod>,<sf>,<bw_khz>,
      * <cr>,<power>,<pkt_size>,<gps_fix>,<gps_lat>,<gps_lon>,<gps_alt>,
-     * <gps_sats>,<gps_hdop>
+     * <gps_sats>,<gps_hdop>,<pcrc16>
      */
     int n = snprintf(buf, (size_t)bufsz,
-        "PKT,%lu,%lu,%lu,%lu,%lu,%d,%d,%d,%u,%u,%lu,%s,%lu,%lu,%lu,%d,%u,0,0,0,0,0,0",
+        "PKT,%lu,%lu,%lu,%lu,%lu,%d,%d,%d,%u,%u,%lu,%s,%lu,%lu,%lu,%d,%u,0,0,0,0,0,0,%u",
         (unsigned long)ctx->session_id,
         (unsigned long)ctx->config_id,
         (unsigned long)ctx->replicate,
@@ -71,7 +71,8 @@ int bench_pkt_format(char* buf, int bufsz,
         (unsigned long)bw_khz,
         (unsigned long)cr,
         (int)evt->txpow_dbm,
-        (unsigned)evt->len);
+        (unsigned)evt->len,
+        (unsigned)evt->pcrc16);
 
     /* snprintf returns the number of chars that WOULD have been written.
      * If n >= bufsz the output was truncated but buf is NUL-terminated. */
