@@ -99,3 +99,27 @@ the algorithm against known test vectors in pure Python.
 
 The PRBS15 implementation adds minimal flash overhead, well within the
 firmware size budget.
+
+## Host Tools
+
+### `tools/e80_sweep_full.py` — full parameter sweep (LoRa + FLRC + PA + LEN + FREQ)
+
+Drives two E80 bench boards (auto-detected CH340 UARTs, SWD reset between
+configs) through the whole firmware parameter space and writes per-config
+summary CSV + per-packet CSV + a markdown report.
+
+Config sections: LoRa SF×BW matrix, LoRa PA sweep, LoRa LEN sweep (16/128/255 B
+— capped at the 255 B firmware limit, `LEN_CAP`), FLRC BR sweep, FLRC PA
+sweep, FLRC LEN sweep @ BR650 pa5 868 MHz (16/64/128/255/511 B — 511 B is
+legal in FLRC only), FREQ sweep 863–870 MHz.
+
+START-reply validation (FIX-T1): the TX board's reply to `START N=… LEN=…`
+is checked before the burst wait. Anything other than `OK START …` — e.g.
+`ERR LEN (MAX 255 LORA / 511 FLRC)` or `ERR NOT ARMED (SEND 'ARM TX')`, or a
+timeout with no reply — is recorded in the row's `error` CSV column and the
+config is skipped immediately, instead of stalling in the burst drain for the
+full (~90 s at SF12) window.
+
+Host tests: `tools/test_e80_sweep_full.py` (9 tests, no serial hardware —
+module IO is faked), wired into ctest as `test_e80_sweep_full_python`
+(`make test-host`).

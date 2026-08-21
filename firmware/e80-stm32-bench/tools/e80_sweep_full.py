@@ -276,6 +276,25 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
     tx.write(f"START N={NPKTS} LEN={cfg['plen']} GAP={cfg['gap']}\r\n".encode())
     start_reply = readline(tx, 3.0)
 
+    # FIX-T1: validate the START reply before waiting on the burst. The
+    # firmware refuses illegal configs synchronously (e.g. 'ERR LEN (MAX 255
+    # LORA / 511 FLRC)', 'ERR NOT ARMED ...'); a None reply means the board
+    # never answered. Record the refusal in error= and move on to the next
+    # config instead of stalling in drain_lines() for the full burst window.
+    if not start_reply or not start_reply.startswith("OK START"):
+        err = start_reply if start_reply else "no reply to START (timeout)"
+        return {
+            "idx": idx, "label": cfg["label"], "mod": mod,
+            "sf": cfg.get("sf", ""), "bw": cfg.get("bw", ""),
+            "br": cfg.get("br", ""), "pa": cfg["pa"], "freq": cfg["freq"],
+            "plen": cfg["plen"], "gap_us": cfg["gap"], "toa_s": 0,
+            "rx_pkts": 0, "crc_err": 0,
+            "rssi_avg": None, "rssi_min": None, "rssi_max": None,
+            "snr_avg": None, "snr_min": None,
+            "bit_err_total": 0, "tx_done": False,
+            "start_reply": start_reply, "pkts": [], "error": err,
+        }
+
     if mod == "lora":
         toa = lora_airtime_s(cfg["sf"], cfg["bw"], cfg["plen"])
     else:
@@ -326,10 +345,14 @@ def build_configs():
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=pa, freq=DEFAULT_FREQ,
                          plen=64, gap=gap, label=f"SF8 BW125 PA{pa}"))
-    # C. LEN sweep @ SF8 BW125 PA10
+    # C. LEN sweep @ SF8 BW125 PA10 (LoRa firmware cap: 255 B — LEN_SWEEP's
+    # 511 entry is FLRC-only, skip it here rather than rely on run_config's
+    # ERR-LEN fail-fast to catch it at bench time)
     for plen in LEN_SWEEP:
         if plen == 64:
             continue  # in matrix
+        if plen > LEN_CAP["lora"]:
+            continue  # firmware refuses LEN>255 in LoRa (uint8 pkt param)
         toa = lora_airtime_s(8, 125, plen)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=DEFAULT_FREQ,
@@ -344,6 +367,16 @@ def build_configs():
             continue  # in D
         cfgs.append(dict(mod="flrc", br=650, pa=pa, freq=DEFAULT_FREQ,
                          plen=64, gap=10000, label=f"FLRC 650k pa{pa}"))
+    # G. FLRC LEN sweep @ BR650 pa5 868 MHz — 511 B is legal in FLRC only
+    #    (fw cap 'ERR LEN (MAX 255 LORA / 511 FLRC)'); probes the L255
+    #    boundary region flagged in docs/rca-fix-plan-20260821.md
+    for plen in LEN_SWEEP:
+        if plen == 64:
+            continue  # in D (FLRC BR sweep row br=650)
+        toa = flrc_airtime_s(650, plen)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="flrc", br=650, pa=5, freq=DEFAULT_FREQ,
+                         plen=plen, gap=gap, label=f"FLRC 650k pa5 L{plen}"))
     # F. FREQ sweep @ SF8 BW125 PA10 (868 in matrix)
     for f in FREQ_SWEEP:
         if f == DEFAULT_FREQ:
@@ -392,7 +425,7 @@ def main():
         try:
             r = run_config(i, cfg, tx, rx, session_id, tx_port, rx_port)
             results.append(r)
-            row = [r.get(k, "") for k in SUMMARY_FIELDS[:-1]] + [""]
+            row = [r.get(k, "") for k in SUMMARY_FIELDS[:-1]] + [r.get("error", "")]
             print(f"rx={r['rx_pkts']}/{NPKTS} rssi={r['rssi_avg']} snr={r['snr_avg']} "
                   f"crc={r['crc_err']} done={r['tx_done']}", flush=True)
             for p in r["pkts"]:
@@ -431,9 +464,10 @@ def main():
         f.write(f"\n## Parameter space covered\n\n")
         f.write(f"- LoRa: SF{min(LORA_SFS)}-{max(LORA_SFS)} x BW{LORA_BWS} (PA 10 dBm)\n")
         f.write(f"- LoRa PA: {PA_SWEEP} dBm @ SF8 BW125 (indoor cap 0-10 dBm)\n")
-        f.write(f"- Payload: {LEN_SWEEP} B @ SF8 BW125\n")
+        f.write(f"- Payload: {LEN_SWEEP} B @ SF8 BW125 (LoRa capped at 255 B by fw)\n")
         f.write(f"- FLRC BR: {FLRC_BRS} kbps @ pa 5\n")
         f.write(f"- FLRC pa: {FLRC_PAS} @ BR 650 kbps\n")
+        f.write("- FLRC payload: 16/64/128/255/511 B @ BR650 pa5 (511 legal in FLRC only)\n")
         f.write(f"- Frequency: {[f/1e6 for f in FREQ_SWEEP]} MHz @ SF8 BW125\n\n")
         f.write("## Files\n\n")
         f.write(f"- Summary CSV: `full-sweep-summary-{ts_str}.csv`\n")
