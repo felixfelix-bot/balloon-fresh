@@ -131,7 +131,7 @@ class StartReplyValidationTests(unittest.TestCase):
             "OK START n=50 len=511 gap_us=10000 src=PRBS",
             tx_lines=["OK START n=50 len=511 gap_us=10000 src=PRBS", "TX DONE"],
             rx_lines=[])
-        self.assertEqual(r.get("error", ""), r)
+        self.assertEqual(r.get("error", ""), "")  # happy path: no error text
         self.assertTrue(r["tx_done"], r)
         self.assertTrue(drain_calls, "burst wait must run on OK START")
 
