@@ -82,4 +82,7 @@ find_program(HOST_PYTHON3 NAMES python3)
 if(HOST_PYTHON3)
     add_test(NAME test_crc16_golden_python
              COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_crc16_golden.py)
+    # Sweep tool: START-reply fail-fast validation + LEN caps (task FIX-T1).
+    add_test(NAME test_e80_sweep_full_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_e80_sweep_full.py)
 endif()
