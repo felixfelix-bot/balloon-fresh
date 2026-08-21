@@ -74,3 +74,26 @@ payload integrity at >256 B sizes are proven good on firmware 88a00cf.
 
 **Definitive post-fix sweep** (chip CRC fixed via Match123 + FIFO clear) will
 be re-run on fix firmware as kanban FIX-T6; expect crc_err=0 across all rows.
+
+## Throughput (computed from per-packet timestamps)
+
+| config | pkts | span_s | delivered_kbps | raw_air_kbps |
+|---|---|---|---|---|
+| FLRC 650k pa5 L16 | 50 | 2.1 | 3.0 | 331.9 |
+| FLRC 650k pa5 L64 | 50 | 2.2 | 11.8 | 436.4 |
+| FLRC 650k pa5 L128 | 50 | 2.2 | 22.9 | 460.5 |
+| FLRC 650k pa5 L192 | 50 | 2.3 | 33.4 | 469.2 |
+| FLRC 650k pa5 L255 | 50 | 2.4 | 43.3 | 473.6 |
+| FLRC 650k pa5 L256 | 50 | 2.4 | 43.4 | 473.6 |
+| FLRC 650k pa5 L300 | 50 | 2.4 | 50.0 | 475.6 |
+| FLRC 650k pa5 L384 | 50 | 2.5 | 62.0 | 478.2 |
+| FLRC 650k pa5 L448 | 50 | 2.5 | 70.6 | 479.5 |
+| FLRC 650k pa5 L511 | 51 | 5.3 | 39.6 | 480.4 |
+| FLRC 1300k pa5 L384 | 50 | 2.3 | 66.2 | 956.3 |
+| FLRC 1300k pa5 L511 | 50 | 2.4 | 85.6 | 960.9 |
+| FLRC 2600k pa5 L511 | 50 | 2.3 | 89.5 | 1921.8 |
+delivered_kbps = payload bytes received / wall-clock span of the config
+(raw RX rate incl. inter-packet gap; 40 ms gap dominates). raw_air_kbps =
+PHY rate on air per packet (LEN*8/ToA @ CR3/4). L511 span inflated by one
+stray 51st packet (5.3 s) — treat as >=62 kbps. Max measured delivered:
+89.5 kbps (BR2600 L511); gap-limited, not PHY-limited (air rate 1.92 Mbps).
