@@ -57,12 +57,17 @@ static lr20xx_radio_flrc_mod_params_t flrc_mod_params = {
 };
 
 /* FLRC packet params (FIX_LEN; pld_len patched per operation).
- * Both bench ends must run the same LEN= (see README). */
+ * Both bench ends must run the same LEN= (see README).
+ * RX match mode is Match123 (FIX-T3): Match1 with a 32-bit sync word leaks
+ * sync bytes into the payload -> chip CRC fails 100% while packets still
+ * demodulate (RCA BUG 2; RadioLib LR2021 and balloon-range-tests 9b740aa
+ * raw cfg 0x7C both run Match123). Golden bytes pinned by
+ * tests/test_radio_bench_cfg.c. */
 static lr20xx_radio_flrc_pkt_params_t flrc_pkt_params = {
     .preamble_len    = LR20XX_RADIO_FLRC_PREAMBLE_LEN_32_BITS,
     .sync_word_len   = LR20XX_RADIO_FLRC_SYNCWORD_LENGTH_4_BYTES,
     .tx_syncword     = LR20XX_RADIO_FLRC_TX_SYNCWORD_1,
-    .match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1,
+    .match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3,
     .header_type     = LR20XX_RADIO_FLRC_PKT_FIX_LEN,
     .pld_len_in_bytes = 255,
     .crc_type        = LR20XX_RADIO_FLRC_CRC_2_BYTES,
