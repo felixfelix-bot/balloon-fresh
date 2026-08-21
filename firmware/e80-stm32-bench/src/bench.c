@@ -665,6 +665,14 @@ static void handle_cmd(const bench_cmd_t* c)
             /* On the RX board the same START line just configures the expected
              * packet length (FLRC FIX_LEN window) and re-arms continuous RX.
              * The bench ctl script sends the identical line to both boards. */
+            /* FIX-T2 parity gate: same per-mod LEN cap as the TX branch below,
+             * so both boards answer 'ERR LEN (MAX 255 LORA / 511 FLRC)'
+             * identically instead of the RX board arming a doomed window. */
+            if (!bench_start_len_ok(cfg.mod, c->len_bytes))
+            {
+                reply_err(bench_start_len_err_str());
+                return;
+            }
             tx_len = (uint16_t)c->len_bytes;
             bench_stats_reset(&stats);
             stats.t_start_us = bench_micros();
@@ -685,10 +693,11 @@ static void handle_cmd(const bench_cmd_t* c)
             reply_err("NOT ARMED (SEND 'ARM TX')");
             return;
         }
-        uint16_t max_len = (cfg.mod == BENCH_MOD_LORA) ? 255 : 511;
-        if (c->len_bytes > max_len)
+        /* FIX-T2: TX gate now shares the exact predicate + ERR string with the
+         * RX branch (bench_start_len_ok / bench_start_len_err_str). */
+        if (!bench_start_len_ok(cfg.mod, c->len_bytes))
         {
-            reply_err("LEN (MAX 255 LORA / 511 FLRC)");
+            reply_err(bench_start_len_err_str());
             return;
         }
         tx_total  = c->n_pkts;
