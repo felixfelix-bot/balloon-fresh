@@ -210,9 +210,25 @@ def ensure_alive(ser, probe, label):
     return False
 
 
+# Firmware caps (ERR LEN): 255 B max in LoRa (SX1262 limit), 511 B max in FLRC
+LEN_CAP = {"lora": 255, "flrc": 511}
+
+
 def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
     """cfg: dict with keys: mod, sf|br, bw, pa, freq, plen, gap, label"""
     mod = cfg["mod"]
+    if cfg["plen"] > LEN_CAP.get(mod, 255):
+        return {
+            "idx": idx, "label": cfg["label"], "mod": mod,
+            "sf": cfg.get("sf", ""), "bw": cfg.get("bw", ""),
+            "br": cfg.get("br", ""), "pa": cfg["pa"], "freq": cfg["freq"],
+            "plen": cfg["plen"], "gap_us": cfg["gap"], "toa_s": 0,
+            "rx_pkts": 0, "crc_err": 0, "rssi_avg": None, "rssi_min": None,
+            "rssi_max": None, "snr_avg": None, "snr_min": None,
+            "bit_err_total": 0, "tx_done": False,
+            "start_reply": f"INVALID CONFIG: LEN>{LEN_CAP[mod]} for {mod}",
+            "pkts": [], "invalid": True,
+        }
     # SWD reset both to clear state
     swd_reset(PROBE_TX)
     swd_reset(PROBE_RX)
