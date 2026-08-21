@@ -48,3 +48,41 @@ empirical spot-tests (flrc-retest-20260821.md).
 Acceptance: FLRC 8 BR rows crc_err=0 50/50, PRBS bit_err=0, seq monotonic,
 drops=0; FLRC L511 50/50 clean; LoRa LEN rows all tx_done 50/50; negative test
 ERR within 1 s recorded in error= col.
+
+## FIX-T3 results (2026-08-21, branch fix/t3-flrc-match123)
+
+**Match1 → Match123 shipped.** `src/radio_bench.c` FLRC pkt params now set
+`match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3`.
+Rationale unchanged (BUG 2 above): Match1 + 32-bit sync word leaks sync
+bytes into the payload → chip CRC fails 100% while packets still demodulate.
+
+**Golden pkt-params bytes pinned by host tests** (`tests/test_radio_bench_cfg.c`,
+runs in ctest): the test harness fake-HALs the lr20xx driver and captures
+every SPI command emitted by the REAL `radio_bench.c` + REAL vendored driver.
+FLRC SetPacketParams (opcode 0x0249, 6 B) on-wire golden values, verified
+across apply_cfg / rx_arm(255) / tx_packet(len=255):
+
+- byte[2] = 0x1E — PREAMBLE_LEN_32_BITS (0x07<<2) | SYNCWORD_LENGTH_4_BYTES (0x02)
+- byte[3] = 0x7D — CRC_2_BYTES (0x01) | PKT_FIX_LEN (0x01<<2) |
+  MATCH_1_OR_2_OR_3 (0x07<<3) | TX_SYNCWORD_1 (0x01<<6)
+  (before the fix: 0x4D = Match1; balloon-range-tests 9b740aa raw cfg was
+  0x7C = same as 0x7D but CRC_OFF)
+- byte[4..5] = pld_len (0x00FF at apply_cfg; patched per op by rx_arm/tx)
+
+Plus a Match1 tripwire test: decoded match field must equal Match123 and must
+NOT equal Match1 — fires if anyone reintroduces the bug. Do not "fix" that test.
+
+**LEN=255 branch hunt: NO firmware branch exists.** Greps over the full fw
+payload path (`src/radio_bench.c`, `src/bench.c`, `src/buffer.c`, vendored
+`lr20xx_radio_fifo.c` + `radio_hal/lr20xx_hal.c`) for 255/0xFF boundary
+conditions found none. All 255s are constants (defaults, demo parity) or the
+correct per-mod cap gate `len > max_len` (bench.c:688; 255 LoRa / 511 FLRC,
+boundary values themselves allowed, as intended). RSSI readout has no
+length-dependent path (FLRC rssi_avg from get_pkt_status, radio_bench.c:430).
+
+Conclusion: the LEN=255-exactly CRC failure and the +35 dB RSSI step at
+LEN>=255 (BUG 3) are NOT explainable by a host-MCU firmware branch — they are
+chip-side (LR2021 silicon RSSI-averaging window / FLRC demod behavior) or
+RF-side. Match123 removes the known config-side CRC killer; the remaining
+boundary anomaly still needs the on-hardware LEN bisect 254/255/256/300
+(FIX-T6) with the new fw.
