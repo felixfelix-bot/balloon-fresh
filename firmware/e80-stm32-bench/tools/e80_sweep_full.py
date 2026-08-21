@@ -401,8 +401,33 @@ def main():
     sum_f = open(sum_path, "w", newline="")
     sum_w = csv.writer(sum_f); sum_w.writerow(SUMMARY_FIELDS); sum_f.flush()
     pkt_f = open(pkt_path, "w", newline="")
-    pkt_w = csv.writer(pkt_f); pkt_w.writerow(PKT_FIELDS); pkt_f.flush()
+    pkt_w = csv.writer(pkt_f); pkt_f_flush = None
+    pkt_w.writerow(PKT_FIELDS); pkt_f.flush()
 
+    # session metadata sidecar — lets downstream tools (e.g. Bloons) fill
+    # Operator / Firmware / HW fields instead of "unknown/unrecoverable"
+    import json as _json, subprocess as _sp
+    try:
+        fw_commit = _sp.run(["git", "log", "-1", "--format=%h %s", "--",
+                             "firmware/e80-stm32-bench"],
+                            capture_output=True, text=True, timeout=5).stdout.strip()
+    except Exception:
+        fw_commit = ""
+    meta = {
+        "session": session_id, "started": ts.isoformat(), "operator": "Felix",
+        "rig": "e80-stm32", "env": "bench",
+        "fw_flashed_on_boards": "88a00cf (buf/t5a-rx-pcrc16 tip)",
+        "fw_source_commit": fw_commit,
+        "tx": {"hw": "E80 STM32F103 + LR2021-class module", "port": tx_port},
+        "rx": {"hw": "E80 STM32F103 + LR2021-class module", "port": rx_port},
+        "band": "868 MHz sub-GHz", "antennas": "SMA, ~30 cm apart",
+        "packets_per_config": NPKTS,
+        "integrity_note": "pre-Match123-fix fw: trust bit_err (PRBS-15), not crc_ok, for FLRC",
+    }
+    meta_path = os.path.join(OUT_DIR, f"full-sweep-meta-{ts_str}.json")
+    with open(meta_path, "w") as mf:
+        _json.dump(meta, mf, indent=1)
+    print(f"meta -> {meta_path}", flush=True)
     results = []
     for i, cfg in enumerate(cfgs):
         print(f"[{i+1}/{len(cfgs)}] {cfg['label']} ...", end=" ", flush=True)
