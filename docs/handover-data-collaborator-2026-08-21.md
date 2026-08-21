@@ -50,15 +50,29 @@ RSSI -37.7 @ 863 MHz → -32.2 @ 870 MHz; SF11/SF12 need GAP >= 1.2x ToA.
 sweep-results-20260821-151147.md/.csv — smaller predecessor; some configs
 ran with too-small GAP. Use Dataset 2 instead; kept for history.
 
-## Per-packet CSV schema (all datasets, fw 88a00cf)
+## CSV schemas (verified against actual file headers, both datasets)
 
-25 fields, comma-separated. Key columns (0-indexed):
-[0] "PKT" · [1] session · [2] config · [3] replicate · [4] pkt_idx (seq)
-[6] rssi_dbm · [7] snr_db (LoRa only; 0.0 in FLRC by design — chip exposes
-no FLRC SNR) · [8] crc_ok (chip verdict — see caveat 1) · [9] bit_err
-(PRBS-15 count — the reliable integrity signal) · [10] bytes_bad
-[13] mod · [14] sf_or_br · [17] len · [24] pcrc16 (app CRC16 of received
-payload — populated only when chip CRC passed on this fw)
+Per-packet CSV (one row per received packet) — 12 named columns:
+idx, label, pkt_idx, session, config, replicate, ts_ms, rssi_dbm, snr_db,
+crc_ok, bit_err, pcrc16
+- label: human config id, e.g. "FLRC 650k pa5 L511" (mod, bitrate, PA, LEN)
+- pkt_idx: packet sequence number within the burst (dedupe key; join with
+  session+config)
+- ts_ms: host-receive timestamp (ms) — basis of the throughput table
+- rssi_dbm: per-packet RSSI (see caveat 2 for the FLRC LEN>=255 step)
+- snr_db: LoRa only; 0.0 in FLRC by design (chip exposes no FLRC SNR)
+- crc_ok: chip-hardware CRC verdict — see caveat 1, unreliable in FLRC
+  on this firmware
+- bit_err: PRBS-15 payload bit-error count — THE reliable integrity signal
+- pcrc16: app-layer CRC16 of received payload; populated only when the
+  chip CRC passed on this fw (0 otherwise — see caveat 3)
+
+Per-config summary CSV — 21 named columns:
+idx, label, mod, sf, bw, br, pa, freq, plen, gap_us, toa_s, rx_pkts,
+crc_err, rssi_avg, rssi_min, rssi_max, snr_avg, snr_min, bit_err_total,
+tx_done, error
+(toa_s = computed time-on-air; rx_pkts vs 50 = delivery count;
+bit_err_total sums PRBS errors — 0 everywhere in Dataset 1)
 
 ## Caveats (know before analyzing)
 
