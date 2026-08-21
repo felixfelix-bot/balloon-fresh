@@ -22,6 +22,76 @@ SWEEPS = [
     (7, 125, 0), (8, 125, 0), (9, 125, 0),
 ]
 
+# ---- CRC-16/CCITT-FALSE (shared with firmware buffer.c) ----------------------
+
+def crc16_ccitt_false(data: bytes) -> int:
+    """CRC-16/CCITT-FALSE: poly 0x1021, init 0xFFFF, no reflect, no xorout.
+    Golden vectors: '123456789'->0x29B1, 64x0->0xD6DA, 4096x(i%256)->0x0F69."""
+    crc = 0xFFFF
+    for b in data:
+        crc ^= b << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021) if (crc & 0x8000) else (crc << 1)
+            crc &= 0xFFFF
+    return crc
+
+# ---- Binary BUF LOAD (no retry/reset during binary phase) --------------------
+
+def buf_load(s, payload: bytes) -> bool:
+    """Stage a TX payload via the BUF LOAD binary protocol.
+
+    Protocol (docs/plans/tx-buffer-spec.md):
+      1. Send 'BUF LOAD <n> <crc_hex>\\r\\n' — firmware acks 'OK BINARY <n>'.
+      2. Send exactly n raw payload bytes (no escaping, no flush, no retry).
+      3. Firmware replies 'OK BUF <n> 1' (CRC OK) or 'ERR CRC' / 'ERR TIMEOUT'.
+
+    Returns True on success, False on any failure. NO retry/reset after the
+    binary phase starts — a corrupted load fails loudly (spec rule: the
+    dedicated loader never retries inside the binary phase).
+    """
+    n = len(payload)
+    if n == 0 or n > 4096:
+        return False
+    crc = crc16_ccitt_false(payload)
+    s.reset_input_buffer()
+    s.write(f"BUF LOAD {n} {crc:04X}\r\n".encode())
+    # Wait for 'OK BINARY <n>' ack (no flush after this point)
+    deadline = time.time() + 3.0
+    buf = ""
+    while time.time() < deadline:
+        chunk = s.read(s.in_waiting or 1).decode(errors="replace")
+        buf += chunk
+        while "\n" in buf:
+            line, buf = buf.split("\n", 1)
+            line = line.strip()
+            if line.startswith("OK BINARY"):
+                if line != f"OK BINARY {n}":
+                    return False  # bad ack
+                break
+            if line.startswith("ERR"):
+                return False  # gate rejection
+        else:
+            continue
+        break
+    else:
+        return False  # timeout
+    # Send raw payload — NO flush, NO retry
+    s.write(payload)
+    # Wait for verdict line
+    deadline = time.time() + 10.0
+    buf2 = ""
+    while time.time() < deadline:
+        chunk = s.read(s.in_waiting or 1).decode(errors="replace")
+        buf2 += chunk
+        while "\n" in buf2:
+            line, buf2 = buf2.split("\n", 1)
+            line = line.strip()
+            if line.startswith("OK BUF"):
+                return line == f"OK BUF {n} 1"
+            if line.startswith("ERR"):
+                return False
+    return False  # timeout
+
 def cmd(s, msg, wait=0.3, retries=3):
     """Send command, validate response, retry on ERR/empty."""
     r = ""
@@ -50,9 +120,10 @@ def parse_pkt(line):
     if not line.startswith("PKT,"):
         return None
     parts = line[4:].split(",")
-    if len(parts) != 23:
+    # Accept 23 (pre-T5a) or 24 (T5a with pcrc16) fields
+    if len(parts) not in (23, 24):
         return None
-    return {
+    d = {
         "session": int(parts[0]), "config": int(parts[1]), "replicate": int(parts[2]),
         "seq": int(parts[3]), "ts_ms": int(parts[4]),
         "rssi": int(parts[5]), "snr": int(parts[6]),
@@ -61,6 +132,9 @@ def parse_pkt(line):
         "bw": int(parts[13]), "cr": int(parts[14]), "power": int(parts[15]),
         "pkt_size": int(parts[16]),
     }
+    if len(parts) == 24:
+        d["pcrc16"] = int(parts[23])
+    return d
 
 def parse_stat(text):
     d = {}
