@@ -88,11 +88,13 @@
 
 ## Anomalies (open issues)
 
-1. **LEN=511 @ SF8 BW125: 0/50 RX, TX never reported DONE.** LEN is firmware-valid
-   (512 rejected, 511 accepted at parse) and gap was adaptive (1.64 s for 1.36 s
-   airtime). Either a TX-side buffer limit at max payload or LEN 511 + PRBS
-   interaction. LEN 255 works perfectly (50/50, CRC 0). Needs firmware-side
-   investigation before trusting max-length payload numbers.
+1. **LEN=511 @ SF8 BW125: INVALID CONFIG (resolved 2026-08-21, not a firmware bug).**
+   Firmware enforces per-mod caps: `ERR LEN (MAX 255 LORA / 511 FLRC)` — 255 B is
+   the SX1262 LoRa hard limit. The sweep script sent LEN=511 in LoRa mode; TX
+   rejected START immediately (correctly). The "TX hang" reading was a host-side
+   logging gap: the ERR reply wasn't captured/checked. Host fix: validate LEN vs
+   mod cap before START; rerun LEN=511 only under FLRC. LoRa LEN sweep 16-255
+   results stand as valid.
 
 2. **FLRC: all packets received (50/50 at radio level) but 100% CRC errors,
    SNR reports 0.0.** RSSI behaves sensibly (-66 to -78 dBm, improves with BR).
