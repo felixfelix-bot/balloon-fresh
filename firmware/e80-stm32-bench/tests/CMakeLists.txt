@@ -56,6 +56,22 @@ target_include_directories(test_radio_bench_cfg PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
 
+# FIFO hygiene test (FIX-T4): same real-source + fake-capturing-HAL harness,
+# pinning an RX FIFO clear on every re-arm (rx_arm is the IRQ re-arm path)
+# and a TX FIFO clear before every FIFO write.
+add_bench_test(test_radio_bench_fifo
+    ${SRC_DIR}/radio_bench.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_fifo.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_system.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_regmem.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_workarounds.c)
+target_include_directories(test_radio_bench_fifo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
+
 # Banner test: only needs the bench_banner.h header from SRC_DIR.
 add_bench_test(test_bench_banner)
 
