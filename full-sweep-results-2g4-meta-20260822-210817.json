@@ -1,0 +1,21 @@
+{
+ "session": 2608222108,
+ "started": "2026-08-22T21:08:17.303439",
+ "operator": "Felix",
+ "rig": "e80-stm32",
+ "env": "bench",
+ "fw_flashed_on_boards": "0561b29 (feat/2g4-sweep: BAND OVERRIDE + HF path, console 2 Mbaud)",
+ "fw_source_commit": "",
+ "tx": {
+  "hw": "E80 STM32F103 + LR2021-class module",
+  "port": "/dev/ttyUSB3"
+ },
+ "rx": {
+  "hw": "E80 STM32F103 + LR2021-class module",
+  "port": "/dev/ttyUSB4"
+ },
+ "band": "dual-band: 863-870 MHz + 2400-2483.5 MHz ISM (BAND OVERRIDE 2026, HF path >= 1.6 GHz)",
+ "antennas": "SMA, ~30 cm apart",
+ "packets_per_config": 50,
+ "integrity_note": "pre-Match123-fix fw: trust bit_err (PRBS-15), not crc_ok, for FLRC"
+}

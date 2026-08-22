@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """e80_sweep_full.py — E80-to-E80 FULL parameter sweep (LoRa + FLRC + PA + LEN + FREQ).
 
-Both boards: E80 STM32 bench, fw=88a00cf (T5a tip: pcrc16 24th PKT field).
+Both boards: E80 STM32 bench, fw=0561b29 (2.4 GHz band support: HF PA/RX
+path >= 1.6 GHz, BAND OVERRIDE range 410-2483.5 MHz, console 2,000,000 8N1).
 PKT format (25 fields): [0]PKT [1]session [2]config [3]replicate [4]pkt_idx
 [5]ts_ms [6]rssi_dbm [7]snr_db [8]crc_ok [9]bit_err [10]? [11]freq_hz [12]mod
 [13]sf/br [14]bw [15]cr [16]pa_dbm [17]len [18-23]0 [24]pcrc16
 
-Firmware parameter space (probed 2026-08-21):
+Firmware parameter space (probed 2026-08-21/22):
   LoRa: SF5-12 x BW125/250/500, PA 0-10 dBm (indoor cap)
   FLRC: BR {260,325,520,650,1040,1300,2080,2600} kbps x pa 0-10
-  FREQ: 863-870 MHz
+  FREQ: 863-870 MHz (868 default); 2400-2483.5 MHz with BAND OVERRIDE
   LEN: 6-511 bytes, GAP us, SESSION/CONFIG tagging
+Bands: dual-band sweep — 868 MHz sections (A..G2) + 2.4 GHz sections
+  (2G4 matrix/PA/LEN/BR/PA/FREQ @ 2440 MHz center, HF radio path).
 
 Robustness:
   - Auto-detect CH340 UART ports (they swap between reboots)
@@ -27,10 +30,11 @@ from datetime import datetime
 # ---- Static config ----
 PROBE_TX = "148757200D2D1425"   # SWD probe of TX board
 PROBE_RX = "203584200D2D0D42"   # SWD probe of RX board
-BAUD = 115200
+BAUD = 2000000                  # fw 0561b29 console default (was 115200)
 NPKTS = 50
 FW_DIR = os.path.expanduser("~/repos/balloon-e80bench/firmware/e80-stm32-bench")
 OUT_DIR = os.path.abspath(os.path.join(FW_DIR, "..", ".."))
+OUT_STEM = "full-sweep-results-2g4"  # dual-band output file stem
 
 LORA_SFS = [5, 6, 7, 8, 9, 10, 11, 12]
 LORA_BWS = [125, 250, 500]
@@ -40,6 +44,16 @@ PA_SWEEP = [0, 3, 6, 10]
 LEN_SWEEP = [16, 64, 128, 255, 511]
 FREQ_SWEEP = [863000000, 865000000, 868000000, 869525000, 870000000]
 DEFAULT_FREQ = 868000000
+
+# 2.4 GHz ISM band (fw 0561b29: HF PA/RX path, needs BAND OVERRIDE).
+FREQ_2G4_SWEEP = [2400000000, 2420000000, 2440000000, 2460000000, 2480000000]
+DEFAULT_FREQ_2G4 = 2440000000
+
+# EU SRD band without override (fw bench.c BENCH_CMD_FREQ gate).
+BAND_MIN_HZ = 863000000
+BAND_MAX_HZ = 870000000
+# 'BAND OVERRIDE <pin>' widens FREQ acceptance to 410-2483.5 MHz (fw main.h).
+BAND_OVERRIDE_PIN = 2026
 
 
 def lora_airtime_s(sf, bw_khz, plen):
@@ -244,6 +258,17 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
     cmd(tx, f"CONFIG {idx} 1")
     cmd(rx, f"CONFIG {idx} 1")
 
+    # Band override for out-of-EU-SRD frequencies (2.4 GHz ISM sections).
+    # band_override is RAM-resident in the fw and every config starts with a
+    # SWD reset of both boards, so it must be (re-)armed per config — sending
+    # it "once at the start of the section" would NOT survive the next reset.
+    needs_override = not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ)
+    if needs_override:
+        for s, label in [(rx, "RX"), (tx, "TX")]:
+            r = cmd(s, f"BAND OVERRIDE {BAND_OVERRIDE_PIN}")
+            if not r or not r.startswith("OK BAND OVERRIDE"):
+                raise RuntimeError(f"{label} BAND OVERRIDE: {r!r}")
+
     # Radio config — RX first
     if mod == "lora":
         m = f"MOD LORA {cfg['sf']} {cfg['bw']}"
@@ -366,6 +391,51 @@ def build_configs():
         cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ,
                          plen=plen, gap=40000,
                          label=f"FLRC {br}k pa5 L{plen}"))
+    # ================= 2.4 GHz ISM band (fw 0561b29, BAND OVERRIDE) =================
+    # HF PA/RX radio path (fw switches at >= 1.6 GHz). run_config arms
+    # 'BAND OVERRIDE 2026' on both boards per config (flag dies on SWD reset).
+    # G-2G4. LoRa SF x BW matrix @ 2440 MHz PA10 LEN64 (24 configs)
+    for bw in LORA_BWS:
+        for sf in LORA_SFS:
+            toa = lora_airtime_s(sf, bw, 64)
+            gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+            cfgs.append(dict(mod="lora", sf=sf, bw=bw, pa=10,
+                             freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
+                             label=f"2G4 SF{sf} BW{bw} PA10"))
+    # H-2G4. LoRa PA sweep @ SF8 BW125 2440 MHz (4 configs; PA10 replicates
+    # the matrix center for cross-section consistency check)
+    for pa in PA_SWEEP:
+        toa = lora_airtime_s(8, 125, 64)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="lora", sf=8, bw=125, pa=pa,
+                         freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
+                         label=f"2G4 SF8 BW125 PA{pa}"))
+    # I-2G4. LoRa LEN sweep @ SF8 BW125 PA10 2440 MHz (5 configs; 511 > LoRa
+    # silicon cap 255 -> run_config records it as INVALID, documenting the
+    # cap on the 2.4 GHz band too, same as the 868 MHz LEN section)
+    for plen in LEN_SWEEP:
+        toa = lora_airtime_s(8, 125, plen)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10,
+                         freq=DEFAULT_FREQ_2G4, plen=plen, gap=gap,
+                         label=f"2G4 SF8 BW125 PA10 L{plen}"))
+    # J-2G4. FLRC BR sweep @ 2440 MHz pa5 (8 configs). gap floor 10 ms holds
+    # for the shortest airtime (2600k: ~1.3 ms for 64 B) — min gap is the
+    # binding constraint, exactly as on 868 MHz.
+    for br in FLRC_BRS:
+        cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ_2G4,
+                         plen=64, gap=10000, label=f"2G4 FLRC {br}k pa5"))
+    # K-2G4. FLRC PA sweep @ 650k 2440 MHz (6 configs; pa5 replicates J)
+    for pa in FLRC_PAS:
+        cfgs.append(dict(mod="flrc", br=650, pa=pa, freq=DEFAULT_FREQ_2G4,
+                         plen=64, gap=10000, label=f"2G4 FLRC 650k pa{pa}"))
+    # L-2G4. FREQ sweep @ SF8 BW125 PA10 across 2.4 GHz points (5 configs;
+    # 2440 replicates the matrix center)
+    for f in FREQ_2G4_SWEEP:
+        toa = lora_airtime_s(8, 125, 64)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=f,
+                         plen=64, gap=gap, label=f"2G4 SF8 BW125 @ {f/1e6:.0f}MHz"))
     return cfgs
 
 
@@ -396,8 +466,8 @@ def main():
     print("=" * 90, flush=True)
 
     ts_str = ts.strftime("%Y%m%d-%H%M%S")
-    sum_path = os.path.join(OUT_DIR, f"full-sweep-summary-{ts_str}.csv")
-    pkt_path = os.path.join(OUT_DIR, f"full-sweep-pkts-{ts_str}.csv")
+    sum_path = os.path.join(OUT_DIR, f"{OUT_STEM}-summary-{ts_str}.csv")
+    pkt_path = os.path.join(OUT_DIR, f"{OUT_STEM}-pkts-{ts_str}.csv")
     sum_f = open(sum_path, "w", newline="")
     sum_w = csv.writer(sum_f); sum_w.writerow(SUMMARY_FIELDS); sum_f.flush()
     pkt_f = open(pkt_path, "w", newline="")
@@ -416,15 +486,16 @@ def main():
     meta = {
         "session": session_id, "started": ts.isoformat(), "operator": "Felix",
         "rig": "e80-stm32", "env": "bench",
-        "fw_flashed_on_boards": "88a00cf (buf/t5a-rx-pcrc16 tip)",
+        "fw_flashed_on_boards": "0561b29 (feat/2g4-sweep: BAND OVERRIDE + HF path, console 2 Mbaud)",
         "fw_source_commit": fw_commit,
         "tx": {"hw": "E80 STM32F103 + LR2021-class module", "port": tx_port},
         "rx": {"hw": "E80 STM32F103 + LR2021-class module", "port": rx_port},
-        "band": "868 MHz sub-GHz", "antennas": "SMA, ~30 cm apart",
+        "band": "dual-band: 863-870 MHz + 2400-2483.5 MHz ISM (BAND OVERRIDE 2026, HF path >= 1.6 GHz)",
+        "antennas": "SMA, ~30 cm apart",
         "packets_per_config": NPKTS,
         "integrity_note": "pre-Match123-fix fw: trust bit_err (PRBS-15), not crc_ok, for FLRC",
     }
-    meta_path = os.path.join(OUT_DIR, f"full-sweep-meta-{ts_str}.json")
+    meta_path = os.path.join(OUT_DIR, f"{OUT_STEM}-meta-{ts_str}.json")
     with open(meta_path, "w") as mf:
         _json.dump(meta, mf, indent=1)
     print(f"meta -> {meta_path}", flush=True)
@@ -454,7 +525,7 @@ def main():
     sum_f.close(); pkt_f.close()
 
     # Markdown report
-    md_path = os.path.join(OUT_DIR, f"full-sweep-report-{ts_str}.md")
+    md_path = os.path.join(OUT_DIR, f"{OUT_STEM}-report-{ts_str}.md")
     with open(md_path, "w") as f:
         f.write(f"# E80-to-E80 FULL Parameter Sweep — {ts.date()}\n\n")
         f.write(f"**Date:** {ts.isoformat()}\n\n")
@@ -479,10 +550,12 @@ def main():
         f.write(f"- Payload: {LEN_SWEEP} B @ SF8 BW125\n")
         f.write(f"- FLRC BR: {FLRC_BRS} kbps @ pa 5\n")
         f.write(f"- FLRC pa: {FLRC_PAS} @ BR 650 kbps\n")
-        f.write(f"- Frequency: {[f/1e6 for f in FREQ_SWEEP]} MHz @ SF8 BW125\n\n")
+        f.write(f"- Frequency: {[f/1e6 for f in FREQ_SWEEP]} MHz @ SF8 BW125\n")
+        f.write(f"- 2.4 GHz ISM (BAND OVERRIDE 2026, HF path): SF matrix/PA/LEN + "
+                f"FLRC BR/PA @ 2440 MHz, FREQ {[f/1e6 for f in FREQ_2G4_SWEEP]} MHz\n\n")
         f.write("## Files\n\n")
-        f.write(f"- Summary CSV: `full-sweep-summary-{ts_str}.csv`\n")
-        f.write(f"- Per-packet CSV: `full-sweep-pkts-{ts_str}.csv`\n")
+        f.write(f"- Summary CSV: `{OUT_STEM}-summary-{ts_str}.csv`\n")
+        f.write(f"- Per-packet CSV: `{OUT_STEM}-pkts-{ts_str}.csv`\n")
         f.write(f"- Script: `firmware/e80-stm32-bench/tools/e80_sweep_full.py`\n\n")
         f.write("## Notes\n\n")
         f.write("- GAP adaptive: max(10 ms, 1.2×airtime + 5 ms) — prevents RX overrun at SF11/12\n")
