@@ -19,6 +19,11 @@ empirical spot-tests (flrc-retest-20260821.md).
   range-tests' old Match1 (0x4C) produced the same failure family (9b740aa).
 - Co-required (H2): bench NEVER calls lr20xx_radio_fifo_clear_rx() (0 grep
   matches). RadioLib clears after every read; 9b740aa fix #3 was exactly this.
+  FIXED (FIX-T4, branch fix/t4-fifo-clear): radio_bench_rx_arm() clears the
+  RX FIFO on every re-arm (IRQ-handler re-arm path => every packet) and
+  radio_bench_tx_packet() clears the TX FIFO before each FIFO write; pinned
+  byte-exact by host tests (tests/test_radio_bench_fifo.c, opcodes 0x011E/
+  0x011F, ordering after SetPacketParams / before SetRx+write).
 - Fallback if hw verify fails: CRC_OFF + app-layer pcrc16/PRBS (range-tests'
   final architecture; pcrc16 field already in flashed fw).
 - SNR=0.0 in FLRC is BY DESIGN (radio_bench.c:432/459 sets snr_qdb=0) — document.

@@ -310,6 +310,14 @@ int radio_bench_rx_arm(uint16_t rx_pld_len)
 
     lr20xx_system_clear_irq_status(E80_CONTEXT, LR20XX_SYSTEM_IRQ_ALL_MASK);
 
+    /* FIFO hygiene (FIX-T4, RCA BUG 2/H2): clear the RX FIFO on EVERY re-arm.
+     * This function re-runs from the IRQ handler after each received packet,
+     * so stale FIFO contents (e.g. an undrained CRC-error packet) can never
+     * corrupt the next payload. RadioLib LR2021 clears after every read;
+     * balloon-range-tests 9b740aa fix#3 was exactly this. Must land after
+     * SetPacketParams and before SetRx. */
+    lr20xx_radio_fifo_clear_rx(E80_CONTEXT);
+
     lr20xx_radio_common_set_rx(E80_CONTEXT, 0);
 
     return 0;
@@ -335,6 +343,10 @@ int radio_bench_tx_packet(const uint8_t* buf, uint16_t len, uint32_t tx_timeout_
         flrc_pkt_params.pld_len_in_bytes = len;
         lr20xx_radio_flrc_set_pkt_params(E80_CONTEXT, &flrc_pkt_params);
     }
+
+    /* FIFO hygiene (FIX-T4): clear the TX FIFO before loading the next
+     * packet so leftovers of an aborted TX can never prefix the payload. */
+    lr20xx_radio_fifo_clear_tx(E80_CONTEXT);
 
     lr20xx_radio_fifo_write_tx(E80_CONTEXT, buf, len);
 
