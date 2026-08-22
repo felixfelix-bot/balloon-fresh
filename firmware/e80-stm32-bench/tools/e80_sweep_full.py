@@ -242,10 +242,14 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
             "bit_err_total": 0, "tx_done": False,
             "start_reply": f"INVALID CONFIG: LEN>{LEN_CAP[mod]} for {mod}",
             "pkts": [], "invalid": True,
+            "dur_s": 0, "cfg_t_start": "", "cfg_t_end": "",
         }
     # SWD reset both to clear state
     swd_reset(PROBE_TX)
     swd_reset(PROBE_RX)
+    # Wall-clock timing: from SWD reset done to last packet drain
+    t_cfg_start = time.monotonic()
+    cfg_t_start_iso = datetime.now().isoformat()
     # Re-open ports (SWD reset can invalidate USB state? no — ports stay, but reopen to be safe)
     tx.port, rx.port = tx_port, rx_port
 
@@ -309,6 +313,8 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
 
     tx_lines = drain_lines(tx, wait_s)
     rx_lines = drain_lines(rx, 5)
+    t_cfg_end = time.monotonic()
+    cfg_t_end_iso = datetime.now().isoformat()
     tx_done = any("TX DONE" in l for l in tx_lines)
 
     stat = cmd(rx, "STAT?")
@@ -323,6 +329,8 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
         "sf": cfg.get("sf", ""), "bw": cfg.get("bw", ""),
         "br": cfg.get("br", ""), "pa": cfg["pa"], "freq": cfg["freq"],
         "plen": cfg["plen"], "gap_us": cfg["gap"], "toa_s": round(toa, 3),
+        "dur_s": round(t_cfg_end - t_cfg_start, 3),
+        "cfg_t_start": cfg_t_start_iso, "cfg_t_end": cfg_t_end_iso,
         "rx_pkts": len(pkts), "crc_err": sd.get("crc_err", 0),
         "rssi_avg": round(sum(rssi)/len(rssi), 1) if rssi else None,
         "rssi_min": round(min(rssi), 1) if rssi else None,
@@ -440,10 +448,12 @@ def build_configs():
 
 
 SUMMARY_FIELDS = ["idx", "label", "mod", "sf", "bw", "br", "pa", "freq", "plen",
-                  "gap_us", "toa_s", "rx_pkts", "crc_err", "rssi_avg", "rssi_min",
-                  "rssi_max", "snr_avg", "snr_min", "bit_err_total", "tx_done", "error"]
+                  "gap_us", "toa_s", "dur_s", "rx_pkts", "crc_err", "rssi_avg",
+                  "rssi_min", "rssi_max", "snr_avg", "snr_min", "bit_err_total",
+                  "tx_done", "error"]
 PKT_FIELDS = ["idx", "label", "pkt_idx", "session", "config", "replicate",
               "ts_ms", "rssi_dbm", "snr_db", "crc_ok", "bit_err", "pcrc16"]
+CONFIGS_FIELDS = ["idx", "label", "t_start", "t_end", "dur_s", "rxcnt"]
 
 
 def main():
@@ -473,6 +483,12 @@ def main():
     pkt_f = open(pkt_path, "w", newline="")
     pkt_w = csv.writer(pkt_f); pkt_f_flush = None
     pkt_w.writerow(PKT_FIELDS); pkt_f.flush()
+
+    # Per-config timing CSV (keeps pkt schema stable)
+    cfg_path = os.path.join(OUT_DIR, f"{OUT_STEM}-configs-{ts_str}.csv")
+    cfg_f = open(cfg_path, "w", newline="")
+    cfg_w = csv.writer(cfg_f); cfg_w.writerow(CONFIGS_FIELDS); cfg_f.flush()
+    t_total_start = time.monotonic()
 
     # session metadata sidecar — lets downstream tools (e.g. Bloons) fill
     # Operator / Firmware / HW fields instead of "unknown/unrecoverable"
@@ -516,13 +532,38 @@ def main():
                                 p["replicate"], p["ts_ms"], p["rssi"], p["snr"],
                                 p["crc_ok"], p["bit_err"], p["pcrc16"]])
             pkt_f.flush()
+            cfg_w.writerow([i, cfg["label"], r.get("cfg_t_start", ""),
+                           r.get("cfg_t_end", ""), r.get("dur_s", 0),
+                           r.get("rx_pkts", 0)])
+            cfg_f.flush()
         except Exception as e:
             print(f"FAIL: {e}", flush=True)
             row = [rec.get(k, "") for k in SUMMARY_FIELDS[:-1]] + [str(e)[:60]]
+            cfg_w.writerow([i, cfg["label"], "", "", 0, 0])
+            cfg_f.flush()
         sum_w.writerow(row)
         sum_f.flush()
 
     sum_f.close(); pkt_f.close()
+    cfg_f.close()
+
+    # Update meta JSON with finished timestamp + timing stats
+    t_total_end = time.monotonic()
+    total_elapsed = round(t_total_end - t_total_start, 3)
+    finished_ts = datetime.now()
+    configs_completed = len(results)
+    configs_planned = len(cfgs)
+    avg_s = round(total_elapsed / configs_completed, 3) if configs_completed else 0
+    meta["finished"] = finished_ts.isoformat()
+    meta["total_elapsed_s"] = total_elapsed
+    meta["configs_planned"] = configs_planned
+    meta["configs_completed"] = configs_completed
+    meta["avg_s_per_config"] = avg_s
+    with open(meta_path, "w") as mf:
+        _json.dump(meta, mf, indent=1)
+    print(f"configs CSV: {cfg_path}", flush=True)
+    print(f"Total elapsed: {total_elapsed}s  avg/config: {avg_s}s  "
+          f"({configs_completed}/{configs_planned} configs)", flush=True)
 
     # Markdown report
     md_path = os.path.join(OUT_DIR, f"{OUT_STEM}-report-{ts_str}.md")
@@ -544,6 +585,41 @@ def main():
                     f"| {pct:.0f}% | {r['rssi_avg'] if r['rssi_avg'] is not None else '-'} "
                     f"| {r['snr_avg'] if r['snr_avg'] is not None else '-'} "
                     f"| {r['crc_err']} | {r['bit_err_total']} | {'✓' if r['tx_done'] else '✗'} |\n")
+
+        # Timing section — wall-clock instrumentation for planning
+        valid = [r for r in results if r.get("dur_s", 0) > 0 and not r.get("invalid")]
+        if valid:
+            sorted_by_dur = sorted(valid, key=lambda r: r["dur_s"], reverse=True)
+            top10 = sorted_by_dur[:10]
+            f.write("\n## Timing\n\n")
+            f.write(f"**Total wall time:** {total_elapsed} s  \n")
+            f.write(f"**Avg per config:** {avg_s} s  \n")
+            f.write(f"**Configs completed:** {configs_completed}/{configs_planned}\n\n")
+            f.write("### Top-10 slowest configs\n\n")
+            f.write("| # | Config | dur_s | toa_s | gap_us | RX |\n")
+            f.write("|---|---|---|---|---|---|\n")
+            for r in top10:
+                f.write(f"| {r['idx']+1} | {r['label']} | {r['dur_s']} | "
+                        f"{r.get('toa_s', '-')} | {r.get('gap_us', '-')} | "
+                        f"{r['rx_pkts']}/{NPKTS} |\n")
+            # Planning formula: calibrate reset_overhead from measured data.
+            # est_s(config) = NPKTS * (toa_s + gap_us/1e6) + reset_overhead_s
+            residuals = [r["dur_s"] - NPKTS * (r.get("toa_s", 0) + r.get("gap_us", 0)/1e6)
+                         for r in valid if r.get("toa_s")]
+            if residuals:
+                reset_overhead = round(sum(residuals) / len(residuals), 3)
+            else:
+                reset_overhead = 0
+            f.write(f"\n### Planning formula\n\n")
+            f.write(f"```\n")
+            f.write(f"est_s(config) = {NPKTS} * (toa_s + gap_us/1e6) + {reset_overhead}\n")
+            f.write(f"  where toa_s = LoRa airtime or FLRC airtime for the config\n")
+            f.write(f"  reset_overhead_s = {reset_overhead} (calibrated from {len(residuals)} configs)\n")
+            f.write(f"  total_s(n_configs) = n_configs * est_s(config)  [worst case]\n")
+            f.write(f"```\n")
+            f.write(f"  Airtime-bound configs: large toa_s (SF11/12, large payloads)\n")
+            f.write(f"  Reset-bound configs: dur_s ≈ reset_overhead regardless of toa\n\n")
+
         f.write(f"\n## Parameter space covered\n\n")
         f.write(f"- LoRa: SF{min(LORA_SFS)}-{max(LORA_SFS)} x BW{LORA_BWS} (PA 10 dBm)\n")
         f.write(f"- LoRa PA: {PA_SWEEP} dBm @ SF8 BW125 (indoor cap 0-10 dBm)\n")
@@ -556,6 +632,8 @@ def main():
         f.write("## Files\n\n")
         f.write(f"- Summary CSV: `{OUT_STEM}-summary-{ts_str}.csv`\n")
         f.write(f"- Per-packet CSV: `{OUT_STEM}-pkts-{ts_str}.csv`\n")
+        f.write(f"- Per-config timing CSV: `{OUT_STEM}-configs-{ts_str}.csv`\n")
+        f.write(f"- Meta JSON: `{OUT_STEM}-meta-{ts_str}.json`\n")
         f.write(f"- Script: `firmware/e80-stm32-bench/tools/e80_sweep_full.py`\n\n")
         f.write("## Notes\n\n")
         f.write("- GAP adaptive: max(10 ms, 1.2×airtime + 5 ms) — prevents RX overrun at SF11/12\n")
@@ -564,6 +642,8 @@ def main():
         f.write("- LEN 6–511 enforced; FREQ 863–870 MHz enforced (EU SRD)\n")
     print(f"\nSummary CSV: {sum_path}")
     print(f"Per-packet CSV: {pkt_path}")
+    print(f"Per-config CSV: {cfg_path}")
+    print(f"Meta JSON: {meta_path}")
     print(f"Markdown report: {md_path}")
     return 0
 
