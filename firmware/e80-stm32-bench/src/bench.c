@@ -444,7 +444,7 @@ static void print_id(void)
     }
     console_put(" freq=");
     console_put_u32(cfg.freq_hz);
-    console_put(band_override ? " band=OVERRIDE" : " band=863-870MHz");
+    console_put(band_override ? " band=OVERRIDE(410-2483MHz)" : " band=863-870MHz");
     console_put(" pa=");
     console_put_i32(cfg.txpow_dbm);
     console_put(power_outdoor ? " pcap=+22dBm(OUTDOOR)" : " pcap=+10dBm");
@@ -485,7 +485,7 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("MOD flrc <br_kbps 260..2600> <dbm0-10> | FREQ <hz> | PA <dbm> | ");
         console_put("POWER MODE OUTDOOR <pin> | ");
         console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
-        console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> | ");
+        console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> 410-2483MHz (incl 2.4GHz ISM) | ");
         console_put("SESSION <id> | CONFIG <id> <replicate> | ");
         console_put("PRBS9 ON|OFF | PRBS ON|OFF | ");
         console_put("BUF CLEAR | BUF LOAD <n> <crc16_hex> | BUF STATUS");
