@@ -258,15 +258,29 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
     /* RF frequency */
     lr20xx_radio_common_set_rf_freq(E80_CONTEXT, freq);
 
-    /* PA config: LF path. Demo: duty 7/slices 7 for 400-550 MHz,
-     * duty 7/slices 6 otherwise (incl. 902-928 ISM). */
-    pa_cfgs.pa_sel           = LR20XX_RADIO_COMMON_PA_SEL_LF;
-    pa_cfgs.pa_lf_mode       = LR20XX_RADIO_COMMON_PA_LF_MODE_FSM;
-    pa_cfgs.pa_lf_duty_cycle = 7;
-    pa_cfgs.pa_lf_slices     = (freq > 400000000UL && freq < 550000000UL) ? 7 : 6;
-    pa_cfgs.pa_hf_duty_cycle = 16;
-    lr20xx_radio_common_set_rx_path(E80_CONTEXT, LR20XX_RADIO_COMMON_RX_PATH_LF,
-                                     LR20XX_RADIO_COMMON_RX_PATH_BOOST_MODE_NONE);
+    /* PA config: HF path for freq >= 1.6 GHz (2.4 GHz ISM), LF path otherwise.
+     * Demo: LF duty 7/slices 7 for 400-550 MHz, duty 7/slices 6 otherwise
+     * (incl. 902-928 ISM). HF duty 16 (BSP default). */
+    if (freq >= 1600000000UL)
+    {
+        pa_cfgs.pa_sel           = LR20XX_RADIO_COMMON_PA_SEL_HF;
+        pa_cfgs.pa_lf_mode       = LR20XX_RADIO_COMMON_PA_LF_MODE_FSM;
+        pa_cfgs.pa_lf_duty_cycle = 6;
+        pa_cfgs.pa_lf_slices     = 7;
+        pa_cfgs.pa_hf_duty_cycle = 16;
+        lr20xx_radio_common_set_rx_path(E80_CONTEXT, LR20XX_RADIO_COMMON_RX_PATH_HF,
+                                         LR20XX_RADIO_COMMON_RX_PATH_BOOST_MODE_NONE);
+    }
+    else
+    {
+        pa_cfgs.pa_sel           = LR20XX_RADIO_COMMON_PA_SEL_LF;
+        pa_cfgs.pa_lf_mode       = LR20XX_RADIO_COMMON_PA_LF_MODE_FSM;
+        pa_cfgs.pa_lf_duty_cycle = 7;
+        pa_cfgs.pa_lf_slices     = (freq > 400000000UL && freq < 550000000UL) ? 7 : 6;
+        pa_cfgs.pa_hf_duty_cycle = 16;
+        lr20xx_radio_common_set_rx_path(E80_CONTEXT, LR20XX_RADIO_COMMON_RX_PATH_LF,
+                                         LR20XX_RADIO_COMMON_RX_PATH_BOOST_MODE_NONE);
+    }
     lr20xx_radio_common_set_pa_cfg(E80_CONTEXT, &pa_cfgs);
 
     /* TX params: power in half-dBm (driver: power_half_dbm), demo clamps at

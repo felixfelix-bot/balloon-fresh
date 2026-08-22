@@ -62,7 +62,7 @@ extern "C" {
 /* Default console: USART1 2,000,000 8N1. CH340 supports 2 Mbps,
  * STM32F103 USART1 supports up to 4.5 Mbps. The RX path is
  * interrupt-driven with a ring buffer. */
-#define E80_BENCH_BAUD_DEFAULT 115200U
+#define E80_BENCH_BAUD_DEFAULT 2000000U
 
 /* Radio default: 868.0 MHz (EU SRD 863-870). */
 #define E80_BENCH_FREQ_DEFAULT_HZ 868000000UL
@@ -73,9 +73,14 @@ extern "C" {
 #define E80_BENCH_BAND_MIN_HZ 863000000UL
 #define E80_BENCH_BAND_MAX_HZ 870000000UL
 #define E80_BENCH_OVERRIDE_PIN 2026
-/* With override: sub-GHz LF path of the LR2021 (E80 module is sub-GHz only). */
+/* With override: full LR2021 range (dual-band: sub-GHz LF + 2.4 GHz HF path).
+ * Felix confirmed E80 boards have dual radios with separate antennas. */
 #define E80_BENCH_OVERRIDE_MIN_HZ 410000000UL
-#define E80_BENCH_OVERRIDE_MAX_HZ 960000000UL
+#define E80_BENCH_OVERRIDE_MAX_HZ 2483500000UL
+
+/* 2.4 GHz ISM band (HF path, PA_SEL_HF + RX_PATH_HF). */
+#define E80_BENCH_BAND_2G4_MIN_HZ 2400000000UL
+#define E80_BENCH_BAND_2G4_MAX_HZ 2483500000UL
 
 /* Indoor TX power cap (safety gate, Felix Aug 16): default max +10 dBm on the
  * desk bench. +22 dBm only after explicit 'POWER MODE OUTDOOR 2026' unlock. */
