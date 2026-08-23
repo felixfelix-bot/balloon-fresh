@@ -81,6 +81,18 @@ static radio_bench_cfg_t cur_cfg = {
     .txpow_dbm = E80_BENCH_TXPOW_CAP_INDOOR_DBM,
     .freq_hz   = 868000000UL,
 };
+
+/* Active modulation tracker for radio_bench_apply_cfg(). The LR2021 modem
+ * does not actually reconfigure on PKT_TYPE writes alone — the chip accepts
+ * the new MOD command but stays on the old modulation, so FLRC<->LoRa
+ * switches produced 0 packets until now. apply_cfg() consults cur_mod at
+ * entry and triggers a hard reset + full recalibration (radio_bench_init
+ * pattern) whenever cfg->mod differs. Initialized to BENCH_MOD_LORA to
+ * match the cur_cfg default above so the first apply_cfg() from
+ * radio_bench_init() (which already does its own reset/calibrate) does
+ * not redundantly re-reset. */
+static bench_mod_t cur_mod = BENCH_MOD_LORA;
+
 static uint16_t cur_rx_pld_len = 255;
 
 /* ---- State ----------------------------------------------------------------- */
@@ -225,6 +237,54 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
 {
     int8_t power_half_dbm;
     uint32_t freq = cfg->freq_hz;
+
+    /* Modulation switch (FLRC<->LoRa): the LR2021 cannot reliably switch
+     * modulation via register writes alone — the chip accepts the new
+     * PKT_TYPE command but its modem does not actually reconfigure, leaving
+     * the radio silent on the new modulation. When the requested modulation
+     * differs from the active one, do a hard reset + full recalibration
+     * first using the same sequence as radio_bench_init() (and in the same
+     * order — calibration must run AFTER DCDC + TCXO are restored so it
+     * uses the right reference clock; DIO8 must be re-armed as IRQ because
+     * reset clears DIO routing to GPIO input). Then proceed with the normal
+     * modulation setup below. This eliminates the need for an external SWD
+     * probe (openocd) between configs during range tests. */
+    if (cfg->mod != cur_mod)
+    {
+        uint16_t errs = 0;
+
+        lr20xx_hal_reset(E80_CONTEXT);
+
+        lr20xx_system_get_errors(E80_CONTEXT, &errs);
+        lr20xx_system_clear_errors(E80_CONTEXT);
+
+        /* TCXO variant (same as init): DC-DC reg + TCXO 2.2V / 64000 steps. */
+        lr20xx_system_set_reg_mode(E80_CONTEXT, LR20XX_SYSTEM_REG_MODE_DCDC);
+        lr20xx_system_set_tcxo_mode(E80_CONTEXT, LR20XX_SYSTEM_TCXO_CTRL_2_2V, 64000);
+
+        /* LF clock: RC (init pattern). */
+        lr20xx_system_cfg_lfclk(E80_CONTEXT, LR20XX_SYSTEM_LFCLK_RC);
+
+        /* Calibrate everything. */
+        lr20xx_system_calibrate(E80_CONTEXT, 0x7F);
+
+        /* Check + clear any calibration errors (init pattern). */
+        lr20xx_system_get_errors(E80_CONTEXT, &errs);
+        if (errs != 0)
+        {
+            lr20xx_system_clear_errors(E80_CONTEXT);
+        }
+
+        /* Re-arm DIO8 = IRQ — reset cleared the DIO function routing back
+         * to the power-on default (GPIO input). Without this RX_DONE /
+         * TX_DONE / TIMEOUT IRQs would stop firing on DIO8 until the
+         * board was power-cycled. */
+        lr20xx_system_set_dio_function(E80_CONTEXT, LR20XX_SYSTEM_DIO_8,
+                                        LR20XX_SYSTEM_DIO_FUNC_IRQ,
+                                        LR20XX_SYSTEM_DIO_DRIVE_PULL_DOWN);
+
+        cur_mod = cfg->mod;
+    }
 
     cur_cfg = *cfg;
 
