@@ -1,0 +1,123 @@
+E80 FULL Sweep — 2026-08-22T21:08:17.303439  session=2608222108
+Probes: TX=148757200D2D1425 RX=203584200D2D0D42  50 pkts/config
+Ports: TX=/dev/ttyUSB3 RX=/dev/ttyUSB4
+Configs: 113
+==========================================================================================
+meta -> /home/c03rad0r/repos/balloon-e80bench/full-sweep-results-2g4-meta-20260822-210817.json
+[1/113] SF5 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=9.9 crc=0 done=True
+[2/113] SF6 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=12.8 crc=0 done=True
+[3/113] SF7 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=14.6 crc=0 done=True
+[4/113] SF8 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=15.0 crc=0 done=True
+[5/113] SF9 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=12.2 crc=0 done=True
+[6/113] SF10 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=13.0 crc=0 done=True
+[7/113] SF11 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=9.0 crc=0 done=True
+[8/113] SF12 BW125 PA10 ... rx=50/50 rssi=-40.0 snr=10.3 crc=0 done=True
+[9/113] SF5 BW250 PA10 ... rx=50/50 rssi=-39.9 snr=10.0 crc=0 done=True
+[10/113] SF6 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=12.8 crc=0 done=True
+[11/113] SF7 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=14.3 crc=0 done=True
+[12/113] SF8 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=15.0 crc=0 done=True
+[13/113] SF9 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=12.0 crc=0 done=True
+[14/113] SF10 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=12.0 crc=0 done=True
+[15/113] SF11 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=8.0 crc=0 done=True
+[16/113] SF12 BW250 PA10 ... rx=50/50 rssi=-40.0 snr=9.0 crc=0 done=True
+[17/113] SF5 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=9.9 crc=0 done=True
+[18/113] SF6 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=12.8 crc=0 done=True
+[19/113] SF7 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=14.6 crc=0 done=True
+[20/113] SF8 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=15.8 crc=0 done=True
+[21/113] SF9 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=13.0 crc=0 done=True
+[22/113] SF10 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=12.9 crc=0 done=True
+[23/113] SF11 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=9.0 crc=0 done=True
+[24/113] SF12 BW500 PA10 ... rx=50/50 rssi=-39.0 snr=10.0 crc=0 done=True
+[25/113] SF8 BW125 PA0 ... rx=50/50 rssi=-49.4 snr=16.3 crc=0 done=True
+[26/113] SF8 BW125 PA3 ... rx=50/50 rssi=-46.0 snr=16.6 crc=0 done=True
+[27/113] SF8 BW125 PA6 ... rx=50/50 rssi=-44.0 snr=16.2 crc=0 done=True
+[28/113] SF8 BW125 PA10 L16 ... rx=50/50 rssi=-40.0 snr=15.0 crc=0 done=True
+[29/113] SF8 BW125 PA10 L128 ... rx=50/50 rssi=-40.0 snr=15.0 crc=0 done=True
+[30/113] SF8 BW125 PA10 L255 ... rx=50/50 rssi=-40.0 snr=15.0 crc=0 done=True
+[31/113] SF8 BW125 PA10 L511 ... rx=0/50 rssi=None snr=None crc=0 done=False
+[32/113] FLRC 260k pa5 ... rx=50/50 rssi=-84.4 snr=0.0 crc=50 done=True
+[33/113] FLRC 325k pa5 ... rx=50/50 rssi=-83.3 snr=0.0 crc=50 done=True
+[34/113] FLRC 520k pa5 ... rx=50/50 rssi=-73.4 snr=0.0 crc=50 done=True
+[35/113] FLRC 650k pa5 ... rx=50/50 rssi=-76.1 snr=0.0 crc=50 done=True
+[36/113] FLRC 1040k pa5 ... rx=50/50 rssi=-78.6 snr=0.0 crc=50 done=True
+[37/113] FLRC 1300k pa5 ... rx=50/50 rssi=-78.5 snr=0.0 crc=50 done=True
+[38/113] FLRC 2080k pa5 ... rx=50/50 rssi=-75.9 snr=0.0 crc=50 done=True
+[39/113] FLRC 2600k pa5 ... rx=50/50 rssi=-75.6 snr=0.0 crc=50 done=True
+[40/113] FLRC 650k pa0 ... rx=50/50 rssi=-86.7 snr=0.0 crc=50 done=True
+[41/113] FLRC 650k pa1 ... rx=50/50 rssi=-84.5 snr=0.0 crc=50 done=True
+[42/113] FLRC 650k pa3 ... rx=50/50 rssi=-76.9 snr=0.0 crc=50 done=True
+[43/113] FLRC 650k pa7 ... rx=50/50 rssi=-77.3 snr=0.0 crc=50 done=True
+[44/113] FLRC 650k pa10 ... rx=50/50 rssi=-81.3 snr=0.0 crc=50 done=True
+[45/113] SF8 BW125 @ 863.000MHz ... rx=50/50 rssi=-40.0 snr=17.0 crc=0 done=True
+[46/113] SF8 BW125 @ 865.000MHz ... rx=50/50 rssi=-40.0 snr=15.1 crc=0 done=True
+[47/113] SF8 BW125 @ 869.525MHz ... rx=50/50 rssi=-39.3 snr=15.3 crc=0 done=True
+[48/113] SF8 BW125 @ 870.000MHz ... rx=50/50 rssi=-39.0 snr=15.2 crc=0 done=True
+[49/113] FLRC 650k pa5 L16 ... rx=50/50 rssi=-76.6 snr=0.0 crc=50 done=True
+[50/113] FLRC 650k pa5 L64 ... rx=50/50 rssi=-75.9 snr=0.0 crc=50 done=True
+[51/113] FLRC 650k pa5 L128 ... rx=50/50 rssi=-76.7 snr=0.0 crc=50 done=True
+[52/113] FLRC 650k pa5 L192 ... rx=50/50 rssi=-75.0 snr=0.0 crc=50 done=True
+[53/113] FLRC 650k pa5 L255 ... rx=50/50 rssi=-45.0 snr=0.0 crc=0 done=True
+[54/113] FLRC 650k pa5 L256 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[55/113] FLRC 650k pa5 L300 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[56/113] FLRC 650k pa5 L384 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[57/113] FLRC 650k pa5 L448 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[58/113] FLRC 650k pa5 L511 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[59/113] FLRC 1300k pa5 L384 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[60/113] FLRC 1300k pa5 L511 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[61/113] FLRC 2600k pa5 L511 ... rx=50/50 rssi=-45.0 snr=0.0 crc=50 done=True
+[62/113] 2G4 SF5 BW125 PA10 ... rx=50/50 rssi=-35.2 snr=9.9 crc=0 done=True
+[63/113] 2G4 SF6 BW125 PA10 ... rx=49/50 rssi=-35.5 snr=12.6 crc=0 done=True
+[64/113] 2G4 SF7 BW125 PA10 ... rx=50/50 rssi=-35.7 snr=14.4 crc=0 done=True
+[65/113] 2G4 SF8 BW125 PA10 ... rx=50/50 rssi=-36.0 snr=15.0 crc=0 done=True
+[66/113] 2G4 SF9 BW125 PA10 ... rx=50/50 rssi=-36.0 snr=13.0 crc=0 done=True
+[67/113] 2G4 SF10 BW125 PA10 ... rx=50/50 rssi=-36.0 snr=12.0 crc=0 done=True
+[68/113] 2G4 SF11 BW125 PA10 ... rx=50/50 rssi=-36.0 snr=8.0 crc=0 done=True
+[69/113] 2G4 SF12 BW125 PA10 ... rx=50/50 rssi=-36.0 snr=6.2 crc=2 done=True
+[70/113] 2G4 SF5 BW250 PA10 ... rx=50/50 rssi=-35.4 snr=9.9 crc=0 done=True
+[71/113] 2G4 SF6 BW250 PA10 ... rx=50/50 rssi=-35.6 snr=12.2 crc=0 done=True
+[72/113] 2G4 SF7 BW250 PA10 ... rx=48/50 rssi=-35.8 snr=14.1 crc=0 done=True
+[73/113] 2G4 SF8 BW250 PA10 ... rx=50/50 rssi=-36.0 snr=12.2 crc=0 done=True
+[74/113] 2G4 SF9 BW250 PA10 ... rx=49/50 rssi=-36.0 snr=11.6 crc=0 done=True
+[75/113] 2G4 SF10 BW250 PA10 ... rx=49/50 rssi=-37.1 snr=12.1 crc=0 done=True
+[76/113] 2G4 SF11 BW250 PA10 ... rx=50/50 rssi=-36.0 snr=10.0 crc=0 done=True
+[77/113] 2G4 SF12 BW250 PA10 ... rx=50/50 rssi=-36.0 snr=9.6 crc=0 done=True
+[78/113] 2G4 SF5 BW500 PA10 ... rx=50/50 rssi=-35.2 snr=10.3 crc=0 done=True
+[79/113] 2G4 SF6 BW500 PA10 ... rx=50/50 rssi=-35.3 snr=12.6 crc=0 done=True
+[80/113] 2G4 SF7 BW500 PA10 ... rx=50/50 rssi=-35.4 snr=14.1 crc=0 done=True
+[81/113] 2G4 SF8 BW500 PA10 ... rx=50/50 rssi=-35.7 snr=15.0 crc=0 done=True
+[82/113] 2G4 SF9 BW500 PA10 ... rx=50/50 rssi=-35.8 snr=13.0 crc=0 done=True
+[83/113] 2G4 SF10 BW500 PA10 ... rx=50/50 rssi=-36.0 snr=12.0 crc=0 done=True
+[84/113] 2G4 SF11 BW500 PA10 ... rx=50/50 rssi=-36.0 snr=8.0 crc=0 done=True
+[85/113] 2G4 SF12 BW500 PA10 ... rx=50/50 rssi=-36.0 snr=8.9 crc=0 done=True
+[86/113] 2G4 SF8 BW125 PA0 ... rx=48/50 rssi=-45.0 snr=15.0 crc=0 done=True
+[87/113] 2G4 SF8 BW125 PA3 ... rx=50/50 rssi=-42.0 snr=16.4 crc=0 done=True
+[88/113] 2G4 SF8 BW125 PA6 ... rx=50/50 rssi=-39.0 snr=15.4 crc=0 done=True
+[89/113] 2G4 SF8 BW125 PA10 ... rx=49/50 rssi=-36.0 snr=15.0 crc=0 done=True
+[90/113] 2G4 SF8 BW125 PA10 L16 ... rx=49/50 rssi=-36.0 snr=15.0 crc=0 done=True
+[91/113] 2G4 SF8 BW125 PA10 L64 ... rx=50/50 rssi=-36.0 snr=15.0 crc=0 done=True
+[92/113] 2G4 SF8 BW125 PA10 L128 ... rx=49/50 rssi=-36.0 snr=15.1 crc=0 done=True
+[93/113] 2G4 SF8 BW125 PA10 L255 ... rx=50/50 rssi=-36.0 snr=15.1 crc=0 done=True
+[94/113] 2G4 SF8 BW125 PA10 L511 ... rx=0/50 rssi=None snr=None crc=0 done=False
+[95/113] 2G4 FLRC 260k pa5 ... rx=50/50 rssi=-78.7 snr=0.0 crc=50 done=True
+[96/113] 2G4 FLRC 325k pa5 ... rx=50/50 rssi=-79.1 snr=0.0 crc=50 done=True
+[97/113] 2G4 FLRC 520k pa5 ... rx=50/50 rssi=-79.8 snr=0.0 crc=50 done=True
+[98/113] 2G4 FLRC 650k pa5 ... rx=50/50 rssi=-70.9 snr=0.0 crc=50 done=True
+[99/113] 2G4 FLRC 1040k pa5 ... rx=50/50 rssi=-72.5 snr=0.0 crc=50 done=True
+[100/113] 2G4 FLRC 1300k pa5 ... rx=51/50 rssi=-73.0 snr=0.0 crc=51 done=True
+[101/113] 2G4 FLRC 2080k pa5 ... rx=50/50 rssi=-74.4 snr=0.0 crc=50 done=True
+[102/113] 2G4 FLRC 2600k pa5 ... rx=50/50 rssi=-74.4 snr=0.0 crc=50 done=True
+[103/113] 2G4 FLRC 650k pa0 ... rx=50/50 rssi=-71.3 snr=0.0 crc=50 done=True
+[104/113] 2G4 FLRC 650k pa1 ... rx=50/50 rssi=-71.1 snr=0.0 crc=50 done=True
+[105/113] 2G4 FLRC 650k pa3 ... rx=50/50 rssi=-70.8 snr=0.0 crc=50 done=True
+[106/113] 2G4 FLRC 650k pa5 ... rx=50/50 rssi=-71.2 snr=0.0 crc=50 done=True
+[107/113] 2G4 FLRC 650k pa7 ... rx=50/50 rssi=-70.7 snr=0.0 crc=50 done=True
+[108/113] 2G4 FLRC 650k pa10 ... rx=50/50 rssi=-74.1 snr=0.0 crc=50 done=True
+[109/113] 2G4 SF8 BW125 @ 2400MHz ... rx=50/50 rssi=-34.0 snr=16.0 crc=0 done=True
+[110/113] 2G4 SF8 BW125 @ 2420MHz ... rx=49/50 rssi=-35.4 snr=15.1 crc=0 done=True
+[111/113] 2G4 SF8 BW125 @ 2440MHz ... rx=50/50 rssi=-36.0 snr=15.0 crc=0 done=True
+[112/113] 2G4 SF8 BW125 @ 2460MHz ... rx=47/50 rssi=-37.0 snr=16.0 crc=0 done=True
+[113/113] 2G4 SF8 BW125 @ 2480MHz ... rx=49/50 rssi=-39.0 snr=16.0 crc=0 done=True
+
+Summary CSV: /home/c03rad0r/repos/balloon-e80bench/full-sweep-results-2g4-summary-20260822-210817.csv
+Per-packet CSV: /home/c03rad0r/repos/balloon-e80bench/full-sweep-results-2g4-pkts-20260822-210817.csv
+Markdown report: /home/c03rad0r/repos/balloon-e80bench/full-sweep-results-2g4-report-20260822-210817.md
