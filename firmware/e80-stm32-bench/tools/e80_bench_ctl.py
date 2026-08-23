@@ -810,6 +810,87 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
     return starts
 
 
+def compute_late_skip(starts, now, rx_lead=0, min_ahead_s=5.0):
+    """Return the index into `starts` where the schedule can still be
+    joined, or `None` if the entire schedule has already passed.
+
+    The returned index `i` is the first entry whose *effective arm point*
+    (`starts[i] - rx_lead`) is at least `min_ahead_s` seconds in the
+    future relative to `now`. This gives the local machine enough time
+    to finish board open + drain + (optional FW hash gate) + config
+    command sequence before needing to arm/start.
+
+    Returns 0 if the whole schedule is still in the future (no skip
+    needed). Returns None if even the last config's arm point is in
+    the past — the operator must re-T0 and relaunch.
+
+    Pure function: no side effects, no time.time() calls. Both
+    `run_tx_mode` and `run_rx_mode` use this to detect late launches
+    before the schedule loop, turning silent desync (the previous
+    behaviour, where wait_until() silently no-ops on past timestamps)
+    into a clear abort or, with --skip-late-configs, an explicit
+    recovery of the remaining future configs. See
+    docs/timing-tolerance-analysis.md §3 (failure modes) and §6
+    (implementation notes) for the design rationale.
+    """
+    earliest = now + min_ahead_s
+    for i, s in enumerate(starts):
+        if (s - rx_lead) >= earliest:
+            return i
+    return None
+
+
+def apply_late_skip(cfgs, starts, now, rx_lead, min_ahead_s=5.0,
+                    skip_late=False, mode_label=""):
+    """Apply the launch-lateness check + (optional) skip to a schedule.
+
+    Returns `(cfgs, starts)` sliced to the recovered starting index, or
+    raises SystemExit with an actionable message describing lateness and
+    how to recover.
+
+    - If the schedule is still on time (returned index == 0): returns the
+      original lists unchanged (no missed configs).
+    - If returned index > 0 and `skip_late` is True: slices cfgs/starts
+      to that index (recovered case — both machines launched equally
+      late). Prints a [LATE] notice on stdout.
+    - If returned index == None: all start times are past; raises
+      SystemExit telling the operator to re-T0.
+    - Otherwise (index > 0 and not skip_late): raises SystemExit with
+      the seconds-late and the suggested --skip-late-configs command.
+    """
+    idx = compute_late_skip(starts, now, rx_lead=rx_lead,
+                            min_ahead_s=min_ahead_s)
+    if idx is None:
+        sys.exit("ERROR [{}]: all {} config start times are already in the "
+                 "past (last start was {:.0f}s ago). Re-set T0 to a "
+                 "future time and relaunch.".format(
+                     mode_label or "?", len(starts), now - starts[-1]))
+    if idx == 0:
+        # On time, nothing to do
+        return cfgs, starts
+    # idx > 0: some configs already past
+    if not skip_late:
+        sys.exit("ERROR [{}]: launched {:.0f}s after T0 — configs 0..{} "
+                 "have already started (their start - rx_lead timestamps "
+                 "are in the past). Aborting to avoid silent desync: "
+                 "wait_until() would no-op and the RX would capture "
+                 "noise under the wrong config header. Re-set T0 to a "
+                 "future time, or pass --skip-late-configs to start "
+                 "from config {} ({}).".format(
+                     mode_label or "?",
+                     now - (starts[0] - rx_lead),
+                     idx - 1,
+                     idx + 1,
+                     cfgs[idx]["label"]))
+    print("[LATE - {}] Skipping configs 0..{} (start arm-points passed "
+          "{:.0f}..{:.0f}s ago). Resuming from config {}: {}.".format(
+              mode_label or "?", idx - 1,
+              now - (starts[0] - rx_lead),
+              now - (starts[idx - 1] - rx_lead),
+              idx + 1, cfgs[idx]["label"]))
+    return cfgs[idx:], starts[idx:]
+
+
 def parse_pkt_line(line):
     """Parse a firmware PKT console line into a dict.
 
@@ -986,6 +1067,16 @@ def run_tx_mode(args):
             i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
             fmt_offset(s, t0)))
     print()
+
+    # Launch-lateness guard: refuse to start past-timestamped configs that
+    # wait_until() would silently no-op on (silent desync class of bug).
+    # See docs/timing-tolerance-analysis.md §3.
+    cfgs, starts = apply_late_skip(
+        cfgs, starts, time.time(),
+        rx_lead=0,           # TX uses absolute starts, no rx_lead
+        skip_late=args.skip_late_configs,
+        mode_label="TX",
+    )
 
     # SWD reset if available (non-fatal if openocd missing)
     def swd_reset_maybe(label="TX"):
@@ -1191,6 +1282,16 @@ def run_rx_mode(args):
             i + 1, len(cfgs), c["label"], c["n_pkts"],
             fmt_offset(s - args.rx_lead, t0)))
     print()
+
+    # Launch-lateness guard: refuse to start past-timestamped configs that
+    # wait_until() would silently no-op on (silent desync class of bug).
+    # See docs/timing-tolerance-analysis.md §3.
+    cfgs, starts = apply_late_skip(
+        cfgs, starts, time.time(),
+        rx_lead=args.rx_lead,   # RX arms rx_lead before start
+        skip_late=args.skip_late_configs,
+        mode_label="RX",
+    )
 
     # SWD reset if available (non-fatal if openocd missing)
     def swd_reset_maybe(label="RX"):
@@ -1554,6 +1655,13 @@ def main():
     ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=10,
                     help="extra inter-config gap seconds when mod params change "
                          "(SWD reset + board reopen time, default 10)")
+    ap.add_argument("--skip-late-configs", dest="skip_late_configs",
+                    action="store_true",
+                    help="if launched after one or more config start times "
+                         "have already passed, skip those configs and resume "
+                         "from the next future one (default: abort with an "
+                         "error message). See "
+                         "docs/timing-tolerance-analysis.md.")
     ap.add_argument("--skip-fw-check", action="store_true",
                     help="skip firmware hash gate (not recommended)")
     args = ap.parse_args()
