@@ -33,7 +33,12 @@ BAND          ?= 868
 TX_LOG        ?= tx-log.csv
 RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
-T0            ?= $(shell date -d '+5 minutes' '+%Y-%m-%d %H:%M' 2>/dev/null || echo '')
+
+# Auto-generate T0 as epoch (5 min from now) and session ID (YYMMDDHHMM)
+# Both timezone-safe: epoch is absolute, session ID is shared label
+# Override with: make range-rx T0=<epoch> SESSION_ID=<id>
+T0            ?= $(shell python3 -c "import time; print(int(time.time()) + 300)")
+SESSION_ID    ?= $(shell date +%y%m%d%H%M)
 
 # Ansible
 ANSIBLE_PLAYBOOK := ansible-playbook
@@ -41,7 +46,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
-.PHONY: range-cvm-server range-adaptive range-cvm-test
+.PHONY: range-coord range-cvm-server range-adaptive range-cvm-test
 
 all: firmware
 
@@ -68,27 +73,29 @@ range-setup: ## Ansible: install openocd, pyserial, clone repo, verify boards (b
 	@echo "Setup complete. Run 'make range-dry-run' to verify."
 
 range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
-	@if [ -z "$(T0)" ]; then echo "ERROR: T0 required. Example: make range-tx T0='2026-08-30 14:00'"; exit 1; fi
 	@echo "=== E80 Distributed TX Mode ==="
-	@echo "  T0:      $(T0)"
-	@echo "  Configs: $(CONFIGS)"
-	@echo "  Band:    $(BAND) MHz"
+	@echo "  T0:         $(T0) (epoch)"
+	@echo "  SESSION_ID: $(SESSION_ID)"
+	@echo "  Configs:    $(CONFIGS)"
+	@echo "  Band:       $(BAND) MHz"
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
-		--t0 "$(T0)" \
+		--t0 $(T0) \
+		--session-id $(SESSION_ID) \
 		--configs "$(CONFIGS)" \
 		--tx-log "$(TX_LOG)" \
 		--skip-fw-check
 
 range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 schedule
-	@if [ -z "$(T0)" ]; then echo "ERROR: T0 required. Example: make range-rx T0='2026-08-30 14:00'"; exit 1; fi
 	@echo "=== E80 Distributed RX Mode ==="
-	@echo "  T0:      $(T0)"
-	@echo "  Configs: $(CONFIGS)"
-	@echo "  Band:    $(BAND) MHz"
+	@echo "  T0:         $(T0) (epoch)"
+	@echo "  SESSION_ID: $(SESSION_ID)"
+	@echo "  Configs:    $(CONFIGS)"
+	@echo "  Band:       $(BAND) MHz"
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode rx \
-		--t0 "$(T0)" \
+		--t0 $(T0) \
+		--session-id $(SESSION_ID) \
 		--configs "$(CONFIGS)" \
 		--rx-log "$(RX_LOG)" \
 		--skip-fw-check
@@ -99,6 +106,20 @@ range-merge: ## Merge TX+RX logs, compute PER, generate report
 	@echo "  RX: $(RX)"
 	@echo ""
 	$(MERGE_SCRIPT) --tx "$(TX)" --rx "$(RX)" --out-dir "$(OUT_DIR)"
+
+range-coord: ## Print T0 + SESSION_ID for sharing between TX and RX operators
+	@echo "============================================"
+	@echo "  T0:         $(T0)"
+	@echo "  SESSION_ID: $(SESSION_ID)"
+	@echo "  Configs:    $(CONFIGS)"
+	@echo "============================================"
+	@echo "Share these values with the other operator:"
+	@echo ""
+	@echo "  On RX machine:  make range-rx T0=$(T0) SESSION_ID=$(SESSION_ID)"
+	@echo "  On TX machine:  make range-tx T0=$(T0) SESSION_ID=$(SESSION_ID)"
+	@echo ""
+	@echo "Or just run 'make range-tx' on this machine (auto-generated)."
+	@echo "Test starts in ~5 minutes. Both machines must sync clocks via NTP."
 
 range-dry-run: ## Print schedule from config preset without touching hardware
 	@echo "=== E80 Range Test Dry Run ==="
