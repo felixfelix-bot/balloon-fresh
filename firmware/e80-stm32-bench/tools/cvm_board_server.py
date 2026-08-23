@@ -14,6 +14,7 @@ Tools (JSON-RPC tools/call with name+arguments):
     board_start_burst {n, plen, gap_us?}            → {ok, reply}   (TX only)
     board_capture     {duration_s, config_idx, eager_stop?}     → {ok, pkts, n, k, lines} (RX only)
     board_swd_reset   {}                            → {ok}
+    set_config        {config_name? | config_json}  → {ok, responses} (push config to board)
 
 Wire protocol: see docs/DESIGN-contextvm-adaptive.md §3.
 - Client → server: kind 25910 inner event (JSON-RPC request), gift-wrapped
@@ -218,6 +219,145 @@ class BoardTools:
     def tool_board_swd_reset(self, args: dict) -> dict:
         self.ctrl.swd_reset()
         return {"ok": True}
+
+    # --- set_config: push config to board via MOD/FREQ/PA/ROLE commands ---
+
+    @staticmethod
+    def _resolve_config_path(config_name: str) -> str | None:
+        """Look up configs/<name>.json in the same dirs load_config_preset uses.
+
+        Search order (matches e80_bench_ctl.load_config_preset):
+          1. <repo_root>/configs/<name>.json
+          2. <firmware>/e80-stm32-bench/configs/<name>.json
+          3. <cwd>/<name>.json
+
+        Returns the resolved path or None if not found.
+        """
+        name = config_name[:-5] if config_name.endswith(".json") else config_name
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))))
+        for c in [
+            os.path.join(repo_root, "configs", name + ".json"),
+            os.path.join(os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__))), "configs", name + ".json"),
+            name + ".json",
+        ]:
+            if os.path.isfile(c):
+                return c
+        return None
+
+    def tool_set_config(self, args: dict) -> dict:
+        """set_config MCP tool — push a config preset to the board.
+
+        Two modes:
+          config_name  — looks up configs/<name>.json on the server filesystem
+          config_json  — inline JSON string with the full config preset
+
+        Sends MOD, FREQ, PA, ROLE commands for each config entry and returns
+        per-entry responses (label, commands sent, board replies).
+
+        The config preset format matches e80_bench_ctl.load_config_preset:
+        {
+          "name": "...",
+          "configs": [
+            {"label": "...", "mod": "flrc"|"lora", "sf": int|null,
+             "bw": int|null, "br": int|null, "pa": int, "freq": int,
+             "plen": int, "gap": int, "n_pkts": int}
+          ]
+        }
+        """
+        config_name = args.get("config_name")
+        config_json = args.get("config_json")
+
+        # --- argument validation ---
+        if not config_name and not config_json:
+            return {"ok": False,
+                    "error": "set_config: 'config_name' or 'config_json' is required"}
+        if config_name and config_json:
+            return {"ok": False,
+                    "error": "set_config: provide 'config_name' OR 'config_json', not both"}
+
+        # --- load config ---
+        if config_name:
+            path = self._resolve_config_path(config_name)
+            if path is None:
+                return {"ok": False,
+                        "error": f"set_config: config file not found: {config_name}"}
+            try:
+                with open(path) as f:
+                    preset = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                return {"ok": False,
+                        "error": f"set_config: cannot read config file: {e}"}
+        else:
+            try:
+                preset = json.loads(config_json)
+            except json.JSONDecodeError as e:
+                return {"ok": False,
+                        "error": f"set_config: invalid JSON: {e}"}
+
+        if not isinstance(preset, dict) or "configs" not in preset:
+            return {"ok": False,
+                    "error": "set_config: config must be an object with 'configs' key"}
+
+        configs = preset["configs"]
+        if not isinstance(configs, list) or len(configs) == 0:
+            return {"ok": False,
+                    "error": "set_config: 'configs' must be a non-empty list"}
+
+        # --- send MOD/FREQ/PA/ROLE for each config entry ---
+        responses = []
+        for cfg in configs:
+            label = cfg.get("label", "?")
+            mod = cfg.get("mod", "").lower()
+            commands = []
+            replies = []
+
+            # Build MOD command
+            if mod == "lora":
+                sf = cfg.get("sf")
+                bw = cfg.get("bw")
+                if sf is None or bw is None:
+                    return {"ok": False,
+                            "error": f"set_config: LoRa config '{label}' missing sf or bw"}
+                mod_line = f"MOD LORA {sf} {bw}"
+            elif mod == "flrc":
+                br = cfg.get("br")
+                pa = cfg.get("pa")
+                if br is None or pa is None:
+                    return {"ok": False,
+                            "error": f"set_config: FLRC config '{label}' missing br or pa"}
+                mod_line = f"MOD FLRC {br} {pa}"
+            else:
+                return {"ok": False,
+                        "error": f"set_config: unknown mod '{mod}' in config '{label}'"}
+
+            commands.append(mod_line)
+            replies.append(self.ctrl.cmd(mod_line, timeout=15.0))
+
+            # PA command (LoRa only — FLRC includes PA in MOD line)
+            if mod == "lora":
+                pa_cmd = f"PA {cfg['pa']}"
+                commands.append(pa_cmd)
+                replies.append(self.ctrl.cmd(pa_cmd, timeout=15.0))
+
+            # FREQ command
+            freq_cmd = f"FREQ {cfg['freq']}"
+            commands.append(freq_cmd)
+            replies.append(self.ctrl.cmd(freq_cmd, timeout=15.0))
+
+            # ROLE command (use the server's role)
+            role_cmd = f"ROLE {self.role}"
+            commands.append(role_cmd)
+            replies.append(self.ctrl.cmd(role_cmd, timeout=15.0))
+
+            responses.append({
+                "label": label,
+                "commands": commands,
+                "replies": replies,
+            })
+
+        return {"ok": True, "responses": responses, "config_name": preset.get("name")}
 
 
 # ===========================================================================
