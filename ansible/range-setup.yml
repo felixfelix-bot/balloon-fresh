@@ -1,0 +1,195 @@
+# ansible/range-setup.yml — E80 distributed range test provisioning
+#
+# Installs: openocd, pyserial, python3-serial, udev rules for CH340
+# Clones balloon-e80bench repo
+# Verifies: board detection (CH340 + CMSIS-DAP), openocd, pyserial imports
+#
+# Idempotent: safe to run multiple times.
+# Tested on: Ubuntu 24.04+, Ubuntu 26.04, Debian 12+
+#
+# Usage:
+#   ansible-playbook -i ansible/range-inventory.ini ansible/range-setup.yml
+#
+# Or via Makefile:
+#   make range-setup
+
+---
+- name: E80 distributed range test — provisioning
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    repo_url: "https://github.com/felixfelix-bot/balloon-fresh.git"
+    repo_dest: "{{ ansible_env.HOME }}/repos/balloon-e80bench"
+    repo_branch: "feat/2g4-sweep"
+    e80_tool_dir: "{{ repo_dest }}/firmware/e80-stm32-bench/tools"
+
+  tasks:
+    # --- Install packages ---
+    - name: Install required packages (apt)
+      apt:
+        name:
+          - openocd
+          - python3-serial
+          - python3-pip
+          - git
+          - udev
+        state: present
+        update_cache: true
+      when: ansible_pkg_mgr == "apt"
+
+    - name: Install required packages (dnf/yum)
+      package:
+        name:
+          - openocd
+          - python3-pyserial
+          - python3-pip
+          - git
+          - systemd-udev
+        state: present
+      when: ansible_pkg_mgr in ['dnf', 'yum']
+
+    # --- pyserial via pip (fallback if apt package is outdated) ---
+    - name: Install pyserial via pip
+      pip:
+        name: pyserial
+        state: present
+        executable: pip3
+      become: false
+
+    # --- Clone/update repo ---
+    - name: Ensure repos directory exists
+      file:
+        path: "{{ ansible_env.HOME }}/repos"
+        state: directory
+        mode: '0755'
+      become: false
+
+    - name: Clone balloon-e80bench repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_branch }}"
+        force: false
+        update: true
+      become: false
+      register: repo_clone
+
+    # --- udev rules for CH340 ---
+    - name: Install udev rules for CH340 (E80 console bridge)
+      copy:
+        dest: /etc/udev/rules.d/85-e80-ch340.rules
+        content: |
+          # CH340 USB-serial bridge (E80 bench board console)
+          # Vendor 1a86, Product 7523
+          SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", \
+            MODE="0666", GROUP="dialout"
+        mode: '0644'
+      notify: reload udev
+
+    - name: Install udev rules for CMSIS-DAP (Raspberry Pi Debugprobe)
+      copy:
+        dest: /etc/udev/rules.d/85-e80-cmsis-dap.rules
+        content: |
+          # CMSIS-DAP / Raspberry Pi Pico Debugprobe (SWD)
+          # Vendor 2e8a (Raspberry Pi Foundation)
+          SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666", GROUP="dialout"
+          SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2e8a", MODE="0666", GROUP="dialout"
+        mode: '0644'
+      notify: reload udev
+
+    - name: Ensure dialout group exists
+      group:
+        name: dialout
+        state: present
+
+    - name: Add current user to dialout group
+      user:
+        name: "{{ ansible_user_id }}"
+        groups: dialout
+        append: true
+      become: true
+
+    # --- Flush handlers (udev reload) ---
+    - meta: flush_handlers
+
+    # --- Verification ---
+    - name: Verify openocd is installed
+      command: openocd --version
+      register: openocd_check
+      changed_when: false
+      become: false
+
+    - name: Show openocd version
+      debug:
+        msg: "openocd: {{ openocd_check.stderr_lines[0] | default('installed') }}"
+
+    - name: Verify pyserial imports
+      command: python3 -c "import serial; print(serial.__version__)"
+      register: pyserial_check
+      changed_when: false
+      become: false
+
+    - name: Show pyserial version
+      debug:
+        msg: "pyserial: {{ pyserial_check.stdout }}"
+
+    - name: Check for CH340 USB-serial devices
+      shell: |
+        for dev in /dev/ttyUSB*; do
+          [ -e "$dev" ] || continue
+          if udevadm info -q property -n "$dev" 2>/dev/null | grep -q "CH340"; then
+            echo "$dev"
+          fi
+        done
+      args:
+        executable: /bin/bash
+      register: ch340_ports
+      changed_when: false
+      become: false
+
+    - name: Report CH340 detection
+      debug:
+        msg: >-
+          CH340 ports found:
+          {{ ch340_ports.stdout_lines if ch340_ports.stdout_lines else 'NONE — plug in E80 board USB cable' }}
+
+    - name: Check for CMSIS-DAP SWD probes
+      shell: lsusb | grep -i "2e8a:" || true
+      args:
+        executable: /bin/bash
+      register: swd_probes
+      changed_when: false
+      become: false
+
+    - name: Report SWD probe detection
+      debug:
+        msg: >-
+          SWD probes found:
+          {{ swd_probes.stdout_lines if swd_probes.stdout_lines else 'NONE — plug in Pico Debugprobe' }}
+
+    - name: Verify e80_detect.py can run
+      command: python3 {{ e80_tool_dir }}/e80_detect.py --check-deps
+      register: detect_check
+      changed_when: false
+      become: false
+      ignore_errors: true
+
+    - name: Report detection result
+      debug:
+        msg: "{{ detect_check.stdout_lines[-3:] if detect_check.stdout_lines else detect_check.stderr_lines[:3] }}"
+
+    - name: Summary
+      debug:
+        msg: >-
+          Setup complete on {{ inventory_hostname }}.
+          openocd: OK |
+          pyserial: OK |
+          CH340: {{ ch340_ports.stdout_lines | length }} port(s) |
+          SWD: {{ swd_probes.stdout_lines | length }} probe(s)
+
+  handlers:
+    - name: reload udev
+      command: udevadm control --reload-rules
+      become: true

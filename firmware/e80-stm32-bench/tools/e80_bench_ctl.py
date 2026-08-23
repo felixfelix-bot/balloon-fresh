@@ -210,12 +210,13 @@ def build_matrix_cells(args, prior_rows):
 
 
 def parse_t0(s):
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%dT%H:%M:%S",
+                "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M"):
         try:
             return datetime.datetime.strptime(s, fmt).timestamp()
         except ValueError:
             continue
-    raise ValueError("bad --t0 {!r}; want 'YYYY-MM-DD HH:MM:SS' local time".format(s))
+    raise ValueError("bad --t0 {!r}; want 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD HH:MM' local time".format(s))
 
 
 def build_stop_schedule(cells, t0_epoch, t0_margin_s, guard_s, settle_s=5.0):
@@ -652,6 +653,610 @@ def ts_now(now_fn):
     return datetime.datetime.fromtimestamp(now_fn()).strftime("%Y-%m-%dT%H:%M:%S")
 
 
+# ---------------------------------------------------------------------------
+# Distributed range test: config presets, PKT parsing, TX/RX log writers
+# ---------------------------------------------------------------------------
+
+def load_config_preset(preset_or_path):
+    """Load a config preset from a JSON file path or a dict.
+
+    Returns a list of validated config dicts with added fields:
+      idx, airtime_s, expected_s
+
+    Each config must have: mod, sf|br, bw, pa, freq, plen, gap, n_pkts, label
+    LoRa configs must have sf + bw; FLRC configs must have br.
+
+    Raises ValueError for invalid configs, FileNotFoundError for missing files.
+    """
+    import json as _json
+
+    if isinstance(preset_or_path, str):
+        with open(preset_or_path) as f:
+            preset = _json.load(f)
+    elif isinstance(preset_or_path, dict):
+        preset = preset_or_path
+    else:
+        raise ValueError("preset must be a file path or dict")
+
+    if "configs" not in preset:
+        raise ValueError("preset missing 'configs' key")
+    raw_cfgs = preset["configs"]
+    if not raw_cfgs:
+        raise ValueError("preset has empty configs list")
+
+    cfgs = []
+    for i, c in enumerate(raw_cfgs):
+        mod = c.get("mod", "").lower()
+        if mod not in ("lora", "flrc"):
+            raise ValueError("config {}: invalid mod {!r} (want 'lora' or 'flrc')".format(i, c.get("mod")))
+
+        if mod == "lora":
+            if c.get("sf") is None:
+                raise ValueError("config {}: lora requires sf".format(i))
+            if c.get("bw") is None:
+                raise ValueError("config {}: lora requires bw".format(i))
+            airtime = lora_airtime_s(c["plen"], c["sf"], c["bw"] * 1000)
+            sf_or_br = c["sf"]
+        else:  # flrc
+            if c.get("br") is None:
+                raise ValueError("config {}: flrc requires br".format(i))
+            airtime = flrc_airtime_s(c["plen"], c["br"] * 1000)
+            sf_or_br = c["br"]
+
+        gap = c.get("gap", 5000)
+        n_pkts = c.get("n_pkts", 10)
+        expected_s = n_pkts * (airtime + gap / 1e6)
+
+        cfgs.append({
+            "idx": i,
+            "label": c.get("label", "cfg{}".format(i)),
+            "mod": mod,
+            "sf": c.get("sf"),
+            "br": c.get("br"),
+            "bw": c.get("bw"),
+            "pa": c.get("pa", 10),
+            "freq": c.get("freq", 868000000),
+            "plen": c.get("plen", 64),
+            "gap": gap,
+            "n_pkts": n_pkts,
+            "airtime_s": round(airtime, 4),
+            "expected_s": round(expected_s, 2),
+        })
+
+    return cfgs
+
+
+def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
+                          settle=2.0, t0_margin_s=None, guard_s=None,
+                          settle_s=None):
+    """Absolute epoch start times for each config in a preset.
+
+    Like build_stop_schedule but works on preset configs (which have
+    their own airtime + gap, not MOD_DEFS cells).
+
+    Accepts both short-form (t0_margin, guard, settle) and long-form
+    (t0_margin_s, guard_s, settle_s) keyword arguments for compatibility.
+    """
+    if t0_margin_s is not None:
+        t0_margin = t0_margin_s
+    if guard_s is not None:
+        guard = guard_s
+    if settle_s is not None:
+        settle = settle_s
+
+    starts = []
+    t = t0_epoch + t0_margin
+    for c in cfgs:
+        starts.append(t)
+        t += c["expected_s"] + settle + guard
+    return starts
+
+
+def parse_pkt_line(line):
+    """Parse a firmware PKT console line into a dict.
+
+    Format: PKT,session,config,replicate,pkt_idx,ts_ms,rssi_dbm,snr_db,
+    crc_ok,bit_err,?,freq_hz,mod,sf/br,bw,cr,pa_dbm,len,0,0,0,0,0,0,pcrc16
+
+    Returns None if the line is not a valid PKT line.
+    """
+    if not line or not line.strip().startswith("PKT,"):
+        return None
+    p = line.strip().split(",")
+    if len(p) < 18:
+        return None
+    try:
+        return {
+            "session": int(p[1]),
+            "config": int(p[2]),
+            "pkt_idx": int(p[4]),
+            "ts_ms": int(p[5]),
+            "rssi_dbm": float(p[6]),
+            "snr_db": float(p[7]),
+            "crc_ok": int(p[8]),
+            "bit_err": int(p[9]),
+            "freq_hz": int(p[11]),
+            "mod": p[12],
+            "sf_or_br": int(p[13]) if p[13].lstrip("-").isdigit() else p[13],
+            "bw": int(p[14]) if p[14].lstrip("-").isdigit() else p[14],
+            "pa_dbm": int(p[16]),
+            "len": int(p[17]),
+            "pcrc16": int(p[24]) if len(p) > 24 else None,
+        }
+    except (ValueError, IndexError):
+        return None
+
+
+def _detect_board_for_mode(mode, port, probe_serial):
+    """Auto-detect board for the given mode using e80_detect.
+
+    Returns (port, probe_serial). Exits with clear error if no board found.
+    """
+    if port and probe_serial:
+        return port, probe_serial
+
+    # Try importing e80_detect
+    _detect = None
+    for p in [os.path.join(os.path.dirname(os.path.abspath(__file__)), "e80_detect.py")]:
+        d = os.path.dirname(p)
+        if d not in sys.path:
+            sys.path.insert(0, d)
+    try:
+        import e80_detect as _detect_mod
+        _detect = _detect_mod.detect_board
+    except ImportError:
+        pass
+
+    if _detect is None:
+        # Fallback: manual CH340 port detection (from e80_sweep_full.py pattern)
+        import glob as _glob
+        ch340_ports = []
+        for dev in sorted(_glob.glob("/dev/ttyUSB*")):
+            try:
+                import subprocess as _sp
+                r = _sp.run(["udevadm", "info", "-q", "property", "-n", dev],
+                            capture_output=True, text=True, timeout=5)
+                if "CH340" in r.stdout:
+                    ch340_ports.append(dev)
+            except Exception:
+                pass
+        if not ch340_ports:
+            sys.exit("ERROR: No CH340 serial port found. Ensure the E80 board's "
+                     "USB-serial cable is connected.")
+        if len(ch340_ports) > 1:
+            sys.exit("ERROR: Multiple CH340 ports found ({}). Use --port to specify.".format(
+                ch340_ports))
+        port = ch340_ports[0]
+        probe_serial = probe_serial or None
+        return port, probe_serial
+
+    target_role = "TX" if mode == "tx" else "RX"
+    result = _detect(target_role)
+    if "error" in result:
+        sys.exit("ERROR: {}".format(result["error"]))
+
+    port = port or result.get("port")
+    probe_serial = probe_serial or result.get("probe_serial")
+    return port, probe_serial
+
+
+class TxLogWriter:
+    """tx-log.csv: one row per config cell. Incremental flush for crash safety."""
+
+    COLUMNS = ["session", "config_idx", "label", "n_pkts", "sent_ok",
+               "mod", "sf_or_br", "bw", "pa_dbm", "freq_hz", "plen",
+               "gap_us", "t0_offset_s", "actual_start_ts", "error"]
+
+    def __init__(self, path, session_id):
+        self.path = path
+        self.session_id = session_id
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            with open(path, "w", newline="") as f:
+                f.write(",".join(self.COLUMNS) + "\n")
+
+    def config_row(self, config_idx, label, n_pkts, sent_ok,
+                   mod, sf_or_br, bw, pa_dbm, freq_hz, plen, gap_us,
+                   t0_offset_s, actual_start_ts, error=""):
+        row = [str(self.session_id), str(config_idx), label, n_pkts, sent_ok,
+               mod, sf_or_br, bw, pa_dbm, freq_hz, plen, gap_us,
+               round(t0_offset_s, 1), actual_start_ts, error]
+        with open(self.path, "a") as f:
+            f.write(",".join(str(x) for x in row) + "\n")
+            f.flush()
+
+    def comment(self, text):
+        with open(self.path, "a") as f:
+            f.write("# {}\n".format(text))
+            f.flush()
+
+
+class RxLogWriter:
+    """rx-log.csv: one row per received packet. Incremental flush."""
+
+    COLUMNS = ["session", "config", "pkt_idx", "ts_ms", "rssi_dbm", "snr_db",
+               "crc_ok", "bit_err", "freq_hz", "mod", "sf_or_br", "bw",
+               "pa_dbm", "len", "pcrc16", "captured_ts"]
+
+    def __init__(self, path):
+        self.path = path
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            with open(path, "w", newline="") as f:
+                f.write(",".join(self.COLUMNS) + "\n")
+
+    def pkt_row(self, session, config, pkt_idx, ts_ms, rssi_dbm, snr_db,
+                crc_ok, bit_err, freq_hz, mod, sf_or_br, bw, pa_dbm, len,
+                pcrc16, captured_ts=None):
+        if captured_ts is None:
+            captured_ts = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        row = [session, config, pkt_idx, ts_ms, rssi_dbm, snr_db,
+               crc_ok, bit_err, freq_hz, mod, sf_or_br, bw, pa_dbm, len,
+               pcrc16, captured_ts]
+        with open(self.path, "a") as f:
+            f.write(",".join(str(x) for x in row) + "\n")
+            f.flush()
+
+
+# ---------------------------------------------------------------------------
+# Distributed TX mode
+# ---------------------------------------------------------------------------
+
+def run_tx_mode(args):
+    """TX-only distributed mode. Sends bursts on T0-anchored schedule."""
+    import subprocess as _sp
+
+    # Load config preset
+    cfgs = load_config_preset(args.configs)
+    t0 = parse_t0(args.t0)
+
+    # Auto-detect board
+    port, probe_serial = _detect_board_for_mode("tx", args.port, args.probe)
+
+    print("== DISTRIBUTED TX MODE ==")
+    print("  T0:         {}".format(
+        datetime.datetime.fromtimestamp(t0).isoformat()))
+    print("  Port:       {}".format(port))
+    print("  Probe:      {}".format(probe_serial or "(not detected)"))
+    print("  Session ID: {}".format(args.session_id))
+    print("  Configs:    {}".format(len(cfgs)))
+    print()
+
+    starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
+                                   args.settle)
+    for i, (c, s) in enumerate(zip(cfgs, starts)):
+        print("  [{}/{}] {} N={} LEN={} start={}".format(
+            i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
+            fmt_offset(s, t0)))
+    print()
+
+    # SWD reset if available (non-fatal if openocd missing)
+    def swd_reset_maybe(label="TX"):
+        if not probe_serial:
+            return
+        openocd_path = None
+        for cand in ("/usr/bin/openocd", os.path.expanduser("~/.local/bin/openocd")):
+            if os.path.isfile(cand) and os.access(cand, os.X_OK):
+                openocd_path = cand
+                break
+        if not openocd_path:
+            try:
+                r = _sp.run(["which", "openocd"], capture_output=True, text=True, timeout=5)
+                openocd_path = r.stdout.strip() or None
+            except Exception:
+                pass
+        if not openocd_path:
+            return
+        fw_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        try:
+            _sp.run(
+                [openocd_path, "-f", "interface/cmsis-dap.cfg",
+                 "-f", "target/stm32f1x.cfg",
+                 "-c", "transport select swd; adapter serial {}; "
+                       "init; reset halt; resume; exit".format(probe_serial)],
+                stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
+                timeout=30, cwd=fw_dir)
+            time.sleep(2.0)
+            print("[SWD] Reset {} board (probe={})".format(label, probe_serial))
+        except Exception as e:
+            print("[SWD] Reset failed (non-fatal): {}".format(e))
+
+    # Open board
+    board = BoardSerial(port)
+    if not args.skip_fw_check:
+        fw = firmware_hash_gate(board, port, skip=False)
+        if fw is False:
+            board.close()
+            sys.exit("ERROR: Firmware hash gate failed on TX board. "
+                     "Use --skip-fw-check to bypass.")
+
+    board.drain()
+    log = TxLogWriter(args.tx_log, session_id=args.session_id)
+    log.comment("DISTRIBUTED_TX_MODE session={} t0={} port={} probe={}".format(
+        args.session_id, datetime.datetime.fromtimestamp(t0).isoformat(),
+        port, probe_serial or "?"))
+
+    def wait_until(ts):
+        while True:
+            d = ts - time.time()
+            if d <= 0:
+                return
+            time.sleep(min(d, 30.0))
+
+    try:
+        for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
+            # Wait for scheduled start
+            wait_until(start)
+
+            # Band override if needed
+            if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
+                board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
+
+            # Power unlock if needed
+            if cfg["pa"] > INDOOR_CAP_DBM:
+                board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+
+            # Session/config tagging
+            board.cmd("SESSION {}".format(args.session_id))
+            board.cmd("CONFIG {} 1".format(cfg["idx"]))
+
+            # Radio config
+            if cfg["mod"] == "lora":
+                mod_line = "MOD LORA {} {}".format(cfg["sf"], cfg["bw"])
+            else:
+                mod_line = "MOD FLRC {} {}".format(cfg["br"], cfg["pa"])
+            board.cmd(mod_line)
+            if cfg["mod"] == "lora":
+                board.cmd("PA {}".format(cfg["pa"]))
+            board.cmd("FREQ {}".format(cfg["freq"]))
+
+            # Role TX + arm
+            board.cmd("ROLE TX")
+            board.cmd("ARM TX")
+
+            # Burst
+            start_line = "START N={} LEN={} GAP={}".format(
+                cfg["n_pkts"], cfg["plen"], cfg["gap"])
+            actual_start = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            board.cmd(start_line, timeout=max(30.0, cfg["expected_s"] + 60))
+
+            # Poll for completion
+            deadline = time.time() + cfg["expected_s"] + 120
+            sent_ok = 0
+            error = ""
+            while time.time() < deadline:
+                s = parse_stat(board.stat())
+                sent_ok = s.get("sent_ok", 0)
+                if sent_ok >= cfg["n_pkts"]:
+                    break
+                time.sleep(2.0)
+            else:
+                error = "TIMEOUT: sent_ok={}/{}".format(sent_ok, cfg["n_pkts"])
+
+            time.sleep(args.settle)
+
+            sf_or_br = cfg["sf"] if cfg["mod"] == "lora" else cfg["br"]
+            bw = cfg["bw"] if cfg["bw"] is not None else 0
+
+            log.config_row(
+                config_idx=cfg["idx"], label=cfg["label"],
+                n_pkts=cfg["n_pkts"], sent_ok=sent_ok,
+                mod=cfg["mod"], sf_or_br=sf_or_br, bw=bw,
+                pa_dbm=cfg["pa"], freq_hz=cfg["freq"],
+                plen=cfg["plen"], gap_us=cfg["gap"],
+                t0_offset_s=start - t0, actual_start_ts=actual_start,
+                error=error,
+            )
+            print("  [{}/{}] {} sent_ok={}/{}".format(
+                idx + 1, len(cfgs), cfg["label"], sent_ok, cfg["n_pkts"]))
+
+        # Teardown
+        board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
+    except KeyboardInterrupt:
+        log.comment("ABORTED by operator (Ctrl-C)")
+        board.cmd("STOP", expect_ok=False, timeout=3.0)
+        board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
+        print("\nABORTED by operator. tx-log.csv has partial data.")
+    except Exception as e:
+        log.comment("ERROR: {}".format(e))
+        print("ERROR: {}".format(e))
+        raise
+    finally:
+        board.close()
+
+    print("\n== TX MODE COMPLETE: {} ==".format(args.tx_log))
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Distributed RX mode
+# ---------------------------------------------------------------------------
+
+def run_rx_mode(args):
+    """RX-only distributed mode. Arms RX and captures PKT lines on schedule."""
+    import subprocess as _sp
+
+    # Load config preset
+    cfgs = load_config_preset(args.configs)
+    t0 = parse_t0(args.t0)
+
+    # Auto-detect board
+    port, probe_serial = _detect_board_for_mode("rx", args.port, args.probe)
+
+    print("== DISTRIBUTED RX MODE ==")
+    print("  T0:         {}".format(
+        datetime.datetime.fromtimestamp(t0).isoformat()))
+    print("  Port:       {}".format(port))
+    print("  Probe:      {}".format(probe_serial or "(not detected)"))
+    print("  Configs:    {}".format(len(cfgs)))
+    print()
+
+    starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
+                                   args.settle)
+    for i, (c, s) in enumerate(zip(cfgs, starts)):
+        print("  [{}/{}] {} RX_arm={} start={}".format(
+            i + 1, len(cfgs), c["label"], c["n_pkts"],
+            fmt_offset(s - args.rx_lead, t0)))
+    print()
+
+    # Open board
+    board = BoardSerial(port)
+    if not args.skip_fw_check:
+        fw = firmware_hash_gate(board, port, skip=False)
+        if fw is False:
+            board.close()
+            sys.exit("ERROR: Firmware hash gate failed on RX board. "
+                     "Use --skip-fw-check to bypass.")
+
+    board.drain()
+    log = RxLogWriter(args.rx_log)
+    log_comment = "# DISTRIBUTED_RX_MODE t0={} port={} probe={}\n".format(
+        datetime.datetime.fromtimestamp(t0).isoformat(),
+        port, probe_serial or "?")
+    with open(args.rx_log, "a") as f:
+        f.write(log_comment)
+
+    def wait_until(ts):
+        while True:
+            d = ts - time.time()
+            if d <= 0:
+                return
+            time.sleep(min(d, 30.0))
+
+    def drain_pkt_lines(ser, duration_s):
+        """Read serial lines for duration_s, return parsed PKT dicts."""
+        pkts = []
+        deadline = time.time() + duration_s
+        buf = ""
+        while time.time() < deadline:
+            data = ser.read(2048)
+            if data:
+                buf += data.decode("ascii", errors="replace")
+                while "\n" in buf:
+                    line, buf = buf.split("\n", 1)
+                    line = line.strip()
+                    if not line:
+                        continue
+                    p = parse_pkt_line(line)
+                    if p is not None:
+                        pkts.append(p)
+        return pkts
+
+    try:
+        for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
+            # Arm RX rx_lead seconds before burst start
+            wait_until(start - args.rx_lead)
+
+            # Band override if needed
+            if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
+                board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
+
+            # Session/config tagging
+            board.cmd("SESSION {}".format(args.session_id))
+            board.cmd("CONFIG {} 1".format(cfg["idx"]))
+
+            # Radio config
+            if cfg["mod"] == "lora":
+                mod_line = "MOD LORA {} {}".format(cfg["sf"], cfg["bw"])
+            else:
+                mod_line = "MOD FLRC {} {}".format(cfg["br"], cfg["pa"])
+            board.cmd(mod_line)
+            if cfg["mod"] == "lora":
+                board.cmd("PA {}".format(cfg["pa"]))
+            board.cmd("FREQ {}".format(cfg["freq"]))
+
+            # Role RX
+            board.cmd("ROLE RX")
+
+            # Arm RX: START resets stats and arms listener
+            start_line = "START N={} LEN={} GAP={}".format(
+                cfg["n_pkts"], cfg["plen"], cfg["gap"])
+            board.cmd(start_line)
+
+            # Wait for burst start + duration + settle
+            wait_until(start)
+            capture_duration = cfg["expected_s"] + args.settle + args.guard
+            pkts = drain_pkt_lines(board.ser, capture_duration)
+
+            # Write packets to log
+            for p in pkts:
+                log.pkt_row(
+                    session=p["session"], config=p["config"],
+                    pkt_idx=p["pkt_idx"], ts_ms=p["ts_ms"],
+                    rssi_dbm=p["rssi_dbm"], snr_db=p["snr_db"],
+                    crc_ok=p["crc_ok"], bit_err=p["bit_err"],
+                    freq_hz=p["freq_hz"], mod=p["mod"],
+                    sf_or_br=p["sf_or_br"], bw=p["bw"],
+                    pa_dbm=p["pa_dbm"], len=p["len"],
+                    pcrc16=p["pcrc16"] or 0,
+                )
+
+            # Read STAT for summary
+            rx_stat = parse_stat(board.stat())
+            print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
+                idx + 1, len(cfgs), cfg["label"],
+                len(pkts), cfg["n_pkts"],
+                rx_stat.get("rssi", "?"), rx_stat.get("snr", "?")))
+
+        # Teardown
+        board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
+    except KeyboardInterrupt:
+        with open(args.rx_log, "a") as f:
+            f.write("# ABORTED by operator (Ctrl-C)\n")
+        board.cmd("STOP", expect_ok=False, timeout=3.0)
+        board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
+        print("\nABORTED by operator. rx-log.csv has partial data.")
+    except Exception as e:
+        with open(args.rx_log, "a") as f:
+            f.write("# ERROR: {}\n".format(e))
+        print("ERROR: {}".format(e))
+        raise
+    finally:
+        board.close()
+
+    print("\n== RX MODE COMPLETE: {} ==".format(args.rx_log))
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Distributed dry-run (preset mode)
+# ---------------------------------------------------------------------------
+
+def dry_run_preset(args):
+    """Print schedule from config preset without touching hardware."""
+    cfgs = load_config_preset(args.configs)
+    t0 = parse_t0(args.t0) if args.t0 else time.time()
+    starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
+                                   args.settle)
+
+    print("== DRY RUN (distributed preset) ==")
+    print("Config file:  {}".format(args.configs))
+    print("T0:           {}".format(
+        datetime.datetime.fromtimestamp(t0).isoformat()))
+    print("t0_margin:    {}s  guard: {}s  rx_lead: {}s  settle: {}s".format(
+        args.t0_margin, args.guard, args.rx_lead, args.settle))
+    print("Configs:      {}".format(len(cfgs)))
+    print("=" * 80)
+
+    for i, (c, s) in enumerate(zip(cfgs, starts)):
+        sf_br = c["sf"] if c["mod"] == "lora" else "{}k".format(c["br"])
+        bw = c["bw"] if c["bw"] is not None else "-"
+        print("\n[{:>2}/{}] {}".format(i + 1, len(cfgs), c["label"]))
+        print("  mod={}  sf/br={}  bw={}  pa={}dBm  freq={:.3f}MHz".format(
+            c["mod"], sf_br, bw, c["pa"], c["freq"] / 1e6))
+        print("  plen={}B  gap={}us  n_pkts={}  airtime={:.3f}s  expected={:.1f}s".format(
+            c["plen"], c["gap"], c["n_pkts"], c["airtime_s"], c["expected_s"]))
+        print("  RX arm @ {} | TX start @ {}".format(
+            fmt_offset(s - args.rx_lead, t0),
+            fmt_offset(s, t0)))
+        print("  Capture duration: {:.1f}s".format(
+            c["expected_s"] + args.settle + args.guard))
+
+    print("\n" + "=" * 80)
+    total_s = starts[-1] + cfgs[-1]["expected_s"] + args.settle + args.guard - t0
+    print("Total wall time: {} (T0+0 to T0+{})".format(
+        fmt_hms(total_s), fmt_hms(total_s)))
+    return 0
+
+
 def dry_run(args):
     """Offline test surface: full matrix + schedule + scripts, no ports, no CSV."""
     power_unlock = args.dbm > INDOOR_CAP_DBM
@@ -717,8 +1322,26 @@ def dry_run(args):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="E80 two-board bench controller (single-shot FLRC-650 or "
-                    "range-campaign matrix per docs/RANGE-TEST-PLAN.md)")
+        description="E80 two-board bench controller — single-shot FLRC-650, "
+                    "range-campaign matrix, or distributed TX/RX split modes")
+    # --- Distributed mode (new) ---
+    ap.add_argument("--mode", choices=["tx", "rx"], default=None,
+                    help="distributed mode: 'tx' = TX-only on schedule, "
+                         "'rx' = RX-only capture on schedule. "
+                         "Requires --configs and --t0.")
+    ap.add_argument("--configs", default=None,
+                    help="config preset JSON file (e.g. configs/outdoor-10.json)")
+    ap.add_argument("--port", default=None,
+                    help="serial port (auto-detected if omitted)")
+    ap.add_argument("--probe", default=None,
+                    help="SWD probe serial (auto-detected if omitted)")
+    ap.add_argument("--tx-log", dest="tx_log", default="tx-log.csv",
+                    help="TX log CSV output (default: tx-log.csv)")
+    ap.add_argument("--rx-log", dest="rx_log", default="rx-log.csv",
+                    help="RX log CSV output (default: rx-log.csv)")
+    ap.add_argument("--session-id", dest="session_id", type=int, default=None,
+                    help="session ID (auto-generated from timestamp if omitted)")
+    # --- Legacy single-shot + matrix mode ---
     ap.add_argument("--tx", default="/dev/ttyUSB3", help="TX board serial port")
     ap.add_argument("--rx", default="/dev/ttyUSB4", help="RX board serial port")
     ap.add_argument("--freq", type=int, default=868000000,
@@ -770,6 +1393,27 @@ def main():
                     help="skip firmware hash gate (not recommended)")
     args = ap.parse_args()
 
+    # --- Distributed mode routing ---
+    if args.mode:
+        if not args.configs:
+            sys.exit("--mode {} requires --configs <preset.json>".format(args.mode))
+        if not args.t0 and not args.dry_run:
+            sys.exit("--mode {} requires --t0 'YYYY-MM-DD HH:MM:SS'".format(args.mode))
+        if args.session_id is None:
+            args.session_id = int(datetime.datetime.now().strftime("%y%m%d%H%M"))
+        if args.dry_run:
+            return dry_run_preset(args)
+        try:
+            if args.mode == "tx":
+                return run_tx_mode(args)
+            else:
+                return run_rx_mode(args)
+        except RuntimeError as e:
+            sys.exit("ERROR: {}".format(e))
+        except KeyboardInterrupt:
+            sys.exit("ERROR: interrupted — partial data in log CSV")
+
+    # --- Legacy mode (single-shot or matrix) ---
     if args.matrix:
         args.matrix = [k.strip() for k in args.matrix.split(",") if k.strip()]
         bad = [k for k in args.matrix if k not in MOD_DEFS]
