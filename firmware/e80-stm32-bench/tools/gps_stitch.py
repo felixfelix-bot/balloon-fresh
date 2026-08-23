@@ -39,6 +39,7 @@ import bisect
 import csv
 import math
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -202,6 +203,182 @@ def parse_gpx(path: str) -> list[GpsPoint]:
     return pts
 
 
+# ---------------------------------------------------------------------------
+# KML parsing (BasicAirData GPS Logger for Android)
+# ---------------------------------------------------------------------------
+#
+# KML tracks carry coordinates but NO per-point timestamps. For phones that
+# export KML (e.g. BasicAirData GPS Logger), we resurrect timestamps by:
+#   1. Extracting start time from the <name> element matching
+#      "GPS Logger YYYYMMDD-HHMMSS" — written by the logger as the track
+#      start time.
+#   2. Extracting total duration from the Placemark <description> via the
+#      pattern "Duration = MM:SS | MM:SS" (total | moving). We use the
+#      total (first) value as the synthesised window.
+#   3. Distributing N gathered <coordinates> evenly across the duration:
+#      epoch_i = start_epoch + i * (duration_s / (n - 1)).
+#
+# Coordinates in KML are "lon,lat,alt" triples, separated by whitespace
+# (newlines/spaces) inside the <coordinates> element. Note this is
+# LON-FIRST — opposite to GPX which exposes lat as an attribute first.
+# The returned GpsPoint tuple keeps our standard (lat, lon, ele) order.
+
+# "GPS Logger" before "YYYYMMDD-HHMMSS" — Placemark also has a <name> like
+# "Track 20260823-184605" that must NOT be picked up as a start-time anchor.
+_KML_NAME_TS_RE = re.compile(
+    r"GPS\s*Logger\s*"                    # "GPS Logger" + optional whitespace
+    r"(\d{4})(\d{2})(\d{2})-"            # YYYYMMDD-
+    r"(\d{2})(\d{2})(\d{2})"            # HHMMSS
+)
+# "Duration = MM:SS | MM:SS" — total | moving. Optional moving-time half
+# so we also accept bare "Duration = MM:SS" if a logger ever drops the tail.
+_KML_DURATION_RE = re.compile(
+    r"Duration\s*=\s*"
+    r"(\d+):(\d+)"                       # total MM:SS
+    r"(?:\s*\|\s*(\d+):(\d+))?"          # optional | moving MM:SS
+)
+
+
+def parse_kml(path: str) -> list[GpsPoint]:
+    """Parse a KML 2.2 file (BasicAirData GPS Logger for Android export).
+
+    KML tracks have NO per-point timestamps. We synthesise them by:
+      1. Extracting the start time from <name>
+         ("GPS Logger YYYYMMDD-HHMMSS").
+      2. Extracting the total duration from the Placemark <description>
+         ("Duration = MM:SS | MM:SS" — first value is total time).
+      3. Distributing N coordinates evenly across ``duration_s`` starting
+         at ``start_epoch`` so the synthesised epochs are strictly
+         increasing and span exactly ``duration_s``.
+
+    Coordinates in KML are ``lon,lat,alt`` triples (note lon-first, which
+    is opposite to the GPX lat-first convention). Returned ``GpsPoint``
+    instances use the standard (lat, lon, ele) split.
+
+    The naive start time (no timezone in KML) is treated as UTC, matching
+    the convention used by :func:`parse_iso_to_epoch` so RX and GPS
+    timestamps share the same time frame.
+    """
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        raise ValueError("KML parse error: {}".format(e))
+    root = tree.getroot()
+
+    def _localname(tag: str) -> str:
+        return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+    # --- Extract start time from <name> "GPS Logger YYYYMMDD-HHMMSS" ---
+    # Iterate in document order so the Document-level <name> wins over
+    # any Placemark <name> ("Track 20260823-184605") — only "GPS Logger ..."
+    # is a valid start-time anchor.
+    start_epoch: float | None = None
+    for node in root.iter():
+        if _localname(node.tag) != "name":
+            continue
+        m = _KML_NAME_TS_RE.search(node.text or "")
+        if not m:
+            continue
+        y, mo, d, h, mi, s = (int(g) for g in m.groups())
+        try:
+            dt = datetime(y, mo, d, h, mi, s, tzinfo=timezone.utc)
+        except ValueError:
+            # Invalid calendar date — keep scanning remaining <name> nodes
+            continue
+        start_epoch = dt.timestamp()
+        break
+
+    # --- Extract total duration from <description> ---
+    # "Duration = MM:SS | MM:SS" (total | moving). The Document-level
+    # <description> never has this string, so we naturally fall through
+    # to the Placemark-level one. First match wins.
+    total_duration_s: float | None = None
+    for node in root.iter():
+        if _localname(node.tag) != "description":
+            continue
+        m = _KML_DURATION_RE.search(node.text or "")
+        if not m:
+            continue
+        mins, secs = int(m.group(1)), int(m.group(2))
+        total_duration_s = float(mins * 60 + secs)
+        break
+
+    # --- Collect coordinates from all <coordinates> elements ---
+    # Each element holds "lon,lat,alt\nlon,lat,alt\n..." — whitespace-
+    # separated tuples, comma-separated components. Altitude is optional
+    # in KML but BasicAirData always emits it.
+    raw: list[tuple[float, float, float]] = []
+    for node in root.iter():
+        if _localname(node.tag) != "coordinates":
+            continue
+        text = (node.text or "").strip()
+        if not text:
+            continue
+        for tok in text.split():
+            parts = tok.split(",")
+            if len(parts) < 2:
+                continue
+            try:
+                lon = float(parts[0])
+                lat = float(parts[1])
+                alt = float(parts[2]) if len(parts) >= 3 else 0.0
+            except (TypeError, ValueError):
+                continue
+            raw.append((lon, lat, alt))
+
+    if not raw:
+        return []
+
+    n = len(raw)
+
+    # --- Synthesise timestamps ---
+    # Start-time fallback: if no "GPS Logger ..." <name> is present
+    # (e.g. KML from another tool), degrade gracefully to file mtime
+    # so the synthesised epochs are at least anchored to something real.
+    if start_epoch is None:
+        try:
+            start_epoch = os.path.getmtime(path)
+        except OSError:
+            start_epoch = 0.0
+        sys.stderr.write(
+            "WARNING: KML {} has no \"GPS Logger YYYYMMDD-HHMMSS\" in "
+            "<name>; using file mtime ({}) as start time.\n".format(
+                path,
+                datetime.fromtimestamp(
+                    start_epoch, tz=timezone.utc).isoformat(),
+            )
+        )
+
+    # Duration fallback: assume ~1 s between consecutive points. This is
+    # the most common phone-logger cadence and keeps the synthesised
+    # timestamps plausible even when the duration metadata is missing.
+    if total_duration_s is None or total_duration_s <= 0:
+        total_duration_s = max(1.0, float(n - 1))
+        sys.stderr.write(
+            "WARNING: KML {} has no \"Duration = MM:SS | MM:SS\" in "
+            "<description>; assuming 1 s/point ({} s total).\n".format(
+                path, total_duration_s)
+        )
+
+    # Even distribution: epoch_i = start + i * (duration_s / (n - 1)).
+    # Edge case n == 1 → duration collapses to a single point at start.
+    step = total_duration_s / (n - 1) if n > 1 else 0.0
+
+    pts: list[GpsPoint] = []
+    for i, (lon, lat, alt) in enumerate(raw):
+        ep = start_epoch + i * step
+        # ISO-8601 UTC string for downstream CSV output, mirroring the
+        # "2026-08-23T20:06:00Z" shape produced by parse_iso_to_epoch.
+        time_str = (
+            datetime.fromtimestamp(ep, tz=timezone.utc)
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
+        )
+        pts.append(GpsPoint(ep, lat, lon, alt, time_str))
+
+    pts.sort(key=lambda p: p.epoch)
+    return pts
+
+
 def parse_gps_csv(path: str) -> list[GpsPoint]:
     """Parse a GPS CSV file. Column names auto-detected from header row."""
     with open(path, newline="", errors="replace") as f:
@@ -256,23 +433,60 @@ def parse_gps_csv(path: str) -> list[GpsPoint]:
     return pts
 
 
-def load_gps(path: str) -> list[GpsPoint]:
-    """Load a GPS file, auto-detecting format from extension/content."""
+def _detect_xml_format(path: str) -> str | None:
+    """Sniff the root element tag of an XML file. Returns 'gpx', 'kml' or None."""
+    try:
+        tree = ET.parse(path)
+    except (ET.ParseError, OSError):
+        return None
+    root = tree.getroot()
+    tag = root.tag.rsplit("}", 1)[-1] if "}" in root.tag else root.tag
+    tag = tag.lower()
+    if tag == "kml":
+        return "kml"
+    if tag == "gpx":
+        return "gpx"
+    return None
+
+
+def load_gps(path: str, fmt: str = "auto") -> list[GpsPoint]:
+    """Load a GPS file in the specified format.
+
+    ``fmt`` values (default ``auto``):
+      - 'auto' — detect by extension (.gpx / .kml / .csv), then fall
+                 back to XML root-tag sniffing, else CSV.
+      - 'gpx'  — force GPX parser.
+      - 'kml'  — force KML parser (BasicAirData GPS Logger, with
+                 synthesised timestamps).
+      - 'csv'  — force GPS CSV parser.
+    """
+    fmt = (fmt or "auto").lower()
+
+    # --- Explicit format override bypasses detection ---
+    if fmt == "gpx":
+        return parse_gpx(path)
+    if fmt == "kml":
+        return parse_kml(path)
+    if fmt == "csv":
+        return parse_gps_csv(path)
+
+    # --- Auto-detect: extension first ---
     ext = os.path.splitext(path)[1].lower()
     if ext == ".gpx":
         return parse_gpx(path)
+    if ext == ".kml":
+        return parse_kml(path)
     if ext in (".csv", ".tsv"):
         return parse_gps_csv(path)
 
-    # .txt or unknown extension: sniff content. XML declaration or <gpx
-    # root → GPX, else CSV.
-    try:
-        with open(path, "rb") as f:
-            head = f.read(512).lstrip()
-        if head.startswith(b"<?xml") or head.startswith(b"<gpx"):
-            return parse_gpx(path)
-    except OSError:
-        pass
+    # --- Unknown extension: sniff XML root tag (handles .bin / .txt) ---
+    detected = _detect_xml_format(path)
+    if detected == "kml":
+        return parse_kml(path)
+    if detected == "gpx":
+        return parse_gpx(path)
+
+    # Last resort: treat as CSV (will raise if no header columns).
     return parse_gps_csv(path)
 
 
@@ -493,6 +707,11 @@ def main(argv=None) -> int:
                         help="Warn if nearest GPS point is farther than this "
                              "many seconds from a packet's timestamp "
                              "(default: 30)")
+    parser.add_argument("--gps-format", choices=["auto", "gpx", "kml", "csv"],
+                        default="auto",
+                        help="Force GPS file format instead of "
+                             "auto-detecting from extension/content "
+                             "(default: auto)")
     args = parser.parse_args(argv)
 
     if not os.path.exists(args.rx):
@@ -525,7 +744,7 @@ def main(argv=None) -> int:
     print("[gps_stitch] Using RX timestamp column: {}".format(ts_col))
 
     # --- Load GPS ---
-    gps_pts = load_gps(args.gps)
+    gps_pts = load_gps(args.gps, fmt=args.gps_format)
     if not gps_pts:
         print("ERROR: No GPS track points found in {}".format(args.gps),
               file=sys.stderr)
