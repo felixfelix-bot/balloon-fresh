@@ -63,6 +63,16 @@ esp32-balloon-integration/
 └── tests/                     # Unit Tests
 ```
 
+## E80 Range Test
+
+Comprehensive operator guide for running distributed LoRa/FLRC range
+tests with the E80-STM32 bench boards:
+
+**👉 [E80 Range Test Operator Guide](firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md)**
+
+Covers hardware setup, prerequisites (Linux/macOS/Windows), flashing,
+running TX/RX, merging data, GPS stitching, and troubleshooting.
+
 ## Schnellstart
 
 ```bash
