@@ -11,7 +11,7 @@ Firmware parameter space (probed 2026-08-21/22):
   LoRa: SF5-12 x BW125/250/500, PA 0-10 dBm (indoor cap)
   FLRC: BR {260,325,520,650,1040,1300,2080,2600} kbps x pa 0-10
   FREQ: 863-870 MHz (868 default); 2400-2483.5 MHz with BAND OVERRIDE
-  LEN: 6-511 bytes, GAP us, SESSION/CONFIG tagging
+  LEN: 6-255 LoRa / 6-511 FLRC, GAP us, SESSION/CONFIG tagging
 Bands: dual-band sweep — 868 MHz sections (A..G2) + 2.4 GHz sections
   (2G4 matrix/PA/LEN/BR/PA/FREQ @ 2440 MHz center, HF radio path).
 
@@ -389,6 +389,9 @@ def build_configs():
     for plen in LEN_SWEEP:
         if plen == 64:
             continue  # in matrix
+        if plen > LEN_CAP["lora"]:
+            continue  # LR2021 LoRa 8-bit length field: max 255 (L511 is
+                      # FLRC-only; generates misleading 100% PER in LoRa)
         toa = lora_airtime_s(8, 125, plen)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=DEFAULT_FREQ,
@@ -444,10 +447,12 @@ def build_configs():
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=pa,
                          freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
                          label=f"2G4 SF8 BW125 PA{pa}"))
-    # I-2G4. LoRa LEN sweep @ SF8 BW125 PA10 2440 MHz (5 configs; 511 > LoRa
-    # silicon cap 255 -> run_config records it as INVALID, documenting the
-    # cap on the 2.4 GHz band too, same as the 868 MHz LEN section)
+    # I-2G4. LoRa LEN sweep @ SF8 BW125 PA10 2440 MHz. L511 filtered: the
+    # LR2021 LoRa 8-bit length field caps at 255 bytes — L511 in LoRa is
+    # untestable and was previously showing as misleading 100% PER.
     for plen in LEN_SWEEP:
+        if plen > LEN_CAP["lora"]:
+            continue
         toa = lora_airtime_s(8, 125, plen)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10,
@@ -550,7 +555,9 @@ def main():
         try:
             r = run_config(i, cfg, tx, rx, session_id, tx_port, rx_port)
             results.append(r)
-            row = [r.get(k, "") for k in SUMMARY_FIELDS[:-1]] + [""]
+            # Surface invalid configs (e.g. LEN > chip cap) in the error column
+            err_msg = r.get("start_reply", "") if r.get("invalid") else ""
+            row = [r.get(k, "") for k in SUMMARY_FIELDS[:-1]] + [err_msg[:60]]
             print(f"rx={r['rx_pkts']}/{NPKTS} rssi={r['rssi_avg']} snr={r['snr_avg']} "
                   f"crc={r['crc_err']} done={r['tx_done']}", flush=True)
             for p in r["pkts"]:
