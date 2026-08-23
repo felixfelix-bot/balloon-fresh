@@ -109,6 +109,102 @@ range-dry-run: ## Print schedule from config preset without touching hardware
 		--t0 "$(T0)" \
 		--configs "$(CONFIGS)"
 
+# ============================================================
+# GPS STITCH + ZIP PACKAGING (manual range test on unknown machine)
+# ============================================================
+#
+#   make range-stitch RX=rx-log.csv GPS=track.gpx [TX_GPS=lat,lon] [OUT=combined.csv]
+#   make range-zip      RX=rx-log.csv [GPS=track.gpx] [SITE=fieldA] [OPERATOR=alice]
+#
+# Variables:
+#   RX        — RX packet log CSV path (required)
+#   GPS       — GPS track file (.gpx or .csv) (optional for zip, required for stitch)
+#   TX_GPS    — TX reference point "lat,lon" for distance calc (optional, stitch only)
+#   OUT       — output combined CSV path (optional, stitch only; default <rx>_gps.csv)
+#   SITE      — short site label, used in zip filename (default: unknown)
+#   OPERATOR  — operator name, written into metadata.txt (default: whoami)
+
+GPS_STITCH  := $(PYTHON) $(TOOLDIR)/tools/gps_stitch.py
+SITE        ?= unknown
+OPERATOR    ?= $(shell whoami 2>/dev/null || echo operator)
+RANGE_ZIP_TS := $(shell date -u '+%Y%m%dT%H%M%SZ')
+
+.PHONY: range-stitch range-zip
+
+range-stitch: ## Stitch RX packet log with GPS track by nearest timestamp
+	@if [ -z "$(RX)" ]; then \
+		echo "ERROR: RX=<file> required."; \
+		echo "Usage: make range-stitch RX=rx-log.csv GPS=track.gpx [TX_GPS=52.0,4.0] [OUT=combined.csv]"; \
+		exit 1; \
+	fi
+	@if [ -z "$(GPS)" ]; then \
+		echo "ERROR: GPS=<file> required."; \
+		echo "Usage: make range-stitch RX=rx-log.csv GPS=track.gpx [TX_GPS=52.0,4.0]"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(RX)" ]; then echo "ERROR: RX file not found: $(RX)"; exit 1; fi
+	@if [ ! -f "$(GPS)" ]; then echo "ERROR: GPS file not found: $(GPS)"; exit 1; fi
+	@echo "=== Stitching RX log with GPS ==="
+	@echo "  RX:       $(RX)"
+	@echo "  GPS:      $(GPS)"
+	@echo "  TX ref:   $(if $(TX_GPS),$(TX_GPS),(not provided — no distance column))"
+	@echo "  Output:   $(if $(OUT),$(OUT),<rx>_gps.csv (auto))"
+	@echo ""
+	@$(GPS_STITCH) \
+		--rx "$(RX)" \
+		--gps "$(GPS)" \
+		$$( [ -n "$(TX_GPS)" ] && echo "--tx-gps $(TX_GPS)" ) \
+		$$( [ -n "$(OUT)" ] && echo "--out $(OUT)" )
+
+range-zip: ## Zip RX log + optional GPS + metadata.txt for sharing
+	@if [ -z "$(RX)" ]; then \
+		echo "ERROR: RX=<file> required."; \
+		echo "Usage: make range-zip RX=rx-log.csv [GPS=track.gpx] [SITE=fieldA] [OPERATOR=alice]"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(RX)" ]; then echo "ERROR: RX file not found: $(RX)"; exit 1; fi
+	@if [ -n "$(GPS)" ] && [ ! -f "$(GPS)" ]; then \
+		echo "ERROR: GPS file not found: $(GPS)"; exit 1; \
+	fi
+	@echo "=== Building range-test zip ==="
+	@ZIP_NAME="$(RANGE_ZIP_TS)_$(SITE).zip"; \
+	META="$$(mktemp metadata-XXXX.txt)"; \
+	trap 'rm -f "$$META"' EXIT; \
+	{ \
+		echo "E80 Range Test — Session Metadata"; \
+		echo "================================="; \
+		echo "zipped_utc: $(RANGE_ZIP_TS)"; \
+		echo "operator:   $(OPERATOR)"; \
+		echo "site:       $(SITE)"; \
+		echo "host:       $$(hostname 2>/dev/null || echo unknown)"; \
+		echo "os:         $$(uname -srm 2>/dev/null || echo unknown)"; \
+		echo "repo_sha:   $(FW_GIT_SHA)"; \
+		echo "repo_branch:$$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"; \
+		echo ""; \
+		echo "Files"; \
+		echo "-----"; \
+		echo "rx_log:     $(RX) ($$(wc -l < $(RX) 2>/dev/null || echo ?) lines, $$(du -h $(RX) 2>/dev/null | cut -f1 || echo ?))"; \
+		if [ -n "$(GPS)" ]; then \
+			echo "gps_track:   $(GPS) ($$(wc -l < $(GPS) 2>/dev/null || echo ?) lines, $$(du -h $(GPS) 2>/dev/null | cut -f1 || echo ?))"; \
+		else \
+			echo "gps_track:   (none provided)"; \
+		fi; \
+		echo ""; \
+		echo "RX log header (first data line + metadata comments)"; \
+		echo "----------------------------------------------------"; \
+		head -n 5 "$(RX)" 2>/dev/null | grep -E '^(#|session,)' || true; \
+	} > "$$META"; \
+	INCLUDE="$(RX) $$META"; \
+	if [ -n "$(GPS)" ]; then INCLUDE="$$INCLUDE $(GPS)"; fi; \
+	zip -j "$$ZIP_NAME" $$INCLUDE > /dev/null; \
+	rm -f "$$META"; \
+	FILESIZE=$$(du -h "$$ZIP_NAME" | cut -f1); \
+	echo "Created: $$ZIP_NAME ($$FILESIZE)"; \
+	echo "Contents:"; \
+	unzip -l "$$ZIP_NAME" 2>/dev/null | grep -E '(\.csv|\.gpx|\.txt)' || true; \
+	echo ""; \
+	echo "Send $$ZIP_NAME to the TX operator via Signal / Slack / email."
+
 range-test-host: ## Run pytest for distributed range test split logic
 	@echo "=== Running distributed range test unit tests ==="
 	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py -v
