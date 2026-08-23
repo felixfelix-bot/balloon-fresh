@@ -747,10 +747,24 @@ def load_config_preset(preset_or_path):
     return cfgs
 
 
+def _mod_params_changed(prev, cur):
+    """Return True if radio parameters changed between two preset configs.
+    SX1280 can't hot-switch mod/sf/br/bw — needs SWD reset."""
+    if prev.get("mod") != cur.get("mod"):
+        return True
+    if prev.get("sf") != cur.get("sf"):
+        return True
+    if prev.get("bw") != cur.get("bw"):
+        return True
+    if prev.get("br") != cur.get("br"):
+        return True
+    return False
+
+
 def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
                           settle=2.0, rx_lead=0,
                           t0_margin_s=None, guard_s=None,
-                          settle_s=None):
+                          settle_s=None, swd_reset_s=0):
     """Absolute epoch start times for each config in a preset.
 
     Like build_stop_schedule but works on preset configs (which have
@@ -763,6 +777,11 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
     re-arm between capture windows (capture_duration = expected_s +
     settle + guard; without rx_lead the gap equals the capture window,
     leaving zero re-arming time for subsequent configs).
+
+    swd_reset_s: extra seconds added to the inter-config gap when
+    modulation parameters change between consecutive configs. This
+    accounts for the SWD reset + board reopen time (~6s) needed when
+    the SX1280 can't hot-switch mod/sf/br/bw.
     """
     if t0_margin_s is not None:
         t0_margin = t0_margin_s
@@ -773,9 +792,12 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
 
     starts = []
     t = t0_epoch + t0_margin
+    prev = None
     for c in cfgs:
         starts.append(t)
-        t += c["expected_s"] + settle + guard + rx_lead
+        extra = swd_reset_s if (prev is not None and _mod_params_changed(prev, c)) else 0
+        t += c["expected_s"] + settle + guard + rx_lead + extra
+        prev = c
     return starts
 
 
@@ -948,7 +970,8 @@ def run_tx_mode(args):
     print()
 
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle, args.rx_lead)
+                                   args.settle, args.rx_lead,
+                                   swd_reset_s=args.swd_reset_s)
     for i, (c, s) in enumerate(zip(cfgs, starts)):
         print("  [{}/{}] {} N={} LEN={} start={}".format(
             i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
@@ -1008,12 +1031,38 @@ def run_tx_mode(args):
                 return
             time.sleep(min(d, 30.0))
 
+    # Helper: decide if SWD reset is needed between configs
+    def _mod_changed(prev, cur):
+        """Return True if radio parameters changed (SX1280 can't hot-switch)."""
+        if prev is None:
+            return False
+        if prev.get("mod") != cur.get("mod"):
+            return True
+        if prev.get("sf") != cur.get("sf"):
+            return True
+        if prev.get("bw") != cur.get("bw"):
+            return True
+        if prev.get("br") != cur.get("br"):
+            return True
+        return False
+
     try:
+        prev_cfg = None
         for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
-            # Stop any ongoing TX and drain stale data from previous config
+            # Drain stale data from previous config (don't send STOP — it
+            # triggers an IWDG watchdog reset on the firmware)
             if idx > 0:
-                board.cmd("STOP", expect_ok=False, timeout=3.0)
                 board.drain(quiet=0.5)
+
+            # SWD reset if modulation parameters changed (SX1280 can't
+            # hot-switch mod/sf/br/bw via MOD command — firmware returns
+            # OK but radio doesn't reconfigure, resulting in 0 packets)
+            if idx > 0 and _mod_changed(prev_cfg, cfg):
+                print("  [SWD] Mod params changed, resetting TX board…")
+                board.close()
+                swd_reset_maybe(label="TX")
+                board = BoardSerial(port)
+                board.drain()
 
             # Wait for scheduled start
             wait_until(start)
@@ -1079,6 +1128,7 @@ def run_tx_mode(args):
             )
             print("  [{}/{}] {} sent_ok={}/{}".format(
                 idx + 1, len(cfgs), cfg["label"], sent_ok, cfg["n_pkts"]))
+            prev_cfg = cfg
 
         # Teardown
         board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
@@ -1122,12 +1172,59 @@ def run_rx_mode(args):
     print()
 
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle, args.rx_lead)
+                                   args.settle, args.rx_lead,
+                                   swd_reset_s=args.swd_reset_s)
     for i, (c, s) in enumerate(zip(cfgs, starts)):
         print("  [{}/{}] {} RX_arm={} start={}".format(
             i + 1, len(cfgs), c["label"], c["n_pkts"],
             fmt_offset(s - args.rx_lead, t0)))
     print()
+
+    # SWD reset if available (non-fatal if openocd missing)
+    def swd_reset_maybe(label="RX"):
+        if not probe_serial:
+            return
+        openocd_path = None
+        for cand in ("/usr/bin/openocd", os.path.expanduser("~/.local/bin/openocd")):
+            if os.path.isfile(cand) and os.access(cand, os.X_OK):
+                openocd_path = cand
+                break
+        if not openocd_path:
+            try:
+                r = _sp.run(["which", "openocd"], capture_output=True, text=True, timeout=5)
+                openocd_path = r.stdout.strip() or None
+            except Exception:
+                pass
+        if not openocd_path:
+            return
+        fw_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        try:
+            _sp.run(
+                [openocd_path, "-f", "interface/cmsis-dap.cfg",
+                 "-f", "target/stm32f1x.cfg",
+                 "-c", "transport select swd; adapter serial {}; "
+                       "init; reset halt; resume; exit".format(probe_serial)],
+                stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
+                timeout=30, cwd=fw_dir)
+            time.sleep(2.0)
+            print("[SWD] Reset {} board (probe={})".format(label, probe_serial))
+        except Exception as e:
+            print("[SWD] Reset failed (non-fatal): {}".format(e))
+
+    # Helper: decide if SWD reset is needed between configs
+    def _mod_changed(prev, cur):
+        """Return True if radio parameters changed (SX1280 can't hot-switch)."""
+        if prev is None:
+            return False
+        if prev.get("mod") != cur.get("mod"):
+            return True
+        if prev.get("sf") != cur.get("sf"):
+            return True
+        if prev.get("bw") != cur.get("bw"):
+            return True
+        if prev.get("br") != cur.get("br"):
+            return True
+        return False
 
     # Open board
     board = BoardSerial(port)
@@ -1173,11 +1270,22 @@ def run_rx_mode(args):
         return pkts
 
     try:
+        prev_cfg = None
         for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
             # Drain stale data from previous config (don't send STOP — it
             # triggers an IWDG watchdog reset on the firmware)
             if idx > 0:
                 board.drain(quiet=0.5)
+
+            # SWD reset if modulation parameters changed (SX1280 can't
+            # hot-switch mod/sf/br/bw via MOD command — firmware returns
+            # OK but radio doesn't reconfigure, resulting in 0 packets)
+            if idx > 0 and _mod_changed(prev_cfg, cfg):
+                print("  [SWD] Mod params changed, resetting RX board…")
+                board.close()
+                swd_reset_maybe(label="RX")
+                board = BoardSerial(port)
+                board.drain()
 
             # Arm RX rx_lead seconds before burst start
             wait_until(start - args.rx_lead)
@@ -1232,6 +1340,7 @@ def run_rx_mode(args):
                 idx + 1, len(cfgs), cfg["label"],
                 len(pkts), cfg["n_pkts"],
                 rx_stat.get("rssi", "?"), rx_stat.get("snr", "?")))
+            prev_cfg = cfg
 
         # Teardown
         board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
@@ -1262,14 +1371,15 @@ def dry_run_preset(args):
     cfgs = load_config_preset(args.configs)
     t0 = parse_t0(args.t0) if args.t0 else time.time()
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle, args.rx_lead)
+                                   args.settle, args.rx_lead,
+                                   swd_reset_s=args.swd_reset_s)
 
     print("== DRY RUN (distributed preset) ==")
     print("Config file:  {}".format(args.configs))
     print("T0:           {}".format(
         datetime.datetime.fromtimestamp(t0).isoformat()))
-    print("t0_margin:    {}s  guard: {}s  rx_lead: {}s  settle: {}s".format(
-        args.t0_margin, args.guard, args.rx_lead, args.settle))
+    print("t0_margin:    {}s  guard: {}s  rx_lead: {}s  settle: {}s  swd_reset: {}s".format(
+        args.t0_margin, args.guard, args.rx_lead, args.settle, args.swd_reset_s))
     print("Configs:      {}".format(len(cfgs)))
     print("=" * 80)
 
@@ -1426,6 +1536,9 @@ def main():
                     help="seconds RX arms before cell start (default 10)")
     ap.add_argument("--settle", type=int, default=2,
                     help="post-burst settle seconds before RX STAT? (default 2)")
+    ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=10,
+                    help="extra inter-config gap seconds when mod params change "
+                         "(SWD reset + board reopen time, default 10)")
     ap.add_argument("--skip-fw-check", action="store_true",
                     help="skip firmware hash gate (not recommended)")
     args = ap.parse_args()
