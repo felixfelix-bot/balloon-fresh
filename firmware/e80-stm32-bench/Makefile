@@ -54,9 +54,9 @@ SESSION_ID    ?= $(shell python3 -c "import time; t0=$(T0); print(time.strftime(
 ANSIBLE_PLAYBOOK := ansible-playbook
 ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
-.PHONY: all test-host clean firmware
+.PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
-.PHONY: rx tx range-coord range-cvm-server range-adaptive range-cvm-test
+.PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test
 
 all: firmware
 
@@ -64,6 +64,33 @@ firmware:
 	$(CMAKE) -B $(BUILD) -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake \
 		-DCMAKE_BUILD_TYPE=Release -DFW_GIT_SHA=$(FW_GIT_SHA) .
 	$(CMAKE) --build $(BUILD)
+
+# Firmware binary path (the build produces "e80_bench" without extension)
+FW_ELF := $(BUILD)/e80_bench
+
+flash: firmware ## Flash firmware to the connected board via SWD (auto-detect probe)
+	@echo "=== Flashing E80 board via SWD ==="
+	@command -v openocd >/dev/null 2>&1 || { \
+		echo "ERROR: openocd not found. Install with:"; \
+		echo "  sudo apt install openocd    # Debian/Ubuntu"; \
+		echo "  brew install openocd         # macOS"; \
+		exit 1; \
+	}
+	@# Acquire board lock if the lock script exists (T470 dev machine), else just flash
+	@if [ -f "$(HOME)/repos/balloon-fresh/tools/balloon-board-lock.py" ]; then \
+		BALLOON_TRACK=e80-bench python3 $(HOME)/repos/balloon-fresh/tools/balloon-board-lock.py acquire both --purpose "make flash" --timeout 60 >/dev/null 2>&1; \
+		echo "  Board lock acquired."; \
+	fi
+	@export BALLOON_TRACK=e80-bench; \
+	openocd -f interface/cmsis-dap.cfg -f target/stm32f1x.cfg \
+		-c "adapter speed 1000; transport select swd; set CHIPNAME stm32f1x; reset_config none separate; program $(FW_ELF) verify reset exit" \
+		2>&1 | tail -8
+	@if [ -f "$(HOME)/repos/balloon-fresh/tools/balloon-board-lock.py" ]; then \
+		BALLOON_TRACK=e80-bench python3 $(HOME)/repos/balloon-fresh/tools/balloon-board-lock.py release both >/dev/null 2>&1; \
+	fi
+	@echo "=== Verifying firmware ==="
+	@$(PYTHON) $(TOOLDIR)/tools/e80_detect.py 2>&1 | grep -E "fw=|role:" || true
+	@echo "=== Done. Board ready. ==="
 
 test-host:
 	$(CMAKE) -B $(TESTBUILD) tests
