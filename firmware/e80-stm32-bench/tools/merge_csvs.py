@@ -45,10 +45,18 @@ def merge_csvs(tx_path, rx_path, out_dir="."):
     rx_rows = load_rx_log(rx_path)
 
     # Build RX lookup: (session, config, pkt_idx) -> rx_row
+    # Normalize pkt_idx: firmware uses global counter, merge expects per-config 0..N-1
     rx_lookup = {}
+    rx_by_config = defaultdict(list)
     for r in rx_rows:
-        key = (str(r["session"]), str(r["config"]), str(r["pkt_idx"]))
-        rx_lookup[key] = r
+        rx_by_config[(str(r["session"]), str(r["config"]))].append(r)
+
+    # Sort each config's packets by pkt_idx and normalize to 0..N-1
+    for (sess, cfg), pkts in rx_by_config.items():
+        pkts.sort(key=lambda p: int(p.get("pkt_idx", 0)))
+        for i, r in enumerate(pkts):
+            r["pkt_idx"] = str(i)
+            rx_lookup[(sess, cfg, str(i))] = r
 
     # Build expected set from TX log
     combined = []
