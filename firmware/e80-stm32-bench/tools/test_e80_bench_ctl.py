@@ -31,6 +31,7 @@ def make_args(**kw):
         mode=None, configs=None, port=None, probe=None, session_id=None,
         tx_log="tx-log.csv", rx_log="rx-log.csv",
         skip_late_configs=False,
+        prime_discard=2,
     )
     base.update(kw)
     return argparse.Namespace(**base)
@@ -562,14 +563,15 @@ class CsvLogTests(unittest.TestCase):
 class ScriptBuilderTests(unittest.TestCase):
     def test_single_shot_default_kept(self):
         tx, rx = m.build_script(make_args(matrix=None, band_override=False,
-                                          dbm=10, freq=868000000))
+                                          dbm=10, freq=868000000,
+                                          prime_discard=0))
         self.assertNotIn("BAND OVERRIDE 2026", tx)
         self.assertEqual(tx[0], "ID?")
         self.assertIn("ARM TX", tx)
         self.assertIn("START N=1000 LEN=255 GAP=5000", tx)
 
     def test_single_shot_unlock_prelude(self):
-        tx, _ = m.build_script(make_args(matrix=None))
+        tx, _ = m.build_script(make_args(matrix=None, prime_discard=0))
         i_band, i_freq = tx.index("BAND OVERRIDE 2026"), tx.index("FREQ 915000000")
         i_pow = tx.index("POWER MODE OUTDOOR 2026")
         self.assertTrue(i_band < i_freq and i_pow < i_freq)
@@ -602,7 +604,8 @@ class DryRunTests(unittest.TestCase):
                 "--csv", csv_path, "--site", "siteA", "--stop", "S3",
                 "--dist-m", "200", "--repeat", "2",
                 "--freq", "915000000", "--dbm", "22", "--band-override",
-                "--t0", "2026-08-30 14:05:00"])
+                "--t0", "2026-08-30 14:05:00",
+                "--prime-discard", "0"])
             self.assertEqual(code, 0)
             for needle in ("cell 1 FLRC-650 N=10000 LEN=51",
                            "cell 4 LoRa-SF12 N=1000",
@@ -655,7 +658,8 @@ class MatrixLiveTests(unittest.TestCase):
         t0 = m.parse_t0("2026-08-30 14:05:00")
         clock = VirtualClock(t0 - 60)
         args = make_args(csv=self.csv_path, matrix=["flrc650", "sf7"],
-                         anchor=True, t0="2026-08-30 14:05:00", **kw)
+                         anchor=True, t0="2026-08-30 14:05:00",
+                         prime_discard=0, **kw)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             m.run_matrix(args, board_cls=board_cls,
@@ -732,7 +736,8 @@ class MatrixLiveTests(unittest.TestCase):
         t0 = m.parse_t0("2026-08-30 14:05:00")
         clock = VirtualClock(t0 - 60)
         args = make_args(csv=self.csv_path, matrix=["flrc650"],
-                         anchor=False, t0="2026-08-30 14:05:00")
+                         anchor=False, t0="2026-08-30 14:05:00",
+                         prime_discard=0)
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 with self.assertRaises(RuntimeError) as cm:

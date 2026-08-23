@@ -171,6 +171,41 @@ def airtime_s(mod_key, length):
     return lora_airtime_s(length, sf, bw)
 
 
+# --- Prime-discard helpers (AGC warmup) ---
+
+DEFAULT_PRIME_DISCARD = 2
+
+
+def compute_tx_total(n_pkts, prime_discard):
+    """Total packet count for the firmware START command.
+
+    TX sends n_pkts measured packets PLUS prime_discard warmup ("prime")
+    packets at the start of the burst, so the AGC has time to settle before
+    the measured window begins. Returns the N value to pass to START.
+    """
+    return n_pkts + prime_discard
+
+
+def discard_prime_pkts(pkts, prime_discard):
+    """Drop the first prime_discard packets (by pkt_idx) from a parsed PKT
+    list. The firmware assigns pkt_idx 0..N-1 sequentially; the first
+    prime_discard indices (0..prime_discard-1) are warmup packets that the
+    RX must not log for measurement. Packets with missing pkt_idx default
+    to 0 and are eligible for discard.
+    """
+    if prime_discard <= 0:
+        return pkts
+    return [p for p in pkts if p.get("pkt_idx", 0) >= prime_discard]
+
+
+def adjust_stat_for_prime(stat, prime_discard):
+    """Subtract prime_discard from stat['recv'] (clamped at 0) so the
+    reported recv count and PER reflect measured packets only. The
+    firmware's STAT? includes ALL received packets (prime + measured).
+    Modifies stat in place."""
+    stat["recv"] = max(0, int(stat.get("recv", 0)) - prime_discard)
+
+
 def make_cell(mod_key, n, length=None, anchor=False):
     d = MOD_DEFS[mod_key]
     len_bytes = ANCHOR_LEN if anchor else (MATRIX_LEN if length is None else length)
@@ -454,18 +489,19 @@ def build_script(args):
         pre.append("BAND OVERRIDE {}".format(UNLOCK_PIN))
     if args.dbm > INDOOR_CAP_DBM:
         pre.append("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+    tx_total = compute_tx_total(args.n, getattr(args, 'prime_discard', 0))
     rx_cmds = ["ID?"] + pre + [
         "ROLE RX",
         "FREQ {}".format(args.freq),
         "MOD flrc 650 {}".format(args.dbm),
-        "START N={} LEN={} GAP={}".format(args.n, args.length, args.gap_us),
+        "START N={} LEN={} GAP={}".format(tx_total, args.length, args.gap_us),
     ]
     tx_cmds = ["ID?"] + pre + [
         "ROLE TX",
         "ARM TX",
         "FREQ {}".format(args.freq),
         "MOD flrc 650 {}".format(args.dbm),
-        "START N={} LEN={} GAP={}".format(args.n, args.length, args.gap_us),
+        "START N={} LEN={} GAP={}".format(tx_total, args.length, args.gap_us),
     ]
     return tx_cmds, rx_cmds
 
@@ -612,8 +648,10 @@ def run_matrix(args, board_cls=None, sleep_fn=time.sleep, now_fn=time.time):
             print("-- cell {}/{} {} N={} LEN={} --".format(
                 idx + 1, len(cells), cell["label"], cell["n"], cell["len_bytes"]))
             mod_lines = [ln.format(dbm=args.dbm) for ln in cell["mod_lines"]]
+            prime_discard = getattr(args, 'prime_discard', 0)
+            tx_total = compute_tx_total(cell["n"], prime_discard)
             start_line = "START N={} LEN={} GAP={}".format(
-                cell["n"], cell["len_bytes"], cell["gap_us"])
+                tx_total, cell["len_bytes"], cell["gap_us"])
 
             wait_until(start - args.rx_lead)
             for ln in mod_lines:
@@ -628,14 +666,15 @@ def run_matrix(args, board_cls=None, sleep_fn=time.sleep, now_fn=time.time):
             deadline = now_fn() + cell["expected_s"] + 120
             while True:
                 s = parse_stat(tx.stat())
-                if s["sent_ok"] >= cell["n"]:
+                if s["sent_ok"] >= tx_total:
                     break
                 if now_fn() >= deadline:
                     raise RuntimeError("cell {} TIMEOUT: TX sent_ok={}/{}".format(
-                        cell["label"], s["sent_ok"], cell["n"]))
+                        cell["label"], s["sent_ok"], tx_total))
                 sleep_fn(5.0 if cell["expected_s"] > 120 else 2.0)
             sleep_fn(args.settle)       # let last packets land
             rx_stat = parse_stat(rx.stat())
+            adjust_stat_for_prime(rx_stat, prime_discard)
             tx_stat = parse_stat(tx.stat())
             row = log.cell_row(args, cell, rx_stat, tx_stat, ts=ts_now(now_fn))
             print("   -> recv={}/{} per={} ci=[{},{}] rssi={} snr={}".format(
@@ -1194,8 +1233,10 @@ def run_tx_mode(args):
             board.cmd("ARM TX")
 
             # Burst
+            prime_discard = getattr(args, 'prime_discard', 0)
+            tx_total = compute_tx_total(cfg["n_pkts"], prime_discard)
             start_line = "START N={} LEN={} GAP={}".format(
-                cfg["n_pkts"], cfg["plen"], cfg["gap"])
+                tx_total, cfg["plen"], cfg["gap"])
             actual_start = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             board.cmd(start_line, timeout=max(30.0, cfg["expected_s"] + 60))
 
@@ -1209,7 +1250,7 @@ def run_tx_mode(args):
                     sent_ok = s.get("sent_ok", 0)
                 except Exception:
                     sent_ok = sent_ok  # keep last known value
-                if sent_ok >= cfg["n_pkts"]:
+                if sent_ok >= tx_total:
                     break
                 time.sleep(2.0)
             else:
@@ -1434,6 +1475,10 @@ def run_rx_mode(args):
             capture_duration = cfg["expected_s"] + args.settle + args.guard
             pkts = drain_pkt_lines(board.ser, capture_duration)
 
+            # Discard prime (AGC warmup) packets before logging
+            prime_discard = getattr(args, 'prime_discard', 0)
+            pkts = discard_prime_pkts(pkts, prime_discard)
+
             # Write packets to log
             for p in pkts:
                 log.pkt_row(
@@ -1452,6 +1497,8 @@ def run_rx_mode(args):
                 rx_stat = parse_stat(board.stat())
             except Exception:
                 rx_stat = {}
+            # STAT? recv includes prime packets — subtract them
+            adjust_stat_for_prime(rx_stat, prime_discard)
             print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
                 idx + 1, len(cfgs), cfg["label"],
                 len(pkts), cfg["n_pkts"],
@@ -1559,7 +1606,8 @@ def dry_run(args):
             fmt_offset(s, t0), fmt_hms(c["expected_s"]), n_src))
         mod_lines = [ln.format(dbm=args.dbm) for ln in c["mod_lines"]]
         start_line = "START N={} LEN={} GAP={}".format(
-            c["n"], c["len_bytes"], c["gap_us"])
+            compute_tx_total(c["n"], getattr(args, 'prime_discard', 0)),
+            c["len_bytes"], c["gap_us"])
         print("   RX @ {}:".format(fmt_offset(s - args.rx_lead, t0)))
         for ln in mod_lines + [start_line]:
             print("      " + ln)
@@ -1664,6 +1712,13 @@ def main():
                          "docs/timing-tolerance-analysis.md.")
     ap.add_argument("--skip-fw-check", action="store_true",
                     help="skip firmware hash gate (not recommended)")
+    ap.add_argument("--prime-discard", dest="prime_discard", type=int,
+                    default=DEFAULT_PRIME_DISCARD,
+                    help="number of AGC warmup 'prime' packets to prepend "
+                         "before the measured burst (default {}). TX sends "
+                         "N+prime total; RX discards the first prime PKT "
+                         "lines. Set to 0 to disable.".format(
+                             DEFAULT_PRIME_DISCARD))
     args = ap.parse_args()
 
     # --- Distributed mode routing ---
