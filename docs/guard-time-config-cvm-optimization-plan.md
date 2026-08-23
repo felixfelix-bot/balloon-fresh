@@ -847,7 +847,14 @@ Total: ~90 min of worker time. Dispatch as 3 parallel workers (Phase 1, Phase 2,
 
 ---
 
-## Distance Test Matrix (with 4 configs × 4 distances)
+## Distance Test Matrix (with 4 configs × 6 distances, extended to 70 km)
+
+The Madeira–Porto Santo inter-island distance is ~70 km. This is the
+mission-relevant maximum range test — if LoRa SF12 works at 70 km
+ground-level (two-ray d⁻⁴ path loss), it will work at balloon altitude
+(FSPL d⁻², much less lossy).
+
+Extended distance series uses 6 dB steps (doubling) from 218m to ~70 km:
 
 | Stop | Distance | FLRC-650 511B | FLRC-2600 511B | LoRa SF7 255B | LoRa SF12 255B | Runs |
 |------|----------|:---:|:---:|:---:|:---:|:---:|
@@ -855,18 +862,34 @@ Total: ~90 min of worker time. Dispatch as 3 parallel workers (Phase 1, Phase 2,
 | D1 | 436m | TEST | TEST | TEST | skip (38dB margin) | 3 |
 | D2 | 872m | TEST (cliff!) | skip (dead) | TEST | TEST | 3 |
 | D3 | 1744m | skip (dead) | skip | TEST (cliff!) | TEST | 2 |
-| D4 | 5000m | skip | skip | skip (dead) | TEST (cliff!) | 1 |
-| Total | | | | | | 13 |
+| D4 | 5000m | skip | skip | skip (dead) | TEST | 1 |
+| D5 | 11000m | skip | skip | skip | TEST | 1 |
+| D6 | 70000m | skip | skip | skip | TEST (mission!) | 1 |
+| Total | | | | | | 15 |
 
-13 runs × ~10s average per run = ~2.5 min test time + driving.
+15 runs × ~15s average per run = ~4 min test time + driving/boat.
 
-Note: FLRC-2600 at 436m — predicted -7 dB margin. Borderline. TEST to find the cliff.
-Note: FLRC-2600 at 872m — predicted -19 dB margin. Dead. Skip.
-
-**"Skip" rationale:**
+**Skip rationale per cell:**
 - FLRC-2600 at 872m: -19 dB margin = certainly dead. Zero information.
 - LoRa SF12 at 436m: +38 dB margin = certainly alive. Zero information.
 - FLRC-650 at 1744m: -23 dB margin = dead. Zero information.
 - LoRa SF7 at 5km: -14 dB margin = dead. Zero information.
+- LoRa SF7 at 11km+70km: way past cliff. Dead. Zero information.
+- FLRC-650/2600 at 5km+: way past cliff. Dead. Zero information.
 
-Every TEST cell is at a cliff edge or sanity check. Zero wasted measurements.
+**Why 70 km is the key test:**
+LoRa SF12 sensitivity is ~-132 dBm. At 70 km ground-level with two-ray
+path loss (d⁻⁴), predicted RSSI is ~-115 dBm → +17 dB margin. At balloon
+altitude (100m), two-ray crossover moves to 5.5 km — below that FSPL
+(d⁻²) governs, which is MUCH less lossy. So 70 km ground test is a
+conservative proxy for balloon-altitude performance.
+
+If SF12 passes at 70 km ground-level → mission is GO.
+If SF12 fails at 70 km → need balloon-altitude test (FSPL regime).
+
+**D5 at 11 km** bridges between 5 km (SF12 certainly alive) and 70 km
+(mission relevant). If SF12 passes at 11 km but fails at 70 km, we
+know the cliff is between 11–70 km — balloon altitude test needed.
+
+Every TEST cell is at a cliff edge, sanity check, or mission boundary.
+Zero wasted measurements.
