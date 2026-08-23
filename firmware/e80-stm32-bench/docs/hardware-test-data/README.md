@@ -32,6 +32,26 @@ Real captured data from E80 bench tests. Each file is from a specific test sessi
 - **Configs tested:** FLRC-650 L64 (10/10), FLRC-2600 L64 (10/10), LoRa-SF7 L64 (0/10), LoRa-SF12 L64 (0/10), FLRC-650 L255 (10/10)
 - **Known issue:** LoRa configs 2+3 received 0 packets. Root cause: Mac had no SWD probe connected. The LR2021 chip cannot hot-switch from FLRC to LoRa without an SWD reset between modulation changes. FLRC-only configs work without SWD probe.
 
+### 2608232205 — First real range test (TX moving, RX stationary)
+
+| File | Role | Machine | Notes |
+|------|------|---------|-------|
+| `tx-range-2608232205.csv` | TX | T14 Gen5 (Linux) | All 5 configs, 12/12 sent_ok each, 0 errors |
+| `rx-range-2608232205.csv` | RX | MacBook | Config 0: 10/10 FLRC-650, RSSI -91.5 dBm, 0 bit errors. Configs 1-4: 0/10 (see notes) |
+| `gps-tx-2608232205.kml` | GPS | TX side | 926 trackpoints, 32m movement during test |
+| `rx-position-2608232205.md` | GPS | RX side | Stationary at lat 32.6420447, lon -16.9556977 (Madeira, Portugal) |
+
+- **Firmware hash:** `3bc6d0d` (AGC fix, pre self-reset fix — LoRa modulation switching still broken without SWD probe)
+- **Distance:** Real outdoor range test — RSSI -91.5 dBm (40 dB below bench test)
+- **GPS:** TX track (KML, moving) + RX position (stationary)
+- **Format:** Harmonized 23-field PKT+STAT
+- **Configs tested:** FLRC-650 L64 (10/10 ✅), FLRC-2600 L64 (0/10), LoRa-SF7 L64 (0/10), LoRa-SF12 L64 (0/10), FLRC-650 L255 (0/10)
+- **Known issues:**
+  - Config 1 (FLRC-2600): 0/10 — higher bitrate has ~8-10 dB worse sensitivity, -91 dBm too weak
+  - Configs 2-3 (LoRa): 0/10 — firmware didn't have self-reset fix yet (commit c70f582). Chip stuck in FLRC mode, couldn't switch to LoRa without SWD probe
+  - Config 4 (FLRC-650 L255): 0/10 — cascading from stuck modulation state after failed LoRa switch at config 2
+  - Fix: reflash both boards with latest firmware (c70f582+) which adds chip self-reset on modulation change
+
 ### Earlier sweep data
 
 | File | Notes |
