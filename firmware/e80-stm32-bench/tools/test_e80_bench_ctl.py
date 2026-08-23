@@ -27,6 +27,10 @@ def make_args(**kw):
         repeat=2, gps_tx="52.01,4.04", gps_rx="52.02,4.01", h_tx="1.5",
         h_rx="1.5", ground="grass", weather="12C clear", t0=None,
         t0_margin=120, guard=20, rx_lead=10, settle=2, skip_fw_check=True,
+        # Distributed / preset-mode fields
+        mode=None, configs=None, port=None, probe=None, session_id=None,
+        tx_log="tx-log.csv", rx_log="rx-log.csv",
+        skip_late_configs=False,
     )
     base.update(kw)
     return argparse.Namespace(**base)
@@ -225,10 +229,218 @@ class ScheduleTests(unittest.TestCase):
                                 cells[0]["expected_s"] + 20)
 
     def test_parse_t0_formats(self):
+        # Space-separator with seconds (primary documented format)
         self.assertEqual(m.parse_t0("2026-08-30 14:05:00"),
-                         m.parse_t0("2026-08-30T14:05:00"))
+                         m.parse_t0("2026-08-30 14:05"))
+        # Epoch integer (timezone-safe, used for distributed tests)
+        epoch = m.parse_t0("2026-08-30 14:05:00")
+        self.assertEqual(m.parse_t0(str(int(epoch))), epoch)
         with self.assertRaises(ValueError):
             m.parse_t0("tomorrow")
+
+
+class LateSkipTests(unittest.TestCase):
+    """Tests for compute_late_skip() + apply_late_skip() — the launch-lateness
+    guard added per docs/timing-tolerance-analysis.md §6.
+
+    These functions replace the previous silent-desync behaviour of
+    wait_until() (which no-ops on past timestamps) with a clear abort by
+    default, or an optional explicit recovery via --skip-late-configs.
+
+    All tests use synthetic schedules so they're independent of wall-clock
+    time (compute_late_skip is a pure function — no time.time()).
+    """
+
+    def _synthetic_schedule(self):
+        """4-config preset schedule with starts at offsets
+        120, 220, 320, 420 (relative to T0)."""
+        t0 = 1000
+        starts = [t0 + 120, t0 + 220, t0 + 320, t0 + 420]
+        cfgs = [
+            {"label": "cfg0"},
+            {"label": "cfg1"},
+            {"label": "cfg2"},
+            {"label": "cfg3"},
+        ]
+        return t0, starts, cfgs
+
+    # ---------- compute_late_skip pure function ----------
+
+    def test_on_time_returns_zero(self):
+        """Well-before-time launch → no skip needed (returns 0)."""
+        t0, starts, _ = self._synthetic_schedule()
+        self.assertEqual(
+            m.compute_late_skip(starts, now=t0 + 10, rx_lead=0),
+            0,
+            "On-time launch must return index 0 (no skip needed)",
+        )
+
+    def test_late_launch_skips_past_starts(self):
+        """Launched well past cfg 0 + cfg 1 → returns the next future index."""
+        t0, starts, _ = self._synthetic_schedule()
+        # now = T0+250: cfg 0 (1120) past, cfg 1 (1220) past, cfg 2 (1320)
+        # future. min_ahead_s=5 → (1320 - 0) >= 1255? Yes → returns 2.
+        self.assertEqual(
+            m.compute_late_skip(starts, now=t0 + 250, rx_lead=0),
+            2,
+        )
+
+    def test_all_past_returns_none(self):
+        """When even the last config's arm point is in the past → None
+        (operator must re-T0)."""
+        t0, starts, _ = self._synthetic_schedule()
+        self.assertIsNone(
+            m.compute_late_skip(starts, now=t0 + 9999, rx_lead=0),
+        )
+
+    def test_rx_lead_subtraction(self):
+        """RX uses rx_lead: each effective arm point is `start - rx_lead`.
+        A start that would be a valid join-point for TX (rx_lead=0) may be
+        too-late-to-arm for RX (rx_lead=10) — must skip one extra. Need
+        a `now` value where the only difference between TX and RX is the
+        skip count, demonstrating that rx_lead is correctly subtracted."""
+        t0, starts, _ = self._synthetic_schedule()
+        # starts = [1120, 1220, 1320, 1420], min_ahead_s=5 (default)
+        # Pick now = T0+310 = 1310 → earliest acceptable arm point = 1315:
+        #   TX (rx_lead=0): starts[2]=1320 >= 1315 → returns 2
+        #   RX (rx_lead=10): starts[2]-10=1310 < 1315 → must skip;
+        #                    starts[3]-10=1410 >= 1315 → returns 3
+        self.assertEqual(
+            m.compute_late_skip(starts, now=t0 + 310, rx_lead=0),
+            2,
+        )
+        self.assertEqual(
+            m.compute_late_skip(starts, now=t0 + 310, rx_lead=10),
+            3,
+        )
+
+    def test_min_ahead_s_prevents_racing_init(self):
+        """Without min_ahead_s, a start 1s in the future would be returned
+        but the local machine can't possibly board-open + configure in time.
+        With min_ahead_s=5, must skip to the next future start."""
+        t0, starts, _ = self._synthetic_schedule()
+        # now = T0 + 318; for TX (rx_lead=0): start T0+320 is only 2s in the
+        # future (< min_ahead_s=5), so must be skipped.
+        self.assertEqual(
+            m.compute_late_skip(starts, now=t0 + 318, rx_lead=0,
+                                min_ahead_s=5.0),
+            3,
+            "start 2 is only 2s ahead — below min_ahead_s=5, must skip to 3",
+        )
+        # With min_ahead_s=1 (tight), start 2 (2s ahead) is acceptable.
+        self.assertEqual(
+            m.compute_late_skip(starts, now=t0 + 318, rx_lead=0,
+                                min_ahead_s=1.0),
+            2,
+        )
+
+    # ---------- apply_late_skip wrapper (calls sys.exit on abort) ----------
+
+    def test_apply_late_skip_on_time_no_mutation(self):
+        """On-time launch returns the same lists unchanged."""
+        _, starts, cfgs = self._synthetic_schedule()
+        c, s = m.apply_late_skip(cfgs, starts, now=1010, rx_lead=0,
+                                 mode_label="TX")
+        self.assertEqual(c, cfgs)
+        self.assertEqual(s, starts)
+
+    def test_apply_late_skip_aborts_when_not_skipping(self):
+        """Late launch without --skip-late-configs raises SystemExit with an
+        actionable message."""
+        t0, starts, cfgs = self._synthetic_schedule()
+        with self.assertRaises(SystemExit) as cm:
+            m.apply_late_skip(cfgs, starts, now=t0 + 250, rx_lead=0,
+                              skip_late=False, mode_label="TX")
+        msg = str(cm.exception)
+        self.assertIn("TX", msg)
+        self.assertIn("configs 0..1", msg)
+        self.assertIn("--skip-late-configs", msg)
+        self.assertIn("cfg2", msg)
+
+    def test_apply_late_skip_recovers_when_skip_late(self):
+        """--skip-late-configs slices cfgs/starts to the first future start
+        and prints a [LATE] notice."""
+        t0, starts, cfgs = self._synthetic_schedule()
+        # Capture stdout for the [LATE] notice
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            c, s = m.apply_late_skip(cfgs, starts, now=t0 + 250,
+                                     rx_lead=0, skip_late=True,
+                                     mode_label="TX")
+        self.assertEqual(len(c), 2, "Should recover cfg 2 and cfg 3")
+        self.assertEqual(c[0]["label"], "cfg2")
+        self.assertEqual(c[1]["label"], "cfg3")
+        self.assertEqual(s[0], starts[2])
+        notice = buf.getvalue()
+        self.assertIn("[LATE - TX]", notice)
+        self.assertIn("Skip", notice)
+        self.assertIn("cfg2", notice)
+
+    def test_apply_late_skip_all_past_aborts_with_reT0(self):
+        """When all starts are in the past, abort with a re-T0 message
+        even if --skip-late-configs is set (nothing to skip to)."""
+        t0, starts, cfgs = self._synthetic_schedule()
+        with self.assertRaises(SystemExit) as cm:
+            m.apply_late_skip(cfgs, starts, now=t0 + 9999, rx_lead=0,
+                              skip_late=True, mode_label="RX")
+        msg = str(cm.exception)
+        self.assertIn("RX", msg)
+        self.assertIn("Re-set T0", msg)
+
+    # ---------- End-to-end: against real build_preset_schedule ----------
+
+    def test_integration_with_real_preset_schedule(self):
+        """Smoke test the helper against the real production schedule
+        builder, to confirm the contract is honoured (start - rx_lead >=
+        now + min_ahead_s, indices into the cfgs list line up)."""
+
+        class MockArgs:
+            t0 = 1747000000  # arbitrary epoch ts
+            t0_margin = 120
+            guard = 20
+            rx_lead = 10
+            settle = 2
+            swd_reset_s = 10
+
+        # Build a minimal synthetic preset (2 configs, distinct mod/sf so
+        # they trigger _mod_params_changed; expected_s ~ 30 and 60 each).
+        cfgs = [
+            {"label": "f650", "mod": "flrc", "sf": None, "br": 650,
+             "bw": None, "pa": 10, "freq": 868000000, "plen": 51,
+             "gap": 5000, "n_pkts": 100, "airtime_s": 0.001,
+             "expected_s": 30.0, "idx": 0},
+            {"label": "sf7", "mod": "lora", "sf": 7, "br": None,
+             "bw": 125, "pa": 10, "freq": 868000000, "plen": 51,
+             "gap": 1000, "n_pkts": 100, "airtime_s": 0.06,
+             "expected_s": 60.0, "idx": 1},
+        ]
+        starts = m.build_preset_schedule(
+            cfgs, MockArgs.t0,
+            t0_margin=MockArgs.t0_margin, guard=MockArgs.guard,
+            settle=MockArgs.settle, rx_lead=MockArgs.rx_lead,
+            swd_reset_s=MockArgs.swd_reset_s,
+        )
+        # Sanity: starts[0] = T0 + 120
+        self.assertEqual(starts[0], MockArgs.t0 + 120)
+        # starts[1] = starts[0] + 30(expected) + 2(settle) + 20(guard)
+        #           + 10(rx_lead) + 10(extra: swd_reset_s, since flrc->lora
+        #                          is a mod change) = starts[0] + 72
+        self.assertEqual(starts[1], starts[0] + 72)
+
+        # On-time: now < T0+120-10-5
+        self.assertEqual(
+            m.compute_late_skip(starts, now=MockArgs.t0 + 100,
+                                rx_lead=10),
+            0,
+        )
+
+        # Late: now falls between starts[0] and starts[1] (past cfg 0,
+        # in time for cfg 1 with rx_lead room).
+        late_now = starts[0] + 40  # 40s after cfg 0 started
+        self.assertEqual(
+            m.compute_late_skip(starts, now=late_now, rx_lead=10),
+            1,
+        )
 
 
 class FreqGateTests(unittest.TestCase):
