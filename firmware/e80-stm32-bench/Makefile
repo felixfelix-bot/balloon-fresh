@@ -35,6 +35,7 @@ BAND          ?= 868
 TX_LOG        ?= tx-log.csv
 RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
+PRIME_DISCARD ?= 2
 
 # ── Deterministic T0 + SESSION_ID ──────────────────────────────────────
 # Both machines independently compute the SAME T0 by rounding up to the
@@ -99,10 +100,11 @@ range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
 	@echo "╔══════════════════════════════════════════════╗"
 	@echo "║  E80 TX MODE — waiting for T0               ║"
 	@echo "╠══════════════════════════════════════════════╣"
-	@echo "║  T0:         $(T0) (epoch)"
-	@echo "║  SESSION_ID: $(SESSION_ID)"
-	@echo "║  Configs:    $(CONFIGS)"
-	@echo "║  Band:       $(BAND) MHz"
+	@echo "║  T0:           $(T0) (epoch)"
+	@echo "║  SESSION_ID:   $(SESSION_ID)"
+	@echo "║  Configs:      $(CONFIGS)"
+	@echo "║  Band:         $(BAND) MHz"
+	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@echo ""
@@ -111,16 +113,18 @@ range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
 		--session-id $(SESSION_ID) \
 		--configs "$(CONFIGS)" \
 		--tx-log "$(TX_LOG)" \
+		--prime-discard $(PRIME_DISCARD) \
 		--skip-fw-check
 
 range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 schedule
 	@echo "╔══════════════════════════════════════════════╗"
 	@echo "║  E80 RX MODE — waiting for T0               ║"
 	@echo "╠══════════════════════════════════════════════╣"
-	@echo "║  T0:         $(T0) (epoch)"
-	@echo "║  SESSION_ID: $(SESSION_ID)"
-	@echo "║  Configs:    $(CONFIGS)"
-	@echo "║  Band:       $(BAND) MHz"
+	@echo "║  T0:           $(T0) (epoch)"
+	@echo "║  SESSION_ID:   $(SESSION_ID)"
+	@echo "║  Configs:      $(CONFIGS)"
+	@echo "║  Band:         $(BAND) MHz"
+	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@echo ""
@@ -129,6 +133,7 @@ range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 sched
 		--session-id $(SESSION_ID) \
 		--configs "$(CONFIGS)" \
 		--rx-log "$(RX_LOG)" \
+		--prime-discard $(PRIME_DISCARD) \
 		--skip-fw-check
 
 range-merge: ## Merge TX+RX logs, compute PER, generate report
