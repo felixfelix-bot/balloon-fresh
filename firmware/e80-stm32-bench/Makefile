@@ -34,11 +34,18 @@ TX_LOG        ?= tx-log.csv
 RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
 
-# Auto-generate T0 as epoch (5 min from now) and session ID (YYMMDDHHMM)
-# Both timezone-safe: epoch is absolute, session ID is shared label
-# Override with: make range-rx T0=<epoch> SESSION_ID=<id>
-T0            ?= $(shell python3 -c "import time; print(int(time.time()) + 300)")
-SESSION_ID    ?= $(shell date +%y%m%d%H%M)
+# ── Deterministic T0 + SESSION_ID ──────────────────────────────────────
+# Both machines independently compute the SAME T0 by rounding up to the
+# next 5-minute epoch boundary. No communication needed between operators.
+#
+# Tolerance: both machines must run `make tx` / `make rx` within ~4 min
+# of each other (NTP-synced clocks). The later starter still has ≥60s
+# before T0 + t0_margin. The lateness guard catches violations.
+#
+# Override: make rx T0=<epoch> SESSION_ID=<id>  (explicit, for debugging)
+BOUNDARY_S    := 300  # 5-minute round-up
+T0            ?= $(shell python3 -c "import time; now=int(time.time()); boundary=$(BOUNDARY_S); t0=((now // boundary) + 1) * boundary; print(t0)")
+SESSION_ID    ?= $(shell python3 -c "import time; t0=$(T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
 
 # Ansible
 ANSIBLE_PLAYBOOK := ansible-playbook
@@ -46,7 +53,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
-.PHONY: range-coord range-cvm-server range-adaptive range-cvm-test
+.PHONY: rx tx range-coord range-cvm-server range-adaptive range-cvm-test
 
 all: firmware
 
@@ -64,6 +71,20 @@ clean:
 	rm -rf $(BUILD) $(TESTBUILD)
 
 # ============================================================
+# SIMPLIFIED TARGETS: `make tx` and `make rx`
+# ============================================================
+# These are the recommended entry points for range testing.
+# T0 and SESSION_ID are auto-computed deterministically (5-min boundary).
+# Both operators just run the same target on their machine — no sharing needed.
+#
+# The T0 prints on startup so operators can verify they're in the same window.
+# If clocks drift >5 min between machines, the lateness guard catches it.
+
+tx: range-tx  ## TX mode: just run `make tx`. T0 + SESSION_ID auto-generated.
+
+rx: range-rx  ## RX mode: just run `make rx`. T0 + SESSION_ID auto-generated.
+
+# ============================================================
 # DISTRIBUTED RANGE TEST TARGETS
 # ============================================================
 
@@ -73,11 +94,15 @@ range-setup: ## Ansible: install openocd, pyserial, clone repo, verify boards (b
 	@echo "Setup complete. Run 'make range-dry-run' to verify."
 
 range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
-	@echo "=== E80 Distributed TX Mode ==="
-	@echo "  T0:         $(T0) (epoch)"
-	@echo "  SESSION_ID: $(SESSION_ID)"
-	@echo "  Configs:    $(CONFIGS)"
-	@echo "  Band:       $(BAND) MHz"
+	@echo "╔══════════════════════════════════════════════╗"
+	@echo "║  E80 TX MODE — waiting for T0               ║"
+	@echo "╠══════════════════════════════════════════════╣"
+	@echo "║  T0:         $(T0) (epoch)"
+	@echo "║  SESSION_ID: $(SESSION_ID)"
+	@echo "║  Configs:    $(CONFIGS)"
+	@echo "║  Band:       $(BAND) MHz"
+	@echo "╚══════════════════════════════════════════════╝"
+	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
 		--t0 $(T0) \
@@ -87,11 +112,15 @@ range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
 		--skip-fw-check
 
 range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 schedule
-	@echo "=== E80 Distributed RX Mode ==="
-	@echo "  T0:         $(T0) (epoch)"
-	@echo "  SESSION_ID: $(SESSION_ID)"
-	@echo "  Configs:    $(CONFIGS)"
-	@echo "  Band:       $(BAND) MHz"
+	@echo "╔══════════════════════════════════════════════╗"
+	@echo "║  E80 RX MODE — waiting for T0               ║"
+	@echo "╠══════════════════════════════════════════════╣"
+	@echo "║  T0:         $(T0) (epoch)"
+	@echo "║  SESSION_ID: $(SESSION_ID)"
+	@echo "║  Configs:    $(CONFIGS)"
+	@echo "║  Band:       $(BAND) MHz"
+	@echo "╚══════════════════════════════════════════════╝"
+	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode rx \
 		--t0 $(T0) \
