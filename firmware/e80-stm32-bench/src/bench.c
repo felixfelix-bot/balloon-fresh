@@ -1065,7 +1065,9 @@ static void radio_task(void)
             break;
 
         default:
-            break; /* timeouts / other IRQs re-armed in the ISR */
+            break; /* RX timeouts re-armed in the ISR (safety net).
+                    * RX_DONE/CRC/etc use RX continuous mode: chip stays
+                    * in RX, no re-arm needed. */
         }
     }
 }

@@ -292,7 +292,9 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
         power_half_dbm = 0;
     lr20xx_radio_common_set_tx_params(E80_CONTEXT, power_half_dbm, LR20XX_RADIO_COMMON_RAMP_304_US);
 
-    /* Auto fallback to STDBY_RC after RX/TX (demo) */
+    /* Fallback to STDBY_RC after TX (demo). In RX continuous mode this is
+     * only hit after TX — the chip stays in RX across received packets.
+     * The main loop re-arms continuous RX after TX_DONE via radio_rearm_rx(). */
     lr20xx_radio_common_set_rx_tx_fallback_mode(E80_CONTEXT, LR20XX_RADIO_FALLBACK_STDBY_RC);
 
     return 0;
@@ -319,7 +321,24 @@ int radio_bench_rx_arm(uint16_t rx_pld_len)
 
     lr20xx_system_clear_irq_status(E80_CONTEXT, LR20XX_SYSTEM_IRQ_ALL_MASK);
 
-    lr20xx_radio_common_set_rx(E80_CONTEXT, 0);
+    /*
+     * AGC settling fix — use RX *continuous* mode (0xFFFFFF RTC steps).
+     *
+     * Problem: With RX single mode (timeout=0) + STDBY_RC fallback, the chip
+     * leaves RX after every received packet and the IRQ handler re-arms RX
+     * fresh. The AGC starts from scratch each time. The FLRC preamble is only
+     * 32 configurable bits + 21 fixed bits = 53 bits ≈ 81 µs at 650 kbps — far
+     * too short for the AGC to settle, so RSSI reads ~30 dB low for short
+     * payloads (≤192 bytes). LoRa is immune (preamble ≥8 symbols ≥2 ms).
+     *
+     * Fix: RX continuous (0xFFFFFF timeout) keeps the chip in RX across packets
+     * (per lr20xx_radio_common.h: "RX continuous — transceiver stays in RX mode
+     * even after reception of a packet"). AGC keeps running between packets,
+     * giving it ample settling time. The IRQ handler no longer re-arms RX
+     * after each packet — it just drains the FIFO and reports the event.
+     * The fallback mode is now only used after TX (main loop re-arms RX).
+     */
+    lr20xx_radio_common_set_rx_with_timeout_in_rtc_step(E80_CONTEXT, 0xFFFFFF);
 
     return 0;
 }
@@ -410,6 +429,9 @@ void radio_bench_irq(void)
         }
         else
         {
+            /* Should not fire in RX continuous mode (0xFFFFFF timeout).
+             * Kept as a safety net: if a stray timeout somehow occurs,
+             * re-arm continuous RX. */
             rb_evt_t e = { .type = RB_EVT_RX_TIMEOUT };
             evt_push(&e);
             radio_bench_rx_arm(rx_pld_for_irq);
@@ -417,9 +439,9 @@ void radio_bench_irq(void)
     }
     else if (radio_irq & LR20XX_SYSTEM_IRQ_LORA_HEADER_ERROR)
     {
+        /* RX continuous: chip stays in RX — no re-arm needed. */
         rb_evt_t e = { .type = RB_EVT_RX_OTHER };
         evt_push(&e);
-        radio_bench_rx_arm(rx_pld_for_irq);
     }
     else if (radio_irq & LR20XX_SYSTEM_IRQ_CRC_ERROR)
     {
@@ -447,7 +469,7 @@ void radio_bench_irq(void)
         }
 
         evt_push(&e);
-        radio_bench_rx_arm(rx_pld_for_irq);
+        /* RX continuous: chip stays in RX — no re-arm needed. */
     }
     else if ((radio_irq & LR20XX_SYSTEM_IRQ_RX_DONE) == LR20XX_SYSTEM_IRQ_RX_DONE)
     {
@@ -484,7 +506,7 @@ void radio_bench_irq(void)
                     (uint32_t)radio_bench_rx_buf[3];
 
         evt_push(&e);
-        radio_bench_rx_arm(rx_pld_for_irq);
+        /* RX continuous: chip stays in RX — no re-arm needed. */
     }
     else if ((radio_irq & LR20XX_SYSTEM_IRQ_TX_DONE) == LR20XX_SYSTEM_IRQ_TX_DONE)
     {
@@ -494,9 +516,9 @@ void radio_bench_irq(void)
     }
     else
     {
+        /* RX continuous: chip stays in RX — no re-arm needed. */
         rb_evt_t e = { .type = RB_EVT_RX_OTHER };
         evt_push(&e);
-        radio_bench_rx_arm(rx_pld_for_irq);
     }
 }
 
