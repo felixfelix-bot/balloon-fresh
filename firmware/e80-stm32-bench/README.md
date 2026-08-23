@@ -2,6 +2,11 @@
 
 LoRa/FLRC benchmark firmware for the STM32-based E80 rig.
 
+> **📋 [E80 Range Test Operator Guide](docs/RANGE-TEST-GUIDE.md)** —
+> complete self-contained guide for running distributed range tests
+> (hardware setup, flashing, TX/RX, data merging, GPS stitching,
+> troubleshooting). Start here if you're new to the E80 bench.
+
 ## PRBS15 BER Test Pattern
 
 The E80 bench firmware uses **PRBS15** (Pseudo-Random Bit Sequence, degree 15) as
