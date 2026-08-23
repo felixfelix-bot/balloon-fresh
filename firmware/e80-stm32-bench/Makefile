@@ -143,6 +143,7 @@ range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
 		--configs "$(CONFIGS)" \
 		--tx-log "$(TX_LOG)" \
 		--prime-discard $(PRIME_DISCARD) \
+		--format $(FORMAT) \
 		--skip-fw-check
 
 range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 schedule
@@ -164,6 +165,7 @@ range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 sched
 		--configs "$(CONFIGS)" \
 		--rx-log "$(RX_LOG)" \
 		--prime-discard $(PRIME_DISCARD) \
+		--format $(FORMAT) \
 		--skip-fw-check
 
 range-merge: ## Merge TX+RX logs, compute PER, generate report
@@ -240,6 +242,7 @@ range-stitch: ## Stitch RX packet log with GPS track by nearest timestamp
 	@$(GPS_STITCH) \
 		--rx "$(RX)" \
 		--gps "$(GPS)" \
+		--t0-epoch $(T0) \
 		$$( [ -n "$(TX_GPS)" ] && echo "--tx-gps $(TX_GPS)" ) \
 		$$( [ -n "$(OUT)" ] && echo "--out $(OUT)" )
 
@@ -279,7 +282,7 @@ range-zip: ## Zip RX log + optional GPS + metadata.txt for sharing
 		echo ""; \
 		echo "RX log header (first data line + metadata comments)"; \
 		echo "----------------------------------------------------"; \
-		head -n 5 "$(RX)" 2>/dev/null | grep -E '^(#|session,)' || true; \
+		head -n 5 "$(RX)" 2>/dev/null | grep -E '^(#|PKT,|STAT,|session,)' || true; \
 	} > "$$META"; \
 	INCLUDE="$(RX) $$META"; \
 	if [ -n "$(GPS)" ]; then INCLUDE="$$INCLUDE $(GPS)"; fi; \

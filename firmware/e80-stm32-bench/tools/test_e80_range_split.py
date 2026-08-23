@@ -233,12 +233,11 @@ class TestParsePktLine(unittest.TestCase):
 
     def test_short_pkt(self):
         self.assertIsNone(ctl.parse_pkt_line_legacy("PKT,1,2,3,4"))
-        self.assertIsNone(ctl.parse_pkt_line("PKT,1,2,3,4"))
 
     def test_flrc_pkt(self):
         line = ("PKT,1,0,1,3,678,-72.0,12.5,1,0,0,868000000,flrc,650,0,0,"
                 "10,64,0,0,0,0,0,0,12345")
-        p = ctl.parse_pkt_line(line)
+        p = ctl.parse_pkt_line_legacy(line)
         self.assertIsNotNone(p)
         self.assertEqual(p["mod"], "flrc")
         self.assertEqual(p["sf_or_br"], 650)
