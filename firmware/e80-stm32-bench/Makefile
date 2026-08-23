@@ -41,6 +41,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
+.PHONY: range-cvm-server range-adaptive range-cvm-test
 
 all: firmware
 
@@ -111,3 +112,62 @@ range-dry-run: ## Print schedule from config preset without touching hardware
 range-test-host: ## Run pytest for distributed range test split logic
 	@echo "=== Running distributed range test unit tests ==="
 	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py -v
+
+# ============================================================
+# CONTEXTVM (NOSTR MCP) RANGE TEST TARGETS
+# ============================================================
+#
+# Server key (board side):   CVM_SERVER_HEX=<64 hex chars>
+#                           or CVM_SERVER_NSEC=nsec1...
+# Client key (coordinator): CVM_CLIENT_HEX=<64 hex chars>
+# Relay list override:      RELAYS=wss://relay.primal.net,wss://nostr.mom
+#
+# Typical two-machine deployment:
+#   # TX machine (auto-detects serial port + SWD probe):
+#   CVM_SERVER_HEX=<hex> make range-cvm-server ROLE=tx
+#
+#   # RX machine:
+#   CVM_SERVER_HEX=<hex> make range-cvm-server ROLE=rx
+#
+#   # Coordinator (any third machine with Nostr relay reachability):
+#   CVM_CLIENT_HEX=<hex> make range-adaptive TX_NPUB=npub1... RX_NPUB=npub1... \
+#       CONFIGS=outdoor-10
+
+range-cvm-server: ## Start CVM (Nostr MCP) board server — ROLE=tx|rx (auto-detects port)
+	@if [ -z "$$CVM_SERVER_HEX" ] && [ -z "$$CVM_SERVER_NSEC" ]; then \
+		echo "ERROR: set CVM_SERVER_HEX or CVM_SERVER_NSEC env var"; \
+		echo "  e.g. CVM_SERVER_HEX=<hex> make range-cvm-server ROLE=tx"; \
+		exit 1; \
+	fi
+	@echo "=== E80 CVM Board Server (role=$(ROLE)) ==="
+	cd $(TOOLDIR) && $(PYTHON) tools/cvm_board_server.py --role $(ROLE) \
+		$$( [ -n "$$CVM_SERVER_HEX" ] && echo "--server-hex $$CVM_SERVER_HEX" ) \
+		$$( [ -n "$$CVM_SERVER_NSEC" ] && echo "--nsec $$CVM_SERVER_NSEC" ) \
+		$$( [ -n "$$RELAYS" ] && echo "--relays $$RELAYS" )
+
+range-adaptive: ## Adaptive sweep via CVM — TX_NPUB=npub1... RX_NPUB=npub1... CONFIGS=outdoor-10
+	@if [ -z "$(TX_NPUB)" ] || [ -z "$(RX_NPUB)" ]; then \
+		echo "ERROR: TX_NPUB and RX_NPUB are required. Example:"; \
+		echo "  make range-adaptive TX_NPUB=npub1... RX_NPUB=npub1... CONFIGS=outdoor-10"; \
+		exit 1; \
+	fi
+	@if [ -z "$$CVM_CLIENT_HEX" ]; then \
+		echo "ERROR: set CVM_CLIENT_HEX env var (coordinator Nostr secret)"; \
+		exit 1; \
+	fi
+	@echo "=== E80 CVM Adaptive Sweep ==="
+	@echo "  TX:      $(TX_NPUB)"
+	@echo "  RX:      $(RX_NPUB)"
+	@echo "  Configs: $(CONFIGS)"
+	@echo ""
+	cd $(TOOLDIR) && $(PYTHON) tools/cvm_campaign.py \
+		--tx-npub "$(TX_NPUB)" \
+		--rx-npub "$(RX_NPUB)" \
+		--configs "$(CONFIGS)" \
+		--client-hex "$$CVM_CLIENT_HEX" \
+		$$( [ -n "$$RELAYS" ] && echo "--relays $$RELAYS" )
+
+range-cvm-test: ## Test CVM relay connectivity + latency — RELAYS=wss://relay.primal.net,wss://nostr.mom
+	@echo "=== CVM Relay Connectivity Test ==="
+	cd $(TOOLDIR) && $(PYTHON) tools/cvm_relay_test.py \
+		$$( [ -n "$(RELAYS)" ] && echo "--relays $(RELAYS)" )

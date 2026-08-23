@@ -58,6 +58,14 @@
         executable: pip3
       become: false
 
+    # --- nostr-sdk via pip (required by CVM board server + campaign) ---
+    - name: Install nostr-sdk via pip (CVM board server dependency)
+      pip:
+        name: nostr-sdk
+        state: present
+        executable: pip3
+      become: false
+
     # --- Clone/update repo ---
     - name: Ensure repos directory exists
       file:
