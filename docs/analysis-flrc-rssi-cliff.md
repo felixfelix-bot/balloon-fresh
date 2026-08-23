@@ -286,6 +286,22 @@ changes.
 
 ---
 
+## Note: LoRa payload length cap (L511 filtering)
+
+The LR2021 chip's LoRa mode uses an 8-bit payload length field, capping the
+maximum payload at **255 bytes**. The `L511` length config (511 bytes) is
+only valid in FLRC mode.
+
+Previously, `build_configs()` in `e80_sweep_full.py` emitted LoRa L511 configs.
+These were untestable (the firmware rejects them) and showed as **100% PER**
+in the results, which looked like a radio failure rather than a configuration
+impossibility. This has been fixed: LoRa configs with `plen > 255` are now
+filtered out in `build_configs()`, and the docstring documents the cap as
+"LEN: 6-255 LoRa / 6-511 FLRC". Invalid configs that still slip through (e.g.
+via `--only` filter overrides) are now surfaced in the CSV error column.
+
+---
+
 *Files inspected:*
 - `firmware/e80-stm32-bench/src/radio_bench.c` (firmware LR2021 + IRQ + external APIs)
 - `firmware/e80-stm32-bench/src/bench_pkt.c` (per-pkt CSV formatter)
