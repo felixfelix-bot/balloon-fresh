@@ -24,7 +24,9 @@ PYTHON        ?= python3
 TOOLDIR       := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 E80_CTL       := $(PYTHON) $(TOOLDIR)/tools/e80_bench_ctl.py
 MERGE_SCRIPT  := $(PYTHON) $(TOOLDIR)/tools/merge_csvs.py
-REPO_ROOT     := $(abspath $(dir $(TOOLDIR)))
+# Repo root is 2 levels up from e80-stm32-bench/
+REPO_ROOT     := $(abspath $(TOOLDIR)/../..)
+E80_DIR       := $(TOOLDIR)
 CONFIGS_DIR   := $(REPO_ROOT)/configs
 
 # Default config preset + band
