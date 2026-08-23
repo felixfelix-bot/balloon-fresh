@@ -134,6 +134,7 @@ range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
+	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
 		--t0 $(T0) \
@@ -154,6 +155,7 @@ range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 sched
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
+	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode rx \
 		--t0 $(T0) \
