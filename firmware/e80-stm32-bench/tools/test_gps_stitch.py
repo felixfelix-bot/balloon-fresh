@@ -70,6 +70,51 @@ SAMPLE_GPX_NO_NS = """<?xml version="1.0"?>
 </gpx>
 """
 
+# ---------------------------------------------------------------------------
+# KML sample — BasicAirData GPS Logger (Android) export shape:
+#   - <name>GPS Logger YYYYMMDD-HHMMSS</name>      → start time
+#   - <description>... Duration = MM:SS | MM:SS ... → total | moving duration
+#   - <Placemark><LineString><coordinates>          → lon,lat,alt triples
+# KML coordinates carry NO per-point timestamps — they must be synthesised
+# by distributing N points evenly across the total duration starting at the
+# start time.
+# ---------------------------------------------------------------------------
+
+SAMPLE_KML = """<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with BasicAirData GPS Logger for Android - ver. 3.3.0 -->
+<!-- Track 3 = 3 TrackPoints + 0 Placemarks -->
+<kml xmlns="http://www.opengis.net/kml/2.2">
+ <Document>
+  <name>GPS Logger 20260823-184605</name>
+  <description><![CDATA[Test track
+3 Trackpoints + 0 Placemarks]]></description>
+  <Style id="TrackStyle">
+   <LineStyle>
+    <color>ff0000ff</color>
+    <width>3</width>
+   </LineStyle>
+  </Style>
+
+  <Placemark id="20260823-184605">
+   <name>Track 20260823-184605</name>
+   <description><![CDATA[<b>Test track</b><br><br>Distance = 25 m<br>Duration = 00:15 | 00:02<br>Altitude Gap = 3 m<br>Max Speed = 2 km/h<br>Direction = W <br><br><i>3 Trackpoints</i>]]></description>
+   <styleUrl>#TrackStyle</styleUrl>
+   <LineString>
+    <extrude>0</extrude>
+    <tessellate>0</tessellate>
+    <altitudeMode>absolute</altitudeMode>
+    <coordinates>
+     -16.94707431,32.63487728,76.231
+     -16.94717201,32.63486183,78.954
+     -16.94720912,32.63486070,79.323
+    </coordinates>
+   </LineString>
+  </Placemark>
+
+ </Document>
+</kml>
+"""
+
 
 def write_temp(content, suffix=".gpx"):
     fd, path = tempfile.mkstemp(suffix=suffix)
@@ -295,6 +340,184 @@ class TestParseGPX(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# KML parsing (BasicAirData GPS Logger for Android)
+# ---------------------------------------------------------------------------
+
+class TestParseKML(unittest.TestCase):
+    """KML parsing — coordinates + synthesised timestamps.
+
+    KML tracks from BasicAirData GPS Logger have NO per-point timestamps:
+      - start time is in the <name> element: "GPS Logger YYYYMMDD-HHMMSS"
+      - total duration in the Placemark <description>:
+        "Duration = MM:SS | MM:SS"  (total | moving)
+      - trackpoints are lon,lat,alt triples inside <LineString>/<coordinates>
+    """
+
+    def test_parse_kml_basic(self):
+        """Parse a simple KML — coordinate order preserves lon,lat,alt."""
+        path = write_temp(SAMPLE_KML, ".kml")
+        try:
+            pts = gs.parse_kml(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(len(pts), 3)
+        # KML order is lon,lat,alt — verify no swap with GPX lat-first order
+        self.assertAlmostEqual(pts[0].lon, -16.94707431, places=5)
+        self.assertAlmostEqual(pts[0].lat, 32.63487728, places=5)
+        self.assertAlmostEqual(pts[0].ele, 76.231, places=3)
+        self.assertAlmostEqual(pts[1].lon, -16.94717201, places=5)
+        self.assertAlmostEqual(pts[2].lon, -16.94720912, places=5)
+        # Each synthesised point carries an ISO time_str like GPX
+        for p in pts:
+            self.assertIsNotNone(p.time_str)
+            self.assertRegex(p.time_str, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+    def test_parse_kml_synthesizes_timestamps(self):
+        """Verify synthesised timestamps are evenly distributed."""
+        path = write_temp(SAMPLE_KML, ".kml")
+        try:
+            pts = gs.parse_kml(path)
+        finally:
+            os.unlink(path)
+        # Total duration 00:15 = 15 s; 3 points → step = 15/(3-1) = 7.5 s
+        # Both gaps must be exactly equal (even distribution).
+        self.assertAlmostEqual(pts[1].epoch - pts[0].epoch, 7.5, places=2)
+        self.assertAlmostEqual(pts[2].epoch - pts[1].epoch, 7.5, places=2)
+        # First point falls exactly on the start time
+        expected_start = gs.parse_iso_to_epoch("2026-08-23T18:46:05Z")
+        assert expected_start is not None
+        self.assertAlmostEqual(pts[0].epoch, expected_start, places=2)
+        # Last point falls on start + duration
+        self.assertAlmostEqual(pts[-1].epoch,
+                               expected_start + 15.0, places=2)
+
+    def test_parse_kml_name_timestamp(self):
+        """Verify start time extraction from "GPS Logger 20260823-184605"."""
+        path = write_temp(SAMPLE_KML, ".kml")
+        try:
+            pts = gs.parse_kml(path)
+        finally:
+            os.unlink(path)
+        expected_start = gs.parse_iso_to_epoch("2026-08-23T18:46:05Z")
+        assert expected_start is not None
+        self.assertAlmostEqual(pts[0].epoch, expected_start, places=2)
+        # The Placemark <name> "Track 20260823-184605" must NOT win — only
+        # "GPS Logger ..." is a valid start-time anchor.
+        wrong_start = gs.parse_iso_to_epoch("2026-08-23T20:46:05Z")
+        assert wrong_start is not None
+        self.assertNotAlmostEqual(pts[0].epoch, wrong_start, places=1)
+
+    def test_parse_kml_duration(self):
+        """Verify duration parsing from "Duration = 00:15 | 00:02".
+
+        Format is "MM:SS | MM:SS" = total | moving. We use the total
+        (first) value to span the N synthesised points.
+        """
+        path = write_temp(SAMPLE_KML, ".kml")
+        try:
+            pts = gs.parse_kml(path)
+        finally:
+            os.unlink(path)
+        # Total = 00:15 = 15 s; full range = pts[-1] - pts[0]
+        self.assertAlmostEqual(pts[-1].epoch - pts[0].epoch, 15.0, places=2)
+        # Moving-only = 2 s would give step 1 s; verify we did NOT pick that
+        # (would be range 2.0, not 15.0).
+        self.assertNotAlmostEqual(pts[-1].epoch - pts[0].epoch, 2.0, places=1)
+
+    def test_parse_kml_no_coordinates_returns_empty(self):
+        """A KML with valid metadata but no coordinates yields []."""
+        empty_kml = """<?xml version="1.0"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+ <Document>
+  <name>GPS Logger 20260823-184605</name>
+  <description>no trackpoints yet</description>
+ </Document>
+</kml>"""
+        path = write_temp(empty_kml, ".kml")
+        try:
+            pts = gs.parse_kml(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(pts, [])
+
+    def test_parse_kml_invalid_xml_raises(self):
+        path = write_temp("<kml><Placemark><oops></kml>", ".kml")
+        try:
+            with self.assertRaises(ValueError):
+                gs.parse_kml(path)
+        finally:
+            os.unlink(path)
+
+    def test_parse_kml_with_real_sample(self):
+        """Round-trip on the real BasicAirData export we were given.
+
+        File lives at ~/.hermes/profiles/manager/cache/documents/ and has
+        a .bin extension despite being KML. This exercises auto-detection
+        via XML root-tag sniffing AND verifies real-world parsing.
+        """
+        sample_path = os.path.join(
+            os.path.expanduser("~"),
+            ".hermes/profiles/manager/cache/documents/"
+            "doc_28c1ff25f72f_.bin",
+        )
+        if not os.path.exists(sample_path):
+            self.skipTest("Real KML sample not available: " + sample_path)
+        # Explicit format hint forces KML parser despite .bin extension
+        pts = gs.parse_kml(sample_path)
+        self.assertEqual(len(pts), 30)
+        # Verify lon,lat,alt come through for the first point
+        self.assertAlmostEqual(pts[0].lon, -16.94707431, places=5)
+        self.assertAlmostEqual(pts[0].lat, 32.63487728, places=5)
+        self.assertAlmostEqual(pts[0].ele, 76.231, places=3)
+        # Timestamps must be strictly increasing
+        for i in range(len(pts) - 1):
+            self.assertGreater(pts[i + 1].epoch, pts[i].epoch)
+        # Total duration 00:29 = 29 s; spread across 30 points
+        self.assertAlmostEqual(pts[-1].epoch - pts[0].epoch,
+                              29.0, places=1)
+        # All timestamps are in 2026 (epoch > 1.7e9)
+        for p in pts:
+            self.assertGreater(p.epoch, 1.7e9)
+
+    def test_stitch_kml_with_rx(self):
+        """End-to-end: KML GPS joined to RX packet log by timestamp."""
+        tmpdir = tempfile.mkdtemp()
+        rx_path = None
+        try:
+            rx_path = write_rx_log([
+                {"pkt_idx": 0, "ts_ms": 0, "rssi_dbm": -80,
+                 "captured_ts": "2026-08-23T18:46:05Z"},
+                {"pkt_idx": 1, "ts_ms": 5000, "rssi_dbm": -82,
+                 "captured_ts": "2026-08-23T18:46:13Z"},
+                {"pkt_idx": 2, "ts_ms": 8000, "rssi_dbm": -85,
+                 "captured_ts": "2026-08-23T18:46:20Z"},
+            ])
+            gps_path = os.path.join(tmpdir, "track.kml")
+            with open(gps_path, "w") as f:
+                f.write(SAMPLE_KML)
+            rx_rows = gs.load_rx_log(rx_path)
+            gps_pts = gs.load_gps(gps_path)
+            combined = gs.stitch(rx_rows, gps_pts, "captured_ts", None)
+            self.assertEqual(len(combined), 3)
+            for r in combined:
+                self.assertTrue(r["gps_lat"])
+            # First packet lands exactly on the first synthesised GPS point
+            self.assertAlmostEqual(
+                float(combined[0]["gps_lat"]), 32.63487728, places=3)
+            self.assertAlmostEqual(
+                float(combined[0]["gps_offset_s"]), 0.0, places=1)
+            # Middle packet at +13 s falls between pt1 (+7.5s) and pt2 (+15s)
+            # → nearest is pt2 (off = -2.0s)
+            self.assertAlmostEqual(
+                float(combined[1]["gps_lat"]), 32.63486070, places=3)
+        finally:
+            import shutil
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            if rx_path and os.path.exists(rx_path):
+                os.unlink(rx_path)
+
+
+# ---------------------------------------------------------------------------
 # GPS CSV parsing
 # ---------------------------------------------------------------------------
 
@@ -457,6 +680,45 @@ class TestLoadGpsAutoDetect(unittest.TestCase):
         finally:
             os.unlink(path)
         self.assertEqual(len(pts), 2)
+
+    def test_auto_detect_kml(self):
+        """A .kml extension triggers the KML parser (3 points/15 s)."""
+        path = write_temp(SAMPLE_KML, ".kml")
+        try:
+            pts = gs.load_gps(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(len(pts), 3)
+        # KML-specific signature: synthesised timestamps evenly spaced
+        self.assertAlmostEqual(pts[1].epoch - pts[0].epoch, 7.5, places=2)
+        # First point is at the "GPS Logger 20260823-184605" start time
+        expected = gs.parse_iso_to_epoch("2026-08-23T18:46:05Z")
+        assert expected is not None
+        self.assertAlmostEqual(pts[0].epoch, expected, places=2)
+
+    def test_auto_detect_gpx(self):
+        """A .gpx extension still triggers the GPX parser (unchanged)."""
+        path = write_temp(SAMPLE_GPX_NO_NS, ".gpx")
+        try:
+            pts = gs.load_gps(path)
+        finally:
+            os.unlink(path)
+        # GPX returns time_str from the file verbatim; KML synthesises a
+        # "Z"-suffixed string. Verify the GPX timestamp round-trips.
+        self.assertEqual(len(pts), 2)
+        self.assertEqual(pts[0].time_str, "2026-08-23T20:00:00Z")
+
+    def test_unknown_extension_kml_sniffs_xml_root(self):
+        """No extension hint — fall back to XML root-tag sniffing for KML."""
+        path = write_temp(SAMPLE_KML, ".bin")
+        try:
+            pts = gs.load_gps(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(len(pts), 3)
+        expected = gs.parse_iso_to_epoch("2026-08-23T18:46:05Z")
+        assert expected is not None
+        self.assertAlmostEqual(pts[0].epoch, expected, places=2)
 
 
 # ---------------------------------------------------------------------------
