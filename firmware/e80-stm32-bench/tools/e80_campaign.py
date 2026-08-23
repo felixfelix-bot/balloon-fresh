@@ -228,8 +228,18 @@ def maybe_reset(prev, cur, policy="strict"):
     """Decide whether to SWD-reset between configs.
 
     Returns True if reset required, False if skippable.
-    prev/cur: dicts with keys mod, band (or freq), pa, error, stop_id.
-    policy: 'strict' (always reset) or 'gated' (skip same-mod adjacency).
+    prev/cur: dicts with keys mod, band (or freq), pa, error, stop_id,
+              sf, bw, br (radio parameters within a modulation).
+    policy: 'strict' (always reset) or 'gated' (skip only when radio
+            parameters are truly unchanged — same mod, same SF/BW/BR,
+            same band, same stop, no error, no PA22).
+
+    V3 finding (2026-08-23): the SX1280 cannot hot-switch spreading factor
+    (SF11→SF12) without a full radio reset. The firmware MOD command
+    returns OK but the radio does not reconfigure, resulting in 0 packets.
+    Same applies to bandwidth (BW) and bit-rate (BR) changes within the
+    same modulation. Therefore 'gated' must reset on any radio-parameter
+    change, not just modulation change.
     """
     # Always reset on: mod change, band change, error, PA22, stop change
     if prev.get("mod") != cur.get("mod"):
@@ -245,7 +255,16 @@ def maybe_reset(prev, cur, policy="strict"):
         return True
     if prev.get("stop_id") != cur.get("stop_id"):
         return True
-    # Same mod, same band, no error, same stop, no PA22
+    # V3 fix: reset on radio-parameter change within same modulation
+    # SX1280 requires full reset to change SF/BW/BR — MOD command alone
+    # returns OK but radio doesn't reconfigure (0 packets observed).
+    if prev.get("sf") != cur.get("sf"):
+        return True
+    if prev.get("bw") != cur.get("bw"):
+        return True
+    if prev.get("br") != cur.get("br"):
+        return True
+    # Same mod, same radio params, same band, no error, same stop, no PA22
     if policy == "gated":
         return False
     # strict: reset everything
