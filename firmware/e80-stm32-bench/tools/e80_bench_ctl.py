@@ -420,6 +420,14 @@ class BoardSerial:
         raise RuntimeError("{}: timeout waiting for reply to '{}'".format(self.port, line))
 
     def cmd(self, line, expect_ok=True, timeout=15.0):
+        if not expect_ok:
+            # Fire-and-forget: send the line, don't wait for a reply
+            self.ser.write((line + "\r\n").encode())
+            try:
+                self.ser.readline()  # consume any immediate echo
+            except Exception:
+                pass
+            return None
         return self.query(line, prefixes=("OK", "ERR"), timeout=timeout)
 
     def stat(self):
@@ -740,7 +748,8 @@ def load_config_preset(preset_or_path):
 
 
 def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
-                          settle=2.0, t0_margin_s=None, guard_s=None,
+                          settle=2.0, rx_lead=0,
+                          t0_margin_s=None, guard_s=None,
                           settle_s=None):
     """Absolute epoch start times for each config in a preset.
 
@@ -749,6 +758,11 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
 
     Accepts both short-form (t0_margin, guard, settle) and long-form
     (t0_margin_s, guard_s, settle_s) keyword arguments for compatibility.
+
+    rx_lead is added to the inter-config gap so the RX has time to
+    re-arm between capture windows (capture_duration = expected_s +
+    settle + guard; without rx_lead the gap equals the capture window,
+    leaving zero re-arming time for subsequent configs).
     """
     if t0_margin_s is not None:
         t0_margin = t0_margin_s
@@ -761,7 +775,7 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
     t = t0_epoch + t0_margin
     for c in cfgs:
         starts.append(t)
-        t += c["expected_s"] + settle + guard
+        t += c["expected_s"] + settle + guard + rx_lead
     return starts
 
 
@@ -934,7 +948,7 @@ def run_tx_mode(args):
     print()
 
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle)
+                                   args.settle, args.rx_lead)
     for i, (c, s) in enumerate(zip(cfgs, starts)):
         print("  [{}/{}] {} N={} LEN={} start={}".format(
             i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
@@ -996,6 +1010,11 @@ def run_tx_mode(args):
 
     try:
         for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
+            # Stop any ongoing TX and drain stale data from previous config
+            if idx > 0:
+                board.cmd("STOP", expect_ok=False, timeout=3.0)
+                board.drain(quiet=0.5)
+
             # Wait for scheduled start
             wait_until(start)
 
@@ -1103,7 +1122,7 @@ def run_rx_mode(args):
     print()
 
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle)
+                                   args.settle, args.rx_lead)
     for i, (c, s) in enumerate(zip(cfgs, starts)):
         print("  [{}/{}] {} RX_arm={} start={}".format(
             i + 1, len(cfgs), c["label"], c["n_pkts"],
@@ -1155,6 +1174,11 @@ def run_rx_mode(args):
 
     try:
         for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
+            # Drain stale data from previous config (don't send STOP — it
+            # triggers an IWDG watchdog reset on the firmware)
+            if idx > 0:
+                board.drain(quiet=0.5)
+
             # Arm RX rx_lead seconds before burst start
             wait_until(start - args.rx_lead)
 
@@ -1238,7 +1262,7 @@ def dry_run_preset(args):
     cfgs = load_config_preset(args.configs)
     t0 = parse_t0(args.t0) if args.t0 else time.time()
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle)
+                                   args.settle, args.rx_lead)
 
     print("== DRY RUN (distributed preset) ==")
     print("Config file:  {}".format(args.configs))
