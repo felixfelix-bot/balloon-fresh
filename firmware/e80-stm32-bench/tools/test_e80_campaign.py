@@ -290,12 +290,36 @@ class TestMaybeReset(unittest.TestCase):
         self.assertTrue(camp.maybe_reset(prev, cur, policy="strict"))
 
     def test_flrc_to_flrc_same_band_skip_gated(self):
-        """FLRC→FLRC same band, same stop → skip in gated."""
+        """FLRC→FLRC same band, same stop, same BR → skip in gated."""
+        prev = {"mod": "flrc", "band": "868", "pa": 5, "error": False,
+                "stop_id": "S1", "br": 650}
+        cur = {"mod": "flrc", "band": "868", "pa": 5, "error": False,
+               "stop_id": "S1", "br": 650}
+        self.assertFalse(camp.maybe_reset(prev, cur, policy="gated"))
+
+    def test_flrc_br_change_requires_reset_gated(self):
+        """FLRC→FLRC same band but BR change → reset in gated (V3 finding)."""
         prev = {"mod": "flrc", "band": "868", "pa": 5, "error": False,
                 "stop_id": "S1", "br": 650}
         cur = {"mod": "flrc", "band": "868", "pa": 5, "error": False,
                "stop_id": "S1", "br": 1300}
-        self.assertFalse(camp.maybe_reset(prev, cur, policy="gated"))
+        self.assertTrue(camp.maybe_reset(prev, cur, policy="gated"))
+
+    def test_lora_sf_change_requires_reset_gated(self):
+        """LoRa SF11→SF12 same band → reset in gated (V3 finding)."""
+        prev = {"mod": "lora", "band": "868", "pa": 10, "error": False,
+                "stop_id": "S1", "sf": 11, "bw": 125}
+        cur = {"mod": "lora", "band": "868", "pa": 10, "error": False,
+               "stop_id": "S1", "sf": 12, "bw": 125}
+        self.assertTrue(camp.maybe_reset(prev, cur, policy="gated"))
+
+    def test_lora_bw_change_requires_reset_gated(self):
+        """LoRa BW125→BW500 same band → reset in gated (V3 finding)."""
+        prev = {"mod": "lora", "band": "868", "pa": 10, "error": False,
+                "stop_id": "S1", "sf": 7, "bw": 125}
+        cur = {"mod": "lora", "band": "868", "pa": 10, "error": False,
+               "stop_id": "S1", "sf": 7, "bw": 500}
+        self.assertTrue(camp.maybe_reset(prev, cur, policy="gated"))
 
 
 class TestCampaignState(unittest.TestCase):
