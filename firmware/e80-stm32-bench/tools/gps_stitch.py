@@ -494,12 +494,57 @@ def load_gps(path: str, fmt: str = "auto") -> list[GpsPoint]:
 # RX log loading
 # ---------------------------------------------------------------------------
 
-def load_rx_log(path: str) -> list[dict]:
-    """Load RX CSV log, skipping '#' metadata comments. Returns list of rows."""
+def load_rx_log(path: str) -> tuple[list[dict], str]:
+    """Load RX log. Auto-detects harmonized (PKT-prefixed) vs legacy CSV.
+
+    Returns (rows, format) where format is 'harmonized' or 'legacy'.
+    For harmonized, rows are parsed PKT dicts (harmonized field names).
+    For legacy, rows are csv.DictReader dicts (old column names).
+    """
+    with open(path, newline="", errors="replace") as f:
+        first_line = f.readline()
+    # Detect harmonized format: first non-empty line starts with PKT, or
+    # the file starts with a comment (#) followed by PKT lines.
+    if first_line.startswith("PKT,"):
+        return load_harmonized_rx(path)
+    # Check if first line is a comment — peek ahead for PKT
+    if first_line.lstrip().startswith("#"):
+        with open(path, errors="replace") as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    if stripped.startswith("PKT,"):
+                        return load_harmonized_rx(path)
+                    break  # non-comment, non-PKT → legacy
+        # All comments / empty → treat as legacy
+    # Legacy CSV
     with open(path, newline="", errors="replace") as f:
         reader = csv.DictReader(ln for ln in f if not ln.lstrip().startswith("#"))
         rows = list(reader)
-    return rows
+    return rows, "legacy"
+
+
+def load_harmonized_rx(path: str) -> tuple[list[dict], str]:
+    """Load a harmonized PKT/STAT file. Returns (pkt_dicts, 'harmonized').
+
+    Parses PKT lines using parse_pkt_line from e80_bench_ctl. STAT and
+    comment lines are skipped (STAT data is not needed for stitching).
+    """
+    # Import parse_pkt_line from e80_bench_ctl (same directory)
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from e80_bench_ctl import parse_pkt_line
+
+    pkts: list[dict] = []
+    with open(path, errors="replace") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("PKT,"):
+                p = parse_pkt_line(line)
+                if p is not None:
+                    pkts.append(p)
+    return pkts, "harmonized"
 
 
 def rx_timestamp_epoch(row: dict, ts_col: str,
@@ -660,6 +705,99 @@ def write_combined_csv(rows: list[dict], out_path: str) -> None:
             writer.writerow(r)
 
 
+def stitch_harmonized(rx_pkts: list[dict], gps_pts: list[GpsPoint],
+                      t0_epoch: float,
+                      tx_lat: float | None = None,
+                      tx_lon: float | None = None,
+                      max_gap_s: float = 30.0,
+                      ) -> list[dict]:
+    """Stitch GPS data into harmonized PKT dicts by nearest timestamp.
+
+    Populates the inline GPS fields (gps_fix, gps_lat, gps_lon, gps_alt,
+    gps_sats, gps_hdop) directly in each PKT dict. Returns the same list
+    of dicts with GPS fields filled in.
+
+    Requires t0_epoch — harmonized PKT format has no captured_ts.
+    """
+    if t0_epoch is None:
+        raise ValueError(
+            "Harmonized PKT format requires --t0-epoch for GPS stitching "
+            "(no captured_ts in PKT lines)")
+
+    gps_epochs = [p.epoch for p in gps_pts]
+    warned_gap = False
+
+    for pkt in rx_pkts:
+        ts_ms = pkt.get("ts_ms", 0)
+        try:
+            epoch = float(t0_epoch) + float(ts_ms) / 1000.0
+        except (TypeError, ValueError):
+            epoch = None
+
+        if epoch is None:
+            pkt["gps_fix"] = 0
+            pkt["gps_lat"] = 0.0
+            pkt["gps_lon"] = 0.0
+            pkt["gps_alt"] = 0.0
+            pkt["gps_sats"] = 0
+            pkt["gps_hdop"] = 0.0
+            continue
+
+        pt, off = nearest_gps(epoch, gps_epochs, gps_pts)
+        if pt is None:
+            pkt["gps_fix"] = 0
+            pkt["gps_lat"] = 0.0
+            pkt["gps_lon"] = 0.0
+            pkt["gps_alt"] = 0.0
+            pkt["gps_sats"] = 0
+            pkt["gps_hdop"] = 0.0
+            continue
+
+        if abs(off) > max_gap_s and not warned_gap:
+            sys.stderr.write(
+                "WARNING: nearest GPS point is {:.0f}s away from packet "
+                "(ts_ms={}). Consider --max-gap-s or check clock sync.\n"
+                .format(off, ts_ms)
+            )
+            warned_gap = True
+
+        pkt["gps_fix"] = 1
+        pkt["gps_lat"] = pt.lat
+        pkt["gps_lon"] = pt.lon
+        pkt["gps_alt"] = pt.ele if pt.ele is not None else 0.0
+        pkt["gps_sats"] = 0  # not available from GPX/CSV tracks
+        pkt["gps_hdop"] = 0.0  # not available from GPX/CSV tracks
+        if tx_lat is not None and tx_lon is not None:
+            pkt["_dist_m"] = haversine(tx_lat, tx_lon, pt.lat, pt.lon)
+
+    return rx_pkts
+
+
+def write_harmonized_output(pkts: list[dict], out_path: str,
+                            tx_lat: float | None = None,
+                            tx_lon: float | None = None) -> None:
+    """Write harmonized PKT lines with GPS fields populated.
+
+    Uses format_pkt_line() from e80_bench_ctl to render each PKT dict
+    back to a PKT, CSV line. Optionally appends a dist_m summary comment.
+    """
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from e80_bench_ctl import format_pkt_line
+
+    with open(out_path, "w") as f:
+        for p in pkts:
+            f.write(format_pkt_line(p) + "\n")
+        # Optionally append a dist_m summary comment
+        if tx_lat is not None:
+            dists = [p.get("_dist_m") for p in pkts if p.get("gps_fix")]
+            dists = [d for d in dists if d is not None]
+            if dists:
+                f.write("# dist_m: min={:.0f} max={:.0f} mean={:.0f}\n".format(
+                    min(dists), max(dists), sum(dists) / len(dists)))
+
+
 def parse_latlon(s: str) -> tuple[float, float]:
     """Parse 'lat,lon' string."""
     parts = s.split(",")
@@ -722,16 +860,64 @@ def main(argv=None) -> int:
               file=sys.stderr)
         return 1
 
-    # --- Load RX ---
-    rx_rows = load_rx_log(args.rx)
+    # --- Load RX --- (auto-detect harmonized vs legacy)
+    rx_rows, rx_fmt = load_rx_log(args.rx)
     if not rx_rows:
         print("ERROR: RX log {} has no data rows".format(args.rx),
               file=sys.stderr)
         return 1
-    print("[gps_stitch] Loaded {} RX packet rows from {}".format(
-        len(rx_rows), args.rx))
+    print("[gps_stitch] Loaded {} RX packet rows from {} (format: {})".format(
+        len(rx_rows), args.rx, rx_fmt))
 
-    # --- Decide timestamp column ---
+    # --- Load GPS ---
+    gps_pts = load_gps(args.gps, fmt=args.gps_format)
+    if not gps_pts:
+        print("ERROR: No GPS track points found in {}".format(args.gps),
+              file=sys.stderr)
+        return 1
+    print("[gps_stitch] Loaded {} GPS track points from {}".format(
+        len(gps_pts), args.gps))
+
+    tx_lat = args.tx_gps[0] if args.tx_gps else None
+    tx_lon = args.tx_gps[1] if args.tx_gps else None
+
+    # --- Branch on format ---
+    if rx_fmt == "harmonized":
+        # Harmonized PKT format — populate inline GPS fields
+        if args.t0_epoch is None:
+            print("ERROR: Harmonized PKT format requires --t0-epoch for "
+                  "GPS stitching (no captured_ts in PKT lines)",
+                  file=sys.stderr)
+            return 1
+        print("[gps_stitch] Using ts_ms + t0_epoch={}".format(args.t0_epoch))
+        combined = stitch_harmonized(
+            rx_rows, gps_pts, args.t0_epoch,
+            tx_lat=tx_lat, tx_lon=tx_lon,
+            max_gap_s=args.max_gap_s)
+
+        if args.out is None:
+            stem = os.path.splitext(args.rx)[0]
+            args.out = "{}_gps.csv".format(stem)
+        write_harmonized_output(combined, args.out,
+                                tx_lat=tx_lat, tx_lon=tx_lon)
+        print("[gps_stitch] Wrote {} PKT rows to {}".format(
+            len(combined), args.out))
+
+        n_with_gps = sum(1 for p in combined if p.get("gps_fix"))
+        if tx_lat is not None:
+            dists = [p.get("_dist_m") for p in combined if p.get("gps_fix")]
+            dists = [d for d in dists if d is not None]
+            if dists:
+                print("[gps_stitch] Distance from TX: min={:.0f}m "
+                      "max={:.0f}m mean={:.0f}m".format(
+                          min(dists), max(dists),
+                          sum(dists) / len(dists)))
+        print("[gps_stitch] {} / {} rows matched to GPS".format(
+            n_with_gps, len(combined)))
+        return 0
+
+    # --- Legacy CSV format (unchanged behavior) ---
+    # Decide timestamp column
     try:
         ts_col = pick_rx_ts_col(rx_rows, args.t0_epoch, args.ts_col)
     except ValueError as e:
@@ -743,18 +929,7 @@ def main(argv=None) -> int:
         return 1
     print("[gps_stitch] Using RX timestamp column: {}".format(ts_col))
 
-    # --- Load GPS ---
-    gps_pts = load_gps(args.gps, fmt=args.gps_format)
-    if not gps_pts:
-        print("ERROR: No GPS track points found in {}".format(args.gps),
-              file=sys.stderr)
-        return 1
-    print("[gps_stitch] Loaded {} GPS track points from {}".format(
-        len(gps_pts), args.gps))
-
-    # --- Stitch ---
-    tx_lat = args.tx_gps[0] if args.tx_gps else None
-    tx_lon = args.tx_gps[1] if args.tx_gps else None
+    # --- Stitch (legacy: append GPS columns) ---
     combined = stitch(rx_rows, gps_pts, ts_col, args.t0_epoch,
                       tx_lat=tx_lat, tx_lon=tx_lon,
                       max_gap_s=args.max_gap_s)
