@@ -32,6 +32,7 @@ CONFIGS_DIR   := $(REPO_ROOT)/configs
 # Default config preset + band
 CONFIGS       ?= $(CONFIGS_DIR)/outdoor-10.json
 BAND          ?= 868
+FORMAT        ?= harmonized
 TX_LOG        ?= tx-log.csv
 RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .

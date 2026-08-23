@@ -209,7 +209,7 @@ class TestParsePktLine(unittest.TestCase):
                   "10,64,0,0,0,0,0,0,43981")
 
     def test_valid_pkt(self):
-        p = ctl.parse_pkt_line(self.SAMPLE_PKT)
+        p = ctl.parse_pkt_line_legacy(self.SAMPLE_PKT)
         self.assertIsNotNone(p)
         self.assertEqual(p["session"], 42)
         self.assertEqual(p["config"], 3)
@@ -227,12 +227,12 @@ class TestParsePktLine(unittest.TestCase):
         self.assertEqual(p["pcrc16"], 43981)
 
     def test_non_pkt_line(self):
-        self.assertIsNone(ctl.parse_pkt_line("OK START"))
-        self.assertIsNone(ctl.parse_pkt_line(""))
-        self.assertIsNone(ctl.parse_pkt_line("STAT role=RX rx=5"))
+        self.assertIsNone(ctl.parse_pkt_line_legacy("OK START"))
+        self.assertIsNone(ctl.parse_pkt_line_legacy(""))
+        self.assertIsNone(ctl.parse_pkt_line_legacy("STAT role=RX rx=5"))
 
-    def test_too_few_fields(self):
-        # Only 5 fields — not enough
+    def test_short_pkt(self):
+        self.assertIsNone(ctl.parse_pkt_line_legacy("PKT,1,2,3,4"))
         self.assertIsNone(ctl.parse_pkt_line("PKT,1,2,3,4"))
 
     def test_flrc_pkt(self):

@@ -187,15 +187,18 @@ def compute_tx_total(n_pkts, prime_discard):
 
 
 def discard_prime_pkts(pkts, prime_discard):
-    """Drop the first prime_discard packets (by pkt_idx) from a parsed PKT
-    list. The firmware assigns pkt_idx 0..N-1 sequentially; the first
+    """Drop the first prime_discard packets (by seq) from a parsed PKT
+    list. The firmware assigns seq 0..N-1 sequentially; the first
     prime_discard indices (0..prime_discard-1) are warmup packets that the
-    RX must not log for measurement. Packets with missing pkt_idx default
+    RX must not log for measurement. Packets with missing seq default
     to 0 and are eligible for discard.
+
+    Falls back to legacy 'pkt_idx' key for backward compatibility with
+    --format legacy.
     """
     if prime_discard <= 0:
         return pkts
-    return [p for p in pkts if p.get("pkt_idx", 0) >= prime_discard]
+    return [p for p in pkts if p.get("seq", p.get("pkt_idx", 0)) >= prime_discard]
 
 
 def adjust_stat_for_prime(stat, prime_discard):
@@ -931,12 +934,60 @@ def apply_late_skip(cfgs, starts, now, rx_lead, min_ahead_s=5.0,
 
 
 def parse_pkt_line(line):
-    """Parse a firmware PKT console line into a dict.
+    """Parse a firmware PKT console line into a dict with 23 harmonized fields.
 
-    Format: PKT,session,config,replicate,pkt_idx,ts_ms,rssi_dbm,snr_db,
-    crc_ok,bit_err,?,freq_hz,mod,sf/br,bw,cr,pa_dbm,len,0,0,0,0,0,0,pcrc16
+    Format: PKT,session_id,config_id,replicate,seq,ts_ms,rssi_dbm,snr_db,
+    crc_ok,bit_err,bytes_bad,freq_hz,mod,sf,bw_khz,cr,power_dbm,pkt_size,
+    gps_fix,gps_lat,gps_lon,gps_alt,gps_sats,gps_hdop
+
+    The firmware always emits 24 comma-separated elements (PKT prefix + 23
+    data fields). GPS fields are zero from firmware (no GPS on the bench
+    board) and are populated host-side by gps_stitch.py.
 
     Returns None if the line is not a valid PKT line.
+    """
+    if not line or not line.strip().startswith("PKT,"):
+        return None
+    p = line.strip().split(",")
+    # 23 data fields + "PKT" prefix = 24 elements
+    if len(p) < 24:
+        return None
+    try:
+        return {
+            "session_id": int(p[1]),
+            "config_id": int(p[2]),
+            "replicate": int(p[3]),
+            "seq": int(p[4]),
+            "ts_ms": int(p[5]),
+            "rssi_dbm": float(p[6]),
+            "snr_db": float(p[7]),
+            "crc_ok": int(p[8]),
+            "bit_err": int(p[9]),
+            "bytes_bad": int(p[10]),
+            "freq_hz": int(p[11]),
+            "mod": p[12],
+            "sf": int(p[13]),
+            "bw_khz": int(p[14]),
+            "cr": int(p[15]),
+            "power_dbm": int(p[16]),
+            "pkt_size": int(p[17]),
+            "gps_fix": int(p[18]),
+            "gps_lat": float(p[19]),
+            "gps_lon": float(p[20]),
+            "gps_alt": float(p[21]),
+            "gps_sats": int(p[22]),
+            "gps_hdop": float(p[23]),
+        }
+    except (ValueError, IndexError):
+        return None
+
+
+def parse_pkt_line_legacy(line):
+    """Legacy parser for the old 16-column CSV schema.
+
+    Kept for backward compatibility with --format legacy. Parses a subset
+    of the firmware PKT line using the old field names (session, config,
+    pkt_idx, sf_or_br, bw, pa_dbm, len, pcrc16).
     """
     if not line or not line.strip().startswith("PKT,"):
         return None
@@ -963,6 +1014,70 @@ def parse_pkt_line(line):
         }
     except (ValueError, IndexError):
         return None
+
+
+# ---------------------------------------------------------------------------
+# Harmonized PKT/STAT formatters (inverse of parse_pkt_line)
+# ---------------------------------------------------------------------------
+
+PKT_FIELD_ORDER = [
+    "session_id", "config_id", "replicate", "seq", "ts_ms",
+    "rssi_dbm", "snr_db", "crc_ok", "bit_err", "bytes_bad",
+    "freq_hz", "mod", "sf", "bw_khz", "cr", "power_dbm", "pkt_size",
+    "gps_fix", "gps_lat", "gps_lon", "gps_alt", "gps_sats", "gps_hdop",
+]
+
+
+def format_pkt_line(d):
+    """Format a parsed PKT dict back to a ``PKT,`` CSV line.
+
+    Inverse of :func:`parse_pkt_line`. Missing fields default to 0.
+    Used by gps_stitch.py when rewriting PKT lines with GPS data populated.
+    """
+    vals = []
+    for f in PKT_FIELD_ORDER:
+        v = d.get(f, 0)
+        if v is None:
+            v = 0
+        vals.append(str(v))
+    return "PKT," + ",".join(vals)
+
+
+def format_stat_line(role, stat, session, config, replicate=1):
+    """Format a parse_stat() dict as a ``STAT,role=...`` line.
+
+    ``stat`` is the dict returned by :func:`parse_stat`. Fields not
+    present in the dict default to 0 / empty.
+    """
+    parts = ["STAT,role={}".format(role)]
+    parts.append("sent={}".format(stat.get("sent", 0)))
+    parts.append("sent_ok={}".format(stat.get("sent_ok", 0)))
+    parts.append("rx={}".format(stat.get("recv", 0)))
+    parts.append("crc_err={}".format(stat.get("crc_err", 0)))
+    per = stat.get("per_pct")
+    parts.append("per_x1e6={}".format(
+        int(round(per * 1e4)) if per is not None else 0))
+    parts.append("per_ci_x1e6=[{},{}]".format(
+        int(stat.get("per_ci_lo_pct", 0) or 0 * 1e4),
+        int(stat.get("per_ci_hi_pct", 0) or 0 * 1e4)))
+    elapsed = stat.get("elapsed_s")
+    parts.append("elapsed_s={}".format(
+        "{:.3f}".format(elapsed) if elapsed is not None else ""))
+    kbps = stat.get("kbps")
+    parts.append("kbps={}".format(
+        "{:.3f}".format(kbps) if kbps is not None else ""))
+    rssi = stat.get("rssi")
+    parts.append("rssi_avg_dbm={}".format(
+        "{:.3f}".format(rssi) if rssi is not None else ""))
+    snr = stat.get("snr")
+    parts.append("snr_avg_db={}".format(
+        "{:.3f}".format(snr) if snr is not None else ""))
+    parts.append("session={}".format(session))
+    parts.append("config={}".format(config))
+    parts.append("replicate={}".format(replicate))
+    parts.append("drops={}".format(stat.get("drops", 0)))
+    parts.append("gap_us={}".format(stat.get("gap_us", 0)))
+    return ",".join(parts)
 
 
 def _detect_board_for_mode(mode, port, probe_serial):
@@ -1083,8 +1198,67 @@ class RxLogWriter:
 
 
 # ---------------------------------------------------------------------------
-# Distributed TX mode
+# Harmonized writers (PKT + STAT line format)
 # ---------------------------------------------------------------------------
+
+class HarmonizedRxLogWriter:
+    """rx-log: PKT + STAT lines in harmonized format. Incremental flush.
+
+    The output file is a plain text file with three line types:
+      - ``PKT,<23 fields>``  — one per received packet
+      - ``STAT,role=RX,...`` — one per config after burst capture
+      - ``# <text>``         — metadata / comments
+
+    No CSV header row — PKT/STAT lines are self-describing.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        # No header row — PKT/STAT lines are self-describing
+
+    def pkt_line(self, pkt_dict):
+        """Write a PKT line from a parsed packet dict."""
+        line = format_pkt_line(pkt_dict)
+        with open(self.path, "a") as f:
+            f.write(line + "\n")
+            f.flush()
+
+    def stat_line(self, role, stat, session, config, replicate=1):
+        """Write a STAT line from a parse_stat() dict."""
+        line = format_stat_line(role, stat, session, config, replicate)
+        with open(self.path, "a") as f:
+            f.write(line + "\n")
+            f.flush()
+
+    def comment(self, text):
+        with open(self.path, "a") as f:
+            f.write("# {}\n".format(text))
+            f.flush()
+
+
+class HarmonizedTxLogWriter:
+    """tx-log: STAT lines for TX side. Incremental flush.
+
+    The output file contains only STAT and comment lines (no PKT lines —
+    TX does not receive packets).
+    """
+
+    def __init__(self, path, session_id):
+        self.path = path
+        self.session_id = session_id
+
+    def stat_line(self, config_idx, stat_dict, replicate=1):
+        """Write a ``STAT,role=TX`` line from a stat dict."""
+        line = format_stat_line("TX", stat_dict,
+                                self.session_id, config_idx, replicate)
+        with open(self.path, "a") as f:
+            f.write(line + "\n")
+            f.flush()
+
+    def comment(self, text):
+        with open(self.path, "a") as f:
+            f.write("# {}\n".format(text))
+            f.flush()
 
 def run_tx_mode(args):
     """TX-only distributed mode. Sends bursts on T0-anchored schedule."""
@@ -1166,7 +1340,11 @@ def run_tx_mode(args):
                      "Use --skip-fw-check to bypass.")
 
     board.drain()
-    log = TxLogWriter(args.tx_log, session_id=args.session_id)
+    use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
+    if use_harmonized:
+        log = HarmonizedTxLogWriter(args.tx_log, session_id=args.session_id)
+    else:
+        log = TxLogWriter(args.tx_log, session_id=args.session_id)
     log.comment("DISTRIBUTED_TX_MODE session={} t0={} port={} probe={}".format(
         args.session_id, datetime.datetime.fromtimestamp(t0).isoformat(),
         port, probe_serial or "?"))
@@ -1269,15 +1447,29 @@ def run_tx_mode(args):
             sf_or_br = cfg["sf"] if cfg["mod"] == "lora" else cfg["br"]
             bw = cfg["bw"] if cfg["bw"] is not None else 0
 
-            log.config_row(
-                config_idx=cfg["idx"], label=cfg["label"],
-                n_pkts=cfg["n_pkts"], sent_ok=sent_ok,
-                mod=cfg["mod"], sf_or_br=sf_or_br, bw=bw,
-                pa_dbm=cfg["pa"], freq_hz=cfg["freq"],
-                plen=cfg["plen"], gap_us=cfg["gap"],
-                t0_offset_s=start - t0, actual_start_ts=actual_start,
-                error=error,
-            )
+            if use_harmonized:
+                # Build a stat dict from the TX config + sent_ok count
+                tx_stat = {
+                    "sent": tx_total,
+                    "sent_ok": sent_ok,
+                    "recv": 0, "crc_err": 0, "per_pct": 0.0,
+                    "elapsed_s": cfg["expected_s"],
+                    "kbps": None, "rssi": None, "snr": None,
+                    "drops": 0, "gap_us": cfg["gap"],
+                }
+                if error:
+                    log.comment("ERROR config={}: {}".format(cfg["idx"], error))
+                log.stat_line(cfg["idx"], tx_stat, replicate=1)
+            else:
+                log.config_row(
+                    config_idx=cfg["idx"], label=cfg["label"],
+                    n_pkts=cfg["n_pkts"], sent_ok=sent_ok,
+                    mod=cfg["mod"], sf_or_br=sf_or_br, bw=bw,
+                    pa_dbm=cfg["pa"], freq_hz=cfg["freq"],
+                    plen=cfg["plen"], gap_us=cfg["gap"],
+                    t0_offset_s=start - t0, actual_start_ts=actual_start,
+                    error=error,
+                )
             print("  [{}/{}] {} sent_ok={}/{}".format(
                 idx + 1, len(cfgs), cfg["label"], sent_ok, cfg["n_pkts"]))
             prev_cfg = cfg
@@ -1398,7 +1590,11 @@ def run_rx_mode(args):
                      "Use --skip-fw-check to bypass.")
 
     board.drain()
-    log = RxLogWriter(args.rx_log)
+    use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
+    if use_harmonized:
+        log = HarmonizedRxLogWriter(args.rx_log)
+    else:
+        log = RxLogWriter(args.rx_log)
     log_comment = "# DISTRIBUTED_RX_MODE t0={} port={} probe={}\n".format(
         datetime.datetime.fromtimestamp(t0).isoformat(),
         port, probe_serial or "?")
@@ -1413,7 +1609,12 @@ def run_rx_mode(args):
             time.sleep(min(d, 30.0))
 
     def drain_pkt_lines(ser, duration_s):
-        """Read serial lines for duration_s, return parsed PKT dicts."""
+        """Read serial lines for duration_s, return parsed PKT dicts.
+
+        Uses harmonized parse_pkt_line when format=harmonized, legacy
+        parse_pkt_line_legacy when format=legacy.
+        """
+        parser = parse_pkt_line if use_harmonized else parse_pkt_line_legacy
         pkts = []
         deadline = time.time() + duration_s
         buf = ""
@@ -1426,7 +1627,7 @@ def run_rx_mode(args):
                     line = line.strip()
                     if not line:
                         continue
-                    p = parse_pkt_line(line)
+                    p = parser(line)
                     if p is not None:
                         pkts.append(p)
         return pkts
@@ -1488,17 +1689,21 @@ def run_rx_mode(args):
             pkts = discard_prime_pkts(pkts, prime_discard)
 
             # Write packets to log
-            for p in pkts:
-                log.pkt_row(
-                    session=p["session"], config=p["config"],
-                    pkt_idx=p["pkt_idx"], ts_ms=p["ts_ms"],
-                    rssi_dbm=p["rssi_dbm"], snr_db=p["snr_db"],
-                    crc_ok=p["crc_ok"], bit_err=p["bit_err"],
-                    freq_hz=p["freq_hz"], mod=p["mod"],
-                    sf_or_br=p["sf_or_br"], bw=p["bw"],
-                    pa_dbm=p["pa_dbm"], len=p["len"],
-                    pcrc16=p["pcrc16"] or 0,
-                )
+            if use_harmonized:
+                for p in pkts:
+                    log.pkt_line(p)
+            else:
+                for p in pkts:
+                    log.pkt_row(
+                        session=p["session"], config=p["config"],
+                        pkt_idx=p["pkt_idx"], ts_ms=p["ts_ms"],
+                        rssi_dbm=p["rssi_dbm"], snr_db=p["snr_db"],
+                        crc_ok=p["crc_ok"], bit_err=p["bit_err"],
+                        freq_hz=p["freq_hz"], mod=p["mod"],
+                        sf_or_br=p["sf_or_br"], bw=p["bw"],
+                        pa_dbm=p["pa_dbm"], len=p["len"],
+                        pcrc16=p["pcrc16"] or 0,
+                    )
 
             # Read STAT for summary (non-fatal on error)
             try:
@@ -1507,6 +1712,9 @@ def run_rx_mode(args):
                 rx_stat = {}
             # STAT? recv includes prime packets — subtract them
             adjust_stat_for_prime(rx_stat, prime_discard)
+            if use_harmonized:
+                log.stat_line("RX", rx_stat, args.session_id, cfg["idx"],
+                              replicate=1)
             print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
                 idx + 1, len(cfgs), cfg["label"],
                 len(pkts), cfg["n_pkts"],
@@ -1727,6 +1935,11 @@ def main():
                          "N+prime total; RX discards the first prime PKT "
                          "lines. Set to 0 to disable.".format(
                              DEFAULT_PRIME_DISCARD))
+    ap.add_argument("--format", choices=["harmonized", "legacy"],
+                    default="harmonized",
+                    help="output format: 'harmonized' = PKT+STAT lines "
+                         "(23-field, default); 'legacy' = 16-column CSV "
+                         "with header row")
     args = ap.parse_args()
 
     # --- Distributed mode routing ---
