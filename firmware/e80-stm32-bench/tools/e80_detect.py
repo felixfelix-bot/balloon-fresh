@@ -358,9 +358,11 @@ def detect_board(target_role: str | None = None) -> dict:
         }
 
     if len(probes) == 1:
-        # Single-board case (distributed): one probe → one role
+        # Single-board case (distributed): one probe → use it regardless
+        # of label. Boards are identical hardware; role is set at runtime
+        # by the host (ROLE TX/RX command), not by probe serial.
         serial, info = next(iter(probes.items()))
-        role = info["role"]
+        role = target_role or info["role"]
     else:
         # Dual-board case: multiple probes. Use target_role to pick.
         if target_role:
