@@ -192,6 +192,7 @@ make range-rx \
     CONFIGS=configs/outdoor-10.json \
     BAND=868 \
     RX_LOG=rx-log.csv \
+    PRIME_DISCARD=2 \
     --skip-fw-check    # if the board isn't running the exact firmware git SHA
 ```
 
@@ -224,6 +225,23 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 ```
 
 The `captured_ts` column is what the GPS stitch script joins against.
+
+### Prime discard (AGC warmup)
+
+The `--prime-discard N` flag (default 2, set to 0 to disable) sends N
+extra "prime" packets at the start of each burst before the measured
+window. The TX sends `N_measured + N_prime` total packets; the RX
+receives them all but discards the first `N_prime` from the log so they
+don't count toward PER.
+
+This compensates for the LR2021 chip's AGC not being fully settled for
+the first 1-2 packets of a burst (especially FLRC with short
+preambles). Without prime discard, the first few packets may show
+depressed RSSI or elevated CRC errors, biasing the PER measurement.
+
+Set `PRIME_DISCARD=0` in the Makefile or `--prime-discard 0` on the CLI
+to disable (e.g. for LoRa SF12 where airtime is long and AGC has time
+to settle within the first packet).
 
 ---
 
