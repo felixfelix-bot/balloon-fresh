@@ -988,16 +988,24 @@ def _detect_board_for_mode(mode, port, probe_serial):
     if _detect is None:
         # Fallback: manual CH340 port detection (from e80_sweep_full.py pattern)
         import glob as _glob
+        import platform as _platform
+        _is_mac = _platform.system() == "Darwin"
         ch340_ports = []
-        for dev in sorted(_glob.glob("/dev/ttyUSB*")):
-            try:
-                import subprocess as _sp
-                r = _sp.run(["udevadm", "info", "-q", "property", "-n", dev],
-                            capture_output=True, text=True, timeout=5)
-                if "CH340" in r.stdout:
-                    ch340_ports.append(dev)
-            except Exception:
-                pass
+        if _is_mac:
+            # macOS: /dev/cu.usbserial-* ports, verify with ioreg
+            for dev in sorted(_glob.glob("/dev/cu.usbserial-*")):
+                ch340_ports.append(dev)
+        else:
+            # Linux: /dev/ttyUSB* + udevadm
+            for dev in sorted(_glob.glob("/dev/ttyUSB*")):
+                try:
+                    import subprocess as _sp
+                    r = _sp.run(["udevadm", "info", "-q", "property", "-n", dev],
+                                capture_output=True, text=True, timeout=5)
+                    if "CH340" in r.stdout:
+                        ch340_ports.append(dev)
+                except Exception:
+                    pass
         if not ch340_ports:
             sys.exit("ERROR: No CH340 serial port found. Ensure the E80 board's "
                      "USB-serial cable is connected.")

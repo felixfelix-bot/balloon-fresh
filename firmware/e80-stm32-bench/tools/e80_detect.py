@@ -44,10 +44,16 @@ from __future__ import annotations
 import glob
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
 import time
+
+# -----------------------------------------------------------------------
+# Platform detection
+# -----------------------------------------------------------------------
+IS_MAC = platform.system() == "Darwin"
 
 # -----------------------------------------------------------------------
 # Static config — SWD probe serial → board role
@@ -76,6 +82,7 @@ def find_openocd() -> str | None:
         os.path.expanduser("~/.local/bin/openocd"),
         "/usr/bin/openocd",
         "/usr/local/bin/openocd",
+        *(("/opt/homebrew/bin/openocd",) if IS_MAC else ()),
     ):
         if candidate and os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
@@ -104,14 +111,23 @@ def check_deps() -> dict:
     pyserial = find_pyserial()
     issues = []
     if not openocd:
-        issues.append(
-            "openocd not found. Install for SWD reset (board recovery):\n"
-            "    sudo apt install openocd\n"
-            "  or (user-local, no sudo):\n"
-            "    pip install meson ninja\n"
-            "    git clone https://git.code.sf.net/p/openocd/code openocd\n"
-            "    cd openocd && ./bootstrap && ./configure --prefix=$HOME/.local && make -j$(nproc) && make install"
-        )
+        if IS_MAC:
+            issues.append(
+                "openocd not found. Install for SWD reset (board recovery):\n"
+                "    brew install openocd\n"
+                "  or build from source:\n"
+                "    git clone https://git.code.sf.net/p/openocd/code openocd\n"
+                "    cd openocd && ./bootstrap && ./configure --prefix=/usr/local && make -j$(nproc) && make install"
+            )
+        else:
+            issues.append(
+                "openocd not found. Install for SWD reset (board recovery):\n"
+                "    sudo apt install openocd\n"
+                "  or (user-local, no sudo):\n"
+                "    pip install meson ninja\n"
+                "    git clone https://git.code.sf.net/p/openocd/code openocd\n"
+                "    cd openocd && ./bootstrap && ./configure --prefix=$HOME/.local && make -j$(nproc) && make install"
+            )
     if not pyserial:
         issues.append(
             "pyserial not found. Install:\n"
@@ -130,10 +146,85 @@ def check_deps() -> dict:
 # -----------------------------------------------------------------------
 
 def find_ch340_ports() -> list[str]:
-    """Return /dev/ttyUSB* ports that are CH340 USB-serial converters.
+    """Return serial-port paths that are CH340 USB-serial converters.
 
-    Uses udevadm to filter by vendor ID 1a86 (QinHeng CH340/CH341).
+    Linux:  glob /dev/ttyUSB* and filter by udevadm (vendor ID 1a86).
+    macOS:  glob /dev/cu.usbserial-* and verify with ioreg.
     """
+    if IS_MAC:
+        return _find_ch340_ports_mac()
+    return _find_ch340_ports_linux()
+
+
+def _find_ch340_ports_mac() -> list[str]:
+    """macOS: find CH340 ports via /dev/cu.usbserial-* + ioreg verification."""
+    ports = sorted(glob.glob("/dev/cu.usbserial-*"))
+    if not ports:
+        return []
+    # Build a set of serial-number suffixes that belong to CH340 devices
+    ch340_serials = _mac_ioreg_ch340_serials()
+    if not ch340_serials:
+        # ioreg failed or no CH340 found — fall back to returning all
+        # cu.usbserial-* ports as a best-effort guess
+        return ports
+    # Filter: keep ports whose basename suffix matches a known CH340 serial
+    result = []
+    for port in ports:
+        suffix = os.path.basename(port).replace("cu.usbserial-", "")
+        if suffix in ch340_serials:
+            result.append(port)
+    # If nothing matched, fall back to all ports (better than nothing)
+    return result if result else ports
+
+
+def _mac_ioreg_ch340_serials() -> set[str]:
+    """Use ioreg to find USB serial-number suffixes of CH340 devices.
+
+    Returns a set of serial-number strings that appear in /dev/cu.usbserial-<serial>.
+    """
+    try:
+        r = subprocess.run(
+            ["ioreg", "-p", "IOUSB", "-l", "-w", "0"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except Exception:
+        return set()
+    serials: set[str] = set()
+    # Parse ioreg output: look for blocks containing CH340 vendor ID
+    # and extract "USB Serial Number" from the same block.
+    current_block: list[str] = []
+    for line in r.stdout.splitlines():
+        if line.strip().startswith("+-o") or line.strip().startswith("{"):
+            # New device block
+            if current_block:
+                _check_block_for_ch340(current_block, serials)
+            current_block = [line] if line.strip().startswith("+-o") else []
+        else:
+            current_block.append(line)
+    if current_block:
+        _check_block_for_ch340(current_block, serials)
+    return serials
+
+
+def _check_block_for_ch340(block: list[str], serials: set[str]) -> None:
+    """Examine an ioreg device block; if it's a CH340, extract its serial."""
+    block_text = "\n".join(block)
+    # CH340 vendor ID 1a86 (decimal 6790), product 7523 (decimal 29987)
+    is_ch340 = (
+        CH340_VENDOR_ID in block_text
+        or "1a86" in block_text.lower()
+        or "CH340" in block_text
+        or "CH341" in block_text
+    )
+    if not is_ch340:
+        return
+    m = re.search(r'"USB Serial Number"\s*=\s*"([^"]+)"', block_text)
+    if m:
+        serials.add(m.group(1))
+
+
+def _find_ch340_ports_linux() -> list[str]:
+    """Linux: find CH340 ports via /dev/ttyUSB* + udevadm."""
     ports = []
     for dev in sorted(glob.glob("/dev/ttyUSB*")):
         try:
@@ -153,12 +244,73 @@ def find_ch340_ports() -> list[str]:
 # -----------------------------------------------------------------------
 
 def find_swd_probes() -> dict[str, dict]:
-    """Find CMSIS-DAP SWD probes by scanning USB sysfs.
+    """Find CMSIS-DAP SWD probes.
+
+    Linux:  scan USB sysfs (/sys/bus/usb/devices/*/serial).
+    macOS:  use ioreg -p IOUSB -l -w 0 and parse "USB Serial Number".
 
     Returns: {probe_serial: {"role": "TX"|"RX"|"?", "syspath": "...",
-                            "product": "...", "vid": "..."}}
+                            "product": "...", "vid": "...", "pid": ...}}
     Only returns probes with serials matching our known TX/RX boards.
     """
+    if IS_MAC:
+        return _find_swd_probes_mac()
+    return _find_swd_probes_linux()
+
+
+def _find_swd_probes_mac() -> dict[str, dict]:
+    """macOS: find SWD probes via ioreg."""
+    found: dict[str, dict] = {}
+    try:
+        r = subprocess.run(
+            ["ioreg", "-p", "IOUSB", "-l", "-w", "0"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except Exception:
+        return found
+
+    # Parse ioreg output into device blocks and extract serial numbers
+    current_block: list[str] = []
+    for line in r.stdout.splitlines():
+        if line.strip().startswith("+-o"):
+            if current_block:
+                _check_block_for_probe(current_block, found)
+            current_block = [line]
+        else:
+            current_block.append(line)
+    if current_block:
+        _check_block_for_probe(current_block, found)
+    return found
+
+
+def _check_block_for_probe(block: list[str], found: dict[str, dict]) -> None:
+    """Examine an ioreg device block for a known SWD probe serial."""
+    block_text = "\n".join(block)
+    m = re.search(r'"USB Serial Number"\s*=\s*"([^"]+)"', block_text)
+    if not m:
+        return
+    serial = m.group(1)
+    if serial not in PROBE_TO_ROLE:
+        return
+    # Extract product name if available
+    prod_match = re.search(r'"USB Product Name"\s*=\s*"([^"]+)"', block_text)
+    prod = prod_match.group(1) if prod_match else "?"
+    # Extract vendor/product IDs if available (ioreg shows decimal)
+    vid_match = re.search(r'"idVendor"\s*=\s*(\d+)', block_text)
+    pid_match = re.search(r'"idProduct"\s*=\s*(\d+)', block_text)
+    vid = hex(int(vid_match.group(1))) if vid_match else "?"
+    pid = hex(int(pid_match.group(1))) if pid_match else "?"
+    found[serial] = {
+        "role": PROBE_TO_ROLE[serial],
+        "syspath": "",  # no syspath on Mac
+        "product": prod,
+        "vid": vid,
+        "pid": pid,
+    }
+
+
+def _find_swd_probes_linux() -> dict[str, dict]:
+    """Linux: find SWD probes by scanning USB sysfs."""
     found: dict[str, dict] = {}
     for dev_dir in sorted(glob.glob("/sys/bus/usb/devices/*")):
         serial_path = os.path.join(dev_dir, "serial")
