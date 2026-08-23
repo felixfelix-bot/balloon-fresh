@@ -210,13 +210,18 @@ def build_matrix_cells(args, prior_rows):
 
 
 def parse_t0(s):
+    # Accept raw epoch integer (timezone-safe for distributed operation)
+    try:
+        return int(s)
+    except (ValueError, TypeError):
+        pass
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%dT%H:%M:%S",
                 "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M"):
         try:
             return datetime.datetime.strptime(s, fmt).timestamp()
         except ValueError:
             continue
-    raise ValueError("bad --t0 {!r}; want 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD HH:MM' local time".format(s))
+    raise ValueError("bad --t0 {!r}; want epoch int or 'YYYY-MM-DD HH:MM:SS'".format(s))
 
 
 def build_stop_schedule(cells, t0_epoch, t0_margin_s, guard_s, settle_s=5.0):
