@@ -1152,4 +1152,52 @@ sudo usermod -aG dialout "$USER" && newgrp dialout
 | `tools/merge_csvs.py` | TX + RX log merger + PER report |
 | `tools/gps_stitch.py` | GPS track stitching onto RX log |
 | `configs/outdoor-10.json` | Outdoor preset (5 configs, 10 pkts each) |
+| `configs/envelope-4cfg-max.json` | 4-config envelope — max payload per modulation |
 | `configs/indoor-baseline.json` | Indoor preset (2 configs, 1000 pkts each) |
+| `tools/cvm_board_server.py` | CVM (Nostr MCP) board server — remote control |
+| `tools/test_cvm_config_provider.py` | Tests for set_config MCP tool |
+
+---
+
+## CVM Config Provider Mode
+
+The CVM board server (`tools/cvm_board_server.py`) exposes board tools over
+Nostr relays using gift-wrapped JSON-RPC (NIP-44/NIP-59). This enables a remote
+coordinator (Hermes LLM or script) to push configs to TX/RX boards over the
+internet instead of using static `--configs` files.
+
+### set_config MCP Tool
+
+The `set_config` tool accepts a config preset and pushes MOD/FREQ/PA/ROLE
+commands to the board. Two modes:
+
+1. **config_name** — server looks up `configs/<name>.json` on its filesystem:
+   ```json
+   {"config_name": "envelope-4cfg-max"}
+   ```
+
+2. **config_json** — coordinator sends the full config preset inline:
+   ```json
+   {"config_json": "{\"name\":\"...\",\"configs\":[...]}"}
+   ```
+
+The tool sends `MOD LORA <sf> <bw>` or `MOD FLRC <br> <pa>`, then `PA <dbm>`
+(LoRa only), `FREQ <hz>`, and `ROLE <TX|RX>` for each config entry, returning
+per-entry responses (label, commands sent, board replies).
+
+### Usage
+
+```bash
+# Start CVM server on TX machine:
+CVM_SERVER_HEX=<hex_secret> python3 tools/cvm_board_server.py --role tx
+
+# Start CVM server on RX machine:
+CVM_SERVER_HEX=<hex_secret> python3 tools/cvm_board_server.py --role rx
+
+# Remote coordinator pushes config via Nostr (cvm_campaign.py or direct call):
+#   call("set_config", {"config_name": "envelope-4cfg-max"})
+```
+
+CVM is an optional layer — `make tx` / `make rx` work without it using
+fixed-schedule mode. CVM enhances with real-time remote config changes when
+internet is available (e.g. lab WiFi or phone hotspot in the field).
