@@ -1302,6 +1302,10 @@ def run_tx_mode(args):
     # SWD reset if available (non-fatal if openocd missing)
     def swd_reset_maybe(label="TX"):
         if not probe_serial:
+            print("  [SWD] WARNING: No SWD probe detected — board will NOT be reset.")
+            print("  [SWD] WARNING: Modulation type change requires chip reset.")
+            print("  [SWD] WARNING: LoRa configs will likely FAIL (0 packets received).")
+            print("  [SWD] WARNING: Connect a CMSIS-DAP probe (Pico) to fix this.")
             return
         openocd_path = None
         for cand in ("/usr/bin/openocd", os.path.expanduser("~/.local/bin/openocd")):
@@ -1315,6 +1319,8 @@ def run_tx_mode(args):
             except Exception:
                 pass
         if not openocd_path:
+            print("  [SWD] WARNING: openocd not found — board will NOT be reset.")
+            print("  [SWD] WARNING: Install openocd to enable SWD reset between configs.")
             return
         fw_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         try:
@@ -1537,6 +1543,10 @@ def run_rx_mode(args):
     # SWD reset if available (non-fatal if openocd missing)
     def swd_reset_maybe(label="RX"):
         if not probe_serial:
+            print("  [SWD] WARNING: No SWD probe detected — board will NOT be reset.")
+            print("  [SWD] WARNING: Modulation type change requires chip reset.")
+            print("  [SWD] WARNING: LoRa configs will likely FAIL (0 packets received).")
+            print("  [SWD] WARNING: Connect a CMSIS-DAP probe (Pico) to fix this.")
             return
         openocd_path = None
         for cand in ("/usr/bin/openocd", os.path.expanduser("~/.local/bin/openocd")):
@@ -1550,6 +1560,8 @@ def run_rx_mode(args):
             except Exception:
                 pass
         if not openocd_path:
+            print("  [SWD] WARNING: openocd not found — board will NOT be reset.")
+            print("  [SWD] WARNING: Install openocd to enable SWD reset between configs.")
             return
         fw_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         try:
