@@ -228,8 +228,41 @@ def ensure_alive(ser, probe, label):
 LEN_CAP = {"lora": 255, "flrc": 511}
 
 
-def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
-    """cfg: dict with keys: mod, sf|br, bw, pa, freq, plen, gap, label"""
+def arm_and_stream(tx, rx, cfg, npkts, toa=None, wait_extra=8):
+    """Reusable arm+stream burst phase — shared by run_config and campaign.
+
+    Sends START, waits for burst completion, drains TX+RX lines.
+    Returns dict: start_reply, tx_lines, rx_lines, toa, wait_s.
+
+    If toa is None, computes it from cfg (mod/sf/br/bw/plen).
+    """
+    mod = cfg["mod"]
+    if toa is None:
+        if mod == "lora":
+            toa = lora_airtime_s(cfg["sf"], cfg["bw"], cfg["plen"])
+        else:
+            toa = flrc_airtime_s(cfg["br"], cfg["plen"])
+    wait_s = npkts * (toa + cfg["gap"] / 1e6) + wait_extra
+    rx.reset_input_buffer()
+    tx.write(f"START N={npkts} LEN={cfg['plen']} GAP={cfg['gap']}\r\n".encode())
+    start_reply = readline(tx, 3.0)
+    tx_lines = drain_lines(tx, wait_s)
+    rx_lines = drain_lines(rx, 5)
+    return {
+        "start_reply": start_reply,
+        "tx_lines": tx_lines,
+        "rx_lines": rx_lines,
+        "toa": toa,
+        "wait_s": wait_s,
+    }
+
+
+def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port, npkts=NPKTS):
+    """cfg: dict with keys: mod, sf|br, bw, pa, freq, plen, gap, label
+
+    npkts: packets per burst (default NPKTS=50; adaptive campaign passes
+    SPRT n_cap for early-stop capable bursts).
+    """
     mod = cfg["mod"]
     if cfg["plen"] > LEN_CAP.get(mod, 255):
         return {
@@ -300,19 +333,12 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port):
     if not r or not r.startswith("OK ARMED"):
         raise RuntimeError(f"TX ARM: {r!r}")
 
-    # Burst
-    rx.reset_input_buffer()
-    tx.write(f"START N={NPKTS} LEN={cfg['plen']} GAP={cfg['gap']}\r\n".encode())
-    start_reply = readline(tx, 3.0)
-
-    if mod == "lora":
-        toa = lora_airtime_s(cfg["sf"], cfg["bw"], cfg["plen"])
-    else:
-        toa = flrc_airtime_s(cfg["br"], cfg["plen"])
-    wait_s = NPKTS * (toa + cfg["gap"] / 1e6) + 8
-
-    tx_lines = drain_lines(tx, wait_s)
-    rx_lines = drain_lines(rx, 5)
+    # Burst — arm_and_stream lets campaign controller reuse this phase
+    burst = arm_and_stream(tx, rx, cfg, npkts, toa=None)
+    tx_lines = burst["tx_lines"]
+    rx_lines = burst["rx_lines"]
+    start_reply = burst["start_reply"]
+    toa = burst["toa"]
     t_cfg_end = time.monotonic()
     cfg_t_end_iso = datetime.now().isoformat()
     tx_done = any("TX DONE" in l for l in tx_lines)
