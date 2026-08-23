@@ -794,9 +794,13 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
     t = t0_epoch + t0_margin
     prev = None
     for c in cfgs:
-        starts.append(t)
+        # Add SWD reset extra time BEFORE this config's start (the reset
+        # happens when transitioning FROM prev TO this config, so the
+        # extra gap must precede this config, not follow it).
         extra = swd_reset_s if (prev is not None and _mod_params_changed(prev, c)) else 0
-        t += c["expected_s"] + settle + guard + rx_lead + extra
+        t += extra
+        starts.append(t)
+        t += c["expected_s"] + settle + guard + rx_lead
         prev = c
     return starts
 
@@ -1104,8 +1108,11 @@ def run_tx_mode(args):
             sent_ok = 0
             error = ""
             while time.time() < deadline:
-                s = parse_stat(board.stat())
-                sent_ok = s.get("sent_ok", 0)
+                try:
+                    s = parse_stat(board.stat())
+                    sent_ok = s.get("sent_ok", 0)
+                except Exception:
+                    sent_ok = sent_ok  # keep last known value
                 if sent_ok >= cfg["n_pkts"]:
                     break
                 time.sleep(2.0)
@@ -1334,8 +1341,11 @@ def run_rx_mode(args):
                     pcrc16=p["pcrc16"] or 0,
                 )
 
-            # Read STAT for summary
-            rx_stat = parse_stat(board.stat())
+            # Read STAT for summary (non-fatal on error)
+            try:
+                rx_stat = parse_stat(board.stat())
+            except Exception:
+                rx_stat = {}
             print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
                 idx + 1, len(cfgs), cfg["label"],
                 len(pkts), cfg["n_pkts"],
