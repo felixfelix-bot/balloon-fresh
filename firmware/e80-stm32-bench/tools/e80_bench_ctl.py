@@ -671,7 +671,20 @@ def load_config_preset(preset_or_path):
     import json as _json
 
     if isinstance(preset_or_path, str):
-        with open(preset_or_path) as f:
+        path = preset_or_path
+        if not os.path.isfile(path):
+            # Try preset name lookup in configs/ dirs
+            name = path[:-5] if path.endswith(".json") else path
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            for c in [
+                os.path.join(repo_root, "configs", name + ".json"),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", name + ".json"),
+                name + ".json",
+            ]:
+                if os.path.isfile(c):
+                    path = c
+                    break
+        with open(path) as f:
             preset = _json.load(f)
     elif isinstance(preset_or_path, dict):
         preset = preset_or_path
