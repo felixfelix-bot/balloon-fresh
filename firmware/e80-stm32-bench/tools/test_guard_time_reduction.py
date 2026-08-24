@@ -176,3 +176,39 @@ def test_makefile_documents_reduced_guard_times():
     assert "NTP" in text, (
         "Makefile comment should note these are safe for NTP-synced machines"
     )
+
+
+# ---------------------------------------------------------------------------
+# Test 5: Integration — full 4-config schedule with reduced guard times
+# ---------------------------------------------------------------------------
+
+def test_schedule_timing_4_configs_reduced_guard():
+    """4 configs with reduced guard times should take <130s total.
+
+    Loads the envelope-4cfg-max preset (FLRC-650 511B, FLRC-2600 511B,
+    LoRa-SF7 255B, LoRa-SF12 255B) and builds the full schedule with the
+    reduced guard-time defaults (t0_margin=30, guard=5, settle=1,
+    rx_lead=3, swd_reset_s=2). Asserts the total schedule duration
+    (from t0_margin to the end of the last burst) is under 130s.
+
+    Note: the LoRa-SF12 255B burst dominates (10 pkts x 9.02s airtime
+    = 90.29s), so the full 4-config schedule lands at ~127.6s. The
+    original <90s target was unreachable (operator-approved relaxation
+    to <130s; keep 10 pkts + max payload).
+    """
+    import time
+    from e80_bench_ctl import build_preset_schedule, load_config_preset
+
+    cfgs = load_config_preset("envelope-4cfg-max")
+    assert len(cfgs) == 4, "envelope-4cfg-max should have 4 configs"
+
+    t0 = int(time.time()) + 300  # 5 min from now
+
+    starts = build_preset_schedule(
+        cfgs, t0,
+        t0_margin=30, guard=5, settle=1, rx_lead=3, swd_reset_s=2,
+    )
+
+    # Total schedule = last start + last burst - t0 - t0_margin
+    total = starts[-1] + cfgs[-1]["expected_s"] - t0 - 30
+    assert total < 130, f"4 configs should take <130s, got {total:.0f}s"
