@@ -1189,15 +1189,27 @@ per-entry responses (label, commands sent, board replies).
 ### Usage
 
 ```bash
-# Start CVM server on TX machine:
-CVM_SERVER_HEX=<hex_secret> python3 tools/cvm_board_server.py --role tx
+# Start CVM server on TX machine (optionally load an initial config):
+CVM_SERVER_HEX=<hex_secret> make range-cvm-server ROLE=tx CONFIGS=envelope-4cfg-max
 
 # Start CVM server on RX machine:
-CVM_SERVER_HEX=<hex_secret> python3 tools/cvm_board_server.py --role rx
+CVM_SERVER_HEX=<hex_secret> make range-cvm-server ROLE=rx CONFIGS=envelope-4cfg-max
 
-# Remote coordinator pushes config via Nostr (cvm_campaign.py or direct call):
-#   call("set_config", {"config_name": "envelope-4cfg-max"})
+# Remote coordinator runs the adaptive sweep (config JSON passed inline):
+CVM_CLIENT_HEX=<hex_secret> make range-adaptive TX_NPUB=npub1... RX_NPUB=npub1... CONFIGS=envelope-4cfg-max
 ```
+
+`range-cvm-server` accepts `CONFIGS` (a config preset name or path) and applies
+it as the board's **initial config** at startup via the `set_config` tool, so
+the board boots into a known radio state before the coordinator connects.
+`range-adaptive` reads the same `CONFIGS` and passes the config preset to the
+coordinator **inline as JSON** (`--configs-json`, derived from the `CONFIGS_JSON`
+Makefile variable). This lets the coordinator run on a third machine without
+having the config file present locally.
+
+The Makefile derives `CONFIGS_JSON` from `CONFIGS` by shelling out to python —
+no separate file to keep in sync. If `CONFIGS` is a bare preset name (e.g.
+`envelope-4cfg-max`), it is resolved against `configs/` first.
 
 CVM is an optional layer — `make tx` / `make rx` work without it using
 fixed-schedule mode. CVM enhances with real-time remote config changes when

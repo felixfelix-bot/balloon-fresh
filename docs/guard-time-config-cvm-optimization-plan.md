@@ -639,7 +639,7 @@ tool. This enables real-time config changes by the LLM coordinator.
 "
 ```
 
-### Task 9: Update Makefile CVM targets for new config flow
+### Task 9: Update Makefile CVM targets for new config flow ✅ DONE
 
 **Objective:** Update `range-cvm-server` and `range-adaptive` targets to work with the new `set_config` flow.
 
@@ -647,8 +647,8 @@ tool. This enables real-time config changes by the LLM coordinator.
 - Modify: `firmware/e80-stm32-bench/Makefile:303-365`
 
 **Changes:**
-- `range-cvm-server` should accept `CONFIGS` env var (config file to load initially)
-- `range-adaptive` should pass config JSON to coordinator instead of config name
+- `range-cvm-server` accepts `CONFIGS` env var (config file to load initially) and passes `--configs` to `cvm_board_server.py`, which applies it via `set_config` at startup
+- `range-adaptive` passes config JSON to coordinator via `--configs-json` (from the Makefile-derived `CONFIGS_JSON` variable), so the coordinator need not have the config file locally
 - Document the CVM config provider pattern in Makefile comments
 
 **Step 1: Update Makefile**
@@ -656,7 +656,7 @@ tool. This enables real-time config changes by the LLM coordinator.
 **Step 2: Verify `make range-cvm-test` still works**
 
 Run: `make range-cvm-test`
-Expected: Relay connectivity test passes
+Expected: Relay connectivity test passes (requires nostr_sdk + relay reachability)
 
 **Step 3: Commit**
 
