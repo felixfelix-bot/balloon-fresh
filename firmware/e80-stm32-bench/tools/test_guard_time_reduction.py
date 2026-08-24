@@ -123,3 +123,13 @@ def test_new_defaults_in_parser():
     assert 'dest="rx_lead", type=int, default=3' in source, (
         "rx_lead default should be 3 (not 10)"
     )
+
+    # settle default should be exactly 1
+    assert '"--settle", type=int, default=1' in source, (
+        "settle default should be 1 (not 2)"
+    )
+
+    # swd_reset_s default should be exactly 2
+    assert 'dest="swd_reset_s", type=int, default=2' in source, (
+        "swd_reset_s default should be 2 (not 10)"
+    )
