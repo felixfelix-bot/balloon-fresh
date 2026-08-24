@@ -179,10 +179,19 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
-// ─── Dual output ─────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
-static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
-static void dualPrintln() { Serial.println(); Serial1.println(); }
+// ─── Dual output with error handling ─────────────────────────────────
+static void dualPrint(const char *s) { 
+    if (Serial) Serial.print(s); 
+    if (Serial1) Serial1.print(s); 
+}
+static void dualPrintln(const char *s) { 
+    if (Serial) Serial.println(s); 
+    if (Serial1) Serial1.println(s); 
+}
+static void dualPrintln() { 
+    if (Serial) Serial.println(); 
+    if (Serial1) Serial1.println(); 
+}
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
@@ -190,8 +199,43 @@ static void dualPrintf(const char *fmt, ...) {
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-    Serial.println(buf);
-    Serial1.println(buf);
+    if (Serial) Serial.println(buf);
+    if (Serial1) Serial1.println(buf);
+}
+
+// Safe serial check and recovery
+static bool checkSerialHealth() {
+    static unsigned long lastCheck = 0;
+    static bool serial1Ok = true;
+    static bool serialOk = true;
+    
+    unsigned long now = millis();
+    if (now - lastCheck > 1000) { // Check every second
+        lastCheck = now;
+        
+        // Check Serial1 (UART bridge)
+        if (Serial1) {
+            serial1Ok = true;
+        } else {
+            if (serial1Ok) {
+                dualPrintln("ERROR: Serial1 lost!");
+                serial1Ok = false;
+            }
+        }
+        
+        // Check Serial (USB CDC)
+        if (Serial) {
+            // Try to detect if USB died by writing a test string
+            Serial.print("HB ");
+            serialOk = true;
+        } else {
+            if (serialOk) {
+                dualPrintln("ERROR: USB Serial lost!");
+                serialOk = false;
+            }
+        }
+    }
+    return serial1Ok; // At minimum, ensure UART bridge works
 }
 
 // ─── Raw SPI Init (TheClams + RadioLib fixes) ────────────────────────
@@ -208,7 +252,7 @@ static bool rawInitRadio() {
     delay(1);
 
     // 2. SET_STANDBY (STDBY_XOSC = 0x01) — start crystal oscillator
-    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
+    { uint8_t cmd[] = { 0x01, 0x28, 0x00 }; rfWriteCmd(cmd, 3); } // STDBY_RC (not XOSC) per RadioLib
     delay(5);
 
     // 3. SET_PACKET_TYPE FLRC (0x05)
@@ -349,6 +393,11 @@ static void resetStats() {
 // ─── Receive session ─────────────────────────────────────────────────
 static void runReceive() {
     if (!radioReady) { dualPrintln("ERR: radio not initialized"); return; }
+    
+    // Check serial health before starting
+    if (!checkSerialHealth()) {
+        dualPrintln("WARN: Serial health check failed, continuing with Serial1 only");
+    }
 
     // Re-arm RX in case we were in another mode
     rfClearIrq();
@@ -607,7 +656,14 @@ void loop() {
         static unsigned long lastHB = 0;
         if (millis() - lastHB > 2000) {
             lastHB = millis();
-            Serial1.println("RX DEAD - retrying init");
+            // Dual output with error checking
+            if (Serial1) Serial1.println("HB alive");
+            if (Serial) Serial.println("HB alive");
+            
+            // Check serial health periodically
+            checkSerialHealth();
+            
+            if (Serial1) Serial1.println("RX DEAD - retrying init");
             Serial1.flush();
         }
         radioReady = rawInitRadio();

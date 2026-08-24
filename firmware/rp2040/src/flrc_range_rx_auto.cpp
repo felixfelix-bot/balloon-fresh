@@ -1,4 +1,25 @@
 /*
+<<<<<<< HEAD
+ * DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
+ * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+ * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
+ *
+ * flrc_range_rx_auto.cpp — FLRC RX with RSSI for outdoor range testing
+ *
+ * Auto-listens on boot, continuous RX (no timeout), outputs per-packet RSSI.
+ * Loops forever. Format optimized for Python logging script.
+ *
+ * Based on flrc_raw_rx.cpp (verified working 2026-07-22).
+ *
+ * Output format per packet:
+ *   PKT,n,seq,rssi_dbm
+ *   PKT,n,seq,rssi_dbm
+ *   ...
+ *   (no per-packet hex dump in auto mode — too slow for logging)
+ *
+ * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
+ *       UART_TX=GP12 UART_RX=GP13  LED=GP25  LED_ALT=GP16
+=======
  * flrc_range_rx_auto.cpp — Autonomous RX for outdoor range testing
  *
  * Based on flrc_range_rx.cpp (proven 0% loss at bench).
@@ -19,6 +40,7 @@
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       UART_TX=GP12 UART_RX=GP13
  *       LED=GP25 LED_ALT=GP16
+>>>>>>> range-tests
  */
 
 #include <Arduino.h>
@@ -38,6 +60,16 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
+<<<<<<< HEAD
+// ─── FLRC Config ─────────────────────────────────────────────────────
+#define FLRC_FREQ_MHZ   2440.0f
+#define FLRC_BR         2600
+#define FLRC_PKT_SIZE   255
+#define SPI_FREQ_HZ     16000000UL   // 16MHz RX (20MHz TX is fine, RX uses 16)
+#define XTAL_MHZ        52.0f
+
+#define PRINT_EVERY     1   // print EVERY packet in auto mode
+=======
 #define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
 
@@ -52,6 +84,7 @@
 #define RX_LISTEN_MS    30000
 #define RX_SILENCE_MS   3000
 #define PRINT_EVERY     100
+>>>>>>> range-tests
 
 // Sync word — MUST match TX
 #define SYNC_WORD_0   0x12
@@ -63,8 +96,11 @@
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
+<<<<<<< HEAD
+=======
 static volatile bool radioReady = false;
 
+>>>>>>> range-tests
 // ─── SPI helpers ─────────────────────────────────────────────────────
 static inline void rfWaitBusy() {
     uint32_t timeout = millis() + 50;
@@ -131,24 +167,45 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
+<<<<<<< HEAD
+// ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) ─────────────
+// LR2021 native command — NOT SX1280's 0x0104!
+// Returns 5 bytes: [pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+// RSSI is 9-bit: bits [8:1] from buf[2], bit [0] from buf[4] bit 2
+// Call AFTER RX_DONE, BEFORE clearing IRQ
+=======
 // ─── RSSI readback via GET_FLRC_PACKET_STATUS (0x024B) — 9-bit assembly
 // Matches verified LR2021Raw.h implementation. SX1280's 0x0104 returns garbage.
+>>>>>>> range-tests
 static int8_t rfReadRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
+<<<<<<< HEAD
+    spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS = 0x024B
+=======
     spiRf.transfer(0x02); spiRf.transfer(0x4B); // GET_FLRC_PACKET_STATUS
+>>>>>>> range-tests
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
+<<<<<<< HEAD
+=======
     // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+>>>>>>> range-tests
     uint8_t buf[7];
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
+<<<<<<< HEAD
+    // LR2021 response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
+    // 9-bit RSSI average: (buf[4] << 1) | ((buf[6] & 0x04) >> 2), then / -2 for dBm
+    uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
+    return -(int8_t)(raw / 2);  // Returns dBm (negative)
+=======
 
     // 9-bit RSSI: bits [8:1] from buf[4], bit[0] from buf[6] bit[2]
     uint16_t raw = ((uint16_t)buf[4] << 1) | ((buf[6] & 0x04) >> 2);
@@ -189,6 +246,7 @@ static void rfSetPktSize(uint16_t size) {
         (uint8_t)(size >> 8), (uint8_t)(size & 0xFF)
     };
     rfWriteCmd(cmd, 6);
+>>>>>>> range-tests
 }
 
 // ─── Dual output ─────────────────────────────────────────────────────
@@ -206,7 +264,11 @@ static void dualPrintf(const char *fmt, ...) {
     Serial1.println(buf);
 }
 
+<<<<<<< HEAD
+// ─── Raw SPI Init ────────────────────────────────────────────────────
+=======
 // ─── Full radio init ─────────────────────────────────────────────────
+>>>>>>> range-tests
 static bool rawInitRadio() {
     pinMode(PIN_RST, OUTPUT);
     digitalWrite(PIN_RST, LOW);
@@ -221,13 +283,28 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
+<<<<<<< HEAD
+    uint32_t frf = (uint32_t)((FLRC_FREQ_MHZ * 1e6 * (double)(1ULL << 18)) / (XTAL_MHZ * 1e6));
+    {
+        uint8_t cmd[] = {
+            0x02, 0x00,
+            (uint8_t)(frf >> 16), (uint8_t)(frf >> 8), (uint8_t)(frf & 0xFF)
+        };
+        rfWriteCmd(cmd, 5);
+    }
+=======
     rfSetFreq(RX_FREQ_MHZ);
+>>>>>>> range-tests
     delay(1);
 
     { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
+<<<<<<< HEAD
+    uint16_t feFreq = (uint16_t)((FLRC_FREQ_MHZ / 4.0f) + 0.5f) | 0x8000;
+=======
     uint16_t feFreq = (uint16_t)((RX_FREQ_MHZ / 4.0f) + 0.5f) | 0x8000;
+>>>>>>> range-tests
     {
         uint8_t cmd[] = {
             0x01, 0x23,
@@ -240,6 +317,10 @@ static bool rawInitRadio() {
 
     { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
+<<<<<<< HEAD
+    { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); }
+    delay(1);
+=======
 
     rfSetBitrate(RX_BITRATE_KBPS);
     delay(5);
@@ -247,6 +328,7 @@ static bool rawInitRadio() {
     // Recalibrate after bitrate change (bandwidth changes with bitrate)
     { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
+>>>>>>> range-tests
 
     {
         uint8_t cmd[] = { 0x02, 0x4C, 0x01, SYNC_WORD_0, SYNC_WORD_1, SYNC_WORD_2, SYNC_WORD_3 };
@@ -254,6 +336,26 @@ static bool rawInitRadio() {
     }
     delay(1);
 
+<<<<<<< HEAD
+    {
+        uint8_t cmd[] = {
+            0x02, 0x49,
+            0x0C,
+            0x4C,
+            0x00, (uint8_t)FLRC_PKT_SIZE
+        };
+        rfWriteCmd(cmd, 6);
+    }
+    delay(1);
+
+    { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
+    delay(1);
+    { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }  // Fs fallback
+    delay(1);
+    { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); }
+    delay(1);
+    { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+=======
     rfSetPktSize(RX_PKT_SIZE);
     delay(1);
 
@@ -262,17 +364,114 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); }
     delay(1);
     { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x04, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+>>>>>>> range-tests
     delay(1);
 
     rfClearIrq();
     delay(1);
+<<<<<<< HEAD
+=======
     rfSetRx();
     delay(2);
+>>>>>>> range-tests
 
     uint8_t st = rfReadStatus();
     uint32_t irq = rfReadIrqStatus();
     dualPrintf("INIT Status=0x%02X IRQ=0x%08lX", st, (unsigned long)irq);
 
+<<<<<<< HEAD
+    if ((st >> 4) == 0x04 || (st >> 4) == 0x07 || (irq & 0x00020000)) {
+        dualPrintln("RADIO_INIT_OK");
+        return true;
+    }
+    dualPrintf("RADIO_INIT_FAIL (St=0x%02X)", st);
+    return false;
+}
+
+// ─── State ───────────────────────────────────────────────────────────
+static volatile bool radioReady = false;
+static uint32_t totalReceived = 0;
+static uint32_t totalUnique = 0;
+static uint32_t lastSeq = 0xFFFFFFFF;
+static int16_t rssiSum = 0;
+static int16_t rssiMin = 0;
+static int16_t rssiMax = -128;
+
+// ─── Continuous RX with RSSI logging ─────────────────────────────────
+static void runReceiveContinuous() {
+    if (!radioReady) { dualPrintln("ERR: radio not initialized"); return; }
+
+    uint8_t buf[FLRC_PKT_SIZE];
+
+    dualPrintln("RX_LISTEN_START");
+    rfSetRx();
+
+    uint32_t lastReportMs = millis();
+
+    while (true) {
+        // Poll IRQ
+        uint32_t irq = rfReadIrqStatus();
+        if (!(irq & 0x00040000)) {
+            // No packet — check for serial commands
+            static char cmdBuf[64];
+            static size_t cmdLen = 0;
+            while (Serial1.available()) {
+                char c = (char)Serial1.read();
+                if (c == '\n' || c == '\r') {
+                    if (cmdLen > 0) {
+                        cmdBuf[cmdLen] = '\0';
+                        if (strcmp(cmdBuf, "STATS") == 0) {
+                            int16_t rssiAvg = (totalReceived > 0) ? (rssiSum / (int16_t)totalReceived) : 0;
+                            dualPrintf("STATS rx=%lu unique=%lu rssi_avg=%d rssi_min=%d rssi_max=%d",
+                                       (unsigned long)totalReceived, (unsigned long)totalUnique,
+                                       rssiAvg, rssiMin, rssiMax);
+                        }
+                        cmdLen = 0;
+                    }
+                } else if (cmdLen < sizeof(cmdBuf) - 1) {
+                    cmdBuf[cmdLen++] = c;
+                }
+            }
+            continue;
+        }
+
+        // RX_DONE — read RSSI BEFORE clearing IRQ
+        int8_t rssi = rfReadRssi();
+
+        // Read packet
+        rfReadFifo(buf, FLRC_PKT_SIZE);
+
+        // Clear + re-arm
+        { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }  // CLEAR_RX_FIFO
+        rfWaitBusy();
+        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
+        rfClearIrq();
+        rfSetRx();
+
+        // Extract seq (bytes 0-3) and burst_id (bytes 4-7)
+        uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
+                       ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
+        uint32_t burstId = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16) |
+                           ((uint32_t)buf[6] << 8)  | (uint32_t)buf[7];
+
+        totalReceived++;
+        if (seq != lastSeq) totalUnique++;
+        lastSeq = seq;
+
+        rssiSum += rssi;
+        if (rssi < rssiMin) rssiMin = rssi;
+        if (rssi > rssiMax) rssiMax = rssi;
+
+        // Output EVERY packet: PKT,n,seq,rssi
+        dualPrintf("PKT,%lu,%lu,%d",
+                   (unsigned long)totalReceived, (unsigned long)seq, (int)rssi);
+
+        // Periodic summary every 100 packets
+        if (totalReceived % 100 == 0) {
+            digitalWrite(PIN_LED, HIGH); delayMicroseconds(50); digitalWrite(PIN_LED, LOW);
+        }
+    }
+=======
     if ((st >> 4) == 0x05) {
         dualPrintln("RADIO_INIT_OK (RX mode)");
         return true;
@@ -429,13 +628,19 @@ static void runReceive() {
                (unsigned long)stats.startMs);
 
     windowNum++;
+>>>>>>> range-tests
 }
 
 // ─── Arduino entry points ────────────────────────────────────────────
 void setup() {
     Serial.begin(115200);
+<<<<<<< HEAD
+    delay(2000);
+    Serial.println("BOOT RX AUTO");
+=======
     delay(2000);  // give TinyUSB time to enumerate
     Serial.println("BOOT RX RANGE AUTO");
+>>>>>>> range-tests
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -443,6 +648,16 @@ void setup() {
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
+<<<<<<< HEAD
+    for (int i = 0; i < 3; i++) {
+        digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(120);
+        digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
+    }
+
+    dualPrintln();
+    dualPrintln("=== RP2040 FLRC RANGE RX AUTO ===");
+    dualPrintln("Continuous RX with RSSI logging");
+=======
     for (int i = 0; i < 4; i++) {
         digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(250);
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(250);
@@ -452,6 +667,7 @@ void setup() {
     dualPrintln("=== RP2040 FLRC RANGE RX (AUTONOMOUS) ===");
     dualPrintf("Config: freq=%.1f br=%d pktSize=%d listen=%dms",
                RX_FREQ_MHZ, RX_BITRATE_KBPS, RX_PKT_SIZE, RX_LISTEN_MS);
+>>>>>>> range-tests
 
     spiRf.begin();
     pinMode(PIN_CS, OUTPUT);
@@ -463,6 +679,16 @@ void setup() {
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
+<<<<<<< HEAD
+        dualPrintln("Auto-start RX in 2s...");
+        delay(2000);
+    } else {
+        digitalWrite(PIN_LED_ALT, LOW);
+        dualPrintln("INIT FAILED");
+        while (true) {
+            digitalWrite(PIN_LED, HIGH); delay(500);
+            digitalWrite(PIN_LED, LOW); delay(500);
+=======
         dualPrintln("AUTO RX LISTENING");
     } else {
         dualPrintln("INIT FAILED — retrying...");
@@ -473,11 +699,17 @@ void setup() {
             dualPrintln("AUTO RX LISTENING (2nd init)");
         } else {
             dualPrintln("INIT FAILED TWICE — stuck");
+>>>>>>> range-tests
         }
     }
 }
 
 void loop() {
+<<<<<<< HEAD
+    // Continuous RX — never returns
+    runReceiveContinuous();
+}
+=======
     if (radioReady) {
         runReceive();
         delay(500);  // brief pause between windows
@@ -488,3 +720,4 @@ void loop() {
         digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(500);
     }
 }
+>>>>>>> range-tests

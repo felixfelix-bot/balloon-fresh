@@ -1,0 +1,229 @@
+0 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+LORA_CFG path=1 bw=0x0F sf=12
+TIME_SYNCED utc=1784976623 offset=1784975132
+0 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+LORA_CFG path=1 bw=0x0F sf=12
+PHASE_RESULT 8 HF-LoRa-SF12-32 pktSize=32 rx=0 unique=0 lost=2 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000PHASE_GUARD 500
+PHASE_START 9 HF-LoRa-SF12-64 pktSize=64
+TIME_SYNCED utc=1784976625 offset=1784975132
+PHASE_RESULT 9 HF-LoRa-SF12-64 pktSize=64 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000PHASE_GUARD 500
+PHASE_START 10 HF-LoRa-SF12-128 pktSize=128
+TIME_SYNCED utc=1784976629 offset=1784975132
+PHASE_RESULT 10 HF-LoRa-SF12-128 pktSize=128 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0PHASE_GUARD 500
+PHASE_START 11 HF-LoRa-SF12-255 pktSize=255
+TIME_SYNCED utc=1784976635 offset=1784975133
+TIME_SYNCED utc=1784976635 offset=1784975133
+TIME_SYNCED utc=1784976635 offset=1784975132
+TIME_SYNCED utc=1784976637 offset=1784975132
+TIME_SYNCED utc=1784976639 offset=1784975132
+TIME_SYNCED utc=1784976641 offset=1784975132
+PHASE_RESULT 11 HF-LoRa-SF12-255 pktSize=255 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 12 HF-FLRC-2600-32 pktSize=32
+SYNC_NOT_FOUND first4=A146B1FC
+SYNC_NOT_FOUND first4=4CEFCB21
+SYNC_NOT_FOUND first4=BBB45665
+SYNC_NOT_FOUND first4=4CD607CF
+SYNC_NOT_FOUND first4=573C03D2
+TIME_SYNCED utc=1784976643 offset=1784975132
+SYNC_NOT_FOUND first4=B388A258
+PHASE_RESULT 12 HF-FLRC-2600-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=6 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 13 HF-FLRC-2600-64 pktSize=64
+SYNC_NOT_FOUND first4=E8240854
+SYNC_NOT_FOUND first4=7324DBBF
+SYNC_NOT_FOUND first4=8CEB3B82
+TIME_SYNCED utc=1784976645 offset=1784975133
+SYNC_NOT_FOUND first4=D728558F
+SYNC_NOT_FOUND first4=17C6C5E2
+PHASE_RESULT 13 HF-FLRC-2600-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=5 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 14 HF-FLRC-2600-128 pktSize=128
+SYNC_NOT_FOUND first4=421573EF
+TIME_SYNCED utc=1784976646 offset=1784975133
+SYNC_NOT_FOUND first4=8CF561A3
+SYNC_NOT_FOUND first4=E92E514E
+SYNC_NOT_FOUND first4=CC8022D3
+SYNC_NOT_FOUND first4=41CC27A4
+PHASE_RESULT 14 HF-FLRC-2600-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=5 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 15 HF-FLRC-2600-255 pktSize=255
+TIME_SYNCED utc=1784976648 offset=1784975133
+SYNC_NOT_FOUND first4=E943D61B
+SYNC_NOT_FOUND first4=62DDEA0D
+SYNC_NOT_FOUND first4=184732DA
+SYNC_NOT_FOUND first4=F7AB57A1
+PHASE_RESULT 15 HF-FLRC-2600-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=4 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 16 HF-FLRC-1300-32 pktSize=32
+SYNC_NOT_FOUND first4=3D430609
+TIME_SYNCED utc=1784976650 offset=1784975133
+SYNC_NOT_FOUND first4=252A5E91
+SYNC_NOT_FOUND first4=E969BC5D
+PHASE_RESULT 16 HF-FLRC-1300-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 17 HF-FLRC-1300-64 pktSize=64
+TIME_SYNCED utc=1784976652 offset=1784975133
+SYNC_NOT_FOUND first4=02B34CD1
+SYNC_NOT_FOUND first4=267E4079
+SYNC_NOT_FOUND first4=8171C233
+PHASE_RESULT 17 HF-FLRC-1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 18 HF-FLRC-1300-128 pktSize=128
+SYNC_NOT_FOUND first4=A1908F2F
+TIME_SYNCED utc=1784976654 offset=1784975133
+SYNC_NOT_FOUND first4=2DD48BE4
+SYNC_NOT_FOUND first4=B5388180
+SYNC_NOT_FOUND first4=36B8340B
+TIME_SYNCED utc=1784976655 offset=1784975133
+SYNC_NOT_FOUND first4=7034977D
+PHASE_RESULT 18 HF-FLRC-1300-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=5 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 19 HF-FLRC-1300-255 pktSize=255
+TIME_SYNCED utc=1784976656 offset=1784975133
+SYNC_NOT_FOUND first4=8CA97CAF
+TIME_SYNCED utc=1784976656 offset=1784975133
+SYNC_NOT_FOUND first4=A69D1EA3
+PHASE_RESULT 19 HF-FLRC-1300-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=2 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 20 HF-FLRC-650-32 pktSize=32
+SYNC_NOT_FOUND first4=E102C6D5
+SYNC_NOT_FOUND first4=A3BD6DE8
+SYNC_NOT_FOUND first4=9264D72A
+TIME_SYNCED utc=1784976658 offset=1784975133
+SYNC_NOT_FOUND first4=65272CBB
+SYNC_NOT_FOUND first4=B0A0122E
+SYNC_NOT_FOUND first4=433F612C
+SYNC_NOT_FOUND first4=59A88578
+SYNC_NOT_FOUND first4=AA75F553
+SYNC_NOT_FOUND first4=5EE2E2CF
+SYNC_NOT_FOUND first4=2EFF16EB
+SYNC_NOT_FOUND first4=74530ED2
+SYNC_NOT_FOUND first4=7F5543AA
+SYNC_NOT_FOUND first4=77230B90
+SYNC_NOT_FOUND first4=732FF726
+SYNC_NOT_FOUND first4=243A3684
+SYNC_NOT_FOUND first4=CB81FF08
+PHASE_RESULT 20 HF-FLRC-650-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=16 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 21 HF-FLRC-650-64 pktSize=64
+SYNC_NOT_FOUND first4=D9F0011E
+TIME_SYNCED utc=1784976659 offset=1784975132
+PHASE_RESULT 21 HF-FLRC-650-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=1 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 20 HF-FLRC-650-32 pktSize=32
+SYNC_NOT_FOUND first4=420EC26B
+PHASE_RESULT 20 HF-FLRC-650-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=1 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 21 HF-FLRC-650-64 pktSize=64
+SYNC_NOT_FOUND first4=5E9EBD86
+SYNC_NOT_FOUND first4=4C02A033
+SYNC_NOT_FOUND first4=D29DB8DA
+SYNC_NOT_FOUND first4=8F9952F1
+SYNC_NOT_FOUND first4=14985C7D
+SYNC_NOT_FOUND first4=398B07DB
+SYNC_NOT_FOUND first4=67897EFB
+SYNC_NOT_FOUND first4=7203E14D
+SYNC_NOT_FOUND first4=A5F30DDC
+SYNC_NOT_FOUND first4=E071A6EE
+SYNC_NOT_FOUND first4=F7A89128
+TIME_SYNCED utc=1784976662 offset=1784975133
+PHASE_RESULT 21 HF-FLRC-650-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=11 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 22 HF-FLRC-650-128 pktSize=128
+SYNC_NOT_FOUND first4=9D92EA96
+SYNC_NOT_FOUND first4=0402B15D
+SYNC_NOT_FOUND first4=A4B59B6E
+SYNC_NOT_FOUND first4=C4F55051
+SYNC_NOT_FOUND first4=88DD369C
+SYNC_NOT_FOUND first4=DF91C253
+SYNC_NOT_FOUND first4=3D0D86CB
+SYNC_NOT_FOUND first4=A64E7C12
+SYNC_NOT_FOUND first4=E74FCA50
+SYNC_NOT_FOUND first4=1C6C61F5
+SYNC_NOT_FOUND first4=942DB1EC
+PHASE_RESULT 22 HF-FLRC-650-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=11 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 23 HF-FLRC-650-255 pktSize=255
+SYNC_NOT_FOUND first4=DA0699E2
+SYNC_NOT_FOUND first4=64FC713C
+SYNC_NOT_FOUND first4=E5250D1A
+SYNC_NOT_FOUND first4=98F0BF8F
+TIME_SYNCED utc=1784976664 offset=1784975133
+SYNC_NOT_FOUND first4=55D5BF3F
+SYNC_NOT_FOUND first4=FF560981
+TIME_STATS min=-8000ms max=1000ms avg=-475ms corrections=89
+SYNC_NOT_FOUND first4=1EFBCAEC
+SYNC_NOT_FOUND first4=63AB3BBB
+SYNC_NOT_FOUND first4=973D2338
+SYNC_NOT_FOUND first4=A5737258
+SYNC_NOT_FOUND first4=53516AF5
+SYNC_NOT_FOUND first4=B09474CD
+SYNC_NOT_FOUND first4=903C63D3
+SYNC_NOT_FOUND first4=1DA0E48D
+SYNC_NOT_FOUND first4=74A4163B
+SYNC_NOT_FOUND first4=0A44B0A7
+SYNC_NOT_FOUND first4=3F3997E4
+SYNC_NOT_FOUND first4=7E9AD670
+TIME_SYNCED utc=1784976665 offset=1784975133
+SYNC_NOT_FOUND first4=CE01DFED
+SYNC_NOT_FOUND first4=AB2EF4EE
+TIME_SYNCED utc=1784976665 offset=1784975133
+PHASE_RESULT 23 HF-FLRC-650-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=20 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 24 HF-FLRC-325-32 pktSize=32
+SYNC_NOT_FOUND first4=5A5EB17A
+TIME_SYNCED utc=1784976666 offset=1784975133
+SYNC_NOT_FOUND first4=48D02544
+SYNC_NOT_FOUND first4=8AEBE4B1
+PHASE_RESULT 24 HF-FLRC-325-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 25 HF-FLRC-325-64 pktSize=64
+TIME_SYNCED utc=1784976668 offset=1784975133
+SYNC_NOT_FOUND first4=1F8A5045
+SYNC_NOT_FOUND first4=53F543B4
+SYNC_NOT_FOUND first4=1472C849
+PHASE_RESULT 25 HF-FLRC-325-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 26 HF-FLRC-325-128 pktSize=128
+SYNC_NOT_FOUND first4=24DF2173
+SYNC_NOT_FOUND first4=9A535E53
+SYNC_NOT_FOUND first4=327E6645
+TIME_SYNCED utc=1784976670 offset=1784975133
+SYNC_NOT_FOUND first4=31838067
+SYNC_NOT_FOUND first4=AD15C47F
+SYNC_NOT_FOUND first4=D24631E3
+PHASE_RESULT 26 HF-FLRC-325-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=6 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 27 HF-FLRC-325-255 pktSize=255
+SYNC_NOT_FOUND first4=BDD9BFE4
+TIME_SYNCED utc=1784976672 offset=1784975133
+SYNC_NOT_FOUND first4=1067D662
+SYNC_NOT_FOUND first4=030C0A1A
+PHASE_RESULT 27 HF-FLRC-325-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=7
+PHASE_START 28 LF-LoRa-SF7-32 pktSize=32
+TIME_SYNCED utc=1784976673 offset=1784975132
+PHASE_RESULT 28 LF-LoRa-SF7-32 pktSize=32 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 27 HF-FLRC-325-255 pktSize=255
+PHASE_RESULT 27 HF-FLRC-325-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=7
+PHASE_START 28 LF-LoRa-SF7-32 pktSize=32
+TIME_SYNCED utc=1784976675 offset=1784975133
+PHASE_RESULT 28 LF-LoRa-SF7-32 pktSize=32 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=7
+PHASE_START 29 LF-LoRa-SF7-64 pktSize=64
+TIME_SYNCED utc=1784976675 offset=1784975132
+PHASE_RESULT 29 LF-LoRa-SF7-64 pktSize=64 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=7
+PHASE_START 28 LF-LoRa-SF7-32 pktSize=32
+PHASE_RESULT 28 LF-LoRa-SF7-32 pktSize=32 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=7
+PHASE_START 29 LF-LoRa-SF7-64 pktSize=64
+TIME_SYNCED utc=1784976678 offset=1784975133

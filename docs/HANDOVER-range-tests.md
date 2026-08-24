@@ -8,8 +8,9 @@
 
 You are an AI assistant (Hermes Agent) continuing work on the **balloon-fresh** project. Your track: **FLRC range testing**. You measure how far the radio link reaches at various bitrates, power levels, and payload sizes.
 
-**Repo:** `~/repos/balloon-fresh`
-**Start here:** Read `docs/PLAN-range-tests.md` — it has the complete test matrix and procedure.
+**WORKTREE:** `~/worktrees/balloon-range-tests/` (branch: `range-tests`)
+**All work goes in this worktree. Do NOT touch ~/repos/balloon-fresh/ — that's the main branch, another agent owns it.**
+**Start here:** Read `docs/HANDOVER-range-tests.md` and `docs/PLAN-range-tests.md` inside the worktree.
 
 ---
 

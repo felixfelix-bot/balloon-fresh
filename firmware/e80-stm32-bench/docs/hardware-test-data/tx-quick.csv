@@ -1,0 +1,4 @@
+session,config_idx,label,n_pkts,sent_ok,mod,sf_or_br,bw,pa_dbm,freq_hz,plen,gap_us,t0_offset_s,actual_start_ts,error
+# DISTRIBUTED_TX_MODE session=2608231846 t0=2026-08-23T18:46:39 port=/dev/ttyUSB4 probe=148757200D2D1425
+2608231846,0,FLRC-650 LEN64,10,10,flrc,650,0,10,868000000,64,5000,30.0,2026-08-23T18:47:09,
+2608231846,1,FLRC-650 LEN255,10,10,flrc,650,0,10,868000000,255,5000,47.1,2026-08-23T18:47:26,

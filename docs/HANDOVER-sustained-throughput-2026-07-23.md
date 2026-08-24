@@ -82,7 +82,7 @@ LR2021 supports 4 modulation types. Throughput spans ~4 orders of magnitude:
 
 | Modulation | Config | Air time/pkt | Theoretical throughput | Use case |
 |---|---|---|---|---|
-| FLRC 2600 | BR=0x00, BT1.0 | 0.39 ms | 2600 kbps | High-speed mesh, close range |
+| FLRC 2600 | BR=0x00, BT0.5 | 0.39 ms | 2600 kbps | High-speed mesh, close range |
 | FLRC 1300 | BR=0x02, BT0.5 | 0.78 ms | 1300 kbps | Medium speed, medium range |
 | FLRC 650 | BR=0x04, BT0.5 | 1.56 ms | 650 kbps | Tradeoff speed/range |
 | FLRC 325 | BR=0x06, BT0.5 | 3.12 ms | 325 kbps | Max FLRC range |

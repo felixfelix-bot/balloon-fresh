@@ -1,0 +1,12 @@
+# Flash size: C3 boards have 4MB flash
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Custom partition table with blossom data partition
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# WiFi
+CONFIG_ESP_WIFI_ENABLED=y
+
+# HTTP server: Nostr auth events are ~630 bytes base64url, need larger header
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024

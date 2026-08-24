@@ -1,0 +1,181 @@
+PHASE_START 70 CH-864-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030100 offset=1785026638
+PHASE_RESULT 70 CH-864-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 71 CH-865-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030102 offset=1785026638
+TIME_SYNCED utc=1785030104 offset=1785026638
+PHASE_RESULT 71 CH-865-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 72 CH-866-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030106 offset=1785026638
+TIME_SYNCED utc=1785030107 offset=1785026638
+PHASE_RESULT 72 CH-866-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 73 CH-867-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030108 offset=1785026638
+TIME_SYNCED utc=1785030110 offset=1785026638
+PHASE_RESULT 73 CH-867-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 74 CH-868-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030112 offset=1785026638
+PHASE_RESULT 74 CH-868-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 75 CH-869-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030114 offset=1785026638
+TIME_SYNCED utc=1785030116 offset=1785026638
+PHASE_RESULT 75 CH-869-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 76 CH-870-FLRC1300-64 pktSize=64
+TIME_SYNCED utc=1785030117 offset=1785026638
+TIME_SYNCED utc=1785030118 offset=1785026638
+PHASE_RESULT 76 CH-870-FLRC1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 1000
+LORA_CFG path=1 bw=0x0F sf=7 freq=2440.0
+PHASE_START 0 HF-LoRa-SF7-32 pktSize=32
+TIME_SYNCED utc=1785030120 offset=1785026638
+PHASE_RESULT 0 HF-LoRa-SF7-32 pktSize=32 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=7 freq=2440.0
+PHASE_START 1 HF-LoRa-SF7-64 pktSize=64
+TIME_SYNCED utc=1785030122 offset=1785026638
+TIME_STATS min=-2000ms max=1000ms avg=172ms corrections=0
+PHASE_RESULT 1 HF-LoRa-SF7-64 pktSize=64 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=7 freq=2440.0
+PHASE_START 2 HF-LoRa-SF7-128 pktSize=128
+TIME_SYNCED utc=1785030124 offset=1785026638
+PHASE_RESULT 2 HF-LoRa-SF7-128 pktSize=128 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=7 freq=2440.0
+PHASE_START 3 HF-LoRa-SF7-255 pktSize=255
+TIME_SYNCED utc=1785030126 offset=1785026638
+TIME_SYNCED utc=1785030127 offset=1785026638
+TIME_SYNCED utc=1785030128 offset=1785026638
+PHASE_RESULT 3 HF-LoRa-SF7-255 pktSize=255 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=9 freq=2440.0
+PHASE_START 4 HF-LoRa-SF9-32 pktSize=32
+LORA_CFG path=1 bw=0x0F sf=9 freq=2440.0
+PHASE_START 6 HF-LoRa-SF9-128 pktSize=128
+TIME_SYNCED utc=1785030136 offset=1785026638
+TIME_SYNCED utc=1785030137 offset=1785026638
+TIME_SYNCED utc=1785030138 offset=1785026638
+PHASE_RESULT 6 HF-LoRa-SF9-128 pktSize=128 rx=0 unique=0 lost=13 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=9 freq=2440.0
+PHASE_START 7 HF-LoRa-SF9-255 pktSize=255
+TIME_SYNCED utc=1785030140 offset=1785026638
+TIME_SYNCED utc=1785030142 offset=1785026638
+PHASE_RESULT 7 HF-LoRa-SF9-255 pktSize=255 rx=0 unique=0 lost=6 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 1000
+PHASE_START 8 HF-FLRC-325-32 pktSize=32
+TIME_SYNCED utc=1785030144 offset=1785026638
+TIME_SYNCED utc=1785030146 offset=1785026638
+PHASE_RESULT 8 HF-FLRC-325-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 9 HF-FLRC-325-64 pktSize=64
+TIME_SYNCED utc=1785030147 offset=1785026638
+TIME_SYNCED utc=1785030148 offset=1785026638
+PHASE_RESULT 9 HF-FLRC-325-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 10 HF-FLRC-325-128 pktSize=128
+TIME_SYNCED utc=1785030150 offset=1785026638
+TIME_SYNCED utc=1785030152 offset=1785026638
+PHASE_RESULT 10 HF-FLRC-325-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 11 HF-FLRC-325-255 pktSize=255
+TIME_SYNCED utc=1785030154 offset=1785026638
+PHASE_RESULT 11 HF-FLRC-325-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 12 HF-FLRC-650-32 pktSize=32
+TIME_SYNCED utc=1785030156 offset=1785026638
+TIME_SYNCED utc=1785030157 offset=1785026638
+TIME_SYNCED utc=1785030158 offset=1785026638
+PHASE_RESULT 12 HF-FLRC-650-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 13 HF-FLRC-650-64 pktSize=64
+TIME_SYNCED utc=1785030160 offset=1785026638
+PHASE_RESULT 13 HF-FLRC-650-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 14 HF-FLRC-650-128 pktSize=128
+TIME_SYNCED utc=1785030162 offset=1785026638
+TIME_SYNCED utc=1785030164 offset=1785026638
+PHASE_RESULT 14 HF-FLRC-650-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 15 HF-FLRC-650-255 pktSize=255
+TIME_SYNCED utc=1785030166 offset=1785026638
+TIME_SYNCED utc=1785030167 offset=1785026638
+PHASE_RESULT 15 HF-FLRC-650-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 16 HF-FLRC-1300-32 pktSize=32
+TIME_SYNCED utc=1785030168 offset=1785026638
+TIME_SYNCED utc=1785030170 offset=1785026638
+PHASE_RESULT 16 HF-FLRC-1300-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 17 HF-FLRC-1300-64 pktSize=64
+TIME_SYNCED utc=1785030172 offset=1785026638
+PHASE_RESULT 17 HF-FLRC-1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 18 HF-FLRC-1300-128 pktSize=128
+TIME_SYNCED utc=1785030174 offset=1785026638
+TIME_SYNCED utc=1785030176 offset=1785026638
+PHASE_RESULT 18 HF-FLRC-1300-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 19 HF-FLRC-1300-255 pktSize=255
+TIME_SYNCED utc=1785030177 offset=1785026638
+TIME_SYNCED utc=1785030178 offset=1785026638
+PHASE_RESULT 20 HF-FLRC-2600-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 21 HF-FLRC-2600-64 pktSize=64
+TIME_SYNCED utc=1785030184 offset=1785026638
+PHASE_RESULT 21 HF-FLRC-2600-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 22 HF-FLRC-2600-128 pktSize=128
+TIME_SYNCED utc=1785030186 offset=1785026638
+TIME_SYNCED utc=1785030187 offset=1785026638
+TIME_SYNCED utc=1785030188 offset=1785026638
+PHASE_RESULT 22 HF-FLRC-2600-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+PHASE_START 23 HF-FLRC-2600-255 pktSize=255
+TIME_SYNCED utc=1785030190 offset=1785026638
+PHASE_RESULT 23 HF-FLRC-2600-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 1000
+LORA_CFG path=1 bw=0x0F sf=12 freq=2440.0
+PHASE_START 24 HF-LoRa-SF12-32 pktSize=32
+TIME_SYNCED utc=1785030192 offset=1785026638
+TIME_SYNCED utc=1785030194 offset=1785026638
+PHASE_RESULT 24 HF-LoRa-SF12-32 pktSize=32 rx=0 unique=0 lost=2 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=12 freq=2440.0
+PHASE_START 25 HF-LoRa-SF12-64 pktSize=64
+TIME_SYNCED utc=1785030196 offset=1785026638
+TIME_SYNCED utc=1785030197 offset=1785026638
+PHASE_RESULT 25 HF-LoRa-SF12-64 pktSize=64 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=12 freq=2440.0
+PHASE_START 26 HF-LoRa-SF12-128 pktSize=128
+TIME_SYNCED utc=1785030198 offset=1785026638
+TIME_SYNCED utc=1785030200 offset=1785026638
+TIME_SYNCED utc=1785030202 offset=1785026638
+PHASE_RESULT 26 HF-LoRa-SF12-128 pktSize=128 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=1 bw=0x0F sf=12 freq=2440.0
+PHASE_START 27 HF-LoRa-SF12-255 pktSize=255
+TIME_SYNCED utc=1785030204 offset=1785026638
+TIME_SYNCED utc=1785030206 offset=1785026638
+TIME_SYNCED utc=1785030207 offset=1785026638
+TIME_SYNCED utc=1785030208 offset=1785026638
+TIME_SYNCED utc=1785030210 offset=1785026638
+TIME_SYNCED utc=1785030212 offset=1785026638
+PHASE_RESULT 27 HF-LoRa-SF12-255 pktSize=255 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 1000
+LORA_CFG path=0 bw=0x05 sf=7 freq=868.0
+PHASE_START 28 LF-LoRa-SF7-32 pktSize=32
+TIME_SYNCED utc=1785030214 offset=1785026638
+PHASE_RESULT 28 LF-LoRa-SF7-32 pktSize=32 rx=0 unique=0 lost=20 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+PHASE_GUARD 500
+LORA_CFG path=0 bw=0x05 sf=7 freq=868.0
+PHASE_START 29 LF-LoRa-SF7-64 pktSize=64
+TIME_SYNCED utc=1785030216 offset=1785026638
+TIME_SYNCED utc=1785030217 offset=1785026638

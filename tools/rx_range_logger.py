@@ -6,7 +6,7 @@ Reads serial output from rp2040-range-rx-auto firmware, logs to CSV.
 Validates RSSI values — flags phantom data (constant 36, 0, or -127).
 
 Usage:
-    python3 rx_range_logger.py /dev/ttyACM0 [--baud 115200] [--out data/]
+    python3 rx_range_logger.py /dev/ttyACM0 [--baud 2000000] [--out data/]
 
 Output: data/range_test_<timestamp>.csv with columns:
     timestamp, line_type, seq, rssi, raw_line
@@ -63,7 +63,7 @@ def is_phantom_rssi(rssi):
 def main():
     parser = argparse.ArgumentParser(description='LR2021 FLRC range test RX logger')
     parser.add_argument('port', help='Serial port (e.g. /dev/ttyACM0)')
-    parser.add_argument('--baud', type=int, default=115200)
+    parser.add_argument('--baud', type=int, default=2000000)
     parser.add_argument('--out', default='data', help='Output directory')
     parser.add_argument('--duration', type=int, default=0, help='Stop after N seconds (0=forever)')
     args = parser.parse_args()

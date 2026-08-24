@@ -1,0 +1,898 @@
+2026-07-26T03:10:07 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:09 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:11 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:13 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:15 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:17 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:19 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:21 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:23 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:25 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:27 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:29 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:31 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:33 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:35 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:37 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:39 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:41 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:43 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:45 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:47 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:49 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:51 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:53 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:55 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:57 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:10:59 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:11:01 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:11:03 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T03:11:05 | # CONNECTED port=/dev/ttyACM4
+2026-07-26T03:11:05 | TIME_SYNCED utc=1785035465 offset=1785033579
+2026-07-26T03:11:05 | SYNC_NOT_FOUND first4=C7173041
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=8410 got=8405 seq=55 syncOff=1
+2026-07-26T03:11:05 | SYNC_NOT_FOUND first4=058EC620
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=5D10 got=5DDF seq=56 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=8A10 got=8A1D seq=57 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=E210 got=E27A seq=58 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=3510 got=35B8 seq=59 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=3210 got=32B4 seq=60 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=E510 got=E576 seq=61 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=8D10 got=8D11 seq=62 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=5A10 got=5AD3 seq=63 syncOff=1
+2026-07-26T03:11:05 | SYNC_NOT_FOUND first4=D37BDA97
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=F310 got=F3C9 seq=64 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=2410 got=240B seq=65 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=4C10 got=4C6C seq=66 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=9B10 got=9BAE seq=67 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=9C10 got=9CA2 seq=68 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=4B10 got=4B60 seq=69 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=2310 got=2307 seq=70 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=F410 got=F4C5 seq=71 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=2D10 got=2D1F seq=72 syncOff=1
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=FA10 got=FADD seq=73 syncOff=1
+2026-07-26T03:11:05 | SYNC_NOT_FOUND first4=DD65E440
+2026-07-26T03:11:05 | APP_CRC_FAIL exp=9210 got=92BA seq=74 syncOff=1
+2026-07-26T03:11:05 | SYNC_NOT_FOUND first4=BA282A64
+2026-07-26T03:11:05 | SYNC_NOT_FOUND first4=655BC324
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=F04E6F83
+2026-07-26T03:11:06 | SYNC_LOST phase=23 consecutive=3 cached_off=1
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=BD702598
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=AD7A28AD
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=A9440462
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=910E7AB5
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=1A153C25
+2026-07-26T03:11:06 | PHASE_RESULT 23 HF-FLRC-650-255 pktSize=255 rx=1 unique=1 lost=99 per=99.0 rssi_avg=-40 rssi_min=-40 crc_err=60 garbage=20 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035464 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:06 | PHASE_GUARD 500
+2026-07-26T03:11:06 | PHASE_START 24 HF-FLRC-325-32 pktSize=32
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 202 122 101 106 24 0 12 117 110 107 110 111 119 110 29 154 99
+2026-07-26T03:11:06 | PKT rx=1 seq=12 rssi=-40 phase=24 rx_ms=1887180 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035466 tx_fw=unknown
+2026-07-26T03:11:06 | SYNC_NOT_FOUND first4=60C51EA4
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | PKT rx=2 seq=13 rssi=-40 phase=24 rx_ms=1887230 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035466 tx_fw=unknown
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | PKT rx=3 seq=14 rssi=-40 phase=24 rx_ms=1887250 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035466 tx_fw=unknown
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:06 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035466 laptop_utc=1785035466 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035466 offset=1
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035466 offset=1
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_SYNCED utc=1785035467 offset=1785033579
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | TIME_DIFF gps_utc=1785035467 laptop_utc=1785035467 offset=0
+2026-07-26T03:11:07 | SYNC_NOT_FOUND first4=C2B4EC14
+2026-07-26T03:11:08 | PHASE_RESULT 24 HF-FLRC-325-32 pktSize=32 rx=61 unique=61 lost=39 per=39.0 rssi_avg=-40 rssi_min=-58 crc_err=0 garbage=2 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035467 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:08 | PHASE_GUARD 500
+2026-07-26T03:11:08 | PHASE_START 25 HF-FLRC-325-64 pktSize=64
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 204 122 101 106 25 0 12 117 110 107 110 111 119 110 29 30 31
+2026-07-26T03:11:08 | PKT rx=1 seq=12 rssi=-40 phase=25 rx_ms=1889176 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035468 tx_fw=unknown
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | PKT rx=2 seq=13 rssi=-40 phase=25 rx_ms=1889207 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035468 tx_fw=unknown
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | PKT rx=3 seq=14 rssi=-40 phase=25 rx_ms=1889227 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035468 tx_fw=unknown
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:08 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035468 laptop_utc=1785035468 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035468 offset=1
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035468 offset=1
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035468 offset=1
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_SYNCED utc=1785035469 offset=1785033579
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:09 | TIME_DIFF gps_utc=1785035469 laptop_utc=1785035469 offset=0
+2026-07-26T03:11:10 | PHASE_RESULT 25 HF-FLRC-325-64 pktSize=64 rx=63 unique=63 lost=37 per=37.0 rssi_avg=-40 rssi_min=-58 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035469 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:10 | PHASE_GUARD 500
+2026-07-26T03:11:10 | PHASE_START 26 HF-FLRC-325-128 pktSize=128
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 206 122 101 106 26 0 12 117 110 107 110 111 119 110 29 30 31
+2026-07-26T03:11:10 | PKT rx=1 seq=12 rssi=-40 phase=26 rx_ms=1891174 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035470 tx_fw=unknown
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | PKT rx=2 seq=13 rssi=-40 phase=26 rx_ms=1891206 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035470 tx_fw=unknown
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | PKT rx=3 seq=14 rssi=-40 phase=26 rx_ms=1891225 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035470 tx_fw=unknown
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | SYNC_NOT_FOUND first4=A697F55B
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:10 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | SYNC_NOT_FOUND first4=933BC39A
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | SYNC_NOT_FOUND first4=4D3BA1A2
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035470 laptop_utc=1785035470 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035470 offset=1
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035470 offset=1
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035470 offset=1
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_SYNCED utc=1785035471 offset=1785033579
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | SYNC_NOT_FOUND first4=F2142C26
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:11 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:12 | TIME_DIFF gps_utc=1785035471 laptop_utc=1785035471 offset=0
+2026-07-26T03:11:12 | PHASE_RESULT 26 HF-FLRC-325-128 pktSize=128 rx=62 unique=62 lost=38 per=38.0 rssi_avg=-41 rssi_min=-58 crc_err=0 garbage=4 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035471 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:12 | PHASE_GUARD 500
+2026-07-26T03:11:12 | PHASE_START 27 HF-FLRC-325-255 pktSize=255
+2026-07-26T03:11:12 | SYNC_NOT_FOUND first4=95857565
+2026-07-26T03:11:12 | SYNC_OFFSET phase=27 off=0 prev=-1
+2026-07-26T03:11:12 | TIME_DIFF gps_utc=1785035472 laptop_utc=1785035472 offset=0
+2026-07-26T03:11:12 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 208 122 101 106 27 0 12 117 110 107 110 111 119 110 29 30 31
+2026-07-26T03:11:12 | PKT rx=1 seq=12 rssi=-40 phase=27 rx_ms=1893187 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035472 tx_fw=unknown
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=31F5 got=39EF seq=13 syncOff=0
+2026-07-26T03:11:12 | SYNC_OFFSET phase=27 off=1 prev=0
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=8E10 got=8E50 seq=15 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=FA10 got=FA07 seq=16 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=2D10 got=2DC5 seq=17 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=4510 got=45A2 seq=18 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=9210 got=9260 seq=19 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=9510 got=956C seq=20 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=4210 got=42AE seq=21 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=2A10 got=2AC9 seq=22 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=FD10 got=FD0B seq=23 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=2410 got=24D1 seq=24 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=F310 got=F313 seq=25 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=9B10 got=9B74 seq=26 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=4C10 got=4CB6 seq=27 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=4B10 got=4BBA seq=28 syncOff=1
+2026-07-26T03:11:12 | APP_CRC_FAIL exp=9C10 got=9C78 seq=29 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=F410 got=F41F seq=30 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=2310 got=23DD seq=31 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1C10 got=1CB1 seq=32 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=CB10 got=CB73 seq=33 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=A310 got=A314 seq=34 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7410 got=74D6 seq=35 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7310 got=73DA seq=36 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=A410 got=A418 seq=37 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=CC10 got=CC7F seq=38 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1B10 got=1BBD seq=39 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=C210 got=C267 seq=40 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1510 got=15A5 seq=41 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7D10 got=7DC2 seq=42 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=AA10 got=AA00 seq=43 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=AD10 got=AD0C seq=44 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7A10 got=7ACE seq=45 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1210 got=12A9 seq=46 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=C500 got=C56B seq=47 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=B110 got=B13C seq=48 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=6610 got=66FE seq=49 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1510 got=1557 seq=50 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=C210 got=C295 seq=51 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=C510 got=C599 seq=52 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1210 got=125B seq=53 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7A10 got=7A3C seq=54 syncOff=1
+2026-07-26T03:11:13 | SYNC_NOT_FOUND first4=3C535448
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=AD10 got=ADFE seq=55 syncOff=1
+2026-07-26T03:11:13 | TIME_SYNCED utc=1785035473 offset=1785033579
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7410 got=7424 seq=56 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=A310 got=A3E6 seq=57 syncOff=1
+2026-07-26T03:11:13 | SYNC_NOT_FOUND first4=E68D0A80
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=CB10 got=CB81 seq=58 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1C10 got=1C43 seq=59 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=1B10 got=1B4F seq=60 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=CC10 got=CC8D seq=61 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=A410 got=A4EA seq=62 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=7310 got=7328 seq=63 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=DA10 got=DA32 seq=64 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=0D10 got=0DF0 seq=65 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=6510 got=6597 seq=66 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=B210 got=B255 seq=67 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=B510 got=B559 seq=68 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=6210 got=629B seq=69 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=0A10 got=0AFC seq=70 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=DD10 got=DD3E seq=71 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=0410 got=04E4 seq=72 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=D310 got=D326 seq=73 syncOff=1
+2026-07-26T03:11:13 | APP_CRC_FAIL exp=BB10 got=BB41 seq=74 syncOff=1
+2026-07-26T03:11:14 | PHASE_RESULT 27 HF-FLRC-325-255 pktSize=255 rx=1 unique=1 lost=99 per=99.0 rssi_avg=-40 rssi_min=-40 crc_err=61 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035472 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:14 | PHASE_GUARD 500
+2026-07-26T03:11:14 | LORA_CFG path=0 bw=0x05 sf=7
+2026-07-26T03:11:14 | PHASE_START 28 LF-LoRa-SF7-32 pktSize=32
+2026-07-26T03:11:14 | SYNC_NOT_FOUND first4=FC1A0F15
+2026-07-26T03:11:14 | SYNC_NOT_FOUND first4=80AE522F
+2026-07-26T03:11:14 | SYNC_NOT_FOUND first4=0F891DDD
+2026-07-26T03:11:14 | SYNC_NOT_FOUND first4=F0FA0F15
+2026-07-26T03:11:14 | SYNC_OFFSET phase=28 off=0 prev=-1
+2026-07-26T03:11:14 | TIME_DIFF gps_utc=1785035474 laptop_utc=1785035474 offset=0
+2026-07-26T03:11:14 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 210 122 101
+2026-07-26T03:11:14 | PKT rx=1 seq=2 rssi=-28 phase=28 rx_ms=1895502 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035474 tx_fw=unknown
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=EE55BE6E
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=FC1A0F15
+2026-07-26T03:11:15 | TIME_DIFF gps_utc=1785035474 laptop_utc=1785035474 offset=0
+2026-07-26T03:11:15 | PKT rx=2 seq=3 rssi=-29 phase=28 rx_ms=1895692 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035474 tx_fw=unknown
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=827A0115
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=296419EC
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=FC1A0F15
+2026-07-26T03:11:15 | SYNC_LOST phase=28 consecutive=3 cached_off=0
+2026-07-26T03:11:15 | TIME_SYNCED utc=1785035475 offset=1785033579
+2026-07-26T03:11:15 | SYNC_OFFSET phase=28 off=0 prev=-1
+2026-07-26T03:11:15 | TIME_DIFF gps_utc=1785035475 laptop_utc=1785035475 offset=0
+2026-07-26T03:11:15 | PKT rx=3 seq=5 rssi=-29 phase=28 rx_ms=1896091 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035475 tx_fw=unknown
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=FC1A0F15
+2026-07-26T03:11:15 | TIME_DIFF gps_utc=1785035475 laptop_utc=1785035475 offset=0
+2026-07-26T03:11:15 | SYNC_NOT_FOUND first4=F0FA0315
+2026-07-26T03:11:15 | TIME_DIFF gps_utc=1785035475 laptop_utc=1785035475 offset=0
+2026-07-26T03:11:16 | SYNC_NOT_FOUND first4=CA9CBB38
+2026-07-26T03:11:16 | SYNC_NOT_FOUND first4=B2F21F76
+2026-07-26T03:11:16 | PHASE_RESULT 28 LF-LoRa-SF7-32 pktSize=32 rx=5 unique=5 lost=15 per=75.0 rssi_avg=-29 rssi_min=-30 crc_err=0 garbage=13 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035475 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:16 | PHASE_GUARD 500
+2026-07-26T03:11:16 | LORA_CFG path=0 bw=0x05 sf=7
+2026-07-26T03:11:16 | PHASE_START 29 LF-LoRa-SF7-64 pktSize=64
+2026-07-26T03:11:16 | SYNC_NOT_FOUND first4=761102BC
+2026-07-26T03:11:16 | TIME_DIFF gps_utc=1785035476 laptop_utc=1785035476 offset=0
+2026-07-26T03:11:16 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 212 122 101
+2026-07-26T03:11:16 | PKT rx=1 seq=1 rssi=-29 phase=29 rx_ms=1897329 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035476 tx_fw=unknown
+2026-07-26T03:11:16 | SYNC_NOT_FOUND first4=76C902BC
+2026-07-26T03:11:16 | TIME_DIFF gps_utc=1785035476 laptop_utc=1785035476 offset=0
+2026-07-26T03:11:16 | PKT rx=2 seq=2 rssi=-29 phase=29 rx_ms=1897522 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035476 tx_fw=unknown
+2026-07-26T03:11:17 | SYNC_NOT_FOUND first4=B0DA0D4A
+2026-07-26T03:11:17 | TIME_DIFF gps_utc=1785035476 laptop_utc=1785035476 offset=0
+2026-07-26T03:11:17 | PKT rx=3 seq=3 rssi=-29 phase=29 rx_ms=1897720 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035476 tx_fw=unknown
+2026-07-26T03:11:17 | SYNC_NOT_FOUND first4=766302BC
+2026-07-26T03:11:17 | TIME_DIFF gps_utc=1785035476 laptop_utc=1785035476 offset=0
+2026-07-26T03:11:17 | TIME_SYNCED utc=1785035477 offset=1785033579
+2026-07-26T03:11:17 | SYNC_NOT_FOUND first4=766302BC
+2026-07-26T03:11:17 | TIME_DIFF gps_utc=1785035477 laptop_utc=1785035477 offset=0
+2026-07-26T03:11:17 | SYNC_NOT_FOUND first4=764408BF
+2026-07-26T03:11:17 | TIME_DIFF gps_utc=1785035477 laptop_utc=1785035477 offset=0
+2026-07-26T03:11:17 | SYNC_NOT_FOUND first4=764408BF
+2026-07-26T03:11:17 | TIME_DIFF gps_utc=1785035477 laptop_utc=1785035477 offset=0
+2026-07-26T03:11:18 | SYNC_NOT_FOUND first4=76C902BC
+2026-07-26T03:11:18 | TIME_DIFF gps_utc=1785035477 laptop_utc=1785035477 offset=0
+2026-07-26T03:11:18 | SYNC_NOT_FOUND first4=766302FC
+2026-07-26T03:11:18 | TIME_DIFF gps_utc=1785035477 laptop_utc=1785035477 offset=0
+2026-07-26T03:11:18 | SYNC_NOT_FOUND first4=7EEF740A
+2026-07-26T03:11:18 | SYNC_NOT_FOUND first4=70250126
+2026-07-26T03:11:18 | SYNC_NOT_FOUND first4=54D11408
+2026-07-26T03:11:18 | SYNC_LOST phase=29 consecutive=3 cached_off=0
+2026-07-26T03:11:18 | SYNC_OFFSET phase=29 off=0 prev=-1
+2026-07-26T03:11:18 | TIME_DIFF gps_utc=1785035478 laptop_utc=1785035478 offset=0
+2026-07-26T03:11:18 | SYNC_NOT_FOUND first4=76C902BC
+2026-07-26T03:11:18 | TIME_DIFF gps_utc=1785035478 laptop_utc=1785035478 offset=0
+2026-07-26T03:11:19 | SYNC_NOT_FOUND first4=766302BC
+2026-07-26T03:11:19 | TIME_DIFF gps_utc=1785035478 laptop_utc=1785035478 offset=0
+2026-07-26T03:11:19 | SYNC_NOT_FOUND first4=766302BC
+2026-07-26T03:11:19 | TIME_DIFF gps_utc=1785035478 laptop_utc=1785035478 offset=0
+2026-07-26T03:11:19 | PHASE_RESULT 29 LF-LoRa-SF7-64 pktSize=64 rx=13 unique=13 lost=7 per=35.0 rssi_avg=-29 rssi_min=-30 crc_err=0 garbage=15 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035478 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:19 | PHASE_GUARD 500
+2026-07-26T03:11:19 | LORA_CFG path=0 bw=0x05 sf=7
+2026-07-26T03:11:19 | PHASE_START 30 LF-LoRa-SF7-128 pktSize=128
+2026-07-26T03:11:19 | TIME_SYNCED utc=1785035479 offset=1785033579
+2026-07-26T03:11:19 | TIME_DIFF gps_utc=1785035479 laptop_utc=1785035479 offset=0
+2026-07-26T03:11:19 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 215 122 101
+2026-07-26T03:11:19 | PKT rx=1 seq=0 rssi=-29 phase=30 rx_ms=1900288 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035479 tx_fw=unknown
+2026-07-26T03:11:19 | SYNC_NOT_FOUND first4=4ED434E5
+2026-07-26T03:11:20 | SYNC_NOT_FOUND first4=7DC003D0
+2026-07-26T03:11:20 | TIME_DIFF gps_utc=1785035479 laptop_utc=1785035479 offset=0
+2026-07-26T03:11:20 | PKT rx=2 seq=2 rssi=-29 phase=30 rx_ms=1900777 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035479 tx_fw=unknown
+2026-07-26T03:11:20 | SYNC_NOT_FOUND first4=EED33CE7
+2026-07-26T03:11:20 | TIME_DIFF gps_utc=1785035480 laptop_utc=1785035480 offset=0
+2026-07-26T03:11:20 | PKT rx=3 seq=3 rssi=-29 phase=30 rx_ms=1901094 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035480 tx_fw=unknown
+2026-07-26T03:11:20 | SYNC_NOT_FOUND first4=70C00ED0
+2026-07-26T03:11:20 | TIME_DIFF gps_utc=1785035480 laptop_utc=1785035480 offset=0
+2026-07-26T03:11:21 | SYNC_NOT_FOUND first4=EED33CE7
+2026-07-26T03:11:21 | TIME_DIFF gps_utc=1785035480 laptop_utc=1785035480 offset=0
+2026-07-26T03:11:21 | SYNC_NOT_FOUND first4=0E29B0D0
+2026-07-26T03:11:21 | TIME_DIFF gps_utc=1785035481 laptop_utc=1785035481 offset=0
+2026-07-26T03:11:21 | TIME_SYNCED utc=1785035481 offset=1785033579
+2026-07-26T03:11:21 | SYNC_NOT_FOUND first4=B9009F16
+2026-07-26T03:11:21 | TIME_DIFF gps_utc=1785035481 laptop_utc=1785035481 offset=0
+2026-07-26T03:11:21 | SYNC_NOT_FOUND first4=70C00ED0
+2026-07-26T03:11:22 | TIME_DIFF gps_utc=1785035481 laptop_utc=1785035481 offset=0
+2026-07-26T03:11:22 | SYNC_NOT_FOUND first4=2A2DE0F0
+2026-07-26T03:11:22 | TIME_DIFF gps_utc=1785035481 laptop_utc=1785035481 offset=0
+2026-07-26T03:11:22 | SYNC_NOT_FOUND first4=4ED334E7
+2026-07-26T03:11:22 | TIME_DIFF gps_utc=1785035482 laptop_utc=1785035482 offset=0
+2026-07-26T03:11:22 | SYNC_NOT_FOUND first4=70C00ED0
+2026-07-26T03:11:23 | TIME_DIFF gps_utc=1785035482 laptop_utc=1785035482 offset=0
+2026-07-26T03:11:23 | SYNC_NOT_FOUND first4=7DC003D0
+2026-07-26T03:11:23 | PHASE_RESULT 30 LF-LoRa-SF7-128 pktSize=128 rx=11 unique=11 lost=2 per=15.4 rssi_avg=-29 rssi_min=-30 crc_err=0 garbage=12 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035482 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:23 | PHASE_GUARD 500
+2026-07-26T03:11:23 | LORA_CFG path=0 bw=0x05 sf=7
+2026-07-26T03:11:23 | PHASE_START 31 LF-LoRa-SF7-255 pktSize=255
+2026-07-26T03:11:23 | TIME_SYNCED utc=1785035483 offset=1785033579
+2026-07-26T03:11:23 | SYNC_NOT_FOUND first4=829BBFD2
+2026-07-26T03:11:24 | TIME_DIFF gps_utc=1785035483 laptop_utc=1785035483 offset=0
+2026-07-26T03:11:24 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 219 122 101
+2026-07-26T03:11:24 | PKT rx=1 seq=1 rssi=-29 phase=31 rx_ms=1904742 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035483 tx_fw=unknown
+2026-07-26T03:11:24 | TIME_DIFF gps_utc=1785035484 laptop_utc=1785035484 offset=0
+2026-07-26T03:11:24 | PKT rx=2 seq=2 rssi=-29 phase=31 rx_ms=1905352 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035484 tx_fw=unknown
+2026-07-26T03:11:25 | TIME_DIFF gps_utc=1785035484 laptop_utc=1785035484 offset=0
+2026-07-26T03:11:25 | PKT rx=3 seq=3 rssi=-29 phase=31 rx_ms=1905967 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035484 tx_fw=unknown
+2026-07-26T03:11:25 | TIME_SYNCED utc=1785035485 offset=1785033579
+2026-07-26T03:11:26 | TIME_DIFF gps_utc=1785035485 laptop_utc=1785035485 offset=0
+2026-07-26T03:11:26 | TIME_DIFF gps_utc=1785035486 laptop_utc=1785035486 offset=0
+2026-07-26T03:11:27 | TIME_DIFF gps_utc=1785035486 laptop_utc=1785035486 offset=0
+2026-07-26T03:11:27 | PHASE_RESULT 31 LF-LoRa-SF7-255 pktSize=255 rx=6 unique=6 lost=1 per=14.3 rssi_avg=-30 rssi_min=-30 crc_err=0 garbage=1 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035486 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:27 | PHASE_GUARD 500
+2026-07-26T03:11:27 | LORA_CFG path=0 bw=0x05 sf=9
+2026-07-26T03:11:27 | PHASE_START 32 LF-LoRa-SF9-32 pktSize=32
+2026-07-26T03:11:27 | TIME_SYNCED utc=1785035487 offset=1785033579
+2026-07-26T03:11:27 | TIME_DIFF gps_utc=1785035487 laptop_utc=1785035487 offset=0
+2026-07-26T03:11:27 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 223 122 101
+2026-07-26T03:11:27 | PKT rx=1 seq=0 rssi=-25 phase=32 rx_ms=1908488 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035487 tx_fw=unknown
+2026-07-26T03:11:28 | SYNC_NOT_FOUND first4=98B27004
+2026-07-26T03:11:28 | TIME_DIFF gps_utc=1785035488 laptop_utc=1785035488 offset=0
+2026-07-26T03:11:28 | PKT rx=2 seq=1 rssi=-25 phase=32 rx_ms=1909099 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035488 tx_fw=unknown
+2026-07-26T03:11:28 | SYNC_NOT_FOUND first4=98BF4007
+2026-07-26T03:11:29 | TIME_DIFF gps_utc=1785035488 laptop_utc=1785035488 offset=0
+2026-07-26T03:11:29 | PKT rx=3 seq=2 rssi=-25 phase=32 rx_ms=1909714 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035488 tx_fw=unknown
+2026-07-26T03:11:29 | TIME_SYNCED utc=1785035489 offset=1785033579
+2026-07-26T03:11:29 | TIME_DIFF gps_utc=1785035489 laptop_utc=1785035489 offset=0
+2026-07-26T03:11:30 | TIME_DIFF gps_utc=1785035489 laptop_utc=1785035489 offset=0
+2026-07-26T03:11:30 | TIME_DIFF gps_utc=1785035490 laptop_utc=1785035490 offset=0
+2026-07-26T03:11:31 | SYNC_NOT_FOUND first4=98BF4007
+2026-07-26T03:11:31 | PHASE_RESULT 32 LF-LoRa-SF9-32 pktSize=32 rx=6 unique=6 lost=1 per=14.3 rssi_avg=-26 rssi_min=-26 crc_err=0 garbage=3 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035490 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:31 | PHASE_GUARD 500
+2026-07-26T03:11:31 | LORA_CFG path=0 bw=0x05 sf=9
+2026-07-26T03:11:31 | PHASE_START 33 LF-LoRa-SF9-64 pktSize=64
+2026-07-26T03:11:31 | TIME_SYNCED utc=1785035491 offset=1785033579
+2026-07-26T03:11:31 | TIME_DIFF gps_utc=1785035491 laptop_utc=1785035491 offset=0
+2026-07-26T03:11:31 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 227 122 101
+2026-07-26T03:11:31 | PKT rx=1 seq=0 rssi=-26 phase=33 rx_ms=1912394 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035491 tx_fw=unknown
+2026-07-26T03:11:32 | TIME_DIFF gps_utc=1785035492 laptop_utc=1785035492 offset=0
+2026-07-26T03:11:32 | PKT rx=2 seq=1 rssi=-26 phase=33 rx_ms=1913492 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035492 tx_fw=unknown
+2026-07-26T03:11:33 | TIME_SYNCED utc=1785035493 offset=1785033579
+2026-07-26T03:11:34 | TIME_DIFF gps_utc=1785035493 laptop_utc=1785035493 offset=0
+2026-07-26T03:11:34 | PKT rx=3 seq=2 rssi=-26 phase=33 rx_ms=1914736 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035493 tx_fw=unknown
+2026-07-26T03:11:34 | PHASE_RESULT 33 LF-LoRa-SF9-64 pktSize=64 rx=3 unique=3 lost=0 per=0.0 rssi_avg=-26 rssi_min=-26 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035493 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:34 | PHASE_GUARD 500
+2026-07-26T03:11:34 | LORA_CFG path=0 bw=0x05 sf=9
+2026-07-26T03:11:34 | PHASE_START 34 LF-LoRa-SF9-128 pktSize=128
+2026-07-26T03:11:35 | TIME_SYNCED utc=1785035495 offset=1785033579
+2026-07-26T03:11:35 | TIME_DIFF gps_utc=1785035495 laptop_utc=1785035495 offset=0
+2026-07-26T03:11:35 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 231 122 101
+2026-07-26T03:11:35 | PKT rx=1 seq=0 rssi=-26 phase=34 rx_ms=1916271 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035495 tx_fw=unknown
+2026-07-26T03:11:36 | PHASE_RESULT 34 LF-LoRa-SF9-128 pktSize=128 rx=1 unique=1 lost=0 per=0.0 rssi_avg=-26 rssi_min=-26 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035495 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:36 | PHASE_GUARD 500
+2026-07-26T03:11:36 | LORA_CFG path=0 bw=0x05 sf=9
+2026-07-26T03:11:36 | PHASE_START 35 LF-LoRa-SF9-255 pktSize=255
+2026-07-26T03:11:37 | TIME_SYNCED utc=1785035497 offset=1785033579
+2026-07-26T03:11:38 | TIME_DIFF gps_utc=1785035497 laptop_utc=1785035498 offset=-1
+2026-07-26T03:11:38 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 233 122 101
+2026-07-26T03:11:38 | PKT rx=1 seq=0 rssi=-26 phase=35 rx_ms=1919201 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035497 tx_fw=unknown
+2026-07-26T03:11:39 | TIME_SYNCED utc=1785035499 offset=1785033579
+2026-07-26T03:11:40 | PHASE_RESULT 35 LF-LoRa-SF9-255 pktSize=255 rx=1 unique=1 lost=0 per=0.0 rssi_avg=-26 rssi_min=-26 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035497 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:40 | PHASE_GUARD 500
+2026-07-26T03:11:40 | LORA_CFG path=0 bw=0x05 sf=12
+2026-07-26T03:11:40 | PHASE_START 36 LF-LoRa-SF12-32 pktSize=32
+2026-07-26T03:11:41 | TIME_SYNCED utc=1785035501 offset=1785033579
+2026-07-26T03:11:43 | TIME_SYNCED utc=1785035503 offset=1785033579
+2026-07-26T03:11:43 | TIME_DIFF gps_utc=1785035502 laptop_utc=1785035503 offset=-1
+2026-07-26T03:11:43 | LORA_RAW: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 238 122 101
+2026-07-26T03:11:43 | PKT rx=1 seq=0 rssi=-18 phase=36 rx_ms=1924171 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035502 tx_fw=unknown
+2026-07-26T03:11:45 | TIME_SYNCED utc=1785035505 offset=1785033579
+2026-07-26T03:11:47 | TIME_SYNCED utc=1785035507 offset=1785033579
+2026-07-26T03:11:49 | TIME_SYNCED utc=1785035509 offset=1785033579
+2026-07-26T03:11:51 | TIME_STATS min=-2000ms max=1000ms avg=-112ms corrections=0
+2026-07-26T03:11:51 | TIME_SYNCED utc=1785035511 offset=1785033579
+2026-07-26T03:11:53 | TIME_SYNCED utc=1785035513 offset=1785033579
+2026-07-26T03:11:55 | PHASE_RESULT 36 LF-LoRa-SF12-32 pktSize=32 rx=1 unique=1 lost=0 per=0.0 rssi_avg=-18 rssi_min=-18 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035502 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:11:55 | PHASE_GUARD 500
+2026-07-26T03:11:55 | LORA_CFG path=0 bw=0x05 sf=12
+2026-07-26T03:11:55 | PHASE_START 37 LF-LoRa-SF12-SKIP SKIP pktSize=64
+2026-07-26T03:11:55 | TIME_SYNCED utc=1785035515 offset=1785033579
+2026-07-26T03:11:56 | PHASE_RESULT 37 LF-LoRa-SF12-SKIP pktSize=64 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+2026-07-26T03:11:56 | PHASE_GUARD 500
+2026-07-26T03:11:56 | LORA_CFG path=0 bw=0x05 sf=12
+2026-07-26T03:11:56 | PHASE_START 38 LF-LoRa-SF12-SKIP SKIP pktSize=128
+2026-07-26T03:11:57 | PHASE_RESULT 38 LF-LoRa-SF12-SKIP pktSize=128 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+2026-07-26T03:11:57 | PHASE_GUARD 500
+2026-07-26T03:11:57 | LORA_CFG path=0 bw=0x05 sf=12
+2026-07-26T03:11:57 | PHASE_START 39 LF-LoRa-SF12-SKIP SKIP pktSize=255
+2026-07-26T03:11:57 | TIME_SYNCED utc=1785035517 offset=1785033579
+2026-07-26T03:11:58 | PHASE_RESULT 39 LF-LoRa-SF12-SKIP pktSize=255 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+2026-07-26T03:11:58 | PHASE_GUARD 500
+2026-07-26T03:11:58 | PHASE_START 40 LF-FLRC-2600-32 pktSize=32
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 254 122 101 106 40 0 11 117 110 107 110 111 119 110 29 156 163
+2026-07-26T03:11:58 | PKT rx=1 seq=11 rssi=-33 phase=40 rx_ms=1939166 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035518 tx_fw=unknown
+2026-07-26T03:11:58 | SYNC_NOT_FOUND first4=3235D866
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | PKT rx=2 seq=12 rssi=-33 phase=40 rx_ms=1939216 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035518 tx_fw=unknown
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | PKT rx=3 seq=13 rssi=-33 phase=40 rx_ms=1939236 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035518 tx_fw=unknown
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:58 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | SYNC_NOT_FOUND first4=1CCAA134
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | SYNC_NOT_FOUND first4=09347193
+2026-07-26T03:11:59 | SYNC_NOT_FOUND first4=0A83456F
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035518 laptop_utc=1785035518 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_SYNCED utc=1785035519 offset=1785033579
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:11:59 | TIME_DIFF gps_utc=1785035519 laptop_utc=1785035519 offset=0
+2026-07-26T03:12:00 | PHASE_RESULT 40 LF-FLRC-2600-32 pktSize=32 rx=60 unique=60 lost=40 per=40.0 rssi_avg=-33 rssi_min=-54 crc_err=0 garbage=4 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035519 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:12:00 | PHASE_GUARD 500
+2026-07-26T03:12:00 | PHASE_START 41 LF-FLRC-2600-64 pktSize=64
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 0 123 101 106 41 0 12 117 110 107 110 111 119 110 29 30 31
+2026-07-26T03:12:00 | PKT rx=1 seq=12 rssi=-33 phase=41 rx_ms=1941181 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035520 tx_fw=unknown
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | PKT rx=2 seq=13 rssi=-33 phase=41 rx_ms=1941213 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035520 tx_fw=unknown
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | PKT rx=3 seq=14 rssi=-54 phase=41 rx_ms=1941229 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035520 tx_fw=unknown
+2026-07-26T03:12:00 | SYNC_NOT_FOUND first4=CE4AD7AA
+2026-07-26T03:12:00 | SYNC_NOT_FOUND first4=4F0FC87E
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | SYNC_NOT_FOUND first4=7C4D1650
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:00 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | APP_CRC_FAIL exp=91D4 got=9737 seq=32 syncOff=0
+2026-07-26T03:12:01 | SYNC_NOT_FOUND first4=C4C6861C
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | SYNC_NOT_FOUND first4=5872F26F
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | SYNC_NOT_FOUND first4=24458D10
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035520 laptop_utc=1785035520 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035520 offset=1
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035520 offset=1
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | SYNC_NOT_FOUND first4=03ABB6AD
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_SYNCED utc=1785035521 offset=1785033579
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:01 | TIME_DIFF gps_utc=1785035521 laptop_utc=1785035521 offset=0
+2026-07-26T03:12:02 | PHASE_RESULT 41 LF-FLRC-2600-64 pktSize=64 rx=58 unique=58 lost=42 per=42.0 rssi_avg=-35 rssi_min=-55 crc_err=1 garbage=7 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035521 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:12:02 | PHASE_GUARD 500
+2026-07-26T03:12:02 | PHASE_START 42 LF-FLRC-2600-128 pktSize=128
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 2 123 101 106 42 0 11 117 110 107 110 111 119 110 29 30 31
+2026-07-26T03:12:02 | PKT rx=1 seq=11 rssi=-33 phase=42 rx_ms=1943168 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035522 tx_fw=unknown
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | PKT rx=2 seq=12 rssi=-33 phase=42 rx_ms=1943199 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035522 tx_fw=unknown
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | PKT rx=3 seq=13 rssi=-33 phase=42 rx_ms=1943219 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035522 tx_fw=unknown
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:02 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | APP_CRC_FAIL exp=7F59 got=7957 seq=39 syncOff=0
+2026-07-26T03:12:03 | SYNC_NOT_FOUND first4=88758660
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | SYNC_NOT_FOUND first4=233D8CCC
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | APP_CRC_FAIL exp=5C61 got=F6C8 seq=46 syncOff=0
+2026-07-26T03:12:03 | SYNC_NOT_FOUND first4=E5079CB8
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035522 laptop_utc=1785035522 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035522 offset=1
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035522 offset=1
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035522 offset=1
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | APP_CRC_FAIL exp=C6CC got=EB8D seq=57 syncOff=0
+2026-07-26T03:12:03 | TIME_SYNCED utc=1785035523 offset=1785033579
+2026-07-26T03:12:03 | SYNC_NOT_FOUND first4=7B4A82E1
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | APP_CRC_FAIL exp=F15A got=1E09 seq=70 syncOff=0
+2026-07-26T03:12:03 | SYNC_NOT_FOUND first4=7BC3C94A
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:03 | TIME_DIFF gps_utc=1785035523 laptop_utc=1785035523 offset=0
+2026-07-26T03:12:04 | SYNC_NOT_FOUND first4=8970987F
+2026-07-26T03:12:04 | PHASE_RESULT 42 LF-FLRC-2600-128 pktSize=128 rx=56 unique=56 lost=44 per=44.0 rssi_avg=-34 rssi_min=-54 crc_err=4 garbage=6 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035523 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:12:04 | PHASE_GUARD 500
+2026-07-26T03:12:04 | PHASE_START 43 LF-FLRC-2600-255 pktSize=255
+2026-07-26T03:12:04 | SYNC_OFFSET phase=43 off=0 prev=1
+2026-07-26T03:12:04 | TIME_DIFF gps_utc=1785035524 laptop_utc=1785035524 offset=0
+2026-07-26T03:12:04 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 4 123 101 106 43 0 11 117 110 107 110 111 119 110 29 30 31
+2026-07-26T03:12:04 | PKT rx=1 seq=11 rssi=-33 phase=43 rx_ms=1945179 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035524 tx_fw=unknown
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=F3D6 got=6DF2 seq=12 syncOff=0
+2026-07-26T03:12:04 | SYNC_OFFSET phase=43 off=1 prev=0
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=4C10 got=4C73 seq=14 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=9B10 got=9BB1 seq=15 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=EF10 got=EFE6 seq=16 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=3810 got=3824 seq=17 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=5010 got=5043 seq=18 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=8710 got=8781 seq=19 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=8010 got=808D seq=20 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=5710 got=574F seq=21 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=3F10 got=3F28 seq=22 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=E810 got=E8EA seq=23 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=3110 got=3130 seq=24 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=E610 got=E6F2 seq=25 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=8E10 got=8E95 seq=26 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=5910 got=5957 seq=27 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=5E10 got=5E5B seq=28 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=8910 got=8999 seq=29 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=E110 got=E1FE seq=30 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=3610 got=363C seq=31 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=0910 got=0950 seq=32 syncOff=1
+2026-07-26T03:12:04 | APP_CRC_FAIL exp=DE10 got=DE92 seq=33 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=B610 got=B6F5 seq=34 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6110 got=6137 seq=35 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6610 got=663B seq=36 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=B110 got=B1F9 seq=37 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=D910 got=D99E seq=38 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0E10 got=0E5C seq=39 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=D710 got=D786 seq=40 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0010 got=0044 seq=41 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6810 got=6823 seq=42 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=BF10 got=BFE1 seq=43 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=B810 got=B8ED seq=44 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6F10 got=6F2F seq=45 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0710 got=0748 seq=46 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=D010 got=D08A seq=47 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=A410 got=A4DD seq=48 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=7310 got=731F seq=49 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0010 got=00B6 seq=50 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=D710 got=D774 seq=51 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=D010 got=D078 seq=52 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0710 got=07BA seq=53 syncOff=1
+2026-07-26T03:12:05 | SYNC_NOT_FOUND first4=BACC4D21
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6F10 got=6FDD seq=54 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=B810 got=B81F seq=55 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6110 got=61C5 seq=56 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=B610 got=B607 seq=57 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=DE10 got=DE60 seq=58 syncOff=1
+2026-07-26T03:12:05 | TIME_SYNCED utc=1785035525 offset=1785033579
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0910 got=09A2 seq=59 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=0E10 got=0EAE seq=60 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=D910 got=D96C seq=61 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=B110 got=B10B seq=62 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=6610 got=66C9 seq=63 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=CF10 got=CFD3 seq=64 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=1810 got=1811 seq=65 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=7010 got=7076 seq=66 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=A710 got=A7B4 seq=67 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=A010 got=A0B8 seq=68 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=7710 got=777A seq=69 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=1F10 got=1F1D seq=70 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=C810 got=C8DF seq=71 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=1110 got=1105 seq=72 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=C610 got=C6C7 seq=73 syncOff=1
+2026-07-26T03:12:05 | APP_CRC_FAIL exp=AE10 got=AEA0 seq=74 syncOff=1
+2026-07-26T03:12:06 | PHASE_RESULT 43 LF-FLRC-2600-255 pktSize=255 rx=1 unique=1 lost=99 per=99.0 rssi_avg=-33 rssi_min=-34 crc_err=62 garbage=1 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035524 tx_fw=unknown rx_fw=unknown
+2026-07-26T03:12:06 | PHASE_GUARD 500
+2026-07-26T03:12:06 | PHASE_START 44 LF-FLRC-1300-32 pktSize=32
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | FLRC_RAW32: 165 90 66 36 0 0 0 0 0 0 0 0 0 0 0 6 123 101 106 44 0 12 117 110 107 110 111 119 110 29 141 238
+2026-07-26T03:12:06 | PKT rx=1 seq=12 rssi=-33 phase=44 rx_ms=1947180 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035526 tx_fw=unknown
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | PKT rx=2 seq=13 rssi=-33 phase=44 rx_ms=1947210 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035526 tx_fw=unknown
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | PKT rx=3 seq=14 rssi=-33 phase=44 rx_ms=1947231 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1785035526 tx_fw=unknown
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | SYNC_NOT_FOUND first4=A3A0D158
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:06 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035526 laptop_utc=1785035526 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035526 offset=1
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035526 offset=1
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035527 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035527 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035527 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035527 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035527 offset=0
+2026-07-26T03:12:07 | TIME_DIFF gps_utc=1785035527 laptop_utc=1785035527 offset=0
+2026-07-26T03:12:07 | # SHUTDOWN

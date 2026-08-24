@@ -45,7 +45,10 @@ static const char *TAG = "FLRC";
 
 // ─── FLRC Config ─────────────────────────────────────────────────────
 #define FLRC_FREQ_MHZ   2440.0f
-#define FLRC_PKT_SIZE   255
+#ifndef TX_PKT_SIZE
+#define TX_PKT_SIZE   255
+#endif
+#define FLRC_PKT_SIZE TX_PKT_SIZE
 #define SPI_CLOCK_HZ    20000000  // 20 MHz — ESP32 can actually do this
 #define XTAL_MHZ        52.0f
 #define TX_PKT_COUNT    1000
@@ -355,6 +358,59 @@ static void run_tx() {
              (long long)elapsed_ms, throughput);
 }
 
+// ─── Continuous TX mode (for LA benchmark — infinite loop) ───────────
+// Same 3-command SPI pattern as RP2040: CLEAR_IRQ → WRITE_TX_FIFO → SET_TX.
+// No TX_PKT_COUNT limit — runs forever until power-cycle.
+#ifdef CONTINUOUS_TX
+static void run_tx_continuous() {
+    ESP_LOGI(TAG, "=== CONTINUOUS TX: infinite packets, %d bytes ===", FLRC_PKT_SIZE);
+
+    uint8_t pkt[FLRC_PKT_SIZE];
+    for (int j = 4; j < FLRC_PKT_SIZE; j++) pkt[j] = (uint8_t)(j & 0xFF);
+
+    uint8_t cmd_clr_irq[] = { 0x01, 0x16, 0xFF, 0xFF, 0xFF, 0xFF };  // CLEAR_IRQ
+    uint8_t cmd_set_tx[]  = { 0x02, 0x0D, 0x00, 0x00, 0x00 };        // SET_TX
+
+    int64_t start_us = esp_timer_get_time();
+    uint32_t tx_done_count = 0;
+    uint32_t tx_timeout_count = 0;
+
+    for (uint32_t i = 0; ; i++) {  // INFINITE — no TX_PKT_COUNT limit
+        pkt[0] = (uint8_t)(i >> 24);
+        pkt[1] = (uint8_t)(i >> 16);
+        pkt[2] = (uint8_t)(i >> 8);
+        pkt[3] = (uint8_t)(i & 0xFF);
+
+        // 1. Clear IRQ (0x0116)
+        rf_write_cmd(cmd_clr_irq, 6);
+
+        // 2. Write TX FIFO (0x0002)
+        rf_write_tx_fifo(pkt, FLRC_PKT_SIZE);
+
+        // 3. Set TX (0x020D)
+        rf_write_cmd(cmd_set_tx, 5);
+
+        // 4. Wait for TX_DONE — IRQ pin goes HIGH
+        uint32_t timeout = 500000;
+        while (!irq_high() && --timeout) {}
+
+        if (timeout > 0) tx_done_count++;
+        else             tx_timeout_count++;
+
+        // Stats every 100 packets (AFTER IRQ wait — non-blocking for TX timing)
+        if ((i + 1) % 100 == 0) {
+            int64_t elapsed_ms = (esp_timer_get_time() - start_us) / 1000;
+            float throughput = (elapsed_ms > 0)
+                ? ((float)(i + 1) * FLRC_PKT_SIZE * 8.0f) / (float)elapsed_ms
+                : 0.0f;
+            ESP_LOGI(TAG, "CONT_TX %lu pkts (done=%lu to=%lu) %.1f kbps",
+                     (unsigned long)(i + 1), (unsigned long)tx_done_count,
+                     (unsigned long)tx_timeout_count, throughput);
+        }
+    }
+}
+#endif
+
 // ─── RX mode ─────────────────────────────────────────────────────────
 static void run_rx() {
     ESP_LOGI(TAG, "=== RX START: listening for %d-byte FLRC packets ===", FLRC_PKT_SIZE);
@@ -519,8 +575,14 @@ extern "C" void app_main() {
     vTaskDelay(pdMS_TO_TICKS(500));
 
     // Run TX (always TX mode for this binary — flash separate board for RX)
-    // To use RX mode, compile with -DCONFIG_FLRC_RX
-#ifdef CONFIG_FLRC_RX
+    // CONTINUOUS_TX:  infinite TX loop for LA benchmark (idf.py -DCONTINUOUS_TX=1)
+    // CONFIG_FLRC_RX: RX mode (idf.py -DCONFIG_FLRC_RX=1)
+    // Default:        finite TX (1000 packets)
+#ifdef CONTINUOUS_TX
+    ESP_LOGI(TAG, "Mode: CONTINUOUS TX (infinite loop)");
+    vTaskDelay(pdMS_TO_TICKS(2000));  // Give RX board time to enter RX mode
+    run_tx_continuous();
+#elif defined(CONFIG_FLRC_RX)
     ESP_LOGI(TAG, "Mode: RX");
     run_rx();
 #else

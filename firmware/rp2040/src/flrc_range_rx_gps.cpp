@@ -1,4 +1,20 @@
 /*
+<<<<<<< HEAD
+ * DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
+ * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+ * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
+ *
+ * flrc_range_rx_gps.cpp — FLRC RX with RSSI + GPS extraction
+ *
+ * Backward compatible: parses GPS fields from TX payload if present.
+ * If TX has no GPS (fix=0), still outputs seq + rssi normally.
+ *
+ * Output per packet:
+ *   With GPS:    PKT,n,seq,rssi,lat,lon,alt,sats,hdop,fix
+ *   Without GPS: PKT,n,seq,rssi,0,0,0,0,0,0
+ *
+ * Based on flrc_range_rx_auto.cpp (verified 2026-07-22).
+=======
  * flrc_range_rx_gps.cpp — Autonomous RX with GPS distance calc
  *
  * Based on flrc_range_rx_auto.cpp.
@@ -22,11 +38,15 @@
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       LED=GP25 LED_ALT=GP16
+>>>>>>> range-tests
  */
 
 #include <Arduino.h>
 #include <SPI.h>
+<<<<<<< HEAD
+=======
 #include <math.h>
+>>>>>>> range-tests
 #include "pico/bootrom.h"
 
 // ─── Pins ────────────────────────────────────────────────────────────
@@ -42,6 +62,14 @@
 #define PIN_LED     25
 #define PIN_LED_ALT 16
 
+<<<<<<< HEAD
+// ─── FLRC Config ─────────────────────────────────────────────────────
+#define FLRC_FREQ_MHZ   2440.0f
+#define FLRC_PKT_SIZE   255
+#define SPI_FREQ_HZ     16000000UL
+#define XTAL_MHZ        52.0f
+
+=======
 #define SPI_FREQ_HZ     20000000UL
 #define XTAL_MHZ        52.0f
 
@@ -59,11 +87,14 @@ static float BASE_LON = 0.0f;
 static bool baseSet = false;
 
 // Sync word
+>>>>>>> range-tests
 #define SYNC_WORD_0   0x12
 #define SYNC_WORD_1   0xAD
 #define SYNC_WORD_2   0x10
 #define SYNC_WORD_3   0x1B
 
+<<<<<<< HEAD
+=======
 // ─── Haversine distance ──────────────────────────────────────────────
 static float haversineM(float lat1, float lon1, float lat2, float lon2) {
     const float R = 6371000.0f;  // Earth radius in meters
@@ -76,15 +107,19 @@ static float haversineM(float lat1, float lon1, float lat2, float lon2) {
     return R * c;
 }
 
+>>>>>>> range-tests
 // ─── SPI ─────────────────────────────────────────────────────────────
 static SPIClassRP2040 spiRf(spi0, PIN_MISO, PIN_CS, PIN_SCK, PIN_MOSI);
 static SPISettings spiSettings(SPI_FREQ_HZ, MSBFIRST, SPI_MODE0);
 
+<<<<<<< HEAD
+=======
 // Dummy RX buffer for write-only transfers (nullptr crashes on some cores)
 static uint8_t spiRxJunk[257];
 
 static volatile bool radioReady = false;
 
+>>>>>>> range-tests
 static inline void rfWaitBusy() {
     uint32_t timeout = millis() + 50;
     while (digitalRead(PIN_BUSY) == HIGH) {
@@ -96,7 +131,11 @@ static void rfWriteCmd(const uint8_t *buf, size_t len) {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
+<<<<<<< HEAD
+    for (size_t i = 0; i < len; i++) spiRf.transfer(buf[i]);
+=======
     spiRf.transfer((uint8_t*)buf, spiRxJunk, len);
+>>>>>>> range-tests
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
 }
@@ -150,16 +189,37 @@ static void rfSetRx() {
     rfWriteCmd(cmd, 5);
 }
 
+<<<<<<< HEAD
+=======
 // RSSI via GET_FLRC_PACKET_STATUS (0x024B) — 9-bit assembly (not SX1280 0x0104)
+>>>>>>> range-tests
 static int8_t rfReadRssi() {
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
+<<<<<<< HEAD
+    spiRf.transfer(0x01); spiRf.transfer(0x04);
+=======
     spiRf.transfer(0x02); spiRf.transfer(0x4B); // GET_FLRC_PACKET_STATUS
+>>>>>>> range-tests
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
     rfWaitBusy();
 
+<<<<<<< HEAD
+    uint8_t buf[4];
+    spiRf.beginTransaction(spiSettings);
+    digitalWrite(PIN_CS, LOW);
+    for (int i = 0; i < 4; i++) buf[i] = spiRf.transfer(0x00);
+    digitalWrite(PIN_CS, HIGH);
+    spiRf.endTransaction();
+    // SX1280/LR2021: PACKET_STATUS buf[0]=status, buf[1]=RSSI (unsigned, negate for dBm)
+    // RadioLib negates this value: RSSI_dBm = -buf[1]
+    return -(int8_t)buf[1];
+}
+
+// ─── Dual output ─────────────────────────────────────────────────────
+=======
     // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
     uint8_t buf[7];
     spiRf.beginTransaction(spiSettings);
@@ -212,6 +272,7 @@ static void rfSetPktSize(uint16_t size) {
 static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
 static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
 
+>>>>>>> range-tests
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
     va_list args;
@@ -222,7 +283,11 @@ static void dualPrintf(const char *fmt, ...) {
     Serial1.println(buf);
 }
 
+<<<<<<< HEAD
+// ─── Raw SPI Init ────────────────────────────────────────────────────
+=======
 // ─── Radio init ──────────────────────────────────────────────────────
+>>>>>>> range-tests
 static bool rawInitRadio() {
     pinMode(PIN_RST, OUTPUT);
     digitalWrite(PIN_RST, LOW);
@@ -237,13 +302,28 @@ static bool rawInitRadio() {
     { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); }
     delay(1);
 
+<<<<<<< HEAD
+    uint32_t frf = (uint32_t)((FLRC_FREQ_MHZ * 1e6 * (double)(1ULL << 18)) / (XTAL_MHZ * 1e6));
+    {
+        uint8_t cmd[] = {
+            0x02, 0x00,
+            (uint8_t)(frf >> 16), (uint8_t)(frf >> 8), (uint8_t)(frf & 0xFF)
+        };
+        rfWriteCmd(cmd, 5);
+    }
+=======
     rfSetFreq(RX_FREQ_MHZ);
+>>>>>>> range-tests
     delay(1);
 
     { uint8_t cmd[] = { 0x02, 0x01, 0x01, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
 
+<<<<<<< HEAD
+    uint16_t feFreq = (uint16_t)((FLRC_FREQ_MHZ / 4.0f) + 0.5f) | 0x8000;
+=======
     uint16_t feFreq = (uint16_t)((RX_FREQ_MHZ / 4.0f) + 0.5f) | 0x8000;
+>>>>>>> range-tests
     {
         uint8_t cmd[] = {
             0x01, 0x23,
@@ -256,6 +336,10 @@ static bool rawInitRadio() {
 
     { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
+<<<<<<< HEAD
+    { uint8_t cmd[] = { 0x02, 0x48, 0x00, 0x25 }; rfWriteCmd(cmd, 4); }
+    delay(1);
+=======
 
     rfSetBitrate(RX_BITRATE_KBPS);
     delay(5);
@@ -263,6 +347,7 @@ static bool rawInitRadio() {
     // Recalibrate after bitrate change (bandwidth changes with bitrate)
     { uint8_t cmd[] = { 0x01, 0x22, 0x5F }; rfWriteCmd(cmd, 3); }
     delay(5);
+>>>>>>> range-tests
 
     {
         uint8_t cmd[] = { 0x02, 0x4C, 0x01, SYNC_WORD_0, SYNC_WORD_1, SYNC_WORD_2, SYNC_WORD_3 };
@@ -270,25 +355,113 @@ static bool rawInitRadio() {
     }
     delay(1);
 
+<<<<<<< HEAD
+    {
+        uint8_t cmd[] = { 0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)FLRC_PKT_SIZE };
+        rfWriteCmd(cmd, 6);
+    }
+    delay(1);
+
+    { uint8_t cmd[] = { 0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10 }; rfWriteCmd(cmd, 7); }
+    delay(1);
+=======
     rfSetPktSize(RX_PKT_SIZE);
     delay(1);
 
+>>>>>>> range-tests
     { uint8_t cmd[] = { 0x02, 0x06, 0x03 }; rfWriteCmd(cmd, 3); }
     delay(1);
     { uint8_t cmd[] = { 0x01, 0x12, 0x09, 0x11 }; rfWriteCmd(cmd, 4); }
     delay(1);
+<<<<<<< HEAD
+    { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+=======
     { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x04, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+>>>>>>> range-tests
     delay(1);
 
     rfClearIrq();
     delay(1);
+<<<<<<< HEAD
+=======
     rfSetRx();
     delay(2);
+>>>>>>> range-tests
 
     uint8_t st = rfReadStatus();
     uint32_t irq = rfReadIrqStatus();
     dualPrintf("INIT Status=0x%02X IRQ=0x%08lX", st, (unsigned long)irq);
 
+<<<<<<< HEAD
+    if ((st >> 4) == 0x04 || (st >> 4) == 0x07 || (irq & 0x00020000)) {
+        dualPrintf("RADIO_INIT_OK");
+        return true;
+    }
+    dualPrintf("RADIO_INIT_FAIL (St=0x%02X)", st);
+    return false;
+}
+
+// ─── State ───────────────────────────────────────────────────────────
+static volatile bool radioReady = false;
+static uint32_t totalReceived = 0;
+
+// ─── Extract GPS from packet ─────────────────────────────────────────
+struct PacketGps {
+    int32_t  lat1e7;
+    int32_t  lon1e7;
+    int16_t  altMeters;
+    uint8_t  satellites;
+    uint8_t  hdopX10;
+    uint8_t  fix;
+};
+
+static PacketGps extractGps(const uint8_t *buf) {
+    PacketGps g;
+    g.lat1e7 = ((int32_t)buf[8] << 24) | ((int32_t)buf[9] << 16) |
+               ((int32_t)buf[10] << 8) | (int32_t)buf[11];
+    g.lon1e7 = ((int32_t)buf[12] << 24) | ((int32_t)buf[13] << 16) |
+               ((int32_t)buf[14] << 8) | (int32_t)buf[15];
+    g.altMeters = (int16_t)(((uint16_t)buf[16] << 8) | buf[17]);
+    g.satellites = buf[18];
+    g.hdopX10 = buf[19];
+    g.fix = buf[24];
+    return g;
+}
+
+// ─── Continuous RX ───────────────────────────────────────────────────
+static void runReceiveContinuous() {
+    if (!radioReady) { dualPrintf("ERR: radio not initialized"); return; }
+
+    uint8_t buf[FLRC_PKT_SIZE];
+    dualPrintf("RX_LISTEN_START");
+    rfSetRx();
+
+    while (true) {
+        uint32_t irq = rfReadIrqStatus();
+        if (!(irq & 0x00040000)) {
+            // No packet — check serial
+            static char cmdBuf[64];
+            static size_t cmdLen = 0;
+            while (Serial1.available()) {
+                char c = (char)Serial1.read();
+                if (c == '\n' || c == '\r') {
+                    if (cmdLen > 0) {
+                        cmdBuf[cmdLen] = '\0';
+                        if (strcmp(cmdBuf, "STATS") == 0) {
+                            dualPrintf("STATS rx=%lu", (unsigned long)totalReceived);
+                        }
+                        cmdLen = 0;
+                    }
+                } else if (cmdLen < sizeof(cmdBuf) - 1) {
+                    cmdBuf[cmdLen++] = c;
+                }
+            }
+            continue;
+        }
+
+        int8_t rssi = rfReadRssi();
+        rfReadFifo(buf, FLRC_PKT_SIZE);
+=======
     if ((st >> 4) == 0x05) {
         dualPrintln("RADIO_INIT_OK (RX mode)");
         return true;
@@ -383,6 +556,7 @@ static void runReceive() {
         stats.rssiCount++;
         if (rssi < stats.rssiMin) stats.rssiMin = rssi;
         if (rssi > stats.rssiMax) stats.rssiMax = rssi;
+>>>>>>> range-tests
 
         { uint8_t cmd[] = { 0x01, 0x1E }; rfWriteCmd(cmd, 2); }
         rfWaitBusy();
@@ -393,6 +567,21 @@ static void runReceive() {
         uint32_t seq = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                        ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
 
+<<<<<<< HEAD
+        PacketGps g = extractGps(buf);
+
+        totalReceived++;
+
+        // Output: PKT,n,seq,rssi,lat,lon,alt,sats,hdop,fix
+        dualPrintf("PKT,%lu,%lu,%d,%ld,%ld,%d,%d,%d,%d",
+                   (unsigned long)totalReceived, (unsigned long)seq, (int)rssi,
+                   (long)g.lat1e7, (long)g.lon1e7, (int)g.altMeters,
+                   (int)g.satellites, (int)g.hdopX10, (int)g.fix);
+
+        if (totalReceived % 100 == 0) {
+            digitalWrite(PIN_LED, HIGH); delayMicroseconds(50); digitalWrite(PIN_LED, LOW);
+        }
+=======
         // DEADBEEF end marker
         if (buf[0] == 0xDE && buf[1] == 0xAD &&
             buf[2] == 0xBE && buf[3] == 0xEF) {
@@ -509,6 +698,7 @@ static void processCommand(const char *cmd) {
         dualPrintln("Commands:");
         dualPrintln("  BASE <lat> <lon>  Set base station GPS position");
         dualPrintln("  STATUS             Print status");
+>>>>>>> range-tests
     }
 }
 
@@ -516,7 +706,11 @@ static void processCommand(const char *cmd) {
 void setup() {
     Serial.begin(115200);
     delay(2000);
+<<<<<<< HEAD
+    Serial.println("BOOT RX GPS");
+=======
     Serial.println("BOOT RX RANGE GPS");
+>>>>>>> range-tests
     Serial1.setTX(PIN_UART_TX);
     Serial1.setRX(PIN_UART_RX);
     Serial1.begin(115200);
@@ -524,6 +718,14 @@ void setup() {
 
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_LED_ALT, OUTPUT);
+<<<<<<< HEAD
+    for (int i = 0; i < 3; i++) {
+        digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(120);
+        digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(120);
+    }
+
+    dualPrintf("=== RP2040 FLRC RANGE RX + GPS ===");
+=======
     for (int i = 0; i < 4; i++) {
         digitalWrite(PIN_LED, HIGH); digitalWrite(PIN_LED_ALT, HIGH); delay(250);
         digitalWrite(PIN_LED, LOW);  digitalWrite(PIN_LED_ALT, LOW);  delay(250);
@@ -534,6 +736,7 @@ void setup() {
     dualPrintf("Config: freq=%.1f br=%d pktSize=%d listen=%dms",
                RX_FREQ_MHZ, RX_BITRATE_KBPS, RX_PKT_SIZE, RX_LISTEN_MS);
     dualPrintln("Serial: BASE <lat> <lon> to set base station position");
+>>>>>>> range-tests
 
     spiRf.begin();
     pinMode(PIN_CS, OUTPUT);
@@ -545,6 +748,15 @@ void setup() {
 
     if (radioReady) {
         digitalWrite(PIN_LED_ALT, HIGH);
+<<<<<<< HEAD
+        dualPrintf("Auto-start RX in 2s...");
+        delay(2000);
+    } else {
+        digitalWrite(PIN_LED_ALT, LOW);
+        while (true) {
+            digitalWrite(PIN_LED, HIGH); delay(500);
+            digitalWrite(PIN_LED, LOW); delay(500);
+=======
         dualPrintln("AUTO RX LISTENING (GPS mode)");
         if (!baseSet) {
             dualPrintln("WARNING: BASE not set — distance will not be computed");
@@ -557,11 +769,16 @@ void setup() {
         if (radioReady) {
             digitalWrite(PIN_LED_ALT, HIGH);
             dualPrintln("AUTO RX LISTENING (2nd init)");
+>>>>>>> range-tests
         }
     }
 }
 
 void loop() {
+<<<<<<< HEAD
+    runReceiveContinuous();
+}
+=======
     // Process serial commands (non-blocking)
     while (Serial.available()) {
         char c = (char)Serial.read();
@@ -585,3 +802,4 @@ void loop() {
         digitalWrite(PIN_LED, HIGH); delay(100); digitalWrite(PIN_LED, LOW); delay(500);
     }
 }
+>>>>>>> range-tests

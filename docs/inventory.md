@@ -30,6 +30,19 @@ Details NiceRF LoRa2021:
 - RX Sub-GHz: <6mA, RX 2.4GHz: <7mA
 - Sleep: <2uA, Sensitivity: -143dBm (SF12/62.5kHz Sub-GHz), -137dBm (SF12/203kHz 2.4GHz)
 
+Details LoRa2021F33-2G4 (AliExpress high-power module):
+- Product: https://pl.aliexpress.com/item/1005012579473443.html
+- Chip: LR2021 Gen4 (same as NiceRF LoRa2021, but with external PA)
+- TX power: 2W (+33 dBm) — highest power LR2021 variant
+- Dual band: Sub-GHz (150-915MHz) + 2.4GHz
+- 2x SMA connectors on board edge (ANT + ANT_2G4)
+- Pin layout: 9 pads per long edge (2.54mm pitch)
+  Top: ANT_2G4, GND, SCK, NSS, BUSY, MOSI, MISO, RESET, IRQ
+  Bottom: ANT, GND, GND, GND, CE, GND, GND, GND, VCC
+- Metal shield over RF section (silver top, blue PCB)
+- Board size: ~40x25mm est (needs caliper verification)
+- Version: V1.0
+
 Details EBYTE E28-2G4M27S:
 - Chip: Semtech SX1281 (2.4 GHz only)
 - TX power: +27 dBm (500 mW) built-in PA — no external FEM needed

@@ -1,0 +1,549 @@
+=== Overnight stability monitor started Sun Jul 26 02:22:25 AM UTC 2026 ===
+2026-07-26T02:22:25 | phases=1 decoded=1 reconnects=1 RSSI range    : -58..-32 dBm (1 samples)
+2026-07-26T02:25:25 | phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T02:25:25 | *** ALERT: ZERO DECODE ***
+2026-07-26T02:28:25 | phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T02:28:25 | *** ALERT: ZERO DECODE ***
+=== Overnight stability monitor v2 started Sun Jul 26 02:30:45 AM UTC 2026 ===
+2026-07-26T02:30:45 | Re-flashing both boards...
+=== Overnight stability monitor v2 started Sun Jul 26 02:32:10 AM UTC 2026 ===
+2026-07-26T02:32:10 | Re-flashing both boards...
+2026-07-26T02:32:10 | cycle=1 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T02:32:10 | *** ALERT: ZERO DECODE ***
+=== Overnight monitor v3 started Sun Jul 26 02:36:30 AM UTC 2026 ===
+2026-07-26T02:36:30 | cycle=1 port=/dev/ttyACM4 phases=45 decoded=41  RSSI    : -58..-15 dBm (41 samples)
+=== Overnight stability monitor v2 started Sun Jul 26 02:39:26 AM UTC 2026 ===
+2026-07-26T02:39:26 | Re-flashing both boards...
+=== Overnight stability monitor v3 started Sun Jul 26 02:40:03 AM UTC 2026 ===
+2026-07-26T02:39:00 | cycle=2 port=/dev/ttyACM4 phases=40 decoded=30  RSSI    : -59..-12 dBm (30 samples)
+2026-07-26T02:40:03 | cycle=1 phases=22 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T02:41:31 | cycle=3 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -59..-14 dBm (33 samples)
+2026-07-26T02:42:33 | cycle=2 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T02:44:01 | cycle=4 port=/dev/ttyACM4 phases=35 decoded=32  RSSI    : -58..-12 dBm (32 samples)
+2026-07-26T02:45:04 | cycle=3 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T02:46:31 | cycle=5 port=/dev/ttyACM4 phases=35 decoded=35  RSSI    : -126..-12 dBm (35 samples)
+2026-07-26T02:47:34 | cycle=4 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T02:49:02 | cycle=6 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-14 dBm (34 samples)
+2026-07-26T02:50:04 | cycle=5 phases=21 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T02:51:32 | cycle=7 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -59..-12 dBm (33 samples)
+2026-07-26T02:52:35 | cycle=6 phases=23 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T02:54:02 | cycle=8 port=/dev/ttyACM4 phases=34 decoded=34  RSSI    : -58..-23 dBm (34 samples)
+2026-07-26T02:55:05 | cycle=7 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T02:56:33 | cycle=9 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -59..-16 dBm (33 samples)
+2026-07-26T02:57:35 | cycle=8 phases=22 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T02:59:03 | cycle=10 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -58..-13 dBm (33 samples)
+2026-07-26T03:00:05 | cycle=9 phases=22 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:01:33 | cycle=11 port=/dev/ttyACM4 phases=35 decoded=32  RSSI    : -58..-13 dBm (32 samples)
+2026-07-26T03:02:36 | cycle=10 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:04:03 | cycle=12 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-14 dBm (34 samples)
+2026-07-26T03:05:06 | cycle=11 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:06:34 | cycle=13 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -58..-16 dBm (33 samples)
+2026-07-26T03:07:36 | cycle=12 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:09:04 | cycle=14 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -58..-12 dBm (33 samples)
+2026-07-26T03:10:07 | cycle=13 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:11:34 | cycle=15 port=/dev/ttyACM4 phases=36 decoded=33  RSSI    : -58..-12 dBm (33 samples)
+2026-07-26T03:12:37 | cycle=14 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:14:05 | cycle=16 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -58..-12 dBm (33 samples)
+2026-07-26T03:15:07 | cycle=15 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:16:35 | cycle=17 port=/dev/ttyACM4 phases=34 decoded=32  RSSI    : -59..-14 dBm (32 samples)
+2026-07-26T03:17:37 | cycle=16 phases=22 decoded=19 reconnects=0 RSSI range    : -58..-18 dBm (19 samples)
+2026-07-26T03:19:05 | cycle=18 port=/dev/ttyACM4 phases=37 decoded=34  RSSI    : -58..-14 dBm (34 samples)
+2026-07-26T03:20:08 | cycle=17 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:21:36 | cycle=19 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -124..-12 dBm (33 samples)
+2026-07-26T03:22:38 | cycle=18 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:24:06 | cycle=20 port=/dev/ttyACM4 phases=34 decoded=33  RSSI    : -58..-13 dBm (33 samples)
+2026-07-26T03:25:08 | cycle=19 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:26:36 | cycle=21 port=/dev/ttyACM4 phases=36 decoded=31  RSSI    : -58..-16 dBm (31 samples)
+2026-07-26T03:27:38 | cycle=20 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:29:07 | cycle=22 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-16 dBm (34 samples)
+2026-07-26T03:30:09 | cycle=21 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:31:37 | cycle=23 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -59..-14 dBm (34 samples)
+2026-07-26T03:32:39 | cycle=22 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:34:07 | cycle=24 port=/dev/ttyACM4 phases=36 decoded=31  RSSI    : -60..-14 dBm (31 samples)
+2026-07-26T03:35:09 | cycle=23 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:36:38 | cycle=25 port=/dev/ttyACM4 phases=36 decoded=34  RSSI    : -58..-16 dBm (34 samples)
+2026-07-26T03:37:40 | cycle=24 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:39:08 | cycle=26 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-12 dBm (34 samples)
+2026-07-26T03:40:10 | cycle=25 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:41:38 | cycle=27 port=/dev/ttyACM4 phases=35 decoded=33  RSSI    : -59..-18 dBm (33 samples)
+2026-07-26T03:42:40 | cycle=26 phases=23 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:44:09 | cycle=28 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -59..-13 dBm (34 samples)
+2026-07-26T03:45:10 | cycle=27 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:46:39 | cycle=29 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -59..-16 dBm (34 samples)
+2026-07-26T03:47:41 | cycle=28 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:49:09 | cycle=30 port=/dev/ttyACM4 phases=36 decoded=33  RSSI    : -122..-13 dBm (33 samples)
+2026-07-26T03:50:11 | cycle=29 phases=20 decoded=17 reconnects=0 RSSI range    : -58..-18 dBm (17 samples)
+2026-07-26T03:51:39 | cycle=31 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-16 dBm (34 samples)
+2026-07-26T03:52:41 | cycle=30 phases=21 decoded=16 reconnects=0 RSSI range    : -56..-18 dBm (16 samples)
+2026-07-26T03:54:10 | cycle=32 port=/dev/ttyACM4 phases=36 decoded=35  RSSI    : -58..-13 dBm (35 samples)
+2026-07-26T03:55:11 | cycle=31 phases=22 decoded=17 reconnects=0 RSSI range    : -56..-18 dBm (17 samples)
+2026-07-26T03:56:40 | cycle=33 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-17 dBm (34 samples)
+2026-07-26T03:57:42 | cycle=32 phases=21 decoded=18 reconnects=0 RSSI range    : -58..-18 dBm (18 samples)
+2026-07-26T03:59:10 | cycle=34 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -59..-17 dBm (34 samples)
+2026-07-26T04:00:12 | cycle=33 phases=20 decoded=17 reconnects=0 RSSI range    : -56..-18 dBm (17 samples)
+2026-07-26T04:01:41 | cycle=35 port=/dev/ttyACM4 phases=37 decoded=34  RSSI    : -59..-14 dBm (34 samples)
+2026-07-26T04:02:42 | cycle=34 phases=20 decoded=16 reconnects=0 RSSI range    : -56..-18 dBm (16 samples)
+2026-07-26T04:04:11 | cycle=36 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-13 dBm (34 samples)
+2026-07-26T04:05:12 | cycle=35 phases=20 decoded=17 reconnects=0 RSSI range    : -56..-18 dBm (17 samples)
+2026-07-26T04:06:41 | cycle=37 port=/dev/ttyACM4 phases=37 decoded=34  RSSI    : -59..-18 dBm (34 samples)
+2026-07-26T04:07:43 | cycle=36 phases=20 decoded=16 reconnects=0 RSSI range    : -55..-18 dBm (16 samples)
+2026-07-26T04:09:12 | cycle=38 port=/dev/ttyACM4 phases=35 decoded=33  RSSI    : -58..-6 dBm (33 samples)
+2026-07-26T04:10:13 | cycle=37 phases=20 decoded=17 reconnects=0 RSSI range    : -56..-18 dBm (17 samples)
+2026-07-26T04:11:42 | cycle=39 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-15 dBm (34 samples)
+2026-07-26T04:12:43 | cycle=38 phases=20 decoded=17 reconnects=0 RSSI range    : -56..-18 dBm (17 samples)
+2026-07-26T04:14:12 | cycle=40 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-14 dBm (34 samples)
+2026-07-26T04:15:13 | cycle=39 phases=20 decoded=16 reconnects=0 RSSI range    : -56..-18 dBm (16 samples)
+2026-07-26T04:16:43 | cycle=41 port=/dev/ttyACM4 phases=37 decoded=35  RSSI    : -60..-16 dBm (35 samples)
+2026-07-26T04:17:44 | cycle=40 phases=20 decoded=17 reconnects=0 RSSI range    : -56..-18 dBm (17 samples)
+2026-07-26T04:19:13 | cycle=42 port=/dev/ttyACM4 phases=35 decoded=34  RSSI    : -58..-17 dBm (34 samples)
+2026-07-26T04:20:14 | cycle=41 phases=18 decoded=15 reconnects=0 RSSI range    : -56..-18 dBm (15 samples)
+2026-07-26T04:21:43 | cycle=43 port=/dev/ttyACM4 phases=8 decoded=8  RSSI    : -58..-32 dBm (8 samples)
+2026-07-26T04:22:44 | cycle=42 phases=3 decoded=2 reconnects=0 RSSI range    : -30..-29 dBm (2 samples)
+2026-07-26T04:24:13 | cycle=44 port=/dev/ttyACM4 phases=3 decoded=1  RSSI    : -21..-21 dBm (1 samples)
+2026-07-26T04:25:14 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:25:14 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:26:44 | cycle=45 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:26:44 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:27:45 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:27:45 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:29:14 | cycle=46 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:29:14 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:30:15 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:30:15 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:31:44 | cycle=47 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:31:44 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:32:45 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:32:45 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:34:14 | cycle=48 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:34:14 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:35:15 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:35:15 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:36:45 | cycle=49 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:36:45 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:37:46 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:37:46 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:39:15 | cycle=50 port=/dev/ttyACM4 phases=2 decoded=2  RSSI    : -21..-20 dBm (2 samples)
+2026-07-26T04:40:16 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:40:16 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:41:45 | cycle=51 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:41:45 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:42:46 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:42:46 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:44:16 | cycle=52 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:44:16 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:45:16 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:45:16 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:46:47 | cycle=53 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:46:47 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:47:46 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:47:46 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:49:17 | cycle=54 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:49:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:50:17 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:50:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:51:47 | cycle=55 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:51:47 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:52:47 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:52:47 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:54:17 | cycle=56 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:54:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:55:17 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:55:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:56:48 | cycle=57 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T04:56:48 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:57:47 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T04:57:47 | *** ALERT: ZERO DECODE ***
+2026-07-26T04:59:18 | cycle=58 port=/dev/ttyACM4 phases=4 decoded=2  RSSI    : -32..-24 dBm (2 samples)
+2026-07-26T05:00:17 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:00:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:01:48 | cycle=59 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:01:48 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:02:48 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:02:48 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:04:19 | cycle=60 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:04:19 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:05:18 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:05:18 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:06:49 | cycle=61 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:06:49 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:07:48 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:07:48 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:09:19 | cycle=62 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:09:19 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:10:18 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:10:18 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:11:49 | cycle=63 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:11:49 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:12:48 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:12:48 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:14:20 | cycle=64 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:14:20 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:15:19 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:15:19 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:16:50 | cycle=65 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:16:50 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:17:49 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:17:49 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:19:20 | cycle=66 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:19:20 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:20:19 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:20:19 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:21:50 | cycle=67 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:21:50 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:22:49 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:22:49 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:24:21 | cycle=68 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:24:21 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:25:19 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:25:19 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:26:51 | cycle=69 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:26:51 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:27:50 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:27:50 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:29:21 | cycle=70 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:29:21 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:30:20 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:30:20 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:31:53 | cycle=71 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:31:53 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:32:50 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:32:50 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:34:23 | cycle=72 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:34:23 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:35:20 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:35:20 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:36:53 | cycle=73 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:36:53 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:37:51 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:37:51 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:39:25 | cycle=74 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:39:25 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:40:21 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:40:21 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:41:55 | cycle=75 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:41:55 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:42:51 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:42:51 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:44:25 | cycle=76 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:44:25 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:45:21 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:45:21 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:46:56 | cycle=77 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:46:56 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:47:51 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:47:51 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:49:27 | cycle=78 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:49:27 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:50:22 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:50:22 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:51:57 | cycle=79 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:51:57 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:52:52 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:52:52 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:54:27 | cycle=80 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:54:27 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:55:22 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:55:22 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:56:57 | cycle=81 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:56:57 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:57:52 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T05:57:52 | *** ALERT: ZERO DECODE ***
+2026-07-26T05:59:28 | cycle=82 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T05:59:28 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:00:22 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:00:22 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:01:58 | cycle=83 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:01:58 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:02:53 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:02:53 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:04:28 | cycle=84 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:04:28 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:05:23 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:05:23 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:06:58 | cycle=85 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:06:58 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:07:53 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:07:53 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:09:29 | cycle=86 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:09:29 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:10:23 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:10:23 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:11:59 | cycle=87 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:11:59 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:12:53 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:12:53 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:14:29 | cycle=88 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:14:29 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:15:24 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:15:24 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:16:59 | cycle=89 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:16:59 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:17:54 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:17:54 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:19:30 | cycle=90 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:19:30 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:20:24 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:20:24 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:22:00 | cycle=91 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:22:00 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:22:54 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:22:54 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:24:30 | cycle=92 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:24:30 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:25:24 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:25:24 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:27:00 | cycle=93 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:27:00 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:27:55 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:27:55 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:29:30 | cycle=94 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:29:30 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:30:25 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:30:25 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:32:01 | cycle=95 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:32:01 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:32:55 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:32:55 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:34:31 | cycle=96 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:34:31 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:35:25 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:35:25 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:37:01 | cycle=97 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:37:01 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:37:55 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:37:55 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:39:32 | cycle=98 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:39:32 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:40:26 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:40:26 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:42:02 | cycle=99 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:42:02 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:42:56 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:42:56 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:44:32 | cycle=100 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:44:32 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:45:26 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:45:26 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:47:02 | cycle=101 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:47:02 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:47:56 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:47:56 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:49:32 | cycle=102 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:49:32 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:50:26 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:50:26 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:52:03 | cycle=103 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:52:03 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:52:57 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:52:57 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:54:33 | cycle=104 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:54:33 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:55:27 | cycle=43 phases=0 decoded=0 reconnects=1 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:55:27 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:57:03 | cycle=105 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:57:03 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:57:57 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T06:57:57 | *** ALERT: ZERO DECODE ***
+2026-07-26T06:59:34 | cycle=106 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T06:59:34 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:00:27 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:00:27 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:02:04 | cycle=107 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:02:04 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:02:57 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:02:57 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:04:34 | cycle=108 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:04:34 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:05:28 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:05:28 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:07:04 | cycle=109 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:07:04 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:07:58 | cycle=43 phases=0 decoded=0 reconnects=1 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:07:58 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:09:34 | cycle=110 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:09:34 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:10:29 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:10:29 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:12:05 | cycle=111 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:12:05 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:12:59 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:12:59 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:14:35 | cycle=112 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:14:35 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:15:29 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:15:29 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:17:05 | cycle=113 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:17:05 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:17:59 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:17:59 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:19:35 | cycle=114 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:19:35 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:20:30 | cycle=43 phases=0 decoded=0 reconnects=1 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:20:30 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:22:06 | cycle=115 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:22:06 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:23:01 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:23:01 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:24:36 | cycle=116 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:24:36 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:25:31 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:25:31 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:27:06 | cycle=117 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:27:06 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:28:01 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:28:01 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:29:36 | cycle=118 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:29:36 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:30:31 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:30:31 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:32:07 | cycle=119 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:32:07 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:33:02 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:33:02 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:34:37 | cycle=120 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:34:37 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:35:32 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:35:32 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:37:07 | cycle=121 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:37:07 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:38:02 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:38:02 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:39:37 | cycle=122 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:39:37 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:40:32 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:40:32 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:42:08 | cycle=123 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:42:08 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:43:03 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:43:03 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:44:39 | cycle=124 port=/dev/ttyACM4 phases=4 decoded=4  RSSI    : -54..-32 dBm (4 samples)
+2026-07-26T07:45:33 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:45:33 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:47:09 | cycle=125 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:47:09 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:48:03 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:48:03 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:49:39 | cycle=126 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:49:39 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:50:33 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:50:33 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:52:10 | cycle=127 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:52:10 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:53:03 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:53:03 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:54:40 | cycle=128 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:54:40 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:55:34 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:55:34 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:57:10 | cycle=129 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:57:10 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:58:04 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T07:58:04 | *** ALERT: ZERO DECODE ***
+2026-07-26T07:59:40 | cycle=130 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T07:59:40 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:00:34 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:00:34 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:02:11 | cycle=131 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:02:11 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:03:04 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:03:04 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:04:41 | cycle=132 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:04:41 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:05:34 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:05:34 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:07:11 | cycle=133 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:07:11 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:08:05 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:08:05 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:09:41 | cycle=134 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:09:41 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:10:35 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:10:35 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:12:12 | cycle=135 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:12:12 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:13:05 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:13:05 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:14:42 | cycle=136 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:14:42 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:15:35 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:15:35 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:17:12 | cycle=137 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:17:12 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:18:05 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:18:05 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:19:42 | cycle=138 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:19:42 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:20:36 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:20:36 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:22:13 | cycle=139 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:22:13 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:23:06 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:23:06 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:24:43 | cycle=140 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:24:43 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:25:36 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:25:36 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:27:13 | cycle=141 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:27:13 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:28:06 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:28:06 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:29:43 | cycle=142 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:29:43 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:30:36 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:30:36 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:32:13 | cycle=143 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:32:13 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:33:07 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:33:07 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:34:44 | cycle=144 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:34:44 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:35:37 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:35:37 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:37:14 | cycle=145 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:37:14 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:38:07 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:38:07 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:39:44 | cycle=146 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:39:44 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:40:37 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:40:37 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:42:14 | cycle=147 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:42:14 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:43:07 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:43:07 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:44:45 | cycle=148 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:44:45 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:45:38 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:45:38 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:47:15 | cycle=149 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:47:15 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:48:08 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:48:08 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:49:45 | cycle=150 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:49:45 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:50:38 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:50:38 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:52:16 | cycle=151 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:52:16 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:53:08 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:53:08 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:54:47 | cycle=152 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:54:47 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:55:38 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:55:38 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:57:17 | cycle=153 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:57:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:58:09 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T08:58:09 | *** ALERT: ZERO DECODE ***
+2026-07-26T08:59:47 | cycle=154 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T08:59:47 | *** ALERT: ZERO DECODE ***
+2026-07-26T09:00:39 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T09:00:39 | *** ALERT: ZERO DECODE ***
+2026-07-26T09:02:17 | cycle=155 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T09:02:17 | *** ALERT: ZERO DECODE ***
+2026-07-26T09:03:09 | cycle=43 phases=0 decoded=0 reconnects=0 RSSI range    : (no packets decoded with RSSI)
+2026-07-26T09:03:09 | *** ALERT: ZERO DECODE ***
+2026-07-26T09:04:48 | cycle=156 port=/dev/ttyACM4 phases= decoded= 
+2026-07-26T09:06:00 | cycle=157 port=/dev/ttyACM4 phases= decoded= 
+2026-07-26T09:06:33 | cycle=158 port=/dev/ttyACM4 phases=0 decoded=0  RSSI    : (no packets decoded with RSSI)
+2026-07-26T09:06:33 | *** ALERT: ZERO DECODE ***

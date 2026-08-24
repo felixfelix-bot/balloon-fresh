@@ -1,41 +1,34 @@
 #!/usr/bin/env python3
 """
-parse_unified_csv.py — Convert raw LR2021 sweep serial logs to unified CSV.
+parse_unified_csv.py — Parse LR2021 sweep serial output into unified CSV.
 
-Reads a serial log file captured from the RX (or TX) board via ``tee`` and
-extracts structured data into the unified CSV schema used by the balloon
-range-test analysis pipeline.
+Handles ALL output formats:
+    - LR2021_RESULT,path=...,freq_mhz=...  (new unified format, plan section 3.1)
+    - PHASE_RESULT <idx> <name> key=val ... (legacy speed-tests format)
+    - RANGE_RESULT_RX key=val ...           (range-tests format)
+    - SWEEP_TX_RESULT key=val ...           (older sweep format)
 
-Supported log line types
--------------------------
-  SWEEP_RX_RESULT  — per-burst receive statistics (RSSI, count, SNR)
-  SWEEP_TX_RESULT  — per-burst transmit statistics (sent, throughput, power)
-  BURST_END        — burst packet count (fallback for packets_sent)
-  MODE_SWITCH      — mode metadata (informational, not emitted as CSV row)
-  PKT              — per-packet data (accumulated for stats, not a CSV row)
+Usage:
+    # Parse a log file
+    python3 parse_unified_csv.py sweep_log.txt --distance 1 --los N -o results.csv
 
-Usage
------
-  python3 tools/parse_unified_csv.py <log_file> [--gpx <gpx_file>] [--output results.csv]
+    # Live capture from serial port
+    cat /dev/ttyACM3 | python3 parse_unified_csv.py --distance 10 --los Y
 
-Exit codes:  0 = success (rows written),  1 = no parseable data,  2 = usage error
+    # With GPS time correlation
+    python3 parse_unified_csv.py log.txt --gps-time 2026-07-24T12:00:00Z
+
+    # Append mode (multiple files → one CSV)
+    python3 parse_unified_csv.py log1.txt log2.txt -o combined.csv --append
 """
 
-from __future__ import annotations
-
-import argparse
-import csv
-import os
-import re
 import sys
-from collections import defaultdict
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+import re
+import csv
+import argparse
+from datetime import datetime, timezone
 
-# ─── Unified CSV schema ─────────────────────────────────────────────────────
-
-CSV_HEADERS = [
+CSV_FIELDS = [
     "timestamp_iso",
     "path",
     "freq_mhz",
@@ -62,582 +55,273 @@ CSV_HEADERS = [
     "notes",
 ]
 
+# Phase name → config mapping (for legacy PHASE_RESULT format)
+PHASE_CONFIG = {
+    "HF-LoRa-SF7":   {"mod": "LORA", "freq": 2440, "sf": 7,  "bw": 812, "cr": 45, "br": 0,   "pkt": 127},
+    "HF-LoRa-SF9":   {"mod": "LORA", "freq": 2440, "sf": 9,  "bw": 812, "cr": 45, "br": 0,   "pkt": 127},
+    "HF-LoRa-SF12":  {"mod": "LORA", "freq": 2440, "sf": 12, "bw": 812, "cr": 45, "br": 0,   "pkt": 127},
+    "HF-FLRC-2600":  {"mod": "FLRC", "freq": 2440, "sf": 0,  "bw": 0,   "cr": 0,  "br": 2600, "pkt": 255},
+    "HF-FLRC-1300":  {"mod": "FLRC", "freq": 2440, "sf": 0,  "bw": 0,   "cr": 0,  "br": 1300, "pkt": 255},
+    "HF-FLRC-650":   {"mod": "FLRC", "freq": 2440, "sf": 0,  "bw": 0,   "cr": 0,  "br": 650,  "pkt": 255},
+    "HF-FLRC-325":   {"mod": "FLRC", "freq": 2440, "sf": 0,  "bw": 0,   "cr": 0,  "br": 325,  "pkt": 255},
+    "LF-LoRa-SF7":   {"mod": "LORA", "freq": 868,  "sf": 7,  "bw": 250, "cr": 45, "br": 0,   "pkt": 127},
+    "LF-LoRa-SF9":   {"mod": "LORA", "freq": 868,  "sf": 9,  "bw": 250, "cr": 45, "br": 0,   "pkt": 127},
+    "LF-LoRa-SF12":  {"mod": "LORA", "freq": 868,  "sf": 12, "bw": 250, "cr": 45, "br": 0,   "pkt": 127},
+    "LF-FLRC-2600":  {"mod": "FLRC", "freq": 868,  "sf": 0,  "bw": 0,   "cr": 0,  "br": 2600, "pkt": 255},
+    "LF-FLRC-1300":  {"mod": "FLRC", "freq": 868,  "sf": 0,  "bw": 0,   "cr": 0,  "br": 1300, "pkt": 255},
+    "LF-FLRC-650":   {"mod": "FLRC", "freq": 868,  "sf": 0,  "bw": 0,   "cr": 0,  "br": 650,  "pkt": 255},
+    "LF-FLRC-325":   {"mod": "FLRC", "freq": 868,  "sf": 0,  "bw": 0,   "cr": 0,  "br": 325,  "pkt": 255},
+}
 
-# ─── Data containers ────────────────────────────────────────────────────────
-
-@dataclass
-class SweepResult:
-    """One row of output — populated from RX+TX join."""
-    timestamp_iso: str = ""
-    path: str = ""
-    freq_mhz: str = ""
-    modulation: str = ""
-    bitrate_kbps: str = ""
-    spreading_factor: str = ""
-    bandwidth_khz: str = ""
-    coding_rate: str = ""
-    tx_power_dbm: str = ""
-    pa_state: str = ""
-    distance_m: str = ""
-    los: str = ""
-    packets_sent: str = ""
-    packets_rx: str = ""
-    packets_unique: str = ""
-    per_percent: str = ""
-    throughput_kbps: str = ""
-    rssi_avg_dbm: str = ""
-    rssi_min_dbm: str = ""
-    rssi_max_dbm: str = ""
-    snr_avg_db: str = ""
-    pkt_size_bytes: str = ""
-    uptime_ms: str = ""
-    notes: str = ""
-
-    def to_dict(self) -> dict:
-        return {h: getattr(self, h, "") for h in CSV_HEADERS}
+def infer_path(name):
+    if name.startswith("HF-"):
+        return "HF_FLRC" if "FLRC" in name else "HF_LORA"
+    elif name.startswith("LF-"):
+        return "LF_FLRC" if "FLRC" in name else "LF_LORA"
+    return "UNKNOWN"
 
 
-# ─── Parsing helpers ────────────────────────────────────────────────────────
+def parse_kv_fields(text):
+    """Parse key=value pairs from text. Handles comma and space separators."""
+    fields = {}
+    # Split on commas first (for LR2021_RESULT format), then parse each segment
+    # Also handle space-separated format (PHASE_RESULT, RANGE_RESULT_RX)
+    # Strategy: find all key=value pairs where value ends at next comma/space
+    for match in re.finditer(r'(\w+)=([^,\s]+)', text):
+        fields[match.group(1)] = match.group(2)
+    return fields
 
-def _parse_kv_fields(parts: list[str]) -> dict:
-    """Parse ``key=value`` tokens into a dict, skipping non-kv tokens."""
-    out: dict[str, str] = {}
-    for tok in parts:
-        if "=" in tok:
-            k, _, v = tok.partition("=")
-            out[k.strip()] = v.strip()
-    return out
+
+def parse_lr2021_result(line):
+    """Parse LR2021_RESULT,key=val,... format (plan section 3.1)."""
+    # Extract everything after the tag
+    m = re.match(r'LR2021_RESULT[,\s]*(.*)', line.strip())
+    if not m:
+        return None
+
+    kv = parse_kv_fields(m.group(1))
+    if not kv:
+        return None
+
+    # Build row from explicit fields
+    row = {f: "" for f in CSV_FIELDS}
+    row["timestamp_iso"] = datetime.now(timezone.utc).isoformat()
+
+    for k, v in kv.items():
+        if k in row:
+            row[k] = v
+        elif k not in ("notes",):
+            # Unknown field — append to notes
+            if row["notes"]:
+                row["notes"] += f" {k}={v}"
+            else:
+                row["notes"] = f"{k}={v}"
+
+    # Derive PA state from tx_power if not explicit
+    if not row.get("pa_state") and row.get("tx_power_dbm"):
+        try:
+            row["pa_state"] = "ON" if float(row["tx_power_dbm"]) >= 12.5 else "OFF"
+        except ValueError:
+            pass
+
+    return row
 
 
-def _split_log_line(line: str) -> tuple[str, list[str]]:
-    """
-    Split a log line into (prefix, tokens).
+def parse_phase_result(line):
+    """Parse legacy PHASE_RESULT format from speed-tests firmware."""
+    m = re.match(r'PHASE_RESULT\s+(\d+)\s+(\S+)\s*(.*)', line.strip())
+    if not m:
+        return None
 
-    Handles two formats:
-      comma-separated:  ``SWEEP_RX_RESULT,mode=0,type=FLRC,...``
-      space-separated:  ``BURST_END mode=0 n=500``
-    """
+    phase_idx = int(m.group(1))
+    phase_name = m.group(2)
+    rest = m.group(3)
+
+    kv = parse_kv_fields(rest)
+    config = PHASE_CONFIG.get(phase_name, {"mod": "?", "freq": 0, "sf": 0, "bw": 0, "cr": 0, "br": 0, "pkt": 0})
+
+    is_rx = "rx=" in rest
+    is_tx = "sent=" in rest
+
+    row = {f: "" for f in CSV_FIELDS}
+    row["timestamp_iso"] = datetime.now(timezone.utc).isoformat()
+    row["path"] = kv.get("path", infer_path(phase_name))
+    row["freq_mhz"] = config["freq"]
+    row["modulation"] = config["mod"]
+    row["bitrate_kbps"] = config["br"]
+    row["spreading_factor"] = config["sf"]
+    row["bandwidth_khz"] = config["bw"]
+    row["coding_rate"] = config["cr"]
+    row["pkt_size_bytes"] = config["pkt"]
+
+    pa = kv.get("pa", "")
+    row["pa_state"] = pa
+
+    if "tx_power_dbm" in kv:
+        row["tx_power_dbm"] = kv["tx_power_dbm"]
+    elif pa == "ON":
+        row["tx_power_dbm"] = "12.5"
+    else:
+        row["tx_power_dbm"] = "0.0"
+
+    if is_rx:
+        row["packets_rx"] = kv.get("rx", "0")
+        row["packets_sent"] = kv.get("expected", "0")
+        row["packets_unique"] = kv.get("rx", "0")
+        row["per_percent"] = kv.get("per", "0")
+        row["rssi_avg_dbm"] = kv.get("rssi_avg", "")
+        row["snr_avg_db"] = "" if config["mod"] == "LORA" else "NA"
+        row["uptime_ms"] = kv.get("elapsed_ms", "")
+        row["notes"] = f"phase={phase_idx} crc_err={kv.get('crc_err', '0')}"
+    elif is_tx:
+        row["packets_sent"] = kv.get("sent", "0")
+        row["packets_rx"] = "0"
+        row["uptime_ms"] = kv.get("elapsed_ms", "")
+        row["notes"] = f"tx_side phase={phase_idx} timeout={kv.get('timeout', '0')}"
+    else:
+        return None
+
+    return row
+
+
+def parse_range_result_rx(line):
+    """Parse RANGE_RESULT_RX format from range-tests firmware."""
+    m = re.match(r'RANGE_RESULT_RX[,\s]*(.*)', line.strip())
+    if not m:
+        return None
+
+    kv = parse_kv_fields(m.group(1))
+    if not kv:
+        return None
+
+    row = {f: "" for f in CSV_FIELDS}
+    row["timestamp_iso"] = datetime.now(timezone.utc).isoformat()
+
+    # Map range-tests fields to unified schema
+    field_map = {
+        "rx": "packets_rx", "sent": "packets_sent", "expected": "packets_sent",
+        "unique": "packets_unique", "per": "per_percent",
+        "rssi": "rssi_avg_dbm", "rssi_avg": "rssi_avg_dbm",
+        "rssi_min": "rssi_min_dbm", "rssi_max": "rssi_max_dbm",
+        "snr": "snr_avg_db", "snr_avg": "snr_avg_db",
+        "path": "path", "pa": "pa_state", "freq": "freq_mhz",
+        "freq_mhz": "freq_mhz", "mod": "modulation", "modulation": "modulation",
+        "br": "bitrate_kbps", "bitrate_kbps": "bitrate_kbps",
+        "sf": "spreading_factor", "spreading_factor": "spreading_factor",
+        "bw": "bandwidth_khz", "bandwidth_khz": "bandwidth_khz",
+        "pkt_sz": "pkt_size_bytes", "pkt_size_bytes": "pkt_size_bytes",
+        "uptime": "uptime_ms", "uptime_ms": "uptime_ms",
+        "distance": "distance_m", "distance_m": "distance_m",
+        "los": "los",
+    }
+
+    for k, v in kv.items():
+        unified_key = field_map.get(k, k)
+        if unified_key in row:
+            row[unified_key] = v
+        else:
+            row["notes"] = (row["notes"] + " " if row["notes"] else "") + f"{k}={v}"
+
+    if not row.get("pa_state") and row.get("tx_power_dbm"):
+        try:
+            row["pa_state"] = "ON" if float(row["tx_power_dbm"]) >= 12.5 else "OFF"
+        except ValueError:
+            pass
+
+    if not row.get("packets_unique") and row.get("packets_rx"):
+        row["packets_unique"] = row["packets_rx"]
+
+    return row
+
+
+def parse_line(line):
+    """Try all parsers, return first match."""
     line = line.strip()
-    # Try comma-separated first (our main data lines)
-    comma_parts = line.split(",")
-    prefix = comma_parts[0].strip()
-    # If prefix contains a space, it's actually a space-separated line
-    if " " in prefix:
-        space_parts = line.split()
-        return space_parts[0].strip(), space_parts[1:]
-    return prefix, comma_parts[1:]
-
-
-def _safe_float(val: str) -> Optional[float]:
-    try:
-        return float(val)
-    except (ValueError, TypeError):
+    if not line:
         return None
 
-
-def _safe_int(val: str) -> Optional[int]:
-    try:
-        return int(val)
-    except (ValueError, TypeError):
-        f = _safe_float(val)
-        return int(f) if f is not None else None
-
-
-def parse_sweep_rx(tokens: list[str]) -> Optional[dict]:
-    """Parse SWEEP_RX_RESULT comma-separated fields."""
-    fields = _parse_kv_fields(tokens)
-    if not fields:
-        return None
-    # Validate we have at least the essential fields
-    if "received" not in fields and "rx" not in fields:
-        return None
-    return fields
-
-
-def parse_sweep_tx(tokens: list[str]) -> Optional[dict]:
-    """Parse SWEEP_TX_RESULT comma-separated fields."""
-    fields = _parse_kv_fields(tokens)
-    if not fields:
-        return None
-    if "sent" not in fields:
-        return None
-    return fields
-
-
-def parse_burst_end(tokens: list[str]) -> Optional[dict]:
-    """Parse ``BURST_END mode=0 n=500`` space-separated fields."""
-    fields: dict[str, str] = {}
-    for tok in tokens:
-        if "=" in tok:
-            k, _, v = tok.partition("=")
-            fields[k.strip()] = v.strip()
-    if "n" not in fields:
-        return None
-    return fields
-
-
-def parse_mode_switch(tokens: list[str]) -> Optional[dict]:
-    """Parse ``MODE_SWITCH mode=0 type=FLRC freq=2440 bitrate=2600``."""
-    fields: dict[str, str] = {}
-    for tok in tokens:
-        if "=" in tok:
-            k, _, v = tok.partition("=")
-            fields[k.strip()] = v.strip()
-    if "mode" not in fields:
-        return None
-    return fields
-
-
-# ─── Field mapping helpers ──────────────────────────────────────────────────
-
-def _map_common_fields(fields: dict, result: SweepResult) -> None:
-    """Populate common fields shared by RX and TX results."""
-    result.path = fields.get("path", "")
-    result.freq_mhz = fields.get("freq", fields.get("freq_mhz", ""))
-    result.modulation = fields.get("type", fields.get("modulation", ""))
-    result.pa_state = fields.get("pa_state", "")
-    result.bandwidth_khz = fields.get(
-        "bandwidth_khz", fields.get("bw", "")
-    )
-    result.bitrate_kbps = fields.get("bitrate", fields.get("bitrate_kbps", ""))
-    result.spreading_factor = fields.get("SF", fields.get("spreading_factor", ""))
-
-
-def _make_key(mode: str, path: str, freq: str) -> tuple:
-    """Join key for matching TX↔RX: (mode, path, freq)."""
-    return (mode, path, str(freq))
-
-
-# ─── GPX distance correlation ───────────────────────────────────────────────
-
-class GpxDistance:
-    """Distance lookup from a GPX track, matched by elapsed-millis timestamp."""
-
-    def __init__(self, gpx_file: str):
-        self.points: list[tuple[float, float, datetime]] = []  # (lat, lon, time)
-        self._load(gpx_file)
-
-    def _load(self, gpx_file: str) -> None:
-        try:
-            import gpxpy  # type: ignore
-        except ImportError:
-            print(
-                f"WARNING: gpxpy not installed — cannot compute distances from {gpx_file}."
-                "\n         Install with: pip install gpxpy",
-                file=sys.stderr,
-            )
-            return
-
-        try:
-            with open(gpx_file, "r") as f:
-                gpx = gpxpy.parse(f)
-        except Exception as exc:
-            print(f"WARNING: Could not parse GPX file {gpx_file}: {exc}", file=sys.stderr)
-            return
-
-        for track in gpx.tracks:
-            for segment in track.segments:
-                for pt in segment.points:
-                    if pt.time:
-                        self.points.append((pt.latitude, pt.longitude, pt.time))
-
-        for route in gpx.routes:
-            for pt in route.points:
-                if pt.time:
-                    self.points.append((pt.latitude, pt.longitude, pt.time))
-
-        self.points.sort(key=lambda p: p[2])
-        if self.points:
-            print(
-                f"GPX loaded: {len(self.points)} track points"
-                f" from {self.points[0][2].isoformat()} to {self.points[-1][2].isoformat()}",
-                file=sys.stderr,
-            )
-
-    @property
-    def available(self) -> bool:
-        return len(self.points) > 0
-
-    def distance_at_seconds(self, elapsed_seconds: float) -> str:
-        """
-        Return distance (meters) from GPX start at *elapsed_seconds*.
-
-        If no GPX data or timestamp is out of range, returns empty string.
-        """
-        if not self.points:
-            return ""
-
-        try:
-            import gpxpy.geo  # type: ignore
-        except ImportError:
-            return ""
-
-        base_time = self.points[0][2]
-        target = base_time + timedelta(seconds=elapsed_seconds)
-
-        # Binary search for closest point
-        lo, hi = 0, len(self.points) - 1
-        if target <= self.points[0][2]:
-            return "0"
-        if target >= self.points[-1][2]:
-            # Compute total distance up to last point
-            total = 0.0
-            for i in range(1, len(self.points)):
-                lat1, lon1, _ = self.points[i - 1]
-                lat2, lon2, _ = self.points[i]
-                total += gpxpy.geo.haversine_distance(lat1, lon1, lat2, lon2)
-            return f"{total:.1f}"
-
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if self.points[mid][2] < target:
-                lo = mid + 1
-            else:
-                hi = mid
-
-        # Accumulate distance up to lo
-        total = 0.0
-        for i in range(1, lo + 1):
-            lat1, lon1, _ = self.points[i - 1]
-            lat2, lon2, _ = self.points[i]
-            total += gpxpy.geo.haversine_distance(lat1, lon1, lat2, lon2)
-        return f"{total:.1f}"
-
-    def timestamp_at_seconds(self, elapsed_seconds: float) -> str:
-        """Return ISO timestamp from GPX for *elapsed_seconds*, or empty."""
-        if not self.points:
-            return ""
-        base_time = self.points[0][2]
-        target = base_time + timedelta(seconds=elapsed_seconds)
-        return target.isoformat()
-
-
-# ─── Main parser ────────────────────────────────────────────────────────────
-
-def parse_log(
-    log_file: str,
-    gpx: Optional[GpxDistance] = None,
-) -> tuple[list[SweepResult], dict]:
-    """
-    Parse the log file and return (results, stats).
-
-    stats contains counts of each line type parsed/skipped.
-    """
-    stats: dict = defaultdict(int)
-    tx_records: dict[tuple, dict] = {}      # key → TX fields
-    burst_end_counts: dict[tuple, int] = {}  # key → sent count fallback
-    rx_list: list[tuple[tuple, dict]] = []   # (key, rx_fields)
-    pkt_rssi_values: list[int] = []
-
-    try:
-        with open(log_file, "r", errors="replace") as f:
-            for lineno, raw_line in enumerate(f, 1):
-                line = raw_line.rstrip("\n\r")
-                if not line.strip():
-                    continue
-
-                prefix, tokens = _split_log_line(line)
-
-                if prefix == "SWEEP_RX_RESULT":
-                    stats["rx_lines"] += 1
-                    fields = parse_sweep_rx(tokens)
-                    if fields is None:
-                        stats["rx_parse_fail"] += 1
-                        print(f"WARNING: line {lineno}: unparseable SWEEP_RX_RESULT: {line[:120]}", file=sys.stderr)
-                        continue
-                    mode = fields.get("mode", "")
-                    key = _make_key(mode, fields.get("path", ""), fields.get("freq", ""))
-                    rx_list.append((key, fields))
-                    stats["rx_parsed"] += 1
-
-                elif prefix == "SWEEP_TX_RESULT":
-                    stats["tx_lines"] += 1
-                    fields = parse_sweep_tx(tokens)
-                    if fields is None:
-                        stats["tx_parse_fail"] += 1
-                        print(f"WARNING: line {lineno}: unparseable SWEEP_TX_RESULT: {line[:120]}", file=sys.stderr)
-                        continue
-                    mode = fields.get("mode", "")
-                    key = _make_key(mode, fields.get("path", ""), fields.get("freq", ""))
-                    tx_records[key] = fields
-                    stats["tx_parsed"] += 1
-
-                elif prefix == "BURST_END":
-                    stats["burst_end_lines"] += 1
-                    fields = parse_burst_end(tokens)
-                    if fields is None:
-                        stats["burst_end_parse_fail"] += 1
-                        continue
-                    # Store as fallback sent-count for this mode
-                    mode = fields.get("mode", "")
-                    n = _safe_int(fields.get("n", ""))
-                    if n is not None:
-                        burst_end_counts[mode] = n
-                    stats["burst_end_parsed"] += 1
-
-                elif prefix == "MODE_SWITCH":
-                    stats["mode_switch_lines"] += 1
-                    # Informational only — not emitted as CSV row
-
-                elif prefix == "PKT":
-                    stats["pkt_lines"] += 1
-                    # PKT,seq,?,rssi — accumulate RSSI for fallback stats
-                    pkt_parts = line.split(",")
-                    if len(pkt_parts) >= 4:
-                        rssi = _safe_int(pkt_parts[-1])
-                        if rssi is not None:
-                            pkt_rssi_values.append(rssi)
-
-                else:
-                    # Skip lines we don't recognise (boot messages, debug, etc.)
-                    stats["skipped_other"] += 1
-
-    except FileNotFoundError:
-        print(f"ERROR: log file not found: {log_file}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as exc:
-        print(f"ERROR reading {log_file}: {exc}", file=sys.stderr)
-        sys.exit(1)
-
-    # ─── Join RX with TX to build output rows ───────────────────────────
-
-    results: list[SweepResult] = []
-
-    for key, rx_fields in rx_list:
-        row = SweepResult()
-        _map_common_fields(rx_fields, row)
-
-        # RX-specific fields
-        received = _safe_int(rx_fields.get("received", "")) or 0
-        max_seq = _safe_int(rx_fields.get("max_seq", ""))
-        row.packets_rx = str(received)
-        row.packets_unique = str(max_seq) if max_seq is not None else str(received)
-
-        rssi_avg = _safe_float(rx_fields.get("rssi_avg", ""))
-        row.rssi_avg_dbm = f"{rssi_avg:.1f}" if rssi_avg is not None else rx_fields.get("rssi_avg", "")
-        row.rssi_min_dbm = rx_fields.get("rssi_min", "")
-        row.rssi_max_dbm = rx_fields.get("rssi_max", "")
-
-        snr = rx_fields.get("snr_avg", "")
-        row.snr_avg_db = "" if snr.upper() == "NA" else snr
-
-        uptime = rx_fields.get("start_ms", rx_fields.get("uptime_ms", ""))
-        row.uptime_ms = uptime
-
-        # ── Join with TX record for sent count, throughput, power ──────
-        tx = tx_records.get(key)
-        notes_parts: list[str] = []
-
-        if tx:
-            sent = _safe_int(tx.get("sent", "")) or 0
-            row.packets_sent = str(sent)
-            row.throughput_kbps = tx.get("throughput_kbps", "")
-            row.pkt_size_bytes = tx.get("pktSize", tx.get("pkt_size", ""))
-            power = _safe_float(tx.get("power", ""))
-            row.tx_power_dbm = f"{power:.1f}" if power is not None else tx.get("power", "")
-
-            # Fill in modulation/fields from TX if RX was missing them
-            if not row.modulation:
-                row.modulation = tx.get("type", "")
-            if not row.bandwidth_khz:
-                row.bandwidth_khz = tx.get("bandwidth_khz", tx.get("bw", ""))
-            if not row.bitrate_kbps:
-                row.bitrate_kbps = tx.get("bitrate", "")
-            if not row.spreading_factor:
-                row.spreading_factor = tx.get("SF", "")
-            if not row.pa_state:
-                row.pa_state = tx.get("pa_state", "")
-        else:
-            # Try BURST_END as fallback for sent count
-            mode_str = str(key[0]) if key else ""
-            burst_n = burst_end_counts.get(mode_str)
-            if burst_n is not None:
-                row.packets_sent = str(burst_n)
-            else:
-                notes_parts.append("no TX data")
-
-        # ── Compute PER ────────────────────────────────────────────────
-        sent_val = _safe_int(row.packets_sent)
-        if sent_val and sent_val > 0:
-            per = (sent_val - received) / sent_val * 100.0
-            row.per_percent = f"{per:.2f}"
-        else:
-            # Unknown sent count → cannot compute PER
-            row.per_percent = ""
-
-        # ── GPX distance correlation ───────────────────────────────────
-        if gpx and gpx.available:
-            uptime_val = _safe_float(uptime)
-            if uptime_val is not None:
-                elapsed_sec = uptime_val / 1000.0
-                row.distance_m = gpx.distance_at_seconds(elapsed_sec)
-                ts = gpx.timestamp_at_seconds(elapsed_sec)
-                if ts:
-                    row.timestamp_iso = ts
-            else:
-                row.timestamp_iso = datetime.now(timezone.utc).isoformat()
-        else:
-            # No GPX — use current time as a fallback timestamp
-            row.timestamp_iso = datetime.now(timezone.utc).isoformat()
-
-        if notes_parts:
-            row.notes = "; ".join(notes_parts)
-
-        results.append(row)
-
-    # ─── If we have TX records with no matching RX, emit TX-only rows ──
-    rx_keys = {key for key, _ in rx_list}
-    for key, tx_fields in tx_records.items():
-        if key in rx_keys:
-            continue  # already joined
-        row = SweepResult()
-        _map_common_fields(tx_fields, row)
-        sent = _safe_int(tx_fields.get("sent", "")) or 0
-        row.packets_sent = str(sent)
-        row.packets_rx = "0"
-        row.per_percent = "100.00"
-        row.throughput_kbps = tx_fields.get("throughput_kbps", "")
-        row.pkt_size_bytes = tx_fields.get("pktSize", tx_fields.get("pkt_size", ""))
-        power = _safe_float(tx_fields.get("power", ""))
-        row.tx_power_dbm = f"{power:.1f}" if power is not None else tx_fields.get("power", "")
-        row.uptime_ms = tx_fields.get("uptime_ms", "")
-
-        if gpx and gpx.available:
-            uptime_val = _safe_float(tx_fields.get("uptime_ms", ""))
-            if uptime_val is not None:
-                elapsed_sec = uptime_val / 1000.0
-                row.distance_m = gpx.distance_at_seconds(elapsed_sec)
-                ts = gpx.timestamp_at_seconds(elapsed_sec)
-                if ts:
-                    row.timestamp_iso = ts
-        else:
-            row.timestamp_iso = datetime.now(timezone.utc).isoformat()
-
-        row.notes = "TX-only (no RX data)"
-        results.append(row)
-
-    stats["total_output_rows"] = len(results)
-    stats["pkt_rssi_collected"] = len(pkt_rssi_values)
-
-    return results, dict(stats)
-
-
-# ─── Output ─────────────────────────────────────────────────────────────────
-
-def write_csv(results: list[SweepResult], output_file: str) -> None:
-    """Write results to CSV file."""
-    try:
-        with open(output_file, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_HEADERS)
-            writer.writeheader()
-            for row in results:
-                writer.writerow(row.to_dict())
-    except Exception as exc:
-        print(f"ERROR writing CSV to {output_file}: {exc}", file=sys.stderr)
-        sys.exit(1)
-
-
-def print_summary(results: list[SweepResult], stats: dict) -> None:
-    """Print summary statistics to stderr."""
-    print("\n" + "=" * 60, file=sys.stderr)
-    print("PARSE SUMMARY", file=sys.stderr)
-    print("=" * 60, file=sys.stderr)
-
-    print(f"\nLog line stats:", file=sys.stderr)
-    for k in sorted(stats):
-        print(f"  {k:30s} {stats[k]}", file=sys.stderr)
-
-    print(f"\nOutput rows: {len(results)}", file=sys.stderr)
-
-    if not results:
-        print("  (no data rows)", file=sys.stderr)
-        return
-
-    # Per-path breakdown
-    path_stats: dict[str, dict] = defaultdict(
-        lambda: {"count": 0, "rx_sum": 0, "sent_sum": 0, "per_sum": 0.0}
-    )
-    for r in results:
-        p = r.path or "(unknown)"
-        ps = path_stats[p]
-        ps["count"] += 1
-        rx = _safe_int(r.packets_rx)
-        sent = _safe_int(r.packets_sent)
-        per = _safe_float(r.per_percent)
-        if rx:
-            ps["rx_sum"] += rx
-        if sent:
-            ps["sent_sum"] += sent
-        if per is not None:
-            ps["per_sum"] += per
-
-    print(f"\nPer-path breakdown:", file=sys.stderr)
-    print(f"  {'Path':<16s} {'Rows':>5s} {'TotalRx':>8s} {'TotalSent':>10s} {'AvgPER':>8s}", file=sys.stderr)
-    print(f"  {'-'*16} {'-'*5} {'-'*8} {'-'*10} {'-'*8}", file=sys.stderr)
-    for path in sorted(path_stats):
-        ps = path_stats[path]
-        avg_per = ps["per_sum"] / ps["count"] if ps["count"] else 0
-        print(
-            f"  {path:<16s} {ps['count']:>5d} {ps['rx_sum']:>8d} {ps['sent_sum']:>10d} {avg_per:>7.1f}%",
-            file=sys.stderr,
-        )
-
-    print(file=sys.stderr)
-
-
-# ─── CLI ────────────────────────────────────────────────────────────────────
-
-def main() -> int:
+    if line.startswith("LR2021_RESULT"):
+        return parse_lr2021_result(line)
+    elif line.startswith("PHASE_RESULT"):
+        return parse_phase_result(line)
+    elif line.startswith("RANGE_RESULT_RX"):
+        return parse_range_result_rx(line)
+    elif line.startswith("SWEEP_TX_RESULT"):
+        # Similar to RANGE_RESULT_RX
+        return parse_range_result_rx(line.replace("SWEEP_TX_RESULT", "RANGE_RESULT_RX"))
+    elif line.startswith("SWEEP_RX_RESULT"):
+        return parse_range_result_rx(line.replace("SWEEP_RX_RESULT", "RANGE_RESULT_RX"))
+
+    return None
+
+
+def main():
     parser = argparse.ArgumentParser(
-        description="Convert LR2021 sweep serial logs to unified CSV.",
+        description="Parse LR2021 sweep serial output → unified CSV",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""\
-Examples:
-  python3 tools/parse_unified_csv.py sweep_log.txt
-  python3 tools/parse_unified_csv.py sweep_log.txt --gpx track.gpx --output results.csv
-""",
     )
-    parser.add_argument("log_file", help="Path to serial log file")
-    parser.add_argument(
-        "--gpx", default=None, help="Optional GPX track file for distance correlation"
-    )
-    parser.add_argument(
-        "--output", "-o", default=None, help="Output CSV path (default: <log_file>.csv)"
-    )
+    parser.add_argument("inputs", nargs="*", default=["-"], help="Input log file(s) (default: stdin)")
+    parser.add_argument("--output", "-o", default="-", help="Output CSV file (default: stdout)")
+    parser.add_argument("--distance", type=float, default=0, help="Distance in meters")
+    parser.add_argument("--los", default="", choices=["Y", "N", ""], help="Line of sight Y/N")
+    parser.add_argument("--rx-only", action="store_true", help="Skip TX-side rows")
+    parser.add_argument("--append", "-a", action="store_true", help="Append to existing output file")
+    parser.add_argument("--gps-time", default="", help="GPS time ISO 8601 (overrides system time)")
     args = parser.parse_args()
 
-    if not os.path.isfile(args.log_file):
-        print(f"ERROR: log file not found: {args.log_file}", file=sys.stderr)
-        return 2
+    # Determine write mode
+    write_header = True
+    if args.append and args.output != "-":
+        import os
+        write_header = not os.path.exists(args.output)
 
-    output_file = args.output
-    if output_file is None:
-        base, _ = os.path.splitext(args.log_file)
-        output_file = base + "_unified.csv"
-
-    # Load GPX if provided
-    gpx = None
-    if args.gpx:
-        if not os.path.isfile(args.gpx):
-            print(f"WARNING: GPX file not found: {args.gpx} — skipping distance correlation", file=sys.stderr)
-        else:
-            gpx = GpxDistance(args.gpx)
-
-    # Parse
-    results, stats = parse_log(args.log_file, gpx)
-
-    # Write CSV
-    if results:
-        write_csv(results, output_file)
-        print(f"Wrote {len(results)} rows to {output_file}", file=sys.stderr)
+    # Open output
+    if args.output == "-":
+        outfile = sys.stdout
     else:
-        print("WARNING: no parseable data rows found in log.", file=sys.stderr)
+        outfile = open(args.output, "a" if args.append else "w", newline="")
 
-    # Summary
-    print_summary(results, stats)
+    writer = csv.DictWriter(outfile, fieldnames=CSV_FIELDS, extrasaction="ignore")
+    if write_header:
+        writer.writeheader()
 
-    return 0 if results else 1
+    count = 0
+    for input_path in args.inputs:
+        if input_path == "-":
+            infile = sys.stdin
+        else:
+            infile = open(input_path, "r")
+
+        for line in infile:
+            row = parse_line(line)
+            if row is None:
+                continue
+
+            # Skip TX-only rows if --rx-only
+            if args.rx_only and "tx_side" in row.get("notes", ""):
+                continue
+            if args.rx_only and row.get("packets_rx") == "0" and row.get("packets_sent", "0") != "0":
+                continue
+
+            # Apply overrides
+            if args.gps_time:
+                row["timestamp_iso"] = args.gps_time
+            if args.distance > 0:
+                row["distance_m"] = args.distance
+            if args.los:
+                row["los"] = args.los
+
+            writer.writerow(row)
+            count += 1
+
+        if infile is not sys.stdin:
+            infile.close()
+
+    if outfile is not sys.stdout:
+        outfile.close()
+
+    print(f"\n# Parsed {count} result rows → CSV", file=sys.stderr)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

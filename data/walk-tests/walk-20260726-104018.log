@@ -1,0 +1,80 @@
+2026-07-26T05:10:18 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:20 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:22 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:24 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:26 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:28 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:30 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:32 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:34 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:36 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:38 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:40 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:42 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:44 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:46 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:48 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:50 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:52 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:54 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:56 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:10:58 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:00 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:02 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:04 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:06 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:08 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:10 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:12 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:14 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:16 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:18 | # OPEN_FAIL port=/dev/ttyACM4 ([Errno 11] Could not exclusively lock port /dev/ttyACM4: [Errno 11] Resource temporarily unavailable)
+2026-07-26T05:11:20 | # CONNECTED port=/dev/ttyACM4
+2026-07-26T05:11:21 | TIME_SYNCED utc=1785042680 offset=1785033577
+2026-07-26T05:11:22 | CED utc=1785042682 offset=1785033578
+2026-07-26T05:11:22 | AVE_ON phases=56 cycle=54900s
+2026-07-26T05:11:23 | TIME_SYNCED utc=1785042682 offset=1785033577
+2026-07-26T05:11:23 | NC_NOT_FOUND first4=BFABBA93
+2026-07-26T05:11:25 | IME_SYNCED utc=1785042684 offset=1785033577
+2026-07-26T05:11:27 | NCED utc=1785042686 offset=1785033577
+2026-07-26T05:11:29 | TIME_SYNCED utc=1785042688 offset=1785033577
+2026-07-26T05:11:31 | E_SYNCED utc=1785042690 offset=1785033577
+2026-07-26T05:11:32 | IME_SYNCED utc=1785042692 offset=1785033577
+2026-07-26T05:11:33 | TIME_SYNCED utc=1785042692 offset=1785033577
+2026-07-26T05:11:35 | TIME_SYNCED utc=1785042694 offset=1785033577
+2026-07-26T05:11:37 | YNCED utc=1785042696 offset=1785033577
+2026-07-26T05:11:39 | TIME_SYNCED utc=1785042698 offset=1785033577
+2026-07-26T05:11:41 | IME_SYNCED utc=1785042700 offset=1785033577
+2026-07-26T05:11:41 | NOT_FOUND first4=46A76DA8
+2026-07-26T05:11:43 | TIME_SYNCED utc=1785042702 offset=1785033577
+2026-07-26T05:11:43 | IME_SYNCED utc=1785042703 offset=1785033578
+2026-07-26T05:11:45 | TIME_SYNCED utc=1785042704 offset=1785033577
+2026-07-26T05:11:47 | TIME_SYNCED utc=1785042706 offset=1785033577
+2026-07-26T05:11:49 | ME_SYNCED utc=1785042708 offset=1785033577
+2026-07-26T05:11:49 | ME_STATS min=-2000ms max=1000ms avg=-91ms corrections=0
+2026-07-26T05:11:51 | ME_SYNCED utc=1785042710 offset=1785033577
+2026-07-26T05:11:53 | TIME_SYNCED utc=1785042712 offset=1785033577
+2026-07-26T05:11:54 | ME_SYNCED utc=1785042713 offset=1785033577
+2026-07-26T05:11:55 | TIME_SYNCED utc=1785042714 offset=1785033577
+2026-07-26T05:11:55 | YNC_NOT_FOUND first4=E7DAC1B9
+2026-07-26T05:11:55 | SYNC_LOST phase=55 consecutive=3 cached_off=1
+2026-07-26T05:11:57 | TIME_SYNCED utc=1785042716 offset=1785033577
+2026-07-26T05:11:59 | TIME_SYNCED utc=1785042718 offset=1785033577
+2026-07-26T05:12:01 | TIME_SYNCED utc=1785042720 offset=1785033577
+2026-07-26T05:12:03 | TIME_SYNCED utc=1785042722 offset=1785033577
+2026-07-26T05:12:04 | utc=1785042723 offset=1785033577
+2026-07-26T05:12:04 | E_ON phases=56 cycle=55050s
+2026-07-26T05:12:04 | SYNC_NOT_FOUND first4=7E476300
+2026-07-26T05:12:05 | TIME_SYNCED utc=1785042724 offset=1785033577
+2026-07-26T05:12:07 | TIME_SYNCED utc=1785042726 offset=1785033577
+2026-07-26T05:12:08 | YNC_NOT_FOUND first4=2FC89255
+2026-07-26T05:12:09 | TIME_SYNCED utc=1785042728 offset=1785033577
+2026-07-26T05:12:11 | TIME_SYNCED utc=1785042730 offset=1785033577
+2026-07-26T05:12:12 | SYNC_NOT_FOUND first4=D61540F7
+2026-07-26T05:12:13 | TIME_SYNCED utc=1785042732 offset=1785033577
+2026-07-26T05:12:14 | IME_SYNCED utc=1785042733 offset=1785033577
+2026-07-26T05:12:14 | TERLEAVE_ON phases=56 cycle=55200s
+2026-07-26T05:12:15 | TIME_SYNCED utc=1785042734 offset=1785033577
+2026-07-26T05:12:16 | SYNC_NOT_FOUND first4=F1774D2D
+2026-07-26T05:12:17 | TIME_SYNCED utc=1785042736 offset=1785033577
+2026-07-26T05:12:18 | # SHUTDOWN

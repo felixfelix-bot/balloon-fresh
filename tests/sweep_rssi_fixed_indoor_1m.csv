@@ -1,0 +1,12 @@
+timestamp_iso,path,freq_mhz,modulation,bitrate_kbps,spreading_factor,bandwidth_khz,coding_rate,tx_power_dbm,pa_state,distance_m,los,packets_sent,packets_rx,packets_unique,per_percent,throughput_kbps,rssi_avg_dbm,rssi_min_dbm,rssi_max_dbm,snr_avg_db,pkt_size_bytes,uptime_ms,notes
+2026-07-23T23:09:48.763361+00:00,HF_LORA,2440,LORA,0,7,812,45,12.5,ON,1.0,N,50,0,0,100.0,,,,,,127,,phase=0 crc_err=0
+2026-07-23T23:09:48.763460+00:00,HF_LORA,2440,LORA,0,9,812,45,12.5,ON,1.0,N,50,0,0,100.0,,,,,,127,,phase=1 crc_err=0
+2026-07-23T23:09:48.763520+00:00,HF_LORA,2440,LORA,0,12,812,45,12.5,ON,1.0,N,30,0,0,100.0,,,,,,127,,phase=2 crc_err=0
+2026-07-23T23:09:48.763568+00:00,HF_FLRC,2440,FLRC,2600,0,0,0,12.5,ON,1.0,N,200,27,27,86.5,,-53,,,NA,255,,phase=3 crc_err=0
+2026-07-23T23:09:48.763612+00:00,HF_FLRC,2440,FLRC,1300,0,0,0,12.5,ON,1.0,N,200,31,31,84.5,,-53,,,NA,255,,phase=4 crc_err=0
+2026-07-23T23:09:48.763652+00:00,HF_FLRC,2440,FLRC,650,0,0,0,12.5,ON,1.0,N,200,76,76,62.0,,-55,,,NA,255,,phase=5 crc_err=0
+2026-07-23T23:09:48.763692+00:00,HF_FLRC,2440,FLRC,325,0,0,0,12.5,ON,1.0,N,200,20,20,90.0,,-45,,,NA,255,,phase=6 crc_err=0
+2026-07-23T23:09:48.763740+00:00,LF_LORA,868,LORA,0,7,250,45,12.5,ON,1.0,N,50,1,1,98.0,,-103,,,,127,,phase=7 crc_err=0
+2026-07-23T23:09:48.763784+00:00,LF_LORA,868,LORA,0,9,250,45,12.5,ON,1.0,N,50,0,0,100.0,,,,,,127,,phase=8 crc_err=0
+2026-07-23T23:09:48.763825+00:00,LF_LORA,868,LORA,0,12,250,45,12.5,ON,1.0,N,20,0,0,100.0,,,,,,127,,phase=9 crc_err=0
+2026-07-23T23:09:48.763864+00:00,LF_FLRC,868,FLRC,2600,0,0,0,12.5,ON,1.0,N,200,11,11,94.5,,-51,,,NA,255,,phase=10 crc_err=0

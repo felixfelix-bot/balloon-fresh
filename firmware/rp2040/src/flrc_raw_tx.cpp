@@ -117,10 +117,19 @@ static void rfClearTxFifo() {
     rfWriteCmd(cmd, 2);
 }
 
-// ─── Dual output ─────────────────────────────────────────────────────
-static void dualPrint(const char *s) { Serial.print(s); Serial1.print(s); }
-static void dualPrintln(const char *s) { Serial.println(s); Serial1.println(s); }
-static void dualPrintln() { Serial.println(); Serial1.println(); }
+// ─── Dual output with error handling ─────────────────────────────────
+static void dualPrint(const char *s) { 
+    if (Serial) Serial.print(s); 
+    if (Serial1) Serial1.print(s); 
+}
+static void dualPrintln(const char *s) { 
+    if (Serial) Serial.println(s); 
+    if (Serial1) Serial1.println(s); 
+}
+static void dualPrintln() { 
+    if (Serial) Serial.println(); 
+    if (Serial1) Serial1.println(); 
+}
 
 static void dualPrintf(const char *fmt, ...) {
     char buf[256];
@@ -128,8 +137,43 @@ static void dualPrintf(const char *fmt, ...) {
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-    Serial.println(buf);
-    Serial1.println(buf);
+    if (Serial) Serial.println(buf);
+    if (Serial1) Serial1.println(buf);
+}
+
+// Safe serial check and recovery
+static bool checkSerialHealth() {
+    static unsigned long lastCheck = 0;
+    static bool serial1Ok = true;
+    static bool serialOk = true;
+    
+    unsigned long now = millis();
+    if (now - lastCheck > 1000) { // Check every second
+        lastCheck = now;
+        
+        // Check Serial1 (UART bridge)
+        if (Serial1) {
+            serial1Ok = true;
+        } else {
+            if (serial1Ok) {
+                dualPrintln("ERROR: Serial1 lost!");
+                serial1Ok = false;
+            }
+        }
+        
+        // Check Serial (USB CDC)
+        if (Serial) {
+            // Try to detect if USB died by writing a test string
+            Serial.print("HB ");
+            serialOk = true;
+        } else {
+            if (serialOk) {
+                dualPrintln("ERROR: USB Serial lost!");
+                serialOk = false;
+            }
+        }
+    }
+    return serial1Ok; // At minimum, ensure UART bridge works
 }
 
 // ─── Raw SPI Init ────────────────────────────────────────────────────
@@ -142,7 +186,7 @@ static bool rawInitRadio() {
 
     { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
     delay(1);
-    { uint8_t cmd[] = { 0x01, 0x28, 0x01 }; rfWriteCmd(cmd, 3); }
+    { uint8_t cmd[] = { 0x01, 0x28, 0x00 }; rfWriteCmd(cmd, 3); } // STDBY_RC (not XOSC) per RadioLib
     delay(5);
     { uint8_t cmd[] = { 0x02, 0x07, 0x05 }; rfWriteCmd(cmd, 3); }
     delay(1);
@@ -224,6 +268,11 @@ static volatile bool radioReady = false;
 
 static void runTransmit() {
     if (!radioReady) { dualPrintln("ERR: radio not initialized"); return; }
+    
+    // Check serial health before starting
+    if (!checkSerialHealth()) {
+        dualPrintln("WARN: Serial health check failed, continuing with Serial1 only");
+    }
 
     dualPrintf("TX_START count=%d pktSize=%d", TX_PKT_COUNT, FLRC_PKT_SIZE);
     delay(10);
@@ -242,16 +291,18 @@ static void runTransmit() {
         pkt[2] = (uint8_t)(i >> 8);
         pkt[3] = (uint8_t)(i & 0xFF);
 
-        // 1. Clear IRQ
-        rfClearIrq();
-
-        // 2. Write TX FIFO
+        // 1. Write TX FIFO
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
 
+        // 2. Re-set DIO IRQ config before each TX (like RadioLib does)
+        //    Maps TX_DONE (bit 19 = 0x00080000) to DIO9
+        { uint8_t cmd[] = { 0x01, 0x15, 0x09, 0x00, 0x08, 0x00, 0x00 }; rfWriteCmd(cmd, 7); }
+        delayMicroseconds(50);
+        
         // 3. Trigger TX
         rfSetTx();
 
-        // 4. Wait for TX_DONE — IRQ pin HIGH
+        // 3. Wait for TX_DONE — IRQ pin HIGH
         uint32_t spinCount = 0;
         bool irqFired = false;
         while (spinCount < 500000) {
@@ -269,6 +320,15 @@ static void runTransmit() {
 
         if (irqFired) txDoneCount++;
         else txTimeoutCount++;
+
+        // 4. CLEAR_ERRORS to prevent PA_OCP_OVP accumulation between packets
+        { uint8_t cmd[] = { 0x01, 0x11, 0x00, 0x00 }; rfWriteCmd(cmd, 4); }
+        delayMicroseconds(100); // Short delay for error clearing
+        
+        // 5. Clear the TX_DONE IRQ after detection, before the next packet.
+        //    rfClearIrq() was previously before WRITE_FIFO; moving it here
+        //    keeps the hot loop IRQ-safe without adding busy-waits.
+        rfClearIrq();
 
         if ((i + 1) % 200 == 0) {
             dualPrintf("TX %d/%d (done=%lu to=%lu)",
@@ -352,7 +412,12 @@ void loop() {
     static unsigned long lastHB = 0;
     if (millis() - lastHB > 2000) {
         lastHB = millis();
-        Serial1.println("HB alive");
+        // Dual output with error checking
+        if (Serial1) Serial1.println("HB alive");
+        if (Serial) Serial.println("HB alive");
+        
+        // Check serial health periodically
+        checkSerialHealth();
     }
 
     static char cmdBuf[64];

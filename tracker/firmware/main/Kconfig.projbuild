@@ -37,7 +37,7 @@ config ENABLE_FEM
 
 config FEM_TX_PIN
     int "FEM TX_EN GPIO pin"
-    default 1
+    default 19
     depends on ENABLE_FEM
 
 config FEM_RX_PIN
@@ -127,6 +127,25 @@ config ENABLE_TDMA
     help
         Enable TDMA time-slot scheduling. Requires GPS PPS for discipline.
         Slots alternate between TX, RX, sleep, and beacon.
+
+config ENABLE_RELAY_MODE
+    bool "Enable relay mode (continuous store-and-forward, no deep sleep)"
+    default n
+    select ENABLE_MESH
+    select ENABLE_NOSTR_STORE
+    help
+        Enable FreeRTOS relay mode: radio_task (IRQ RX) + app_task (secp verify +
+        nostr_store) + main loop (telemetry + CLI). Replaces TX-sleep with
+        continuous operation for store-and-forward relay.
+
+config ENABLE_TOLLGATE
+    bool "Enable TollGate payment processing (Cashu e-cash over mesh)"
+    default n
+    depends on ENABLE_RELAY_MODE
+    help
+        Enable TollGate payment message handling in app_task. Decodes PAY
+        messages from ground stations, validates Cashu tokens, and sends ACK
+        responses with session info. Requires relay mode for continuous RX.
 
 config ENABLE_NOSTR_STORE
     bool "Enable Nostr event store (for mesh relay)"
