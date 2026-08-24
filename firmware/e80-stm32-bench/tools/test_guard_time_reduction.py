@@ -8,6 +8,7 @@ import pytest
 import inspect
 import sys
 import os
+import pathlib
 
 # Ensure tools/ is importable
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -132,4 +133,46 @@ def test_new_defaults_in_parser():
     # swd_reset_s default should be exactly 2
     assert 'dest="swd_reset_s", type=int, default=2' in source, (
         "swd_reset_s default should be 2 (not 10)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 4: Makefile documents the reduced timing defaults
+# ---------------------------------------------------------------------------
+
+def test_makefile_documents_reduced_guard_times():
+    """The e80-stm32-bench Makefile must document the reduced timing defaults.
+
+    Task 4 (guard-time-config-cvm-optimization-plan.md): add a comment after
+    line 112 (the SIMPLIFIED TARGETS block) recording the reduced defaults
+    (t0_margin=30s, guard=5s, rx_lead=3s, settle=1s, swd_reset_s=2s) so
+    operators understand the timing without reading e80_bench_ctl.py source.
+
+    The Makefile does not pass --guard/--t0-margin etc. — they use argparse
+    defaults. This comment is the documentation of those values.
+    """
+    makefile = pathlib.Path(__file__).resolve().parent.parent / "Makefile"
+    assert makefile.exists(), f"Makefile not found at {makefile}"
+
+    text = makefile.read_text()
+
+    # The comment should mention the reduced guard-time defaults.
+    assert "t0_margin=30" in text, (
+        "Makefile should document t0_margin=30s default"
+    )
+    assert "guard=5" in text, (
+        "Makefile should document guard=5s default"
+    )
+    assert "rx_lead=3" in text, (
+        "Makefile should document rx_lead=3s default"
+    )
+    assert "settle=1" in text, (
+        "Makefile should document settle=1s default"
+    )
+    assert "swd_reset_s=2" in text, (
+        "Makefile should document swd_reset_s=2s default"
+    )
+    # And should mention NTP-synced machines / offline override hint.
+    assert "NTP" in text, (
+        "Makefile comment should note these are safe for NTP-synced machines"
     )
