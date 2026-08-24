@@ -669,7 +669,7 @@ git commit -m "feat: update CVM Makefile targets for dynamic config provider"
 
 ## Phase 4: Integration Testing + Documentation
 
-### Task 10: Integration test — full schedule with reduced guard times
+### Task 10: Integration test — full schedule with reduced guard times ✅ DONE
 
 **Objective:** Run `make range-dry-run` with the new config and verify the schedule timing is correct.
 
@@ -679,10 +679,10 @@ git commit -m "feat: update CVM Makefile targets for dynamic config provider"
 **Test:**
 ```python
 def test_schedule_timing_4_configs_reduced_guard():
-    """4 configs with reduced guard times should take <90s total."""
-    from e80_bench_ctl import build_preset_schedule, load_configs
+    """4 configs with reduced guard times should take <130s total."""
+    from e80_bench_ctl import build_preset_schedule, load_config_preset
     
-    cfgs = load_configs("configs/envelope-4cfg-max.json")
+    cfgs = load_config_preset("envelope-4cfg-max")
     import time
     t0 = int(time.time()) + 300  # 5 min from now
     
@@ -692,15 +692,18 @@ def test_schedule_timing_4_configs_reduced_guard():
     )
     
     # Total schedule = last start + last burst - t0 - t0_margin
-    # With 4 configs:
-    #   FLRC-650: burst ~0.1s, gap = 0.1 + 1 + 5 + 3 = 9.1s
-    #   FLRC-2600 (same mod): burst ~0.1s, gap = 0.1 + 1 + 5 + 3 = 9.1s
-    #   LoRa-SF7 (mod change): burst ~1.0s, gap = 1.0 + 1 + 5 + 3 + 2 = 12.0s
-    #   LoRa-SF12 (same LoRa): burst ~23.5s, gap = 23.5 + 1 + 5 + 3 = 32.5s
-    # Total: ~9.1 + 9.1 + 12.0 + 32.5 = ~63s
+    # With 4 configs (envelope-4cfg-max, 10 pkts each, max payload):
+    #   FLRC-650  511B:   expected = 0.11s, start off = 0.00s
+    #   FLRC-2600 511B:   expected = 0.07s, start off = 11.11s
+    #   LoRa-SF7  255B:   expected = 4.10s, start off = 22.18s
+    #   LoRa-SF12 255B:   expected = 90.29s, start off = 37.28s
+    # Total: 127.57s (~90s of which is the SF12 255B burst alone:
+    # 10 pkts x 9.02s airtime). The original <90s target was
+    # unreachable (operator-approved relaxation to <130s; keep 10
+    # pkts + max payload).
     
     total = starts[-1] + cfgs[-1]["expected_s"] - t0 - 30
-    assert total < 90, f"4 configs should take <90s, got {total:.0f}s"
+    assert total < 130, f"4 configs should take <130s, got {total:.0f}s"
 ```
 
 **Step 1: Write integration test**
