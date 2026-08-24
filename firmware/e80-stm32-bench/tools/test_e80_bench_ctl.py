@@ -615,7 +615,7 @@ class DryRunTests(unittest.TestCase):
                            "MOD loRa 12 125",
                            "START N=1000 LEN=51 GAP=1000",
                            "START N=10000 LEN=255 GAP=5000",
-                           "T0+00:02:00",           # margin 120 s
+                           "T0+00:00:30",           # margin 30 s
                            "ROLE NONE",
                            "SF12 time cap"):
                 self.assertIn(needle, out, needle)

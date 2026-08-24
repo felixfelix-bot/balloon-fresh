@@ -27,13 +27,17 @@
 
 **Recommended values (with code fix):**
 
-| Parameter | Current | Safe | Aggressive |
+| Parameter | Current | Implemented | Aggressive |
 |---|---|---|---|
 | t0_margin | 120s | 30s | 20s |
-| guard | 20s | 3s | 2s |
+| guard | 20s | 5s | 3s |
 | rx_lead | 10s | 3s | 2s |
-| settle | 2s | 0.5s | 0.3s |
+| settle | 2s | 1s | 0.3s |
 | swd_reset_s | 10s | 2s | 1s |
+
+**Implementation note:** guard=5s (conservative-safe) chosen over 3s for the
+default. settle=1s (not 0.5s) to allow serial buffer flush. All other values
+match the "Safe" column from the original plan.
 
 ### Experiment Design Consultant
 

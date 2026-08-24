@@ -1262,7 +1262,6 @@ class HarmonizedTxLogWriter:
 
 def run_tx_mode(args):
     """TX-only distributed mode. Sends bursts on T0-anchored schedule."""
-    import subprocess as _sp
 
     # Load config preset
     cfgs = load_config_preset(args.configs)
@@ -1299,49 +1298,11 @@ def run_tx_mode(args):
         mode_label="TX",
     )
 
-    # SWD reset if available (non-fatal if openocd missing)
-    def swd_reset_maybe(label="TX"):
-        if not probe_serial:
-            print("  [SWD] WARNING: No SWD probe detected — board will NOT be reset.")
-            print("  [SWD] WARNING: Modulation type change requires chip reset.")
-            print("  [SWD] WARNING: LoRa configs will likely FAIL (0 packets received).")
-            print("  [SWD] WARNING: Connect a CMSIS-DAP probe (Pico) to fix this.")
-            return
-        openocd_path = None
-        for cand in ("/usr/bin/openocd", os.path.expanduser("~/.local/bin/openocd")):
-            if os.path.isfile(cand) and os.access(cand, os.X_OK):
-                openocd_path = cand
-                break
-        if not openocd_path:
-            try:
-                r = _sp.run(["which", "openocd"], capture_output=True, text=True, timeout=5)
-                openocd_path = r.stdout.strip() or None
-            except Exception:
-                pass
-        if not openocd_path:
-            print("  [SWD] WARNING: openocd not found — board will NOT be reset.")
-            print("  [SWD] WARNING: Install openocd to enable SWD reset between configs.")
-            return
-        fw_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        try:
-            _sp.run(
-                [openocd_path, "-f", "interface/cmsis-dap.cfg",
-                 "-f", "target/stm32f1x.cfg",
-                 "-c", "transport select swd; adapter serial {}; "
-                       "init; reset halt; resume; exit".format(probe_serial)],
-                stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
-                timeout=30, cwd=fw_dir)
-            time.sleep(2.0)
-            print("[SWD] Reset {} board (probe={})".format(label, probe_serial))
-        except Exception as e:
-            print("[SWD] Reset failed (non-fatal): {}".format(e))
-
     # Open board
     board = BoardSerial(port)
     if not args.skip_fw_check:
         fw = firmware_hash_gate(board, port, skip=False)
         if fw is False:
-            board.close()
             sys.exit("ERROR: Firmware hash gate failed on TX board. "
                      "Use --skip-fw-check to bypass.")
 
@@ -1362,21 +1323,6 @@ def run_tx_mode(args):
                 return
             time.sleep(min(d, 30.0))
 
-    # Helper: decide if SWD reset is needed between configs
-    def _mod_changed(prev, cur):
-        """Return True if radio parameters changed (SX1280 can't hot-switch)."""
-        if prev is None:
-            return False
-        if prev.get("mod") != cur.get("mod"):
-            return True
-        if prev.get("sf") != cur.get("sf"):
-            return True
-        if prev.get("bw") != cur.get("bw"):
-            return True
-        if prev.get("br") != cur.get("br"):
-            return True
-        return False
-
     try:
         prev_cfg = None
         for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
@@ -1385,18 +1331,12 @@ def run_tx_mode(args):
             if idx > 0:
                 board.drain(quiet=0.5)
 
-            # SWD reset if modulation parameters changed (SX1280 can't
-            # hot-switch mod/sf/br/bw via MOD command — firmware returns
-            # OK but radio doesn't reconfigure, resulting in 0 packets)
-            if idx > 0 and _mod_changed(prev_cfg, cfg):
-                print("  [SWD] Mod params changed, resetting TX board…")
-                board.close()
-                swd_reset_maybe(label="TX")
-                board = BoardSerial(port)
-                board.drain()
-
-            # Wait for scheduled start
-            wait_until(start)
+            # --- Send radio config BEFORE the scheduled start time ---
+            # This allows the firmware self-reset (TCXO startup + calibration
+            # triggered by MOD command) to happen during the inter-config
+            # gap, eliminating the 3-5s burst delay that required guard>=6s.
+            # Firmware handles chip reset internally since c70f582 — no SWD
+            # close/reopen needed.
 
             # Band override if needed
             if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
@@ -1423,6 +1363,9 @@ def run_tx_mode(args):
             # Role TX + arm
             board.cmd("ROLE TX")
             board.cmd("ARM TX")
+
+            # Wait for scheduled start — config already sent, radio ready
+            wait_until(start)
 
             # Burst
             prime_discard = getattr(args, 'prime_discard', 0)
@@ -1492,10 +1435,12 @@ def run_tx_mode(args):
         print("ERROR: {}".format(e))
         raise
     finally:
-        board.close()
+        try:
+            board.ser.close()
+        except Exception:
+            pass
 
     print("\n== TX MODE COMPLETE: {} ==".format(args.tx_log))
-    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -1920,17 +1865,17 @@ def main():
     ap.add_argument("--t0", default=None, metavar="'YYYY-MM-DD HH:MM:SS'",
                     help="sync point exchanged by phone (plan §5); schedule runs "
                          "from wall clock T0. Required for live matrix runs")
-    ap.add_argument("--t0-margin", dest="t0_margin", type=int, default=120,
-                    help="seconds after T0 before cell 1 (default 120)")
-    ap.add_argument("--guard", type=int, default=20,
-                    help="inter-cell guard seconds (default 20)")
-    ap.add_argument("--rx-lead", dest="rx_lead", type=int, default=10,
-                    help="seconds RX arms before cell start (default 10)")
-    ap.add_argument("--settle", type=int, default=2,
-                    help="post-burst settle seconds before RX STAT? (default 2)")
-    ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=10,
+    ap.add_argument("--t0-margin", dest="t0_margin", type=int, default=30,
+                    help="seconds after T0 before cell 1 (default 30, was 120)")
+    ap.add_argument("--guard", type=int, default=5,
+                    help="inter-cell guard seconds (default 5, was 20)")
+    ap.add_argument("--rx-lead", dest="rx_lead", type=int, default=3,
+                    help="seconds RX arms before cell start (default 3, was 10)")
+    ap.add_argument("--settle", type=int, default=1,
+                    help="post-burst settle seconds before RX STAT? (default 1, was 2)")
+    ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=2,
                     help="extra inter-config gap seconds when mod params change "
-                         "(SWD reset + board reopen time, default 10)")
+                         "(SWD reset + board reopen time, default 2, was 10)")
     ap.add_argument("--skip-late-configs", dest="skip_late_configs",
                     action="store_true",
                     help="if launched after one or more config start times "
