@@ -1156,6 +1156,7 @@ sudo usermod -aG dialout "$USER" && newgrp dialout
 | `configs/indoor-baseline.json` | Indoor preset (2 configs, 1000 pkts each) |
 | `tools/cvm_board_server.py` | CVM (Nostr MCP) board server — remote control |
 | `tools/test_cvm_config_provider.py` | Tests for set_config MCP tool |
+| `tools/test_cvm_campaign_dynamic_config.py` | Tests for dynamic config pushing via set_config |
 
 ---
 
@@ -1201,3 +1202,23 @@ CVM_SERVER_HEX=<hex_secret> python3 tools/cvm_board_server.py --role rx
 CVM is an optional layer — `make tx` / `make rx` work without it using
 fixed-schedule mode. CVM enhances with real-time remote config changes when
 internet is available (e.g. lab WiFi or phone hotspot in the field).
+
+### Dynamic Config Pushing (cvm_campaign.py)
+
+The CVM campaign coordinator (`tools/cvm_campaign.py`) uses `set_config` to
+push each config entry to both TX and RX boards dynamically. For each config
+in the preset:
+
+1. Coordinator calls `set_config` on both TX and RX with the single config
+   entry as inline JSON (`config_json` mode)
+2. Each board server applies MOD/FREQ/PA/ROLE commands to the board
+3. Coordinator sends SESSION/CONFIG metadata via `board_send`
+4. Coordinator arms TX (`board_query` with "ARM TX")
+5. Coordinator starts burst on TX (`board_start_burst`)
+6. Coordinator captures on RX (`board_capture`)
+7. SPRT decision logic runs on the captured packets
+
+This replaces the previous approach where the coordinator sent individual
+`board_send` commands for each radio parameter (MOD, FREQ, PA, ROLE). The
+`set_config` tool encapsulates all radio config in one MCP call, enabling
+the LLM coordinator to push configs remotely with a single round-trip.

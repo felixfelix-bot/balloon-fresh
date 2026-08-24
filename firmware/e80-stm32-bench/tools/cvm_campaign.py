@@ -9,11 +9,13 @@ Architecture:
     Coordinator (this file)
         │
         ├── CVMClient ──► TX board server (cvm_board_server --role tx)
+        │                   ├── set_config (dynamic config push: MOD/FREQ/PA/ROLE)
         │                   ├── board_query / board_send / board_stat
         │                   ├── board_start_burst
         │                   └── board_swd_reset
         │
         └── CVMClient ──► RX board server (cvm_board_server --role rx)
+                            ├── set_config (dynamic config push: MOD/FREQ/PA/ROLE)
                             ├── board_query / board_send / board_stat
                             ├── board_capture
                             └── board_swd_reset
@@ -304,34 +306,52 @@ def _next_id() -> int:
 # Distributed SPRT loop — replaces e80_campaign.sprt_run()
 # ===========================================================================
 
+async def push_config_to_boards(cfg: dict, tx_client: CVMClient,
+                                 rx_client: CVMClient) -> bool:
+    """Push a single config entry to both TX and RX boards via set_config MCP tool.
+
+    Wraps the config entry into a preset JSON with one config and sends it
+    to each board's set_config tool (inline JSON mode). The board server
+    applies MOD/FREQ/PA/ROLE commands to the board.
+
+    Returns True if both boards accepted the config, False otherwise.
+    """
+    # Build a single-config preset for inline JSON mode
+    preset = json.dumps({
+        "name": "dynamic",
+        "configs": [cfg],
+    })
+    # Push to both boards
+    for client in (tx_client, rx_client):
+        result = await client.call("set_config", {"config_json": preset})
+        if not result.get("ok"):
+            return False
+    return True
+
+
 async def cvm_sprt_run(cfg, tx_client: CVMClient, rx_client: CVMClient,
                         session_id: int, cfg_idx: int, n_cap: int = 20,
                         policy: Optional[dict] = None,
                         stop_fn=None) -> camp.SprtResult:
     """Distributed replacement for e80_campaign.sprt_run().
 
-    Sends radio config commands to both TX and RX via CVM board_send,
-    arms TX via board_query (ARM TX), starts the burst via board_start_burst,
-    captures on RX via board_capture, then applies SPRT via the shared
-    sprt_decide() helper. Returns SprtResult(verdict, k, n).
+    Pushes radio config to both TX and RX via the set_config MCP tool
+    (dynamic config pushing), then sends SESSION/CONFIG metadata via
+    board_send, arms TX via board_query (ARM TX), starts the burst via
+    board_start_burst, captures on RX via board_capture, then applies SPRT
+    via the shared sprt_decide() helper. Returns SprtResult(verdict, k, n).
     """
     p = policy or camp.SPRT
     n_cap_local = n_cap or p["n_cap"]
     n_min = p["n_min"]
 
-    # --- Configure radio on both boards ---
+    # --- Push radio config (MOD/FREQ/PA/ROLE) to both boards via set_config ---
     mod = cfg["mod"]
-    if mod == "lora":
-        m = f"MOD LORA {cfg['sf']} {cfg['bw']}"
-    else:
-        m = f"MOD FLRC {cfg['br']} {cfg['pa']}"
-    # Issue radio config + role + session + config_id on both boards
-    for client, role in ((rx_client, "RX"), (tx_client, "TX")):
-        await client.call("board_send", {"line": m})
-        if mod == "lora":
-            await client.call("board_send", {"line": f"PA {cfg['pa']}"})
-        await client.call("board_send", {"line": f"FREQ {cfg['freq']}"})
-        await client.call("board_send", {"line": f"ROLE {role}"})
+    if not await push_config_to_boards(cfg, tx_client, rx_client):
+        return camp.SprtResult("DEAD", n_cap_local, n_cap_local)
+
+    # --- Session metadata (not radio config — still via board_send) ---
+    for client in (tx_client, rx_client):
         await client.call("board_send", {"line": f"SESSION {session_id}"})
         await client.call("board_send", {"line": f"CONFIG {cfg_idx} 1"})
     # Band override if outside 868 (firmware gate)
