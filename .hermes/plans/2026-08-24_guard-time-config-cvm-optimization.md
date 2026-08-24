@@ -1,0 +1,872 @@
+# Guard Time Reduction + Config Optimization + CVM Integration Plan
+
+> **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
+>
+> **AUTONOMY:** DO NOT stop between phases to report completion and wait. Proceed immediately to the next phase. Only pause for genuine blockers requiring human input, explicit "AWAIT OPERATOR APPROVAL" gates, or quota exhaustion. "Phase N complete" is a progress marker, NOT a stopping point.
+
+**Goal:** Reduce range test per-stop time from 3.2 min to <1 min by cutting guard times, use max payload per modulation (keep high data rates + all modulations), and enable ContextVM as the remote config provider for `e80_bench_ctl.py`.
+
+**Architecture:** Three parallel workstreams:
+1. **Code fix** — move MOD before `wait_until(start)` in TX, remove dead SWD code, reduce default guard times
+2. **Config files** — new 4-config preset with FLRC-2600 KEPT + max payloads, update outdoor-10 to max payloads
+3. **CVM config provider** — CVM server exposes `set_config` tool that pushes config JSON to the board server, replacing the static `--configs` file
+
+**Tech Stack:** Python 3, pyserial, nostr_sdk (CVM), Make, pytest
+
+---
+
+## Consultant Findings Summary
+
+### Timing Consultant (verified against source code)
+
+**NTP drift:** Two online laptops stay within 50ms. The 1s drift seen between DQ05/T470 was timezone misconfiguration, not NTP. Safe assumption: "both online = within 1 second."
+
+**Critical code issue:** TX sends MOD command AFTER `wait_until(start)`. Firmware self-reset (commit c70f582) blocks 3-5s inside MOD (TCXO startup ~2s + calibration ~2s). This delays the burst start, so guard must cover it. **Fix: move MOD before `wait_until(start)`** — then guard=3s works universally.
+
+**Dead SWD code:** Python SWD close/reopen (`board.close()` → `swd_reset_maybe()` → `BoardSerial(port)`) is unnecessary since firmware handles reset. Adds ~2s overhead. Remove.
+
+**Recommended values (with code fix):**
+
+| Parameter | Current | Safe | Aggressive |
+|---|---|---|---|
+| t0_margin | 120s | 30s | 20s |
+| guard | 20s | 3s | 2s |
+| rx_lead | 10s | 3s | 2s |
+| settle | 2s | 0.5s | 0.3s |
+| swd_reset_s | 10s | 2s | 1s |
+
+### Experiment Design Consultant
+
+**Max payload strategy: CORRECT.** 511B has 1-3 dB worse sensitivity than 64B — if 511B works, smaller works. 511B airtime >6ms avoids LR2021 AGC RSSI artifact (more accurate RSSI).
+
+**FLRC-2600: user says KEEP.** High data rate is the mission goal. Consultant recommended dropping it, but user overrules — we need to know where FLRC-2600 dies vs FLRC-650.
+
+**Distance spacing:** 10 dB steps (450m/1.5km/5km) too wide — cliffs are 3-6 dB. Doubling distances (436m/872m/1744m/5km) = 6 dB resolution. **User decision needed.**
+
+**4 configs (user's preference):**
+1. FLRC-650 511B — best throughput, cliff 400-730m
+2. FLRC-2600 511B — highest data rate, cliff <218m (need to find where it works)
+3. LoRa-SF7 255B — medium range, cliff ~900m ground
+4. LoRa-SF12 255B — max range, cliff ~2.2km ground
+
+---
+
+## Phase 1: Code Fix — Guard Time Reduction (TDD)
+
+### Task 1: Write failing test for MOD-before-wait_until in TX schedule
+
+**Objective:** Test that TX sends MOD command before `wait_until(start)`, not after.
+
+**Files:**
+- Create: `firmware/e80-stm32-bench/tools/test_guard_time_reduction.py`
+- Modify: `firmware/e80-stm32-bench/tools/e80_bench_ctl.py:1382-1433` (run_tx_mode)
+
+**Step 1: Write failing test**
+
+```python
+# test_guard_time_reduction.py
+"""
+Tests for guard time reduction: MOD-before-wait_until, removed SWD code,
+and reduced default timing parameters.
+"""
+import pytest
+from unittest.mock import patch, MagicMock, call
+import time
+
+# We test the schedule timing math, not actual serial communication
+
+def test_tx_mod_command_before_wait_until():
+    """TX should send MOD command BEFORE wait_until(start), not after.
+    
+    Currently MOD is sent after wait_until, blocking 3-5s for firmware
+    self-reset. This delays the burst start and requires large guard times.
+    Fix: send MOD (and other config commands) before wait_until.
+    """
+    # Read the source and verify the ordering
+    import inspect
+    import e80_bench_ctl
+    
+    source = inspect.getsource(e80_bench_ctl.run_tx_mode)
+    
+    # Find positions of "wait_until" and "mod_line" (or MOD command)
+    wait_until_pos = source.find("wait_until(start")
+    mod_pos = source.find("mod_line")
+    
+    # MOD should come BEFORE wait_until
+    # If mod_pos < wait_until_pos, MOD is sent before wait_until
+    assert mod_pos < wait_until_pos, (
+        "MOD command is sent AFTER wait_until(start). This blocks 3-5s "
+        "for firmware self-reset, delaying the burst. Move MOD before "
+        "wait_until to allow guard=3s instead of 6s."
+    )
+
+
+def test_swd_close_reopen_removed_from_tx():
+    """SWD close/reopen should be removed from TX loop since firmware
+    handles chip reset internally (commit c70f582)."""
+    import inspect
+    import e80_bench_ctl
+    
+    source = inspect.getsource(e80_bench_ctl.run_tx_mode)
+    
+    # Should NOT contain swd_reset_maybe call in the TX loop
+    # (it may still exist as a function, but shouldn't be called in run_tx_mode)
+    assert "swd_reset_maybe" not in source or "board.close()" not in source, (
+        "Dead SWD close/reopen code in run_tx_mode adds ~2s overhead. "
+        "Firmware self-reset (c70f582) handles this. Remove."
+    )
+
+
+def test_reduced_default_guard_times():
+    """Default timing parameters should be reduced for online NTP-synced machines."""
+    import argparse
+    import e80_bench_ctl
+    
+    parser = argparse.ArgumentParser()
+    # Replicate the argument parser to check defaults
+    # We check the source for default values
+    import inspect
+    source = inspect.getsource(e80_bench_ctl)
+    
+    # Check default values in add_argument calls
+    assert "default=30" in source or "default=20" in source, (
+        "t0_margin default should be 30s (safe) or 20s (aggressive), not 120s"
+    )
+    assert "default=5" in source or "default=3" in source, (
+        "guard default should be 3-5s, not 20s"
+    )
+    assert "default=3" in source or "default=2" in source, (
+        "rx_lead default should be 2-3s, not 10s"
+    )
+```
+
+**Step 2: Run test to verify failure**
+
+Run: `cd firmware/e80-stm32-bench && python3 -m pytest tools/test_guard_time_reduction.py -v`
+Expected: FAIL — MOD is currently after wait_until
+
+**Step 3: Commit failing test**
+
+```bash
+cd firmware/e80-stm32-bench
+git add tools/test_guard_time_reduction.py
+git commit -m "test: guard time reduction — MOD before wait_until, remove SWD, reduce defaults"
+```
+
+### Task 2: Fix TX — move MOD before wait_until, remove SWD close/reopen
+
+**Objective:** Reorder TX commands so MOD (and config commands that trigger firmware self-reset) execute during the inter-config gap, before `wait_until(start)`.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/tools/e80_bench_ctl.py:1382-1433` (run_tx_mode TX loop)
+
+**Current code structure (problematic):**
+```python
+# SWD close/reopen (dead code — firmware handles reset)
+if idx > 0 and _mod_changed(prev_cfg, cfg):
+    board.close()
+    swd_reset_maybe(label="TX")  # returns immediately, no probe
+    board = BoardSerial(port)     # ~1.5s
+    board.drain()                 # ~0.4s
+
+wait_until(start)  # Wait for scheduled start
+
+# Config commands sent AFTER wait_until — MOD blocks 3-5s!
+board.cmd(mod_line)  # BLOCKS 3-5s on mod change (firmware self-reset)
+board.cmd("FREQ ...")
+board.cmd("ROLE TX")
+board.cmd("ARM TX")
+board.cmd("START N=...")  # Burst actually starts at start + ~5s
+```
+
+**Fixed code structure:**
+```python
+# Config commands BEFORE wait_until — MOD blocks 3-5s but during gap
+if idx > 0 and _mod_changed(prev_cfg, cfg):
+    board.drain(quiet=0.5)  # clear stale data, ~0.5s
+
+board.cmd(mod_line)    # Blocks 3-5s on mod change, but we're in the gap
+board.cmd("FREQ ...")  # Fast, <0.1s
+board.cmd("ROLE TX")   # Fast
+# Note: ARM TX starts IWDG — send just before wait_until to minimize IWDG window
+# But ARM TX persists across START, so we can send it here too
+
+wait_until(start)  # Now the board is configured and ready
+
+# After wait_until — only START (fast, <0.1s)
+board.cmd("ARM TX")   # If not already armed (check state)
+board.cmd("START N=...")  # Burst starts within ~0.1s of scheduled start
+```
+
+**Key changes:**
+1. Remove `board.close()` / `swd_reset_maybe()` / `BoardSerial(port)` — dead SWD code
+2. Move `mod_line`, `FREQ`, `ROLE TX` commands BEFORE `wait_until(start)`
+3. Only `ARM TX` + `START` remain after `wait_until(start)`
+4. `board.drain(quiet=0.5)` replaces the SWD close/reopen for clearing stale data
+
+**Step 1: Implement the fix**
+
+Read the actual source at lines 1382-1433 and reorder the commands. The exact code depends on current structure — read it first, then modify.
+
+**Step 2: Run tests**
+
+Run: `cd firmware/e80-stm32-bench && python3 -m pytest tools/test_guard_time_reduction.py -v`
+Expected: PASS
+
+**Step 3: Commit**
+
+```bash
+git add tools/e80_bench_ctl.py
+git commit -m "fix: move MOD before wait_until in TX — eliminates 3-5s burst delay
+
+MOD command triggers firmware self-reset (TCXO + calibration, 3-5s).
+Previously sent after wait_until(start), delaying burst start and
+requiring guard>=6s. Now sent during inter-config gap, allowing
+guard=3s universally. Also removes dead SWD close/reopen code (firmware
+handles chip reset since c70f582).
+
+Saves ~5s per mod-change transition.
+"
+```
+
+### Task 3: Reduce default timing parameters in argparse
+
+**Objective:** Update default values for t0_margin, guard, rx_lead, settle, swd_reset_s to match NTP-synced reality.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/tools/e80_bench_ctl.py:1923-1931` (argparse defaults)
+
+**Changes:**
+
+```python
+# Line 1923: t0_margin 120 → 30
+ap.add_argument("--t0-margin", dest="t0_margin", type=int, default=30,
+                help="seconds after T0 before cell 1 (default 30, was 120)")
+
+# Line 1925: guard 20 → 5
+ap.add_argument("--guard", type=int, default=5,
+                help="inter-cell guard seconds (default 5, was 20)")
+
+# Line 1927: rx_lead 10 → 3
+ap.add_argument("--rx-lead", dest="rx_lead", type=int, default=3,
+                help="seconds RX arms before cell start (default 3, was 10)")
+
+# Line 1929: settle 2 → 1
+ap.add_argument("--settle", type=int, default=1,
+                help="post-burst settle seconds before RX STAT? (default 1, was 2)")
+
+# Line 1931: swd_reset_s 10 → 2
+ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=2,
+                help="extra inter-config gap seconds when mod params change "
+                     "(firmware self-reset time, default 2, was 10)")
+```
+
+**Rationale (from consultant analysis):**
+- t0_margin=30s: covers 5s setup + 25s operator delay. Both operators run `make tx/rx` within 4 min of T0.
+- guard=5s: covers 1s TX command delay + NTP drift (<0.1s) + 4s margin. With MOD-before-wait_until fix, 3s is safe; 5s is conservative-safe.
+- rx_lead=3s: covers 1s arming + 2s skew margin. Both sides equally delayed by MOD.
+- settle=1s: TX poll loop confirms burst done. 1s for serial buffer flush.
+- swd_reset_s=2s: firmware self-reset is in MOD command (before wait_until). 2s buffer for variance.
+
+**Step 1: Write test for new defaults**
+
+Add to `test_guard_time_reduction.py`:
+```python
+def test_new_defaults_in_parser():
+    """Verify argparse defaults match reduced values."""
+    import argparse
+    import inspect
+    import e80_bench_ctl
+    
+    source = inspect.getsource(e80_bench_ctl)
+    
+    # t0_margin default should be 30 (not 120)
+    assert 'dest="t0_margin", type=int, default=30' in source
+    
+    # guard default should be 5 (not 20)  
+    assert '"--guard", type=int, default=5' in source
+    
+    # rx_lead default should be 3 (not 10)
+    assert 'dest="rx_lead", type=int, default=3' in source
+```
+
+**Step 2: Run test (should fail with old defaults)**
+
+Run: `python3 -m pytest tools/test_guard_time_reduction.py::test_new_defaults_in_parser -v`
+Expected: FAIL
+
+**Step 3: Update defaults in e80_bench_ctl.py**
+
+**Step 4: Run tests — all pass**
+
+Run: `python3 -m pytest tools/test_guard_time_reduction.py -v`
+Expected: ALL PASS
+
+**Step 5: Commit**
+
+```bash
+git add tools/e80_bench_ctl.py tools/test_guard_time_reduction.py
+git commit -m "feat: reduce default guard times for NTP-synced machines
+
+t0_margin 120→30, guard 20→5, rx_lead 10→3, settle 2→1, swd_reset_s 10→2.
+Safe for online machines (NTP drift <50ms). Saves ~75% per-stop overhead.
+
+Old: 5 configs = 3.2 min. New: 4 configs = ~1 min.
+"
+```
+
+### Task 4: Update Makefile to pass reduced timing parameters
+
+**Objective:** Make sure `make range-tx` and `make range-rx` use the new defaults (or pass them explicitly).
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/Makefile:127-170` (range-tx, range-rx targets)
+
+**Check:** The Makefile currently does NOT pass --guard, --t0-margin, etc. — they use argparse defaults. So updating the defaults in Task 3 is sufficient. But add a comment documenting the reduced values.
+
+**Step 1: Add documentation comment to Makefile**
+
+After line 112, add:
+```makefile
+# Timing parameters (defaults in e80_bench_ctl.py):
+#   t0_margin=30s  guard=5s  rx_lead=3s  settle=1s  swd_reset_s=2s
+# These are safe for NTP-synced machines (drift <50ms).
+# For offline machines, override: make range-tx GUARD=10 T0_MARGIN=60
+# To pass custom timing: add --guard $(GUARD) etc. to the e80_ctl invocation
+```
+
+**Step 2: Verify `make range-dry-run` shows new defaults**
+
+Run: `cd firmware/e80-stm32-bench && make range-dry-run CONFIGS=outdoor-10`
+Expected: Schedule shows ~1 min total for 5 configs (was 3.2 min)
+
+**Step 3: Commit**
+
+```bash
+git add Makefile
+git commit -m "docs: document reduced guard time defaults in Makefile"
+```
+
+---
+
+## Phase 2: Config Files — Max Payload, Keep High Data Rates
+
+### Task 5: Create 4-config envelope preset (KEEP FLRC-2600, max payloads)
+
+**Objective:** Create a new config file with 4 configs, max payload per modulation, 868 MHz, 10 packets each (user said keep 10 — don't reduce packet count).
+
+**Files:**
+- Create: `configs/envelope-4cfg-max.json`
+- Keep: `configs/envelope-3cfg.json` (consultant created, but we need the 4-config version with FLRC-2600)
+
+**Config content:**
+```json
+{
+  "name": "envelope-4cfg-max",
+  "description": "4-config envelope — max payload per modulation, 868 MHz, 10 pkts each",
+  "band": "868",
+  "configs": [
+    {
+      "label": "FLRC-650 LEN511",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 511,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "FLRC-2600 LEN511",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 2600,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 511,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF7 BW125 LEN255",
+      "mod": "lora",
+      "sf": 7,
+      "bw": 125,
+      "br": null,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 255,
+      "gap": 10000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF12 BW125 LEN255",
+      "mod": "lora",
+      "sf": 12,
+      "bw": 125,
+      "br": null,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 255,
+      "gap": 10000,
+      "n_pkts": 10
+    }
+  ]
+}
+```
+
+**Why 4 configs (not 3):**
+- User explicitly: "I'm reluctant to drop high data rates because our high data rate is exactly what we're trying to achieve at a distance."
+- FLRC-2600 is the highest data rate (2600 kbps). Must test at range.
+- FLRC-650 (650 kbps) is the reliable workhorse.
+- LoRa SF7 (3 kbps) is medium-range LoRa.
+- LoRa SF12 (0.3 kbps) is max-range LoRa.
+- All at max payload: 511B FLRC, 255B LoRa.
+
+**Why 10 packets (not fewer):**
+- User explicitly: "Let's not reduce the time, the number of tries that we spend on a certain configuration, since that doesn't save us a lot of time."
+- 10 packets gives 10% PER resolution. Reducing to 4 saves only 18s out of 3+ min.
+- With reduced guard times, 4 configs × 10 packets = ~1 min total.
+
+**Step 1: Write the config file**
+
+**Step 2: Write test that validates config structure**
+
+```python
+# test_config_validation.py
+import json
+import pathlib
+
+def test_envelope_4cfg_max_structure():
+    cfg_path = pathlib.Path("configs/envelope-4cfg-max.json")
+    assert cfg_path.exists(), "envelope-4cfg-max.json not found"
+    
+    cfg = json.loads(cfg_path.read_text())
+    assert cfg["name"] == "envelope-4cfg-max"
+    assert len(cfg["configs"]) == 4
+    
+    # FLRC configs use max payload 511
+    for c in cfg["configs"]:
+        if c["mod"] == "flrc":
+            assert c["plen"] == 511, f"FLRC config {c['label']} should use 511B max payload"
+    
+    # LoRa configs use max payload 255
+    for c in cfg["configs"]:
+        if c["mod"] == "lora":
+            assert c["plen"] == 255, f"LoRa config {c['label']} should use 255B max payload"
+    
+    # All 10 packets
+    for c in cfg["configs"]:
+        assert c["n_pkts"] == 10, f"Config {c['label']} should have 10 packets"
+    
+    # All 868 MHz
+    for c in cfg["configs"]:
+        assert c["freq"] == 868000000, f"Config {c['label']} should be 868 MHz"
+    
+    # Verify expected modulations present
+    labels = [c["label"] for c in cfg["configs"]]
+    assert any("FLRC-650" in l for l in labels), "Missing FLRC-650"
+    assert any("FLRC-2600" in l for l in labels), "Missing FLRC-2600"
+    assert any("SF7" in l for l in labels), "Missing LoRa SF7"
+    assert any("SF12" in l for l in labels), "Missing LoRa SF12"
+```
+
+**Step 3: Commit**
+
+```bash
+git add configs/envelope-4cfg-max.json tools/test_config_validation.py
+git commit -m "feat: add envelope-4cfg-max config — 4 configs, max payload, 10 pkts
+
+FLRC-650 511B, FLRC-2600 511B, LoRa-SF7 255B, LoRa-SF12 255B.
+Keeps high data rate (FLRC-2600) per user directive. Max payload
+per modulation for worst-case sensitivity test + best throughput.
+"
+```
+
+### Task 6: Update Makefile default CONFIGS to envelope-4cfg-max
+
+**Objective:** Make `make tx` / `make rx` use the new 4-config preset by default.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/Makefile:32` (CONFIGS default)
+
+**Change:**
+```makefile
+# Line 32: Change default config preset
+CONFIGS ?= envelope-4cfg-max
+```
+
+**Step 1: Make the change**
+
+**Step 2: Verify `make range-dry-run` uses the new config**
+
+Run: `make range-dry-run`
+Expected: 4 configs listed, ~1 min total
+
+**Step 3: Commit**
+
+```bash
+git add Makefile
+git commit -m "feat: default CONFIGS to envelope-4cfg-max (4 configs, max payload)"
+```
+
+---
+
+## Phase 3: CVM Config Provider Integration
+
+### Task 7: Design CVM set_config tool
+
+**Objective:** Add a `set_config` MCP tool to the CVM board server that accepts a config JSON (or config name) and applies it to the board. This lets a remote coordinator (LLM or script) push configs to the TX/RX machines over Nostr instead of using static `--configs` files.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/tools/cvm_board_server.py` (add `set_config` tool)
+- Modify: `firmware/e80-stm32-bench/tools/cvm_campaign.py` (coordinator can push configs)
+
+**Design:**
+
+The CVM board server already wraps serial commands as MCP tools. We add one new tool:
+
+```python
+# New MCP tool: set_config
+# Input: { "config_name": "envelope-4cfg-max" } or { "config_json": "{...}" }
+# Effect: Loads the named config file (or inline JSON), applies MOD/FREQ/PA/ROLE commands
+#         to the board, and returns the board's response.
+# The coordinator can call this to switch configs remotely.
+```
+
+**Two modes:**
+1. **Config file name** — server looks up `configs/<name>.json` locally
+2. **Inline JSON** — coordinator sends the full config JSON over Nostr
+
+This means the Python script (`make rx`/`make tx`) could itself BE a CVM server, and the coordinator (Hermes or another LLM) pushes configs to it remotely. This is exactly what the user described: "the Python script that we trigger with make RX and make TX could be a context VM."
+
+**Step 1: Read existing CVM board server to understand tool registration pattern**
+
+Read: `firmware/e80-stm32-bench/tools/cvm_board_server.py`
+
+**Step 2: Write failing test for set_config tool**
+
+```python
+# test_cvm_config_provider.py
+import pytest
+import json
+
+def test_set_config_tool_exists():
+    """CVM board server should expose a set_config MCP tool."""
+    import inspect
+    import cvm_board_server
+    
+    source = inspect.getsource(cvm_board_server)
+    assert "set_config" in source, "set_config tool not found in cvm_board_server"
+
+def test_set_config_accepts_config_name():
+    """set_config should accept a config file name and load it."""
+    # Test with a known config
+    result = None  # Will be populated by implementation
+    # The tool should accept {"config_name": "envelope-4cfg-max"}
+    # and return success with the board's response
+    pass  # Implementation-dependent
+
+def test_set_config_accepts_inline_json():
+    """set_config should accept inline config JSON."""
+    pass  # Implementation-dependent
+```
+
+**Step 3: Implement set_config tool in cvm_board_server.py**
+
+Add a new MCP tool that:
+1. Accepts `config_name` (string) or `config_json` (string)
+2. Loads the config from `configs/<name>.json` or parses inline JSON
+3. Sends MOD, FREQ, PA, ROLE commands to the board via serial
+4. Returns the board's responses
+
+**Step 4: Run tests**
+
+Run: `python3 -m pytest tools/test_cvm_config_provider.py -v`
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add tools/cvm_board_server.py tools/test_cvm_config_provider.py
+git commit -m "feat: add set_config MCP tool to CVM board server
+
+Allows remote coordinator (LLM or script) to push configs to TX/RX
+boards over Nostr. Two modes: config file name or inline JSON.
+Enables 'make range-cvm-server' to receive configs dynamically
+instead of static --configs file.
+"
+```
+
+### Task 8: Update cvm_campaign.py to use set_config for dynamic config pushing
+
+**Objective:** The CVM campaign coordinator should use `set_config` to push configs to both boards, then trigger bursts, instead of both boards loading the same static config file.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/tools/cvm_campaign.py`
+
+**Changes:**
+1. Coordinator loads config JSON from file
+2. For each config entry, coordinator calls `set_config` on both TX and RX boards with the single config (not the whole file)
+3. Coordinator waits for both boards to confirm configuration
+4. Coordinator calls `board_start_burst` on TX and `board_capture` on RX
+5. Coordinator collects results and decides next config (SPRT adaptive)
+
+This is the user's vision: "Hermes could be providing the configurations remotely as a context VM."
+
+**Step 1: Read existing cvm_campaign.py to understand current flow**
+
+**Step 2: Implement dynamic config pushing**
+
+**Step 3: Write test**
+
+**Step 4: Commit**
+
+```bash
+git add tools/cvm_campaign.py
+git commit -m "feat: CVM coordinator pushes configs dynamically via set_config
+
+Instead of both boards loading the same static config file, the
+coordinator sends each config entry individually via set_config MCP
+tool. This enables real-time config changes by the LLM coordinator.
+"
+```
+
+### Task 9: Update Makefile CVM targets for new config flow
+
+**Objective:** Update `range-cvm-server` and `range-adaptive` targets to work with the new `set_config` flow.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/Makefile:303-365`
+
+**Changes:**
+- `range-cvm-server` should accept `CONFIGS` env var (config file to load initially)
+- `range-adaptive` should pass config JSON to coordinator instead of config name
+- Document the CVM config provider pattern in Makefile comments
+
+**Step 1: Update Makefile**
+
+**Step 2: Verify `make range-cvm-test` still works**
+
+Run: `make range-cvm-test`
+Expected: Relay connectivity test passes
+
+**Step 3: Commit**
+
+```bash
+git add Makefile
+git commit -m "feat: update CVM Makefile targets for dynamic config provider"
+```
+
+---
+
+## Phase 4: Integration Testing + Documentation
+
+### Task 10: Integration test — full schedule with reduced guard times
+
+**Objective:** Run `make range-dry-run` with the new config and verify the schedule timing is correct.
+
+**Files:**
+- Test: `firmware/e80-stm32-bench/tools/test_guard_time_reduction.py`
+
+**Test:**
+```python
+def test_schedule_timing_4_configs_reduced_guard():
+    """4 configs with reduced guard times should take <90s total."""
+    from e80_bench_ctl import build_preset_schedule, load_configs
+    
+    cfgs = load_configs("configs/envelope-4cfg-max.json")
+    import time
+    t0 = int(time.time()) + 300  # 5 min from now
+    
+    starts = build_preset_schedule(
+        cfgs, t0,
+        t0_margin=30, guard=5, settle=1, rx_lead=3, swd_reset_s=2
+    )
+    
+    # Total schedule = last start + last burst - t0 - t0_margin
+    # With 4 configs:
+    #   FLRC-650: burst ~0.1s, gap = 0.1 + 1 + 5 + 3 = 9.1s
+    #   FLRC-2600 (same mod): burst ~0.1s, gap = 0.1 + 1 + 5 + 3 = 9.1s
+    #   LoRa-SF7 (mod change): burst ~1.0s, gap = 1.0 + 1 + 5 + 3 + 2 = 12.0s
+    #   LoRa-SF12 (same LoRa): burst ~23.5s, gap = 23.5 + 1 + 5 + 3 = 32.5s
+    # Total: ~9.1 + 9.1 + 12.0 + 32.5 = ~63s
+    
+    total = starts[-1] + cfgs[-1]["expected_s"] - t0 - 30
+    assert total < 90, f"4 configs should take <90s, got {total:.0f}s"
+```
+
+**Step 1: Write integration test**
+
+**Step 2: Run all tests**
+
+Run: `cd firmware/e80-stm32-bench && python3 -m pytest tools/ -v -k "guard or config or cvm"`
+Expected: ALL PASS
+
+**Step 3: Commit**
+
+```bash
+git add tools/test_guard_time_reduction.py
+git commit -m "test: integration test for 4-config reduced-guard schedule"
+```
+
+### Task 11: Update RANGE-TEST-GUIDE.md with new timing
+
+**Objective:** Document the reduced guard times and 4-config preset in the operator guide.
+
+**Files:**
+- Modify: `firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md`
+
+**Changes:**
+1. Update timing table to show new defaults
+2. Add section on 4-config envelope preset
+3. Add section on CVM config provider mode
+4. Update "NTP sync verification" step (run `date -u +%s` on both machines)
+
+**Step 1: Write docs update**
+
+**Step 2: Commit**
+
+```bash
+git add docs/RANGE-TEST-GUIDE.md
+git commit -m "docs: update RANGE-TEST-GUIDE with reduced guard times + CVM config provider"
+```
+
+### Task 12: Update RF-EXPERIMENT-DESIGN-ANALYSIS.md with user decisions
+
+**Objective:** Update the consultant's analysis doc to reflect user decisions (keep FLRC-2600, keep 10 packets, 4 configs).
+
+**Files:**
+- Modify: `docs/RF-EXPERIMENT-DESIGN-ANALYSIS.md` (already created by consultant)
+
+**Step 1: Add "User Decisions" section**
+
+```markdown
+## User Decisions (2026-08-24)
+
+1. **FLRC-2600: KEEP.** "I'm reluctant to drop high data rates because our
+   high data rate is exactly what we're trying to achieve at a distance."
+2. **Packet count: KEEP 10.** "Let's not reduce the number of tries since
+   that doesn't save us a lot of time."
+3. **Payload size: MAX.** "Drop smaller packet sizes, always measure with
+   the largest packet size." (511B FLRC, 255B LoRa)
+4. **Guard time: REDUCE.** "We can assume network time isn't going to be
+   seconds apart on two computers that are both online."
+5. **CVM: INTEGRATE.** "The Python script could be a CVM, and Hermes could
+   provide configs remotely as a CVM."
+```
+
+**Step 2: Commit**
+
+```bash
+git add docs/RF-EXPERIMENT-DESIGN-ANALYSIS.md
+git commit -m "docs: update experiment design with user decisions"
+```
+
+---
+
+## Phase 5: Push + Quality Gates
+
+### Task 13: Run full test suite + cold review + push
+
+**Objective:** Pass all quality gates and push to remote.
+
+**Gate 1 (TDD):** All new behavior has failing tests observed first. ✓ (Tasks 1, 5, 7, 10)
+**Gate 2 (Tests pass):** Run full suite.
+**Gate 2.5 (Cold review):** Cross-family review of all changes.
+**Gate 3 (Docs):** RANGE-TEST-GUIDE.md updated in same commit as code.
+**Gate 4 (Atomic commits):** One concern per commit. Conventional messages.
+**Gate 5 (PUSH):** `git push` exit code 0.
+
+**Step 1: Run full test suite**
+
+Run: `cd firmware/e80-stm32-bench && python3 -m pytest tools/ -v`
+Expected: ALL PASS, zero failures
+
+**Step 2: Cold review**
+
+Dispatch cross-family reviewer (kimi-k3 if worker is GLM) with git diff.
+
+**Step 3: Push**
+
+```bash
+git push origin feat/2g4-sweep
+```
+
+**Step 4: Verify push**
+
+Run: `git log origin/feat/2g4-sweep..HEAD --oneline`
+Expected: empty (nothing unpushed)
+
+---
+
+## Open Questions for Felix
+
+**Q1: Distance spacing.** The experiment design consultant found that 450m/1.5km/5km (10 dB steps) is too wide to resolve radio cliffs (3-6 dB wide). Recommended: doubling distances (436m/872m/1744m/5000m = 6 dB steps). This means 4 field stops instead of 3. With reduced guard times, total test time is still <30 min.
+
+Options:
+- (a) 3 stops (450m, 1.5km, 5km) — fast but may miss cliffs (10 dB resolution)
+- (b) 4 stops (436m, 872m, 1744m, 5km) — 6 dB resolution, catches all cliffs, +1 stop
+- (c) 5 stops (218m sanity + 4 field) — best data, ~30 min total
+
+Recommendation: (b) — 4 stops with 6 dB resolution. With reduced guard times, each stop is <1 min test time. The extra stop is worth the cliff resolution.
+
+**Q2: CVM in the field.** CVM requires internet on both machines (Nostr relay access). In Madeira field tests, will both machines have phone hotspot internet? If not, CVM mode won't work and we fall back to fixed-schedule mode.
+
+Options:
+- (a) Test CVM in lab first (both machines on WiFi), then use in field if internet available
+- (b) Skip CVM for now, use fixed-schedule mode for field tests
+- (c) Implement CVM but make it optional — `make tx/rx` works without CVM, `make range-cvm-server` adds CVM on top
+
+Recommendation: (c) — implement CVM as an optional layer. Fixed-schedule is the fallback. CVM is the enhancement when internet is available.
+
+---
+
+## Summary Table
+
+| Task | Phase | Description | Time |
+|------|-------|-------------|------|
+| 1 | 1 | Write failing test for MOD-before-wait_until | 5 min |
+| 2 | 1 | Fix TX: move MOD before wait_until, remove SWD code | 10 min |
+| 3 | 1 | Reduce default guard times in argparse | 5 min |
+| 4 | 1 | Update Makefile docs | 2 min |
+| 5 | 2 | Create envelope-4cfg-max config file | 5 min |
+| 6 | 2 | Update Makefile default CONFIGS | 2 min |
+| 7 | 3 | Add set_config MCP tool to CVM board server | 15 min |
+| 8 | 3 | Update CVM coordinator for dynamic config | 10 min |
+| 9 | 3 | Update Makefile CVM targets | 5 min |
+| 10 | 4 | Integration test for full schedule | 5 min |
+| 11 | 4 | Update RANGE-TEST-GUIDE.md | 10 min |
+| 12 | 4 | Update experiment design doc | 5 min |
+| 13 | 5 | Full test suite + cold review + push | 10 min |
+
+Total: ~90 min of worker time. Dispatch as 3 parallel workers (Phase 1, Phase 2, Phase 3) after plan approval.
+
+---
+
+## Distance Test Matrix (with 4 configs × 4 distances)
+
+| Stop | Distance | FLRC-650 511B | FLRC-2600 511B | LoRa SF7 255B | LoRa SF12 255B | Runs |
+|------|----------|:---:|:---:|:---:|:---:|:---:|
+| Sanity | 218m | TEST | TEST | TEST | TEST | 4 |
+| D1 | 436m | TEST | TEST | TEST | skip (38dB margin) | 3 |
+| D2 | 872m | TEST (cliff!) | skip (dead) | TEST | TEST | 3 |
+| D3 | 1744m | skip (dead) | skip | TEST (cliff!) | TEST | 2 |
+| D4 | 5000m | skip | skip | skip (dead) | TEST (cliff!) | 1 |
+| Total | | | | | | 13 |
+
+13 runs × ~10s average per run = ~2.5 min test time + driving.
+
+Note: FLRC-2600 at 436m — predicted -7 dB margin. Borderline. TEST to find the cliff.
+Note: FLRC-2600 at 872m — predicted -19 dB margin. Dead. Skip.
+
+**"Skip" rationale:**
+- FLRC-2600 at 872m: -19 dB margin = certainly dead. Zero information.
+- LoRa SF12 at 436m: +38 dB margin = certainly alive. Zero information.
+- FLRC-650 at 1744m: -23 dB margin = dead. Zero information.
+- LoRa SF7 at 5km: -14 dB margin = dead. Zero information.
+
+Every TEST cell is at a cliff edge or sanity check. Zero wasted measurements.

@@ -1355,26 +1355,37 @@ ground-level (two-ray d⁻⁴ path loss), it will work at balloon altitude
 (FSPL d⁻², much less lossy).
 
 The extended distance series uses **6 dB steps (doubling)** from 50 m to
-~70 km. Each stop runs the `envelope-4cfg-max-plus` preset (or a subset) at
-that distance. The plus preset adds FLRC-260 (most robust FLRC), SF9
-(BW125), and SF7 (BW500) configs for throughput characterization at the
-longer-range stops.
+~70 km. Each stop runs the `envelope-dualband` preset (or a subset) at
+that distance. The dual-band preset contains 12 configs: 7× 869 MHz
+(pa=22, 869.525 MHz) + 5× 2.4 GHz (pa=12, 2400 MHz). 869 MHz is the primary
+band (better link budget: +19 dB margin advantage). 2.4 GHz is secondary
+(frequency diversity, smaller antenna, global ISM).
 
-### Distance Matrix
+### ⚠️ Operator: Antenna Cable Swap Required
 
-| Stop | Dist | FLRC-260 511B | FLRC-650 511B | FLRC-2600 511B | SF7 255B | SF9 255B | SF7-500kHz 255B | SF12 255B |
-|------|------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| Baseline | 50m | ✓ | ✓ | ✓ | — | — | — | — |
-| B2 | 100m | ✓ | ✓ | ✓ | — | — | — | — |
-| Sanity | 218m | ✓ | ✓ | ✓ | ✓ | — | — | ✓ |
-| D1 | 436m | ✓ | ✓ | — | ✓ | — | — | — |
-| D2 | 872m | ✓ | — | — | ✓ | — | — | ✓ |
-| D3 | 1744m | ✓ | — | — | ✓ | — | — | ✓ |
-| D4 | 5km | — | — | — | — | — | — | ✓ |
-| D5 | 11km | — | — | — | ✓ | ✓ | ✓ | ✓ |
-| D6 | 70km | — | — | — | ✓ | ✓ | ✓ | ✓ |
+The E80 board has **dual SMA jacks**: sub-GHz (Pin 9, LF jack) and 2.4 GHz
+(Pin 10, HF jack). The operator must **physically swap the antenna cable**
+between band groups:
 
-**Config rationale per stop:**
+1. **Run all 869 MHz configs first** — antenna cable on sub-GHz SMA jack (Pin 9).
+2. **Swap antenna cable** to 2.4 GHz SMA jack (Pin 10).
+3. **Run all 2.4 GHz configs** — antenna cable on 2.4 GHz SMA jack (Pin 10).
+
+### Dual-Band Distance Matrix
+
+| Stop | Dist | 869: FLRC-260 | 869: FLRC-650 | 869: FLRC-2600 | 869: SF7-125 | 869: SF9-125 | 869: SF7-500 | 869: SF12 | 2G4: SF12 | 2G4: SF9 | 2G4: SF7 | 2G4: FLRC-260 | 2G4: FLRC-2600 |
+|------|------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Baseline | 50m | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | ✓ | ✓ |
+| B2 | 100m | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | ✓ | — |
+| Sanity | 218m | ✓ | ✓ | ✓ | ✓ | — | — | ✓ | ✓ | — | — | — | — |
+| D1 | 436m | ✓ | ✓ | — | ✓ | — | — | — | ✓ | — | — | — | — |
+| D2 | 872m | ✓ | — | — | ✓ | — | — | ✓ | ✓ | — | — | — | — |
+| D3 | 1744m | ✓ | — | — | ✓ | — | — | ✓ | ✓ | — | — | — | — |
+| D4 | 5km | — | — | — | — | — | — | ✓ | ✓ | — | — | — | — |
+| D5 | 11km | — | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — | — |
+| D6 | 70km | — | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+
+**869 MHz config rationale per stop:**
 - **Baseline / B2 (50–100 m):** FLRC only — short range, characterize FLRC
   PER/RSSI at near-zero distance. All three FLRC bitrates tested.
 - **Sanity (218 m):** All key mods — verify radio links work before
@@ -1393,6 +1404,22 @@ longer-range stops.
 - **D6 (70 km):** SF7 + SF9 + SF7-500kHz + SF12. The mission stop.
   SF12 is the known-good mission config. SF7/SF9/SF7-500kHz test whether
   higher throughput is feasible at inter-island range.
+
+**2.4 GHz config rationale per stop:**
+- **2.4 GHz uses 2400 MHz** (below WiFi channel 1) to avoid interference.
+  At 2.4 GHz, max TX power is +12 dBm (chip hardware limit, vs +22 dBm
+  at 869 MHz). Link budget is 19 dB worse than 869 MHz (10 dB power + 9 dB
+  FSPL).
+- **Baseline / B2 (50–100 m):** FLRC-260 + FLRC-2600 at 50 m; FLRC-260
+  only at 100 m. 2.4 GHz FLRC dies fast — sensitivity -88 to -98 dBm,
+  dead past ~100 m at +12 dBm.
+- **Sanity → D4 (218 m – 5 km):** 2.4 GHz SF12 only. SF12 has +20.4 dB
+  margin at 70 km — enough to survive all intermediate distances. This
+  brackets the range cliff for 2.4 GHz.
+- **D5 (11 km):** 2.4 GHz SF12 + SF9. SF9 adds mid-range sensitivity
+  characterization.
+- **D6 (70 km):** 2.4 GHz SF12 + SF9 + SF7. SF7 at 70 km has ~+2 dB margin
+  (marginal) — will it work? This is the key 2.4 GHz experiment.
 
 **Why the new SF9 and SF7-BW500 configs at D5/D6:**
 - **SF9 BW125** sits between SF7 (high throughput, shorter range) and
@@ -1414,6 +1441,18 @@ balloon-altitude performance.
 **D5 at 11 km** bridges between 5 km (SF12 certainly alive) and 70 km
 (mission relevant). If SF12 passes at 11 km but fails at 70 km, we know
 the cliff is between 11–70 km — balloon altitude test needed.
+
+### 2.4 GHz Link Budget Summary
+
+| Metric | 869 MHz | 2.4 GHz | Δ |
+|--------|---------|---------|-----|
+| Max TX power | +22 dBm | +12 dBm | 10 dB |
+| FSPL @ 70 km | 128.1 dB | 137.1 dB | 9.0 dB |
+| Link margin @ 70 km (whip) | +39.4 dB | +20.4 dB | 19.0 dB |
+| Quarter-wave antenna | 86 mm | 31 mm | 2.77× smaller |
+| Interference | Low | WiFi (avoidable at 2400 MHz) | 869 MHz cleaner |
+
+See `docs/2G4-LINK-BUDGET-ANALYSIS.md` for the full analysis.
 
 ---
 
