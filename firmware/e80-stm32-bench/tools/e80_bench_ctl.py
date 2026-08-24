@@ -1614,6 +1614,10 @@ def run_rx_mode(args):
             if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
                 board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
 
+            # Power unlock if needed (must be sent BEFORE any PA command)
+            if cfg["pa"] > INDOOR_CAP_DBM:
+                board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+
             # Session/config tagging
             board.cmd("SESSION {}".format(args.session_id))
             board.cmd("CONFIG {} 1".format(cfg["idx"]))
