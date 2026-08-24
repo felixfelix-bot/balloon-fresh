@@ -486,7 +486,7 @@ per modulation for worst-case sensitivity test + best throughput.
 "
 ```
 
-### Task 6: Update Makefile default CONFIGS to envelope-4cfg-max
+### Task 6: Update Makefile default CONFIGS to envelope-4cfg-max ✅ DONE
 
 **Objective:** Make `make tx` / `make rx` use the new 4-config preset by default.
 

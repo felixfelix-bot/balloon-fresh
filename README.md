@@ -197,7 +197,8 @@ The ZIP contains:
 | `tools/gps_stitch.py` | Stitch GPS track onto RX packet log |
 | `tools/merge_csvs.py` | Merge TX + RX logs into PER report |
 | `tools/countdown.py` | Countdown timer with beeps |
-| `configs/outdoor-10.json` | Default outdoor range test preset |
+| `configs/envelope-4cfg-max.json` | Default range test preset (4 configs, max payload) |
+| `configs/outdoor-10.json` | Outdoor range test preset (10 pkts per config) |
 | `docs/RANGE-TEST-GUIDE.md` | Full operator guide |
 | `README-RANGE-TEST.txt` | Quick start card |
 
