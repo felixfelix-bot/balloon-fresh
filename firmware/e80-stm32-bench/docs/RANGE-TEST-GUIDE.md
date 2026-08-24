@@ -1454,6 +1454,71 @@ the cliff is between 11–70 km — balloon altitude test needed.
 
 See `docs/2G4-LINK-BUDGET-ANALYSIS.md` for the full analysis.
 
+### Per-Stop Config Files (Maximum Throughput at Every Distance)
+
+Instead of running the full `envelope-dualband.json` at every stop, the
+operator loads a **per-stop config file** that contains only the configs
+relevant for that distance, ordered from **highest throughput first**.
+
+These files live under `configs/per-stop/` and include both 869 MHz and
+2.4 GHz configs (869 first, then 2g4). Each file adds the high-throughput
+LoRa modes (SF5, SF6, SF8) and FLRC-1300 that the original
+`envelope-dualband.json` was missing.
+
+**Usage:**
+
+```bash
+# At each stop, load the per-stop file for that distance:
+make tx CONFIGS=configs/per-stop/stop-50m.json
+make rx CONFIGS=configs/per-stop/stop-50m.json
+```
+
+**Per-stop config table:**
+
+| Stop | File | 869 configs | 2G4 configs | Total | Est. time |
+|------|------|:-:|:-:|:-:|---|
+| 50 m | `stop-50m.json` | 7 | 3 | 10 | ~60 s |
+| 100 m | `stop-100m.json` | 7 | 4 | 11 | ~65 s |
+| 218 m | `stop-218m.json` | 8 | 4 | 12 | ~70 s |
+| 436 m | `stop-436m.json` | 6 | 3 | 9 | ~55 s |
+| 872 m | `stop-872m.json` | 6 | 3 | 9 | ~90 s |
+| 1744 m | `stop-1744m.json` | 6 | 3 | 9 | ~90 s |
+| 5 km | `stop-5km.json` | 6 | 2 | 8 | ~80 s |
+| 11 km | `stop-11km.json` | 6 | 2 | 8 | ~80 s |
+| 70 km | `stop-70km.json` | 6 | 3 | 9 | ~90 s |
+
+**Estimated test time per stop** is calculated as:
+- ~5 s per FLRC config (reduced guard time, 10 pkts × 5 s gap)
+- ~10 s per LoRa config (10 pkts × 1 s gap + TX airtime + settle)
+
+Times include the inter-config SWD reset (2 s) and band swap overhead
+(~30 s antenna cable swap between 869 MHz and 2.4 GHz groups).
+
+**Config selection rationale:**
+- **50–100 m:** Maximum throughput — FLRC-2600 (2.6 Mbps) down to FLRC-260,
+  plus LoRa SF5 BW500 (~120 kbps) and SF7 BW500. At 50 m, 2.4 GHz FLRC-2600
+  and FLRC-650 are included; by 100 m, 2.4 GHz FLRC-650 is dropped (cliff).
+- **218 m:** FLRC-2600 dropped (dead at this range), FLRC-1300 steps in.
+  SF12 added as a cliff-edge reference. 2.4 GHz drops to FLRC-260 + LoRa only.
+- **436 m:** FLRC-650 is the fastest FLRC that works. 2.4 GHz FLRC-260
+  still viable. SF5/SF7 BW500 added to probe high-throughput LoRa.
+- **872 m:** FLRC-260 is the only FLRC (cliff edge). 2.4 GHz FLRC dropped
+  entirely — only LoRa configs survive at this range on 2.4 GHz.
+- **1744 m:** No FLRC at all. SF8 BW125 added to bridge SF7→SF9. All LoRa.
+- **5–11 km:** LoRa only. SF7 BW500 is the fastest (may work at 5–11 km
+  with +22 dBm). SF9 and SF12 bracket the cliff. 2.4 GHz drops to SF9+SF12.
+- **70 km:** The mission stop. SF7 BW500 first (marginal), then SF7 BW125,
+  SF5 BW125, SF8, SF9, SF12. 2.4 GHz adds SF7 (marginal at 70 km, +2 dB margin).
+
+**New high-throughput LoRa modes added:**
+- **SF5 BW500** (~120 kbps): works ~0–5 km at +22 dBm. Previously untested.
+- **SF5 BW125** (~30 kbps): works ~0–10 km. Previously untested.
+- **SF8 BW125** (~15 kbps): works ~0–30 km. Bridges SF7→SF9.
+
+**New FLRC mode added:**
+- **FLRC-1300** (1.3 Mbps): works ~0–200 m. Fills the gap between
+  FLRC-2600 (2.6 Mbps, ~100 m) and FLRC-650 (650 kbps, ~400 m).
+
 ---
 
 ## 20. Throughput Optimization Opportunities
