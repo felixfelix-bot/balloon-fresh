@@ -26,7 +26,7 @@ regime rule: 10^4 when the previous stop's same-mod Wilson ci_hi <= 2 %,
 else 10^3; SF12 is time-capped at 10^3. Results append to --csv.
 
 Safety policy: freq outside 863-870 MHz (EU SRD) is rejected host-side unless
---band-override is given (firmware window 410-960 MHz, pin-gated). +dBm above
+--band-override is given (firmware window 410-2483 MHz, pin-gated). +dBm above
 10 requires POWER MODE OUTDOOR 2026 on the TX board; the tool issues both
 unlocks and verifies acceptance via ID? (band=/pcap= echo) before any TX.
 Ctrl-C at any time sends STOP to both boards and marks the stop ABORTED.
@@ -59,7 +59,7 @@ STOPBITS = 1
 BAND_MIN_HZ = 863000000          # EU SRD clamp (firmware-identical)
 BAND_MAX_HZ = 870000000
 OVERRIDE_MIN_HZ = 410000000      # firmware override window (sub-GHz LF path)
-OVERRIDE_MAX_HZ = 960000000
+OVERRIDE_MAX_HZ = 2483500000
 UNLOCK_PIN = 2026
 INDOOR_CAP_DBM = 10
 TXPOW_MAX_DBM = 22
@@ -732,7 +732,9 @@ def load_config_preset(preset_or_path):
             name = path[:-5] if path.endswith(".json") else path
             repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             for c in [
+                os.path.join(repo_root, "configs", "per-stop", name + ".json"),
                 os.path.join(repo_root, "configs", name + ".json"),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "per-stop", name + ".json"),
                 os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", name + ".json"),
                 name + ".json",
             ]:
@@ -794,6 +796,36 @@ def load_config_preset(preset_or_path):
     return cfgs
 
 
+BAND_THRESHOLD_HZ = 1_600_000_000  # 1.6 GHz — sub-GHz vs 2.4 GHz boundary
+
+
+def is_band_transition(prev_freq, cur_freq, threshold=BAND_THRESHOLD_HZ):
+    """Return True if prev_freq and cur_freq are on different sides of the
+    1.6 GHz band boundary (sub-GHz vs 2.4 GHz).
+
+    A band transition means the operator must physically swap the antenna
+    cable from the sub-GHz jack (Pin 9) to the 2.4 GHz jack (Pin 10) or
+    vice versa.
+    """
+    if prev_freq is None or cur_freq is None:
+        return False
+    return (prev_freq < threshold) != (cur_freq < threshold)
+
+
+def _band_label(freq_hz):
+    """Return a human-readable band label for antenna swap messages."""
+    if freq_hz < BAND_THRESHOLD_HZ:
+        return "869 MHz"
+    return "2.4 GHz"
+
+
+def _antenna_jack(freq_hz):
+    """Return the antenna jack name for antenna swap messages."""
+    if freq_hz < BAND_THRESHOLD_HZ:
+        return "sub-GHz jack (Pin 9)"
+    return "2.4 GHz jack (Pin 10)"
+
+
 def _mod_params_changed(prev, cur):
     """Return True if radio parameters changed between two preset configs.
     SX1280 can't hot-switch mod/sf/br/bw — needs SWD reset."""
@@ -811,7 +843,7 @@ def _mod_params_changed(prev, cur):
 def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
                           settle=2.0, rx_lead=0,
                           t0_margin_s=None, guard_s=None,
-                          settle_s=None, swd_reset_s=0):
+                          settle_s=None, swd_reset_s=0, band_swap_s=0):
     """Absolute epoch start times for each config in a preset.
 
     Like build_stop_schedule but works on preset configs (which have
@@ -829,6 +861,12 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
     modulation parameters change between consecutive configs. This
     accounts for the SWD reset + board reopen time (~6s) needed when
     the SX1280 can't hot-switch mod/sf/br/bw.
+
+    band_swap_s: extra seconds added to the inter-config gap when
+    the frequency crosses the 1.6 GHz band boundary between consecutive
+    configs (sub-GHz ↔ 2.4 GHz). This gives the operator time to
+    physically swap the antenna cable between jacks (default 0; the
+    CLI --band-swap-s default is 30).
     """
     if t0_margin_s is not None:
         t0_margin = t0_margin_s
@@ -845,6 +883,9 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
         # happens when transitioning FROM prev TO this config, so the
         # extra gap must precede this config, not follow it).
         extra = swd_reset_s if (prev is not None and _mod_params_changed(prev, c)) else 0
+        # Add band swap delay when frequency crosses the 1.6 GHz boundary
+        if prev is not None and is_band_transition(prev.get("freq"), c.get("freq")):
+            extra += band_swap_s
         t += extra
         starts.append(t)
         t += c["expected_s"] + settle + guard + rx_lead
@@ -1281,7 +1322,8 @@ def run_tx_mode(args):
 
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
                                    args.settle, args.rx_lead,
-                                   swd_reset_s=args.swd_reset_s)
+                                   swd_reset_s=args.swd_reset_s,
+                                   band_swap_s=args.band_swap_s)
     for i, (c, s) in enumerate(zip(cfgs, starts)):
         print("  [{}/{}] {} N={} LEN={} start={}".format(
             i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
@@ -1330,6 +1372,12 @@ def run_tx_mode(args):
             # triggers an IWDG watchdog reset on the firmware)
             if idx > 0:
                 board.drain(quiet=0.5)
+
+            # Band transition antenna swap reminder
+            if prev_cfg is not None and is_band_transition(prev_cfg.get("freq"), cfg.get("freq")):
+                print("\n⚠️  BAND TRANSITION: {} → {} — SWAP ANTENNA to {} NOW\n".format(
+                    _band_label(prev_cfg["freq"]), _band_label(cfg["freq"]),
+                    _antenna_jack(cfg["freq"])))
 
             # --- Send radio config BEFORE the scheduled start time ---
             # This allows the firmware self-reset (TCXO startup + calibration
@@ -1468,7 +1516,8 @@ def run_rx_mode(args):
 
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
                                    args.settle, args.rx_lead,
-                                   swd_reset_s=args.swd_reset_s)
+                                   swd_reset_s=args.swd_reset_s,
+                                   band_swap_s=args.band_swap_s)
     for i, (c, s) in enumerate(zip(cfgs, starts)):
         print("  [{}/{}] {} RX_arm={} start={}".format(
             i + 1, len(cfgs), c["label"], c["n_pkts"],
@@ -1597,6 +1646,12 @@ def run_rx_mode(args):
             if idx > 0:
                 board.drain(quiet=0.5)
 
+            # Band transition antenna swap reminder
+            if prev_cfg is not None and is_band_transition(prev_cfg.get("freq"), cfg.get("freq")):
+                print("\n⚠️  BAND TRANSITION: {} → {} — SWAP ANTENNA to {} NOW\n".format(
+                    _band_label(prev_cfg["freq"]), _band_label(cfg["freq"]),
+                    _antenna_jack(cfg["freq"])))
+
             # SWD reset if modulation parameters changed (SX1280 can't
             # hot-switch mod/sf/br/bw via MOD command — firmware returns
             # OK but radio doesn't reconfigure, resulting in 0 packets)
@@ -1712,7 +1767,8 @@ def dry_run_preset(args):
     t0 = parse_t0(args.t0) if args.t0 else time.time()
     starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
                                    args.settle, args.rx_lead,
-                                   swd_reset_s=args.swd_reset_s)
+                                   swd_reset_s=args.swd_reset_s,
+                                   band_swap_s=args.band_swap_s)
 
     print("== DRY RUN (distributed preset) ==")
     print("Config file:  {}".format(args.configs))
@@ -1834,7 +1890,7 @@ def main():
     ap.add_argument("--rx", default="/dev/ttyUSB4", help="RX board serial port")
     ap.add_argument("--freq", type=int, default=868000000,
                     help="Hz; 863-870 MHz (EU SRD) unless --band-override "
-                         "(then firmware window 410-960 MHz)")
+                         "(then firmware window 410-2483 MHz)")
     ap.add_argument("--n", type=int, default=1000,
                     help="single-shot packet count (default 1000)")
     ap.add_argument("--length", type=int, default=255,
@@ -1880,6 +1936,11 @@ def main():
     ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=2,
                     help="extra inter-config gap seconds when mod params change "
                          "(SWD reset + board reopen time, default 2, was 10)")
+    ap.add_argument("--band-swap-s", dest="band_swap_s", type=int, default=30,
+                    help="extra inter-config gap seconds when frequency crosses "
+                         "the 1.6 GHz band boundary (sub-GHz ↔ 2.4 GHz) — gives "
+                         "operator time to physically swap antenna cable "
+                         "(default 30)")
     ap.add_argument("--skip-late-configs", dest="skip_late_configs",
                     action="store_true",
                     help="if launched after one or more config start times "
