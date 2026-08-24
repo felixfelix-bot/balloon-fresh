@@ -593,19 +593,27 @@ accurate RSSI. 10 packets each keeps 10% PER resolution.
 #### `configs/envelope-4cfg-max-plus.json`
 
 Extended envelope — 7-config preset adding FLRC-260 (most robust FLRC),
-SF9, and SF7-BW500 for throughput sweep at range. 868 MHz, 10 packets
-each. Used for the extended distance matrix (§19) with stops at 11 km
-and 70 km.
+SF9, and SF7-BW500 for throughput sweep at range. **869.525 MHz** (EU
+high-power sub-band 869.4–869.65 MHz, 500 mW ERP allowed), **PA=22 dBm**
+with POWER MODE OUTDOOR 2026 unlock, 10 packets each. Used for the
+extended distance matrix (§19) with stops at 11 km and 70 km.
+
+> **Power note:** PA=22 dBm exceeds the +10 dBm indoor cap. The control
+> script (`e80_bench_ctl.py`) automatically sends `POWER MODE OUTDOOR 2026`
+> before any PA command when `pa > 10`. This unlocks the full 0–22 dBm
+> range on the LR2021 chip. At 869.525 MHz in the EU high-power sub-band,
+> +22 dBm (158 mW) is legal — the sub-band allows up to 500 mW ERP
+> (+27 dBm), well above the chip's maximum output.
 
 | # | Label | Modulation | Bitrate/SF | BW | PA | Payload | Gap | Packets |
 |---|-------|-----------|------------|-----|-----|---------|-----|---------|
-| 0 | FLRC-260 LEN511 | FLRC | 260 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
-| 1 | FLRC-650 LEN511 | FLRC | 650 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
-| 2 | FLRC-2600 LEN511 | FLRC | 2600 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
-| 3 | LoRa-SF7 BW125 LEN255 | LoRa | SF7 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
-| 4 | LoRa-SF12 BW125 LEN255 | LoRa | SF12 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
-| 5 | LoRa-SF9 BW125 LEN255 | LoRa | SF9 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
-| 6 | LoRa-SF7 BW500 LEN255 | LoRa | SF7 | 500 kHz | 10 dBm | 255 B | 10 ms | 10 |
+| 0 | FLRC-260 LEN511 | FLRC | 260 kbps | — | 22 dBm | 511 B | 5 ms | 10 |
+| 1 | FLRC-650 LEN511 | FLRC | 650 kbps | — | 22 dBm | 511 B | 5 ms | 10 |
+| 2 | FLRC-2600 LEN511 | FLRC | 2600 kbps | — | 22 dBm | 511 B | 5 ms | 10 |
+| 3 | LoRa-SF7 BW125 LEN255 | LoRa | SF7 | 125 kHz | 22 dBm | 255 B | 10 ms | 10 |
+| 4 | LoRa-SF12 BW125 LEN255 | LoRa | SF12 | 125 kHz | 22 dBm | 255 B | 10 ms | 10 |
+| 5 | LoRa-SF9 BW125 LEN255 | LoRa | SF9 | 125 kHz | 22 dBm | 255 B | 10 ms | 10 |
+| 6 | LoRa-SF7 BW500 LEN255 | LoRa | SF7 | 500 kHz | 22 dBm | 255 B | 10 ms | 10 |
 
 Total: 70 packets across 7 configs. Duration: **~2.5 minutes** with
 reduced guard times.
@@ -1425,7 +1433,7 @@ The firmware (`bench.c` + `radio_bench.c`) hardcodes these LoRa defaults:
 | Preamble length | 8 symbols | `radio_bench.c:37` — `lora_pkt_params.preamble_len_in_symb = 8` |
 | Header mode | Explicit | `radio_bench.c:38` — `lora_pkt_params.pkt_mode = LR20XX_RADIO_LORA_PKT_EXPLICIT` |
 | CRC | Enabled (true) | `radio_bench.c:40` — `lora_pkt_params.crc = true` |
-| PA power | 10 dBm (indoor cap) | Configurable via `PA <dbm>` command; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm |
+| PA power | 22 dBm (OUTDOOR mode) | Configurable via `PA <dbm>` command; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm; `envelope-4cfg-max-plus.json` uses pa=22 at 869.525 MHz |
 
 ### Opportunity 1: Bandwidth 250 kHz and 500 kHz
 
@@ -1558,31 +1566,35 @@ requires the RX to know the payload length, which it does via the
 
 **Config parameter name (proposed):** `"header_mode": "implicit"`
 
-### Opportunity 5: PA Power Increase (10 → 14 dBm)
+### Opportunity 5: PA Power Increase (10 → 22 dBm)
 
-**Status: ✅ Already supported by firmware.**
+**Status: ✅ Already supported by firmware + config.**
 
 The `PA <dbm>` command accepts any value from 0 to 22 dBm. The indoor
 cap is 10 dBm; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm. The host-side
-controller (`e80_bench_ctl.py`) enforces the same gate.
+controller (`e80_bench_ctl.py`) enforces the same gate and automatically
+sends the unlock command when `pa > 10` in both TX and RX modes.
 
-| PA (dBm) | ERP (mW) | Legal status (EU 868 MHz) | Range gain vs 10 dBm |
-|----------|----------|--------------------------|---------------------|
-| 10 (current) | 10 mW | ✅ Legal (indoor) | 0 dB (baseline) |
-| 14 | 25 mW | ✅ Legal (EU SRD max) | +4 dB |
-| 22 | 158 mW | ⚠️ Requires license/exemption | +12 dB |
+The `envelope-4cfg-max-plus.json` preset now uses **PA=22 dBm** at
+**869.525 MHz** (EU high-power sub-band 869.4–869.65 MHz).
+
+| PA (dBm) | ERP (mW) | Legal status (EU) | Range gain vs 10 dBm |
+|----------|----------|-------------------|---------------------|
+| 10 (indoor cap) | 10 mW | ✅ Legal (any 868 MHz sub-band) | 0 dB (baseline) |
+| 14 | 25 mW | ✅ Legal (EU SRD max, most sub-bands) | +4 dB |
+| 22 | 158 mW | ✅ Legal at 869.4–869.65 MHz high-power sub-band (500 mW ERP limit) | +12 dB |
 
 **Throughput tradeoff:** PA increase doesn't change data rate — it
-improves link margin. +4 dB (10→14 dBm) extends range by ~1.6×
-(4 dB = 0.4 decades → 2.5× in FSPL, ~1.6× in two-ray). This could make
-the difference between SF7 and SF9 working at 70 km.
+improves link margin. +12 dB (10→22 dBm) extends range by ~4×
+in FSPL (free-space), ~2.5× in two-ray. This makes the difference
+between SF7 and SF9 working at 70 km much more likely.
 
-**Config change:** Simply set `"pa": 14` in the config JSON and add
-`"POWER MODE OUTDOOR 2026"` to the pre-commands. The firmware and
-host tool already handle this. EU 868 MHz allows +14 dBm ERP (25 mW)
-in the sub-band — this is within legal limits.
+**Config change:** Already done — `envelope-4cfg-max-plus.json` now has
+`"pa": 22` and `"freq": 869525000`. The firmware and host tool
+automatically send `POWER MODE OUTDOOR 2026` before any PA command when
+`pa > 10`.
 
-**Config parameter name:** `"pa": 14` (existing field)
+**Config parameter name:** `"pa": 22` (existing field)
 
 ### Summary: What's Ready Now vs What Needs Firmware Work
 
@@ -1594,11 +1606,11 @@ in the sub-band — this is within legal limits.
 | CR 4/8 (future) | ❌ Needs MOD cmd change | `"cr": 8` (proposed) | -33% throughput | +2-3 dB sensitivity |
 | Shorter preamble | ❌ Needs firmware change | `"preamble": 4` (proposed) | 3-30% airtime savings | Risk at low SNR |
 | Implicit header | ❌ Needs firmware change | `"header_mode": "implicit"` (proposed) | 1-6% airtime savings | None |
-| PA 14 dBm | ✅ Ready | `"pa": 14` | No rate change (range gain) | +4 dB link margin |
+| PA 22 dBm | ✅ Ready | `"pa": 22` | No rate change (range gain) | +12 dB link margin |
 
 The **highest-impact, zero-firmware-change** opportunities are:
 1. **BW 500 kHz** (already in envelope-4cfg-max-plus.json) — 4× throughput
-2. **PA 14 dBm** (just change config + add outdoor unlock) — +4 dB range
+2. **PA 22 dBm** (now in envelope-4cfg-max-plus.json at 869.525 MHz) — +12 dB range
 
 Future firmware work could add CR selection, preamble length, and
 implicit header mode for additional throughput gains.
