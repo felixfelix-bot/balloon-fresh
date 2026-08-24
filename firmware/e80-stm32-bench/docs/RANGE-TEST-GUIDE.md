@@ -464,6 +464,47 @@ sntp time.apple.com     # offset should be < ±0.1s
 w32tm /query /status    # look for "Last Successful Sync Time"
 ```
 
+**NTP sync step (both machines):** run `date -u +%s` on **both** machines
+and confirm the two epoch values agree within ~1 second. This is the
+single most important pre-flight check — the reduced guard times below
+assume both machines are NTP-synced (drift <50 ms). If the values differ
+by more than a second, fix clock sync before starting.
+
+```bash
+# On BOTH machines, compare the output:
+date -u +%s
+```
+
+### Timing parameters (reduced guard times)
+
+The default timing parameters are tuned for **NTP-synced online
+machines** (drift <50 ms). With the MOD-before-`wait_until` fix, the
+firmware self-reset (TCXO + calibration, 3-5 s) happens during the
+inter-config gap instead of delaying the burst start, so guard times can
+be much smaller than before.
+
+| Parameter | Default | Purpose |
+|-----------|---------|---------|
+| `t0_margin` | 30 s | Seconds after T0 before cell 1 (was 120 s) |
+| `guard` | 5 s | Inter-cell guard seconds (was 20 s) |
+| `rx_lead` | 3 s | Seconds RX arms before cell start (was 10 s) |
+| `settle` | 1 s | Post-burst settle before RX STAT? (was 2 s) |
+| `swd_reset_s` | 2 s | Extra inter-config gap when mod params change (was 10 s) |
+
+As Makefile variables these are `t0_margin=30`, `guard=5`, `rx_lead=3`,
+`settle=1`, `swd_reset_s=2`.
+
+These defaults are safe for online machines. For **offline** machines
+(no NTP), override them to be conservative:
+
+```bash
+make tx GUARD=10 T0_MARGIN=60
+make rx GUARD=10 T0_MARGIN=60
+```
+
+With the 4-config envelope preset (below), the full schedule runs in
+**~1 minute** (was ~3.2 min for 5 configs).
+
 ### What if clocks drift?
 
 If one machine's clock is off by more than ~60 seconds past T0, the
@@ -518,6 +559,34 @@ Indoor bench baseline — 1000 packets per config, 868 MHz.
 
 Total: 2000 packets. Duration: ~15-30 minutes. Used for long-run
 statistical baseline measurements.
+
+#### `configs/envelope-4cfg-max.json` (default)
+
+The **default** preset — 4-config envelope, max payload per modulation,
+868 MHz, 10 packets each. This is the recommended field-test preset.
+
+| # | Label | Modulation | Bitrate/SF | BW | PA | Payload | Gap | Packets |
+|---|-------|-----------|------------|-----|-----|---------|-----|---------|
+| 0 | FLRC-650 LEN511 | FLRC | 650 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
+| 1 | FLRC-2600 LEN511 | FLRC | 2600 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
+| 2 | LoRa-SF7 BW125 LEN255 | LoRa | SF7 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
+| 3 | LoRa-SF12 BW125 LEN255 | LoRa | SF12 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
+
+Total: 40 packets across 4 configs. Duration: **~1 minute** with the
+reduced guard times.
+
+**Why these 4 configs:**
+- **FLRC-650 511B** — the reliable throughput workhorse (650 kbps).
+- **FLRC-2600 511B** — the highest data rate (2600 kbps). Kept per user
+  directive: high data rate at a distance is the mission goal, so we
+  need to know where FLRC-2600 dies vs FLRC-650.
+- **LoRa-SF7 255B** — medium-range LoRa.
+- **LoRa-SF12 255B** — max-range LoRa (the 70 km mission config).
+
+**Why max payload (511B FLRC / 255B LoRa):** 511B has 1-3 dB worse
+sensitivity than 64B — if 511B works, smaller works. Max payload also
+gives >6 ms airtime, avoiding the LR2021 AGC RSSI artifact for more
+accurate RSSI. 10 packets each keeps 10% PER resolution.
 
 ### Using a custom config
 
@@ -1234,3 +1303,51 @@ This replaces the previous approach where the coordinator sent individual
 `board_send` commands for each radio parameter (MOD, FREQ, PA, ROLE). The
 `set_config` tool encapsulates all radio config in one MCP call, enabling
 the LLM coordinator to push configs remotely with a single round-trip.
+
+---
+
+## 19. 70 km Distance Test Matrix
+
+The Madeira–Porto Santo inter-island distance is **~70 km**. This is the
+mission-relevant maximum range test — if LoRa SF12 works at 70 km
+ground-level (two-ray d⁻⁴ path loss), it will work at balloon altitude
+(FSPL d⁻², much less lossy).
+
+The extended distance series uses **6 dB steps (doubling)** from 218 m to
+~70 km. Each stop runs the `envelope-4cfg-max` preset (or a subset) at
+that distance.
+
+| Stop | Distance | FLRC-650 511B | FLRC-2600 511B | LoRa SF7 255B | LoRa SF12 255B | Runs |
+|------|----------|:---:|:---:|:---:|:---:|:---:|
+| Sanity | 218m | TEST | TEST | TEST | TEST | 4 |
+| D1 | 436m | TEST | TEST | TEST | skip (38 dB margin) | 3 |
+| D2 | 872m | TEST (cliff!) | skip (dead) | TEST | TEST | 3 |
+| D3 | 1744m | skip (dead) | skip | TEST (cliff!) | TEST | 2 |
+| D4 | 5km | skip | skip | skip (dead) | TEST | 1 |
+| D5 | 11km | skip | skip | skip | TEST | 1 |
+| D6 | 70km | skip | skip | skip | TEST (mission!) | 1 |
+| **Total** | | | | | | **15** |
+
+15 runs × ~15 s average per run = ~4 min test time + driving/boat.
+
+**Skip rationale per cell:**
+- FLRC-2600 at 872 m: -19 dB margin = certainly dead. Zero information.
+- LoRa SF12 at 436 m: +38 dB margin = certainly alive. Zero information.
+- FLRC-650 at 1744 m: -23 dB margin = dead. Zero information.
+- LoRa SF7 at 5 km: -14 dB margin = dead. Zero information.
+- LoRa SF7 at 11 km+70 km: way past cliff. Dead. Zero information.
+- FLRC-650/2600 at 5 km+: way past cliff. Dead. Zero information.
+
+**Why 70 km is the key test:** LoRa SF12 sensitivity is ~-132 dBm. At
+70 km ground-level with two-ray path loss (d⁻⁴), predicted RSSI is
+~-115 dBm → +17 dB margin. At balloon altitude (100 m), two-ray crossover
+moves to 5.5 km — below that FSPL (d⁻²) governs, which is MUCH less
+lossy. So the 70 km ground test is a conservative proxy for
+balloon-altitude performance.
+
+- If SF12 passes at 70 km ground-level → **mission is GO**.
+- If SF12 fails at 70 km → need balloon-altitude test (FSPL regime).
+
+**D5 at 11 km** bridges between 5 km (SF12 certainly alive) and 70 km
+(mission relevant). If SF12 passes at 11 km but fails at 70 km, we know
+the cliff is between 11–70 km — balloon altitude test needed.
