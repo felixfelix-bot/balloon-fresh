@@ -1,0 +1,1070 @@
+{
+  "violations": [
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.5519 mm",
+          "pos": {
+            "x": 2.9481,
+            "y": 22.0
+          },
+          "uuid": "12ee7537-e5c9-4f51-a9fb-b1b528fd4da7"
+        },
+        {
+          "description": "Pad 1 [VCAP] of C1 on F.Cu",
+          "pos": {
+            "x": 3.5,
+            "y": 22.0
+          },
+          "uuid": "a81e8e9c-1b43-4b3e-a872-af5fd275bb72"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 1.3871 mm",
+          "pos": {
+            "x": 2.4808,
+            "y": 23.7207
+          },
+          "uuid": "6bb41f0c-2888-482d-9b02-796db254759e"
+        },
+        {
+          "description": "Pad 1 [VCAP] of U4 on F.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "71876f7b-49f5-4563-ae31-17d2bfdbb53e"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.7485 mm",
+          "pos": {
+            "x": 2.4808,
+            "y": 23.7207
+          },
+          "uuid": "716dcc63-99a2-4172-a7a0-b3e6729e0fcc"
+        },
+        {
+          "description": "Pad 1 [VCAP] of U4 on F.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "71876f7b-49f5-4563-ae31-17d2bfdbb53e"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.7781 mm",
+          "pos": {
+            "x": 2.4998,
+            "y": 23.6998
+          },
+          "uuid": "9e01ff38-f685-43ef-a320-ed0daf2163a2"
+        },
+        {
+          "description": "Pad 1 [VCAP] of U4 on F.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "71876f7b-49f5-4563-ae31-17d2bfdbb53e"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.0399 mm",
+          "pos": {
+            "x": 3.0101,
+            "y": 24.25
+          },
+          "uuid": "a8fbbe10-3f24-471c-b2fd-0e2bca63f3c9"
+        },
+        {
+          "description": "Pad 1 [VCAP] of U4 on F.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "71876f7b-49f5-4563-ae31-17d2bfdbb53e"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.4483 mm",
+          "pos": {
+            "x": 2.9481,
+            "y": 22.0
+          },
+          "uuid": "be67d6b3-2d3f-44e5-9e2f-2e5e20d75129"
+        },
+        {
+          "description": "Pad 1 [VCAP] of C1 on F.Cu",
+          "pos": {
+            "x": 3.5,
+            "y": 22.0
+          },
+          "uuid": "a81e8e9c-1b43-4b3e-a872-af5fd275bb72"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Front solder mask aperture bridges items with different nets",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 3.2985 mm",
+          "pos": {
+            "x": 1.5,
+            "y": 24.7015
+          },
+          "uuid": "ded70c29-2e05-4523-a4a5-2577ef8c8dde"
+        },
+        {
+          "description": "Pad 1 [VCAP] of C_CAP on F.Cu",
+          "pos": {
+            "x": 1.5,
+            "y": 28.0
+          },
+          "uuid": "418066a3-c7df-48be-84d7-6c03e03d8ec7"
+        }
+      ],
+      "severity": "error",
+      "type": "solder_mask_bridge"
+    },
+    {
+      "description": "Items shorting two nets (nets 3V3 and VCAP)",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.5519 mm",
+          "pos": {
+            "x": 2.9481,
+            "y": 22.0
+          },
+          "uuid": "12ee7537-e5c9-4f51-a9fb-b1b528fd4da7"
+        },
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.5,
+            "y": 22.0
+          },
+          "uuid": "a804e620-475c-44b7-9b37-cfc787e565d9"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Clearance violation ( clearance 0.2000 mm; actual 0.1782 mm)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "301b20e9-baa1-467a-8077-bbac01ff6786"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 1.6998 mm",
+          "pos": {
+            "x": 2.4998,
+            "y": 23.6998
+          },
+          "uuid": "58a1b58b-87cc-404a-adf8-f346012fbad2"
+        }
+      ],
+      "severity": "error",
+      "type": "clearance"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and 3V3)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "301b20e9-baa1-467a-8077-bbac01ff6786"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 1.3871 mm",
+          "pos": {
+            "x": 2.4808,
+            "y": 23.7207
+          },
+          "uuid": "6bb41f0c-2888-482d-9b02-796db254759e"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and 3V3)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "301b20e9-baa1-467a-8077-bbac01ff6786"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 0.7485 mm",
+          "pos": {
+            "x": 2.4808,
+            "y": 23.7207
+          },
+          "uuid": "716dcc63-99a2-4172-a7a0-b3e6729e0fcc"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and 3V3)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "301b20e9-baa1-467a-8077-bbac01ff6786"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 0.7781 mm",
+          "pos": {
+            "x": 2.4998,
+            "y": 23.6998
+          },
+          "uuid": "9e01ff38-f685-43ef-a320-ed0daf2163a2"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and 3V3)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "301b20e9-baa1-467a-8077-bbac01ff6786"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 0.0399 mm",
+          "pos": {
+            "x": 3.0101,
+            "y": 24.25
+          },
+          "uuid": "a8fbbe10-3f24-471c-b2fd-0e2bca63f3c9"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and 3V3)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.5,
+            "y": 22.0
+          },
+          "uuid": "a804e620-475c-44b7-9b37-cfc787e565d9"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 0.4483 mm",
+          "pos": {
+            "x": 2.9481,
+            "y": 22.0
+          },
+          "uuid": "be67d6b3-2d3f-44e5-9e2f-2e5e20d75129"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and 3V3)",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 1.5,
+            "y": 28.0
+          },
+          "uuid": "d6ecbd6e-80a2-40ba-9033-245d4f2c1922"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 3.2985 mm",
+          "pos": {
+            "x": 1.5,
+            "y": 24.7015
+          },
+          "uuid": "ded70c29-2e05-4523-a4a5-2577ef8c8dde"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets GND and FEM_RX)",
+      "items": [
+        {
+          "description": "Via [GND] on F.Cu - B.Cu",
+          "pos": {
+            "x": 28.0,
+            "y": 5.0
+          },
+          "uuid": "1ab6c0e7-ab07-408d-9d91-d513c9bb00eb"
+        },
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Clearance violation ( clearance 0.2000 mm; actual 0.1321 mm)",
+      "items": [
+        {
+          "description": "Via [GND] on F.Cu - B.Cu",
+          "pos": {
+            "x": 10.5,
+            "y": 11.0
+          },
+          "uuid": "9cda4870-6927-44ac-b131-9fa403d177c9"
+        },
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        }
+      ],
+      "severity": "error",
+      "type": "clearance"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and GND)",
+      "items": [
+        {
+          "description": "Track [VCAP] on B.Cu, length 1.9000 mm",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "5cb0e411-9082-421a-9f1d-76b2ccfff1fa"
+        },
+        {
+          "description": "Via [GND] on F.Cu - B.Cu",
+          "pos": {
+            "x": 4.0,
+            "y": 24.25
+          },
+          "uuid": "a585dfd8-88ec-4643-a950-d9e1b31fc1ab"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_MISO and GND)",
+      "items": [
+        {
+          "description": "Track [SPI_MISO] on B.Cu, length 9.6208 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 14.4
+          },
+          "uuid": "88ea6252-a63d-4d1f-970e-bbf1ed6f162a"
+        },
+        {
+          "description": "Via [GND] on F.Cu - B.Cu",
+          "pos": {
+            "x": 8.25,
+            "y": 12.0
+          },
+          "uuid": "cc924108-c610-4ffb-b44f-162b24b794ba"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets 3V3 and VCAP)",
+      "items": [
+        {
+          "description": "Track [3V3] on F.Cu, length 0.7485 mm",
+          "pos": {
+            "x": 2.4808,
+            "y": 23.7207
+          },
+          "uuid": "716dcc63-99a2-4172-a7a0-b3e6729e0fcc"
+        },
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "951c82ce-d04e-40df-ab4d-be49b63e935a"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VDIV_MID and LR2021_BUSY)",
+      "items": [
+        {
+          "description": "Track [VDIV_MID] on B.Cu, length 2.5606 mm",
+          "pos": {
+            "x": 11.2058,
+            "y": 19.4667
+          },
+          "uuid": "0c7f7d3d-fc1c-445a-8358-11ae01825600"
+        },
+        {
+          "description": "Via [LR2021_BUSY] on F.Cu - B.Cu",
+          "pos": {
+            "x": 13.1,
+            "y": 19.0
+          },
+          "uuid": "b186c5d5-da7e-4772-a918-7975e7ac9a4c"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VCAP and SOLAR_IN)",
+      "items": [
+        {
+          "description": "Track [VCAP] on B.Cu, length 3.6284 mm",
+          "pos": {
+            "x": 4.95,
+            "y": 24.25
+          },
+          "uuid": "741e89b8-b6b3-4375-8ac5-14a732a5d19e"
+        },
+        {
+          "description": "Via [SOLAR_IN] on F.Cu - B.Cu",
+          "pos": {
+            "x": 6.5,
+            "y": 25.0
+          },
+          "uuid": "d78c9570-b090-4824-97e5-c67e3f1a191c"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VDIV_MID and LR2021_BUSY)",
+      "items": [
+        {
+          "description": "Track [VDIV_MID] on B.Cu, length 1.2309 mm",
+          "pos": {
+            "x": 13.7664,
+            "y": 19.4667
+          },
+          "uuid": "130aadab-5dc4-44a0-bf47-87490cd122cb"
+        },
+        {
+          "description": "Via [LR2021_BUSY] on F.Cu - B.Cu",
+          "pos": {
+            "x": 13.1,
+            "y": 19.0
+          },
+          "uuid": "b186c5d5-da7e-4772-a918-7975e7ac9a4c"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets VDIV_MID and LR2021_BUSY)",
+      "items": [
+        {
+          "description": "Track [VDIV_MID] on B.Cu, length 1.7055 mm",
+          "pos": {
+            "x": 9.9998,
+            "y": 20.6727
+          },
+          "uuid": "6d1acaad-3cf0-4950-951c-4c96dec62460"
+        },
+        {
+          "description": "Track [LR2021_BUSY] on B.Cu, length 10.8259 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 16.8
+          },
+          "uuid": "d08fac30-2b00-4f5b-8348-a1079aeca019"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Clearance violation ( clearance 0.2000 mm; actual 0.0213 mm)",
+      "items": [
+        {
+          "description": "Via [SPI_SCK] on F.Cu - B.Cu",
+          "pos": {
+            "x": 5.25,
+            "y": 18.0
+          },
+          "uuid": "57a6f850-e0f7-4ea9-9f22-4d1e42d0a676"
+        },
+        {
+          "description": "Track [LR2021_DIO9] on B.Cu, length 30.8084 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 18.0
+          },
+          "uuid": "c7f9b8d2-85f6-4242-929c-d189a2a1d7fc"
+        }
+      ],
+      "severity": "error",
+      "type": "clearance"
+    },
+    {
+      "description": "Items shorting two nets (nets LR2021_RST and SPI_SCK)",
+      "items": [
+        {
+          "description": "Track [LR2021_RST] on B.Cu, length 30.4059 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 15.6
+          },
+          "uuid": "5b9d099a-b8b4-4c25-9ec1-c98c595ebbaa"
+        },
+        {
+          "description": "Via [SPI_SCK] on F.Cu - B.Cu",
+          "pos": {
+            "x": 13.1,
+            "y": 15.0
+          },
+          "uuid": "ae4e4bf3-0be6-4e19-ba6d-d8965a8c634a"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Clearance violation ( clearance 0.2000 mm; actual 0.1634 mm)",
+      "items": [
+        {
+          "description": "Track [VCAP] on B.Cu, length 3.6284 mm",
+          "pos": {
+            "x": 4.95,
+            "y": 24.25
+          },
+          "uuid": "741e89b8-b6b3-4375-8ac5-14a732a5d19e"
+        },
+        {
+          "description": "Track [SOLAR_IN] on B.Cu, length 3.9051 mm",
+          "pos": {
+            "x": 6.5,
+            "y": 25.0
+          },
+          "uuid": "81d2c458-dc3b-4eb5-8e23-0fb870f8d17b"
+        }
+      ],
+      "severity": "error",
+      "type": "clearance"
+    },
+    {
+      "description": "Items shorting two nets (nets VDIV_MID and LR2021_BUSY)",
+      "items": [
+        {
+          "description": "Track [VDIV_MID] on B.Cu, length 1.2309 mm",
+          "pos": {
+            "x": 13.7664,
+            "y": 19.4667
+          },
+          "uuid": "130aadab-5dc4-44a0-bf47-87490cd122cb"
+        },
+        {
+          "description": "Track [LR2021_BUSY] on B.Cu, length 10.8259 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 16.8
+          },
+          "uuid": "d08fac30-2b00-4f5b-8348-a1079aeca019"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Clearance violation ( clearance 0.2000 mm; actual 0.1105 mm)",
+      "items": [
+        {
+          "description": "Track [SPI_SCK] on B.Cu, length 8.4037 mm",
+          "pos": {
+            "x": 5.25,
+            "y": 18.0
+          },
+          "uuid": "0a242ba6-9d65-43ef-a9a2-931999236ef3"
+        },
+        {
+          "description": "Via [SPI_MOSI] on F.Cu - B.Cu",
+          "pos": {
+            "x": 6.75,
+            "y": 18.0
+          },
+          "uuid": "6feeeee2-d593-4ca2-96df-0c1a9ec06ac5"
+        }
+      ],
+      "severity": "error",
+      "type": "clearance"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_MOSI and LR2021_BUSY)",
+      "items": [
+        {
+          "description": "Via [SPI_MOSI] on F.Cu - B.Cu",
+          "pos": {
+            "x": 6.75,
+            "y": 18.0
+          },
+          "uuid": "6feeeee2-d593-4ca2-96df-0c1a9ec06ac5"
+        },
+        {
+          "description": "Track [LR2021_BUSY] on B.Cu, length 10.8259 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 16.8
+          },
+          "uuid": "d08fac30-2b00-4f5b-8348-a1079aeca019"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Tracks crossing",
+      "items": [
+        {
+          "description": "Track [LR2021_RST] on B.Cu, length 30.4059 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 15.6
+          },
+          "uuid": "5b9d099a-b8b4-4c25-9ec1-c98c595ebbaa"
+        },
+        {
+          "description": "Track [LR2021_DIO9] on B.Cu, length 30.8084 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 18.0
+          },
+          "uuid": "c7f9b8d2-85f6-4242-929c-d189a2a1d7fc"
+        }
+      ],
+      "severity": "error",
+      "type": "tracks_crossing"
+    },
+    {
+      "description": "Tracks crossing",
+      "items": [
+        {
+          "description": "Track [SPI_MOSI] on B.Cu, length 8.0822 mm",
+          "pos": {
+            "x": 6.75,
+            "y": 18.0
+          },
+          "uuid": "06cd9ab0-ea1b-4b21-b75c-11ecee5ac990"
+        },
+        {
+          "description": "Track [LR2021_RST] on B.Cu, length 30.4059 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 15.6
+          },
+          "uuid": "5b9d099a-b8b4-4c25-9ec1-c98c595ebbaa"
+        }
+      ],
+      "severity": "error",
+      "type": "tracks_crossing"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_MISO and FEM_RX)",
+      "items": [
+        {
+          "description": "Via [SPI_MISO] on F.Cu - B.Cu",
+          "pos": {
+            "x": 11.5,
+            "y": 11.0
+          },
+          "uuid": "42ac4567-25a2-4c7b-b153-924d34fefd4e"
+        },
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets FEM_TX and LR2021_BUSY)",
+      "items": [
+        {
+          "description": "Via [FEM_TX] on F.Cu - B.Cu",
+          "pos": {
+            "x": 9.5,
+            "y": 18.0
+          },
+          "uuid": "6580286e-f35f-406a-a9fb-e7b0144e6dd4"
+        },
+        {
+          "description": "Track [LR2021_BUSY] on B.Cu, length 10.8259 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 16.8
+          },
+          "uuid": "d08fac30-2b00-4f5b-8348-a1079aeca019"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Items shorting two nets (nets FEM_RX and SPI_MISO)",
+      "items": [
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        },
+        {
+          "description": "Via [SPI_MISO] on F.Cu - B.Cu",
+          "pos": {
+            "x": 13.1,
+            "y": 11.0
+          },
+          "uuid": "f96fdba5-8be2-4bcc-b384-28bf8dbebfa2"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Tracks crossing",
+      "items": [
+        {
+          "description": "Track [SPI_MISO] on B.Cu, length 1.6000 mm",
+          "pos": {
+            "x": 11.5,
+            "y": 11.0
+          },
+          "uuid": "72d14a49-7b6c-41a6-8730-c33a5de7f536"
+        },
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        }
+      ],
+      "severity": "error",
+      "type": "tracks_crossing"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_MISO and FEM_RX)",
+      "items": [
+        {
+          "description": "Track [SPI_MISO] on B.Cu, length 9.6208 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 14.4
+          },
+          "uuid": "88ea6252-a63d-4d1f-970e-bbf1ed6f162a"
+        },
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Tracks crossing",
+      "items": [
+        {
+          "description": "Track [FEM_TX] on B.Cu, length 22.0227 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 18.0
+          },
+          "uuid": "0318f360-b2d9-4402-b1ee-313a9ac320f0"
+        },
+        {
+          "description": "Track [LR2021_RST] on B.Cu, length 30.4059 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 15.6
+          },
+          "uuid": "5b9d099a-b8b4-4c25-9ec1-c98c595ebbaa"
+        }
+      ],
+      "severity": "error",
+      "type": "tracks_crossing"
+    },
+    {
+      "description": "Items shorting two nets (nets SPI_MISO and FEM_RX)",
+      "items": [
+        {
+          "description": "Track [SPI_MISO] on B.Cu, length 9.6208 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 14.4
+          },
+          "uuid": "88ea6252-a63d-4d1f-970e-bbf1ed6f162a"
+        },
+        {
+          "description": "Via [FEM_RX] on F.Cu - B.Cu",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "e1f7cc92-f7b3-438d-9f8b-5ebdbd816442"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Tracks crossing",
+      "items": [
+        {
+          "description": "Track [FEM_TX] on B.Cu, length 22.0227 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 18.0
+          },
+          "uuid": "0318f360-b2d9-4402-b1ee-313a9ac320f0"
+        },
+        {
+          "description": "Track [FEM_RX] on B.Cu, length 21.5407 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 12.0
+          },
+          "uuid": "bc422446-e213-4682-8928-8fbf81b9bf64"
+        }
+      ],
+      "severity": "error",
+      "type": "tracks_crossing"
+    },
+    {
+      "description": "Tracks crossing",
+      "items": [
+        {
+          "description": "Track [LR2021_RST] on B.Cu, length 30.4059 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 15.6
+          },
+          "uuid": "5b9d099a-b8b4-4c25-9ec1-c98c595ebbaa"
+        },
+        {
+          "description": "Track [LED] on B.Cu, length 16.0078 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 16.5
+          },
+          "uuid": "77039f36-a726-4fff-9692-d342c2538b8c"
+        }
+      ],
+      "severity": "error",
+      "type": "tracks_crossing"
+    },
+    {
+      "description": "Items shorting two nets (nets LED and LR2021_DIO9)",
+      "items": [
+        {
+          "description": "Via [LED] on F.Cu - B.Cu",
+          "pos": {
+            "x": 9.5,
+            "y": 16.5
+          },
+          "uuid": "3225335e-fdc6-42f4-82d9-fc54e9ecf648"
+        },
+        {
+          "description": "Track [LR2021_DIO9] on B.Cu, length 30.8084 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 18.0
+          },
+          "uuid": "c7f9b8d2-85f6-4242-929c-d189a2a1d7fc"
+        }
+      ],
+      "severity": "error",
+      "type": "shorting_items"
+    },
+    {
+      "description": "Clearance violation ( clearance 0.2000 mm; actual 0.0941 mm)",
+      "items": [
+        {
+          "description": "Track [LED] on B.Cu, length 16.0078 mm",
+          "pos": {
+            "x": 9.5,
+            "y": 16.5
+          },
+          "uuid": "77039f36-a726-4fff-9692-d342c2538b8c"
+        },
+        {
+          "description": "Track [LR2021_DIO9] on B.Cu, length 30.8084 mm",
+          "pos": {
+            "x": 2.5,
+            "y": 18.0
+          },
+          "uuid": "c7f9b8d2-85f6-4242-929c-d189a2a1d7fc"
+        }
+      ],
+      "severity": "error",
+      "type": "clearance"
+    },
+    {
+      "description": "Copper sliver (B.Cu)",
+      "items": [],
+      "severity": "warning",
+      "type": "copper_sliver"
+    },
+    {
+      "description": "Drilled holes co-located",
+      "items": [
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "301b20e9-baa1-467a-8077-bbac01ff6786"
+        },
+        {
+          "description": "Via [VCAP] on F.Cu - B.Cu",
+          "pos": {
+            "x": 3.05,
+            "y": 24.25
+          },
+          "uuid": "951c82ce-d04e-40df-ab4d-be49b63e935a"
+        }
+      ],
+      "severity": "warning",
+      "type": "holes_co_located"
+    }
+  ],
+  "unconnected_items": [
+    {
+      "description": "Missing connection between items",
+      "items": [
+        {
+          "description": "Via [3V3] on F.Cu - B.Cu",
+          "pos": {
+            "x": 4.95,
+            "y": 25.75
+          },
+          "uuid": "42c49dda-3159-4a2f-ad8e-8106c1824149"
+        },
+        {
+          "description": "Track [3V3] on F.Cu, length 0.0399 mm",
+          "pos": {
+            "x": 3.0101,
+            "y": 24.25
+          },
+          "uuid": "a8fbbe10-3f24-471c-b2fd-0e2bca63f3c9"
+        }
+      ],
+      "severity": "error",
+      "type": "unconnected_items"
+    },
+    {
+      "description": "Missing connection between items",
+      "items": [
+        {
+          "description": "Pad 1 [RF_SUB_868] of ANT1 on F.Cu",
+          "pos": {
+            "x": 13.0,
+            "y": 4.0
+          },
+          "uuid": "e454bbb5-01fc-4cfb-aaa4-8d085ccf6ef7"
+        },
+        {
+          "description": "Pad 9 [RF_SUB_868] of U2 on F.Cu",
+          "pos": {
+            "x": 13.1,
+            "y": 23.0
+          },
+          "uuid": "382594c7-25c3-4a18-9754-b2b2134649bd"
+        }
+      ],
+      "severity": "error",
+      "type": "unconnected_items"
+    }
+  ]
+}

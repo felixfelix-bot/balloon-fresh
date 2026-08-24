@@ -1,0 +1,76 @@
+---
+# Ansible playbook: Install KiCad + PCB design tools on Ubuntu/Debian
+# Target: Ubuntu 24.04 / Debian 12 (auto-detected)
+# Usage: ansible-playbook ansible/pcb-workstation.yml -K
+#        (run on local machine: add -i localhost, -c local if no inventory)
+
+- name: Install PCB workstation tools
+  hosts: localhost
+  connection: local
+  become: true
+  vars:
+    kicad_version: "9.0"
+  tasks:
+
+    - name: Detect OS distribution
+      ansible.builtin.setup:
+        filter: ansible_distribution*
+
+    - name: Add KiCad PPA (Ubuntu)
+      ansible.builtin.apt_repository:
+        repo: "ppa:kicad/kicad-{{ kicad_version }}-releases"
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Add KiCad repo (Debian)
+      ansible.builtin.apt_repository:
+        repo: "deb https://downloads.kicad.org/kicad-{{ kicad_version }}-releases debian bookworm main"
+        state: present
+      when: ansible_distribution == "Debian"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install KiCad and PCB tools
+      ansible.builtin.apt:
+        name:
+          - kicad
+          - kicad-symbols
+          - kicad-footprints
+          - kicad-templates
+          - kicad-packages3d
+          - gerbv
+          - git
+          - python3
+          - python3-pip
+          - python3-venv
+          - meshlab
+          - freecad
+        state: present
+
+    - name: Install KiCad automation tools via pip
+      ansible.builtin.pip:
+        name:
+          - kikit
+          - interactive_bom
+        state: present
+        extra_args: "--break-system-packages"
+      become: false
+
+    - name: Verify KiCad installation
+      ansible.builtin.command: kicad-cli --version
+      register: kicad_check
+      changed_when: false
+
+    - name: Show KiCad version
+      ansible.builtin.debug:
+        msg: "KiCad installed: {{ kicad_check.stdout }}"
+
+  post_tasks:
+    - name: Done
+      ansible.builtin.debug:
+        msg: |
+          PCB workstation ready. Open KiCad, then open:
+          v_c3_flight_v7_routed.kicad_pcb
+          Route the 6 unrouted nets per ROUTING-HANDOVER.md

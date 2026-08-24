@@ -1,0 +1,348 @@
+(pcb "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/v_c3_4layer.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "9.0.8+dfsg-1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer In1.Cu
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer In2.Cu
+      (type power)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  35000 -30000  0 -30000  0 0  35000 0  35000 -30000)
+    )
+    (plane GND (polygon In1.Cu 0  500 -500  34500 -500  34500 -29500  500 -29500  500 -500))
+    (plane 3V3 (polygon In2.Cu 0  500 -500  34500 -500  34500 -29500  500 -29500  500 -500))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 2000)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component ""
+      (place R_DIV1 11000.000000 -25000.000000 front 0.000000 (PN 100k))
+      (place R_LED 20000.000000 -4000.000000 front 0.000000 (PN 1k))
+      (place R_PD 11000.000000 -11000.000000 front 0.000000 (PN 10k))
+      (place R_DIV2 11000.000000 -22000.000000 front 0.000000 (PN 100k))
+    )
+    (component ::1
+      (place FEM 28000.000000 -4000.000000 front 0.000000 (PN SKY66112))
+    )
+    (component ::2
+      (place ANT2 32000.000000 -26000.000000 front 0.000000 (PN "U.FL-2400"))
+      (place ANT1 13000.000000 -4000.000000 front 0.000000 (PN "U.FL-868"))
+    )
+    (component ::3
+      (place U3 6000.000000 -5000.000000 front 0.000000 (PN "MAX-M10S"))
+    )
+    (component ::4
+      (place LED1 18000.000000 -4000.000000 front 0.000000 (PN "LED-0603"))
+    )
+    (component ::5
+      (place U2 23000.000000 -15000.000000 front 0.000000 (PN LR2021F33))
+    )
+    (component ::6
+      (place SOLAR 10000.000000 -28000.000000 front 0.000000 (PN "Solar-Conn"))
+    )
+    (component ::7
+      (place U1 6000.000000 -15000.000000 front 0.000000 (PN "ESP32-C3"))
+    )
+    (component ::8
+      (place C_CAP 4000.000000 -28000.000000 front 0.000000 (PN Supercap))
+    )
+    (component ::9
+      (place U4 4000.000000 -25000.000000 front 0.000000 (PN TPS7A02))
+    )
+    (component ::10
+      (place C1 4000.000000 -22000.000000 front 0.000000 (PN 10uF))
+      (place C2 7500.000000 -22000.000000 front 0.000000 (PN 10uF))
+    )
+    (component ::11
+      (place D1 7500.000000 -25000.000000 front 0.000000 (PN BAT54))
+    )
+  )
+  (library
+    (image ""
+      (pin Rect[T]Pad_600.000000x500.000000_um 1 -500 0)
+      (pin Rect[T]Pad_600.000000x500.000000_um 2 500 0)
+    )
+    (image ::1
+      (pin Rect[T]Pad_1000.000000x700.000000_um GND 0 -1000)
+      (pin Rect[T]Pad_1000.000000x700.000000_um RX 1500 0)
+      (pin Rect[T]Pad_1000.000000x700.000000_um TX -1500 0)
+      (pin Rect[T]Pad_1000.000000x700.000000_um VCC 0 1000)
+    )
+    (image ::2
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+      (pin Rect[T]Pad_1000.000000x1200.000000_um 2 -1800 0)
+      (pin Rect[T]Pad_1000.000000x1200.000000_um 3 1800 0)
+    )
+    (image ::3
+      (pin Rect[T]Pad_1000.000000x800.000000_um 1 -2000 0)
+      (pin Rect[T]Pad_1000.000000x800.000000_um 2 -700 0)
+      (pin Rect[T]Pad_1000.000000x800.000000_um 3 700 0)
+      (pin Rect[T]Pad_1000.000000x800.000000_um 4 2000 0)
+    )
+    (image ::4
+      (pin Rect[T]Pad_700.000000x600.000000_um A -500 0)
+      (pin Rect[T]Pad_700.000000x600.000000_um K 500 0)
+    )
+    (image ::5
+      (pin Rect[T]Pad_1200.000000x800.000000_um 1 -9900 8000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 2 -9900 6000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 3 -9900 4000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 4 -9900 2000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 5 -9900 0)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 6 -9900 -2000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 7 -9900 -4000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 8 -9900 -6000)
+      (pin Rect[T]Pad_1500.000000x800.000000_um 9 -9900 -8000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 10 9900 8000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 11 9900 6000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 13 9900 2000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 14 9900 0)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 16 9900 -4000)
+      (pin Rect[T]Pad_1200.000000x800.000000_um 17 9900 -6000)
+      (pin Rect[T]Pad_1500.000000x800.000000_um 18 9900 -8000)
+    )
+    (image ::6
+      (pin Rect[T]Pad_1200.000000x1400.000000_um 1 -1000 0)
+      (pin Rect[T]Pad_1200.000000x1400.000000_um 2 1000 0)
+    )
+    (image ::7
+      (pin Rect[T]Pad_900.000000x600.000000_um GND 2250 3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO0 -3500 3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO1 -3500 1800)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO2 -3500 600)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO3 -3500 -600)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO4 -3500 -1800)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO5 -3500 -3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO6 -750 -3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO7 750 -3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO8 3500 3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO9 3500 1500)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO10 3500 0)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO18 3500 -1500)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO19 3500 -3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO20 -2250 3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um GPIO21 -750 3000)
+      (pin Rect[T]Pad_900.000000x600.000000_um VCC 750 3000)
+    )
+    (image ::8
+      (pin Rect[T]Pad_1800.000000x1800.000000_um 1 -2500 0)
+      (pin Rect[T]Pad_1800.000000x1800.000000_um 2 2500 0)
+    )
+    (image ::9
+      (pin Rect[T]Pad_600.000000x400.000000_um 1 -950 750)
+      (pin Rect[T]Pad_600.000000x400.000000_um 2 0 750)
+      (pin Rect[T]Pad_600.000000x400.000000_um 3 950 750)
+      (pin Rect[T]Pad_600.000000x400.000000_um 4 950 -750)
+    )
+    (image ::10
+      (pin Rect[T]Pad_700.000000x600.000000_um 1 -500 0)
+      (pin Rect[T]Pad_700.000000x600.000000_um 2 500 0)
+    )
+    (image ::11
+      (pin Rect[T]Pad_800.000000x600.000000_um A -1000 0)
+      (pin Rect[T]Pad_800.000000x600.000000_um K 1000 0)
+    )
+    (padstack Rect[T]Pad_600.000000x400.000000_um
+      (shape (rect F.Cu -300 -200 300 200))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_600.000000x500.000000_um
+      (shape (rect F.Cu -300 -250 300 250))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_700.000000x600.000000_um
+      (shape (rect F.Cu -350 -300 350 300))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_800.000000x600.000000_um
+      (shape (rect F.Cu -400 -300 400 300))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_900.000000x600.000000_um
+      (shape (rect F.Cu -450 -300 450 300))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x700.000000_um
+      (shape (rect F.Cu -500 -350 500 350))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x800.000000_um
+      (shape (rect F.Cu -500 -400 500 400))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1000.000000_um
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1200.000000_um
+      (shape (rect F.Cu -500 -600 500 600))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1200.000000x800.000000_um
+      (shape (rect F.Cu -600 -400 600 400))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1200.000000x1400.000000_um
+      (shape (rect F.Cu -600 -700 600 700))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1500.000000x800.000000_um
+      (shape (rect F.Cu -750 -400 750 400))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1800.000000x1800.000000_um
+      (shape (rect F.Cu -900 -900 900 900))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle In2.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net 3V3
+      (pins R_DIV1-1 FEM-VCC U3-1 U2-1 U1-VCC U4-4 C2-1)
+    )
+    (net GND
+      (pins FEM-GND ANT2-2 ANT2-3 U3-2 LED1-K U2-2 U2-8 U2-10 U2-11 U2-16 U2-17 R_PD-1
+        SOLAR-2 U1-GND C_CAP-2 U4-2 C1-2 R_DIV2-2 C2-2 ANT1-2 ANT1-3)
+    )
+    (net VCAP
+      (pins C_CAP-1 U4-1 U4-3 C1-1 D1-K)
+    )
+    (net SOLAR_IN
+      (pins SOLAR-1 D1-A)
+    )
+    (net VDIV_MID
+      (pins R_DIV1-2 R_DIV2-1)
+    )
+    (net SPI_SCK
+      (pins U2-5 U1-GPIO6)
+    )
+    (net SPI_MOSI
+      (pins U2-4 U1-GPIO7)
+    )
+    (net SPI_MISO
+      (pins U2-3 R_PD-2 U1-GPIO2)
+    )
+    (net SPI_NSS
+      (pins U2-6 U1-GPIO10)
+    )
+    (net LR2021_RST
+      (pins U2-14 U1-GPIO3)
+    )
+    (net LR2021_BUSY
+      (pins U2-7 U1-GPIO4)
+    )
+    (net LR2021_DIO9
+      (pins U2-13 U1-GPIO5)
+    )
+    (net GPS_TX
+      (pins U3-4 U1-GPIO0)
+    )
+    (net GPS_RX
+      (pins U3-3 U1-GPIO1)
+    )
+    (net FEM_TX
+      (pins FEM-TX U1-GPIO19)
+    )
+    (net FEM_RX
+      (pins FEM-RX U1-GPIO8)
+    )
+    (net LED
+      (pins R_LED-1 U1-GPIO18)
+    )
+    (net LED_ANODE
+      (pins R_LED-2 LED1-A)
+    )
+    (net STATUS_LED
+      (pins U1-GPIO9)
+    )
+    (net UART0_RX
+      (pins U1-GPIO20)
+    )
+    (net UART0_TX
+      (pins U1-GPIO21)
+    )
+    (net RF_SUB_868
+      (pins U2-9 ANT1-1)
+    )
+    (net RF_2G4_2400
+      (pins ANT2-1 U2-18)
+    )
+    (class kicad_default 3V3 FEM_RX FEM_TX GND GPS_RX GPS_TX LED LED_ANODE
+      LR2021_BUSY LR2021_DIO9 LR2021_RST RF_2G4_2400 RF_SUB_868 SOLAR_IN SPI_MISO
+      SPI_MOSI SPI_NSS SPI_SCK STATUS_LED UART0_RX UART0_TX VCAP VDIV_MID
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 2000)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+    (via "Via[0-3]_600:300_um"  13100 -7000 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  4000 -5000 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  28000 -3000 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  7000 -22000 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  4950 -25750 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  10500 -25000 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  6750 -12000 (net 3V3)(type route))
+    (via "Via[0-3]_600:300_um"  11000 -28000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  6500 -28000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  4000 -24250 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  28000 -5000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  33800 -26000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  13100 -21000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  11500 -22000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  32900 -7000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  32900 -19000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  8250 -12000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  5300 -5000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  10500 -11000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  30200 -26000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  11200 -4000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  32900 -9000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  8000 -22000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  13100 -9000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  18500 -4000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  32900 -21000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  4500 -22000 (net GND)(type route))
+    (via "Via[0-3]_600:300_um"  14800 -4000 (net GND)(type route))
+  )
+)

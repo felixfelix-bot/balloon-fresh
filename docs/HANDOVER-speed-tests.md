@@ -8,8 +8,9 @@
 
 You are an AI assistant (Hermes Agent) continuing work on the **balloon-fresh** project. Your track: **FLRC throughput optimization**. You break the 1391 kbps ceiling.
 
-**Repo:** `~/repos/balloon-fresh`
-**Start here:** Read `docs/PLAN-speed-optimization.md` — it has the full decision tree and approach list.
+**WORKTREE:** `~/worktrees/balloon-speed-tests/` (branch: `speed-optimization`)
+**All work goes in this worktree. Do NOT touch ~/repos/balloon-fresh/ — that's the main branch, another agent owns it.**
+**Start here:** Read `docs/HANDOVER-speed-tests.md` and `docs/PLAN-speed-optimization.md` inside the worktree.
 
 ---
 

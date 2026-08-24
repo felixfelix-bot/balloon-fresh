@@ -1,0 +1,4 @@
+2026-07-26T16:03:15 | # CONNECTED port=/dev/ttyACM1
+2026-07-26T16:03:15 | TIME_SYNCED utc=1785081795 offset=1785081752
+2026-07-26T16:03:16 | PHASE_RESULT 8 LF-LoRa-SF9 rx=0 unique=0 lost=50 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=03d6834
+2026-07-26T16:03:16 | # SHUTDOWN

@@ -1,3 +1,12 @@
+/*
+ * app_main.cpp — Pico Balloon Tracker firmware
+ *
+ * Radio driver: lr2021_transport (raw 2-byte SPI, per ADR-020)
+ * RadioLib has been completely removed. All radio operations go through
+ * EspHalLr2021Radio (Lr2021Radio interface) and optionally Lr2021Transport
+ * for FIPS stream communication.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +20,8 @@
 #include "driver/i2c.h"
 #include "soc/rtc.h"
 
-#include <RadioLib.h>
-#include "EspHalC3.h"
+#include "esp_idf_lr2021_radio.h"
+#include "lr2021_transport.h"
 
 #ifdef CONFIG_ENABLE_MESHCORE
 #include <Mesh.h>
@@ -53,13 +62,29 @@ extern "C" {
 #endif
 #ifdef CONFIG_ENABLE_NOSTR_STORE
 #include "nostr_store.h"
+/* Accessor for the file-static nostr_store in app_task.cpp — avoids creating
+ * a second store (index + bloom filter are per-instance). */
+extern "C" nostr_store_t *app_task_get_store(void);
+#endif
+#ifdef CONFIG_ENABLE_RELAY_MODE
+#include "relay_types.h"
+extern "C" {
+    void radio_task(void *arg);
+    void app_task(void *arg);
+}
+extern QueueHandle_t g_rx_queue;
+extern QueueHandle_t g_tx_queue;
+#endif
+#ifdef CONFIG_ENABLE_TOLLGATE
+#include "tollgate_payment_proto.h"
 #endif
 }
 
 static const char *TAG = "TRACKER";
 
-#define LED_GPIO 10
+#define LED_GPIO 18  /* moved from GPIO10 (was colliding with LR2021 NSS) */
 
+/* LR2021 pin reference (matching lr2021_spi.h defaults / EspHalLr2021Radio) */
 #define LR2021_SCK   6
 #define LR2021_MISO  2
 #define LR2021_MOSI  7
@@ -68,8 +93,9 @@ static const char *TAG = "TRACKER";
 #define LR2021_RST   3
 #define LR2021_DIO9  5
 
-static EspHalC3* hal = nullptr;
-static LR2021* radio = nullptr;
+/* Radio handles — lr2021_transport based (replaces RadioLib) */
+EspHalLr2021Radio* s_radio = nullptr;
+Lr2021Transport*   s_transport = nullptr;
 
 #ifdef CONFIG_ENABLE_BMP280
 static bmp280_t bmp;
@@ -82,28 +108,41 @@ static gps_data_t gps_data;
 static RTC_DATA_ATTR uint16_t rtc_seq = 0;
 static RTC_DATA_ATTR bool rtc_first_boot = true;
 
-static bool flag_tx_done = false;
 #ifdef CONFIG_ENABLE_MESH
 static mesh_frame_queue_t s_mesh_tx_queue;
 static int s_mesh_pending = 0;
 #endif
 
-static void IRAM_ATTR on_tx_done(void) {
-    flag_tx_done = true;
+/* ── Radio helpers (polling-based, replaces RadioLib ISR callbacks) ── */
+
+/**
+ * Wait for TX_DONE IRQ with timeout.
+ * Polls the LR2021 IRQ status register until TX_DONE is set or timeout.
+ * @return true if TX completed within timeout, false on timeout.
+ */
+static bool wait_tx_done(uint32_t timeout_ms)
+{
+    if (!s_radio) return false;
+    uint32_t flags = 0;
+    for (uint32_t elapsed = 0; elapsed < timeout_ms; elapsed++) {
+        if (s_radio->get_irq_status(flags) == Lr2021Error::Ok &&
+            (flags & IrqSource::TX_DONE)) {
+            s_radio->clear_irq();
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    s_radio->clear_irq();
+    return false;
 }
 
 #ifdef CONFIG_ENABLE_MESH
-static void mesh_radio_send(const uint8_t *frame, uint16_t len) {
-    if (!radio) return;
-    flag_tx_done = false;
-    int16_t state = radio->startTransmit(frame, len);
-    if (state == RADIOLIB_ERR_NONE) {
-        uint32_t timeout = 0;
-        while (!flag_tx_done && timeout < 10000) {
-            hal->delay(1);
-            timeout++;
-        }
-    }
+static void mesh_radio_send(const uint8_t *frame, uint16_t len)
+{
+    if (!s_radio) return;
+    s_radio->standby();
+    s_radio->send_packet(frame, len);
+    wait_tx_done(10000);
 }
 #endif
 
@@ -126,36 +165,44 @@ static void blink_led(int times)
     }
 }
 
-static int16_t init_radio(void)
+/**
+ * Initialize the LR2021 radio using lr2021_transport (FLRC mode).
+ * Replaces the old RadioLib-based init_radio().
+ */
+static int init_radio(void)
 {
-    hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
-    hal->setCsPin(LR2021_NSS);
-    hal->setBusyPin(LR2021_BUSY);
-    radio = new LR2021(new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY));
-    radio->irqDioNum = 9;
+    s_radio = new EspHalLr2021Radio();
 
-    ESP_LOGI(TAG, "Initializing LR2021...");
+    ESP_LOGI(TAG, "Initializing LR2021 (FLRC, lr2021_transport)...");
     printf("GPIO states: BUSY(%d)=%d RST(%d)=%d NSS(%d)=%d\n",
-        (int)LR2021_BUSY, (int)gpio_get_level((gpio_num_t)LR2021_BUSY),
-        (int)LR2021_RST, (int)gpio_get_level((gpio_num_t)LR2021_RST),
-        (int)LR2021_NSS, (int)gpio_get_level((gpio_num_t)LR2021_NSS));
+        LR2021_BUSY, (int)gpio_get_level((gpio_num_t)LR2021_BUSY),
+        LR2021_RST, (int)gpio_get_level((gpio_num_t)LR2021_RST),
+        LR2021_NSS, (int)gpio_get_level((gpio_num_t)LR2021_NSS));
     fflush(stdout);
 
-    float freq_mhz = (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f;
-    int16_t state = radio->begin(
-        freq_mhz, 125.0,
-        CONFIG_RADIO_SF, 7,
-        0x12, CONFIG_RADIO_TX_POWER_DBM, 8,
-        0.0f
-    );
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "LR2021 init failed: %d", state);
-        return state;
+    /* FLRC configuration (proven baseline from ADR-020) */
+    Lr2021Config config;
+    config.freq_mhz      = 2440.0f;   /* 2.4 GHz ISM */
+    config.bitrate_kbps  = 2600;       /* FLRC max bitrate */
+    config.tx_power_dbm  = CONFIG_RADIO_TX_POWER_DBM;
+    config.payload_length = LR2021_MAX_PACKET;
+
+    if (s_radio->init(config) != Lr2021Error::Ok) {
+        ESP_LOGE(TAG, "LR2021 init failed");
+        return -1;
     }
 
-    radio->setPacketSentAction(on_tx_done);
-    ESP_LOGI(TAG, "LR2021 OK (868 MHz, SF%d, %d dBm)", CONFIG_RADIO_SF, CONFIG_RADIO_TX_POWER_DBM);
-    return RADIOLIB_ERR_NONE;
+    /* Create FIPS transport (stream send/recv over FLRC packets) */
+    s_transport = new Lr2021Transport(s_radio);
+    TransportError terr = s_transport->init(config);
+    if (terr != TransportError::Ok) {
+        ESP_LOGE(TAG, "LR2021 transport init failed");
+        return -1;
+    }
+
+    ESP_LOGI(TAG, "LR2021 OK (FLRC 2440 MHz, 2600 kbps, %d dBm)",
+             CONFIG_RADIO_TX_POWER_DBM);
+    return 0;
 }
 
 static void deep_sleep(uint32_t seconds)
@@ -164,8 +211,8 @@ static void deep_sleep(uint32_t seconds)
 #ifdef CONFIG_ENABLE_BMP280
     bmp280_sleep(&bmp);
 #endif
-    if (radio) {
-        radio->sleep();
+    if (s_radio) {
+        s_radio->sleep();
     }
 #ifdef CONFIG_ENABLE_FEM
     sky66112_shutdown();
@@ -232,8 +279,8 @@ static void cli_cmd_config(const char *args) {
     (void)args;
     printf("=== Configuration ===\n");
     printf("  Callsign hash: %s\n", CONFIG_CALLSIGN_HASH_HEX);
-    printf("  Frequency: %.1f MHz\n", (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f);
-    printf("  SF: %d\n", CONFIG_RADIO_SF);
+    printf("  Frequency: FLRC 2440 MHz (2.4 GHz ISM)\n");
+    printf("  Bitrate: 2600 kbps\n");
     printf("  TX power: %d dBm\n", CONFIG_RADIO_TX_POWER_DBM);
     printf("  TX interval: %d s\n", CONFIG_TX_INTERVAL_SEC);
     printf("  Low voltage: %d mV\n", CONFIG_LOW_VOLTAGE_MV);
@@ -252,10 +299,11 @@ static void cli_cmd_config(const char *args) {
 static void cli_cmd_radio(const char *args) {
     (void)args;
     printf("=== Radio State ===\n");
-    printf("  Freq: %.1f MHz\n", (float)CONFIG_RADIO_FREQ_MHZ_X10 / 10.0f);
-    printf("  SF: %d, BW: 125 kHz, CR: 4/7\n", CONFIG_RADIO_SF);
+    printf("  Mode: FLRC 2440 MHz, 2600 kbps\n");
     printf("  TX power: %d dBm\n", CONFIG_RADIO_TX_POWER_DBM);
-    printf("  Initialized: %s\n", radio ? "yes" : "no");
+    printf("  Driver: lr2021_transport (ADR-020)\n");
+    printf("  Transport: %s\n", s_transport ? "ready" : "not init");
+    printf("  Initialized: %s\n", s_radio ? "yes" : "no");
 }
 
 static void cli_cmd_restart(const char *args) {
@@ -270,17 +318,9 @@ static void cli_cmd_sleep_now(const char *args) {
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
 }
 
-static bool flag_rx_done = false;
-static int16_t s_rx_rssi = 0;
-static float s_rx_snr = 0;
-
-static void IRAM_ATTR on_rx_done(void) {
-    flag_rx_done = true;
-}
-
 static void cli_cmd_radio_test(const char *args) {
     (void)args;
-    if (!radio) {
+    if (!s_radio) {
         printf("Radio not initialized\n");
         return;
     }
@@ -291,59 +331,149 @@ static void cli_cmd_radio_test(const char *args) {
     uint8_t buf[TELEMETRY_SIZE];
     telemetry_serialize(&pkt, buf);
 
-    flag_tx_done = false;
     printf("TX test packet (%d bytes)... ", TELEMETRY_SIZE);
     fflush(stdout);
-    int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
-    if (state != RADIOLIB_ERR_NONE) {
-        printf("FAIL (err %d)\n", state);
-        return;
-    }
-    uint32_t timeout = 0;
-    while (!flag_tx_done && timeout < 10000) {
-        hal->delay(1);
-        timeout++;
-    }
-    printf("%s\n", flag_tx_done ? "OK" : "TIMEOUT");
+    s_radio->standby();
+    s_radio->send_packet(buf, TELEMETRY_SIZE);
+    printf("%s\n", wait_tx_done(10000) ? "OK" : "TIMEOUT");
 }
 
 static void cli_cmd_radio_recv(const char *args) {
     (void)args;
-    if (!radio) {
+    if (!s_radio) {
         printf("Radio not initialized\n");
         return;
     }
     printf("Listening for 30s...\n");
-    flag_rx_done = false;
-    radio->setPacketReceivedAction(on_rx_done);
-    radio->startReceive();
+    s_radio->start_rx();
+    s_radio->clear_irq();
 
     uint32_t start = xTaskGetTickCount() * portTICK_PERIOD_MS;
     while ((xTaskGetTickCount() * portTICK_PERIOD_MS - start) < 30000) {
-        if (flag_rx_done) {
+        bool irq = false;
+        s_radio->check_irq(irq);
+        if (irq) {
             uint8_t rx_buf[256];
-            int16_t len = radio->readData(rx_buf, sizeof(rx_buf));
-            if (len >= 0) {
-                s_rx_rssi = radio->getRSSI();
-                s_rx_snr = radio->getSNR();
-                printf("RX %d bytes, RSSI: %d dBm, SNR: %.1f dB\n  HEX: ", len, s_rx_rssi, s_rx_snr);
+            PacketStatus status;
+            if (s_radio->read_packet(rx_buf, sizeof(rx_buf), status) == Lr2021Error::Ok
+                && status.length > 0) {
+                int len = (int)status.length;
+                printf("RX %d bytes, RSSI: %d dBm, SNR: %d dB\n  HEX: ",
+                       len, (int)status.rssi_dbm, (int)status.snr_db);
                 for (int i = 0; i < len && i < 64; i++) printf("%02x", rx_buf[i]);
                 printf("\n");
                 if (len == TELEMETRY_SIZE) {
                     telemetry_packet_t *rpkt = (telemetry_packet_t *)rx_buf;
                     if (telemetry_validate(rx_buf, TELEMETRY_SIZE)) {
-                        printf("  Valid telemetry! seq=%d voltage=%dmV\n", rpkt->seq, rpkt->voltage_mv);
+                        printf("  Valid telemetry! seq=%d voltage=%dmV\n",
+                               rpkt->seq, rpkt->voltage_mv);
                     }
                 }
             }
-            flag_rx_done = false;
-            radio->startReceive();
+            s_radio->clear_irq();
+            s_radio->start_rx();
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-    radio->standby();
+    s_radio->standby();
     printf("Listen done\n");
 }
+
+#if defined(CONFIG_ENABLE_RELAY_MODE) && defined(CONFIG_ENABLE_NOSTR_STORE)
+/*
+ * relay_send_nostr — CLI command to serialize a Nostr event and queue it
+ * for radio TX via g_tx_queue.
+ *
+ * Usage:
+ *   relay_send_nostr                  → sends a hardcoded test event
+ *   relay_send_nostr <kind> <content> → sends event with given kind + content
+ *
+ * The event is serialized with nostr_event_serialize() into pkt.data+1
+ * (skipping the 1-byte type tag), prefixed with RELAY_TYPE_NOSTR_EVENT,
+ * and queued to g_tx_queue. radio_task will TX it over FLRC.
+ *
+ * V1 limitation: nostr_event_t has no signature field populated — events
+ * are sent without Schnorr signatures. Remote relay stores without sig
+ * verification (see app_task.cpp). Sig verification is a V2 task.
+ *
+ * Content is limited to ~374 bytes (RELAY_PACKET_MAX_SIZE - 1 - 137 bytes
+ * of fixed serialization overhead). NOSTR_MAX_CONTENT is 480 but the relay
+ * packet cap (511) is the binding constraint.
+ */
+static void cli_cmd_relay_send_nostr(const char *args) {
+    if (!g_tx_queue) {
+        printf("relay_send_nostr: relay mode not active (g_tx_queue NULL)\n");
+        return;
+    }
+
+    /* Build the Nostr event */
+    nostr_event_t evt;
+    memset(&evt, 0, sizeof(evt));
+
+    /* Deterministic test ID + pubkey (V1: no real sig) */
+    for (int i = 0; i < NOSTR_EVENT_ID_SIZE; i++) evt.id[i] = (uint8_t)(0x10 + i);
+    for (int i = 0; i < NOSTR_PUBKEY_SIZE; i++) evt.pubkey[i] = 0xAB;
+    evt.created_at = (uint32_t)(esp_timer_get_time() / 1000000);
+    evt.kind = 1;
+    evt.num_tags = 0;
+
+    /* Parse args: optional "<kind> <content>" or just "<content>" */
+    if (args && *args) {
+        /* Try to parse a leading integer as kind */
+        char *endp = NULL;
+        long parsed_kind = strtol(args, &endp, 10);
+        if (endp != args && *endp == ' ') {
+            /* kind followed by content */
+            evt.kind = (uint16_t)parsed_kind;
+            endp++;  /* skip space */
+            size_t clen = strlen(endp);
+            if (clen > NOSTR_MAX_CONTENT) clen = NOSTR_MAX_CONTENT;
+            evt.content_len = (uint16_t)clen;
+            memcpy(evt.content, endp, clen);
+        } else {
+            /* No leading integer — treat entire arg as content with kind=1 */
+            size_t clen = strlen(args);
+            if (clen > NOSTR_MAX_CONTENT) clen = NOSTR_MAX_CONTENT;
+            evt.content_len = (uint16_t)clen;
+            memcpy(evt.content, args, clen);
+        }
+    } else {
+        /* No args — hardcoded test content */
+        const char *test_content = "balloon relay test event";
+        evt.content_len = (uint16_t)strlen(test_content);
+        memcpy(evt.content, test_content, evt.content_len);
+    }
+
+    /* Serialize into relay packet (skip type tag byte at [0]) */
+    relay_packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.data[0] = RELAY_TYPE_NOSTR_EVENT;
+
+    uint16_t slen = nostr_event_serialize(&evt, pkt.data + 1,
+                                           RELAY_PACKET_MAX_SIZE - 1);
+    if (slen == 0) {
+        printf("relay_send_nostr: serialize failed (content too big for relay packet)\n");
+        printf("  content_len=%u, max serialized=%d, relay payload max=%d\n",
+               evt.content_len, RELAY_PACKET_MAX_SIZE - 1, RELAY_PACKET_MAX_SIZE - 1);
+        return;
+    }
+
+    pkt.len = (size_t)(slen + 1);
+    pkt.timestamp = 0;
+    pkt.rssi = 0;
+
+    /* Queue for radio_task to TX */
+    if (xQueueSend(g_tx_queue, &pkt, pdMS_TO_TICKS(100)) != pdTRUE) {
+        printf("relay_send_nostr: TX queue full (dropped %u bytes)\n",
+               (unsigned)pkt.len);
+        return;
+    }
+
+    printf("relay_send_nostr: queued %u bytes (kind=%u, content=%u bytes, serialized=%u)\n",
+           (unsigned)pkt.len, evt.kind, evt.content_len, slen);
+    printf("  → radio_task will TX via FLRC transport\n");
+}
+#endif /* CONFIG_ENABLE_RELAY_MODE && CONFIG_ENABLE_NOSTR_STORE */
 
 static void cli_cmd_i2c_scan(const char *args) {
     (void)args;
@@ -364,6 +494,160 @@ static void cli_cmd_i2c_scan(const char *args) {
     printf("Scan complete: %d device(s) found\n", found);
 }
 
+#ifdef CONFIG_ENABLE_NOSTR_STORE
+/*
+ * nostr_dump — dump stored Nostr events from the flash-backed nostr_store.
+ *
+ * Uses app_task_get_store() to access the SAME store instance that app_task
+ * populates — avoids creating a second store (which would have a separate
+ * index and bloom filter).
+ *
+ * Output format (one line per event):
+ *   [idx] kind=<kind> ts=<created_at> len=<content_len> pub=<16 hex> <content>
+ *
+ * Content is truncated to 80 chars.  Pubkey is shown as first 16 hex chars.
+ * Supports optional count arg: `nostr_dump 10` dumps first 10 events.
+ */
+static void cli_cmd_nostr_dump(const char *args) {
+    nostr_store_t *store = app_task_get_store();
+    if (!store) {
+        printf("nostr_store not ready (app_task not started or store disabled)\n");
+        return;
+    }
+
+    uint16_t count = nostr_store_count(store);
+    if (count == 0) {
+        printf("Nostr store: 0 events\n");
+        return;
+    }
+
+    /* Optional count limit for pagination */
+    uint16_t limit = count;
+    if (args && *args) {
+        long n = strtol(args, NULL, 10);
+        if (n > 0 && (uint16_t)n < limit) {
+            limit = (uint16_t)n;
+        }
+    }
+
+    printf("=== Nostr Store: %u events (showing %u) ===\n", count, limit);
+    for (uint16_t i = 0; i < limit; i++) {
+        nostr_event_t event;
+        memset(&event, 0, sizeof(event));
+
+        if (nostr_store_get(store, i, &event) != 0) {
+            printf("[%u] READ ERROR\n", i);
+            continue;
+        }
+
+        /* Truncate content to 80 chars for terminal readability */
+        char content_preview[81];
+        uint16_t show_len = event.content_len;
+        if (show_len > 80) show_len = 80;
+        memcpy(content_preview, event.content, show_len);
+        /* Replace non-printable chars with '.' for safe terminal output */
+        for (uint16_t c = 0; c < show_len; c++) {
+            if (content_preview[c] < 0x20 || content_preview[c] > 0x7E) {
+                content_preview[c] = '.';
+            }
+        }
+        content_preview[show_len] = '\0';
+
+        /* Pubkey: first 16 hex chars (8 bytes) */
+        char pub_hex[17];
+        for (int b = 0; b < 8; b++) {
+            snprintf(pub_hex + b * 2, 3, "%02x", event.pubkey[b]);
+        }
+        pub_hex[16] = '\0';
+
+        printf("[%u] kind=%u ts=%lu len=%u pub=%s %s%s\n",
+               i,
+               (unsigned)event.kind,
+               (unsigned long)event.created_at,
+               (unsigned)event.content_len,
+               pub_hex,
+               content_preview,
+               event.content_len > 80 ? "..." : "");
+    }
+}
+#endif /* CONFIG_ENABLE_NOSTR_STORE */
+
+#ifdef CONFIG_ENABLE_TOLLGATE
+/*
+ * tollgate_send_pay — encode a TollGate PAY message and queue it for
+ * radio TX via g_tx_queue.
+ *
+ * Wire format in the relay packet:
+ *   data[0]    = RELAY_TYPE_TOLLGATE_PAY (0x02)
+ *   data[1..]  = tollgate_proto_encode(TG_MSG_PAY, seq, payload, len)
+ *
+ * Args (optional): "<token_string>"
+ *   - If provided, the token string is used as the PAY payload (raw bytes).
+ *   - If omitted, a minimal test payload "{\"token\":\"test\"}" is used.
+ *
+ * The PAY message is encoded with the real tollgate_proto_encode() from
+ * tollgate_payment_proto.c (ADR-002 wire format).
+ */
+static uint32_t s_tollgate_seq = 0;
+
+static void cli_cmd_tollgate_send_pay(const char *args) {
+    if (!g_tx_queue) {
+        printf("tollgate_send_pay: relay mode not active (g_tx_queue NULL)\n");
+        return;
+    }
+
+    /* Payload: use args as token, or default test payload */
+    const char *payload;
+    uint16_t payload_len;
+
+    if (args && *args) {
+        payload = args;
+        payload_len = (uint16_t)strlen(args);
+    } else {
+        payload = "{\"token\":\"test\"}";
+        payload_len = (uint16_t)strlen(payload);
+    }
+
+    /* Check it fits in the relay packet (minus 1 type tag + 8 header) */
+    if (payload_len > RELAY_PACKET_MAX_SIZE - 1 - sizeof(tollgate_msg_hdr_t)) {
+        printf("tollgate_send_pay: payload too long (%u > %d max)\n",
+               payload_len,
+               RELAY_PACKET_MAX_SIZE - 1 - (int)sizeof(tollgate_msg_hdr_t));
+        return;
+    }
+
+    /* Build the relay packet */
+    relay_packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.data[0] = RELAY_TYPE_TOLLGATE_PAY;
+
+    s_tollgate_seq++;
+    int enc_len = tollgate_proto_encode(pkt.data + 1,
+                                         RELAY_PACKET_MAX_SIZE - 1,
+                                         TG_MSG_PAY, (uint16_t)s_tollgate_seq,
+                                         payload, payload_len);
+    if (enc_len < 0) {
+        printf("tollgate_send_pay: proto_encode failed (payload too big?)\n");
+        return;
+    }
+
+    pkt.len = (size_t)(enc_len + 1);  /* +1 for the type tag byte */
+    pkt.timestamp = 0;
+    pkt.rssi = 0;
+
+    /* Queue for radio_task to TX */
+    if (xQueueSend(g_tx_queue, &pkt, pdMS_TO_TICKS(100)) != pdTRUE) {
+        printf("tollgate_send_pay: TX queue full (dropped %u bytes)\n",
+               (unsigned)pkt.len);
+        return;
+    }
+
+    printf("tollgate_send_pay: queued %u bytes (seq=%u, payload=%u bytes, enc=%d)\n",
+           (unsigned)pkt.len, (unsigned)s_tollgate_seq, payload_len, enc_len);
+    printf("  → radio_task will TX via FLRC transport\n");
+}
+#endif /* CONFIG_ENABLE_TOLLGATE */
+
 static void setup_cli(void) {
     cli_init();
     cli_register_command("status", "System status (uptime, heap, voltage)", cli_cmd_status);
@@ -374,8 +658,19 @@ static void setup_cli(void) {
     cli_register_command("restart", "Software restart", cli_cmd_restart);
     cli_register_command("sleep", "Force deep sleep cycle", cli_cmd_sleep_now);
     cli_register_command("radio_test", "Transmit test packet", cli_cmd_radio_test);
-    cli_register_command("radio_recv", "Listen for LoRa packets (30s)", cli_cmd_radio_recv);
+    cli_register_command("radio_recv", "Listen for FLRC packets (30s)", cli_cmd_radio_recv);
+#if defined(CONFIG_ENABLE_RELAY_MODE) && defined(CONFIG_ENABLE_NOSTR_STORE)
+    cli_register_command("relay_send_nostr", "Serialize + queue Nostr event for radio TX", cli_cmd_relay_send_nostr);
+#endif
     cli_register_command("i2c_scan", "Scan I2C bus for devices", cli_cmd_i2c_scan);
+#ifdef CONFIG_ENABLE_NOSTR_STORE
+    cli_register_command("nostr_dump", "Dump stored Nostr events (optional count arg)",
+                          cli_cmd_nostr_dump);
+#endif
+#ifdef CONFIG_ENABLE_TOLLGATE
+    cli_register_command("tollgate_send_pay", "Send TollGate PAY message (optional token arg)",
+                          cli_cmd_tollgate_send_pay);
+#endif
 }
 
 extern "C" void app_main(void)
@@ -428,7 +723,7 @@ extern "C" void app_main(void)
     printf("> ");
     fflush(stdout);
 
-    if (init_radio() != RADIOLIB_ERR_NONE) {
+    if (init_radio() != 0) {
         ESP_LOGE(TAG, "Radio init failed, sleeping");
         deep_sleep(CONFIG_TX_INTERVAL_SEC);
         return;
@@ -474,6 +769,89 @@ extern "C" void app_main(void)
     }
     gps_sleep();
 #endif
+
+#ifdef CONFIG_ENABLE_RELAY_MODE
+    /*
+     * RELAY MODE — continuous store-and-forward operation.
+     * Creates radio_task and app_task, main loop does telemetry + CLI.
+     * No deep sleep — relay must stay alive for RX.
+     */
+    ESP_LOGI(TAG, "=== RELAY MODE (store-and-forward) ===");
+    ESP_LOGI(TAG, "Free heap before tasks: %lu", (unsigned long)esp_get_free_heap_size());
+
+    /* Create queues */
+    g_rx_queue = xQueueCreate(RELAY_RX_QUEUE_LEN, sizeof(relay_packet_t));
+    g_tx_queue = xQueueCreate(RELAY_TX_QUEUE_LEN, sizeof(relay_packet_t));
+    if (!g_rx_queue || !g_tx_queue) {
+        ESP_LOGE(TAG, "FATAL: queue creation failed");
+        deep_sleep(60);
+        return;
+    }
+
+    /* Create tasks: radio_task (HIGH, 4KB), app_task (MEDIUM, 8KB) */
+    BaseType_t r1 = xTaskCreate(radio_task, "radio_task", 4096, NULL,
+                                configMAX_PRIORITIES - 1, NULL);
+    BaseType_t r2 = xTaskCreate(app_task, "app_task", 8192, NULL,
+                                configMAX_PRIORITIES - 2, NULL);
+    if (r1 != pdPASS || r2 != pdPASS) {
+        ESP_LOGE(TAG, "FATAL: task creation failed (r1=%d r2=%d)", r1, r2);
+        deep_sleep(60);
+        return;
+    }
+
+    ESP_LOGI(TAG, "Tasks created. Free heap: %lu", (unsigned long)esp_get_free_heap_size());
+    ESP_LOGI(TAG, "Entering relay main loop (telemetry every %ds)...", CONFIG_TX_INTERVAL_SEC);
+
+    /* Main loop for relay mode: telemetry + CLI */
+    uint32_t relay_seq = rtc_seq;
+    while (true) {
+        relay_seq++;
+
+        /* Read sensors */
+        cap_mv = power_manager_read_supercap_mv();
+        float temp = 0, pressure = 0, altitude = 0;
+#ifdef CONFIG_ENABLE_BMP280
+        bmp280_wakeup(&bmp);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        bmp280_read(&bmp, &temp, &pressure, &altitude);
+        bmp280_sleep(&bmp);
+#endif
+
+        /* Compose telemetry */
+        telemetry_packet_t tpkt;
+        memset(&tpkt, 0, sizeof(tpkt));
+        tpkt.callsign_hash = (uint32_t)strtoul(CONFIG_CALLSIGN_HASH_HEX, NULL, 16);
+#ifdef CONFIG_ENABLE_GPS
+        if (gps_data.fix) {
+            tpkt.latitude_deg1e5 = (uint32_t)(gps_data.latitude);
+            tpkt.longitude_deg1e5 = (int32_t)(gps_data.longitude);
+            tpkt.altitude_m = (uint16_t)gps_data.altitude_m;
+            tpkt.sats = gps_data.sats;
+            tpkt.flags |= TELEMETRY_FLAG_GPS_VALID;
+        }
+#endif
+        tpkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+        telemetry_fill(&tpkt, temp, pressure, (float)tpkt.altitude_m, cap_mv, relay_seq);
+
+        /* Queue telemetry for radio_task to TX */
+        relay_packet_t tx_pkt;
+        memset(&tx_pkt, 0, sizeof(tx_pkt));
+        tx_pkt.data[0] = RELAY_TYPE_TELEMETRY;
+        telemetry_serialize(&tpkt, tx_pkt.data + 1);
+        tx_pkt.len = TELEMETRY_SIZE + 1;
+        xQueueSend(g_tx_queue, &tx_pkt, pdMS_TO_TICKS(100));
+
+        ESP_LOGI(TAG, "Telemetry queued (seq=%lu, heap=%lu)",
+                 (unsigned long)relay_seq, (unsigned long)esp_get_free_heap_size());
+
+        /* CLI + sleep interval */
+        for (int i = 0; i < CONFIG_TX_INTERVAL_SEC * 10; i++) {
+            cli_process();
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    }
+    /* UNREACHED — relay mode runs forever */
+#endif /* CONFIG_ENABLE_RELAY_MODE */
 
 #ifdef CONFIG_BENCH_TEST_MODE
     ESP_LOGI(TAG, "=== BENCH TEST MODE (TX every %ds) ===", CONFIG_BENCH_TEST_INTERVAL_SEC);
@@ -522,7 +900,6 @@ extern "C" void app_main(void)
     telemetry_serialize(&pkt, buf);
 
     ESP_LOGI(TAG, "TX %d bytes (seq %d)...", TELEMETRY_SIZE, rtc_seq);
-    flag_tx_done = false;
 
 #ifdef CONFIG_ENABLE_FEM
     sky66112_tx_enable();
@@ -535,7 +912,7 @@ extern "C" void app_main(void)
     static mesh::EspIdfRNG meshRNG;
     static mesh::EspIdfBoard meshBoard;
     static mesh::EspIdfRTC meshRTC;
-    static mesh::EspIdfRadio meshRadio(*radio, meshBoard);
+    static mesh::Lr2021MeshRadio meshRadio(*s_radio, meshBoard);
     static StaticPoolPacketManager meshPktMgr(8);
     static SimpleMeshTables meshTables;
 
@@ -567,17 +944,10 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "Mesh: %d frames sent", s_mesh_pending);
     }
 #else
-    int16_t state = radio->startTransmit(buf, TELEMETRY_SIZE);
-    if (state != RADIOLIB_ERR_NONE) {
-        ESP_LOGE(TAG, "startTransmit failed: %d", state);
-    } else {
-        uint32_t timeout = 0;
-        while (!flag_tx_done && timeout < 10000) {
-            hal->delay(1);
-            timeout++;
-        }
-        ESP_LOGI(TAG, "%s", flag_tx_done ? "TX complete" : "TX timeout");
-    }
+    s_radio->standby();
+    s_radio->send_packet(buf, TELEMETRY_SIZE);
+    bool tx_ok = wait_tx_done(10000);
+    ESP_LOGI(TAG, "%s", tx_ok ? "TX complete" : "TX timeout");
 #endif
 
 #ifdef CONFIG_ENABLE_FEM
@@ -585,20 +955,17 @@ extern "C" void app_main(void)
 #endif
 
 #ifdef CONFIG_BENCH_TEST_MODE
-    radio->sleep();
+    s_radio->sleep();
     rtc_seq++;
     ESP_LOGI(TAG, "Waiting %ds until next TX...", CONFIG_BENCH_TEST_INTERVAL_SEC);
     for (int i = 0; i < CONFIG_BENCH_TEST_INTERVAL_SEC * 100; i++) {
         cli_process();
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-    int16_t rx_state = radio->standby();
-    if (rx_state != RADIOLIB_ERR_NONE) {
-        ESP_LOGW(TAG, "radio standby failed: %d", rx_state);
-    }
+    s_radio->standby();
     } // end bench test while loop
 #else
-    radio->sleep();
+    s_radio->sleep();
     rtc_seq++;
     deep_sleep(CONFIG_TX_INTERVAL_SEC);
 #endif // CONFIG_BENCH_TEST_MODE

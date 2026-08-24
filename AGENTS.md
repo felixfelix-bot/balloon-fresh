@@ -1,47 +1,21 @@
 # HIERARCHY ROLE: SUB-PROJECT MANAGER
 
-You are the isolated manager of balloon-range-tests. You report to the balloon-hermes orchestrator group.
+You are the isolated manager of balloon-tollgate only. You report to the balloon-hermes orchestrator group.
 
-## ANTI-PATTERN: DOING WORKER WORK (APPLIES TO ALL LEVELS)
+## CRITICAL BOUNDARIES (ANTI-COLLAPSE GUARDRAILS)
 
-This applies to BOTH the orchestrator AND sub-managers at every level.
-
-**The delegation hierarchy is multi-level:**
-```
-Orchestrator (balloon-hermes)
-  → Sub-managers (scoped domain, own context window)
-    → Workers via kanban (worker-balloon, etc.)
-```
-
-**Sub-managers are ALSO managers, NOT workers.** A sub-manager that finds
-itself running `pio run`, reading firmware line-by-line, or flashing boards
-in its own thread is doing it wrong. It should create kanban tasks and
-delegate to worker profiles.
-
-**Every level delegates down. Nobody does mechanical work in their own
-context.** Every level keeps its context for decisions, brainstorming,
-and coordination.
-
-## YOUR EXTERNAL DUTIES (3 communication channels)
-
-1. STATUS REPORTS — When the orchestrator asks, fill STATUS-REQUEST-PROMPT.md and reply.
-2. TASK EXECUTION — When the orchestrator delegates a task (see DELEGATION-PROMPT.md), execute it within your scope and report results.
-3. PROACTIVE ESCALATION — If you discover something relevant to other tracks or the orchestrator (a blocker, a cross-track finding, a dependency, a question), REPORT IT UP IMMEDIATELY. Do NOT wait for a status pull. Reply: "ESCALATION: [what you found] -> [who needs to know]".
-
-## BOUNDARIES (keep your scope tight)
-
-- You are a SUB-MANAGER, not a coordinator. You do NOT coordinate other tracks.
+- You are a SUB-MANAGER, not a coordinator. You do NOT coordinate other balloon tracks.
 - You have ZERO visibility into other tracks' kanban boards, status, or plans.
-- ALL cross-track communication goes THROUGH the orchestrator. You escalate UP, never sideways to other track groups.
-- Do NOT message other balloon track Signal groups directly.
-- Do NOT read coordination files (INDEX.md, DECISIONS-AND-BLOCKERS.md, TRACKS-REGISTRY.yaml) — orchestrator-only.
-- Do NOT read ~/.hermes/profiles/manager/state/session-notes.md — coordinator context.
+- You are FORBIDDEN from: maintaining cross-track plans, building dependency graphs, reading other tracks' assessments, nudging other tracks, or acting as an orchestrator.
+- Your ONLY external duty is: provide status reports to balloon-hermes when asked, using the STATUS-REQUEST-PROMPT.md template.
+- Do NOT read ~/repos/balloon-fresh/docs/coordination/ files (INDEX.md, DECISIONS-AND-BLOCKERS.md, COORDINATOR-TRACKING.md, TRACKS-REGISTRY.yaml) — those are orchestrator-only files.
+- Do NOT read ~/.hermes/profiles/manager/state/session-notes.md — that contains coordinator context.
 
 ## YOUR SCOPE
-- Worktree: this directory only
-- Kanban: your board only (if configured)
-- Assessment: docs/INTEGRATION-ASSESSMENT.md
-- Status file: docs/STATUS-balloon-range-tests.md
+- Your worktree: this directory only
+- Your kanban: your board only (if configured)
+- Your assessment: docs/INTEGRATION-ASSESSMENT.md in this worktree
+- Your status file: docs/STATUS-balloon-tollgate.md in this worktree
 
 ## DELEGATION EXPECTATIONS (POSITIVE COLLABORATION)
 
@@ -55,310 +29,340 @@ You are part of a hierarchy. The orchestrator (balloon-hermes group) DELEGATES w
 
 These complement your anti-collapse guardrails above: you collaborate THROUGH the orchestrator, never directly with other tracks.
 
----
+## BOARD ACCESS — HARD MUTEX LOCK (v3)
 
-# AGENTS.md - AI Agent Instructions
+All 3 ESP32-S3 boards are shared resources across balloon tracks. Access is
+enforced by a **hard device lock** (chmod 000 on /dev/ttyACMx), not just an
+advisory flock. When another track holds a board lock, raw tool access is
+physically blocked:
 
-## Project Overview
-ESP32-C3 + NiceRF LoRa2021 (Semtech LR2021 Gen 4) pico balloon tracker AND mesh internet transport network. Solar/supercap power. Target weight: <14g (Mesh V1, night-off) or <9g (Minimal tracker).
+- `cat /dev/ttyACMx` → Permission denied
+- `esptool.py --port /dev/ttyACMx ...` → Permission denied
+- `idf.py -p /dev/ttyACMx flash` → Permission denied
 
-Two-track project:
-1. **Tracker** (`tracker/`): Single balloon telemetry, position reporting
-2. **Mesh Stack** (`mesh-stack/`): Multi-balloon relay network for internet transport
+Tool: `~/repos/balloon-fresh/tools/balloon-board-lock.py` (v3)
 
-## RF Driver: RadioLib
+### Flash Queue — Orchestrator Approval REQUIRED
 
-**IMPORTANT**: We use RadioLib v7.6.0 (NOT a custom driver) for LR2021 communication.
-- RadioLib is included as an ESP-IDF component dependency via `idf_component.yml`
-- Supports: LoRa, FLRC, GFSK, OOK, LR-FHSS, O-QPSK, RTToF ranging
-- Has native ESP-IDF support with HAL abstraction layer
-- The custom LR2021 driver in `tracker/firmware/components/lr2021/` is DEPRECATED
-- See `tracker/firmware/main/EspHalC3.h` for the ESP32-C3 hardware abstraction
+**NO flashing without orchestrator (balloon-hermes) approval.** Before
+flashing ANY board, add a row to `~/repos/balloon-fresh/docs/coordination/FLASH-QUEUE.md`
+and wait for approval. This prevents firmware mismatch during coordinated tests.
 
-## Inventory (Owned Parts)
-- 20x ESP32-C3_Mini_V1 (Maker go, 22.52x18mm, USB-C, U.FL antenna) — was listed as "XIAO ESP32C3"
-- 2x XIAO ESP32-C5
-- 4x NiceRF LoRa2021 modules (19.72x15x2.2mm, 18-pin)
-- 3x EBYTE E28-2G4M27S (SX1281, 2.4 GHz, +27 dBm PA built-in, SPI)
-- 100x Solar cells 52x19mm (0.5V 400mA)
-- 50x Solar cells 78x39mm (0.54W 0.5V)
-- 30x DecoGlee 18" foil party balloons (short test flights only)
-- ~43x Magenesis 10x2mm neodymium magnets (~1.21g each, test weights)
-- 1x Pressure sensor + pump (for balloon testing)
-- 1x MS300 jewelry scale (cannot weigh neodymium magnets — magnetic interference)
-- 1x Digital calipers
-- Double-sided copper clad FR4 boards (for toner transfer PCB fab)
-
-## Build & Flash Commands
-
-### Firmware (ESP-IDF v5.4.1)
-```bash
-source ~/esp/esp-idf/export.sh
-cd tracker/firmware && idf.py build
-idf.py -p /dev/ttyACM0 flash monitor    # ESP32-C3_Mini_V1 (USB-C)
-idf.py -p /dev/ttyUSB0 flash             # bare ESP-C3-12F
-```
-
-### Hardware (SKiDL + KiCad)
-```bash
-pip install skidl graphviz
-cd tracker/hardware && python hub_board/hub_schematic.py
-```
-
-### Lint & Typecheck
-```bash
-cd tracker/firmware && idf.py reconfigure
-ruff check tracker/hardware/
-```
-
-## Project Structure
-```
-tracker/firmware/main/         - Main application (C++, uses RadioLib)
-tracker/firmware/components/   - Drivers (BMP280, power_manager, antenna_switch, sky66112)
-                               NOTE: lr2021/ is deprecated, use RadioLib instead
-tracker/hardware/hub_board/    - Central electronics board (SKiDL + KiCad)
-tracker/hardware/hub_board_diy/- DIY v0.1 development hub board (toner transfer)
-tracker/hardware/wing_board/   - 4x identical antenna+solar boards
-tracker/hardware/footprints/   - Custom component footprint data (JSON)
-tracker/ground-station/        - Antenna tracker + ground station software
-tracker/ground-station/receiver/ - Ground station LoRa receiver (ESP32-C3, builds OK)
-mesh-stack/                    - Mesh internet transport (separate AGENTS.md)
-mesh-stack/ROADMAP.md          - Comprehensive mesh plan, link budgets, research checklist
-mesh-stack/research/           - Research notes (erasure-coding, routing, tdma, etc.)
-IMPLEMENTATION-PLAN.md         - Master implementation plan with checklists
-docs/adr/                      - Architecture Decision Records (10 decisions)
-docs/component-guide.md        - All parts with explanations and alternatives
-docs/inventory.md              - Full inventory tracking
-docs/plan-variants.md          - DIY / Minimal / Mittel / Komfort / Mesh V1 / Mesh V2
-docs/antenna-strategy.md       - V1 omni + V2 directional + product research
-docs/power-budget.md           - Tracker + mesh relay power analysis
-  docs/balloon-pressure-test.md  - Mylar balloon test plan
-  docs/balloon-test-results.md   - DecoGlee leak test data + community references
-  docs/balloon-options-analysis.md - 7 balloon types compared with cost analysis
-  docs/balloon-flight-lessons.md - Lessons from 80+ community flights (6 practitioners)
-  docs/sx1280-repos-reference.md - Related SX1280 repos with git URLs
-bom/BOM.md                     - Bill of Materials (prioritized)
-```
-
-## Plan Variants
-| Variant | Weight | Antenna | FEM/SP4T | Target |
-|---------|--------|---------|----------|--------|
-| DIY v0.1 | ~15g | Wire dipole | No | Development |
-| Minimal | ~8-9g | Wire dipole | No | Ultra-light flight |
-| Mittel | ~12-13g | 1-2x PCB-Yagi | Optional | Recommended flight |
-| Komfort | ~16.6g | 4x PCB-Yagi | Yes | Full features |
-| **Mesh V1** | **~14g** | **Wire dipole** | **SKY66112** | **Mesh relay (night-off)** |
-| **Mesh V2** | **~18-22g** | **PCB-Yagis** | **SKY66114 +30dBm** | **Mesh relay (night-active)** |
-
-## Key Design Decisions (see docs/adr/)
-1. ESP32-C3 as MCU (ADR-001)
-2. LR2021 Gen 4 as LoRa chip (ADR-002)
-3. Dual-track hardware: Dev board (ESP32-C3_Mini_V1) + Flight board (bare chip) (ADR-003)
-4. 3D Yagi antenna structure: 4 wings + SP4T switch (ADR-004)
-5. SKY66112-11 FEM for PA+LNA (ADR-005)
-6. Supercapacitor power (Solar → Caps → LDO) (ADR-006)
-7. Adaptive protocol (FLRC/LoRa/Sub-GHz) (ADR-007)
-8. 24-byte binary telemetry with CRC-16 (ADR-008)
-9. **V1 omnidirectional dipoles, V2 directional upgrade** (ADR-009)
-10. **Adaptive TX power per TDMA slot** (ADR-010)
-11. **Single balloon first, He 4.6, Minimal variant for first flight** (ADR-011)
-
-## NiceRF LoRa2021 Pin Mapping (ESP32-C3_Mini_V1 Dev Board)
-```
-NiceRF Pin   Function    ESP32 GPIO  Silkscreen  Notes
-Pin 1        VCC         3.3V        3V3
-Pin 2,8,11,12,18  GND   GND         GND
-Pin 3        MISO        GPIO2       D2          Strapping pin (OK as input)
-Pin 4        MOSI        GPIO7       D7          JTAG label, usable as GPIO
-Pin 5        SCK         GPIO6       D6          JTAG label, usable as GPIO
-Pin 6        NSS         GPIO10      D10
-Pin 7        BUSY        GPIO4       D4          JTAG label, usable as GPIO
-Pin 9        ANT (Sub-GHz, 50 Ohm)
-Pin 10       2.4G (2.4 GHz + S Band, 50 Ohm)
-Pin 14       RST         GPIO3       D3
-Pin 15       DIO9 (IRQ)  GPIO5       D5          JTAG label, usable as GPIO
-Pin 16       DIO8        GPIO1       D1
-Pin 17       DIO7        GPIO0       D0
-```
-RadioLib: Set `radio.irqDioNum = 9` and call `setDioFunction()` for DIO9 as IRQ.
-
-GPIO4-7 are labeled "JTAG" on silkscreen but are general-purpose GPIO when JTAG not enabled.
-GPIO8 (I2C SDA) is shared with onboard LED (inverted) — LED flickers during I2C (cosmetic only).
-GPIO9 (I2C SCL) is shared with BOOT button — internal pullup is fine for I2C.
-Using GPIO4-7 means no JTAG debug; use UART/printf via USB-C.
-See `tracker/hardware/footprints/esp32c3-mini-v1.json` for full pinout data.
-
-## Pin Assignment (ESP32-C3 bare, Flight Board)
-```
-GPIO7  = SPI_MOSI (LR2021)
-GPIO2  = SPI_MISO (LR2021)
-GPIO6  = SPI_SCLK (LR2021)
-GPIO10 = SPI_CS   (LR2021 NSS)
-GPIO3  = LR2021 RESET
-GPIO4  = LR2021 BUSY
-GPIO5  = LR2021 DIO9 (IRQ) -- note: NiceRF exposes DIO7/8/9, not DIO1/5
-GPIO0  = ADC Supercap Voltage (or use LR2021 getVoltage())
-GPIO20 = I2C_SDA (BMP280)  -- was GPIO8, moved to avoid strapping pin issue
-GPIO21 = I2C_SCL (BMP280)  -- was GPIO9, moved to avoid strapping pin issue
-GPIO1  = FEM TX_EN (SKY66112) -- optional
-```
-
-**IMPORTANT**: GPIO8 and GPIO9 are strapping pins on ESP32-C3:
-- GPIO8 pulled HIGH at reset → can force download boot mode
-- GPIO9 pulled LOW at reset (BOOT button) → download boot mode
-- Do NOT use GPIO8/GPIO9 for I2C or any function with pull-up resistors
-- The dev board (SuperMini) has an onboard LED on GPIO8 that causes this exact issue
-- Flight board uses GPIO20/GPIO21 for I2C instead (safe, non-strapping)
-
-## Antenna Strategy
-- Sub-GHz (868 MHz): Wire dipole, omnidirectional, +22 dBm, ~480 km range
-- 2.4 GHz: PCB Yagis on wing boards (Komfort) or wire dipole (Minimal)
-- Ground station: Circular polarized (RHCP) antenna for 2.4 GHz to eliminate rotation loss
-- See docs/antenna-strategy.md for details
-- **V1: Omnidirectional wire dipoles** — ground station gain sufficient for 22 kbps @ 300 km
-- **V2: Directional PCB Yagis** — 2-3x throughput upgrade when needed (ADR-009)
-
-## Important Notes
-- WiFi and Bluetooth MUST be disabled in sdkconfig.defaults (power saving)
-- CPU clock should be set to 80 MHz (not 160 MHz) for power saving
-- RadioLib is C++; app_main must be in a .cpp file with `extern "C" void app_main()`
-- All wing boards are IDENTICAL (same PCB, same components)
-- Solder joints connect wing boards to hub board (no connectors on flight board)
-- Always run `idf.py build` after firmware changes to verify compilation
-- FEM and SP4T are optional; start without them for DIY/Minimal
-- **Flight board uses GPIO20/GPIO21 for I2C (NOT GPIO8/GPIO9)** — see strapping pin warning above
-- **NiceRF LoRa2021 uses crystal oscillator (XTAL), NOT TCXO** — pass `tcxoVoltage=0` to `radio->begin()`. With TCXO config, oscillator fails to start (HF_XOSC_START_ERR) causing calibrate and setFrequency to fail.
-- **RadioLib calibration error handling**: `RADIOLIB_DEBUG_BASIC` must be set in RadioLib component (not just main) for the debug branch. We patched `config()` to always continue on calibration failure.
-- **SPI debug**: `RADIOLIB_DEBUG_SPI=1` and `RADIOLIB_DEBUG_BASIC=1` in main CMakeLists are PRIVATE — they only apply to the main component, not RadioLib
-- **`radio->irqDioNum = 9` is MANDATORY** for LR2021 TX/RX — without it, DIO mapping is not configured and interrupts don't fire on GPIO5. Set before calling `begin()` or `beginFLRC()`.
-- **LR2021 power limits**: Sub-GHz (150-1090 MHz) = -9 to +22 dBm; 2.4 GHz (2400-2500 MHz) = -19 to +12 dBm
-- **ESP-IDF framework required for LR2021 TX** — PlatformIO Arduino framework cannot TX (returns TX_TIMEOUT -5)
-- **`esp_task_wdt_deinit()`** needed in benchmarker — RX loop blocks cmd task and starves IDLE task watchdog
-- **RX processing bottleneck ~15-20ms** — at 2600 kbps with 200B pkts, need 20ms spacing for 0% PER
-- **LR2021 has native FIFO API** (unlike SX1280): `readRadioRxFifo()`, `getRxFifoLevel()` (uint16_t!), `configFifoIrq()`, `autoTxRx()`, `clearRxFifo()`. Access via `#define RADIOLIB_GODMODE 1` before `#include <RadioLib.h>` (zero-patch, no RadioLib file modifications needed)
-- **WARNING: RADIOLIB_GODMODE BREAKS RX** — Using GODMODE silently corrupts radio configuration. All RX firmware MUST use public RadioLib API only. Do NOT use GODMODE in RX code.
-- **Raw SPI bypass achieves 838.8 kbps** — Bypassing RadioLib with direct SPI commands (CMD_READ_RX_FIFO=0x0001, CMD_CLEAR_IRQ=0x0116, CMD_WRITE_TX_FIFO=0x0002, CMD_SET_TX=0x020D) achieves 8.3x improvement over RadioLib baseline (101.2 kbps). Per-packet processing: 188µs (was 14ms).
-- **No-STBY continuous RX** — Keep radio in RX mode during FIFO read. Skip standby/setRx transition. Saves ~24ms per packet.
-- **80 MHz is optimal for throughput** — 160 MHz gives WORSE results (775 vs 839 kbps) due to USB serial JTAG interrupt interference.
-- **SPI FIFO read speed: 10.46 Mbps** — reading 255 bytes takes only 195µs. The 80 kbps bottleneck is NOT the SPI bus; it's per-packet processing overhead (standby + startReceive + PRBS + RTOS)
-- **LR2021 ≠ SX1280** — different chip, different architecture. LR2021 has dedicated RX/TX FIFOs with threshold interrupts, auto-RX-TX mode, single-frame reads. SX1280 has flat 256B buffer with single-packet overwrite.
-
-## Bench Test Results (2026-06-11)
-
-See `mesh-stack/flrc-bench-espidf/RESULTS.md` for full data.
-
-| Test | Band | Mode | Bit Rate | Pkts | PER | BER | TX Tput |
-|------|------|------|----------|------|-----|-----|---------|
-| L1 | 868 | LoRa SF9 | ~1 kbps | 10/10 | 0% | 0% | 0.2 kbps |
-| F1-F4 | 868 | FLRC | 260-2600 kbps | 100/100 each | 0% | 0% | 4-40 kbps |
-| Burst | 868 | FLRC 2600 | 200B, no delay | 200→100 | 50% | 0% | 167 kbps |
-| Sustained | 868 | FLRC 2600 | 200B, 20ms | 200/200 | 0% | 0% | 80 kbps |
-| 2G4 | 2450 | FLRC | 1300-2600 | 100/100 | 0% | 0% | 40 kbps |
-| Power | 868 | FLRC 1300 | -6 to +22 dBm | All pass | 0% | 0% | 40 kbps |
-| Power | 2450 | FLRC 1300 | -16 to +12 dBm | 6/8 pass | ≤2% | 0% | 40 kbps |
-| PktSz | 868 | FLRC 1300 | 20-255 bytes | All pass | 0% | 0% | 8-68 kbps |
-
-**Key result**: Max sustained throughput = **80 kbps** (FLRC 2600 kbps, 200B, 20ms spacing).
-**Deployment config**: 2.4 GHz FLRC 1300-2600 kbps at +12 dBm with wire dipoles.
-
-## Balloon Strategy
-
-**Short test flights (DecoGlee, owned):** 30x DecoGlee 18" foil, 4.8g net lift, 0.15 g/day leak rate. Use for 3-8 day shakedown flights. Heat seal + Kapton tape. 6-7 balloons with cut-down for Mesh V1.
-
-**Long-duration flights (Yokohama + He 4.6, to purchase):** Yokohama 32" Crystal Clear Sphere Balloon valveless 10-pack €105.95 from https://www.yokohamaballoon.com/. Nylon/PE laminate (NOT foil). Industrial helium (grade 4.6, 99.996%) from Air Liquide ALbee Fly system. 67% circumnavigation rate with ultra-pure He (Ruthroff data). Our 9-14g payload is well within proven range (Ruthroff flew 14-22g payloads). Hydrogen deferred to future — He 4.6 is safer, higher success rate, and can be handled indoors. See ADR-011.
-
-**Key references:**
-- Ruthroff (37 flights, Yokohama + H2/He): https://www.theastroimager.com/picoballoning/pico-ballooning/
-- KI4MCW (31 flights, party balloons): https://sites.google.com/site/ki4mcw/Home/pico-balloonery
-- K9YO (beginner guide): https://sites.google.com/view/picoballoonsbyk9yo/beginners-guide
-- Klofas/SF-HAB (5+ launches): https://www.klofas.com/blog/tag/picoballoon.html
-- IEEE Spectrum (David Schneider): https://spectrum.ieee.org/explore-stratosphere-diy-pico-balloon
-- Pico Balloon mailing list (1,152 members): https://groups.io/g/picoballoon
-- Traquito/Picoballoons.net: https://www.picoballoons.net/
-- WSPRnet (global spot database): https://wsprnet.org/
-- Yokohama balloons: https://www.yokohamaballoon.com/
-- SBS balloons: https://www.scientificballoonsolutions.com/products/
-- HYSPLIT (NOAA trajectory prediction): https://ready.arl.noaa.gov/HYSPLIT.php
-
-## BOARD ACCESS — Mutex Lock (MANDATORY)
-
-**Before flashing or testing ANY board, you MUST acquire the board lock.**
-Skipping the lock is a bug. The lock uses OS-enforced flock(2) — true mutual exclusion.
-
-### Commands
+### Flash Procedure
 
 ```bash
-# Check who holds what
-python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py status
+# 1. Get orchestrator approval (add row to FLASH-QUEUE.md)
 
-# Acquire boards (blocks up to --timeout seconds)
-BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both \
-    --purpose "describe your test" --timeout 120
+# 2. Acquire hard lock (blocks other tracks at OS level):
+BALLOON_TRACK=tollgate python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire board-a \
+    --purpose "approved flash: C3 stripped build" --timeout 120
 
-# Release when done
-BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
+# 3. Flash with idf.py (lock holder's sentinel keeps fd open → access works):
+idf.py -p /dev/ttyACM0 flash monitor
 
-# Force-release stale lock (if another track crashed without releasing)
-python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both --force
+# 4. ALWAYS release when done (restores chmod 666):
+BALLOON_TRACK=tollgate python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release board-a
+
+# 5. Update FLASH-QUEUE.md status to DONE
 ```
 
-### Resources
-- `tx` — RP2040 TX board (F242D, /dev/ttyACM0)
-- `rx` — RP2040 RX board (8332, /dev/ttyACM2)
-- `both` — TX + RX (for coordinated tests)
-- `board-a`, `board-b`, `board-c` — ESP32-S3 boards
+### Verify Lock Before Board Work
 
-### How It Works
-- Uses `flock(LOCK_EX)` — OS-enforced, no race conditions
-- A sentinel daemon process holds the lock open
-- Auto-releases if your Hermes session crashes (sentinel monitors your PID)
-- `status` shows real flock state, not just file existence
+```bash
+# Exit 0 = you hold the lock; Exit 1 = another track holds it
+BALLOON_TRACK=tollgate python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py check board-a
+```
 
-### Track Identity
-Always set `BALLOON_TRACK=range-tests` (or your track name) so others can see who holds the lock.
+### Serial Wrapper for Python Test Scripts
 
-### MANDATORY: Use BoardSerial, NOT serial.Serial()
-
-**All scripts accessing /dev/ttyACM* MUST use the BoardSerial wrapper.**
-Raw `serial.Serial()` calls BYPASS the lock and cause concurrent access bugs.
+Any Python script that opens a serial port MUST use BoardSerial instead of
+raw `serial.Serial()`:
 
 ```python
-# WRONG — bypasses lock, causes conflicts:
-import serial
-ser = serial.Serial('/dev/ttyACM0', 115200)
-
-# CORRECT — enforces lock:
-import sys
-sys.path.insert(0, str(__import__('pathlib').Path.home() / 'repos' / 'balloon-fresh' / 'tools'))
 from board_serial import BoardSerial
+# NOT: ser = serial.Serial('/dev/ttyACM0', 115200)
 ser = BoardSerial('/dev/ttyACM0', 115200)
 ```
 
-**Pre-flight assertion** — call this at the top of every test script:
-```bash
-python3 ~/repos/balloon-fresh/tools/board-lock-assert.py tx rx || exit 1
+Tool: `~/repos/balloon-fresh/tools/board-serial.py`
+
+Board mapping:
+- board-a: ESP32-S3, MAC 94:a9:90:2e:37:7c, /dev/ttyACM0, TollGate-B96D80
+- board-b: ESP32-S3, MAC fc:01:2c:c5:50:50, /dev/ttyACM1, TollGate-C0E9CA
+- board-c: ESP32-S3, MAC 20:6e:f1:98:d7:08, /dev/ttyACM3, display board
+
+Skipping the lock is a bug. Concurrent flashing corrupts boards. The hard
+device lock (chmod 000) ensures that even if a sub-manager bypasses the lock
+script, raw tools fail with "Permission denied".
+
+### Discovery Sync Notes (2026-07-24)
+
+Adopted independently from cross-track findings (no coordination):
+- **Hard device locking (v3)**: from balloon-hermes commit 35b292c + balloon-speed-tests commit ef60a51
+- **Flash queue protocol**: from balloon-hermes FLASH-QUEUE.md
+- **Serial wrapper mandate**: from balloon-range-tests commit 171387d
+- **FLRC byte alignment**: from balloon-range-tests commit 9b740aa — informational only, tollgate has no LR2021 radio
+
+When the orchestrator (balloon-hermes) asks for a status update, fill the template from STATUS-REQUEST-PROMPT.md and reply with the filled template only. No commentary, no cross-track opinions.
+
+---
+
+# AGENTS.md — Instructions for AI Coding Agents
+
+## Project Overview
+
+TollGate ESP32 firmware: captive portal WiFi hotspot with Cashu e-cash payments, on-device wallet, Nostr identity derivation, wifistr service discovery, ContextVM (MCP over Nostr) server, and **local Nostr relay** with relay selection and sync. Runs on three ESP32-S3 boards.
+
+## Technology Stack
+
+- **Framework:** ESP-IDF v5.4.1 (C/C++)
+- **Target:** ESP32-S3, 16MB flash, 8MB PSRAM (OCT mode)
+- **Wallet:** nucula library (libsecp256k1) via git submodule
+- **Identity:** Nostr nsec → HMAC-SHA512 → deterministic MAC/SSID/IP
+- **Service discovery:** wifistr (Nostr kind 38787) via WebSocket
+- **ContextVM:** MCP over Nostr (kind 25910), CEP-6 announcements, 10 MCP tools
+- **Local relay:** wisp-esp32 (adapted), NIP-01 server on port 4869, LittleFS 4MB storage
+- **Relay selection:** NIP-11 HTTP probing, latency + NIP-77 scoring, auto-failover
+- **Sync:** REQ-diff with primary (30min) and fallback (6h) relays
+- **Testing:** Host C unit tests (gcc), Node.js integration tests (live board), Playwright E2E
+
+## Board Configuration
+
+| Board | Port | Factory MAC | SSID | AP IP | Notes |
+|-------|------|-------------|------|-------|-------|
+| A | `/dev/ttyACM0` | `94:a9:90:2e:37:7c` | `TollGate-B96D80` | `10.185.47.1` | Primary test target |
+| B | `/dev/ttyACM1` | `fc:01:2c:c5:50:50` | `TollGate-C0E9CA` | `10.192.45.1` | Secondary |
+| C | `/dev/ttyACM3` | `20:6e:f1:98:d7:08` | (TBD) | (TBD) | Display board |
+
+**IMPORTANT:** Board ports change on every USB replug. Always verify with `esptool.py --port <port> chip_id` before flashing.
+
+Identity (SSID, IP, MAC) is derived from `nsec` in config.json. Each board gets a unique nsec.
+
+## Boot Sequence
+
+```
+nvs_flash_init()
+  → tollgate_config_init()          // loads config.json with nsec from SPIFFS
+  → identity_init(nsec)             // derives npub, STA/AP MAC, SSID, IP via HMAC-SHA512
+  → tollgate_config_derive_unique() // copies derived values into config struct
+  → esp_netif_init() + esp_event_loop_create_default()
+  → wifi_init_sta() + wifi_create_ap_netif()  // AP netif with derived IP
+  → esp_wifi_init()
+  → esp_wifi_set_mac(STA/AP)        // sets derived MACs
+  → esp_wifi_set_mode(APSTA)
+  → esp_wifi_set_country_code("DE") // EU regulatory domain (channels 1-13, 20dBm)
+  → wifi_configure_ap()             // uses derived SSID
+  → esp_wifi_start()
+  → [on STA got IP] start_services():
+      sntp_init, firewall_init, session_init, wallet_init, dns_server, captive_portal, api,
+      local_relay_init+start, relay_selector_init+probe, sync_manager_start, wifistr_publish, cvm_server_start
 ```
 
-Scripts found using raw `serial.Serial()` on board ports are BUGS.
+## Key Files
 
-## Board Access Protocol — MANDATORY
+### Source (main/)
+- `tollgate_main.c` — entry point, WiFi AP+STA, event loop, service lifecycle
+- `config.c/h` — SPIFFS config.json parsing, nsec/nostr/wifi/mint settings
+- `identity.c/h` — HMAC-SHA512 derivation from nsec, npub/MAC/SSID/IP
+- `nostr_event.c/h` — NIP-01 event serialization + BIP-340 Schnorr signing
+- `geohash.c/h` — lat/lon to geohash encoding
+- `wifistr.c/h` — kind 38787 event builder + local-first publish (local relay then public)
+- `captive_portal.c/h` — HTTP :80 portal, captive detection, grant/reset
+- `dns_server.c/h` — DNS hijack/forward per-client, DoT reject
+- `firewall.c/h` — per-client NAT filter via LWIP_HOOK_IP4_CANFORWARD, MAC resolution
+- `session.c/h` — time-based sessions, MAC tracking
+- `cashu.c/h` — Cashu token decode, checkstate, allotment calc
+- `tollgate_api.c/h` — HTTP :2121, payment endpoints, wallet endpoints
+- `cvm_server.c/h` — ContextVM: persistent WS relay listener, kind 25910 subscription, MCP protocol handlers, CEP-6 announcements
+- `mcp_handler.c/h` — 10 MCP tool handlers (get_config, set_config, get_balance, wallet_send, get_sessions, get_usage, set_payout, set_metric, set_price, wallet_melt)
+- `local_relay.c/h` — Thin wrapper: inits wisp_relay storage/sub/rate-limiter on port 4869, publishes events to LittleFS + broadcasts to WS subscribers
+- `relay_selector.c/h` — NIP-11 HTTP probing of seed relays, latency + NIP-77 scoring, auto-failover after 3 disconnects, 6h re-probe cycle
+- `sync_manager.c/h` — REQ-diff sync: primary every 30min, fallback every 6h, reconciles local events vs remote, dedicated FreeRTOS task
+- `display.c/h` — QSPI TFT display (JC3248W535/AXS15231B): boot/ready/payment/error states, Wi-Fi and portal URL QR cycling every 5s, `escape_wifi_field()` for special chars
+- `font.c/h` — Bitmap font rendering for display text output
 
-1. ALWAYS acquire board lock before ANY board interaction:
-   ```bash
-   BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py acquire both --purpose "<what>" --timeout 120
-   ```
+### Components
+- `nucula_lib/` — C++ bridge to nucula::Wallet (C API in nucula_wallet.h)
+- `secp256k1/` — symlink to nucula_src/components/secp256k1/
+- `wisp_relay/` — Local Nostr relay (NIP-01): ws_server, storage_engine (LittleFS), sub_manager, broadcaster, router, handlers, relay_validator (Schnorr+SHA256), rate_limiter, nip11, deletion, flash_monitor
+- `esp_littlefs/` — LittleFS VFS integration for relay storage partition (git submodule)
+- `negentropy/` — Negentropy set-reconciliation library (git submodule, for future NIP-77)
+- `axs15231b/` — QSPI TFT display driver (JC3248W535)
+- `qrcode/` — QR code generator
 
-2. ALWAYS release when done:
-   ```bash
-   python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release both
-   ```
+### Config Format (config.json on SPIFFS)
+```json
+{
+  "nsec": "<64-char hex>",
+  "wifi_networks": [{"ssid":"...", "password":"..."}],
+  "ap_password": "",
+  "mint_url": "https://testnut-nutshell.mints.orangesync.tech",
+  "price_per_step": 21,
+  "step_size_ms": 60000,
+  "nostr_geohash": "u281w0dfz",
+  "nostr_relays": ["wss://relay.damus.io", "wss://nos.lol", "wss://relay.anzenkodo.workers.dev", "wss://nostr.koning-degraaf.nl"],
+  "nostr_publish_interval_s": 21600,
+  "nostr_seed_relays": [
+    "wss://relay.orangesync.tech",
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.nostr.band",
+    "wss://relay.anzenkodo.workers.dev",
+    "wss://nostr.koning-degraaf.nl",
+    "wss://knostr.neutrine.com",
+    "wss://nostr.einundzwanzig.space"
+  ],
+  "nostr_sync_interval_s": 1800,
+  "nostr_fallback_sync_interval_s": 21600,
+  "cvm_enabled": true
+}
+```
 
-3. NEVER use raw `pio run -t upload` — use pio-flash.sh wrapper:
-   ```bash
-   BALLOON_TRACK=range-tests tools/pio-flash.sh <env> --upload-port /dev/ttyACMx
-   ```
+## Testing Rules — MANDATORY
 
-4. picotool and openocd are shimmed — they check lock before running.
-   Bypassing the shim is a violation.
+### Rule 1: Every new C source file MUST have unit tests
+- Place test in `tests/unit/test_<module>.c`
+- Test pure-logic functions with known input/output vectors
+- Compile with host gcc via `make -C tests/unit`
+- Source files remain untouched — stubs in `tests/unit/stubs/` provide ESP-IDF types
+- **Run `make test-unit` after any code change. Must pass before commit.**
 
-5. Flash requests require orchestrator approval (see docs/coordination/FLASH-QUEUE.md)
+### Rule 2: Every new HTTP endpoint MUST have integration tests
+- Place in `tests/integration/phase<N>.mjs`
+- Test against live board using curl + `TOLLGATE_IP` env var
+- Never hardcode IP addresses — always use `process.env.TOLLGATE_IP`
+
+### Rule 3: Every new browser-visible feature MUST have Playwright E2E tests
+- Place in `tests/e2e/<feature>.spec.mjs`
+- Test the full user-visible flow in a browser
+
+### Rule 4: All tests must pass before commit
+- `make test-unit` — host unit tests (no hardware needed)
+- `make test-integration` — against live Board A (needs hardware)
+- `make test-e2e` — Playwright browser tests (needs hardware)
+
+### Rule 5: Test naming conventions
+| Test type | Location | Naming | Run command |
+|-----------|----------|--------|-------------|
+| Host unit | `tests/unit/` | `test_<module>.c` | `make test-unit` |
+| Integration | `tests/integration/` | `phase<N>.mjs` or `<feature>.mjs` | `make test-integration` |
+| E2E | `tests/e2e/` | `<feature>.spec.mjs` | `make test-e2e` |
+
+### Rule 6: Coverage requirements by code type
+| Code type | Required test type | Examples |
+|-----------|-------------------|----------|
+| Pure math/logic | Unit test | geohash, allotment calc, derivation |
+| Crypto operations | Unit test with known vectors | HMAC derivation, Schnorr signing, SHA-256 |
+| Token parsing | Unit test with known tokens | Cashu token decode |
+| State management | Unit test with mocks | Session lifecycle, firewall client list |
+| HTTP endpoints | Integration test | GET /wallet, POST /, POST /wallet/send |
+| HTML pages | Playwright E2E | Portal rendering, payment flow |
+| Network behavior | Integration test | DNS hijack, NAT, connectivity |
+
+## How to Run Tests
+
+```bash
+# Host unit tests (no hardware needed)
+make test-unit
+
+# Integration tests (needs Board A connected and flashed)
+export TOLLGATE_IP=10.192.45.1
+export TOLLGATE_SSID=TollGate-C0E9CA
+make test-integration
+
+# E2E tests (needs Board A + browser)
+make test-e2e
+
+# All tests
+make test-all
+
+# Quick smoke (30s, needs hardware)
+make smoke
+
+# Local relay tests (needs board)
+make test-local-relay
+make test-relay-nip11
+
+# CVM MCP roundtrip (needs board + internet)
+make test-cvm-roundtrip
+```
+
+## Build & Flash
+
+```bash
+source ~/esp/esp-idf/export.sh
+make flash          # build + flash to Board A
+make flash-a        # same
+make flash-b        # flash to Board B
+```
+
+## Test Infrastructure
+
+### Host Unit Tests (`tests/unit/`)
+- Compile with system gcc, link against `libmbedcrypto` + `libcjson` + secp256k1
+- ESP-IDF types provided by stubs in `tests/unit/stubs/`
+- Each test file is a standalone binary that returns 0 on success, 1 on failure
+- Uses a minimal assert macro: `ASSERT(cond, msg)`
+- Golden test vectors: known nsec → expected npub/MAC/SSID/IP
+
+### Integration Tests (`tests/integration/`)
+- Node.js scripts that run curl/ping/nmcli against a live ESP32 board
+- Require `TOLLGATE_IP` env var (default: auto-detect or error)
+- Token generation via nutshell CLI: `cashu -h https://testnut-nutshell.mints.orangesync.tech send --legacy 21`
+
+### E2E Tests (`tests/e2e/`)
+- Playwright browser tests
+- Config in `tests/e2e/playwright.config.mjs`
+- Test the captive portal UI and payment flow
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TOLLGATE_IP` | (none, must set) | Board A's AP IP (e.g., `10.192.45.1`) |
+| `TOLLGATE_SSID` | `TollGate-C0E9CA` | Board A's AP SSID |
+| `TEST_TOKEN` | (none) | Cashu token for payment tests |
+| `SUDO_PW` | `c03rad0r123` | sudo password for route management |
+
+## External Dependencies
+
+- **Test mint:** `testnut-nutshell.mints.orangesync.tech` — Nutshell/0.20.0, works with cashu CLI
+- **Nostr relays:** `relay.damus.io`, `nos.lol`, `relay.anzenkodo.workers.dev`, `nostr.koning-degraaf.nl` — for wifistr events
+- **Seed relays:** `relay.orangesync.tech` (NIP-77), `relay.damus.io`, `nos.lol`, `relay.nostr.band`, `relay.anzenkodo.workers.dev`, `nostr.koning-degraaf.nl`, `knostr.neutrine.com`, `nostr.einundzwanzig.space` — for relay selection and sync
+- **CVM relay:** `relay.primal.net` — for ContextVM kind 25910 events and CEP-6 announcements
+- **Local relay:** Port 4869, LittleFS 4MB partition at 0x500000, max 5000 events, 21-day TTL
+- **Nutshell CLI:** `cashu` command for token generation
+- **ESP-IDF:** `source ~/esp/esp-idf/export.sh` before `idf.py` commands
+- **System libs for unit tests:** `libmbedtls-dev`, `libcjson-dev`
+
+## Reminders
+
+- **Commit + push every time a test passes that previously didn't pass.** Green tests = checkpoint. Don't batch multiple test fixes into one commit.
+- Commit + push after each working change
+- Board A is at `/dev/ttyACM0`, Board B at `/dev/ttyACM1`, Board C at `/dev/ttyACM3`
+- **Per-board locks required** before hardware access: `make lock-a PHASE="desc"`, lock files in `physical-router-test-automation/locks/`
+- `sudo` password: `c03rad0r123`
+- SPIFFS is at offset `0x410000`, size `0xF0000` — erase with `esptool.py erase_region 0x410000 0xF0000` if config is stale
+- NVS stores wallet proofs — erasing NVS clears wallet balance
+- **Relay storage** LittleFS at offset `0x500000`, size `0x400000` (4MB) — auto-formatted on first boot
+- The `nostr_event.c` `created_at` field uses `gettimeofday()` — mock this in unit tests
+- Wifistr event signing uses `secp256k1_schnorrsig_sign32()` — verify with `_verify()` in tests
+- relay_validator.c does Schnorr verify + SHA-256 event ID — test with `test_relay_validator`
+- relay_selector scoring: NIP-77 bonus (1000pts) + latency + failure penalty (100pts each) — test with `test_relay_selector`
+- Portal HTML has server-side template substitution (`__AP_IP__`, `__PRICE__`, `__MINT_URL__`) — no JS fetch
+- **WiFi country code:** Must set `esp_wifi_set_country_code("DE")` before `esp_wifi_start()` — defaults to CN which causes auth failures on EU APs
+- Default nsec: `a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2`
+
+## Git Remotes & Repositories
+
+Full details in `REMOTES.md`. Key facts:
+
+- **This repo** (`esp32-tollgate`): `nostr://npub12m5.../git.orangesync.tech/esp32-tollgate`
+- **GRASP server:** `git.orangesync.tech` (git smart HTTP)
+- **Nostr relay:** `wss://ngit.orangesync.tech` (state events)
+- **GitWorkshop:** `workshop.orangesync.tech` (web UI)
+- **NerdQAxePlus fork:** `nostr://npub12m5.../git.orangesync.tech/esp-miner-nerdqaxeplus-tollgate`
+- **Worktrees:** `esp32-miner-integration` (feature/miner-integration), `esp32-tollgate-arch` (feature/tollgate-core-component)
+- **Push commands:** `git push orangesync --all` (esp32-tollgate), `git push ngit-origin develop` (NerdQAxePlus)
+- **Backup bundles:** `/home/c03rad0r/mining-work-backup/`
+- Board A nsec: `9af47906b45aca5e238390f3d03c8274e154198e81aa2095065627d1e61ca968`

@@ -1,0 +1,83 @@
+# ESP32-S3 build defaults for balloon-tracker
+# S3 boards: 16MB flash, 8MB PSRAM (octal)
+# GPIO pins are same as C3 (all valid via S3 GPIO matrix — no conflicts)
+# See sdkconfig.defaults for the C3 baseline.
+
+CONFIG_IDF_TARGET="esp32s3"
+
+# ── CPU frequency ──
+# S3 runs at 240 MHz by default; keep 80 MHz for power parity with C3
+CONFIG_ESP_SYSTEM_DEFAULT_CPU_FREQ_80=y
+CONFIG_ESP_SYSTEM_DEFAULT_CPU_FREQ=80
+
+# ── Wireless (disabled — not needed for relay/mesh mode) ──
+CONFIG_ESP_WIFI_ENABLED=n
+CONFIG_ESP_BT_ENABLED=n
+
+# ── RTOS ──
+CONFIG_FREERTOS_HZ=1000
+
+# ── Power management ──
+CONFIG_PM_ENABLE=y
+CONFIG_PM_DFS_INIT_AUTO=y
+
+# ── SPI ──
+CONFIG_SPI_MASTER_ISR_IN_IRAM=y
+
+# ── Logging ──
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_DEFAULT_LEVEL=3
+
+# ── Compiler ──
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# ── Panic / bootloader ──
+CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y
+CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+
+# ── Console: USB serial JTAG (S3 has built-in USB-Serial-JTAG) ──
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# ── Deep sleep ──
+CONFIG_ESP_SYSTEM_DEEP_SLEEP_WAKEUP_DELAY=1000
+
+# ── Flash: 16MB (S3 boards have 16MB) ──
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+
+# ── PSRAM: 8MB octal PSRAM on S3 boards ──
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+
+# ── Main task stack ──
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+
+# ── Mesh networking (same as C3 baseline) ──
+CONFIG_ENABLE_MESH=y
+
+# ── Relay mode: continuous store-and-forward ──
+# (selects ENABLE_MESH and ENABLE_NOSTR_STORE automatically)
+CONFIG_ENABLE_RELAY_MODE=y
+
+# ── Bench test mode: continuous TX for bench testing ──
+CONFIG_BENCH_TEST_MODE=y
+CONFIG_BENCH_TEST_INTERVAL_SEC=10
+
+# ── BMP280 sensor enabled ──
+CONFIG_ENABLE_BMP280=y
+
+# ── GPS disabled (not wired on S3 bench boards) ──
+# CONFIG_ENABLE_GPS is not set
+
+# ── FEM (SKY66112) disabled for bench testing ──
+# CONFIG_ENABLE_FEM is not set
+
+# ── Antenna switch disabled ──
+# CONFIG_ENABLE_ANTENNA_SWITCH is not set
+
+# ── TollGate payment processing (relay mode required, already set above) ──
+CONFIG_ENABLE_TOLLGATE=y

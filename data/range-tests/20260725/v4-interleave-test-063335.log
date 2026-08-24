@@ -1,0 +1,62 @@
+PHASE_RESULT 36 LF-LoRa-SF12-32 pktSize=32 rx=0 unique=0 lost=1 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+ORA_CFG path=0 bw=0x05 sf=12
+HASE_START 37 LF-LoRa-SF12-SKIP SKIP pktSize=64
+HASE_RESULT 37 LF-LoRa-SF12-SKIP pktSize=64 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+ORA_CFG path=0 bw=0x05 sf=12
+HASE_START 38 LF-LoRa-SF12-SKIP SKIP pktSize=128
+HASE_RESULT 38 LF-LoRa-SF12-SKIP pktSize=128 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+ORA_CFG path=0 bw=0x05 sf=12
+HASE_START 39 LF-LoRa-SF12-SKIP SKIP pktSize=255
+HASE_RESULT 39 LF-LoRa-SF12-SKIP pktSize=255 rx=0 unique=0 lost=0 per=0.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+HASE_START 40 LF-FLRC-2600-32 pktSize=32
+HASE_RESULT 40 LF-FLRC-2600-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=1 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+RT 41 LF-FLRC-2600-64 pktSize=64
+HASE_RESULT 41 LF-FLRC-2600-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+HASE_START 42 LF-FLRC-2600-128 pktSize=128
+HASE_RESULT 42 LF-FLRC-2600-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0HASE_GUARD 500
+HASE_START 43 LF-FLRC-2600-255 pktSize=255
+HASE_RESULT 43 LF-FLRC-2600-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=000000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+HASE_START 44 LF-FLRC-1300-32 pktSize=32
+HASE_RESULT 44 LF-FLRC-1300-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+HASE_START 45 LF-FLRC-1300-64 pktSize=64
+HASE_RESULT 45 LF-FLRC-1300-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_START 46 LF-FLRC-1300-128 pktSize=128
+TIME_STATS min=0ms max=1000ms avg=117ms corrections=0
+E_RESULT 46 LF-FLRC-1300-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=000000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+ 500
+HASE_START 47 LF-FLRC-1300-255 pktSize=255
+RESULT 47 LF-FLRC-1300-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=000000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+500
+HASE_START 48 LF-FLRC-650-32 pktSize=32
+RESULT 48 LF-FLRC-650-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_START 49 LF-FLRC-650-64 pktSize=64
+ND first4=F9932C5D
+HASE_RESULT 49 LF-FLRC-650-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=1 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+HASE_START 50 LF-FLRC-650-128 pktSize=128
+_FOUND first4=2019E7FD
+YNC_NOT_FOUND first4=8C471FA8
+YNC_NOT_FOUND first4=9BBA4430
+YNC_NOT_FOUND first4=BD1539EB
+HASE_RESULT 50 LF-FLRC-650-128 pktSize=128 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=4 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+51 LF-FLRC-650-255 pktSize=255
+HASE_RESULT 51 LF-FLRC-650-255 pktSize=255 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_GUARD 500
+ART 52 LF-FLRC-325-32 pktSize=32
+RESULT 52 LF-FLRC-325-32 pktSize=32 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+_GUARD 500
+RT 53 LF-FLRC-325-64 pktSize=64
+HASE_RESULT 53 LF-FLRC-325-64 pktSize=64 rx=0 unique=0 lost=100 per=100.0 rssi_avg=0 rssi_min=0 crc_err=0 garbage=0 tx_lat=0.0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+ 500
+HASE_START 54 LF-FLRC-325-128 pktSize=128
+0000 tx_lon=0.00000 sats=0 fix=0 utc=0 tx_fw=none rx_fw=unknown
+HASE_START 55 LF-FLRC-325-255 pktSize=255

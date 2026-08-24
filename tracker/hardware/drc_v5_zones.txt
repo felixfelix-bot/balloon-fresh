@@ -1,0 +1,664 @@
+** Drc report for v5_zones.kicad_pcb **
+** Created on 2026-08-07T18:20:48+0530 **
+** Report includes: Errors, Warnings **
+
+** Found 131 DRC violations **
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(8.1100 mm, 6.0000 mm): PTH pad 1 [3V3] of U1
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(8.1100 mm, 6.0000 mm): PTH pad 1 [3V3] of U1
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+    @(21.6100 mm, 6.0000 mm): PTH pad 10 [<no net>] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+    @(21.6100 mm, 6.0000 mm): PTH pad 10 [<no net>] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(21.6100 mm, 6.0000 mm): PTH pad 10 [<no net>] of U1
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(21.6100 mm, 6.0000 mm): PTH pad 10 [<no net>] of U1
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+[solder_mask_bridge]: Front solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+    @(26.1100 mm, 6.0000 mm): PTH pad 13 [GND] of U1
+[solder_mask_bridge]: Rear solder mask aperture bridges items with different nets
+    Rule: board setup solder mask min width; error
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+    @(26.1100 mm, 6.0000 mm): PTH pad 13 [GND] of U1
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2500 mm; actual 0.1550 mm)
+    Rule: netclass 'Default'; error
+    @(43.9050 mm, 16.8400 mm): Pad 10 [RF_2G4_2400] of U2 on F.Cu
+    @(42.5000 mm, 17.0000 mm): Pad 2 [<no net>] of R2 on F.Cu
+[shorting_items]: Items shorting two nets (nets 3V3 and GND)
+    Local override; error
+    @(8.1100 mm, 6.0000 mm): PTH pad 1 [3V3] of U1
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+[shorting_items]: Items shorting two nets (nets GND and SPI0_SCK)
+    Local override; error
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+[shorting_items]: Items shorting two nets (nets SPI0_SCK and SPI0_MOSI)
+    Local override; error
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+[shorting_items]: Items shorting two nets (nets SPI0_MOSI and SPI0_MISO)
+    Local override; error
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+[shorting_items]: Items shorting two nets (nets SPI0_MISO and SPI0_NSS)
+    Local override; error
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+[shorting_items]: Items shorting two nets (nets SPI0_NSS and LR2021_BUSY)
+    Local override; error
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+[shorting_items]: Items shorting two nets (nets LR2021_BUSY and LR2021_DIO9)
+    Local override; error
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+[shorting_items]: Items shorting two nets (nets LR2021_DIO9 and LR2021_RST)
+    Local override; error
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2500 mm; actual 0.0000 mm)
+    Rule: netclass 'Default'; error
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+    @(21.6100 mm, 6.0000 mm): PTH pad 10 [<no net>] of U1
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2500 mm; actual 0.0000 mm)
+    Rule: netclass 'Default'; error
+    @(21.6100 mm, 6.0000 mm): PTH pad 10 [<no net>] of U1
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+[shorting_items]: Items shorting two nets (nets RP2040_TX_ESP_RX and ESP_TX_RP2040_RX)
+    Local override; error
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+[shorting_items]: Items shorting two nets (nets ESP_TX_RP2040_RX and GND)
+    Local override; error
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+    @(26.1100 mm, 6.0000 mm): PTH pad 13 [GND] of U1
+[zones_intersect]: Copper zones intersect (intersecting zones must have distinct priorities)
+    Local override; error
+    @(0.0000 mm, 0.0000 mm): Zone [GND] on In1.Cu, priority 0
+    @(0.5000 mm, 0.5000 mm): Zone [GND] on In1.Cu, priority 0
+[zones_intersect]: Copper zones intersect (intersecting zones must have distinct priorities)
+    Local override; error
+    @(0.0000 mm, 0.0000 mm): Zone [3V3] on In2.Cu, priority 0
+    @(0.5000 mm, 0.5000 mm): Zone [3V3] on In2.Cu, priority 0
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(25.0000 mm, 2.5000 mm): PCB text 'Balloon Hub V1 — Auto-route (GPIO9 LED)' on F.Silkscreen
+    @(6.0000 mm, 3.0000 mm): Reference field of C1
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(3.0000 mm, 6.7400 mm): Segment of U on F.Silkscreen
+    @(15.0000 mm, 6.0000 mm): Reference field of U1
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(3.0000 mm, 6.7400 mm): Segment of U on F.Silkscreen
+    @(12.0000 mm, 6.5000 mm): Reference field of U
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(15.7300 mm, 7.2700 mm): Segment of U1 on F.Silkscreen
+    @(3.0000 mm, 6.7400 mm): Segment of U on F.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(25.0000 mm, 2.5000 mm): PCB text 'Balloon Hub V1 — Auto-route (GPIO9 LED)' on F.Silkscreen
+    @(38.0000 mm, 3.0000 mm): Reference field of C2
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(21.0000 mm, 6.7400 mm): Segment of U on F.Silkscreen
+    @(49.7700 mm, 7.2700 mm): Segment of U1 on F.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(20.0000 mm, 29.0000 mm): Reference field of R3
+    @(21.0000 mm, 29.2600 mm): Segment of U on F.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(3.5000 mm, 13.0000 mm): Reference field of U3
+    @(3.0000 mm, 29.2600 mm): Segment of U on F.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(47.0000 mm, 5.5000 mm): Value field of AE1 (868MHz)
+    @(47.0000 mm, 6.0000 mm): Reference field of AE2
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(24.0950 mm, 29.4900 mm): Segment of U2 on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(43.9050 mm, 14.5100 mm): Segment of U2 on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(12.0000 mm, 6.5000 mm): Reference field of U
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(3.0000 mm, 6.7400 mm): Segment of U on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(3.0000 mm, 29.2600 mm): Segment of U on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(3.5000 mm, 13.0000 mm): Reference field of U3
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(47.0000 mm, 17.0000 mm): Reference field of U4
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(15.0000 mm, 6.0000 mm): Reference field of U1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(15.7300 mm, 7.2700 mm): Segment of U1 on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(49.7700 mm, 7.2700 mm): Segment of U1 on F.Silkscreen
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(23.0000 mm, 29.0000 mm): Reference field of R4
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(23.0000 mm, 29.0000 mm): Reference field of R4
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(25.0000 mm, 36.5000 mm): Reference field of TP1
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(25.0000 mm, 36.5000 mm): Reference field of TP1
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(6.0000 mm, 3.0000 mm): Reference field of C1
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(6.0000 mm, 3.0000 mm): Reference field of C1
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.6000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(8.0000 mm, 28.0000 mm): Reference field of D1
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(33.0000 mm, 36.5000 mm): Reference field of TP3
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(33.0000 mm, 36.5000 mm): Reference field of TP3
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.6000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(3.0000 mm, 5.0000 mm): Reference field of J
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(37.0000 mm, 36.5000 mm): Reference field of TP4
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(37.0000 mm, 36.5000 mm): Reference field of TP4
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.5000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(18.0000 mm, 32.5000 mm): Reference field of D2
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(38.0000 mm, 3.0000 mm): Reference field of C2
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(38.0000 mm, 3.0000 mm): Reference field of C2
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(20.0000 mm, 29.0000 mm): Reference field of R3
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(20.0000 mm, 29.0000 mm): Reference field of R3
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(22.0000 mm, 32.8000 mm): Reference field of R5
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(22.0000 mm, 32.8000 mm): Reference field of R5
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(40.0000 mm, 36.5000 mm): Reference field of TP5
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(40.0000 mm, 36.5000 mm): Reference field of TP5
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(16.0000 mm, 37.0000 mm): Reference field of C7
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(16.0000 mm, 37.0000 mm): Reference field of C7
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.6000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(47.0000 mm, 6.0000 mm): Reference field of AE2
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.6000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(47.0000 mm, 1.0000 mm): Reference field of AE1
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(42.0000 mm, 16.0000 mm): Reference field of R2
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(42.0000 mm, 16.0000 mm): Reference field of R2
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(42.0000 mm, 29.0000 mm): Reference field of C6
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(42.0000 mm, 29.0000 mm): Reference field of C6
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(29.0000 mm, 36.5000 mm): Reference field of TP2
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(29.0000 mm, 36.5000 mm): Reference field of TP2
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(42.0000 mm, 13.0000 mm): Reference field of R1
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(42.0000 mm, 13.0000 mm): Reference field of R1
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(45.0000 mm, 36.5000 mm): Reference field of TP6
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(45.0000 mm, 36.5000 mm): Reference field of TP6
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(30.0000 mm, 29.0000 mm): Reference field of C3
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(30.0000 mm, 29.0000 mm): Reference field of C3
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.6000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(5.0000 mm, 28.5000 mm): Reference field of SC
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(33.0000 mm, 32.0000 mm): Reference field of C4
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(33.0000 mm, 32.0000 mm): Reference field of C4
+[text_thickness]: Text thickness out of range (board setup constraints silk text thickness min thickness 0.0800 mm; actual 0.0600 mm)
+    Rule: board setup constraints silk text thickness; warning
+    @(20.0000 mm, 37.0000 mm): Reference field of C5
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.4000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(20.0000 mm, 37.0000 mm): Reference field of C5
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.6000 mm)
+    Rule: board setup constraints silk text height; warning
+    @(12.0000 mm, 33.0000 mm): Reference field of U5
+[lib_footprint_mismatch]: Footprint 'R_0402_1005Metric' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(23.0000 mm, 30.0000 mm): Footprint R4
+[lib_footprint_mismatch]: Footprint 'TestPoint_Pad_D1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(25.0000 mm, 38.0000 mm): Footprint TP1
+[lib_footprint_mismatch]: Footprint 'C_0402_1005Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(6.0000 mm, 4.0000 mm): Footprint C1
+[lib_footprint_mismatch]: Footprint 'D_SOD-123' does not match copy in library 'Diode_SMD'.
+    Local override; warning
+    @(8.0000 mm, 30.0000 mm): Footprint D1
+[lib_footprint_issues]: The current configuration does not include the footprint library 'custom'.
+    Local override; warning
+    @(34.0000 mm, 22.0000 mm): Footprint U2
+[lib_footprint_mismatch]: Footprint 'TestPoint_Pad_D1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(33.0000 mm, 38.0000 mm): Footprint TP3
+[lib_footprint_issues]: The current configuration does not include the footprint library 'custom'.
+    Local override; warning
+    @(12.0000 mm, 18.0000 mm): Footprint U
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x02_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(3.0000 mm, 8.0000 mm): Footprint J
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x04_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(3.5000 mm, 18.0000 mm): Footprint U3
+[lib_footprint_mismatch]: Footprint 'TestPoint_Pad_D1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(37.0000 mm, 38.0000 mm): Footprint TP4
+[lib_footprint_mismatch]: Footprint 'LED_0603_1608Metric' does not match copy in library 'LED_SMD'.
+    Local override; warning
+    @(18.0000 mm, 34.0000 mm): Footprint D2
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x04_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(47.0000 mm, 22.0000 mm): Footprint U4
+[lib_footprint_mismatch]: Footprint 'C_0402_1005Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(38.0000 mm, 4.0000 mm): Footprint C2
+[lib_footprint_mismatch]: Footprint 'R_0402_1005Metric' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(20.0000 mm, 30.0000 mm): Footprint R3
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x13_P2.54mm_Vertical' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(17.0000 mm, 6.0000 mm): Footprint U1
+[lib_footprint_mismatch]: Footprint 'R_0402_1005Metric' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(22.0000 mm, 34.0000 mm): Footprint R5
+[lib_footprint_mismatch]: Footprint 'TestPoint_Pad_D1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(40.0000 mm, 38.0000 mm): Footprint TP5
+[lib_footprint_mismatch]: Footprint 'C_0805_2012Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(16.0000 mm, 38.0000 mm): Footprint C7
+[lib_footprint_mismatch]: Footprint 'TestPoint_THTPad_D2.0mm_Drill1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(47.0000 mm, 8.0000 mm): Footprint AE2
+[lib_footprint_mismatch]: Footprint 'TestPoint_THTPad_D2.0mm_Drill1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(47.0000 mm, 3.0000 mm): Footprint AE1
+[lib_footprint_mismatch]: Footprint 'R_0402_1005Metric' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(42.0000 mm, 17.0000 mm): Footprint R2
+[lib_footprint_mismatch]: Footprint 'C_0402_1005Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(42.0000 mm, 30.0000 mm): Footprint C6
+[lib_footprint_mismatch]: Footprint 'TestPoint_Pad_D1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(29.0000 mm, 38.0000 mm): Footprint TP2
+[lib_footprint_mismatch]: Footprint 'R_0402_1005Metric' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(42.0000 mm, 14.0000 mm): Footprint R1
+[lib_footprint_mismatch]: Footprint 'TestPoint_Pad_D1.0mm' does not match copy in library 'TestPoint'.
+    Local override; warning
+    @(45.0000 mm, 38.0000 mm): Footprint TP6
+[lib_footprint_mismatch]: Footprint 'C_0402_1005Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(30.0000 mm, 30.0000 mm): Footprint C3
+[lib_footprint_mismatch]: Footprint 'CP_Radial_D8.0mm_P3.50mm' does not match copy in library 'Capacitor_THT'.
+    Local override; warning
+    @(5.0000 mm, 33.5000 mm): Footprint SC
+[lib_footprint_mismatch]: Footprint 'C_0805_2012Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(33.0000 mm, 33.0000 mm): Footprint C4
+[lib_footprint_mismatch]: Footprint 'C_0402_1005Metric' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(20.0000 mm, 38.0000 mm): Footprint C5
+[lib_footprint_mismatch]: Footprint 'SOT-23-5' does not match copy in library 'Package_TO_SOT_SMD'.
+    Local override; warning
+    @(12.0000 mm, 35.0000 mm): Footprint U5
+
+** Found 53 unconnected pads **
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(8.1100 mm, 6.0000 mm): PTH pad 1 [3V3] of U1
+    @(5.5000 mm, 4.0000 mm): Pad 1 [3V3] of C1 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(12.9500 mm, 35.9500 mm): Pad 5 [3V3] of U5 on F.Cu
+    @(15.3500 mm, 38.0000 mm): Pad 1 [3V3] of C7 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(15.3500 mm, 38.0000 mm): Pad 1 [3V3] of C7 on F.Cu
+    @(19.5000 mm, 38.0000 mm): Pad 1 [3V3] of C5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(19.5000 mm, 38.0000 mm): Pad 1 [3V3] of C5 on F.Cu
+    @(24.0950 mm, 27.1600 mm): Pad 1 [3V3] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(24.0950 mm, 27.1600 mm): Pad 1 [3V3] of U2 on F.Cu
+    @(29.5000 mm, 30.0000 mm): Pad 1 [3V3] of C3 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(32.3500 mm, 33.0000 mm): Pad 1 [3V3] of C4 on F.Cu
+    @(29.5000 mm, 30.0000 mm): Pad 1 [3V3] of C3 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(32.3500 mm, 33.0000 mm): Pad 1 [3V3] of C4 on F.Cu
+    @(33.0000 mm, 38.0000 mm): Pad 1 [3V3] of TP3 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(37.5000 mm, 4.0000 mm): Pad 1 [3V3] of C2 on F.Cu
+    @(41.5000 mm, 14.0000 mm): Pad 1 [3V3] of R1 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(41.5000 mm, 14.0000 mm): Pad 1 [3V3] of R1 on F.Cu
+    @(41.5000 mm, 17.0000 mm): Pad 1 [3V3] of R2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(41.5000 mm, 30.0000 mm): Pad 1 [3V3] of C6 on F.Cu
+    @(32.3500 mm, 33.0000 mm): Pad 1 [3V3] of C4 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(41.5000 mm, 30.0000 mm): Pad 1 [3V3] of C6 on F.Cu
+    @(41.5000 mm, 17.0000 mm): Pad 1 [3V3] of R2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(47.0000 mm, 18.1900 mm): PTH pad 1 [3V3] of U4
+    @(41.5000 mm, 17.0000 mm): Pad 1 [3V3] of R2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(6.5000 mm, 4.0000 mm): Pad 2 [GND] of C1 on F.Cu
+    @(9.6100 mm, 6.0000 mm): PTH pad 2 [GND] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(6.7500 mm, 33.5000 mm): PTH pad 2 [GND] of SC
+    @(12.9500 mm, 34.0500 mm): Pad 2 [GND] of U5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(12.9500 mm, 34.0500 mm): Pad 2 [GND] of U5 on F.Cu
+    @(17.2000 mm, 34.0000 mm): Pad 1 [GND] of D2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(16.6500 mm, 38.0000 mm): Pad 2 [GND] of C7 on F.Cu
+    @(20.5000 mm, 38.0000 mm): Pad 2 [GND] of C5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(17.2000 mm, 34.0000 mm): Pad 1 [GND] of D2 on F.Cu
+    @(16.6500 mm, 38.0000 mm): Pad 2 [GND] of C7 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(17.2000 mm, 34.0000 mm): Pad 1 [GND] of D2 on F.Cu
+    @(23.5000 mm, 30.0000 mm): Pad 2 [GND] of R4 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(23.5000 mm, 30.0000 mm): Pad 2 [GND] of R4 on F.Cu
+    @(24.0950 mm, 25.8700 mm): Pad 2 [GND] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(24.0950 mm, 18.1300 mm): Pad 8 [GND] of U2 on F.Cu
+    @(24.0950 mm, 25.8700 mm): Pad 2 [GND] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(26.1100 mm, 6.0000 mm): PTH pad 13 [GND] of U1
+    @(38.5000 mm, 4.0000 mm): Pad 2 [GND] of C2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(30.5000 mm, 30.0000 mm): Pad 2 [GND] of C3 on F.Cu
+    @(23.5000 mm, 30.0000 mm): Pad 2 [GND] of R4 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(33.6500 mm, 33.0000 mm): Pad 2 [GND] of C4 on F.Cu
+    @(30.5000 mm, 30.0000 mm): Pad 2 [GND] of C3 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(33.6500 mm, 33.0000 mm): Pad 2 [GND] of C4 on F.Cu
+    @(37.0000 mm, 38.0000 mm): Pad 1 [GND] of TP4 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(42.5000 mm, 30.0000 mm): Pad 2 [GND] of C6 on F.Cu
+    @(43.9050 mm, 27.1600 mm): Pad 18 [GND] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(43.9050 mm, 19.4200 mm): Pad 12 [GND] of U2 on F.Cu
+    @(43.9050 mm, 18.1300 mm): Pad 11 [GND] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(43.9050 mm, 19.4200 mm): Pad 12 [GND] of U2 on F.Cu
+    @(47.0000 mm, 20.7300 mm): PTH pad 2 [GND] of U4
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(43.9050 mm, 27.1600 mm): Pad 18 [GND] of U2 on F.Cu
+    @(47.0000 mm, 20.7300 mm): PTH pad 2 [GND] of U4
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(24.0950 mm, 22.0000 mm): Pad 5 [SPI0_SCK] of U2 on F.Cu
+    @(11.1100 mm, 6.0000 mm): PTH pad 3 [SPI0_SCK] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(25.0000 mm, 38.0000 mm): Pad 1 [SPI0_SCK] of TP1 on F.Cu
+    @(24.0950 mm, 22.0000 mm): Pad 5 [SPI0_SCK] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(24.0950 mm, 23.2900 mm): Pad 4 [SPI0_MOSI] of U2 on F.Cu
+    @(12.6100 mm, 6.0000 mm): PTH pad 4 [SPI0_MOSI] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(29.0000 mm, 38.0000 mm): Pad 1 [SPI0_MOSI] of TP2 on F.Cu
+    @(24.0950 mm, 23.2900 mm): Pad 4 [SPI0_MOSI] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(14.1100 mm, 6.0000 mm): PTH pad 5 [SPI0_MISO] of U1
+    @(24.0950 mm, 24.5800 mm): Pad 3 [SPI0_MISO] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(15.6100 mm, 6.0000 mm): PTH pad 6 [SPI0_NSS] of U1
+    @(24.0950 mm, 20.7100 mm): Pad 6 [SPI0_NSS] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(17.1100 mm, 6.0000 mm): PTH pad 7 [LR2021_BUSY] of U1
+    @(24.0950 mm, 19.4200 mm): Pad 7 [LR2021_BUSY] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(20.1100 mm, 6.0000 mm): PTH pad 9 [LR2021_RST] of U1
+    @(43.9050 mm, 22.0000 mm): Pad 14 [LR2021_RST] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(18.6100 mm, 6.0000 mm): PTH pad 8 [LR2021_DIO9] of U1
+    @(43.9050 mm, 23.2900 mm): Pad 15 [LR2021_DIO9] of U2 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(42.5000 mm, 14.0000 mm): Pad 2 [I2C_SDA] of R1 on F.Cu
+    @(9.4600 mm, 24.3500 mm): PTH pad 7 [I2C_SDA] of U
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(47.0000 mm, 23.2700 mm): PTH pad 3 [I2C_SDA] of U4
+    @(42.5000 mm, 14.0000 mm): Pad 2 [I2C_SDA] of R1 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(24.0950 mm, 16.8400 mm): Pad 9 [RF_SUB_868] of U2 on F.Cu
+    @(47.0000 mm, 3.0000 mm): PTH pad 1 [RF_SUB_868] of AE1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(43.9050 mm, 16.8400 mm): Pad 10 [RF_2G4_2400] of U2 on F.Cu
+    @(47.0000 mm, 8.0000 mm): PTH pad 1 [RF_2G4_2400] of AE2
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(9.4600 mm, 14.1900 mm): PTH pad 3 [ESP_TX_RP2040_RX] of U
+    @(24.6100 mm, 6.0000 mm): PTH pad 12 [ESP_TX_RP2040_RX] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(9.4600 mm, 16.7300 mm): PTH pad 4 [RP2040_TX_ESP_RX] of U
+    @(23.1100 mm, 6.0000 mm): PTH pad 11 [RP2040_TX_ESP_RX] of U1
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(3.5000 mm, 19.2700 mm): PTH pad 3 [GPS_TX_ESP_RX] of U3
+    @(9.4600 mm, 19.2700 mm): PTH pad 5 [GPS_TX_ESP_RX] of U
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(9.4600 mm, 21.8100 mm): PTH pad 6 [VDIV_MID] of U
+    @(20.5000 mm, 30.0000 mm): Pad 2 [VDIV_MID] of R3 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(20.5000 mm, 30.0000 mm): Pad 2 [VDIV_MID] of R3 on F.Cu
+    @(22.5000 mm, 30.0000 mm): Pad 1 [VDIV_MID] of R4 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(21.5000 mm, 34.0000 mm): Pad 1 [STATUS_LED] of R5 on F.Cu
+    @(40.0000 mm, 38.0000 mm): Pad 1 [STATUS_LED] of TP5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(18.8000 mm, 34.0000 mm): Pad 2 [LED_ANODE] of D2 on F.Cu
+    @(22.5000 mm, 34.0000 mm): Pad 2 [LED_ANODE] of R5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(9.5000 mm, 30.0000 mm): Pad 2 [VCAP] of D1 on F.Cu
+    @(11.0500 mm, 34.0500 mm): Pad 1 [VCAP] of U5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(9.5000 mm, 30.0000 mm): Pad 2 [VCAP] of D1 on F.Cu
+    @(3.2500 mm, 33.5000 mm): PTH pad 1 [VCAP] of SC
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(11.0500 mm, 34.0500 mm): Pad 1 [VCAP] of U5 on F.Cu
+    @(12.9500 mm, 35.0000 mm): Pad 3 [VCAP] of U5 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(12.9500 mm, 35.0000 mm): Pad 3 [VCAP] of U5 on F.Cu
+    @(19.5000 mm, 30.0000 mm): Pad 1 [VCAP] of R3 on F.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(3.0000 mm, 6.7300 mm): PTH pad 1 [SOLAR_IN] of J
+    @(6.5000 mm, 30.0000 mm): Pad 1 [SOLAR_IN] of D1 on F.Cu
+
+** Found 0 Footprint errors **
+
+** End of Report **

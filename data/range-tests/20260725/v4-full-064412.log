@@ -1,0 +1,475 @@
+SYNC_NOT_FOUND first4=59A3F95A
+SYNC_NOT_FOUND first4=FF8D4FF2
+SYNC_NOT_FOUND first4=204BC993
+SYNC_NOT_FOUND first4=80A2189B
+SYNC_NOT_FOUND first4=A200B9F2
+SYNC_NOT_FOUND first4=A7D17508
+SYNC_NOT_FOUND first4=C7CC5920
+SYNC_OFFSET phase=55 off=0 prev=-1
+APP_CRC_FAIL exp=D0D0 got=C41B seq=2 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=5 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=8 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=11 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=14 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=16 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=18 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=20 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=22 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=24 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=26 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=28 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=30 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=32 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=34 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=36 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=38 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=40 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=42 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=44 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=46 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=48 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=50 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=52 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=55 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=58 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=61 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=63 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=65 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=68 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=70 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=72 syncOff=0
+APP_CRC_FAIL exp=D0D0 got=C41B seq=74 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=2 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=5 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=8 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=11 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=13 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=16 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=19 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=22 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=24 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=26 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=29 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=32 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=35 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=37 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=39 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=41 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=43 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=45 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=47 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=49 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=51 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=53 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=56 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=59 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=61 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=64 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=67 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=69 syncOff=0
+APP_CRC_FAIL exp=4040 got=473E seq=72 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=0 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=3 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=6 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=9 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=12 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=15 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=17 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=19 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=22 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=24 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=26 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=28 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=30 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=33 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=36 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=39 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=42 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=45 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=48 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=51 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=54 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=57 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=59 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=62 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=65 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=68 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=71 syncOff=0
+APP_CRC_FAIL exp=9595 got=13EF seq=74 syncOff=0
+PKT rx=1 seq=0 rssi=-41 phase=55 rx_ms=745677 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1784942098 tx_fw=unknown
+APP_CRC_FAIL exp=5410 got=5463 seq=5 syncOff=1
+APP_CRC_FAIL exp=3210 got=321C seq=8 syncOff=1
+APP_CRC_FAIL exp=5A10 got=5A7B seq=11 syncOff=1
+APP_CRC_FAIL exp=8A10 got=8AB5 seq=13 syncOff=1
+PKT rx=2 seq=15 rssi=-41 phase=55 rx_ms=745832 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1784942098 tx_fw=unknown
+APP_CRC_FAIL exp=FE10 got=FEE2 seq=18 syncOff=1
+APP_CRC_FAIL exp=F910 got=F9EE seq=21 syncOff=1
+APP_CRC_FAIL exp=4610 got=464B seq=23 syncOff=1
+APP_CRC_FAIL exp=4810 got=4853 seq=25 syncOff=1
+APP_CRC_FAIL exp=F710 got=F7F6 seq=27 syncOff=1
+APP_CRC_FAIL exp=2700 got=2738 seq=29 syncOff=1
+APP_CRC_FAIL exp=9810 got=989D seq=31 syncOff=1
+SYNC_NOT_FOUND first4=F175675D
+APP_CRC_FAIL exp=1810 got=1854 seq=34 syncOff=1
+APP_CRC_FAIL exp=1F10 got=1F58 seq=37 syncOff=1
+APP_CRC_FAIL exp=7910 got=7927 seq=40 syncOff=1
+APP_CRC_FAIL exp=C610 got=C682 seq=42 syncOff=1
+APP_CRC_FAIL exp=C110 got=C18E seq=45 syncOff=1
+APP_CRC_FAIL exp=0A10 got=0A7C seq=48 syncOff=1
+APP_CRC_FAIL exp=AE10 got=AE17 seq=50 syncOff=1
+APP_CRC_FAIL exp=A910 got=A91B seq=53 syncOff=1
+APP_CRC_FAIL exp=1610 got=16BE seq=55 syncOff=1
+APP_CRC_FAIL exp=1810 got=18A6 seq=57 syncOff=1
+APP_CRC_FAIL exp=A710 got=A703 seq=59 syncOff=1
+APP_CRC_FAIL exp=7710 got=77CD seq=61 syncOff=1
+APP_CRC_FAIL exp=6110 got=6172 seq=64 syncOff=1
+APP_CRC_FAIL exp=0910 got=0915 seq=67 syncOff=1
+APP_CRC_FAIL exp=D910 got=D9DB seq=69 syncOff=1
+APP_CRC_FAIL exp=6610 got=667E seq=71 syncOff=1
+APP_CRC_FAIL exp=6810 got=6866 seq=73 syncOff=1
+APP_CRC_FAIL exp=0010 got=0001 seq=74 syncOff=1
+SYNC_NOT_FOUND first4=056197CD
+TIME_STATS min=-8000ms max=1000ms avg=-931ms corrections=1
+SYNC_NOT_FOUND first4=A9F3466A
+SYNC_LOST phase=55 consecutive=3 cached_off=1
+SYNC_NOT_FOUND first4=3E9C7F32
+SYNC_NOT_FOUND first4=C0C0F980
+SYNC_NOT_FOUND first4=DECE2704
+SYNC_NOT_FOUND first4=ADF580CD
+SYNC_NOT_FOUND first4=1E9AF3F9
+SYNC_NOT_FOUND first4=7E1497BC
+SYNC_NOT_FOUND first4=5FBE7C3D
+SYNC_NOT_FOUND first4=011E546C
+SYNC_NOT_FOUND first4=E800EFE8
+SYNC_NOT_FOUND first4=00C01ADD
+SYNC_NOT_FOUND first4=D04FBFD4
+SYNC_NOT_FOUND first4=F4999617
+SYNC_NOT_FOUND first4=2C922286
+SYNC_NOT_FOUND first4=D99615F5
+SYNC_NOT_FOUND first4=55C88CCF
+SYNC_NOT_FOUND first4=4CABB4C9
+SYNC_NOT_FOUND first4=BA0F8F60
+SYNC_NOT_FOUND first4=DAC1CAC5
+SYNC_NOT_FOUND first4=012778CE
+SYNC_NOT_FOUND first4=803A983E
+SYNC_NOT_FOUND first4=DA4C44EF
+SYNC_NOT_FOUND first4=9E134D87
+SYNC_NOT_FOUND first4=86644400
+SYNC_NOT_FOUND first4=B0D88982
+SYNC_NOT_FOUND first4=5C3D8707
+SYNC_NOT_FOUND first4=7C0AF0FC
+SYNC_NOT_FOUND first4=B219F58C
+SYNC_NOT_FOUND first4=E6730425
+SYNC_NOT_FOUND first4=3A10598C
+SYNC_NOT_FOUND first4=121FE27E
+SYNC_NOT_FOUND first4=DB722590
+TIME_STATS min=-8000ms max=1000ms avg=-931ms corrections=1
+SYNC_NOT_FOUND first4=496357A0
+SYNC_NOT_FOUND first4=4B697E6E
+SYNC_NOT_FOUND first4=1F094170
+SYNC_OFFSET phase=55 off=1 prev=-1
+APP_CRC_FAIL exp=D010 got=C41B seq=0 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=1 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=2 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=3 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=4 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=5 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=6 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=7 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=8 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=9 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=10 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=11 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=12 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=13 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=14 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=15 syncOff=1
+SYNC_NOT_FOUND first4=D04E034B
+SYNC_NOT_FOUND first4=3DC1F358
+APP_CRC_FAIL exp=D010 got=C41B seq=16 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=17 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=18 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=19 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=20 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=21 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=22 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=23 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=24 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=25 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=26 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=27 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=28 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=29 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=30 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=31 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=32 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=33 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=34 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=35 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=36 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=37 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=38 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=39 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=40 syncOff=1
+APP_CRC_FAIL exp=D000 got=C41B seq=41 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=42 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=43 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=44 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=45 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=46 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=47 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=48 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=49 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=50 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=51 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=52 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=53 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=54 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=55 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=56 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=57 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=58 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=59 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=60 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=61 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=62 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=63 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=64 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=65 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=66 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=67 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=68 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=69 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=70 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=71 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=72 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=73 syncOff=1
+APP_CRC_FAIL exp=D010 got=C41B seq=74 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=0 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=1 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=2 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=3 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=4 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=5 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=6 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=7 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=8 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=9 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=10 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=11 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=12 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=13 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=14 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=15 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=16 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=17 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=18 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=19 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=20 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=21 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=22 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=23 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=24 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=25 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=26 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=27 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=28 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=29 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=30 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=31 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=32 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=33 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=34 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=35 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=36 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=37 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=38 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=39 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=40 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=41 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=42 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=43 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=44 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=45 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=46 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=47 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=48 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=49 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=50 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=51 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=52 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=53 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=54 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=55 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=56 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=57 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=58 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=59 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=60 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=61 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=62 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=63 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=64 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=65 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=66 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=67 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=68 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=69 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=70 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=71 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=72 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=73 syncOff=1
+APP_CRC_FAIL exp=4010 got=473E seq=74 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=0 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=1 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=2 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=3 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=4 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=5 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=6 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=7 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=8 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=9 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=10 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=11 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=12 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=13 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=14 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=15 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=16 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=17 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=18 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=19 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=20 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=21 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=22 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=23 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=24 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=25 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=26 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=27 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=28 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=29 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=30 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=31 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=32 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=33 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=34 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=35 syncOff=1
+SYNC_NOT_FOUND first4=9557A668
+APP_CRC_FAIL exp=9510 got=13EF seq=36 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=37 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=38 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=39 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=40 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=41 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=42 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=43 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=44 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=45 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=46 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=47 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=48 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=49 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=50 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=51 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=52 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=53 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=54 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=55 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=56 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=57 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=58 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=59 syncOff=1
+APP_CRC_FAIL exp=9500 got=13EF seq=60 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=61 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=62 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=63 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=64 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=65 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=66 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=67 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=68 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=69 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=70 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=71 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=72 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=73 syncOff=1
+APP_CRC_FAIL exp=9510 got=13EF seq=74 syncOff=1
+SYNC_NOT_FOUND first4=958B8116
+APP_CRC_FAIL exp=F410 got=F41C seq=0 syncOff=1
+APP_CRC_FAIL exp=2310 got=23DE seq=1 syncOff=1
+APP_CRC_FAIL exp=4B10 got=4BB9 seq=2 syncOff=1
+APP_CRC_FAIL exp=9C10 got=9C7B seq=3 syncOff=1
+APP_CRC_FAIL exp=9B10 got=9B77 seq=4 syncOff=1
+APP_CRC_FAIL exp=4C10 got=4CB5 seq=5 syncOff=1
+APP_CRC_FAIL exp=2410 got=24D2 seq=6 syncOff=1
+TIME_DIFF gps_utc=1784942172 laptop_utc=1784942172 offset=0
+PKT rx=3 seq=7 rssi=-41 phase=55 rx_ms=819720 tx_lat=0.00000 tx_lon=0.00000 sats=0 fix=0 utc=1784942172 tx_fw=unknown
+APP_CRC_FAIL exp=2A10 got=2B37 seq=8 syncOff=1
+APP_CRC_FAIL exp=9510 got=956F seq=10 syncOff=1
+APP_CRC_FAIL exp=4210 got=42AD seq=11 syncOff=1
+APP_CRC_FAIL exp=4510 got=45A1 seq=12 syncOff=1
+APP_CRC_FAIL exp=9210 got=9263 seq=13 syncOff=1
+APP_CRC_FAIL exp=FA10 got=FA04 seq=14 syncOff=1
+APP_CRC_FAIL exp=2D10 got=2DC6 seq=15 syncOff=1
+APP_CRC_FAIL exp=5910 got=5991 seq=16 syncOff=1
+APP_CRC_FAIL exp=8E10 got=8E53 seq=17 syncOff=1
+APP_CRC_FAIL exp=E610 got=E634 seq=18 syncOff=1
+APP_CRC_FAIL exp=3110 got=31F6 seq=19 syncOff=1
+APP_CRC_FAIL exp=3610 got=36FA seq=20 syncOff=1
+APP_CRC_FAIL exp=E110 got=E138 seq=21 syncOff=1
+APP_CRC_FAIL exp=8910 got=895F seq=22 syncOff=1
+APP_CRC_FAIL exp=5E00 got=5E9D seq=23 syncOff=1
+APP_CRC_FAIL exp=8710 got=8747 seq=24 syncOff=1
+APP_CRC_FAIL exp=5010 got=5085 seq=25 syncOff=1
+APP_CRC_FAIL exp=3810 got=38E2 seq=26 syncOff=1
+SYNC_NOT_FOUND first4=E25640E8
+APP_CRC_FAIL exp=EF10 got=EF20 seq=27 syncOff=1
+APP_CRC_FAIL exp=E810 got=E82C seq=28 syncOff=1
+APP_CRC_FAIL exp=3F10 got=3FEE seq=29 syncOff=1
+APP_CRC_FAIL exp=5710 got=5789 seq=30 syncOff=1
+APP_CRC_FAIL exp=8000 got=804B seq=31 syncOff=1
+APP_CRC_FAIL exp=BF10 got=BF27 seq=32 syncOff=1
+APP_CRC_FAIL exp=6810 got=68E5 seq=33 syncOff=1
+APP_CRC_FAIL exp=0010 got=0082 seq=34 syncOff=1
+APP_CRC_FAIL exp=D710 got=D740 seq=35 syncOff=1
+APP_CRC_FAIL exp=D010 got=D04C seq=36 syncOff=1
+APP_CRC_FAIL exp=0710 got=078E seq=37 syncOff=1
+APP_CRC_FAIL exp=6F10 got=6FE9 seq=38 syncOff=1
+APP_CRC_FAIL exp=B810 got=B82B seq=39 syncOff=1
+APP_CRC_FAIL exp=6110 got=61F1 seq=40 syncOff=1
+APP_CRC_FAIL exp=B610 got=B633 seq=41 syncOff=1
+APP_CRC_FAIL exp=DE10 got=DE54 seq=42 syncOff=1
+APP_CRC_FAIL exp=0910 got=0996 seq=43 syncOff=1
+APP_CRC_FAIL exp=0E10 got=0E9A seq=44 syncOff=1
+APP_CRC_FAIL exp=D910 got=D958 seq=45 syncOff=1
+APP_CRC_FAIL exp=B110 got=B13F seq=46 syncOff=1
+APP_CRC_FAIL exp=6610 got=66FD seq=47 syncOff=1
+APP_CRC_FAIL exp=1210 got=12AA seq=48 syncOff=1
+APP_CRC_FAIL exp=C510 got=C568 seq=49 syncOff=1
+APP_CRC_FAIL exp=B610 got=B6C1 seq=50 syncOff=1
+APP_CRC_FAIL exp=6110 got=6103 seq=51 syncOff=1
+APP_CRC_FAIL exp=6610 got=660F seq=52 syncOff=1
+APP_CRC_FAIL exp=B110 got=B1CD seq=53 syncOff=1
+APP_CRC_FAIL exp=D910 got=D9AA seq=54 syncOff=1
+APP_CRC_FAIL exp=0E10 got=0E68 seq=55 syncOff=1
+APP_CRC_FAIL exp=D710 got=D7B2 seq=56 syncOff=1
+APP_CRC_FAIL exp=0010 got=0070 seq=57 syncOff=1
+APP_CRC_FAIL exp=6810 got=6817 seq=58 syncOff=1
+APP_CRC_FAIL exp=BF10 got=BFD5 seq=59 syncOff=1
+APP_CRC_FAIL exp=B810 got=B8D9 seq=60 syncOff=1
+APP_CRC_FAIL exp=6F10 got=6F1B seq=61 syncOff=1
+APP_CRC_FAIL exp=0710 got=077C seq=62 syncOff=1
+APP_CRC_FAIL exp=D010 got=D0BE seq=63 syncOff=1
+APP_CRC_FAIL exp=7910 got=79A4 seq=64 syncOff=1
+APP_CRC_FAIL exp=AE10 got=AE66 seq=65 syncOff=1
+APP_CRC_FAIL exp=C610 got=C601 seq=66 syncOff=1
+APP_CRC_FAIL exp=1110 got=11C3 seq=67 syncOff=1
+APP_CRC_FAIL exp=1610 got=16CF seq=68 syncOff=1
+APP_CRC_FAIL exp=C110 got=C10D seq=69 syncOff=1
+APP_CRC_FAIL exp=A910 got=A96A seq=70 syncOff=1
+APP_CRC_FAIL exp=7E10 got=7EA8 seq=71 syncOff=1
+APP_CRC_FAIL exp=A710 got=A772 seq=72 syncOff=1
+APP_CRC_FAIL exp=7010 got=70B0 seq=73 syncOff=1
+APP_CRC_FAIL exp=1810 got=18D7 seq=74 syncOff=1

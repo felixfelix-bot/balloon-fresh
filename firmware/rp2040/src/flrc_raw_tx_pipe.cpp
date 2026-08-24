@@ -1,4 +1,8 @@
 /*
+ * DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
+ * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+ * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
+ *
  * flrc_raw_tx_pipe.cpp — RP2040 FLRC TX with FIFO pipelining (v5)
  *
  * Based on v4 (flrc_raw_tx.cpp) with pipelined TX:
@@ -290,47 +294,35 @@ static void runTransmit() {
             pkt[2] = (uint8_t)((i + 1) >> 8);
             pkt[3] = (uint8_t)((i + 1) & 0xFF);
 
-            // 2. Wait for BUSY LOW (chip back in STDBY after TX)
+            // 2. After IRQ pin HIGH the chip is already in STDBY (BUSY LOW).
+            //    Wait once before the first command after the IRQ, then rely on
+            //    command-to-command timing for the remaining short commands.
             rfWaitBusy();
 
-            // 3. CLR_IRQ + CLR_TX_FIFO + CLEAR_ERRORS (separate CS per command)
-            //    SX1280 requires one command per CS assertion — combining
-            //    multiple commands in one CS causes only the first to execute,
-            //    leaving CLR_TX_FIFO unexecuted so the FIFO is not cleared
-            //    and the chip reads stale data (wrong sequence numbers).
-
-            // CLR_IRQ: 0x01 0x16 0xFF 0xFF 0xFF 0xFF
-            digitalWrite(PIN_CS, LOW);
-            spiRf.transfer(0x01); spiRf.transfer(0x16);
-            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
-            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
-            digitalWrite(PIN_CS, HIGH);
-            rfWaitBusy();
-
-            // CLR_TX_FIFO: 0x01 0x1F
-            digitalWrite(PIN_CS, LOW);
-            spiRf.transfer(0x01); spiRf.transfer(0x1F);
-            digitalWrite(PIN_CS, HIGH);
-            rfWaitBusy();
-
-            // CLEAR_ERRORS: 0x01 0x11 0x00 0x00
-            digitalWrite(PIN_CS, LOW);
-            spiRf.transfer(0x01); spiRf.transfer(0x11);
-            spiRf.transfer(0x00); spiRf.transfer(0x00);
-            digitalWrite(PIN_CS, HIGH);
-            rfWaitBusy();
-
-            // 4. WRITE_TX_FIFO: header + payload (ONE CS assertion)
+            // 3. WRITE_TX_FIFO: header + payload (ONE CS assertion).
+            //    LR2021 clears the TX FIFO automatically on TX_DONE, so the
+            //    explicit CLR_TX_FIFO command is redundant in the hot loop.
+            //    CLEAR_ERRORS is also removed here: DIO9 is configured to only
+            //    TX_DONE, so no error IRQ fires in this path; errors are handled
+            //    at init / in the timeout branch if needed.
             digitalWrite(PIN_CS, LOW);
             spiRf.transfer(0x00);  // FIFO write command
             spiRf.transfer(0x02);  // offset 0
             for (int j = 0; j < FLRC_PKT_SIZE; j++) spiRf.transfer(pkt[j]);
             digitalWrite(PIN_CS, HIGH);
 
-            // Wait for FIFO write to complete
-            rfWaitBusy();
+            // 4. Clear the previous TX_DONE IRQ AFTER the FIFO write and BEFORE
+            //    the next SET_TX. The long FIFO write keeps BUSY low, so no
+            //    extra wait is needed before this short command.
+            digitalWrite(PIN_CS, LOW);
+            spiRf.transfer(0x01); spiRf.transfer(0x16);
+            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            spiRf.transfer(0xFF); spiRf.transfer(0xFF);
+            digitalWrite(PIN_CS, HIGH);
 
-            // 5. SET_TX — trigger next TX, BUSY goes HIGH
+            // 5. SET_TX — trigger next TX, BUSY goes HIGH.
+            //    The 257-byte FIFO write keeps the SPI bus busy long enough that
+            //    BUSY is already LOW when we assert CS; skip the explicit wait.
             digitalWrite(PIN_CS, LOW);
             for (int j = 0; j < 5; j++) spiRf.transfer(setTxCmd[j]);
             digitalWrite(PIN_CS, HIGH);

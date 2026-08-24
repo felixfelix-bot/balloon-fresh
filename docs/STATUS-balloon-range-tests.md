@@ -66,6 +66,10 @@ differs between bitrate windows at same distance. If identical → switch not wo
 - All pushed to: ngit + GitHub (felixfelix-bot/balloon-fresh)
 - Working tree: clean
 
+## Discovery Sync Log
+
+- **2026-07-30**: circuit-design — clearance-aware routing rewrite + DRC analysis tooling [PROTOCOL, TEST]. Informational. Relevant when custom PCBs arrive: F33 variant (2W PA, +33 dBm) will need separate range characterization vs dev boards. DRC-clean routing = can rule out PCB shorts as RF degradation cause. No action needed now — current boards are RP2040 dev boards.
+
 ## Next Steps (Physical — Operator Required)
 
 1. Flash sweep firmware on both boards (rp2040-range-tx-sweep + rp2040-range-rx-sweep)

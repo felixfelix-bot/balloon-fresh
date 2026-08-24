@@ -65,7 +65,7 @@ struct BandConfig {
 };
 
 static const BandConfig bands[] = {
-    {868.0f,  22, "868"},
+    {2440.0f, 22, "2440"},
 };
 static const int bandCount = sizeof(bands) / sizeof(bands[0]);
 
@@ -210,6 +210,7 @@ extern "C" void app_main() {
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     hal = new EspHalC3(LR2021_SCK, LR2021_MISO, LR2021_MOSI);
+    hal->init();
     hal->setCsPin(LR2021_NSS);
     hal->setBusyPin(LR2021_BUSY);
     mod = new Module(hal, LR2021_NSS, LR2021_DIO9, LR2021_RST, LR2021_BUSY);

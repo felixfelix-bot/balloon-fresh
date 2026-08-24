@@ -51,8 +51,9 @@ TheClams calls `calib_fe(&[])` with empty freqs (uses defaults).
    - byte3 = (coding_rate << 4) | pulse_shape
    - CR: Cr12=0, Cr34=1, None=2, Cr23=3
    - PulseShape: None=0, Bt0p3=4, Bt0p5=5, Bt0p7=6, Bt1p0=7
-   - Br2600 + None + Bt1p0 → `{0x02, 0x48, 0x00, 0x27}`
    - Br2600 + None + Bt0p5 → `{0x02, 0x48, 0x00, 0x25}`
+   - Br2600 + None + Bt1p0 → `{0x02, 0x48, 0x00, 0x27}`
+   - We use BT0.5 (0x05) on both RP2040 and ESP32 for cross-platform compatibility.
 7. SET_FLRC_SYNCWORD (0x024C): up to 3 sync words, 32-bit each
    - `{0x02, 0x4C, sw_num, sync_hi, sync_mid_hi, sync_mid_lo, sync_lo}`
    - TheClams: sw1=0xCD05CAFE, sw2=0x12345678, sw3=0x9ABCDEF0
@@ -125,7 +126,7 @@ rxfreq_no_fe_cal (no front-end calibration for this frequency)
 | CALIBRATE | 0x6F (bit 5 undefined) | 0x5F (defined bits only) | ⚠️ MAYBE |
 | SET_STANDBY | Called (0x0128) | NOT called by reference | ⚠️ EXTRA |
 | SET_PACKET_TYPE | FLRC=5 ✓ | FLRC=5 ✓ | ✓ |
-| FLRC_MOD_PARAMS | 0x25 (CR_None, Bt0p5) | 0x27 (CR_None, Bt1p0) | ⚠️ DIFFERENT |
+| FLRC_MOD_PARAMS | 0x25 (CR_None, Bt0p5) | 0x25 (CR_None, Bt0p5) | ✅ Unified |
 | FLRC_PACKET_PARAMS | Fixed, CRC Off | Dynamic, CRC24 | ⚠️ DIFFERENT |
 | FLRC_SYNCWORD | Not verified | 0xCD05CAFE slot 1 | ⚠️ CHECK |
 | SET_FALLBACK | STBY_RC=1 | Fs=3 | ⚠️ DIFFERENT |
@@ -152,7 +153,7 @@ Rewrite rawInitRadio() to match TheClams exact sequence:
 4. CALIBRATE (0x5F, not 0x6F)
 5. CALIB_FE (defaults)
 6. SET_PACKET_TYPE (FLRC=5)
-7. SET_FLRC_MODULATION (Br2600, None, Bt1p0 → 0x27)
+7. SET_FLRC_MODULATION (Br2600, None, Bt0p5 → 0x25)
 8. SET_FLRC_SYNCWORD (sw1=0xCD05CAFE)
 9. SET_FLRC_PACKET (16b preamble, 32b SW, SwTx=1, Match1, Dynamic, CRC24)
 10. SET_RX_TX_FALLBACK (Fs=3)

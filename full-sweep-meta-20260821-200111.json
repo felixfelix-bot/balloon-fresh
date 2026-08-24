@@ -1,0 +1,21 @@
+{
+ "session": 2608212001,
+ "started": "2026-08-21T20:01:11.381190",
+ "operator": "Felix",
+ "rig": "e80-stm32",
+ "env": "bench",
+ "fw_flashed_on_boards": "88a00cf (buf/t5a-rx-pcrc16 tip)",
+ "fw_source_commit": "",
+ "tx": {
+  "hw": "E80 STM32F103 + LR2021-class module",
+  "port": "/dev/ttyUSB5"
+ },
+ "rx": {
+  "hw": "E80 STM32F103 + LR2021-class module",
+  "port": "/dev/ttyUSB3"
+ },
+ "band": "868 MHz sub-GHz",
+ "antennas": "SMA, ~30 cm apart",
+ "packets_per_config": 50,
+ "integrity_note": "pre-Match123-fix fw: trust bit_err (PRBS-15), not crc_ok, for FLRC"
+}

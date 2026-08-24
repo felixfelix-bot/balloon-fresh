@@ -1,0 +1,20 @@
+### Footprint positions - created on 2026-07-30T05:25:00+0530 ###
+### Printed by KiCad version 9.0.8+dfsg-1
+## Unit = inches, Angle = deg.
+## Side : All
+# Ref     Val              Package                               PosX       PosY       Rot  Side
+C8        100uF            C_1206_3216Metric                   0.7087    -1.4567    0.0000  top
+C9        10uF             C_0805_2012Metric                   0.7087    -0.7480    0.0000  top
+C10       100nF            C_0402_1005Metric                   0.6299    -0.7480    0.0000  top
+D1        BAT54            D_SOD-123                           0.1969    -1.5748    0.0000  top
+J1        SMA-868          SMA_Edge_Mount                      0.0787    -1.1024    0.0000  top
+J2        SMA-2G4          SMA_Edge_Mount                      2.8740    -1.1024    0.0000  top
+J3        SOLAR            PinHeader_1x02_P2.54mm_Vertical     0.1575    -1.8898    0.0000  top
+SC        1F_5.5V          CP_Radial_D8.0mm_P3.50mm            0.3937    -1.8898    0.0000  top
+U         ESP32-C3-Mini-1  ESP32-C3_Mini_V1_Header             0.4724    -0.5906    0.0000  top
+U1        RP2040-Zero      PinHeader_1x14_P2.54mm_Vertical     2.4803    -0.5906    0.0000  top
+U2        LoRa2021F33-2G4  LoRa2021F33_2G4                     1.4764    -1.1024    0.0000  top
+U3        MAX-M10S         PinHeader_1x04_P2.54mm_Vertical     0.2362    -1.7717    0.0000  top
+U4        MS5611           PinHeader_1x04_P2.54mm_Vertical     2.6772    -1.7717    0.0000  top
+U5        TPS7A02          SOT-23-5                            0.3150    -1.5748    0.0000  top
+## End

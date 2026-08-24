@@ -30,6 +30,7 @@
 #include <SPI.h>
 #include <stdarg.h>
 #include <string.h>
+#include <Adafruit_NeoPixel.h>
 
 // ─── Firmware self-identification (injected at build time) ───────────
 #ifndef FW_GIT_HASH
@@ -73,7 +74,20 @@ static void printBootBanner() {
 #define PIN_IRQ     7
 #define PIN_RST     8
 #undef PIN_LED
-#define PIN_LED     25
+#define PIN_NEOPIXEL 16   // Waveshare RP2040-Zero onboard WS2812
+#define PIN_LED       25   // Standard Pi Pico (fallback, no-op on RP2040-Zero)
+
+// Single NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
+Adafruit_NeoPixel statusLED(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+// LED color helper — show status as visible colors
+void ledColor(uint8_t r, uint8_t g, uint8_t b) {
+    statusLED.setPixelColor(0, statusLED.Color(r, g, b));
+    statusLED.show();
+}
+
+// Timestamp of last valid packet received (for green LED status)
+static uint32_t lastPacketMs = 0;
 
 #define SPI_FREQ_HZ  20000000UL
 #define XTAL_MHZ     52.0f
@@ -184,7 +198,7 @@ static void buildInterleaveTable() {
     // V4: Channel sweep — FLRC-1300-64B at every WiFi channel + 868MHz sub-band
     for (int f = 0; f < NUM_SWEEP_FREQS_HF; f++) {
         Phase &exp = interleavePhases[idx];
-        exp = phases[3];  // HF-FLRC-1300 base
+        exp = phases[4];  // HF-FLRC-1300 base (phases[4] = HF-FLRC-1300)
         exp.freqMHz = SWEEP_FREQS_HF[f];
         exp.pktSize = 64;
         exp.pktCount = 100;
@@ -195,7 +209,7 @@ static void buildInterleaveTable() {
     }
     for (int f = 0; f < NUM_SWEEP_FREQS_LF; f++) {
         Phase &exp = interleavePhases[idx];
-        exp = phases[11];  // LF-FLRC-1300 base
+        exp = phases[12];  // LF-FLRC-1300 base (phases[12] = LF-FLRC-1300)
         exp.freqMHz = SWEEP_FREQS_LF[f];
         exp.pktSize = 64;
         exp.pktCount = 100;
@@ -392,17 +406,14 @@ static void rfWriteCmd(const uint8_t *cmd, size_t len) {
 }
 
 static uint32_t rfReadIrqStatus() {
+    // MUST be single CS-low transaction: opcode + dummy bytes in one NSS-low
+    // window. Splitting CS toggle between send+read makes the chip forget the
+    // command -> all reads return 0x00 (silent packet drops). [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
-    spiRf.transfer(0x01); spiRf.transfer(0x17);
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
+    spiRf.transfer(0x01); spiRf.transfer(0x17);  // GET_IRQ_STATUS opcode
     uint8_t buf[6] = {0};
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 6; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -455,17 +466,12 @@ static uint16_t crc16(const uint8_t *data, size_t len) {
 //   buf[3] = SNR (signed)            → dB = val<128 ? val/4 : (val-256)/4
 //   (verified against RadioLib SX128x source + lr2021-complete-learnings)
 static int16_t rfGetLoraRssi() {
+    // Single CS-low transaction: opcode + dummy bytes read in one window [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x02); spiRf.transfer(0x2A);  // GET_LORA_PACKET_STATUS
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
     uint8_t buf[8];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 8; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -493,18 +499,13 @@ static int16_t rfGetLoraRssi() {
 //   raw = (buf[4] << 1) | ((buf[6] & 0x04) >> 2)
 //   rssiAvg = raw / -2.0  → dBm (float)
 static int16_t rfGetFlrcRssi() {
+    // Single CS-low transaction: opcode + dummy bytes read in one window [ESP32 19f6443]
     rfWaitBusy();
     spiRf.beginTransaction(spiSettings);
     digitalWrite(PIN_CS, LOW);
     spiRf.transfer(0x02); spiRf.transfer(0x4B);  // GET_FLRC_PACKET_STATUS
-    digitalWrite(PIN_CS, HIGH);
-    spiRf.endTransaction();
-    rfWaitBusy();
-
     // Response: [stat_msb][stat_lsb][pktLen_msb][pktLen_lsb][rssiAvg][rssiSync][flags]
     uint8_t buf[7];
-    spiRf.beginTransaction(spiSettings);
-    digitalWrite(PIN_CS, LOW);
     for (int i = 0; i < 7; i++) buf[i] = spiRf.transfer(0x00);
     digitalWrite(PIN_CS, HIGH);
     spiRf.endTransaction();
@@ -572,26 +573,6 @@ static void rfCalibrate(float freqMHz, uint8_t rfPath) {
     delay(5);
 }
 
-// ─── Channel sweep: cycle HF/LF frequencies per UTC cycle ──────────
-static const float HF_CHANNELS[] = {
-    2422.0, 2437.0, 2440.0, 2452.0, 2462.0, 2478.0, 2483.0,
-};
-#define NUM_HF_CHANNELS 7
-static const float LF_CHANNELS[] = {
-    863.0, 865.0, 867.0, 868.0, 869.5,
-};
-#define NUM_LF_CHANNELS 5
-static bool channelSweepMode = true;
-static float currentChanFreq = 0;
-
-static float getChannelFreq(uint8_t rfPath, uint32_t utcSec) {
-    if (!channelSweepMode) return 0;
-    uint32_t divisor = (totalCycleSec > 0) ? totalCycleSec : 158;
-    uint32_t cycle = utcSec / divisor;
-    if (rfPath == 1) return HF_CHANNELS[cycle % NUM_HF_CHANNELS];
-    else return LF_CHANNELS[cycle % NUM_LF_CHANNELS];
-}
-
 static void rfInitForPhaseRX(const Phase &p) {
     rfResetAndStandby();
 
@@ -599,14 +580,8 @@ static void rfInitForPhaseRX(const Phase &p) {
     { uint8_t c[] = {0x02, 0x07, p.pktType}; rfWriteCmd(c, 3); }
     delay(1);
 
-    // SET_RF_FREQUENCY — channel sweep overrides phase table freq
-    float useFreq = p.freqMHz;
-    if (channelSweepMode) {
-        float chanFreq = getChannelFreq(p.rfPath, getUtcNow());
-        if (chanFreq > 0) useFreq = chanFreq;
-    }
-    currentChanFreq = useFreq;
-    rfSetFreq(useFreq);
+    // SET_RF_FREQUENCY — use phase table freq directly (matches TX)
+    rfSetFreq(p.freqMHz);
     delay(1);
 
     // SET_RX_PATH — MANDATORY: HF=1, LF=0
@@ -616,11 +591,11 @@ static void rfInitForPhaseRX(const Phase &p) {
     // Fix 3: LoRa config debug dump — walk test showed near-zero LoRa packets
     // with noise-floor RSSI. This verifies path/modulation params are correct.
     if (p.pktType == PT_LORA) {
-        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d freq=%.1f\n", p.rfPath, p.bwCode, p.sf, useFreq);
+        dualPrintf("LORA_CFG path=%d bw=0x%02X sf=%d freq=%.1f\n", p.rfPath, p.bwCode, p.sf, p.freqMHz);
     }
 
     // Calibrate (MANDATORY for RX)
-    rfCalibrate(useFreq, p.rfPath);
+    rfCalibrate(p.freqMHz, p.rfPath);
 
     if (p.pktType == PT_LORA) {
         // SET_LORA_MODULATION_PARAMS (0x0220)
@@ -657,7 +632,11 @@ static void rfInitForPhaseRX(const Phase &p) {
         delay(1);
 
         // SET_FLRC_PACKET_PARAMS (0x0249)
-        { uint8_t c[] = {0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
+        // byte2: 0x0E = agc_pbl_len=3 (16-bit preamble) | sw_len=2 (32-bit sync word)
+        // byte3: 0x7C = crc=10 (CRC24) | pkt_format=1 (Fixed) | sw_match=111 (Match123)
+        //   was 0x4C (crc=01 CRC16-off, pkt_format=0 Dynamic, sw_match=100 Match1)
+        //   matched TheClams reference: CRC24 + Match123, keep Fixed format
+        { uint8_t c[] = {0x02, 0x49, 0x0E, 0x7C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
         delay(1);
     }
 
@@ -749,6 +728,9 @@ static void rxPacketPoll(int phaseIdx) {
     if (irq & 0x00200000) {
         // CRC error
         rxCrcErrors++;
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -757,6 +739,9 @@ static void rxPacketPoll(int phaseIdx) {
 
     if (!(irq & 0x00040000)) {
         // Other IRQ source — clear and re-arm RX
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -815,6 +800,9 @@ static void rxPacketPoll(int phaseIdx) {
                 lastSyncOffset[phaseIdx] = -1;
             }
         }
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -878,6 +866,9 @@ static void rxPacketPoll(int phaseIdx) {
         dualPrintf("SYNC_OOB gpsOff=%d crcLen=%d readLen=%d — skipping\n",
                    gpsOff, crcLen, readLen);
         rxGarbageCount++;
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -890,6 +881,9 @@ static void rxPacketPoll(int phaseIdx) {
         rxCrcErrors++;
         dualPrintf("APP_CRC_FAIL exp=%04X got=%04X seq=%u syncOff=%d pSz=%d\n",
                    expectedCrc, actualCrc, seq, syncOffset, pktSize);
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
@@ -910,10 +904,33 @@ static void rxPacketPoll(int phaseIdx) {
                    pktLatE7/1e7f, pktLonE7/1e7f, txSats, seq, syncOffset);
         rxGarbageCount++;
         // Treat as garbage — do NOT count as a valid packet
+        // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+        { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+        delay(1);
         rfClearRxFifo();
         rfClearIrq();
         rfSetRx();
         return;
+    }
+
+    // ─── V4: TX GPS-searching beacon detection ────────────────────
+    // TX sends phaseId=0xFE when it has laptop time but GPS hasn't locked.
+    // Lets RX know TX is alive. Don't count as normal sweep packet.
+    {
+        uint8_t beaconId = rxBuf[gpsOff + 15];
+        if (beaconId == 0xFE) {
+            uint16_t txUptime = ((uint16_t)rxBuf[gpsOff + 16] << 8)
+                              | rxBuf[gpsOff + 17];
+            dualPrintf("TX_ALIVE searching_for_gps sats=%u uptime=%u\n",
+                       txSats, txUptime);
+            // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+            { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+            delay(1);
+            rfClearRxFifo();
+            rfClearIrq();
+            rfSetRx();
+            return;
+        }
     }
 
     if (seq < MAX_SEQ) {
@@ -930,8 +947,12 @@ static void rxPacketPoll(int phaseIdx) {
     // V4: Read phase ID from packet and sync to TX's actual phase.
     // This breaks the chicken-and-egg: once any packet decodes, RX jumps
     // to TX's phase instead of relying on drifting millis() clock.
+    // FIX: Only accept FORWARD phase jumps (monotonic) to prevent bounce
+    // at phase boundaries where late packets from previous phase arrive.
     uint8_t txPhaseId = rxBuf[gpsOff + 15];
-    if (txPhaseId != currentPhase && txPhaseId < numInterleavePhases) {
+    bool isForward = (txPhaseId > currentPhase) ||
+                     (currentPhase > numInterleavePhases - 5 && txPhaseId < 5);
+    if (txPhaseId != currentPhase && txPhaseId < numInterleavePhases && isForward) {
         dualPrintf("PHASE_SYNC old=%d new=%d (from TX packet)\n", currentPhase, txPhaseId);
         currentPhase = txPhaseId;
         const Phase &np = *getPhaseEntry(currentPhase);
@@ -1032,8 +1053,13 @@ static void rxPacketPoll(int phaseIdx) {
                    berTotal > 0 ? (double)berErrors / berTotal : 0.0);
     }
 
-    digitalWrite(PIN_LED, (rxReceived & 1) ? HIGH : LOW);
+    // NeoPixel status — green pulse on each received packet
+    lastPacketMs = millis();
+    ledColor(0, 255, 0);   // Green: packet received
 
+    // Force radio to STANDBY before re-entering RX (prevents stuck-RX bug, V3 commit 9d7f2ce)
+    { uint8_t c[] = {0x01, 0x04, 0x00}; rfWriteCmd(c, 3); }  // SET_STANDBY (STDBY_XOSC)
+    delay(1);
     rfClearRxFifo();
     rfClearIrq();
     rfSetRx();
@@ -1057,6 +1083,17 @@ void setup() {
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
     digitalWrite(PIN_LED, LOW);
+
+    // Init NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
+    statusLED.begin();
+    statusLED.show();  // Turn off
+    // Boot strobe: blue flash 6x — confirms firmware is alive
+    for (int i = 0; i < 6; i++) {
+        ledColor(0, 0, 255);   // Blue
+        delay(100);
+        ledColor(0, 0, 0);     // Off
+        delay(100);
+    }
 
     spiRf.begin();
 
@@ -1094,11 +1131,11 @@ void setup() {
     }
 
     dualPrintf("=== AUTO START IN 8s ===\n");
-    // LED blink countdown
+    // NeoPixel countdown — yellow blink during startup delay
     for (int i = 8; i > 0; i--) {
         dualPrintf("  Starting in %d...\n", i);
-        digitalWrite(PIN_LED, HIGH); delay(400);
-        digitalWrite(PIN_LED, LOW);  delay(600);
+        ledColor(255, 200, 0);  delay(400);  // Yellow
+        ledColor(0, 0, 0);       delay(600);  // Off
     }
     dualPrintf("=== STARTING RX SWEEP ===\n");
 }
@@ -1124,6 +1161,9 @@ void loop() {
 
     // If we don't have UTC time yet, wait for it
     if (utcOffset == 0) {
+        // Red blink while waiting for time sync
+        bool on = ((millis() % 1000) < 500);
+        ledColor(on ? 255 : 30, 0, 0);
         if (lastWaitingPrintMs == 0 || (millis() - lastWaitingPrintMs) >= 5000) {
             dualPrintf("WAITING_FOR_TIME_SYNC uptime=%lu\n", (unsigned long)millis());
             lastWaitingPrintMs = millis();
@@ -1192,6 +1232,18 @@ void loop() {
 
     // Still in the same phase — poll for ONE packet (non-blocking)
     rxPacketPoll(phase);
+
+    // ─── NEOPIXEL STATUS LED ─────────────────────────────────────────
+    // Green = packet received recently. Yellow = RX active, waiting.
+    {
+        if (lastPacketMs > 0 && (millis() - lastPacketMs) < 1000) {
+            ledColor(0, 255, 0);   // Green: actively receiving
+        } else {
+            // Yellow blink at 2Hz while listening
+            bool on = ((millis() % 500) < 250);
+            ledColor(on ? 255 : 30, on ? 200 : 20, 0);
+        }
+    }
 
     // No delay needed — rxPacketPoll returns instantly if no IRQ.
     // loop() is called again immediately, recomputing phase from UTC.

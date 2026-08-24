@@ -1,0 +1,135 @@
+(base) c08rad0r@T14Gen5:~/Documents/balloon-fresh$ cd firmware/e80-stm32-bench
+(base) c08rad0r@T14Gen5:~/Documents/balloon-fresh/firmware/e80-stm32-bench$ make tx
+╔══════════════════════════════════════════════╗
+║  E80 TX MODE — waiting for T0               ║
+╠══════════════════════════════════════════════╣
+║  T0:           1787509200 (epoch)
+║  SESSION_ID:   2608231820
+║  Configs:      /home/c08rad0r/Documents/balloon-fresh/configs/outdoor-10.json
+║  Band:         868 MHz
+║  Prime discard: 2
+╚══════════════════════════════════════════════╝
+T0 in 120s (2m 0s). RX operator should run: make rx
+
+cd /home/c08rad0r/Documents/balloon-fresh/firmware/e80-stm32-bench && python3 /home/c08rad0r/Documents/balloon-fresh/firmware/e80-stm32-bench/tools/e80_bench_ctl.py --mode tx \
+	--t0 1787509200 \
+	--session-id 2608231820 \
+	--configs "/home/c08rad0r/Documents/balloon-fresh/configs/outdoor-10.json" \
+	--tx-log "tx-log.csv" \
+	--prime-discard 2 \
+	--skip-fw-check
+== DISTRIBUTED TX MODE ==
+  T0:         2026-08-23T20:20:00
+  Port:       /dev/ttyUSB0
+  Probe:      148757200D2D1425
+  Session ID: 2608231820
+  Configs:    5
+
+  [1/5] FLRC-650 LEN64 N=10 LEN=64 start=T0+00:02:00
+  [2/5] FLRC-2600 LEN64 N=10 LEN=64 start=T0+00:02:42
+  [3/5] LoRa-SF7 BW125 LEN64 N=10 LEN=64 start=T0+00:03:24
+  [4/5] LoRa-SF12 BW125 LEN64 N=10 LEN=64 start=T0+00:04:07
+  [5/5] FLRC-650 LEN255 N=10 LEN=255 start=T0+00:05:17
+
+  [/dev/ttyUSB0] SESSION 2608231820 -> OK SESSION 2608231820
+  [/dev/ttyUSB0] CONFIG 0 1 -> OK CONFIG 0 1
+  [/dev/ttyUSB0] MOD FLRC 650 10 -> CONFIG_START,0,1,319134
+  [/dev/ttyUSB0] MOD FLRC 650 10 -> OK MOD flrc br=650000 pa=10
+  [/dev/ttyUSB0] FREQ 868000000 -> OK FREQ 868000000
+  [/dev/ttyUSB0] ROLE TX -> OK ROLE TX (TX INHIBITED - SEND 'ARM TX' TO ENABLE)
+  [/dev/ttyUSB0] ARM TX -> OK ARMED (TX ENABLED)
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=5000 -> NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=5000 -> OK START n=12 len=64 gap_us=5000 src=PRBS
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=1 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=2608231820 config=0 replicate=1 drops=0 gap_us=5000 buf=0
+  [/dev/ttyUSB0] STAT? -> TX DONE (RADIO ASLEEP)
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=12 sent_ok=12 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.1 kbps=56 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=2608231820 config=0 replicate=1 drops=0 gap_us=5000 buf=0
+  [1/5] FLRC-650 LEN64 sent_ok=12/10
+  [SWD] Mod params changed, resetting TX board…
+[SWD] Reset TX board (probe=148757200D2D1425)
+  [/dev/ttyUSB0] SESSION 2608231820 -> E80 BENCH FW v1.2 (STM32F103C8 + LR2021) fw=FW_HASH=11aa3e2 - 'HELP' for commands
+  [/dev/ttyUSB0] SESSION 2608231820 -> RADIO LR2021 v1.24 ASLEEP, TX INHIBITED
+  [/dev/ttyUSB0] SESSION 2608231820 -> OK SESSION 2608231820
+  [/dev/ttyUSB0] CONFIG 1 1 -> OK CONFIG 1 1
+  [/dev/ttyUSB0] MOD FLRC 2600 10 -> CONFIG_START,1,1,15447
+  [/dev/ttyUSB0] MOD FLRC 2600 10 -> OK MOD flrc br=2600000 pa=10
+  [/dev/ttyUSB0] FREQ 868000000 -> OK FREQ 868000000
+  [/dev/ttyUSB0] ROLE TX -> OK ROLE TX (TX INHIBITED - SEND 'ARM TX' TO ENABLE)
+  [/dev/ttyUSB0] ARM TX -> OK ARMED (TX ENABLED)
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=5000 -> NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=5000 -> OK START n=12 len=64 gap_us=5000 src=PRBS
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=1 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=2608231820 config=1 replicate=1 drops=0 gap_us=5000 buf=0
+  [/dev/ttyUSB0] STAT? -> TX DONE (RADIO ASLEEP)
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=12 sent_ok=12 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.0 kbps=62 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=2608231820 config=1 replicate=1 drops=0 gap_us=5000 buf=0
+  [2/5] FLRC-2600 LEN64 sent_ok=12/10
+  [SWD] Mod params changed, resetting TX board…
+[SWD] Reset TX board (probe=148757200D2D1425)
+  [/dev/ttyUSB0] SESSION 2608231820 -> E80 BENCH FW v1.2 (STM32F103C8 + LR2021) fw=FW_HASH=11aa3e2 - 'HELP' for commands
+  [/dev/ttyUSB0] SESSION 2608231820 -> RADIO LR2021 v1.24 ASLEEP, TX INHIBITED
+  [/dev/ttyUSB0] SESSION 2608231820 -> OK SESSION 2608231820
+  [/dev/ttyUSB0] CONFIG 2 1 -> OK CONFIG 2 1
+  [/dev/ttyUSB0] MOD LORA 7 125 -> CONFIG_START,2,1,15439
+  [/dev/ttyUSB0] MOD LORA 7 125 -> OK MOD lora sf=7 bw=125000
+  [/dev/ttyUSB0] PA 10 -> OK PA 10 DBM
+  [/dev/ttyUSB0] FREQ 868000000 -> OK FREQ 868000000
+  [/dev/ttyUSB0] ROLE TX -> OK ROLE TX (TX INHIBITED - SEND 'ARM TX' TO ENABLE)
+  [/dev/ttyUSB0] ARM TX -> OK ARMED (TX ENABLED)
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=10000 -> NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=10000 -> OK START n=12 len=64 gap_us=10000 src=PRBS
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=1 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=2 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> TX DONE (RADIO ASLEEP)
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=12 sent_ok=12 rx=0 crc_err=0 per_x1e6=0 elapsed_s=1.5 kbps=3 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=2 replicate=1 drops=0 gap_us=10000 buf=0
+  [3/5] LoRa-SF7 BW125 LEN64 sent_ok=12/10
+  [SWD] Mod params changed, resetting TX board…
+[SWD] Reset TX board (probe=148757200D2D1425)
+  [/dev/ttyUSB0] SESSION 2608231820 -> E80 BENCH FW v1.2 (STM32F103C8 + LR2021) fw=FW_HASH=11aa3e2 - 'HELP' for commands
+  [/dev/ttyUSB0] SESSION 2608231820 -> RADIO LR2021 v1.24 ASLEEP, TX INHIBITED
+  [/dev/ttyUSB0] SESSION 2608231820 -> OK SESSION 2608231820
+  [/dev/ttyUSB0] CONFIG 3 1 -> OK CONFIG 3 1
+  [/dev/ttyUSB0] MOD LORA 12 125 -> CONFIG_START,3,1,16934
+  [/dev/ttyUSB0] MOD LORA 12 125 -> OK MOD lora sf=12 bw=125000
+  [/dev/ttyUSB0] PA 10 -> OK PA 10 DBM
+  [/dev/ttyUSB0] FREQ 868000000 -> OK FREQ 868000000
+  [/dev/ttyUSB0] ROLE TX -> OK ROLE TX (TX INHIBITED - SEND 'ARM TX' TO ENABLE)
+  [/dev/ttyUSB0] ARM TX -> OK ARMED (TX ENABLED)
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=10000 -> NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE
+  [/dev/ttyUSB0] START N=12 LEN=64 GAP=10000 -> OK START n=12 len=64 gap_us=10000 src=PRBS
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=1 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=1 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=2.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=2 sent_ok=1 rx=0 crc_err=0 per_x1e6=0 elapsed_s=4.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=3 sent_ok=2 rx=0 crc_err=0 per_x1e6=0 elapsed_s=6.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=4 sent_ok=3 rx=0 crc_err=0 per_x1e6=0 elapsed_s=8.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=5 sent_ok=4 rx=0 crc_err=0 per_x1e6=0 elapsed_s=10.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=5 sent_ok=4 rx=0 crc_err=0 per_x1e6=0 elapsed_s=12.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=6 sent_ok=5 rx=0 crc_err=0 per_x1e6=0 elapsed_s=14.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=7 sent_ok=6 rx=0 crc_err=0 per_x1e6=0 elapsed_s=16.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=8 sent_ok=7 rx=0 crc_err=0 per_x1e6=0 elapsed_s=18.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=9 sent_ok=8 rx=0 crc_err=0 per_x1e6=0 elapsed_s=20.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=9 sent_ok=8 rx=0 crc_err=0 per_x1e6=0 elapsed_s=22.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=10 sent_ok=9 rx=0 crc_err=0 per_x1e6=0 elapsed_s=24.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=11 sent_ok=10 rx=0 crc_err=0 per_x1e6=0 elapsed_s=26.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=12 sent_ok=11 rx=0 crc_err=0 per_x1e6=0 elapsed_s=28.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [/dev/ttyUSB0] STAT? -> TX DONE (RADIO ASLEEP)
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=12 sent_ok=12 rx=0 crc_err=0 per_x1e6=0 elapsed_s=29.7 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=2608231820 config=3 replicate=1 drops=0 gap_us=10000 buf=0
+  [4/5] LoRa-SF12 BW125 LEN64 sent_ok=12/10
+  [SWD] Mod params changed, resetting TX board…
+[SWD] Reset TX board (probe=148757200D2D1425)
+  [/dev/ttyUSB0] SESSION 2608231820 -> E80 BENCH FW v1.2 (STM32F103C8 + LR2021) fw=FW_HASH=11aa3e2 - 'HELP' for commands
+  [/dev/ttyUSB0] SESSION 2608231820 -> RADIO LR2021 v1.24 ASLEEP, TX INHIBITED
+  [/dev/ttyUSB0] SESSION 2608231820 -> OK SESSION 2608231820
+  [/dev/ttyUSB0] CONFIG 4 1 -> OK CONFIG 4 1
+  [/dev/ttyUSB0] MOD FLRC 650 10 -> CONFIG_START,4,1,13416
+  [/dev/ttyUSB0] MOD FLRC 650 10 -> OK MOD flrc br=650000 pa=10
+  [/dev/ttyUSB0] FREQ 868000000 -> OK FREQ 868000000
+  [/dev/ttyUSB0] ROLE TX -> OK ROLE TX (TX INHIBITED - SEND 'ARM TX' TO ENABLE)
+  [/dev/ttyUSB0] ARM TX -> OK ARMED (TX ENABLED)
+  [/dev/ttyUSB0] START N=12 LEN=255 GAP=5000 -> NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE
+  [/dev/ttyUSB0] START N=12 LEN=255 GAP=5000 -> OK START n=12 len=255 gap_us=5000 src=PRBS
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=1 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.0 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=2608231820 config=4 replicate=1 drops=0 gap_us=5000 buf=0
+  [/dev/ttyUSB0] STAT? -> TX DONE (RADIO ASLEEP)
+  [/dev/ttyUSB0] STAT? -> STAT role=TX sent=12 sent_ok=12 rx=0 crc_err=0 per_x1e6=0 elapsed_s=0.1 kbps=161 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=2608231820 config=4 replicate=1 drops=0 gap_us=5000 buf=0
+  [5/5] FLRC-650 LEN255 sent_ok=12/10
+
+== TX MODE COMPLETE: tx-log.csv ==
+
+
+how do we continue?

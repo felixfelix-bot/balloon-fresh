@@ -31,13 +31,14 @@
  *
  * Pins: SCK=GP2 MOSI=GP3 MISO=GP4 CS=GP5 BUSY=GP6 IRQ=GP7 RST=GP8
  *       GPS_RX=GP1 GPS_TX=GP0
- *       LED=GP25
+ *       LED=GP16 (WS2812 NeoPixel on Waveshare RP2040-Zero)
  */
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <stdarg.h>
 #include <hardware/watchdog.h>
+#include <Adafruit_NeoPixel.h>
 
 // ─── Firmware self-identification (injected at build time) ───────────
 // These come from tools/inject_git_version.py via -D flags.
@@ -95,7 +96,17 @@ static void printBootBanner() {
 #define PIN_GPS_RX  1    // RP2040 RX ← GPS TX (NMEA data)
 #define PIN_GPS_TX  0    // RP2040 TX → GPS RX (optional config)
 #undef PIN_LED
-#define PIN_LED     25
+#define PIN_NEOPIXEL 16   // Waveshare RP2040-Zero onboard WS2812
+#define PIN_LED       25   // Standard Pi Pico (fallback, no-op on RP2040-Zero)
+
+// Single NeoPixel on GP16
+Adafruit_NeoPixel statusLED(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+// LED color helpers — show status as visible colors
+void ledColor(uint8_t r, uint8_t g, uint8_t b) {
+    statusLED.setPixelColor(0, statusLED.Color(r, g, b));
+    statusLED.show();
+}
 
 #define SPI_FREQ_HZ  20000000UL
 #define XTAL_MHZ     52.0f
@@ -233,7 +244,7 @@ static void buildInterleaveTable() {
     // Purpose: characterize which frequencies are affected by WiFi interference
     for (int f = 0; f < NUM_SWEEP_FREQS_HF; f++) {
         Phase &exp = interleavePhases[idx];
-        exp = phases[3];  // HF-FLRC-1300 base (first FLRC entry after reorder)
+        exp = phases[4];  // HF-FLRC-1300 base (phases[4] = HF-FLRC-1300)
         exp.freqMHz = SWEEP_FREQS_HF[f];
         exp.pktSize = 64;
         exp.pktCount = 100;
@@ -244,7 +255,7 @@ static void buildInterleaveTable() {
     }
     for (int f = 0; f < NUM_SWEEP_FREQS_LF; f++) {
         Phase &exp = interleavePhases[idx];
-        exp = phases[10];  // LF-FLRC-1300 base
+        exp = phases[12];  // LF-FLRC-1300 base (phases[12] = LF-FLRC-1300)
         exp.freqMHz = SWEEP_FREQS_LF[f];
         exp.pktSize = 64;
         exp.pktCount = 100;
@@ -279,6 +290,35 @@ struct GpsData {
     bool     hasUnixTime; // GPS gave us a complete date+time → real Unix epoch
 };
 static GpsData gps = {0, 0, 0, false, 0, false, 0, false};
+
+// ─── GPS time offset for autonomous clock hold ──────────────────────
+// When GPS gives Unix time, we store offset = unixTime - millis()/1000.
+// If GPS time becomes stale (module issue, antenna disconnect), we
+// extrapolate from millis() + offset. RP2040 crystal is accurate enough
+// for phase sync over minutes. This allows TX to keep sweeping even if
+// GPS stops sending NMEA sentences entirely.
+static int32_t  gpsTimeOffset  = 0;    // unix_time = millis()/1000 + gpsTimeOffset
+static uint32_t lastGpsTimeMs  = 0;    // millis() when last GPS unix time was received
+#define GPS_TIME_STALE_MS  10000       // after 10s without GPS update, use offset hold
+
+// Forward declarations — defined later in the file
+static uint32_t getUtcNow();
+static bool     hasLaptopTime();
+
+// Unified time source selector — used by main loop, embedGPS, heartbeat.
+// Priority: fresh GPS > GPS hold (millis+offset) > laptop SET_TIME > degraded.
+static uint32_t getBestUnixTime() {
+    if (gps.hasUnixTime && gps.unixTime > 0 &&
+        (millis() - lastGpsTimeMs) < GPS_TIME_STALE_MS)
+        return gps.unixTime;                    // fresh GPS — primary
+    if (gpsTimeOffset != 0)
+        return millis() / 1000 + gpsTimeOffset; // GPS hold — extrapolate
+    if (hasLaptopTime())
+        return getUtcNow();                     // laptop SET_TIME — bench only
+    if (gps.hasUnixTime)
+        return gps.unixTime;                    // stale GPS — better than 0
+    return gps.timeSec;                         // seconds since midnight (degraded)
+}
 
 // ─── Days-since-1970 helper (Howard Hinnant's civil-from-days algorithm) ──
 static uint32_t daysSinceEpoch(uint16_t year, uint8_t month, uint8_t day) {
@@ -449,9 +489,13 @@ static void parseNMEA(const char *sentence) {
                 uint32_t days = daysSinceEpoch(dYear, dMo, dDay);
                 gps.unixTime    = days * 86400UL + gps.timeSec;
                 gps.hasUnixTime = true;
-                outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu\n",
+                // Track offset for autonomous clock hold — if GPS time
+                // becomes stale later, we extrapolate from millis().
+                gpsTimeOffset = (int32_t)(gps.unixTime - millis() / 1000);
+                lastGpsTimeMs = millis();
+                outPrintf("GPS_UNIX: days=%lu timeSec=%lu unix=%lu offset=%ld\n",
                           (unsigned long)days, (unsigned long)gps.timeSec,
-                          (unsigned long)gps.unixTime);
+                          (unsigned long)gps.unixTime, (long)gpsTimeOffset);
             }
         }
     }
@@ -510,7 +554,8 @@ static void rfClearIrq() {
 }
 
 static void rfSetTx() {
-    uint8_t cmd[5] = {0x02, 0x0D, 0x00, 0x00, 0x00};
+    // Timeout 0xFFFFFF = max (~262s); 0x000000 = no timeout (TX hangs if IRQ missed). [ESP32 fix]
+    uint8_t cmd[5] = {0x02, 0x0D, 0xFF, 0xFF, 0xFF};
     rfWriteCmd(cmd, 5);
 }
 
@@ -543,17 +588,29 @@ static void rfClearTxFifo() {
 // force-aborts by sending SET_STANDBY (STDBY_XOSC) before the next
 // phase reconfigures the modem. Called at the TOP of every phase change,
 // BEFORE rfInitForPhase.
+//
+// BUG FIX: The IRQ pin (GP7) is LOW both when TX is mid-transmission AND
+// when the radio is idle with no TX ever started. Without a tracking flag,
+// every phase transition when GPS gates TX (no fix → no TX) triggered a
+// false TX_ABORT. We now track txInProgress so we only abort when a TX was
+// actually started and hasn't completed.
+static volatile bool txInProgress = false;
+
 static void abortTxIfActive() {
+    if (!txInProgress) return;  // No TX was started, nothing to abort
+
     uint32_t irqPinMask = 1UL << PIN_IRQ;
     if (sio_hw->gpio_in & irqPinMask) {
         // TX_DONE already fired — radio returned to fallback mode (STDBY)
+        txInProgress = false;
         return;
     }
-    // TX still in progress — force-abort with SET_STANDBY (STDBY_XOSC)
+    // TX genuinely in progress — force-abort with SET_STANDBY (STDBY_XOSC)
     uint8_t stdby[] = {0x01, 0x28, 0x01};
     rfWriteCmd(stdby, 3);
     outPrintf("TX_ABORT — previous phase TX still active, force SET_STANDBY\n");
     rfClearIrq();   // clear stale IRQ bits from the aborted TX
+    txInProgress = false;
     delay(100);     // guard: let the radio settle before reconfiguration
 }
 
@@ -718,12 +775,21 @@ static void rfInitForPhase(const Phase &p) {
         delay(1);
 
         // SET_FLRC_PACKET_PARAMS (0x0249) — V4: dynamic pktSize
-        { uint8_t c[] = {0x02, 0x49, 0x0C, 0x4C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
+        // byte2: 0x0E = agc_pbl_len=3 (16-bit preamble) | sw_len=2 (32-bit sync word)
+        // byte3: 0x7C = crc=10 (CRC24) | pkt_format=1 (Fixed) | sw_match=111 (Match123)
+        //   was 0x4C (crc=01 CRC16-off, pkt_format=0 Dynamic, sw_match=100 Match1)
+        //   matched TheClams reference: CRC24 + Match123, keep Fixed format
+        { uint8_t c[] = {0x02, 0x49, 0x0E, 0x7C, 0x00, (uint8_t)p.pktSize}; rfWriteCmd(c, 6); }
         delay(1);
     }
 
-    // SET_PA_CONFIG
-    { uint8_t c[] = {0x02, 0x02, 0x80, 0x00, 0x60, 0x07, 0x10}; rfWriteCmd(c, 7); }
+    // SET_TX_PATH (0x0202) -- MANDATORY before TX. HF=1 (2.4GHz), LF=0 (sub-GHz).
+    // Same opcode as SET_PA_CONFIG, distinguished by payload. [ESP32 lr2021_radio.c:286]
+    { uint8_t c[] = {0x02, 0x02, p.rfPath, 0x00}; rfWriteCmd(c, 4); }
+    delay(1);
+
+    // SET_PA_CONFIG (0x0202) -- HF=0x80, LF=0x00 [LR2021Raw.h setPaConfig/setPaConfigLF]
+    { uint8_t c[] = {0x02, 0x02, (uint8_t)(p.rfPath ? 0x80 : 0x00), 0x00, 0x60, 0x07, 0x10}; rfWriteCmd(c, 7); }
     delay(1);
 
     // SET_TX_PARAMS
@@ -787,9 +853,10 @@ static void checkSerialTimeSync() {
                     uint32_t ts = (uint32_t)strtoul(syncBuf + 9, nullptr, 10);
                     if (ts > 0) {
                         utcOffset = ts - millis() / 1000;
+                        lastCdcSuccessMs = 0;  // Disarm CDC watchdog for battery mode
                         outPrintf("TIME_SYNCED unix=%lu offset=%ld\n",
-                                  (unsigned long)getUtcNow(), (long)utcOffset);
-                    }
+                                      (unsigned long)getUtcNow(), (long)utcOffset);
+                        }
                 } else if (strcmp(syncBuf, "FW_QUERY") == 0) {
                     // Firmware identification query — respond with boot banner
                     printBootBanner();
@@ -844,14 +911,9 @@ static void embedGPS(uint8_t *pkt) {
     uint16_t sats = gps.sats;
     memcpy(&pkt[12], &sats, 2);
     pkt[14] = gps.fixValid ? 1 : 0;
-    // Embed Unix epoch time (from SET_TIME or GPS) so RX can verify sync.
-    uint32_t unixNow;
-    if (hasLaptopTime())
-        unixNow = getUtcNow();
-    else if (gps.hasUnixTime)
-        unixNow = gps.unixTime;
-    else
-        unixNow = gps.timeSec;   // seconds since midnight (degraded)
+    // Embed Unix epoch time — uses unified time source selector.
+    // Handles: fresh GPS, GPS hold (millis+offset), laptop SET_TIME.
+    uint32_t unixNow = getBestUnixTime();
     memcpy(&pkt[15], &unixNow, 4);  // LE via memcpy
 }
 
@@ -964,7 +1026,16 @@ void setup() {
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_RST, HIGH);
-    digitalWrite(PIN_LED, LOW);
+    // Init NeoPixel on GP16 (Waveshare RP2040-Zero onboard LED)
+    statusLED.begin();
+    statusLED.show();  // Turn off
+    // Boot strobe: blue flash 6x so Felix sees LED working
+    for (int i = 0; i < 6; i++) {
+        ledColor(0, 0, 255);   // Blue
+        delay(100);
+        ledColor(0, 0, 0);     // Off
+        delay(100);
+    }
 
     spiRf.begin();
 
@@ -986,23 +1057,35 @@ void setup() {
                (unsigned long)totalCycleSec, (unsigned long)totalCycleMs, TX_POWER_DBM);
     outPrintf("Packet sizes: 32 / 64 / 128 / 255 bytes per mode\\n\\n");
 
-    // ── GPS GATE: TX NEVER transmits without accurate time ──
-    // Walk mode: blocks until GPS fix.
-    // Bench mode: laptop SET_TIME bypasses (sets hasLaptopTime).
-    outPrintf("=== WAITING FOR GPS FIX (TX blocked until locked) ===\n");
+    // ── GPS GATE: TX waits for GPS TIME (phase computation needs it) ──
+    // GPS gives time (from satellite ephemeris download) BEFORE position fix.
+    // Time arrives in ~10-30s. Position fix takes 1-15 min.
+    // TX computes phase from GPS time immediately, but does NOT transmit
+    // packets until GPS position fix is acquired (Felix requirement —
+    // see FIX GATE in main loop). Bench mode: laptop SET_TIME bypasses.
+    outPrintf("=== WAITING FOR GPS TIME (phase computation needs UTC) ===\n");
+    outPrintf("=== TX will NOT transmit until GPS FIX acquired ===\n");
     outPrintf("=== Bench test: send SET_TIME to override ===\n");
     outPrintf("GPS_DEBUG: UART1 RX=GP1 TX=GP0  LED=GP25(green)  GPS module pin wiring check\n");
     outPrintf("GPS_DEBUG: If no NMEA_RAW lines appear, GPS module is not communicating\n");
     uint32_t gpsStart = millis();
     uint32_t lastNmeaPrint = 0;
-    while (!gps.hasTime || !gps.fixValid) {
+    while (!gps.hasTime) {
         gpsPoll();
         checkSerialTimeSync();  // Process SET_TIME during boot gate
         digitalWrite(PIN_LED, ((millis() / 250) & 1) ? HIGH : LOW);
+        ledColor(((millis() / 500) & 1) ? 100 : 30, 0, 0);  // Dim red pulse while searching
 
         // Bench override: laptop SET_TIME received
         if (hasLaptopTime()) {
             outPrintf("LAPTOP_TIME_OVERRIDE — entering bench mode (no GPS required)\n");
+            break;
+        }
+
+        // V4: Boot gate timeout — don't hang forever if no GPS and no SET_TIME
+        if ((millis() - gpsStart) > GPS_FIX_TIMEOUT_MS) {
+            outPrintf("GPS_FIX_TIMEOUT %lums — no fix and no SET_TIME, proceeding to main loop\n",
+                      (unsigned long)(millis() - gpsStart));
             break;
         }
 
@@ -1065,28 +1148,25 @@ void setup() {
         outPrintf("GPS_TIME_ACQUIRED utc=%s fix=%d sats=%d lat=%.5f lon=%.5f unix=%lu\n",
                    tbuf, gps.fixValid ? 1 : 0, gps.sats, gps.lat, gps.lon,
                    gps.hasUnixTime ? (unsigned long)gps.unixTime : 0UL);
-        // Compute initial phase from the best available time source
-        uint32_t phaseTime;
-        if (gps.hasUnixTime)
-            phaseTime = gps.unixTime;
-        else
-            phaseTime = gps.timeSec;   // seconds since midnight (degraded)
+        // Compute initial phase from best available time source
+        uint32_t phaseTime = getBestUnixTime();
         currentPhase = computePhaseFromUTC(phaseTime);
         uint32_t cyclePos = phaseTime % totalCycleSec;
         outPrintf("INITIAL_PHASE=%d phaseTime=%lu cycle_pos=%lu source=%s\n",
                    currentPhase, (unsigned long)phaseTime, (unsigned long)cyclePos,
-                   gps.hasUnixTime ? "GPS_UNIX" : "GPS_MIDNIGHT");
+                   gps.hasUnixTime ? "GPS_UNIX" : "GPS_TIME_ONLY");
     } else if (hasLaptopTime()) {
-        // BENCH MODE: No GPS fix, but laptop SET_TIME provides epoch
-        outPrintf("BENCH_MODE unix=%lu — using laptop time (no GPS fix)\n",
+        // BENCH MODE: No GPS time, but laptop SET_TIME provides epoch
+        outPrintf("BENCH_MODE unix=%lu — using laptop time (no GPS)\n",
                    (unsigned long)getUtcNow());
         currentPhase = computePhaseFromUTC(getUtcNow());
         outPrintf("INITIAL_PHASE=%d source=LAPTOP\n", currentPhase);
     } else {
-        // V4: Should never reach here — GPS gate loop handles all cases above.
-        // Safety fallback: enter bench mode with millis() to avoid hard hang.
-        outPrintf("GPS_NO_FIX_LAPTOP_NO_TIME — safety fallback to millis() mode\n");
-        currentPhase = 0;
+        // AUTONOMOUS MODE: No GPS time and no laptop time.
+        // Enter WAITING_FOR_GPS state — main loop will keep polling GPS
+        // and start sweeping as soon as GPS time arrives.
+        outPrintf("WAITING_FOR_GPS_TIME — no time source yet, will poll in main loop\n");
+        currentPhase = -1;  // sentinel: main loop knows to wait for GPS
     }
 
     digitalWrite(PIN_LED, HIGH);
@@ -1102,9 +1182,28 @@ void loop() {
     // GPS still works if module is alive — used for position data in packets
     gpsPoll();
 
+    // ─── NEOPIXEL STATUS LED ─────────────────────────────────────────
+    // Red pulse = GPS searching for time. Yellow = has time, TX active, no fix. Green = GPS locked.
+    {
+        if (gps.fixValid) {
+            ledColor(0, 255, 0);   // Green: GPS locked, full operation
+        } else if (gps.hasTime) {
+            // Yellow blink at 2Hz
+            bool on = ((millis() % 500) < 250);
+            ledColor(on ? 255 : 50, on ? 200 : 30, 0);
+        } else {
+            // Red blink at 1Hz
+            bool on = ((millis() % 1000) < 500);
+            ledColor(on ? 255 : 30, 0, 0);
+        }
+    }
+
     // CDC watchdog — if USB CDC hasn't accepted output for 30s, hard reboot.
     // Serial.begin() doesn't fix a dead TinyUSB stack — only a chip reboot does.
-    if (lastCdcSuccessMs > 0 && (millis() - lastCdcSuccessMs) > CDC_WATCHDOG_MS) {
+    // GUARD: Only fire when USB host IS present (Serial &&). On power bank / walk
+    // test, there's no USB host — Serial.write returns 0 naturally. We must NOT
+    // reboot in that case or we lose utcOffset (laptop time sync) and hang.
+    if (Serial && lastCdcSuccessMs > 0 && (millis() - lastCdcSuccessMs) > CDC_WATCHDOG_MS) {
         // USB CDC is dead. Hardware watchdog reboot to restart USB cleanly.
         // This reboots the RP2040 — firmware restarts, USB re-enumerates,
         // GPS re-acquires in ~30s. No manual BOOTSEL button needed.
@@ -1113,36 +1212,42 @@ void loop() {
 
     // Heartbeat every 10s
     if (lastHeartbeatMs == 0 || (millis() - lastHeartbeatMs) > HEARTBEAT_INTERVAL_MS) {
-        uint32_t utcNow = 0;
-        if (gps.hasUnixTime && gps.unixTime > 0) utcNow = gps.unixTime;
-        else if (hasLaptopTime()) utcNow = getUtcNow();
-        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu src=%s\n", (unsigned long)millis(),
-                  currentPhase, (unsigned long)utcNow,
-                  (gps.hasUnixTime && gps.unixTime > 0) ? "GPS" :
-                  hasLaptopTime() ? "LAPTOP" : "NONE");
+        uint32_t utcNow = getBestUnixTime();
+        const char *src =
+            (gps.hasUnixTime && gps.unixTime > 0 &&
+             (millis() - lastGpsTimeMs) < GPS_TIME_STALE_MS) ? "GPS" :
+            (gpsTimeOffset != 0) ? "GPS_HOLD" :
+            hasLaptopTime() ? "LAPTOP" : "NONE";
+        outPrintf("HEARTBEAT millis=%lu phase=%d utc=%lu src=%s fix=%d sats=%d\n",
+                  (unsigned long)millis(), currentPhase, (unsigned long)utcNow,
+                  src, gps.fixValid ? 1 : 0, gps.sats);
         lastHeartbeatMs = millis();
     }
 
-    // Determine current phase using ABSOLUTE TIME (Unix epoch modulo)
-    // V4 WALK: GPS time is PRIMARY. Laptop SET_TIME is bench-test backup.
-    // No time source = NO TRANSMIT (strict).
-    int phase;
-    if (gps.hasUnixTime && gps.unixTime > 0) {
-        // GPS real Unix epoch (date + time from RMC) — primary for walk tests
-        phase = computePhaseFromUTC(gps.unixTime);
-    } else if (hasLaptopTime()) {
-        // Unix epoch time from laptop SET_TIME — backup for bench tests only
-        phase = computePhaseFromUTC(getUtcNow());
-    } else {
-        // V4 WALK: No time source. Wait for GPS. Do NOT transmit unsynced.
-        if (currentPhase >= 0) {
-            outPrintf("PHASE_GUARD 500\n");
-            currentPhase = -1;
+    // ─── AUTONOMOUS TIME SOURCE: GPS is primary, laptop is bench backup ──
+    // Fresh GPS time → use directly. Stale GPS (>10s) → extrapolate from
+    // millis() + last GPS offset. Laptop SET_TIME → bench test only.
+    // No time source at all → WAIT for GPS (do not transmit unsynced).
+    uint32_t timeNow = getBestUnixTime();
+    bool hasTimeSource = (gpsTimeOffset != 0) || hasLaptopTime() ||
+                         (gps.hasUnixTime && gps.unixTime > 0);
+
+    if (!hasTimeSource) {
+        // No time source — keep polling GPS, don't transmit unsynced.
+        // This is the WAITING_FOR_GPS state after boot gate timeout.
+        static uint32_t lastWaitMsg = 0;
+        if (millis() - lastWaitMsg > 3000) {
+            outPrintf("WAIT_GPS_TIME sats=%d hasTime=%d hasUnix=%d — polling\n",
+                      gps.sats, gps.hasTime ? 1 : 0, gps.hasUnixTime ? 1 : 0);
+            lastWaitMsg = millis();
         }
+        if (currentPhase >= 0) currentPhase = -1;
         gpsPoll();
         delay(50);
         return;
     }
+
+    int phase = computePhaseFromUTC(timeNow);
 
     // Phase change detection
     if (phase != currentPhase) {
@@ -1191,37 +1296,36 @@ void loop() {
         return;
     }
 
-    // V4 WALK: GPS fix check with 15s grace period.
-    // If GPS fix drops (walking behind building), TX continues for 15s
-    // using last known time/position. After 15s without fix → STOP.
-    // This prevents phase jumps from momentary GPS dropouts.
-    // Bench test: laptop SET_TIME bypasses GPS requirement entirely.
-    static bool     gpsFixWasValid = false;
-    static uint32_t gpsFixLostMs   = 0;
-    static bool     gpsInGrace     = false;
-    #define GPS_GRACE_MS  30000  // 30 seconds — range test needs tolerance for balcony GPS
-
-    if (gps.fixValid) {
-        gpsFixWasValid = true;
-        gpsInGrace = false;
-    } else if (gpsFixWasValid && !hasLaptopTime()) {
-        if (!gpsInGrace) {
-            gpsFixLostMs = millis();
-            gpsInGrace = true;
-            outPrintf("GPS_FIX_LOST — grace period %ds\n", GPS_GRACE_MS / 1000);
+    // ─── FIX GATE: TX must NOT transmit without GPS fix (Felix requirement) ──
+    // The sweep loop keeps running (phase computation + radio reconfig above)
+    // so TX stays phase-synced and is ready to transmit the moment fix returns.
+    // Last known position is preserved in gps.lat/lon — parseNMEA only updates
+    // those fields on a valid fix. When fix returns, position updates automatically.
+    // Bench mode (laptop SET_TIME) is exempt — allows testing without GPS.
+    // ─── GPS FIX GATE (ADR-018): TX NEVER transmits without satellite fix ───
+    // This is UNCONDITIONAL — no laptop exemption. Per Felix's requirement:
+    // "when we don't have a satellite fix, the TX board shouldn't transmit at all."
+    // The sweep loop keeps running (phase computation + radio reconfig above)
+    // so TX stays phase-synced and is ready to transmit the moment fix returns.
+    // Last known position is preserved in gps.lat/lon — parseNMEA only updates
+    // those fields on a valid fix. When fix returns, position updates automatically.
+    if (!gps.fixValid) {
+        static uint32_t lastNoFixMsg = 0;
+        static bool hadFix = false;
+        if (gps.fixValid) hadFix = true;
+        if (millis() - lastNoFixMsg > 3000) {
+            if (hadFix) {
+                outPrintf("FIX_LOST sats=%d fix=0 — sweep continues, TX gated. Last pos preserved.\n",
+                          gps.sats);
+            } else {
+                outPrintf("NO_FIX_WAIT sats=%d fix=0 — sweep continues, TX gated on fix\n",
+                          gps.sats);
+            }
+            lastNoFixMsg = millis();
         }
-        if ((millis() - gpsFixLostMs) > GPS_GRACE_MS) {
-            outPrintf("GPS_GRACE_EXPIRED sats=%d — STOPPING TX\n", gps.sats);
-            gpsPoll();
-            delay(100);
-            return;
-        }
-        // Still in grace period — continue transmitting with last known position
-    } else if (!hasLaptopTime()) {
-        outPrintf("WAIT_GPS sats=%d fix=%d — not transmitting\n", gps.sats, gps.fixValid ? 1 : 0);
         gpsPoll();
-        delay(100);
-        return;
+        delay(50);
+        return;  // Don't transmit without fix — phase detection still runs next loop()
     }
 
     uint16_t pktSize = p.pktSize;
@@ -1294,6 +1398,7 @@ void loop() {
     rfClearIrq();
     rfClearTxFifo();
     rfWriteTxFifo(txBuf, pktSize);
+    txInProgress = true;   // track TX for abortTxIfActive() phase-safety
     rfSetTx();
 
     // Wait for TX_DONE — poll DIO9 IRQ pin
@@ -1308,7 +1413,7 @@ void loop() {
     // (410ms/byte × 32 + 10ms). The old timeout always expired mid-TX,
     // leaving the radio transmitting into the next phase's time slot.
     while ((millis() - txStartMs) < 16000) {
-        if (sio_hw->gpio_in & irqPinMask) { irqFired = true; break; }
+        if (sio_hw->gpio_in & irqPinMask) { irqFired = true; txInProgress = false; break; }
         // Drain GPS UART every ~65K iterations (~3ms at 125MHz)
         if ((millis() - txStartMs) % 3 == 0) gpsPoll();  // poll GPS ~every 3ms
     }
@@ -1325,7 +1430,15 @@ void loop() {
     outPrintf("PKT seq=%u rssi=%d phase=%d pktSize=%d tx_fw=%s\n", seqInPhase, rssiDbm,
               currentPhase, pktSize, FW_GIT_HASH);
 
-    digitalWrite(PIN_LED, (seqInPhase & 1) ? HIGH : LOW);
+    // NeoPixel status — already handled in main heartbeat above.
+    // Just toggle brightness slightly per TX for feedback.
+    {
+        if (gps.fixValid) {
+            ledColor(0, seqInPhase & 1 ? 255 : 100, 0);  // Green pulse per packet
+        } else {
+            ledColor(seqInPhase & 1 ? 255 : 50, seqInPhase & 1 ? 200 : 30, 0);  // Yellow pulse
+        }
+    }
 
     seqInPhase++;
 
