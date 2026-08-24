@@ -592,23 +592,29 @@ accurate RSSI. 10 packets each keeps 10% PER resolution.
 
 #### `configs/envelope-4cfg-max-plus.json`
 
-Extended envelope — 6-config preset adding SF9 and SF7-BW500 for
-throughput sweep at range. 868 MHz, 10 packets each. Used for the
-extended distance matrix (§19) with stops at 11 km and 70 km.
+Extended envelope — 7-config preset adding FLRC-260 (most robust FLRC),
+SF9, and SF7-BW500 for throughput sweep at range. 868 MHz, 10 packets
+each. Used for the extended distance matrix (§19) with stops at 11 km
+and 70 km.
 
 | # | Label | Modulation | Bitrate/SF | BW | PA | Payload | Gap | Packets |
 |---|-------|-----------|------------|-----|-----|---------|-----|---------|
-| 0 | FLRC-650 LEN511 | FLRC | 650 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
-| 1 | FLRC-2600 LEN511 | FLRC | 2600 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
-| 2 | LoRa-SF7 BW125 LEN255 | LoRa | SF7 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
-| 3 | LoRa-SF12 BW125 LEN255 | LoRa | SF12 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
-| 4 | LoRa-SF9 BW125 LEN255 | LoRa | SF9 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
-| 5 | LoRa-SF7 BW500 LEN255 | LoRa | SF7 | 500 kHz | 10 dBm | 255 B | 10 ms | 10 |
+| 0 | FLRC-260 LEN511 | FLRC | 260 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
+| 1 | FLRC-650 LEN511 | FLRC | 650 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
+| 2 | FLRC-2600 LEN511 | FLRC | 2600 kbps | — | 10 dBm | 511 B | 5 ms | 10 |
+| 3 | LoRa-SF7 BW125 LEN255 | LoRa | SF7 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
+| 4 | LoRa-SF12 BW125 LEN255 | LoRa | SF12 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
+| 5 | LoRa-SF9 BW125 LEN255 | LoRa | SF9 | 125 kHz | 10 dBm | 255 B | 10 ms | 10 |
+| 6 | LoRa-SF7 BW500 LEN255 | LoRa | SF7 | 500 kHz | 10 dBm | 255 B | 10 ms | 10 |
 
-Total: 60 packets across 6 configs. Duration: **~2 minutes** with
+Total: 70 packets across 7 configs. Duration: **~2.5 minutes** with
 reduced guard times.
 
-**Why the 2 extra configs:**
+**Why the 3 extra configs:**
+- **FLRC-260 511B** — the slowest FLRC bitrate (260 kbps) with ~4 dB
+  better sensitivity than FLRC-650. Extends FLRC ground-level range to
+  ~700 m. Most robust FLRC mode; listed first so the most reliable FLRC
+  config is tested before faster but less sensitive ones.
 - **SF9 BW125** — mid-range LoRa between SF7 and SF12. Tests the
   throughput/range tradeoff at 11 km and 70 km stops.
 - **SF7 BW500** — max throughput LoRa experiment. 4× the data rate of
@@ -1342,33 +1348,36 @@ ground-level (two-ray d⁻⁴ path loss), it will work at balloon altitude
 
 The extended distance series uses **6 dB steps (doubling)** from 50 m to
 ~70 km. Each stop runs the `envelope-4cfg-max-plus` preset (or a subset) at
-that distance. The plus preset adds SF9 (BW125) and SF7 (BW500) configs for
-throughput characterization at the longer-range stops.
+that distance. The plus preset adds FLRC-260 (most robust FLRC), SF9
+(BW125), and SF7 (BW500) configs for throughput characterization at the
+longer-range stops.
 
 ### Distance Matrix
 
-| Stop | Dist | FLRC-650 511B | FLRC-2600 511B | SF7 255B | SF9 255B | SF7-500kHz 255B | SF12 255B |
-|------|------|:-:|:-:|:-:|:-:|:-:|:-:|
-| Baseline | 50m | ✓ | ✓ | — | — | — | — |
-| B2 | 100m | ✓ | ✓ | — | — | — | — |
-| Sanity | 218m | ✓ | ✓ | ✓ | — | — | ✓ |
-| D1 | 436m | ✓ | ✓ | ✓ | — | — | — |
-| D2 | 872m | ✓ | ✓ | ✓ | — | — | ✓ |
-| D3 | 1744m | — | — | ✓ | — | — | ✓ |
-| D4 | 5km | — | — | — | — | — | ✓ |
-| D5 | 11km | — | — | ✓ | ✓ | ✓ | ✓ |
-| D6 | 70km | — | — | ✓ | ✓ | ✓ | ✓ |
+| Stop | Dist | FLRC-260 511B | FLRC-650 511B | FLRC-2600 511B | SF7 255B | SF9 255B | SF7-500kHz 255B | SF12 255B |
+|------|------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Baseline | 50m | ✓ | ✓ | ✓ | — | — | — | — |
+| B2 | 100m | ✓ | ✓ | ✓ | — | — | — | — |
+| Sanity | 218m | ✓ | ✓ | ✓ | ✓ | — | — | ✓ |
+| D1 | 436m | ✓ | ✓ | — | ✓ | — | — | — |
+| D2 | 872m | ✓ | — | — | ✓ | — | — | ✓ |
+| D3 | 1744m | ✓ | — | — | ✓ | — | — | ✓ |
+| D4 | 5km | — | — | — | — | — | — | ✓ |
+| D5 | 11km | — | — | — | ✓ | ✓ | ✓ | ✓ |
+| D6 | 70km | — | — | — | ✓ | ✓ | ✓ | ✓ |
 
 **Config rationale per stop:**
 - **Baseline / B2 (50–100 m):** FLRC only — short range, characterize FLRC
-  PER/RSSI at near-zero distance.
+  PER/RSSI at near-zero distance. All three FLRC bitrates tested.
 - **Sanity (218 m):** All key mods — verify radio links work before
   committing to the long drive/boat. SF12 included as a reference.
-- **D1 (436 m):** FLRC + SF7. SF12 skipped (+38 dB margin = certainly
+- **D1 (436 m):** FLRC-260 + FLRC-650 + SF7. FLRC-2600 skipped
+  (cliff, -13 dB margin). SF12 skipped (+38 dB margin = certainly
   alive, zero information).
-- **D2 (872 m):** FLRC-650 (cliff!) + SF7 + SF12. FLRC-2600 skipped
-  (-19 dB margin = dead).
-- **D3 (1744 m):** SF7 (cliff!) + SF12. Both FLRC dead (-23 dB margin).
+- **D2 (872 m):** FLRC-260 (cliff!) + SF7 + SF12. FLRC-650 skipped
+  (-7 dB margin = dead). FLRC-2600 skipped (-19 dB margin = dead).
+- **D3 (1744 m):** FLRC-260 (cliff!) + SF7 (cliff!) + SF12.
+  FLRC-650/2600 dead (-15 dB margin).
 - **D4 (5 km):** SF12 only. SF7 dead (-14 dB margin). FLRC dead.
 - **D5 (11 km):** SF7 + SF9 + SF7-500kHz + SF12. This is the throughput
   sweep stop — measure whether higher-BW / lower-SF configs can still
