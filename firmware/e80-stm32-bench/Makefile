@@ -110,6 +110,15 @@ clean:
 #
 # The T0 prints on startup so operators can verify they're in the same window.
 # If clocks drift >5 min between machines, the lateness guard catches it.
+#
+# Timing parameters (defaults in tools/e80_bench_ctl.py):
+#   t0_margin=30s  guard=5s  rx_lead=3s  settle=1s  swd_reset_s=2s
+# These are safe for NTP-synced machines (drift <50ms). Guard times were
+# reduced from (120/20/10/2/10)s — inter-stop overhead is now seconds, not
+# tens of seconds. For offline machines, override: make range-tx GUARD=10 T0_MARGIN=60
+# To pass custom timing, add --guard $(GUARD) etc. to the e80_ctl invocation.
+# NOTE: total wall time is still dominated by LoRa-SF12 airtime (~90s for
+# 10x 255B pkts), not by guard times — see `make range-dry-run`.
 
 tx: range-tx  ## TX mode: just run `make tx`. T0 + SESSION_ID auto-generated.
 
