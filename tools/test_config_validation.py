@@ -111,3 +111,32 @@ def test_envelope_3cfg_still_valid():
     for c in cfg["configs"]:
         assert c["n_pkts"] == 10
         assert c["freq"] == 868000000
+
+
+# --- Makefile default CONFIGS test (RED until Makefile updated) ---
+
+def test_makefile_default_configs_is_envelope_4cfg_max():
+    """The e80-stm32-bench Makefile default CONFIGS must point to envelope-4cfg-max.
+
+    This is TDD red-first: the Makefile currently defaults to outdoor-10.json.
+    After Task 6, it should default to envelope-4cfg-max.json so that
+    `make range-dry-run` / `make range-tx` / `make range-rx` use the
+    4-config max-payload preset without requiring CONFIGS= on the command line.
+    """
+    makefile = pathlib.Path(__file__).resolve().parent.parent / "firmware" / "e80-stm32-bench" / "Makefile"
+    assert makefile.exists(), f"Makefile not found at {makefile}"
+
+    text = makefile.read_text()
+    # Find the CONFIGS ?= line (the default assignment)
+    import re
+    matches = re.findall(r'^CONFIGS\s*\?=\s*(.+)$', text, re.MULTILINE)
+    assert len(matches) >= 1, "No 'CONFIGS ?=' line found in Makefile"
+
+    # The default should reference envelope-4cfg-max
+    # Accept either the full path form ($(CONFIGS_DIR)/envelope-4cfg-max.json)
+    # or the bare name (envelope-4cfg-max) — both are valid as long as the
+    # filename is envelope-4cfg-max
+    default_val = matches[0].strip()
+    assert "envelope-4cfg-max" in default_val, (
+        f"Makefile default CONFIGS is '{default_val}', expected to contain 'envelope-4cfg-max'"
+    )

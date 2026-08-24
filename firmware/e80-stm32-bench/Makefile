@@ -30,7 +30,7 @@ E80_DIR       := $(TOOLDIR)
 CONFIGS_DIR   := $(REPO_ROOT)/configs
 
 # Default config preset + band
-CONFIGS       ?= $(CONFIGS_DIR)/outdoor-10.json
+CONFIGS       ?= $(CONFIGS_DIR)/envelope-4cfg-max.json
 BAND          ?= 868
 FORMAT        ?= harmonized
 TX_LOG        ?= tx-log.csv
