@@ -464,14 +464,33 @@ def _parse_args():
     ap.add_argument("--configs", default=None,
                     help="Config preset name (e.g. outdoor-10) or path to a "
                          "JSON preset file. Overrides --mode/--band when given.")
+    ap.add_argument("--configs-json", default=None,
+                    help="Inline config preset JSON (the whole preset object "
+                         "with a 'configs' list). Lets the coordinator run on "
+                         "a machine without the config file — the config JSON "
+                         "comes from CONFIGS in the Makefile. "
+                         "Overrides --configs when given.")
     return ap.parse_args()
 
 
 async def amain(args) -> int:
-    if args.configs:
-        # Reuse e80_bench_ctl's preset loader (single-sourced):
-        # accepts either a preset name (looked up in configs/) or a file path.
-        import e80_bench_ctl as ctl
+    # Reuse e80_bench_ctl's preset loader (single-sourced). The config comes
+    # from one of three sources, in priority order:
+    #   1. --configs-json (inline JSON string — lets the coordinator run on a
+    #      machine without the config file; e.g. from Makefile CONFIGS)
+    #   2. --configs (preset name or file path)
+    #   3. --mode/--band (programmatic campaign builder)
+    import e80_bench_ctl as ctl
+    if args.configs_json:
+        try:
+            preset = json.loads(args.configs_json)
+            cfgs = ctl.load_config_preset(preset)
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"ERROR parsing --configs-json: {e}", file=sys.stderr)
+            return 2
+        print(f"E80 CVM Campaign — configs-json "
+              f"stop={args.stop_id} d={args.distance}m", flush=True)
+    elif args.configs:
         try:
             cfgs = ctl.load_config_preset(args.configs)
         except (FileNotFoundError, ValueError) as e:

@@ -38,6 +38,14 @@ RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
 PRIME_DISCARD ?= 2
 
+# --- CVM config provider (dynamic config flow) ---
+# CONFIGS names the config preset — a path to a .json file, or a bare preset
+# name resolved in configs/. CONFIGS_JSON is the inline JSON of that same
+# preset, produced by shelling out to python. It is passed to the CVM
+# coordinator via --configs-json so the coordinator can run on a third machine
+# (or the same machine) WITHOUT needing the config file present locally.
+CONFIGS_JSON ?= $(shell $(PYTHON) -c "import json,os,sys; v='$(CONFIGS)'; p=v if v.endswith('.json') else os.path.join('$(CONFIGS_DIR)', v+'.json'); sys.stdout.write(json.dumps(json.load(open(p))))" 2>/dev/null || echo '')
+
 # ── Deterministic T0 + SESSION_ID ──────────────────────────────────────
 # Both machines independently compute the SAME T0 by rounding up to the
 # next 5-minute epoch boundary. No communication needed between operators.
@@ -327,20 +335,29 @@ range-test-host: ## Run pytest for distributed range test split logic
 #   # Coordinator (any third machine with Nostr relay reachability):
 #   CVM_CLIENT_HEX=<hex> make range-adaptive TX_NPUB=npub1... RX_NPUB=npub1... \
 #       CONFIGS=outdoor-10
+#
+# CVM config provider: the coordinator runs the adaptive sweep by pushing each
+# config entry to both boards via the set_config MCP tool. The Makefile passes
+# the whole config preset to the coordinator inline as JSON (--configs-json,
+# from CONFIGS_JSON) so the coordinator need not have the config file locally.
+# The board servers (range-cvm-server) can also load an initial config at
+# startup via CONFIGS=name|path, applied through the same set_config tool.
 
-range-cvm-server: ## Start CVM (Nostr MCP) board server — ROLE=tx|rx (auto-detects port)
+range-cvm-server: ## Start CVM (Nostr MCP) board server — ROLE=tx|rx (auto-detects port). CONFIGS=name|path to load initially.
 	@if [ -z "$$CVM_SERVER_HEX" ] && [ -z "$$CVM_SERVER_NSEC" ]; then \
 		echo "ERROR: set CVM_SERVER_HEX or CVM_SERVER_NSEC env var"; \
 		echo "  e.g. CVM_SERVER_HEX=<hex> make range-cvm-server ROLE=tx"; \
 		exit 1; \
 	fi
 	@echo "=== E80 CVM Board Server (role=$(ROLE)) ==="
+	@echo "  Initial config: $(CONFIGS)"
 	cd $(TOOLDIR) && $(PYTHON) tools/cvm_board_server.py --role $(ROLE) \
 		$$( [ -n "$$CVM_SERVER_HEX" ] && echo "--server-hex $$CVM_SERVER_HEX" ) \
 		$$( [ -n "$$CVM_SERVER_NSEC" ] && echo "--nsec $$CVM_SERVER_NSEC" ) \
-		$$( [ -n "$$RELAYS" ] && echo "--relays $$RELAYS" )
+		$$( [ -n "$$RELAYS" ] && echo "--relays $$RELAYS" ) \
+		$$( [ -n "$(CONFIGS)" ] && echo "--configs '$(CONFIGS)'" )
 
-range-adaptive: ## Adaptive sweep via CVM — TX_NPUB=npub1... RX_NPUB=npub1... CONFIGS=outdoor-10
+range-adaptive: ## Adaptive sweep via CVM — TX_NPUB=npub1... RX_NPUB=npub1... CONFIGS=outdoor-10 (config JSON passed inline)
 	@if [ -z "$(TX_NPUB)" ] || [ -z "$(RX_NPUB)" ]; then \
 		echo "ERROR: TX_NPUB and RX_NPUB are required. Example:"; \
 		echo "  make range-adaptive TX_NPUB=npub1... RX_NPUB=npub1... CONFIGS=outdoor-10"; \
@@ -358,7 +375,7 @@ range-adaptive: ## Adaptive sweep via CVM — TX_NPUB=npub1... RX_NPUB=npub1... 
 	cd $(TOOLDIR) && $(PYTHON) tools/cvm_campaign.py \
 		--tx-npub "$(TX_NPUB)" \
 		--rx-npub "$(RX_NPUB)" \
-		--configs "$(CONFIGS)" \
+		--configs-json '$(CONFIGS_JSON)' \
 		--client-hex "$$CVM_CLIENT_HEX" \
 		$$( [ -n "$$RELAYS" ] && echo "--relays $$RELAYS" )
 

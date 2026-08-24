@@ -636,9 +636,14 @@ def _load_keys(hexpass: Optional[str], nsec: Optional[str]):
 def run_server(role: str, port_spec: str = "auto",
                server_keys=None, relays: Optional[list[str]] = None,
                allowed_clients: Optional[list[str]] = None,
+               initial_config: Optional[str] = None,
                log=print) -> int:
     """Open the board, build the CVM server, serve forever.
     Returns exit code (0=clean, non-zero=error).
+
+    initial_config: optional config preset name or file path to load at
+        startup (via set_config). Lets `range-cvm-server CONFIGS=...` start
+        the board in a known radio config before the coordinator connects.
     """
     if relays is None:
         relays = list(DEFAULT_RELAYS)
@@ -698,6 +703,22 @@ def run_server(role: str, port_spec: str = "auto",
                              role=ctrl.role, allowed_client_pubkeys=allowed_clients,
                              log=log)
 
+    # --- Optional initial config: push a known config at startup ---
+    if initial_config:
+        try:
+            init_result = tools.dispatch_tool(
+                "set_config", {"config_name": initial_config})
+            if init_result.get("ok"):
+                n = len(init_result.get("responses", []))
+                log(f"[cvm-server] initial config '{initial_config}' applied "
+                    f"({n} config entry/entries)")
+            else:
+                log(f"[cvm-server] WARNING initial config '{initial_config}' "
+                    f"failed: {init_result.get('error', '?')}")
+        except Exception as e:
+            log(f"[cvm-server] WARNING initial config '{initial_config}' "
+                f"error: {e}")
+
     # Signal handling: SIGINT/SIGTERM → graceful shutdown
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -740,6 +761,11 @@ def main():
     ap.add_argument("--allowed-client-npubs",
                     default=os.environ.get("CVM_ALLOWED_CLIENTS", ""),
                     help="Comma-separated client npub allow-list (default: any)")
+    ap.add_argument("--configs",
+                    default=os.environ.get("CVM_CONFIGS", ""),
+                    help="Initial config preset name (e.g. envelope-4cfg-max) "
+                         "or path to a JSON preset file to load at startup. "
+                         "Env: CVM_CONFIGS")
     args = ap.parse_args()
 
     # Validate keys
@@ -775,7 +801,8 @@ def main():
 
     return run_server(args.role.upper(), port_spec=args.port,
                        server_keys=server_keys, relays=relays,
-                       allowed_clients=allowed)
+                       allowed_clients=allowed,
+                       initial_config=args.configs or None)
 
 
 if __name__ == "__main__":
