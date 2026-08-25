@@ -1,0 +1,31 @@
+{
+  "name": "detail-lora",
+  "description": "Detail re-run — LoRa configs only, 10 pkts, 868 MHz EU SRD",
+  "band": "868",
+  "configs": [
+    {
+      "label": "LoRa-SF7 BW125 LEN64",
+      "mod": "lora",
+      "sf": 7,
+      "bw": 125,
+      "br": null,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 10000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF12 BW125 LEN64",
+      "mod": "lora",
+      "sf": 12,
+      "bw": 125,
+      "br": null,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 10000,
+      "n_pkts": 10
+    }
+  ]
+}

@@ -10,6 +10,17 @@
 #   make range-merge    - Merge TX+RX logs, compute PER, generate report
 #   make range-dry-run  - Print schedule without touching hardware
 #   make range-test-host - Run pytest for distributed split logic
+#
+# DIST parameter — auto-select per-stop config:
+#   make tx DIST=50m       → configs/per-stop/stop-50m.json
+#   make tx DIST=70km      → configs/per-stop/stop-70km.json
+#   make tx DIST=100       → configs/per-stop/stop-100m.json (bare = meters)
+#   make rx DIST=218m      → configs/per-stop/stop-218m.json
+#   make range-dry-run DIST=436m   (preview without hardware)
+#
+# Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km
+# Bare numbers are meters: DIST=1744 → stop-1744m.json
+# When DIST is not set, CONFIGS defaults to envelope-4cfg-max.json.
 
 CMAKE ?= cmake
 BUILD := build-fw
@@ -31,6 +42,16 @@ CONFIGS_DIR   := $(REPO_ROOT)/configs
 
 # Default config preset + band
 CONFIGS       ?= $(CONFIGS_DIR)/envelope-4cfg-max.json
+
+# DIST: distance for per-stop configs (50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km)
+# Bare numbers are meters: DIST=100 → stop-100m.json
+ifdef DIST
+  # normalize: bare number → <n>m
+  DIST_NORM := $(shell python3 -c "d='$(DIST)'; print(d if not d.isdigit() else d+'m')")
+  DIST_FILE := $(CONFIGS_DIR)/per-stop/stop-$(DIST_NORM).json
+  CONFIGS := $(DIST_FILE)
+endif
+
 BAND          ?= 868
 FORMAT        ?= harmonized
 TX_LOG        ?= tx-log.csv
@@ -148,6 +169,14 @@ range-tx: ## Distributed TX mode: auto-detect board, send bursts on T0 schedule
 	@echo "║  T0:           $(T0) (epoch)"
 	@echo "║  SESSION_ID:   $(SESSION_ID)"
 	@echo "║  Configs:      $(CONFIGS)"
+ifdef DIST
+	@if [ ! -f "$(DIST_FILE)" ]; then \
+		echo "║  ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
+		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
+		exit 1; \
+	fi
+	@echo "║  DIST:         $(DIST) → stop-$(DIST_NORM).json"
+endif
 	@echo "║  Band:         $(BAND) MHz"
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "╚══════════════════════════════════════════════╝"
@@ -170,6 +199,14 @@ range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 sched
 	@echo "║  T0:           $(T0) (epoch)"
 	@echo "║  SESSION_ID:   $(SESSION_ID)"
 	@echo "║  Configs:      $(CONFIGS)"
+ifdef DIST
+	@if [ ! -f "$(DIST_FILE)" ]; then \
+		echo "║  ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
+		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
+		exit 1; \
+	fi
+	@echo "║  DIST:         $(DIST) → stop-$(DIST_NORM).json"
+endif
 	@echo "║  Band:         $(BAND) MHz"
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "╚══════════════════════════════════════════════╝"
@@ -209,6 +246,15 @@ range-coord: ## Print T0 + SESSION_ID for sharing between TX and RX operators
 range-dry-run: ## Print schedule from config preset without touching hardware
 	@echo "=== E80 Range Test Dry Run ==="
 	@echo "  Configs: $(CONFIGS)"
+ifdef DIST
+	@if [ ! -f "$(DIST_FILE)" ]; then \
+		echo "ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
+		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
+		echo "Bare numbers are meters: DIST=100 → stop-100m.json"; \
+		exit 1; \
+	fi
+	@echo "  DIST:     $(DIST) → stop-$(DIST_NORM).json"
+endif
 	@echo ""
 	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
 		--dry-run \

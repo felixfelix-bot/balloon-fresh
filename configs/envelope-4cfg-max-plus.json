@@ -1,0 +1,91 @@
+{
+  "name": "envelope-4cfg-max-plus",
+  "description": "7-config envelope — most robust FLRC first (FLRC-260) + max payload per modulation + SF9 and SF7-BW500 throughput sweep, 869.525 MHz high-power sub-band, PA=22 dBm OUTDOOR, 10 pkts each",
+  "band": "868",
+  "configs": [
+    {
+      "label": "FLRC-260 LEN511",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 260,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 511,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "FLRC-650 LEN511",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 511,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "FLRC-2600 LEN511",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 2600,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 511,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF7 BW125 LEN255",
+      "mod": "lora",
+      "sf": 7,
+      "bw": 125,
+      "br": null,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 255,
+      "gap": 10000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF12 BW125 LEN255",
+      "mod": "lora",
+      "sf": 12,
+      "bw": 125,
+      "br": null,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 255,
+      "gap": 10000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF9 BW125 LEN255",
+      "mod": "lora",
+      "sf": 9,
+      "bw": 125,
+      "br": null,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 255,
+      "gap": 10000,
+      "n_pkts": 10
+    },
+    {
+      "label": "LoRa-SF7 BW500 LEN255",
+      "mod": "lora",
+      "sf": 7,
+      "bw": 500,
+      "br": null,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 255,
+      "gap": 10000,
+      "n_pkts": 10
+    }
+  ]
+}
