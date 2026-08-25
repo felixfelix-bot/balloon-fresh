@@ -247,6 +247,25 @@ boards share one openocd. For outdoor tests, use two laptops
 - **Access:** Walk (~15 min from Cowork)
 - **Best for:** stop-872m
 
+## Quick Reference — Trip Sequence
+
+5 trips, sorted by Cowork window side to minimize changes. Only 4 window
+changes total. Each trip group hits all TX locations visible from that
+window without going back to move the radio.
+
+| Order | Window | TX Stops | Travel | Duration |
+|-------|--------|----------|--------|----------|
+| 1 | South | 50m, 100m, 218m, 436m | Walk seafront | 30 min |
+| 2 | West | 872m (Achada), 1744m (Barcelos), 11000m (Cabo Girão) | Taxi ×2 | 2 hours |
+| 3 | East | 1744m (São Gonçalo), 5000m (Garajau), 11000m (Machico) | Taxi ×2 | 2 hours |
+| 4 | North | 1744m (Monte), 11000m (Pico Arieiro) | Taxi + drive | 3 hours |
+| 5 | NW | 70000m (Porto Moniz or Encumeada) | Drive | Half day |
+
+**Total: 4 window changes, 5 trips, ~1.5 days of testing.**
+
+Note: 70km true distance not possible on Madeira alone (~34km max to
+Porto Moniz). Would need Porto Santo island for 70km+.
+
 ## Weather Notes
 - Madeira peaks (Pico Arieiro, Pico Ruivo) frequently in cloud
 - Check cloud cover before driving to high elevations
