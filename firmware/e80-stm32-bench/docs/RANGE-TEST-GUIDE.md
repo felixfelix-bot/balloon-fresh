@@ -26,6 +26,8 @@
 16. [Troubleshooting](#16-troubleshooting)
 17. [Test Results Reference](#17-test-results-reference)
 18. [Quick Reference Cheat Sheet](#18-quick-reference-cheat-sheet)
+19. [70 km Distance Test Matrix](#19-70-km-distance-test-matrix)
+20. [Throughput Optimization Opportunities](#20-throughput-optimization-opportunities)
 
 ---
 
@@ -587,6 +589,45 @@ reduced guard times.
 sensitivity than 64B — if 511B works, smaller works. Max payload also
 gives >6 ms airtime, avoiding the LR2021 AGC RSSI artifact for more
 accurate RSSI. 10 packets each keeps 10% PER resolution.
+
+#### `configs/envelope-4cfg-max-plus.json`
+
+Extended envelope — 7-config preset adding FLRC-260 (most robust FLRC),
+SF9, and SF7-BW500 for throughput sweep at range. **869.525 MHz** (EU
+high-power sub-band 869.4–869.65 MHz, 500 mW ERP allowed), **PA=22 dBm**
+with POWER MODE OUTDOOR 2026 unlock, 10 packets each. Used for the
+extended distance matrix (§19) with stops at 11 km and 70 km.
+
+> **Power note:** PA=22 dBm exceeds the +10 dBm indoor cap. The control
+> script (`e80_bench_ctl.py`) automatically sends `POWER MODE OUTDOOR 2026`
+> before any PA command when `pa > 10`. This unlocks the full 0–22 dBm
+> range on the LR2021 chip. At 869.525 MHz in the EU high-power sub-band,
+> +22 dBm (158 mW) is legal — the sub-band allows up to 500 mW ERP
+> (+27 dBm), well above the chip's maximum output.
+
+| # | Label | Modulation | Bitrate/SF | BW | PA | Payload | Gap | Packets |
+|---|-------|-----------|------------|-----|-----|---------|-----|---------|
+| 0 | FLRC-260 LEN511 | FLRC | 260 kbps | — | 22 dBm | 511 B | 5 ms | 10 |
+| 1 | FLRC-650 LEN511 | FLRC | 650 kbps | — | 22 dBm | 511 B | 5 ms | 10 |
+| 2 | FLRC-2600 LEN511 | FLRC | 2600 kbps | — | 22 dBm | 511 B | 5 ms | 10 |
+| 3 | LoRa-SF7 BW125 LEN255 | LoRa | SF7 | 125 kHz | 22 dBm | 255 B | 10 ms | 10 |
+| 4 | LoRa-SF12 BW125 LEN255 | LoRa | SF12 | 125 kHz | 22 dBm | 255 B | 10 ms | 10 |
+| 5 | LoRa-SF9 BW125 LEN255 | LoRa | SF9 | 125 kHz | 22 dBm | 255 B | 10 ms | 10 |
+| 6 | LoRa-SF7 BW500 LEN255 | LoRa | SF7 | 500 kHz | 22 dBm | 255 B | 10 ms | 10 |
+
+Total: 70 packets across 7 configs. Duration: **~2.5 minutes** with
+reduced guard times.
+
+**Why the 3 extra configs:**
+- **FLRC-260 511B** — the slowest FLRC bitrate (260 kbps) with ~4 dB
+  better sensitivity than FLRC-650. Extends FLRC ground-level range to
+  ~700 m. Most robust FLRC mode; listed first so the most reliable FLRC
+  config is tested before faster but less sensitive ones.
+- **SF9 BW125** — mid-range LoRa between SF7 and SF12. Tests the
+  throughput/range tradeoff at 11 km and 70 km stops.
+- **SF7 BW500** — max throughput LoRa experiment. 4× the data rate of
+  SF7 BW125 at -6 dB sensitivity cost. Tests whether high-throughput
+  LoRa is viable at inter-island range.
 
 ### Using a custom config
 
@@ -1313,30 +1354,79 @@ mission-relevant maximum range test — if LoRa SF12 works at 70 km
 ground-level (two-ray d⁻⁴ path loss), it will work at balloon altitude
 (FSPL d⁻², much less lossy).
 
-The extended distance series uses **6 dB steps (doubling)** from 218 m to
-~70 km. Each stop runs the `envelope-4cfg-max` preset (or a subset) at
-that distance.
+The extended distance series uses **6 dB steps (doubling)** from 50 m to
+~70 km. Each stop runs the `envelope-dualband` preset (or a subset) at
+that distance. The dual-band preset contains 12 configs: 7× 869 MHz
+(pa=22, 869.525 MHz) + 5× 2.4 GHz (pa=12, 2400 MHz). 869 MHz is the primary
+band (better link budget: +19 dB margin advantage). 2.4 GHz is secondary
+(frequency diversity, smaller antenna, global ISM).
 
-| Stop | Distance | FLRC-650 511B | FLRC-2600 511B | LoRa SF7 255B | LoRa SF12 255B | Runs |
-|------|----------|:---:|:---:|:---:|:---:|:---:|
-| Sanity | 218m | TEST | TEST | TEST | TEST | 4 |
-| D1 | 436m | TEST | TEST | TEST | skip (38 dB margin) | 3 |
-| D2 | 872m | TEST (cliff!) | skip (dead) | TEST | TEST | 3 |
-| D3 | 1744m | skip (dead) | skip | TEST (cliff!) | TEST | 2 |
-| D4 | 5km | skip | skip | skip (dead) | TEST | 1 |
-| D5 | 11km | skip | skip | skip | TEST | 1 |
-| D6 | 70km | skip | skip | skip | TEST (mission!) | 1 |
-| **Total** | | | | | | **15** |
+### ⚠️ Operator: Antenna Cable Swap Required
 
-15 runs × ~15 s average per run = ~4 min test time + driving/boat.
+The E80 board has **dual SMA jacks**: sub-GHz (Pin 9, LF jack) and 2.4 GHz
+(Pin 10, HF jack). The operator must **physically swap the antenna cable**
+between band groups:
 
-**Skip rationale per cell:**
-- FLRC-2600 at 872 m: -19 dB margin = certainly dead. Zero information.
-- LoRa SF12 at 436 m: +38 dB margin = certainly alive. Zero information.
-- FLRC-650 at 1744 m: -23 dB margin = dead. Zero information.
-- LoRa SF7 at 5 km: -14 dB margin = dead. Zero information.
-- LoRa SF7 at 11 km+70 km: way past cliff. Dead. Zero information.
-- FLRC-650/2600 at 5 km+: way past cliff. Dead. Zero information.
+1. **Run all 869 MHz configs first** — antenna cable on sub-GHz SMA jack (Pin 9).
+2. **Swap antenna cable** to 2.4 GHz SMA jack (Pin 10).
+3. **Run all 2.4 GHz configs** — antenna cable on 2.4 GHz SMA jack (Pin 10).
+
+### Dual-Band Distance Matrix
+
+| Stop | Dist | 869: FLRC-260 | 869: FLRC-650 | 869: FLRC-2600 | 869: SF7-125 | 869: SF9-125 | 869: SF7-500 | 869: SF12 | 2G4: SF12 | 2G4: SF9 | 2G4: SF7 | 2G4: FLRC-260 | 2G4: FLRC-2600 |
+|------|------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Baseline | 50m | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | ✓ | ✓ |
+| B2 | 100m | ✓ | ✓ | ✓ | — | — | — | — | — | — | — | ✓ | — |
+| Sanity | 218m | ✓ | ✓ | ✓ | ✓ | — | — | ✓ | ✓ | — | — | — | — |
+| D1 | 436m | ✓ | ✓ | — | ✓ | — | — | — | ✓ | — | — | — | — |
+| D2 | 872m | ✓ | — | — | ✓ | — | — | ✓ | ✓ | — | — | — | — |
+| D3 | 1744m | ✓ | — | — | ✓ | — | — | ✓ | ✓ | — | — | — | — |
+| D4 | 5km | — | — | — | — | — | — | ✓ | ✓ | — | — | — | — |
+| D5 | 11km | — | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — | — |
+| D6 | 70km | — | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+
+**869 MHz config rationale per stop:**
+- **Baseline / B2 (50–100 m):** FLRC only — short range, characterize FLRC
+  PER/RSSI at near-zero distance. All three FLRC bitrates tested.
+- **Sanity (218 m):** All key mods — verify radio links work before
+  committing to the long drive/boat. SF12 included as a reference.
+- **D1 (436 m):** FLRC-260 + FLRC-650 + SF7. FLRC-2600 skipped
+  (cliff, -13 dB margin). SF12 skipped (+38 dB margin = certainly
+  alive, zero information).
+- **D2 (872 m):** FLRC-260 (cliff!) + SF7 + SF12. FLRC-650 skipped
+  (-7 dB margin = dead). FLRC-2600 skipped (-19 dB margin = dead).
+- **D3 (1744 m):** FLRC-260 (cliff!) + SF7 (cliff!) + SF12.
+  FLRC-650/2600 dead (-15 dB margin).
+- **D4 (5 km):** SF12 only. SF7 dead (-14 dB margin). FLRC dead.
+- **D5 (11 km):** SF7 + SF9 + SF7-500kHz + SF12. This is the throughput
+  sweep stop — measure whether higher-BW / lower-SF configs can still
+  deliver data at moderate range.
+- **D6 (70 km):** SF7 + SF9 + SF7-500kHz + SF12. The mission stop.
+  SF12 is the known-good mission config. SF7/SF9/SF7-500kHz test whether
+  higher throughput is feasible at inter-island range.
+
+**2.4 GHz config rationale per stop:**
+- **2.4 GHz uses 2400 MHz** (below WiFi channel 1) to avoid interference.
+  At 2.4 GHz, max TX power is +12 dBm (chip hardware limit, vs +22 dBm
+  at 869 MHz). Link budget is 19 dB worse than 869 MHz (10 dB power + 9 dB
+  FSPL).
+- **Baseline / B2 (50–100 m):** FLRC-260 + FLRC-2600 at 50 m; FLRC-260
+  only at 100 m. 2.4 GHz FLRC dies fast — sensitivity -88 to -98 dBm,
+  dead past ~100 m at +12 dBm.
+- **Sanity → D4 (218 m – 5 km):** 2.4 GHz SF12 only. SF12 has +20.4 dB
+  margin at 70 km — enough to survive all intermediate distances. This
+  brackets the range cliff for 2.4 GHz.
+- **D5 (11 km):** 2.4 GHz SF12 + SF9. SF9 adds mid-range sensitivity
+  characterization.
+- **D6 (70 km):** 2.4 GHz SF12 + SF9 + SF7. SF7 at 70 km has ~+2 dB margin
+  (marginal) — will it work? This is the key 2.4 GHz experiment.
+
+**Why the new SF9 and SF7-BW500 configs at D5/D6:**
+- **SF9 BW125** sits between SF7 (high throughput, shorter range) and
+  SF12 (max range, low data rate). At 11–70 km it tests the middle ground.
+- **SF7 BW500** quadruples the data rate of SF7 BW125 (4× bandwidth → 4×
+  symbol rate) at the cost of ~6 dB sensitivity loss. At 11–70 km it
+  probes whether high-throughput LoRa is viable at mission range.
 
 **Why 70 km is the key test:** LoRa SF12 sensitivity is ~-132 dBm. At
 70 km ground-level with two-ray path loss (d⁻⁴), predicted RSSI is
@@ -1351,3 +1441,280 @@ balloon-altitude performance.
 **D5 at 11 km** bridges between 5 km (SF12 certainly alive) and 70 km
 (mission relevant). If SF12 passes at 11 km but fails at 70 km, we know
 the cliff is between 11–70 km — balloon altitude test needed.
+
+### 2.4 GHz Link Budget Summary
+
+| Metric | 869 MHz | 2.4 GHz | Δ |
+|--------|---------|---------|-----|
+| Max TX power | +22 dBm | +12 dBm | 10 dB |
+| FSPL @ 70 km | 128.1 dB | 137.1 dB | 9.0 dB |
+| Link margin @ 70 km (whip) | +39.4 dB | +20.4 dB | 19.0 dB |
+| Quarter-wave antenna | 86 mm | 31 mm | 2.77× smaller |
+| Interference | Low | WiFi (avoidable at 2400 MHz) | 869 MHz cleaner |
+
+See `docs/2G4-LINK-BUDGET-ANALYSIS.md` for the full analysis.
+
+### Per-Stop Config Files (Maximum Throughput at Every Distance)
+
+Instead of running the full `envelope-dualband.json` at every stop, the
+operator loads a **per-stop config file** that contains only the configs
+relevant for that distance, ordered from **highest throughput first**.
+
+These files live under `configs/per-stop/` and include both 869 MHz and
+2.4 GHz configs (869 first, then 2g4). Each file adds the high-throughput
+LoRa modes (SF5, SF6, SF8) and FLRC-1300 that the original
+`envelope-dualband.json` was missing.
+
+**Usage:**
+
+```bash
+# At each stop, load the per-stop file for that distance:
+make tx CONFIGS=configs/per-stop/stop-50m.json
+make rx CONFIGS=configs/per-stop/stop-50m.json
+```
+
+**Per-stop config table:**
+
+| Stop | File | 869 configs | 2G4 configs | Total | Est. time |
+|------|------|:-:|:-:|:-:|---|
+| 50 m | `stop-50m.json` | 7 | 3 | 10 | ~60 s |
+| 100 m | `stop-100m.json` | 7 | 4 | 11 | ~65 s |
+| 218 m | `stop-218m.json` | 8 | 4 | 12 | ~70 s |
+| 436 m | `stop-436m.json` | 6 | 3 | 9 | ~55 s |
+| 872 m | `stop-872m.json` | 6 | 3 | 9 | ~90 s |
+| 1744 m | `stop-1744m.json` | 6 | 3 | 9 | ~90 s |
+| 5 km | `stop-5km.json` | 6 | 2 | 8 | ~80 s |
+| 11 km | `stop-11km.json` | 6 | 2 | 8 | ~80 s |
+| 70 km | `stop-70km.json` | 6 | 3 | 9 | ~90 s |
+
+**Estimated test time per stop** is calculated as:
+- ~5 s per FLRC config (reduced guard time, 10 pkts × 5 s gap)
+- ~10 s per LoRa config (10 pkts × 1 s gap + TX airtime + settle)
+
+Times include the inter-config SWD reset (2 s) and band swap overhead
+(~30 s antenna cable swap between 869 MHz and 2.4 GHz groups).
+
+**Config selection rationale:**
+- **50–100 m:** Maximum throughput — FLRC-2600 (2.6 Mbps) down to FLRC-260,
+  plus LoRa SF5 BW500 (~120 kbps) and SF7 BW500. At 50 m, 2.4 GHz FLRC-2600
+  and FLRC-650 are included; by 100 m, 2.4 GHz FLRC-650 is dropped (cliff).
+- **218 m:** FLRC-2600 dropped (dead at this range), FLRC-1300 steps in.
+  SF12 added as a cliff-edge reference. 2.4 GHz drops to FLRC-260 + LoRa only.
+- **436 m:** FLRC-650 is the fastest FLRC that works. 2.4 GHz FLRC-260
+  still viable. SF5/SF7 BW500 added to probe high-throughput LoRa.
+- **872 m:** FLRC-260 is the only FLRC (cliff edge). 2.4 GHz FLRC dropped
+  entirely — only LoRa configs survive at this range on 2.4 GHz.
+- **1744 m:** No FLRC at all. SF8 BW125 added to bridge SF7→SF9. All LoRa.
+- **5–11 km:** LoRa only. SF7 BW500 is the fastest (may work at 5–11 km
+  with +22 dBm). SF9 and SF12 bracket the cliff. 2.4 GHz drops to SF9+SF12.
+- **70 km:** The mission stop. SF7 BW500 first (marginal), then SF7 BW125,
+  SF5 BW125, SF8, SF9, SF12. 2.4 GHz adds SF7 (marginal at 70 km, +2 dB margin).
+
+**New high-throughput LoRa modes added:**
+- **SF5 BW500** (~120 kbps): works ~0–5 km at +22 dBm. Previously untested.
+- **SF5 BW125** (~30 kbps): works ~0–10 km. Previously untested.
+- **SF8 BW125** (~15 kbps): works ~0–30 km. Bridges SF7→SF9.
+
+**New FLRC mode added:**
+- **FLRC-1300** (1.3 Mbps): works ~0–200 m. Fills the gap between
+  FLRC-2600 (2.6 Mbps, ~100 m) and FLRC-650 (650 kbps, ~400 m).
+
+---
+
+## 20. Throughput Optimization Opportunities
+
+The LR2021 chip supports several parameters that trade sensitivity for
+data rate. This section documents what's available, what the firmware
+currently uses, and what could be explored in future range tests.
+
+### Current firmware defaults
+
+The firmware (`bench.c` + `radio_bench.c`) hardcodes these LoRa defaults:
+
+| Parameter | Current value | Location in firmware |
+|-----------|--------------|----------------------|
+| Coding rate (CR) | 4/5 (denominator=5) | `bench.c:562` — `cfg.cr = 5` |
+| Preamble length | 8 symbols | `radio_bench.c:37` — `lora_pkt_params.preamble_len_in_symb = 8` |
+| Header mode | Explicit | `radio_bench.c:38` — `lora_pkt_params.pkt_mode = LR20XX_RADIO_LORA_PKT_EXPLICIT` |
+| CRC | Enabled (true) | `radio_bench.c:40` — `lora_pkt_params.crc = true` |
+| PA power | 22 dBm (OUTDOOR mode) | Configurable via `PA <dbm>` command; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm; `envelope-4cfg-max-plus.json` uses pa=22 at 869.525 MHz |
+
+### Opportunity 1: Bandwidth 250 kHz and 500 kHz
+
+**Status: ✅ Already supported by firmware.**
+
+The firmware `MOD loRa <sf> <bw>` command accepts BW values 125, 250,
+and 500 (kHz). The LR2021 driver (`radio_bench.c`) maps these to the
+correct `lr20xx_radio_lora_bw_t` enum via `bw_to_enum()`.
+
+| BW (kHz) | Relative data rate | Sensitivity penalty | Config field |
+|----------|-------------------|---------------------|--------------|
+| 125 | 1× (baseline) | 0 dB (baseline) | `"bw": 125` |
+| 250 | 2× | -3 dB | `"bw": 250` |
+| 500 | 4× | -6 dB | `"bw": 500` |
+
+**Throughput math:** Data rate scales linearly with bandwidth. SF7 at
+500 kHz has the same symbol time as SF5 at 125 kHz — ~4× faster than
+SF7 at 125 kHz.
+
+**Sensitivity tradeoff:** Wider bandwidth means more noise integrates
+into each symbol, so sensitivity degrades by ~3 dB per doubling. SF7
+BW500 has ~6 dB worse sensitivity than SF7 BW125.
+
+**Config example:** Already in `envelope-4cfg-max-plus.json` as
+`"LoRa-SF7 BW500 LEN255"` with `"bw": 500`.
+
+**Test plan:** SF7 BW500 is included at D5 (11 km) and D6 (70 km) stops.
+If it works at 70 km, it delivers 4× the throughput of SF7 BW125 at the
+same SF — a major win for the balloon mission.
+
+### Opportunity 2: Coding Rate CR 4/5 vs 4/8
+
+**Status: ✅ Already at optimal (4/5). No firmware command to change it.**
+
+The firmware hardcodes CR to 4/5 (denominator=5) in `bench.c:562`:
+```c
+cfg.cr = 5; /* LoRa default: coding rate 4/5 */
+```
+
+The `radio_bench_cfg_t` struct has a `cr` field (`radio_bench.h:43`),
+and `radio_bench.c` applies it via `lora_cr_to_enum(cfg->cr)`. But the
+`MOD` command parser (`bench_cmd.c:238-263`) does NOT accept a CR
+argument — it's always set to 5.
+
+| CR | Overhead | Error correction | Relative throughput |
+|----|----------|-----------------|-------------------|
+| 4/5 | 20% | Lowest | 1.0× (highest throughput) |
+| 4/6 | 33% | Low | 0.83× |
+| 4/7 | 43% | Medium | 0.71× |
+| 4/8 | 50% | Highest | 0.67× (max range, lowest throughput) |
+
+**Firmware change needed:** To make CR configurable, add an optional 5th
+token to the `MOD loRa` command: `MOD loRa <sf> <bw> [cr]`. The parser
+in `bench_cmd.c` would need to accept `ntok == 4` (default CR=5) or
+`ntok == 5` (CR from token[4]). The config JSON would add a `"cr"` field.
+
+**Sensitivity tradeoff:** Lower CR (more overhead) gives better error
+correction — useful in high-noise or weak-signal conditions. CR 4/8
+gains ~2-3 dB effective sensitivity vs 4/5 at the cost of 33% throughput
+reduction. Since the firmware already uses 4/5 (the fastest), there's
+no throughput gain to be had — only a range gain by going to 4/8 if
+PER is high.
+
+### Opportunity 3: Shorter Preamble
+
+**Status: ❌ Not configurable. Hardcoded to 8 symbols.**
+
+The LoRa preamble is set to 8 symbols in `radio_bench.c:37`:
+```c
+.preamble_len_in_symb = 8,
+```
+
+The LR2021 driver accepts preamble lengths from 1 to 65535 symbols.
+
+| Preamble (symbols) | Time overhead (SF7/BW125) | Time overhead (SF12/BW125) |
+|--------------------|--------------------------|---------------------------|
+| 8 (current) | 61 ms | 2.0 s |
+| 4 | 30 ms | 1.0 s |
+| 2 | 15 ms | 0.5 s |
+
+**Throughput gain:** For short packets (255B) at SF7/BW125, airtime is
+~102 ms. Reducing preamble from 8→4 saves ~31 ms (30% of airtime). At
+SF12/BW125, airtime for 255B is ~9.8 s — reducing preamble from 8→4
+saves ~1.0 s (10% of airtime).
+
+**Sensitivity tradeoff:** Shorter preamble = less time for the RX to
+detect the packet. The LR2021 requires at least 4 symbols of preamble
+for reliable detection. Going below 4 risks missed packets at low SNR.
+
+**Firmware change needed:** Add a preamble field to
+`radio_bench_cfg_t` and a `PREAMBLE <n>` console command, or add it as
+an optional `MOD loRa` argument.
+
+**Config parameter name (proposed):** `"preamble": 8` (symbols)
+
+### Opportunity 4: Implicit Header Mode
+
+**Status: ❌ Not configurable. Hardcoded to explicit.**
+
+The LoRa packet type is set to explicit header in `radio_bench.c:38`:
+```c
+.pkt_mode = LR20XX_RADIO_LORA_PKT_EXPLICIT,
+```
+
+The LR2021 supports both explicit (with header) and implicit (no header)
+modes. In explicit mode, each packet carries a 3-byte header (payload
+length, forward error correction info, CRC presence). In implicit mode,
+both TX and RX must agree on these parameters out-of-band.
+
+| Header mode | Bytes saved per packet | Throughput gain (255B, SF7/125) |
+|-------------|----------------------|--------------------------------|
+| Explicit (current) | 0 | 0% |
+| Implicit | 3 bytes | ~3% (small but free) |
+
+**Throughput gain:** 3 bytes saved per packet. For a 255B payload,
+this is ~1.2% airtime reduction. For shorter payloads (e.g. 51B), it's
+more significant: ~6% airtime reduction.
+
+**Sensitivity tradeoff:** None — implicit mode has identical sensitivity
+to explicit. The only risk is that RX must know the payload length
+and CR in advance (no in-band metadata). Since both bench boards run
+the same firmware with the same config, this is guaranteed.
+
+**Firmware change needed:** Change `lora_pkt_params.pkt_mode` from
+`LR20XX_RADIO_LORA_PKT_EXPLICIT` to
+`LR20XX_RADIO_LORA_PKT_IMPLICIT`. This is a single-line change in
+`radio_bench.c`, but it affects ALL LoRa configs — implicit mode
+requires the RX to know the payload length, which it does via the
+`START N=<n> LEN=<l> GAP=<us>` command.
+
+**Config parameter name (proposed):** `"header_mode": "implicit"`
+
+### Opportunity 5: PA Power Increase (10 → 22 dBm)
+
+**Status: ✅ Already supported by firmware + config.**
+
+The `PA <dbm>` command accepts any value from 0 to 22 dBm. The indoor
+cap is 10 dBm; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm. The host-side
+controller (`e80_bench_ctl.py`) enforces the same gate and automatically
+sends the unlock command when `pa > 10` in both TX and RX modes.
+
+The `envelope-4cfg-max-plus.json` preset now uses **PA=22 dBm** at
+**869.525 MHz** (EU high-power sub-band 869.4–869.65 MHz).
+
+| PA (dBm) | ERP (mW) | Legal status (EU) | Range gain vs 10 dBm |
+|----------|----------|-------------------|---------------------|
+| 10 (indoor cap) | 10 mW | ✅ Legal (any 868 MHz sub-band) | 0 dB (baseline) |
+| 14 | 25 mW | ✅ Legal (EU SRD max, most sub-bands) | +4 dB |
+| 22 | 158 mW | ✅ Legal at 869.4–869.65 MHz high-power sub-band (500 mW ERP limit) | +12 dB |
+
+**Throughput tradeoff:** PA increase doesn't change data rate — it
+improves link margin. +12 dB (10→22 dBm) extends range by ~4×
+in FSPL (free-space), ~2.5× in two-ray. This makes the difference
+between SF7 and SF9 working at 70 km much more likely.
+
+**Config change:** Already done — `envelope-4cfg-max-plus.json` now has
+`"pa": 22` and `"freq": 869525000`. The firmware and host tool
+automatically send `POWER MODE OUTDOOR 2026` before any PA command when
+`pa > 10`.
+
+**Config parameter name:** `"pa": 22` (existing field)
+
+### Summary: What's Ready Now vs What Needs Firmware Work
+
+| Opportunity | Firmware support | Config field | Throughput gain | Sensitivity cost |
+|-------------|-----------------|-------------|----------------|-----------------|
+| BW 250 kHz | ✅ Ready | `"bw": 250` | 2× data rate | -3 dB |
+| BW 500 kHz | ✅ Ready | `"bw": 500` | 4× data rate | -6 dB |
+| CR 4/5 (current) | ✅ Already set | N/A (hardcoded) | Baseline | Baseline |
+| CR 4/8 (future) | ❌ Needs MOD cmd change | `"cr": 8` (proposed) | -33% throughput | +2-3 dB sensitivity |
+| Shorter preamble | ❌ Needs firmware change | `"preamble": 4` (proposed) | 3-30% airtime savings | Risk at low SNR |
+| Implicit header | ❌ Needs firmware change | `"header_mode": "implicit"` (proposed) | 1-6% airtime savings | None |
+| PA 22 dBm | ✅ Ready | `"pa": 22` | No rate change (range gain) | +12 dB link margin |
+
+The **highest-impact, zero-firmware-change** opportunities are:
+1. **BW 500 kHz** (already in envelope-4cfg-max-plus.json) — 4× throughput
+2. **PA 22 dBm** (now in envelope-4cfg-max-plus.json at 869.525 MHz) — +12 dB range
+
+Future firmware work could add CR selection, preamble length, and
+implicit header mode for additional throughput gains.
