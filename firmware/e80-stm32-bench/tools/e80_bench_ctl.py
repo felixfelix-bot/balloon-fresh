@@ -1302,7 +1302,13 @@ class HarmonizedTxLogWriter:
             f.flush()
 
 def run_tx_mode(args):
-    """TX-only distributed mode. Sends bursts on T0-anchored schedule."""
+    """TX-only distributed mode. Sends bursts on T0-anchored schedule.
+
+    With --loop N (default 1), the schedule is repeated N times (0 = infinite).
+    Each cycle recomputes T0 = time.time() + t0_margin and regenerates the
+    schedule via build_preset_schedule. The cycle number (1-based) is used
+    as the replicate counter in CSV log lines.
+    """
 
     # Load config preset
     cfgs = load_config_preset(args.configs)
@@ -1311,6 +1317,8 @@ def run_tx_mode(args):
     # Auto-detect board
     port, probe_serial = _detect_board_for_mode("tx", args.port, args.probe)
 
+    loop_count = getattr(args, "loop", 1)
+
     print("== DISTRIBUTED TX MODE ==")
     print("  T0:         {}".format(
         datetime.datetime.fromtimestamp(t0).isoformat()))
@@ -1318,27 +1326,8 @@ def run_tx_mode(args):
     print("  Probe:      {}".format(probe_serial or "(not detected)"))
     print("  Session ID: {}".format(args.session_id))
     print("  Configs:    {}".format(len(cfgs)))
+    print("  Loop:       {}".format("infinite (Ctrl-C to stop)" if loop_count == 0 else loop_count))
     print()
-
-    starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle, args.rx_lead,
-                                   swd_reset_s=args.swd_reset_s,
-                                   band_swap_s=args.band_swap_s)
-    for i, (c, s) in enumerate(zip(cfgs, starts)):
-        print("  [{}/{}] {} N={} LEN={} start={}".format(
-            i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
-            fmt_offset(s, t0)))
-    print()
-
-    # Launch-lateness guard: refuse to start past-timestamped configs that
-    # wait_until() would silently no-op on (silent desync class of bug).
-    # See docs/timing-tolerance-analysis.md §3.
-    cfgs, starts = apply_late_skip(
-        cfgs, starts, time.time(),
-        rx_lead=0,           # TX uses absolute starts, no rx_lead
-        skip_late=args.skip_late_configs,
-        mode_label="TX",
-    )
 
     # Open board
     board = BoardSerial(port)
@@ -1354,9 +1343,9 @@ def run_tx_mode(args):
         log = HarmonizedTxLogWriter(args.tx_log, session_id=args.session_id)
     else:
         log = TxLogWriter(args.tx_log, session_id=args.session_id)
-    log.comment("DISTRIBUTED_TX_MODE session={} t0={} port={} probe={}".format(
+    log.comment("DISTRIBUTED_TX_MODE session={} t0={} port={} probe={} loop={}".format(
         args.session_id, datetime.datetime.fromtimestamp(t0).isoformat(),
-        port, probe_serial or "?"))
+        port, probe_serial or "?", loop_count))
 
     def wait_until(ts):
         while True:
@@ -1365,119 +1354,155 @@ def run_tx_mode(args):
                 return
             time.sleep(min(d, 30.0))
 
+    cycle = 0
     try:
-        prev_cfg = None
-        for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
-            # Drain stale data from previous config (don't send STOP — it
-            # triggers an IWDG watchdog reset on the firmware)
-            if idx > 0:
-                board.drain(quiet=0.5)
+        while True:
+            cycle += 1
+            if loop_count > 0 and cycle > loop_count:
+                break
 
-            # Band transition antenna swap reminder
-            if prev_cfg is not None and is_band_transition(prev_cfg.get("freq"), cfg.get("freq")):
-                print("\n⚠️  BAND TRANSITION: {} → {} — SWAP ANTENNA to {} NOW\n".format(
-                    _band_label(prev_cfg["freq"]), _band_label(cfg["freq"]),
-                    _antenna_jack(cfg["freq"])))
+            # Recompute T0 and schedule for this cycle
+            t0_cycle = time.time() + args.t0_margin
+            starts = build_preset_schedule(cfgs, t0_cycle, args.t0_margin,
+                                           args.guard, args.settle, args.rx_lead,
+                                           swd_reset_s=args.swd_reset_s,
+                                           band_swap_s=args.band_swap_s)
 
-            # --- Send radio config BEFORE the scheduled start time ---
-            # This allows the firmware self-reset (TCXO startup + calibration
-            # triggered by MOD command) to happen during the inter-config
-            # gap, eliminating the 3-5s burst delay that required guard>=6s.
-            # Firmware handles chip reset internally since c70f582 — no SWD
-            # close/reopen needed.
+            if loop_count != 1:
+                print("\n--- TX Cycle {}/{} ---".format(
+                    cycle if loop_count > 0 else cycle,
+                    loop_count if loop_count > 0 else "∞"))
+                print("  T0_cycle:   {}".format(
+                    datetime.datetime.fromtimestamp(t0_cycle).isoformat()))
+                for i, (c, s) in enumerate(zip(cfgs, starts)):
+                    print("  [{}/{}] {} N={} LEN={} start={}".format(
+                        i + 1, len(cfgs), c["label"], c["n_pkts"], c["plen"],
+                        fmt_offset(s, t0_cycle)))
+                print()
 
-            # Band override if needed
-            if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
-                board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
+            # Launch-lateness guard
+            cfgs_cycle, starts_cycle = apply_late_skip(
+                cfgs, starts, time.time(),
+                rx_lead=0,
+                skip_late=args.skip_late_configs,
+                mode_label="TX",
+            )
 
-            # Power unlock if needed
-            if cfg["pa"] > INDOOR_CAP_DBM:
-                board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+            prev_cfg = None
+            for idx, (cfg, start) in enumerate(zip(cfgs_cycle, starts_cycle)):
+                # Drain stale data from previous config (don't send STOP — it
+                # triggers an IWDG watchdog reset on the firmware)
+                if idx > 0:
+                    board.drain(quiet=0.5)
 
-            # Session/config tagging
-            board.cmd("SESSION {}".format(args.session_id))
-            board.cmd("CONFIG {} 1".format(cfg["idx"]))
+                # Band transition antenna swap reminder
+                if prev_cfg is not None and is_band_transition(prev_cfg.get("freq"), cfg.get("freq")):
+                    print("\n⚠️  BAND TRANSITION: {} → {} — SWAP ANTENNA to {} NOW\n".format(
+                        _band_label(prev_cfg["freq"]), _band_label(cfg["freq"]),
+                        _antenna_jack(cfg["freq"])))
 
-            # Radio config
-            if cfg["mod"] == "lora":
-                mod_line = "MOD LORA {} {}".format(cfg["sf"], cfg["bw"])
-            else:
-                mod_line = "MOD FLRC {} {}".format(cfg["br"], cfg["pa"])
-            board.cmd(mod_line)
-            if cfg["mod"] == "lora":
-                board.cmd("PA {}".format(cfg["pa"]))
-            board.cmd("FREQ {}".format(cfg["freq"]))
+                # --- Send radio config BEFORE the scheduled start time ---
+                # This allows the firmware self-reset (TCXO startup + calibration
+                # triggered by MOD command) to happen during the inter-config
+                # gap, eliminating the 3-5s burst delay that required guard>=6s.
+                # Firmware handles chip reset internally since c70f582 — no SWD
+                # close/reopen needed.
 
-            # Role TX + arm
-            board.cmd("ROLE TX")
-            board.cmd("ARM TX")
+                # Band override if needed
+                if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
+                    board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
 
-            # Wait for scheduled start — config already sent, radio ready
-            wait_until(start)
+                # Power unlock if needed
+                if cfg["pa"] > INDOOR_CAP_DBM:
+                    board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
 
-            # Burst
-            prime_discard = getattr(args, 'prime_discard', 0)
-            tx_total = compute_tx_total(cfg["n_pkts"], prime_discard)
-            start_line = "START N={} LEN={} GAP={}".format(
-                tx_total, cfg["plen"], cfg["gap"])
-            actual_start = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-            board.cmd(start_line, timeout=max(30.0, cfg["expected_s"] + 60))
+                # Session/config tagging
+                board.cmd("SESSION {}".format(args.session_id))
+                board.cmd("CONFIG {} {}".format(cfg["idx"], cycle))
 
-            # Poll for completion
-            deadline = time.time() + cfg["expected_s"] + 120
-            sent_ok = 0
-            error = ""
-            while time.time() < deadline:
-                try:
-                    s = parse_stat(board.stat())
-                    sent_ok = s.get("sent_ok", 0)
-                except Exception:
-                    sent_ok = sent_ok  # keep last known value
-                if sent_ok >= tx_total:
-                    break
-                time.sleep(2.0)
-            else:
-                error = "TIMEOUT: sent_ok={}/{}".format(sent_ok, cfg["n_pkts"])
+                # Radio config
+                if cfg["mod"] == "lora":
+                    mod_line = "MOD LORA {} {}".format(cfg["sf"], cfg["bw"])
+                else:
+                    mod_line = "MOD FLRC {} {}".format(cfg["br"], cfg["pa"])
+                board.cmd(mod_line)
+                if cfg["mod"] == "lora":
+                    board.cmd("PA {}".format(cfg["pa"]))
+                board.cmd("FREQ {}".format(cfg["freq"]))
 
-            time.sleep(args.settle)
+                # Role TX + arm
+                board.cmd("ROLE TX")
+                board.cmd("ARM TX")
 
-            sf_or_br = cfg["sf"] if cfg["mod"] == "lora" else cfg["br"]
-            bw = cfg["bw"] if cfg["bw"] is not None else 0
+                # Wait for scheduled start — config already sent, radio ready
+                wait_until(start)
 
-            if use_harmonized:
-                # Build a stat dict from the TX config + sent_ok count
-                tx_stat = {
-                    "sent": tx_total,
-                    "sent_ok": sent_ok,
-                    "recv": 0, "crc_err": 0, "per_pct": 0.0,
-                    "elapsed_s": cfg["expected_s"],
-                    "kbps": None, "rssi": None, "snr": None,
-                    "drops": 0, "gap_us": cfg["gap"],
-                }
-                if error:
-                    log.comment("ERROR config={}: {}".format(cfg["idx"], error))
-                log.stat_line(cfg["idx"], tx_stat, replicate=1)
-            else:
-                log.config_row(
-                    config_idx=cfg["idx"], label=cfg["label"],
-                    n_pkts=cfg["n_pkts"], sent_ok=sent_ok,
-                    mod=cfg["mod"], sf_or_br=sf_or_br, bw=bw,
-                    pa_dbm=cfg["pa"], freq_hz=cfg["freq"],
-                    plen=cfg["plen"], gap_us=cfg["gap"],
-                    t0_offset_s=start - t0, actual_start_ts=actual_start,
-                    error=error,
-                )
-            print("  [{}/{}] {} sent_ok={}/{}".format(
-                idx + 1, len(cfgs), cfg["label"], sent_ok, cfg["n_pkts"]))
-            prev_cfg = cfg
+                # Burst
+                prime_discard = getattr(args, 'prime_discard', 0)
+                tx_total = compute_tx_total(cfg["n_pkts"], prime_discard)
+                start_line = "START N={} LEN={} GAP={}".format(
+                    tx_total, cfg["plen"], cfg["gap"])
+                actual_start = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                board.cmd(start_line, timeout=max(30.0, cfg["expected_s"] + 60))
+
+                # Poll for completion
+                deadline = time.time() + cfg["expected_s"] + 120
+                sent_ok = 0
+                error = ""
+                while time.time() < deadline:
+                    try:
+                        s = parse_stat(board.stat())
+                        sent_ok = s.get("sent_ok", 0)
+                    except Exception:
+                        sent_ok = sent_ok  # keep last known value
+                    if sent_ok >= tx_total:
+                        break
+                    time.sleep(2.0)
+                else:
+                    error = "TIMEOUT: sent_ok={}/{}".format(sent_ok, cfg["n_pkts"])
+
+                time.sleep(args.settle)
+
+                sf_or_br = cfg["sf"] if cfg["mod"] == "lora" else cfg["br"]
+                bw = cfg["bw"] if cfg["bw"] is not None else 0
+
+                if use_harmonized:
+                    # Build a stat dict from the TX config + sent_ok count
+                    tx_stat = {
+                        "sent": tx_total,
+                        "sent_ok": sent_ok,
+                        "recv": 0, "crc_err": 0, "per_pct": 0.0,
+                        "elapsed_s": cfg["expected_s"],
+                        "kbps": None, "rssi": None, "snr": None,
+                        "drops": 0, "gap_us": cfg["gap"],
+                    }
+                    if error:
+                        log.comment("ERROR config={}: {}".format(cfg["idx"], error))
+                    log.stat_line(cfg["idx"], tx_stat, replicate=cycle)
+                else:
+                    log.config_row(
+                        config_idx=cfg["idx"], label=cfg["label"],
+                        n_pkts=cfg["n_pkts"], sent_ok=sent_ok,
+                        mod=cfg["mod"], sf_or_br=sf_or_br, bw=bw,
+                        pa_dbm=cfg["pa"], freq_hz=cfg["freq"],
+                        plen=cfg["plen"], gap_us=cfg["gap"],
+                        t0_offset_s=start - t0_cycle, actual_start_ts=actual_start,
+                        error=error,
+                    )
+                print("  [{}/{}] {} sent_ok={}/{}".format(
+                    idx + 1, len(cfgs_cycle), cfg["label"], sent_ok, cfg["n_pkts"]))
+                prev_cfg = cfg
+
+            if loop_count != 1:
+                print("  Cycle {} complete.".format(cycle))
 
         # Teardown
         board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
     except KeyboardInterrupt:
-        log.comment("ABORTED by operator (Ctrl-C)")
+        log.comment("ABORTED by operator (Ctrl-C) at cycle {}".format(cycle))
         board.cmd("STOP", expect_ok=False, timeout=3.0)
         board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
-        print("\nABORTED by operator. tx-log.csv has partial data.")
+        print("\nABORTED by operator at cycle {}. tx-log.csv has partial data.".format(cycle))
     except Exception as e:
         log.comment("ERROR: {}".format(e))
         print("ERROR: {}".format(e))
@@ -1496,7 +1521,13 @@ def run_tx_mode(args):
 # ---------------------------------------------------------------------------
 
 def run_rx_mode(args):
-    """RX-only distributed mode. Arms RX and captures PKT lines on schedule."""
+    """RX-only distributed mode. Arms RX and captures PKT lines on schedule.
+
+    With --loop N (default 1), the schedule is repeated N times (0 = infinite).
+    Each cycle recomputes T0 = time.time() + t0_margin and regenerates the
+    schedule via build_preset_schedule. The cycle number (1-based) is used
+    as the replicate counter in CSV log lines.
+    """
     import subprocess as _sp
 
     # Load config preset
@@ -1506,33 +1537,16 @@ def run_rx_mode(args):
     # Auto-detect board
     port, probe_serial = _detect_board_for_mode("rx", args.port, args.probe)
 
+    loop_count = getattr(args, "loop", 1)
+
     print("== DISTRIBUTED RX MODE ==")
     print("  T0:         {}".format(
         datetime.datetime.fromtimestamp(t0).isoformat()))
     print("  Port:       {}".format(port))
     print("  Probe:      {}".format(probe_serial or "(not detected)"))
     print("  Configs:    {}".format(len(cfgs)))
+    print("  Loop:       {}".format("infinite (Ctrl-C to stop)" if loop_count == 0 else loop_count))
     print()
-
-    starts = build_preset_schedule(cfgs, t0, args.t0_margin, args.guard,
-                                   args.settle, args.rx_lead,
-                                   swd_reset_s=args.swd_reset_s,
-                                   band_swap_s=args.band_swap_s)
-    for i, (c, s) in enumerate(zip(cfgs, starts)):
-        print("  [{}/{}] {} RX_arm={} start={}".format(
-            i + 1, len(cfgs), c["label"], c["n_pkts"],
-            fmt_offset(s - args.rx_lead, t0)))
-    print()
-
-    # Launch-lateness guard: refuse to start past-timestamped configs that
-    # wait_until() would silently no-op on (silent desync class of bug).
-    # See docs/timing-tolerance-analysis.md §3.
-    cfgs, starts = apply_late_skip(
-        cfgs, starts, time.time(),
-        rx_lead=args.rx_lead,   # RX arms rx_lead before start
-        skip_late=args.skip_late_configs,
-        mode_label="RX",
-    )
 
     # SWD reset if available (non-fatal if openocd missing)
     def swd_reset_maybe(label="RX"):
@@ -1601,9 +1615,9 @@ def run_rx_mode(args):
         log = HarmonizedRxLogWriter(args.rx_log)
     else:
         log = RxLogWriter(args.rx_log)
-    log_comment = "# DISTRIBUTED_RX_MODE t0={} port={} probe={}\n".format(
+    log_comment = "# DISTRIBUTED_RX_MODE t0={} port={} probe={} loop={}\n".format(
         datetime.datetime.fromtimestamp(t0).isoformat(),
-        port, probe_serial or "?")
+        port, probe_serial or "?", loop_count)
     with open(args.rx_log, "a") as f:
         f.write(log_comment)
 
@@ -1638,113 +1652,149 @@ def run_rx_mode(args):
                         pkts.append(p)
         return pkts
 
+    cycle = 0
     try:
-        prev_cfg = None
-        for idx, (cfg, start) in enumerate(zip(cfgs, starts)):
-            # Drain stale data from previous config (don't send STOP — it
-            # triggers an IWDG watchdog reset on the firmware)
-            if idx > 0:
-                board.drain(quiet=0.5)
+        while True:
+            cycle += 1
+            if loop_count > 0 and cycle > loop_count:
+                break
 
-            # Band transition antenna swap reminder
-            if prev_cfg is not None and is_band_transition(prev_cfg.get("freq"), cfg.get("freq")):
-                print("\n⚠️  BAND TRANSITION: {} → {} — SWAP ANTENNA to {} NOW\n".format(
-                    _band_label(prev_cfg["freq"]), _band_label(cfg["freq"]),
-                    _antenna_jack(cfg["freq"])))
+            # Recompute T0 and schedule for this cycle
+            t0_cycle = time.time() + args.t0_margin
+            starts = build_preset_schedule(cfgs, t0_cycle, args.t0_margin,
+                                           args.guard, args.settle, args.rx_lead,
+                                           swd_reset_s=args.swd_reset_s,
+                                           band_swap_s=args.band_swap_s)
 
-            # SWD reset if modulation parameters changed (SX1280 can't
-            # hot-switch mod/sf/br/bw via MOD command — firmware returns
-            # OK but radio doesn't reconfigure, resulting in 0 packets)
-            if idx > 0 and _mod_changed(prev_cfg, cfg):
-                print("  [SWD] Mod params changed, resetting RX board…")
-                board.close()
-                swd_reset_maybe(label="RX")
-                board = BoardSerial(port)
-                board.drain()
+            if loop_count != 1:
+                print("\n--- RX Cycle {}/{} ---".format(
+                    cycle if loop_count > 0 else cycle,
+                    loop_count if loop_count > 0 else "∞"))
+                print("  T0_cycle:   {}".format(
+                    datetime.datetime.fromtimestamp(t0_cycle).isoformat()))
+                for i, (c, s) in enumerate(zip(cfgs, starts)):
+                    print("  [{}/{}] {} RX_arm={} start={}".format(
+                        i + 1, len(cfgs), c["label"], c["n_pkts"],
+                        fmt_offset(s - args.rx_lead, t0_cycle)))
+                print()
 
-            # Arm RX rx_lead seconds before burst start
-            wait_until(start - args.rx_lead)
+            # Launch-lateness guard
+            cfgs_cycle, starts_cycle = apply_late_skip(
+                cfgs, starts, time.time(),
+                rx_lead=args.rx_lead,
+                skip_late=args.skip_late_configs,
+                mode_label="RX",
+            )
 
-            # Band override if needed
-            if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
-                board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
+            prev_cfg = None
+            for idx, (cfg, start) in enumerate(zip(cfgs_cycle, starts_cycle)):
+                # Drain stale data from previous config (don't send STOP — it
+                # triggers an IWDG watchdog reset on the firmware)
+                if idx > 0:
+                    board.drain(quiet=0.5)
 
-            # Power unlock if needed (must be sent BEFORE any PA command)
-            if cfg["pa"] > INDOOR_CAP_DBM:
-                board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+                # Band transition antenna swap reminder
+                if prev_cfg is not None and is_band_transition(prev_cfg.get("freq"), cfg.get("freq")):
+                    print("\n⚠️  BAND TRANSITION: {} → {} — SWAP ANTENNA to {} NOW\n".format(
+                        _band_label(prev_cfg["freq"]), _band_label(cfg["freq"]),
+                        _antenna_jack(cfg["freq"])))
 
-            # Session/config tagging
-            board.cmd("SESSION {}".format(args.session_id))
-            board.cmd("CONFIG {} 1".format(cfg["idx"]))
+                # SWD reset if modulation parameters changed (SX1280 can't
+                # hot-switch mod/sf/br/bw via MOD command — firmware returns
+                # OK but radio doesn't reconfigure, resulting in 0 packets)
+                if idx > 0 and _mod_changed(prev_cfg, cfg):
+                    print("  [SWD] Mod params changed, resetting RX board…")
+                    board.close()
+                    swd_reset_maybe(label="RX")
+                    board = BoardSerial(port)
+                    board.drain()
 
-            # Radio config
-            if cfg["mod"] == "lora":
-                mod_line = "MOD LORA {} {}".format(cfg["sf"], cfg["bw"])
-            else:
-                mod_line = "MOD FLRC {} {}".format(cfg["br"], cfg["pa"])
-            board.cmd(mod_line)
-            if cfg["mod"] == "lora":
-                board.cmd("PA {}".format(cfg["pa"]))
-            board.cmd("FREQ {}".format(cfg["freq"]))
+                # Arm RX rx_lead seconds before burst start
+                wait_until(start - args.rx_lead)
 
-            # Role RX
-            board.cmd("ROLE RX")
+                # Band override if needed
+                if not (BAND_MIN_HZ <= cfg["freq"] <= BAND_MAX_HZ):
+                    board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
 
-            # Arm RX: START resets stats and arms listener
-            start_line = "START N={} LEN={} GAP={}".format(
-                cfg["n_pkts"], cfg["plen"], cfg["gap"])
-            board.cmd(start_line)
+                # Power unlock if needed (must be sent BEFORE any PA command)
+                if cfg["pa"] > INDOOR_CAP_DBM:
+                    board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
 
-            # Wait for burst start + duration + settle
-            wait_until(start)
-            capture_duration = cfg["expected_s"] + args.settle + args.guard
-            pkts = drain_pkt_lines(board.ser, capture_duration)
+                # Session/config tagging
+                board.cmd("SESSION {}".format(args.session_id))
+                board.cmd("CONFIG {} {}".format(cfg["idx"], cycle))
 
-            # Discard prime (AGC warmup) packets before logging
-            prime_discard = getattr(args, 'prime_discard', 0)
-            pkts = discard_prime_pkts(pkts, prime_discard)
+                # Radio config
+                if cfg["mod"] == "lora":
+                    mod_line = "MOD LORA {} {}".format(cfg["sf"], cfg["bw"])
+                else:
+                    mod_line = "MOD FLRC {} {}".format(cfg["br"], cfg["pa"])
+                board.cmd(mod_line)
+                if cfg["mod"] == "lora":
+                    board.cmd("PA {}".format(cfg["pa"]))
+                board.cmd("FREQ {}".format(cfg["freq"]))
 
-            # Write packets to log
-            if use_harmonized:
-                for p in pkts:
-                    log.pkt_line(p)
-            else:
-                for p in pkts:
-                    log.pkt_row(
-                        session=p["session"], config=p["config"],
-                        pkt_idx=p["pkt_idx"], ts_ms=p["ts_ms"],
-                        rssi_dbm=p["rssi_dbm"], snr_db=p["snr_db"],
-                        crc_ok=p["crc_ok"], bit_err=p["bit_err"],
-                        freq_hz=p["freq_hz"], mod=p["mod"],
-                        sf_or_br=p["sf_or_br"], bw=p["bw"],
-                        pa_dbm=p["pa_dbm"], len=p["len"],
-                        pcrc16=p["pcrc16"] or 0,
-                    )
+                # Role RX
+                board.cmd("ROLE RX")
 
-            # Read STAT for summary (non-fatal on error)
-            try:
-                rx_stat = parse_stat(board.stat())
-            except Exception:
-                rx_stat = {}
-            # STAT? recv includes prime packets — subtract them
-            adjust_stat_for_prime(rx_stat, prime_discard)
-            if use_harmonized:
-                log.stat_line("RX", rx_stat, args.session_id, cfg["idx"],
-                              replicate=1)
-            print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
-                idx + 1, len(cfgs), cfg["label"],
-                len(pkts), cfg["n_pkts"],
-                rx_stat.get("rssi", "?"), rx_stat.get("snr", "?")))
-            prev_cfg = cfg
+                # Arm RX: START resets stats and arms listener
+                start_line = "START N={} LEN={} GAP={}".format(
+                    cfg["n_pkts"], cfg["plen"], cfg["gap"])
+                board.cmd(start_line)
+
+                # Wait for burst start + duration + settle
+                wait_until(start)
+                capture_duration = cfg["expected_s"] + args.settle + args.guard
+                pkts = drain_pkt_lines(board.ser, capture_duration)
+
+                # Discard prime (AGC warmup) packets before logging
+                prime_discard = getattr(args, 'prime_discard', 0)
+                pkts = discard_prime_pkts(pkts, prime_discard)
+
+                # Write packets to log
+                if use_harmonized:
+                    for p in pkts:
+                        log.pkt_line(p)
+                else:
+                    for p in pkts:
+                        log.pkt_row(
+                            session=p["session"], config=p["config"],
+                            pkt_idx=p["pkt_idx"], ts_ms=p["ts_ms"],
+                            rssi_dbm=p["rssi_dbm"], snr_db=p["snr_db"],
+                            crc_ok=p["crc_ok"], bit_err=p["bit_err"],
+                            freq_hz=p["freq_hz"], mod=p["mod"],
+                            sf_or_br=p["sf_or_br"], bw=p["bw"],
+                            pa_dbm=p["pa_dbm"], len=p["len"],
+                            pcrc16=p["pcrc16"] or 0,
+                        )
+
+                # Read STAT for summary (non-fatal on error)
+                try:
+                    rx_stat = parse_stat(board.stat())
+                except Exception:
+                    rx_stat = {}
+                # STAT? recv includes prime packets — subtract them
+                adjust_stat_for_prime(rx_stat, prime_discard)
+                if use_harmonized:
+                    log.stat_line("RX", rx_stat, args.session_id, cfg["idx"],
+                                  replicate=cycle)
+                print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
+                    idx + 1, len(cfgs_cycle), cfg["label"],
+                    len(pkts), cfg["n_pkts"],
+                    rx_stat.get("rssi", "?"), rx_stat.get("snr", "?")))
+                prev_cfg = cfg
+
+            if loop_count != 1:
+                print("  Cycle {} complete.".format(cycle))
 
         # Teardown
         board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
     except KeyboardInterrupt:
         with open(args.rx_log, "a") as f:
-            f.write("# ABORTED by operator (Ctrl-C)\n")
+            f.write("# ABORTED by operator (Ctrl-C) at cycle {}\n".format(cycle))
         board.cmd("STOP", expect_ok=False, timeout=3.0)
         board.cmd("ROLE NONE", expect_ok=False, timeout=3.0)
-        print("\nABORTED by operator. rx-log.csv has partial data.")
+        print("\nABORTED by operator at cycle {}. rx-log.csv has partial data.".format(cycle))
     except Exception as e:
         with open(args.rx_log, "a") as f:
             f.write("# ERROR: {}\n".format(e))
@@ -1962,6 +2012,12 @@ def main():
                     help="output format: 'harmonized' = PKT+STAT lines "
                          "(23-field, default); 'legacy' = 16-column CSV "
                          "with header row")
+    ap.add_argument("--loop", type=int, default=1,
+                    help="number of sweep cycles in distributed mode "
+                         "(default 1; 0 = infinite until Ctrl-C). "
+                         "Each cycle recomputes T0 and regenerates the "
+                         "schedule. The cycle number is used as the "
+                         "replicate counter in CSV logs.")
     args = ap.parse_args()
 
     # --- Distributed mode routing ---
