@@ -1,0 +1,67 @@
+{
+  "name": "maritime-sweep",
+  "description": "Maritime sweep for boat trip — 868 MHz only, 5 configs, 8 pkts each. PA=22 outdoor mode at 869.525 MHz (high-power sub-band). Short gaps for fast cycling while boat is moving. Includes FLRC-260 LEN511 for max-range robustness over water.",
+  "band": "868",
+  "configs": [
+    {
+      "label": "FLRC-2600 LEN64",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 2600,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 64,
+      "gap": 2000,
+      "n_pkts": 8
+    },
+    {
+      "label": "FLRC-650 LEN64",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 64,
+      "gap": 2000,
+      "n_pkts": 8
+    },
+    {
+      "label": "LoRa-SF7 BW125 LEN64",
+      "mod": "lora",
+      "sf": 7,
+      "bw": 125,
+      "br": null,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 64,
+      "gap": 5000,
+      "n_pkts": 8
+    },
+    {
+      "label": "LoRa-SF12 BW125 LEN64",
+      "mod": "lora",
+      "sf": 12,
+      "bw": 125,
+      "br": null,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 64,
+      "gap": 5000,
+      "n_pkts": 8
+    },
+    {
+      "label": "FLRC-260 LEN511",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 260,
+      "pa": 22,
+      "freq": 869525000,
+      "plen": 511,
+      "gap": 2000,
+      "n_pkts": 8
+    }
+  ]
+}
