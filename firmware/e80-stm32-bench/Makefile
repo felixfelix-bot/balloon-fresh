@@ -87,6 +87,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 .PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
 .PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test
+.PHONY: boat-tx boat-rx
 
 all: firmware
 
@@ -152,6 +153,72 @@ clean:
 tx: range-tx  ## TX mode: just run `make tx`. T0 + SESSION_ID auto-generated.
 
 rx: range-rx  ## RX mode: just run `make rx`. T0 + SESSION_ID auto-generated.
+
+# ============================================================
+# BOAT / MARITIME SWEEP — continuous loop, all 19 configs
+# ============================================================
+# For boat trips or moving platforms. Runs all configs from all
+# distance presets (50m-70km) in a continuous loop until Ctrl-C.
+# Log GPS separately on phone (GPX track) and stitch afterwards.
+#
+#   make boat-rx          # at base station (Cowork)
+#   make boat-tx          # on boat / mobile side
+#
+# Both auto-compute same T0 (60s boundary for fast start).
+# Uses configs/maritime-full-sweep.json (19 configs, ~4 min/cycle).
+
+BOAT_CONFIGS  := $(CONFIGS_DIR)/maritime-full-sweep.json
+BOAT_BOUNDARY := 60
+BOAT_T0       := $(shell python3 -c "import time; now=int(time.time()); boundary=$(BOAT_BOUNDARY); t0=((now // boundary) + 1) * boundary; print(t0)")
+BOAT_SESSION  := $(shell python3 -c "import time; t0=$(BOAT_T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
+BOAT_TX_LOG   ?= boat-tx.csv
+BOAT_RX_LOG   ?= boat-rx.csv
+
+boat-tx: ## Boat TX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-C to stop.
+	@echo "╔══════════════════════════════════════════════╗"
+	@echo "║  E80 BOAT TX — continuous maritime sweep    ║"
+	@echo "╠══════════════════════════════════════════════╣"
+	@echo "║  T0:           $(BOAT_T0) (epoch)"
+	@echo "║  SESSION_ID:   $(BOAT_SESSION)"
+	@echo "║  Configs:      $(BOAT_CONFIGS)"
+	@echo "║  Loop:         infinite (Ctrl-C to stop)"
+	@echo "║  Cycle time:   ~4 min (19 configs)"
+	@echo "╚══════════════════════════════════════════════╝"
+	@python3 -c "import time; remaining=int($(BOAT_T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make boat-rx')"
+	@python3 $(TOOLDIR)/tools/countdown.py $(BOAT_T0) 2>/dev/null || true
+	@echo ""
+	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
+		--t0 $(BOAT_T0) \
+		--session-id $(BOAT_SESSION) \
+		--configs "$(BOAT_CONFIGS)" \
+		--tx-log "$(BOAT_TX_LOG)" \
+		--prime-discard $(PRIME_DISCARD) \
+		--format $(FORMAT) \
+		--loop 0 \
+		--skip-fw-check
+
+boat-rx: ## Boat RX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-C to stop.
+	@echo "╔══════════════════════════════════════════════╗"
+	@echo "║  E80 BOAT RX — continuous maritime sweep    ║"
+	@echo "╠══════════════════════════════════════════════╣"
+	@echo "║  T0:           $(BOAT_T0) (epoch)"
+	@echo "║  SESSION_ID:   $(BOAT_SESSION)"
+	@echo "║  Configs:      $(BOAT_CONFIGS)"
+	@echo "║  Loop:         infinite (Ctrl-C to stop)"
+	@echo "║  Cycle time:   ~4 min (19 configs)"
+	@echo "╚══════════════════════════════════════════════╝"
+	@python3 -c "import time; remaining=int($(BOAT_T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make boat-tx')"
+	@python3 $(TOOLDIR)/tools/countdown.py $(BOAT_T0) 2>/dev/null || true
+	@echo ""
+	cd $(TOOLDIR) && $(E80_CTL) --mode rx \
+		--t0 $(BOAT_T0) \
+		--session-id $(BOAT_SESSION) \
+		--configs "$(BOAT_CONFIGS)" \
+		--rx-log "$(BOAT_RX_LOG)" \
+		--prime-discard $(PRIME_DISCARD) \
+		--format $(FORMAT) \
+		--loop 0 \
+		--skip-fw-check
 
 # ============================================================
 # DISTRIBUTED RANGE TEST TARGETS
