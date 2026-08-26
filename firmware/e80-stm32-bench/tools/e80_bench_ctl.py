@@ -1708,6 +1708,10 @@ def run_rx_mode(args):
                 if idx > 0 and _mod_changed(prev_cfg, cfg):
                     if args.no_swd_reset:
                         print("  [SWD] Mod params changed — skipping SWD reset (--no-swd-reset)")
+                        # Drain stale PKT lines from the previous config's
+                        # continuous RX mode. Without SWD reset the board
+                        # stays in RX and may have buffered data.
+                        board.drain(quiet=1.0)
                     else:
                         print("  [SWD] Mod params changed, resetting RX board…")
                         board.close()
