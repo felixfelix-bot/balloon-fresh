@@ -1,0 +1,2 @@
+# DISTRIBUTED_RX_MODE t0=2026-08-26T18:41:00 port=/dev/ttyUSB3 probe=203584200D2D0D42 loop=1
+# ERROR: /dev/ttyUSB3: timeout waiting for reply to 'FREQ 869525000'
