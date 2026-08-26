@@ -1338,6 +1338,14 @@ def run_tx_mode(args):
                      "Use --skip-fw-check to bypass.")
 
     board.drain()
+    # Send STOP to clear any leftover RX state from previous test.
+    # Safe for RX (IWDG only starts at ARM TX, not RX).
+    if args.no_swd_reset:
+        try:
+            board.cmd("STOP", expect_ok=False, timeout=3.0)
+            board.drain(quiet=0.5)
+        except Exception:
+            pass
     use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
     if use_harmonized:
         log = HarmonizedTxLogWriter(args.tx_log, session_id=args.session_id)
@@ -1610,6 +1618,14 @@ def run_rx_mode(args):
                      "Use --skip-fw-check to bypass.")
 
     board.drain()
+    # Send STOP to clear any leftover RX state from previous test.
+    # Safe for RX (IWDG only starts at ARM TX, not RX).
+    if args.no_swd_reset:
+        try:
+            board.cmd("STOP", expect_ok=False, timeout=3.0)
+            board.drain(quiet=0.5)
+        except Exception:
+            pass
     use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
     if use_harmonized:
         log = HarmonizedRxLogWriter(args.rx_log)
@@ -1688,9 +1704,18 @@ def run_rx_mode(args):
 
             prev_cfg = None
             for idx, (cfg, start) in enumerate(zip(cfgs_cycle, starts_cycle)):
-                # Drain stale data from previous config (don't send STOP — it
-                # triggers an IWDG watchdog reset on the firmware)
-                if idx > 0:
+                # When --no-swd-reset is set, send STOP before every config
+                # to put the radio to sleep and clear any PKT flood from
+                # continuous RX mode. This ensures MOD/FREQ/ROLE/START
+                # commands get clean OK responses. Safe for RX (IWDG only
+                # starts at ARM TX, not RX).
+                if idx > 0 and args.no_swd_reset:
+                    try:
+                        board.cmd("STOP", expect_ok=False, timeout=3.0)
+                    except Exception:
+                        pass
+                    board.drain(quiet=0.5)
+                elif idx > 0:
                     board.drain(quiet=0.5)
 
                 # Band transition antenna swap reminder
@@ -1707,17 +1732,7 @@ def run_rx_mode(args):
                 # internally since c70f582).
                 if idx > 0 and _mod_changed(prev_cfg, cfg):
                     if args.no_swd_reset:
-                        print("  [SWD] Mod params changed — sending STOP + reconfigure (--no-swd-reset)")
-                        # Send STOP to put radio to sleep and stop the PKT
-                        # flood from continuous RX mode. This is safe for RX
-                        # (IWDG only starts at ARM TX, not RX). STOP clears
-                        # the receive state so MOD/FREQ/ROLE/START commands
-                        # get clean OK responses without buffer contention.
-                        try:
-                            board.cmd("STOP", expect_ok=False, timeout=3.0)
-                        except Exception:
-                            pass
-                        board.drain(quiet=0.5)
+                        print("  [SWD] Mod params changed — STOP already sent, reconfiguring (--no-swd-reset)")
                     else:
                         print("  [SWD] Mod params changed, resetting RX board…")
                         board.close()
