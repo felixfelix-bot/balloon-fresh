@@ -175,7 +175,7 @@ BOAT_TX_LOG   ?= boat-tx.csv
 BOAT_RX_LOG   ?= boat-rx.csv
 # SWD reset takes ~7-10s real-world (openocd + sleep + board reopen)
 # but default swd_reset_s is only 2. Override to 12 for margin.
-BOAT_SWD_RESET ?= 12
+BOAT_SWD_RESET ?= 20
 
 boat-tx: ## Boat TX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-C to stop.
 	@echo "╔══════════════════════════════════════════════╗"
