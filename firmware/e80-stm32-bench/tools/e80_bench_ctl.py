@@ -1702,12 +1702,18 @@ def run_rx_mode(args):
                 # SWD reset if modulation parameters changed (SX1280 can't
                 # hot-switch mod/sf/br/bw via MOD command — firmware returns
                 # OK but radio doesn't reconfigure, resulting in 0 packets)
+                # --no-swd-reset: skip openocd reset, just reconfigure radio
+                # with MOD/FREQ/ROLE/START (firmware handles chip reset
+                # internally since c70f582).
                 if idx > 0 and _mod_changed(prev_cfg, cfg):
-                    print("  [SWD] Mod params changed, resetting RX board…")
-                    board.close()
-                    swd_reset_maybe(label="RX")
-                    board = BoardSerial(port)
-                    board.drain()
+                    if args.no_swd_reset:
+                        print("  [SWD] Mod params changed — skipping SWD reset (--no-swd-reset)")
+                    else:
+                        print("  [SWD] Mod params changed, resetting RX board…")
+                        board.close()
+                        swd_reset_maybe(label="RX")
+                        board = BoardSerial(port)
+                        board.drain()
 
                 # Arm RX rx_lead seconds before burst start
                 wait_until(start - args.rx_lead)
@@ -1986,6 +1992,11 @@ def main():
     ap.add_argument("--swd-reset-s", dest="swd_reset_s", type=int, default=2,
                     help="extra inter-config gap seconds when mod params change "
                          "(SWD reset + board reopen time, default 2, was 10)")
+    ap.add_argument("--no-swd-reset", dest="no_swd_reset", action="store_true",
+                    help="skip openocd SWD reset between configs — just "
+                         "reconfigure radio with MOD/FREQ/ROLE/START commands. "
+                         "Firmware supports hot-switching modulation parameters "
+                         "(since c70f582). Use for boat-rx and multi-config RX.")
     ap.add_argument("--band-swap-s", dest="band_swap_s", type=int, default=30,
                     help="extra inter-config gap seconds when frequency crosses "
                          "the 1.6 GHz band boundary (sub-GHz ↔ 2.4 GHz) — gives "
