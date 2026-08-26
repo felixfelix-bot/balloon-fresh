@@ -59,6 +59,33 @@ RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
 PRIME_DISCARD ?= 2
 
+# --- Board selection (desk setup: both boards on ONE machine) ---
+# Auto-detect fails with 2+ CH340 boards (or both targets grab the same port).
+#   make rx DIST=50m PORT=/dev/ttyUSB0 PROBE=148757200D2D1425
+#   make tx DIST=50m PORT=/dev/ttyUSB1 PROBE=203584200D2D0D42
+# Find ports:  python3 tools/e80_detect.py   (lists port + probe per board)
+PORT          ?=
+PROBE         ?=
+ifneq ($(PORT),)
+E80_PORT_ARG  := --port $(PORT)
+else
+E80_PORT_ARG  :=
+endif
+ifneq ($(PROBE),)
+E80_PROBE_ARG := --probe $(PROBE)
+else
+E80_PROBE_ARG :=
+endif
+
+# RX board SWD reset between configs. 20s covers real-world openocd+reopen.
+# SWD_RESET_S=0 → --no-swd-reset (STOP-based; only safe from power-cycled board)
+SWD_RESET_S   ?= 20
+ifneq ($(SWD_RESET_S),0)
+RX_SWD_ARG    := --swd-reset-s $(SWD_RESET_S)
+else
+RX_SWD_ARG    := --no-swd-reset
+endif
+
 # --- CVM config provider (dynamic config flow) ---
 # CONFIGS names the config preset — a path to a .json file, or a bare preset
 # name resolved in configs/. CONFIGS_JSON is the inline JSON of that same
@@ -251,6 +278,8 @@ ifdef DIST
 endif
 	@echo "║  Band:         $(BAND) MHz"
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
+	@echo "║  Port:         $(if $(PORT),$(PORT),auto-detect)"
+	@echo "║  Probe:        $(if $(PROBE),$(PROBE),auto-detect)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
@@ -262,6 +291,7 @@ endif
 		--tx-log "$(TX_LOG)" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
+		$(E80_PORT_ARG) $(E80_PROBE_ARG) \
 		--skip-fw-check
 
 range-rx: ## Distributed RX mode: auto-detect board, capture packets on T0 schedule
@@ -281,7 +311,9 @@ ifdef DIST
 endif
 	@echo "║  Band:         $(BAND) MHz"
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
-	@echo "║  SWD reset:     SKIPPED (--no-swd-reset)"
+	@echo "║  Port:         $(if $(PORT),$(PORT),auto-detect)"
+	@echo "║  Probe:        $(if $(PROBE),$(PROBE),auto-detect)"
+	@echo "║  SWD reset:    $(if $(filter 0,$(SWD_RESET_S)),DISABLED,$(SWD_RESET_S)s between configs)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
@@ -293,7 +325,8 @@ endif
 		--rx-log "$(RX_LOG)" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
-		--no-swd-reset \
+		$(E80_PORT_ARG) $(E80_PROBE_ARG) \
+		$(RX_SWD_ARG) \
 		--skip-fw-check
 
 range-merge: ## Merge TX+RX logs, compute PER, generate report
