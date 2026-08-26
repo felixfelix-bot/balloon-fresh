@@ -173,6 +173,9 @@ BOAT_T0       := $(shell python3 -c "import time; now=int(time.time()); boundary
 BOAT_SESSION  := $(shell python3 -c "import time; t0=$(BOAT_T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
 BOAT_TX_LOG   ?= boat-tx.csv
 BOAT_RX_LOG   ?= boat-rx.csv
+# SWD reset takes ~7-10s real-world (openocd + sleep + board reopen)
+# but default swd_reset_s is only 2. Override to 12 for margin.
+BOAT_SWD_RESET ?= 12
 
 boat-tx: ## Boat TX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-C to stop.
 	@echo "╔══════════════════════════════════════════════╗"
@@ -182,7 +185,7 @@ boat-tx: ## Boat TX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-
 	@echo "║  SESSION_ID:   $(BOAT_SESSION)"
 	@echo "║  Configs:      $(BOAT_CONFIGS)"
 	@echo "║  Loop:         infinite (Ctrl-C to stop)"
-	@echo "║  Cycle time:   ~4 min (19 configs)"
+	@echo "║  Cycle time:   ~5 min (19 configs)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(BOAT_T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make boat-rx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(BOAT_T0) 2>/dev/null || true
@@ -205,7 +208,8 @@ boat-rx: ## Boat RX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-
 	@echo "║  SESSION_ID:   $(BOAT_SESSION)"
 	@echo "║  Configs:      $(BOAT_CONFIGS)"
 	@echo "║  Loop:         infinite (Ctrl-C to stop)"
-	@echo "║  Cycle time:   ~4 min (19 configs)"
+	@echo "║  SWD reset:    $(BOAT_SWD_RESET)s (allows board reboot between configs)"
+	@echo "║  Cycle time:   ~5 min (19 configs)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(BOAT_T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make boat-tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(BOAT_T0) 2>/dev/null || true
@@ -218,6 +222,7 @@ boat-rx: ## Boat RX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
 		--loop 0 \
+		--swd-reset-s $(BOAT_SWD_RESET) \
 		--skip-fw-check
 
 # ============================================================
