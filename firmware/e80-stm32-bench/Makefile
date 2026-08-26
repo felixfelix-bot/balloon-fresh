@@ -168,7 +168,7 @@ rx: range-rx  ## RX mode: just run `make rx`. T0 + SESSION_ID auto-generated.
 # Uses configs/maritime-full-sweep.json (19 configs, ~4 min/cycle).
 
 BOAT_CONFIGS  := $(CONFIGS_DIR)/maritime-full-sweep.json
-BOAT_BOUNDARY := 60
+BOAT_BOUNDARY := 300
 BOAT_T0       := $(shell python3 -c "import time; now=int(time.time()); boundary=$(BOAT_BOUNDARY); t0=((now // boundary) + 1) * boundary; print(t0)")
 BOAT_SESSION  := $(shell python3 -c "import time; t0=$(BOAT_T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
 BOAT_TX_LOG   ?= boat-tx.csv
