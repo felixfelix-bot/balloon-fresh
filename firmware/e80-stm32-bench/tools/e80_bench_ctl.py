@@ -1708,10 +1708,17 @@ def run_rx_mode(args):
                 if idx > 0 and _mod_changed(prev_cfg, cfg):
                     if args.no_swd_reset:
                         print("  [SWD] Mod params changed — skipping SWD reset (--no-swd-reset)")
-                        # Drain stale PKT lines from the previous config's
-                        # continuous RX mode. Without SWD reset the board
-                        # stays in RX and may have buffered data.
-                        board.drain(quiet=1.0)
+                        # Without SWD reset the board stays in continuous RX
+                        # mode. When MOD changes (e.g. FLRC→LoRa), the board
+                        # may start receiving the TX burst immediately, flooding
+                        # the serial buffer with PKT lines and causing timeouts
+                        # on subsequent commands (PA, FREQ, etc.).
+                        # Close and reopen the serial port to flush the UART
+                        # buffer — this is fast (~0.5s) compared to SWD reset
+                        # (~15s) and doesn't lose radio state.
+                        board.close()
+                        board = BoardSerial(port)
+                        board.drain(quiet=0.5)
                     else:
                         print("  [SWD] Mod params changed, resetting RX board…")
                         board.close()
