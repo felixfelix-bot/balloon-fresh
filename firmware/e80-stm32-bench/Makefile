@@ -208,8 +208,8 @@ boat-rx: ## Boat RX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-
 	@echo "║  SESSION_ID:   $(BOAT_SESSION)"
 	@echo "║  Configs:      $(BOAT_CONFIGS)"
 	@echo "║  Loop:         infinite (Ctrl-C to stop)"
-	@echo "║  SWD reset:    $(BOAT_SWD_RESET)s (allows board reboot between configs)"
-	@echo "║  Cycle time:   ~5 min (19 configs)"
+	@echo "║  SWD reset:    SKIPPED (--no-swd-reset)"
+	@echo "║  Cycle time:   ~4 min (19 configs, no SWD reset)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(BOAT_T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make boat-tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(BOAT_T0) 2>/dev/null || true
@@ -222,7 +222,7 @@ boat-rx: ## Boat RX mode: continuous loop of all 19 configs (868+2.4 GHz). Ctrl-
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
 		--loop 0 \
-		--swd-reset-s $(BOAT_SWD_RESET) \
+		--no-swd-reset \
 		--skip-fw-check
 
 # ============================================================
@@ -281,6 +281,7 @@ ifdef DIST
 endif
 	@echo "║  Band:         $(BAND) MHz"
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
+	@echo "║  SWD reset:     SKIPPED (--no-swd-reset)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
@@ -292,6 +293,7 @@ endif
 		--rx-log "$(RX_LOG)" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
+		--no-swd-reset \
 		--skip-fw-check
 
 range-merge: ## Merge TX+RX logs, compute PER, generate report
