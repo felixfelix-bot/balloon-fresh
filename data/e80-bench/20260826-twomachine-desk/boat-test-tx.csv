@@ -1,0 +1,20 @@
+# DISTRIBUTED_TX_MODE session=2608252235 t0=2026-08-26T04:05:00 port=/dev/ttyUSB3 probe=148757200D2D1425 loop=1
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.070,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=0,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.080,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=1,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.110,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=2,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.210,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=3,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.360,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=4,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=1.010,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=5,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=1.390,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=6,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=4.010,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=7,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=7.080,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=8,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=12.510,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=9,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=90.200,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=10,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.070,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=11,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.110,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=12,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.360,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=13,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=1.390,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=14,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=12.510,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=15,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=90.200,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=16,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=4.010,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=17,replicate=1,drops=0,gap_us=1000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.210,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608252235,config=18,replicate=1,drops=0,gap_us=5000
