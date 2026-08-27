@@ -16,7 +16,9 @@ bench board families per docs/BENCH-CONSOLE-SPEC.md v1.0:
   * Cross-board pair planner: TX from family A + RX from family B,
     same SESSION id
   * Sweep matrices, CSV columns and MD emission identical to the e80
-    tool (tools/test_balloon_sweep.py pins parity)
+    tool (tools/test_balloon_sweep.py pins parity) — including the
+    2.4 GHz dual-band sections; those configs only run on pairs whose
+    FREQ plans (spec §9) intersect on the 2.4 GHz band
   * ttyACM boards open through BoardSerial (tools/board-serial.py)
     so the BALLOON board lock + tracking stays enforced
 
@@ -462,6 +464,13 @@ PA_SWEEP = [0, 3, 6, 10]
 LEN_SWEEP = [16, 64, 128, 255, 511]
 FREQ_SWEEP = [863000000, 865000000, 868000000, 869525000, 870000000]
 
+# 2.4 GHz ISM band (e80_sweep_full dual-band matrices; on the e80 pair
+# these need fw 0561b29 BAND OVERRIDE + HF path — here they are gated by
+# the per-board FREQ plan, spec §9: plan_pairs refuses any pair whose
+# boards do not BOTH allow the frequency, before any hardware is touched).
+FREQ_2G4_SWEEP = [2400000000, 2420000000, 2440000000, 2460000000, 2480000000]
+DEFAULT_FREQ_2G4 = 2440000000
+
 
 def lora_airtime_s(sf, bw_khz, plen):
     """Standard LoRa airtime: preamble 8, CR 4/5, explicit hdr, CRC on.
@@ -506,6 +515,9 @@ def build_configs():
     for plen in LEN_SWEEP:
         if plen == 64:
             continue  # in matrix
+        if plen > LEN_CAP["lora"]:
+            continue  # LR2021 LoRa 8-bit length field: max 255 (L511 is
+                      # FLRC-only; generates misleading 100% PER in LoRa)
         toa = lora_airtime_s(8, 125, plen)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=DEFAULT_FREQ,
@@ -541,12 +553,63 @@ def build_configs():
         cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ,
                          plen=plen, gap=40000,
                          label=f"FLRC {br}k pa5 L{plen}"))
+    # ================= 2.4 GHz ISM band (e80_sweep_full dual-band port) =====
+    # Matrices byte-identical to e80_sweep_full (spec §11.6 parity, pinned
+    # by E80ParityTests). FREQ-plan gating per spec §9 happens in
+    # plan_pairs: e.g. E80BENCH pairs (863-870 only) and RP2040 pairs
+    # (2440 point only) are refused pre-hardware unless configs are
+    # filtered to the pair's allowed band intersection.
+    # G-2G4. LoRa SF x BW matrix @ 2440 MHz PA10 LEN64 (24 configs)
+    for bw in LORA_BWS:
+        for sf in LORA_SFS:
+            toa = lora_airtime_s(sf, bw, 64)
+            gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+            cfgs.append(dict(mod="lora", sf=sf, bw=bw, pa=10,
+                             freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
+                             label=f"2G4 SF{sf} BW{bw} PA10"))
+    # H-2G4. LoRa PA sweep @ SF8 BW125 2440 MHz (4 configs; PA10 replicates
+    # the matrix center for cross-section consistency check)
+    for pa in PA_SWEEP:
+        toa = lora_airtime_s(8, 125, 64)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="lora", sf=8, bw=125, pa=pa,
+                         freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
+                         label=f"2G4 SF8 BW125 PA{pa}"))
+    # I-2G4. LoRa LEN sweep @ SF8 BW125 PA10 2440 MHz. L511 filtered: the
+    # LR2021 LoRa 8-bit length field caps at 255 bytes — L511 in LoRa is
+    # untestable and was previously showing as misleading 100% PER.
+    for plen in LEN_SWEEP:
+        if plen > LEN_CAP["lora"]:
+            continue
+        toa = lora_airtime_s(8, 125, plen)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10,
+                         freq=DEFAULT_FREQ_2G4, plen=plen, gap=gap,
+                         label=f"2G4 SF8 BW125 PA10 L{plen}"))
+    # J-2G4. FLRC BR sweep @ 2440 MHz pa5 (8 configs). gap floor 10 ms holds
+    # for the shortest airtime (2600k: ~1.3 ms for 64 B) — min gap is the
+    # binding constraint, exactly as on 868 MHz.
+    for br in FLRC_BRS:
+        cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ_2G4,
+                         plen=64, gap=10000, label=f"2G4 FLRC {br}k pa5"))
+    # K-2G4. FLRC PA sweep @ 650k 2440 MHz (6 configs; pa5 replicates J)
+    for pa in FLRC_PAS:
+        cfgs.append(dict(mod="flrc", br=650, pa=pa, freq=DEFAULT_FREQ_2G4,
+                         plen=64, gap=10000, label=f"2G4 FLRC 650k pa{pa}"))
+    # L-2G4. FREQ sweep @ SF8 BW125 PA10 across 2.4 GHz points (5 configs;
+    # 2440 replicates the matrix center)
+    for f in FREQ_2G4_SWEEP:
+        toa = lora_airtime_s(8, 125, 64)
+        gap = max(10000, int(1.2 * toa * 1e6) + 5000)
+        cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=f,
+                         plen=64, gap=gap, label=f"2G4 SF8 BW125 @ {f/1e6:.0f}MHz"))
     return cfgs
 
 
 SUMMARY_FIELDS = ["idx", "label", "mod", "sf", "bw", "br", "pa", "freq", "plen",
-                  "gap_us", "toa_s", "rx_pkts", "crc_err", "rssi_avg", "rssi_min",
-                  "rssi_max", "snr_avg", "snr_min", "bit_err_total", "tx_done", "error"]
+                  "gap_us", "toa_s", "dur_s", "rx_pkts", "crc_err", "rssi_avg",
+                  "rssi_min", "rssi_max", "snr_avg", "snr_min", "bit_err_total",
+                  "tx_done", "error"]
 PKT_FIELDS = ["idx", "label", "pkt_idx", "session", "config", "replicate",
               "ts_ms", "rssi_dbm", "snr_db", "crc_ok", "bit_err", "pcrc16"]
 
@@ -711,6 +774,10 @@ def run_config(idx, cfg, tx, rx, session_id, tx_driver=None, rx_driver=None):
     plan_pairs (spec S6/S7/S9 enforcement happens pre-hardware).
     """
     mod = cfg["mod"]
+    # Wall-clock timing: from reset start to last packet drain (same
+    # instrumentation as e80_sweep_full; feeds the dur_s summary column).
+    t_cfg_start = time.monotonic()
+    cfg_t_start_iso = datetime.now().isoformat()
     if tx_driver is not None:
         tx_driver.reset(cfg.get("_tx_port", ""))
     if rx_driver is not None:
@@ -763,6 +830,8 @@ def run_config(idx, cfg, tx, rx, session_id, tx_driver=None, rx_driver=None):
 
     stat = cmd(rx, "STAT?")
     sd = parse_stat(stat) if stat else {}
+    t_cfg_end = time.monotonic()
+    cfg_t_end_iso = datetime.now().isoformat()
 
     pkts = [p for p in (parse_pkt(l) for l in rx_lines) if p is not None]
     rssi = [p["rssi"] for p in pkts]
@@ -773,6 +842,8 @@ def run_config(idx, cfg, tx, rx, session_id, tx_driver=None, rx_driver=None):
         "sf": cfg.get("sf", ""), "bw": cfg.get("bw", ""),
         "br": cfg.get("br", ""), "pa": cfg["pa"], "freq": cfg["freq"],
         "plen": cfg["plen"], "gap_us": cfg["gap"], "toa_s": round(toa, 3),
+        "dur_s": round(t_cfg_end - t_cfg_start, 3),
+        "cfg_t_start": cfg_t_start_iso, "cfg_t_end": cfg_t_end_iso,
         "rx_pkts": len(pkts), "crc_err": sd.get("crc_err", 0),
         "rssi_avg": round(sum(rssi) / len(rssi), 1) if rssi else None,
         "rssi_min": round(min(rssi), 1) if rssi else None,
