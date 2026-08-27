@@ -113,7 +113,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
-.PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test
+.PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke
 .PHONY: boat-tx boat-rx
 
 all: firmware
@@ -180,6 +180,34 @@ clean:
 tx: range-tx  ## TX mode: just run `make tx`. T0 + SESSION_ID auto-generated.
 
 rx: range-rx  ## RX mode: just run `make rx`. T0 + SESSION_ID auto-generated.
+
+# ============================================================
+# BUF FLASH SMOKE (BUF-T3) — console-only, one board
+# ============================================================
+# 10x full-capacity (4 KB) binary BUF LOADs with CRC gate,
+# then START with src=BUF, then BUF CLEAR -> START with src=PRBS.
+# Console-only smoke: no radio probing, no second board needed.
+#
+#   make buf-smoke PORT=/dev/ttyUSB4
+#
+# PORT=  required — CH340 console port of the board under test.
+# PROBE= optional — accepted for symmetry with make tx/rx but
+#        IGNORED here (this smoke never touches the radio probe
+#        port; find ports with `python3 tools/e80_detect.py`).
+# LOADS=, SIZE= optional — override the 10x4096 defaults.
+
+buf-smoke:
+ifndef PORT
+	@echo "usage: make buf-smoke PORT=<tty> [LOADS=n] [SIZE=n] [PROBE=<probe>]" >&2
+	@echo "  PORT= is required (CH340 console of the board under test, e.g. /dev/ttyUSB4)" >&2
+	@echo "  PROBE= is optional and ignored by this console-only smoke" >&2
+	@echo "  Find ports: python3 tools/e80_detect.py" >&2
+	@exit 1
+endif
+	@echo "BUF flash smoke: port=$(PORT) loads=$(if $(LOADS),$(LOADS),10) size=$(if $(SIZE),$(SIZE),4096)"
+	$(PYTHON) $(TOOLDIR)/tools/buf_smoke_t3.py --port $(PORT) \
+		$(if $(LOADS),--loads $(LOADS)) \
+		$(if $(SIZE),--size $(SIZE))
 
 # ============================================================
 # BOAT / MARITIME SWEEP — continuous loop, all 19 configs
