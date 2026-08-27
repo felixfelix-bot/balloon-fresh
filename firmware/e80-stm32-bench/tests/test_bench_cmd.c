@@ -258,6 +258,41 @@ static void test_radio_config_has_cr_field(void)
     CHECK(cfg.cr == 1);
 }
 
+static void test_quiet(void)
+{
+    bench_cmd_t c;
+
+    /* QUIET ON */
+    c = parse("QUIET ON");
+    CHECK(c.id == BENCH_CMD_QUIET && c.err == BENCH_CMD_OK);
+    CHECK(c.quiet_enable == true);
+
+    /* case-insensitive */
+    c = parse("quiet on");
+    CHECK(c.id == BENCH_CMD_QUIET && c.quiet_enable == true);
+
+    /* QUIET OFF */
+    c = parse("QUIET OFF");
+    CHECK(c.id == BENCH_CMD_QUIET && c.err == BENCH_CMD_OK);
+    CHECK(c.quiet_enable == false);
+
+    /* case-insensitive OFF */
+    c = parse("Quiet Off");
+    CHECK(c.id == BENCH_CMD_QUIET && c.quiet_enable == false);
+
+    /* QUIET with no argument -> syntax error */
+    c = parse("QUIET");
+    CHECK(c.err == BENCH_CMD_E_SYNTAX);
+
+    /* QUIET with bad argument -> arg error */
+    c = parse("QUIET YES");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+
+    /* QUIET with too many tokens -> syntax error */
+    c = parse("QUIET ON NOW");
+    CHECK(c.err == BENCH_CMD_E_SYNTAX);
+}
+
 int main(void)
 {
     test_basic_commands();
@@ -269,6 +304,7 @@ int main(void)
     test_token_overflow();
     test_parse_helpers();
     test_radio_config_has_cr_field();
+    test_quiet();
 
     if (failures == 0)
     {

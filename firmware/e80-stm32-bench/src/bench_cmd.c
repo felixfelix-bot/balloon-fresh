@@ -388,6 +388,21 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
         return BENCH_CMD_OK;
     }
 
+    if (bench_strcaseeq(tokens[0], "QUIET"))
+    {
+        /* QUIET ON|OFF — suppress per-packet PKT console output */
+        if (ntok != 2)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        if (bench_strcaseeq(tokens[1], "ON"))
+            out->quiet_enable = true;
+        else if (bench_strcaseeq(tokens[1], "OFF"))
+            out->quiet_enable = false;
+        else
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_QUIET;
+        return BENCH_CMD_OK;
+    }
+
     if (bench_strcaseeq(tokens[0], "BUF"))
     {
         /* TX buffer: BUF CLEAR | BUF STATUS | BUF LOAD <n> <crc16_hex>
