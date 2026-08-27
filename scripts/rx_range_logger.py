@@ -1,326 +1,173 @@
 #!/usr/bin/env python3
-"""
-RX Range Logger Daemon — 24/7 continuous capture with log rotation.
+"""rx_range_logger.py — C3/ESP32 serial RX logger for harmonized 23-field PKT format
 
-Features:
-- Auto-detects RX board (F242D) by serial number
-- Auto-reconnects on disconnect/reboot
-- Rotates log files at --max-size (default 5MB)
-- Cleans up old logs beyond --max-logs (default 500)
-- Designed to run as systemd service (never exits)
+Reads serial output from C3 range test firmware, logs PKT lines to CSV.
+Parses the harmonized 23-field PKT format via the shared pkt_parser module.
+
+Uses the BoardSerial wrapper (board flock enforcement, per AGENTS.md mandate)
+when the balloon-fresh tools are importable; falls back to plain pyserial
+otherwise so the tool stays runnable standalone.
 
 Usage:
-    python3 rx_range_logger.py [--port /dev/ttyACM2] [--baud 115200]
-                                [--outdir /var/log/rx-logger]
-                                [--max-size-mb 5] [--max-logs 500]
-
-Output files (rotated):
-    range_test_YYYYMMDD_HHMMSS.log  — raw serial output with timestamps
-    range_test_YYYYMMDD_HHMMSS.csv  — parsed: timestamp,n,seq,rssi
+    python3 scripts/rx_range_logger.py /dev/ttyACM0 [--baud 2000000] [--out ../data/]
 """
-import time
-import sys
+
+import argparse
+import csv
 import os
-import subprocess
-import signal
-import glob
-import logging
+import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ─── BoardSerial import ──────────────────────────────────────────────────
-TOOLS_DIR = Path.home() / "repos" / "balloon-fresh" / "tools"
-sys.path.insert(0, str(TOOLS_DIR))
+try:
+    import serial
+    import serial.tools.list_ports
+except ImportError:
+    print("ERROR: pyserial not installed. Run: pip install pyserial", file=sys.stderr)
+    sys.exit(1)
+
+# ─── BoardSerial (AGENTS.md serial wrapper mandate) ────────────────────
+FRESH_TOOLS_DIR = Path.home() / "repos" / "balloon-fresh" / "tools"
+sys.path.insert(0, str(FRESH_TOOLS_DIR))
 
 try:
     from board_serial import BoardSerial
 except ImportError:
-    print("ERROR: Cannot import BoardSerial from", TOOLS_DIR, file=sys.stderr)
-    print("Ensure balloon-fresh repo is cloned.", file=sys.stderr)
-    sys.exit(1)
+    BoardSerial = None
+    print(f"WARN: BoardSerial not found in {FRESH_TOOLS_DIR}; "
+          "using plain pyserial (no board flock enforcement).", file=sys.stderr)
 
-# ─── Config ──────────────────────────────────────────────────────────
-RX_SERIAL = "E663B035977F242D"
-DEFAULT_OUTDIR = "/var/log/rx-logger"
-MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
-MAX_LOGS = 500
+# Shared PKT parser from tools/
+TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
+sys.path.insert(0, str(TOOLS_DIR))
+from pkt_parser import parse_pkt_line, PKT_FIELDS, PKT_CSV_HEADER  # noqa: E402
 
-# ─── Logging (stderr → journald) ─────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    stream=sys.stderr,
-)
-log = logging.getLogger("rx-logger")
+# Additional columns appended after PKT fields
+EXTRA_COLUMNS = ['raw_line']
+CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + EXTRA_COLUMNS
 
-# ─── Board detection ─────────────────────────────────────────────────
-def find_rx_port():
-    """Find F242D by udev serial number. Returns port path or None."""
-    try:
-        ports = subprocess.check_output(
-            "ls /dev/ttyACM* 2>/dev/null", shell=True, text=True
-        ).strip().split()
-    except subprocess.CalledProcessError:
-        return None
 
-    for port in ports:
-        port = port.strip()
-        if not port:
-            continue
-        try:
-            info = subprocess.check_output(
-                ["udevadm", "info", "-q", "property", port],
-                text=True, stderr=subprocess.DEVNULL,
-            )
-            if RX_SERIAL in info:
-                return port
-        except subprocess.CalledProcessError:
-            pass
+def auto_detect_port():
+    candidates = []
+    for port in serial.tools.list_ports.comports():
+        if '303a:1001' in (port.hwid or '') or 'Espressif' in (port.manufacturer or ''):
+            candidates.append(port.device)
+    for p in sorted(candidates):
+        return p
     return None
 
 
-def wait_for_board(timeout_s=0):
-    """Block until RX board is found. timeout_s=0 = wait forever."""
-    waited = 0
-    while True:
-        port = find_rx_port()
-        if port:
-            return port
-        if timeout_s > 0 and waited >= timeout_s:
-            return None
-        if waited % 30 == 0:
-            log.info(f"Waiting for RX board ({RX_SERIAL})... ({waited}s)")
-        time.sleep(5)
-        waited += 5
+def find_port(arg_port):
+    if arg_port:
+        return arg_port
+    port = auto_detect_port()
+    if port:
+        print(f"Auto-detected: {port}", file=sys.stderr)
+        return port
+    print("No Espressif device found. Use --port /dev/ttyACMx", file=sys.stderr)
+    sys.exit(1)
 
 
-# ─── Log rotation ────────────────────────────────────────────────────
-class RotatingLogger:
-    def __init__(self, outdir, max_bytes, max_files):
-        self.outdir = outdir
-        self.max_bytes = max_bytes
-        self.max_files = max_files
-        self.log_file = None
-        self.csv_file = None
-        self.log_path = None
-        self.csv_path = None
-        self.current_size = 0
-        os.makedirs(outdir, exist_ok=True)
-        self._new_files()
-
-    def _new_files(self):
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_path = os.path.join(self.outdir, f"range_test_{ts}.log")
-        self.csv_path = os.path.join(self.outdir, f"range_test_{ts}.csv")
-        self.log_file = open(self.log_path, "a")
-        self.csv_file = open(self.csv_path, "a")
-        self.csv_file.write("timestamp_iso,n,seq,rssi_dbm,gps_lat1e7,gps_lon1e7,gps_alt,gps_sats,gps_hdop_x10,gps_fix\n")
-        self.csv_file.flush()
-        self.current_size = 0
-        log.info(f"New log: {self.log_path}")
-
-    def _rotate(self):
-        """Close current files, clean up old, open new."""
-        if self.log_file:
-            self.log_file.close()
-        if self.csv_file:
-            self.csv_file.close()
-        self._cleanup_old()
-        self._new_files()
-
-    def _cleanup_old(self):
-        """Keep only the most recent max_files log/csv pairs."""
-        log_files = sorted(
-            glob.glob(os.path.join(self.outdir, "range_test_*.log")),
-            key=os.path.getmtime,
-        )
-        while len(log_files) > self.max_files:
-            oldest = log_files.pop(0)
-            try:
-                os.remove(oldest)
-                # Also remove matching csv
-                csv = oldest.replace(".log", ".csv")
-                if os.path.exists(csv):
-                    os.remove(csv)
-                log.info(f"Cleaned old: {os.path.basename(oldest)}")
-            except OSError:
-                pass
-
-    def write(self, line_text, is_packet=False, n=0, seq=0, rssi=0):
-        """Write a non-packet line. Rotates if exceeding max size."""
-        ts = datetime.now(timezone.utc)
-        ts_iso = ts.isoformat(timespec="milliseconds")
-
-        log_line = f"{ts_iso} | {line_text}\n"
-        self.log_file.write(log_line)
-        self.log_file.flush()
-        self.current_size += len(log_line)
-
-        if self.current_size >= self.max_bytes:
-            log.info(f"Rotating at {self.current_size / 1024 / 1024:.1f} MB")
-            self._rotate()
-
-    def write_pkt(self, ts_iso, n, seq, rssi,
-                  gps_lat, gps_lon, gps_alt, gps_sats, gps_hdop, gps_fix):
-        """Write a packet line to both raw log and CSV."""
-        # Raw log
-        log_line = f"{ts_iso} | PKT,{n},{seq},{rssi},{gps_lat},{gps_lon},{gps_alt},{gps_sats},{gps_hdop},{gps_fix}\n"
-        self.log_file.write(log_line)
-        self.log_file.flush()
-
-        # CSV
-        csv_line = f"{ts_iso},{n},{seq},{rssi},{gps_lat},{gps_lon},{gps_alt},{gps_sats},{gps_hdop},{gps_fix}\n"
-        self.csv_file.write(csv_line)
-        self.csv_file.flush()
-
-        self.current_size += len(log_line) + len(csv_line)
-
-        if self.current_size >= self.max_bytes:
-            log.info(f"Rotating at {self.current_size / 1024 / 1024:.1f} MB")
-            self._rotate()
-
-
-# ─── Main daemon loop ────────────────────────────────────────────────
-def run(port, baud, outdir, max_bytes, max_files):
-    """Connect to board and log forever. Reconnects on failure."""
-    logger = RotatingLogger(outdir, max_bytes, max_files)
-
-    pkt_count = 0
-    rssi_sum = 0
-    rssi_min = 0
-    rssi_max = -128
-    last_report = time.time()
-    pkts_last_report = 0
-    buf = b""
-
-    log.info(f"Connecting to {port} @ {baud} baud")
-    try:
-        ser = BoardSerial(port, baud, timeout=0.5)
-    except Exception as e:
-        log.error(f"Failed to open {port}: {e}")
-        return False  # caller retries
-
-    log.info(f"Connected. Logging to {outdir}")
-
-    while True:
-        try:
-            data = ser.read(4096)
-            if not data:
-                # Check if port still exists
-                if not os.path.exists(port):
-                    log.warning(f"Port {port} disappeared")
-                    ser.close()
-                    return False
-                continue
-
-            buf += data
-
-            while b"\n" in buf:
-                line, buf = buf.split(b"\n", 1)
-                line = line.strip(b"\r").decode("utf-8", errors="replace").strip()
-                if not line:
-                    continue
-
-                is_pkt = line.startswith("PKT,")
-                n = seq = rssi = 0
-                gps_lat = gps_lon = gps_alt = "0"
-                gps_sats = gps_hdop = gps_fix = "0"
-
-                if is_pkt:
-                    parts = line.split(",")
-                    try:
-                        n = int(parts[1])
-                        seq = int(parts[2])
-                        rssi = int(parts[3])
-                        pkt_count += 1
-                        rssi_sum += rssi
-                        if rssi < rssi_min:
-                            rssi_min = rssi
-                        if rssi > rssi_max:
-                            rssi_max = rssi
-
-                        # GPS fields (if present — backward compatible)
-                        gps_lat = parts[4] if len(parts) > 4 else "0"
-                        gps_lon = parts[5] if len(parts) > 5 else "0"
-                        gps_alt = parts[6] if len(parts) > 6 else "0"
-                        gps_sats = parts[7] if len(parts) > 7 else "0"
-                        gps_hdop = parts[8] if len(parts) > 8 else "0"
-                        gps_fix = parts[9] if len(parts) > 9 else "0"
-                    except (ValueError, IndexError):
-                        is_pkt = False
-
-                # Write to logger with GPS fields appended
-                ts = datetime.now(timezone.utc)
-                ts_iso = ts.isoformat(timespec="milliseconds")
-                if is_pkt:
-                    logger.write_pkt(ts_iso, n, seq, rssi,
-                                     gps_lat, gps_lon, gps_alt,
-                                     gps_sats, gps_hdop, gps_fix)
-                else:
-                    logger.write(line, is_pkt, n, seq, rssi)
-
-                # Periodic console (→ journald)
-                current = time.time()
-                if current - last_report >= 10.0:
-                    delta = pkt_count - pkts_last_report
-                    rate = delta / (current - last_report)
-                    rssi_avg = rssi_sum / pkt_count if pkt_count > 0 else 0
-                    log.info(
-                        f"total={pkt_count} rate={rate:.1f}/s "
-                        f"rssi_avg={rssi_avg:.0f}dBm "
-                        f"min={rssi_min} max={rssi_max}"
-                    )
-                    last_report = current
-                    pkts_last_report = pkt_count
-
-        except (Exception, OSError) as e:
-            # BoardSerial wraps pyserial; SerialException / OSError (port
-            # disappeared, cable pull, board reboot) surfaces here.
-            log.error(f"I/O error: {e}")
-            try:
-                ser.close()
-            except Exception:
-                pass
-            return False
+def open_serial(port, baud):
+    """Open via BoardSerial when available, else plain pyserial."""
+    if BoardSerial is not None:
+        return BoardSerial(port, baud, timeout=0.5)
+    return serial.Serial(port, baud, timeout=0.5)
 
 
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="RX Range Logger Daemon")
-    parser.add_argument("--port", help="Serial port (auto-detect if not given)")
-    parser.add_argument("--baud", type=int, default=115200)
-    parser.add_argument("--outdir", default=DEFAULT_OUTDIR)
-    parser.add_argument("--max-size-mb", type=float, default=5.0)
-    parser.add_argument("--max-logs", type=int, default=MAX_LOGS)
+    parser = argparse.ArgumentParser(
+        description='C3/ESP32 RX logger for harmonized 23-field PKT format')
+    parser.add_argument('--port', help='Serial port (auto-detect if omitted)')
+    parser.add_argument('--baud', type=int, default=2000000,
+                        help='Baud rate (default: 2000000 for C3)')
+    parser.add_argument('--out', default='data',
+                        help='Output directory (default: data/)')
+    parser.add_argument('--duration', type=int, default=0,
+                        help='Stop after N seconds (0=forever)')
     args = parser.parse_args()
 
-    max_bytes = int(args.max_size_mb * 1024 * 1024)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    log.info(f"RX Logger Daemon starting")
-    log.info(f"outdir={args.outdir} max_size={args.max_size_mb}MB max_logs={args.max_logs}")
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    csv_path = out_dir / f'range_packets_{ts}.csv'
+    raw_path = out_dir / f'range_raw_{ts}.txt'
 
-    # Signal handler for clean shutdown
-    def handle_signal(sig, frame):
-        log.info("Received signal — stopping")
-        sys.exit(0)
+    port = find_port(args.port)
+    ser = open_serial(port, args.baud)
 
-    signal.signal(signal.SIGTERM, handle_signal)
-    signal.signal(signal.SIGINT, handle_signal)
+    pkt_count = 0
+    start_time = time.time()
+    reconnects = 0
 
-    # Main reconnect loop — runs forever
-    while True:
-        port = args.port or wait_for_board()
-        if not port:
-            log.warning("Board not found, retrying in 10s...")
-            time.sleep(10)
-            continue
+    with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(CSV_COLUMNS)
 
-        ok = run(port, args.baud, args.outdir, max_bytes, args.max_logs)
-        if not ok:
-            log.info("Reconnecting in 5s...")
-            time.sleep(5)
+        print(f"Logging {port} -> {csv_path}", file=sys.stderr)
+        print(f"Raw output -> {raw_path}", file=sys.stderr)
+        print(f"Duration: {'forever' if args.duration == 0 else f'{args.duration}s'}",
+              file=sys.stderr)
+        print("Press Ctrl+C to stop\n", file=sys.stderr)
+
+        buf = ''
+        while True:
+            if args.duration > 0 and (time.time() - start_time) > args.duration:
+                print(f"\nDuration reached ({args.duration}s)", file=sys.stderr)
+                break
+
+            try:
+                data = ser.read(4096)
+                if not data:
+                    continue
+
+                text = data.decode('utf-8', errors='replace')
+                rawfile.write(text)
+                buf += text
+
+                while '\n' in buf:
+                    line, buf = buf.split('\n', 1)
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    now = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+
+                    # Harmonized 23-field PKT line
+                    pkt = parse_pkt_line(line)
+                    if pkt:
+                        row = [now] + [str(pkt[f]) for f in PKT_FIELDS] + [line]
+                        writer.writerow(row)
+                        pkt_count += 1
+                        if pkt_count % 100 == 0:
+                            print(f"  PKT {pkt_count} seq={pkt['seq']} "
+                                  f"rssi={pkt['rssi_dbm']}", file=sys.stderr)
+                        continue
+
+                    # Pass non-PKT lines through to terminal
+                    print(line)
+
+            except serial.SerialException:
+                reconnects += 1
+                print(f"Serial disconnected! Reconnecting ({reconnects})...",
+                      file=sys.stderr)
+                time.sleep(2)
+                try:
+                    ser.close()
+                except Exception:
+                    pass
+                ser = open_serial(port, args.baud)
+
+    elapsed = time.time() - start_time
+    print(f"\n=== {pkt_count} PKT lines logged in {elapsed:.0f}s "
+          f"({reconnects} reconnects) ===", file=sys.stderr)
+    print(f"CSV: {csv_path}", file=sys.stderr)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nStopped by user.", file=sys.stderr)

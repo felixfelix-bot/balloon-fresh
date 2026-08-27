@@ -43,11 +43,13 @@ struct BenchConfig {
     uint16_t txDelayMs;
     uint16_t preambleLen;
     BenchRole role;
+    bool prbsEnabled;  /* PRBS-15 mode gate: OFF for throughput modes */
 };
 
 static BenchConfig cfg = {
     MODE_FLRC, 868.0f, 325, 9, 125.0f,
-    RADIOLIB_LR2021_FLRC_CR_3_4, 22, 50, 1000, 5, 16, ROLE_NONE
+    RADIOLIB_LR2021_FLRC_CR_3_4, 22, 50, 1000, 5, 16, ROLE_NONE,
+    false  /* PRBS OFF by default for throughput/bench mode */
 };
 
 static volatile bool rxFlag = false;
@@ -149,7 +151,11 @@ static void runTx() {
         buf[2] = (txCurrentPkt >> 8) & 0xFF;
         buf[3] = txCurrentPkt & 0xFF;
         if (cfg.pktSize > 4) {
-            prbs15_fill(buf + 4, cfg.pktSize - 4, txCurrentPkt);
+            if (cfg.prbsEnabled) {
+                prbs15_fill(buf + 4, cfg.pktSize - 4, txCurrentPkt);
+            } else {
+                memset(buf + 4, 0, cfg.pktSize - 4);
+            }
         }
 
         state = radio->transmit(buf, cfg.pktSize);
@@ -278,12 +284,18 @@ static void runRx() {
 
             if (len > 4) {
                 uint16_t bytesBad = 0;
-                uint16_t bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
-                if (bitErr > 0) {
-                    rxPayloadCorrupt++;
-                    rxBitErrorsTotal += bitErr;
+                uint16_t bitErr = 0;
+                if (cfg.prbsEnabled) {
+                    bitErr = prbs15_verify(buf + 4, len - 4, seq, &bytesBad);
+                    if (bitErr > 0) {
+                        rxPayloadCorrupt++;
+                        rxBitErrorsTotal += bitErr;
+                    }
+                    rxBitsCheckedTotal += (len - 4) * 8;
+                } else {
+                    bitErr = 0;
+                    bytesBad = 0;
                 }
-                rxBitsCheckedTotal += (len - 4) * 8;
             }
 
             rxReceived++;
@@ -356,10 +368,11 @@ static void processCommand(const char *cmd) {
     if (strlen(cmd) == 0) return;
 
     if (strcmp(cmd, "CONFIG") == 0) {
-        ESP_LOGI(TAG, "mode=%s freq=%.1f br=%d sf=%d bw=%.0f cr=0x%02X pwr=%d size=%d count=%d delay=%d role=%s",
+        ESP_LOGI(TAG, "mode=%s freq=%.1f br=%d sf=%d bw=%.0f cr=0x%02X pwr=%d size=%d count=%d delay=%d role=%s prbs=%s",
                  cfg.mode == MODE_FLRC ? "FLRC" : "LORA", cfg.freq, cfg.br, cfg.sf, cfg.bw,
                  cfg.cr, cfg.pwr, cfg.pktSize, cfg.pktCount, cfg.txDelayMs,
-                 cfg.role == ROLE_TX ? "TX" : cfg.role == ROLE_RX ? "RX" : "NONE");
+                 cfg.role == ROLE_TX ? "TX" : cfg.role == ROLE_RX ? "RX" : "NONE",
+                 cfg.prbsEnabled ? "ON" : "OFF");
     } else if (strncmp(cmd, "MODE ", 5) == 0) {
         if (strcmp(cmd + 5, "FLRC") == 0) cfg.mode = MODE_FLRC;
         else if (strcmp(cmd + 5, "LORA") == 0) cfg.mode = MODE_LORA;
@@ -376,12 +389,16 @@ static void processCommand(const char *cmd) {
     else if (strncmp(cmd, "ROLE ", 5) == 0) {
         if (strcmp(cmd + 5, "TX") == 0) cfg.role = ROLE_TX;
         else if (strcmp(cmd + 5, "RX") == 0) cfg.role = ROLE_RX;
+    } else if (strncmp(cmd, "PRBS ", 5) == 0) {
+        if (strcmp(cmd + 5, "ON") == 0) { cfg.prbsEnabled = true; ESP_LOGI(TAG, "PRBS enabled"); }
+        else if (strcmp(cmd + 5, "OFF") == 0) { cfg.prbsEnabled = false; ESP_LOGI(TAG, "PRBS disabled"); }
+        else ESP_LOGW(TAG, "Usage: PRBS ON|OFF");
     } else if (strcmp(cmd, "RUN") == 0) {
         if (cfg.role == ROLE_TX) runTx();
         else if (cfg.role == ROLE_RX) runRx();
         else ESP_LOGE(TAG, "Set ROLE first");
     } else if (strcmp(cmd, "HELP") == 0) {
-        ESP_LOGI(TAG, "Commands: MODE FLRC|LORA, FREQ, BR, SF, BW, CR, PWR, SIZE, COUNT, DELAY, PREAMBLE, ROLE TX|RX, RUN, CONFIG, HELP");
+        ESP_LOGI(TAG, "Commands: MODE FLRC|LORA, FREQ, BR, SF, BW, CR, PWR, SIZE, COUNT, DELAY, PREAMBLE, ROLE TX|RX, PRBS ON|OFF, RUN, CONFIG, HELP");
     } else {
         ESP_LOGW(TAG, "Unknown: %s", cmd);
     }

@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
-"""
-rx_range_logger.py — Serial RX logger for LR2021 FLRC range tests
+"""rx_range_logger.py — Serial RX logger for LR2021 FLRC range tests
 
 Reads serial output from rp2040-range-rx-auto firmware, logs to CSV.
 Validates RSSI values — flags phantom data (constant 36, 0, or -127).
+Now parses the harmonized 23-field PKT format.
+
+HOST-1/M2: Firmware hash gate — refuses to start capture unless the
+boot banner contains a valid FW_HASH=<7hexchars>.  Use --skip-fw-check
+to bypass (not recommended for production captures).
+
+HOST-3: Session ID injection — generates a UUID4 session_id on startup,
+writes a SESSION_START header to the CSV, and injects the session_id
+into every PKT line's session_id field.
 
 Usage:
     python3 rx_range_logger.py /dev/ttyACM0 [--baud 2000000] [--out data/]
+    python3 rx_range_logger.py /dev/ttyACM0 --skip-fw-check
+    python3 rx_range_logger.py /dev/ttyACM0 --board c3 --baud 115200
+
+HOST-2: Default baud is 2,000,000 for E80.  Use --board c3 to auto-select
+115200 for C3/RP2040 (USB CDC, baud is cosmetic).
 
 Output: data/range_test_<timestamp>.csv with columns:
-    timestamp, line_type, seq, rssi, raw_line
+    timestamp_iso, session_id, config_id, replicate, seq, ts_ms,
+    rssi_dbm, snr_db, crc_ok, bit_err, bytes_bad, freq_hz, mod, sf,
+    bw_khz, cr, power_dbm, pkt_size, gps_fix, gps_lat, gps_lon,
+    gps_alt, gps_sats, gps_hdop, raw_line
 """
 
 import argparse
@@ -37,12 +53,32 @@ except ImportError:
     # Fall back to raw serial if board_serial not available
     Serial = serial.Serial
 
+# 23-field PKT parser
+from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
+
+# Firmware hash gate (HOST-1/M2)
+from firmware_hash_gate import parse_fw_hash, validate_fw_hash, format_session_start as fmt_session_start  # noqa: E402
+
+# Session manager (HOST-3)
+from session_manager import (  # noqa: E402
+    generate_session_id,
+    start_session,
+    end_session,
+    format_session_start,
+    format_session_command,
+    inject_session_id_into_pkt,
+)
+
 # Phantom RSSI values from old SX1280 opcode bug
 PHANTOM_RSSI = {0, 36, -127}
 
-# Regex patterns
-PKT_PATTERN = re.compile(r'PKT (\d+) seq=(\d+) rssi=(-?\d+)')
+PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + ['raw_line']
+
+# Regex patterns (non-PKT lines)
 RESULT_PATTERN = re.compile(r'RANGE_RESULT_RX,(.+)')
+
+# How long to wait for a boot banner on startup (seconds)
+BOOT_BANNER_TIMEOUT = 10.0
 
 
 def parse_result_fields(kv_str):
@@ -63,10 +99,44 @@ def is_phantom_rssi(rssi):
 def main():
     parser = argparse.ArgumentParser(description='LR2021 FLRC range test RX logger')
     parser.add_argument('port', help='Serial port (e.g. /dev/ttyACM0)')
-    parser.add_argument('--baud', type=int, default=2000000)
+    parser.add_argument('--baud', type=int, default=None,
+                        help='Baud rate (default: 2000000 for E80, 115200 for C3/RP2040)')
+    parser.add_argument('--board', choices=['e80', 'c3', 'rp2040'], default='e80',
+                        help='Board type for baud auto-select (default: e80)')
     parser.add_argument('--out', default='data', help='Output directory')
     parser.add_argument('--duration', type=int, default=0, help='Stop after N seconds (0=forever)')
+    parser.add_argument('--skip-fw-check', action='store_true',
+                        help='Skip firmware hash gate (not recommended)')
+    parser.add_argument('--firmware-path', default=None,
+                        help='Path to firmware binary for SHA256 pre-check (optional)')
+    parser.add_argument('--expected-hash', default=None,
+                        help='Expected SHA256 hex digest for firmware file (optional)')
     args = parser.parse_args()
+
+    # ── HOST-1/M2: Optional firmware file SHA256 pre-check ──────────
+    # If both --firmware-path and --expected-hash are provided, verify
+    # the firmware binary's SHA256 BEFORE opening the serial port.
+    # If mismatch or file missing, abort immediately.
+    if args.firmware_path and args.expected_hash:
+        from firmware_hash_gate import check as fw_file_check
+        print(f"[FW FILE GATE] Checking {args.firmware_path}…")
+        if not fw_file_check(args.firmware_path, args.expected_hash):
+            print("[FW FILE GATE] ERROR: firmware file hash mismatch or file not found!")
+            print(f"[FW FILE GATE] Expected SHA256: {args.expected_hash}")
+            sys.exit(1)
+        print("[FW FILE GATE] OK: firmware file hash matches.")
+    elif args.firmware_path or args.expected_hash:
+        print("[FW FILE GATE] WARNING: --firmware-path and --expected-hash must both "
+              "be provided to enable file-hash checking. Skipping file-hash gate.")
+    else:
+        pass  # No file-hash gate requested — serial-banner gate still runs
+
+    # HOST-2: Auto-select baud based on board type if not explicitly set
+    if args.baud is None:
+        if args.board == 'e80':
+            args.baud = 2000000
+        else:
+            args.baud = 115200  # C3/RP2040 use USB CDC, baud is cosmetic
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -79,6 +149,65 @@ def main():
     print(f"Logging {args.port} -> {csv_path}")
     print(f"Raw output -> {raw_path}")
     print(f"Duration: {'forever' if args.duration == 0 else f'{args.duration}s'}")
+
+    # ── HOST-1/M2: Firmware hash gate ──────────────────────────────
+    # On startup, read serial lines for up to BOOT_BANNER_TIMEOUT seconds
+    # looking for a boot banner with FW_HASH.  Refuse to start capture
+    # if the banner does not contain a valid FW_HASH=<7hexchars>.
+    fw_hash = None
+    if not args.skip_fw_check:
+        print(f"\nWaiting for boot banner (timeout {BOOT_BANNER_TIMEOUT:.0f}s)…")
+        buf = ''
+        gate_start = time.time()
+        while (time.time() - gate_start) < BOOT_BANNER_TIMEOUT:
+            data = ser.read(256)
+            if not data:
+                continue
+            text = data.decode('ascii', errors='replace')
+            buf += text
+            # Check each complete line for FW_HASH
+            while '\n' in buf:
+                line, buf = buf.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+                candidate = parse_fw_hash(line)
+                if candidate:
+                    if validate_fw_hash(candidate):
+                        fw_hash = candidate
+                        print(f"[FW GATE] Valid FW_HASH={fw_hash} — capture authorised.")
+                        break
+                    else:
+                        print(f"[FW GATE] Found FW_HASH={candidate} but invalid (too short or 'unknown').")
+            if fw_hash:
+                break
+
+        if not fw_hash:
+            print("[FW GATE] ERROR: No valid FW_HASH found in boot banner!")
+            print("[FW GATE] Refusing to start capture. Flash firmware with FW_HASH")
+            print("[FW GATE] or use --skip-fw-check to bypass (not recommended).")
+            ser.close()
+            sys.exit(1)
+    else:
+        print("[FW GATE] SKIPPED (--skip-fw-check)")
+
+    # ── HOST-3: Session ID injection ────────────────────────────────
+    # Start a new capture session with lifecycle tracking.
+    # This generates a unique session_id, registers it in the sessions
+    # registry (~/.balloon/sessions.json) with status "active", and
+    # writes a SESSION_START header to the CSV.
+    session_meta = start_session()
+    session_id = session_meta["session_id"]
+    session_header = format_session_start(session_id)
+    print(f"[SESSION] {session_id}")
+
+    # Send SESSION command to firmware so it includes the session_id in PKT lines
+    try:
+        ser.write(format_session_command(session_id).encode('ascii'))
+        print("[SESSION] SESSION command sent to firmware")
+    except Exception as e:
+        print(f"[SESSION] WARNING: Failed to send SESSION command to firmware: {e}")
+
     print("Ctrl+C to stop\n")
 
     pkt_count = 0
@@ -88,9 +217,10 @@ def main():
 
     with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['timestamp', 'type', 'seq', 'rssi', 'burst', 'rx',
-                         'unique', 'lost', 'per', 'throughput_kbps',
-                         'rssi_avg', 'rssi_min', 'bitrate', 'raw'])
+        # Write SESSION header and SESSION_START comment line before CSV header
+        csvfile.write(f"# SESSION {session_id}\n")
+        csvfile.write(f"# {session_header}")
+        writer.writerow(PKT_CSV_COLUMNS)
 
         buf = ''
         while True:
@@ -114,50 +244,41 @@ def main():
 
                 now = datetime.now().isoformat(timespec='milliseconds')
 
-                # Per-packet line
-                m = PKT_PATTERN.search(line)
-                if m:
-                    pkt_num = int(m.group(1))
-                    seq = int(m.group(2))
-                    rssi = int(m.group(3))
-
+                # Harmonized 23-field PKT line
+                pkt = parse_pkt_line(line)
+                if pkt:
+                    rssi = pkt['rssi_dbm']
                     if is_phantom_rssi(rssi):
                         phantom_count += 1
                         if phantom_count <= 5 or phantom_count % 100 == 0:
-                            print(f"  [WARN] Phantom RSSI={rssi} on pkt {pkt_num} "
+                            print(f"  [WARN] Phantom RSSI={rssi} on seq={pkt['seq']} "
                                   f"(count={phantom_count}) — firmware bug?")
 
-                    writer.writerow([now, 'PKT', seq, rssi, '', '', '', '',
-                                     '', '', '', '', '', line])
+                    # HOST-3: Inject session_id into PKT line and parsed dict
+                    line = inject_session_id_into_pkt(line, session_id)
+                    pkt['session_id'] = session_id
+
+                    row = [now] + [str(pkt[f]) for f in PKT_FIELDS] + [line]
+                    writer.writerow(row)
                     pkt_count += 1
                     if pkt_count % 100 == 0:
-                        print(f"  PKT {pkt_count} seq={seq} rssi={rssi}")
+                        print(f"  PKT {pkt_count} seq={pkt['seq']} rssi={rssi}")
                     continue
 
                 # Result summary line
                 m = RESULT_PATTERN.search(line)
                 if m:
                     fields = parse_result_fields(m.group(1))
-                    rssi_avg = float(fields.get('rssi_avg', 0))
+                    rssi_avg_s = fields.get('rssi_avg', '0')
+                    rssi_avg = float(rssi_avg_s) if rssi_avg_s else 0.0
 
-                    if is_phantom_rssi(int(rssi_avg)):
+                    if is_phantom_rssi(int(rssi_avg) if rssi_avg else 0):
                         print(f"  [WARN] Phantom rssi_avg={rssi_avg} in RESULT "
                               f"— RSSI still broken!")
 
-                    writer.writerow([
-                        now, 'RESULT', '',
-                        int(rssi_avg) if rssi_avg else '',
-                        fields.get('burst', fields.get('window', '')),
-                        fields.get('rx', ''),
-                        fields.get('unique', ''),
-                        fields.get('lost', ''),
-                        fields.get('per', ''),
-                        fields.get('throughput_kbps', ''),
-                        rssi_avg,
-                        fields.get('rssi_min', ''),
-                        fields.get('bitrate', ''),
-                        line
-                    ])
+                    # Write RESULT as a sparse PKT-like row with empty PKT fields
+                    row = [now] + [''] * len(PKT_FIELDS) + [line]
+                    writer.writerow(row)
                     result_count += 1
                     print(f"\n  RESULT #{result_count}: rx={fields.get('rx', '?')} "
                           f"unique={fields.get('unique', '?')} "
@@ -168,12 +289,20 @@ def main():
 
     elapsed = time.time() - start_time
     print(f"\n=== Session complete ===")
+    print(f"Session ID: {session_id}")
     print(f"Duration: {elapsed:.0f}s")
     print(f"Packets logged: {pkt_count}")
     print(f"Result summaries: {result_count}")
     print(f"Phantom RSSI warnings: {phantom_count}")
     print(f"CSV: {csv_path}")
     print(f"Raw: {raw_path}")
+
+    # HOST-3: Mark session as ended in the lifecycle registry
+    try:
+        end_session(session_id)
+        print(f"[SESSION] Ended session {session_id}")
+    except Exception as e:
+        print(f"[SESSION] WARNING: Failed to end session: {e}")
 
     if phantom_count > 0:
         print(f"\n[!] {phantom_count} phantom RSSI values detected!")

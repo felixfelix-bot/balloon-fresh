@@ -50,3 +50,5 @@ graphify-out/cache/
 __pycache__/
 Testing/
 firmware/rp2040/build/
+firmware/rp2040/build_pio/
+firmware/rp2040/build_pio2/

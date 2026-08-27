@@ -1,180 +1,217 @@
 #!/usr/bin/env python3
-"""
-capture_sweep.py — Live capture + parse LR2021 sweep data from serial port.
+"""capture_sweep.py — Sweep-mode capture tool with harmonized 23-field PKT parsing.
 
-Reads RX board serial output, parses result lines in real-time,
-appends to unified CSV. Supports GPS time correlation.
+Captures LR2021 multi-radio sweep data from RX board over serial. Parses
+23-field PKT lines via the shared pkt_parser module and writes structured CSV.
+Supports stop-and-capture and walk-mode (with GPS distance).
+
+Two modes:
+  1. STOP-AND-CAPTURE (default): operator places TX at fixed distance
+  2. WALK MODE (--walk): operator walks with TX; distance from GPS coords
 
 Usage:
-    # Basic capture (5 min, distance=1m, indoor)
-    python3 capture_sweep.py --port /dev/ttyACM3 --distance 1 --los N \\
-        --duration 300 --output results.csv
-
-    # With GPS time injection (from u-blox GPS on TX board)
-    python3 capture_sweep.py --port /dev/ttyACM3 --distance 50 --los Y \\
-        --gps-port /dev/ttyUSB0 --output outdoor_50m.csv
-
-    # Append to existing CSV
-    python3 capture_sweep.py --port /dev/ttyACM3 --distance 100 --los Y \\
-        --output outdoor_sweep.csv --append
+  # Walk mode — continuous capture with GPS distance
+  python3 tools/capture_sweep.py --port /dev/ttyACM0 --walk --env outdoor_los
+  python3 tools/capture_sweep.py --port /dev/ttyACM0 --distance 10 --env outdoor_los
 """
 
-import sys
-import os
-import time
-import serial
-import csv
 import argparse
-import subprocess
+import csv
+import math
+import os
+import sys
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 
-# Add tools dir to path for parser
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from parse_unified_csv import parse_line, CSV_FIELDS
+try:
+    import serial
+except ImportError:
+    print("ERROR: pyserial not installed. Run: pip install pyserial", file=sys.stderr)
+    sys.exit(1)
+
+# Shared PKT parser from tools/
+TOOLS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(TOOLS_DIR))
+from pkt_parser import parse_pkt_line, PKT_FIELDS  # noqa: E402
+
+# Session manager (HOST-3)
+from session_manager import generate_session_id, format_session_start, inject_session_id_into_pkt, send_session_command  # noqa: E402
+
+PKT_CSV_COLUMNS = ['timestamp_iso'] + PKT_FIELDS + [
+    'distance_m', 'environment', 'notes', 'raw_line',
+]
+
+# Haversine distance
+def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371000.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = (math.sin(dphi / 2) ** 2 +
+         math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 
-def get_gps_time(gps_port):
-    """Try to read GPS time from u-blox module."""
-    try:
-        # Use gpsd if available
-        result = subprocess.run(
-            ['gpspipe', '-w', '-n', '1', '-x', '2'],
-            capture_output=True, text=True, timeout=3
-        )
-        if result.returncode == 0 and result.stdout:
-            import json
-            for line in result.stdout.strip().split('\n'):
-                try:
-                    data = json.loads(line)
-                    if data.get('class') == 'TP':
-                        return datetime.fromtimestamp(
-                            data.get('real_sec', time.time()),
-                            tz=timezone.utc
-                        ).isoformat()
-                except (json.JSONDecodeError, KeyError):
-                    continue
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-
-    # Fallback: try direct NMEA parse
-    try:
-        s = serial.Serial(gps_port, 9600, timeout=2)
-        for _ in range(20):  # Read up to 20 NMEA sentences
-            line = s.readline().decode('ascii', errors='ignore').strip()
-            if line.startswith('$GPRMC') or line.startswith('$GNRMC'):
-                # $GPRMC,hhmmss.ss,A,...
-                parts = line.split(',')
-                if len(parts) > 1 and parts[1]:
-                    hh = int(parts[1][0:2])
-                    mm = int(parts[1][2:4])
-                    ss = int(parts[1][4:6])
-                    now = datetime.now(timezone.utc)
-                    return now.replace(hour=hh, minute=mm, second=ss).isoformat()
-        s.close()
-    except (serial.SerialException, ValueError, IndexError):
-        pass
-
-    return None
+def parse_cycle_start(line: str) -> int | None:
+    """Parse: === CYCLE <n> START uptime=<ms> ==="""
+    import re
+    m = re.search(r"CYCLE (\d+) START", line)
+    return int(m.group(1)) if m else None
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Live capture + parse LR2021 sweep data from serial port",
-    )
-    parser.add_argument("--port", "-p", required=True, help="Serial port (e.g. /dev/ttyACM3)")
-    parser.add_argument("--output", "-o", required=True, help="Output CSV file")
-    parser.add_argument("--duration", type=int, default=300, help="Capture duration in seconds (default: 300)")
-    parser.add_argument("--distance", type=float, required=True, help="TX-RX distance in meters")
-    parser.add_argument("--los", default="N", choices=["Y", "N"], help="Line of sight")
-    parser.add_argument("--baud", type=int, default=2000000, help="Baud rate (default: 2000000)")
-    parser.add_argument("--append", "-a", action="store_true", help="Append to existing CSV")
-    parser.add_argument("--rx-only", action="store_true", help="Only capture RX-side results")
-    parser.add_argument("--gps-port", default="", help="GPS serial port for time correlation")
-    parser.add_argument("--gps-time", default="", help="Manual GPS time ISO 8601 (overrides auto)")
+        description='Sweep-mode capture with 23-field PKT parsing')
+    parser.add_argument('--port', default='/dev/ttyACM0',
+                        help='Serial port (default: /dev/ttyACM0)')
+    parser.add_argument('--baud', type=int, default=2000000,
+                        help='Baud rate (default: 2000000)')
+    parser.add_argument('--out', default='data/sweep',
+                        help='Output directory')
+    parser.add_argument('--duration', type=int, default=0,
+                        help='Capture duration in seconds (0=forever)')
+    parser.add_argument('--distance', type=float, default=0,
+                        help='Fixed TX-RX distance in meters (stop mode)')
+    parser.add_argument('--walk', action='store_true',
+                        help='Walk mode — compute distance from GPS')
+    parser.add_argument('--base-lat', type=float,
+                        help='Base station latitude (walk mode)')
+    parser.add_argument('--base-lon', type=float,
+                        help='Base station longitude (walk mode)')
+    parser.add_argument('--env', default='indoor',
+                        help='Environment label (indoor/outdoor_los/urban)')
+    parser.add_argument('--notes', default='', help='Custom notes for CSV')
     args = parser.parse_args()
 
-    # Set up serial port
+    # Validate args
+    if args.walk and args.distance > 0:
+        print("ERROR: --walk and --distance are mutually exclusive", file=sys.stderr)
+        sys.exit(1)
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    csv_path = out_dir / f'sweep_capture_{ts}.csv'
+    raw_path = out_dir / f'sweep_capture_{ts}.raw'
+
     try:
-        ser = serial.Serial(args.port, args.baud, timeout=1)
+        ser = serial.Serial(args.port, args.baud, timeout=1.0)
     except serial.SerialException as e:
         print(f"ERROR: Cannot open {args.port}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Set up output
-    write_header = True
-    if args.append and os.path.exists(args.output):
-        write_header = False
+    # ── HOST-3: Session ID injection ────────────────────────────────
+    # Generate a unique session_id, send it to firmware via SESSION command,
+    # and inject it into all PKT lines and output metadata.
+    session_id = generate_session_id()
+    session_header = format_session_start(session_id)
+    print(f"[SESSION] {session_id}")
 
-    outfile = open(args.output, "a" if args.append else "w", newline="")
-    writer = csv.DictWriter(outfile, fieldnames=CSV_FIELDS, extrasaction="ignore")
-    if write_header:
-        writer.writeheader()
+    # Send SESSION command to firmware so it includes the session_id in PKT lines
+    if not send_session_command(ser, session_id):
+        print("[SESSION] WARNING: Failed to send SESSION command to firmware")
+    else:
+        print("[SESSION] SESSION command sent to firmware")
 
-    # Get GPS time if available
-    gps_time = args.gps_time
-    if not gps_time and args.gps_port:
-        gps_time = get_gps_time(args.gps_port)
-        if gps_time:
-            print(f"GPS time: {gps_time}", file=sys.stderr)
-        else:
-            print("GPS time: unavailable, using system time", file=sys.stderr)
+    pkt_count = 0
+    cycle_count = 0
+    start_time = time.time()
 
-    print(f"Capturing from {args.port} for {args.duration}s...", file=sys.stderr)
-    print(f"Distance: {args.distance}m, LOS: {args.los}", file=sys.stderr)
-    print(f"Output: {args.output}", file=sys.stderr)
-    print("Press Ctrl-C to stop early.", file=sys.stderr)
-    print("-" * 40, file=sys.stderr)
+    with open(csv_path, 'w', newline='') as csvfile, open(raw_path, 'w') as rawfile:
+        writer = csv.writer(csvfile)
+        # Write SESSION_START header before the CSV column header
+        csvfile.write(f"# {session_header}")
+        writer.writerow(PKT_CSV_COLUMNS)
 
-    count = 0
-    start = time.time()
+        mode_label = f"WALK (base={args.base_lat},{args.base_lon})" if args.walk \
+                     else f"STOP (d={args.distance}m)"
+        print(f"Sweep capture started:")
+        print(f"  Port:     {args.port} @ {args.baud} baud")
+        print(f"  Mode:     {mode_label}")
+        print(f"  Env:      {args.env}")
+        print(f"  Duration: {'forever' if args.duration == 0 else f'{args.duration}s'}")
+        print(f"  PKT CSV:  {csv_path}")
+        print(f"Press Ctrl+C to stop.\n")
 
+        buf = ''
+        while True:
+            if args.duration > 0 and (time.time() - start_time) > args.duration:
+                print(f"\nDuration reached ({args.duration}s)")
+                break
+
+            try:
+                data = ser.read(4096)
+                if not data:
+                    time.sleep(0.01)
+                    continue
+
+                text = data.decode('utf-8', errors='replace')
+                rawfile.write(text)
+                buf += text
+
+                while '\n' in buf:
+                    line, buf = buf.split('\n', 1)
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    now = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+
+                    # Detect cycle starts for walk-mode distance tracking
+                    cycle = parse_cycle_start(line)
+                    if cycle is not None:
+                        cycle_count += 1
+                        print(f"  CYCLE {cycle} START at +{time.time() - start_time:.0f}s")
+
+                    # Harmonized 23-field PKT line
+                    pkt = parse_pkt_line(line)
+                    if pkt:
+                        # HOST-3: Inject session_id into PKT line and parsed dict
+                        line = inject_session_id_into_pkt(line, session_id)
+                        pkt['session_id'] = session_id
+
+                        # Compute distance
+                        distance_m = args.distance
+                        if args.walk and args.base_lat is not None and args.base_lon is not None:
+                            lat = pkt.get('gps_lat')
+                            lon = pkt.get('gps_lon')
+                            if lat and lon and isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+                                distance_m = round(haversine(args.base_lat, args.base_lon, lat, lon), 1)
+
+                        row = [now] + [str(pkt[f]) for f in PKT_FIELDS] + [
+                            distance_m, args.env, args.notes, line,
+                        ]
+                        writer.writerow(row)
+                        pkt_count += 1
+                        if pkt_count % 100 == 0:
+                            print(f"  PKT {pkt_count} seq={pkt['seq']} "
+                                  f"rssi={pkt['rssi_dbm']}dBm d={distance_m}m",
+                                  file=sys.stderr)
+                        continue
+
+                    # Non-PKT lines echo
+                    if line.strip():
+                        print(line)
+
+            except serial.SerialException as e:
+                print(f"Serial error: {e}", file=sys.stderr)
+                break
+
+    elapsed = time.time() - start_time
+    print(f"\n=== Sweep capture complete ===")
+    print(f"  Duration:  {elapsed:.0f}s")
+    print(f"  PKT lines: {pkt_count}")
+    print(f"  Cycles:    {cycle_count}")
+    print(f"  CSV:       {csv_path}")
+    print(f"  RAW:       {raw_path}")
+
+
+if __name__ == '__main__':
     try:
-        while time.time() - start < args.duration:
-            raw = ser.readline()
-            if not raw:
-                continue
-
-            line = raw.decode('ascii', errors='ignore').strip()
-            if not line:
-                continue
-
-            # Print all lines for visibility
-            print(line, file=sys.stderr)
-
-            # Try to parse
-            row = parse_line(line)
-            if row is None:
-                continue
-
-            # Skip TX rows if rx-only
-            if args.rx_only:
-                notes = row.get("notes", "")
-                if "tx_side" in notes:
-                    continue
-                if row.get("packets_rx") in ("0", "") and row.get("packets_sent", "0") not in ("0", ""):
-                    continue
-
-            # Apply metadata
-            row["distance_m"] = args.distance
-            row["los"] = args.los
-            if gps_time:
-                row["timestamp_iso"] = gps_time
-
-            writer.writerow(row)
-            outfile.flush()
-            count += 1
-            print(f"  >>> Parsed row {count}: {row['path']} rx={row.get('packets_rx', '?')}", file=sys.stderr)
-
+        main()
     except KeyboardInterrupt:
-        print("\nInterrupted by user.", file=sys.stderr)
-
-    ser.close()
-    outfile.close()
-
-    elapsed = time.time() - start
-    print("-" * 40, file=sys.stderr)
-    print(f"Captured {count} result rows in {elapsed:.0f}s → {args.output}", file=sys.stderr)
-
-
-if __name__ == "__main__":
-    main()
+        print("\nStopped by user.")

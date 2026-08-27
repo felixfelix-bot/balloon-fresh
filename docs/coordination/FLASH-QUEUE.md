@@ -7,7 +7,9 @@
 
 | track | board | purpose | requested_time | approved_by | duration | status |
 |-------|-------|---------|----------------|-------------|----------|--------|
-| _(empty — no pending flash requests)_ | | | | | | |
+| balloon-range-tests | E80 #1+#2 | PRBS-15 harmonization: E80 flashed+verified, C3 not connected | 2026-08-20T09:00Z | felix (orchestrator) | 8m | DONE (PARTIAL) |
+| balloon-range-tests | E80 TX (#1) | BUF-T3 flash smoke: SWD flash e80_bench.bin (buf/t2-impl 91cd0ae + NVIC fix) + 10x 4KB BUF LOAD + src=BUF/src=PRBS gates | 2026-08-21T08:30Z | kanban t_dd4e516b (pre-approved) | 15m | DONE |
+| balloon-range-tests | E80 RX (#2) | BUF-T5a: SWD flash e80_bench.bin (buf/t5a-rx-pcrc16) + verify PKT lines carry pcrc16 field | 2026-08-21T16:00Z | kanban t_a2949a8d (pre-approved) | 15m | DONE |
 
 ## Rules
 
