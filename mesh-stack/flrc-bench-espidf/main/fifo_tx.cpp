@@ -151,7 +151,8 @@ extern "C" void app_main() {
                 buf[1] = (p >> 16) & 0xFF;
                 buf[2] = (p >> 8) & 0xFF;
                 buf[3] = p & 0xFF;
-                prbs15_fill(buf + 4, 251, p);
+                /* PRBS-15 disabled for throughput mode — 5-10ms CPU cost unacceptable at high throughput */
+                memset(buf + 4, 0, 251);
 
                 rawWriteTxFifo(buf, 255);
                 rawSetTx();
