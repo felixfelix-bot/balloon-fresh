@@ -77,6 +77,7 @@ static bool     tx_wait_irq  = false;
 static uint8_t  tx_buf[E80_BENCH_MAX_PAYLOAD];
 static bool     session_active = false;
 static bool     prbs_verify_enabled = true; /* PRBS-15 RX verification (PRBS ON|OFF) */
+static bool     quiet_mode = false;         /* QUIET ON|OFF — suppress per-packet PKT lines */
 
 /* TX payload source (tx-buffer-spec): a staged buffer wins over PRBS.
  * src is latched at START (buf_len()>0 then) and the offset is
@@ -455,6 +456,7 @@ static void print_id(void)
     console_put(radio_bench_is_asleep() ? " radio=asleep" : " radio=awake");
     console_put(" ");
     console_put(bench_safety_boot_field(iwdg_active));
+    console_put(quiet_mode ? " quiet=1" : " quiet=0");
     console_put(" buf=");
     console_put_u32(buf_len());
     console_putln("");
@@ -487,7 +489,7 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
         console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> 410-2483MHz (incl 2.4GHz ISM) | ");
         console_put("SESSION <id> | CONFIG <id> <replicate> | ");
-        console_put("PRBS9 ON|OFF | PRBS ON|OFF | ");
+        console_put("PRBS9 ON|OFF | PRBS ON|OFF | QUIET ON|OFF | ");
         console_put("BUF CLEAR | BUF LOAD <n> <crc16_hex> | BUF STATUS");
         console_putln("");
         break;
@@ -916,6 +918,12 @@ static void handle_cmd(const bench_cmd_t* c)
         console_putln(c->prbs_enable ? "ON" : "OFF");
         break;
 
+    case BENCH_CMD_QUIET:
+        quiet_mode = c->quiet_enable;
+        console_put("OK QUIET ");
+        console_putln(c->quiet_enable ? "ON" : "OFF");
+        break;
+
     default:
         reply_err(bench_cmd_err_str(c->err));
         break;
@@ -1000,7 +1008,7 @@ static void radio_task(void)
             if (e.seq > stats.rx_last_seq)
                 stats.rx_last_seq = e.seq;
 
-            /* Per-packet PKT line (E80-6/M3+M4+M5) */
+            /* Per-packet PKT line (E80-6/M3+M4+M5) — suppressed in QUIET mode */
             {
                 uint16_t bytes_bad = 0;
                 uint16_t bit_err = 0;
@@ -1009,26 +1017,29 @@ static void radio_task(void)
                                             e.len - BENCH_PAYLOAD_HDR_LEN,
                                             e.seq, &bytes_bad);
 
-                bench_pkt_evt_t pe = {
-                    .seq            = e.seq,
-                    .len            = e.len,
-                    .rssi_half_dbm  = e.rssi_half_dbm,
-                    .snr_qdb        = e.snr_qdb,
-                    .mod            = (cfg.mod == BENCH_MOD_LORA)
-                                      ? BENCH_PKT_MOD_LORA : BENCH_PKT_MOD_FLRC,
-                    .sf             = cfg.sf,
-                    .bw_hz          = cfg.bw_hz,
-                    .freq_hz         = cfg.freq_hz,
-                    .txpow_dbm      = cfg.txpow_dbm,
-                    .cr             = cfg.cr,
-                    .ts_ms          = bench_micros() / 1000U,
-                    .bit_err        = bit_err,
-                    .bytes_bad      = bytes_bad,
-                };
-                char pktbuf[160];
-                bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 1);
-                console_put(pktbuf);
-                console_putln("");
+                if (!quiet_mode)
+                {
+                    bench_pkt_evt_t pe = {
+                        .seq            = e.seq,
+                        .len            = e.len,
+                        .rssi_half_dbm  = e.rssi_half_dbm,
+                        .snr_qdb        = e.snr_qdb,
+                        .mod            = (cfg.mod == BENCH_MOD_LORA)
+                                          ? BENCH_PKT_MOD_LORA : BENCH_PKT_MOD_FLRC,
+                        .sf             = cfg.sf,
+                        .bw_hz          = cfg.bw_hz,
+                        .freq_hz         = cfg.freq_hz,
+                        .txpow_dbm      = cfg.txpow_dbm,
+                        .cr             = cfg.cr,
+                        .ts_ms          = bench_micros() / 1000U,
+                        .bit_err        = bit_err,
+                        .bytes_bad      = bytes_bad,
+                    };
+                    char pktbuf[160];
+                    bench_pkt_format(pktbuf, sizeof(pktbuf), &pkt_ctx, &pe, 1);
+                    console_put(pktbuf);
+                    console_putln("");
+                }
             }
             break;
 
@@ -1039,7 +1050,9 @@ static void radio_task(void)
              * E80-7: rssi_half_dbm populated in the CRC event path.
              * N1 fix: snr_qdb is also populated by the IRQ handler
              * (radio_bench.c:424) — the chip measures signal strength
-             * regardless of CRC status. Pass it through instead of zeroing. */
+             * regardless of CRC status. Pass it through instead of zeroing.
+             * Suppressed in QUIET mode — stats still count the CRC error. */
+            if (!quiet_mode)
             {
                 bench_pkt_evt_t pe = {
                     .seq            = 0,
