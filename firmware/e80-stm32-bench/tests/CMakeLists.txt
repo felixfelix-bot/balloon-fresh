@@ -82,4 +82,8 @@ find_program(HOST_PYTHON3 NAMES python3)
 if(HOST_PYTHON3)
     add_test(NAME test_crc16_golden_python
              COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_crc16_golden.py)
+    # HARM-T2: cross-board host tool — golden-transcript replay tests
+    # (no hardware; tests/golden/*.txt per docs/BENCH-CONSOLE-SPEC.md).
+    add_test(NAME test_balloon_sweep_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/test_balloon_sweep.py)
 endif()
