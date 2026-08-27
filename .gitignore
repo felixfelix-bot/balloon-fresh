@@ -49,3 +49,4 @@ build_pio*/
 graphify-out/cache/
 __pycache__/
 Testing/
+firmware/rp2040/build/
