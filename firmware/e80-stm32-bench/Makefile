@@ -113,7 +113,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
-.PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke
+.PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke sweep-e80
 .PHONY: boat-tx boat-rx
 
 all: firmware
@@ -208,6 +208,46 @@ endif
 	$(PYTHON) $(TOOLDIR)/tools/buf_smoke_t3.py --port $(PORT) \
 		$(if $(LOADS),--loads $(LOADS)) \
 		$(if $(SIZE),--size $(SIZE))
+
+# ============================================================
+# SWEEP-E80 — desk E80<->E80 sweep via hardened root tool
+# ============================================================
+# Wraps the ROOT tools/e80_sweep.py (buf/t5b lineage: response
+# validation + retries, IWDG-safe ARM/START sequencing, 23/24-field
+# PKT parse, binary BUF loader). Full matrix: 14 configs, 50 pkts,
+# 64B PRBS-15, 10ms gap — see the script docstring.
+#
+#   make sweep-e80 PORT=/dev/ttyUSB3
+#   make sweep-e80 PORT=/dev/ttyUSB3 RX_PORT=/dev/ttyUSB4
+#   make sweep-e80 PORT=/dev/ttyUSB3 CONFIGS="0 3 7"
+#   make sweep-e80 PORT=/dev/ttyUSB3 DRY=1
+#
+# PORT=    required — TX board CH340 console port
+# RX_PORT= optional — RX board console port (default: /dev/ttyUSB4)
+# CONFIGS= optional — space-separated sweep indexes -> --only
+# DRY=1    optional — plan only, no hardware touched
+#
+# CONFIGS has a file-level default (a range-test JSON preset) that must
+# NOT leak into this target. The target-specific empty value disables it;
+# a command-line CONFIGS= still wins over both (make rule).
+
+sweep-e80: CONFIGS =
+sweep-e80:
+ifndef PORT
+	@echo "usage: make sweep-e80 PORT=<tx-tty> [RX_PORT=<rx-tty>] [CONFIGS=\"0 1\"] [DRY=1]" >&2
+	@echo "  PORT=    required (TX board CH340 console, e.g. /dev/ttyUSB3)" >&2
+	@echo "  RX_PORT= optional (RX board console; default /dev/ttyUSB4)" >&2
+	@echo "  CONFIGS= optional (space-separated sweep indexes, e.g. \"0 3 7\"; default: all 14)" >&2
+	@echo "  DRY=1    optional (plan only, no hardware touched)" >&2
+	@echo "  Find ports: python3 tools/e80_detect.py" >&2
+	@exit 1
+endif
+	@echo "sweep-e80: tx=$(PORT) rx=$(if $(RX_PORT),$(RX_PORT),/dev/ttyUSB4 default) configs=[$(if $(CONFIGS),$(CONFIGS),all 14)]$(if $(DRY), [dry-run])"
+	@$(PYTHON) $(REPO_ROOT)/tools/e80_sweep.py \
+		--tx-port $(PORT) \
+		$(if $(RX_PORT),--rx-port $(RX_PORT)) \
+		$(if $(CONFIGS),--only "$(CONFIGS)") \
+		$(if $(DRY),--dry-run)
 
 # ============================================================
 # BOAT / MARITIME SWEEP — continuous loop, all 19 configs

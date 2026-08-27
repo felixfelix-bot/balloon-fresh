@@ -5,7 +5,7 @@ Sweeps SF7-12 at BW125, SF7-9 at BW250, SF7-8 at BW500, and SF7-9 at PA=0.
 Each config: 50 packets, 64B payload, PRBS-15 fill+verify, 10ms gap.
 """
 
-import serial, time, statistics, os, sys
+import argparse, serial, time, statistics, os, sys
 from datetime import datetime
 
 TX_PORT = "/dev/ttyUSB3"
@@ -144,9 +144,52 @@ def parse_stat(text):
             d[k] = v
     return d
 
+def parse_args():
+    """CLI for `make sweep-e80` (firmware/e80-stm32-bench/Makefile).
+
+    Defaults are the original module constants, so running the script with
+    no arguments behaves exactly like the pre-CLI version.
+    """
+    ap = argparse.ArgumentParser(
+        description="E80-to-E80 LoRa sweep (hardened: response validation + retries, "
+                    "IWDG-safe ARM/START sequencing, 23/24-field PKT parse, binary BUF loader)")
+    ap.add_argument("--tx-port", default=TX_PORT, metavar="TTY",
+                    help="TX board CH340 console port (default: %(default)s)")
+    ap.add_argument("--rx-port", default=RX_PORT, metavar="TTY",
+                    help="RX board CH340 console port (default: %(default)s)")
+    ap.add_argument("--only", default="", metavar="IDX",
+                    help='space-separated sweep indexes into the built-in matrix, e.g. '
+                         '"0 3 7" (default: all %d)' % len(SWEEPS))
+    ap.add_argument("--dry-run", action="store_true",
+                    help="print the plan (ports + selected configs) and exit - no hardware touched")
+    return ap.parse_args()
+
+def select_sweeps(only):
+    """Pick (idx, (sf, bw, pa)) pairs from SWEEPS, keeping original indexes."""
+    if not only.strip():
+        return list(enumerate(SWEEPS))
+    picked = []
+    for tok in only.split():
+        try:
+            idx = int(tok)
+        except ValueError:
+            sys.exit(f"error: --only token {tok!r} is not an integer")
+        if not 0 <= idx < len(SWEEPS):
+            sys.exit(f"error: --only index {idx} out of range 0..{len(SWEEPS) - 1}")
+        picked.append((idx, SWEEPS[idx]))
+    return picked
+
 def main():
-    tx = serial.Serial(TX_PORT, BAUD, timeout=0.5)
-    rx = serial.Serial(RX_PORT, BAUD, timeout=0.5)
+    args = parse_args()
+    sweeps = select_sweeps(args.only)
+    if args.dry_run:
+        print(f"dry-run: tx={args.tx_port} rx={args.rx_port} baud={BAUD} freq={FREQ}")
+        for idx, (sf, bw, pa) in sweeps:
+            print(f"  config {idx}: SF{sf} BW{bw} PA={pa}  (50 pkts, 64B PRBS-15, 10ms gap)")
+        print(f"dry-run: {len(sweeps)}/{len(SWEEPS)} configs - no hardware touched, no files written")
+        return
+    tx = serial.Serial(args.tx_port, BAUD, timeout=0.5)
+    rx = serial.Serial(args.rx_port, BAUD, timeout=0.5)
     time.sleep(0.5)
 
     # Initial stop
@@ -157,7 +200,7 @@ def main():
     raw_lines = []
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    for idx, (sf, bw, pa) in enumerate(SWEEPS):
+    for idx, (sf, bw, pa) in sweeps:
         print(f"\n=== Config {idx+1}/{len(SWEEPS)}: SF{sf} BW{bw} PA={pa} ===", flush=True)
 
         # Stop both (ignore errors — board may be idle/reset)
@@ -277,7 +320,7 @@ def main():
     raw_path = os.path.expanduser("~/repos/balloon-fresh/data/e80-sweep-2026-08-20-raw.txt")
     with open(raw_path, "w") as f:
         f.write(f"E80 LoRa Sweep — {timestamp}\n")
-        f.write(f"Firmware: fw=e79f0c0, TX={TX_PORT}, RX={RX_PORT}, baud={BAUD}\n")
+        f.write(f"Firmware: fw=e79f0c0, TX={args.tx_port}, RX={args.rx_port}, baud={BAUD}\n")
         f.write(f"Each config: 50 packets, 64B payload, PRBS-15, 10ms gap\n\n")
         for line in raw_lines:
             f.write(line + "\n")
@@ -287,7 +330,7 @@ def main():
     with open(sum_path, "w") as f:
         f.write(f"E80 LoRa Sweep Measurement — {timestamp}\n")
         f.write(f"Firmware: fw=e79f0c0\n")
-        f.write(f"TX: {TX_PORT}, RX: {RX_PORT}, baud={BAUD}\n")
+        f.write(f"TX: {args.tx_port}, RX: {args.rx_port}, baud={BAUD}\n")
         f.write(f"Each config: N=50, LEN=64, PRBS-15, GAP=10ms\n\n")
         f.write(f"{'Cfg':>3} {'SF':>2} {'BW':>3} {'PA':>2} {'TX':>3} {'RX':>3} {'CRC':>3} {'RSSI':>6} {'SNR':>5} {'BER':>4} {'Loss%':>5}\n")
         f.write("-" * 50 + "\n")
