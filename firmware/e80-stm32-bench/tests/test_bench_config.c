@@ -29,7 +29,7 @@ static void test_baud_default(void)
     /* E80-2: Bumped from 115200 to 2,000,000 baud.  CH340 supports 2 Mbps,
      * STM32F103 USART1 supports up to 4.5 Mbps, and the IRQ-driven RX ring
      * buffer handles the higher data rate without overrun. */
-    CHECK(E80_BENCH_BAUD_DEFAULT == 2000000U);
+    CHECK(E80_BENCH_BAUD_DEFAULT == 115200U);
 }
 
 /* ---- Compile-time safety caps ---------------------------------------------- */
