@@ -807,6 +807,46 @@ test-unit: ## Run unit tests only (no hardware required)
 test-hardware: ## Run hardware integration tests only (requires boards connected)
 	$(PYTHON) -m pytest tests/ -v --tb=short -m "hardware"
 
+## ─── sweep-cross (cross-board bench sweep — BENCH-CONSOLE-SPEC v1.0) ──
+## Wraps tools/balloon_sweep.py (harm/t5): runs a same-family TX->RX bench
+## sweep with pre-hardware spec enforcement (LEN/GAP/FREQ, spec §11.6).
+## Spec: docs/BENCH-CONSOLE-SPEC.md  Tool doc: docs/BALLOON-SWEEP-TOOL.md
+## Usage: make sweep-cross BOARD=e80|esp32|rp2040 PORT=/dev/ttyACM0 \
+##        [CONFIGS="0 1 2"] [RX_PORT=/dev/ttyACM1] [DRY=1]
+.PHONY: sweep-cross bench-console-test
+# PORT= must be explicit for this target: the file-level default
+# (PORT ?= /dev/ttyACM1, for bootsel targets) does NOT apply here.
+# Command-line PORT= still wins over this empty target-specific value.
+sweep-cross: PORT =
+sweep-cross: ## Cross-board bench sweep. Usage: make sweep-cross BOARD=e80|esp32|rp2040 PORT=<tty> [CONFIGS="0 1"] [RX_PORT=<tty>] [DRY=1]
+	@if [ -z "$(BOARD)" ] || [ -z "$(PORT)" ]; then \
+		echo "Usage: make sweep-cross BOARD=e80|esp32|rp2040 PORT=<tty> [CONFIGS=\"0 1\"] [RX_PORT=<tty>] [DRY=1]" >&2; \
+		echo "  BOARD=  required — bench board family (e80|esp32|rp2040), used for both TX and RX" >&2; \
+		echo "  PORT=   required — console port of the TX board (RX auto-detects the other port)" >&2; \
+		echo "  CONFIGS optional — space-separated config indexes (--only), default: all" >&2; \
+		echo "  RX_PORT optional — explicit RX console port override" >&2; \
+		echo "  DRY=1   optional — plan + spec-check only, no hardware touched" >&2; \
+		echo "  Docs: docs/BALLOON-SWEEP-TOOL.md, docs/BENCH-CONSOLE-SPEC.md" >&2; \
+		exit 1; \
+	fi
+	@if ! echo "$(BOARD)" | grep -Eq '^(e80|esp32|rp2040)$$'; then \
+		echo "ERROR: BOARD=$(BOARD) — must be one of e80|esp32|rp2040" >&2; \
+		exit 1; \
+	fi
+	@echo "sweep-cross: $(BOARD)<->$(BOARD) tx=$(PORT)$(if $(RX_PORT), rx=$(RX_PORT), rx=auto-detect)$(if $(DRY), [dry-run])"
+	@$(PYTHON) $(TOOLS_DIR)/balloon_sweep.py --tx $(BOARD) --rx $(BOARD) \
+		--tx-port $(PORT) \
+		$(if $(RX_PORT),--rx-port $(RX_PORT)) \
+		$(if $(CONFIGS),--only $(CONFIGS)) \
+		$(if $(DRY),--dry-run)
+
+## ─── bench-console-test (RP2040 bench console host tests — harm/t5) ──
+## Runs firmware/rp2040/tests/run_bench_tests.sh: host-only golden suites
+## (crc16, prbs, bench_pkt, bench_stats, rp2040_bench). No hardware,
+## no PlatformIO build, no flashing. Not part of default all/test.
+bench-console-test: ## Run RP2040 bench console host tests (host-only, no hardware).
+	@bash $(RP2040_DIR)/tests/run_bench_tests.sh
+
 ##@ Clean
 .PHONY: clean
 clean: ## Clean PlatformIO build artifacts
