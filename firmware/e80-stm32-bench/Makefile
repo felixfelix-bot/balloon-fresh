@@ -54,9 +54,15 @@ endif
 
 BAND          ?= 868
 FORMAT        ?= harmonized
-TX_LOG        ?= tx-log.csv
-RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
+# Durable directive: default RX/TX log paths embed SESSION_ID + T0 (unique
+# per run) and are ABSOLUTE, repo-root anchored — the `cd $(TOOLDIR)` in the
+# range targets below can no longer redirect a relative default into the
+# bench dir. ?= defers expansion (SESSION_ID/T0 are defined further below);
+# explicit TX_LOG=/RX_LOG= on the command line or in the env still win.
+LOG_DIR       ?= $(REPO_ROOT)/logs/s$(SESSION_ID)-t0$(T0)
+TX_LOG        ?= $(LOG_DIR)/tx-log.csv
+RX_LOG        ?= $(LOG_DIR)/rx-log.csv
 PRIME_DISCARD ?= 2
 
 # --- Board selection (auto-detect is the DEFAULT UX) ---
@@ -288,8 +294,9 @@ BOAT_CONFIGS  := $(CONFIGS_DIR)/maritime-full-sweep.json
 BOAT_BOUNDARY := 300
 BOAT_T0       := $(shell python3 -c "import time; now=int(time.time()); boundary=$(BOAT_BOUNDARY); t0=((now // boundary) + 1) * boundary; print(t0)")
 BOAT_SESSION  := $(shell python3 -c "import time; t0=$(BOAT_T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
-BOAT_TX_LOG   ?= boat-tx.csv
-BOAT_RX_LOG   ?= boat-rx.csv
+BOAT_LOG_DIR  ?= $(REPO_ROOT)/logs/s$(BOAT_SESSION)-t0$(BOAT_T0)
+BOAT_TX_LOG   ?= $(BOAT_LOG_DIR)/boat-tx.csv
+BOAT_RX_LOG   ?= $(BOAT_LOG_DIR)/boat-rx.csv
 # SWD reset takes ~7-10s real-world (openocd + sleep + board reopen)
 # but default swd_reset_s is only 2. Override to 12 for margin.
 BOAT_SWD_RESET ?= 20
@@ -370,6 +377,7 @@ endif
 	@echo "║  Prime discard: $(PRIME_DISCARD)"
 	@echo "║  Port:         $(if $(PORT),$(PORT),auto-detect)"
 	@echo "║  Probe:        $(if $(PROBE),$(PROBE),auto-detect)"
+	@echo "║  TX log:       $(TX_LOG)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
@@ -404,6 +412,7 @@ endif
 	@echo "║  Port:         $(if $(PORT),$(PORT),auto-detect)"
 	@echo "║  Probe:        $(if $(PROBE),$(PROBE),auto-detect)"
 	@echo "║  SWD reset:    $(if $(filter 0,$(SWD_RESET_S)),DISABLED,$(SWD_RESET_S)s between configs)"
+	@echo "║  RX log:       $(RX_LOG)"
 	@echo "╚══════════════════════════════════════════════╝"
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
@@ -468,11 +477,16 @@ range-check: ## Post-stop verdict: rx-log coverage for DIST/SESSION; on gaps wri
 		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
 		exit 2; \
 	fi
-	@echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$(RX_LOG) ==="
+	@if [ "$(origin RX_LOG)" = "file" ]; then \
+		CHECK_RX_LOG="$(REPO_ROOT)/logs/s$(SESSION)-t0$$(python3 -c "import calendar; s='$(SESSION)'; print(calendar.timegm((2000+int(s[0:2]), int(s[2:4]), int(s[4:6]), int(s[6:8]), int(s[8:10]), 0)))")/rx-log.csv"; \
+	else \
+		CHECK_RX_LOG="$(RX_LOG)"; \
+	fi; \
+	echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$$CHECK_RX_LOG ==="; \
 	cd $(TOOLDIR) && $(PYTHON) tools/range_check.py \
 		--dist $(DIST_NORM) \
 		--session $(SESSION) \
-		--rx-log "$(RX_LOG)" \
+		--rx-log "$$CHECK_RX_LOG" \
 		--configs "$(DIST_FILE)" \
 		--repo-root $(REPO_ROOT)
 

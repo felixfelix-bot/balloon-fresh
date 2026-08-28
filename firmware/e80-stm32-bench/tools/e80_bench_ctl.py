@@ -262,6 +262,32 @@ def parse_t0(s):
     raise ValueError("bad --t0 {!r}; want epoch int or 'YYYY-MM-DD HH:MM:SS'".format(s))
 
 
+def resolve_log_path(log_path, is_default, session_id, t0_epoch, role,
+                     repo_root=None):
+    """Resolve an RX/TX log path to its final location (durable directive).
+
+    Default (is_default=True): per-run unique, T0+SESSION-embedded, ABSOLUTE
+    path under <repo_root>/logs/s<SESSION>-t0<T0EPOCH>/<role>-log.csv.
+    Absolute + repo-root anchored so the `cd $(TOOLDIR)` in the Makefile
+    range targets cannot redirect a relative default into the bench dir.
+
+    Explicit override (is_default=False): returned untouched — the operator
+    (or an RX_LOG=/TX_LOG= make override) always wins.
+
+    Directory creation is NOT done here (pure path logic; see main()).
+    """
+    if not is_default:
+        return log_path
+    if repo_root is None:
+        # this file: <repo_root>/firmware/e80-stm32-bench/tools/e80_bench_ctl.py
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))))
+    return os.path.join(
+        repo_root, "logs",
+        "s{session}-t0{t0}".format(session=session_id, t0=int(t0_epoch)),
+        "{role}-log.csv".format(role=role))
+
+
 def build_stop_schedule(cells, t0_epoch, t0_margin_s, guard_s, settle_s=5.0):
     """Absolute epoch start time per cell. RX arms rx_lead earlier (runner)."""
     starts = []
@@ -1975,9 +2001,13 @@ def main():
     ap.add_argument("--probe", default=None,
                     help="SWD probe serial (auto-detected if omitted)")
     ap.add_argument("--tx-log", dest="tx_log", default="tx-log.csv",
-                    help="TX log CSV output (default: tx-log.csv)")
+                    help="TX log CSV output (default: logs/s<SESSION>-t0<T0EPOCH>/"
+                         "tx-log.csv under the repo root — per-run unique, absolute; "
+                         "an explicit value always wins)")
     ap.add_argument("--rx-log", dest="rx_log", default="rx-log.csv",
-                    help="RX log CSV output (default: rx-log.csv)")
+                    help="RX log CSV output (default: logs/s<SESSION>-t0<T0EPOCH>/"
+                         "rx-log.csv under the repo root — per-run unique, absolute; "
+                         "an explicit value always wins)")
     ap.add_argument("--session-id", dest="session_id", type=int, default=None,
                     help="session ID (auto-generated from timestamp if omitted)")
     # --- Legacy single-shot + matrix mode ---
@@ -2078,6 +2108,23 @@ def main():
             sys.exit("--mode {} requires --t0 'YYYY-MM-DD HH:MM:SS'".format(args.mode))
         if args.session_id is None:
             args.session_id = int(datetime.datetime.now().strftime("%y%m%d%H%M"))
+        # Durable directive: default log filenames embed SESSION + T0 and are
+        # absolute, repo-root anchored (immune to make's `cd $(TOOLDIR)`).
+        # An explicit --tx-log/--rx-log (e.g. from a TX_LOG=/RX_LOG= make
+        # override) always wins and is used exactly as given.
+        _t0_for_logs = parse_t0(args.t0) if args.t0 else (
+            (int(time.time()) // 300 + 1) * 300)  # next 5-min boundary
+        args.tx_log = resolve_log_path(
+            args.tx_log, args.tx_log == "tx-log.csv",
+            args.session_id, _t0_for_logs, "tx")
+        args.rx_log = resolve_log_path(
+            args.rx_log, args.rx_log == "rx-log.csv",
+            args.session_id, _t0_for_logs, "rx")
+        if not args.dry_run:
+            for _p in (args.tx_log, args.rx_log):
+                _d = os.path.dirname(os.path.abspath(_p))
+                if _d:
+                    os.makedirs(_d, exist_ok=True)
         if args.dry_run:
             return dry_run_preset(args)
         try:
