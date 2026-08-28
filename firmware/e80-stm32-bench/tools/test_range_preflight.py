@@ -481,5 +481,170 @@ class DryRunT0GuardRehearsalTests(unittest.TestCase):
             self.assertEqual(m.dry_run_preset(args2), 0)
 
 
+# ---------------------------------------------------------------------------
+# 3. Session collision guard: existing logs/s<SESSION>-t0<OTHER>/ with
+#    OTHER != T0 hard-errors at startup, naming BOTH dirs.
+# ---------------------------------------------------------------------------
+
+class FindSessionCollisionsTests(unittest.TestCase):
+    """find_session_collisions() pure behavior (tempdir logs root)."""
+
+    SESSION = 2608282100
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.root = self.dir.name
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _mk(self, name):
+        os.makedirs(os.path.join(self.root, name), exist_ok=True)
+        return name
+
+    def test_detects_existing_dir_with_different_t0(self):
+        old = self._mk("s{}-t0{}".format(self.SESSION, T0_PAST))
+        coll = m.find_session_collisions(self.SESSION, T0_FUTURE,
+                                         logs_root=self.root)
+        self.assertEqual(len(coll), 1)
+        self.assertEqual(coll[0][0], old)
+        self.assertEqual(coll[0][1], T0_PAST)
+
+    def test_same_t0_is_not_a_collision(self):
+        self._mk("s{}-t0{}".format(self.SESSION, T0_FUTURE))
+        coll = m.find_session_collisions(self.SESSION, T0_FUTURE,
+                                         logs_root=self.root)
+        self.assertEqual(coll, [])
+
+    def test_different_session_is_ignored(self):
+        self._mk("s{}-t0{}".format(self.SESSION + 1, T0_PAST))
+        coll = m.find_session_collisions(self.SESSION, T0_FUTURE,
+                                         logs_root=self.root)
+        self.assertEqual(coll, [])
+
+    def test_missing_logs_root_is_empty(self):
+        coll = m.find_session_collisions(
+            self.SESSION, T0_FUTURE,
+            logs_root=os.path.join(self.root, "nope"))
+        self.assertEqual(coll, [])
+
+    def test_non_digit_t0_suffix_ignored(self):
+        self._mk("s{}-t0abc".format(self.SESSION))
+        self._mk("s{}-t0{}-junk".format(self.SESSION, T0_PAST))
+        coll = m.find_session_collisions(self.SESSION, T0_FUTURE,
+                                         logs_root=self.root)
+        self.assertEqual(coll, [])
+
+    def test_multiple_collisions_all_reported(self):
+        a = self._mk("s{}-t0{}".format(self.SESSION, T0_PAST))
+        b = self._mk("s{}-t0{}".format(self.SESSION, T0_PAST - 999))
+        coll = m.find_session_collisions(self.SESSION, T0_FUTURE,
+                                         logs_root=self.root)
+        self.assertEqual(sorted(c[0] for c in coll), sorted([a, b]))
+
+
+class DefaultLogsRootTests(unittest.TestCase):
+
+    def test_absolute_path_ending_in_logs(self):
+        root = m.default_logs_root()
+        self.assertTrue(os.path.isabs(root))
+        self.assertEqual(os.path.basename(root), "logs")
+
+    def test_matches_resolve_log_path_parent(self):
+        # default_logs_root() must be exactly where resolve_log_path()
+        # puts session dirs — otherwise the guard scans the wrong place.
+        session, t0 = 2608282100, 1750000000
+        p = m.resolve_log_path("tx-log.csv", True, session, t0, "tx")
+        self.assertEqual(
+            m.default_logs_root(),
+            os.path.dirname(os.path.dirname(p)))
+        # and the session dir it builds sits under default_logs_root()
+        self.assertTrue(p.startswith(m.default_logs_root() + os.sep))
+
+
+class MainSessionCollisionGuardTests(unittest.TestCase):
+    """main() hard-errors before makedirs when the session id is already
+    on disk with a different t0 — naming BOTH dirs."""
+
+    SESSION = 2608282100
+    OTHER_T0 = T0_PAST
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.old_dir = "s{}-t0{}".format(self.SESSION, self.OTHER_T0)
+        os.makedirs(os.path.join(self.dir.name, self.old_dir))
+        self.configs = os.path.join(E80_DIR, "..", "..", "configs",
+                                    "envelope-4cfg-max.json")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _main(self, t0):
+        argv = ["e80_bench_ctl.py", "--mode", "tx",
+                "--configs", self.configs,
+                "--session-id", str(self.SESSION),
+                "--t0", str(t0),
+                "--port", "/dev/ttyUSB9"]
+        with mock.patch.object(sys, "argv", argv), \
+             mock.patch.object(m, "default_logs_root",
+                               return_value=self.dir.name), \
+             contextlib.redirect_stdout(io.StringIO()) as out, \
+             contextlib.redirect_stderr(io.StringIO()) as err:
+            m.main()
+        return out.getvalue(), err.getvalue()
+
+    def test_collision_hard_errors_naming_both_dirs(self):
+        with self.assertRaises(SystemExit) as cm:
+            self._main(T0_FUTURE)
+        self.assertNotEqual(cm.exception.code, 0)
+        msg = str(cm.exception)
+        self.assertIn("session collision", msg)
+        self.assertIn(self.old_dir, msg)                      # existing dir
+        self.assertIn("s{}-t0{}".format(self.SESSION, T0_FUTURE), msg)  # new dir
+        self.assertIn("--session-id", msg)
+
+    def test_matching_t0_passes_the_guard(self):
+        # same session + same t0 (e.g. RX joining a TX already on disk) is
+        # the normal distributed flow — must NOT trip the guard. Route into
+        # dry-run so no hardware is touched after the guard passes.
+        argv = ["e80_bench_ctl.py", "--mode", "tx",
+                "--configs", self.configs,
+                "--session-id", str(self.SESSION),
+                "--t0", str(self.OTHER_T0), "--dry-run"]
+        with mock.patch.object(sys, "argv", argv), \
+             mock.patch.object(m, "default_logs_root",
+                               return_value=self.dir.name), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(m.main(), 0)
+
+
+class DryRunSessionCollisionRehearsalTests(unittest.TestCase):
+
+    SESSION = 2608282100
+
+    def test_dry_run_rehearses_the_guard(self):
+        args = make_range_args(configs=PRESET_LO_PA, t0=str(T0_FUTURE))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            m.dry_run_preset(args)
+        out = buf.getvalue()
+        self.assertIn("Session guard", out)
+        self.assertIn("--session-id", out)
+
+    def test_dry_run_warns_but_exits_0_on_real_collision(self):
+        with tempfile.TemporaryDirectory() as root:
+            old = "s{}-t0{}".format(self.SESSION, T0_PAST)
+            os.makedirs(os.path.join(root, old))
+            args = make_range_args(configs=PRESET_LO_PA, t0=str(T0_FUTURE))
+            buf = io.StringIO()
+            with mock.patch.object(m, "default_logs_root",
+                                   return_value=root), \
+                 contextlib.redirect_stdout(buf):
+                rc = m.dry_run_preset(args)
+            self.assertEqual(rc, 0)
+            self.assertIn("WARNING", buf.getvalue())
+            self.assertIn(old, buf.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

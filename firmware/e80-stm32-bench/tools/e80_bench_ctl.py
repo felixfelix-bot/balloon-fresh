@@ -364,6 +364,44 @@ def resolve_log_path(log_path, is_default, session_id, t0_epoch, role,
         "{role}-log.csv".format(role=role))
 
 
+def default_logs_root(repo_root=None):
+    """<repo_root>/logs — exactly where resolve_log_path() puts session
+    dirs. Kept in one place so the session-collision guard scans the same
+    root the launcher writes to."""
+    if repo_root is None:
+        # this file: <repo_root>/firmware/e80-stm32-bench/tools/e80_bench_ctl.py
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))))
+    return os.path.join(repo_root, "logs")
+
+
+def find_session_collisions(session_id, t0_epoch, logs_root=None):
+    """Pure scan: existing logs/s<SESSION>-t0<OTHER>/ dirs with OTHER != T0.
+
+    One session id must map to exactly one T0: firmware PKT lines are keyed
+    by session id, so a second run reusing the id with a different T0 forks
+    the session's data across dirs and desyncs analysis (2026-08-28
+    incident class: stale shell-var replay). Returns a sorted list of
+    (dir_name, other_t0) tuples; [] when clean.
+    """
+    if logs_root is None:
+        logs_root = default_logs_root()
+    prefix = "s{}-t0".format(session_id)
+    collisions = []
+    if not os.path.isdir(logs_root):
+        return collisions
+    for name in sorted(os.listdir(logs_root)):
+        if not name.startswith(prefix):
+            continue
+        rest = name[len(prefix):]
+        if not rest.isdigit():
+            continue
+        other = int(rest)
+        if other != int(t0_epoch):
+            collisions.append((name, other))
+    return collisions
+
+
 def build_stop_schedule(cells, t0_epoch, t0_margin_s, guard_s, settle_s=5.0):
     """Absolute epoch start time per cell. RX arms rx_lead earlier (runner)."""
     starts = []
@@ -2080,6 +2118,17 @@ def dry_run_preset(args):
     print("T0 guard:     at launch: hard error 'T0 in past — recompute or "
           "pass explicit T0' when T0 < now+{}s (dry-run is exempt)".format(
               T0_MIN_LEAD_S))
+    print("Session guard: at launch: hard error 'session collision' when "
+          "logs/ already has s<SESSION>-t0<OTHER>/ with a different t0 — "
+          "pass a fresh --session-id".format())
+    _coll = find_session_collisions(getattr(args, "session_id", None)
+                                    or 0, t0)
+    if _coll:
+        for name, other in _coll:
+            print("WARNING: session collision on disk: logs/{} exists with "
+                  "t0={} != this run's t0={} — a live launch would hard "
+                  "error here. Pass a fresh --session-id or move/remove "
+                  "the stale dir.".format(name, other, int(t0)))
     print("=" * 80)
 
     for i, (c, s) in enumerate(zip(cfgs, starts)):
@@ -2309,6 +2358,25 @@ def main():
             _ok, _msg = check_t0_future(_t0_for_logs, time.time())
             if not _ok:
                 sys.exit(_msg)
+            # Session-collision guard: session id already on disk with a
+            # DIFFERENT t0 → refuse before creating any dir. PKT data is
+            # keyed by session id; one id must map to one T0.
+            _coll = find_session_collisions(args.session_id, _t0_for_logs)
+            if _coll:
+                _new_dir = "s{session}-t0{t0}".format(
+                    session=args.session_id, t0=int(_t0_for_logs))
+                _existing = ", ".join(
+                    "{} (t0={})".format(name, other)
+                    for name, other in _coll)
+                sys.exit(
+                    "session collision: logs/ already has [{existing}] for "
+                    "session {session}, but this run would create "
+                    "[{new_dir}] — one session id must map to exactly one "
+                    "T0 or the session's data forks across dirs. Pass a "
+                    "fresh --session-id (or move/remove the stale dir) and "
+                    "retry.".format(existing=_existing,
+                                    session=args.session_id,
+                                    new_dir=_new_dir))
             for _p in (args.tx_log, args.rx_log):
                 _d = os.path.dirname(os.path.abspath(_p))
                 if _d:
