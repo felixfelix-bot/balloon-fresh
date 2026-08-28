@@ -106,7 +106,7 @@ echo "  ✅ pyserial ready."
 # ── 3. Clone or update the repo ──────────────────────────────────────────
 banner "STEP 3/5 — Clone / update repo"
 
-if [[ -d "$REPO_DIR/.git" ]]; then
+if [[ -e "$REPO_DIR/.git" ]]; then
   info "Repo already cloned at $REPO_DIR — pulling latest..."
   git -C "$REPO_DIR" fetch origin "$BRANCH" 2>/dev/null || warn "git fetch failed (offline? continuing with local copy)"
   git -C "$REPO_DIR" checkout "$BRANCH" 2>/dev/null || true
