@@ -58,11 +58,14 @@ OUT_DIR       ?= .
 # Durable directive: default RX/TX log paths embed SESSION_ID + T0 (unique
 # per run) and are ABSOLUTE, repo-root anchored — the `cd $(TOOLDIR)` in the
 # range targets below can no longer redirect a relative default into the
-# bench dir. ?= defers expansion (SESSION_ID/T0 are defined further below);
+# bench dir. When DIST is set the path gains a per-stop subdir
+# (stop-$(DIST_NORM)), and the FILENAME itself carries t0<T0>-<SESSION_ID>,
+# so a later run can never append to or overwrite a previous measurement's
+# CSV. ?= defers expansion (SESSION_ID/T0/DIST_NORM are defined elsewhere);
 # explicit TX_LOG=/RX_LOG= on the command line or in the env still win.
-LOG_DIR       ?= $(REPO_ROOT)/logs/s$(SESSION_ID)-t0$(T0)
-TX_LOG        ?= $(LOG_DIR)/tx-log.csv
-RX_LOG        ?= $(LOG_DIR)/rx-log.csv
+LOG_DIR       ?= $(REPO_ROOT)/logs/s$(SESSION_ID)-t0$(T0)$(if $(DIST),/stop-$(DIST_NORM))
+TX_LOG        ?= $(LOG_DIR)/tx-log-t0$(T0)-$(SESSION_ID).csv
+RX_LOG        ?= $(LOG_DIR)/rx-log-t0$(T0)-$(SESSION_ID).csv
 PRIME_DISCARD ?= 2
 
 # --- Board selection (auto-detect is the DEFAULT UX) ---
@@ -134,8 +137,7 @@ ANSIBLE_PLAYBOOK := ansible-playbook
 ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
-.PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
-.PHONY: range-check
+.PHONY: range-setup range-tx range-rx range-merge range-check range-dry-run range-test-host
 .PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke sweep-e80
 .PHONY: boat-tx boat-rx
 
@@ -382,11 +384,12 @@ endif
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
+	@mkdir -p "$(LOG_DIR)"
 	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
 		--t0 $(T0) \
 		--session-id $(SESSION_ID) \
-		--configs "$(CONFIGS)" \
-		--tx-log "$(TX_LOG)" \
+		--configs "$(abspath $(CONFIGS))" \
+		--tx-log "$(abspath $(TX_LOG))" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
 		$(E80_PORT_ARG) $(E80_PROBE_ARG) \
@@ -417,15 +420,17 @@ endif
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
+	@mkdir -p "$(LOG_DIR)"
 	cd $(TOOLDIR) && $(E80_CTL) --mode rx \
 		--t0 $(T0) \
 		--session-id $(SESSION_ID) \
-		--configs "$(CONFIGS)" \
-		--rx-log "$(RX_LOG)" \
+		--configs "$(abspath $(CONFIGS))" \
+		--rx-log "$(abspath $(RX_LOG))" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
 		$(E80_PORT_ARG) $(E80_PROBE_ARG) \
 		$(RX_SWD_ARG) \
+		--skip-late-configs \
 		--skip-fw-check
 
 range-merge: ## Merge TX+RX logs, compute PER, generate report
@@ -434,6 +439,56 @@ range-merge: ## Merge TX+RX logs, compute PER, generate report
 	@echo "  RX: $(RX)"
 	@echo ""
 	$(MERGE_SCRIPT) --tx "$(TX)" --rx "$(RX)" --out-dir "$(OUT_DIR)"
+
+# ============================================================
+# RANGE-CHECK — post-stop gap check + selective re-send preset
+# ============================================================
+# Run on the RX machine right after each stop:
+#   make range-check DIST=872m                     (latest session found)
+#   make range-check DIST=872m SESSION=2608281225  (explicit session)
+# Prints one line, e.g.   872m: GAPS c4 MISS, c7 THIN 3/10
+# If gaps: writes configs/resend/resend-<dist>-<session>.json (only the
+# missing/thin configs, idx preserved) and prints the paste-ready
+# `make range-tx CONFIGS=... T0=... SESSION_ID=...` re-send commands
+# (T0 = next 5-minute boundary). Exit code 1 if gaps, 0 if complete.
+RANGE_CHECK   := $(PYTHON) $(TOOLDIR)/tools/range_check.py
+
+range-check: ## Post-stop gap check: diff rx-log vs preset, write re-send preset
+	@if [ -z "$(DIST)" ]; then \
+		echo "usage: make range-check DIST=<50m|100m|218m|436m|872m|1744m|5km|11km|70km> [SESSION=<id>] [RX=<rx-log.csv>|RX_LOG=path]"; \
+		exit 2; \
+	fi
+	@if [ ! -f "$(DIST_FILE)" ]; then \
+		echo "ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
+		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
+		echo "Bare numbers are meters: DIST=100 → stop-100m.json"; \
+		exit 2; \
+	fi
+	@if [ -n "$(RX)" ]; then \
+		CHECK_RX_LOG="$(RX)"; \
+	elif [ "$(origin RX_LOG)" = "file" ]; then \
+		CHECK_RX_LOG="$(RX_LOG)"; \
+	else \
+		EPOCH=$$(python3 -c "import calendar; s='$(SESSION)'; print(calendar.timegm((2000+int(s[0:2]), int(s[2:4]), int(s[4:6]), int(s[6:8]), int(s[8:10]), 0)))" 2>/dev/null || echo ""); \
+		if [ -n "$$EPOCH" ]; then \
+			CHECK_RX_LOG="$(REPO_ROOT)/logs/s$(SESSION)-t0$$EPOCH/stop-$(DIST_NORM)/rx-log-t0$$EPOCH-$(SESSION).csv"; \
+			if [ ! -f "$$CHECK_RX_LOG" ]; then \
+				CHECK_RX_LOG="$(REPO_ROOT)/logs/s$(SESSION)-t0$$EPOCH/rx-log.csv"; \
+			fi; \
+			if [ ! -f "$$CHECK_RX_LOG" ]; then \
+				CHECK_RX_LOG=""; \
+			fi; \
+		else \
+			CHECK_RX_LOG=""; \
+		fi; \
+	fi; \
+	echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$$CHECK_RX_LOG ==="; \
+	cd $(TOOLDIR) && $(RANGE_CHECK) \
+		--dist $(DIST_NORM) \
+		$(if $(SESSION),--session $(SESSION)) \
+		--rx-log "$$CHECK_RX_LOG" \
+		--configs "$(abspath $(DIST_FILE))" \
+		--repo-root $(REPO_ROOT)
 
 range-coord: ## Print T0 + SESSION_ID for sharing between TX and RX operators
 	@echo "============================================"
@@ -466,29 +521,6 @@ endif
 		--dry-run \
 		--t0 "$(T0)" \
 		--configs "$(CONFIGS)"
-
-range-check: ## Post-stop verdict: rx-log coverage for DIST/SESSION; on gaps write resend preset + TX one-liner
-	@if [ -z "$(DIST)" ] || [ -z "$(SESSION)" ]; then \
-		echo "Usage: make range-check DIST=<50m|100m|218m|436m|872m|1744m|5km|11km|70km> SESSION=<id> [RX_LOG=path]"; \
-		exit 2; \
-	fi
-	@if [ ! -f "$(DIST_FILE)" ]; then \
-		echo "ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
-		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
-		exit 2; \
-	fi
-	@if [ "$(origin RX_LOG)" = "file" ]; then \
-		CHECK_RX_LOG="$(REPO_ROOT)/logs/s$(SESSION)-t0$$(python3 -c "import calendar; s='$(SESSION)'; print(calendar.timegm((2000+int(s[0:2]), int(s[2:4]), int(s[4:6]), int(s[6:8]), int(s[8:10]), 0)))")/rx-log.csv"; \
-	else \
-		CHECK_RX_LOG="$(RX_LOG)"; \
-	fi; \
-	echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$$CHECK_RX_LOG ==="; \
-	cd $(TOOLDIR) && $(PYTHON) tools/range_check.py \
-		--dist $(DIST_NORM) \
-		--session $(SESSION) \
-		--rx-log "$$CHECK_RX_LOG" \
-		--configs "$(DIST_FILE)" \
-		--repo-root $(REPO_ROOT)
 
 # ============================================================
 # GPS STITCH + ZIP PACKAGING (manual range test on unknown machine)
@@ -589,7 +621,7 @@ range-zip: ## Zip RX log + optional GPS + metadata.txt for sharing
 
 range-test-host: ## Run pytest for distributed range test split logic
 	@echo "=== Running distributed range test unit tests ==="
-	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py -v
+	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py test_range_check.py -v
 
 # ============================================================
 # CONTEXTVM (NOSTR MCP) RANGE TEST TARGETS

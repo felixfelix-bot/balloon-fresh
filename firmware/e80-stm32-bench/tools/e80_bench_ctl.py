@@ -34,6 +34,7 @@ Ctrl-C at any time sends STOP to both boards and marks the stop ABORTED.
 import argparse
 import csv
 import datetime
+import math
 import os
 import re
 import sys
@@ -807,7 +808,10 @@ def load_config_preset(preset_or_path):
         expected_s = n_pkts * (airtime + gap / 1e6)
 
         cfgs.append({
-            "idx": i,
+            # Positional by default; presets may carry an EXPLICIT idx
+            # (e.g. selective re-send presets written by range_check.py)
+            # to keep the original preset's config numbering across runs.
+            "idx": c["idx"] if isinstance(c.get("idx"), int) else i,
             "label": c.get("label", "cfg{}".format(i)),
             "mod": mod,
             "sf": c.get("sf"),
@@ -920,6 +924,43 @@ def build_preset_schedule(cfgs, t0_epoch, t0_margin=120, guard=20,
         t += c["expected_s"] + settle + guard + rx_lead
         prev = c
     return starts
+
+
+def compute_cycle_len(cfgs, t0_margin=120, guard=20, settle=2.0, rx_lead=0,
+                      swd_reset_s=0, band_swap_s=0):
+    """Deterministic wall-clock length of one sweep cycle, in seconds.
+
+    The cycle spans from its anchor (T0_k) to the next cycle's anchor
+    (T0_k + cycle_len): t0_margin headroom + every config's capture
+    window + inter-config gaps (incl. swd/band-swap extras) + the wrap
+    gap back to config 0 (band swap when the preset wraps
+    sub-GHz <-> 2.4 GHz). Rounded UP to a whole minute so both machines
+    compute the identical value from the same preset + timing args.
+
+    Pure function — no wall-clock reads. run_tx_mode/run_rx_mode use it
+    to anchor every cycle to the shared T0:
+
+        t0_cycle = T0 + (cycle - 1) * cycle_len
+
+    replacing the old per-machine ``time.time()`` re-anchoring that let
+    TX and RX cycles drift apart (boat-trip failure) and made late
+    launches silently desync (stop-50m, session 2608281130).
+    """
+    if not cfgs:
+        return 0
+    starts = build_preset_schedule(cfgs, 0, t0_margin, guard, settle, rx_lead,
+                                   swd_reset_s=swd_reset_s,
+                                   band_swap_s=band_swap_s)
+    end = starts[-1] + cfgs[-1]["expected_s"] + settle + guard
+    wrap_extra = 0
+    if len(cfgs) > 1:
+        last, first = cfgs[-1], cfgs[0]
+        if _mod_params_changed(last, first):
+            wrap_extra += swd_reset_s
+        if is_band_transition(last.get("freq"), first.get("freq")):
+            wrap_extra += band_swap_s
+    raw = end + wrap_extra
+    return int(math.ceil(raw / 60.0)) * 60
 
 
 def compute_late_skip(starts, now, rx_lead=0, min_ahead_s=5.0):
@@ -1147,6 +1188,11 @@ def format_stat_line(role, stat, session, config, replicate=1):
     parts.append("replicate={}".format(replicate))
     parts.append("drops={}".format(stat.get("drops", 0)))
     parts.append("gap_us={}".format(stat.get("gap_us", 0)))
+    # Optional extras (TX side): preset metadata so merge_csvs can compute
+    # the PER denominator and label reports without the preset file.
+    for k in ("label", "n_pkts", "plen"):
+        if k in stat:
+            parts.append("{}={}".format(k, stat[k]))
     return ",".join(parts)
 
 
@@ -1345,9 +1391,9 @@ def run_tx_mode(args):
     """TX-only distributed mode. Sends bursts on T0-anchored schedule.
 
     With --loop N (default 1), the schedule is repeated N times (0 = infinite).
-    Each cycle recomputes T0 = time.time() + t0_margin and regenerates the
-    schedule via build_preset_schedule. The cycle number (1-based) is used
-    as the replicate counter in CSV log lines.
+    Every cycle is anchored to the SHARED --t0: t0_cycle = T0 + (cycle-1) *
+    compute_cycle_len(...). The cycle number (1-based) is used as the
+    replicate counter in CSV log lines.
     """
 
     # Load config preset
@@ -1358,6 +1404,10 @@ def run_tx_mode(args):
     port, probe_serial = _detect_board_for_mode("tx", args.port, args.probe)
 
     loop_count = getattr(args, "loop", 1)
+    cycle_len = compute_cycle_len(cfgs, args.t0_margin, args.guard,
+                                  args.settle, args.rx_lead,
+                                  swd_reset_s=args.swd_reset_s,
+                                  band_swap_s=args.band_swap_s)
 
     print("== DISTRIBUTED TX MODE ==")
     print("  T0:         {}".format(
@@ -1367,6 +1417,7 @@ def run_tx_mode(args):
     print("  Session ID: {}".format(args.session_id))
     print("  Configs:    {}".format(len(cfgs)))
     print("  Loop:       {}".format("infinite (Ctrl-C to stop)" if loop_count == 0 else loop_count))
+    print("  Cycle len:  {}s (cycles anchored to T0, no drift)".format(int(cycle_len)))
     print()
 
     # Open board
@@ -1403,14 +1454,19 @@ def run_tx_mode(args):
             time.sleep(min(d, 30.0))
 
     cycle = 0
+    prev_cfg = None
     try:
         while True:
             cycle += 1
             if loop_count > 0 and cycle > loop_count:
                 break
 
-            # Recompute T0 and schedule for this cycle
-            t0_cycle = time.time() + args.t0_margin
+            # Anchor this cycle to the SHARED T0 (deterministic on both
+            # machines — same preset + same timing args) instead of local
+            # time.time(). Cycles can never drift apart, and a late
+            # launch is caught by apply_late_skip against the TRUE
+            # schedule instead of silently re-anchoring.
+            t0_cycle = t0 + (cycle - 1) * cycle_len
             starts = build_preset_schedule(cfgs, t0_cycle, args.t0_margin,
                                            args.guard, args.settle, args.rx_lead,
                                            swd_reset_s=args.swd_reset_s,
@@ -1436,7 +1492,6 @@ def run_tx_mode(args):
                 mode_label="TX",
             )
 
-            prev_cfg = None
             for idx, (cfg, start) in enumerate(zip(cfgs_cycle, starts_cycle)):
                 # Drain stale data from previous config (don't send STOP — it
                 # triggers an IWDG watchdog reset on the firmware)
@@ -1523,6 +1578,8 @@ def run_tx_mode(args):
                         "elapsed_s": cfg["expected_s"],
                         "kbps": None, "rssi": None, "snr": None,
                         "drops": 0, "gap_us": cfg["gap"],
+                        "label": cfg["label"], "n_pkts": cfg["n_pkts"],
+                        "plen": cfg["plen"],
                     }
                     if error:
                         log.comment("ERROR config={}: {}".format(cfg["idx"], error))
@@ -1572,9 +1629,9 @@ def run_rx_mode(args):
     """RX-only distributed mode. Arms RX and captures PKT lines on schedule.
 
     With --loop N (default 1), the schedule is repeated N times (0 = infinite).
-    Each cycle recomputes T0 = time.time() + t0_margin and regenerates the
-    schedule via build_preset_schedule. The cycle number (1-based) is used
-    as the replicate counter in CSV log lines.
+    Every cycle is anchored to the SHARED --t0: t0_cycle = T0 + (cycle-1) *
+    compute_cycle_len(...). The cycle number (1-based) is used as the
+    replicate counter in CSV log lines.
     """
     import subprocess as _sp
 
@@ -1586,6 +1643,10 @@ def run_rx_mode(args):
     port, probe_serial = _detect_board_for_mode("rx", args.port, args.probe)
 
     loop_count = getattr(args, "loop", 1)
+    cycle_len = compute_cycle_len(cfgs, args.t0_margin, args.guard,
+                                  args.settle, args.rx_lead,
+                                  swd_reset_s=args.swd_reset_s,
+                                  band_swap_s=args.band_swap_s)
 
     print("== DISTRIBUTED RX MODE ==")
     print("  T0:         {}".format(
@@ -1594,6 +1655,7 @@ def run_rx_mode(args):
     print("  Probe:      {}".format(probe_serial or "(not detected)"))
     print("  Configs:    {}".format(len(cfgs)))
     print("  Loop:       {}".format("infinite (Ctrl-C to stop)" if loop_count == 0 else loop_count))
+    print("  Cycle len:  {}s (cycles anchored to T0, no drift)".format(int(cycle_len)))
     print()
 
     # SWD reset if available (non-fatal if openocd missing)
@@ -1709,14 +1771,19 @@ def run_rx_mode(args):
         return pkts
 
     cycle = 0
+    prev_cfg = None
     try:
         while True:
             cycle += 1
             if loop_count > 0 and cycle > loop_count:
                 break
 
-            # Recompute T0 and schedule for this cycle
-            t0_cycle = time.time() + args.t0_margin
+            # Anchor this cycle to the SHARED T0 (deterministic on both
+            # machines — same preset + same timing args) instead of local
+            # time.time(). Cycles can never drift apart, and a late
+            # launch is caught by apply_late_skip against the TRUE
+            # schedule instead of silently re-anchoring.
+            t0_cycle = t0 + (cycle - 1) * cycle_len
             starts = build_preset_schedule(cfgs, t0_cycle, args.t0_margin,
                                            args.guard, args.settle, args.rx_lead,
                                            swd_reset_s=args.swd_reset_s,
@@ -1742,7 +1809,6 @@ def run_rx_mode(args):
                 mode_label="RX",
             )
 
-            prev_cfg = None
             for idx, (cfg, start) in enumerate(zip(cfgs_cycle, starts_cycle)):
                 # When --no-swd-reset is set, send STOP before every config
                 # to put the radio to sleep and clear any PKT flood from

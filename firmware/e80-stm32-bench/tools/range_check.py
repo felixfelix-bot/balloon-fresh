@@ -1,52 +1,52 @@
 #!/usr/bin/env python3
-"""range_check.py — post-stop rx-log coverage verdict + selective re-send preset.
+"""range_check.py — post-stop rx-log gap check + selective re-send preset.
 
-Field tool for the Friday range sweep. After a stop's session completes, check
-the RX log for coverage gaps and — if any config came in missing or thin —
-write a re-send preset containing ONLY those configs, plus the copy-paste
-TX command to run it.
+Union of the two range-check implementations (superset — both feature sets):
+
+v1 (main / worker-balloon/range-check):
+  - STAT-row parsing with the bracket-safe ``per_ci_x1e6=[lo,hi]`` split
+    (a comma inside brackets must not corrupt later fields).
+  - LOGGING GAP verdict: zero STAT rows for the session means the rx
+    LOGGER failed (STAT rows are emitted per config even when rx=0, so
+    rx=0 STATs are DATA — RF death — never a logging gap; no resend file).
+  - WARMUP_REPLICATES exclusion (first 2 replicates never count).
+  - Default per-stop preset lookup + VALID_DISTS error (exit 2).
+  - v1-style renumbered resend ``configs/resend-<DIST>-s<SESSION>.json``
+    + verbatim TX one-liner (``T0=+90`` relative form).
+
+v2 (worker-balloon/range-check2):
+  - Best-pass analysis across replicates (max, never pooled — matches the
+    best-pass merge policy in merge_csvs.py) with a thin_frac threshold.
+  - T0-tagged per-stop log discovery (logs/*/stop-<dist>/rx-log-*.csv,
+    newest first) + legacy cwd-quirk fallback.
+  - Session auto-detect (highest session id found in the log).
+  - idx-preserved resend ``configs/resend/resend-<dist>-<session>.json``
+    + paste-ready TX/RX re-send commands (T0 = next 5-minute boundary).
 
 Usage (from firmware/e80-stm32-bench/, or via the root make proxy):
 
-    make range-check DIST=50m SESSION=2608281130 [RX_LOG=rx-log.csv]
+    make range-check DIST=50m                      # latest session found
+    make range-check DIST=872m SESSION=2608281225  # explicit session
 
-Decision procedure (approved design):
-  - Rows for cfg i = rx-log rows with session == SESSION and config == i.
-  - counted = PKT rows with replicate >= WARMUP_REPLICATES + 1 (the first 2
-    replicates are warmups and never count).
-  - MISS  = no counted rows; THIN = counted < n_pkts; otherwise OK.
-  - PASS iff every config is OK (exit 0). Any MISS/THIN = GAPS (exit 1).
-  - Zero STAT rows for the session = LOGGING GAP verdict (the rx logger
-    itself failed — no re-send file is written). STAT rows with rx=0 mean
-    the radio heard nothing (RF death) — that is DATA, not a logging gap.
-
-The rx-log format is the harmonized one written by e80_bench_ctl run_rx_mode
-(HarmonizedRxLogWriter): ``PKT,<23 fields>`` and ``STAT,role=RX,...`` lines,
-no header, ``#`` comments allowed. This tool parses exactly that format.
-
-On GAPS it writes ``configs/resend-<DIST>-s<SESSION>.json`` (schema-compatible
-with load_config_preset; configs are renumbered 0..N-1 for the new session,
-labels preserved) and prints the TX-side one-liner:
-
-    make range-tx CONFIGS=configs/resend-<DIST>-s<SESSION>.json T0=+90 \
-        PROBE=148757200D2D1425 PORT=<from detect>
-
-No hardware, no serial — safe to run any time.
+Exit codes: 0 = complete, 1 = gaps / logging gap, 2 = usage/log errors.
+The analysis layer never modifies raw logs. No hardware, no serial.
 """
 
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import os
 import re
 import sys
+import time
 
 _TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _TOOLS_DIR not in sys.path:
     sys.path.insert(0, _TOOLS_DIR)
 
-from e80_bench_ctl import load_config_preset, parse_pkt_line  # noqa: E402
+import e80_bench_ctl as ctl  # noqa: E402  (parse_pkt_line + preset loader)
 
 # First WARMUP_REPLICATES replicates never count toward coverage.
 WARMUP_REPLICATES = 2
@@ -56,9 +56,11 @@ TX_PROBE_SERIAL = "148757200D2D1425"
 
 VALID_DISTS = ["50m", "100m", "218m", "436m", "872m", "1744m", "5km", "11km", "70km"]
 
+DEFAULT_THIN_FRAC = 0.5
+
 
 def default_repo_root():
-    """Repo root four levels up from this file (.../firmware/e80-stm32-bench/tools/)."""
+    """Repo root three levels up from this file (.../firmware/e80-stm32-bench/tools/)."""
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -68,10 +70,10 @@ def normalize_dist(dist):
 
 
 # ---------------------------------------------------------------------------
-# rx-log parsing (harmonized PKT + STAT lines, no header)
+# rx-log parsing (harmonized PKT + STAT lines, no header; legacy CSV too)
 # ---------------------------------------------------------------------------
 
-_STAT_SPLIT_RE = re.compile(r",(?![^\[]*\])")  # commas outside [...] brackets
+_STAT_SPLIT_RE = re.compile(r",(?![^\[]*])")  # commas outside [...] brackets
 
 
 def parse_stat_row(line):
@@ -94,66 +96,156 @@ def parse_stat_row(line):
     return fields
 
 
-def parse_rx_log(path):
-    """Parse an rx-log into ([pkt dicts], [stat dicts]).
+def _parse_rx_log_full(path):
+    """Parse an rx-log into (pkts, stats, sessions).
 
     PKT rows are parsed with e80_bench_ctl.parse_pkt_line (the same parser
-    the merge/stitch tools use). Comment lines and noise are ignored. A
+    the merge/stitch tools use), STAT rows with parse_stat_row above.
+    Harmonized format first; a header-only legacy file (16-col CSV) is
+    parsed via csv.DictReader. Comment lines and noise are ignored. A
     missing file parses as empty (=> LOGGING GAP verdict upstream).
     """
-    pkts, stats = [], []
+    pkts, stats, sessions = [], [], set()
     if not path or not os.path.isfile(path):
-        return pkts, stats
+        return pkts, stats, sessions
     with open(path, errors="replace") as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("PKT,"):
-                p = parse_pkt_line(line)
-                if p is not None:
-                    pkts.append(p)
-            elif line.startswith("STAT,"):
-                s = parse_stat_row(line)
-                if s is not None:
-                    stats.append(s)
-    return pkts, stats
+        lines = [ln.rstrip("\n") for ln in f]
+    data = [ln for ln in lines if not ln.startswith("#")]
+    for ln in data:
+        s = ln.strip()
+        if s.startswith("PKT,"):
+            p = ctl.parse_pkt_line(s)
+            if p is not None:
+                pkts.append(p)
+                try:
+                    sessions.add(int(p["session_id"]))
+                except (TypeError, ValueError):
+                    pass
+        elif s.startswith("STAT,"):
+            st = parse_stat_row(s)
+            if st is not None:
+                stats.append(st)
+    if not pkts and not stats and data and data[0].startswith("session,"):
+        import csv
+        import io
+        for row in csv.DictReader(io.StringIO("\n".join(data))):
+            try:
+                pkts.append({
+                    "session_id": int(row["session"]),
+                    "config_id": int(row["config"]),
+                    "replicate": int(row.get("replicate", 1)),
+                })
+                sessions.add(int(row["session"]))
+            except (ValueError, KeyError, TypeError):
+                continue
+    return pkts, stats, sessions
 
 
-# ---------------------------------------------------------------------------
-# Coverage analysis
-# ---------------------------------------------------------------------------
+def parse_rx_log(path):
+    """Parse an rx-log file -> (pkts, sessions).
 
-def _session_matches(row_value, session):
-    """Compare session ids as strings (int-normalized when numeric)."""
-    return str(row_value).strip() == str(session).strip()
-
-
-def analyze(cfgs, pkts, stats, session):
-    """Return (per-config results, session STAT row count).
-
-    Per config: counted = PKT rows with session==SESSION, config==idx and
-    replicate > WARMUP_REPLICATES. Status: MISS / THIN / OK.
+    Harmonized format: PKT,<23 fields> lines (STAT,/comment lines ignored).
+    Legacy format (16-col CSV with header) parsed via csv.DictReader.
     """
-    stat_rows = [s for s in stats
-                 if _session_matches(s.get("session", ""), session)]
-    results = []
+    pkts, _stats, sessions = _parse_rx_log_full(path)
+    return pkts, sessions
+
+
+def find_rx_logs(dist, session, search_roots):
+    """Locate candidate rx-log files for a stop, best-first.
+
+    Order: explicit T0-tagged files for the session -> any T0-tagged file
+    for the stop (newest first) -> legacy cwd-quirk rx-log.csv in tool dir.
+    Handles both the s<session>-t0<epoch> repo-root layout and the bare
+    <session> layout.
+    """
+    cands = []
+    for root in search_roots:
+        if session:
+            cands.extend(glob.glob(os.path.join(
+                root, "logs", "s{}-t0*".format(session), "stop-" + dist,
+                "rx-log-*.csv")))
+            cands.extend(glob.glob(os.path.join(
+                root, "logs", str(session), "stop-" + dist, "rx-log-*.csv")))
+        cands.extend(glob.glob(os.path.join(
+            root, "logs", "*", "stop-" + dist, "rx-log-*.csv")))
+    cands = sorted(set(cands), key=os.path.getmtime, reverse=True)
+    legacy = os.path.join(_TOOLS_DIR, "rx-log.csv")
+    if os.path.isfile(legacy):
+        cands.append(legacy)
+    seen = set()
+    uniq = []
+    for c in cands:
+        r = os.path.realpath(c)
+        if r not in seen:
+            seen.add(r)
+            uniq.append(c)
+    return uniq
+
+
+# ---------------------------------------------------------------------------
+# Coverage analysis (best pass across replicates, warmup-aware)
+# ---------------------------------------------------------------------------
+
+def analyze_capture(cfgs, pkts, thin_frac=DEFAULT_THIN_FRAC,
+                    warmup_replicates=0):
+    """Diff captured packets against the preset (BEST pass per config).
+
+    pkts: list of parsed PKT dicts (harmonized or legacy — filter to one
+    session first). Counting is per replicate: each replicate's received
+    count is computed, replicates <= warmup_replicates are excluded
+    (warmups never count), and the BEST surviving replicate is the result
+    — matching the best-pass merge policy (never pooled).
+
+    Returns {config_idx: {"n_pkts": expected, "n_recv": best-pass count,
+                          "per_replicate": {rep: count}, "status": ...}}
+    where status is "OK" (n_recv >= thin_frac*n_pkts), "THIN"
+    (0 < n_recv < thin_frac*n_pkts) or "MISS" (n_recv == 0).
+    """
+    counts = {}
+    for p in pkts:
+        key = (int(p["config_id"]), int(p["replicate"]))
+        counts[key] = counts.get(key, 0) + 1
+    out = {}
     for c in cfgs:
-        counted = sum(
-            1 for p in pkts
-            if _session_matches(p["session_id"], session)
-            and p["config_id"] == c["idx"]
-            and p["replicate"] > WARMUP_REPLICATES)
-        n = c["n_pkts"]
-        if counted == 0:
+        idx = int(c["idx"])
+        per_rep = {rep: n for (ci, rep), n in counts.items()
+                   if ci == idx and rep > warmup_replicates}
+        n_recv = max(per_rep.values()) if per_rep else 0
+        n_pkts = int(c["n_pkts"])
+        if n_recv == 0:
             status = "MISS"
-        elif counted < n:
+        elif n_recv < thin_frac * n_pkts:
             status = "THIN"
         else:
             status = "OK"
-        results.append({
-            "idx": c["idx"], "label": c["label"],
-            "n_pkts": n, "counted": counted, "status": status,
-        })
-    return results, len(stat_rows)
+        out[idx] = {"n_pkts": n_pkts, "n_recv": n_recv,
+                    "per_replicate": per_rep, "status": status}
+    return out
+
+
+def render_summary_line(dist, per_cfg):
+    """One operator line: '<dist>: COMPLETE 9/9' or '<dist>: GAPS c4 MISS, c7 THIN 3/10'."""
+    total = len(per_cfg)
+    gaps = [i for i in sorted(per_cfg) if per_cfg[i]["status"] != "OK"]
+    if not gaps:
+        return "{}: COMPLETE {}/{}".format(dist, total, total)
+    parts = []
+    for i in gaps:
+        s = per_cfg[i]
+        if s["status"] == "MISS":
+            parts.append("c{} MISS".format(i))
+        else:
+            parts.append("c{} THIN {}/{}".format(i, s["n_recv"], s["n_pkts"]))
+    return "{}: GAPS {}".format(dist, ", ".join(parts))
+
+
+def _session_matches(row_value, session):
+    """Compare session ids as strings (int-normalized when numeric)."""
+    a, b = str(row_value).strip(), str(session).strip()
+    if a.isdigit() and b.isdigit():
+        return int(a) == int(b)
+    return a == b
 
 
 def verdict_line(dist, session, results, kind, stat_count=0):
@@ -179,23 +271,38 @@ def verdict_line(dist, session, results, kind, stat_count=0):
 
 
 # ---------------------------------------------------------------------------
-# Re-send preset
+# Re-send presets (both output forms)
 # ---------------------------------------------------------------------------
+
+def build_resend_preset(cfgs, per_cfg, dist, session):
+    """Trimmed preset with ONLY the gap configs (idx preserved). None if complete."""
+    gaps = [i for i in sorted(per_cfg) if per_cfg[i]["status"] != "OK"]
+    if not gaps:
+        return None
+    keep = [c for c in cfgs if int(c["idx"]) in gaps]
+    return {
+        "name": "resend-{}-{}".format(dist, session),
+        "description": ("Selective re-send for stop {} session {} — gap "
+                        "configs only (MISS/THIN per range-check); idx values "
+                        "match the original preset".format(dist, session)),
+        "configs": keep,
+    }
+
 
 def write_resend_preset(raw_cfgs, results, dist, session, repo_root):
     """Write configs/resend-<DIST>-s<SESSION>.json with ONLY MISS+THIN cfgs.
 
     raw_cfgs is the ORIGINAL preset's configs list (verbatim dicts, labels
-    preserved); the re-send renumbers them 0..N-1 via load_config_preset
-    position semantics for the new session. Returns the path.
+    preserved); position semantics of load_config_preset renumber them for
+    the new session (presets with explicit idx values keep their idx).
+    Returns the path.
     """
     gapped = [raw_cfgs[r["idx"]] for r in results if r["status"] != "OK"]
     out = {
         "name": "resend-{}-s{}".format(dist, session),
         "description": ("Selective re-send for stop {} session {} — only "
-                        "configs that came in MISS/THIN; renumbered 0..{} "
-                        "in the new session, labels preserved.".format(
-                            dist, session, len(gapped) - 1)),
+                        "configs that came in MISS/THIN; labels preserved."
+                        .format(dist, session)),
         "configs": gapped,
     }
     out_dir = os.path.join(repo_root, "configs")
@@ -212,21 +319,49 @@ def tx_one_liner(dist, session):
             "PROBE={} PORT=<from detect>".format(dist, session, TX_PROBE_SERIAL))
 
 
+def next_t0(boundary_s=300, now=None):
+    """Next 5-minute epoch boundary (same rule as the Makefile)."""
+    now = int(now if now is not None else time.time())
+    return ((now // boundary_s) + 1) * boundary_s
+
+
+def format_resend_commands(resend_path, t0, dist):
+    """Paste-ready TX + RX commands for the selective re-send."""
+    sid = time.strftime("%y%m%d%H%M", time.gmtime(t0))
+    cfgs_arg = "CONFIGS={}".format(resend_path)
+    common = "DIST={} {} T0={} SESSION_ID={}".format(dist, cfgs_arg, t0, sid)
+    return (
+        "TX: make range-tx {}   # run FIRST, banner prints instantly".format(common),
+        "RX: make range-rx {}   # arm BEFORE T0 (or immediately — late join "
+        "skips to the next future config)".format(common),
+    )
+
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 
 def main(argv=None):
     ap = argparse.ArgumentParser(
-        description="Post-stop rx-log coverage verdict + selective re-send preset")
+        description="Post-stop gap check: diff rx-log vs preset, write "
+                    "selective re-send presets + paste-ready commands")
     ap.add_argument("--dist", required=True,
                     help="stop distance, e.g. 50m / 1744m / 70km (bare = meters)")
-    ap.add_argument("--session", required=True,
-                    help="session id from the stop's SESSION_ID banner")
-    ap.add_argument("--rx-log", default="rx-log.csv",
-                    help="rx log path (default: rx-log.csv, as written by make rx)")
+    ap.add_argument("--session", default=None,
+                    help="session id from the stop's SESSION_ID banner "
+                         "(default: highest session found in the log)")
+    ap.add_argument("--rx-log", default=None,
+                    help="explicit rx-log path (skips discovery; a missing "
+                         "file is a LOGGING GAP, not an error)")
     ap.add_argument("--configs", default=None,
-                    help="preset path override (default: configs/per-stop/stop-<DIST>.json)")
+                    help="preset path override (default: "
+                         "<repo-root>/configs/per-stop/stop-<DIST>.json)")
+    ap.add_argument("--thin-frac", type=float, default=DEFAULT_THIN_FRAC,
+                    help="configs with fewer than this fraction of n_pkts "
+                         "received are THIN (default 0.5)")
+    ap.add_argument("--out-dir", default=None,
+                    help="where to write the idx-preserved resend preset "
+                         "(default: <repo-root>/configs/resend)")
     ap.add_argument("--repo-root", default=None,
                     help="repo root for preset lookup + resend output (default: derived)")
     args = ap.parse_args(argv)
@@ -242,33 +377,109 @@ def main(argv=None):
                 preset_path, ", ".join(VALID_DISTS)))
         return 2
 
-    cfgs = load_config_preset(preset_path)
+    cfgs = ctl.load_config_preset(preset_path)
     with open(preset_path) as f:
         raw_preset = json.load(f)
     raw_cfgs = raw_preset["configs"]
 
-    pkts, stats = parse_rx_log(args.rx_log)
-    results, stat_count = analyze(cfgs, pkts, stats, args.session)
+    # Locate the log: explicit path (missing => empty => LOGGING GAP), else
+    # discovery over the per-stop T0-tagged layout with legacy fallback.
+    if args.rx_log:
+        path = args.rx_log
+    else:
+        roots = [os.getcwd(), repo_root, os.path.abspath(os.path.join(_TOOLS_DIR, ".."))]
+        cands = find_rx_logs(dist, args.session, roots)
+        if not cands:
+            sys.stderr.write(
+                "ERROR: no rx-log found for stop {} (looked in logs/*/"
+                "stop-{}/ and {}). Pass --rx-log explicitly.\n".format(
+                    dist, dist, os.path.join(_TOOLS_DIR, "rx-log.csv")))
+            return 2
+        path = cands[0]
+        if len(cands) > 1:
+            print("note: multiple candidate logs, using newest: {}".format(path))
+
+    pkts, stats, sessions = _parse_rx_log_full(path)
+
+    session = args.session
+    if session is None:
+        if sessions:
+            session = str(max(sessions))
+            print("session: {} (auto — highest in {})".format(session, path))
+        else:
+            session = ""
+    else:
+        print("session: {} (explicit)".format(session))
+
+    stat_count = sum(
+        1 for s in stats
+        if _session_matches(s.get("session", ""), session)) if session else 0
 
     if stat_count == 0:
         # Logger problem: the rx side wrote no STAT rows for this session at
         # all (STAT lines are emitted per config even when rx=0, so zero
         # means the logger/logger path failed, not the radio).
-        print(verdict_line(dist, args.session, results, "LOGGING_GAP"))
+        print("log: {}".format(path))
+        print(verdict_line(dist, session, [], "LOGGING_GAP"))
         return 1
 
+    pkts = [p for p in pkts if _session_matches(p["session_id"], session)]
+    per_cfg = analyze_capture(cfgs, pkts, thin_frac=args.thin_frac,
+                              warmup_replicates=WARMUP_REPLICATES)
+    results = [{"idx": int(c["idx"]), "label": c["label"],
+                "n_pkts": per_cfg[int(c["idx"])]["n_pkts"],
+                "counted": per_cfg[int(c["idx"])]["n_recv"],
+                "status": per_cfg[int(c["idx"])]["status"]}
+               for c in cfgs]
+
+    # v2-style operator output: one line + per-config table.
+    print("")
+    print(render_summary_line(dist, per_cfg))
+    reps = max((len(v["per_replicate"]) for v in per_cfg.values()), default=1)
+    print("")
+    print("per-config (best pass{}):".format(
+        " across {} replicates".format(reps) if reps > 1 else ""))
+    for i in sorted(per_cfg):
+        s = per_cfg[i]
+        label = next((c["label"] for c in cfgs if int(c["idx"]) == i), "?")
+        print("  c{:<2} {:<22} {:>3}/{}  {}".format(
+            i, label, s["n_recv"], s["n_pkts"], s["status"]))
+    print("")
+    print("log: {}".format(path))
+
     if all(r["status"] == "OK" for r in results):
-        print(verdict_line(dist, args.session, results, "PASS"))
+        print("result: COMPLETE — no re-send needed.")
+        print(verdict_line(dist, session, results, "PASS"))
         return 0
 
-    print(verdict_line(dist, args.session, results, "GAPS"))
-    path = write_resend_preset(raw_cfgs, results, dist, args.session, repo_root)
+    print(verdict_line(dist, session, results, "GAPS"))
+
+    # v1 output: renumbered resend + verbatim TX one-liner.
+    v1_path = write_resend_preset(raw_cfgs, results, dist, session, repo_root)
     labels = ", ".join(raw_cfgs[r["idx"]]["label"] for r in results
                        if r["status"] != "OK")
-    print("resend: {} (cfgs renumbered 0..{} in the new session; labels: {})"
-          .format(os.path.relpath(path, repo_root),
-                  sum(1 for r in results if r["status"] != "OK") - 1, labels))
-    print("TX: " + tx_one_liner(dist, args.session))
+    print("resend: {} (labels: {})".format(
+        os.path.relpath(v1_path, repo_root), labels))
+    print("TX: " + tx_one_liner(dist, session))
+
+    # v2 output: idx-preserved resend + paste-ready TX/RX pair.
+    preset = build_resend_preset(cfgs, per_cfg, dist, session)
+    out_dir = args.out_dir or os.path.join(repo_root, "configs", "resend")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "resend-{}-{}.json".format(dist, session))
+    with open(out_path, "w") as f:
+        json.dump(preset, f, indent=2)
+        f.write("\n")
+    print("resend (idx preserved): {}".format(
+        os.path.relpath(out_path, repo_root)))
+
+    t0 = next_t0()
+    sid = time.strftime("%y%m%d%H%M", time.gmtime(t0))
+    print("")
+    print("Paste-ready selective re-send (T0={} session={}):".format(t0, sid))
+    for cmd in format_resend_commands(
+            os.path.relpath(out_path, repo_root), t0, dist):
+        print("  " + cmd)
     return 1
 
 
