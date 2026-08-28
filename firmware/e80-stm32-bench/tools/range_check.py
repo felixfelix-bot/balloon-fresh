@@ -39,6 +39,7 @@ The analysis layer never modifies raw logs. No hardware, no serial.
 from __future__ import annotations
 
 import argparse
+import datetime
 import glob
 import json
 import os
@@ -155,6 +156,113 @@ def parse_rx_log(path):
     """
     pkts, _stats, sessions = _parse_rx_log_full(path)
     return pkts, sessions
+
+
+# ---------------------------------------------------------------------------
+# t0 cross-check (2026-08-28 incident hardening): the rx-log and tx-log of
+# one stop must belong to the SAME launch. t0 is read from BOTH the
+# filename tag (-t0<epoch>, TZ-safe) and the log header (t0=<iso>); any
+# disagreement is a loud exit-2, not a silent wrong-session analysis.
+# ---------------------------------------------------------------------------
+
+_T0_FN_RE = re.compile(r"(?:^|[-_/])t0(\d{8,})")
+_T0_ISO_FMTS = ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%d %H:%M:%S")
+
+
+def t0_from_filename(path):
+    """Epoch int from a '-t0<epoch>' tag in the log's basename, else from
+    its parent session dir (s<session>-t0<epoch>). None when untagged."""
+    parent = os.path.basename(os.path.dirname(os.path.abspath(path or "")))
+    for part in (os.path.basename(path or ""), parent):
+        m = _T0_FN_RE.search(part)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def t0_from_header(path):
+    """Epoch int from the DISTRIBUTED_*_MODE 't0=<iso-or-epoch>' comment.
+
+    Only the first DISTRIBUTED header line is consulted (the launch-time
+    banner). None when absent, unreadable, or unparseable.
+    """
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, errors="replace") as f:
+            for ln in f:
+                if "DISTRIBUTED" not in ln or "t0=" not in ln:
+                    continue
+                m = re.search(r"t0=(\S+)", ln)
+                if not m:
+                    return None
+                tok = m.group(1)
+                try:
+                    return int(tok)
+                except ValueError:
+                    pass
+                for fmt in _T0_ISO_FMTS:
+                    try:
+                        return int(datetime.datetime.strptime(
+                            tok, fmt).timestamp())
+                    except ValueError:
+                        continue
+                return None
+    except OSError:
+        return None
+    return None
+
+
+def t0_sources(path):
+    """[(label, epoch)] for every t0 we can read from one log file."""
+    srcs = []
+    base = os.path.basename(path or "") or str(path)
+    fn = t0_from_filename(path)
+    if fn is not None:
+        srcs.append(("{}: filename -t0{}".format(base, fn), fn))
+    hdr = t0_from_header(path)
+    if hdr is not None:
+        srcs.append(("{}: header t0= -> {}".format(base, hdr), hdr))
+    return srcs
+
+
+def check_t0_match(rx_path, tx_path):
+    """All readable t0 sources of BOTH logs must agree.
+
+    Returns (ok, message). ok=True message summarizes the agreed epoch;
+    ok=False message is a loud multi-line T0 MISMATCH report naming every
+    source (rx filename, rx header, tx filename, tx header).
+    """
+    srcs = [("rx " + lbl, t) for lbl, t in t0_sources(rx_path)]
+    srcs += [("tx " + lbl, t) for lbl, t in t0_sources(tx_path)]
+    epochs = sorted({t for _lbl, t in srcs})
+    if len(epochs) > 1:
+        lines = ["T0 MISMATCH — rx-log and tx-log disagree on the launch:"]
+        for lbl, t in srcs:
+            lines.append("  {:<44} t0={}".format(lbl, t))
+        lines.append(
+            "The rx and tx logs are NOT from the same launch (stale "
+            "T0/SESSION shell var? copied the wrong tx-log?). Re-check "
+            "SESSION/T0, or pass --tx-log with the matching tx-log.")
+        return False, "\n".join(lines)
+    if not epochs:
+        return True, "no t0 tags found (filename/header) — nothing to check"
+    return True, "t0={} agreed by {}".format(
+        epochs[0], ", ".join(lbl for lbl, _t in srcs))
+
+
+def find_sibling_tx_log(rx_path):
+    """Newest tx-log*.csv next to the rx-log, else in its parent session
+    dir. None when no tx-log candidate exists."""
+    if not rx_path:
+        return None
+    d = os.path.dirname(os.path.abspath(rx_path))
+    for base in (d, os.path.dirname(d)):
+        cands = glob.glob(os.path.join(base, "tx-log*.csv"))
+        if cands:
+            return max(cands, key=os.path.getmtime)
+    return None
 
 
 def find_rx_logs(dist, session, search_roots):
@@ -371,6 +479,10 @@ def main(argv=None):
     ap.add_argument("--rx-log", default=None,
                     help="explicit rx-log path (skips discovery; a missing "
                          "file is a LOGGING GAP, not an error)")
+    ap.add_argument("--tx-log", default=None,
+                    help="explicit tx-log path for the t0 cross-check "
+                         "(default: newest tx-log*.csv sibling of the "
+                         "rx-log)")
     ap.add_argument("--configs", default=None,
                     help="preset path override (default: "
                          "<repo-root>/configs/per-stop/stop-<DIST>.json)")
@@ -416,6 +528,20 @@ def main(argv=None):
         path = cands[0]
         if len(cands) > 1:
             print("note: multiple candidate logs, using newest: {}".format(path))
+
+    # t0 cross-check (fail fast): the rx-log and its sibling/explicit
+    # tx-log must belong to the SAME launch — filename -t0<epoch> tags and
+    # DISTRIBUTED_*_MODE t0=<iso> headers must all agree.
+    tx_path = args.tx_log or find_sibling_tx_log(path)
+    if tx_path:
+        ok, msg = check_t0_match(path, tx_path)
+        if not ok:
+            sys.stderr.write("ERROR: {}\n".format(msg))
+            return 2
+        print("t0 cross-check: OK ({})".format(msg))
+    else:
+        print("note: no tx-log found (sibling of {}) — t0 cross-check "
+              "skipped".format(path))
 
     pkts, stats, sessions = _parse_rx_log_full(path)
 

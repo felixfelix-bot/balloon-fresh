@@ -477,7 +477,7 @@ RANGE_CHECK   := $(PYTHON) $(TOOLDIR)/tools/range_check.py
 
 range-check: ## Post-stop gap check: diff rx-log vs preset, write re-send preset
 	@if [ -z "$(DIST)" ]; then \
-		echo "usage: make range-check DIST=<50m|100m|218m|436m|872m|1744m|5km|11km|70km> [SESSION=<id>] [RX=<rx-log.csv>|RX_LOG=path]"; \
+		echo "usage: make range-check DIST=<50m|100m|218m|436m|872m|1744m|5km|11km|70km> [SESSION=<id>] [RX=<rx-log.csv>|RX_LOG=path] [TX=<tx-log.csv>|TX_LOG=path]"; \
 		exit 2; \
 	fi
 	@if [ ! -f "$(DIST_FILE)" ]; then \
@@ -504,11 +504,24 @@ range-check: ## Post-stop gap check: diff rx-log vs preset, write re-send preset
 			CHECK_RX_LOG=""; \
 		fi; \
 	fi; \
-	echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$$CHECK_RX_LOG ==="; \
+	if [ -n "$(TX)" ]; then \
+		CHECK_TX_LOG="$(TX)"; \
+	elif [ "$(origin TX_LOG)" = "file" ]; then \
+		CHECK_TX_LOG="$(TX_LOG)"; \
+	else \
+		EPOCH2=$$(python3 -c "import calendar; s='$(SESSION)'; print(calendar.timegm((2000+int(s[0:2]), int(s[2:4]), int(s[4:6]), int(s[6:8]), int(s[8:10]), 0)))" 2>/dev/null || echo ""); \
+		if [ -n "$$EPOCH2" ] && [ -f "$(REPO_ROOT)/logs/s$(SESSION)-t0$$EPOCH2/tx-log-t0$$EPOCH2-$(SESSION).csv" ]; then \
+			CHECK_TX_LOG="$(REPO_ROOT)/logs/s$(SESSION)-t0$$EPOCH2/tx-log-t0$$EPOCH2-$(SESSION).csv"; \
+		else \
+			CHECK_TX_LOG=""; \
+		fi; \
+	fi; \
+	echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$$CHECK_RX_LOG TX_LOG=$$CHECK_TX_LOG ==="; \
 	cd $(TOOLDIR) && $(RANGE_CHECK) \
 		--dist $(DIST_NORM) \
 		$(if $(SESSION),--session $(SESSION)) \
 		--rx-log "$$CHECK_RX_LOG" \
+		--tx-log "$$CHECK_TX_LOG" \
 		--configs "$(abspath $(DIST_FILE))" \
 		--repo-root $(REPO_ROOT)
 
