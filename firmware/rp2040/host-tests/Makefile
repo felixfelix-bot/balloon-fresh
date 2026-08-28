@@ -13,7 +13,7 @@ SRC_DIR   = ../src
 
 # --- test targets (add new test_*.cpp here) --------------------------------
 
-TESTS = test_stats test_safety test_cmd test_bw_codes test_radio
+TESTS = test_stats test_safety test_cmd test_bw_codes test_radio test_dispatch
 
 # `all` is declared below; make it the default goal so a bare `make` builds
 # every test (the first explicit rule would otherwise become the default).
@@ -37,6 +37,14 @@ test_bw_codes: test_bw_codes.cpp
 # asserts set_tx ticks derive from the FW-4 chip-timeout function.
 test_radio: test_radio.cpp $(SRC_DIR)/flrc_range_host_radio.cpp $(SRC_DIR)/flrc_range_host_safety.cpp
 	$(CXX) $(CXXFLAGS) -DBENCH_RADIO_HOST_TEST -I$(SRC_DIR) -o $@ $^
+
+# FW-6: dispatch layer (state machine + plan + replies). Links the parser,
+# safety (band/PA checks) and stats (embedded counters) pure TUs.
+test_dispatch: test_dispatch.cpp $(SRC_DIR)/flrc_range_host_dispatch.cpp \
+               $(SRC_DIR)/flrc_range_host_cmd.cpp \
+               $(SRC_DIR)/flrc_range_host_safety.cpp \
+               $(SRC_DIR)/flrc_range_host_stats.cpp
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^
 
 # --- catch-all ------------------------------------------------------------
 
