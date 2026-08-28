@@ -54,8 +54,6 @@ endif
 
 BAND          ?= 868
 FORMAT        ?= harmonized
-TX_LOG        ?= tx-log.csv
-RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
 PRIME_DISCARD ?= 2
 
@@ -113,12 +111,24 @@ BOUNDARY_S    := 300  # 5-minute round-up
 T0            ?= $(shell python3 -c "import time; now=int(time.time()); boundary=$(BOUNDARY_S); t0=((now // boundary) + 1) * boundary; print(t0)")
 SESSION_ID    ?= $(shell python3 -c "import time; t0=$(T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
 
+# ── Per-run log naming ─────────────────────────────────────────────────
+# Logs land in logs/<session>/stop-<dist>/ (or logs/<session>/ without
+# DIST) and carry T0 + SESSION_ID in the FILENAME, so a later run can
+# never append to or overwrite a previous measurement's CSV.
+# Override: TX_LOG=/RX_LOG= (absolute or relative to the make invocation).
+LOG_DIR        = logs/$(SESSION_ID)
+ifdef DIST
+  LOG_DIR     := logs/$(SESSION_ID)/stop-$(DIST_NORM)
+endif
+TX_LOG        ?= $(LOG_DIR)/tx-log-t0$(T0)-$(SESSION_ID).csv
+RX_LOG        ?= $(LOG_DIR)/rx-log-t0$(T0)-$(SESSION_ID).csv
+
 # Ansible
 ANSIBLE_PLAYBOOK := ansible-playbook
 ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
-.PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
+.PHONY: range-setup range-tx range-rx range-merge range-check range-dry-run range-test-host
 .PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke sweep-e80
 .PHONY: boat-tx boat-rx
 
@@ -363,11 +373,12 @@ endif
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
+	@mkdir -p "$(LOG_DIR)"
 	cd $(TOOLDIR) && $(E80_CTL) --mode tx \
 		--t0 $(T0) \
 		--session-id $(SESSION_ID) \
-		--configs "$(CONFIGS)" \
-		--tx-log "$(TX_LOG)" \
+		--configs "$(abspath $(CONFIGS))" \
+		--tx-log "$(abspath $(TX_LOG))" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
 		$(E80_PORT_ARG) $(E80_PROBE_ARG) \
@@ -397,15 +408,17 @@ endif
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
+	@mkdir -p "$(LOG_DIR)"
 	cd $(TOOLDIR) && $(E80_CTL) --mode rx \
 		--t0 $(T0) \
 		--session-id $(SESSION_ID) \
-		--configs "$(CONFIGS)" \
-		--rx-log "$(RX_LOG)" \
+		--configs "$(abspath $(CONFIGS))" \
+		--rx-log "$(abspath $(RX_LOG))" \
 		--prime-discard $(PRIME_DISCARD) \
 		--format $(FORMAT) \
 		$(E80_PORT_ARG) $(E80_PROBE_ARG) \
 		$(RX_SWD_ARG) \
+		--skip-late-configs \
 		--skip-fw-check
 
 range-merge: ## Merge TX+RX logs, compute PER, generate report
@@ -414,6 +427,35 @@ range-merge: ## Merge TX+RX logs, compute PER, generate report
 	@echo "  RX: $(RX)"
 	@echo ""
 	$(MERGE_SCRIPT) --tx "$(TX)" --rx "$(RX)" --out-dir "$(OUT_DIR)"
+
+# ============================================================
+# RANGE-CHECK — post-stop gap check + selective re-send preset
+# ============================================================
+# Run on the RX machine right after each stop:
+#   make range-check DIST=872m                     (latest session found)
+#   make range-check DIST=872m SESSION=2608281225  (explicit session)
+# Prints one line, e.g.   872m: GAPS c4 MISS, c7 THIN 3/10
+# If gaps: writes configs/resend/resend-<dist>-<session>.json (only the
+# missing/thin configs, idx preserved) and prints the paste-ready
+# `make range-tx CONFIGS=... T0=... SESSION_ID=...` re-send commands
+# (T0 = next 5-minute boundary). Exit code 1 if gaps, 0 if complete.
+RANGE_CHECK   := $(PYTHON) $(TOOLDIR)/tools/range_check.py
+
+range-check: ## Post-stop gap check: diff rx-log vs preset, write re-send preset
+	@if [ -z "$(DIST)" ]; then \
+		echo "usage: make range-check DIST=<50m|100m|218m|436m|872m|1744m|5km|11km|70km> [SESSION=<id>] [RX=<rx-log.csv>]"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(DIST_FILE)" ]; then \
+		echo "ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
+		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
+		exit 1; \
+	fi
+	@cd $(TOOLDIR) && $(RANGE_CHECK) \
+		--dist "$(DIST_NORM)" \
+		--configs "$(abspath $(DIST_FILE))" \
+		$(if $(SESSION),--session $(SESSION)) \
+		$(if $(RX),--rx-log "$(RX)")
 
 range-coord: ## Print T0 + SESSION_ID for sharing between TX and RX operators
 	@echo "============================================"
