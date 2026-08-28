@@ -23,8 +23,8 @@ and the results are the centrepiece of Friday's demo.
 
 | Item | Qty | Notes |
 |------|-----|-------|
-| E80 STM32+LR2021 board "A" (RX/base) | 1 | debug probe `148757200D2D1425`, firmware `5fa7912`, 115200 baud — stays at Cowork |
-| E80 STM32+LR2021 board "B" (TX/field) | 1 | debug probe `203584200D2D0D42`, firmware `5fa7912`, 115200 baud — walks with Felix |
+| E80 STM32+LR2021 board "A" (TX/field) | 1 | debug probe `148757200D2D1425`, firmware `5fa7912`, 115200 baud — walks with Felix |
+| E80 STM32+LR2021 board "B" (RX/base) | 1 | debug probe `203584200D2D0D42`, firmware `5fa7912`, 115200 baud — stays at Cowork |
 | Raspberry Pi Pico debug probe (SWD) | 1/board | plugs alongside the CH340 serial cable |
 | 868 MHz whip antenna | 1/board | SMA, sub-GHz jack = **Pin 9** |
 | 2.4 GHz whip antenna (~31 mm) | 1/board | SMA, 2.4 GHz jack = **Pin 10** |
@@ -69,20 +69,20 @@ grabs the wrong board.
 
 ```bash
 cd ~/repos/balloon-e80bench/firmware/e80-stm32-bench   # or your clone path
-python3 tools/e80_detect.py            # find current port for probe 148757200D2D1425
-make range-rx DIST=<stop> PROBE=148757200D2D1425 PORT=<port-from-detect>
+python3 tools/e80_detect.py            # find current port for probe 203584200D2D0D42
+make range-rx DIST=<stop> PROBE=203584200D2D0D42 PORT=<port-from-detect>
 ```
 
-### Per-stop TX (field laptop, walks with Felix) — `PROBE=203584200D2D0D42`
+### Per-stop TX (field laptop, walks with Felix) — `PROBE=148757200D2D1425`
 
 | Stop | Command |
 |------|---------|
-| 50 m | `make range-tx DIST=50m PROBE=203584200D2D0D42` |
-| 100 m | `make range-tx DIST=100m PROBE=203584200D2D0D42` |
-| 218 m | `make range-tx DIST=218m PROBE=203584200D2D0D42` |
-| 436 m | `make range-tx DIST=436m PROBE=203584200D2D0D42` |
-| 872 m | `make range-tx DIST=872m PROBE=203584200D2D0D42` (Jardim Miradouro da Achada) |
-| 1744 m | `make range-tx DIST=1744m PROBE=203584200D2D0D42` (Monte village) |
+| 50 m | `make range-tx DIST=50m PROBE=148757200D2D1425` |
+| 100 m | `make range-tx DIST=100m PROBE=148757200D2D1425` |
+| 218 m | `make range-tx DIST=218m PROBE=148757200D2D1425` |
+| 436 m | `make range-tx DIST=436m PROBE=148757200D2D1425` |
+| 872 m | `make range-tx DIST=872m PROBE=148757200D2D1425` (Jardim Miradouro da Achada) |
+| 1744 m | `make range-tx DIST=1744m PROBE=148757200D2D1425` (Monte village) |
 
 Preset sizes (`configs/per-stop/stop-<dist>.json`): 50 m = 10 cfgs (7×868 + 3×2G4) ·
 100 m = 11 (7+4) · 218 m = 12 (8+4) · 436/872/1744 m = 9 (6+3) each. ~4–5 min per cycle,
