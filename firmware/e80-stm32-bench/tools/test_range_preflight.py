@@ -646,5 +646,142 @@ class DryRunSessionCollisionRehearsalTests(unittest.TestCase):
             self.assertIn(old, buf.getvalue())
 
 
+# ---------------------------------------------------------------------------
+# 4. POWER MODE OUTDOOR timeout: retry once after 2 s, then raise an error
+#    naming the likely causes (console wedged / old fw missing pcap= /
+#    wrong port).
+# ---------------------------------------------------------------------------
+
+class SendPowerOutdoorRetryTests(unittest.TestCase):
+    """send_power_outdoor() wrapper unit behavior."""
+
+    def _clock(self):
+        return FakeClock(time.time())
+
+    def test_success_first_try_no_retry(self):
+        board = RangeBoard("/dev/ttyUSB3", power_failures=0)
+        clock = self._clock()
+        with mock.patch.object(m.time, "sleep", clock.sleep):
+            reply = m.send_power_outdoor(board, board.port)
+        self.assertIn("OK", reply)
+        pmos = [ln for ln in board.log
+                if ln.startswith("POWER MODE OUTDOOR")]
+        self.assertEqual(len(pmos), 1)
+
+    def test_transient_timeout_retried_once_after_2s(self):
+        board = RangeBoard("/dev/ttyUSB3", power_failures=1)
+        clock = self._clock()
+        with mock.patch.object(m.time, "sleep", clock.sleep):
+            reply = m.send_power_outdoor(board, board.port)
+        self.assertIn("OK", reply)
+        pmos = [ln for ln in board.log
+                if ln.startswith("POWER MODE OUTDOOR")]
+        self.assertEqual(len(pmos), 2)
+        self.assertIn(2.0, clock.sleeps)
+
+    def test_double_timeout_raises_with_cause_list(self):
+        board = RangeBoard("/dev/ttyUSB3", power_failures=99)
+        clock = self._clock()
+        with mock.patch.object(m.time, "sleep", clock.sleep):
+            with self.assertRaises(RuntimeError) as cm:
+                m.send_power_outdoor(board, board.port)
+        msg = str(cm.exception)
+        self.assertIn("POWER MODE OUTDOOR", msg)
+        self.assertIn("power-cycle", msg)      # console wedged guidance
+        self.assertIn("pcap=", msg)            # old-fw ID? diagnostic
+        self.assertIn("wrong port", msg)
+        self.assertIn("/dev/ttyUSB3", msg)     # names the port
+
+    def test_error_mentions_console_wedged(self):
+        board = RangeBoard("/dev/ttyUSB3", power_failures=99)
+        with mock.patch.object(m.time, "sleep", lambda d: None):
+            with self.assertRaises(RuntimeError) as cm:
+                m.send_power_outdoor(board, board.port)
+        self.assertIn("console wedged", str(cm.exception))
+
+
+class PowerOutdoorRetryWiringTests(unittest.TestCase):
+    """The three call sites go through the retry wrapper."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _run_tx(self, board):
+        clock = FakeClock(time.time())
+        board.clock = clock
+        board.ser = FakeSer(clock)
+        args = make_range_args(
+            configs=PRESET_HI_PA,
+            tx_log=os.path.join(self.dir.name, "tx-log.csv"))
+        made = []
+        with mock.patch.object(m.time, "time", clock.time), \
+             mock.patch.object(m.time, "sleep", clock.sleep), \
+             contextlib.redirect_stdout(io.StringIO()):
+            m.run_tx_mode(args, board_cls=lambda p: made.append(p) or board)
+        return made
+
+    def _run_rx(self, board):
+        clock = FakeClock(time.time())
+        board.clock = clock
+        board.ser = FakeSer(clock)
+        args = make_range_args(
+            mode="rx", configs=PRESET_HI_PA,
+            rx_log=os.path.join(self.dir.name, "rx-log.csv"))
+        with mock.patch.object(m.time, "time", clock.time), \
+             mock.patch.object(m.time, "sleep", clock.sleep), \
+             contextlib.redirect_stdout(io.StringIO()):
+            m.run_rx_mode(args, board_cls=lambda p: board)
+
+    def test_tx_mode_double_timeout_raises_with_causes(self):
+        board = RangeBoard("/dev/ttyUSB3", id_reply=ID_WITH_PCAP,
+                           power_failures=99)
+        with self.assertRaises(RuntimeError) as cm:
+            self._run_tx(board)
+        msg = str(cm.exception)
+        self.assertIn("POWER MODE OUTDOOR", msg)
+        self.assertIn("power-cycle", msg)
+        # failed AFTER a retry (send attempted twice)
+        pmos = [ln for ln in board.log
+                if ln.startswith("POWER MODE OUTDOOR")]
+        self.assertEqual(len(pmos), 2)
+
+    def test_rx_mode_double_timeout_raises_with_causes(self):
+        board = RangeBoard("/dev/ttyUSB4", id_reply=ID_WITH_PCAP,
+                           power_failures=99)
+        with self.assertRaises(RuntimeError) as cm:
+            self._run_rx(board)
+        msg = str(cm.exception)
+        self.assertIn("POWER MODE OUTDOOR", msg)
+        self.assertIn("wrong port", msg)
+        pmos = [ln for ln in board.log
+                if ln.startswith("POWER MODE OUTDOOR")]
+        self.assertEqual(len(pmos), 2)
+
+    def test_matrix_preflight_double_timeout_raises_with_causes(self):
+        board = RangeBoard("/dev/ttyUSB3", id_reply=ID_WITH_PCAP,
+                           power_failures=99)
+        args = argparse.Namespace(band_override=False, freq=868000000)
+        with mock.patch.object(m.time, "sleep", lambda d: None):
+            with self.assertRaises(RuntimeError) as cm:
+                m.preflight(board, args, "TX", power_unlock=True)
+        msg = str(cm.exception)
+        self.assertIn("power-cycle", msg)
+        self.assertIn("pcap=", msg)
+
+    def test_tx_mode_transient_timeout_recovered_by_retry(self):
+        # One wedged attempt then success: the run must complete normally.
+        board = RangeBoard("/dev/ttyUSB3", id_reply=ID_WITH_PCAP,
+                           power_failures=1)
+        made = self._run_tx(board)
+        self.assertEqual(made, ["/dev/ttyUSB3"])
+        pmos = [ln for ln in board.log
+                if ln.startswith("POWER MODE OUTDOOR")]
+        self.assertEqual(len(pmos), 2)
+        self.assertTrue(any(ln.startswith("START") for ln in board.log))
+
+
 if __name__ == "__main__":
     unittest.main()

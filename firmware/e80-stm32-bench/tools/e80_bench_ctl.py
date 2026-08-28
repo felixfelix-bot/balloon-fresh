@@ -94,6 +94,7 @@ BOOT_BANNER_TIMEOUT = 10.0  # seconds to wait for FW_HASH in boot banner
 # Range-mode fail-fast budgets (2026-08-28 field-incident hardening):
 ID_PREFLIGHT_TIMEOUT_S = 10.0    # banner-time ID? reply budget (seconds)
 T0_MIN_LEAD_S = 60               # live launches need T0 >= now + 60 s
+POWER_OUTDOOR_RETRY_S = 2.0      # retry delay for POWER MODE OUTDOOR sends
 
 
 def firmware_hash_gate(board, port_label, skip=False):
@@ -169,6 +170,35 @@ def check_t0_future(t0_epoch, now, min_lead_s=T0_MIN_LEAD_S):
             "5-minute boundary, or pass --t0 explicitly.)".format(
                 iso, lead, min_lead_s))
     return True, ""
+
+
+def send_power_outdoor(board, port_label,
+                       retry_delay_s=POWER_OUTDOOR_RETRY_S):
+    """POWER MODE OUTDOOR with retry-once + diagnostic double-failure error.
+
+    Root cause of the 2026-08-28 field incident: at GO time (after the
+    3-minute T0 wait) the POWER MODE OUTDOOR send timed out and the
+    operator had no guidance. A transient console hiccup now costs one
+    2 s retry; a real failure raises an error naming the likely causes.
+    """
+    line = "POWER MODE OUTDOOR {}".format(UNLOCK_PIN)
+    try:
+        return board.cmd(line)
+    except (RuntimeError, OSError) as first:
+        time.sleep(retry_delay_s)
+        try:
+            return board.cmd(line)
+        except (RuntimeError, OSError) as second:
+            raise RuntimeError(
+                "{port}: POWER MODE OUTDOOR failed twice ({first}; "
+                "retried after {delay}s -> {second}). Likely causes: "
+                "(1) console wedged — power-cycle the board; "
+                "(2) old firmware without POWER MODE OUTDOOR / pcap "
+                "support — send ID? and check the reply contains 'pcap=' "
+                "when pa>{cap}dBm (fw since d788c72); "
+                "(3) wrong port — verify the device is really on {port}."
+                .format(port=port_label, first=first, second=second,
+                        delay=retry_delay_s, cap=INDOOR_CAP_DBM))
 
 
 def id_preflight(board, cfgs, port_label, timeout=ID_PREFLIGHT_TIMEOUT_S):
@@ -722,7 +752,7 @@ def preflight(board, args, role, power_unlock):
     if args.band_override:
         board.cmd("BAND OVERRIDE {}".format(UNLOCK_PIN))
     if power_unlock:
-        board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+        send_power_outdoor(board, board.port)
     board.cmd("ROLE {}".format(role))
     if role == "TX":
         board.cmd("ARM TX")
@@ -1644,7 +1674,7 @@ def run_tx_mode(args, board_cls=None):
 
                 # Power unlock if needed
                 if cfg["pa"] > INDOOR_CAP_DBM:
-                    board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+                    send_power_outdoor(board, port)
 
                 # Session/config tagging
                 board.cmd("SESSION {}".format(args.session_id))
@@ -1996,7 +2026,7 @@ def run_rx_mode(args, board_cls=None):
 
                 # Power unlock if needed (must be sent BEFORE any PA command)
                 if cfg["pa"] > INDOOR_CAP_DBM:
-                    board.cmd("POWER MODE OUTDOOR {}".format(UNLOCK_PIN))
+                    send_power_outdoor(board, port)
 
                 # Session/config tagging
                 board.cmd("SESSION {}".format(args.session_id))
@@ -2121,6 +2151,10 @@ def dry_run_preset(args):
     print("Session guard: at launch: hard error 'session collision' when "
           "logs/ already has s<SESSION>-t0<OTHER>/ with a different t0 — "
           "pass a fresh --session-id".format())
+    print("POWER retry:  POWER MODE OUTDOOR retried once after "
+          "{}s; double timeout hard-errors with causes (console wedged -> "
+          "power-cycle board; old fw -> ID? must show pcap=; wrong port)"
+          .format(POWER_OUTDOOR_RETRY_S))
     _coll = find_session_collisions(getattr(args, "session_id", None)
                                     or 0, t0)
     if _coll:
