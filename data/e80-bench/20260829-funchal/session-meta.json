@@ -1,0 +1,29 @@
+{
+  "session": "20260829-funchal",
+  "date": "2026-08-29",
+  "operator": "Felix",
+  "base": {
+    "name": "Cowork Funchal, Rua das Mercês 41, 3rd floor (sea-facing)",
+    "lat": 32.6513123,
+    "lon": -16.9116552,
+    "roof_elev_m": 35
+  },
+  "fw_sha": "5fa7912",
+  "boards": {
+    "rx_base": { "board": "A", "probe": "148757200D2D1425" },
+    "tx_field": { "board": "B", "probe": "203584200D2D0D42" }
+  },
+  "antennas": "dual-attach per board: 868 whip on sub-GHz jack (Pin 9) + 2.4G ~31mm whip on 2.4GHz jack (Pin 10), SMA, no mid-run swap",
+  "t0_rule": "next 5-min epoch boundary (BOUNDARY_S=300), RX joins before TX, T0 relayed via Signal",
+  "stops": [
+    { "dist": "50m",   "viewpoint": "Avenida do Mar (street, S of base)",        "elev_m": 30,   "lat": null, "lon": null, "note": "fill GPS from phone track" },
+    { "dist": "100m",  "viewpoint": "Avenida do Mar, past marina",               "elev_m": 30,   "lat": null, "lon": null, "note": "fill GPS from phone track" },
+    { "dist": "218m",  "viewpoint": "Avenida do Mar / Rua do Gomes (port area)", "elev_m": 30,   "lat": null, "lon": null, "note": "fill GPS from phone track" },
+    { "dist": "436m",  "viewpoint": "Parque da Avenida do Mar",                  "elev_m": 30,   "lat": null, "lon": null, "note": "fill GPS from phone track" },
+    { "dist": "872m",  "viewpoint": "Jardim Miradouro da Achada",                "elev_m": 100,  "lat": 32.6573,  "lon": -16.9196, "note": "NW of base, west window at RX" },
+    { "dist": "1744m", "viewpoint": "Monte (village)",                           "elev_m": 550,  "lat": 32.6763,  "lon": -16.9038, "note": "NNE of base, north window at RX" }
+  ],
+  "per_stop_dirs": "data/e80-bench/20260829-funchal-<stop>/ (tx-log.csv + rx-log.csv)",
+  "weather": null,
+  "notes": "Logs land in firmware/e80-stm32-bench/{tx,rx}-log.csv — copy per stop, commit+push after each stop."
+}
