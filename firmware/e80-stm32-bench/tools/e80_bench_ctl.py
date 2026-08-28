@@ -91,6 +91,9 @@ CI_HI_NHI_PCT = 2.0              # Wilson ci_hi threshold for the 10^4 regime
 
 BOOT_BANNER_TIMEOUT = 10.0  # seconds to wait for FW_HASH in boot banner
 
+# Range-mode fail-fast budgets (2026-08-28 field-incident hardening):
+ID_PREFLIGHT_TIMEOUT_S = 10.0    # banner-time ID? reply budget (seconds)
+
 
 def firmware_hash_gate(board, port_label, skip=False):
     """M2: Read boot banner lines from a freshly opened board, look for
@@ -140,6 +143,56 @@ def write_session_start_header(log, tx_fw, rx_fw, operator="?", rig="?"):
     else:
         log._comment("SESSION_START tx_fw={} rx_fw={}".format(
             tx_fw or "unknown", rx_fw or "unknown"))
+
+
+# ---------------------------------------------------------------------------
+# Range-mode fail-fast preflight (2026-08-28 field-incident hardening)
+# ---------------------------------------------------------------------------
+
+def id_preflight(board, cfgs, port_label, timeout=ID_PREFLIGHT_TIMEOUT_S):
+    """Banner-time fail-fast check, BEFORE the T0 countdown.
+
+    Live incident (2026-08-28): every range run aborted only at GO —
+    "timeout waiting for reply to 'POWER MODE OUTDOOR 2026'" — after the
+    operators had already waited out the full T0 countdown. This preflight
+    catches the same failures in seconds at launch:
+
+      - open port + send ID?, require a reply (console alive, right port);
+      - if any preset cfg has pa > INDOOR_CAP_DBM (10), require 'pcap=' in
+        the ID? output — firmware that does not report pcap predates the
+        POWER MODE OUTDOOR command (added with the pcap= ID echo, d788c72)
+        and would time out at GO.
+
+    Returns the ID? reply on success; raises RuntimeError on failure.
+    """
+    print("[PREFLIGHT] ID? on {} (fail-fast, {:.0f}s budget)…".format(
+        port_label, timeout))
+    try:
+        reply = board.query("ID?", timeout=timeout)
+    except RuntimeError as e:
+        raise RuntimeError(
+            "PREFLIGHT FAILED on {}: no reply to ID? — aborting BEFORE the "
+            "countdown (fail in seconds, not at GO after the T0 wait). "
+            "Likely causes: wrong serial port; board not powered / USB "
+            "cable; console wedged (power-cycle the board). ({})".format(
+                port_label, e))
+    max_pa = max((int(c.get("pa", 0)) for c in cfgs), default=0) if cfgs else 0
+    if max_pa > INDOOR_CAP_DBM and "pcap=" not in reply:
+        raise RuntimeError(
+            "PREFLIGHT FAILED on {}: ID? reply lacks 'pcap=' (reply: '{}') "
+            "but this preset needs POWER MODE OUTDOOR (max pa={} dBm > {} "
+            "dBm indoor cap). Old firmware without pcap in ID? has no "
+            "POWER MODE OUTDOOR support and would time out at GO after the "
+            "T0 wait. Reflash the board (fw with pcap= in ID?, d788c72+) "
+            "or use a pa<={} preset.".format(
+                port_label, reply, max_pa, INDOOR_CAP_DBM, INDOOR_CAP_DBM))
+    if max_pa > INDOOR_CAP_DBM:
+        print("[PREFLIGHT] OK — console alive, pcap reported "
+              "(max pa={} > {})".format(max_pa, INDOOR_CAP_DBM))
+    else:
+        print("[PREFLIGHT] OK — console alive (max pa={} <= {}, no pcap "
+              "requirement)".format(max_pa, INDOOR_CAP_DBM))
+    return reply
 
 
 # ---------------------------------------------------------------------------
@@ -1387,7 +1440,7 @@ class HarmonizedTxLogWriter:
             f.write("# {}\n".format(text))
             f.flush()
 
-def run_tx_mode(args):
+def run_tx_mode(args, board_cls=None):
     """TX-only distributed mode. Sends bursts on T0-anchored schedule.
 
     With --loop N (default 1), the schedule is repeated N times (0 = infinite).
@@ -1421,7 +1474,7 @@ def run_tx_mode(args):
     print()
 
     # Open board
-    board = BoardSerial(port)
+    board = (board_cls or BoardSerial)(port)
     if not args.skip_fw_check:
         fw = firmware_hash_gate(board, port, skip=False)
         if fw is False:
@@ -1437,6 +1490,14 @@ def run_tx_mode(args):
             board.drain(quiet=0.5)
         except Exception:
             pass
+
+    # --- RANGE PREFLIGHT: ID? + pcap gate, BEFORE the countdown ------------
+    # Fail in seconds at banner time, not at GO after the 3-min T0 wait
+    # (2026-08-28 incident: both boards timed out on POWER MODE OUTDOOR
+    # at GO; a wedged console or pcap-less old firmware is detectable here).
+    print("-- RANGE PREFLIGHT (ID? + pcap gate, before countdown) --")
+    id_preflight(board, cfgs, port)
+
     use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
     if use_harmonized:
         log = HarmonizedTxLogWriter(args.tx_log, session_id=args.session_id)
@@ -1625,7 +1686,7 @@ def run_tx_mode(args):
 # Distributed RX mode
 # ---------------------------------------------------------------------------
 
-def run_rx_mode(args):
+def run_rx_mode(args, board_cls=None):
     """RX-only distributed mode. Arms RX and captures PKT lines on schedule.
 
     With --loop N (default 1), the schedule is repeated N times (0 = infinite).
@@ -1711,7 +1772,7 @@ def run_rx_mode(args):
         return False
 
     # Open board
-    board = BoardSerial(port)
+    board = (board_cls or BoardSerial)(port)
     if not args.skip_fw_check:
         fw = firmware_hash_gate(board, port, skip=False)
         if fw is False:
@@ -1728,6 +1789,14 @@ def run_rx_mode(args):
             board.drain(quiet=0.5)
         except Exception:
             pass
+
+    # --- RANGE PREFLIGHT: ID? + pcap gate, BEFORE the countdown ------------
+    # Fail in seconds at banner time, not at GO after the 3-min T0 wait
+    # (2026-08-28 incident: both boards timed out on POWER MODE OUTDOOR
+    # at GO; a wedged console or pcap-less old firmware is detectable here).
+    print("-- RANGE PREFLIGHT (ID? + pcap gate, before countdown) --")
+    id_preflight(board, cfgs, port)
+
     use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
     if use_harmonized:
         log = HarmonizedRxLogWriter(args.rx_log)
@@ -1843,7 +1912,7 @@ def run_rx_mode(args):
                         print("  [SWD] Mod params changed, resetting RX board…")
                         board.close()
                         swd_reset_maybe(label="RX")
-                        board = BoardSerial(port)
+                        board = (board_cls or BoardSerial)(port)
                         board.drain()
 
                 # Arm RX rx_lead seconds before burst start
@@ -1964,6 +2033,16 @@ def dry_run_preset(args):
     print("t0_margin:    {}s  guard: {}s  rx_lead: {}s  settle: {}s  swd_reset: {}s".format(
         args.t0_margin, args.guard, args.rx_lead, args.settle, args.swd_reset_s))
     print("Configs:      {}".format(len(cfgs)))
+
+    # Rehearse the launch-time fail-fast guards (live runs execute these
+    # at banner time, BEFORE the countdown — 2026-08-28 incident hardening).
+    max_pa = max((int(c.get("pa", 0)) for c in cfgs), default=0) if cfgs else 0
+    print("PREFLIGHT:    at launch: open port, send ID?, require a reply")
+    if max_pa > INDOOR_CAP_DBM:
+        print("              pcap= required in ID? output "
+              "(preset max pa={}dBm > {}dBm indoor cap — old fw without "
+              "pcap in ID? would time out at GO on POWER MODE OUTDOOR)".format(
+                  max_pa, INDOOR_CAP_DBM))
     print("=" * 80)
 
     for i, (c, s) in enumerate(zip(cfgs, starts)):
