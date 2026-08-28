@@ -93,6 +93,7 @@ BOOT_BANNER_TIMEOUT = 10.0  # seconds to wait for FW_HASH in boot banner
 
 # Range-mode fail-fast budgets (2026-08-28 field-incident hardening):
 ID_PREFLIGHT_TIMEOUT_S = 10.0    # banner-time ID? reply budget (seconds)
+T0_MIN_LEAD_S = 60               # live launches need T0 >= now + 60 s
 
 
 def firmware_hash_gate(board, port_label, skip=False):
@@ -148,6 +149,27 @@ def write_session_start_header(log, tx_fw, rx_fw, operator="?", rig="?"):
 # ---------------------------------------------------------------------------
 # Range-mode fail-fast preflight (2026-08-28 field-incident hardening)
 # ---------------------------------------------------------------------------
+
+def check_t0_future(t0_epoch, now, min_lead_s=T0_MIN_LEAD_S):
+    """Host-side T0-past guard (incident (b), 2026-08-28: a stale $T0 shell
+    var made the banner print 'T0 in -64s' and the run STILL launched).
+
+    Returns (ok, message). ok is False when t0_epoch < now + min_lead_s —
+    a live launch must then hard-error with the message: no countdown,
+    no launch. Dry-runs are exempt (nothing launches, and the Makefile
+    dry-run T0 default can legitimately be < 60 s away).
+    """
+    lead = t0_epoch - now
+    if lead < min_lead_s:
+        iso = datetime.datetime.fromtimestamp(t0_epoch).isoformat()
+        return False, (
+            "T0 in past — recompute or pass explicit T0 "
+            "(T0={} is {:+.0f}s from now; a live launch needs "
+            "T0 >= now+{}s. Re-run to auto-recompute T0 to the next "
+            "5-minute boundary, or pass --t0 explicitly.)".format(
+                iso, lead, min_lead_s))
+    return True, ""
+
 
 def id_preflight(board, cfgs, port_label, timeout=ID_PREFLIGHT_TIMEOUT_S):
     """Banner-time fail-fast check, BEFORE the T0 countdown.
@@ -1453,6 +1475,12 @@ def run_tx_mode(args, board_cls=None):
     cfgs = load_config_preset(args.configs)
     t0 = parse_t0(args.t0)
 
+    # T0-past guard (incident (b)): hard-error at banner, no countdown/no
+    # launch when T0 < now+60s (stale $T0 shell var, replayed command, …).
+    _ok, _msg = check_t0_future(t0, time.time())
+    if not _ok:
+        sys.exit(_msg)
+
     # Auto-detect board
     port, probe_serial = _detect_board_for_mode("tx", args.port, args.probe)
 
@@ -1699,6 +1727,12 @@ def run_rx_mode(args, board_cls=None):
     # Load config preset
     cfgs = load_config_preset(args.configs)
     t0 = parse_t0(args.t0)
+
+    # T0-past guard (incident (b)): hard-error at banner, no countdown/no
+    # launch when T0 < now+60s (stale $T0 shell var, replayed command, …).
+    _ok, _msg = check_t0_future(t0, time.time())
+    if not _ok:
+        sys.exit(_msg)
 
     # Auto-detect board
     port, probe_serial = _detect_board_for_mode("rx", args.port, args.probe)
@@ -2043,6 +2077,9 @@ def dry_run_preset(args):
               "(preset max pa={}dBm > {}dBm indoor cap — old fw without "
               "pcap in ID? would time out at GO on POWER MODE OUTDOOR)".format(
                   max_pa, INDOOR_CAP_DBM))
+    print("T0 guard:     at launch: hard error 'T0 in past — recompute or "
+          "pass explicit T0' when T0 < now+{}s (dry-run is exempt)".format(
+              T0_MIN_LEAD_S))
     print("=" * 80)
 
     for i, (c, s) in enumerate(zip(cfgs, starts)):
@@ -2266,6 +2303,12 @@ def main():
             args.rx_log, args.rx_log == "rx-log.csv",
             args.session_id, _t0_for_logs, "rx")
         if not args.dry_run:
+            # T0-past guard at the earliest possible point (before any log
+            # dir is created): incident (b), 2026-08-28 — a stale $T0 shell
+            # var printed "T0 in -64s" at the banner and STILL launched.
+            _ok, _msg = check_t0_future(_t0_for_logs, time.time())
+            if not _ok:
+                sys.exit(_msg)
             for _p in (args.tx_log, args.rx_log):
                 _d = os.path.dirname(os.path.abspath(_p))
                 if _d:

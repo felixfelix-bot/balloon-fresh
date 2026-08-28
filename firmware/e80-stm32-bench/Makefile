@@ -381,6 +381,17 @@ endif
 	@echo "║  Probe:        $(if $(PROBE),$(PROBE),auto-detect)"
 	@echo "║  TX log:       $(TX_LOG)"
 	@echo "╚══════════════════════════════════════════════╝"
+	@# T0-past guard (incident (b), 2026-08-28): a stale $T0 shell var made
+	@# the banner print "T0 in -64s" and the run still launched. Fail BEFORE
+	@# the countdown. e80_bench_ctl re-checks at its own banner (defense in
+	@# depth). Default T0 (next 5-min boundary) may trip this when invoked
+	@# <60s before a boundary — re-run to recompute T0.
+	@if python3 -c "import sys,time; sys.exit(0 if $(T0) >= int(time.time())+60 else 1)"; then \
+		echo "T0 guard: OK ($(T0) >= now+60s)"; \
+	else \
+		echo "ERROR: T0 in past — recompute or pass explicit T0 (T0=$(T0), need >= now+60s). Re-run to auto-recompute T0 to the next 5-minute boundary."; \
+		exit 1; \
+	fi
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). RX operator should run: make rx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
@@ -417,6 +428,17 @@ endif
 	@echo "║  SWD reset:    $(if $(filter 0,$(SWD_RESET_S)),DISABLED,$(SWD_RESET_S)s between configs)"
 	@echo "║  RX log:       $(RX_LOG)"
 	@echo "╚══════════════════════════════════════════════╝"
+	@# T0-past guard (incident (b), 2026-08-28): a stale $T0 shell var made
+	@# the banner print "T0 in -64s" and the run still launched. Fail BEFORE
+	@# the countdown. e80_bench_ctl re-checks at its own banner (defense in
+	@# depth). Default T0 (next 5-min boundary) may trip this when invoked
+	@# <60s before a boundary — re-run to recompute T0.
+	@if python3 -c "import sys,time; sys.exit(0 if $(T0) >= int(time.time())+60 else 1)"; then \
+		echo "T0 guard: OK ($(T0) >= now+60s)"; \
+	else \
+		echo "ERROR: T0 in past — recompute or pass explicit T0 (T0=$(T0), need >= now+60s). Re-run to auto-recompute T0 to the next 5-minute boundary."; \
+		exit 1; \
+	fi
 	@python3 -c "import time; remaining=int($(T0)-time.time()); print(f'T0 in {remaining}s ({remaining//60}m {remaining%60}s). TX operator should run: make tx')"
 	@python3 $(TOOLDIR)/tools/countdown.py $(T0) 2>/dev/null || true
 	@echo ""
