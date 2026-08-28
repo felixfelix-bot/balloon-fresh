@@ -9,7 +9,11 @@ v1 (main / worker-balloon/range-check):
   - LOGGING GAP verdict: zero STAT rows for the session means the rx
     LOGGER failed (STAT rows are emitted per config even when rx=0, so
     rx=0 STATs are DATA — RF death — never a logging gap; no resend file).
-  - WARMUP_REPLICATES exclusion (first 2 replicates never count).
+  - WARMUP_REPLICATES exclusion, per-config conditional: when a config's
+    capture has more than WARMUP_REPLICATES distinct replicates, the
+    first WARMUP_REPLICATES never count (multi-cycle warmup); a
+    single-cycle (loop=1) or short capture (<= WARMUP_REPLICATES
+    distinct replicates) counts ALL of its replicates.
   - Default per-stop preset lookup + VALID_DISTS error (exit 2).
   - v1-style renumbered resend ``configs/resend-<DIST>-s<SESSION>.json``
     + verbatim TX one-liner (``T0=+90`` relative form).
@@ -48,7 +52,9 @@ if _TOOLS_DIR not in sys.path:
 
 import e80_bench_ctl as ctl  # noqa: E402  (parse_pkt_line + preset loader)
 
-# First WARMUP_REPLICATES replicates never count toward coverage.
+# Multi-cycle warmup: when a config's capture has MORE than this many
+# distinct replicates, the first this-many never count. Captures with
+# this many or fewer (e.g. single-cycle loop=1 stops) count everything.
 WARMUP_REPLICATES = 2
 
 # Field TX board probe serial (TX laptop, walks with the operator).
@@ -192,10 +198,14 @@ def analyze_capture(cfgs, pkts, thin_frac=DEFAULT_THIN_FRAC,
     """Diff captured packets against the preset (BEST pass per config).
 
     pkts: list of parsed PKT dicts (harmonized or legacy — filter to one
-    session first). Counting is per replicate: each replicate's received
-    count is computed, replicates <= warmup_replicates are excluded
-    (warmups never count), and the BEST surviving replicate is the result
-    — matching the best-pass merge policy (never pooled).
+    session first). Counting is per replicate with a CONDITIONAL warmup
+    rule: when a config's capture has more than warmup_replicates distinct
+    replicates (a multi-cycle run), the first warmup_replicates are
+    excluded (warmups never count); when it has warmup_replicates or
+    fewer distinct replicates (single-cycle loop=1 or a short capture)
+    ALL of them count — there is nothing to warm up against. The BEST
+    surviving replicate is the result — matching the best-pass merge
+    policy (never pooled).
 
     Returns {config_idx: {"n_pkts": expected, "n_recv": best-pass count,
                           "per_replicate": {rep: count}, "status": ...}}
@@ -209,8 +219,16 @@ def analyze_capture(cfgs, pkts, thin_frac=DEFAULT_THIN_FRAC,
     out = {}
     for c in cfgs:
         idx = int(c["idx"])
-        per_rep = {rep: n for (ci, rep), n in counts.items()
-                   if ci == idx and rep > warmup_replicates}
+        distinct = {rep for (ci, rep) in counts if ci == idx}
+        if len(distinct) > warmup_replicates:
+            # Multi-cycle run: the first warmup_replicates never count.
+            per_rep = {rep: n for (ci, rep), n in counts.items()
+                       if ci == idx and rep > warmup_replicates}
+        else:
+            # Single-cycle (loop=1) / short capture: nothing to warm up
+            # against — count ALL replicates.
+            per_rep = {rep: n for (ci, rep), n in counts.items()
+                       if ci == idx}
         n_recv = max(per_rep.values()) if per_rep else 0
         n_pkts = int(c["n_pkts"])
         if n_recv == 0:
