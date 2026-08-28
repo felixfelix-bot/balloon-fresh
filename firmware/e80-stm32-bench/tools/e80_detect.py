@@ -555,28 +555,53 @@ def detect_board(target_role: str | None = None) -> dict:
         # Single board — the only port is ours
         port = ports[0]
     else:
-        # Multiple CH340 ports — match via USB tree proximity
+        # Multiple CH340 ports — match via USB tree proximity. Role resolution
+        # MUST be unambiguous. With 2+ CH340 boards, silently picking the first
+        # port for a role caused the 9209aaf desk crash (tx and rx both grabbed
+        # ttyUSB0 → SerialException 'multiple access on port'). NEVER silently
+        # fall back to the first CH340; abort loudly with exact override
+        # commands so the operator can pin PORT=/PROBE= for exotic setups.
         mapping = match_ports_to_probes(ports, probes)
-        matched = [p for p, s in mapping.items() if s == serial]
-        if matched:
-            port = matched[0]
+
+        # Reverse map: probe_serial → [matched ports]
+        probe_ports: dict[str, list[str]] = {}
+        for p, s in mapping.items():
+            if s:
+                probe_ports.setdefault(s, []).append(p)
+
+        # Every CH340 port must be claimed by exactly one probe, and our target
+        # probe must be pinned to exactly one port. Anything else is ambiguous.
+        assigned_ports = [p for lst in probe_ports.values() for p in lst]
+        my_matches = probe_ports.get(serial, [])
+
+        def _ambiguous_error():
+            return {
+                "error": (
+                    f"AMBIGUOUS board detection: {len(ports)} CH340 ports and "
+                    f"{len(probes)} SWD probe(s) — cannot uniquely determine "
+                    f"which port is role={role}.\n"
+                    f"  CH340 ports: {ports}\n"
+                    f"  SWD probes:  {list(probes.keys())}\n"
+                    f"Use exact override commands:\n"
+                    f"  make tx PORT=<tx-port> PROBE={PROBE_TX}\n"
+                    f"  make rx PORT=<rx-port> PROBE={PROBE_RX}"
+                ),
+                "ambiguous": True,
+                "role": role,
+                "probe_serial": serial,
+                "ports": ports,
+                "probe_ports": probe_ports,
+            }
+
+        if set(ports) - set(assigned_ports):
+            # A CH340 port is unclaimed → likely a second board whose probe we
+            # can't role-resolve. Do NOT silently pick one.
+            return _ambiguous_error()
+        if len(my_matches) == 1:
+            port = my_matches[0]
         else:
-            # Fallback: try ID? on each port and check role= field
-            for p in ports:
-                reply = query_id(p)
-                if reply:
-                    parsed = parse_id_reply(reply)
-                    if parsed.get("role", "").upper() == role:
-                        port = p
-                        break
-            else:
-                return {
-                    "error": f"could not determine which CH340 port is {role}. "
-                             f"Found {ports}. Try --port to specify manually.",
-                    "probe_serial": serial,
-                    "role": role,
-                    "ports": ports,
-                }
+            # 0 or >1 ports pinned to our probe → ambiguous.
+            return _ambiguous_error()
 
     # Step 3: verify board is alive with ID?
     id_reply = query_id(port)
@@ -591,6 +616,35 @@ def detect_board(target_role: str | None = None) -> dict:
         "fw_hash": id_parsed.get("fw"),
         "openocd": find_openocd(),
     }
+
+
+def cross_role_guard(result: dict) -> dict:
+    """Refuse to hand tx and rx the SAME CH340 port.
+
+    The 9209aaf desk crash happened because both ``make tx`` and ``make rx``
+    auto-detected the same CH340 port → SerialException 'multiple access on
+    port'. This guard returns a loud error if a resolution collides tx and rx
+    onto one port; otherwise returns ``result`` unchanged.
+
+    Args:
+        result: a ``{"tx": {...}, "rx": {...}}`` resolution dict. Each role
+                sub-dict has a ``"port"`` key.
+
+    Returns:
+        The input dict if ports are distinct, else an error dict.
+    """
+    tx = result.get("tx")
+    rx = result.get("rx")
+    if tx and rx and tx.get("port") == rx.get("port"):
+        return {
+            "error": "cross-role port collision: both TX and RX resolved to "
+                     "the SAME CH340 port {}. Refusing to open it twice. "
+                     "Use make tx PORT=... PROBE=... and make rx PORT=... "
+                     "PROBE=... to pin distinct ports.".format(tx["port"]),
+            "tx": tx,
+            "rx": rx,
+        }
+    return result
 
 
 def detect_dual_board() -> dict:
@@ -623,7 +677,7 @@ def detect_dual_board() -> dict:
             }
 
     if result["tx"] and result["rx"]:
-        return result
+        return cross_role_guard(result)
 
     # Fallback: ID? role= field
     for port in ports:
@@ -642,7 +696,9 @@ def detect_dual_board() -> dict:
             }
 
     if result["tx"] and result["rx"]:
-        return result
+        # Cross-role guard: tx and rx must NEVER share the same CH340 port —
+        # that would cause SerialException 'multiple access on port' (9209aaf).
+        return cross_role_guard(result)
 
     return {"error": "could not fully auto-detect dual boards",
             "partial": result, "ports": ports}
