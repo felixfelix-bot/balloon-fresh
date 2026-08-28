@@ -59,8 +59,14 @@ RX_LOG        ?= rx-log.csv
 OUT_DIR       ?= .
 PRIME_DISCARD ?= 2
 
-# --- Board selection (desk setup: both boards on ONE machine) ---
-# Auto-detect fails with 2+ CH340 boards (or both targets grab the same port).
+# --- Board selection (auto-detect is the DEFAULT UX) ---
+# Bare `make tx` / `make rx` auto-discover the board role + serial port
+# (via tools/e80_detect.py), including BOTH boards on one machine. Role
+# resolution is unambiguous; if it cannot be determined, the tool ABORTS
+# loudly and prints the exact PORT=/PROBE= override commands to use.
+#
+# PORT/PROBE are OVERRIDES for exotic setups (e.g. a hub topology the USB
+# tree matcher can't disambiguate). They skip auto-detection entirely.
 #   make rx DIST=50m PORT=/dev/ttyUSB0 PROBE=148757200D2D1425
 #   make tx DIST=50m PORT=/dev/ttyUSB1 PROBE=203584200D2D0D42
 # Find ports:  python3 tools/e80_detect.py   (lists port + probe per board)
@@ -164,6 +170,11 @@ clean:
 # These are the recommended entry points for range testing.
 # T0 and SESSION_ID are auto-computed deterministically (5-min boundary).
 # Both operators just run the same target on their machine — no sharing needed.
+#
+# Board auto-discovery is the default: bare `make tx` / `make rx` detect the
+# board role + serial port (both boards on one machine included). Ambiguous
+# setups abort loudly with the exact PORT=/PROBE= override to use; PORT=/PROBE=
+# skip auto-detect entirely for exotic hub topologies.
 #
 # The T0 prints on startup so operators can verify they're in the same window.
 # If clocks drift >5 min between machines, the lateness guard catches it.
