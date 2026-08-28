@@ -11,6 +11,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -758,6 +759,60 @@ class MatrixLiveTests(unittest.TestCase):
         # tool must issue the unlock first, so this run succeeds end-to-end.
         boards, world, _ = self._run(band_override=True)
         self.assertIn("BAND OVERRIDE 2026", boards["/dev/ttyUSB4"].log)
+
+
+# ---------------------------------------------------------------------------
+# _detect_board_for_mode — fallback loud-fail (never silently pick ch340[0])
+# ---------------------------------------------------------------------------
+
+class TestDetectBoardForModeFallback(unittest.TestCase):
+    """When e80_detect cannot be imported, the manual-CH340 fallback must
+    STILL loud-fail on multiple ports instead of picking the first one.
+
+    The 9209aaf desk crash was exactly this: both tx and rx grabbed the same
+    CH340 port. The fallback must print override commands, never ch340[0].
+    """
+
+    def _force_import_failure(self):
+        """Make `import e80_detect` fail inside _detect_board_for_mode."""
+        real_import = __builtins__["__import__"]
+
+        def fake_import(name, *a, **kw):
+            if name == "e80_detect":
+                raise ImportError("simulated: e80_detect unavailable")
+            return real_import(name, *a, **kw)
+
+        return mock.patch("builtins.__import__", side_effect=fake_import)
+
+    def test_multiple_ch340_loud_fails_with_override_commands(self):
+        with self._force_import_failure(), \
+             mock.patch("glob.glob", return_value=["/dev/ttyUSB0", "/dev/ttyUSB1"]), \
+             mock.patch("subprocess.run") as mock_run, \
+             mock.patch.object(m.sys, "exit") as mock_exit:
+            mock_run.return_value = FakeSubprocessResult(stdout="ID_VENDOR_ID=1a86\nID_MODEL=CH340\n")
+            m._detect_board_for_mode("tx", None, None)
+        # sys.exit must be called (not return a port)
+        mock_exit.assert_called_once()
+        msg = mock_exit.call_args[0][0]
+        self.assertIn("Multiple CH340 ports", msg)
+        self.assertIn("make tx PORT=", msg)
+        self.assertIn("PROBE=", msg)
+
+    def test_single_ch340_still_returns_port(self):
+        """Single-board behavior unchanged: one CH340 → return it."""
+        with self._force_import_failure(), \
+             mock.patch("glob.glob", return_value=["/dev/ttyUSB0"]), \
+             mock.patch("subprocess.run") as mock_run:
+            mock_run.return_value = FakeSubprocessResult(stdout="ID_VENDOR_ID=1a86\nID_MODEL=CH340\n")
+            port, probe = m._detect_board_for_mode("tx", None, None)
+        self.assertEqual(port, "/dev/ttyUSB0")
+
+
+class FakeSubprocessResult:
+    def __init__(self, stdout="", stderr="", returncode=0):
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
 
 
 if __name__ == "__main__":
