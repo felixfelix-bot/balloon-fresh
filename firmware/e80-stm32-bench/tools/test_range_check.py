@@ -166,11 +166,12 @@ class TestVerdicts:
         assert "50m s%d: PASS (3/3 clean)" % SESSION in r.stdout
 
     def test_missing_cfg_is_miss_and_gap(self, tmp_path):
-        lines = clean_log(n_cfgs=3)
-        # drop cfg1's replicate-3 rows entirely (keep its warmups)
-        lines = [ln for ln in lines
-                 if not (ln.startswith("PKT,") and ",1,3," in ln)
-                 and not (ln.startswith("STAT,") and "config=1,replicate=3" in ln)]
+        # drop ALL of cfg1's packets (warmups + counted pass) — a config
+        # the radio never heard. Under the conditional warmup rule a
+        # capture with <= WARMUP_REPLICATES replicates counts them, so a
+        # true MISS needs zero captured packets for the config.
+        lines = [ln for ln in clean_log(n_cfgs=3)
+                 if not (ln.startswith("PKT,") and re.match(r"PKT,\d+,1,", ln))]
         preset = write_preset(tmp_path)
         log = write_rx_log(tmp_path, lines)
         r = run_tool(tmp_path, preset=preset, rx_log=log, repo_root=str(tmp_path))
@@ -269,6 +270,108 @@ class TestVerdicts:
                      repo_root=str(tmp_path))
         assert r.returncode == 0
         assert "100m s%d: PASS" % SESSION in r.stdout
+
+
+# -----------------------------------------------------------------------
+# Warmup exclusion vs single-cycle (loop=1) stops — sweep-day hotfix
+# -----------------------------------------------------------------------
+
+class TestLoop1WarmupRegression:
+    """loop=1 stops log replicate=1 for every packet.
+
+    e80_bench_ctl sends ``CONFIG <idx> <cycle>`` so the CSV ``replicate``
+    field IS the cycle number, and ``make range-tx`` defaults ``--loop 1``
+    → single-cycle stops produce replicate=1-only captures. The old
+    unconditional ``replicate > WARMUP_REPLICATES`` filter turned complete
+    single-cycle captures into all-MISS verdicts + bogus full resend
+    presets. The exclusion must be conditional: only drop the first
+    WARMUP_REPLICATES when MORE than WARMUP_REPLICATES distinct
+    replicates exist for the config (a multi-cycle run).
+    """
+
+    def test_loop1_full_reception_is_complete(self, tmp_path):
+        """Every packet replicate=1, reception complete → COMPLETE/OK."""
+        lines = ["# DISTRIBUTED_RX_MODE t0=2026-08-28T12:00:00 loop=1"]
+        for c in range(3):
+            for s in range(10):
+                lines.append(pkt_line(c, 1, seq=s))
+            lines.append(stat_line(c, 1, rx=10))
+        preset = write_preset(tmp_path)
+        log = write_rx_log(tmp_path, lines)
+        r = run_tool(tmp_path, preset=preset, rx_log=log, repo_root=str(tmp_path))
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "50m: COMPLETE 3/3" in r.stdout
+        assert "50m s%d: PASS (3/3 clean)" % SESSION in r.stdout
+        assert "MISS" not in r.stdout
+        assert not (tmp_path / RESEND_NAME).exists()
+
+    def test_loop1_counted_gt_zero(self):
+        """Library level: replicate=1-only capture with warmup_replicates=2
+        must still count (>0) — was all-MISS before the fix."""
+        cfgs = [_cfg(0, n_pkts=10), _cfg(1, n_pkts=10)]
+        pkts = ([{"config_id": 0, "replicate": 1}] * 10 +
+                [{"config_id": 1, "replicate": 1}] * 3)
+        per = range_check.analyze_capture(
+            cfgs, pkts, warmup_replicates=range_check.WARMUP_REPLICATES)
+        assert per[0]["per_replicate"] == {1: 10}
+        assert per[0]["n_recv"] == 10
+        assert per[0]["status"] == "OK"
+        assert per[1]["per_replicate"] == {1: 3}
+        assert per[1]["n_recv"] > 0
+        assert per[1]["status"] == "THIN"
+
+    def test_replicates_1_and_2_only_fully_counted(self, tmp_path):
+        """<= WARMUP_REPLICATES distinct replicates → nothing excluded."""
+        lines = ["# DISTRIBUTED_RX_MODE t0=2026-08-28T12:00:00 loop=2"]
+        for c in range(3):
+            for rep in (1, 2):
+                for s in range(10):
+                    lines.append(pkt_line(c, rep, seq=s))
+                lines.append(stat_line(c, rep, rx=10))
+        preset = write_preset(tmp_path)
+        log = write_rx_log(tmp_path, lines)
+        r = run_tool(tmp_path, preset=preset, rx_log=log, repo_root=str(tmp_path))
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "50m: COMPLETE 3/3" in r.stdout
+        assert "MISS" not in r.stdout
+
+    def test_multi_cycle_warmups_still_excluded_best_pass(self, tmp_path):
+        """replicates 1..4: warmups 1-2 excluded, best pass of 3-4 wins.
+
+        Warmups are FULL (10/10) and the counted passes are 4 and 6 pkts —
+        if warmups leaked into the count the verdict would flip to 10/10.
+        """
+        lines = ["# DISTRIBUTED_RX_MODE t0=2026-08-28T12:00:00 loop=4"]
+        for c in range(3):
+            for rep in (1, 2):
+                for s in range(10):
+                    lines.append(pkt_line(c, rep, seq=s))
+                lines.append(stat_line(c, rep, rx=10))
+            for s in range(4):
+                lines.append(pkt_line(c, 3, seq=s))
+            lines.append(stat_line(c, 3, rx=4))
+            for s in range(6):
+                lines.append(pkt_line(c, 4, seq=s))
+            lines.append(stat_line(c, 4, rx=6))
+        preset = write_preset(tmp_path)
+        log = write_rx_log(tmp_path, lines)
+        r = run_tool(tmp_path, preset=preset, rx_log=log, repo_root=str(tmp_path))
+        assert r.returncode == 0, r.stdout + r.stderr  # 6/10 >= thin_frac
+        assert "6/10" in r.stdout      # best pass of reps 3-4
+        assert "10/10" not in r.stdout  # warmups 1-2 did NOT leak in
+
+    def test_multi_cycle_per_replicate_exact(self):
+        """Library level: replicates 1..4 → per_replicate {3:4, 4:6}."""
+        cfgs = [_cfg(0, n_pkts=10)]
+        pkts = ([{"config_id": 0, "replicate": 1}] * 10 +
+                [{"config_id": 0, "replicate": 2}] * 10 +
+                [{"config_id": 0, "replicate": 3}] * 4 +
+                [{"config_id": 0, "replicate": 4}] * 6)
+        per = range_check.analyze_capture(
+            cfgs, pkts, warmup_replicates=range_check.WARMUP_REPLICATES)
+        assert per[0]["per_replicate"] == {3: 4, 4: 6}
+        assert per[0]["n_recv"] == 6
+        assert per[0]["status"] == "OK"
 
 
 # -----------------------------------------------------------------------

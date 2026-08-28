@@ -58,6 +58,8 @@ Preset sizes: 50 m=10 cfg (7×868 + 3×2G4) · 100 m=11 (7+4) · 218 m=12 (8+4) 
    the other operator via Signal; both confirm identical T0/SESSION_ID before the countdown ends.
 4. **`--loop 1` only** (CLI default when invoked directly). Never `--loop 0` in the field —
    a runaway infinite loop burns the stop's schedule and the PA budget.
+   Note: the per-stop single pass (default `loop=1`) is fully counted by
+   `range-check`; warmup exclusion applies only to multi-cycle runs.
 
 ## E. Band-transition fallback
 
