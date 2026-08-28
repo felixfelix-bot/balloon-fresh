@@ -9,7 +9,7 @@
 # Idempotent: safe to re-run.  Does NOT flash firmware.
 #
 # Usage (curl|bash one-liner):
-#   curl -fsSL https://raw.githubusercontent.com/felixfelix-bot/balloon-fresh/laptop-tx-setup/scripts/laptop-tx-setup.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/felixfelix-bot/balloon-fresh/main/scripts/laptop-tx-setup.sh | bash
 #
 # Or after clone:
 #   bash scripts/laptop-tx-setup.sh
@@ -132,41 +132,29 @@ if [[ ! -f "$DETECT_SCRIPT" ]]; then
   fail "e80_detect.py not found at $DETECT_SCRIPT. Repo may be incomplete."
 fi
 
-info "Running board detection..."
+info "Running board detection (--role TX asserts Board A, probe $TX_PROBE)..."
 echo ""
-( cd "$BENCH_FULL" && python3 tools/e80_detect.py ) || {
+DETECT_OUT=""
+DETECT_OUT="$( cd "$BENCH_FULL" && python3 tools/e80_detect.py --role TX 2>&1 )" || {
   warn "e80_detect.py exited non-zero — board may not be connected yet."
   warn "Plug in the E80 board via USB (both CH340 serial + Pico probe cables)."
   warn "Then re-run this script."
 }
+echo "$DETECT_OUT"
+echo ""
 
-# Try to extract the detected port for the TX probe
-DETECTED_PORT=""
-if command -v udevadm >/dev/null 2>&1; then
-  # Linux: scan ACM + USB ports for the TX probe serial
-  for p in /dev/ttyACM[0-9] /dev/ttyUSB[0-9]; do
-    [[ -e "$p" ]] || continue
-    if udevadm info -q property "$p" 2>/dev/null | grep -q "$TX_PROBE"; then
-      DETECTED_PORT="$p"
-      break
-    fi
-  done
-fi
-
-if [[ -z "$DETECTED_PORT" ]]; then
-  # macOS fallback: check /dev/cu.usbserial-* (CH340 shows as cu.usbserial-*)
-  for p in /dev/cu.usbserial* /dev/tty.usbserial*; do
-    [[ -e "$p" ]] || continue
-    DETECTED_PORT="$p"
-    break
-  done
-fi
+# Extract the CH340 console port straight from e80_detect.py output.
+# NEVER guess via udevadm probe-serial match: the probe serial (e.g. 1487…)
+# shows up on the RP2040 CDC port (ttyACMx), but make range-tx talks to the
+# CH340 console (ttyUSBx on Linux, cu.usbserial* on macOS).
+# Text mode prints: "  port: /dev/ttyUSB0"
+DETECTED_PORT="$(printf '%s\n' "$DETECT_OUT" | sed -nE 's/^[[:space:]]*port:[[:space:]]*(\/dev\/[^[:space:]]+).*$/\1/p' | head -1)"
 
 if [[ -n "$DETECTED_PORT" ]]; then
-  info "TX board detected at: $DETECTED_PORT (probe $TX_PROBE)"
+  info "TX board console port: $DETECTED_PORT (probe $TX_PROBE)"
 else
   warn "Could not auto-detect the TX board port."
-  warn "Run manually after plugging in:  cd $BENCH_FULL && python3 tools/e80_detect.py"
+  warn "Run manually after plugging in:  cd $BENCH_FULL && python3 tools/e80_detect.py --role TX"
   warn "Then note the PORT= value and add it to the make commands below."
 fi
 
