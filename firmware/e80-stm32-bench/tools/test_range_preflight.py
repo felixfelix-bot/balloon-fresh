@@ -20,6 +20,7 @@ Run:  python3 -m pytest tools/test_range_preflight.py -v
 """
 import argparse
 import contextlib
+import datetime
 import io
 import os
 import sys
@@ -781,6 +782,307 @@ class PowerOutdoorRetryWiringTests(unittest.TestCase):
                 if ln.startswith("POWER MODE OUTDOOR")]
         self.assertEqual(len(pmos), 2)
         self.assertTrue(any(ln.startswith("START") for ln in board.log))
+
+
+# ---------------------------------------------------------------------------
+# 5. range_check.py: rx-log and tx-log t0 (filename -t0<epoch> AND header
+#    t0=<iso>) must agree — loud exit-2 on mismatch; sibling tx-log
+#    auto-discovery; make range-check TX= override.
+# ---------------------------------------------------------------------------
+
+RC_SESSION = 2608282100
+RC_T0 = 1750000500
+RC_T0_ISO = datetime.datetime.fromtimestamp(RC_T0).isoformat()
+RC_T0_OTHER = RC_T0 + 86400
+RC_T0_OTHER_ISO = datetime.datetime.fromtimestamp(RC_T0_OTHER).isoformat()
+
+
+def _rc_pkt_line(cfg, rep, seq, session=RC_SESSION):
+    return m.format_pkt_line({
+        "session_id": session, "config_id": cfg, "replicate": rep,
+        "seq": seq, "ts_ms": 1000 + seq, "rssi_dbm": -80.5, "snr_db": 9.0,
+        "crc_ok": 1, "bit_err": 0, "bytes_bad": 0, "freq_hz": 869525000,
+        "mod": "flrc", "sf": 0, "bw_khz": 1200, "cr": 1, "power_dbm": 22,
+        "pkt_size": 255, "gps_fix": 0, "gps_lat": 0.0, "gps_lon": 0.0,
+        "gps_alt": 0.0, "gps_sats": 0, "gps_hdop": 0.0,
+    })
+
+
+def _rc_stat_line(cfg, rep, rx=10, session=RC_SESSION):
+    return m.format_stat_line("RX", {
+        "sent": 12, "sent_ok": 12, "recv": rx, "crc_err": 0,
+        "per_pct": 0.0, "per_ci_lo_pct": 0.0, "per_ci_hi_pct": 25.8,
+        "elapsed_s": 1.234, "kbps": 42.5, "rssi": -80.5, "snr": 9.0,
+        "drops": 0, "gap_us": 1000,
+    }, session, cfg, rep)
+
+
+def _write_rc_log(path, header_t0_iso, session=RC_SESSION, n_cfgs=3,
+                  n_pkts=10, role="RX"):
+    """Complete (all-OK) log in the harmonized format with a t0= header."""
+    lines = ["# DISTRIBUTED_{}_MODE t0={} port=/dev/ttyUSB9 loop=1".format(
+        role, header_t0_iso)]
+    for c in range(n_cfgs):
+        for rep in (1, 2):
+            for s in range(2):
+                lines.append(_rc_pkt_line(c, rep, s, session))
+            lines.append(_rc_stat_line(c, rep, rx=2, session=session))
+        for s in range(n_pkts):
+            lines.append(_rc_pkt_line(c, 3, s, session))
+        lines.append(_rc_stat_line(c, 3, rx=n_pkts, session=session))
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def _write_rc_preset(tmp_root, n_cfgs=3, n_pkts=10):
+    cfgs = [{"label": "CFG{}".format(i), "band": "868",
+             "mod": "flrc", "sf": None, "bw": None, "br": 650 + i,
+             "pa": 22, "freq": 869525000, "plen": 255, "gap": 1000,
+             "n_pkts": n_pkts} for i in range(n_cfgs)]
+    d = os.path.join(tmp_root, "configs", "per-stop")
+    os.makedirs(d, exist_ok=True)
+    p = os.path.join(d, "stop-50m.json")
+    with open(p, "w") as f:
+        import json
+        json.dump({"name": "rc-t0", "configs": cfgs}, f)
+    return p
+
+
+class T0ExtractionTests(unittest.TestCase):
+    """t0_from_filename() / t0_from_header() pure behavior."""
+
+    def test_filename_tag(self):
+        p = "/repo/logs/s99-t099/rx-log-t0{}-{}.csv".format(RC_T0, RC_SESSION)
+        self.assertEqual(rc.t0_from_filename(p), RC_T0)
+
+    def test_filename_via_parent_session_dir(self):
+        p = "/repo/logs/s{}-t0{}/rx-log.csv".format(RC_SESSION, RC_T0)
+        self.assertEqual(rc.t0_from_filename(p), RC_T0)
+
+    def test_filename_plain_log_is_none(self):
+        self.assertIsNone(rc.t0_from_filename("/somewhere/rx-log.csv"))
+
+    def test_header_iso(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".csv",
+                                         delete=False) as f:
+            f.write("# DISTRIBUTED_RX_MODE t0={} port=x loop=1\n"
+                    .format(RC_T0_ISO))
+            p = f.name
+        try:
+            want = int(datetime.datetime.strptime(
+                RC_T0_ISO, "%Y-%m-%dT%H:%M:%S").timestamp())
+            self.assertEqual(rc.t0_from_header(p), want)
+        finally:
+            os.unlink(p)
+
+    def test_header_epoch_form(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".csv",
+                                         delete=False) as f:
+            f.write("# DISTRIBUTED_TX_MODE session=1 t0={} port=x\n"
+                    .format(RC_T0))
+            p = f.name
+        try:
+            self.assertEqual(rc.t0_from_header(p), RC_T0)
+        finally:
+            os.unlink(p)
+
+    def test_header_missing_is_none(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".csv",
+                                         delete=False) as f:
+            f.write("PKT,stuff\n")
+            p = f.name
+        try:
+            self.assertIsNone(rc.t0_from_header(p))
+        finally:
+            os.unlink(p)
+
+    def test_header_missing_file_is_none(self):
+        self.assertIsNone(rc.t0_from_header("/nonexistent/rx-log.csv"))
+
+
+class SiblingTxLogDiscoveryTests(unittest.TestCase):
+
+    def _touch(self, path, mtime=None):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write("# DISTRIBUTED_TX_MODE t0=x\n")
+        if mtime is not None:
+            os.utime(path, (mtime, mtime))
+        return path
+
+    def test_finds_tx_in_same_stop_dir(self):
+        with tempfile.TemporaryDirectory() as root:
+            stop = os.path.join(root, "logs", "s1-t01", "stop-50m")
+            rx = self._touch(os.path.join(stop, "rx-log-t01-1.csv"))
+            tx = self._touch(os.path.join(stop, "tx-log-t01-1.csv"))
+            self.assertEqual(rc.find_sibling_tx_log(rx), tx)
+
+    def test_falls_back_to_session_dir(self):
+        with tempfile.TemporaryDirectory() as root:
+            sdir = os.path.join(root, "logs", "s1-t01")
+            stop = os.path.join(sdir, "stop-50m")
+            rx = self._touch(os.path.join(stop, "rx-log.csv"))
+            tx = self._touch(os.path.join(sdir, "tx-log-t01-1.csv"))
+            self.assertEqual(rc.find_sibling_tx_log(rx), tx)
+
+    def test_newest_wins(self):
+        with tempfile.TemporaryDirectory() as root:
+            stop = os.path.join(root, "stop-50m")
+            rx = self._touch(os.path.join(stop, "rx-log.csv"))
+            old = self._touch(os.path.join(stop, "tx-log-t01-1.csv"),
+                              mtime=1000)
+            new = self._touch(os.path.join(stop, "tx-log-t02-1.csv"),
+                              mtime=2000)
+            self.assertEqual(rc.find_sibling_tx_log(rx), new)
+
+    def test_none_when_absent(self):
+        with tempfile.TemporaryDirectory() as root:
+            rx = self._touch(os.path.join(root, "rx-log.csv"))
+            self.assertIsNone(rc.find_sibling_tx_log(rx))
+
+    def test_rx_logs_are_not_tx_candidates(self):
+        with tempfile.TemporaryDirectory() as root:
+            stop = os.path.join(root, "stop-50m")
+            rx = self._touch(os.path.join(stop, "rx-log.csv"))
+            self._touch(os.path.join(stop, "rx-log-t01-1.csv"))
+            self.assertIsNone(rc.find_sibling_tx_log(rx))
+
+
+class RangeCheckT0CrossCheckTests(unittest.TestCase):
+    """main(): tx-log t0 must agree with rx-log t0 (filename AND header)."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.root = self.dir.name
+        self.preset = _write_rc_preset(self.root)
+        self.stopdir = os.path.join(
+            self.root, "logs", "s{}-t0{}".format(RC_SESSION, RC_T0),
+            "stop-50m")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _logs(self, rx_t0=RC_T0, tx_t0=None, rx_name=None, tx_name=None,
+              rx_header_iso=None, tx_header_iso=None, tx_in="stop"):
+        """Write rx+tx logs; returns their paths. t0=None => no tag."""
+        os.makedirs(self.stopdir, exist_ok=True)
+        tx_t0 = RC_T0 if tx_t0 is None else tx_t0
+        rx_name = rx_name if rx_name is not None else (
+            "rx-log.csv" if rx_t0 is None else
+            "rx-log-t0{}-{}.csv".format(rx_t0, RC_SESSION))
+        tx_name = tx_name if tx_name is not None else (
+            "tx-log.csv" if tx_t0 is None else
+            "tx-log-t0{}-{}.csv".format(tx_t0, RC_SESSION))
+        tx_dir = self.stopdir if tx_in == "stop" else os.path.dirname(
+            self.stopdir)
+        os.makedirs(tx_dir, exist_ok=True)
+        rx_path = os.path.join(self.stopdir, rx_name)
+        tx_path = os.path.join(tx_dir, tx_name)
+        _write_rc_log(rx_path, rx_header_iso or RC_T0_ISO, role="RX")
+        _write_rc_log(tx_path, tx_header_iso or RC_T0_ISO, role="TX")
+        return rx_path, tx_path
+
+    def _run(self, rx_path, tx=None):
+        argv = ["--dist", "50m", "--session", str(RC_SESSION),
+                "--rx-log", rx_path, "--configs", self.preset,
+                "--repo-root", self.root]
+        if tx is not None:
+            argv += ["--tx-log", tx]
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), \
+             contextlib.redirect_stderr(err):
+            code = rc.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
+    def test_matching_t0s_pass(self):
+        rx, tx = self._logs()
+        code, out, err = self._run(rx)
+        self.assertEqual(code, 0, err + out)
+        self.assertIn("t0 cross-check: OK", out)
+
+    def test_tx_filename_t0_mismatch_exits_2_loudly(self):
+        rx, tx = self._logs(tx_t0=RC_T0_OTHER)
+        code, out, err = self._run(rx)
+        self.assertEqual(code, 2)
+        blob = out + err
+        self.assertIn("T0 MISMATCH", blob)
+        self.assertIn(str(RC_T0), blob)
+        self.assertIn(str(RC_T0_OTHER), blob)
+        self.assertIn(os.path.basename(rx), blob)
+        self.assertIn(os.path.basename(tx), blob)
+
+    def test_rx_filename_vs_header_mismatch_exits_2(self):
+        # a renamed/copied log: filename says T0, header says OTHER
+        rx, tx = self._logs(rx_header_iso=RC_T0_OTHER_ISO)
+        code, out, err = self._run(rx)
+        self.assertEqual(code, 2)
+        self.assertIn("T0 MISMATCH", out + err)
+
+    def test_header_fallback_when_untagged_filename(self):
+        # rx named plain rx-log.csv: t0 comes from the header instead
+        rx, tx = self._logs(rx_t0=None)
+        code, out, err = self._run(rx)
+        self.assertEqual(code, 0, err + out)
+
+    def test_header_fallback_mismatch_exits_2(self):
+        rx, tx = self._logs(rx_t0=None, tx_t0=None,
+                            tx_header_iso=RC_T0_OTHER_ISO)
+        code, out, err = self._run(rx)
+        self.assertEqual(code, 2)
+        self.assertIn("T0 MISMATCH", out + err)
+
+    def test_no_tx_log_note_no_error(self):
+        rx, _ = self._logs()
+        os.remove(os.path.join(self.stopdir,
+                               "tx-log-t0{}-{}.csv".format(RC_T0, RC_SESSION)))
+        code, out, err = self._run(rx)
+        self.assertEqual(code, 0, err + out)
+        self.assertIn("note:", out)
+        self.assertIn("tx-log", out)
+
+    def test_explicit_tx_log_arg_used(self):
+        # the far log must genuinely disagree: its filename tag dies in the
+        # rename, so the differing t0 has to live in its header.
+        rx, tx = self._logs(tx_t0=RC_T0_OTHER, tx_header_iso=RC_T0_OTHER_ISO)
+        far = os.path.join(self.root, "far-tx.csv")
+        os.rename(tx, far)
+        code, out, err = self._run(rx, tx=far)
+        self.assertEqual(code, 2)
+        self.assertIn("T0 MISMATCH", out + err)
+        self.assertIn("far-tx.csv", out + err)
+
+
+class MakefileRangeCheckTxTests(unittest.TestCase):
+    """make range-check passes TX= through as --tx-log."""
+
+    # the Makefile with the range-check target lives in E80_DIR itself
+    # (firmware/e80-stm32-bench), NOT its parent.
+    FWDIR = E80_DIR
+
+    def _make(self, *vars_):
+        import subprocess
+        return subprocess.run(
+            ["make", "-n", "range-check", "DIST=50m", "SESSION=x"] + list(vars_),
+            capture_output=True, text=True, cwd=self.FWDIR, timeout=60)
+
+    def test_tx_override_passed_through(self):
+        r = self._make("TX=/tmp/far/tx-log-t0{}-s.csv".format(RC_T0))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('CHECK_TX_LOG="/tmp/far/tx-log-t0{}-s.csv"'.format(RC_T0),
+                      r.stdout)
+        # make -n prints recipes with $$ already expanded to a single $
+        self.assertIn('--tx-log "$CHECK_TX_LOG"', r.stdout)
+
+    def test_tx_log_make_var_also_wins(self):
+        r = self._make("TX_LOG=/tmp/other/tx.csv")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('CHECK_TX_LOG="/tmp/other/tx.csv"', r.stdout)
+
+    def test_usage_line_mentions_tx(self):
+        r = self._make()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # the usage help must document the new TX= override
+        self.assertIn("TX=<tx-log.csv>", r.stdout)
 
 
 if __name__ == "__main__":
