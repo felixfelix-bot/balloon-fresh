@@ -9,7 +9,7 @@
 # Idempotent: safe to re-run.  Does NOT flash firmware.
 #
 # Usage (curl|bash one-liner):
-#   curl -fsSL https://raw.githubusercontent.com/felixfelix-bot/balloon-fresh/main/scripts/laptop-tx-setup.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/felixfelix-bot/balloon-fresh/laptop-tx-setup/scripts/laptop-tx-setup.sh | bash
 #
 # Or after clone:
 #   bash scripts/laptop-tx-setup.sh
@@ -132,30 +132,35 @@ if [[ ! -f "$DETECT_SCRIPT" ]]; then
   fail "e80_detect.py not found at $DETECT_SCRIPT. Repo may be incomplete."
 fi
 
-info "Running board detection (--role TX asserts Board A, probe $TX_PROBE)..."
+info "Running board detection..."
 echo ""
-DETECT_OUT=""
-DETECT_OUT="$( cd "$BENCH_FULL" && python3 tools/e80_detect.py --role TX 2>&1 )" || {
+( cd "$BENCH_FULL" && python3 tools/e80_detect.py ) || {
   warn "e80_detect.py exited non-zero — board may not be connected yet."
   warn "Plug in the E80 board via USB (both CH340 serial + Pico probe cables)."
   warn "Then re-run this script."
 }
-echo "$DETECT_OUT"
-echo ""
 
-# Extract the CH340 console port straight from e80_detect.py output.
-# NEVER guess via udevadm probe-serial match: the probe serial (e.g. 1487…)
-# shows up on the RP2040 CDC port (ttyACMx), but make range-tx talks to the
-# CH340 console (ttyUSBx on Linux, cu.usbserial* on macOS).
-# Text mode prints: "  port: /dev/ttyUSB0"
-DETECTED_PORT="$(printf '%s\n' "$DETECT_OUT" | sed -nE 's/^[[:space:]]*port:[[:space:]]*(\/dev\/[^[:space:]]+).*$/\1/p' | head -1)"
-
-if [[ -n "$DETECTED_PORT" ]]; then
-  info "TX board console port: $DETECTED_PORT (probe $TX_PROBE)"
+# Try to extract the detected port for the TX probe — SINGLE SOURCE OF TRUTH.
+# We take the `port:` field from e80_detect.py output (the CH340 console) via
+# scripts/e80_detect_port.py. We NEVER re-grep /dev/ttyACM* here: ttyACM is the
+# Pico debugprobe CDC UART, not the E80 console. The helper hard-aborts if the
+# resolved port is a ttyACM device.
+DETECT_PORT_HELPER="$REPO_DIR/scripts/e80_detect_port.py"
+DETECTED_PORT=""
+if [[ -f "$DETECT_PORT_HELPER" ]]; then
+  if DETECTED_PORT="$( ( cd "$BENCH_FULL" && python3 "$DETECT_PORT_HELPER" ) 2>&1 | tail -1 )" \
+      && [[ "$DETECTED_PORT" == /dev/* ]]; then
+    info "TX board console port (from e80_detect port field): $DETECTED_PORT"
+  else
+    DETECTED_PORT=""
+    warn "Could not resolve the CH340 console port from e80_detect output."
+    warn "This is a HARD STOP: the E80 console is never on /dev/ttyACM* (that is the"
+    warn "Pico probe CDC). Plug the CH340 cable into the serial port and re-run."
+  fi
 else
-  warn "Could not auto-detect the TX board port."
-  warn "Run manually after plugging in:  cd $BENCH_FULL && python3 tools/e80_detect.py --role TX"
-  warn "Then note the PORT= value and add it to the make commands below."
+  warn "e80_detect_port.py not found at $DETECT_PORT_HELPER — cannot resolve console port."
+  warn "Run manually:  cd $BENCH_FULL && python3 tools/e80_detect.py"
+  warn "Then add PORT= to the commands below."
 fi
 
 # ── 5. Print per-stop make commands ─────────────────────────────────────
@@ -199,6 +204,12 @@ echo ""
 echo "    cd $BENCH_FULL"
 echo "    python3 tools/e80_detect.py"
 echo ""
+echo "  Or — from the repo ROOT (proxy targets now work at top level):"
+echo ""
+echo "    cd $REPO_DIR"
+echo "    make range-tx DIST=50m PROBE=$TX_PROBE $PORT_ARG   # and so on"
+echo ""
+echo "  All per-stop commands below run from $BENCH_FULL (the e80-stm32-bench dir):"
 
 for dist in "${DEMO_STOPS[@]}"; do
   if [[ -n "$PORT_ARG" ]]; then

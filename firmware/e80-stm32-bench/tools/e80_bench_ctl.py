@@ -732,6 +732,9 @@ def load_config_preset(preset_or_path):
             name = path[:-5] if path.endswith(".json") else path
             repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             for c in [
+                # repo-root-relative path (e.g. CONFIGS=configs/resend-...json
+                # typed at the repo root; this tool runs with cwd=e80-stm32-bench)
+                os.path.join(repo_root, path),
                 os.path.join(repo_root, "configs", "per-stop", name + ".json"),
                 os.path.join(repo_root, "configs", name + ".json"),
                 os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "per-stop", name + ".json"),
