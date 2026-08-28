@@ -779,7 +779,10 @@ def load_config_preset(preset_or_path):
         expected_s = n_pkts * (airtime + gap / 1e6)
 
         cfgs.append({
-            "idx": i,
+            # Positional by default; presets may carry an EXPLICIT idx
+            # (e.g. selective re-send presets written by range_check.py)
+            # to keep the original preset's config numbering across runs.
+            "idx": c["idx"] if isinstance(c.get("idx"), int) else i,
             "label": c.get("label", "cfg{}".format(i)),
             "mod": mod,
             "sf": c.get("sf"),
@@ -1156,6 +1159,11 @@ def format_stat_line(role, stat, session, config, replicate=1):
     parts.append("replicate={}".format(replicate))
     parts.append("drops={}".format(stat.get("drops", 0)))
     parts.append("gap_us={}".format(stat.get("gap_us", 0)))
+    # Optional extras (TX side): preset metadata so merge_csvs can compute
+    # the PER denominator and label reports without the preset file.
+    for k in ("label", "n_pkts", "plen"):
+        if k in stat:
+            parts.append("{}={}".format(k, stat[k]))
     return ",".join(parts)
 
 
@@ -1541,6 +1549,8 @@ def run_tx_mode(args):
                         "elapsed_s": cfg["expected_s"],
                         "kbps": None, "rssi": None, "snr": None,
                         "drops": 0, "gap_us": cfg["gap"],
+                        "label": cfg["label"], "n_pkts": cfg["n_pkts"],
+                        "plen": cfg["plen"],
                     }
                     if error:
                         log.comment("ERROR config={}: {}".format(cfg["idx"], error))

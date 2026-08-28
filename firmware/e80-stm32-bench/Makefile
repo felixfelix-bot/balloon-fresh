@@ -588,7 +588,7 @@ range-zip: ## Zip RX log + optional GPS + metadata.txt for sharing
 
 range-test-host: ## Run pytest for distributed range test split logic
 	@echo "=== Running distributed range test unit tests ==="
-	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py -v
+	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py test_range_check.py -v
 
 # ============================================================
 # CONTEXTVM (NOSTR MCP) RANGE TEST TARGETS
