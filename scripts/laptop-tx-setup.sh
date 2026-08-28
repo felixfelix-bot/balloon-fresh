@@ -140,34 +140,27 @@ echo ""
   warn "Then re-run this script."
 }
 
-# Try to extract the detected port for the TX probe
+# Try to extract the detected port for the TX probe — SINGLE SOURCE OF TRUTH.
+# We take the `port:` field from e80_detect.py output (the CH340 console) via
+# scripts/e80_detect_port.py. We NEVER re-grep /dev/ttyACM* here: ttyACM is the
+# Pico debugprobe CDC UART, not the E80 console. The helper hard-aborts if the
+# resolved port is a ttyACM device.
+DETECT_PORT_HELPER="$REPO_DIR/scripts/e80_detect_port.py"
 DETECTED_PORT=""
-if command -v udevadm >/dev/null 2>&1; then
-  # Linux: scan ACM + USB ports for the TX probe serial
-  for p in /dev/ttyACM[0-9] /dev/ttyUSB[0-9]; do
-    [[ -e "$p" ]] || continue
-    if udevadm info -q property "$p" 2>/dev/null | grep -q "$TX_PROBE"; then
-      DETECTED_PORT="$p"
-      break
-    fi
-  done
-fi
-
-if [[ -z "$DETECTED_PORT" ]]; then
-  # macOS fallback: check /dev/cu.usbserial-* (CH340 shows as cu.usbserial-*)
-  for p in /dev/cu.usbserial* /dev/tty.usbserial*; do
-    [[ -e "$p" ]] || continue
-    DETECTED_PORT="$p"
-    break
-  done
-fi
-
-if [[ -n "$DETECTED_PORT" ]]; then
-  info "TX board detected at: $DETECTED_PORT (probe $TX_PROBE)"
+if [[ -f "$DETECT_PORT_HELPER" ]]; then
+  if DETECTED_PORT="$( ( cd "$BENCH_FULL" && python3 "$DETECT_PORT_HELPER" ) 2>&1 | tail -1 )" \
+      && [[ "$DETECTED_PORT" == /dev/* ]]; then
+    info "TX board console port (from e80_detect port field): $DETECTED_PORT"
+  else
+    DETECTED_PORT=""
+    warn "Could not resolve the CH340 console port from e80_detect output."
+    warn "This is a HARD STOP: the E80 console is never on /dev/ttyACM* (that is the"
+    warn "Pico probe CDC). Plug the CH340 cable into the serial port and re-run."
+  fi
 else
-  warn "Could not auto-detect the TX board port."
-  warn "Run manually after plugging in:  cd $BENCH_FULL && python3 tools/e80_detect.py"
-  warn "Then note the PORT= value and add it to the make commands below."
+  warn "e80_detect_port.py not found at $DETECT_PORT_HELPER — cannot resolve console port."
+  warn "Run manually:  cd $BENCH_FULL && python3 tools/e80_detect.py"
+  warn "Then add PORT= to the commands below."
 fi
 
 # ── 5. Print per-stop make commands ─────────────────────────────────────
@@ -211,6 +204,12 @@ echo ""
 echo "    cd $BENCH_FULL"
 echo "    python3 tools/e80_detect.py"
 echo ""
+echo "  Or — from the repo ROOT (proxy targets now work at top level):"
+echo ""
+echo "    cd $REPO_DIR"
+echo "    make range-tx DIST=50m PROBE=$TX_PROBE $PORT_ARG   # and so on"
+echo ""
+echo "  All per-stop commands below run from $BENCH_FULL (the e80-stm32-bench dir):"
 
 for dist in "${DEMO_STOPS[@]}"; do
   if [[ -n "$PORT_ARG" ]]; then
