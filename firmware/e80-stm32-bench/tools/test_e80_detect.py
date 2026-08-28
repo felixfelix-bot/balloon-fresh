@@ -306,3 +306,165 @@ class TestFindOpenocdMac:
             mock_isfile.side_effect = isfile_side
             result = e80_detect.find_openocd()
         assert result == "/opt/homebrew/bin/openocd"
+
+
+# ---------------------------------------------------------------------------
+# detect_board — dual-board resolution matrix (0/1/2 boards + ambiguity)
+# ---------------------------------------------------------------------------
+# These exercise the role-aware dual-port resolution path WITHOUT live HW:
+# find_swd_probes / find_ch340_ports / match_ports_to_probes / query_id are
+# all mocked. The USB-tree matcher is mocked to simulate clean vs ambiguous
+# topology.
+
+TX_SERIAL = e80_detect.PROBE_TX
+RX_SERIAL = e80_detect.PROBE_RX
+PORT_A = "/dev/ttyUSB0"
+PORT_B = "/dev/ttyUSB1"
+
+PROBE_TX_INFO = {"role": "TX", "syspath": "/sys/bus/usb/devices/1-1.1",
+                 "product": "Pico", "vid": "2e8a", "pid": "0004"}
+PROBE_RX_INFO = {"role": "RX", "syspath": "/sys/bus/usb/devices/1-1.2",
+                 "product": "Pico", "vid": "2e8a", "pid": "0004"}
+
+
+class TestDetectBoardResolutionMatrix:
+    """0 boards, 1 board, 2 boards clean, 2 boards ambiguous — no live HW."""
+
+    # ---- 0 boards ----
+    def test_zero_boards_no_probe_errors(self):
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value={}), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[]):
+            result = e80_detect.detect_board("TX")
+        assert "error" in result
+
+    def test_zero_boards_probe_but_no_port_errors(self):
+        probes = {TX_SERIAL: PROBE_TX_INFO}
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[]):
+            result = e80_detect.detect_board("TX")
+        assert "error" in result
+
+    # ---- 1 board (single-port, interchangeable) ----
+    def test_single_port_returns_port(self):
+        probes = {RX_SERIAL: PROBE_RX_INFO}  # RX-labelled probe only
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[PORT_A]), \
+             mock.patch.object(e80_detect, "query_id", return_value=None):
+            # target TX even though probe is RX-labelled → interchangeable
+            result = e80_detect.detect_board("TX")
+        assert "error" not in result
+        assert result["port"] == PORT_A
+        assert result["role"] == "TX"
+
+    # ---- 2 boards, clean match (each probe → distinct port) ----
+    def test_two_ports_two_probes_clean_tx(self):
+        probes = {TX_SERIAL: PROBE_TX_INFO, RX_SERIAL: PROBE_RX_INFO}
+        mapping = {PORT_A: TX_SERIAL, PORT_B: RX_SERIAL}
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[PORT_A, PORT_B]), \
+             mock.patch.object(e80_detect, "match_ports_to_probes", return_value=mapping), \
+             mock.patch.object(e80_detect, "query_id", return_value=None):
+            result = e80_detect.detect_board("TX")
+        assert "error" not in result
+        assert result["port"] == PORT_A
+        assert result["probe_serial"] == TX_SERIAL
+        assert result["role"] == "TX"
+
+    def test_two_ports_two_probes_clean_rx(self):
+        probes = {TX_SERIAL: PROBE_TX_INFO, RX_SERIAL: PROBE_RX_INFO}
+        mapping = {PORT_A: TX_SERIAL, PORT_B: RX_SERIAL}
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[PORT_A, PORT_B]), \
+             mock.patch.object(e80_detect, "match_ports_to_probes", return_value=mapping), \
+             mock.patch.object(e80_detect, "query_id", return_value=None):
+            result = e80_detect.detect_board("RX")
+        assert "error" not in result
+        assert result["port"] == PORT_B
+        assert result["probe_serial"] == RX_SERIAL
+        assert result["role"] == "RX"
+
+    # ---- 2 boards, ambiguous tree: single probe + two ports (the 9209aaf crash) ----
+    def test_two_ports_single_probe_aborts_loudly(self):
+        """The desk-crash shape: ONE probe detected, TWO CH340 ports. The old
+        code silently picked the first port for BOTH tx and rx → SerialException
+        'multiple access on port'. Now it MUST abort loudly with override hints.
+        """
+        probes = {RX_SERIAL: PROBE_RX_INFO}  # only one probe enumerates
+        # matcher binds the sole probe to the first sorted port (both share hub)
+        mapping = {PORT_A: RX_SERIAL, PORT_B: None}
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[PORT_A, PORT_B]), \
+             mock.patch.object(e80_detect, "match_ports_to_probes", return_value=mapping), \
+             mock.patch.object(e80_detect, "query_id", return_value=None):
+            result = e80_detect.detect_board("TX")
+        assert "error" in result
+        # Loud-fail markers: both ports listed + override command with PORT=
+        assert result.get("ambiguous") is True
+        assert PORT_A in result.get("ports", [])
+        assert PORT_B in result.get("ports", [])
+        assert "PORT=" in result["error"]
+        assert "PROBE=" in result["error"]
+
+    def test_two_ports_two_probes_ambiguous_tree_aborts(self):
+        """Two probes but the tree matcher cannot distinguish which port belongs
+        to which role (both ports match both probes at equal depth). Must abort,
+        never pick matched[0].
+        """
+        probes = {TX_SERIAL: PROBE_TX_INFO, RX_SERIAL: PROBE_RX_INFO}
+        # Both probes resolve to BOTH ports (ambiguous hub) → no unique match.
+        mapping = {PORT_A: TX_SERIAL, PORT_B: TX_SERIAL}  # both → TX probe
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports", return_value=[PORT_A, PORT_B]), \
+             mock.patch.object(e80_detect, "match_ports_to_probes", return_value=mapping), \
+             mock.patch.object(e80_detect, "query_id", return_value=None):
+            result = e80_detect.detect_board("RX")
+        assert "error" in result
+        assert result.get("ambiguous") is True
+        assert "PORT=" in result["error"]
+        assert "PROBE=" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# detect_dual_board — cross-role guard (never same port for tx AND rx)
+# ---------------------------------------------------------------------------
+
+class TestDetectDualBoardCrossRoleGuard:
+    """Refuse to open the same CH340 port for both tx and rx roles."""
+
+    def test_dual_board_clean_bijection_distinct_ports(self):
+        """Clean two-probe/two-port bijection → tx and rx resolve to distinct
+        CH340 ports (never the same port)."""
+        probes = {TX_SERIAL: PROBE_TX_INFO, RX_SERIAL: PROBE_RX_INFO}
+        with mock.patch.object(e80_detect, "find_swd_probes", return_value=probes), \
+             mock.patch.object(e80_detect, "find_ch340_ports",
+                               return_value=[PORT_A, PORT_B]), \
+             mock.patch.object(e80_detect, "match_ports_to_probes",
+                               return_value={PORT_A: TX_SERIAL, PORT_B: RX_SERIAL}), \
+             mock.patch.object(e80_detect, "query_id", return_value=None):
+            result = e80_detect.detect_dual_board()
+        assert "error" not in result
+        assert result["tx"]["port"] == PORT_A
+        assert result["rx"]["port"] == PORT_B
+        assert result["tx"]["port"] != result["rx"]["port"]
+
+    def test_cross_role_guard_rejects_same_port(self):
+        """Direct guard contract: passing a resolution where tx and rx share
+        one CH340 port returns a loud cross-role error, never a collapsed
+        pair."""
+        collapsed = {
+            "tx": {"port": PORT_A, "role": "TX"},
+            "rx": {"port": PORT_A, "role": "RX"},
+        }
+        result = e80_detect.cross_role_guard(collapsed)
+        assert "error" in result
+        assert "cross-role" in result["error"].lower()
+        assert "PORT=" in result["error"]
+        assert "PROBE=" in result["error"]
+
+    def test_cross_role_guard_passes_distinct_ports(self):
+        distinct = {
+            "tx": {"port": PORT_A, "role": "TX"},
+            "rx": {"port": PORT_B, "role": "RX"},
+        }
+        result = e80_detect.cross_role_guard(distinct)
+        assert result == distinct  # untouched, no error
