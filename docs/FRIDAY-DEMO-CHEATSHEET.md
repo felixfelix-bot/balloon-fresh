@@ -26,6 +26,14 @@ make range-rx DIST=<stop> PROBE=203584200D2D0D42 PORT=<port-from-detect>
 5-min window (start both within ~4 min of each other). Compare the printed
 `T0:`/`SESSION_ID:` banners — they must match on both machines.
 
+> **Root-of-repo shortcut (proxy targets):** `tx`, `rx`, `range-tx`, `range-rx`,
+> `range-merge`, `range-stitch`, `range-dry-run`, `boat-tx`, `boat-rx` now work
+> from the repo ROOT `~/repos/balloon-e80bench` too — they proxy to
+> `firmware/e80-stm32-bench/Makefile` and pass `PORT PROBE DIST T0 SESSION_ID
+> TX RX GPS` through. So `cd ~/repos/balloon-e80bench && make range-rx DIST=50m
+> PROBE=203584200D2D0D42` is equivalent. (Working dir convention stays
+> `firmware/e80-stm32-bench/`; the proxy is a convenience.)
+
 ## C. Per-stop TX commands (field laptop)
 
 Ports swap on every replug — run `python3 tools/e80_detect.py` first, add `PORT=` if
