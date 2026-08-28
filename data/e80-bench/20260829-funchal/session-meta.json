@@ -10,8 +10,8 @@
   },
   "fw_sha": "5fa7912",
   "boards": {
-    "rx_base": { "board": "A", "probe": "148757200D2D1425" },
-    "tx_field": { "board": "B", "probe": "203584200D2D0D42" }
+    "rx_base": { "board": "B", "probe": "203584200D2D0D42" },
+    "tx_field": { "board": "A", "probe": "148757200D2D1425" }
   },
   "antennas": "dual-attach per board: 868 whip on sub-GHz jack (Pin 9) + 2.4G ~31mm whip on 2.4GHz jack (Pin 10), SMA, no mid-run swap",
   "t0_rule": "next 5-min epoch boundary (BOUNDARY_S=300), RX joins before TX, T0 relayed via Signal",

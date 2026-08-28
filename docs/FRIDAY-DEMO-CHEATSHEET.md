@@ -1,7 +1,7 @@
 # E80 Friday Field Demo — Cheat Sheet (2026-08-29, Funchal)
 
 > Repo: `~/repos/balloon-e80bench` (branch `main`, fw `5fa7912`).
-> RX = base (Board A, probe `148757200D2D1425`) · TX = field (Board B, probe `203584200D2D0D42`).
+> RX = base (Board B, probe `203584200D2D0D42`) · TX = field (Board A, probe `148757200D2D1425`).
 > Full context: `docs/RANGE-TEST-FUNCHAL.md`, `docs/RANGE-TEST-PLAN-MINIMAL.md`.
 
 ## A. Pre-departure checklist
@@ -17,8 +17,8 @@
 
 ```bash
 cd ~/repos/balloon-e80bench/firmware/e80-stm32-bench
-python3 tools/e80_detect.py            # find current port for probe 148757200D2D1425
-make range-rx DIST=<stop> PROBE=148757200D2D1425 PORT=<port-from-detect>
+python3 tools/e80_detect.py            # find current port for probe 203584200D2D0D42
+make range-rx DIST=<stop> PROBE=203584200D2D0D42 PORT=<port-from-detect>
 ```
 
 **Join-before-T0 rule:** RX always starts before TX. T0 = next 5-min epoch boundary
@@ -29,16 +29,16 @@ make range-rx DIST=<stop> PROBE=148757200D2D1425 PORT=<port-from-detect>
 ## C. Per-stop TX commands (field laptop)
 
 Ports swap on every replug — run `python3 tools/e80_detect.py` first, add `PORT=` if
-auto-detect grabs the wrong board. Always `PROBE=203584200D2D0D42`.
+auto-detect grabs the wrong board. Always `PROBE=148757200D2D1425`.
 
 | Stop | Command (from `firmware/e80-stm32-bench/`) |
 |------|--------------------------------------------|
-| 50 m  | `make range-tx DIST=50m PROBE=203584200D2D0D42` |
-| 100 m | `make range-tx DIST=100m PROBE=203584200D2D0D42` |
-| 218 m | `make range-tx DIST=218m PROBE=203584200D2D0D42` |
-| 436 m | `make range-tx DIST=436m PROBE=203584200D2D0D42` |
-| 872 m | `make range-tx DIST=872m PROBE=203584200D2D0D42` (Jardim Miradouro da Achada) |
-| 1744 m | `make range-tx DIST=1744m PROBE=203584200D2D0D42` (Monte village) |
+| 50 m  | `make range-tx DIST=50m PROBE=148757200D2D1425` |
+| 100 m | `make range-tx DIST=100m PROBE=148757200D2D1425` |
+| 218 m | `make range-tx DIST=218m PROBE=148757200D2D1425` |
+| 436 m | `make range-tx DIST=436m PROBE=148757200D2D1425` |
+| 872 m | `make range-tx DIST=872m PROBE=148757200D2D1425` (Jardim Miradouro da Achada) |
+| 1744 m | `make range-tx DIST=1744m PROBE=148757200D2D1425` (Monte village) |
 
 Preset sizes: 50 m=10 cfg (7×868 + 3×2G4) · 100 m=11 (7+4) · 218 m=12 (8+4) · 436/872/1744 m=9 (6+3) each.
 
