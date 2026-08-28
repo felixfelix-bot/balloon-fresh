@@ -693,6 +693,7 @@ help: ## Show this help message.
 	@echo "  rp2040-raw-tx-pipe   Pipelined transfer"
 	@echo ""
 	@echo "Channel mapping: CH1=CS, CH2=SCK, CH3=MOSI, CH4=MISO, CH5=BUSY, CH6=IRQ, CH7=RST"
+	@$(MAKE) -s e80-proxy-hint
 
 # ═══════════════════════════════════════════════════════════════════════
 # Range Test Targets (from master branch)
@@ -846,6 +847,58 @@ sweep-cross: ## Cross-board bench sweep. Usage: make sweep-cross BOARD=e80|esp32
 ## no PlatformIO build, no flashing. Not part of default all/test.
 bench-console-test: ## Run RP2040 bench console host tests (host-only, no hardware).
 	@bash $(RP2040_DIR)/tests/run_bench_tests.sh
+
+# ═══════════════════════════════════════════════════════════════════════
+# E80 bench proxies (one-command UX from the repo ROOT)
+# ───────────────────────────────────────────────────────────────────────
+# The E80 range-test convenience targets live in
+# firmware/e80-stm32-bench/Makefile (make tx, make rx, range-tx, range-rx,
+# range-merge, range-check, range-stitch, range-dry-run, boat-tx, boat-rx,
+# ...).
+#
+# These proxies forward any target to that Makefile via $(MAKE) -C, and
+# command-line variables (PORT PROBE DIST T0 SESSION_ID TX RX GPS CONFIGS
+# SESSION BAND FORMAT OUT_DIR etc.) propagate to the sub-make automatically
+# (make passes command-line vars down through MAKEFLAGS). So you can run
+# the SAME one-command UX from anywhere in the repo:
+#
+#     make range-dry-run DIST=50m          # from repo root, no hardware
+#     make tx  PROBE=148757200D2D1425      # TX mode
+#     make rx  PORT=/dev/ttyUSB0           # RX mode
+#     make range-check DIST=872m           # post-stop gap check + re-send
+#     make boat-tx                          # continuous maritime sweep
+#     make range-merge TX=tx.csv RX=rx.csv  # merge + PER report
+#
+# The canonical working dir is firmware/e80-stm32-bench/ — see its Makefile
+# header for the full variable list.
+E80_BENCH_DIR := firmware/e80-stm32-bench
+
+E80_PROXY_TARGETS := tx rx range-tx range-rx range-merge range-check \
+	range-stitch range-dry-run range-coord range-setup range-test-host \
+	range-zip boat-tx boat-rx
+
+.PHONY: $(E80_PROXY_TARGETS)
+$(E80_PROXY_TARGETS):
+	@if [ ! -d "$(E80_BENCH_DIR)" ]; then \
+		echo "ERROR: $(E80_BENCH_DIR) not found — is this the repo root?" >&2; \
+		exit 1; \
+	fi
+	$(MAKE) -C $(E80_BENCH_DIR) $@
+
+# Hint when running `make` bare from the root: mention the E80 proxy targets.
+# (help is the default goal; this augments the help body.)
+.PHONY: e80-proxy-hint
+e80-proxy-hint:
+	@echo ""
+	@echo "  E80 range-test (run from repo ROOT):"
+	@echo "    make range-dry-run DIST=50m          # dry-run, no hardware"
+	@echo "    make tx [PROBE=...] [PORT=...]       # TX mode"
+	@echo "    make rx [PROBE=...] [PORT=...]       # RX mode"
+	@echo "    make range-check DIST=872m [SESSION=...]  # post-stop gaps + re-send preset"
+	@echo "    make boat-tx / make boat-rx          # continuous maritime sweep"
+	@echo "    make range-merge TX=tx.csv RX=rx.csv # merge + PER report"
+	@echo "    make range-stitch RX=rx.csv GPS=track.gpx"
+	@echo "  (proxy → firmware/e80-stm32-bench/Makefile; vars PORT PROBE DIST T0 SESSION_ID TX RX GPS SESSION pass through)"
 
 ##@ Clean
 .PHONY: clean
