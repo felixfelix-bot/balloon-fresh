@@ -107,12 +107,23 @@ BOUNDARY_S    := 300  # 5-minute round-up
 T0            ?= $(shell python3 -c "import time; now=int(time.time()); boundary=$(BOUNDARY_S); t0=((now // boundary) + 1) * boundary; print(t0)")
 SESSION_ID    ?= $(shell python3 -c "import time; t0=$(T0); print(time.strftime('%y%m%d%H%M', time.gmtime(t0)))")
 
+# Relative T0: `make range-tx T0=+90` resolves ONCE at invocation time to an
+# absolute epoch (paste time + 90s). SESSION_ID autogen, the T0 banners,
+# countdown and --t0 then all see a normal epoch — and the banner shows the
+# absolute T0 the other operator can relay (same trick as the no-NTP case).
+ifeq ($(origin T0),command line)
+  ifneq ($(filter +%,$(T0)),)
+    override T0 := $(shell python3 -c "import time; print(int(time.time())+int('$(T0)'[1:]))")
+  endif
+endif
+
 # Ansible
 ANSIBLE_PLAYBOOK := ansible-playbook
 ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-dry-run range-test-host
+.PHONY: range-check
 .PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke sweep-e80
 .PHONY: boat-tx boat-rx
 
@@ -435,6 +446,24 @@ endif
 		--dry-run \
 		--t0 "$(T0)" \
 		--configs "$(CONFIGS)"
+
+range-check: ## Post-stop verdict: rx-log coverage for DIST/SESSION; on gaps write resend preset + TX one-liner
+	@if [ -z "$(DIST)" ] || [ -z "$(SESSION)" ]; then \
+		echo "Usage: make range-check DIST=<50m|100m|218m|436m|872m|1744m|5km|11km|70km> SESSION=<id> [RX_LOG=path]"; \
+		exit 2; \
+	fi
+	@if [ ! -f "$(DIST_FILE)" ]; then \
+		echo "ERROR: DIST=$(DIST) → $(DIST_FILE) not found."; \
+		echo "Valid DIST values: 50m, 100m, 218m, 436m, 872m, 1744m, 5km, 11km, 70km"; \
+		exit 2; \
+	fi
+	@echo "=== Range Check: DIST=$(DIST_NORM) SESSION=$(SESSION) RX_LOG=$(RX_LOG) ==="
+	cd $(TOOLDIR) && $(PYTHON) tools/range_check.py \
+		--dist $(DIST_NORM) \
+		--session $(SESSION) \
+		--rx-log "$(RX_LOG)" \
+		--configs "$(DIST_FILE)" \
+		--repo-root $(REPO_ROOT)
 
 # ============================================================
 # GPS STITCH + ZIP PACKAGING (manual range test on unknown machine)

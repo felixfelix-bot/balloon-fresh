@@ -872,7 +872,7 @@ bench-console-test: ## Run RP2040 bench console host tests (host-only, no hardwa
 E80_BENCH_DIR := firmware/e80-stm32-bench
 
 E80_PROXY_TARGETS := tx rx range-tx range-rx range-merge range-stitch \
-	range-dry-run range-coord range-setup range-test-host range-zip boat-tx boat-rx
+	range-dry-run range-coord range-setup range-test-host range-zip range-check boat-tx boat-rx
 
 .PHONY: $(E80_PROXY_TARGETS)
 $(E80_PROXY_TARGETS):
@@ -894,6 +894,7 @@ e80-proxy-hint:
 	@echo "    make boat-tx / make boat-rx          # continuous maritime sweep"
 	@echo "    make range-merge TX=tx.csv RX=rx.csv # merge + PER report"
 	@echo "    make range-stitch RX=rx.csv GPS=track.gpx"
+	@echo "    make range-check DIST=50m SESSION=<id> # post-stop verdict + resend one-liner"
 	@echo "  (proxy → firmware/e80-stm32-bench/Makefile; vars PORT PROBE DIST T0 SESSION_ID TX RX GPS pass through)"
 
 ##@ Clean
