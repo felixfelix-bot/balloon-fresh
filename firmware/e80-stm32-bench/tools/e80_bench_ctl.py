@@ -1166,8 +1166,19 @@ def _detect_board_for_mode(mode, port, probe_serial):
             sys.exit("ERROR: No CH340 serial port found. Ensure the E80 board's "
                      "USB-serial cable is connected.")
         if len(ch340_ports) > 1:
-            sys.exit("ERROR: Multiple CH340 ports found ({}). Use --port to specify.".format(
-                ch340_ports))
+            # Loud-fail: never silently pick the first CH340. On a 2-board desk
+            # this handed the same port to both tx and rx → 'multiple access on
+            # port' (9209aaf). Pin exact ports instead. (Known probe serials are
+            # hardcoded here because this fallback runs only when e80_detect's
+            # import failed — the constants aren't reachable.)
+            sys.exit(
+                "ERROR: Multiple CH340 ports found ({}). Board role cannot be "
+                "determined. Use exact override commands:\n"
+                "  make tx PORT=<tx-port> PROBE=148757200D2D1425\n"
+                "  make rx PORT=<rx-port> PROBE=203584200D2D0D42".format(
+                    ch340_ports,
+                )
+            )
         port = ch340_ports[0]
         probe_serial = probe_serial or None
         return port, probe_serial
