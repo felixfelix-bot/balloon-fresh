@@ -336,6 +336,12 @@ make tx T0=1724515500 SESSION_ID=2408241425
 make tx TX_LOG=my-tx-log.csv
 ```
 
+> **Band override window:** `BAND OVERRIDE <pin>` unlocks the full LR2021
+> dual-band range **410–2483.5 MHz** (sub-GHz LF + 2.4 GHz HF path). Without
+> override, `FREQ` only accepts the EU SRD 863–870 MHz band. The host-side
+> `freq_gate()` mirror and the `FakeBoard` test stand-in enforce the same
+> window as the firmware (`E80_BENCH_OVERRIDE_MIN_HZ`/`MAX_HZ`).
+
 ### Keeping the laptop awake
 
 If the laptop suspends during the test, the schedule is lost.
