@@ -95,7 +95,7 @@ class FakeBoard:
             return "OK POWER MODE OUTDOOR PIN 2026 ACCEPTED"
         if line.startswith("FREQ"):
             hz = int(line.split()[1])
-            lo, hi = (410000000, 960000000) if w.get("band_override") \
+            lo, hi = (410000000, 2483500000) if w.get("band_override") \
                 else (863000000, 870000000)
             if not lo <= hz <= hi:
                 reply = "ERR BAND (EU SRD 863-870MHZ ONLY)"
@@ -454,10 +454,13 @@ class FreqGateTests(unittest.TestCase):
         self.assertIn("--band-override", msg)
 
     def test_override_window(self):
-        for hz in (410000000, 868000000, 915000000, 960000000):
+        # Override window is the full LR2021 dual-band range 410-2483.5 MHz
+        # (sub-GHz LF + 2.4 GHz HF path), matching E80_BENCH_OVERRIDE_*_HZ.
+        for hz in (410000000, 868000000, 915000000, 960000000,
+                   961000000, 2400000000, 2483500000):
             ok, _ = m.freq_gate(hz, True)
             self.assertTrue(ok, hz)
-        for hz in (409000000, 961000000):
+        for hz in (409000000, 2484000000):
             ok, _ = m.freq_gate(hz, True)
             self.assertFalse(ok, hz)
 
