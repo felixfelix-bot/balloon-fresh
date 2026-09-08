@@ -542,6 +542,109 @@ class ParseTempLineTests(unittest.TestCase):
         self.assertAlmostEqual(c, 57.06, places=1)
 
 
+class ParseTempLineExtendedTests(unittest.TestCase):
+    """Extended TEMP line (e80-interp-logging): adds applied offset, curve
+    version/params, supply voltage, GPS alt/temp and GS-synced epoch to the
+    base TEMP,<ts_ms>,<die_temp_raw> line. Backward compatible: the base
+    fields still parse, new fields default to None when absent."""
+
+    EXT = ("TEMP,123456,4096,1200,3,2000,25000,3300,1500,12,1788877000000")
+
+    def test_parses_extended_fields(self):
+        d = m.parse_temp_line(self.EXT)
+        self.assertEqual(d["ts_ms"], 123456)
+        self.assertEqual(d["die_temp_raw"], 4096)
+        self.assertEqual(d["offset_hz"], 1200)
+        self.assertEqual(d["curve_ver"], 3)
+        self.assertEqual(d["k_mhz_per_c"], 2000)
+        self.assertEqual(d["t0_mc"], 25000)
+        self.assertEqual(d["vcc_mv"], 3300)
+        self.assertEqual(d["gps_alt_m"], 1500)
+        self.assertEqual(d["gps_temp_c"], 12)
+        self.assertEqual(d["sync_epoch_ms"], 1788877000000)
+
+    def test_base_line_defaults_new_fields_none(self):
+        d = m.parse_temp_line("TEMP,123456,4096")
+        self.assertEqual(d["ts_ms"], 123456)
+        self.assertEqual(d["die_temp_raw"], 4096)
+        self.assertIsNone(d["offset_hz"])
+        self.assertIsNone(d["curve_ver"])
+        self.assertIsNone(d["k_mhz_per_c"])
+        self.assertIsNone(d["t0_mc"])
+        self.assertIsNone(d["vcc_mv"])
+        self.assertIsNone(d["gps_alt_m"])
+        self.assertIsNone(d["gps_temp_c"])
+        self.assertIsNone(d["sync_epoch_ms"])
+
+    def test_partial_extended_line(self):
+        # offset present, rest absent
+        d = m.parse_temp_line("TEMP,123456,4096,1200")
+        self.assertEqual(d["offset_hz"], 1200)
+        self.assertIsNone(d["curve_ver"])
+
+    def test_malformed_extended_still_none(self):
+        self.assertIsNone(m.parse_temp_line("TEMP,123456,4096,abc"))
+        self.assertIsNone(m.parse_temp_line("TEMP,123456,4096,1200,3,xyz"))
+
+
+class ParseGsObsLineTests(unittest.TestCase):
+    """GS-side observation line (e80-interp-logging): the ground station logs
+    its measured frequency offset, RSSI, balloon-synced timestamp, its own
+    reference status, ambient temp and position/velocity (for Doppler
+    correction). Format:
+    GSOBS,<ts_ms>,<measured_offset_hz>,<rssi_dbm>,<gs_ref_stable>,
+    <gs_ambient_c>,<gs_lat>,<gs_lon>,<gs_alt_m>,<gs_vx>,<gs_vy>,<gs_vz>"""
+
+    OBS = "GSOBS,123456,25,-87.5,1,22.5,52.01,4.04,1.5,0.0,0.0,0.0"
+
+    def test_parses_valid_gs_obs(self):
+        d = m.parse_gs_obs_line(self.OBS)
+        self.assertEqual(d["ts_ms"], 123456)
+        self.assertEqual(d["measured_offset_hz"], 25)
+        self.assertEqual(d["rssi_dbm"], -87.5)
+        self.assertTrue(d["gs_ref_stable"])
+        self.assertEqual(d["gs_ambient_c"], 22.5)
+        self.assertEqual(d["gs_lat"], 52.01)
+        self.assertEqual(d["gs_lon"], 4.04)
+        self.assertEqual(d["gs_alt_m"], 1.5)
+        self.assertEqual(d["gs_vx"], 0.0)
+        self.assertEqual(d["gs_vy"], 0.0)
+        self.assertEqual(d["gs_vz"], 0.0)
+
+    def test_returns_none_for_non_gs_obs(self):
+        self.assertIsNone(m.parse_gs_obs_line("TEMP,123456,4096"))
+        self.assertIsNone(m.parse_gs_obs_line("PKT,1,0,1,2,100,-70,8,1,0,0,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0"))
+        self.assertIsNone(m.parse_gs_obs_line(""))
+
+    def test_returns_none_for_malformed_gs_obs(self):
+        self.assertIsNone(m.parse_gs_obs_line("GSOBS,123456"))
+        self.assertIsNone(m.parse_gs_obs_line("GSOBS,abc,25,-87.5,1,22.5,52.01,4.04,1.5,0,0,0"))
+        self.assertIsNone(m.parse_gs_obs_line("GSOBS,123456,25,-87.5,1,22.5,52.01,4.04,1.5,0,0"))
+
+    def test_ref_stable_false(self):
+        d = m.parse_gs_obs_line("GSOBS,123456,25,-87.5,0,22.5,52.01,4.04,1.5,0.0,0.0,0.0")
+        self.assertFalse(d["gs_ref_stable"])
+
+
+class FormatGsObsLineTests(unittest.TestCase):
+    """Inverse of parse_gs_obs_line — helpers the GS tooling uses to emit the
+    line (Doppler correction needs position/velocity + ref status)."""
+
+    def test_round_trip(self):
+        d = m.parse_gs_obs_line(self.OBS)
+        ln = m.format_gs_obs_line(d)
+        # parse back: must be identical (float formatting stable)
+        self.assertEqual(m.parse_gs_obs_line(ln), d)
+
+    def test_format_ref_stable_false(self):
+        d = m.parse_gs_obs_line("GSOBS,123456,25,-87.5,0,22.5,52.01,4.04,1.5,0.0,0.0,0.0")
+        ln = m.format_gs_obs_line(d)
+        self.assertTrue(ln.startswith("GSOBS,"))
+        self.assertIn(",0,", ln)  # gs_ref_stable=0 preserved
+
+    OBS = "GSOBS,123456,25,-87.5,1,22.5,52.01,4.04,1.5,0.0,0.0,0.0"
+
+
 class CsvLogTests(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()

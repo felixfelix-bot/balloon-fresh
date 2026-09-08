@@ -547,8 +547,19 @@ def parse_temp_line(line):
     lr20xx_system_get_temp() is a system command that only works in
     STDBY/FS and would interrupt RX + perturb timing.
 
-    Returns a dict {'ts_ms': int, 'die_temp_raw': int} or None if the line
-    is not a valid TEMP line.
+    e80-interp-logging extension: the firmware appends interpretability
+    fields to the same line:
+      TEMP,<ts_ms>,<die_temp_raw>[,<offset_hz>,<curve_ver>,<k_mhz_per_c>,
+      <t0_mc>,<vcc_mv>,<gps_alt_m>,<gps_temp_c>,<sync_epoch_ms>]
+    where k is the {k, T0} curve slope in mHz/°C, T0 in m°C (fixed point,
+    firmware stays float-free), offset_hz is the applied frequency offset,
+    vcc_mv the supply voltage, gps_* the GPS altitude/temperature if
+    available, and sync_epoch_ms the GS-synced epoch timestamp. All new
+    fields are optional: a base 3-field line parses with the new keys set
+    to None (backward compatible).
+
+    Returns a dict {'ts_ms': int, 'die_temp_raw': int, ...} or None if the
+    line is not a valid TEMP line.
     """
     if not line or not line.strip().startswith("TEMP,"):
         return None
@@ -556,12 +567,87 @@ def parse_temp_line(line):
     if len(p) < 3:
         return None
     try:
-        return {
+        out = {
             "ts_ms": int(p[1]),
             "die_temp_raw": int(p[2]),
+            "offset_hz": None,
+            "curve_ver": None,
+            "k_mhz_per_c": None,
+            "t0_mc": None,
+            "vcc_mv": None,
+            "gps_alt_m": None,
+            "gps_temp_c": None,
+            "sync_epoch_ms": None,
         }
     except ValueError:
         return None
+    # Optional interpretability fields (positional, firmware always emits
+    # all-or-none after die_temp_raw).
+    int_fields = [
+        ("offset_hz", 3), ("curve_ver", 4), ("k_mhz_per_c", 5),
+        ("t0_mc", 6), ("vcc_mv", 7), ("gps_alt_m", 8),
+        ("gps_temp_c", 9), ("sync_epoch_ms", 10),
+    ]
+    try:
+        for key, idx in int_fields:
+            if len(p) > idx:
+                out[key] = int(p[idx])
+    except ValueError:
+        return None
+    return out
+
+
+def parse_gs_obs_line(line):
+    """Parse a ground-station observation line 'GSOBS,<ts_ms>,...'.
+
+    The GS logs its measured frequency offset, RSSI, a balloon-synced
+    timestamp, its own reference status (TCXO lock / GPS-disciplined),
+    ambient temperature and position/velocity (for Doppler correction):
+
+      GSOBS,<ts_ms>,<measured_offset_hz>,<rssi_dbm>,<gs_ref_stable>,
+      <gs_ambient_c>,<gs_lat>,<gs_lon>,<gs_alt_m>,<gs_vx>,<gs_vy>,<gs_vz>
+
+    Returns a dict or None if the line is not a valid GSOBS line.
+    """
+    if not line or not line.strip().startswith("GSOBS,"):
+        return None
+    p = line.strip().split(",")
+    if len(p) < 12:
+        return None
+    try:
+        return {
+            "ts_ms": int(p[1]),
+            "measured_offset_hz": int(p[2]),
+            "rssi_dbm": float(p[3]),
+            "gs_ref_stable": bool(int(p[4])),
+            "gs_ambient_c": float(p[5]),
+            "gs_lat": float(p[6]),
+            "gs_lon": float(p[7]),
+            "gs_alt_m": float(p[8]),
+            "gs_vx": float(p[9]),
+            "gs_vy": float(p[10]),
+            "gs_vz": float(p[11]),
+        }
+    except (ValueError, IndexError):
+        return None
+
+
+def format_gs_obs_line(d):
+    """Format a GS observation dict back to a ``GSOBS,`` line.
+
+    Inverse of :func:`parse_gs_obs_line`. Missing fields default to 0 (or
+    False for gs_ref_stable).
+    """
+    return ("GSOBS,{ts_ms},{measured_offset_hz},{rssi_dbm},{gs_ref_stable},"
+            "{gs_ambient_c},{gs_lat},{gs_lon},{gs_alt_m},{gs_vx},{gs_vy},{gs_vz}"
+            ).format(
+                ts_ms=d["ts_ms"],
+                measured_offset_hz=d["measured_offset_hz"],
+                rssi_dbm=d["rssi_dbm"],
+                gs_ref_stable=1 if bool(d["gs_ref_stable"]) else 0,
+                gs_ambient_c=d["gs_ambient_c"],
+                gs_lat=d["gs_lat"], gs_lon=d["gs_lon"], gs_alt_m=d["gs_alt_m"],
+                gs_vx=d["gs_vx"], gs_vy=d["gs_vy"], gs_vz=d["gs_vz"])
 
 
 def read_prior_rows(path):

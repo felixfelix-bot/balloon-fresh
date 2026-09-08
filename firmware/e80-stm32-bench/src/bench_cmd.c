@@ -70,6 +70,40 @@ bool bench_parse_i8(const char* s, int8_t* out)
     return true;
 }
 
+bool bench_parse_i32(const char* s, int32_t* out)
+{
+    if (s == NULL || *s == '\0')
+        return false;
+    bool neg = false;
+    if (*s == '-')
+    {
+        neg = true;
+        s++;
+    }
+    else if (*s == '+')
+    {
+        s++;
+    }
+    if (*s == '\0')
+        return false;
+    uint32_t v = 0;
+    if (!bench_parse_u32(s, &v))
+        return false;
+    if (neg)
+    {
+        if (v > 2147483648UL)
+            return false; /* below INT32_MIN */
+        *out = (v == 2147483648UL) ? (int32_t)(-2147483647 - 1) : -(int32_t)v;
+    }
+    else
+    {
+        if (v > 2147483647UL)
+            return false; /* above INT32_MAX */
+        *out = (int32_t)v;
+    }
+    return true;
+}
+
 static bench_cmd_err_t split_tokens(const char* line, char tokens[][E80_CMD_ARG_MAX], int* ntok)
 {
     int n = 0;
@@ -438,6 +472,94 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
             return BENCH_CMD_OK;
         }
         return (out->err = BENCH_CMD_E_ARG); /* "BUF FOO": known word, bad subcommand */
+    }
+
+    /* ---- e80-interp-logging commands (log-don't-tune) -------------------- */
+
+    if (bench_strcaseeq(tokens[0], "OFFSET"))
+    {
+        /* OFFSET <hz> — applied RX frequency offset (interp logging only;
+         * the value is reported, the radio is NOT retuned by this command).
+         * Signed: the correction goes negative on the cold side of T0 /
+         * the receding leg. */
+        if (ntok != 2 || !bench_parse_i32(tokens[1], &out->offset_hz))
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_OFFSET;
+        return BENCH_CMD_OK;
+    }
+
+    if (bench_strcaseeq(tokens[0], "CURVE"))
+    {
+        /* CURVE <ver> <k_mhz_per_c> <t0_mc> — stored {k,T0} crystal-drift
+         * curve version + signed fixed-point params in use (log-don't-tune:
+         * this is metadata for post-flight validation, NOT a tuning write).
+         * k/T0 signed: a negative slope or a sub-zero intercept is
+         * legitimate for cryo flights. */
+        if (ntok != 4 ||
+            !bench_parse_u32(tokens[1], &out->curve_ver) ||
+            !bench_parse_i32(tokens[2], &out->curve_k) ||
+            !bench_parse_i32(tokens[3], &out->curve_t0))
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_CURVE;
+        return BENCH_CMD_OK;
+    }
+
+    if (bench_strcaseeq(tokens[0], "SYNC"))
+    {
+        /* SYNC <epoch_ms> — record the GS-synced balloon clock epoch so the
+         * TEMP line carries an absolute timestamp joinable to the GS clock.
+         * The up-to-uint64 epoch is stored as mgr state; direct token parse. */
+        if (ntok != 2)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        uint64_t v = 0;
+        for (const char* s = tokens[1]; *s != '\0'; s++)
+        {
+            if (*s < '0' || *s > '9')
+                return (out->err = BENCH_CMD_E_ARG);
+            uint64_t d = (uint64_t)(*s - '0');
+            if (v > (0xFFFFFFFFFFFFFFFFULL - d) / 10ULL)
+                return (out->err = BENCH_CMD_E_ARG); /* overflow */
+            v = v * 10ULL + d;
+        }
+        out->sync_epoch_ms = v;
+        out->id = BENCH_CMD_SYNC;
+        return BENCH_CMD_OK;
+    }
+
+    if (bench_strcaseeq(tokens[0], "LOADGPS"))
+    {
+        /* LOADGPS <alt_m> <temp_c> — inject GPS altitude (m) + temperature
+         * (°C, can be negative) into the TEMP line for thermal-lag
+         * deconvolution. Host-populated when a GPS module is stitched in. */
+        if (ntok != 3 || !bench_parse_u32(tokens[1], &out->gps_alt_m))
+            return (out->err = BENCH_CMD_E_ARG);
+        /* temp may be negative (int; reuse bench_parse_i8 buffer via int32) */
+        int32_t tv;
+        /* sanity gate: real balloon ascents reach 25-35 km burst altitude —
+         * well past the 11 km tropopause — so the ceiling must not truncate
+         * telemetry. Hard ceiling at 60 km (>= 60 km rejected as garbage). */
+        if (out->gps_alt_m >= 60000UL)
+            return (out->err = BENCH_CMD_E_RANGE);
+        /* parse a signed integer ourselves (no assumption on i8 range) */
+        const char* s = tokens[2];
+        bool neg = false;
+        if (*s == '-') { neg = true; s++; }
+        else if (*s == '+') { s++; }
+        if (*s == '\0') return (out->err = BENCH_CMD_E_ARG);
+        uint32_t mag = 0;
+        for (const char* p = s; *p != '\0'; p++)
+        {
+            if (*p < '0' || *p > '9') return (out->err = BENCH_CMD_E_ARG);
+            uint32_t d = (uint32_t)(*p - '0');
+            if (mag > (0x7FFFFFFFUL - d) / 10UL) return (out->err = BENCH_CMD_E_ARG);
+            mag = mag * 10UL + d;
+        }
+        tv = neg ? -(int32_t)mag : (int32_t)mag;
+        if (tv < -150 || tv > 150) /* GPS temp sanity (‑150..150 °C out of range) */
+            return (out->err = BENCH_CMD_E_RANGE);
+        out->gps_temp_c = tv;
+        out->id = BENCH_CMD_LOADGPS;
+        return BENCH_CMD_OK;
     }
 
     return (out->err = BENCH_CMD_E_UNKNOWN);

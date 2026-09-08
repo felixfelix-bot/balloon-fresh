@@ -464,6 +464,21 @@ int radio_bench_get_die_temp(uint16_t* temp)
                                    temp) == LR20XX_STATUS_OK) ? 0 : -1;
 }
 
+int radio_bench_get_supply_mv(uint16_t* mv)
+{
+    /* LR2021 supply voltage in real millivolts (UNIT format). The unit
+     * format makes the radio return the power supply voltage directly in
+     * [mV] — the value logged on the wire as vcc_mv and consumed host-side
+     * with no scaling. Same system-command constraint as get_die_temp:
+     * only valid in STDBY/FS — caller gates on BSTATE_IDLE, never
+     * mid-RX/TX. (Not RAW: RAW returns an unscaled 13-bit count that would
+     * need host conversion; UNIT matches the mV field contract.) */
+    return (lr20xx_system_get_vbat(E80_CONTEXT,
+                                   LR20XX_SYSTEM_VALUE_FORMAT_UNIT,
+                                   LR20XX_SYSTEM_MEAS_RES_13_BITS,
+                                   mv) == LR20XX_STATUS_OK) ? 0 : -1;
+}
+
 bool radio_bench_is_asleep(void)
 {
     return radio_asleep;

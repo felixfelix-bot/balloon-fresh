@@ -157,6 +157,24 @@ void console_put_i32(int32_t v)
     }
 }
 
+void console_put_u64(uint64_t v)
+{
+    char tmp[21];
+    int i = 0;
+    if (v == 0)
+    {
+        HAL_UART_Transmit(&huart1, (const uint8_t*)"0", 1, 100);
+        return;
+    }
+    while (v > 0 && i < 20)
+    {
+        tmp[i++] = (char)('0' + (v % 10));
+        v /= 10;
+    }
+    while (i > 0)
+        HAL_UART_Transmit(&huart1, (const uint8_t*)&tmp[--i], 1, 100);
+}
+
 void console_put_u32_hex8(uint32_t v)
 {
     static const char hex[] = "0123456789ABCDEF";

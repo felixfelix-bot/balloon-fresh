@@ -218,6 +218,69 @@ static void test_pa(void)
     CHECK(c.err == BENCH_CMD_E_ARG);
 }
 
+static void test_interp_logging_cmds(void)
+{
+    bench_cmd_t c;
+
+    /* OFFSET accepts a negative applied offset (cold side of T0). */
+    c = parse("OFFSET 1200");
+    CHECK(c.id == BENCH_CMD_OFFSET && c.err == BENCH_CMD_OK);
+    CHECK(c.offset_hz == 1200);
+
+    c = parse("OFFSET -130");
+    CHECK(c.id == BENCH_CMD_OFFSET && c.err == BENCH_CMD_OK);
+    CHECK(c.offset_hz == -130);
+
+    c = parse("OFFSET");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+    c = parse("OFFSET abc");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+
+    /* CURVE: k (mHz/°C) and T0 (m°C) are signed fixed-point. A negative k
+     * slope or a sub-zero T0 intercept is legitimate for cryo flights. */
+    c = parse("CURVE 3 2000 25000");
+    CHECK(c.id == BENCH_CMD_CURVE && c.err == BENCH_CMD_OK);
+    CHECK(c.curve_ver == 3 && c.curve_k == 2000 && c.curve_t0 == 25000);
+
+    c = parse("CURVE 4 -1500 25000");
+    CHECK(c.id == BENCH_CMD_CURVE && c.err == BENCH_CMD_OK);
+    CHECK(c.curve_ver == 4 && c.curve_k == -1500 && c.curve_t0 == 25000);
+
+    c = parse("CURVE 5 2000 -5000");
+    CHECK(c.id == BENCH_CMD_CURVE && c.err == BENCH_CMD_OK);
+    CHECK(c.curve_ver == 5 && c.curve_k == 2000 && c.curve_t0 == -5000);
+
+    c = parse("CURVE 3 2000");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+    c = parse("CURVE x 2000 25000");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+}
+
+static void test_loadgps_alt_ceiling(void)
+{
+    bench_cmd_t c;
+
+    /* High-altitude balloon ascents pass 11 km toward 25-35 km burst
+     * altitude; the LOADGPS ceiling must not truncate real telemetry. */
+    c = parse("LOADGPS 30000 -50");
+    CHECK(c.id == BENCH_CMD_LOADGPS && c.err == BENCH_CMD_OK);
+    CHECK(c.gps_alt_m == 30000 && c.gps_temp_c == -50);
+
+    c = parse("LOADGPS 50000 -60");
+    CHECK(c.id == BENCH_CMD_LOADGPS && c.err == BENCH_CMD_OK);
+    CHECK(c.gps_alt_m == 50000 && c.gps_temp_c == -60);
+
+    /* Beyond the sanity ceiling still rejected. */
+    c = parse("LOADGPS 60000 -60");
+    CHECK(c.err == BENCH_CMD_E_RANGE);
+
+    /* Garbage still rejected. */
+    c = parse("LOADGPS abc -50");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+    c = parse("LOADGPS 30000");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+}
+
 static void test_token_overflow(void)
 {
     char longtok[64];
@@ -301,6 +364,8 @@ int main(void)
     test_mod();
     test_start();
     test_pa();
+    test_interp_logging_cmds();
+    test_loadgps_alt_ceiling();
     test_token_overflow();
     test_parse_helpers();
     test_radio_config_has_cr_field();

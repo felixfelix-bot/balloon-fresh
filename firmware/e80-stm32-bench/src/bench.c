@@ -105,6 +105,22 @@ static uint32_t last_temp_ms = 0;
 static uint16_t last_die_temp = 0;   /* cached for the STAT? per-run anchor */
 static bool     die_temp_valid = false;
 
+/* e80-interp-logging state (log-don't-tune). These are all LOGGED/REPORTED,
+ * never used to retune the radio in-flight. Applied offset, curve version +
+ * fixed-point {k,T0}, GS-synced epoch, and GPS alt/temp (host-injected)
+ * annotate the TEMP line so the GS can validate measured-vs-predicted offset
+ * and deconvolve thermal lag post-flight. */
+static int32_t  applied_offset_hz = 0; /* OFFSET <hz> — applied RX offset (signed) */
+static uint32_t curve_ver = 0;         /* CURVE <ver> <k> <t0> — curve in use */
+static int32_t  curve_k_mhz_per_c = 0; /* k slope (mHz/°C, signed fixed point) */
+static int32_t  curve_t0_mc = 0;       /* T0 (m°C, signed fixed point)        */
+static uint64_t sync_epoch_ms = 0;     /* SYNC <epoch_ms> — GS-synced epoch  */
+static bool     sync_valid = false;
+static uint32_t gps_alt_m = 0;         /* LOADGPS <alt_m> <temp_c>            */
+static int32_t  gps_temp_c = 0;        /* GPS temp °C (host-injected)         */
+static uint16_t last_vbat_mv = 0;      /* last supply mV reading              */
+static bool     vbat_valid = false;
+
 /* ---- Time ------------------------------------------------------------------- */
 
 static uint32_t bench_micros(void)
@@ -392,7 +408,14 @@ static void radio_sleep_now(void)
  * is in STDBY (BSTATE_IDLE, between runs) and awake. lr20xx_system_get_temp()
  * is a system command that only works in STDBY/FS — never mid-RX/TX (it
  * would interrupt RX + perturb timing). The raw 13-bit value goes on the
- * wire; °C conversion is done host-side (firmware stays float-free). */
+ * wire; °C conversion is done host-side (firmware stays float-free).
+
+ * e80-interp-logging extends the line with interpretability fields:
+ *   TEMP,<ts_ms>,<die_temp_raw>,<offset_hz>,<curve_ver>,<k_mhz_per_c>,
+ *   <t0_mc>,<vcc_mv>,<gps_alt_m>,<gps_temp_c>,<sync_epoch_ms>
+ * The applied offset / curve version+params / supply / echo of the synced
+ * epoch annotate the line so the GS can validate in real time. GPS fields
+ * are host-injected (placeholder 0 when no GPS module). */
 static void die_temp_periodic(void)
 {
     uint32_t now_ms = HAL_GetTick();
@@ -405,20 +428,48 @@ static void die_temp_periodic(void)
     if (radio_bench_is_asleep())
         return; /* radio must be awake (STDBY) for the system command */
 
-    uint16_t temp = 0;
+    uint16_t temp = 0, vbat = 0;
     radio_critical_begin();
     int rc = radio_bench_get_die_temp(&temp);
+    int rv = radio_bench_get_supply_mv(&vbat);
     radio_critical_end();
-    if (rc != 0)
+    if (rc != 0 || rv != 0)
         return;
 
     last_die_temp = temp;
     die_temp_valid = true;
+    last_vbat_mv = vbat;
+    vbat_valid = true;
 
+    /* Extended TEMP line (e80-interp-logging): append the interpretability
+     * fields positionally after die_temp_raw; a base 3-field reader still
+     * parses the prefix (backward compatible). Every field after
+     * die_temp_raw is emitted positionally — 0 placeholders when unset
+     * (GPS not injected, epoch not synced) — so the line shape is fixed
+     * for host parsing. */
     console_put("TEMP,");
     console_put_u32(now_ms);
     console_put(",");
     console_put_u32(temp);
+    console_put(",");
+    console_put_i32(applied_offset_hz);
+    console_put(",");
+    console_put_u32(curve_ver);
+    console_put(",");
+    console_put_i32(curve_k_mhz_per_c);
+    console_put(",");
+    console_put_i32(curve_t0_mc);
+    console_put(",");
+    console_put_u32(vbat);
+    console_put(",");
+    console_put_u32(gps_alt_m);
+    console_put(",");
+    console_put_i32(gps_temp_c);
+    console_put(",");
+    if (sync_valid)
+        console_put_u64(sync_epoch_ms);
+    else
+        console_put("0");
     console_putln("");
 }
 
@@ -839,6 +890,26 @@ static void handle_cmd(const bench_cmd_t* c)
             console_put(" die_temp=");
             console_put_u32(last_die_temp);
         }
+        /* e80-interp-logging STAT anchors: curve + offset + supply + sync
+         * echo what the TEMP line is annotating (log-don't-tune). */
+        console_put(" offset_hz=");
+        console_put_i32(applied_offset_hz);
+        console_put(" curve_ver=");
+        console_put_u32(curve_ver);
+        console_put(" k_mhz_per_c=");
+        console_put_i32(curve_k_mhz_per_c);
+        console_put(" t0_mc=");
+        console_put_i32(curve_t0_mc);
+        if (vbat_valid)
+        {
+            console_put(" vcc_mv=");
+            console_put_u32(last_vbat_mv);
+        }
+        if (sync_valid)
+        {
+            console_put(" sync_epoch_ms=");
+            console_put_u64(sync_epoch_ms);
+        }
         console_putln("");
         break;
     }
@@ -972,6 +1043,49 @@ static void handle_cmd(const bench_cmd_t* c)
         quiet_mode = c->quiet_enable;
         console_put("OK QUIET ");
         console_putln(c->quiet_enable ? "ON" : "OFF");
+        break;
+
+    /* ---- e80-interp-logging (log-don't-tune) ----------------------------- */
+    /* All four only update the REPORTED state annotated on the TEMP/STAT
+     * lines. NONE of them retune the radio or change cfg — the balloon's
+     * curve stays FIXED in-flight; the GS validates, never tunes. */
+
+    case BENCH_CMD_OFFSET:
+        applied_offset_hz = c->offset_hz;
+        console_put("OK OFFSET ");
+        console_put_i32(applied_offset_hz);
+        console_putln(" (LOGGED - RADIO NOT RETUNED)");
+        break;
+
+    case BENCH_CMD_CURVE:
+        curve_ver = c->curve_ver;
+        curve_k_mhz_per_c = c->curve_k;
+        curve_t0_mc = c->curve_t0;
+        console_put("OK CURVE ver=");
+        console_put_u32(curve_ver);
+        console_put(" k_mhz_per_c=");
+        console_put_i32(curve_k_mhz_per_c);
+        console_put(" t0_mc=");
+        console_put_i32(curve_t0_mc);
+        console_putln(" (LOGGED - CURVE FIXED IN-FLIGHT)");
+        break;
+
+    case BENCH_CMD_SYNC:
+        sync_epoch_ms = c->sync_epoch_ms;
+        sync_valid = true;
+        console_put("OK SYNC epoch_ms=");
+        console_put_u64(sync_epoch_ms);
+        console_putln(" (GS CLOCK JOIN)");
+        break;
+
+    case BENCH_CMD_LOADGPS:
+        gps_alt_m = c->gps_alt_m;
+        gps_temp_c = c->gps_temp_c;
+        console_put("OK GPS alt_m=");
+        console_put_u32(gps_alt_m);
+        console_put(" temp_c=");
+        console_put_i32(gps_temp_c);
+        console_putln(" (INJECTED)");
         break;
 
     default:
