@@ -501,6 +501,46 @@ class ParseStatTests(unittest.TestCase):
         self.assertAlmostEqual(s["per_pct"], 1.0)
         self.assertAlmostEqual(s["per_ci_hi_pct"], 2.2)
 
+    def test_die_temp_field_parsed(self):
+        """die_temp= on the STAT line is parsed into the normalized dict."""
+        s = m.parse_stat(self.FW_RX + " die_temp=4096")
+        self.assertEqual(s["die_temp"], 4096)
+
+    def test_die_temp_absent_defaults_none(self):
+        """No die_temp= field -> die_temp is None (not 0)."""
+        s = m.parse_stat(self.FW_RX)
+        self.assertIsNone(s["die_temp"])
+
+
+class ParseTempLineTests(unittest.TestCase):
+    """TEMP,<ts_ms>,<die_temp_raw> line parser (LR2021 VBE die temp)."""
+
+    def test_parses_valid_line(self):
+        d = m.parse_temp_line("TEMP,123456,4096")
+        self.assertEqual(d["ts_ms"], 123456)
+        self.assertEqual(d["die_temp_raw"], 4096)
+
+    def test_returns_none_for_non_temp_line(self):
+        self.assertIsNone(m.parse_temp_line("PKT,1,0,1,2,100,-70,8,1,0,0,868000000,LORA,7,125,5,10,64,0,0,0,0,0,0"))
+        self.assertIsNone(m.parse_temp_line("STAT role=RX sent=0"))
+        self.assertIsNone(m.parse_temp_line(""))
+
+    def test_returns_none_for_malformed_temp(self):
+        self.assertIsNone(m.parse_temp_line("TEMP,123456"))
+        self.assertIsNone(m.parse_temp_line("TEMP,abc,4096"))
+        self.assertIsNone(m.parse_temp_line("TEMP,123456,xyz"))
+
+    def test_raw_to_celsius_conversion(self):
+        """Host-side °C conversion of the raw 13-bit VBE value.
+
+        Formula (lr20xx_system.h): T°C = (raw/8192 * Vana - Vbe25) *
+        1000/VbeSlope + 25, with Vana=1.35, Vbe25=0.7295, VbeSlope=-1.7.
+        """
+        # raw=4096 -> (4096/8192*1.35 - 0.7295) * 1000/-1.7 + 25
+        #          = (0.675 - 0.7295) * -588.235 + 25 = 57.06
+        c = m.die_temp_raw_to_celsius(4096)
+        self.assertAlmostEqual(c, 57.06, places=1)
+
 
 class CsvLogTests(unittest.TestCase):
     def setUp(self):
