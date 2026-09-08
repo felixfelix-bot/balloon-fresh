@@ -127,7 +127,8 @@ int radio_bench_get_die_temp(uint16_t* temp);
 /** Read the LR2021 supply voltage (mV) into *mv. Same supply telemetry the
  *  interp logger annotates — crystal drift can correlate with supply. System
  *  command: only valid in STDBY/FS — call it ONLY between runs (BSTATE_IDLE),
- *  never mid-RX/TX. RAW Vbat is held on the wire; host converts to mV.
+ *  never mid-RX/TX. UNIT format: the radio returns the voltage directly in
+ *  [mV]; the value is logged as vcc_mv and consumed host-side as-is.
  *  @return 0 ok, -1 driver error. */
 int radio_bench_get_supply_mv(uint16_t* mv);
 

@@ -35,6 +35,18 @@ class TestInterpLoggingDocs(unittest.TestCase):
             self.assertIn(f, self.guide,
                           f"guide should document {f} interp field")
 
+    def test_vcc_mv_is_plain_mv_not_raw_13bit(self):
+        """vcc_mv is the LR2021 supply voltage in real mV (UNIT format from
+        the radio). It must NOT be described as a raw 13-bit count that the
+        host converts — the host parser consumes the wire value as mV with
+        no scaling, and the canonical test line uses 3300 for a 3.3 V
+        supply. (Regression: firmware initially logged VALUE_FORMAT_RAW
+        counts (~5643 @ 3.3 V) into the mV field.)"""
+        # The field row / prose must state mV semantics.
+        self.assertIn("Supply voltage in mV", self.guide)
+        # No "raw 13-bit ... host converts" wording for the supply field.
+        self.assertNotIn("raw 13-bit Vbat converted host-side", self.guide)
+
     def test_gs_obs_line_documented(self):
         self.assertIn("GSOBS", self.guide,
                       "guide should document the GSOBS observation line")

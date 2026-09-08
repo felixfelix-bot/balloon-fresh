@@ -734,7 +734,7 @@ TEMP,<ts_ms>,<die_temp_raw>,<offset_hz>,<curve_ver>,<k_mhz_per_c>,<t0_mc>,<vcc_m
 | `curve_ver` | int | `{k,T0}` crystal-drift curve version in use (from `CURVE <ver> ...`) |
 | `k_mhz_per_c` | int | Curve slope k in mHz/°C (fixed point; `k_Hz/°C = k_mhz_per_c/1000`) |
 | `t0_mc` | int | Curve intercept T0 in m°C (`T0_°C = t0_mc/1000`) |
-| `vcc_mv` | int | Supply voltage in mV (raw 13-bit Vbat converted host-side) |
+| `vcc_mv` | int | Supply voltage in mV (LR2021 UNIT format — real mV, no host scaling) |
 | `gps_alt_m` | int | GPS altitude in m (host-injected via `LOADGPS`; 0 when absent) |
 | `gps_temp_c` | int | GPS temperature in °C (host-injected; can be negative) |
 | `sync_epoch_ms` | int | GS-synced epoch timestamp in ms (absolute) |
