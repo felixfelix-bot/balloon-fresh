@@ -626,6 +626,25 @@ class ParseGsObsLineTests(unittest.TestCase):
         self.assertFalse(d["gs_ref_stable"])
 
 
+class FormatGsObsLineTests(unittest.TestCase):
+    """Inverse of parse_gs_obs_line — helpers the GS tooling uses to emit the
+    line (Doppler correction needs position/velocity + ref status)."""
+
+    def test_round_trip(self):
+        d = m.parse_gs_obs_line(self.OBS)
+        ln = m.format_gs_obs_line(d)
+        # parse back: must be identical (float formatting stable)
+        self.assertEqual(m.parse_gs_obs_line(ln), d)
+
+    def test_format_ref_stable_false(self):
+        d = m.parse_gs_obs_line("GSOBS,123456,25,-87.5,0,22.5,52.01,4.04,1.5,0.0,0.0,0.0")
+        ln = m.format_gs_obs_line(d)
+        self.assertTrue(ln.startswith("GSOBS,"))
+        self.assertIn(",0,", ln)  # gs_ref_stable=0 preserved
+
+    OBS = "GSOBS,123456,25,-87.5,1,22.5,52.01,4.04,1.5,0.0,0.0,0.0"
+
+
 class CsvLogTests(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()

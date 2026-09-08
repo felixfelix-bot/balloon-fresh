@@ -51,7 +51,8 @@ class GsValidatorTests(unittest.TestCase):
         v = self._mk()
         # T=35 -> predicted 20 Hz; measured 25 Hz (within 500 Hz tol)
         flags = v.validate_sample(measured_offset_hz=25.0, die_temp_c=35.0)
-        self.assertFalse(any(flags.values()))
+        self.assertFalse(any(v for k, v in flags.items()
+                             if k != "predicted_offset_hz"))
         self.assertAlmostEqual(flags["predicted_offset_hz"], 20.0)
 
     def test_die_temp_out_of_range(self):
