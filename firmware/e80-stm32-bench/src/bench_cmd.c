@@ -193,6 +193,16 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
         out->id = BENCH_CMD_STAT;
         return BENCH_CMD_OK;
     }
+    if (bench_strcaseeq(tokens[0], "TEMP?"))
+    {
+        /* TEMP? — host-driven fresh die-temp + supply read (per-run
+         * anchor). Argument-free like STAT?/ID?: the read targets are
+         * fixed (VBE die temp + supply), so a bare query suffices. */
+        if (ntok != 1)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        out->id = BENCH_CMD_TEMP;
+        return BENCH_CMD_OK;
+    }
     if (bench_strcaseeq(tokens[0], "STOP"))
     {
         if (ntok != 1)
