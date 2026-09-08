@@ -708,6 +708,36 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 
 The `captured_ts` column is the join key for GPS stitching.
 
+### Die-temperature lines (`TEMP,<ts_ms>,<die_temp_raw>`)
+
+The bench firmware emits a periodic **TEMP** line at ~1 Hz while the radio
+is in STDBY (between runs, `BSTATE_IDLE`) and awake. It is **never** sampled
+mid-RX/TX — `lr20xx_system_get_temp()` is a system command that only works
+in STDBY/FS and would interrupt RX + perturb timing.
+
+```
+TEMP,<ts_ms>,<die_temp_raw>
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ts_ms` | int | Firmware uptime in milliseconds (since board boot) |
+| `die_temp_raw` | int | Raw 13-bit LR2021 VBE die-temperature reading |
+
+The raw 13-bit value is kept on the wire; °C conversion is done host-side
+(firmware stays float-free). The conversion formula (from `lr20xx_system.h`,
+RAW format) is:
+
+```
+T°C = (raw/8192 × Vana − Vbe25) × 1000/VbeSlope + 25
+```
+
+with `Vana` = 1.35 V, `Vbe25` = 0.7295 V, `VbeSlope` = −1.7 mV/°C (typ).
+The bench uses the **same source (VBE) + resolution (13-bit)** that flight
+firmware uses to index the cryo cal table, so the bench reading is directly
+comparable. The `STAT?` line also carries a `die_temp=` field (the most
+recent reading) as a per-run anchor.
+
 ### TX log CSV (`tx-log.csv`)
 
 One row per config (summary). Columns:
