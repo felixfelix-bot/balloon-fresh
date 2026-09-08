@@ -515,7 +515,53 @@ def parse_stat(reply):
     out["snr"] = _f("snr_avg_db", "snr")
     out["drops"] = int(_f("drops") or 0)
     out["gap_us"] = int(_f("gap_us") or 0)
+    out["die_temp"] = _f("die_temp")
     return out
+
+
+# LR2021 VBE die-temp conversion constants (lr20xx_system.h RAW formula):
+#   T°C = (raw/8192 * Vana - Vbe25) * 1000/VbeSlope + 25
+# Vana typ 1.35 V, Vbe25 typ 0.7295 V, VbeSlope typ -1.7 mV/°C.
+_DIE_TEMP_VANA = 1.35
+_DIE_TEMP_VBE25 = 0.7295
+_DIE_TEMP_VBE_SLOPE = -1.7
+
+
+def die_temp_raw_to_celsius(raw):
+    """Convert a raw 13-bit LR2021 VBE die-temp reading to °C (host-side).
+
+    Firmware stays float-free; the raw value is logged on the wire and this
+    conversion is applied host-side. Same source (VBE) + resolution (13-bit)
+    flight firmware uses to index the cryo cal table, so the bench reading is
+    directly comparable.
+    """
+    return (raw / 8192.0 * _DIE_TEMP_VANA - _DIE_TEMP_VBE25) * \
+        1000.0 / _DIE_TEMP_VBE_SLOPE + 25.0
+
+
+def parse_temp_line(line):
+    """Parse a firmware 'TEMP,<ts_ms>,<die_temp_raw>' console line.
+
+    Emitted at ~1 Hz by the bench firmware, sampled only while the radio is
+    in STDBY (BSTATE_IDLE, between runs) — never mid-RX/TX, because
+    lr20xx_system_get_temp() is a system command that only works in
+    STDBY/FS and would interrupt RX + perturb timing.
+
+    Returns a dict {'ts_ms': int, 'die_temp_raw': int} or None if the line
+    is not a valid TEMP line.
+    """
+    if not line or not line.strip().startswith("TEMP,"):
+        return None
+    p = line.strip().split(",")
+    if len(p) < 3:
+        return None
+    try:
+        return {
+            "ts_ms": int(p[1]),
+            "die_temp_raw": int(p[2]),
+        }
+    except ValueError:
+        return None
 
 
 def read_prior_rows(path):
@@ -1331,6 +1377,9 @@ def format_stat_line(role, stat, session, config, replicate=1):
     parts.append("replicate={}".format(replicate))
     parts.append("drops={}".format(stat.get("drops", 0)))
     parts.append("gap_us={}".format(stat.get("gap_us", 0)))
+    die_temp = stat.get("die_temp")
+    if die_temp is not None:
+        parts.append("die_temp={}".format(die_temp))
     # Optional extras (TX side): preset metadata so merge_csvs can compute
     # the PER denominator and label reports without the preset file.
     for k in ("label", "n_pkts", "plen"):
