@@ -63,6 +63,10 @@ class FakeBoard:
     def stat(self):
         return self._reply("STAT?", True)
 
+    def temp(self):
+        """TEMP? — force a fresh die-temp + supply read (per-run anchor)."""
+        return self._reply("TEMP?", True)
+
     # firmware model
     def _reply(self, line, expect_ok):
         self.log.append(line)
@@ -81,10 +85,20 @@ class FakeBoard:
                         "per_x1e6=0 elapsed_s=42.0 kbps=64 rssi_avg_dbm=0.0 "
                         "snr_avg_db=0.0 drops=0".format(n, n))
             rx = w.get("rx_ok", n - 3)
+            die = w.get("die_temp")
+            die_part = " die_temp={}".format(die) if die is not None else ""
             return ("STAT role=RX sent=0 sent_ok=0 rx={} crc_err=1 "
                     "per_x1e6=300 per_ci_x1e6=[100,900] elapsed_s=42.5 "
-                    "kbps=63 rssi_avg_dbm=-87.5 snr_avg_db=9.8 drops=0"
-                    .format(rx))
+                    "kbps=63 rssi_avg_dbm=-87.5 snr_avg_db=9.8 drops=0{}"
+                    .format(rx, die_part))
+        if line == "TEMP?":
+            if w.get("no_temp_cmd"):
+                # Older firmware (pre-e80-temp-per-run) replies ERR UNKNOWN.
+                return "ERR UNKNOWN"
+            die = w.get("die_temp", 4096)
+            w["die_temp"] = die  # cache for the STAT? die_temp= anchor
+            # Extended TEMP line (interp fields all zero placeholders).
+            return "TEMP,123456,{},0,0,0,0,3300,0,0,0".format(die)
         if line.startswith("BAND OVERRIDE"):
             assert line == "BAND OVERRIDE 2026", line
             w["band_override"] = True
@@ -585,6 +599,72 @@ class ParseTempLineExtendedTests(unittest.TestCase):
     def test_malformed_extended_still_none(self):
         self.assertIsNone(m.parse_temp_line("TEMP,123456,4096,abc"))
         self.assertIsNone(m.parse_temp_line("TEMP,123456,4096,1200,3,xyz"))
+
+
+class PerRunTempSamplingTests(unittest.TestCase):
+    """Host-driven per-run die-temp anchor (e80-temp-per-run).
+
+    The RX mode loop issues a TEMP? query to the RX board right after a run's
+    capture completes (before/around STAT?) so the rx-log carries one fresh
+    TEMP line per run and the STAT? die_temp= anchor reflects a reading taken
+    in the between-runs window — not the last IDLE periodic sample.
+    """
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.dir.name, "rx-log.txt")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _rx_log(self):
+        return m.HarmonizedRxLogWriter(self.path)
+
+    def _fake_rx(self, die_temp=None, no_temp_cmd=False):
+        world = {"tx": {"freq": 868000000, "n": 100},
+                 "rx": {"freq": 868000000, "n": 100}}
+        if die_temp is not None:
+            world["rx"]["die_temp"] = die_temp
+        if no_temp_cmd:
+            world["rx"]["no_temp_cmd"] = True
+        return FakeBoard("/dev/ttyUSB4", world)
+
+    def test_sample_run_temp_parses_fresh_reading(self):
+        """sample_run_temp() issues TEMP? and returns the parsed reading."""
+        board = self._fake_rx(die_temp=4123)
+        d = m.sample_run_temp(board)
+        self.assertIsNotNone(d)
+        self.assertEqual(d["die_temp_raw"], 4123)
+        # The TEMP? query was actually sent to the board.
+        self.assertIn("TEMP?", board.log)
+
+    def test_sample_run_temp_old_firmware_returns_none(self):
+        """Pre-TEMP? firmware replies ERR UNKNOWN — the sampler must not
+        raise and must return None (log-don't-crash: the anchor is best
+        effort, a missing anchor must not abort a range run)."""
+        board = self._fake_rx(no_temp_cmd=True)
+        self.assertIsNone(m.sample_run_temp(board))
+
+    def test_run_log_carries_one_fresh_temp_line(self):
+        """After a capture the host writes exactly one TEMP line per run."""
+        board = self._fake_rx(die_temp=4100)
+        log = self._rx_log()
+        d = m.sample_run_temp(board)
+        self.assertIsNotNone(d)
+        log.temp_line(d)
+        with open(self.path) as f:
+            lines = f.read().splitlines()
+        temp_lines = [ln for ln in lines if ln.startswith("TEMP,")]
+        self.assertEqual(len(temp_lines), 1)
+        self.assertEqual(m.parse_temp_line(temp_lines[0])["die_temp_raw"], 4100)
+
+    def test_stat_anchor_reflects_fresh_temp(self):
+        """After TEMP? is issued before STAT?, the die_temp= STAT anchor is
+        the fresh per-run reading, not stale."""
+        board = self._fake_rx(die_temp=4180)
+        m.sample_run_temp(board)
+        stat = m.parse_stat(board.stat())
+        self.assertEqual(stat["die_temp"], 4180)
 
 
 class ParseGsObsLineTests(unittest.TestCase):

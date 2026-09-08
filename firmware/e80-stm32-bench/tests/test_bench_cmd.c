@@ -59,6 +59,25 @@ static void test_basic_commands(void)
     CHECK(c.id == BENCH_CMD_STOP);
 }
 
+/* e80-temp-per-run: TEMP? — host-driven fresh die-temp + supply read in the
+ * between-runs window (per-run temperature anchor). Parser surface only here;
+ * the mid-burst/STDBY gating lives in bench.c's handler (compile-only). */
+static void test_temp_query(void)
+{
+    bench_cmd_t c;
+
+    c = parse("TEMP?");
+    CHECK(c.id == BENCH_CMD_TEMP && c.err == BENCH_CMD_OK);
+
+    /* case-insensitive */
+    c = parse("temp?");
+    CHECK(c.id == BENCH_CMD_TEMP && c.err == BENCH_CMD_OK);
+
+    /* no arguments allowed (like STAT?/ID?) */
+    c = parse("TEMP? NOW");
+    CHECK(c.err == BENCH_CMD_E_SYNTAX);
+}
+
 static void test_role(void)
 {
     bench_cmd_t c;
@@ -359,6 +378,7 @@ static void test_quiet(void)
 int main(void)
 {
     test_basic_commands();
+    test_temp_query();
     test_role();
     test_freq_band();
     test_mod();

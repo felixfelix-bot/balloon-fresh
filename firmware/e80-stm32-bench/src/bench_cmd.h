@@ -36,6 +36,7 @@ typedef enum bench_cmd_id_e
     BENCH_CMD_PA,            /* PA <dbm> */
     BENCH_CMD_START,         /* START N=<pkts> LEN=<bytes> GAP=<us> */
     BENCH_CMD_STAT,          /* STAT? */
+    BENCH_CMD_TEMP,          /* TEMP? — force a fresh die-temp + supply read */
     BENCH_CMD_STOP,          /* STOP */
     BENCH_CMD_FLASH,         /* FLASH — jump to the STM32F1 ROM bootloader */
     BENCH_CMD_HELP,          /* HELP */
