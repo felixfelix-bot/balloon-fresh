@@ -450,6 +450,20 @@ void radio_bench_set_tx_test_mode(lr20xx_radio_common_tx_test_mode_t mode)
     lr20xx_radio_common_set_tx_test_mode(E80_CONTEXT, mode);
 }
 
+int radio_bench_get_die_temp(uint16_t* temp)
+{
+    /* VBE (0x00) + 13-bit — SAME source/resolution flight firmware uses to
+     * index the cryo cal table, so the bench reading is directly comparable.
+     * RAW format keeps the raw 13-bit value on the wire; °C conversion is
+     * done host-side (firmware stays float-free). System command: only valid
+     * in STDBY/FS — caller must gate on BSTATE_IDLE, never mid-RX/TX. */
+    return (lr20xx_system_get_temp(E80_CONTEXT,
+                                   LR20XX_SYSTEM_VALUE_FORMAT_RAW,
+                                   LR20XX_SYSTEM_MEAS_RES_13_BITS,
+                                   LR20XX_SYSTEM_TEMP_SRC_VBE,
+                                   temp) == LR20XX_STATUS_OK) ? 0 : -1;
+}
+
 bool radio_bench_is_asleep(void)
 {
     return radio_asleep;

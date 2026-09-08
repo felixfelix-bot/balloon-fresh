@@ -115,6 +115,15 @@ uint32_t radio_bench_evt_drops(void);
 /** Set the LR2021 TX_TEST_MODE register (PRBS9 / NORMAL). */
 void radio_bench_set_tx_test_mode(lr20xx_radio_common_tx_test_mode_t mode);
 
+/** Read the LR2021 VBE die temperature (raw 13-bit value) into *temp.
+ *  Wraps lr20xx_system_get_temp() with the SAME source (VBE) + resolution
+ *  (13-bit) flight firmware uses to index the cryo cal table, so the bench
+ *  reading is directly comparable. This is a system command: it only works
+ *  while the radio is in STDBY/FS — call it ONLY between runs (BSTATE_IDLE),
+ *  never mid-RX/TX (it would interrupt RX + perturb timing).
+ *  @return 0 ok, -1 driver error. */
+int radio_bench_get_die_temp(uint16_t* temp);
+
 #ifdef __cplusplus
 }
 #endif
