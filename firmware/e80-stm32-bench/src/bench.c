@@ -403,19 +403,47 @@ static void radio_sleep_now(void)
     state = BSTATE_IDLE;
 }
 
+/* Shared TEMP line emitter: prints one extended TEMP line from the cached
+ * last_die_temp / last_vbat_mv + interp annotation state. Used by both the
+ * ~1 Hz periodic sampler (die_temp_periodic) and the host-driven TEMP?
+ * per-run read — the on-wire format stays in ONE place so the two paths
+ * cannot drift. Fields after die_temp_raw are emitted positionally — 0
+ * placeholders when unset (GPS not injected, epoch not synced) — so the
+ * line shape is fixed for host parsing. */
+static void temp_line_emit(uint32_t now_ms)
+{
+    console_put("TEMP,");
+    console_put_u32(now_ms);
+    console_put(",");
+    console_put_u32(last_die_temp);
+    console_put(",");
+    console_put_i32(applied_offset_hz);
+    console_put(",");
+    console_put_u32(curve_ver);
+    console_put(",");
+    console_put_i32(curve_k_mhz_per_c);
+    console_put(",");
+    console_put_i32(curve_t0_mc);
+    console_put(",");
+    console_put_u32(last_vbat_mv);
+    console_put(",");
+    console_put_u32(gps_alt_m);
+    console_put(",");
+    console_put_i32(gps_temp_c);
+    console_put(",");
+    if (sync_valid)
+        console_put_u64(sync_epoch_ms);
+    else
+        console_put("0");
+    console_putln("");
+}
+
 /* Periodic LR2021 VBE die-temp sampler (e80-die-temp). Emits a
  * 'TEMP,<ts_ms>,<die_temp_raw>' line at ~1 Hz, sampled ONLY while the radio
  * is in STDBY (BSTATE_IDLE, between runs) and awake. lr20xx_system_get_temp()
  * is a system command that only works in STDBY/FS — never mid-RX/TX (it
  * would interrupt RX + perturb timing). The raw 13-bit value goes on the
- * wire; °C conversion is done host-side (firmware stays float-free).
-
- * e80-interp-logging extends the line with interpretability fields:
- *   TEMP,<ts_ms>,<die_temp_raw>,<offset_hz>,<curve_ver>,<k_mhz_per_c>,
- *   <t0_mc>,<vcc_mv>,<gps_alt_m>,<gps_temp_c>,<sync_epoch_ms>
- * The applied offset / curve version+params / supply / echo of the synced
- * epoch annotate the line so the GS can validate in real time. GPS fields
- * are host-injected (placeholder 0 when no GPS module). */
+ * wire; °C conversion is done host-side (firmware stays float-free). */
 static void die_temp_periodic(void)
 {
     uint32_t now_ms = HAL_GetTick();
@@ -441,36 +469,7 @@ static void die_temp_periodic(void)
     last_vbat_mv = vbat;
     vbat_valid = true;
 
-    /* Extended TEMP line (e80-interp-logging): append the interpretability
-     * fields positionally after die_temp_raw; a base 3-field reader still
-     * parses the prefix (backward compatible). Every field after
-     * die_temp_raw is emitted positionally — 0 placeholders when unset
-     * (GPS not injected, epoch not synced) — so the line shape is fixed
-     * for host parsing. */
-    console_put("TEMP,");
-    console_put_u32(now_ms);
-    console_put(",");
-    console_put_u32(temp);
-    console_put(",");
-    console_put_i32(applied_offset_hz);
-    console_put(",");
-    console_put_u32(curve_ver);
-    console_put(",");
-    console_put_i32(curve_k_mhz_per_c);
-    console_put(",");
-    console_put_i32(curve_t0_mc);
-    console_put(",");
-    console_put_u32(vbat);
-    console_put(",");
-    console_put_u32(gps_alt_m);
-    console_put(",");
-    console_put_i32(gps_temp_c);
-    console_put(",");
-    if (sync_valid)
-        console_put_u64(sync_epoch_ms);
-    else
-        console_put("0");
-    console_putln("");
+    temp_line_emit(now_ms);
 }
 
 /* ---- TX-hang watchdog (see bench_safety.h for the layered design) ---------- */
@@ -582,7 +581,7 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("CMDS: ID? | ROLE TX|RX|NONE | ARM TX | MOD loRa <sf5-12> <bw125|250|500> | ");
         console_put("MOD flrc <br_kbps 260..2600> <dbm0-10> | FREQ <hz> | PA <dbm> | ");
         console_put("POWER MODE OUTDOOR <pin> | ");
-        console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
+        console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | TEMP? | STOP | ");
         console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> 410-2483MHz (incl 2.4GHz ISM) | ");
         console_put("SESSION <id> | CONFIG <id> <replicate> | ");
         console_put("PRBS9 ON|OFF | PRBS ON|OFF | QUIET ON|OFF | ");
@@ -920,6 +919,77 @@ static void handle_cmd(const bench_cmd_t* c)
         session_active = false;
         console_putln("OK STOP (RADIO ASLEEP)");
         break;
+
+    case BENCH_CMD_TEMP:
+    {
+        /* Host-driven per-run die-temp anchor (e80-temp-per-run). Forces a
+         * FRESH die-temp + supply read at a safe moment — the brief window
+         * between runs — so each run carries a real per-run temperature
+         * anchor without perturbing the run's packets.
+
+         * lr20xx_system_get_temp()/get_vbat are SYSTEM commands: only valid
+         * in STDBY/FS. Never issued mid-burst: BSTATE_TX_BURST is refused
+         * outright (ERR), so a host TEMP? cannot interrupt an active TX
+         * burst. If we come from RX_CONT (role RX listening between runs)
+         * the read happens AFTER the previous run's capture and we re-arm
+         * continuous RX before returning, so the next run is unaffected. */
+        if (state == BSTATE_TX_BURST)
+        {
+            reply_err("TX BURST ACTIVE (STOP FIRST)");
+            return;
+        }
+
+        bool restore_rx_cont = (state == BSTATE_RX_CONT);
+        bool was_asleep      = radio_bench_is_asleep();
+        bool restore_sleep   = was_asleep && !restore_rx_cont;
+
+        radio_critical_begin();
+        if (was_asleep)
+            radio_bench_wakeup(); /* NSS glitch -> STDBY_RC (warm sleep wake) */
+        /* Force STDBY for the system read (RX_CONT -> STDBY_RC; a freshly
+         * woken radio is already in STDBY_RC). */
+        lr20xx_system_set_standby_mode(E80_CONTEXT, LR20XX_SYSTEM_STANDBY_MODE_RC);
+        uint16_t temp = 0, vbat = 0;
+        int rc = radio_bench_get_die_temp(&temp);
+        int rv = radio_bench_get_supply_mv(&vbat);
+        radio_critical_end();
+
+        if (rc != 0 || rv != 0)
+        {
+            /* Restore posture first — never leave the radio misconfigured,
+             * even when the read itself failed. */
+            if (restore_rx_cont)
+                radio_rearm_rx();
+            else if (restore_sleep)
+            {
+                radio_critical_begin();
+                radio_bench_sleep();
+                radio_critical_end();
+            }
+            reply_err("TEMP READ FAIL");
+            return;
+        }
+
+        last_die_temp = temp;
+        die_temp_valid = true;
+        last_vbat_mv = vbat;
+        vbat_valid = true;
+
+        /* Restore posture: re-arm RX if we came from RX_CONT so the next
+         * run is unaffected; return to sleep if the radio was asleep. */
+        if (restore_rx_cont)
+            radio_rearm_rx();
+        else if (restore_sleep)
+        {
+            radio_critical_begin();
+            radio_bench_sleep();
+            radio_critical_end();
+        }
+
+        /* ONE TEMP line — same on-wire format as the periodic sampler. */
+        temp_line_emit(HAL_GetTick());
+        break;
+    }
 
     case BENCH_CMD_BUF_CLEAR:
         buf_clear();
