@@ -118,7 +118,6 @@ static uint64_t sync_epoch_ms = 0;     /* SYNC <epoch_ms> — GS-synced epoch  *
 static bool     sync_valid = false;
 static uint32_t gps_alt_m = 0;         /* LOADGPS <alt_m> <temp_c>            */
 static int32_t  gps_temp_c = 0;        /* GPS temp °C (host-injected)         */
-static bool     gps_valid = false;
 static uint16_t last_vbat_mv = 0;      /* last supply mV reading              */
 static bool     vbat_valid = false;
 
@@ -1082,7 +1081,6 @@ static void handle_cmd(const bench_cmd_t* c)
     case BENCH_CMD_LOADGPS:
         gps_alt_m = c->gps_alt_m;
         gps_temp_c = c->gps_temp_c;
-        gps_valid = true;
         console_put("OK GPS alt_m=");
         console_put_u32(gps_alt_m);
         console_put(" temp_c=");
