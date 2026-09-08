@@ -464,6 +464,18 @@ int radio_bench_get_die_temp(uint16_t* temp)
                                    temp) == LR20XX_STATUS_OK) ? 0 : -1;
 }
 
+int radio_bench_get_supply_mv(uint16_t* mv)
+{
+    /* LR2021 supply voltage. RAW format keeps the raw 13-bit Vbat value on
+     * the wire; host converts to mV (Vbat = (raw/8192*5 - 1) * Vana). Same
+     * system-command constraint as get_die_temp: only valid in STDBY/FS —
+     * caller gates on BSTATE_IDLE, never mid-RX/TX. */
+    return (lr20xx_system_get_vbat(E80_CONTEXT,
+                                   LR20XX_SYSTEM_VALUE_FORMAT_RAW,
+                                   LR20XX_SYSTEM_MEAS_RES_13_BITS,
+                                   mv) == LR20XX_STATUS_OK) ? 0 : -1;
+}
+
 bool radio_bench_is_asleep(void)
 {
     return radio_asleep;
