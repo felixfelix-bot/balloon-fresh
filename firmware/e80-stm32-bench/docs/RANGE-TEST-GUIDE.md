@@ -758,6 +758,47 @@ firmware uses to index the cryo cal table, so the bench reading is directly
 comparable. The `STAT?` line also carries a `die_temp=` field (the most
 recent reading) as a per-run anchor.
 
+### Host-driven per-run die-temp sampling (`TEMP?`) (e80-temp-per-run)
+
+The periodic sampler above is gated to `BSTATE_IDLE` + awake, so an RX
+board parked in continuous RX (`BSTATE_RX_CONT`) never samples **during** a
+run — its `die_temp=` STAT anchor was the last IDLE-window reading and went
+stale on long runs. To get a **TRUE per-run temperature**, the host issues a
+new `TEMP?` console command in the brief between-runs window (after the
+previous run's capture completes, before the next run's `START`):
+
+```
+TEMP?      force a fresh LR2021 VBE die-temp + supply read, emit ONE TEMP line
+```
+
+`TEMP?` handling on the firmware (argument-free, like `STAT?`/`ID?`):
+
+- **Safe-moment rule.** The read is only performed when the radio is NOT
+  mid-burst (`BSTATE_TX_BURST` is refused with `ERR TX BURST ACTIVE (STOP
+  FIRST)` — a TEMP? can never interrupt an active TX burst or perturb a
+  run's timing).
+- **STDBY read.** The radio is briefly placed in STDBY (woken first if it
+  was asleep), then `radio_bench_get_die_temp()` + `radio_bench_get_supply_mv()`
+  are read via the SAME system commands the periodic sampler uses. The
+  caches (`last_die_temp`/`die_temp_valid` + `vbat`) are updated and exactly
+  ONE `TEMP,<ts_ms>,<die_temp_raw>,...` line is emitted (same on-wire format
+  as the periodic line — backward compatible).
+- **Posture restore.** If the board came from continuous RX
+  (`role==RX`, `BSTATE_RX_CONT`), continuous RX is re-armed before the
+  handler returns, so the next run is unaffected; if the radio was asleep it
+  is returned to sleep.
+- **Log-don't-tune.** `TEMP?` only READS (die temp + supply) and updates the
+  reported caches; it never retunes the radio or changes the compensation
+  curve.
+- **Per-run anchor.** Issuing `TEMP?` before `STAT?` makes the `die_temp=`
+  STAT field reflect the fresh between-runs reading.
+
+Host tooling (`e80_bench_ctl.py`, RX mode loop): after a run's capture
+completes and before the `STAT?` summary read, the RX board is sent `TEMP?`
+and the parsed reading is written to the harmonized rx-log as one `TEMP,`
+line per run (older firmware without `TEMP?` replies `ERR UNKNOWN` — the
+sample is skipped, never fatal).
+
 ### Ground-station observation lines (`GSOBS,...`)
 
 The GS side logs its measured offset (applied offset received from the
