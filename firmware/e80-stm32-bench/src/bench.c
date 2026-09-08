@@ -95,6 +95,16 @@ static bench_pkt_ctx_t pkt_ctx = { .session_id = 0, .config_id = 0, .replicate =
  * (unrecoverable app corrupt). Once set, it stays set until power-cycle. */
 static bool     iwdg_active = false;
 
+/* LR2021 VBE die-temp periodic sampler (e80-die-temp): emits a TEMP line at
+ * ~1 Hz, sampled ONLY while the radio is in STDBY (BSTATE_IDLE, between
+ * runs) and awake. lr20xx_system_get_temp() is a system command that only
+ * works in STDBY/FS — never mid-RX/TX (it would interrupt RX + perturb
+ * timing). The raw 13-bit value goes on the wire; °C conversion is host-side. */
+#define DIE_TEMP_PERIOD_MS 1000U
+static uint32_t last_temp_ms = 0;
+static uint16_t last_die_temp = 0;   /* cached for the STAT? per-run anchor */
+static bool     die_temp_valid = false;
+
 /* ---- Time ------------------------------------------------------------------- */
 
 static uint32_t bench_micros(void)
@@ -375,6 +385,41 @@ static void radio_sleep_now(void)
     radio_bench_sleep();
     radio_critical_end();
     state = BSTATE_IDLE;
+}
+
+/* Periodic LR2021 VBE die-temp sampler (e80-die-temp). Emits a
+ * 'TEMP,<ts_ms>,<die_temp_raw>' line at ~1 Hz, sampled ONLY while the radio
+ * is in STDBY (BSTATE_IDLE, between runs) and awake. lr20xx_system_get_temp()
+ * is a system command that only works in STDBY/FS — never mid-RX/TX (it
+ * would interrupt RX + perturb timing). The raw 13-bit value goes on the
+ * wire; °C conversion is done host-side (firmware stays float-free). */
+static void die_temp_periodic(void)
+{
+    uint32_t now_ms = HAL_GetTick();
+    if ((uint32_t)(now_ms - last_temp_ms) < DIE_TEMP_PERIOD_MS)
+        return;
+    last_temp_ms = now_ms;
+
+    if (state != BSTATE_IDLE)
+        return; /* never sample mid-RX/TX */
+    if (radio_bench_is_asleep())
+        return; /* radio must be awake (STDBY) for the system command */
+
+    uint16_t temp = 0;
+    radio_critical_begin();
+    int rc = radio_bench_get_die_temp(&temp);
+    radio_critical_end();
+    if (rc != 0)
+        return;
+
+    last_die_temp = temp;
+    die_temp_valid = true;
+
+    console_put("TEMP,");
+    console_put_u32(now_ms);
+    console_put(",");
+    console_put_u32(temp);
+    console_putln("");
 }
 
 /* ---- TX-hang watchdog (see bench_safety.h for the layered design) ---------- */
@@ -789,6 +834,11 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_u32(tx_gap_us);
         console_put(" buf=");
         console_put_u32(buf_len());
+        if (die_temp_valid)
+        {
+            console_put(" die_temp=");
+            console_put_u32(last_die_temp);
+        }
         console_putln("");
         break;
     }
@@ -1180,6 +1230,7 @@ int main(void)
             }
         }
         radio_task();
+        die_temp_periodic();
     }
 #else
     return 0;
