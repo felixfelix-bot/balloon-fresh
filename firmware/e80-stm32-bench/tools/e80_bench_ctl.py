@@ -597,6 +597,45 @@ def parse_temp_line(line):
     return out
 
 
+def format_temp_line(d):
+    """Format a parsed TEMP dict back to a ``TEMP,`` line.
+
+    Inverse of :func:`parse_temp_line` for the base + extended shapes the
+    firmware emits (e80-temp-per-run host tooling writes one fresh TEMP
+    line per run into the rx-log). Optional interpretability fields that are
+    None (absent on the base 3-field line) are omitted; present ints are
+    appended positionally in the documented order.
+    """
+    parts = [str(d["ts_ms"]), str(d["die_temp_raw"])]
+    for key in ("offset_hz", "curve_ver", "k_mhz_per_c", "t0_mc",
+                "vcc_mv", "gps_alt_m", "gps_temp_c", "sync_epoch_ms"):
+        v = d.get(key)
+        if v is None:
+            continue
+        parts.append(str(v))
+    return "TEMP," + ",".join(parts)
+
+
+def sample_run_temp(board):
+    """Issue TEMP? to a board (fresh die-temp + supply read, per-run anchor).
+
+    The RX mode loop calls this right after a run's capture completes and
+    before STAT?, so the rx-log carries one fresh TEMP line per run and the
+    STAT? die_temp= field reflects a reading taken in the between-runs
+    window — not the last IDLE periodic sample. Returns the parsed TEMP
+    dict, or None when the firmware does not support TEMP? (older build
+    replies ERR UNKNOWN / query timeout) — log-don't-crash: a missing
+    anchor must never abort a range run.
+    """
+    try:
+        raw = board.query("TEMP?", prefixes=("TEMP", "ERR", "OK"))
+    except Exception:
+        return None
+    if not raw or not raw.startswith("TEMP"):
+        return None
+    return parse_temp_line(raw)
+
+
 def parse_gs_obs_line(line):
     """Parse a ground-station observation line 'GSOBS,<ts_ms>,...'.
 
@@ -1635,6 +1674,19 @@ class HarmonizedRxLogWriter:
             f.write(line + "\n")
             f.flush()
 
+    def temp_line(self, temp_dict):
+        """Write a TEMP line from a parse_temp_line() dict (per-run anchor).
+
+        e80-temp-per-run: the RX mode loop samples TEMP? after each run's
+        capture and writes the reading here, so the rx-log carries one fresh
+        per-run die-temperature line (not just the IDLE-window periodic
+        samples).
+        """
+        line = format_temp_line(temp_dict)
+        with open(self.path, "a") as f:
+            f.write(line + "\n")
+            f.flush()
+
     def comment(self, text):
         with open(self.path, "a") as f:
             f.write("# {}\n".format(text))
@@ -2210,6 +2262,19 @@ def run_rx_mode(args, board_cls=None):
                             pa_dbm=p["pa_dbm"], len=p["len"],
                             pcrc16=p["pcrc16"] or 0,
                         )
+
+                # Fresh per-run die-temp anchor (TEMP?): issue TEMP? in the
+                # between-runs window — the TX burst for this config ended
+                # inside capture_duration, and the next START is rx_lead s
+                # away — so the rx-log carries ONE fresh TEMP line per run
+                # and the STAT? die_temp= below reflects THIS run's reading,
+                # not the last IDLE periodic sample. Older firmware without
+                # TEMP? replies ERR UNKNOWN: sample_run_temp returns None and
+                # the anchor is skipped (log-don't-crash).
+                if use_harmonized:
+                    temp_d = sample_run_temp(board)
+                    if temp_d is not None:
+                        log.temp_line(temp_d)
 
                 # Read STAT for summary (non-fatal on error)
                 try:
