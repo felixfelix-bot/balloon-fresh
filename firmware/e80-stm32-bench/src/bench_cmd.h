@@ -47,6 +47,14 @@ typedef enum bench_cmd_id_e
     BENCH_CMD_BUF_CLEAR,     /* BUF CLEAR — drop the staged TX buffer (len=0) */
     BENCH_CMD_BUF_LOAD,      /* BUF LOAD <n> <crc16_hex> — binary payload receive */
     BENCH_CMD_BUF_STATUS,    /* BUF STATUS — staged len/crc report */
+    /* e80-interp-logging (log-don't-tune): balloon-side interpretability
+     * logging state. These commands make the applied offset / curve / sync /
+     * GPS telemetry visible so the GS can validate in real time. They NEVER
+     * tune the radio in-flight — the curve stays FIXED. */
+    BENCH_CMD_OFFSET,        /* OFFSET <hz> — applied RX frequency offset */
+    BENCH_CMD_CURVE,         /* CURVE <ver> <k_mhz_per_c> <t0_mc> — stored {k,T0} curve in use */
+    BENCH_CMD_SYNC,          /* SYNC <epoch_ms> — GS-synced balloon clock epoch */
+    BENCH_CMD_LOADGPS,       /* LOADGPS <alt_m> <temp_c> — host-injected GPS alt/temp */
 } bench_cmd_id_t;
 
 typedef enum bench_role_e
@@ -101,6 +109,15 @@ typedef struct bench_cmd_s
 
     uint32_t buf_load_n;   /* BUF LOAD <n>: payload byte count (1..4096) */
     uint16_t buf_load_crc; /* BUF LOAD <n> <crc16_hex>: expected CCITT-FALSE CRC */
+
+    /* e80-interp-logging command args */
+    uint32_t offset_hz;    /* OFFSET <hz> — applied RX frequency offset */
+    uint32_t curve_ver;    /* CURVE <ver> <k> <T0> — first arg (curve version) */
+    uint32_t curve_k;      /* CURVE <ver> <k> <T0> — k in mHz/°C */
+    uint32_t curve_t0;     /* CURVE <ver> <k> <T0> — T0 in m°C */
+    uint64_t sync_epoch_ms;/* SYNC <epoch_ms> — GS-synced epoch timestamp */
+    uint32_t gps_alt_m;    /* LOADGPS <alt_m> <temp_c> */
+    int32_t  gps_temp_c;   /* LOADGPS <alt_m> <temp_c> */
 } bench_cmd_t;
 
 /**
