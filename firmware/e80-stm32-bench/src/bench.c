@@ -110,10 +110,10 @@ static bool     die_temp_valid = false;
  * fixed-point {k,T0}, GS-synced epoch, and GPS alt/temp (host-injected)
  * annotate the TEMP line so the GS can validate measured-vs-predicted offset
  * and deconvolve thermal lag post-flight. */
-static uint32_t applied_offset_hz = 0; /* OFFSET <hz> — applied RX offset */
+static int32_t  applied_offset_hz = 0; /* OFFSET <hz> — applied RX offset (signed) */
 static uint32_t curve_ver = 0;         /* CURVE <ver> <k> <t0> — curve in use */
-static uint32_t curve_k_mhz_per_c = 0; /* k slope (mHz/°C, fixed point)      */
-static uint32_t curve_t0_mc = 0;       /* T0 (m°C, fixed point)              */
+static int32_t  curve_k_mhz_per_c = 0; /* k slope (mHz/°C, signed fixed point) */
+static int32_t  curve_t0_mc = 0;       /* T0 (m°C, signed fixed point)        */
 static uint64_t sync_epoch_ms = 0;     /* SYNC <epoch_ms> — GS-synced epoch  */
 static bool     sync_valid = false;
 static uint32_t gps_alt_m = 0;         /* LOADGPS <alt_m> <temp_c>            */
@@ -444,20 +444,22 @@ static void die_temp_periodic(void)
 
     /* Extended TEMP line (e80-interp-logging): append the interpretability
      * fields positionally after die_temp_raw; a base 3-field reader still
-     * parses the prefix (backward compatible). sync epoch printed only when
-     * valid; GPS printed only when injected. */
+     * parses the prefix (backward compatible). Every field after
+     * die_temp_raw is emitted positionally — 0 placeholders when unset
+     * (GPS not injected, epoch not synced) — so the line shape is fixed
+     * for host parsing. */
     console_put("TEMP,");
     console_put_u32(now_ms);
     console_put(",");
     console_put_u32(temp);
     console_put(",");
-    console_put_u32(applied_offset_hz);
+    console_put_i32(applied_offset_hz);
     console_put(",");
     console_put_u32(curve_ver);
     console_put(",");
-    console_put_u32(curve_k_mhz_per_c);
+    console_put_i32(curve_k_mhz_per_c);
     console_put(",");
-    console_put_u32(curve_t0_mc);
+    console_put_i32(curve_t0_mc);
     console_put(",");
     console_put_u32(vbat);
     console_put(",");
@@ -892,13 +894,13 @@ static void handle_cmd(const bench_cmd_t* c)
         /* e80-interp-logging STAT anchors: curve + offset + supply + sync
          * echo what the TEMP line is annotating (log-don't-tune). */
         console_put(" offset_hz=");
-        console_put_u32(applied_offset_hz);
+        console_put_i32(applied_offset_hz);
         console_put(" curve_ver=");
         console_put_u32(curve_ver);
         console_put(" k_mhz_per_c=");
-        console_put_u32(curve_k_mhz_per_c);
+        console_put_i32(curve_k_mhz_per_c);
         console_put(" t0_mc=");
-        console_put_u32(curve_t0_mc);
+        console_put_i32(curve_t0_mc);
         if (vbat_valid)
         {
             console_put(" vcc_mv=");
@@ -1052,7 +1054,7 @@ static void handle_cmd(const bench_cmd_t* c)
     case BENCH_CMD_OFFSET:
         applied_offset_hz = c->offset_hz;
         console_put("OK OFFSET ");
-        console_put_u32(applied_offset_hz);
+        console_put_i32(applied_offset_hz);
         console_putln(" (LOGGED - RADIO NOT RETUNED)");
         break;
 
@@ -1063,9 +1065,9 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("OK CURVE ver=");
         console_put_u32(curve_ver);
         console_put(" k_mhz_per_c=");
-        console_put_u32(curve_k_mhz_per_c);
+        console_put_i32(curve_k_mhz_per_c);
         console_put(" t0_mc=");
-        console_put_u32(curve_t0_mc);
+        console_put_i32(curve_t0_mc);
         console_putln(" (LOGGED - CURVE FIXED IN-FLIGHT)");
         break;
 

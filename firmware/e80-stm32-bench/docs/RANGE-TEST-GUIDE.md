@@ -730,10 +730,10 @@ TEMP,<ts_ms>,<die_temp_raw>,<offset_hz>,<curve_ver>,<k_mhz_per_c>,<t0_mc>,<vcc_m
 |-------|------|-------------|
 | `ts_ms` | int | Firmware uptime in milliseconds (since board boot) |
 | `die_temp_raw` | int | Raw 13-bit LR2021 VBE die-temperature reading |
-| `offset_hz` | int | Applied frequency offset (the exact offset commanded per RX re-arm; reported, never retunes the radio in-flight) |
+| `offset_hz` | int | Applied frequency offset in Hz — **signed**: the correction goes negative on the cold side of T0 / the receding leg (the exact offset commanded per RX re-arm; reported, never retunes the radio in-flight) |
 | `curve_ver` | int | `{k,T0}` crystal-drift curve version in use (from `CURVE <ver> ...`) |
-| `k_mhz_per_c` | int | Curve slope k in mHz/°C (fixed point; `k_Hz/°C = k_mhz_per_c/1000`) |
-| `t0_mc` | int | Curve intercept T0 in m°C (`T0_°C = t0_mc/1000`) |
+| `k_mhz_per_c` | int | Curve slope k in mHz/°C — **signed** fixed point (`k_Hz/°C = k_mhz_per_c/1000`; a negative slope is legitimate for cryo) |
+| `t0_mc` | int | Curve intercept T0 in m°C — **signed** fixed point (`T0_°C = t0_mc/1000`; a sub-zero intercept is legitimate) |
 | `vcc_mv` | int | Supply voltage in mV (LR2021 UNIT format — real mV, no host scaling) |
 | `gps_alt_m` | int | GPS altitude in m (host-injected via `LOADGPS`; 0 when absent) |
 | `gps_temp_c` | int | GPS temperature in °C (host-injected; can be negative) |
@@ -783,11 +783,19 @@ GSOBS,<ts_ms>,<measured_offset_hz>,<rssi_dbm>,<gs_ref_stable>,<gs_ambient_c>,<gs
 The balloon-side commands that record the interp telemetry state:
 
 ```
-OFFSET <hz>                    set applied RX frequency offset (logged only)
-CURVE <ver> <k_mhz_per_c> <t0_mc>   set stored {k,T0} curve version + params (metadata only)
+OFFSET <hz>                    set applied RX frequency offset, signed (logged only)
+CURVE <ver> <k_mhz_per_c> <t0_mc>   set stored {k,T0} curve version + signed params (metadata only)
 SYNC <epoch_ms>                set GS-synced balloon clock epoch
-LOADGPS <alt_m> <temp_c>       inject GPS altitude + temperature
+LOADGPS <alt_m> <temp_c>       inject GPS altitude + temperature (alt < 60 km; temp ±150 °C)
 ```
+
+**Signed values:** `OFFSET <hz>` and the `CURVE` k/T0 parameters are signed
+fixed point — a negative applied offset (cold side of T0 / receding leg), a
+negative slope k, or a sub-zero T0 intercept are all legitimate and must not
+be rejected. `LOADGPS <alt_m>` accepts altitudes up to the 60 km hard sanity
+ceiling (real balloon ascents reach 25-35 km burst altitude, past the 11 km
+tropopause — the ceiling must not truncate telemetry; ≥ 60 km is rejected as
+garbage).
 
 **Constraint (log-don't-tune):** none of these retunes the radio or changes
 `cfg`. The balloon's crystal-drift curve stays **FIXED** in flight; the GS

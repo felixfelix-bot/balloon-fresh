@@ -110,11 +110,14 @@ typedef struct bench_cmd_s
     uint32_t buf_load_n;   /* BUF LOAD <n>: payload byte count (1..4096) */
     uint16_t buf_load_crc; /* BUF LOAD <n> <crc16_hex>: expected CCITT-FALSE CRC */
 
-    /* e80-interp-logging command args */
-    uint32_t offset_hz;    /* OFFSET <hz> — applied RX frequency offset */
+    /* e80-interp-logging command args. OFFSET/CURVE signed values are
+     * legitimate: the applied RX offset is a correction that goes negative
+     * on the cold side of T0 / the receding leg, and a cryo {k,T0} curve
+     * may have a negative slope k or a sub-zero intercept T0. */
+    int32_t  offset_hz;    /* OFFSET <hz> — applied RX frequency offset (signed) */
     uint32_t curve_ver;    /* CURVE <ver> <k> <T0> — first arg (curve version) */
-    uint32_t curve_k;      /* CURVE <ver> <k> <T0> — k in mHz/°C */
-    uint32_t curve_t0;     /* CURVE <ver> <k> <T0> — T0 in m°C */
+    int32_t  curve_k;      /* CURVE <ver> <k> <T0> — k in mHz/°C (signed) */
+    int32_t  curve_t0;     /* CURVE <ver> <k> <T0> — T0 in m°C (signed) */
     uint64_t sync_epoch_ms;/* SYNC <epoch_ms> — GS-synced epoch timestamp */
     uint32_t gps_alt_m;    /* LOADGPS <alt_m> <temp_c> */
     int32_t  gps_temp_c;   /* LOADGPS <alt_m> <temp_c> */
@@ -140,6 +143,9 @@ bool bench_parse_u32(const char* s, uint32_t* out);
 
 /** Parse int8 (allows leading '-'); returns false on garbage. */
 bool bench_parse_i8(const char* s, int8_t* out);
+
+/** Parse int32 (allows leading '-'/'+'); returns false on garbage/overflow. */
+bool bench_parse_i32(const char* s, int32_t* out);
 
 #ifdef __cplusplus
 }
