@@ -626,9 +626,16 @@ def sample_run_temp(board):
     dict, or None when the firmware does not support TEMP? (older build
     replies ERR UNKNOWN / query timeout) — log-don't-crash: a missing
     anchor must never abort a range run.
+
+    Note on reply attribution: on a board in BSTATE_IDLE the ~1 Hz periodic
+    sampler could emit a TEMP line that the first-prefix match attributes to
+    this TEMP? query (up to 1 s stale). The RX-loop caller only queries in
+    RX_CONT, where the periodic sampler is gated off, so this is not
+    reachable in the current flow — documented in case TEMP? is later
+    pointed at a TX/IDLE board.
     """
     try:
-        raw = board.query("TEMP?", prefixes=("TEMP", "ERR", "OK"))
+        raw = board.temp()
     except Exception:
         return None
     if not raw or not raw.startswith("TEMP"):
@@ -816,6 +823,10 @@ class BoardSerial:
 
     def stat(self):
         return self.query("STAT?", prefixes=("STAT", "ERR", "OK"))
+
+    def temp(self):
+        """TEMP? — force a fresh die-temp + supply read (per-run anchor)."""
+        return self.query("TEMP?", prefixes=("TEMP", "ERR", "OK"))
 
     def close(self):
         self.ser.close()
