@@ -306,3 +306,17 @@ class TestRp2040PRBS6Wiring:
             cxx=True,
         )
         assert "8/8 passed" in out
+
+
+class TestE28RangeConsole:
+    """E28-2G4M27S (SX1282) ranging console core — host tests (no hardware)."""
+
+    def test_e28_range_console_host(self):
+        e28_src = os.path.join(REPO_ROOT, "firmware", "esp32-e28-range", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "src", "e28_range", "test_e28_range_console.cpp"),
+            [os.path.join(e28_src, "e28_range_console.c")],
+            [e28_src],
+            cxx=True,
+        )
+        assert "ALL CHECKS PASSED" in out
