@@ -32,6 +32,7 @@ extern "C" {
 #define E28_RANGE_BOARD_NAME      "E28-RANGE"
 #define E28_RANGE_FW_VERSION      "v1.0"
 #define E28_RANGE_TXPOW_CAP_INDOOR_DBM  10   /* EU indoor cap (matches E80) */
+#define E28_RANGE_PA_MIN_DBM      -18        /* SX1282 setOutputPower floor */
 #define E28_RANGE_DEFAULT_ADDR    0xE80E2801ul
 #define E28_RANGE_FREQ_MIN_HZ     2400000000ul
 #define E28_RANGE_FREQ_MAX_HZ     2500000000ul

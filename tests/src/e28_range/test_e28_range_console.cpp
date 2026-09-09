@@ -132,6 +132,22 @@ int main(void) {
   e28_range_feed_line("STAT?");
   CHECK(out_buf.find("pa=-3") != std::string::npos, "negative PA allowed (SX1282 range -18..+13)");
 
+  // PA below the SX1282 floor must be clamped, not wrapped past the cap
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("PA -200");   // would wrap to +56 if unchecked
+  CHECK(out_buf.find("floor") != std::string::npos, "PA -200 rejected below SX1282 floor");
+  e28_range_feed_line("STAT?");
+  CHECK(out_buf.find("pa=-18") != std::string::npos, "PA -200 clamped to -18, never wraps past cap");
+
+  // non-numeric PA must be rejected, not coerced to 0
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("PA banana");
+  CHECK(out_buf.find("ERR") != std::string::npos, "PA banana rejected (not coerced)");
+
   // ================= FREQ bounds =================
   reset_fakes();
   io = make_io();
@@ -145,6 +161,12 @@ int main(void) {
   e28_range_init(&io, "0123456");
   e28_range_feed_line("FREQ 9999999999");  // out of band
   CHECK(out_buf.find("ERR") != std::string::npos, "out-of-band FREQ rejected");
+
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("FREQ banana");
+  CHECK(out_buf.find("ERR") != std::string::npos, "non-numeric FREQ rejected");
 
   // ================= SF bounds =================
   reset_fakes();
@@ -160,7 +182,7 @@ int main(void) {
   e28_range_feed_line("SF 13");  // out of 5..12
   CHECK(out_buf.find("ERR") != std::string::npos, "SF 13 rejected");
 
-  // ================= BW (ranging-valid only) =================
+  // ================= BW (812.5 kHz only) =================
   reset_fakes();
   io = make_io();
   e28_range_init(&io, "0123456");
@@ -171,8 +193,14 @@ int main(void) {
   reset_fakes();
   io = make_io();
   e28_range_init(&io, "0123456");
-  e28_range_feed_line("BW 125");  // not ranging-valid
-  CHECK(out_buf.find("ERR") != std::string::npos, "BW 125 rejected (ranging 406/812/1625 only)");
+  e28_range_feed_line("BW 125");  // not the 812.5-only value
+  CHECK(out_buf.find("ERR") != std::string::npos, "BW 125 rejected (812.5 kHz only)");
+
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("BW 406.25");  // ranging-valid but not the 812.5-only value
+  CHECK(out_buf.find("ERR") != std::string::npos, "BW 406.25 rejected (812.5 kHz only)");
 
   // ================= ADDR =================
   reset_fakes();
@@ -181,6 +209,12 @@ int main(void) {
   e28_range_feed_line("ADDR 0xDEADBEEF");
   e28_range_feed_line("STAT?");
   CHECK(out_buf.find("DEADBEEF") != std::string::npos, "ADDR 0xDEADBEEF stored");
+
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("ADDR zzz");
+  CHECK(out_buf.find("ERR") != std::string::npos, "non-numeric ADDR rejected");
 
   // ================= RANGE (master) -> DIST =================
   reset_fakes();
@@ -222,12 +256,41 @@ int main(void) {
   CHECK(last_range_addr == 0xE80E2801ul, "RANGE-SLAVE uses configured addr");
   CHECK(out_buf.find("SLAVE OK") != std::string::npos, "RANGE-SLAVE reports SLAVE OK");
 
+  // RANGE-SLAVE error path
+  reset_fakes();
+  io = make_io();
+  fake_range_ret = -901;
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("RANGE-SLAVE");
+  CHECK(out_buf.find("ERR") != std::string::npos, "RANGE-SLAVE error reported");
+
   // ================= config push after FREQ/SF/BW/PA calls radioBegin =====
   reset_fakes();
   io = make_io();
   e28_range_init(&io, "0123456");
   e28_range_feed_line("FREQ 2460000000");
   CHECK(last_radio_begin >= 1, "FREQ pushes config via radioBegin");
+
+  // ================= boot config push =================
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  CHECK(last_radio_begin >= 1, "init pushes power-on defaults to radio");
+
+  // ================= tab-separated command =================
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("FREQ\t2440000000");
+  e28_range_feed_line("STAT?");
+  CHECK(out_buf.find("freq=2440") != std::string::npos, "tab-separated FREQ accepted");
+
+  // ================= '?' alias =================
+  reset_fakes();
+  io = make_io();
+  e28_range_init(&io, "0123456");
+  e28_range_feed_line("?");
+  CHECK(out_buf.find("RANGE") != std::string::npos, "'?' lists commands (RANGE present)");
 
   // ================= unknown command =================
   reset_fakes();

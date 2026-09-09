@@ -47,7 +47,7 @@ Case-insensitive, `\n`-terminated, one command per line. Boot prints
 | `RANGE?` | — | last distance: `DIST=<meters>m` (or `DIST=none`) |
 | `FREQ <hz>` | frequency Hz | set carrier (2400–2500 MHz) |
 | `SF <n>` | 5–12 | LoRa spreading factor |
-| `BW <khz>` | 406.25 / 812.5 / 1625 | LoRa bandwidth (ranging-valid only; **812.5 kHz default**) |
+| `BW <khz>` | 812.5 | LoRa bandwidth (**812.5 kHz only** — ranging BW) |
 | `PA <dbm>` | dBm | TX power, clamped to indoor cap (+10 dBm) |
 | `ADDR <hex>` | 32-bit hex | ranging address (both ends must match) |
 | `HELP` `/` `?` | — | list commands |
@@ -58,6 +58,8 @@ SX1282 reaches +22 dBm, but indoor bench use is capped at **+10 dBm**
 (`E28_RANGE_TXPOW_CAP_INDOOR_DBM = 10`, matching `E80_BENCH_TXPOW_CAP_INDOOR_DBM`).
 The cap is enforced in the host-testable console **core** (`e28_range_console.c`),
 so it cannot be bypassed by the firmware glue. `PA 22` → `ERR PA capped to 10 dBm`.
+Values below the SX1282 floor (−18 dBm) are clamped to −18 dBm
+(`E28_RANGE_PA_MIN_DBM`), so an out-of-range negative can never wrap past the cap.
 
 ## Ranging configuration
 

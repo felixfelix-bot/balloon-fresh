@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <errno.h>
 
 /* ---- state --------------------------------------------------------------- */
 
@@ -60,6 +61,32 @@ static void putf(const char* fmt, ...)
     vsnprintf(buf, sizeof buf, fmt, ap);
     va_end(ap);
     put(buf);
+}
+
+/* Strict decimal parse: returns true iff the whole string is a valid
+ * (optionally signed) integer with no trailing garbage. */
+static bool parse_long(const char* s, long* out)
+{
+    if(!s || !*s) return false;
+    char* end = NULL;
+    errno = 0;
+    long v = strtol(s, &end, 10);
+    if(errno != 0 || end == s || *end != '\0') return false;
+    *out = v;
+    return true;
+}
+
+/* Strict unsigned parse (hex or decimal): returns true iff the whole string
+ * is a valid non-negative integer with no trailing garbage. */
+static bool parse_ulong(const char* s, unsigned long* out)
+{
+    if(!s || !*s) return false;
+    char* end = NULL;
+    errno = 0;
+    unsigned long v = strtoul(s, &end, 0);   /* 0x prefix -> hex, else decimal */
+    if(errno != 0 || end == s || *end != '\0') return false;
+    *out = v;
+    return true;
 }
 
 static void push_config(void)
@@ -148,10 +175,11 @@ static void cmd_range_query(void)
 
 static void cmd_freq(const char* arg)
 {
-    char buf[32];
-    snprintf(buf, sizeof buf, "%s", arg);
-    trim(buf);
-    unsigned long hz = strtoul(buf, NULL, 10);
+    unsigned long hz;
+    if(!parse_ulong(arg, &hz)) {
+        put("ERR freq: expected integer Hz\r\n");
+        return;
+    }
     if(hz < E28_RANGE_FREQ_MIN_HZ || hz > E28_RANGE_FREQ_MAX_HZ) {
         put("ERR freq out of band (2400-2500 MHz)\r\n");
         return;
@@ -162,10 +190,11 @@ static void cmd_freq(const char* arg)
 
 static void cmd_sf(const char* arg)
 {
-    char buf[16];
-    snprintf(buf, sizeof buf, "%s", arg);
-    trim(buf);
-    long sf = strtol(buf, NULL, 10);
+    long sf;
+    if(!parse_long(arg, &sf)) {
+        put("ERR sf: expected integer\r\n");
+        return;
+    }
     if(sf < E28_RANGE_SF_MIN || sf > E28_RANGE_SF_MAX) {
         put("ERR sf out of range (5-12)\r\n");
         return;
@@ -180,8 +209,8 @@ static void cmd_bw(const char* arg)
     snprintf(buf, sizeof buf, "%s", arg);
     trim(buf);
     float bw = (float)atof(buf);
-    if(bw != 406.25f && bw != 812.5f && bw != 1625.0f) {
-        put("ERR bw must be 406.25/812.5/1625 kHz (ranging-valid)\r\n");
+    if(bw != 812.5f) {
+        put("ERR bw must be 812.5 kHz (ranging BW 812.5 kHz only)\r\n");
         return;
     }
     g.bw_khz = bw;
@@ -190,13 +219,18 @@ static void cmd_bw(const char* arg)
 
 static void cmd_pa(const char* arg)
 {
-    char buf[16];
-    snprintf(buf, sizeof buf, "%s", arg);
-    trim(buf);
-    long pa = strtol(buf, NULL, 10);
+    long pa;
+    if(!parse_long(arg, &pa)) {
+        put("ERR pa: expected integer dBm\r\n");
+        return;
+    }
     if(pa > E28_RANGE_TXPOW_CAP_INDOOR_DBM) {
         putf("ERR PA capped to %d dBm\r\n", E28_RANGE_TXPOW_CAP_INDOOR_DBM);
         pa = E28_RANGE_TXPOW_CAP_INDOOR_DBM;
+    }
+    if(pa < E28_RANGE_PA_MIN_DBM) {
+        putf("ERR pa below SX1282 floor (%d dBm)\r\n", E28_RANGE_PA_MIN_DBM);
+        pa = E28_RANGE_PA_MIN_DBM;
     }
     g.pa_dbm = (int8_t)pa;
     push_config();
@@ -204,10 +238,11 @@ static void cmd_pa(const char* arg)
 
 static void cmd_addr(const char* arg)
 {
-    char buf[32];
-    snprintf(buf, sizeof buf, "%s", arg);
-    trim(buf);
-    unsigned long a = strtoul(buf, NULL, 16);
+    unsigned long a;
+    if(!parse_ulong(arg, &a)) {
+        put("ERR addr: expected hex or decimal\r\n");
+        return;
+    }
     g.addr = (uint32_t)a;
     push_config();
 }
@@ -231,6 +266,9 @@ void e28_range_init(const e28_io_t* io, const char* fw_sha7)
     g.pa_dbm = E28_RANGE_TXPOW_CAP_INDOOR_DBM;
     g.addr = E28_RANGE_DEFAULT_ADDR;
     g.last_err = 0;
+    /* push the power-on defaults to the radio so hardware is configured
+     * even before the first console command (cold-review finding). */
+    push_config();
 }
 
 void e28_range_feed_line(const char* line)
@@ -240,13 +278,15 @@ void e28_range_feed_line(const char* line)
     trim(buf);
     if(buf[0] == 0) return;
 
-    /* split command + arg */
+    /* split command + arg on any whitespace (space or tab) */
     char cmd[32];
     const char* arg = "";
-    char* sp = strchr(buf, ' ');
-    if(sp) {
+    char* sp = buf;
+    while(*sp && !isspace((unsigned char)*sp)) sp++;
+    if(*sp) {
         *sp = 0;
         arg = sp + 1;
+        trim((char*)arg);
     }
     /* bounded copy: commands are short; truncation is safe (unknown cmd) */
     size_t clen = strlen(buf);
