@@ -34,6 +34,7 @@ tests track the real on-wire format. No hardware, no serial.
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import re
@@ -828,6 +829,285 @@ class TestMakefileLogNaming(unittest.TestCase):
             cwd=self.FWDIR, capture_output=True, text=True)
         self.assertIn("--skip-late-configs", out.stdout)
         self.assertIn("rx-log-t01787921400-2608281250.csv", out.stdout)
+
+
+# ---------------------------------------------------------------------------
+# session_id join (GO-mode log dirs) with a t0 fallback — v3 lineage
+#
+# The two on-disk layouts one launch can produce:
+#   legacy boundary/manual: logs/s<sid>-t0<epoch>/stop-<dist>/rx-log-*.csv
+#   GO mode (--sync cvm):   logs/s<sid>-go<epoch>/rx-log.csv  (no stop level)
+# range_check joins primarily on session_id (session dir name + the launch
+# header's session=<sid> token) and falls back to the legacy t0 rule.
+# ---------------------------------------------------------------------------
+
+LEGACY_SESSION = "2608281250"          # legacy 10-digit int session form
+GO_SESSION = "2609130435a3f"           # GO form: %y%m%d%H%M + 3-hex nonce
+GO_OTHER_SESSION = "2609130501b7c"
+SID_T0 = 1787921400                    # launch epoch (same value the
+                                       # Makefile log-naming test uses)
+
+
+def _sid_iso(t0):
+    """Local-time ISO stamp exactly as the runners write it in the header."""
+    return datetime.datetime.fromtimestamp(t0).isoformat()
+
+
+def _write_log(path, lines):
+    """Write a log file (creating parents); returns the path."""
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    return path
+
+
+def go_log(tmp_path, session=GO_SESSION, t0=SID_T0, role="rx"):
+    """logs/s<session>-go<t0>/<role>-log.csv — the GO-mode layout.
+
+    Mirrors the real writers: the RX banner (DISTRIBUTED_RX_MODE) carries no
+    session= token, the RX/TX GO_MODE line does; the TX banner carries both.
+    GO mode has NO `stop-<dist>` level — the stop lives in the ARMED/header.
+    """
+    d = tmp_path / "logs" / "s{}-go{}".format(session, t0)
+    d.mkdir(parents=True, exist_ok=True)
+    lines = []
+    if role == "rx":
+        lines.append("# DISTRIBUTED_RX_MODE t0={} port=/dev/ttyUSB1 loop=1"
+                     .format(_sid_iso(t0)))
+    else:
+        lines.append("# DISTRIBUTED_TX_MODE session={} t0={} port=/dev/ttyUSB2 "
+                     "loop=1".format(session, _sid_iso(t0)))
+    lines.append("# GO_MODE sync=cvm source=generate session={} t_ready={} "
+                 "t0={} deadline_mono=1.0 armed_seq=7".format(
+                     session, _sid_iso(t0), _sid_iso(t0)))
+    return _write_log(str(d / "{}-log.csv".format(role)), lines)
+
+
+def legacy_stop_log(tmp_path, session=LEGACY_SESSION, t0=SID_T0, dist="50m"):
+    """logs/s<session>-t0<t0>/stop-<dist>/rx-log-t0<t0>-<session>.csv."""
+    d = tmp_path / "logs" / "s{}-t0{}".format(session, t0) / ("stop-" + dist)
+    d.mkdir(parents=True, exist_ok=True)
+    return _write_log(
+        str(d / "rx-log-t0{}-{}.csv".format(t0, session)),
+        ["# DISTRIBUTED_RX_MODE t0={} port=/dev/ttyUSB1 loop=1"
+         .format(_sid_iso(t0))])
+
+
+class TestLaunchTagT0Extraction:
+    """t0_from_filename() accepts BOTH launch tags: -t0<epoch> and -go<epoch>."""
+
+    def test_go_session_dir_t0(self, tmp_path):
+        rx = go_log(tmp_path, role="rx")
+        assert range_check.t0_from_filename(rx) == SID_T0
+
+    def test_go_basename_t0(self, tmp_path):
+        p = _write_log(str(tmp_path / "tx-log-go{}.csv".format(SID_T0)),
+                       ["# GO_MODE sync=cvm session={} t0=x".format(GO_SESSION)])
+        assert range_check.t0_from_filename(p) == SID_T0
+
+    def test_legacy_tag_in_basename_unchanged(self, tmp_path):
+        rx = legacy_stop_log(tmp_path)
+        assert range_check.t0_from_filename(rx) == SID_T0
+
+    def test_legacy_tag_in_parent_dir_unchanged(self, tmp_path):
+        d = tmp_path / "logs" / "s{}-t0{}".format(LEGACY_SESSION, SID_T0)
+        p = _write_log(str(d / "rx-log.csv"), [])
+        assert range_check.t0_from_filename(p) == SID_T0
+
+    def test_untagged_plain_log_is_none(self):
+        assert range_check.t0_from_filename("/somewhere/rx-log.csv") is None
+
+    def test_go_dir_t0_sources_labelled(self, tmp_path):
+        rx = go_log(tmp_path, role="rx")
+        srcs = dict(range_check.t0_sources(rx))
+        assert srcs
+        assert set(srcs.values()) == {SID_T0}
+        assert any("-go{}".format(SID_T0) in lbl for lbl in srcs), srcs
+
+
+class TestSessionFromFilename:
+    """session_from_filename(): the s<session>-{t0,go}<epoch> dir name."""
+
+    def test_legacy_int_session_dir(self, tmp_path):
+        rx = legacy_stop_log(tmp_path)
+        assert range_check.session_from_filename(rx) == LEGACY_SESSION
+
+    def test_go_nonce_session_dir(self, tmp_path):
+        rx = go_log(tmp_path, role="rx")
+        assert range_check.session_from_filename(rx) == GO_SESSION
+
+    def test_no_session_dir_is_none(self, tmp_path):
+        p = _write_log(str(tmp_path / "rx-log.csv"),
+                       ["# DISTRIBUTED_RX_MODE t0=x loop=1"])
+        assert range_check.session_from_filename(p) is None
+
+
+class TestSessionFromHeader:
+    """session_from_header(): the session=<sid> token of the launch banner."""
+
+    def test_go_rx_banner_has_no_session_but_go_line_does(self, tmp_path):
+        rx = go_log(tmp_path, role="rx")
+        assert range_check.session_from_header(rx) == GO_SESSION
+
+    def test_go_tx_distributed_banner_session(self, tmp_path):
+        tx = go_log(tmp_path, role="tx")
+        assert range_check.session_from_header(tx) == GO_SESSION
+
+    def test_legacy_distributed_banner_with_session(self, tmp_path):
+        p = _write_log(
+            str(tmp_path / "tx-log.csv"),
+            ["# DISTRIBUTED_TX_MODE session={} t0=2026-09-13T04:50:00 port=x "
+             "loop=1".format(LEGACY_SESSION)])
+        assert range_check.session_from_header(p) == LEGACY_SESSION
+
+    def test_header_without_session_is_none(self, tmp_path):
+        p = _write_log(str(tmp_path / "rx-log.csv"),
+                       ["# DISTRIBUTED_RX_MODE t0=2026-09-13T04:50:00 loop=1"])
+        assert range_check.session_from_header(p) is None
+
+    def test_missing_file_is_none(self):
+        assert range_check.session_from_header("/nonexistent/rx-log.csv") is None
+
+    def test_session_sources_shape_and_labels(self, tmp_path):
+        rx = go_log(tmp_path, role="rx")
+        srcs = range_check.session_sources(rx)
+        assert [s for _l, s in srcs] == [GO_SESSION, GO_SESSION]
+        assert any("dir" in lbl for lbl, _s in srcs), srcs
+        assert any("header" in lbl for lbl, _s in srcs), srcs
+
+
+class TestSessionFirstJoin:
+    """check_t0_match(): session_id first, legacy t0 rule as the fallback."""
+
+    def test_session_mismatch_is_loud(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        tx = go_log(tmp_path, session=GO_OTHER_SESSION, role="tx")
+        ok, msg = range_check.check_t0_match(rx, tx)
+        assert not ok
+        assert "SESSION MISMATCH" in msg
+        assert GO_SESSION in msg
+        assert GO_OTHER_SESSION in msg
+        assert os.path.basename(rx) in msg and os.path.basename(tx) in msg
+        assert "NOT from the same launch" in msg
+
+    def test_session_mismatch_names_every_source_label(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        tx = go_log(tmp_path, session=GO_OTHER_SESSION, role="tx")
+        _ok, msg = range_check.check_t0_match(rx, tx)
+        for lbl, _s in (range_check.session_sources(rx)
+                        + range_check.session_sources(tx)):
+            assert lbl in msg, (lbl, msg)
+
+    def test_same_session_and_t0_ok(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        tx = go_log(tmp_path, session=GO_SESSION, role="tx")
+        ok, msg = range_check.check_t0_match(rx, tx)
+        assert ok, msg
+        assert str(SID_T0) in msg
+
+    def test_same_session_but_t0_disagreement_still_loud(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, t0=SID_T0, role="rx")
+        tx = go_log(tmp_path, session=GO_SESSION, t0=SID_T0 + 60, role="tx")
+        ok, msg = range_check.check_t0_match(rx, tx)
+        assert not ok
+        assert "T0 MISMATCH" in msg
+        assert str(SID_T0) in msg and str(SID_T0 + 60) in msg
+
+    def test_one_sided_session_falls_back_to_t0(self, tmp_path):
+        # rx is GO-tagged; tx is a plain t0-tagged tx log (no session at all)
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        tx = _write_log(
+            str(tmp_path / "tx-log-t0{}.csv".format(SID_T0)),
+            ["# DISTRIBUTED_TX_MODE t0={} port=x loop=1".format(_sid_iso(SID_T0))])
+        ok, msg = range_check.check_t0_match(rx, tx)
+        assert ok, msg
+
+    def test_legacy_t0_only_pair_unchanged(self, tmp_path):
+        # legacy manual/boundary pair: no session anywhere, only t0
+        rx = _write_log(
+            str(tmp_path / "rx-log-t0{}.csv".format(SID_T0)),
+            ["# DISTRIBUTED_RX_MODE t0={} loop=1".format(_sid_iso(SID_T0))])
+        tx = _write_log(
+            str(tmp_path / "tx-log-t0{}.csv".format(SID_T0)),
+            ["# DISTRIBUTED_TX_MODE t0={} loop=1".format(_sid_iso(SID_T0))])
+        ok, msg = range_check.check_t0_match(rx, tx)
+        assert ok, msg
+
+    def test_legacy_t0_only_mismatch_unchanged(self, tmp_path):
+        rx = _write_log(
+            str(tmp_path / "rx-log-t0{}.csv".format(SID_T0)),
+            ["# DISTRIBUTED_RX_MODE t0={} loop=1".format(_sid_iso(SID_T0))])
+        tx = _write_log(
+            str(tmp_path / "tx-log-t0{}.csv".format(SID_T0 + 300)),
+            ["# DISTRIBUTED_TX_MODE t0={} loop=1"
+             .format(_sid_iso(SID_T0 + 300))])
+        ok, msg = range_check.check_t0_match(rx, tx)
+        assert not ok
+        assert "T0 MISMATCH" in msg
+
+
+class TestFindRxLogsGoLayout:
+    """find_rx_logs(): the GO layout is discoverable, legacy patterns kept."""
+
+    def test_finds_go_layout_log(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        got = range_check.find_rx_logs("50m", GO_SESSION, [str(tmp_path)])
+        assert [os.path.realpath(p) for p in got] == [os.path.realpath(rx)]
+
+    def test_go_layout_found_for_any_dist(self, tmp_path):
+        # the GO dir carries no stop-<dist> level, so it is a candidate for
+        # every DIST of that session
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        got = range_check.find_rx_logs("70km", GO_SESSION, [str(tmp_path)])
+        assert os.path.realpath(rx) in [os.path.realpath(p) for p in got]
+
+    def test_go_layout_found_without_explicit_session(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        got = range_check.find_rx_logs("50m", None, [str(tmp_path)])
+        assert os.path.realpath(rx) in [os.path.realpath(p) for p in got]
+
+    def test_session_tagged_beats_newer_foreign_log(self, tmp_path):
+        mine = go_log(tmp_path, session=GO_SESSION, role="rx")
+        foreign = legacy_stop_log(tmp_path, session=LEGACY_SESSION)
+        os.utime(mine, (1000, 1000))
+        os.utime(foreign, (2000, 2000))          # newer, but not our session
+        got = range_check.find_rx_logs("50m", GO_SESSION, [str(tmp_path)])
+        assert os.path.realpath(got[0]) == os.path.realpath(mine)
+
+    def test_legacy_patterns_still_discovered(self, tmp_path):
+        a = legacy_stop_log(tmp_path, session=LEGACY_SESSION)
+        b = _write_log(str(tmp_path / "logs" / str(LEGACY_SESSION) / "stop-50m"
+                           / "rx-log-s.csv"), [])
+        c = _write_log(str(tmp_path / "logs" / "s9-t01" / "stop-50m"
+                           / "rx-log-x.csv"), [])
+        got = {os.path.realpath(p)
+               for p in range_check.find_rx_logs("50m", LEGACY_SESSION,
+                                                 [str(tmp_path)])}
+        assert {os.path.realpath(a), os.path.realpath(b),
+                os.path.realpath(c)} <= got
+
+    def test_realpath_dedupe_holds_for_go_layout(self, tmp_path):
+        rx = go_log(tmp_path, session=GO_SESSION, role="rx")
+        got = range_check.find_rx_logs(
+            "50m", GO_SESSION, [str(tmp_path), str(tmp_path)])
+        assert len([p for p in got
+                    if os.path.realpath(p) == os.path.realpath(rx)]) == 1
+
+
+class TestNoRxLogMessage:
+    """main(): the discovery-miss error names BOTH log-dir schemes."""
+
+    def test_error_names_both_layouts(self, tmp_path):
+        preset = write_preset(tmp_path)
+        r = subprocess.run(
+            [sys.executable, os.path.join(TOOLS_DIR, "range_check.py"),
+             "--dist", "70km", "--configs", preset,
+             "--repo-root", str(tmp_path)],
+            capture_output=True, text=True, cwd=str(tmp_path))
+        assert r.returncode == 2, r.stderr
+        assert "s<session>-t0<t0>" in r.stderr, r.stderr
+        assert "s<session>-go<t0>" in r.stderr, r.stderr
+        assert "stop-70km" in r.stderr, r.stderr
 
 
 if __name__ == "__main__":
