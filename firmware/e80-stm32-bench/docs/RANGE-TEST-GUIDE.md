@@ -561,7 +561,9 @@ Rules that matter in the field:
 - **GO-window guard.** GO is refused (loudly, non-zero exit) when less than
   5 s (`GO_MODE_RX_LEAD_MIN`) remains to T0 — i.e. the arm window has
   expired. The refusal says how many seconds ago the RX armed and tells you
-  to re-arm.
+  to re-arm. Boundary/manual-t0 runs keep the legacy T0-past guard
+  (`T0 >= now+60 s`, `T0_MIN_LEAD_S`); GO mode replaces it, because 60 s of
+  wall-clock lead is exactly what the message-derived T0 no longer needs.
 - **`rx_lead` is clamped to >= 5 s** in GO mode (boundary mode keeps the 3 s
   default).
 - **Monotonic anchor.** When the ARMED is accepted the tool captures

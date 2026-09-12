@@ -25,6 +25,29 @@ without further operator input (plan §5). N per cell follows the plan §3
 regime rule: 10^4 when the previous stop's same-mod Wilson ci_hi <= 2 %,
 else 10^3; SF12 is time-capped at 10^3. Results append to --csv.
 
+GO mode — derived T0 from the ARMED message (--sync cvm, ADR-range-sync-cvm.md):
+    ./e80_bench_ctl.py --mode rx --sync cvm --stop 50m \
+        --configs configs/per-stop/stop-50m.json
+            # RX is the session authority: generates + publishes the ARMED
+            # (session_id = %y%m%d%H%M+3hex), writes it to --armed-out for
+            # relay, then GOes on T0 = t_ready_utc + 30s — no 5-minute wait.
+    ./e80_bench_ctl.py --mode tx --sync cvm --armed-file /tmp/armed.json \
+        --configs configs/per-stop/stop-50m.json
+            # TX derives the same T0 from the relayed ARMED (no live bus
+            # needed); --armed-file relaxes the freshness checks, the
+            # GO-window guard still applies. Without --armed-file the TX uses
+            # the cvm_sync subscriber seam (main(bus=...)).
+    ./e80_bench_ctl.py --mode rx --sync cvm --t0 1789000030 --session-id 2609130435
+            # an explicit --t0 ALWAYS wins: this is exactly the legacy
+            # boundary/manual run (legacy guard + s<sid>-t0<epoch> log dir).
+
+GO-mode rules: --session-id is a hard error (the ARMED supplies it); rx_lead is
+clamped to >= 5s (GO_MODE_RX_LEAD_MIN); GO is refused when < 5s remain to T0
+("GO window expired … Re-arm the RX"); all waits use a MONOTONIC deadline
+captured when the ARMED is accepted, so an NTP step mid-pass cannot shift one
+side; the absolute wall T0 stays visible (t0=<epoch>/ISO) for log correlation +
+GPS stitching; default log dirs become logs/s<sid>-go<t0>/<role>-log.csv.
+
 Safety policy: freq outside 863-870 MHz (EU SRD) is rejected host-side unless
 --band-override is given (firmware window 410-2483 MHz, pin-gated). +dBm above
 10 requires POWER MODE OUTDOOR 2026 on the TX board; the tool issues both
@@ -32,8 +55,11 @@ unlocks and verifies acceptance via ID? (band=/pcap= echo) before any TX.
 Ctrl-C at any time sends STOP to both boards and marks the stop ABORTED.
 """
 import argparse
+import asyncio
 import csv
 import datetime
+import hashlib
+import json
 import math
 import os
 import re
@@ -52,6 +78,20 @@ except ImportError:
     parse_fw_hash = None
     validate_fw_hash = None
     fmt_session_start = None
+
+# CVM range-sync message layer (P1 — docs/ADR-range-sync-cvm.md). Imported from
+# this file's own directory so both the Makefile's `cd $(TOOLDIR) && …` and
+# pytest resolve it. GO mode (--sync cvm) hard-errors without it.
+_HERE_TOOLS = os.path.dirname(os.path.abspath(__file__))
+if _HERE_TOOLS not in sys.path:
+    sys.path.insert(0, _HERE_TOOLS)
+try:
+    import cvm_sync as cvm
+except ImportError:      # pragma: no cover — only when tools/ is stripped
+    cvm = None
+
+# T0 = armed["t_ready_utc"] + T0_MARGIN (mirrors cvm_sync.T0_MARGIN).
+T0_MARGIN = cvm.T0_MARGIN if cvm is not None else 30.0
 
 BAUD = 2000000
 PARITY = "N"
@@ -95,6 +135,15 @@ BOOT_BANNER_TIMEOUT = 10.0  # seconds to wait for FW_HASH in boot banner
 ID_PREFLIGHT_TIMEOUT_S = 10.0    # banner-time ID? reply budget (seconds)
 T0_MIN_LEAD_S = 60               # live launches need T0 >= now + 60 s
 POWER_OUTDOOR_RETRY_S = 2.0      # retry delay for POWER MODE OUTDOOR sends
+
+# T0 sync sources (--sync). "boundary" = legacy next-5-minute-boundary T0;
+# "cvm" = T0 derived from the RX ARMED message (GO mode, ADR-range-sync-cvm.md).
+SYNC_BOUNDARY = "boundary"
+SYNC_CVM = "cvm"
+
+# GO mode (--sync cvm with a derived T0):
+GO_MODE_RX_LEAD_MIN = 5      # rx_lead clamp AND the GO-window minimum lead (s)
+GO_ARMED_WAIT_S = 300.0      # bus budget for the first accepted ARMED (s)
 
 
 def firmware_hash_gate(board, port_label, skip=False):
@@ -170,6 +219,254 @@ def check_t0_future(t0_epoch, now, min_lead_s=T0_MIN_LEAD_S):
             "5-minute boundary, or pass --t0 explicitly.)".format(
                 iso, lead, min_lead_s))
     return True, ""
+
+
+# ---------------------------------------------------------------------------
+# GO mode — derived T0 from the ARMED message (ADR-range-sync-cvm.md §2.1/§3,
+# task E80-CVM-P2 stage 1). The RX is the sole session authority: it publishes
+# an ARMED message; both sides derive T0 = t_ready_utc + T0_MARGIN (30 s) and
+# anchor every wait to a MONOTONIC deadline captured when the ARMED is
+# accepted, so an NTP step mid-pass cannot shift one side of the pass.
+# ---------------------------------------------------------------------------
+
+def _require_cvm():
+    """Return the P1 message layer, or exit loudly without it."""
+    if cvm is None:
+        sys.exit("ERROR: --sync cvm needs tools/cvm_sync.py on sys.path "
+                 "(range-sync message layer — docs/ADR-range-sync-cvm.md)")
+    return cvm
+
+
+def go_rx_lead(rx_lead, sync, t0=None):
+    """Effective RX arm lead (seconds) for this run.
+
+    GO mode (--sync cvm with a DERIVED T0, i.e. no explicit --t0) arms RX at
+    least GO_MODE_RX_LEAD_MIN (5 s) before cell 1: rx_lead = max(rx_lead, 5).
+    Boundary mode — and any run with an explicit --t0, which always wins —
+    keeps the legacy value untouched (CLI default 3).
+
+    Pure: the caller supplies both the CLI value and the sync mode.
+    """
+    if sync == SYNC_CVM and t0 is None:
+        return max(int(rx_lead), GO_MODE_RX_LEAD_MIN)
+    return rx_lead
+
+
+def mono_deadline(t0_epoch, wall_at_event, mono_at_event):
+    """Map an absolute wall T0 onto the monotonic clock.
+
+    Captured when the ARMED is accepted:
+        deadline_mono = mono_at_event + (t0_epoch - wall_at_event)
+    A later NTP step moves the wall clock but not time.monotonic(), so the
+    deadline — and every wait derived from it — is unaffected.
+    """
+    return float(mono_at_event) + (float(t0_epoch) - float(wall_at_event))
+
+
+def go_window_ok(t0_epoch, now_mono, deadline_mono,
+                 min_lead_s=GO_MODE_RX_LEAD_MIN, t0_margin=None):
+    """GO-window guard — the GO-mode replacement for check_t0_future().
+
+    GO is REFUSED when the remaining time to T0 is below the GO-mode RX lead
+    (GO_MODE_RX_LEAD_MIN = 5 s): by then the arm window is over, the RX could
+    not arm before the burst, and a late launch would silently desync the
+    pass. Returns (ok, message); the message is empty when ok and otherwise
+    says how many seconds ago the RX armed and to re-arm.
+
+    Injected monotonic clocks only (now_mono / deadline_mono) — pure,
+    unit-testable and NTP-step immune. t0_margin (the ARMED-derived T0
+    margin) is used solely to report how long ago the RX armed.
+    """
+    if t0_margin is None:
+        t0_margin = T0_MARGIN
+    remaining = float(deadline_mono) - float(now_mono)
+    if remaining >= min_lead_s:
+        return True, ""
+    armed_ago = max(0.0, float(t0_margin) - remaining)
+    iso = datetime.datetime.fromtimestamp(t0_epoch).isoformat()
+    return False, (
+        "GO window expired: the RX armed {ago:.0f}s ago — only {rem:+.1f}s "
+        "remain to T0 ({iso}), less than the {lead}s GO-mode RX lead. "
+        "Re-arm the RX (it generates a fresh session_id + T0) and relay the "
+        "new ARMED before re-running.".format(
+            ago=armed_ago, rem=remaining, iso=iso, lead=min_lead_s))
+
+
+class GoAnchor:
+    """Derived-T0 anchor for a GO-mode run.
+
+    Built the instant the ARMED is accepted: carries the wall T0
+    (t_ready_utc + T0_MARGIN), the RX-authoritative session id (never derived
+    from T0), and the monotonic deadline every GO-mode wait is measured
+    against.
+    """
+
+    def __init__(self, armed, wall_at_event, mono_at_event, source="?"):
+        _require_cvm()
+        self.armed = armed
+        self.source = source
+        self.session_id = armed["session_id"]
+        self.t_ready_utc = int(armed["t_ready_utc"])
+        self.wall_at_event = float(wall_at_event)
+        self.mono_at_event = float(mono_at_event)
+        self.t0_epoch = _require_cvm().compute_t0(armed)
+        self.deadline_mono = mono_deadline(self.t0_epoch, self.wall_at_event,
+                                           self.mono_at_event)
+
+    def remaining_s(self, mono_now):
+        """Seconds from a monotonic instant to T0 (negative once past)."""
+        return self.deadline_mono - float(mono_now)
+
+    def mono_target(self, ts):
+        """Monotonic instant for an absolute wall schedule time `ts`."""
+        return self.deadline_mono + (float(ts) - float(self.t0_epoch))
+
+    def wall_now(self, mono_now):
+        """Wall-clock estimate that tracks the monotonic anchor.
+
+        Used for the anchor-relative late-join check: after an NTP step the
+        real wall clock no longer agrees with the pass timeline, this mirror
+        still does.
+        """
+        return self.wall_at_event + (float(mono_now) - self.mono_at_event)
+
+
+def preset_hash(cfgs):
+    """sha256 (first 12 hex) over the canonical JSON of a loaded preset.
+
+    Both sides must hash the same config list to the same value; the ARMED
+    carries it so a preset mismatch is visible before GO.
+    """
+    canon = json.dumps(cfgs, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:12]
+
+
+def build_go_armed(cfgs, session_id, stop, t_ready_utc):
+    """RX-authority ARMED message for a GO-mode run (cvm_sync.build_armed)."""
+    return _require_cvm().build_armed(session_id, stop, int(t_ready_utc),
+                                      preset_hash(cfgs), seq=1)
+
+
+def load_armed_file(path):
+    """Read one ARMED object from an operator-relayed JSON file."""
+    with open(path) as f:
+        return json.load(f)
+
+
+def validate_armed_relaxed(msg):
+    """Structural ARMED validation with freshness relaxed (--armed-file).
+
+    The operator relayed the message by hand, so the created_at skew bound
+    (MAX_CREATED_AT_SKEW, 60 s) is not applied — but every structural check
+    cvm_sync.validate_armed performs still is, and the GO-window guard still
+    rejects an ARMED whose arm window has expired.
+    """
+    created = msg.get("created_at") if isinstance(msg, dict) else None
+    now = int(created) if created is not None else int(time.time())
+    return _require_cvm().validate_armed(msg, now=now)
+
+
+def write_armed_out(path, armed):
+    """Write the ARMED the RX generated (--armed-out) for hand relay."""
+    d = os.path.dirname(os.path.abspath(path))
+    if d:
+        os.makedirs(d, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(armed, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def wait_for_armed_on_bus(bus, timeout_s=GO_ARMED_WAIT_S,
+                          now_fn=time.time, mono_fn=time.monotonic,
+                          poll_s=0.2):
+    """Block (sync) until cvm_sync's subscriber accepts an ARMED on `bus`.
+
+    Reuses the P1 subscriber seam (ArmedSubscriber: freshness watchdog —
+    created_at skew > 60 s rejected, stale re-broadcasts ignored) against an
+    injected bus object with `async subscribe(handler)`. Returns the armed
+    dict, or None when no fresh ARMED arrived within timeout_s.
+    """
+    async def _wait():
+        sub = _require_cvm().ArmedSubscriber(bus, now_fn=now_fn)
+        await sub.start()
+        deadline = mono_fn() + float(timeout_s)
+        while mono_fn() < deadline:
+            if sub.last_armed is not None:
+                return sub.last_armed
+            await asyncio.sleep(poll_s)
+        return None
+
+    return asyncio.run(_wait())
+
+
+def acquire_armed_for_go(args, cfgs=None, bus=None, now_fn=time.time,
+                         mono_fn=time.monotonic):
+    """Resolve the ARMED for a GO-mode run.
+
+    Returns (armed, source, wall_at_event, mono_at_event) where source is one
+    of "file" (--armed-file, operator relay), "generate" (RX is the session
+    authority and builds it) or "bus" (TX subscribed via cvm_sync). The caller
+    stamps the anchor — wall AND monotonic — at acceptance.
+    """
+    armed_file = getattr(args, "armed_file", None)
+    if armed_file:
+        armed = load_armed_file(armed_file)
+        ok, reason = validate_armed_relaxed(armed)
+        if not ok:
+            sys.exit("ERROR: bad --armed-file {}: {}".format(armed_file,
+                                                             reason))
+        return armed, "file", now_fn(), mono_fn()
+    if getattr(args, "mode", None) == "rx":
+        armed = build_go_armed(cfgs or [],
+                               _require_cvm().generate_session_id(now_fn()),
+                               getattr(args, "stop", "?"), int(now_fn()))
+        ok, reason = _require_cvm().validate_armed(armed, now=int(now_fn()))
+        if not ok:      # pragma: no cover — the RX's own message must pass
+            sys.exit("ERROR: generated ARMED failed validation: "
+                     "{}".format(reason))
+        return armed, "generate", now_fn(), mono_fn()
+    if bus is None:
+        sys.exit("ERROR: GO mode TX needs an ARMED source — pass --armed-file "
+                 "PATH (operator relay) or run with a live cvm bus "
+                 "(main(bus=...)); see docs/ADR-range-sync-cvm.md")
+    _require_cvm()
+    armed = wait_for_armed_on_bus(bus, now_fn=now_fn, mono_fn=mono_fn)
+    if armed is None:
+        sys.exit("ERROR: GO mode: no fresh ARMED from the RX within {}s — the "
+                 "RX is not armed (or its re-broadcasts are stale). Re-arm "
+                 "the RX and re-run.".format(int(GO_ARMED_WAIT_S)))
+    ok, reason = _require_cvm().validate_armed(armed, now=int(now_fn()))
+    if not ok:
+        sys.exit("ERROR: GO mode: ARMED rejected: {}".format(reason))
+    return armed, "bus", now_fn(), mono_fn()
+
+
+def assert_go_window(anchor, mono_fn=time.monotonic):
+    """Enforce the GO-window guard: loud, non-zero exit when the arm window has
+    expired. GO is refused — the run is never launched late."""
+    ok, msg = go_window_ok(anchor.t0_epoch, mono_fn(), anchor.deadline_mono)
+    if not ok:
+        sys.exit(msg)
+    print("  GO window:   OK (T0 in {:.1f}s; monotonic deadline)".format(
+        anchor.remaining_s(mono_fn())))
+
+
+def print_go_banner(args, anchor):
+    """Operator banner for a GO-mode run: ARMED source, the RX-authoritative
+    session id, and the ABSOLUTE wall T0 (kept visible for log correlation +
+    GPS stitching)."""
+    print("== GO MODE (--sync cvm — derived T0, no boundary wait) ==")
+    print("  ARMED source: {}".format(anchor.source))
+    print("  Session ID:  {}  (from ARMED — RX is the session authority)".format(
+        anchor.session_id))
+    print("  ARMED t_ready: {} ({})".format(
+        datetime.datetime.fromtimestamp(anchor.t_ready_utc).isoformat(),
+        anchor.t_ready_utc))
+    print("  T0 (derived):  {}  t0={}  (t_ready + {:g}s)".format(
+        datetime.datetime.fromtimestamp(anchor.t0_epoch).isoformat(),
+        anchor.t0_epoch, T0_MARGIN))
+    print("  Mode:        {}   rx_lead: {}s".format(args.mode, args.rx_lead))
+    print()
 
 
 def send_power_outdoor(board, port_label,
@@ -369,13 +666,15 @@ def parse_t0(s):
 
 
 def resolve_log_path(log_path, is_default, session_id, t0_epoch, role,
-                     repo_root=None):
+                     repo_root=None, go=False):
     """Resolve an RX/TX log path to its final location (durable directive).
 
-    Default (is_default=True): per-run unique, T0+SESSION-embedded, ABSOLUTE
-    path under <repo_root>/logs/s<SESSION>-t0<T0EPOCH>/<role>-log.csv.
-    Absolute + repo-root anchored so the `cd $(TOOLDIR)` in the Makefile
-    range targets cannot redirect a relative default into the bench dir.
+    Default (is_default=True): per-run unique, SESSION-embedded, ABSOLUTE path
+    under <repo_root>/logs/ — GO mode (go=True, --sync cvm with a derived T0)
+    uses s<SESSION>-go<T0EPOCH>/, legacy boundary/manual-t0 runs keep
+    s<SESSION>-t0<T0EPOCH>/. Absolute + repo-root anchored so the
+    `cd $(TOOLDIR)` in the Makefile range targets cannot redirect a relative
+    default into the bench dir.
 
     Explicit override (is_default=False): returned untouched — the operator
     (or an RX_LOG=/TX_LOG= make override) always wins.
@@ -388,10 +687,10 @@ def resolve_log_path(log_path, is_default, session_id, t0_epoch, role,
         # this file: <repo_root>/firmware/e80-stm32-bench/tools/e80_bench_ctl.py
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.dirname(os.path.abspath(__file__)))))
-    return os.path.join(
-        repo_root, "logs",
-        "s{session}-t0{t0}".format(session=session_id, t0=int(t0_epoch)),
-        "{role}-log.csv".format(role=role))
+    dirname = ("s{session}-go{t0}" if go else "s{session}-t0{t0}").format(
+        session=session_id, t0=int(t0_epoch))
+    return os.path.join(repo_root, "logs", dirname,
+                        "{role}-log.csv".format(role=role))
 
 
 def default_logs_root(repo_root=None):
