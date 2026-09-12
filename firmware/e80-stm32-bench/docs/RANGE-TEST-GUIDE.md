@@ -532,6 +532,64 @@ make rx T0=1724515500 SESSION_ID=2408241425
 Both sides must use the same values. This bypasses the auto-computed
 5-minute boundary.
 
+### GO mode (`--sync cvm`): T0 from the ARMED message
+
+The default is `--sync boundary` — the 5-minute epoch boundary above,
+unchanged. `--sync cvm` replaces that wait with a **message-derived T0**
+(ADR-range-sync-cvm.md): the RX is the sole session authority, publishes
+an `ARMED` message, and both sides compute
+
+```
+T0         = armed["t_ready_utc"] + 30 s     # cvm_sync.T0_MARGIN — no boundary wait
+session_id = armed["session_id"]             # %y%m%d%H%M + 3-hex nonce (RX-generated)
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--sync {boundary,cvm}` | `boundary` (default) = legacy 5-min T0; `cvm` = derive T0 from the ARMED — only when `--t0` is **absent** |
+| `--armed-file PATH` | GO mode without a live Nostr bus: a JSON file holding one ARMED object as relayed to the operator |
+| `--armed-out PATH` | RX writes the ARMED it generated (default `<run log dir>/armed.json`) |
+
+Rules that matter in the field:
+
+- **`--t0` always wins.** `--sync cvm --t0 <epoch>` is exactly the legacy
+  boundary/manual run: legacy T0-past guard, legacy
+  `logs/s<sid>-t0<epoch>/` log dir, `--session-id` still an int flag.
+- **Do not pass `--session-id` in GO mode** — it is a hard error
+  (`session_id comes from ARMED in GO mode`). The session id comes from the
+  ARMED and is never derived from T0.
+- **GO-window guard.** GO is refused (loudly, non-zero exit) when less than
+  5 s (`GO_MODE_RX_LEAD_MIN`) remains to T0 — i.e. the arm window has
+  expired. The refusal says how many seconds ago the RX armed and tells you
+  to re-arm.
+- **`rx_lead` is clamped to >= 5 s** in GO mode (boundary mode keeps the 3 s
+  default).
+- **Monotonic anchor.** When the ARMED is accepted the tool captures
+  `time.monotonic()` alongside wall time and derives a *monotonic* T0
+  deadline; all GO-mode waits use it, so an NTP step mid-pass cannot shift
+  one side of the pass. The absolute wall T0 stays visible (`t0=<epoch>` in
+  operator output, ISO in the log header) for log correlation + GPS
+  stitching.
+- **Log dirs** default to `logs/s<sid>-go<t0>/<role>-log.csv` in GO mode;
+  legacy `s<sid>-t0<epoch>` dirs are untouched for boundary/manual runs, and
+  an explicit `--tx-log`/`--rx-log` always wins.
+- **Fallback stays.** The 5-minute boundary + Signal relay path below is
+  unchanged and remains the boat / no-internet fallback.
+
+With `--armed-file` the freshness checks (`created_at` skew 60 s / stale
+30 s) are relaxed, because the operator relayed the message by hand; the
+GO-window guard still applies. Without `--armed-file` the TX uses the
+`cvm_sync` subscriber seam against the live bus, and the RX generates the
+ARMED and writes it to `--armed-out`.
+
+Rehearsal without hardware:
+
+```bash
+python3 tools/e80_bench_ctl.py --mode rx --sync cvm \
+    --configs configs/per-stop/stop-50m.json \
+    --armed-file /tmp/armed.json --dry-run
+```
+
 ---
 
 ## 9. Config Presets

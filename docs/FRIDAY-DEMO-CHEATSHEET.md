@@ -60,6 +60,15 @@ Preset sizes: 50 m=10 cfg (7×868 + 3×2G4) · 100 m=11 (7+4) · 218 m=12 (8+4) 
    a runaway infinite loop burns the stop's schedule and the PA budget.
    Note: the per-stop single pass (default `loop=1`) is fully counted by
    `range-check`; warmup exclusion applies only to multi-cycle runs.
+5. **GO mode (optional, `--sync cvm`):** when the CVM message layer is up, T0 no
+   longer comes from the 5-min boundary — the RX publishes an `ARMED` message and
+   both sides derive `T0 = t_ready_utc + 30 s`, with the session id taken from the
+   ARMED (no `T0`/`SESSION_ID` relay over Signal). Do **not** pass `--session-id`
+   in GO mode (hard error); pass `--t0` and the run is the legacy boundary run.
+   Offline rehearsal: `--armed-file /tmp/armed.json`. The arm window is short
+   (30 s, with a 5 s minimum): if the ARMED is too old at GO the run refuses
+   loudly (`GO window expired … Re-arm the RX`), so arm → relay → GO fast.
+   See `docs/RANGE-TEST-GUIDE.md` §8 “GO mode (`--sync cvm`)”.
 
 ## E. Band-transition fallback
 
