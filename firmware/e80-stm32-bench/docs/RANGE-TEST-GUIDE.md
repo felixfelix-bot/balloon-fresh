@@ -564,8 +564,19 @@ Rules that matter in the field:
   to re-arm. Boundary/manual-t0 runs keep the legacy T0-past guard
   (`T0 >= now+60 s`, `T0_MIN_LEAD_S`); GO mode replaces it, because 60 s of
   wall-clock lead is exactly what the message-derived T0 no longer needs.
+- **Two 30 s margins, both real.** `T0` itself is derived with the arming
+  margin `armed["t_ready_utc"] + 30 s` (`cvm_sync.T0_MARGIN`, the RX publish →
+  relay → arm headroom); the *existing* scheduler then places the first cell
+  at `T0 + --t0-margin` (`t0_margin`, CLI default 30 s) exactly as it does in
+  boundary mode — that gap is the launch/preflight headroom the runners have
+  always used. The two are independent knobs: moving `--t0-margin` shifts the
+  first cell, it does **not** change the T0 derivation, and the derivation
+  margin is not exposed as a flag.
 - **`rx_lead` is clamped to >= 5 s** in GO mode (boundary mode keeps the 3 s
-  default).
+  default). The clamp is applied to `args.rx_lead` itself, so `compute_cycle_len`
+  and the schedule builder consume the *same* value — the cycle length must be
+  byte-identical on TX and RX or the per-cycle re-anchor walks the two sides
+  apart.
 - **Monotonic anchor.** When the ARMED is accepted the tool captures
   `time.monotonic()` alongside wall time and derives a *monotonic* T0
   deadline; all GO-mode waits use it, so an NTP step mid-pass cannot shift

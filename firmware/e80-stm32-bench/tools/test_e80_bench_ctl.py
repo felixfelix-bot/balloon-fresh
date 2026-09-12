@@ -29,12 +29,15 @@ def make_args(**kw):
         csv=None, band_override=True, site="siteA", stop="S3", dist_m="200",
         repeat=2, gps_tx="52.01,4.04", gps_rx="52.02,4.01", h_tx="1.5",
         h_rx="1.5", ground="grass", weather="12C clear", t0=None,
-        t0_margin=120, guard=20, rx_lead=10, settle=2, skip_fw_check=True,
+        t0_margin=30, guard=20, rx_lead=10, settle=2, skip_fw_check=True,
         # Distributed / preset-mode fields
         mode=None, configs=None, port=None, probe=None, session_id=None,
         tx_log="tx-log.csv", rx_log="rx-log.csv",
         skip_late_configs=False,
         prime_discard=2,
+        # Runner fields (existing tests never reached them; GO wiring does)
+        swd_reset_s=2, band_swap_s=30,
+        sync="boundary", armed_file=None, armed_out=None,
     )
     base.update(kw)
     return argparse.Namespace(**base)
