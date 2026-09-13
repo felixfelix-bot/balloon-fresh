@@ -1009,6 +1009,17 @@ class ImmediateBus:
         self.published.append(event)
 
 
+class FailingBus(ImmediateBus):
+    """ImmediateBus whose publish() raises — relay pool unreachable.
+
+    The STARTED notice is best-effort: radio capture must never depend on
+    the CVM message layer, so a publish failure is a loud warning only.
+    """
+
+    async def publish(self, event):
+        raise RuntimeError("relay pool unreachable")
+
+
 class GoT0DerivationTests(unittest.TestCase):
     """T0 = armed["t_ready_utc"] + 30 s (cvm_sync.T0_MARGIN) — no boundary wait."""
 
@@ -1381,6 +1392,7 @@ class GoMainWiringTests(unittest.TestCase):
         def fake_run(args, board_cls=None, go_anchor=None):
             captured["args"] = args
             captured["anchor"] = go_anchor
+            captured["runs"] = captured.get("runs", 0) + 1
             return 0
 
         old_argv = sys.argv
@@ -1479,6 +1491,104 @@ class GoMainWiringTests(unittest.TestCase):
             self.assertEqual(os.path.basename(
                 os.path.dirname(cap["args"].tx_log)), "s42-t0{}".format(t0))
 
+    # ------------------------------------------------------------------
+    # Split-brain guard: a TX start always echoes a LIVE RX session id and
+    # announces itself with a STARTED notice. There is no code path where
+    # TX starts without echoing a live RX session id.
+    # ------------------------------------------------------------------
+
+    def test_legacy_tx_refuses_a_start_without_an_echoed_session_id(self):
+        """A manual TX start with no --session-id is refused loudly.
+
+        main() used to silently invent one (%y%m%d%H%M); the RX stayed on
+        its own session and the analysis reported a false MISS/LOGGING GAP
+        with no warning — the split-brain failure mode.
+        """
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "tx", "--t0", str(t0), "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertNotEqual(code, 0)
+        self.assertIn("split brain", out.lower())
+        self.assertIn("--session-id", out)
+        self.assertIn("RX", out)               # echo the RX banner value
+        self.assertNotIn("runs", cap)          # refused before any launch
+
+    def test_legacy_tx_dry_run_without_session_id_is_not_refused(self):
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "tx", "--t0", str(t0), "--configs", self.preset,
+                "--dry-run"]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("split brain", out.lower())
+
+    def test_legacy_tx_writes_started_json_next_to_tx_log(self):
+        t0 = int(time.time()) + 300
+        tx_log = os.path.join(self.dir.name, "tx-log.csv")
+        argv = ["--mode", "tx", "--t0", str(t0), "--session-id", "2609130435",
+                "--configs", self.preset, "--tx-log", tx_log]
+        # Scope the session-collision scan to the temp dir: the real
+        # <repo>/logs can hold an s2609130435-t0<other>/ dir from an earlier
+        # manual CLI run (this test's session id is a fixed echo).
+        with mock.patch.object(m, "default_logs_root",
+                               return_value=self.dir.name):
+            code, out, cap = self._main(argv)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(cap["runs"], 1)
+        path = os.path.join(self.dir.name, "started.json")
+        self.assertTrue(os.path.exists(path), out)
+        with open(path) as f:
+            notice = json.load(f)
+        self.assertEqual(notice["type"], "STARTED")
+        self.assertEqual(notice["session_id"], "2609130435")   # echoed, not made up
+        self.assertEqual(notice["t0"], t0)
+        self.assertEqual(notice["t_ready_utc"], t0 - int(m.T0_MARGIN))
+        self.assertEqual(notice["role"], "tx")
+        self.assertEqual(notice["preset_hash"],
+                         m.preset_hash(m.load_config_preset(self.preset)))
+        self.assertIn("STARTED", out)
+        self.assertIn(path, out)               # absolute artefact path
+        self.assertIn("relay", out.lower())    # Signal fallback instruction
+
+    def test_go_tx_publishes_started_on_the_bus_with_the_armed_session(self):
+        t_ready = int(time.time()) + 60
+        bus = ImmediateBus([_armed_dict(t_ready)])
+        argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
+        code, out, cap = self._main(argv, bus=bus)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(cap["runs"], 1)
+        started = [msg for msg in bus.published if msg.get("type") == "STARTED"]
+        self.assertEqual(len(started), 1, bus.published)
+        self.assertEqual(started[0]["session_id"], GO_SESSION)
+        self.assertEqual(started[0]["session_id"], cap["anchor"].session_id)
+        self.assertEqual(started[0]["t0"], t_ready + 30)
+        self.assertEqual(started[0]["t_ready_utc"], t_ready)
+        self.assertEqual(started[0]["role"], "tx")
+        self.assertIn("STARTED", out)
+        self.assertIn(GO_SESSION, out)
+        self.assertIn("published", out)
+
+    def test_started_publish_failure_is_a_loud_warning_not_a_stop(self):
+        t_ready = int(time.time()) + 60
+        bus = FailingBus([_armed_dict(t_ready)])
+        argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
+        code, out, cap = self._main(argv, bus=bus)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(cap["runs"], 1)       # radio capture still ran
+        self.assertIn("WARNING", out)
+        self.assertIn("STARTED", out)
+
+    def test_build_started_notice_defaults_stop_and_derives_the_fields(self):
+        args = argparse.Namespace(stop=None, t0="1789000000",
+                                  session_id="2609130435")
+        notice = m.build_started_notice(args, [{"mod": "flrc"}])
+        self.assertEqual(notice["type"], "STARTED")
+        self.assertEqual(notice["stop"], "?")
+        self.assertEqual(notice["session_id"], "2609130435")
+        self.assertEqual(notice["t0"], 1789000000)
+        self.assertEqual(notice["t_ready_utc"], 1789000000 - int(m.T0_MARGIN))
+        self.assertEqual(notice["role"], "tx")
+        self.assertTrue(notice["preset_hash"])
+
     def test_go_rx_without_armed_file_generates_and_writes_armed_out(self):
         out_path = os.path.join(self.dir.name, "armed-out.json")
         argv = ["--mode", "rx", "--sync", "cvm", "--configs", self.preset,
@@ -1502,7 +1612,9 @@ class GoMainWiringTests(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("--armed-file", out)
         self.assertIn("ARMED", out)
-        self.assertNotIn("args", cap)
+        # no live RX session was echoed → no STARTED may be emitted at all
+        self.assertNotIn("STARTED", out)
+        self.assertNotIn("runs", cap)
 
     def test_go_tx_uses_the_bus_seam(self):
         t_ready = int(time.time()) + 60

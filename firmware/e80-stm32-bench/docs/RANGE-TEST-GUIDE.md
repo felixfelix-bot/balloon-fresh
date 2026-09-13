@@ -558,6 +558,21 @@ Rules that matter in the field:
 - **Do not pass `--session-id` in GO mode** — it is a hard error
   (`session_id comes from ARMED in GO mode`). The session id comes from the
   ARMED and is never derived from T0.
+- **Split-brain guard.** A TX start always **echoes a live RX session id**
+  and announces itself with a `STARTED` message: in GO mode that is the
+  ARMED's `session_id` + its derived `t0` (published on the bus); a legacy
+  manual TX start (`--t0`) must echo the RX banner by hand via
+  `--session-id`. Without it the tool **refuses loudly**
+  (`SPLIT-BRAIN GUARD … split brain refused`) instead of inventing a
+  `%y%m%d%H%M` id. An invented id is how a pass ends up with the two sides
+  on *different* sessions — the analysis then reports a false
+  `MISS`/`LOGGING GAP` with no warning. `--dry-run` is exempt (nothing is
+  transmitted).
+- **`STARTED` is best effort.** If publishing it fails (relay pool down)
+  the TX prints a `WARNING` and **continues**: radio capture never depends
+  on the message layer. With no live bus the notice is printed *and*
+  written to `started.json` in the run's log dir (next to `--tx-log` /
+  `--rx-log`) — relay that file to the other operator (Signal fallback).
 - **GO-window guard.** GO is refused (loudly, non-zero exit) when less than
   5 s (`GO_MODE_RX_LEAD_MIN`) remains to T0 — i.e. the arm window has
   expired. The refusal says how many seconds ago the RX armed and tells you

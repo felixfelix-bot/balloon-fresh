@@ -68,6 +68,13 @@ Preset sizes: 50 m=10 cfg (7×868 + 3×2G4) · 100 m=11 (7+4) · 218 m=12 (8+4) 
    Offline rehearsal: `--armed-file /tmp/armed.json`. The arm window is short
    (30 s, with a 5 s minimum): if the ARMED is too old at GO the run refuses
    loudly (`GO window expired … Re-arm the RX`), so arm → relay → GO fast.
+   **Split-brain guard:** a TX start always echoes the RX session id and
+   announces `STARTED` (published on the bus, or written to `started.json`
+   next to the tx log when there is no live bus — relay that file over
+   Signal). A legacy `--t0` TX start **without** `--session-id` is refused
+   loudly: never invent a session id, or the analysis reports a false
+   `MISS`/`LOGGING GAP`. A failed `STARTED` publish is a `WARNING` only —
+   the burst still runs.
    See `docs/RANGE-TEST-GUIDE.md` §8 “GO mode (`--sync cvm`)”.
 
 ## E. Band-transition fallback
