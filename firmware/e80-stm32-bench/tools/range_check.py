@@ -361,6 +361,13 @@ def session_sources(path):
 # written before that token existed, from the ARMED the RX left in the same
 # dir. Without this a log of another stop is a discovery candidate for ANY
 # DIST and the tool prints a verdict for a stop that was never run.
+#
+# A token that names NO stop (absent, empty, or the "?" sentinel `--stop`
+# defaults to — see ctl.is_unknown_stop) is not a claimed stop: the log reads
+# as "no stop source" and is kept with a note. Reading "?" as a stop NAME was a
+# round-2 review blocker: every documented-default GO launch writes stop=? into
+# BOTH stop sources, so the healthy log was refused with exit 2 ("belongs to
+# stop ?") and the pass could never be scored.
 # ---------------------------------------------------------------------------
 
 ARMED_FILENAME = "armed.json"
@@ -372,6 +379,7 @@ def go_stop_from_header(path):
 
     Only the GO_MODE line is consulted (the DISTRIBUTED_*_MODE banner has no
     stop token, so a legacy log reads as unknown rather than as a mismatch).
+    A `stop=?` / empty token reads as unknown too — it names no stop.
     """
     if not path or not os.path.isfile(path):
         return None
@@ -381,8 +389,8 @@ def go_stop_from_header(path):
                 if "GO_MODE" not in ln:
                     continue
                 m = _GO_STOP_RE.search(ln)
-                if m:
-                    return m.group(1)
+                if m and not ctl.is_unknown_stop(m.group(1)):
+                    return m.group(1).strip()
     except OSError:
         return None
     return None
@@ -400,7 +408,11 @@ def _armed_file_candidates(path):
 
 
 def go_stop_from_armed(path):
-    """`stop` field of the sibling/ancestor armed.json, or None."""
+    """`stop` field of the sibling/ancestor armed.json, or None.
+
+    An armed.json whose stop is the "?"/empty sentinel names no stop (the RX
+    was launched without `--stop`), so it is not a stop source either.
+    """
     for cand in _armed_file_candidates(path):
         if not os.path.isfile(cand):
             continue
@@ -409,8 +421,9 @@ def go_stop_from_armed(path):
                 obj = json.load(f)
         except (OSError, ValueError):
             continue
-        if isinstance(obj, dict) and obj.get("stop"):
-            return str(obj["stop"]).strip()
+        stop = obj.get("stop") if isinstance(obj, dict) else None
+        if not ctl.is_unknown_stop(stop):
+            return str(stop).strip()
     return None
 
 
@@ -433,15 +446,18 @@ def check_go_stop_match(path, dist):
     Returns (ok, message): ok=False is a loud refusal naming every stop source
     (analysing it would print a confident verdict for a stop that was never
     run); ok=True carries "" or a warning when the log exposes no stop source
-    at all (unverifiable, but not provably wrong — kept, with a note).
+    at all (unverifiable, but not provably wrong — kept, with a note). A
+    sentinel source (`stop=?`, empty) is "no stop source", never a stop named
+    "?" — otherwise a GO launch without `--stop` could not be scored at all.
     """
     if not (is_go_layout(path) or go_stop_from_header(path) is not None):
         return True, ""
     srcs = go_stop_sources(path)
     if not srcs:
-        return True, ("note: {} is a GO-mode log with no stop= token in its "
-                      "GO_MODE banner and no {} beside it — cannot verify it "
-                      "belongs to stop {}".format(
+        return True, ("note: {} is a GO-mode log that records NO stop id (its "
+                      "GO_MODE banner carries no `stop=<id>` token and there "
+                      "is no sibling {} naming one) — cannot verify it belongs "
+                      "to stop {}".format(
                           os.path.basename(path or ""), ARMED_FILENAME, dist))
     stops = sorted({normalize_dist(s) for _lbl, s in srcs})
     if normalize_dist(dist) in stops:

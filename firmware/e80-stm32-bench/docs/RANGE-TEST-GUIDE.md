@@ -547,6 +547,7 @@ session_id = armed["session_id"]             # %y%m%d%H%M + 3-hex nonce (RX-gene
 | Flag | Meaning |
 |------|---------|
 | `--sync {boundary,cvm}` | `boundary` (default) = legacy 5-min T0; `cvm` = derive T0 from the ARMED — only when `--t0` is **absent** |
+| `--stop <id>` | **Required in GO mode** — the stop id recorded in the `GO_MODE` banner and in the ARMED (`armed.json`). Default `?` means *not recorded* (see below) |
 | `--armed-file PATH` | GO mode without a live Nostr bus: a JSON file holding one ARMED object as relayed to the operator |
 | `--armed-out PATH` | RX writes the ARMED it generated (default `<run log dir>/armed.json`) |
 
@@ -555,6 +556,16 @@ Rules that matter in the field:
 - **`--t0` always wins.** `--sync cvm --t0 <epoch>` is exactly the legacy
   boundary/manual run: legacy T0-past guard, legacy
   `logs/s<sid>-t0<epoch>/` log dir, `--session-id` still an int flag.
+- **Pass `--stop <id>` in GO mode — it is the only thing that attributes the
+  pass to a stop.** A GO dir has no `stop-<dist>` level, so the stop lives
+  *only* in the `stop=` token of the `GO_MODE` banner and in the ARMED /
+  `armed.json`. `--stop` defaults to `?`, which this toolchain uses everywhere
+  for *not recorded*: a launch that omits it prints
+  `WARNING: GO mode launched without --stop …` at launch time, and the log
+  then carries no stop id, so `range_check` can only keep it with an
+  *"records NO stop id … cannot verify it belongs to stop X"* note (score it
+  with the matching `--dist`). The pass is still scored — it is just no longer
+  attributable, which is exactly the mistake that gets made at the bench.
 - **Do not pass `--session-id` in GO mode** — it is a hard error
   (`session_id comes from ARMED in GO mode`). The session id comes from the
   ARMED and is never derived from T0.
@@ -645,10 +656,28 @@ GO TX must not be assumed to be relay-authenticated.
 Rehearsal without hardware:
 
 ```bash
+# RX (generates the ARMED) — --stop is REQUIRED in GO mode
 python3 tools/e80_bench_ctl.py --mode rx --sync cvm \
-    --configs configs/per-stop/stop-50m.json \
+    --configs configs/per-stop/stop-50m.json --stop 50m \
     --armed-file /tmp/armed.json --dry-run
+
+# TX on the other board, with the RX ARMED relayed by hand (Signal)
+python3 tools/e80_bench_ctl.py --mode tx --sync cvm \
+    --configs configs/per-stop/stop-50m.json --stop 50m \
+    --armed-file /tmp/armed.json
 ```
+
+**`--stop` is not optional in GO mode:** it defaults to `?` (*not recorded*),
+and in GO mode it is the only thing that attributes the pass to a stop. A
+launch that omits it prints
+`WARNING: GO mode launched without --stop …` and the resulting log can then
+only be kept with a loose *"records NO stop id"* note — it is still scored, it
+is just not attributable (see the flag table above).
+
+**The Makefile cannot enter GO mode.** `make range-rx` / `make range-tx`
+always pass `--t0` and `--session-id`, and `--t0` always wins over
+`--sync cvm`, so a GO pass must be launched with the direct
+`e80_bench_ctl.py` invocations above. A GO-aware make target is P3 work.
 
 ### Log layout & post-stop analysis
 
@@ -663,7 +692,7 @@ GO stop.
 |--------|---------|--------------------------|
 | Boundary / manual `--t0` (sweep) | `logs/s<session>-t0<t0epoch>/stop-<dist>/rx-log-*.csv` | the `stop-<dist>/` path level |
 | Boundary / manual `--t0` (single run) | `logs/s<session>-t0<t0epoch>/{rx,tx}-log.csv` | not in the path — pass `RX=`/`TX=` |
-| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — carried by the `stop=` token of the `GO_MODE` banner, with the sibling `armed.json` as fallback. `range_check` refuses (exit 2) a GO log whose own stop differs from the requested `--dist` instead of printing a confident pass for a stop that was never run |
+| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — carried by the `stop=` token of the `GO_MODE` banner, with the sibling `armed.json` as fallback. `range_check` refuses (exit 2) a GO log whose own stop differs from the requested `--dist` instead of printing a confident pass for a stop that was never run. A log with **no** stop id in either source (both `stop=?`/empty — a GO launch without `--stop`) is kept with a note, never refused |
 
 `<session>` is the legacy 10-digit int form (e.g. `2608281250`) for
 boundary/manual runs, and the RX-generated `%y%m%d%H%M` + 3-hex nonce
@@ -689,7 +718,11 @@ tag `-t0<epoch>` / `-go<epoch>`, and the banner `t0=<iso>`) must agree, else
 Log discovery is best-first: session-tagged candidates for the requested
 session (newest first) → any other candidate (newest first) → the cwd-quirk
 `tools/rx-log.csv`. Because the GO dir carries no `stop-<dist>` level, a GO
-log of the requested session is a candidate for **any** `DIST`. Exit codes
+log of the requested session is a candidate for **any** `DIST`. The stop guard
+then decides: a log naming a *different* stop is refused (exit 2), a log naming
+*no* stop (`stop=?`/empty in both sources — launched without `--stop`) is
+analysed with an *unverifiable* note, and a matching stop is analysed silently.
+Exit codes
 are unchanged: `0` complete, `1` gaps / logging gap, `2` usage or log errors.
 
 ---

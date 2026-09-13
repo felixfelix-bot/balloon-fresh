@@ -514,6 +514,42 @@ def assert_armed_matches_knobs(armed, cfgs, knobs, source_label="ARMED"):
             schedule_knobs_str(knobs), preset_only))
 
 
+# `--stop` (and `--dist-m`, `--site`, …) default to this sentinel, and every
+# CSV/notice field uses it for "not recorded". It is NOT a stop id: a GO log
+# whose only stop tokens are sentinels has no stop source at all, and
+# range_check must read it as unknown (kept, with a note) rather than refuse
+# it as "the log of stop ?" — which made a documented-default GO launch
+# impossible to score (round-2 review, 2026-09-13).
+UNKNOWN_STOP = "?"
+
+
+def is_unknown_stop(stop):
+    """True when a stop token names no stop (None / "" / the "?" sentinel)."""
+    if stop is None:
+        return True
+    return str(stop).strip() in ("", UNKNOWN_STOP)
+
+
+def go_stop_warning(args):
+    """Loud launch warning when a GO run carries no real `--stop`, else None.
+
+    --stop is optional and defaults to the sentinel, but in GO mode the value
+    is written into BOTH stop sources (`stop=` in the GO_MODE banner and
+    `stop` in armed.json), so a run without it produces a log that cannot be
+    attributed to any stop: range_check keeps it with an "unverifiable" note
+    and the operator has to remember which stop the pass was. Warn at LAUNCH —
+    the operator is still at the bench and can restart — instead of only when
+    the pass is scored afterwards.
+    """
+    if not is_unknown_stop(getattr(args, "stop", None)):
+        return None
+    return ("WARNING: GO mode launched without --stop (stop={!r}) — this run's "
+            "log will carry no stop id, so range_check cannot verify which "
+            "stop it belongs to: score it with the matching --dist, and pass "
+            "`--stop <id>` next time. See docs/RANGE-TEST-GUIDE.md §8 GO mode "
+            "(--sync cvm).".format(getattr(args, "stop", None)))
+
+
 def build_go_armed(cfgs, session_id, stop, t_ready_utc, knobs=None):
     """RX-authority ARMED message for a GO-mode run (cvm_sync.build_armed).
 
@@ -3249,6 +3285,12 @@ def main(bus=None):
         go_anchor = None
         _cfgs = None
         if go_mode:
+            # --stop is optional and defaults to the sentinel, but in GO mode
+            # it is the ONLY thing that attributes the log to a stop (the dir
+            # carries no stop-<dist> level). Warn before anything is written.
+            _stop_warn = go_stop_warning(args)
+            if _stop_warn:
+                print(_stop_warn)
             _cfgs = load_config_preset(args.configs)
             _armed, _src, _wall_ev, _mono_ev = acquire_armed_for_go(
                 args, _cfgs, bus)
