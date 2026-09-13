@@ -600,7 +600,10 @@ Rules that matter in the field:
   stitching.
 - **Log dirs** default to `logs/s<sid>-go<t0>/<role>-log.csv` in GO mode;
   legacy `s<sid>-t0<epoch>` dirs are untouched for boundary/manual runs, and
-  an explicit `--tx-log`/`--rx-log` always wins.
+  an explicit `--tx-log`/`--rx-log` always wins. Post-stop tools read **both**
+  schemes — see [Log layout & post-stop analysis](#log-layout--post-stop-analysis)
+  below: `range_check` joins the rx/tx logs on `session_id`, with the legacy
+  `t0` rule as the fallback.
 - **Fallback stays.** The 5-minute boundary + Signal relay path below is
   unchanged and remains the boat / no-internet fallback.
 
@@ -617,6 +620,44 @@ python3 tools/e80_bench_ctl.py --mode rx --sync cvm \
     --configs configs/per-stop/stop-50m.json \
     --armed-file /tmp/armed.json --dry-run
 ```
+
+### Log layout & post-stop analysis
+
+GO mode adds a second log-dir scheme. **Both are readable** by the post-stop
+tools (`range_check`, `merge_csvs`, GPS stitching):
+
+| Launch | Log dir | Stop distance encoded as |
+|--------|---------|--------------------------|
+| Boundary / manual `--t0` (sweep) | `logs/s<session>-t0<t0epoch>/stop-<dist>/rx-log-*.csv` | the `stop-<dist>/` path level |
+| Boundary / manual `--t0` (single run) | `logs/s<session>-t0<t0epoch>/{rx,tx}-log.csv` | not in the path — pass `RX=`/`TX=` |
+| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — it lives in the ARMED / log header |
+
+`<session>` is the legacy 10-digit int form (e.g. `2608281250`) for
+boundary/manual runs, and the RX-generated `%y%m%d%H%M` + 3-hex nonce
+(e.g. `2609130435a3f`) in GO mode.
+
+**The join key is `session_id`; `t0` is the fallback.** `range_check.py`
+reads the session of each log from two independent sources:
+
+1. the session dir name in the path — `s<session>-t0<epoch>` (legacy) or
+   `s<session>-go<epoch>` (GO);
+2. the `session=<sid>` token of the first launch-banner comment line
+   (`# DISTRIBUTED_TX_MODE session=… t0=…` or
+   `# GO_MODE sync=cvm source=… session=… t_ready=… t0=…`).
+
+If **both** logs expose at least one session and the sets disagree, the
+check fails loudly (`SESSION MISMATCH`, exit 2): the rx and tx logs are NOT
+from the same launch — a wrong log was picked up, or the two sides started
+split-brain with a session each. If the sessions agree, or only one side
+exposes one, the legacy rule applies verbatim: every readable `t0` (filename
+tag `-t0<epoch>` / `-go<epoch>`, and the banner `t0=<iso>`) must agree, else
+`T0 MISMATCH` (exit 2).
+
+Log discovery is best-first: session-tagged candidates for the requested
+session (newest first) → any other candidate (newest first) → the cwd-quirk
+`tools/rx-log.csv`. Because the GO dir carries no `stop-<dist>` level, a GO
+log of the requested session is a candidate for **any** `DIST`. Exit codes
+are unchanged: `0` complete, `1` gaps / logging gap, `2` usage or log errors.
 
 ---
 
@@ -793,6 +834,32 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 ```
 
 The `captured_ts` column is the join key for GPS stitching.
+
+### Launch banner comment lines
+
+Every log opens with a launch banner (comment lines starting with `#`) — the
+metadata the post-stop tools read:
+
+```
+# boundary / manual --t0
+# DISTRIBUTED_RX_MODE t0=2026-08-28T11:30:00 port=/dev/ttyUSB1 probe=203584200D2D0D42 loop=3
+# DISTRIBUTED_TX_MODE session=2608281250 t0=2026-08-28T11:30:00 port=/dev/ttyUSB0 loop=3
+
+# GO mode (--sync cvm): the DISTRIBUTED_*_MODE banner PLUS a GO_MODE line
+# GO_MODE sync=cvm source=generate session=2609130435a3f t_ready=2026-09-13T04:35:00 t0=2026-09-13T04:35:30 deadline_mono=123456.789 armed_seq=7
+```
+
+| Token | Meaning |
+|-------|---------|
+| `t0=<iso>` | Launch epoch the schedule anchors to; the `GO_MODE` line repeats the same value |
+| `session=<sid>` | Session id — the primary join key (GO: `%y%m%d%H%M` + 3-hex nonce, e.g. `2609130435a3f`; legacy: 10-digit int, e.g. `2608281250`) |
+| `t_ready` / `deadline_mono` / `armed_seq` | GO mode only: the ARMED message's ready time, the monotonic deadline the waits use, and the ARMED sequence number |
+
+The RX `DISTRIBUTED_RX_MODE` banner carries **no** `session=` token: in GO
+mode the RX session comes from the trailing `GO_MODE` line (and the log dir
+name), in legacy mode from the log dir name. `range_check` joins the rx/tx
+logs on this session id, with the `t0` rule as fallback — see
+[Log layout & post-stop analysis](#log-layout--post-stop-analysis).
 
 ### Die-temperature lines (`TEMP,...`) + interp logging
 
