@@ -1110,5 +1110,31 @@ class TestNoRxLogMessage:
         assert "stop-70km" in r.stderr, r.stderr
 
 
+class TestGoBoardSessionMatch:
+    """GO sessions reach PKT rows as their u32 board projection.
+
+    The bench firmware SESSION command is u32 (src/bench_cmd.c), so a GO
+    session id (<%y%m%d%H%M><3-hex nonce>) can never be echoed on the wire:
+    the board carries the 10-digit prefix. The analyzer must accept a PKT row
+    whose session equals that projection, or a GO log reads as all-MISS.
+    """
+
+    def test_go_session_matches_its_board_projection(self):
+        assert range_check._session_matches(2609130435, "2609130435a3f")
+
+    def test_legacy_numeric_match_unchanged(self):
+        assert range_check._session_matches(2609130435, "2609130435")
+        assert not range_check._session_matches(2609130435, "2609130436")
+
+    def test_other_projection_does_not_match(self):
+        assert not range_check._session_matches(2609130436, "2609130435a3f")
+
+    def test_full_go_session_still_matches_itself(self):
+        assert range_check._session_matches("2609130435a3f", "2609130435a3f")
+
+    def test_non_numeric_row_does_not_match_a_go_session(self):
+        assert not range_check._session_matches("bench-a", "2609130435a3f")
+
+
 if __name__ == "__main__":
     unittest.main()

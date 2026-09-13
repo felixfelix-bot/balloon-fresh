@@ -1638,5 +1638,53 @@ class GoMainWiringTests(unittest.TestCase):
         self.assertIn("t0={}".format(t_ready + 30), out)
 
 
+class GoBoardSessionTests(unittest.TestCase):
+    """The board session a GO run sends to the firmware.
+
+    src/bench_cmd.c parses `SESSION <id>` with bench_parse_u32 and PKT lines
+    echo it with console_put_u32, so a GO session id (10 digits + 3-hex nonce)
+    can never be carried on the wire. The board gets the numeric projection;
+    the full id stays at the message/join layer (ARMED, log-dir name, banner).
+    """
+
+    def test_numeric_session_passes_through(self):
+        self.assertEqual(m.board_session_id(2609130435), 2609130435)
+        self.assertEqual(m.board_session_id("2609130435"), 2609130435)
+
+    def test_go_session_projects_to_its_digit_prefix(self):
+        self.assertEqual(m.board_session_id("2609130435a3f"), 2609130435)
+
+    def test_projection_fits_a_u32(self):
+        self.assertLess(m.board_session_id("2609130435a3f"), 2 ** 32)
+
+    def test_same_minute_arms_share_one_board_session(self):
+        # Documents the constraint the ARMED nonce exists to work around: two
+        # arms inside one minute are the SAME board session on the wire.
+        self.assertEqual(m.board_session_id("2609130435a3f"),
+                         m.board_session_id("2609130435b71"))
+
+    def test_unprojectable_session_is_none(self):
+        self.assertIsNone(m.board_session_id("bench-a"))
+        self.assertIsNone(m.board_session_id(None))
+        self.assertIsNone(m.board_session_id(""))
+
+    def test_session_command_uses_the_projection(self):
+        self.assertEqual(m.session_command("2609130435a3f"),
+                         "SESSION 2609130435")
+        self.assertEqual(m.session_command(42), "SESSION 42")
+
+    def test_session_command_refuses_an_unprojectable_id(self):
+        with self.assertRaises(SystemExit):
+            m.session_command("bench-a")
+
+    def test_parse_pkt_line_keeps_a_non_numeric_session(self):
+        # Regression: int(p[1]) killed the whole row (ValueError -> None), so
+        # every config of such a log read as MISS with no warning.
+        line = ",".join(["PKT", "2609130435a3f"] + [str(i) for i in range(2, 24)])
+        p = m.parse_pkt_line(line)
+        self.assertIsNotNone(p)
+        self.assertEqual(p["session_id"], "2609130435a3f")
+
+
 if __name__ == "__main__":
     unittest.main()
