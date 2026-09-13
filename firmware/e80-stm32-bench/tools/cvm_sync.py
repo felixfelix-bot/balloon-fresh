@@ -23,6 +23,12 @@ Message shapes (inner event content, JSON):
         "t_ready_utc": 1788096000, "preset_hash": "abc123", "seq": 1,
         "created_at": 1788096000, "author": "<hex pubkey>" }
 
+    STARTED (anti split-brain — TX announces its start ON THE RX'S session):
+      { "type": "STARTED", "session_id": "2608301440a3f", "stop": "50m",
+        "t_ready_utc": 1788096000, "t0": 1788096030,
+        "preset_hash": "abc123", "role": "tx", "seq": 1,
+        "created_at": 1788096000, "author": "<hex pubkey>" }
+
     VERDICT:
       { "type": "VERDICT", "session_id": "...", "stop": "50m",
         "summary": "50m s2608301440a3f: GAPS c1:MISS c2:THIN 3/10 (1/3 clean)",
@@ -33,6 +39,11 @@ Message shapes (inner event content, JSON):
 RX is the SOLE session authority: session_id = %y%m%d%H%M + 3-hex nonce.
 T0 = t_ready_utc + 30s margin. ARMED re-broadcast every 10-15s until GO.
 TX freshness watchdog: reject created_at skew > 60s, abort if stale > 30s.
+
+Split-brain guard: a TX that starts MANUALLY (legacy --t0 path) must echo a
+LIVE RX session id and announce itself with a STARTED message, so a TX start
+on an invented session id is visible immediately instead of surfacing later
+as a false MISS/LOGGING GAP in the analysis.
 """
 
 from __future__ import annotations
@@ -98,6 +109,34 @@ def build_armed(session_id: str, stop: str, t_ready_utc: int,
         "stop": stop,
         "t_ready_utc": int(t_ready_utc),
         "preset_hash": preset_hash,
+        "seq": int(seq),
+        "created_at": int(created_at if created_at is not None else time.time()),
+        "author": author or "",
+    }
+
+
+def build_started(session_id: str, stop: str,
+                  t_ready_utc: Optional[int] = None,
+                  t0: Optional[int] = None, preset_hash: str = "",
+                  role: str = "tx", seq: int = 1,
+                  created_at: Optional[int] = None,
+                  author: Optional[str] = None) -> dict:
+    """Build a STARTED message dict (JSON-serializable inner content).
+
+    Anti split-brain: a TX start announces itself on the SAME session id
+    the RX armed (`session_id` is echoed, never invented), carrying the T0
+    it is actually running against. `t_ready_utc` / `t0` are None when the
+    caller has no ARMED-derived anchor (a legacy manual start knows only
+    its own --t0, so t_ready_utc = t0 - T0_MARGIN).
+    """
+    return {
+        "type": "STARTED",
+        "session_id": session_id,
+        "stop": stop,
+        "t_ready_utc": int(t_ready_utc) if t_ready_utc is not None else None,
+        "t0": int(t0) if t0 is not None else None,
+        "preset_hash": preset_hash,
+        "role": role,
         "seq": int(seq),
         "created_at": int(created_at if created_at is not None else time.time()),
         "author": author or "",

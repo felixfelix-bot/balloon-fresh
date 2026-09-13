@@ -48,6 +48,16 @@ captured when the ARMED is accepted, so an NTP step mid-pass cannot shift one
 side; the absolute wall T0 stays visible (t0=<epoch>/ISO) for log correlation +
 GPS stitching; default log dirs become logs/s<sid>-go<t0>/<role>-log.csv.
 
+Split-brain guard: a TX start ALWAYS echoes a LIVE RX session id and announces
+it with a STARTED notice (cvm_sync.build_started — published on the bus when a
+bus is available, else printed + written to started.json next to --tx-log for
+Signal relay). A legacy manual TX start (--t0 path) without --session-id is
+refused loudly instead of auto-generating %y%m%d%H%M: an invented id means the
+two sides run different sessions and the analysis reports a false
+MISS/LOGGING GAP. A failed STARTED publish is a loud WARNING only — radio
+capture never depends on the message layer. --dry-run is exempt (no
+transmission).
+
 Safety policy: freq outside 863-870 MHz (EU SRD) is rejected host-side unless
 --band-override is given (firmware window 410-2483 MHz, pin-gated). +dBm above
 10 requires POWER MODE OUTDOOR 2026 on the TX board; the tool issues both
@@ -144,6 +154,10 @@ SYNC_CVM = "cvm"
 # GO mode (--sync cvm with a derived T0):
 GO_MODE_RX_LEAD_MIN = 5      # rx_lead clamp AND the GO-window minimum lead (s)
 GO_ARMED_WAIT_S = 300.0      # bus budget for the first accepted ARMED (s)
+
+# Split-brain guard: the TX-start artefact written next to --tx-log when no
+# live bus is available (relayed to the RX operator by hand, Signal fallback).
+STARTED_NOTICE_FILENAME = "started.json"
 
 
 def firmware_hash_gate(board, port_label, skip=False):
@@ -345,6 +359,79 @@ def build_go_armed(cfgs, session_id, stop, t_ready_utc):
     """RX-authority ARMED message for a GO-mode run (cvm_sync.build_armed)."""
     return _require_cvm().build_armed(session_id, stop, int(t_ready_utc),
                                       preset_hash(cfgs), seq=1)
+
+
+def build_started_notice(args, cfgs, go_anchor=None):
+    """STARTED notice for a TX start — the session id it ECHOES, never one it invented.
+
+    Anti split-brain (docs/RANGE-TEST-GUIDE.md §8 GO mode): whoever starts a
+    TX says so, on the session id the RX armed.
+
+    GO mode (go_anchor given): session_id / T0 / t_ready all come from the
+    ARMED-derived anchor — the TX is echoing the live RX session.
+
+    Legacy manual start (go_anchor None): the operator copied the RX banner
+    by hand, so session_id = --session-id (validated in main()) and
+    t_ready_utc is back-derived from --t0 as t0 - T0_MARGIN.
+    """
+    stop = getattr(args, "stop", None) or "?"
+    if go_anchor is not None:
+        session_id = go_anchor.session_id
+        t0 = int(go_anchor.t0_epoch)
+        t_ready_utc = int(go_anchor.t_ready_utc)
+    else:
+        session_id = str(args.session_id)
+        t0 = int(parse_t0(args.t0))
+        t_ready_utc = t0 - int(T0_MARGIN)
+    return _require_cvm().build_started(
+        session_id, stop, t_ready_utc=t_ready_utc, t0=t0,
+        preset_hash=preset_hash(cfgs), role="tx", seq=1)
+
+
+def emit_started_notice(notice, args, bus=None):
+    """Announce a TX start. Best effort — radio capture never depends on CVM.
+
+    bus is not None: publish the STARTED on the live bus (async seam) and
+    print a one-liner. A publish failure is a LOUD warning and nothing more:
+    the TX burst must never be blocked, delayed or aborted by the message
+    channel.
+
+    bus is None: print the JSON notice plus the operator relay instruction
+    (Signal fallback) and write started.json next to --tx-log — that file is
+    the artefact the RX operator relays. Returns the path written, or None.
+    """
+    session_id = notice.get("session_id", "?")
+    if bus is not None:
+        try:
+            asyncio.run(bus.publish(notice))
+        except Exception as e:      # noqa: BLE001 — a notice must never stop a run
+            print("WARNING: STARTED notice for session {} was NOT published "
+                  "on the CVM bus ({}: {}) — continuing the TX run anyway; "
+                  "relay STARTED by hand (Signal) so the RX sees this "
+                  "start.".format(session_id, type(e).__name__, e))
+            return None
+        print("STARTED published (session {}) — TX echoes the RX session id "
+              "on the CVM bus.".format(session_id))
+        return None
+    print(json.dumps(notice, indent=2, sort_keys=True))
+    print("STARTED: relay this notice to the RX operator (Signal fallback) "
+          "— no live CVM bus in this run, so the RX cannot otherwise see "
+          "TX session {} start.".format(session_id))
+    path = os.path.join(os.path.dirname(os.path.abspath(args.tx_log)),
+                        STARTED_NOTICE_FILENAME)
+    try:
+        _d = os.path.dirname(path)
+        if _d:
+            os.makedirs(_d, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(notice, f, indent=2, sort_keys=True)
+            f.write("\n")
+    except OSError as e:
+        print("WARNING: STARTED notice could not be written to {} ({}) — "
+              "relay it by hand (Signal).".format(path, e))
+        return None
+    print("STARTED notice written: {}".format(path))
+    return path
 
 
 def load_armed_file(path):
@@ -2951,6 +3038,7 @@ def main(bus=None):
         if not go_mode and not args.t0 and not args.dry_run:
             sys.exit("--mode {} requires --t0 'YYYY-MM-DD HH:MM:SS'".format(args.mode))
         go_anchor = None
+        _cfgs = None
         if go_mode:
             _cfgs = load_config_preset(args.configs)
             _armed, _src, _wall_ev, _mono_ev = acquire_armed_for_go(
@@ -2964,6 +3052,28 @@ def main(bus=None):
             args.t0 = str(go_anchor.t0_epoch)
             args.rx_lead = go_rx_lead(args.rx_lead, SYNC_CVM, None)
             print_go_banner(args, go_anchor)
+        # Split-brain guard (legacy TX starts only). A manual TX start MUST
+        # echo the RX session id from the RX banner: main() used to silently
+        # invent one right here (%y%m%d%H%M), and the two sides then ran
+        # different session ids — the analysis reported a false MISS/LOGGING
+        # GAP with no warning. Refuse BEFORE the auto-generation line below
+        # (an invented id is never transmitted), and loudly enough that the
+        # operator re-arms the RX and copies its session id. --dry-run is
+        # exempt: nothing is transmitted.
+        if (args.mode == "tx" and not args.dry_run and not go_mode
+                and args.session_id is None):
+            sys.exit(
+                "SPLIT-BRAIN GUARD — split brain refused: this TX start has "
+                "no --session-id, so the tool would have to invent one "
+                "(%y%m%d%H%M). The RX is the sole session authority: a "
+                "manual TX start must ECHO the live RX session id from the "
+                "RX banner (or its ARMED message) — pass "
+                "--session-id <RX session id>. Do not invent a session id: "
+                "the two sides would then run different sessions and the "
+                "analysis would report a false MISS/LOGGING GAP with no "
+                "warning. To have the TX take the session id automatically, "
+                "run GO mode instead (--sync cvm + the RX ARMED). A dry run "
+                "(--dry-run) is exempt.")
         if args.session_id is None:
             args.session_id = int(datetime.datetime.now().strftime("%y%m%d%H%M"))
         # Durable directive: default log filenames embed SESSION + T0 and are
@@ -3024,6 +3134,18 @@ def main(bus=None):
                     os.makedirs(_d, exist_ok=True)
         if args.dry_run:
             return dry_run_preset(args)
+        if args.mode == "tx":
+            # Anti split-brain: the TX announces its start on the session it
+            # echoes — GO mode from the ARMED anchor, legacy from the
+            # operator-echoed --session-id (guarded above). Best effort: a
+            # publish failure is a warning, never a reason to skip the burst.
+            emit_started_notice(
+                build_started_notice(
+                    args,
+                    _cfgs if _cfgs is not None
+                    else load_config_preset(args.configs),
+                    go_anchor),
+                args, bus)
         try:
             if args.mode == "tx":
                 return run_tx_mode(args, go_anchor=go_anchor)
