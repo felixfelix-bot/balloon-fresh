@@ -592,6 +592,17 @@ Rules that matter in the field:
   and the schedule builder consume the *same* value — the cycle length must be
   byte-identical on TX and RX or the per-cycle re-anchor walks the two sides
   apart.
+- **The board carries the u32 projection of the session id.** The firmware's
+  `SESSION` command takes a u32 (`src/bench_cmd.c`) and every PKT line echoes
+  it with `console_put_u32`, so the 3-hex nonce of a GO session can never
+  reach the wire. Both runners therefore send `SESSION <first 10 digits>`
+  (`e80_bench_ctl.board_session_id()`), and the analyzer accepts a PKT row
+  whose session equals that projection (`range_check._session_matches`).
+  Consequence to respect in the field: **never arm two passes inside the same
+  minute** — on the wire they are the same board session and only the ARMED
+  nonce (ARMED / log-dir / banner) tells them apart. A session id with no
+  numeric projection is refused at launch (`session_command()`), instead of
+  shipping `SESSION None` to the board.
 - **Monotonic anchor.** When the ARMED is accepted the tool captures
   `time.monotonic()` alongside wall time and derives a *monotonic* T0
   deadline; all GO-mode waits use it, so an NTP step mid-pass cannot shift

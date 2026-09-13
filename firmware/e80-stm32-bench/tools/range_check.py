@@ -533,11 +533,20 @@ def render_summary_line(dist, per_cfg):
 
 
 def _session_matches(row_value, session):
-    """Compare session ids as strings (int-normalized when numeric)."""
+    """Compare session ids as strings (int-normalized when numeric).
+
+    GO sessions (`%y%m%d%H%M` + 3-hex nonce) reach the PKT rows as the u32
+    board projection (the firmware's SESSION command is u32 — see
+    e80_bench_ctl.board_session_id), so a row matching that projection is a
+    match. Without this a GO log scores every config as MISS.
+    """
     a, b = str(row_value).strip(), str(session).strip()
     if a.isdigit() and b.isdigit():
         return int(a) == int(b)
-    return a == b
+    if a == b:
+        return True
+    proj = ctl.board_session_id(b)
+    return proj is not None and a.isdigit() and int(a) == proj
 
 
 def verdict_line(dist, session, results, kind, stat_count=0):

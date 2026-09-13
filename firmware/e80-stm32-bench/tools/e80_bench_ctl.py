@@ -345,6 +345,60 @@ class GoAnchor:
         return self.wall_at_event + (float(mono_now) - self.mono_at_event)
 
 
+# ---------------------------------------------------------------------------
+# Board session projection (GO mode vs the firmware's u32 SESSION command)
+# ---------------------------------------------------------------------------
+# src/bench_cmd.c parses `SESSION <id>` with bench_parse_u32 and src/bench_pkt.c
+# echoes it into every PKT line with console_put_u32, so whatever the RX
+# announces in the ARMED (cvm_sync.generate_session_id -> %y%m%d%H%M + 3-hex
+# nonce) CANNOT be carried on the wire. The board session is therefore the
+# numeric PROJECTION of the session id: the digits themselves for a legacy id,
+# the leading GO_SESSION_DIGITS digits for a GO id. The 3-hex nonce is a
+# message/join-layer identity only (ARMED + log-dir name + banner), which is
+# what lets the analysis separate two arms inside one minute; the boards
+# cannot, so never arm twice in the same minute.
+GO_SESSION_DIGITS = 10
+
+
+def board_session_id(session_id):
+    """The u32 the firmware's SESSION command can carry for `session_id`.
+
+    Legacy numeric ids pass through; a GO id (`%y%m%d%H%M` + 3-hex nonce)
+    projects to its 10-digit prefix. None when there is no numeric projection.
+    """
+    s = str(session_id).strip() if session_id is not None else ""
+    if s.isdigit():
+        return int(s)
+    digits = s[:GO_SESSION_DIGITS]
+    if len(digits) == GO_SESSION_DIGITS and digits.isdigit():
+        return int(digits)
+    return None
+
+
+def session_command(session_id):
+    """The exact `SESSION <n>` console line for this run (fail-fast on an
+    unprojectable id instead of shipping `SESSION None` to the board)."""
+    n = board_session_id(session_id)
+    if n is None:
+        sys.exit("ERROR: session id {!r} has no numeric projection the bench "
+                 "board can carry (SESSION is a u32; see src/bench_cmd.c) — "
+                 "pass a numeric --session-id, or use a GO id of the form "
+                 "%y%m%d%H%M + 3-hex nonce.".format(session_id))
+    return "SESSION {}".format(n)
+
+
+def parse_session_token(tok):
+    """Session field of a PKT row: int for the legacy numeric form, the
+    stripped string otherwise (a GO id, should a board ever emit one).
+
+    Never raises: int(p[1]) used to turn a non-numeric session into a
+    ValueError, parse_pkt_line returned None, and range_check silently scored
+    the whole log as MISS with no warning.
+    """
+    t = (tok or "").strip()
+    return int(t) if t.isdigit() else t
+
+
 def preset_hash(cfgs):
     """sha256 (first 12 hex) over the canonical JSON of a loaded preset.
 
@@ -1735,7 +1789,7 @@ def parse_pkt_line(line):
         return None
     try:
         return {
-            "session_id": int(p[1]),
+            "session_id": parse_session_token(p[1]),
             "config_id": int(p[2]),
             "replicate": int(p[3]),
             "seq": int(p[4]),
@@ -2251,7 +2305,7 @@ def run_tx_mode(args, board_cls=None, go_anchor=None):
                     send_power_outdoor(board, port)
 
                 # Session/config tagging
-                board.cmd("SESSION {}".format(args.session_id))
+                board.cmd(session_command(args.session_id))
                 board.cmd("CONFIG {} {}".format(cfg["idx"], cycle))
 
                 # Radio config
@@ -2662,7 +2716,7 @@ def run_rx_mode(args, board_cls=None, go_anchor=None):
                     send_power_outdoor(board, port)
 
                 # Session/config tagging
-                board.cmd("SESSION {}".format(args.session_id))
+                board.cmd(session_command(args.session_id))
                 board.cmd("CONFIG {} {}".format(cfg["idx"], cycle))
 
                 # Radio config
