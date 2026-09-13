@@ -592,6 +592,17 @@ Rules that matter in the field:
   and the schedule builder consume the *same* value — the cycle length must be
   byte-identical on TX and RX or the per-cycle re-anchor walks the two sides
   apart.
+- **Both sides must agree on the preset *and* the timing knobs.** The ARMED
+  carries a fingerprint (`preset_hash`) over the config preset plus the knobs
+  that feed `compute_cycle_len` / `build_preset_schedule` / the RX arm instant
+  (`--t0-margin`, `--guard`, `--settle`, `--rx-lead`, `--swd-reset-s`,
+  `--band-swap-s`). `acquire_armed_for_go()` compares it against the local
+  fingerprint and **refuses loudly** (`GO mode preset/knob MISMATCH — refusing
+  to GO`) before any log dir is created. Without that check the two operators
+  could run the same preset with different timing and re-anchor to a different
+  `t0_cycle` from cycle 2 on, drifting apart mid-pass with nothing on the wire
+  to reveal it. An ARMED relayed from an older build (preset-only digest) is
+  still accepted.
 - **The board carries the u32 projection of the session id.** The firmware's
   `SESSION` command takes a u32 (`src/bench_cmd.c`) and every PKT line echoes
   it with `console_put_u32`, so the 3-hex nonce of a GO session can never
@@ -621,8 +632,15 @@ Rules that matter in the field:
 With `--armed-file` the freshness checks (`created_at` skew 60 s / stale
 30 s) are relaxed, because the operator relayed the message by hand; the
 GO-window guard still applies. Without `--armed-file` the TX uses the
-`cvm_sync` subscriber seam against the live bus, and the RX generates the
+`cvm_sync` subscriber seam against a live bus, and the RX generates the
 ARMED and writes it to `--armed-out`.
+
+**The live bus has no production wiring yet.** `cvm_sync.ArmedSubscriber` is
+reachable only through the `main(bus=…)` injection point — there is no CLI
+flag and no relay subscriber in the shipped tool — so **in the field a GO TX
+always runs `--armed-file`** with the ARMED relayed by hand (Signal). The
+RP2/allowed-npub hardening in the ADR lands with that wiring: until then a
+GO TX must not be assumed to be relay-authenticated.
 
 Rehearsal without hardware:
 
@@ -634,14 +652,18 @@ python3 tools/e80_bench_ctl.py --mode rx --sync cvm \
 
 ### Log layout & post-stop analysis
 
-GO mode adds a second log-dir scheme. **Both are readable** by the post-stop
-tools (`range_check`, `merge_csvs`, GPS stitching):
+GO mode adds a second log-dir scheme. **`range_check` and `merge_csvs` read
+both schemes** — the `(session, config)` join is normalised through the board
+u32 projection on each side, so a GO run merges like a boundary run.
+**`gps_stitch.py` does not**: it has no session/GO awareness and no
+`captured_ts` in harmonized GO rows, so pass it `--t0-epoch` explicitly for a
+GO stop.
 
 | Launch | Log dir | Stop distance encoded as |
 |--------|---------|--------------------------|
 | Boundary / manual `--t0` (sweep) | `logs/s<session>-t0<t0epoch>/stop-<dist>/rx-log-*.csv` | the `stop-<dist>/` path level |
 | Boundary / manual `--t0` (single run) | `logs/s<session>-t0<t0epoch>/{rx,tx}-log.csv` | not in the path — pass `RX=`/`TX=` |
-| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — it lives in the ARMED / log header |
+| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — carried by the `stop=` token of the `GO_MODE` banner, with the sibling `armed.json` as fallback. `range_check` refuses (exit 2) a GO log whose own stop differs from the requested `--dist` instead of printing a confident pass for a stop that was never run |
 
 `<session>` is the legacy 10-digit int form (e.g. `2608281250`) for
 boundary/manual runs, and the RX-generated `%y%m%d%H%M` + 3-hex nonce
@@ -654,7 +676,7 @@ reads the session of each log from two independent sources:
    `s<session>-go<epoch>` (GO);
 2. the `session=<sid>` token of the first launch-banner comment line
    (`# DISTRIBUTED_TX_MODE session=… t0=…` or
-   `# GO_MODE sync=cvm source=… session=… t_ready=… t0=…`).
+   `# GO_MODE sync=cvm source=… session=… stop=… t_ready=… t0=…`).
 
 If **both** logs expose at least one session and the sets disagree, the
 check fails loudly (`SESSION MISMATCH`, exit 2): the rx and tx logs are NOT
