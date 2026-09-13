@@ -2591,9 +2591,11 @@ def run_rx_mode(args, board_cls=None, go_anchor=None):
     # same file for the routing path; the write is idempotent, and this one
     # keeps the seam working when the runner is invoked directly (wrappers,
     # tests, a future napplet). Goes out BEFORE the countdown so the relay has
-    # the whole T0 margin.
+    # the whole T0 margin. A --dry-run writes NO run artefacts (it does not
+    # reach here from main(), but keep the guard at the writer too).
     if (go_anchor is not None and getattr(go_anchor, "source", None) == "generate"
-            and getattr(args, "armed_out", None)):
+            and getattr(args, "armed_out", None)
+            and not getattr(args, "dry_run", False)):
         write_armed_out(args.armed_out, go_anchor.armed)
         print("  ARMED written: {} (relay to TX now)".format(args.armed_out))
 
@@ -3163,7 +3165,16 @@ def main(bus=None):
             if not args.armed_out:
                 args.armed_out = os.path.join(
                     os.path.dirname(os.path.abspath(args.rx_log)), "armed.json")
-            write_armed_out(args.armed_out, go_anchor.armed)
+            if args.dry_run:
+                # A dry run writes NO run artefacts: this write used to happen
+                # before the --dry-run gate below, so a rehearsal left
+                # logs/s<sid>-go<t0>/armed.json behind — and the next live
+                # launch then tripped the session-collision guard on a log dir
+                # that no run ever wrote. Path is still reported for review.
+                print("  dry run:     ARMED not written ({})".format(
+                    args.armed_out))
+            else:
+                write_armed_out(args.armed_out, go_anchor.armed)
         if not args.dry_run:
             if go_mode:
                 # Stale-T0 is meaningless for an event: the legacy T0-past

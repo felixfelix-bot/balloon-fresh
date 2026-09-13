@@ -9,6 +9,7 @@ import contextlib
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import time
@@ -1636,6 +1637,65 @@ class GoMainWiringTests(unittest.TestCase):
         self.assertIn("DRY RUN", out)
         self.assertIn("FLRC-650", out)
         self.assertIn("t0={}".format(t_ready + 30), out)
+
+
+    # --- a --dry-run writes NO run artefacts -----------------------------
+
+    def _run_main(self, argv, bus=None):
+        """main() with the REAL artefact-writing path (no runner/fs mocks).
+
+        A --dry-run GO RX returns before any board or countdown is touched, so
+        this exercises the write itself rather than a mocked stand-in.
+        """
+        old_argv = sys.argv
+        sys.argv = ["e80_bench_ctl.py"] + argv
+        buf, err = io.StringIO(), io.StringIO()
+        code = 0
+        try:
+            with contextlib.redirect_stdout(buf), \
+                 contextlib.redirect_stderr(err):
+                code = m.main(bus=bus)
+        except SystemExit as e:
+            if isinstance(e.code, str):
+                err.write(str(e.code) + "\n")
+                code = 1
+            else:
+                code = e.code or 0
+        finally:
+            sys.argv = old_argv
+        return code, buf.getvalue() + err.getvalue()
+
+    def test_go_rx_dry_run_writes_no_armed_out_file(self):
+        # the --armed-out write used to sit ABOVE the --dry-run gate, so a
+        # rehearsal left a real ARMED artefact behind for a run that never
+        # happened (and its logs/s<sid>-go<t0>/ dir with it).
+        out_path = os.path.join(self.dir.name, "armed-dry-run.json")
+        argv = ["--mode", "rx", "--sync", "cvm", "--dry-run",
+                "--configs", self.preset, "--stop", "50m",
+                "--armed-out", out_path]
+        code, out = self._run_main(argv)
+        self.assertEqual(code, 0, out)
+        self.assertIn("DRY RUN", out)
+        self.assertIn("ARMED not written", out)
+        self.assertFalse(os.path.exists(out_path),
+                         "a --dry-run must not create the ARMED artefact")
+
+    def test_go_rx_dry_run_creates_no_log_dir_either(self):
+        # default --armed-out is <rx-log dir>/armed.json — INSIDE the per-run
+        # logs/s<sid>-go<t0>/ dir. Creating it from a dry run made the next
+        # live launch trip the session-collision guard on a dir no run wrote.
+        argv = ["--mode", "rx", "--sync", "cvm", "--dry-run",
+                "--configs", self.preset, "--stop", "50m"]
+        code, out = self._run_main(argv)
+        self.assertEqual(code, 0, out)
+        m_dry = re.search(r"ARMED not written \((.+?)\)", out)
+        self.assertIsNotNone(m_dry, out)
+        path = m_dry.group(1)
+        self.assertFalse(os.path.exists(path), path)
+        self.assertFalse(
+            os.path.exists(os.path.dirname(path)),
+            "dry run created the run's log dir: {}".format(
+                os.path.dirname(path)))
 
 
 class GoBoardSessionTests(unittest.TestCase):
