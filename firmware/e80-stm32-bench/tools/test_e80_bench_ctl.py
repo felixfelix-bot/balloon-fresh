@@ -1453,6 +1453,40 @@ class GoMainWiringTests(unittest.TestCase):
         self.assertIn(GO_SESSION, out)
         self.assertIn("t0={}".format(t_ready + 30), out)
 
+    def test_go_mode_warns_when_stop_is_the_sentinel(self):
+        # --stop defaults to "?" (the unknown sentinel). A GO launch that
+        # omits it writes stop=? into BOTH stop sources, so the log can never
+        # be attributed to a stop: say so AT LAUNCH, not after the stop when
+        # the operator scores the pass.
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertIn("GO mode launched without --stop", out)
+        self.assertIn("--dist", out)
+        self.assertEqual(cap["args"].stop, "?")
+
+    def test_go_mode_has_no_stop_warning_when_a_stop_is_given(self):
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm", "--stop", "50m",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertNotIn("launched without --stop", out)
+        self.assertEqual(cap["args"].stop, "50m")
+
+    def test_legacy_mode_has_no_go_stop_warning(self):
+        # the warning belongs to GO mode only: a boundary run's --stop is CSV
+        # metadata, and its log dir already carries the stop level.
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "rx", "--t0", str(t0), "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertNotIn("launched without --stop", out)
+
     def test_go_mode_rejects_explicit_session_id(self):
         t_ready = int(time.time()) + 60
         argv = ["--mode", "rx", "--sync", "cvm",

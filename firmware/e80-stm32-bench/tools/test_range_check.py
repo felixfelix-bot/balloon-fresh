@@ -1426,6 +1426,59 @@ class TestGoStopGuard:
                range_check.find_rx_logs("70km", None, [str(tmp_path)])]
         assert os.path.realpath(rx) in got
 
+    def test_stop_sentinel_is_not_a_claimed_stop(self, tmp_path):
+        # round-2 review repro: --stop defaults to the "?" sentinel, so a
+        # documented-default GO launch writes stop=? into BOTH stop sources.
+        # The guard read that as a claimed stop named "?" and refused the
+        # healthy log with exit 2 — a pass that could never be scored.
+        write_go_preset(tmp_path)
+        rx = go_rx_log(tmp_path, stop="?")
+        assert range_check.go_stop_from_header(rx) is None
+        assert range_check.go_stop_from_armed(rx) is None
+        assert range_check.go_stop_sources(rx) == []
+        ok, msg = range_check.check_go_stop_match(rx, "50m")
+        assert ok, msg
+        assert "cannot verify" in msg, msg
+        r = run_range_check(tmp_path, dist="50m", extra=["--rx-log", rx])
+        assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" in r.stdout, r.stdout
+
+    def test_stop_sentinel_in_armed_is_not_a_claimed_stop(self, tmp_path):
+        # same sentinel, other source: the banner carries no stop token and
+        # armed.json carries "?" — still "no stop source", not "stop ?".
+        write_go_preset(tmp_path)
+        rx = go_rx_log(tmp_path, stop_token=False, armed_stop="?")
+        assert range_check.go_stop_from_header(rx) is None
+        assert range_check.go_stop_from_armed(rx) is None
+        assert range_check.go_stop_sources(rx) == []
+        r = run_range_check(tmp_path, dist="50m", extra=["--rx-log", rx])
+        assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" in r.stdout, r.stdout
+
+    def test_empty_stop_token_is_not_a_claimed_stop(self, tmp_path):
+        # "" is the other spelling of "not recorded" (the ARMED/banner token
+        # is written from an optional CLI value).
+        write_go_preset(tmp_path)
+        rx = go_rx_log(tmp_path, stop="")
+        assert range_check.go_stop_from_header(rx) is None
+        assert range_check.go_stop_sources(rx) == []
+        r = run_range_check(tmp_path, dist="50m", extra=["--rx-log", rx])
+        assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" in r.stdout, r.stdout
+
+    def test_sentinel_armed_does_not_mask_a_real_banner_stop(self, tmp_path):
+        # the fix must stay narrow: a REAL stop token still counts even when
+        # the other source is the sentinel, or "?" would excuse a wrong stop.
+        write_preset(tmp_path, preset=make_preset_dict(n_cfgs=2, n_pkts=10),
+                     name="stop-70km.json")
+        rx = go_rx_log(tmp_path, stop="50m", armed_stop="?")
+        assert range_check.go_stop_from_header(rx) == "50m"
+        assert [s for _lbl, s in range_check.go_stop_sources(rx)] == ["50m"]
+        r = run_range_check(tmp_path, dist="70km", session=GO_SESSION,
+                            extra=["--rx-log", rx])
+        assert r.returncode == 2, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" not in r.stdout, r.stdout
+
 
 if __name__ == "__main__":
     unittest.main()
