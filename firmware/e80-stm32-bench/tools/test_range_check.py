@@ -1172,6 +1172,21 @@ def go_banner_lines(session=GO_SESSION, stop="50m", t0=SID_T0,
         _sid_iso(t0)), go]
 
 
+def write_go_preset(tmp_path, n_cfgs=2, n_pkts=10, name="stop-50m.json"):
+    """Preset for the GO fixtures — MUST agree with go_rx_log/go_tx_log shape.
+
+    go_rx_log/go_tx_log log 2 configs x 10 pkts by default, so the preset has
+    to describe the same 2 configs: write_preset()'s 3-config default would
+    (correctly) report c2 as MISS — a config of the preset that was never
+    received is a MISS/GAPS verdict, not a logging gap — and exit 1. Pairing
+    the fixtures here keeps the GO analysis tests about the session/stop join
+    rather than about a preset/log shape mismatch.
+    """
+    return write_preset(tmp_path,
+                        preset=make_preset_dict(n_cfgs=n_cfgs, n_pkts=n_pkts),
+                        name=name)
+
+
 def go_rx_log(tmp_path, session=GO_SESSION, stop="50m", t0=SID_T0,
               n_cfgs=2, n_pkts=10, stop_token=True, armed_stop=None):
     """A GO rx-log written by the TOOL'S OWN writers.
@@ -1276,7 +1291,7 @@ class TestGoLogAnalysis:
     def test_explicit_rx_log_without_session_is_not_a_logging_gap(self, tmp_path):
         # the reviewer's repro of blocker 1: `--dist 50m --rx-log <GO rx-log>`
         # with no --session printed "LOGGING GAP (0 STAT rows ...)" and exit 1.
-        write_preset(tmp_path)
+        write_go_preset(tmp_path)
         rx = go_rx_log(tmp_path)
         r = run_range_check(tmp_path, extra=["--rx-log", rx])
         assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
@@ -1284,7 +1299,7 @@ class TestGoLogAnalysis:
         assert "PASS" in r.stdout, r.stdout
 
     def test_auto_session_is_the_launch_authority_not_the_pkt_rows(self, tmp_path):
-        write_preset(tmp_path)
+        write_go_preset(tmp_path)
         rx = go_rx_log(tmp_path)
         r = run_range_check(tmp_path, extra=["--rx-log", rx])
         assert "session: {} (auto".format(GO_SESSION) in r.stdout, r.stdout
@@ -1296,7 +1311,7 @@ class TestGoLogAnalysis:
     def test_u32_session_form_matches_the_same_log(self, tmp_path):
         # the obvious guess from the PKT rows must work too (the STAT rows
         # carry the same wire spelling now).
-        write_preset(tmp_path)
+        write_go_preset(tmp_path)
         rx = go_rx_log(tmp_path)
         r = run_range_check(tmp_path, session=str(GO_U32),
                             extra=["--rx-log", rx])
@@ -1388,7 +1403,7 @@ class TestGoStopGuard:
         assert r.returncode == 2, (r.returncode, r.stdout, r.stderr)
 
     def test_matching_stop_is_still_analysed(self, tmp_path):
-        write_preset(tmp_path)
+        write_go_preset(tmp_path)
         rx = go_rx_log(tmp_path, stop="50m")
         r = run_range_check(tmp_path, dist="50m", extra=["--rx-log", rx])
         assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
