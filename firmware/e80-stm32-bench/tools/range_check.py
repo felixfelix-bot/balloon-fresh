@@ -27,6 +27,17 @@ v2 (worker-balloon/range-check2):
   - idx-preserved resend ``configs/resend/resend-<dist>-<session>.json``
     + paste-ready TX/RX re-send commands (T0 = next 5-minute boundary).
 
+v3 (GO mode, --sync cvm):
+  - Session-FIRST launch cross-check: the rx/tx logs of one stop must
+    expose the same session_id (session dir name s<session>-{t0,go}<epoch>
+    and/or the banner's session=<sid> token); a disagreement is a loud
+    SESSION MISMATCH exit-2. When the sessions agree (or only one side
+    exposes one) the legacy t0 rule (filename tag + header) applies.
+  - Both log-dir schemes are read: legacy boundary/manual
+    logs/s<sid>-t0<epoch>/stop-<dist>/rx-log-*.csv AND the GO layout
+    logs/s<sid>-go<epoch>/rx-log.csv (no stop-<dist> level — the stop lives
+    in the ARMED/log header), session-tagged candidates first.
+
 Usage (from firmware/e80-stm32-bench/, or via the root make proxy):
 
     make range-check DIST=50m                      # latest session found
@@ -159,40 +170,101 @@ def parse_rx_log(path):
 
 
 # ---------------------------------------------------------------------------
-# t0 cross-check (2026-08-28 incident hardening): the rx-log and tx-log of
-# one stop must belong to the SAME launch. t0 is read from BOTH the
-# filename tag (-t0<epoch>, TZ-safe) and the log header (t0=<iso>); any
-# disagreement is a loud exit-2, not a silent wrong-session analysis.
+# launch cross-check (2026-08-28 incident hardening, session-FIRST since GO
+# mode): the rx-log and tx-log of one stop must belong to the SAME launch.
+# The primary key is session_id, read from the session dir name
+# (s<session>-t0<epoch> legacy / s<session>-go<epoch> GO) and from the
+# `session=<sid>` token of the launch banner (DISTRIBUTED_*_MODE / GO_MODE);
+# a disagreement is a loud exit-2. When the sessions agree (or only one side
+# exposes one) the legacy t0 rule applies: t0 is read from BOTH the filename
+# tag (-t0<epoch> / -go<epoch>, TZ-safe) and the log header (t0=<iso>), any
+# disagreement a loud exit-2. Never a silent wrong-session analysis.
 # ---------------------------------------------------------------------------
 
-_T0_FN_RE = re.compile(r"(?:^|[-_/])t0(\d{8,})")
+# Launch tags: `-t0<epoch>` (boundary / manual --t0) and `-go<epoch>` (GO
+# mode, --sync cvm). Digits only, so both spellings stay TZ-safe.
+_T0_FN_RE = re.compile(r"(?:^|[-_/])(t0|go)(\d{8,})")
 _T0_ISO_FMTS = ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S",
                 "%Y-%m-%d %H:%M:%S")
 
+# Session dir names: s<session>-{t0,go}<epoch>, where <session> is the
+# legacy 10-digit int form or the GO form (%y%m%d%H%M + 3 lowercase hex).
+_SESSION_DIR_RE = re.compile(r"^s(\d{10}[0-9a-f]{3}|\d{10})-(t0|go)\d{8,}$")
 
-def t0_from_filename(path):
-    """Epoch int from a '-t0<epoch>' tag in the log's basename, else from
-    its parent session dir (s<session>-t0<epoch>). None when untagged."""
+# Banner markers: the launch-banner comment lines of a log. The RX
+# DISTRIBUTED_RX_MODE banner carries no session= token; GO mode appends a
+# GO_MODE line that does (and repeats the same t0=), so both are accepted.
+_HEADER_MARKERS = ("DISTRIBUTED", "GO_MODE")
+
+
+def _t0_tag(path):
+    """(tag, epoch) from the nearest '-t0<epoch>' / '-go<epoch>' tag.
+
+    The tag is looked for in the log's basename first (legacy
+    rx-log-t0<epoch>-<session>.csv), then in its parent dir: the GO layout
+    is logs/s<session>-go<epoch>/rx-log.csv, the legacy parent-dir form is
+    s<session>-t0<epoch>/. None when untagged.
+    """
     parent = os.path.basename(os.path.dirname(os.path.abspath(path or "")))
     for part in (os.path.basename(path or ""), parent):
         m = _T0_FN_RE.search(part)
         if m:
-            return int(m.group(1))
+            return m.group(1), int(m.group(2))
     return None
 
 
-def t0_from_header(path):
-    """Epoch int from the DISTRIBUTED_*_MODE 't0=<iso-or-epoch>' comment.
+def t0_from_filename(path):
+    """Epoch int from a '-t0<epoch>' / '-go<epoch>' tag in the log's
+    basename, else from its parent session dir (s<session>-{t0,go}<epoch>).
+    None when untagged."""
+    got = _t0_tag(path)
+    return got[1] if got else None
 
-    Only the first DISTRIBUTED header line is consulted (the launch-time
-    banner). None when absent, unreadable, or unparseable.
+
+def _session_dir_in_path(path):
+    """(session, dirname, tag) for the nearest session dir in `path`.
+
+    A session dir is s<session>-t0<epoch> (legacy boundary/manual) or
+    s<session>-go<epoch> (GO mode, --sync cvm). The log's own dir is checked
+    first (GO: logs/s<sid>-go<t0>/rx-log.csv), then every ancestor: the
+    legacy per-stop layout nests the log one level below the session dir
+    (logs/s<sid>-t0<t0>/stop-<dist>/rx-log-*.csv). None when the path
+    carries no session dir.
+    """
+    d = os.path.dirname(os.path.abspath(path or ""))
+    while d and d != os.path.dirname(d):
+        m = _SESSION_DIR_RE.match(os.path.basename(d))
+        if m:
+            return m.group(1), os.path.basename(d), m.group(2)
+        d = os.path.dirname(d)
+    return None
+
+
+def session_from_filename(path):
+    """Session id from the s<session>-{t0,go}<epoch> dir name in the path.
+
+    Both session spellings are accepted (legacy 10-digit int, GO
+    %y%m%d%H%M + 3-hex nonce). None when the path carries no session dir.
+    """
+    got = _session_dir_in_path(path)
+    return got[0] if got else None
+
+
+def t0_from_header(path):
+    """Epoch int from the launch banner's 't0=<iso-or-epoch>' comment.
+
+    Banner styles: DISTRIBUTED_*_MODE (boundary/manual) and GO_MODE
+    (--sync cvm, which repeats the same T0). Only the first banner line
+    carrying t0= is consulted (the launch-time banner). None when absent,
+    unreadable, or unparseable.
     """
     if not path or not os.path.isfile(path):
         return None
     try:
         with open(path, errors="replace") as f:
             for ln in f:
-                if "DISTRIBUTED" not in ln or "t0=" not in ln:
+                if "t0=" not in ln or not any(
+                        mk in ln for mk in _HEADER_MARKERS):
                     continue
                 m = re.search(r"t0=(\S+)", ln)
                 if not m:
@@ -214,26 +286,102 @@ def t0_from_header(path):
     return None
 
 
+def session_from_header(path):
+    """Session id from the launch banner's 'session=<sid>' token.
+
+    Banner styles (both known spellings):
+      # DISTRIBUTED_TX_MODE session=<sid> t0=<iso> port=... probe=... loop=...
+      # GO_MODE sync=cvm source=<s> session=<sid> t_ready=... t0=<iso> ...
+    The first banner line carrying a session= token wins. The RX
+    DISTRIBUTED_RX_MODE banner has none, so a GO RX log reads it from its
+    trailing GO_MODE line; a legacy RX log exposes none at all. None when
+    absent, unreadable, or without the token.
+    """
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, errors="replace") as f:
+            for ln in f:
+                if not any(mk in ln for mk in _HEADER_MARKERS):
+                    continue
+                m = re.search(r"session=(\S+)", ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        return None
+    return None
+
+
 def t0_sources(path):
     """[(label, epoch)] for every t0 we can read from one log file."""
     srcs = []
     base = os.path.basename(path or "") or str(path)
-    fn = t0_from_filename(path)
-    if fn is not None:
-        srcs.append(("{}: filename -t0{}".format(base, fn), fn))
+    tag = _t0_tag(path)
+    if tag is not None:
+        srcs.append(("{}: filename -{}{}".format(base, tag[0], tag[1]),
+                     tag[1]))
     hdr = t0_from_header(path)
     if hdr is not None:
         srcs.append(("{}: header t0= -> {}".format(base, hdr), hdr))
     return srcs
 
 
-def check_t0_match(rx_path, tx_path):
-    """All readable t0 sources of BOTH logs must agree.
+def session_sources(path):
+    """[(label, session)] for every session we can read from one log file.
 
-    Returns (ok, message). ok=True message summarizes the agreed epoch;
-    ok=False message is a loud multi-line T0 MISMATCH report naming every
-    source (rx filename, rx header, tx filename, tx header).
+    Mirrors t0_sources(): the session dir name and the launch banner token
+    are independent sources, so a split-brain log (dir says one session,
+    header another) surfaces as two entries.
     """
+    srcs = []
+    base = os.path.basename(path or "") or str(path)
+    got = _session_dir_in_path(path)
+    if got is not None:
+        srcs.append(("{}: dir {}".format(base, got[1]), got[0]))
+    hdr = session_from_header(path)
+    if hdr is not None:
+        srcs.append(("{}: header session= -> {}".format(base, hdr), hdr))
+    return srcs
+
+
+def check_t0_match(rx_path, tx_path):
+    """Session-FIRST launch check, with the legacy t0 rule as the fallback.
+
+    Primary key: session_id. When BOTH logs expose at least one session
+    source and those sets disagree, the logs are from different launches:
+    a loud multi-line SESSION MISMATCH report naming every session source
+    (and the t0 sources for context) — a wrong-log pickup, or a split-brain
+    start where each side armed its own session.
+
+    Otherwise the legacy rule applies verbatim: all readable t0 sources of
+    BOTH logs must agree, else the existing T0 MISMATCH report.
+
+    Returns (ok, message). ok=True message summarizes the agreed session /
+    epoch; ok=False message is the loud multi-line report.
+    """
+    rsess = [("rx " + lbl, s) for lbl, s in session_sources(rx_path)]
+    tsess = [("tx " + lbl, s) for lbl, s in session_sources(tx_path)]
+    if rsess and tsess:
+        rset = {s for _lbl, s in rsess}
+        tset = {s for _lbl, s in tsess}
+        if rset != tset:
+            lines = ["SESSION MISMATCH — rx-log and tx-log disagree on the "
+                     "launch (rx session {} vs tx session {}):".format(
+                         "/".join(sorted(rset)), "/".join(sorted(tset)))]
+            for lbl, s in rsess + tsess:
+                lines.append("  {:<44} session={}".format(lbl, s))
+            tsrcs = [("rx " + lbl, t) for lbl, t in t0_sources(rx_path)]
+            tsrcs += [("tx " + lbl, t) for lbl, t in t0_sources(tx_path)]
+            if tsrcs:
+                lines.append("  t0 sources of the same logs:")
+                for lbl, t in tsrcs:
+                    lines.append("  {:<44} t0={}".format(lbl, t))
+            lines.append(
+                "The rx and tx logs are NOT from the same launch — wrong "
+                "log picked up, or a split-brain start (each side armed its "
+                "own session). Re-check SESSION/--session, or pass --tx-log "
+                "with the matching tx-log.")
+            return False, "\n".join(lines)
     srcs = [("rx " + lbl, t) for lbl, t in t0_sources(rx_path)]
     srcs += [("tx " + lbl, t) for lbl, t in t0_sources(tx_path)]
     epochs = sorted({t for _lbl, t in srcs})
@@ -268,22 +416,40 @@ def find_sibling_tx_log(rx_path):
 def find_rx_logs(dist, session, search_roots):
     """Locate candidate rx-log files for a stop, best-first.
 
-    Order: explicit T0-tagged files for the session -> any T0-tagged file
-    for the stop (newest first) -> legacy cwd-quirk rx-log.csv in tool dir.
-    Handles both the s<session>-t0<epoch> repo-root layout and the bare
-    <session> layout.
+    Both log-dir schemes are searched:
+
+      * legacy boundary/manual: logs/s<session>-t0<epoch>/stop-<dist>/
+        rx-log-*.csv, plus the bare logs/<session>/stop-<dist>/ variant and
+        the stop-less logs/<session>/{,s<session>-t0<epoch>/}rx-log*.csv
+        defaults;
+      * GO mode (--sync cvm): logs/s<session>-go<epoch>/rx-log.csv — the GO
+        dir has NO `stop-<dist>` level at all (the stop lives in the
+        ARMED/log header), so a GO dir is a candidate for ANY dist of that
+        session.
+
+    Order: session-tagged candidates (the requested session) newest-first,
+    then any other candidate newest-first, then the legacy cwd-quirk
+    rx-log.csv in the tool dir (last resort). realpath-deduplicated.
     """
-    cands = []
+    tagged, untagged = [], []
     for root in search_roots:
         if session:
-            cands.extend(glob.glob(os.path.join(
+            tagged.extend(glob.glob(os.path.join(
                 root, "logs", "s{}-t0*".format(session), "stop-" + dist,
                 "rx-log-*.csv")))
-            cands.extend(glob.glob(os.path.join(
+            tagged.extend(glob.glob(os.path.join(
                 root, "logs", str(session), "stop-" + dist, "rx-log-*.csv")))
-        cands.extend(glob.glob(os.path.join(
+            # GO layout: flat session dir, no stop-<dist> level.
+            tagged.extend(glob.glob(os.path.join(
+                root, "logs", "s{}-go*".format(session), "rx-log*.csv")))
+        untagged.extend(glob.glob(os.path.join(
             root, "logs", "*", "stop-" + dist, "rx-log-*.csv")))
-    cands = sorted(set(cands), key=os.path.getmtime, reverse=True)
+        # A GO dir (and the stop-less default harmonized dir) cannot be
+        # filtered by dist, so it stays a candidate even for auto-detect.
+        untagged.extend(glob.glob(os.path.join(
+            root, "logs", "*", "rx-log*.csv")))
+    cands = sorted(set(tagged), key=os.path.getmtime, reverse=True)
+    cands += sorted(set(untagged), key=os.path.getmtime, reverse=True)
     legacy = os.path.join(_TOOLS_DIR, "rx-log.csv")
     if os.path.isfile(legacy):
         cands.append(legacy)
@@ -521,17 +687,26 @@ def main(argv=None):
         cands = find_rx_logs(dist, args.session, roots)
         if not cands:
             sys.stderr.write(
-                "ERROR: no rx-log found for stop {} (looked in logs/*/"
-                "stop-{}/ and {}). Pass --rx-log explicitly.\n".format(
+                "ERROR: no rx-log found for stop {} — searched both log "
+                "layouts:\n"
+                "  legacy boundary/manual: logs/s<session>-t0<t0>/stop-{}/"
+                "rx-log-*.csv\n"
+                "  GO mode (--sync cvm):   logs/s<session>-go<t0>/rx-log.csv "
+                "(no stop-<dist> level)\n"
+                "  cwd quirk:              {}\n"
+                "Pass --rx-log explicitly.\n".format(
                     dist, dist, os.path.join(_TOOLS_DIR, "rx-log.csv")))
             return 2
         path = cands[0]
         if len(cands) > 1:
             print("note: multiple candidate logs, using newest: {}".format(path))
 
-    # t0 cross-check (fail fast): the rx-log and its sibling/explicit
-    # tx-log must belong to the SAME launch — filename -t0<epoch> tags and
-    # DISTRIBUTED_*_MODE t0=<iso> headers must all agree.
+    # Launch cross-check (fail fast): the rx-log and its sibling/explicit
+    # tx-log must belong to the SAME launch — the session id (session dir
+    # name s<session>-{t0,go}<epoch> / banner session=<sid>) is the primary
+    # key; when it agrees (or only one side exposes one) the legacy rule
+    # applies: filename -t0<epoch>/-go<epoch> tags and the banner's t0=<iso>
+    # must all agree.
     tx_path = args.tx_log or find_sibling_tx_log(path)
     if tx_path:
         ok, msg = check_t0_match(path, tx_path)
