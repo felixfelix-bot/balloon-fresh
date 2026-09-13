@@ -306,6 +306,28 @@ def go_window_ok(t0_epoch, now_mono, deadline_mono,
             ago=armed_ago, rem=remaining, iso=iso, lead=min_lead_s))
 
 
+def poll_left(deadline_mono, deadline_wall,
+              mono_fn=time.monotonic, wall_fn=time.time):
+    """Whether a bounded wait may keep polling (blocker 5).
+
+    GO mode bounds every capture/poll window with the MONOTONIC image of the
+    window end (`GoAnchor.mono_target`), passed as `deadline_mono`. A bare
+    `time.time()` deadline is NTP-step sensitive: a forward step ends the RX
+    capture early (silently fewer packets -> false THIN/MISS) and a backward
+    step stretches it past the next config's arm point (the burst is captured
+    under the previous config's header). `deadline_mono` therefore WINS when
+    both are given; `deadline_wall` is the legacy path, unchanged.
+
+    Both clocks are injected for testability: the function reads only the
+    deadlines it is handed, never the system clock directly.
+    """
+    if deadline_mono is not None:
+        return mono_fn() < float(deadline_mono)
+    if deadline_wall is not None:
+        return wall_fn() < float(deadline_wall)
+    return False
+
+
 class GoAnchor:
     """Derived-T0 anchor for a GO-mode run.
 
@@ -412,20 +434,95 @@ def parse_session_token(tok):
     return int(t) if t.isdigit() else t
 
 
-def preset_hash(cfgs):
+def preset_hash(cfgs, knobs=None):
     """sha256 (first 12 hex) over the canonical JSON of a loaded preset.
 
     Both sides must hash the same config list to the same value; the ARMED
     carries it so a preset mismatch is visible before GO.
+
+    knobs (optional) extends the fingerprint over the timing knobs that feed
+    compute_cycle_len / build_preset_schedule (see schedule_knobs): without
+    them two operators can run the SAME preset with different timing and
+    re-anchor to different t0_cycle from cycle 2 on with nothing on the wire
+    to detect it (cold-review blocker 4). Omitted (None) keeps the preset-only
+    digest — the legacy behaviour every existing caller and log header uses.
     """
-    canon = json.dumps(cfgs, sort_keys=True, separators=(",", ":"))
+    if knobs is None:
+        payload = cfgs
+    else:
+        payload = {"cfgs": cfgs,
+                   "knobs": {str(k): float(v) for k, v in knobs.items()}}
+    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:12]
 
 
-def build_go_armed(cfgs, session_id, stop, t_ready_utc):
-    """RX-authority ARMED message for a GO-mode run (cvm_sync.build_armed)."""
+# Every CLI knob that feeds compute_cycle_len / build_preset_schedule, or the
+# RX arm instant (start - rx_lead): the GO fingerprint must cover all of them.
+GO_SCHEDULE_KNOBS = ("t0_margin", "guard", "settle", "rx_lead",
+                     "swd_reset_s", "band_swap_s")
+
+
+def schedule_knobs(args):
+    """The timing knobs a GO-mode ARMED fingerprint covers (blocker 4).
+
+    Read RAW (unclamped) from the CLI namespace: the fingerprint compares
+    operator intent, and both sides must be launched with the same knobs for
+    their cycle_len / schedule / arm instants to agree.
+    """
+    return {name: float(getattr(args, name)) for name in GO_SCHEDULE_KNOBS}
+
+
+def schedule_knobs_str(knobs):
+    """`name=value` list for diagnostics, in GO_SCHEDULE_KNOBS order."""
+    return " ".join("{}={}".format(n, knobs.get(n)) for n in GO_SCHEDULE_KNOBS)
+
+
+def assert_armed_matches_knobs(armed, cfgs, knobs, source_label="ARMED"):
+    """Refuse an ARMED built for another preset or another knob set.
+
+    Cold-review blocker 4: preset_hash was computed, shipped in the ARMED and
+    never compared, so two operators with different presets — or the same
+    preset with different timing knobs — re-anchored to a different t0_cycle
+    from cycle 2 on with no detection (the boat-trip drift class). The RX is
+    the session authority, so a mismatch is REFUSED loudly here, before any
+    GO/burst, never silently absorbed.
+
+    Accepts the plain preset-only digest (a legacy/hand-relayed ARMED) as well
+    as the knob-extended one, so old ARMEDs still relay; anything else is a
+    different preset or different knobs and exits non-zero.
+    """
+    got = armed.get("preset_hash")
+    preset_only = preset_hash(cfgs or [])
+    with_knobs = preset_hash(cfgs or [], knobs)
+    if got in (preset_only, with_knobs):
+        return
+    sys.exit(
+        "ERROR: GO mode preset/knob MISMATCH — refusing to GO.\n"
+        "  ARMED fingerprint: {}  (from the {} the RX published)\n"
+        "  local fingerprint: {}  (this run's preset + timing knobs)\n"
+        "  local preset:      {} config(s); local knobs: {}\n"
+        "The ARMED's digest matches neither this run's preset-only digest "
+        "({}) nor its preset+knobs digest, so the preset and/or the timing "
+        "knobs differ. The two sides would run different cycle lengths and "
+        "re-anchor to a different t0_cycle from cycle 2 on, with nothing on "
+        "the wire to detect it (the boat-trip drift class; see "
+        "docs/ADR-range-sync-cvm.md §2.1). Fix it: re-arm the RX with this "
+        "machine's preset + timing knobs (it is the session authority — its "
+        "ARMED carries the fingerprint), or re-run this side with the preset "
+        "+ knobs the ARMED was built for.".format(
+            got, source_label, with_knobs, len(cfgs or []),
+            schedule_knobs_str(knobs), preset_only))
+
+
+def build_go_armed(cfgs, session_id, stop, t_ready_utc, knobs=None):
+    """RX-authority ARMED message for a GO-mode run (cvm_sync.build_armed).
+
+    knobs (the timing knobs that feed the schedule; see schedule_knobs) are
+    folded into preset_hash so the TX can detect a knob mismatch before GO
+    (blocker 4). omitting knobs keeps the legacy preset-only digest.
+    """
     return _require_cvm().build_armed(session_id, stop, int(t_ready_utc),
-                                      preset_hash(cfgs), seq=1)
+                                      preset_hash(cfgs, knobs), seq=1)
 
 
 def build_started_notice(args, cfgs, go_anchor=None):
@@ -563,17 +660,25 @@ def acquire_armed_for_go(args, cfgs=None, bus=None, now_fn=time.time,
     stamps the anchor — wall AND monotonic — at acceptance.
     """
     armed_file = getattr(args, "armed_file", None)
+    knobs = schedule_knobs(args)
     if armed_file:
         armed = load_armed_file(armed_file)
         ok, reason = validate_armed_relaxed(armed)
         if not ok:
             sys.exit("ERROR: bad --armed-file {}: {}".format(armed_file,
                                                              reason))
+        # Blocker 4: the relayed ARMED must have been built for THIS preset
+        # and THESE timing knobs, or the two sides re-anchor apart from
+        # cycle 2 on with nothing on the wire to detect it.
+        assert_armed_matches_knobs(armed, cfgs, knobs,
+                                   source_label="--armed-file {}".format(
+                                       armed_file))
         return armed, "file", now_fn(), mono_fn()
     if getattr(args, "mode", None) == "rx":
         armed = build_go_armed(cfgs or [],
                                _require_cvm().generate_session_id(now_fn()),
-                               getattr(args, "stop", "?"), int(now_fn()))
+                               getattr(args, "stop", "?"), int(now_fn()),
+                               knobs=knobs)
         ok, reason = _require_cvm().validate_armed(armed, now=int(now_fn()))
         if not ok:      # pragma: no cover — the RX's own message must pass
             sys.exit("ERROR: generated ARMED failed validation: "
@@ -592,6 +697,9 @@ def acquire_armed_for_go(args, cfgs=None, bus=None, now_fn=time.time,
     ok, reason = _require_cvm().validate_armed(armed, now=int(now_fn()))
     if not ok:
         sys.exit("ERROR: GO mode: ARMED rejected: {}".format(reason))
+    # Blocker 4, bus branch: same refusal as the --armed-file branch — an
+    # ARMED published for another preset/knob set must never start a GO.
+    assert_armed_matches_knobs(armed, cfgs, knobs, source_label="CVM bus")
     return armed, "bus", now_fn(), mono_fn()
 
 
@@ -2347,11 +2455,24 @@ def run_tx_mode(args, board_cls=None, go_anchor=None):
                 actual_start = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 board.cmd(start_line, timeout=max(30.0, cfg["expected_s"] + 60))
 
-                # Poll for completion
-                deadline = time.time() + cfg["expected_s"] + 120
+                # Poll for completion. In GO mode the window end is the
+                # ANCHOR's monotonic image of start + expected_s + 120
+                # (blocker 5): a bare time.time() deadline ends the poll early
+                # on a forward NTP step (a false TIMEOUT for a burst still in
+                # flight) and stretches it on a backward step, past the next
+                # config's arm point. The legacy wall deadline is unchanged.
                 sent_ok = 0
                 error = ""
-                while time.time() < deadline:
+                if go_anchor is not None:
+                    poll_deadline_mono = go_anchor.mono_target(
+                        start + cfg["expected_s"] + 120)
+                    poll_deadline_wall = None
+                else:
+                    poll_deadline_mono = None
+                    poll_deadline_wall = (time.time() + cfg["expected_s"]
+                                          + 120)
+                while poll_left(poll_deadline_mono, poll_deadline_wall,
+                                mono_fn=time.monotonic, wall_fn=time.time):
                     try:
                         s = parse_stat(board.stat())
                         sent_ok = s.get("sent_ok", 0)
@@ -2616,17 +2737,27 @@ def run_rx_mode(args, board_cls=None, go_anchor=None):
                 return
             time.sleep(min(d, 30.0))
 
-    def drain_pkt_lines(ser, duration_s):
+    def drain_pkt_lines(ser, duration_s, deadline_mono=None):
         """Read serial lines for duration_s, return parsed PKT dicts.
 
         Uses harmonized parse_pkt_line when format=harmonized, legacy
         parse_pkt_line_legacy when format=legacy.
+
+        deadline_mono (GO mode): the ANCHOR's monotonic image of the window
+        end. The capture is then bounded by the monotonic clock (blocker 5) —
+        a forward NTP step can no longer truncate the capture (silent false
+        THIN/MISS) nor a backward step stretch it under the next config's
+        header. None keeps the legacy `time.time() + duration_s` window.
         """
         parser = parse_pkt_line if use_harmonized else parse_pkt_line_legacy
         pkts = []
-        deadline = time.time() + duration_s
+        if deadline_mono is None:
+            deadline_wall = time.time() + duration_s
+        else:
+            deadline_wall = None
         buf = ""
-        while time.time() < deadline:
+        while poll_left(deadline_mono, deadline_wall,
+                        mono_fn=time.monotonic, wall_fn=time.time):
             data = ser.read(2048)
             if data:
                 buf += data.decode("ascii", errors="replace")
@@ -2757,7 +2888,14 @@ def run_rx_mode(args, board_cls=None, go_anchor=None):
                 # Wait for burst start + duration + settle
                 wait_until(start)
                 capture_duration = cfg["expected_s"] + args.settle + args.guard
-                pkts = drain_pkt_lines(board.ser, capture_duration)
+                # Blocker 5: the capture window ends on the ANCHOR's monotonic
+                # image of the window end, never a bare time.time() deadline.
+                capture_deadline_mono = (
+                    None if go_anchor is None
+                    else go_anchor.mono_target(
+                        start + cfg["expected_s"] + args.settle + args.guard))
+                pkts = drain_pkt_lines(board.ser, capture_duration,
+                                       deadline_mono=capture_deadline_mono)
 
                 # Discard prime (AGC warmup) packets before logging
                 prime_discard = getattr(args, 'prime_discard', 0)

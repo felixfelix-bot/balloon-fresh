@@ -1382,10 +1382,19 @@ class GoMainWiringTests(unittest.TestCase):
         self.dir.cleanup()
 
     def _armed_file(self, t_ready, name="armed.json", **kw):
+        # A hand-relayed ARMED must carry the fingerprint of THIS preset +
+        # the CLI timing knobs (blocker 4): acquire_armed_for_go refuses an
+        # ARMED built for another preset/knob set, so the fixture has to be
+        # self-consistent with the run it is relayed into.
+        kw.setdefault("preset_hash", preset_knobs_hash(self.preset))
         p = os.path.join(self.dir.name, name)
         with open(p, "w") as f:
             json.dump(_armed_dict(t_ready, **kw), f)
         return p
+
+    def _armed_msg(self, t_ready, **kw):
+        kw.setdefault("preset_hash", preset_knobs_hash(self.preset))
+        return _armed_dict(t_ready, **kw)
 
     def _main(self, argv, bus=None):
         captured = {}
@@ -1552,7 +1561,7 @@ class GoMainWiringTests(unittest.TestCase):
 
     def test_go_tx_publishes_started_on_the_bus_with_the_armed_session(self):
         t_ready = int(time.time()) + 60
-        bus = ImmediateBus([_armed_dict(t_ready)])
+        bus = ImmediateBus([self._armed_msg(t_ready)])
         argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
         code, out, cap = self._main(argv, bus=bus)
         self.assertEqual(code, 0, out)
@@ -1570,7 +1579,7 @@ class GoMainWiringTests(unittest.TestCase):
 
     def test_started_publish_failure_is_a_loud_warning_not_a_stop(self):
         t_ready = int(time.time()) + 60
-        bus = FailingBus([_armed_dict(t_ready)])
+        bus = FailingBus([self._armed_msg(t_ready)])
         argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
         code, out, cap = self._main(argv, bus=bus)
         self.assertEqual(code, 0, out)
@@ -1619,7 +1628,7 @@ class GoMainWiringTests(unittest.TestCase):
 
     def test_go_tx_uses_the_bus_seam(self):
         t_ready = int(time.time()) + 60
-        bus = ImmediateBus([_armed_dict(t_ready)])
+        bus = ImmediateBus([self._armed_msg(t_ready)])
         argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
         code, out, cap = self._main(argv, bus=bus)
         self.assertEqual(code, 0)
@@ -1827,7 +1836,7 @@ class GoFingerprintTests(unittest.TestCase):
         self.assertEqual(armed["preset_hash"],
                          m.preset_hash(self.CFGS, m.schedule_knobs(args)))
         other, _s, _w, _mo = m.acquire_armed_for_go(
-            make_args(mode="rx", stop="50m", guard=20), self.CFGS, None)
+            make_args(mode="rx", stop="50m", guard=35), self.CFGS, None)
         self.assertNotEqual(armed["preset_hash"], other["preset_hash"])
 
 
