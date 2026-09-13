@@ -1526,7 +1526,12 @@ class GoMainWiringTests(unittest.TestCase):
         tx_log = os.path.join(self.dir.name, "tx-log.csv")
         argv = ["--mode", "tx", "--t0", str(t0), "--session-id", "2609130435",
                 "--configs", self.preset, "--tx-log", tx_log]
-        code, out, cap = self._main(argv)
+        # Scope the session-collision scan to the temp dir: the real
+        # <repo>/logs can hold an s2609130435-t0<other>/ dir from an earlier
+        # manual CLI run (this test's session id is a fixed echo).
+        with mock.patch.object(m, "default_logs_root",
+                               return_value=self.dir.name):
+            code, out, cap = self._main(argv)
         self.assertEqual(code, 0, out)
         self.assertEqual(cap["runs"], 1)
         path = os.path.join(self.dir.name, "started.json")
