@@ -1136,5 +1136,281 @@ class TestGoBoardSessionMatch:
         assert not range_check._session_matches("bench-a", "2609130435a3f")
 
 
+# -----------------------------------------------------------------------
+# GO-mode log/analysis consistency — cold-review blockers 1-3
+#
+# The RX is the session authority (full GO id: %y%m%d%H%M + 3-hex nonce) but
+# the BOARD can only carry a u32 SESSION (src/bench_cmd.c), so every row a run
+# writes is the projection (e80_bench_ctl.wire_session_id) while the banner /
+# dir name keep the full id. These tests drive the tool's OWN writers and then
+# the analysis tools over the resulting pair: a spelling or join-key mismatch
+# must never come back as a confident wrong verdict.
+#
+# A GO session dir also has NO stop-<dist> level, so "which stop is this?"
+# must be verified from the GO_MODE banner token (or the ARMED the RX left in
+# the same dir) instead of being assumed.
+# -----------------------------------------------------------------------
+
+GO_U32 = 2609130435                  # board projection of GO_SESSION
+
+
+def go_session_dir(tmp_path, session=GO_SESSION, t0=SID_T0):
+    d = tmp_path / "logs" / "s{}-go{}".format(session, t0)
+    d.mkdir(parents=True, exist_ok=True)
+    return str(d)
+
+
+def go_banner_lines(session=GO_SESSION, stop="50m", t0=SID_T0,
+                    stop_token=True):
+    """The two launch-banner lines run_rx_mode writes at the top of a GO rx-log."""
+    go = "# GO_MODE sync=cvm source=generate session={} ".format(session)
+    if stop_token:
+        go += "stop={} ".format(stop)
+    go += ("t_ready={} t0={} deadline_mono=1.0 armed_seq=1".format(
+        _sid_iso(t0), _sid_iso(t0)))
+    return ["# DISTRIBUTED_RX_MODE t0={} port=/dev/ttyUSB1 loop=1".format(
+        _sid_iso(t0)), go]
+
+
+def go_rx_log(tmp_path, session=GO_SESSION, stop="50m", t0=SID_T0,
+              n_cfgs=2, n_pkts=10, stop_token=True, armed_stop=None):
+    """A GO rx-log written by the TOOL'S OWN writers.
+
+    PKT/STAT rows carry ctl.wire_session_id(session) — the u32 the firmware
+    SESSION command can carry — while the dir name and the banner keep the full
+    RX-authoritative id. armed_stop also writes the ARMED artefact the RX
+    leaves next to its log (the pre-/alternative stop source).
+    """
+    d = go_session_dir(tmp_path, session, t0)
+    path = os.path.join(d, "rx-log.csv")
+    _write_log(path, go_banner_lines(session, stop, t0, stop_token))
+    wire = ctl.wire_session_id(session)
+    log = ctl.HarmonizedRxLogWriter(path)
+    for c in range(n_cfgs):
+        for s in range(n_pkts):
+            log.pkt_line({
+                "session_id": wire, "config_id": c, "replicate": 1, "seq": s,
+                "ts_ms": 1000 + s, "rssi_dbm": -80.5, "snr_db": 9.0,
+                "crc_ok": 1, "bit_err": 0, "bytes_bad": 0,
+                "freq_hz": 869525000, "mod": "flrc", "sf": 0, "bw_khz": 1200,
+                "cr": 1, "power_dbm": 22, "pkt_size": 255, "gps_fix": 0,
+                "gps_lat": 0.0, "gps_lon": 0.0, "gps_alt": 0.0,
+                "gps_sats": 0, "gps_hdop": 0.0,
+            })
+        log.stat_line("RX", {"sent": n_pkts + 2, "sent_ok": n_pkts + 2,
+                             "recv": n_pkts, "crc_err": 0, "per_pct": 0.0,
+                             "elapsed_s": 1.0, "kbps": 42.5, "rssi": -80.5,
+                             "snr": 9.0, "drops": 0, "gap_us": 1000},
+                      wire, c, 1)
+    if armed_stop is not None:
+        with open(os.path.join(d, "armed.json"), "w") as f:
+            json.dump({"type": "ARMED", "session_id": session,
+                       "stop": armed_stop, "t_ready_utc": t0,
+                       "preset_hash": "deadbeefcafe", "seq": 1}, f)
+    return path
+
+
+def go_tx_log(tmp_path, session=GO_SESSION, stop="50m", t0=SID_T0,
+              n_cfgs=2, n_pkts=10, wire_session=True):
+    """A GO tx-log written by HarmonizedTxLogWriter (one STAT row per config).
+
+    wire_session=False reproduces the pre-fix spelling where the TX STAT rows
+    carried the full GO id — the other half of the join-key mismatch.
+    """
+    d = go_session_dir(tmp_path, session, t0)
+    path = os.path.join(d, "tx-log.csv")
+    sid = ctl.wire_session_id(session) if wire_session else session
+    log = ctl.HarmonizedTxLogWriter(path, session_id=sid)
+    log.comment("DISTRIBUTED_TX_MODE session={} t0={} port=/dev/ttyUSB2 "
+                "loop=1".format(session, _sid_iso(t0)))
+    log.comment("GO_MODE sync=cvm source=file session={} stop={} t_ready={} "
+                "t0={} deadline_mono=1.0 armed_seq=1".format(
+                    session, stop, _sid_iso(t0), _sid_iso(t0)))
+    for c in range(n_cfgs):
+        log.stat_line(c, {"sent": n_pkts + 2, "sent_ok": n_pkts + 2,
+                          "recv": 0, "crc_err": 0, "per_pct": 0.0,
+                          "gap_us": 1000, "label": "CFG{}".format(c),
+                          "n_pkts": n_pkts, "plen": 255}, replicate=1)
+    return path
+
+
+def run_range_check(tmp_path, dist="50m", session=None, extra=()):
+    """Run range_check.py as a subprocess with cwd = tmp_path (a search root)."""
+    cmd = [sys.executable, os.path.join(TOOLS_DIR, "range_check.py"),
+           "--dist", dist, "--repo-root", str(tmp_path)]
+    if session:
+        cmd += ["--session", session]
+    cmd += list(extra)
+    return subprocess.run(cmd, capture_output=True, text=True,
+                          cwd=str(tmp_path))
+
+
+class TestGoSessionMatchIsSymmetric:
+    """_session_matches(): either side may be the u32 board projection.
+
+    The auto-session path can hand over the u32 (max PKT session) while the
+    banner/dir carry the full GO id, so the comparison must project BOTH
+    sides — it used to project only the expected side and reported a false
+    LOGGING GAP on the tool's primary documented path.
+    """
+
+    def test_u32_expected_matches_a_full_go_row(self):
+        assert range_check._session_matches(GO_U32, GO_SESSION)
+
+    def test_full_go_expected_matches_a_u32_row(self):
+        assert range_check._session_matches(GO_SESSION, GO_U32)
+
+    def test_full_go_row_still_matches_itself(self):
+        assert range_check._session_matches(GO_SESSION, GO_SESSION)
+
+    def test_other_projection_still_refused(self):
+        assert not range_check._session_matches(str(GO_U32 + 1), GO_SESSION)
+
+    def test_non_numeric_row_still_refused(self):
+        assert not range_check._session_matches("bench-a", GO_SESSION)
+
+
+class TestGoLogAnalysis:
+    """range_check over the GO log pair the tool's own writers produce."""
+
+    def test_explicit_rx_log_without_session_is_not_a_logging_gap(self, tmp_path):
+        # the reviewer's repro of blocker 1: `--dist 50m --rx-log <GO rx-log>`
+        # with no --session printed "LOGGING GAP (0 STAT rows ...)" and exit 1.
+        write_preset(tmp_path)
+        rx = go_rx_log(tmp_path)
+        r = run_range_check(tmp_path, extra=["--rx-log", rx])
+        assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+        assert "LOGGING GAP" not in r.stdout, r.stdout
+        assert "PASS" in r.stdout, r.stdout
+
+    def test_auto_session_is_the_launch_authority_not_the_pkt_rows(self, tmp_path):
+        write_preset(tmp_path)
+        rx = go_rx_log(tmp_path)
+        r = run_range_check(tmp_path, extra=["--rx-log", rx])
+        assert "session: {} (auto".format(GO_SESSION) in r.stdout, r.stdout
+        # the PKT rows only ever carry the u32 projection — that is why the
+        # auto-session must prefer the launch dir / banner token.
+        _pkts, sessions = range_check.parse_rx_log(rx)
+        assert sessions == {GO_U32}, sessions
+
+    def test_u32_session_form_matches_the_same_log(self, tmp_path):
+        # the obvious guess from the PKT rows must work too (the STAT rows
+        # carry the same wire spelling now).
+        write_preset(tmp_path)
+        rx = go_rx_log(tmp_path)
+        r = run_range_check(tmp_path, session=str(GO_U32),
+                            extra=["--rx-log", rx])
+        assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" in r.stdout, r.stdout
+
+
+class TestGoMergeJoin:
+    """merge_csvs over a GO tx/rx pair: a perfect pass merges to 0 lost."""
+
+    def _merge_cli(self, tmp_path, tx, rx):
+        out = tmp_path / "out"
+        out.mkdir(exist_ok=True)
+        r = subprocess.run(
+            [sys.executable, os.path.join(TOOLS_DIR, "merge_csvs.py"),
+             "--tx", tx, "--rx", rx, "--out-dir", str(out)],
+            capture_output=True, text=True, cwd=str(tmp_path))
+        return r, out
+
+    def test_perfect_go_pass_merges_to_zero_lost(self, tmp_path):
+        # the reviewer's repro of blocker 2: a perfect GO pass used to merge to
+        # "0/100 received, 100 lost, PER=100.0%" + 100 foreign packets.
+        tx = go_tx_log(tmp_path)
+        rx = go_rx_log(tmp_path)
+        r, out = self._merge_cli(tmp_path, tx, rx)
+        assert r.returncode == 0, r.stderr
+        assert "20/20 received, 0 lost" in r.stdout, r.stdout
+        assert "PER=0.0%" in r.stdout, r.stdout
+        report = (out / "combined-range-report.md").read_text()
+        assert "| Foreign packets | 0 |" in report, report
+
+    def test_tx_log_with_the_full_go_id_still_joins(self, tmp_path):
+        # the two logs of one GO run may spell the session differently (older
+        # TX logs carry the full id): normalising BOTH sides keeps the
+        # (session, config) join intact rather than reporting 100% loss.
+        tx = go_tx_log(tmp_path, wire_session=False)
+        rx = go_rx_log(tmp_path)
+        out = tmp_path / "out"
+        out.mkdir()
+        combined = merge_csvs.merge_csvs(tx, rx, str(out))
+        assert [row for row in combined if row["status"] == "lost"] == []
+        assert len(combined) == 20
+        assert "| Foreign packets | 0 |" in (
+            out / "combined-range-report.md").read_text()
+
+    def test_writers_use_one_wire_spelling(self):
+        assert ctl.wire_session_id(GO_SESSION) == GO_U32
+        assert ctl.wire_session_id(str(GO_U32)) == GO_U32
+        assert ctl.wire_session_id(GO_SESSION) == ctl.board_session_id(GO_SESSION)
+
+
+class TestGoStopGuard:
+    """A GO session dir has no stop-<dist> level: the stop must be verified.
+
+    Otherwise a 50m GO log is a discovery candidate for 70km and the tool
+    printed a confident PASS for a stop that was never run (verdict-changing
+    regression vs the legacy layout, which exits 2 with no stop dir).
+    """
+
+    def test_banner_stop_token_is_read(self, tmp_path):
+        rx = go_rx_log(tmp_path, stop="50m")
+        assert range_check.go_stop_from_header(rx) == "50m"
+        assert [s for _lbl, s in range_check.go_stop_sources(rx)] == ["50m"]
+
+    def test_armed_json_is_the_fallback_source(self, tmp_path):
+        rx = go_rx_log(tmp_path, stop="50m", stop_token=False,
+                       armed_stop="50m")
+        assert range_check.go_stop_from_header(rx) is None
+        assert range_check.go_stop_from_armed(rx) == "50m"
+        assert [s for _lbl, s in range_check.go_stop_sources(rx)] == ["50m"]
+
+    def test_other_stop_is_refused_loudly(self, tmp_path):
+        write_preset(tmp_path, preset=make_preset_dict(n_cfgs=2, n_pkts=10),
+                     name="stop-70km.json")
+        rx = go_rx_log(tmp_path, stop="50m")
+        r = run_range_check(tmp_path, dist="70km", session=GO_SESSION,
+                            extra=["--rx-log", rx])
+        assert r.returncode == 2, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" not in r.stdout, r.stdout
+        assert "50m" in r.stderr and "70km" in r.stderr, r.stderr
+
+    def test_armed_json_alone_refuses_a_mismatched_stop(self, tmp_path):
+        write_preset(tmp_path, preset=make_preset_dict(n_cfgs=2, n_pkts=10),
+                     name="stop-70km.json")
+        rx = go_rx_log(tmp_path, stop="50m", stop_token=False,
+                       armed_stop="50m")
+        r = run_range_check(tmp_path, dist="70km", session=GO_SESSION,
+                            extra=["--rx-log", rx])
+        assert r.returncode == 2, (r.returncode, r.stdout, r.stderr)
+
+    def test_matching_stop_is_still_analysed(self, tmp_path):
+        write_preset(tmp_path)
+        rx = go_rx_log(tmp_path, stop="50m")
+        r = run_range_check(tmp_path, dist="50m", extra=["--rx-log", rx])
+        assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+        assert "PASS" in r.stdout, r.stdout
+
+    def test_discovery_drops_a_go_log_of_another_stop(self, tmp_path):
+        other = go_rx_log(tmp_path, session=GO_OTHER_SESSION, stop="70km",
+                          t0=SID_T0 + 300)
+        mine = go_rx_log(tmp_path, session=GO_SESSION, stop="50m")
+        got = [os.path.realpath(p) for p in
+               range_check.find_rx_logs("70km", None, [str(tmp_path)])]
+        assert os.path.realpath(mine) not in got
+        assert os.path.realpath(other) in got
+
+    def test_discovery_keeps_a_stop_less_go_log(self, tmp_path):
+        # a log with no stop source anywhere cannot be classified: keep it a
+        # candidate (warn), never silently drop the only log there is.
+        rx = go_rx_log(tmp_path, stop_token=False)
+        got = [os.path.realpath(p) for p in
+               range_check.find_rx_logs("70km", None, [str(tmp_path)])]
+        assert os.path.realpath(rx) in got
+
+
 if __name__ == "__main__":
     unittest.main()

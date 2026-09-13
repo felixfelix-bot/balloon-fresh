@@ -45,6 +45,21 @@ FALLBACK_PRIME = getattr(ctl, "DEFAULT_PRIME_DISCARD", 2)
 _STAT_KV = re.compile(r"(\w+)=((?:\[[^\]]*\])|[^,]*)")
 
 
+def wire_session(session):
+    """The board (u32) spelling of a session id — the merge join key.
+
+    A GO session id (`%y%m%d%H%M` + 3-hex nonce) carries a nonce the bench
+    board cannot put on the wire (SESSION is a u32, src/bench_cmd.c), so the
+    PKT rows echo the 10-digit PROJECTION while a TX STAT row may still carry
+    the full id — the two logs of one GO run then spell the session
+    differently and no (session, config) key can ever match (the merge
+    reported 100% loss + every packet foreign). Normalizing BOTH sides here
+    keeps the join intact whichever spelling each log was written with.
+    Ids with no numeric projection pass through unchanged.
+    """
+    return str(ctl.wire_session_id(session))
+
+
 def parse_stat_line(line):
     """Parse a harmonized ``STAT,role=...`` line into a dict (or None).
 
@@ -90,7 +105,7 @@ def load_tx_log(path):
         if n_pkts is None:
             n_pkts = max(sent - FALLBACK_PRIME, 0)
         rows.append({
-            "session": str(st.get("session", "")),
+            "session": wire_session(st.get("session", "")),
             "config": str(st.get("config", "")),
             "replicate": _to_int(st.get("replicate"), 1),
             "n_pkts": n_pkts,
@@ -108,7 +123,7 @@ def load_tx_log(path):
         for r in csv.DictReader(ln for ln in f if not ln.startswith("#")):
             n_pkts = _to_int(r.get("n_pkts"), 0)
             out.append({
-                "session": str(r.get("session", "")),
+                "session": wire_session(r.get("session", "")),
                 "config": str(r.get("config_idx", r.get("config", ""))),
                 "replicate": 1,
                 "n_pkts": n_pkts,
@@ -164,10 +179,15 @@ def load_rx_log(path):
 
 def group_rx(rx_rows):
     """Group RX rows by (session, config, replicate); normalize pkt_idx
-    to 0..N-1 within each group (sorted by firmware seq)."""
+    to 0..N-1 within each group (sorted by firmware seq).
+
+    The session is normalized to the WIRE (u32) spelling first: the RX PKT
+    rows carry the board projection while a TX STAT row of the same run may
+    carry the full GO id, and the join is on the string form.
+    """
     groups = defaultdict(list)
     for r in rx_rows:
-        groups[(str(r["session"]), str(r["config"]),
+        groups[(wire_session(r["session"]), str(r["config"]),
                 int(r.get("replicate", 1)))].append(r)
     for pkts in groups.values():
         pkts.sort(key=lambda p: int(p.get("seq", p.get("pkt_idx", 0))))

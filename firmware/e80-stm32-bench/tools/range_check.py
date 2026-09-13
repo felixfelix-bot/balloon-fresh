@@ -240,6 +240,16 @@ def _session_dir_in_path(path):
     return None
 
 
+def is_go_layout(path):
+    """True when the path sits in a GO session dir (s<session>-go<epoch>/).
+
+    The GO layout has NO `stop-<dist>` level, so callers cannot filter it by
+    path and must verify the stop from the banner / ARMED instead.
+    """
+    got = _session_dir_in_path(path)
+    return bool(got and got[2] == "go")
+
+
 def session_from_filename(path):
     """Session id from the s<session>-{t0,go}<epoch> dir name in the path.
 
@@ -344,6 +354,111 @@ def session_sources(path):
     return srcs
 
 
+# ---------------------------------------------------------------------------
+# GO-mode stop verification: a GO session dir carries no `stop-<dist>` level,
+# so "which stop is this?" is read from the `stop=<dist>` token the GO_MODE
+# banner comment carries (run_rx_mode/run_tx_mode) and, as a fallback for logs
+# written before that token existed, from the ARMED the RX left in the same
+# dir. Without this a log of another stop is a discovery candidate for ANY
+# DIST and the tool prints a verdict for a stop that was never run.
+# ---------------------------------------------------------------------------
+
+ARMED_FILENAME = "armed.json"
+_GO_STOP_RE = re.compile(r"\bstop=(\S+)")
+
+
+def go_stop_from_header(path):
+    """`stop=<dist>` of the GO_MODE launch banner, or None.
+
+    Only the GO_MODE line is consulted (the DISTRIBUTED_*_MODE banner has no
+    stop token, so a legacy log reads as unknown rather than as a mismatch).
+    """
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, errors="replace") as f:
+            for ln in f:
+                if "GO_MODE" not in ln:
+                    continue
+                m = _GO_STOP_RE.search(ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        return None
+    return None
+
+
+def _armed_file_candidates(path):
+    """armed.json paths for a log: its own dir, then the parent dir.
+
+    GO layout: logs/s<sid>-go<t0>/rx-log.csv sits NEXT TO armed.json.
+    Legacy layout: the log is one level below the session dir.
+    """
+    d = os.path.dirname(os.path.abspath(path or ""))
+    return [os.path.join(d, ARMED_FILENAME),
+            os.path.join(os.path.dirname(d), ARMED_FILENAME)]
+
+
+def go_stop_from_armed(path):
+    """`stop` field of the sibling/ancestor armed.json, or None."""
+    for cand in _armed_file_candidates(path):
+        if not os.path.isfile(cand):
+            continue
+        try:
+            with open(cand) as f:
+                obj = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if isinstance(obj, dict) and obj.get("stop"):
+            return str(obj["stop"]).strip()
+    return None
+
+
+def go_stop_sources(path):
+    """[(label, stop)] for a GO log: the banner token, then armed.json."""
+    srcs = []
+    base = os.path.basename(path or "") or str(path)
+    hdr = go_stop_from_header(path)
+    if hdr:
+        srcs.append(("{}: GO_MODE banner stop=".format(base), hdr))
+    armed = go_stop_from_armed(path)
+    if armed:
+        srcs.append(("{}: {}/stop".format(base, ARMED_FILENAME), armed))
+    return srcs
+
+
+def check_go_stop_match(path, dist):
+    """Verify a GO log belongs to the requested stop.
+
+    Returns (ok, message): ok=False is a loud refusal naming every stop source
+    (analysing it would print a confident verdict for a stop that was never
+    run); ok=True carries "" or a warning when the log exposes no stop source
+    at all (unverifiable, but not provably wrong — kept, with a note).
+    """
+    if not (is_go_layout(path) or go_stop_from_header(path) is not None):
+        return True, ""
+    srcs = go_stop_sources(path)
+    if not srcs:
+        return True, ("note: {} is a GO-mode log with no stop= token in its "
+                      "GO_MODE banner and no {} beside it — cannot verify it "
+                      "belongs to stop {}".format(
+                          os.path.basename(path or ""), ARMED_FILENAME, dist))
+    stops = sorted({normalize_dist(s) for _lbl, s in srcs})
+    if normalize_dist(dist) in stops:
+        return True, ""
+    lines = ["GO-mode rx-log {} belongs to stop {} — refusing to analyse it "
+             "as stop {}:".format(os.path.basename(path or ""),
+                                  "/".join(stops), dist)]
+    for lbl, s in srcs:
+        lines.append("  {:<44} stop={}".format(lbl, s))
+    lines.append(
+        "A GO session dir has no stop-<dist> level (logs/s<session>-go<t0>/), "
+        "so a log of another stop is a candidate for every DIST. Pass the "
+        "rx-log of stop {} (or re-run the analysis with --dist {}).".format(
+            "/".join(stops), "/".join(stops)))
+    return False, "\n".join(lines)
+
+
 def check_t0_match(rx_path, tx_path):
     """Session-FIRST launch check, with the legacy t0 rule as the fallback.
 
@@ -429,7 +544,10 @@ def find_rx_logs(dist, session, search_roots):
 
     Order: session-tagged candidates (the requested session) newest-first,
     then any other candidate newest-first, then the legacy cwd-quirk
-    rx-log.csv in the tool dir (last resort). realpath-deduplicated.
+    rx-log.csv in the tool dir (last resort). realpath-deduplicated, and a GO
+    candidate whose own stop token (banner / armed.json) names ANOTHER stop is
+    dropped: without that a 50m log is a candidate for 70km and the tool
+    prints a verdict for a stop that was never run.
     """
     tagged, untagged = [], []
     for root in search_roots:
@@ -460,7 +578,9 @@ def find_rx_logs(dist, session, search_roots):
         if r not in seen:
             seen.add(r)
             uniq.append(c)
-    return uniq
+    # A GO dir cannot be filtered by path (no stop-<dist> level): drop the
+    # candidates that provably belong to another stop.
+    return [c for c in uniq if check_go_stop_match(c, dist)[0]]
 
 
 # ---------------------------------------------------------------------------
@@ -535,18 +655,30 @@ def render_summary_line(dist, per_cfg):
 def _session_matches(row_value, session):
     """Compare session ids as strings (int-normalized when numeric).
 
-    GO sessions (`%y%m%d%H%M` + 3-hex nonce) reach the PKT rows as the u32
-    board projection (the firmware's SESSION command is u32 — see
-    e80_bench_ctl.board_session_id), so a row matching that projection is a
-    match. Without this a GO log scores every config as MISS.
+    GO sessions (`%y%m%d%H%M` + 3-hex nonce) can only reach the wire/log rows as
+    the u32 board projection (the firmware's SESSION command is u32 — see
+    e80_bench_ctl.board_session_id), while the session DIR name and the launch
+    banner keep the full id. EITHER side may therefore be the projection:
+
+      * row=u32, expected=GO id (the explicit --session path), and
+      * row=GO id, expected=u32 (the auto-session path, when the session was
+        derived from the PKT rows),
+
+    so both sides are projected instead of only the expected one. Projecting
+    only one direction made the auto-session path return False for every STAT
+    row and print a fabricated "0 STAT rows" LOGGING GAP verdict.
+    Legacy numeric ids compare as ints, and an id with no numeric projection
+    still only matches itself.
     """
     a, b = str(row_value).strip(), str(session).strip()
-    if a.isdigit() and b.isdigit():
-        return int(a) == int(b)
+    if not a or not b:
+        return False
     if a == b:
         return True
-    proj = ctl.board_session_id(b)
-    return proj is not None and a.isdigit() and int(a) == proj
+    if a.isdigit() and b.isdigit():
+        return int(a) == int(b)
+    pa, pb = ctl.board_session_id(a), ctl.board_session_id(b)
+    return pa is not None and pa == pb
 
 
 def verdict_line(dist, session, results, kind, stat_count=0):
@@ -710,6 +842,17 @@ def main(argv=None):
         if len(cands) > 1:
             print("note: multiple candidate logs, using newest: {}".format(path))
 
+    # Stop verification (fail fast, before any verdict): a GO session dir has
+    # no stop-<dist> level, so the log must prove it belongs to this DIST via
+    # its GO_MODE banner stop= token / the ARMED beside it. Analysing a
+    # mismatched stop prints a confident PASS/verdict for a stop never run.
+    _ok, _msg = check_go_stop_match(path, dist)
+    if not _ok:
+        sys.stderr.write("ERROR: {}\n".format(_msg))
+        return 2
+    if _msg:
+        print(_msg)
+
     # Launch cross-check (fail fast): the rx-log and its sibling/explicit
     # tx-log must belong to the SAME launch — the session id (session dir
     # name s<session>-{t0,go}<epoch> / banner session=<sid>) is the primary
@@ -731,7 +874,17 @@ def main(argv=None):
 
     session = args.session
     if session is None:
-        if sessions:
+        # Auto-detect: prefer the LAUNCH-authoritative session — the session
+        # dir name (s<sid>-{t0,go}<epoch>) or the banner's session=<sid> token,
+        # i.e. the full RX GO id. max(PKT session) would hand over the board's
+        # u32 projection instead, which then looked like a different session
+        # from the banner and produced a false LOGGING GAP verdict.
+        auto = session_from_filename(path) or session_from_header(path)
+        if auto:
+            session = auto
+            print("session: {} (auto — launch dir/banner in {})".format(
+                session, path))
+        elif sessions:
             session = str(max(sessions))
             print("session: {} (auto — highest in {})".format(session, path))
         else:

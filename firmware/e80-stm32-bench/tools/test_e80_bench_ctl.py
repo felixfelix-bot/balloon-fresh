@@ -1685,6 +1685,307 @@ class GoBoardSessionTests(unittest.TestCase):
         self.assertIsNotNone(p)
         self.assertEqual(p["session_id"], "2609130435a3f")
 
+    def test_wire_session_id_is_what_the_logs_carry(self):
+        # Every row a run writes (PKT + STAT, both sides) must use the wire
+        # spelling, or range_check/merge_csvs compare a u32 against the full
+        # GO id and report a false LOGGING GAP / an all-MISS merge.
+        self.assertEqual(m.wire_session_id("2609130435a3f"), 2609130435)
+        self.assertEqual(m.wire_session_id(2609130435), 2609130435)
+        self.assertEqual(m.wire_session_id("bench-a"), "bench-a")
+
+
+# The --mode CLI timing-knob defaults (main()'s argparse): the GO fingerprint
+# hashes them, so a hand-built ARMED in a test must use the same values.
+CLI_KNOBS = {"t0_margin": 30.0, "guard": 5.0, "settle": 1.0, "rx_lead": 3.0,
+             "swd_reset_s": 2.0, "band_swap_s": 30.0}
+
+
+def preset_knobs_hash(preset_path, knobs=None):
+    """preset_hash() of a preset FILE + a knob set (default: the CLI defaults)."""
+    return m.preset_hash(m.load_config_preset(preset_path),
+                         CLI_KNOBS if knobs is None else knobs)
+
+
+class RecordingAnchor(m.GoAnchor):
+    """GoAnchor that records every mono_target(ts) instant (white-box spy).
+
+    Used to pin that a capture/poll window is bounded by the ANCHOR (monotonic
+    image of the window end) instead of a bare time.time() deadline.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.targets = []
+
+    def mono_target(self, ts):
+        self.targets.append(float(ts))
+        return super().mono_target(ts)
+
+
+class GoFingerprintTests(unittest.TestCase):
+    """Blocker 4: preset_hash is compared, and covers the schedule knobs.
+
+    ADR §2.1: the ARMED carries `preset_hash` and both sides must match. The
+    knobs that feed compute_cycle_len / build_preset_schedule must be inside
+    the fingerprint too, or the two operators can run different timing and
+    re-anchor apart from cycle 2 on with no detection.
+    """
+
+    CFGS = [{"mod": "flrc", "br": 650, "plen": 51, "n_pkts": 10, "pa": 10,
+             "freq": 868000000, "gap": 5000, "label": "FLRC-650"}]
+
+    def test_preset_hash_without_knobs_is_unchanged(self):
+        # legacy callers / docs keep the preset-only digest
+        self.assertEqual(m.preset_hash(self.CFGS),
+                         m.preset_hash(json.loads(json.dumps(self.CFGS))))
+        self.assertNotEqual(m.preset_hash(self.CFGS),
+                            m.preset_hash(self.CFGS, CLI_KNOBS))
+
+    def test_schedule_knobs_covers_every_cycle_len_knob(self):
+        knobs = m.schedule_knobs(make_args())
+        self.assertEqual(set(knobs), {"t0_margin", "guard", "settle",
+                                      "rx_lead", "swd_reset_s", "band_swap_s"})
+        # every knob that compute_cycle_len / build_preset_schedule consume
+        self.assertEqual(knobs["guard"], 20.0)
+        self.assertEqual(knobs["rx_lead"], 10.0)
+
+    def test_fingerprint_is_stable_and_knob_sensitive(self):
+        base = m.schedule_knobs(make_args())
+        self.assertEqual(m.preset_hash(self.CFGS, base),
+                         m.preset_hash(self.CFGS, dict(base)))
+        for knob, value in (("guard", 35.0), ("settle", 9.0),
+                            ("t0_margin", 130.0), ("rx_lead", 12.0),
+                            ("swd_reset_s", 7.0), ("band_swap_s", 45.0)):
+            tweaked = dict(base, **{knob: value})
+            self.assertNotEqual(m.preset_hash(self.CFGS, base),
+                                m.preset_hash(self.CFGS, tweaked), knob)
+
+    def test_generated_armed_fingerprints_the_knobs(self):
+        args = make_args(mode="rx", stop="50m")
+        armed, src, _wall, _mono = m.acquire_armed_for_go(args, self.CFGS, None)
+        self.assertEqual(src, "generate")
+        self.assertEqual(armed["preset_hash"],
+                         m.preset_hash(self.CFGS, m.schedule_knobs(args)))
+        other, _s, _w, _mo = m.acquire_armed_for_go(
+            make_args(mode="rx", stop="50m", guard=20), self.CFGS, None)
+        self.assertNotEqual(armed["preset_hash"], other["preset_hash"])
+
+
+class GoFingerprintCompareTests(unittest.TestCase):
+    """acquire_armed_for_go() refuses an ARMED built for another preset/knobs."""
+
+    CFGS = GoFingerprintTests.CFGS
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _armed_file(self, preset_hash, t_ready=None, **kw):
+        p = os.path.join(self.dir.name, "armed.json")
+        with open(p, "w") as f:
+            json.dump(_armed_dict(
+                int(t_ready if t_ready is not None else time.time() + 30),
+                preset_hash=preset_hash, **kw), f)
+        return p
+
+    def _args(self, path, **kw):
+        return make_args(mode="tx", sync=m.SYNC_CVM, armed_file=path,
+                         configs=self.CFGS, stop="50m", **kw)
+
+    def _refusal(self, args, bus=None):
+        """Run acquire_armed_for_go and return the SystemExit message."""
+        with self.assertRaises(SystemExit) as exc:
+            m.acquire_armed_for_go(args, self.CFGS, bus)
+        return str(exc.exception.code if exc.exception.code else "")
+
+    def test_matching_fingerprint_is_accepted(self):
+        path = self._armed_file(
+            m.preset_hash(self.CFGS, m.schedule_knobs(make_args())))
+        armed, src, _w, _mo = m.acquire_armed_for_go(
+            self._args(path), self.CFGS, None)
+        self.assertEqual(src, "file")
+        self.assertEqual(armed["session_id"], GO_SESSION)
+
+    def test_another_preset_is_refused(self):
+        # the reviewer's repro: preset_hash=deadbeefcafe with a stop-50m preset
+        # passed every check and walked the two sides apart from cycle 2 on.
+        path = self._armed_file("deadbeefcafe")
+        msg = self._refusal(self._args(path))
+        self.assertIn("deadbeefcafe", msg)
+        self.assertIn("preset", msg.lower())
+        self.assertIn("ARMED", msg)
+
+    def test_another_knob_set_is_refused(self):
+        # same preset, different --guard: cycle_len differs (240s vs 480s), so
+        # every cycle from 2 on re-anchors to a different t0_cycle.
+        path = self._armed_file(
+            m.preset_hash(self.CFGS, dict(CLI_KNOBS, guard=20.0)))
+        msg = self._refusal(self._args(path))
+        self.assertIn("guard", msg)
+        self.assertIn("20", msg)
+
+    def test_bus_armed_from_another_knob_set_is_refused(self):
+        armed = _armed_dict(int(time.time()) + 30,
+                            preset_hash=m.preset_hash(
+                                self.CFGS, dict(CLI_KNOBS, settle=9.0)))
+        msg = self._refusal(self._args(None), bus=ImmediateBus([armed]))
+        self.assertIn("settle", msg)
+
+
+class GoAnchorBoundWaitTests(unittest.TestCase):
+    """Blocker 5: every GO-mode capture/poll window is bounded by the anchor.
+
+    A bare time.time() deadline ends the RX capture early on a forward NTP
+    step (silently fewer packets -> false THIN/MISS) and stretches it on a
+    backward step (past the next config's arm point, so the burst is captured
+    under the previous config header).
+    """
+
+    def test_monotonic_deadline_closes_and_opens_the_window(self):
+        self.assertTrue(m.poll_left(100.0, None, mono_fn=lambda: 99.9))
+        self.assertFalse(m.poll_left(100.0, None, mono_fn=lambda: 100.0))
+
+    def test_forward_wall_step_does_not_close_a_monotonic_window(self):
+        # the wall clock jumped +1e6 s; the monotonic deadline is untouched
+        self.assertTrue(m.poll_left(600.0, None, mono_fn=lambda: 599.0,
+                                    wall_fn=lambda: 1_000_000.0))
+        # the same instant read off the wall clock would have ended it
+        self.assertFalse(m.poll_left(None, 500.0, wall_fn=lambda: 1_000_000.0))
+
+    def test_legacy_wall_deadline_unchanged(self):
+        self.assertTrue(m.poll_left(None, 100.0, wall_fn=lambda: 99.0))
+        self.assertFalse(m.poll_left(None, 100.0, wall_fn=lambda: 100.0))
+
+
+class GoWaitBoundsTests(unittest.TestCase):
+    """White-box: run_rx_mode/run_tx_mode hand the ANCHOR the window end."""
+
+    class _AbortCycle(KeyboardInterrupt):
+        pass
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        # ONE config + a clearly non-zero expected_s: with one config the only
+        # mono_target() calls today are the arm instant and the config start,
+        # so the capture/poll bound is unambiguous (no next-config arm instant
+        # can coincidentally equal the window end).
+        self.cfgs = [{"mod": "flrc", "br": 650, "plen": 51, "n_pkts": 100,
+                      "pa": 10, "freq": 868000000, "gap": 5000, "label": "A"}]
+        self.seen = {}
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _anchor(self):
+        """An anchor whose whole timeline is already past → every wait is a
+        no-op, so the test measures WHICH bound is used, not real sleeping."""
+        t_ready = int(time.time()) - 130          # T0 = now - 100 s
+        return RecordingAnchor(_armed_dict(t_ready), wall_at_event=float(t_ready),
+                               mono_at_event=time.monotonic() - 500.0)
+
+    def _board_cls(self):
+        class StubSerial:
+            def read(self, n=0):
+                return b""
+
+            def close(self):
+                pass
+
+        class StubBoard:
+            def __init__(self, port):
+                self.port = port
+                self.ser = StubSerial()
+                self.log = []
+
+            def drain(self, quiet=0.4):
+                pass
+
+            def close(self):
+                self.log.append("CLOSE")
+
+            def cmd(self, line, expect_ok=True, timeout=15.0):
+                self.log.append(line)
+                return "OK " + line.split()[0]
+
+            def query(self, line, prefixes=(), timeout=15.0):
+                self.log.append(line)
+                return "ID E80BENCH role=RX band=863-870MHz"
+
+            def stat(self):
+                # sent_ok == n_pkts so the TX completion poll ends on the first
+                # read (this test measures the BOUND, not the fw timing).
+                return ("STAT role=TX sent=100 sent_ok=100 rx=0 crc_err=0 "
+                        "per_x1e6=0 elapsed_s=1.0 kbps=1 rssi_avg_dbm=0.0 "
+                        "snr_avg_db=0.0 drops=0")
+
+        return StubBoard
+
+    def _run(self, mode, anchor):
+        calls = {"n": 0}
+
+        def spy_apply(cfgs, starts, now, rx_lead, min_ahead_s=5.0,
+                      skip_late=False, mode_label=""):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                self.seen["starts"] = list(starts)
+                return cfgs, starts
+            raise GoWaitBoundsTests._AbortCycle()
+
+        args = make_args(
+            mode=mode, configs=self.cfgs, session_id=GO_SESSION,
+            t0=str(anchor.t0_epoch), sync=m.SYNC_CVM, stop="50m", rx_lead=3,
+            settle=0, guard=0, skip_fw_check=True, loop=1,
+            format="harmonized", no_swd_reset=True, skip_late_configs=True,
+            prime_discard=0, probe="PX1", port="/dev/ttyUSB9",
+            tx_log=os.path.join(self.dir.name, "tx.csv"),
+            rx_log=os.path.join(self.dir.name, "rx.csv"))
+        buf = io.StringIO()
+        with mock.patch.object(m, "_detect_board_for_mode",
+                               return_value=("/dev/ttyUSB9", "PX1")), \
+             mock.patch.object(m, "id_preflight", lambda *a, **k: "ID"), \
+             mock.patch.object(m, "apply_late_skip", side_effect=spy_apply), \
+             contextlib.redirect_stdout(buf):
+            fn = m.run_tx_mode if mode == "tx" else m.run_rx_mode
+            rc = fn(args, board_cls=self._board_cls(), go_anchor=anchor)
+        return rc, args
+
+    def test_rx_capture_window_is_bounded_by_the_anchor(self):
+        anchor = self._anchor()
+        rc, args = self._run("rx", anchor)
+        self.assertEqual(rc, 0)
+        loaded = m.load_config_preset(self.cfgs)
+        start = self.seen["starts"][0]
+        capture_end = start + loaded[0]["expected_s"] + args.settle + args.guard
+        self.assertIn(capture_end, anchor.targets,
+                      "RX capture window must end on the anchor's monotonic "
+                      "image of start+capture_duration: {}".format(anchor.targets))
+
+    def test_tx_stat_poll_is_bounded_by_the_anchor(self):
+        anchor = self._anchor()
+        rc, args = self._run("tx", anchor)
+        self.assertEqual(rc, 0)
+        loaded = m.load_config_preset(self.cfgs)
+        start = self.seen["starts"][0]
+        poll_end = start + loaded[0]["expected_s"] + 120
+        self.assertIn(poll_end, anchor.targets,
+                      "TX stat poll must end on the anchor, not time.time(): "
+                      "{}".format(anchor.targets))
+
+    def test_go_banners_carry_the_stop_token(self):
+        # blocker 3: the GO session dir has no stop-<dist> level, so the stop
+        # token in the banner is what lets range_check verify the log.
+        anchor = self._anchor()
+        for mode in ("rx", "tx"):
+            rc, args = self._run(mode, anchor)
+            self.assertEqual(rc, 0)
+            path = args.rx_log if mode == "rx" else args.tx_log
+            with open(path) as f:
+                header = f.read()
+            self.assertIn("stop=50m", header, (mode, header))
+            self.assertIn("GO_MODE", header, (mode, header))
+
 
 if __name__ == "__main__":
     unittest.main()

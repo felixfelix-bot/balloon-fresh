@@ -375,6 +375,19 @@ def board_session_id(session_id):
     return None
 
 
+def wire_session_id(session_id):
+    """Session spelling used INSIDE a run's logs (PKT rows, STAT rows, the
+    merge keys): the board projection when there is one.
+
+    The board can only carry the u32 projection (see board_session_id), so
+    every row a run writes must use that same spelling or the analysis tools
+    compare a u32 against the full GO id and report a false LOGGING GAP
+    (STAT side) / an all-MISS merge (PKT side).
+    """
+    n = board_session_id(session_id)
+    return n if n is not None else str(session_id)
+
+
 def session_command(session_id):
     """The exact `SESSION <n>` console line for this run (fail-fast on an
     unprojectable id instead of shipping `SESSION None` to the board)."""
@@ -2200,16 +2213,17 @@ def run_tx_mode(args, board_cls=None, go_anchor=None):
 
     use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
     if use_harmonized:
-        log = HarmonizedTxLogWriter(args.tx_log, session_id=args.session_id)
+        log = HarmonizedTxLogWriter(args.tx_log, session_id=wire_session_id(args.session_id))
     else:
         log = TxLogWriter(args.tx_log, session_id=args.session_id)
     log.comment("DISTRIBUTED_TX_MODE session={} t0={} port={} probe={} loop={}".format(
         args.session_id, datetime.datetime.fromtimestamp(t0).isoformat(),
         port, probe_serial or "?", loop_count))
     if go_anchor is not None:
-        log.comment("GO_MODE sync=cvm source={} session={} t_ready={} t0={} "
+        log.comment("GO_MODE sync=cvm source={} session={} stop={} t_ready={} t0={} "
                     "deadline_mono={:.3f} armed_seq={}".format(
                         go_anchor.source, go_anchor.session_id,
+                        getattr(args, "stop", "?"),
                         go_anchor.t_ready_utc,
                         datetime.datetime.fromtimestamp(
                             go_anchor.t0_epoch).isoformat(),
@@ -2560,9 +2574,10 @@ def run_rx_mode(args, board_cls=None, go_anchor=None):
         # stitching; the monotonic deadline is recorded for post-hoc timing
         # forensics (NTP step mid-pass).
         log_comment += (
-            "# GO_MODE sync=cvm source={} session={} t_ready={} t0={} "
+            "# GO_MODE sync=cvm source={} session={} stop={} t_ready={} t0={} "
             "deadline_mono={:.3f} armed_seq={}\n".format(
                 go_anchor.source, go_anchor.session_id,
+                getattr(args, "stop", "?"),
                 go_anchor.t_ready_utc,
                 datetime.datetime.fromtimestamp(
                     go_anchor.t0_epoch).isoformat(),
@@ -2771,7 +2786,7 @@ def run_rx_mode(args, board_cls=None, go_anchor=None):
                 # STAT? recv includes prime packets — subtract them
                 adjust_stat_for_prime(rx_stat, prime_discard)
                 if use_harmonized:
-                    log.stat_line("RX", rx_stat, args.session_id, cfg["idx"],
+                    log.stat_line("RX", rx_stat, wire_session_id(args.session_id), cfg["idx"],
                                   replicate=cycle)
                 print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
                     idx + 1, len(cfgs_cycle), cfg["label"],
