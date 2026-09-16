@@ -86,4 +86,9 @@ if(HOST_PYTHON3)
     # (no hardware; tests/golden/*.txt per docs/BENCH-CONSOLE-SPEC.md).
     add_test(NAME test_balloon_sweep_python
              COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/test_balloon_sweep.py)
+    # FIX-T6 sweep pre-flight gate: config-matrix coverage + console-baud
+    # contract + the board/firmware preflight decision. Self-contained
+    # (unittest, no pyserial needed): run with the same HOST_PYTHON3.
+    add_test(NAME test_e80_sweep_preflight_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_e80_sweep_preflight.py)
 endif()
