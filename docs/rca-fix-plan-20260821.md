@@ -48,3 +48,40 @@ empirical spot-tests (flrc-retest-20260821.md).
 Acceptance: FLRC 8 BR rows crc_err=0 50/50, PRBS bit_err=0, seq monotonic,
 drops=0; FLRC L511 50/50 clean; LoRa LEN rows all tx_done 50/50; negative test
 ERR within 1 s recorded in error= col.
+
+## FIX-T6 pre-flight (2026-09-16) — HOLD, tool gate added
+
+**Read `docs/FIX-T6-preflight-verdict-20260916.md` before running FIX-T6.** It
+records, with hardware evidence, that FIX-T5 never flashed (the card is `done`
+only via the fleet write-back), that only ONE E80 board (RX probe
+`203584200D2D0D42`, fw=`5fa7912`) is attached to the fleet and that the TX board
+probe is absent — so no sweep may be claimed as FIX-T6 evidence until
+`t_52ede356` (FIX-R2) flashes the reconciled head.
+
+Three defects were found and fixed on branch `fix/t6-sweep-preflight`
+(base `origin/main` b862357) so the resumed run cannot silently produce a
+misleading verdict:
+
+1. **Console baud contract (silent failure).** `src/main.h` default is **115200**,
+   but `tools/e80_sweep_full.py` and `tools/e80_bench_ctl.py` hardcoded
+   `BAUD = 2000000` (the unmerged `feat/2g4-sweep` fw). Against a `main`-based
+   board every command is dropped and the CSV reads as RF death. The sweep tool
+   now derives the baud from the firmware header (`fw_default_baud()` /
+   `resolve_baud()`, `E80_BAUD` override) and the pre-flight gate makes a
+   mismatch fatal. Verified on hardware: the DQ05 board answers at 115200.
+2. **The chain tip cannot cover the acceptance set.** `07dbb8d`'s
+   `build_configs()` has no FLRC LEN matrix (only `LEN_SWEEP` applied to LoRa,
+   uncapped), so 256/300/384/448 rows do not exist and an illegal LoRa L511 row
+   is emitted — measured: 33 failed / 1 passed for this card's gate suite against
+   that tree. The GREEN implementation (`2e4a2c6`, T1 tip) is **not an ancestor**
+   of the chain tip; the reconciled head must fold it in.
+3. **Duplicated `(br650, pa5, plen64)` row** (sections D and G) broke knob-tuple
+   section selection (9 rows for an 8-row section); configs are now stamped with
+   a `flag` and sections select on it.
+
+New gate: `tools/test_e80_sweep_preflight.py` (39 tests, no pyserial needed) is
+wired into `make test-host` and pins the matrix coverage, the baud contract and
+the pre-flight decision — including that the gate only ever sends `ID?`. The
+sweep now refuses to key the radio unless `--preflight` passes for both boards
+and (with `--expected-fw <sha7>`) the boards report the firmware under test;
+`fw_measured` is recorded in the run metadata JSON.
