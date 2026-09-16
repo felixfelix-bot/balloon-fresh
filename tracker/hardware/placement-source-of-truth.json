@@ -1,0 +1,49 @@
+{
+  "_why": "Placement coordinates on the flight board were hand-typed literals spread over many tables and patch scripts, with two scripts writing the same board path. That is why the same pad-overlap pairs survived on both a 55x45mm and an 80x60mm outline: nobody owned the coordinates. This registry is the single declared list; placement_guard.py fails when something outside it writes a board or defines a coordinate table.",
+  "_rule": "Coordinates are GEOMETRY and must be COMPUTED - KRT py_placer/place_optimize.py (quench, bounded by --max-displacement) or a parametric/constraint generator. The LLM supplies constraints (design brief / floorplan intent), the tool computes positions, kicad-cli DRC referees, the frozen board is committed with its sha256. Never hand-type a coordinate table.",
+
+  "canonical_placement_source": null,
+  "_canonical_pending": "PCB-S0 (t_7c65638f) must name the ONE canonical placement source here and archive the rest. Until then every entry below is legacy and untrusted.",
+
+  "boards": {
+    "v_c3_flight_4layer_routed.kicad_pcb": {
+      "writer": null,
+      "legacy_writers": ["output/route_4layer.py", "output/route_4layer_v2.py"],
+      "note": "two scripts write this path - last writer wins; keep ONE"
+    },
+    "v_c3_flight_replaced.kicad_pcb": {
+      "writer": null,
+      "legacy_writers": ["output/replace_footprints.py", "output/replace_footprints_v2.py"]
+    },
+    "v5_routed.kicad_pcb": {
+      "writer": null,
+      "legacy_writers": ["r0r2_novias.py", "r0r2_route.py"]
+    }
+  },
+
+  "allowed_coordinate_tables": [],
+
+  "legacy_tables": [
+    {"path": "gen_pcb.py", "coord_rows": 58, "verdict": "legacy - superseded board generator with its own literal table"},
+    {"path": "grid_placement.py", "coord_rows": 27, "verdict": "legacy - literal table; positions do NOT match the shipped board"},
+    {"path": "placement_fix.py", "coord_rows": 27, "verdict": "legacy patch script"},
+    {"path": "fix_placement.py", "coord_rows": 16, "verdict": "legacy patch script"},
+    {"path": "fix_placement_v2.py", "coord_rows": 14, "verdict": "legacy patch script"},
+    {"path": "output/replace_footprints.py", "coord_rows": 14, "verdict": "legacy patch script"},
+    {"path": "output/replace_footprints_v2.py", "coord_rows": 10, "verdict": "legacy patch script"},
+    {"path": "output/fix_placement_p0.py", "coord_rows": 5, "verdict": "legacy patch script"},
+    {"path": "output/fix_placement_p0_v2.py", "coord_rows": 9, "verdict": "legacy patch script"},
+    {"path": "output/fix_placement_p0_v3.py", "coord_rows": 9, "verdict": "legacy patch script"}
+  ],
+
+  "legacy_patch_scripts_no_coord_table": [
+    "fix_all_drc.py", "fix_crossings.py", "fix_pcb_and_route.py", "fix_shorts_v2.py",
+    "fix_unconnected.py", "auto_route_v1.py", "route_c3_manhattan.py", "route_full_collision.py"
+  ],
+
+  "gate": {
+    "gate25": "0 pad-box overlaps at 0.2mm AND courtyards_overlap=0 AND 0 segments AND fp>=10, on the FROZEN board (sha256 recorded)",
+    "guard": "python3 placement_guard.py must exit 0 (no R1/R2 violations) for a placement card to close",
+    "evidence": "drc_score.py row + DRC JSON + board sha256 + the named canonical source"
+  }
+}
