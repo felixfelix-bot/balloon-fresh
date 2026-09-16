@@ -104,3 +104,102 @@ the algorithm against known test vectors in pure Python.
 
 The PRBS15 implementation adds minimal flash overhead, well within the
 firmware size budget.
+
+## Bench Protocol Limits & Radio Notes
+
+Reference notes for the packet-length limits, the FLRC RX match mode, the
+FLRC SNR convention, the `pcrc16` field and the two `drops=` counters.
+Everything below is grounded in this tree — `src/` and
+`third_party/Radio/lr20xx_driver/` — with the source location cited for each
+claim. Corrections/expansions belong in the same commit as the code they
+describe (this section is a Gate-3 deliverable, not a scratch pad).
+
+### Payload length: LoRa 255 B (hard), FLRC 511 B (legal)
+
+| Modulation | Max payload | Where the ceiling comes from |
+|---|---|---|
+| LoRa | **255 B** | `pld_len_in_bytes` is a **`uint8_t`** in the LR20xx driver — `third_party/Radio/lr20xx_driver/inc/lr20xx_radio_lora_types.h:247` |
+| FLRC | **511 B** | `pld_len_in_bytes` is a **`uint16_t`** documented as range `[6:511]` — `third_party/Radio/lr20xx_driver/inc/lr20xx_radio_flrc_types.h:210` |
+
+LoRa's 255 B is therefore the **silicon/driver** ceiling, not a bench policy:
+`LEN=511` in LoRa is not "slow", it is unrepresentable in the packet-params
+struct. FLRC has no wall at 256 B — 511 B is a legal FLRC frame and is the
+payload the throughput work targets.
+
+Both boards answer an over-cap `START` with the same ERR string and refuse
+before keying the radio — the TX gate is on `main` (`src/bench.c:786-790`);
+the identical RX-side gate (shared predicate + shared string) is on branch
+`fix/t2-rx-start-len-gate` (69dfd17):
+
+```
+ERR LEN (MAX 255 LORA / 511 FLRC)
+```
+
+Host tooling must apply the same per-modulation cap **before** it sends
+`START`. A host that reads and ignores the ERR reply converts an invalid
+config into a long silent stall that looks exactly like RF death.
+
+### FLRC RX match mode is Match123 (`MATCH_SYNCWORD_1_OR_2_OR_3`)
+
+The FLRC RX match mode must stay
+`LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3` ("Match123"). With a 32-bit
+sync word, Match1 (`RX_MATCH_SYNCWORD_1`) leaks sync bytes into the payload:
+packets still demodulate, but the chip CRC fails 100 % of the time — the
+failure signature that made FLRC look dead while LoRa on the same rig worked.
+
+Both independent references for this configuration use Match123:
+
+- the RadioLib LR2021 module, and
+- `balloon-range-tests` commit `9b740aa` (raw FLRC config byte `0x7C`; its
+  Match1 predecessor `0x4C` produced the same failure family).
+
+Do not "simplify" this field back to Match1, and do not drop the golden-byte
+host tests that pin the FLRC `SetPacketParams` wire bytes — opcode `0x0249`,
+6 bytes, with `byte[3] = crc_type | header_type<<2 | match_sync_word<<3 |
+tx_syncword<<6`, so Match123 with CRC on is `0x7D` and the range-tests raw
+config `0x7C` is that same frame with CRC off. Those tests
+(`tests/test_radio_bench_cfg.c`) currently live on branch
+`fix/t3-flrc-match123` (a1fcd27) and are not on `main` yet; keep them in
+whatever lands the Match123 change, so a silent regression in the packet
+params fails a host test instead of a field run.
+
+### SNR is 0.0 in FLRC — by design
+
+The LR2021 provides no FLRC SNR estimate. The bench reports **0.0** rather
+than a stale or invented number (`src/radio_bench.c` — both the IRQ path and
+the poll path comment it as "FLRC has no SNR estimate"), and the host decodes
+`snr_db = snr_qdb / 4` (`src/bench_pkt.c`). A `snr_db = 0.0` row in an FLRC
+capture is expected data, not a measurement failure: judge FLRC link quality
+on RSSI, `crc_ok` and the PRBS15 `bit_err`. Only LoRa rows carry a real SNR.
+
+### `pcrc16` semantics
+
+`pcrc16` is the trailing field of the `PKT` line and is the
+**CRC-16/CCITT-FALSE over the received payload bytes**
+(`src/bench.c` RX path; format contract in `src/bench_pkt.h`). It is **0**
+when the chip CRC failed, because no payload is read on a CRC failure.
+
+Two consequences for analysis:
+
+- a row with `crc_ok=0` carries `pcrc16=0` and therefore no payload
+  information — filter on `crc_ok` before treating `pcrc16` as evidence;
+- `pcrc16` is an **application-layer** check stacked on the radio CRC, so it
+  is the integrity path if the chip CRC is ever disabled
+  (`crc_type = CRC_OFF`) and integrity is carried by the app layer instead
+  (payload CRC + PRBS15 `bit_err`).
+
+### Watching `drops=`
+
+Two different counters are both printed as `drops=`, each an absolute count
+since boot:
+
+| Command | Counter | Meaning |
+|---|---|---|
+| `STAT` | `radio_bench_evt_drops()` | Radio **event-mailbox** overwrites — the superloop did not consume an event before the next arrived. |
+| `BUF STATUS` | `buf_drops()` | RX **buffer** drops while staging a loaded frame. |
+
+Check `STAT drops=` on every measured run: a nonzero value means the firmware
+missed a radio event and that run's PER / `bit_err` numbers are not
+trustworthy. Console pressure is worst at the largest payload (511 B on a
+115200-baud console), so a `LEN=511` row reporting `drops>0` should be re-run
+with the inter-packet gap doubled and **both** runs recorded.

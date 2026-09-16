@@ -660,7 +660,7 @@ self-documenting — see `configs/outdoor-10.json` as a template.
 | `configs[].br` | int/null | FLRC bitrate in kbps (260, 325, 650, 1300, 2600), null for LoRa |
 | `configs[].pa` | int | TX power in dBm |
 | `configs[].freq` | int | Frequency in Hz |
-| `configs[].plen` | int | Payload length in bytes (max 255) |
+| `configs[].plen` | int | Payload length in bytes — **max 255 for LoRa, max 511 for FLRC** (per-modulation silicon limit; see [Payload length limits](#payload-length-limits)) |
 | `configs[].gap` | int | Inter-packet gap in milliseconds |
 | `configs[].n_pkts` | int | Number of packets to send per config |
 
@@ -686,7 +686,7 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 | `pkt_idx` | int | Packet index within config (starts at 2 when prime_discard=2) |
 | `ts_ms` | int | Firmware uptime in milliseconds (since board boot) |
 | `rssi_dbm` | float | Received signal strength in dBm |
-| `snr_db` | float | Signal-to-noise ratio in dB (LoRa only; 0.0 for FLRC) |
+| `snr_db` | float | Signal-to-noise ratio in dB (LoRa only; **0.0 for FLRC by design** — the LR2021 has no FLRC SNR estimate) |
 | `crc_ok` | int | 1 = CRC valid, 0 = CRC error |
 | `bit_err` | int | Bit errors from PRBS15 verification |
 | `freq_hz` | int | Frequency in Hz |
@@ -695,7 +695,7 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 | `bw` | int | LoRa bandwidth in kHz (0 for FLRC) |
 | `pa_dbm` | int | TX power in dBm |
 | `len` | int | Payload length in bytes |
-| `pcrc16` | int | Payload CRC16 (expected) |
+| `pcrc16` | int | CRC-16/CCITT-FALSE of the received payload bytes; **0 when `crc_ok=0`** (no payload read on a CRC failure) |
 | `captured_ts` | string | ISO-8601 timestamp when host captured the packet (wall-clock) |
 
 **Example rows:**
@@ -707,6 +707,57 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 ```
 
 The `captured_ts` column is the join key for GPS stitching.
+
+### Payload length limits
+
+The maximum payload is **per modulation** and comes from the LR20xx driver's
+packet-params types, not from this bench:
+
+| Modulation | Max payload | Source of the limit |
+|---|---|---|
+| LoRa | **255 B** | `pld_len_in_bytes` is a `uint8_t` (`lr20xx_radio_lora_types.h`) |
+| FLRC | **511 B** | `pld_len_in_bytes` is a `uint16_t`, documented range `[6:511]` (`lr20xx_radio_flrc_types.h`) |
+
+A LoRa config with `plen > 255` cannot be represented in the packet params at
+all; it is not a slow-but-legal frame. Firmware answers an over-cap `START`
+with:
+
+```
+ERR LEN (MAX 255 LORA / 511 FLRC)
+```
+
+and refuses before keying the radio, so the reply arrives immediately and no
+burst starts. The host tooling applies the same cap before sending `START`;
+if you see the ERR string in a log, the preset (not the radio) is wrong.
+
+### Reading the `drops=` counters
+
+Two counters print as `drops=`:
+
+| Command | Meaning |
+|---|---|
+| `STAT` | Radio **event-mailbox** overwrites — the firmware superloop missed a radio event. Any nonzero value invalidates that run's PER / `bit_err`. |
+| `BUF STATUS` | RX **buffer** drops while staging a loaded frame. |
+
+Check `STAT drops=` on every measured run. Console pressure is worst at the
+largest payloads (511 B on a 115200-baud console), so a `LEN=511` row with
+`drops>0` should be re-run with the inter-packet gap doubled — record both
+runs rather than only the clean one.
+
+### FLRC `snr_db` is 0.0 by design
+
+The LR2021 has no FLRC SNR estimate, so every FLRC row carries `snr_db=0.0`.
+That is expected data, not a dead receiver — score FLRC configs on RSSI,
+`crc_ok` and `bit_err`. Only LoRa rows carry a real SNR.
+
+### `pcrc16` semantics
+
+`pcrc16` is the CRC-16/CCITT-FALSE of the received payload bytes. It is **0**
+whenever `crc_ok=0` (no payload is read on a CRC failure), so it adds no
+information on failed rows — filter on `crc_ok` first. Because it is an
+application-layer check on top of the radio CRC, it is also the integrity
+path used when the chip CRC is disabled and integrity is carried by the app
+layer (payload CRC + PRBS15 `bit_err`).
 
 ### Die-temperature lines (`TEMP,...`) + interp logging
 
@@ -1182,6 +1233,18 @@ sets TX, `make rx` sets RX).
 
 **Fix:** Update firmware with `make flash`. If the error persists,
 power-cycle the board.
+
+### `START` replies `ERR LEN (MAX 255 LORA / 511 FLRC)`
+
+**Cause:** The preset asks for a payload longer than the modulation allows.
+LoRa is capped at **255 B** (the LR20xx LoRa packet-length field is a
+`uint8_t`); FLRC allows up to **511 B**. The firmware refuses the `START`
+before keying the radio, so the board is fine and nothing was transmitted.
+
+**Fix:** Correct the preset's `plen` for that config. Full limits, and what
+each `drops=` counter means, are in
+[Payload length limits](#payload-length-limits) and
+[Reading the `drops=` counters](#reading-the-drops-counters).
 
 ### `make flash` fails: "arm-none-eabi-gcc not found"
 
