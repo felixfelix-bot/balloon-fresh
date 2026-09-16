@@ -730,6 +730,12 @@ and refuses before keying the radio, so the reply arrives immediately and no
 burst starts. The host tooling applies the same cap before sending `START`;
 if you see the ERR string in a log, the preset (not the radio) is wrong.
 
+Board parity note: the TX board's gate is on `main`; the RX board gets the
+identical gate (shared predicate + shared ERR string) in
+`fix/t2-rx-start-len-gate` (69dfd17). Until that lands, an RX board fed an
+over-cap `START` still arms a receive window it can never fill — send the
+corrected preset rather than trusting an ERR reply from the RX side.
+
 ### Reading the `drops=` counters
 
 Two counters print as `drops=`:
