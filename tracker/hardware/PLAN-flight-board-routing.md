@@ -37,7 +37,14 @@ party re-runs the verifier command on the frozen `sha256`.** No prose claims.
   run `py_placer/place_optimize.py <board> --max-displacement 3` (KRT) and/or explicit
   grid coordinates; freeze the placement; rip all tracks.
 - **GATE S0:** `0` pad-overlap pairs (0.2 mm margin, 0.2 mm margin script), `courtyards_overlap = 0`,
-  zero segments on the board, footprint count `>= 10`.
+  zero segments on the board, footprint count `>= 10`, **and `python3 placement_guard.py` exits 0**
+  (no R1/R2 violations — one writer per board, no unregistered coordinate tables).
+- Placement is done by the **dedicated tool** (`py_placer/place_optimize.py --max-displacement 3`,
+  KRT, already cloned at `~/tools/KiCadRoutingTools`), with the LLM supplying constraints only
+  (design brief + floorplan intent). A homegrown solver is fallback-only, with the failure documented.
+  Measured context: 37.5 % occupancy, offenders need 0.16 mm / 0.45 mm shifts → **do not enlarge the outline**.
+- The work list is `placement-source-of-truth.json`: 11 unregistered coordinate tables + 3 boards with
+  two writers. Name the single canonical source there and archive the rest; do not add a 13th script.
 - Evidence: `gate25_check.py` JSON + board `sha256` + committed `*_placed.kicad_pcb`.
 - Why it blocks everything: every routed variant today carries the **same 2 overlap pairs
   (`U2/C4`, `D1/U1`)**. No router can fix two pads in the same space — this is the
