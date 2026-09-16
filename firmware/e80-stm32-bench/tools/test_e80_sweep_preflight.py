@@ -49,8 +49,7 @@ class TestFlrcCoverage(unittest.TestCase):
     """The config matrix must cover what the card accepts on."""
 
     def test_flrc_br_sweep_has_all_8_bitrates_at_pa5_plen64_868(self):
-        rows = [c for c in _flrc(sf.build_configs())
-                if c.get("flag") == "flrc-br"]
+        rows = sf.select_configs(sf.build_configs(), "flrc-br")
         self.assertEqual(
             sorted(c["br"] for c in rows), sorted(T6_FLRC_BRS),
             "FLRC BR sweep section must emit exactly the 8 accepted bit rates "
@@ -109,12 +108,21 @@ class TestFlrcCoverage(unittest.TestCase):
             self.assertEqual(c["br"], 1300)
             self.assertEqual(c["pa"], 10)
             self.assertEqual(c["freq"], 868000000)
-            self.assertEqual(c["flag"],
-                             "flrc-bisect",
-                             "`flag` marks bisect rows so a CSV can be "
-                             "attributed to the bisect run, not the BR sweep")
+            self.assertTrue(c["label"].startswith("BISECT "),
+                            "bisect rows must be labelled so a CSV can be "
+                            "attributed to the bisect run, not the BR sweep")
 
-    def test_len_bisect_labels_are_unique(self):
+    def test_config_dicts_keep_the_original_key_shape(self):
+        """No extra keys: tools/test_balloon_sweep.py pins dict-for-dict parity
+        between balloon_sweep.build_configs() and e80_sweep_full.build_configs()
+        (a section tag added here silently reds that parity test)."""
+        keys = set()
+        for cfg in sf.build_configs():
+            keys |= set(cfg)
+        self.assertEqual(keys, {"mod", "sf", "bw", "br", "pa", "freq", "plen",
+                                "gap", "label"})
+
+    def test_flrc_len_labels_are_unique(self):
         labels = [c["label"] for c in sf.build_len_bisect_configs()]
         self.assertEqual(len(labels), len(set(labels)))
 

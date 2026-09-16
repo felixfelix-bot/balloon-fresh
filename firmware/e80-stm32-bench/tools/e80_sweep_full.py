@@ -428,6 +428,25 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port, npkts=NPKTS):
     }
 
 
+def build_flrc_br_configs():
+    """Section D — FLRC BR sweep @pa5 plen64 868 MHz (the 8 accepted bit rates)."""
+    return [dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ, plen=64, gap=10000,
+                 label=f"FLRC {br}k pa5") for br in FLRC_BRS]
+
+
+def build_flrc_len_configs():
+    """Section G — FLRC large-packet LEN matrix @BR650 pa5 (gap 40 ms: console
+    headroom for 511 B PKT lines @115200 baud, drops watch item)."""
+    return [dict(mod="flrc", br=650, pa=5, freq=DEFAULT_FREQ, plen=plen, gap=40000,
+                 label=f"FLRC 650k pa5 L{plen}") for plen in FLRC_LEN_MATRIX]
+
+
+def build_flrc_len_br_configs():
+    """Section G2 — large-packet x BR interaction (does 384/511 hold at higher BR?)."""
+    return [dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ, plen=plen, gap=40000,
+                 label=f"FLRC {br}k pa5 L{plen}") for br, plen in FLRC_LEN_BR_INTERACTIONS]
+
+
 def _build_all_configs():
     cfgs = []
     # A. LoRa SF x BW matrix @ PA10, LEN64, 868MHz
@@ -436,8 +455,7 @@ def _build_all_configs():
             toa = lora_airtime_s(sf, bw, 64)
             gap = max(10000, int(1.2 * toa * 1e6) + 5000)
             cfgs.append(dict(mod="lora", sf=sf, bw=bw, pa=10, freq=DEFAULT_FREQ,
-                             plen=64, gap=gap, label=f"SF{sf} BW{bw} PA10",
-              flag="lora-sf-bw"))
+                             plen=64, gap=gap, label=f"SF{sf} BW{bw} PA10"))
     # B. LoRa PA sweep @ SF8 BW125 LEN64
     for pa in PA_SWEEP:
         if pa == 10:
@@ -445,8 +463,7 @@ def _build_all_configs():
         toa = lora_airtime_s(8, 125, 64)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=pa, freq=DEFAULT_FREQ,
-                         plen=64, gap=gap, label=f"SF8 BW125 PA{pa}",
-              flag="lora-pa"))
+                         plen=64, gap=gap, label=f"SF8 BW125 PA{pa}"))
     # C. LEN sweep @ SF8 BW125 PA10
     for plen in LEN_SWEEP:
         if plen == 64:
@@ -457,20 +474,15 @@ def _build_all_configs():
         toa = lora_airtime_s(8, 125, plen)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=DEFAULT_FREQ,
-                         plen=plen, gap=gap, label=f"SF8 BW125 PA10 L{plen}",
-              flag="lora-len"))
+                         plen=plen, gap=gap, label=f"SF8 BW125 PA10 L{plen}"))
     # D. FLRC BR sweep @ pa5
-    for br in FLRC_BRS:
-        cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ,
-                         plen=64, gap=10000, label=f"FLRC {br}k pa5",
-              flag="flrc-br"))
+    cfgs.extend(build_flrc_br_configs())
     # E. FLRC pa sweep @ BR650
     for pa in FLRC_PAS:
         if pa == 5:
             continue  # in D
         cfgs.append(dict(mod="flrc", br=650, pa=pa, freq=DEFAULT_FREQ,
-                         plen=64, gap=10000, label=f"FLRC 650k pa{pa}",
-              flag="flrc-pa"))
+                         plen=64, gap=10000, label=f"FLRC 650k pa{pa}"))
     # F. FREQ sweep @ SF8 BW125 PA10 (868 in matrix)
     for f in FREQ_SWEEP:
         if f == DEFAULT_FREQ:
@@ -478,23 +490,14 @@ def _build_all_configs():
         toa = lora_airtime_s(8, 125, 64)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=f,
-                         plen=64, gap=gap, label=f"SF8 BW125 @ {f/1e6:.3f}MHz",
-              flag="lora-freq"))
+                         plen=64, gap=gap, label=f"SF8 BW125 @ {f/1e6:.3f}MHz"))
     # G. FLRC LEN matrix @ BR650 pa5 — large-packet coverage (operator priority
     #    2026-08-21: >256 B sizes thoroughly covered; 511 = FLRC fw max, legal
     #    ONLY in FLRC — LoRa silicon cap is 255). gap 40 ms: console pressure
     #    headroom for 511 B PKT lines @ 115200 baud (drops watch item).
-    for plen in FLRC_LEN_MATRIX:
-        cfgs.append(dict(mod="flrc", br=650, pa=5, freq=DEFAULT_FREQ,
-                         plen=plen, gap=40000,
-                         label=f"FLRC 650k pa5 L{plen}",
-              flag="flrc-len"))
+    cfgs.extend(build_flrc_len_configs())
     # G2. large-packet x BR interaction (does 511 hold at higher BR?)
-    for br, plen in FLRC_LEN_BR_INTERACTIONS:
-        cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ,
-                         plen=plen, gap=40000,
-                         label=f"FLRC {br}k pa5 L{plen}",
-              flag="flrc-len-br"))
+    cfgs.extend(build_flrc_len_br_configs())
     # ================= 2.4 GHz ISM band (fw 0561b29, BAND OVERRIDE) =================
     # HF PA/RX radio path (fw switches at >= 1.6 GHz). run_config arms
     # 'BAND OVERRIDE 2026' on both boards per config (flag dies on SWD reset).
@@ -505,8 +508,7 @@ def _build_all_configs():
             gap = max(10000, int(1.2 * toa * 1e6) + 5000)
             cfgs.append(dict(mod="lora", sf=sf, bw=bw, pa=10,
                              freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
-                             label=f"2G4 SF{sf} BW{bw} PA10",
-              flag="2g4-lora-sf-bw"))
+                             label=f"2G4 SF{sf} BW{bw} PA10"))
     # H-2G4. LoRa PA sweep @ SF8 BW125 2440 MHz (4 configs; PA10 replicates
     # the matrix center for cross-section consistency check)
     for pa in PA_SWEEP:
@@ -514,8 +516,7 @@ def _build_all_configs():
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=pa,
                          freq=DEFAULT_FREQ_2G4, plen=64, gap=gap,
-                         label=f"2G4 SF8 BW125 PA{pa}",
-              flag="2g4-lora-pa"))
+                         label=f"2G4 SF8 BW125 PA{pa}"))
     # I-2G4. LoRa LEN sweep @ SF8 BW125 PA10 2440 MHz. L511 filtered: the
     # LR2021 LoRa 8-bit length field caps at 255 bytes — L511 in LoRa is
     # untestable and was previously showing as misleading 100% PER.
@@ -526,28 +527,24 @@ def _build_all_configs():
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10,
                          freq=DEFAULT_FREQ_2G4, plen=plen, gap=gap,
-                         label=f"2G4 SF8 BW125 PA10 L{plen}",
-              flag="2g4-lora-len"))
+                         label=f"2G4 SF8 BW125 PA10 L{plen}"))
     # J-2G4. FLRC BR sweep @ 2440 MHz pa5 (8 configs). gap floor 10 ms holds
     # for the shortest airtime (2600k: ~1.3 ms for 64 B) — min gap is the
     # binding constraint, exactly as on 868 MHz.
     for br in FLRC_BRS:
         cfgs.append(dict(mod="flrc", br=br, pa=5, freq=DEFAULT_FREQ_2G4,
-                         plen=64, gap=10000, label=f"2G4 FLRC {br}k pa5",
-              flag="2g4-flrc-br"))
+                         plen=64, gap=10000, label=f"2G4 FLRC {br}k pa5"))
     # K-2G4. FLRC PA sweep @ 650k 2440 MHz (6 configs; pa5 replicates J)
     for pa in FLRC_PAS:
         cfgs.append(dict(mod="flrc", br=650, pa=pa, freq=DEFAULT_FREQ_2G4,
-                         plen=64, gap=10000, label=f"2G4 FLRC 650k pa{pa}",
-              flag="2g4-flrc-pa"))
+                         plen=64, gap=10000, label=f"2G4 FLRC 650k pa{pa}"))
     # L-2G4. FREQ sweep @ SF8 BW125 PA10 across 2.4 GHz points (5 configs;
     # 2440 replicates the matrix center)
     for f in FREQ_2G4_SWEEP:
         toa = lora_airtime_s(8, 125, 64)
         gap = max(10000, int(1.2 * toa * 1e6) + 5000)
         cfgs.append(dict(mod="lora", sf=8, bw=125, pa=10, freq=f,
-                         plen=64, gap=gap, label=f"2G4 SF8 BW125 @ {f/1e6:.0f}MHz",
-              flag="2g4-lora-freq"))
+                         plen=64, gap=gap, label=f"2G4 SF8 BW125 @ {f/1e6:.0f}MHz"))
     return cfgs
 
 
@@ -563,46 +560,36 @@ def build_len_bisect_configs():
     for plen in FLRC_BISECT_LENS:
         cfgs.append(dict(mod="flrc", br=FLRC_BISECT_BR, pa=FLRC_BISECT_PA,
                          freq=DEFAULT_FREQ, plen=plen, gap=40000,
-                         flag="flrc-bisect",
                          label=f"BISECT {FLRC_BISECT_BR}k pa{FLRC_BISECT_PA} L{plen}"))
     return cfgs
 
 
 # Named sections so each FIX-T6 phase is ONE reproducible command instead of a
-# hand-typed `--only` guess.
-SWEEP_SECTIONS = {
-    # (a) FLRC BR sweep: all 8 bit rates @pa5 plen64 868 MHz
-    # NOTE: matched on the `flag` stamped at build time, not on the knob tuple —
-    # BR650/pa5/plen64 is emitted by BOTH section D (BR sweep) and section G
-    # (the L64 row of the LEN matrix), so a knob-only predicate silently returns
-    # 9 rows for an 8-row section.
-    "flrc-br": lambda c: c.get("flag") == "flrc-br",
-    # (c) FLRC large-packet LEN matrix @BR650 pa5
-    "flrc-len": lambda c: c.get("flag") == "flrc-len",
-    # (c') large-packet x BR interaction rows
-    "flrc-len-br": lambda c: c.get("flag") == "flrc-len-br",
-    # (b) boundary bisect (separate builder, see build_len_bisect_configs)
-    "flrc-bisect": None,
+# hand-typed `--only` guess. Each section is a BUILDER, not a filter over the
+# full matrix: (br650, pa5, plen64) is emitted by two different sections, and
+# tagging the dicts with a section key breaks the dict-for-dict parity test in
+# tools/test_balloon_sweep.py (E80ParityTests.test_build_configs_identical).
+SECTION_BUILDERS = {
+    "flrc-br": build_flrc_br_configs,          # (a) BR sweep
+    "flrc-len": build_flrc_len_configs,        # (c) large-packet LEN matrix
+    "flrc-len-br": build_flrc_len_br_configs,  # (c') large-packet x BR
+    "flrc-bisect": build_len_bisect_configs,   # (b) LEN 253-257 boundary bisect
 }
 
 
 def select_configs(cfgs, section=None):
-    """Return the subset of `cfgs` belonging to a named FIX-T6 section."""
+    """Full matrix for 'all', else the named section's own builder output."""
     key = (section or "all").lower()
     if key in ("all", "*"):
         return list(cfgs)
-    if key == "flrc-bisect":
-        return build_len_bisect_configs()
-    if key not in SWEEP_SECTIONS:
+    if key not in SECTION_BUILDERS:
         raise ValueError(f"unknown sweep section {section!r} "
-                         f"(known: {sorted(SWEEP_SECTIONS) + ['all']})")
-    return [c for c in cfgs if SWEEP_SECTIONS[key](c)]
+                         f"(known: {sorted(SECTION_BUILDERS) + ['all']})")
+    return SECTION_BUILDERS[key]()
 
 
 def build_configs(section=None):
     """Full dual-band sweep, or one named FIX-T6 section."""
-    if section and section.lower() == "flrc-bisect":
-        return build_len_bisect_configs()
     return select_configs(_build_all_configs(), section)
 
 

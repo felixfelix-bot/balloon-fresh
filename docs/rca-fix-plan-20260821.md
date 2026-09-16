@@ -76,12 +76,18 @@ misleading verdict:
    that tree. The GREEN implementation (`2e4a2c6`, T1 tip) is **not an ancestor**
    of the chain tip; the reconciled head must fold it in.
 3. **Duplicated `(br650, pa5, plen64)` row** (sections D and G) broke knob-tuple
-   section selection (9 rows for an 8-row section); configs are now stamped with
-   a `flag` and sections select on it.
+   section selection (9 rows for an 8-row section); each section is now its own
+   builder reached via `SECTION_BUILDERS`. (Tagging the config dicts with a `flag`
+   key was the first attempt and is WRONG here: it breaks the dict-for-dict parity
+   test with `balloon_sweep.build_configs()` in `tools/test_balloon_sweep.py`.
+   That test hid behind a same-named pre-existing ctest failure — compare failure
+   REASONS, not test names.)
 
-New gate: `tools/test_e80_sweep_preflight.py` (39 tests, no pyserial needed) is
+New gate: `tools/test_e80_sweep_preflight.py` (40 tests, no pyserial needed) is
 wired into `make test-host` and pins the matrix coverage, the baud contract and
 the pre-flight decision — including that the gate only ever sends `ID?`. The
 sweep now refuses to key the radio unless `--preflight` passes for both boards
 and (with `--expected-fw <sha7>`) the boards report the firmware under test;
-`fw_measured` is recorded in the run metadata JSON.
+`fw_measured` is recorded in the run metadata JSON. With the tool's `serial`
+import made tolerant, `make test-host` is **21/21 (100%)** on this branch, versus
+19/20 on base.

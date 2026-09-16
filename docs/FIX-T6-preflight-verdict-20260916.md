@@ -89,9 +89,20 @@ make this green.
 ### F3 — one duplicated config made knob-tuple section selection wrong
 
 The full matrix emits `(br=650, pa=5, plen=64, 868 MHz)` **twice** (section D's BR
-sweep row and section G's L64 row). Any `--section` predicate written over knob
-tuples therefore returns **9 rows for the 8-row BR sweep**. Fixed by stamping every
-config with a `flag` at build time and selecting on the flag.
+sweep row and section G's L64 row), so any `--section` predicate written over knob
+tuples returns **9 rows for the 8-row BR sweep**. Each section is therefore its own
+**builder** (`build_flrc_{br,len,len_br}_configs()`, reached through
+`SECTION_BUILDERS`), not a filter over the full list.
+
+The first attempt tagged each config with a `flag` key — that is a schema change,
+and `tools/test_balloon_sweep.py::E80ParityTests::test_build_configs_identical`
+pins dict-for-dict parity with `balloon_sweep.build_configs()`, so it went red.
+The ctest line only names the failing test, so this hid behind a pre-existing
+failure **of the same name** (`test_balloon_sweep_python`); it was caught only by
+re-running the gate under an interpreter that has pyserial. Lesson for the next
+run: compare the failure *reason*, never the test name, before calling something
+pre-existing. With builders (no key added) the parity test is green and the full
+111-row matrix is unchanged.
 
 ### Still open (no hardware, not measurable today)
 
@@ -103,7 +114,7 @@ finding (the radio config path really does change at 255), not a Match123 artefa
 
 ## 3. What this branch delivers
 
-* `tools/test_e80_sweep_preflight.py` — 39 host tests pinning the config-matrix
+* `tools/test_e80_sweep_preflight.py` — 40 host tests pinning the config-matrix
   coverage, the baud contract, the pre-flight decision, and (via a fake serial
   seam) that the gate only ever sends `ID?`.
 * `tools/e80_sweep_full.py` — header-derived baud, `--section` selectors
@@ -117,10 +128,13 @@ finding (the radio config path really does change at 255), not a Match123 artefa
   (works without pyserial: the tool's `serial` import is now tolerant).
 
 Evidence: RED on `main` = **25 failed / 4 passed** before implementation; GREEN =
-**39 passed**; `make test-host` on the branch = **20/21** with the single failure
-being the pre-existing `test_balloon_sweep_python` (no pyserial under the gate's
-`python3`), which also fails **19/20 → same test** on a pristine `origin/main`
-worktree; `make firmware` = 100%, FLASH 29252 B (44.64%).
+**40 passed**. `make test-host` on the branch = **21/21, 100% (0 failed)** — it now
+runs 21 suites instead of the base's 20 and every one passes. The base's one red
+(`test_balloon_sweep_python`) was an import error under the gate's `python3` (no
+pyserial); making the tool's `serial` import tolerant lets that suite actually
+execute, which is how the F3 regression above was caught. `tools/` pytest = 636
+passed vs 596 at base (+40 new), same single pre-existing `cvm_relay_test.py`
+error. `make firmware` = 100%, FLASH 29252 B (44.64%).
 
 ## 4. Runbook for the resumed card (after t_52ede356 reports its SHA)
 
