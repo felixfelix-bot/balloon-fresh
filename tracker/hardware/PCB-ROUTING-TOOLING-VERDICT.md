@@ -188,6 +188,45 @@ only for decisions.** That inverts the order the pasted advice implies.
   working `pcbnew`) → SKiDL and pcbnew live in different interpreters.
 - `balloon-*` clones have **no `ngit` remote**, so board work cannot dual-push
   (violates our own push policy for public repos).
-- No freerouting `.jar` found on disk although `~/.config/freerouting/` exists —
-  the tool was configured but the artifact is missing; re-provisioning needed
-  before action 1.
+- ~~No freerouting `.jar` found on disk~~ — **CORRECTED the same day:** the jar IS
+  present at `~/tools/freerouting/freerouting.jar` with java 17.0.20 installed;
+  the earlier check searched the wrong paths. Action 1 needed no re-provisioning
+  and has already run — see §8.
+- `skidl` is **not importable** from the default `python3` (`ModuleNotFoundError`),
+  while `pcbnew` only works under `/usr/bin/python3.14` — schematic-stage and
+  board-stage tooling still live in different interpreters.
+- **No discrete GPU on this host** (`nvidia-smi` absent) → OrthoRoute's CUDA path
+  is unreachable here; any OrthoRoute trial must first establish a CPU fallback.
+
+---
+
+## 8. Update — the two $0 actions were executed (2026-09-16, later session)
+
+Freerouting 2.4.1 (java, DSN export via pcbnew `ExportSpecctraDSN` → SES import),
+rows now in `drc_snapshots/history.jsonl`:
+
+| attempt | violations | shorts | clearance | unconnected | vias | copper mm | fab-ready |
+|---|---|---|---|---|---|---|---|
+| manual 4-layer (baseline) | 17 | 0 | 3 | 20 | 48 | 167.2 | no |
+| freerouting (mp10) | 134 | 0 | 125 | **1** | 66 | 577.8 | no |
+| freerouting + explicit JLCPCB rules | 130 | 0 | 121 | **1** | 65 | 577.8 | no |
+
+1. **The free deterministic router attacked exactly the class the LLM could not:**
+   `unconnected` 20 → 1 (95 % of the electrical-completeness failures gone) at $0
+   inference cost, `shorts` held at 0.
+2. **The clearance blow-up is NOT yet a like-for-like comparison.** Trial 2 *also*
+   tightened the design rules (explicit JLCPCB 0.2 mm width/clearance, 0.6/0.3 vias),
+   so its 121 `clearance` + 33 `hole_clearance` may not be scored against a baseline
+   measured under looser board rules. Per §4's own rule — a change counts only when
+   compared at identical rules on a frozen revision — the honest interim verdict is
+   *"rule set changed; re-score under one rule set before ranking"*. This is the
+   first live instance of the comparability trap §5 warned about, and it is a
+   **scoring** defect, not a routing regression.
+3. Copper 167 mm → 578 mm, vias 48 → 65: the router actually routed nets the hand
+   fix had left dangling. Rising copper with a *falling* blocking count on the
+   class that matters reads as real routing, not churn — but it is the §5 signal to
+   keep watching.
+
+**Next step this implies:** re-run both free tools under ONE design-rule file and
+score with `drc_score.py` *before* any LLM attempt is funded, then adopt this doc +
+the trial rows as the board's definition-of-done baseline (§6 action 4).
