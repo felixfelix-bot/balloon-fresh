@@ -31,6 +31,8 @@ constraints apply. Inference is never spent on coordinates.
 
 Gate rule: **a stage is done only when its evidence artifact exists and a second
 party re-runs the verifier command on the frozen `sha256`.** No prose claims.
+Definition of done per PCB card, and the paste-into-card block:
+`tracker/hardware/PCB-CARD-DOD.md` (S4 — no card closes on a prose "DRC clean").
 
 ### S0 — Placement to zero overlap · **AGENT, $0**
 - Do: audit netlist (27 pads currently carry **no net** — confirm intentional/mechanical),
@@ -77,9 +79,20 @@ party re-runs the verifier command on the frozen `sha256`.** No prose claims.
 - Why human: a fab mistake costs a 5–7 day cycle plus money — this is irreducibly a
   judgement call on a physical artifact, and it is exactly the "cheap insurance" case.
 
-### S4 — Policy · **MANAGER, $0**
+### S4 — Policy · **MANAGER, $0** · **RECORDED 2026-09-16**
 - **GATE S4:** every PCB card's definition of done includes a `drc_score.py` row;
-  "DRC clean" in prose no longer closes a card. Record in the board/skill.
+  "DRC clean" in prose no longer closes a card. Recorded in the board/skill.
+- **Standing rule:** `tracker/hardware/PCB-CARD-DOD.md` (status ACTIVE) — the accepted
+  evidence, the paste-into-card DoD block, the progress rule
+  (`shorts+clearance+unconnected` must fall; total `violations` is not evidence), the
+  comparability rule (same `.kicad_dru` + frozen `sha256_12`) and the fab-ready gate
+  (`shorts=0 AND clearance=0 AND unconnected=0 AND fp>=10`).
+- **Also recorded in:** skill `kicad-cli-headless-pcb` →
+  `references/pcb-card-definition-of-done.md` (+ pointer in `SKILL.md`), so a card
+  created from the skill cannot be written without the DoD block.
+- **Card-creator duty (manager):** the DoD block in `PCB-CARD-DOD.md` §6 is pasted into
+  the body of every new PCB/board card. No row in the handoff ⇒ the card is blocked,
+  not completed — however plausible the prose.
 
 ---
 
