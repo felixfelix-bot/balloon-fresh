@@ -284,6 +284,20 @@ class TestBlossomDatagram:
         assert "11/11 passed" in out
 
 
+class TestStratoRelayMesh:
+    def test_stratorelay_mesh_host(self):
+        stratorelay_dir = os.path.join(COMPONENTS, "stratorelay")
+        out = _compile_and_run_c(
+            os.path.join(stratorelay_dir, "test", "test_stratorelay_mesh.cpp"),
+            [],
+            [stratorelay_dir],
+            cxx=True,
+            extra_cflags=["-Werror"],
+        )
+        assert "9/9 passed" in out
+        assert "(section 11: 8/8)" in out
+
+
 class TestRp2040PRBS:
     def test_rp2040_prbs(self):
         rp2040_src = os.path.join(REPO_ROOT, "firmware", "rp2040", "src")
