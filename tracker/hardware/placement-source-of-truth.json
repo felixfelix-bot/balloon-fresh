@@ -2,38 +2,74 @@
   "_why": "Placement coordinates on the flight board were hand-typed literals spread over many tables and patch scripts, with two scripts writing the same board path. That is why the same pad-overlap pairs survived on both a 55x45mm and an 80x60mm outline: nobody owned the coordinates. This registry is the single declared list; placement_guard.py fails when something outside it writes a board or defines a coordinate table.",
   "_rule": "Coordinates are GEOMETRY and must be COMPUTED - KRT py_placer/place_optimize.py (quench, bounded by --max-displacement) or a parametric/constraint generator. The LLM supplies constraints (design brief / floorplan intent), the tool computes positions, kicad-cli DRC referees, the frozen board is committed with its sha256. Never hand-type a coordinate table.",
 
-  "canonical_placement_source": null,
-  "_canonical_pending": "PCB-S0 (t_7c65638f) must name the ONE canonical placement source here and archive the rest. Until then every entry below is legacy and untrusted.",
+  "canonical_placement_source": {
+    "tool": "KiCadRoutingTools v0.22.0 py_placer/place_optimize.py (MIT, drandyhaas/KiCadRoutingTools)",
+    "invoked_by": "publish_placed_board.py",
+    "lap": "--max-displacement 3 --max-passes 10 --halo-base 1.0 --halo-weight 6.0 --lock ANT1 J1 J2 SOLAR",
+    "constraints_the_tool_did_not_compute": [
+      "the four locked parts are mechanical interfaces: ANT1 (U.FL RF port, east face), J1 (1x06 prog header, south), J2 (1x04 debug header, south), SOLAR (1x02 solar input, south)"
+    ],
+    "prep": "prep_placement_input.py (rip all copper, keep the 3 zone definitions, drop stale fills)",
+    "referee": "gate25_check.py (0 pad-box overlaps at 0.2mm, courtyards_overlap 0, 0 segments, fp>=10) + kicad-cli pcb drc",
+    "frozen_artefact": "output/v_c3_flight_4layer_placed.kicad_pcb",
+    "sha256": "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6",
+    "decided_by": "PCB-S0 t_7c65638f, 2026-09-17",
+    "_note": "Any later placement change must go through the same tool. Do not add a nudge script or a new coordinate table."
+  },
+  "_canonical_pending": null,
+
+  "provenance_of_the_SHIPPED_placement": {
+    "answer": "tracker/hardware/fix_placement_v2.py (now archive/hardware-placement-legacy/fix_placement_v2.py)",
+    "evidence": "re-measured 2026-09-17: the `placements` dict matches the shipped board positions exactly (within 0.1mm) for 18 of 20 footprints; C2 (board 25,9 vs table 18,9) and C4 (board 48,11 vs table 33,9) are the two it does NOT claim, and both already hold those positions in the intermediate output/v_c3_flight_final.kicad_pcb, so they survived unchanged from an earlier step. fix_placement.py, grid_placement.py, placement_fix.py and gen_pcb.py each match 0 shipped positions. fix_placement_v2.py was added in commit 93427ca 'C3 flight PCB placement - 0 shorting_items, 0 solder_mask_bridge (Gate 2.5 PASS)', which also rewrote output/v_c3_flight_final.kicad_pcb.",
+    "chain": "fix_placement_v2.py -> output/v_c3_flight_final.kicad_pcb -> (output/route_4layer_v2.py) -> output/v_c3_flight_4layer_routed.kicad_pcb",
+    "why_it_recurs": "the table carries hand-math comments as if they were checks (e.g. 'Gap between U1 and U2: 29.5-20.7 = 8.8mm'), and the scripts it belongs to hard-code an absolute path into a DIFFERENT clone (~/repos/balloon-fresh) - so both clones inherited the same unresolved near-miss.",
+    "schematic_note": "schematics/v_c3_flight.kicad_sch is NOT a stub but it is disconnected: 55 symbol instances and 41 labels yet ZERO wires (re-measured 2026-09-17), so connectivity was authored as generator nets rather than schematic nets. Its ERC report (v_c3_flight-erc.rpt) is full of pin_not_connected and label_dangling, and not one pin carries an explicit no-connect, so no pad can be certified 'intentional' from the schematic - which is why the netlist audit classifies from device pin functions instead (see ADR-028, schematic-first)."
+  },
+
+  "netlist_audit": {
+    "tool": "tracker/hardware/netlist_audit.py",
+    "artifact": "output/v_c3_flight_4layer_placed_netlist_audit.json (+ PCB-S0-NETLIST-AUDIT.md)",
+    "result": "27 pads carry no net: 11 classified GAP (4 HIGH, 6 MEDIUM, 1 LOW confidence) and 16 INTENTIONAL; the superseded routed board carries the SAME 27 netless pads, so the S0 lap neither lost nor added a net.",
+    "worst_case": "U3 pad 11 = MAX-M10S RF_IN (GPS antenna input) has no net and no antenna part exists anywhere on the board, so GPS cannot receive until a feed is added; U4 pad 3 = TPS7A02 EN is floating; U2 pads 11/16 match the RFM9xW reference GROUND tabs."
+  },
 
   "boards": {
+    "v_c3_flight_4layer_placed.kicad_pcb": {
+      "writer": "publish_placed_board.py",
+      "note": "S0 frozen placement - the ONE board the routing stage (S1) may build on"
+    },
     "v_c3_flight_4layer_routed.kicad_pcb": {
-      "writer": null,
-      "legacy_writers": ["output/route_4layer.py", "output/route_4layer_v2.py"],
-      "note": "two scripts write this path - last writer wins; keep ONE"
+      "writer": "output/route_4layer_v2.py",
+      "legacy_writers": ["output/route_4layer.py"],
+      "_note": "route_4layer.py archived (two scripts wrote this path; last writer wins). This artifact is superseded by the S0 placement - it still carries the two pad-overlap pairs."
     },
     "v_c3_flight_replaced.kicad_pcb": {
       "writer": null,
-      "legacy_writers": ["output/replace_footprints.py", "output/replace_footprints_v2.py"]
+      "legacy_writers": ["output/replace_footprints.py", "output/replace_footprints_v2.py"],
+      "_note": "both writers archived; artifact superseded, no live writer"
     },
     "v5_routed.kicad_pcb": {
-      "writer": null,
-      "legacy_writers": ["r0r2_novias.py", "r0r2_route.py"]
+      "writer": "r0r2_route.py",
+      "legacy_writers": ["r0r2_novias.py"],
+      "_note": "r0r2_novias.py archived (it wrote the same path with a different router)"
     }
   },
 
   "allowed_coordinate_tables": [],
 
   "legacy_tables": [
-    {"path": "gen_pcb.py", "coord_rows": 58, "verdict": "legacy - superseded board generator with its own literal table"},
-    {"path": "grid_placement.py", "coord_rows": 27, "verdict": "legacy - literal table; positions do NOT match the shipped board"},
-    {"path": "placement_fix.py", "coord_rows": 27, "verdict": "legacy patch script"},
-    {"path": "fix_placement.py", "coord_rows": 16, "verdict": "legacy patch script"},
-    {"path": "fix_placement_v2.py", "coord_rows": 14, "verdict": "legacy patch script"},
-    {"path": "output/replace_footprints.py", "coord_rows": 14, "verdict": "legacy patch script"},
-    {"path": "output/replace_footprints_v2.py", "coord_rows": 10, "verdict": "legacy patch script"},
-    {"path": "output/fix_placement_p0.py", "coord_rows": 5, "verdict": "legacy patch script"},
-    {"path": "output/fix_placement_p0_v2.py", "coord_rows": 9, "verdict": "legacy patch script"},
-    {"path": "output/fix_placement_p0_v3.py", "coord_rows": 9, "verdict": "legacy patch script"}
+    {"path": "archive/hardware-placement-legacy/fix_placement_v2.py", "coord_rows": 16, "verdict": "ARCHIVED - this is the table that produced the shipped positions (see provenance_of_the_SHIPPED_placement)"},
+    {"path": "archive/hardware-placement-legacy/fix_placement.py", "coord_rows": 16, "verdict": "ARCHIVED - legacy patch script"},
+    {"path": "archive/hardware-placement-legacy/placement_fix.py", "coord_rows": 27, "verdict": "ARCHIVED - legacy patch script"},
+    {"path": "archive/hardware-placement-legacy/grid_placement.py", "coord_rows": 27, "verdict": "ARCHIVED - literal table; positions never matched the shipped board"},
+    {"path": "archive/hardware-placement-legacy/output/replace_footprints.py", "coord_rows": 14, "verdict": "ARCHIVED - legacy patch script (double writer)"},
+    {"path": "archive/hardware-placement-legacy/output/replace_footprints_v2.py", "coord_rows": 10, "verdict": "ARCHIVED - legacy patch script (double writer)"},
+    {"path": "archive/hardware-placement-legacy/output/fix_placement_p0.py", "coord_rows": 5, "verdict": "ARCHIVED - legacy patch script"},
+    {"path": "archive/hardware-placement-legacy/output/fix_placement_p0_v2.py", "coord_rows": 9, "verdict": "ARCHIVED - legacy patch script"},
+    {"path": "archive/hardware-placement-legacy/output/fix_placement_p0_v3.py", "coord_rows": 9, "verdict": "ARCHIVED - legacy patch script"},
+    {"path": "archive/hardware-placement-legacy/route_4layer.py", "coord_rows": 0, "verdict": "ARCHIVED - second writer of the routed board path"},
+    {"path": "archive/hardware-placement-legacy/r0r2_novias.py", "coord_rows": 0, "verdict": "ARCHIVED - second writer of output/v5_routed.kicad_pcb"},
+    {"path": "gen_pcb.py", "coord_rows": 58, "verdict": "legacy - superseded board generator with its own literal table (not a writer of any live artifact)"}
   ],
 
   "legacy_patch_scripts_no_coord_table": [
@@ -44,6 +80,13 @@
   "gate": {
     "gate25": "0 pad-box overlaps at 0.2mm AND courtyards_overlap=0 AND 0 segments AND fp>=10, on the FROZEN board (sha256 recorded)",
     "guard": "python3 placement_guard.py must exit 0 (no R1/R2 violations) for a placement card to close",
-    "evidence": "drc_score.py row + DRC JSON + board sha256 + the named canonical source"
+    "evidence": "gate25_check.py JSON + DRC JSON + board sha256 + the named canonical source",
+    "S0_result": {
+      "board": "output/v_c3_flight_4layer_placed.kicad_pcb",
+      "sha256": "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6",
+      "gate25": "output/v_c3_flight_4layer_placed_gate25.json",
+      "drc": "output/v_c3_flight_4layer_placed_drc.json",
+      "measured": "pad_overlap_pairs_0.2mm=0, exact_pad_overlap_pairs_0.2mm=0, courtyards_overlap=0, segments=0, vias=0, footprints=20, zones=3, DRC 4 violations (all silk_edge_clearance, cosmetic)"
+    }
   }
 }

@@ -1,0 +1,257 @@
+{
+  "task": "t_7c65638f",
+  "tool": "KiCadRoutingTools v0.22.0 py_placer/place_optimize.py",
+  "date": "2026-09-17",
+  "laps": [
+    {
+      "lap": "d3_plain",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10"
+      ],
+      "board": "krt_d3.kicad_pcb",
+      "sha256": "136b13c2aa3813ec095d6292df4940b7e34be942df920836a38e33dce4933734",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 776.5,
+        "crossings_before": 125,
+        "crossings_after": 90,
+        "parts_moved": 17,
+        "pad_conflicts_after": 0,
+        "pad_overlap_pairs": 0,
+        "pad_conflicts_before": 0,
+        "pad_edge_min_gap_mm": 1.365
+      },
+      "floorplan": {
+        "errors": 3,
+        "warnings": 3,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "halo6",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--halo-base",
+        "1.0",
+        "--halo-weight",
+        "6.0"
+      ],
+      "board": "krt_halo4.kicad_pcb",
+      "sha256": "8e1d0c68684a325195cc84c6063e88e8f5eb55fe0e6088d5acebccc17cceb13d",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 788.2,
+        "crossings_before": 125,
+        "crossings_after": 90,
+        "pad_conflicts_after": 0,
+        "pad_overlap_pairs": 0,
+        "pad_conflicts_before": 0,
+        "pad_edge_min_gap_mm": 1.365
+      },
+      "floorplan": {
+        "errors": 4,
+        "warnings": 2,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "grid025",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--step",
+        "0.25",
+        "--halo-weight",
+        "4.0"
+      ],
+      "board": "krt_grid025.kicad_pcb",
+      "sha256": "0a84ea3ab99ce5df61a3e7a2cf535db329bffa211e3936c78e50db1fdece2890",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 804.9,
+        "crossings_before": 125,
+        "crossings_after": 84,
+        "pad_conflicts_after": 0,
+        "pad_overlap_pairs": 0,
+        "pad_conflicts_before": 0,
+        "pad_edge_min_gap_mm": 2.1499999999999986
+      },
+      "floorplan": {
+        "errors": 3,
+        "warnings": 1,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "clr02",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--clearance",
+        "0.2",
+        "--halo-weight",
+        "4.0"
+      ],
+      "board": "krt_clr02.kicad_pcb",
+      "sha256": "55ddf199b5e2c3044122e656e65e042cf9f0da8173a64a6ef5469faadef64636",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 770.2,
+        "crossings_before": 125,
+        "crossings_after": 87,
+        "pad_conflicts_after": 0,
+        "pad_overlap_pairs": 0,
+        "pad_conflicts_before": 0,
+        "pad_edge_min_gap_mm": 1.365
+      },
+      "floorplan": {
+        "errors": 6,
+        "warnings": 2,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "lock_edges",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--lock",
+        "ANT1",
+        "J1",
+        "J2",
+        "SOLAR"
+      ],
+      "board": "krt_lock.kicad_pcb",
+      "sha256": "63d751bac21d9fc822569c6313c9194aba117f944f76da705906b4abab31aecf",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 800.9,
+        "crossings_before": 125,
+        "crossings_after": 89,
+        "parts_moved": 13,
+        "pad_overlap_pairs": 0
+      },
+      "floorplan": {
+        "errors": 2,
+        "warnings": 3,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "lock_edges_halo6_CHOSEN",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--halo-base",
+        "1.0",
+        "--halo-weight",
+        "6.0",
+        "--lock",
+        "ANT1",
+        "J1",
+        "J2",
+        "SOLAR"
+      ],
+      "board": "krt_lockh_planes.kicad_pcb",
+      "sha256": "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 809.7,
+        "crossings_before": 125,
+        "crossings_after": 94,
+        "parts_moved": 14,
+        "pad_overlap_pairs": 0
+      },
+      "floorplan": {
+        "errors": 3,
+        "warnings": 2,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "lock_edges_radio",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--halo-base",
+        "1.0",
+        "--halo-weight",
+        "6.0",
+        "--lock",
+        "ANT1",
+        "J1",
+        "J2",
+        "SOLAR",
+        "U2"
+      ],
+      "board": "krt_m2.kicad_pcb",
+      "sha256": "1f3bf3fdfd9e09798d0300bd34c3f76acdcf4e286dfed5d15f132d48d9fea4f6",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 824.5,
+        "crossings_before": 125,
+        "crossings_after": 94,
+        "parts_moved": 13,
+        "pad_overlap_pairs": 0
+      },
+      "floorplan": {
+        "errors": 2,
+        "warnings": 1,
+        "violations_by_rule": null
+      }
+    },
+    {
+      "lap": "lock_7_no_rotate",
+      "args": [
+        "--max-displacement",
+        "3",
+        "--max-passes",
+        "10",
+        "--halo-base",
+        "1.0",
+        "--halo-weight",
+        "6.0",
+        "--lock",
+        "ANT1",
+        "J1",
+        "J2",
+        "SOLAR",
+        "U2",
+        "U1",
+        "U3",
+        "--no-rotate"
+      ],
+      "board": "krt_m4.kicad_pcb",
+      "sha256": "76b5883387054e72a5d5930867067c2190baf41cab13139a8fd07c95585a7693",
+      "krt_summary": {
+        "airwire_before_mm": 816.0,
+        "airwire_after_mm": 814.3,
+        "crossings_before": 125,
+        "crossings_after": 108,
+        "parts_moved": 12,
+        "pad_overlap_pairs": 0
+      },
+      "floorplan": {
+        "errors": 3,
+        "warnings": 1,
+        "violations_by_rule": null
+      }
+    }
+  ]
+}
