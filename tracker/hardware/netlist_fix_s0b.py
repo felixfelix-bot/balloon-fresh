@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -100,11 +101,24 @@ def census(board):
             }
     nets = sorted(n.GetNetname() for n in board.GetNetInfo().NetsByNetcode().values()
                   if n.GetNetname())
+    # Two different, both-correct counts of "zones": pcbnew's Zones() returns
+    # the board ZONE objects it materialises (the netted copper pours), while
+    # the file text additionally carries multi-layer keepout / rule-area
+    # blocks.  gate25_check.py counts text blocks and so reports 3 where this
+    # census says 2.  Record BOTH numbers for both boards so the difference is
+    # visible in the evidence instead of looking like a contradiction.
+    txt = ""
+    try:
+        txt = Path(board.GetFileName()).read_text(errors="replace")
+    except OSError:
+        pass
     coop = {"segments": len([t for t in board.GetTracks()
                              if t.Type() == pcbnew.PCB_TRACE_T]),
             "vias": len([t for t in board.GetTracks()
                          if t.Type() == pcbnew.PCB_VIA_T]),
-            "zones": len(list(board.Zones()))}
+            "zones": len(list(board.Zones())),
+            "zone_blocks_in_file": len(re.findall(r"\(zone[\s(]", txt)),
+            "filled_polygons": txt.count("filled_polygon")}
     return {"pads": pads, "footprints": fps, "nets": nets, "copper": coop}
 
 
@@ -128,6 +142,18 @@ def check(src_census, dst_census, report):
         fail(f"COPPER CHANGED: {src_census['copper']} -> {dst_census['copper']}")
     else:
         report["copper_unchanged"] = src_census["copper"]
+    # The zone text scan is the only copper counter that can silently degrade:
+    # if the board path is wrong, `txt` is empty, both boards report 0 text
+    # blocks and the wholesale dict comparison above would still pass.  Pin the
+    # scan to reality instead of trusting that equality (review round 2, minor
+    # finding 1).
+    for name, cen in (("source", src_census), ("output", dst_census)):
+        blocks = cen["copper"]["zone_blocks_in_file"]
+        pours = cen["copper"]["zones"]
+        if blocks < 1 or blocks < pours:
+            fail(f"zone text scan unusable for the {name} board: "
+                 f"zone_blocks_in_file={blocks} vs pcbnew zones={pours} "
+                 f"(board text unreadable -> the copper invariant is unverified)")
 
     changed = {}
     for k, v in src_census["pads"].items():
@@ -140,8 +166,7 @@ def check(src_census, dst_census, report):
         if v["pos"] != w["pos"] or v["size"] != w["size"]:
             fail(f"pad {k} moved/resized: {v} -> {w}")
     report["pads_whose_net_changed"] = changed
-    expected = {f"{r}.{p}": [None, n] for (r, p), (n, _) in FIXES.items()}
-    expected = {k: ["", v[1]] for k, v in expected.items()}
+    expected = {f"{r}.{p}": ["", n] for (r, p), (n, _) in FIXES.items()}
     if changed != expected:
         fail(f"unexpected net-change set: expected {expected}, got {changed}")
 
@@ -230,7 +255,12 @@ def main() -> int:
 
     dest = HERE / "output" / "s0b"
     dest.mkdir(parents=True, exist_ok=True)
-    (dest / "netlist_fix_report.json").write_text(json.dumps(report, indent=2) + "\n")
+    # A verify-only run must NOT clobber the delivery report: --check does not
+    # copy the sibling files, so the report it could write is a reduced one
+    # (no `siblings` block).  Keep the two reports separate so re-verifying the
+    # board can never destroy the evidence the delivery commit points at.
+    name = "netlist_fix_report.check.json" if a.check else "netlist_fix_report.json"
+    (dest / name).write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     return 0 if ok else 1
 

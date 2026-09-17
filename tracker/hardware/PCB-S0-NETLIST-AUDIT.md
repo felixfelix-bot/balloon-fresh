@@ -2,6 +2,10 @@
 
 **Card:** kanban `t_a1f8e389` (PCB-S0b) · **Parent:** `t_7c65638f` (S0 placement freeze)
 **Date:** 2026-09-17 · **Branch:** `pr/pcb-s0b-netlist`
+**Revision 2 (2026-09-18):** extended after a cold cross-family review round (see §8) that found
+the EN threshold the card explicitly demanded missing, and two documentation defects
+(a zone-count ambiguity and a dead assignment in the tool's invariant check). Board unchanged
+(sha256 identical) — documentation + tool fixes only.
 **Supersedes:** the first revision of this file (27 netless pads = 11 GAP + 16 intentional,
 produced in parallel with `PLACEMENT-S0-FREEZE.md` §3; that split is preserved below as the
 "before" column so the closure can be checked row by row).
@@ -18,7 +22,7 @@ Row counts are machine-checked against the board census, not counted by hand (§
 | artefact | role | sha256 |
 |---|---|---|
 | `output/v_c3_flight_4layer_placed.kicad_pcb` | S0 placement freeze — **byte-identical, untouched** (still the S1/S2 comparability anchor) | `f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6` |
-| `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` | **netlist of record after S0b** (same 20 footprints, same positions/rotations, 0 tracks, 0 vias, 3 zones) | `aa76fbbb85ce89ffd6b5e346ca7b5f53575035ba611ec137f3c086ac4dc0809a` |
+| `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` | **netlist of record after S0b** (same 20 footprints, same positions/rotations, 0 tracks, 0 vias, 2 netted zones + 1 multi-layer keepout, 0 filled polygons — see the zone-count note below) | `aa76fbbb85ce89ffd6b5e346ca7b5f53575035ba611ec137f3c086ac4dc0809a` |
 | `output/v_c3_flight_4layer_placed_netfix.kicad_dru` | frozen JLCPCB rule set, byte-identical to the S1 file | `5acd7dced4a0d8b3edb8b3b977cc2a110a0a97fba0c6d867ce698b243835ca59` |
 | `output/v_c3_flight_4layer_placed_netfix.kicad_pro` | project/netclass carrier, byte-identical to the S0 file | `a29acec391bae6b1d53f69be95e0fcce6af5bae7c6d06a4ba0706f7a54920238` |
 | `netlist_fix_s0b.py` | the tool that derives the netfix board from the frozen board and re-verifies the invariants | see `output/s0b/netlist_fix_report.json` |
@@ -51,10 +55,23 @@ The frozen artefact is therefore left byte-identical and a new artefact carries 
   an internal pulldown resistor, which is disconnected when EN is driven high externally…"*
   → a floating EN is an **internal pulldown to disabled**: the 3V3 rail would never come up. This is
   the electrical reason the audit called it a GAP.
-* `Absolute Maximum Ratings, p.4` — V_EN = **–0.3 … 6.5 V**, i.e. the rail tie at 3.3–5.5 V is
-  in spec; the electrical characteristics are specified at **V_EN = V_IN** (`§6.5`), which is
-  exactly the tie implemented.
 
+**The EN threshold the card asks for (rev 2 — this was missing in rev 1):**
+* `§6.5 Electrical Characteristics, p.5` (conditions: V_EN = V_IN, T_J = −40…+125 °C, I_OUT = 1 mA):
+  **V_EN(HI) = 1.1 V (MIN)** — the pin's logic-high threshold; **V_EN(LOW) = 0.3 V (MAX)** — the
+  logic-low threshold. `R_EN(PULLDOWN) = 500 kΩ` (typ, at V_EN = 0.3 V) is the smart-enable pulldown
+  that holds the pin low when it floats, and `I_EN = 10 nA` (max) is the leakage.
+* `§7.3.4 Smart Enable, p.9`: *"The enable (EN) input polarity is active high. … When the enable pin
+  is floating, the R_EN(PULLDOWN) is connected and pulls the enable pin low to disable the device."*
+  — and, for this exact tie, the datasheet's own instruction: ***"If independent control of the
+  output voltage is not needed, connect EN to IN."*** That sentence is the vendor's own endorsement
+  of path 2; no external resistor is required in this configuration.
+* `§6.3 Recommended Operating Conditions, p.4` — V_IN = 1.5 … 6.0 V, **V_EN = 0 … 6.0 V**;
+  `§6.1 Absolute Maximum Ratings, p.4` — **V_EN = −0.3 … 6.5 V**.
+* Margin of the tie actually implemented: the rail the pin is tied to (`VCAP` = IN) sits at
+  3.3–5.5 V, which is far above V_EN(HI) = 1.1 V (enabled by > 2 V of margin) and inside both the
+  recommended (0–6.0 V) and absolute-maximum (−0.3…6.5 V) EN ranges. The EC table is specified at
+  V_EN = V_IN, i.e. exactly at the operating point this tie creates.
 **Change:** `U4.3 (EN)`: no net → **`VCAP`** (= IN, pin 1).
 
 ## 3. Item 2 — the 11 netless MAX-M10S (U3) pads, classified from the datasheet
@@ -136,9 +153,12 @@ the board's land pattern is taken from (`HOPERF_RFM9XW_SMD`; the KiCad footprint
 13 3.3V   14 DIO0  15 DIO1  16 DIO2
 ```
 
-The flight board's U2 nets are a strict subset of that table and match it pin for pin:
+The flight board's U2 nets map onto that table one function per pad, with a single documented
+exception (**pad 12**):
 `2 MISO · 3 MOSI · 4 SCK · 5 NSS · 6 RESET · 9 ANT (RF_OUT) · 13 3.3V (+3V3) · 14 DIO0 (LR_DIO0) ·
-1/8/10 GND`, with **pad 12 (DIO4) repurposed as `LR_BUSY`**.
+1/8/10 GND`, with **pad 12 (DIO4) repurposed as `LR_BUSY`** — so 15 of the 16 pads match the HOPERF
+table verbatim and one is repurposed; the classification below is therefore **conditional on the
+fitted module really being the 16-pad part** (§4.3, still BLOCKED-ON-OPERATOR).
 
 | pad | vendor function | verdict | evidence |
 |---|---|---|---|
@@ -184,7 +204,24 @@ Census of `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` (`gate25_check.py 
 | **INTENTIONAL** (netless, cited) | **23** | `U1` × 9 unnamed library mechanical pads · `J1.6` spare header pin · `U4.4` NC (TI SBVS277C) · `U2.7/11/15/16` unused DIO5/DIO3/DIO1/DIO2 (HOPERF §1.4) · `U3.4/5/13/14/15/16/17/18` unused/optional/defective-if-tied pins (UBX-20035208 Table 10 + Table 11) |
 | **BLOCKED-ON-OPERATOR** | **1 pad + 1 finding** | `U3.11` RF_IN (no GNSS antenna feed, options costed §3.1) · `U2` lands/part mismatch (§4.3) |
 | **unknown** | **0** | — |
-| netless pads before → after | 27 → **24** | 24 = 23 intentional + RF_IN; `unconnected` in DRC 64 → 67 because the three newly netted pads have no copper yet (this lap carries 0 tracks by definition — routing is S1/S3) |
+| netless pads before → after | 27 → **24** | 24 = 23 intentional + RF_IN |
+| DRC `unconnected` before → after | 64 → **67** | **expected by design, not a regression.** A pad that carries *no* net is not "unconnected" (there is nothing to connect it to); giving it a net makes it a connection the router still owes. The three newly netted pads (`U4.3`, `U3.6`, `U3.9`) therefore add exactly 3 unconnected items, and this lap carries 0 tracks by definition — routing is S1/S3. Any board routed from this netlist must bring this count to 0 for the two power ties (the RF_IN row stays open, §3.1). |
+
+### 5.1 Zone-count note (rev 2) — "2 zones" and "3 zones" are both correct
+
+`netlist_fix_report.json` says `copper.zones = 2` (pcbnew's `board.Zones()`) while
+`gate25_check.py` / §6 say `zones = 3`. Both are right and they count different things:
+
+| count | method | value | what it is |
+|---|---|---|---|
+| `zones` | `pcbnew` `board.Zones()` | **2** | the netted copper pours: `GND` on `In1.Cu`, `+3V3` on `In2.Cu` |
+| `zone_blocks_in_file` | text scan for `\(zone` | **3** | the two pours **+ one multi-layer keepout / rule area** (`net 0`, layers `F.Cu B.Cu In1.Cu In2.Cu`) |
+| `filled_polygons` | text scan | **0** | no pour is filled in this lap (fills are recomputed at fab export) |
+
+All three numbers are identical on the frozen source board and on the netlist of record, and all
+three are recorded in the census for both boards (rev 2 added `zone_blocks_in_file` +
+`filled_polygons` so the ambiguity cannot reappear). The invariant that matters — *no zone was
+added, removed, refilled or moved* — holds under either counting method.
 
 ## 6. Evidence contract
 
@@ -193,7 +230,8 @@ Census of `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` (`gate25_check.py 
 | board file after this card | `tracker/hardware/output/v_c3_flight_4layer_placed_netfix.kicad_pcb` |
 | sha256 | `aa76fbbb85ce89ffd6b5e346ca7b5f53575035ba611ec137f3c086ac4dc0809a` |
 | frozen placement (unchanged) | `output/v_c3_flight_4layer_placed.kicad_pcb` = `f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6` |
-| gate25 (`output/s0b/gate25_netfix.json`) | `footprints 20 · pads 125 · segments 0 · vias 0 · zones 3 · pads_with_no_net 24 · pad_overlap_pairs_0.2mm 0 · exact_pad_overlap_pairs_0.2mm 0 · courtyards_overlap 0 · DRC violations_total 4 (all silk_edge_clearance) · shorting_items 0 · clearance 0 · unconnected 67 · placement_gate PASS` |
+| gate25 (`output/s0b/gate25_netfix.json`, re-run 2026-09-18) | `footprints 20 · pads 125 · segments 0 · vias 0 · zones 3 (text blocks: 2 pours + 1 keepout — §5.1) · pads_with_no_net 24 · pad_overlap_pairs_0.2mm 0 · exact_pad_overlap_pairs_0.2mm 0 · courtyards_overlap 0 · DRC violations_total 4 (all silk_edge_clearance) · shorting_items 0 · clearance 0 · unconnected 67 · placement_gate PASS` |
+| census (`output/s0b/netlist_fix_report.json`, re-run 2026-09-18) | `placement_identical (20 fp, pos+rot+identity) · copper_unchanged {segments 0, vias 0, zones 2, zone_blocks_in_file 3, filled_polygons 0} · net_table_unchanged 22 · pads_with_no_net 27→24 · failures [] · verdict PASS` |
 | `placement_guard.py --gate25` exit code | **0** (`gate25: fp=20 pad_overlaps=0 segments=0 -> PASS`, `violations: []`) |
 | tool | `netlist_fix_s0b.py` (reproduces the output sha256 byte-for-byte) |
 | re-freeze | **not required** — net ties only, no part added or moved |
@@ -208,3 +246,22 @@ Census of `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` (`gate25_check.py 
    from the S0b netlist of record before fab (`output/v_c3_flight_4layer_placed_netfix.kicad_pcb`).
 5. The schematic is still a stub (`schematics/v_c3_flight.kicad_sch`), so the board's nets have no
    schematic provenance (ADR-028). S0b makes the netlist *correct*, not *derived*.
+
+## 8. Cold cross-family review record (rev 2)
+
+Round 1 of a tool-less cold review by a different model family than the card author was run against
+the committed deliverable (`7bc385f`): **glm-5.3** served upstream on the local router (lane
+requested `glm-5.2`), family **zhipu**, versus card author family **deepseek** (`worker-pcb`
+profile) — a genuine cross-family review, not a self-review.
+
+| round | verdict | what it produced |
+|---|---|---|
+| 1 | **CHANGES REQUESTED** | (i) the EN *threshold* the card explicitly demands was never stated, only the pulldown narrative; (ii) contradicting zone counts ("3 zones" vs the census's 2); (iii) a dead `expected` reassignment in the tool's invariant check; plus two wording items (U2 "pin for pin" overstated; DRC `unconnected` 64→67 explained hand-wavily) |
+| 2 | **APPROVED** | all three resolved on the artefacts; the two wording items fixed; the round-2 reviewer's one minor non-blocking suggestion (assert the zone text scan cannot silently degrade) is implemented in `netlist_fix_s0b.py::check()` |
+
+Review artefacts (not committed; they are review evidence, not deliverables):
+`~/reports/reviews/balloon-t_a1f8e389-glm-5.2.md` (round 1) and
+`~/reports/reviews/balloon-t_a1f8e389-glm-5.2-round2.md` (round 2). Both are also attached to the
+kanban card. Neither datasheet was supplied to the reviewer, so the reviewer returned *every*
+datasheet number as UNVERIFIED — that is expected for a tool-less review and is stated here rather
+than papered over; the primary sources are the vendor PDFs cited inline in §2–§4.

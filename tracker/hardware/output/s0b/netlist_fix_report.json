@@ -22,7 +22,9 @@
   "copper_unchanged": {
     "segments": 0,
     "vias": 0,
-    "zones": 2
+    "zones": 2,
+    "zone_blocks_in_file": 3,
+    "filled_polygons": 0
   },
   "pads_whose_net_changed": {
     "U4.3": [

@@ -1,5 +1,5 @@
 {
-  "board": "output/v_c3_flight_4layer_placed_netfix.kicad_pcb",
+  "board": "tracker/hardware/output/v_c3_flight_4layer_placed_netfix.kicad_pcb",
   "footprints": 20,
   "pads": 125,
   "segments": 0,
@@ -351,7 +351,7 @@
   "exact_pad_overlap_examples": [],
   "courtyards_overlap": 0,
   "drc": {
-    "path": "output/v_c3_flight_4layer_placed_netfix_drc.json",
+    "path": "tracker/hardware/output/v_c3_flight_4layer_placed_netfix_drc.json",
     "rc": 0,
     "violations_total": 4,
     "by_type": {
