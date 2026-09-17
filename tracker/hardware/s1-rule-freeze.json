@@ -1,0 +1,32 @@
+{
+  "campaign": "PCB-S1 — route the flight board under ONE rule set at $0",
+  "created": "2026-09-17",
+  "rule_file": "tracker/hardware/jlcpcb-s1-frozen.kicad_dru",
+  "rule_sha256": "5acd7dced4a0d8b3edb8b3b977cc2a110a0a97fba0c6d867ce698b243835ca59",
+  "rule_params": {
+    "clearance_min_mm": 0.2,
+    "track_width_min_mm": 0.2,
+    "via_diameter_min_mm": 0.6,
+    "via_hole_min_mm": 0.3,
+    "hole_to_hole_min_mm": 0.25,
+    "hole_size_scope": "vias only (condition A.Type == 'Via'); PTH pad drills are library-defined and JLCPCB-legal down to 0.2mm"
+  },
+  "placement_board": "tracker/hardware/output/v_c3_flight_4layer_placed.kicad_pcb",
+  "placement_sha256": "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6",
+  "placement_frozen_by": "t_7c65638f (PCB-S0), commit ff19ea9",
+  "router_inputs_derived_from": {
+    "default_netclass_in_placed_kicad_pro": {
+      "clearance": 0.2,
+      "track_width": 0.2,
+      "via_diameter": 0.6,
+      "via_drill": 0.3
+    },
+    "note": "routers are told exactly what the referee enforces: KRT gets --clearance 0.2 --track-width 0.2 --via-size 0.6 --via-drill 0.3; Specctra DSN carries the same numbers from the same netclass"
+  },
+  "dru_mechanism_verified": {
+    "how": "kicad-cli resolves custom rules from <board-basename>.kicad_dru next to the .kicad_pcb (project = sibling .kicad_pro)",
+    "probe": "temporary rule (constraint clearance (min 3.0mm)) on the placed board: 4 violations -> 165 violations (161 clearance); with the frozen rules: 4 cosmetic silk_edge_clearance only",
+    "scoping_fix": "a GLOBAL hole_size (min 0.3mm) rule flags the 12 library PTH pads drilled at 0.20mm as drill_out_of_range — a rule-scoping artifact, not a board defect; the frozen file scopes it to vias"
+  },
+  "per_attempt_rule_application": "each attempt board gets byte-identical copies of the frozen .kicad_dru (and the frozen .kicad_pro) as its siblings, verified by sha256 before scoring"
+}
