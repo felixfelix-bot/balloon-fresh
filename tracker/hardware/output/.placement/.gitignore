@@ -1,0 +1,4 @@
+# intermediates of publish_placed_board.py (regenerable; the frozen board and the
+# placement_record.json / s0_lap_matrix.json evidence ARE tracked)
+flight_placement_input.kicad_pcb
+flight_krt_lap.kicad_pcb

@@ -114,25 +114,37 @@ into S0 because S0's gate is legality and the mechanical seats.
 
 ## 3. Netlist audit — the 27 pads that carry no net
 
-Board totals: 20 footprints, 125 pads, 22 nets, 27 pads with net 0.
+Board totals: 20 footprints, 125 pads, 22 nets, 27 pads with net 0.  The four-layer
+routed board carried the SAME 27 netless pads, so the S0 placement change neither
+introduced nor removed one.
 
-| # | pads | what they are | classification |
-|---|---|---|---|
-| 1 | `U2.7`, `U2.11`, `U2.15`, `U2.16` (4) | LR2021F33 on the HOPERF RFM9XW pad map: pins 7/11/15/16 are the spare modem DIO lines (RFM9x: 7=DIO5, 11=DIO3, 15=DIO1, 16=DIO2). The design routes only DIO0 (`LR_DIO0` net 15) and BUSY (`LR_BUSY` net 14). | **intentional (NC)** — 4 |
-| 2 | `U1` × 9 unnumbered `0.7×0.7 mm` SMD pads in a 3×3 grid | `ESP32-C3-WROOM-02` module underside/mechanical pad array. They carry NO pin number, so no netlist can reach them; the module's numbered ground pad (`U1.19`, 13 copper items incl. 12 PTH vias) is on GND. | **intentional (mechanical/thermal)** — 9. Action: stitch to GND in the pour/routing stage (S1) |
-| 3 | `J1.6` (1) | 6th pin of the 1×06 programming header. Pins 1–5 carry GND / +3V3 / EN / UART0_TX / UART0_RX. | **intentional (spare pin)** — 1 |
-| 4 | `U4.3`, `U4.4` (2) | SOT-23-5 regulator (`TPS7A02`): `U4.1`=VCAP, `U4.2`=GND, `U4.5`=+3V3 are connected. On the TI SOT-23-5 pin map 3 = EN and 4 = NC. | **U4.4 = intentional (NC). U4.3 = GAP — needs a decision**: an enable pin left floating is not a design choice, it must be tied to VCAP (or deliberately grounded to keep the rail off). Verify against the TPS7A02 datasheet before fab — 1 gap |
-| 5 | `U3.4`, `U3.5`, `U3.6`, `U3.9`, `U3.11`, `U3.13`, `U3.14`, `U3.15`, `U3.16`, `U3.17`, `U3.18` (11) | u-blox MAX form-factor GPS (`ublox_MAX` footprint, 18 pads). Connected: `U3.1/10/12`=GND, `U3.2/3`=UART, `U3.7/8`=+3V3. | **GAP / UNVERIFIED — 11**: in the MAX pin family the majority of the 18 pads are GND/shield and pin 11 is the RF input. The board routes NO RF net to U3 at all, so either the fitted module has an internal antenna or the GPS antenna is missing. The u-blox pin table could not be fetched from this host (the vendor PDF URL returned an HTML error page and the browser daemon is down), and **no datasheet for it exists in the repo** |
+**The detailed, pad-by-pad audit of record is
+`tracker/hardware/PCB-S0-NETLIST-AUDIT.md`** (produced in parallel, with a pin
+function and a confidence per pad; machine-readable copy
+`output/v_c3_flight_4layer_placed_netlist_audit.json`).  Its split: **11 GAP
+(4 HIGH / 1 LOW / 6 MEDIUM) and 16 intentional.**  This file does not restate that
+table — it records where the two independent audits agree, where they differ, and
+what would settle it:
+
+| pads | both audits agree | residual difference / what settles it |
+|---|---|---|
+| `U1` × 9 unnumbered `0.7×0.7 mm` SMD pads (3×3 grid) | **intentional (mechanical)** — WROOM-02 library footprint has 9 unnamed pads; an unnamed pad cannot be netted | none |
+| `J1.6` | **intentional (spare pin)** — pads 1–5 carry GND/+3V3/EN/UART0_TX/UART0_RX | mark no-connect in the schematic so ERC stops reporting it |
+| `U4.3` | **GAP** — SOT-23-5 pin 3 is the regulator EN and it is floating; every in-repo source agrees on pin 3 | tie EN to VCAP (always-on) or to a GPIO |
+| `U3.11` | **GAP, functional-critical** — it is the MAX-form-factor RF input and NOTHING on the board feeds it: there is no GPS antenna part and no RF net touching U3 | add the antenna feed, or fit a module variant with an integral antenna |
+| `U2.7`, `U2.11`, `U2.15`, `U2.16` | both: netless, and NOT certifiable from this repo | **DISPUTED**: the HOPERF RFM9XW 16-pad reference pinout reads 7/11/15/16 as the spare modem DIO lines (DIO5/DIO3/DIO1/DIO2 ⇒ intentional), while the parallel audit reads 11/16 as ground tabs that must be grounded and 7 as an unmodelled I/O. The board mixes a NiceRF LR2021F33 value with an RFM9XW footprint, and the repo's own module tables (`footprints/nicerf-lora2021*.json`) describe a THIRD, 18-pin package — so no in-repo artefact can arbitrate. **Settle with the NiceRF LR2021F33 (or HOPERF RFM9XW) drawing before fab.** |
+| `U3.4`, `U3.5`, `U3.6`, `U3.9`, `U3.13`–`U3.18` (10) | both: netless | split by the parallel audit into 6 intentional optional/IO-only pins (TIMEPULSE, EXTINT, LNA_EN, VCC_RF, SDA, SCL) and 4 inputs/power pins whose floating state is undefined (`V_BCKP` power_in, `VIO_SEL` IO-reference select, `~RESET`, `~SAFEBOOT`). The u-blox pin table could not be fetched from this host (vendor PDF returned an HTML error page; browser daemon down) and no MAX-M10S datasheet exists in the repo, so treat the 4 as GAPS to confirm |
+| `U4.4` | both: netless | **DISPUTED, LOW confidence**: this audit reads it as NC (TI DBV arrangement, pad 5 = OUT — the board matches that); the parallel audit notes the repo's own symbol (`balloon_symbols.kicad_sym`) says pin 4 = OUT, pin 5 = NC, i.e. symbol and board contradict each other. Arbitrate against the TI datasheet and fix whichever artefact is wrong |
 
 **Structural finding (this is the part that matters).** `schematics/v_c3_flight.kicad_sch`
 is a STUB: it contains exactly ONE symbol (U2) and its `(nets)` section is empty.
 `kicad-cli sch export netlist` on it emits a single component and zero nets.  The
 board's 22 nets were authored in generator code (`gen_pcb.py` / `route_*.py`), not
 imported from a schematic.  Consequence: **no pad on this board can be certified
-"intentionally unconnected" from the repo** — classifications 1–4 above rest on
-component semantics (RFM9x pin map, footprint construction, header usage), and the
-11 U3 pads cannot be closed at all without the u-blox datasheet.  This is the
-ADR-028 schematic-first gap, and it is a `needs_input` item for the operator.
+"intentionally unconnected" from the repo** — every classification above is
+component-semantics inference, and the two independent audits still disagree on 5
+pads.  This is the ADR-028 schematic-first gap and a `needs_input` item for the
+operator.
 
 ## 4. Provenance — which table produced the shipped placement
 

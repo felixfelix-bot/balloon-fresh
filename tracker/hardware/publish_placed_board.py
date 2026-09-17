@@ -89,7 +89,7 @@ def main() -> int:
     try:
         import gate25_check as g
         res = g.gate25(OUT_PATH, margin=0.2,
-                       drc_out=OUT_PATH[:-11] + "_drc.json")
+                       drc_out=os.path.splitext(OUT_PATH)[0] + "_drc.json")
         print(json.dumps({k: res[k] for k in
                           ("footprints", "segments", "vias", "zones",
                            "pad_overlap_pairs_0.2mm",
