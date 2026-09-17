@@ -1,7 +1,7 @@
 (export (version "E")
   (design
     (source "/home/c03rad0r/worktrees/t_6543830b/repo/tracker/hardware/schematics/flight_board/v_c3_flight.kicad_sch")
-    (date "2026-09-17T16:04:16+0200")
+    (date "2026-09-17T16:07:53+0200")
     (tool "Eeschema 9.0.8+dfsg-1")
     (sheet (number "1") (name "/") (tstamps "/")
       (title_block

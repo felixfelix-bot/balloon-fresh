@@ -337,14 +337,12 @@ def resolve_symbol(fpid):
 # ---------------------------------------------------------------- emit
 def emit(footprints):
     lib_ids_used = []
-    sym_defs = ["\t\t" + lr2021_symbol().replace("\n", "\n")]
     lib_blocks = {"balloon_flight:LR2021F33": lr2021_symbol()}
     resolved = []
     for fp in footprints:
         lib_id = resolve_symbol(fp["fpid"])
         if lib_id in lib_blocks:
             block = lib_blocks[lib_id]
-            raw = None
         else:
             lib, name = lib_id.split(":")
             block = load_lib_symbol(lib, name)

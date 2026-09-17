@@ -17,11 +17,13 @@ Everything below is regenerated deterministically from the frozen PCB by one scr
 hand-typed. Re-running is idempotent for a given PCB sha256 — the files are **byte-identical**
 across runs, which GATE 6 now proves (dispatch 4 fixed a `uuid4()` in the generator: before the
 fix every re-run produced a different schematic, so the published sha256 was not provenance).
+Determinism is gated on the `.kicad_sch`; the exported `v_c3_flight.net` carries a KiCad
+generation timestamp, so it is expected to show a one-line diff after any gate run.
 
 | artifact | path | sha256 | notes |
 |---|---|---|---|
 | schematic (v0) | `tracker/hardware/schematics/flight_board/v_c3_flight.kicad_sch` | `c15d00df…446d` | 140 756 B, 20 symbols, 22 nets |
-| generator | `tracker/hardware/schematics/flight_board/build_flight_sch.py` | `8c448b13…9e9a` | PCB → schematic; exits 2 on pad-coverage failure, 3 on PCB sha mismatch |
+| generator | `tracker/hardware/schematics/flight_board/build_flight_sch.py` | `30f39753…f73a` | PCB → schematic; exits 2 on pad-coverage failure, 3 on PCB sha mismatch. Dead locals removed; 19 pre-existing cosmetic E127/E128 continuation-indent findings remain (no behaviour change — the schematic sha is unchanged) |
 | gate suite | `tracker/hardware/schematics/flight_board/check_sch_gates.py` | `02134fce…e13b` | 7 gates, exit 0 = all pass |
 | custom symbol lib | `balloon_flight.kicad_sym` | `dfeb5c7b…d3e2` | the LR2021F33 symbol (only part absent from KiCad v9 libs) |
 | footprint lib | `balloon_flight.pretty/` (15 `.kicad_mod`) | — | the PCB's own footprints, exported verbatim |
