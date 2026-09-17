@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "balloon_flight")(type "KiCad")(uri "${KIPRJMOD}/balloon_flight.pretty")(options "")(descr "Flight board footprints exported from the frozen PCB"))
+)
