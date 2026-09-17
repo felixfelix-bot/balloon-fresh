@@ -284,6 +284,20 @@ class TestBlossomDatagram:
         assert "11/11 passed" in out
 
 
+class TestStratoRelayMesh:
+    def test_stratorelay_mesh_host(self):
+        stratorelay_dir = os.path.join(COMPONENTS, "stratorelay")
+        out = _compile_and_run_c(
+            os.path.join(stratorelay_dir, "test", "test_stratorelay_mesh.cpp"),
+            [],
+            [stratorelay_dir],
+            cxx=True,
+            extra_cflags=["-Werror"],
+        )
+        assert "9/9 passed" in out
+        assert "(section 11: 8/8)" in out
+
+
 class TestRp2040PRBS:
     def test_rp2040_prbs(self):
         rp2040_src = os.path.join(REPO_ROOT, "firmware", "rp2040", "src")
@@ -306,3 +320,17 @@ class TestRp2040PRBS6Wiring:
             cxx=True,
         )
         assert "8/8 passed" in out
+
+
+class TestE28RangeConsole:
+    """E28-2G4M27S (SX1282) ranging console core — host tests (no hardware)."""
+
+    def test_e28_range_console_host(self):
+        e28_src = os.path.join(REPO_ROOT, "firmware", "esp32-e28-range", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "src", "e28_range", "test_e28_range_console.cpp"),
+            [os.path.join(e28_src, "e28_range_console.c")],
+            [e28_src],
+            cxx=True,
+        )
+        assert "ALL CHECKS PASSED" in out
