@@ -14,13 +14,15 @@ before the full build (PCB-S5b). Supersedes `tracker/hardware/SCHEMATIC-PLAN.md`
 ## 0. What exists after this card (v0, verified)
 
 Everything below is regenerated deterministically from the frozen PCB by one script; nothing is
-hand-typed. Re-running is idempotent for a given PCB sha256.
+hand-typed. Re-running is idempotent for a given PCB sha256 — the files are **byte-identical**
+across runs, which GATE 6 now proves (dispatch 4 fixed a `uuid4()` in the generator: before the
+fix every re-run produced a different schematic, so the published sha256 was not provenance).
 
 | artifact | path | sha256 | notes |
 |---|---|---|---|
-| schematic (v0) | `tracker/hardware/schematics/flight_board/v_c3_flight.kicad_sch` | `f87cf242…2df6` | 140 756 B, 20 symbols, 22 nets |
-| generator | `tracker/hardware/schematics/flight_board/build_flight_sch.py` | `cbeb1dd3…8e46` | PCB → schematic; exits 2 on pad-coverage failure, 3 on PCB sha mismatch |
-| gate suite | `tracker/hardware/schematics/flight_board/check_sch_gates.py` | `9730c096…efa7` | 6 gates, exit 0 = all pass |
+| schematic (v0) | `tracker/hardware/schematics/flight_board/v_c3_flight.kicad_sch` | `c15d00df…446d` | 140 756 B, 20 symbols, 22 nets |
+| generator | `tracker/hardware/schematics/flight_board/build_flight_sch.py` | `8c448b13…9e9a` | PCB → schematic; exits 2 on pad-coverage failure, 3 on PCB sha mismatch |
+| gate suite | `tracker/hardware/schematics/flight_board/check_sch_gates.py` | `02134fce…e13b` | 7 gates, exit 0 = all pass |
 | custom symbol lib | `balloon_flight.kicad_sym` | `dfeb5c7b…d3e2` | the LR2021F33 symbol (only part absent from KiCad v9 libs) |
 | footprint lib | `balloon_flight.pretty/` (15 `.kicad_mod`) | — | the PCB's own footprints, exported verbatim |
 | lib tables | `sym-lib-table`, `fp-lib-table` | `1823b99b…a05b`, `f5e0002f…3a55` | make ERC resolve both link classes |
@@ -29,6 +31,7 @@ hand-typed. Re-running is idempotent for a given PCB sha256.
 Gate evidence for v0 (re-runnable, `python3 check_sch_gates.py`, exit 0):
 
 ```
+GATE 6  determinism regenerate twice: sha256 run1 == run2      c15d00df…446d
 GATE 0  load        kicad-cli sch erc v_c3_flight.kicad_sch           exit=0
 GATE 1  severity    kicad-cli sch erc --exit-code-violations          0 errors, 1 warning
 GATE 2  net parity  schematic=22  pcb=22   only-in-schematic=none  only-in-pcb=none
@@ -37,6 +40,16 @@ GATE 4  netless     total=27  unnamed-mechanical=9  INTENTIONAL=7  DECLARED_GAP=
 GATE 5  pad coverage build_flight_sch.py exit=0 (2 = a pad has no symbol pin)
 ALL GATES PASS
 ```
+
+Independently re-verified on dispatch 4 (2026-09-17, this commit) **without the repo's gate
+code**: a separate parser (`independent_parity_check.py`, kept in the task scratch dir, not in
+this repo) reads the frozen PCB with its own S-expression scanner and compares it against the
+netlist that `kicad-cli` exports from the committed `.kicad_sch` — 125 pads, 98 netted pads,
+**22/22 nets and 84/84 nodes, zero differences, no orphans on either side** (parity therefore
+does not depend on the generator's own view of the PCB). The same pass counted 18 `(no_connect)`
+markers and 11 on-sheet `GAP <ref>.<pad>: …` annotations in the file — 18 numbered netless pads
++ 9 unnamed mechanical pads = the audit's 27, 1:1. Raw `kicad-cli sch erc` exit 0;
+`--exit-code-violations` exit 5 with **0 errors, 1 warning**.
 
 **84/84 nodes across 22/22 nets, both directions, with zero differences** — the schematic is a
 provable mirror of the frozen PCB, which is exactly what ADR-028 needed and never had.
@@ -162,6 +175,7 @@ no-connect with visible annotations. This mismatch is open question Q1.
 | 4 | **netless pads declared** | `check_sch_gates.py` GATE 4 | 27 netless, each INTENTIONAL / DECLARED_GAP / unnamed-mechanical, **0 unclassified** | **9 + 7 + 11 = 27, 0 unclassified** |
 | 5 | **every pad has a pin** | `build_flight_sch.py` (+ GATE 5) | exit 0; exit 2 = a pad has no symbol pin | **exit 0** |
 | 6 | **provenance** | `build_flight_sch.py` | PCB sha256 == `FROZEN_SHA256` (else exit 3) | **match** |
+| 7 | **determinism** | `check_sch_gates.py` GATE 6 | regenerate twice → byte-identical `sha256` | **identical** |
 
 One command runs the whole suite (exit 0 = all pass):
 
@@ -189,7 +203,8 @@ PCB-S0b's, and any resolved row that adds or moves a part forces a re-freeze per
 
 Generator, library export, both filters, ERC to 0 errors, gate suite, plan: **≈5 worker-hours of
 tool work** (three dispatches; the first two hit the 40-iteration cap). **$0 inference** — pure
-script + `kicad-cli` work on the local host.
+script + `kicad-cli` work on the local host. Dispatch 4 added the deterministic-uuid fix, GATE 6
+and the independent re-verification: **≈0.5 worker-hour** (one dispatch, same $0).
 
 ### Remaining for PCB-S5b
 
@@ -264,3 +279,14 @@ one more PCB re-freeze cycle (~2 h, plus component lead time).
   require misrepresenting the BME280's `SDO`→GND tie.
 - **KiCad GUI rendering** was not inspected (headless environment): the gates prove the file
   parses, mirrors the netlist and passes ERC — they do not prove the sheet is *pretty*.
+- **Push targets.** GitHub: `pr/adr-028-schematic-v0` pushed to
+  `https://github.com/felixfelix-bot/balloon-fresh` (and the earlier
+  `pr/pcb-s5a-schematic-plan` is up there too). **ngit: push FAILS** —
+  `Error: no repo announcement event found at specified Nip19Coordinates. if you are the
+  repository maintainer consider running 'ngit init' to create one`. Publishing this repo's
+  branch to ngit therefore needs a maintainer-side `ngit init` (or an ngit-ready fork); it is
+  not an artifact defect and cannot be fixed from inside this card.
+- **Pad-coverage definition.** 125 PCB pads = 116 numbered + 9 unnamed mechanical pads (U1's
+  library pads). Coverage is asserted over the 116 numbered pads; the 9 unnamed ones cannot be
+  addressed by pin number and are declared + counted by GATE 4 (they are the case the audit
+  itself marks "cannot be netted by construction"). No pad is silently dropped.

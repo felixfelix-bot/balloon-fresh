@@ -16,9 +16,13 @@ numbers and the script exits non-zero if any gate fails.
                                 mechanical, 0 unclassified (ties into PCB-S0b)
   GATE 5  pad coverage:         every numbered PCB pad has a symbol pin
                                 (build_flight_sch.py exits 2 otherwise)
+  GATE 6  determinism:          regenerating twice from the same PCB yields a
+                                byte-identical schematic (runs FIRST, so every
+                                later gate reads a reproducible file)
 
 Run:  python3 check_sch_gates.py
 """
+import hashlib
 import os
 import re
 import subprocess
@@ -61,6 +65,34 @@ def blocks(text, prefix):
 def nodes(block):
     return set(re.findall(r'\(ref "([^"]+)"\) \(pin "([^"]+)"\)', block))
 
+
+# ------------------------------------------------- GATE 6 (runs first: every
+# later gate must read a reproducible file, and the sha256 published in the
+# plan must be the sha256 of the committed schematic)
+print("== GATE 6: generator determinism ==")
+
+
+def _gen():
+    r = subprocess.run([sys.executable, os.path.join(HERE, "build_flight_sch.py")],
+                       cwd=HERE, capture_output=True, text=True)
+    if r.returncode != 0:
+        return None, r.returncode
+    return hashlib.sha256(open(SCH, "rb").read()).hexdigest(), 0
+
+
+sha_a, rc_a = _gen()
+sha_b, rc_b = _gen()
+print("   build exit=%d/%d  sha256 run1=%s run2=%s  (%d bytes)"
+      % (rc_a, rc_b, (sha_a or "n/a")[:16], (sha_b or "n/a")[:16],
+         os.path.getsize(SCH)))
+if rc_a or rc_b:
+    fails.append("GATE 6: generator exit %d/%d" % (rc_a, rc_b))
+elif sha_a != sha_b:
+    fails.append("GATE 6: generator is NOT deterministic "
+                 "(%s != %s)" % (sha_a, sha_b))
+else:
+    print("   deterministic: byte-identical across two runs")
+print("   schematic sha256 = %s" % sha_a)
 
 # ---------------------------------------------------------------- GATE 0 + 1
 print("== GATE 0: schematic loads (kicad-cli sch erc) ==")

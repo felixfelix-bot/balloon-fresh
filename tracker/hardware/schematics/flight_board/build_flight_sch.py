@@ -16,6 +16,7 @@ Outputs (all regenerated deterministically from the PCB sha256 in the header):
 Run:  python3 build_flight_sch.py
 """
 import hashlib
+import itertools
 import os
 import re
 import sys
@@ -111,8 +112,17 @@ COLUMN_TITLES = [
 
 
 # ---------------------------------------------------------------- helpers
+# DETERMINISTIC uuids.  The .kicad_sch is a build product: regenerating it from
+# the same PCB must be byte-identical, otherwise the recorded sha256 is not
+# provenance and every re-run churns the diff.  uuid5 over a fixed namespace
+# plus a per-run sequence is stable because the generator walks the board file
+# in file order (no sets, no dicts built from unordered input).
+UID_NAMESPACE = uuid.UUID("b4a1c0de-0000-5000-a000-f1a5b0a1d0e0")
+_uid_seq = itertools.count(1)
+
+
 def uid():
-    return str(uuid.uuid4())
+    return str(uuid.uuid5(UID_NAMESPACE, "flight-sch-%06d" % next(_uid_seq)))
 
 
 def fmt(v):
