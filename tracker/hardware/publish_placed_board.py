@@ -68,7 +68,6 @@ def sha256(path: str) -> str:
 
 def run(cmd, **kw):
     sys.stderr.write("+ " + " ".join(str(c) for c in cmd) + "\n")
-    t0 = time.time()
     r = subprocess.run(cmd, capture_output=True, text=True, **kw)
     sys.stderr.write(r.stdout[-2000:])
     sys.stderr.write(r.stderr[-1000:])
@@ -85,7 +84,6 @@ def main() -> int:
     print("prepared input:", stats)
     run([PY314, PLACER, IN_PATH, LAP_PATH, *PLACER_ARGS], cwd=KRT)
     shutil.copyfile(LAP_PATH, OUT_PATH)
-    gh = "gate25_check"
     try:
         import gate25_check as g
         res = g.gate25(OUT_PATH, margin=0.2,
