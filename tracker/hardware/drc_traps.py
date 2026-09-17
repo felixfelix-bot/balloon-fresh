@@ -242,7 +242,8 @@ def t7_frozen_placement_violation() -> None:
         if missing or extra or moved:
             moved_total.append((bname, missing, extra, moved))
     passed = placed_sha == PLACED_SHA and not moved_total
-    detail = "frozen_sha_ok=%s placement_diffs=%s" % (placed_sha == PLACED_SHA, moved_total if moved_total else "none")
+    detail = "frozen_sha_ok=%s placement_diffs=%s" % (
+        placed_sha == PLACED_SHA, moved_total if moved_total else "none")
     record("T7", passed, detail)
 
 
@@ -255,7 +256,8 @@ def t8_rule_file_drift() -> None:
     ]:
         s = sha256(path)
         if s != FROZEN_DR_SHA:
-            record("T8", False, "%s sha=%s (expected %s)" % (os.path.basename(path), s[:12], FROZEN_DR_SHA[:12]))
+            record("T8", False, "%s sha=%s (expected %s)" % (
+                os.path.basename(path), s[:12], FROZEN_DR_SHA[:12]))
             return
     record("T8", True, "all attempt .kicad_dru match frozen sha")
 
