@@ -67,11 +67,12 @@ LOG PARSING CONTRACT (host-testable, no serial required):
   form used by the producers that print that field, the ':' form, and the
   whitespace-only form (`seq 9`, `session_id 5`, `price 10 sats`, `expires 99`)
   that the pre-D6 harness accepted. One separator is always required, so a
-  glued token (`seq9`) is not a field. Field NAMES are literal: session_id is
-  matched as `session[_ ]*id`, which the only real session producer
-  (`ACK sent (session=%u, ...)`, tollgate_balloon.c:255) does not print, and no
-  producer prints `expires` at all — both gaps predate this change and are
-  deliberately untouched here. That grammar, both separator forms, and the
+  glued token (`seq9`) is not a field. Field NAMES are literal: to populate
+  session_id a line must spell `session`, then optional `_`/whitespace, then
+  `id` — a bare `session=<n>`, which is what the only real session producer
+  prints (`ACK sent (session=%u, ...)`, tollgate_balloon.c:255), does not match,
+  and no producer prints `expires` at all — both gaps predate this change and
+  are deliberately untouched here. That grammar, both separator forms, and the
   re-widening of all four fields (D6 narrowed seq and these three siblings at
   once) are pinned by tracker/firmware/test/test_tollgate_payack_parse.py —
   suite 2c of .github/workflows/ci-host-tests.yml and
