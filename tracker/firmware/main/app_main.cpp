@@ -585,10 +585,16 @@ static void cli_cmd_nostr_dump(const char *args) {
  *   - If provided, the token string is used as the PAY payload (raw bytes).
  *   - If omitted, a minimal test payload "{\"token\":\"test\"}" is used.
  *
- * The PAY message is encoded with the real tollgate_proto_encode() from
- * tollgate_payment_proto.c (ADR-002 wire format).
+ * The PAY message is encoded with the real tollgate_proto_encode_relay() from
+ * tollgate_payment_proto.c (ADR-002 wire format), which enforces the tracker
+ * relay's payload budget (TOLLGATE_MAX_PAYLOAD_RELAY = 503 B) in the encode
+ * path.
+ *
+ * Sequence numbers follow the contract documented in tollgate_payment_proto.h:
+ * a uint16_t echo token that wraps modulo 2^16 (65535 -> 0), with no
+ * deduplication in v1.
  */
-static uint32_t s_tollgate_seq = 0;
+static uint16_t s_tollgate_seq = 0;
 
 static void cli_cmd_tollgate_send_pay(const char *args) {
     if (!g_tx_queue) {
@@ -608,26 +614,23 @@ static void cli_cmd_tollgate_send_pay(const char *args) {
         payload_len = (uint16_t)strlen(payload);
     }
 
-    /* Check it fits in the relay packet (minus 1 type tag + 8 header) */
-    if (payload_len > RELAY_PACKET_MAX_SIZE - 1 - sizeof(tollgate_msg_hdr_t)) {
-        printf("tollgate_send_pay: payload too long (%u > %d max)\n",
-               payload_len,
-               RELAY_PACKET_MAX_SIZE - 1 - (int)sizeof(tollgate_msg_hdr_t));
-        return;
-    }
-
-    /* Build the relay packet */
+    /* Build the relay packet. The payload bound is checked inside
+     * tollgate_proto_encode_relay() — not duplicated here. */
     relay_packet_t pkt;
     memset(&pkt, 0, sizeof(pkt));
     pkt.data[0] = RELAY_TYPE_TOLLGATE_PAY;
 
-    s_tollgate_seq++;
-    int enc_len = tollgate_proto_encode(pkt.data + 1,
-                                         RELAY_PACKET_MAX_SIZE - 1,
-                                         TG_MSG_PAY, (uint16_t)s_tollgate_seq,
-                                         payload, payload_len);
+    s_tollgate_seq = tollgate_seq_next(s_tollgate_seq);
+    int enc_len = tollgate_proto_encode_relay(pkt.data, RELAY_PACKET_MAX_SIZE,
+                                               TG_MSG_PAY, s_tollgate_seq,
+                                               payload, payload_len);
+    if (enc_len == TG_ENC_ERR_TOO_LONG) {
+        printf("tollgate_send_pay: payload too long (%u > %u bytes max in a relay frame)\n",
+               payload_len, (unsigned)TOLLGATE_MAX_PAYLOAD_RELAY);
+        return;
+    }
     if (enc_len < 0) {
-        printf("tollgate_send_pay: proto_encode failed (payload too big?)\n");
+        printf("tollgate_send_pay: proto_encode failed (%d)\n", enc_len);
         return;
     }
 

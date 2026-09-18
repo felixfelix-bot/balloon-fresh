@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "relay_types.h"          /* RELAY_PACKET_MAX_SIZE (relay frame budget) */
 #include "tollgate_payment_proto.h"
 
 /* ---- Minimal test framework (self-contained, no external dep) ---- */
@@ -313,6 +314,93 @@ static void test_ack_payload_struct(void)
     ASSERT_EQ_INT(21, (int)ack2->price_sats, "ACK price_sats round-trip");
 }
 
+/* 11. Sequence contract — u16 wrap (65535 → 0) and exact echo equality */
+static void test_seq_contract(void)
+{
+    printf("\n--- test_seq_contract ---\n");
+
+    ASSERT_EQ_INT(65536, (int)TOLLGATE_SEQ_MODULO, "seq modulo == 2^16");
+    ASSERT_EQ_INT(1, (int)tollgate_seq_next(0), "tollgate_seq_next(0) == 1");
+    ASSERT_EQ_INT(65535, (int)tollgate_seq_next(65534), "tollgate_seq_next(65534) == 65535");
+    ASSERT_EQ_INT(0, (int)tollgate_seq_next(65535), "tollgate_seq_next(65535) wraps to 0");
+    ASSERT_EQ_INT(1, (int)tollgate_seq_next(0), "counter keeps running after the wrap");
+
+    ASSERT(tollgate_seq_equal(0, 0), "tollgate_seq_equal(0,0) == true");
+    ASSERT(tollgate_seq_equal(65535, 65535), "tollgate_seq_equal(65535,65535) == true");
+    ASSERT(!tollgate_seq_equal(0, 65535),
+           "seq is an opaque echo token: 0 != 65535 (no modular comparison window)");
+    ASSERT(!tollgate_seq_equal(65535, 0),
+           "wrapped-forward case is NOT a match by design (no dedup in v1)");
+    ASSERT(!tollgate_seq_equal(1, 2), "tollgate_seq_equal(1,2) == false");
+}
+
+/* 12. Relay payload budget — the 2048-byte token cannot cross the relay frame */
+static void test_relay_payload_budget(void)
+{
+    printf("\n--- test_relay_payload_budget ---\n");
+
+    /* TOLLGATE_MAX_PAYLOAD_RELAY = RELAY_PACKET_MAX_SIZE - 1 type tag - 8 hdr */
+    ASSERT_EQ_INT(RELAY_PACKET_MAX_SIZE - 1 - (int)sizeof(tollgate_msg_hdr_t),
+                  (int)TOLLGATE_MAX_PAYLOAD_RELAY,
+                  "TOLLGATE_MAX_PAYLOAD_RELAY matches the relay frame budget");
+    ASSERT_EQ_INT(503, (int)TOLLGATE_MAX_PAYLOAD_RELAY, "relay budget == 503 bytes");
+    ASSERT(TOLLGATE_MAX_TOKEN_LEN > TOLLGATE_MAX_PAYLOAD_RELAY,
+           "TOLLGATE_MAX_TOKEN_LEN (2048, mesh-stack capability) exceeds the tracker relay budget");
+
+    uint8_t frame[RELAY_PACKET_MAX_SIZE];
+    static char payload[TOLLGATE_MAX_TOKEN_LEN];
+    memset(payload, 'a', sizeof(payload));
+
+    /* Exactly at the relay budget: succeeds, frame is exactly full */
+    int ret = tollgate_proto_encode_relay(frame, sizeof(frame), TG_MSG_PAY, 1,
+                                           payload, TOLLGATE_MAX_PAYLOAD_RELAY);
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t) + TOLLGATE_MAX_PAYLOAD_RELAY, ret,
+                  "encode at the budget succeeds");
+
+    tollgate_msg_hdr_t hdr;
+    const uint8_t *pl = NULL;
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t),
+                  tollgate_proto_decode(frame + 1, (uint16_t)ret, &hdr, &pl),
+                  "budget-sized message decodes");
+    ASSERT_EQ_INT(TOLLGATE_MAX_PAYLOAD_RELAY, (int)hdr.payload_len,
+                  "decoded payload_len == TOLLGATE_MAX_PAYLOAD_RELAY");
+
+    /* One byte over the budget: rejected explicitly, not truncated */
+    ret = tollgate_proto_encode_relay(frame, sizeof(frame), TG_MSG_PAY, 1,
+                                       payload, TOLLGATE_MAX_PAYLOAD_RELAY + 1);
+    ASSERT_EQ_INT(TG_ENC_ERR_TOO_LONG, ret, "budget+1 → TG_ENC_ERR_TOO_LONG");
+
+    /* The full 2048-byte token the constant advertises has no home on the relay */
+    ret = tollgate_proto_encode_relay(frame, sizeof(frame), TG_MSG_PAY, 1,
+                                       payload, TOLLGATE_MAX_TOKEN_LEN);
+    ASSERT_EQ_INT(TG_ENC_ERR_TOO_LONG, ret,
+                  "2048-byte token → TG_ENC_ERR_TOO_LONG (explicit, not silent)");
+
+    /* A frame smaller than the declared budget still reports the same error */
+    uint8_t small_frame[64];
+    ret = tollgate_proto_encode_relay(small_frame, sizeof(small_frame), TG_MSG_PAY, 1,
+                                       payload, 100);
+    ASSERT_EQ_INT(TG_ENC_ERR_TOO_LONG, ret,
+                  "payload larger than the supplied frame → TG_ENC_ERR_TOO_LONG");
+
+    /* Invalid arguments */
+    ret = tollgate_proto_encode_relay(NULL, sizeof(frame), TG_MSG_PAY, 1, payload, 8);
+    ASSERT_EQ_INT(-1, ret, "NULL frame → -1");
+    ret = tollgate_proto_encode_relay(frame, (uint16_t)sizeof(tollgate_msg_hdr_t),
+                                       TG_MSG_PAY, 1, payload, 8);
+    ASSERT_EQ_INT(-1, ret, "frame too small for tag + header → -1");
+
+    /* Protocol-level hard cap: > TOLLGATE_MAX_TOKEN_LEN is refused even with room */
+    uint8_t big_frame[TOLLGATE_MAX_TOKEN_LEN + 64];
+    ret = tollgate_proto_encode(big_frame, (uint16_t)sizeof(big_frame), TG_MSG_PAY, 1,
+                                 payload, TOLLGATE_MAX_TOKEN_LEN);
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t) + TOLLGATE_MAX_TOKEN_LEN, ret,
+                  "protocol cap allows exactly TOLLGATE_MAX_TOKEN_LEN");
+    ret = tollgate_proto_encode(big_frame, (uint16_t)sizeof(big_frame), TG_MSG_PAY, 1,
+                                 payload, (uint16_t)(TOLLGATE_MAX_TOKEN_LEN + 1));
+    ASSERT_EQ_INT(-1, ret, "protocol cap rejects > TOLLGATE_MAX_TOKEN_LEN");
+}
+
 /* ---- Main ---- */
 
 int main(void)
@@ -329,6 +417,8 @@ int main(void)
     test_decode_truncated();
     test_roundtrip();
     test_ack_payload_struct();
+    test_seq_contract();
+    test_relay_payload_budget();
 
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
