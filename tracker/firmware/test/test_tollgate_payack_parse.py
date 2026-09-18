@@ -19,6 +19,12 @@ Why this exists (defect D6 from the t_d7f958f8 inventory):
   * `if ack_seq:` discarded a parsed 0, so a legitimate wrap to seq 0 could
     never match.
 
+The accepted `seq` grammar is the UNION of the pre-D6 forms (`seq: 9`,
+`seq 9`) and the producer form (`seq=%u`); the re-widening that restores the
+whitespace-only form (cold review of t_3a5cfe25, finding 1) is pinned by
+test_seq_whitespace_only_form_is_parsed_without_regressing_d6_scoping, which
+also re-asserts the D6 TollGate-line scoping.
+
 Run:
   python3 test/test_tollgate_payack_parse.py     # standalone (exit 0 = pass)
   pytest test/test_tollgate_payack_parse.py      # or under pytest
@@ -93,6 +99,48 @@ def test_seq_equals_form_is_parsed():
 def test_seq_colon_and_space_forms_still_parse():
     assert h.extract_seq("I (1) TRACKER: TollGate PAY received (seq: 9)") == 9
     assert h.extract_seq("I (1) TRACKER: TollGate ACK queued seq=10") == 10
+
+
+def test_seq_whitespace_only_form_is_parsed_without_regressing_d6_scoping():
+    """The pre-D6 form `seq 9` (no `:`/`=`) must not silently become None.
+
+    The D6 fix narrowed SEQ_PATTERN to a mandatory `[:=]` separator, which
+    dropped the whitespace-only form the harness accepted before it — a silent
+    narrowing of the accepted log grammar (cold review of t_3a5cfe25, finding
+    1; the comment above SEQ_PATTERN still claimed whitespace was accepted, and
+    test_seq_colon_and_space_forms_still_parse was named as if it covered the
+    form too). The form is accepted again; this test pins BOTH halves of the
+    contract: `seq 9` parses to 9, AND the D6 line-scoping (TollGate-prefixed
+    lines only) still excludes the TRACKER-tagged telemetry lines that carry a
+    whitespace `seq` field of their own.
+    """
+    ws_ack = "I (1) TRACKER: TollGate ACK queued (seq 9)"
+    ws_pay = "I (1) TRACKER: TollGate PAY received (seq 9)"
+    assert h.extract_seq(ws_ack) == 9
+    assert h.extract_seq(ws_pay) == 9
+    rec = h.parse_tollgate_log_line(ws_ack)
+    assert rec is not None and rec["kind"] == "ack" and rec["seq"] == 9
+
+    # D6 scoping must not regress: `TX %d bytes (seq %d)...` and the long
+    # telemetry form carry whitespace-form `seq` fields of their own and are
+    # NOT TollGate lines, so the re-widened pattern must not reach them.
+    assert h.parse_tollgate_log_line(L_TELEMETRY) is None
+    assert h.parse_tollgate_log_line(L_TELEMETRY_LONG) is None
+    assert h.extract_seq(L_TELEMETRY) is None
+    assert h.extract_seq(L_TELEMETRY_LONG) is None
+    classified = h.classify_tollgate_output(
+        L_TELEMETRY + "\n" + L_TELEMETRY_LONG + "\n" + ws_pay + "\n" + ws_ack + "\n")
+    assert [r["seq"] for r in classified["ack"]] == [9]
+    assert [r["seq"] for r in classified["pay"]] == [9]
+    assert classified["nack"] == []
+
+    # ...and the whitespace form is a complete round: it reaches PASS.
+    code, label = h.compute_verdict([_round(h.extract_seq(ws_pay), h.extract_seq(ws_ack))])
+    assert code == 0, label
+
+    # The separator requirement is deliberate: a glued `seq9` token is not a
+    # seq field. Accepted: `seq=%u` (all producers), `seq: 9`, `seq 9`.
+    assert h.extract_seq("I (1) TRACKER: TollGate ACK queued (seq9)") is None
 
 
 def test_wrapped_seq_is_parsed_both_directions():

@@ -131,15 +131,22 @@ TG_MSG_NACK = 0x03
 #
 #   1. Every TollGate producer prints `seq=%u` (main/app_main.cpp:645,
 #      main/app_task.cpp:121,140), so the sequence pattern must accept '=' as
-#      well as ':'/whitespace.
+#      well as ':' and the whitespace-only form `seq 9` the harness accepted
+#      before the D6 fix (that narrowing was an unintended side effect of the
+#      card's "accept '='" wording, not a contract change: no producer prints
+#      it, but a future producer that does would have parsed as None). One of
+#      the three separators is REQUIRED, so a bare `seq9` token is not a seq
+#      field.
 #   2. The tracker log tag is "TRACKER" (main/app_main.cpp:83) — it CONTAINS
 #      the substring "ack" — and the telemetry line
 #      `TX %d bytes (seq %d)...` (main/app_main.cpp:902) has a `seq` field of
-#      its own. Neither may be counted as a TollGate ACK/sequence.
+#      its own. Neither may be counted as a TollGate ACK/sequence; both are
+#      whitespace-form `seq` lines, so they are excluded by the TollGate
+#      line-scoping in parse_tollgate_log_line(), NOT by the seq pattern.
 
 TOLLGATE_LINE_PATTERN = re.compile(r"tollgate", re.IGNORECASE)
 
-SEQ_PATTERN = re.compile(r"\bseq\s*[:=]\s*(\d+)", re.IGNORECASE)
+SEQ_PATTERN = re.compile(r"\bseq\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
 SESSION_ID_PATTERN = re.compile(r"session[_\s]*id\s*[:=]\s*(\d+)", re.IGNORECASE)
 PRICE_PATTERN = re.compile(r"price\s*[:=]\s*(\d+)\s*sats?", re.IGNORECASE)
 EXPIRES_PATTERN = re.compile(r"expires?\s*[:=]\s*(\d+)", re.IGNORECASE)

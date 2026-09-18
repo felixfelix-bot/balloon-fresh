@@ -5,7 +5,7 @@ name: Host Unit Tests
 #   - nostr_store    (7 tests)    — tracker/firmware/components/nostr_store
 #   - relay-pipeline (13 tests)   — tracker/firmware/main/test/test_relay_pipeline.c
 #   - tollgate-proto (106 asserts)— tracker/firmware/main/test/test_tollgate_payment_proto.c
-#   - payack-parser  (14 tests)   — tracker/firmware/test/test_tollgate_payack_parse.py
+#   - payack-parser  (15 tests)   — tracker/firmware/test/test_tollgate_payack_parse.py
 #   - tollgate       (~350 tests) — mesh-stack/tollgate/tests/unit (Makefile, 13 binaries)
 #   - ehash-relay    (65 tests)   — mesh-stack/ehash-relay/test
 #   - stratorelay    (11 tests)   — tracker/firmware/components/stratorelay/test
@@ -57,9 +57,10 @@ jobs:
             main/tollgate_payment_proto.c
           /tmp/test_tollgate_payment_proto
 
-      # ── Suite 2c: PAY→ACK harness log parser (14 tests, host-only) ─
+      # ── Suite 2c: PAY→ACK harness log parser (15 tests, host-only) ─
       # Regression guard for the D6 false-negative/false-positive defects:
-      # `seq=%u` parsing, TRACKER-tag/telemetry false positives, seq 0.
+      # `seq=%u` parsing, TRACKER-tag/telemetry false positives, seq 0, and
+      # the whitespace-only `seq 9` form (t_24d9e30c).
       - name: Run PAY→ACK harness parser regression tests
         run: |
           cd tracker/firmware
