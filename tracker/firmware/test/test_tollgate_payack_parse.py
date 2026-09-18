@@ -37,17 +37,20 @@ test_session_price_expires_accept_the_whitespace_only_forms (both forms, the
 glued-field rejection, and the unchanged D6 line gate).
 
 D6 ALSO narrowed the session field NAME: the pattern required the literal `id`
-after `session`, while the only producer of a session number in the tree prints
-`session=%u` (`ACK sent (session=%u, price=%u sats)`,
-mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_balloon.c:255 —
-the sole hit of `git grep -nE '"session' tracker/ mesh-stack/` outside this
-harness and the C test fixtures), so session_id could not be populated from a
-real log line in ANY revision (cold review finding 1 of t_2a65361e, filed as
-t_388122d0). The name is now the union `session` / `session_id`, keeping the
+after `session`, while the only log PRODUCER of a session number in the tree
+(the vendored libsecp256k1 `#include "session.h"` lines, the C test fixtures and
+the ehash-interface-boundary.md JSON samples also hit `git grep -nE '"session'
+tracker/ mesh-stack/`, none of them a log line) prints `session=%u`
+(`ACK sent (session=%u, price=%u sats)`,
+mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_balloon.c:255), so
+session_id could not be populated from a real log line in ANY revision (cold
+review finding 1 of t_2a65361e, filed as t_388122d0). The name is now the union
+`session` / `session_id`, on a leading `\b` like SEQ_PATTERN's, keeping the
 mandatory separator and the D6 line gate; pinned by
 test_session_name_accepts_the_real_producer_form, which also pins that a glued
-(`session7`), plural (`active_sessions: 3`) or longer (`session_timeout=30`)
-name is still not a field and that a non-TollGate line contributes nothing.
+(`session7`), embedded (`subsession=7`), plural (`active_sessions: 3`) or
+longer (`session_timeout=30`) name is still not a field and that a non-TollGate
+line contributes nothing.
 `expires` still has no producer anywhere in the tree, so expires_unix is only
 recorded if one starts printing it.
 
@@ -232,15 +235,15 @@ def test_session_name_accepts_the_real_producer_form():
 
     mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_balloon.c:255
       ESP_LOGI(TAG, "ACK sent (session=%u, price=%u sats)", ...)
-    is the ONLY line in the tree that prints a session number, and
-    SESSION_ID_PATTERN required the literal `id` after `session`, so that line
-    could not populate session_id in ANY revision (pre- or post-D6) — the field
-    was unreachable by construction (cold review finding 1 of t_2a65361e, filed
-    as t_388122d0). The accepted NAME is now `session` with an optional `_id`
-    suffix; the mandatory separator and the D6 TollGate-line gate are unchanged.
-    A tree-wide producer/collision scan at this commit found no TollGate-gated
-    line the widened name newly matches except this producer, and no
-    TollGate-gated line whose `session` is followed by a number without the
+    is the ONLY log producer of a session number, and SESSION_ID_PATTERN
+    required the literal `id` after `session`, so that line could not populate
+    session_id in ANY revision (pre- or post-D6) — the field was unreachable by
+    construction (cold review finding 1 of t_2a65361e, filed as t_388122d0). The
+    accepted NAME is now `session` with an optional `_id` suffix, anchored on a
+    word boundary; the mandatory separator and the D6 TollGate-line gate are
+    unchanged. A tree-wide producer/collision scan at this commit found no
+    TollGate-gated line the widened name newly matches except this producer, and
+    no TollGate-gated line whose `session` is followed by a number without the
     separator (evidence: collision_scan.log).
     """
     real = "I (12345) tollgate_balloon: ACK sent (session=7, price=10 sats)"
@@ -261,9 +264,12 @@ def test_session_name_accepts_the_real_producer_form():
         assert h.extract_session_info(line)["session_id"] == 7, line
 
     # The separator stays REQUIRED and the name stays whole: a glued `session7`,
-    # a plural (`active_sessions: 3`) and a longer name (`session_timeout=30`)
-    # are not fields, and prose ("3 sessions active") is not either.
+    # a word that merely ENDS in session (`subsession=7`), a plural
+    # (`active_sessions: 3`) and a longer name (`session_timeout=30`) are not
+    # fields, and prose ("3 sessions active") is not either.
     assert h.extract_session_info("I (1) TRACKER: TollGate ACK queued (session7)") == {}
+    assert h.extract_session_info("I (1) TRACKER: TollGate ACK queued (subsession=7)") == {}
+    assert h.extract_session_info("I (1) TRACKER: TollGate ACK queued (xsession 7)") == {}
     assert h.extract_session_info('I (1) tollgate_balloon: active_sessions: 3') == {}
     assert h.extract_session_info("I (1) tollgate_balloon: session_timeout=30") == {}
     assert h.extract_session_info("I (1) tollgate_balloon: 3 sessions active") == {}
