@@ -206,8 +206,9 @@ TG_MSG_NACK = 0x03
 #      Collision scan over every non-vendored tracked line carrying a `session`
 #      string literal (evidence:
 #      /home/c03rad0r/reports/balloon/t_388122d0/evidence/collision_scan.log):
-#      no TollGate-gated line is newly matched except that producer, and no
-#      TollGate-gated line has `session` followed by a number without a
+#      no TollGate-gated PRODUCER is newly matched except that one (the only
+#      other newly-matched TollGate-tagged lines are this test's own literals),
+#      and no TollGate-gated line has `session` followed by a number without a
 #      separator (`session7`, `subsession=7`, `active_sessions: 3`,
 #      `session_timeout=30` and `3 sessions active` all stay unmatched — pinned
 #      in suite 2c). `expires` still has no producer at all (see the contract in

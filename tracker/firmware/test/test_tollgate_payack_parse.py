@@ -242,7 +242,7 @@ def test_session_name_accepts_the_real_producer_form():
     accepted NAME is now `session` with an optional `_id` suffix, anchored on a
     word boundary; the mandatory separator and the D6 TollGate-line gate are
     unchanged. A tree-wide producer/collision scan at this commit found no
-    TollGate-gated line the widened name newly matches except this producer, and
+    TollGate-gated PRODUCER the widened name newly matches except this one, and
     no TollGate-gated line whose `session` is followed by a number without the
     separator (evidence: collision_scan.log).
     """
@@ -274,10 +274,10 @@ def test_session_name_accepts_the_real_producer_form():
     assert h.extract_session_info("I (1) tollgate_balloon: session_timeout=30") == {}
     assert h.extract_session_info("I (1) tollgate_balloon: 3 sessions active") == {}
 
-    # `expires` has NO producer in this tree (`grep -rn '"expires' tracker/
-    # mesh-stack/` matches only struct fields and C test fixtures, never a log
-    # line), so expires_unix is only filled if some producer starts printing it.
-    # The extraction stays (pinned by
+    # `expires` has NO producer in this tree (`git grep -nE '"expires' --
+    # tracker/ mesh-stack/` matches only struct fields and C test fixtures,
+    # never a log line), so expires_unix is only filled if some producer starts
+    # printing it. The extraction stays (pinned by
     # test_session_price_expires_accept_the_whitespace_only_forms) and must not
     # invent a value off the session producer.
     assert "expires_unix" not in h.extract_session_info(real)
