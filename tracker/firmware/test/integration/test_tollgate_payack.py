@@ -45,7 +45,14 @@ WHAT IT VERIFIES:
   - Board B processes the payment (or at least acknowledges receipt)
   - An ACK response is generated (either by Board B or test harness)
   - The ACK's sequence number matches the PAY's sequence number
-  - The ACK payload contains valid session info (session_id, expires, price)
+  - The ACK payload's session fields are recorded when a producer prints them:
+    session / session_id, price (sats) and expires are read off the ACK's
+    TollGate log line. The producers on this path print `seq=%u` only
+    (main/app_task.cpp:121,143 — no payload fields), so `session_info` is
+    normally empty and is reported only when it is not; the tollgate_balloon
+    producer that does print them (`ACK sent (session=%u, price=%u sats)`,
+    tollgate_balloon.c:255) is readable by the same patterns, and no producer
+    in the tree prints `expires` at all.
 
 BOARD CLI COMMANDS USED:
   - tollgate_send_pay [token]  — encode + queue TollGate PAY message for TX
@@ -67,15 +74,20 @@ LOG PARSING CONTRACT (host-testable, no serial required):
   form used by the producers that print that field, the ':' form, and the
   whitespace-only form (`seq 9`, `session_id 5`, `price 10 sats`, `expires 99`)
   that the pre-D6 harness accepted. One separator is always required, so a
-  glued token (`seq9`) is not a field. Field NAMES are literal: to populate
-  session_id a line must spell `session`, then optional `_`/whitespace, then
-  `id` — a bare `session=<n>`, which is what the only real session producer
-  prints (`ACK sent (session=%u, ...)`, tollgate_balloon.c:255), does not match,
-  and no producer prints `expires` at all — both gaps predate this change and
-  are deliberately untouched here. That grammar, both separator forms, and the
-  re-widening of all four fields (D6 narrowed seq and these three siblings at
-  once) are pinned by tracker/firmware/test/test_tollgate_payack_parse.py —
-  suite 2c of .github/workflows/ci-host-tests.yml and
+  glued token (`seq9`) is not a field. The session field's NAME is the union
+  `session` / `session_id`: the only producer of a session number spells it
+  `session` (`ACK sent (session=%u, price=%u sats)`, tollgate_balloon.c:255),
+  which the earlier name-literal form could not match in ANY revision (cold
+  review finding 1 of t_2a65361e, filed as t_388122d0). A glued name
+  (`session7`) and a longer or plural name (`session_timeout=30`,
+  `active_sessions: 3`) are still not fields. No producer prints `expires` at
+  all (`expires_unix` occurs only as a struct field, e.g. tollgate_balloon.c:249
+  `ack.expires_unix = 0;  /* TODO: real expiry */`), so expires_unix is recorded
+  only if some producer starts printing it. That grammar, both separator forms,
+  the NAME union, and the re-widening of all four fields (D6 narrowed seq and
+  these three siblings at once) are pinned by
+  tracker/firmware/test/test_tollgate_payack_parse.py — suite 2c of
+  .github/workflows/ci-host-tests.yml and
   .ngit/act/workflows/host-tests.yml.
 
 EXIT CODES (computed by compute_verdict() — single source of truth):
@@ -173,18 +185,36 @@ TG_MSG_NACK = 0x03
 #      mandatory-separator union as seq here. Producer scan at this commit: the
 #      only log producers for these fields print a separator — `Price: %u sats /
 #      %ld ms` (tollgate_balloon.c:163) and `ACK sent (session=%u, price=%u
-#      sats)` (tollgate_balloon.c:255) — nothing prints `expires`, nothing
-#      prints the literal `session_id`, and nothing prints the whitespace-only
-#      form, so the re-widening is zero-cost today and restores the pre-D6
-#      grammar instead of inventing a new one.
+#      sats)` (tollgate_balloon.c:255) — nothing prints `expires`, and nothing
+#      prints the whitespace-only form, so the re-widening is zero-cost today
+#      and restores the pre-D6 grammar instead of inventing a new one.
+#   4. The NAME of the session field was narrowed by the same D6 spelling: the
+#      pattern required the literal `id` after `session`, while the ONLY
+#      producer of a session number in the tree prints `session=%u`
+#      (tollgate_balloon.c:255 — the sole hit of `git grep -nE '"session'
+#      tracker/ mesh-stack/` outside this harness and the C test fixtures), so
+#      session_id was unreachable from a real log line in ANY revision (cold
+#      review finding 1 of t_2a65361e, filed as t_388122d0). The pattern now
+#      accepts the name union `session` / `session_id`, keeping the mandatory
+#      separator and the D6 line gate. Collision scan over every non-vendored
+#      tracked line carrying a `session` string literal (evidence:
+#      /home/c03rad0r/reports/balloon/t_388122d0/evidence/collision_scan.log):
+#      no TollGate-gated line is newly matched except that producer, and no
+#      TollGate-gated line has `session` followed by a number without a
+#      separator (`session7`, `active_sessions: 3`, `session_timeout=30` and
+#      `3 sessions active` all stay unmatched — pinned in suite 2c). `expires`
+#      still has no producer at all (see the contract in the module docstring).
 
 TOLLGATE_LINE_PATTERN = re.compile(r"tollgate", re.IGNORECASE)
 
 # Every field accepts `[:=]` (the producer form), the ':' form, and the
 # whitespace-only form; the separator is REQUIRED in all cases (a glued `seq9`
-# is not a field). See the note above.
+# is not a field). See the note above. The session field's NAME is likewise a
+# union — `session` (the only producer's spelling) and `session_id` — because
+# D6's name-literal form could not match the one real producer. See item 4 of
+# the note above.
 SEQ_PATTERN = re.compile(r"\bseq\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
-SESSION_ID_PATTERN = re.compile(r"session[_\s]*id\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
+SESSION_ID_PATTERN = re.compile(r"session(?:[_\s]*id)?\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
 PRICE_PATTERN = re.compile(r"price\s*(?:[:=]\s*|\s+)(\d+)\s*sats?", re.IGNORECASE)
 EXPIRES_PATTERN = re.compile(r"expires?\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
 QUEUED_PATTERN = re.compile(r"queued\s+\d+\s+bytes", re.IGNORECASE)
@@ -278,9 +308,21 @@ def extract_session_info(text: str) -> dict:
     resolved through `rec = parse_tollgate_log_line(line)` /
     `if rec is None: continue`, so the string handed in here is a
     TollGate-scoped line by construction and the per-line gate above is a no-op
-    for it. Producer scan at this commit: no non-TollGate producer line in this
-    tree prints session_id/price/expires at all (only the two TollGate
-    producers noted above do).
+    for it. Verified against this file, not just against a diff of it: the two
+    call sites are the rx loop (parse gate, then `if rec["kind"] == "ack"`) and
+    the tx fallback loop (`if not result["ack_received"] and not
+    result["nack_received"]`), and both pass the very `line` they gated.
+    Producer scan at this commit: no non-TollGate producer line in this tree
+    prints session/price/expires at all (only the two TollGate producers noted
+    above do).
+
+    session_id is read with the NAME union `session` / `session_id`, so the one
+    real producer (`ACK sent (session=%u, price=%u sats)`) now fills the field;
+    expires_unix still has no producer in the tree, so it is only recorded if
+    one appears. Recording the field is kept deliberately: it is the only place
+    this harness reports ACK payload fields, it is printed only when non-empty
+    (see the run summary), and on the tracker↔tracker producers
+    (main/app_task.cpp:121,143 print `seq=%u` only) it stays `{}`.
     """
     info = {}
     for line in (text or "").split("\n"):

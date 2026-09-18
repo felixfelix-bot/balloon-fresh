@@ -59,11 +59,12 @@ jobs:
             main/tollgate_payment_proto.c
           /tmp/test_tollgate_payment_proto
 
-      # ── Suite 2c: PAY→ACK harness log parser (16 tests, host-only) ─
+      # ── Suite 2c: PAY→ACK harness log parser (17 tests, host-only) ─
       # Regression guard for the D6 false-negative/false-positive defects:
       # `seq=%u` parsing, TRACKER-tag/telemetry false positives, seq 0, the
-      # whitespace-only `seq 9` form (t_24d9e30c), and the sibling
-      # `session_id 5` / `price 10 sats` / `expires 99` forms (t_2a65361e).
+      # whitespace-only `seq 9` form (t_24d9e30c), the sibling
+      # `session_id 5` / `price 10 sats` / `expires 99` forms (t_2a65361e), and
+      # the session NAME union `session=%u` / `session_id 5` (t_388122d0).
       - name: Run PAY→ACK harness parser regression tests
         run: |
           cd tracker/firmware
