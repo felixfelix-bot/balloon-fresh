@@ -64,13 +64,18 @@ LOG PARSING CONTRACT (host-testable, no serial required):
   line-scoped the same way, so no parse in this module can read a field off a
   non-TollGate line. Inside a TollGate line the harness reads four numeric
   fields — seq, session_id, price (sats) and expires — each accepting the '='
-  form the producers print, the ':' form, and the whitespace-only form
-  (`seq 9`, `session_id 5`, `price 10 sats`, `expires 99`) that the pre-D6
-  harness accepted. One separator is always required, so a glued token (`seq9`)
-  is not a field. That grammar, both separator forms, and the re-widening of
-  all four fields (D6 narrowed seq and these three siblings at once) are pinned
-  by tracker/firmware/test/test_tollgate_payack_parse.py — suite 2c of
-  .github/workflows/ci-host-tests.yml and .ngit/act/workflows/host-tests.yml.
+  form used by the producers that print that field, the ':' form, and the
+  whitespace-only form (`seq 9`, `session_id 5`, `price 10 sats`, `expires 99`)
+  that the pre-D6 harness accepted. One separator is always required, so a
+  glued token (`seq9`) is not a field. Field NAMES are literal: session_id is
+  matched as `session[_ ]*id`, which the only real session producer
+  (`ACK sent (session=%u, ...)`, tollgate_balloon.c:255) does not print, and no
+  producer prints `expires` at all — both gaps predate this change and are
+  deliberately untouched here. That grammar, both separator forms, and the
+  re-widening of all four fields (D6 narrowed seq and these three siblings at
+  once) are pinned by tracker/firmware/test/test_tollgate_payack_parse.py —
+  suite 2c of .github/workflows/ci-host-tests.yml and
+  .ngit/act/workflows/host-tests.yml.
 
 EXIT CODES (computed by compute_verdict() — single source of truth):
   0 — PASS: every round sent a PAY, got an ACK, and the seq echoed exactly
@@ -267,11 +272,13 @@ def extract_session_info(text: str) -> dict:
     whitespace-only form makes that class reachable again for a caller that
     passes raw captures.
 
-    No behaviour change on the live path: run_pay_round() calls this with a
-    single line it has ALREADY accepted through parse_tollgate_log_line(), so
-    that line is TollGate-scoped by construction and the per-line gate here is a
-    no-op for it. Producer scan at this commit: no non-TollGate producer line in
-    this tree prints session_id/price/expires at all (only the two TollGate
+    No behaviour change on the live path: both call sites are run_pay_round()'s
+    ACK branches, and each one runs this on the same single line it has just
+    resolved through `rec = parse_tollgate_log_line(line)` /
+    `if rec is None: continue`, so the string handed in here is a
+    TollGate-scoped line by construction and the per-line gate above is a no-op
+    for it. Producer scan at this commit: no non-TollGate producer line in this
+    tree prints session_id/price/expires at all (only the two TollGate
     producers noted above do).
     """
     info = {}
