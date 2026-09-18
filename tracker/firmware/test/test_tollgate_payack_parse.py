@@ -8,13 +8,13 @@ the verdict computation, feeding the EXACT log lines the firmware producers
 print.
 
 Why this exists (defect D6 from the t_d7f958f8 inventory):
-  * every tollgate producer prints `seq=%u` (main/app_main.cpp:645,
-    main/app_task.cpp:121,140) but the harness required ':' or whitespace
+  * every tollgate producer prints `seq=%u` (main/app_main.cpp:648,
+    main/app_task.cpp:121,143) but the harness required ':' or whitespace
     after `seq` → pay_seq/ack_seq were always None → the PAY→ACK PASS branch
     was unreachable;
   * the ACK detector matched the substring "ack" inside TAG="TRACKER" and the
     `seq` detector matched the telemetry line "TX %d bytes (seq %d)..."
-    (main/app_main.cpp:902) → a non-tollgate counter could be counted as an
+    (main/app_main.cpp:905) → a non-tollgate counter could be counted as an
     ACK seq;
   * `if ack_seq:` discarded a parsed 0, so a legitimate wrap to seq 0 could
     never match.

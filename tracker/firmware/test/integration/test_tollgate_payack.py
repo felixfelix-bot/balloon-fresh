@@ -129,8 +129,8 @@ TG_MSG_NACK = 0x03
 # through parse_tollgate_log_line(), which scopes a line to the TollGate
 # subsystem first:
 #
-#   1. Every TollGate producer prints `seq=%u` (main/app_main.cpp:645,
-#      main/app_task.cpp:121,140), so the sequence pattern must accept '=' as
+#   1. Every TollGate producer prints `seq=%u` (main/app_main.cpp:648,
+#      main/app_task.cpp:121,143), so the sequence pattern must accept '=' as
 #      well as ':' and the whitespace-only form `seq 9` the harness accepted
 #      before the D6 fix (that narrowing was an unintended side effect of the
 #      card's "accept '='" wording, not a contract change: no producer prints
@@ -139,7 +139,7 @@ TG_MSG_NACK = 0x03
 #      field.
 #   2. The tracker log tag is "TRACKER" (main/app_main.cpp:83) — it CONTAINS
 #      the substring "ack" — and the telemetry line
-#      `TX %d bytes (seq %d)...` (main/app_main.cpp:902) has a `seq` field of
+#      `TX %d bytes (seq %d)...` (main/app_main.cpp:905) has a `seq` field of
 #      its own. Neither may be counted as a TollGate ACK/sequence; both are
 #      whitespace-form `seq` lines, so they are excluded by the TollGate
 #      line-scoping in parse_tollgate_log_line(), NOT by the seq pattern.
