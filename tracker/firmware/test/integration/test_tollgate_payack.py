@@ -58,6 +58,20 @@ exact ACK handling path may need adjustment based on firmware behavior.
 The tollgate component on Board B may automatically ACK or may require
 firmware changes to process PAY messages and respond with ACK.
 
+LOG PARSING CONTRACT (host-testable, no serial required):
+  Every parse goes through parse_tollgate_log_line(), which first requires the
+  line to mention "tollgate" (the D6 gate); extract_session_info() is
+  line-scoped the same way, so no parse in this module can read a field off a
+  non-TollGate line. Inside a TollGate line the harness reads four numeric
+  fields — seq, session_id, price (sats) and expires — each accepting the '='
+  form the producers print, the ':' form, and the whitespace-only form
+  (`seq 9`, `session_id 5`, `price 10 sats`, `expires 99`) that the pre-D6
+  harness accepted. One separator is always required, so a glued token (`seq9`)
+  is not a field. That grammar, both separator forms, and the re-widening of
+  all four fields (D6 narrowed seq and these three siblings at once) are pinned
+  by tracker/firmware/test/test_tollgate_payack_parse.py — suite 2c of
+  .github/workflows/ci-host-tests.yml and .ngit/act/workflows/host-tests.yml.
+
 EXIT CODES (computed by compute_verdict() — single source of truth):
   0 — PASS: every round sent a PAY, got an ACK, and the seq echoed exactly
   1 — PARTIAL: at least one ACK/NACK was seen, but not all rounds matched
@@ -143,13 +157,30 @@ TG_MSG_NACK = 0x03
 #      its own. Neither may be counted as a TollGate ACK/sequence; both are
 #      whitespace-form `seq` lines, so they are excluded by the TollGate
 #      line-scoping in parse_tollgate_log_line(), NOT by the seq pattern.
+#   3. The three ACK-payload patterns lost the SAME whitespace-only form in the
+#      SAME commit: pre-D6 they read `session[_\s]*id[:\s]+(\d+)`,
+#      `price[:\s]+(\d+)\s*sats?`, `expires?[:\s]+(\d+)` (64b8923:107-109), so
+#      `session_id 5` / `price 10 sats` / `expires 99` parsed and now do not.
+#      They are read on the live path by extract_session_info() below (called
+#      by run_pay_round() for every detected ACK), so the narrowing silently
+#      emptied the recorded ACK session info. All three carry the same
+#      mandatory-separator union as seq here. Producer scan at this commit: the
+#      only log producers for these fields print a separator — `Price: %u sats /
+#      %ld ms` (tollgate_balloon.c:163) and `ACK sent (session=%u, price=%u
+#      sats)` (tollgate_balloon.c:255) — nothing prints `expires`, nothing
+#      prints the literal `session_id`, and nothing prints the whitespace-only
+#      form, so the re-widening is zero-cost today and restores the pre-D6
+#      grammar instead of inventing a new one.
 
 TOLLGATE_LINE_PATTERN = re.compile(r"tollgate", re.IGNORECASE)
 
+# Every field accepts `[:=]` (the producer form), the ':' form, and the
+# whitespace-only form; the separator is REQUIRED in all cases (a glued `seq9`
+# is not a field). See the note above.
 SEQ_PATTERN = re.compile(r"\bseq\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
-SESSION_ID_PATTERN = re.compile(r"session[_\s]*id\s*[:=]\s*(\d+)", re.IGNORECASE)
-PRICE_PATTERN = re.compile(r"price\s*[:=]\s*(\d+)\s*sats?", re.IGNORECASE)
-EXPIRES_PATTERN = re.compile(r"expires?\s*[:=]\s*(\d+)", re.IGNORECASE)
+SESSION_ID_PATTERN = re.compile(r"session[_\s]*id\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
+PRICE_PATTERN = re.compile(r"price\s*(?:[:=]\s*|\s+)(\d+)\s*sats?", re.IGNORECASE)
+EXPIRES_PATTERN = re.compile(r"expires?\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
 QUEUED_PATTERN = re.compile(r"queued\s+\d+\s+bytes", re.IGNORECASE)
 # \b stops "NACK" (and words like "stack"/"feedback") from matching as an ACK.
 ACK_PATTERN = re.compile(r"(?:\bACK\b|\baccepted\b)", re.IGNORECASE)
@@ -225,17 +256,36 @@ def extract_seq(text: str):
 
 
 def extract_session_info(text: str) -> dict:
-    """Extract session info from ACK output."""
+    """Extract session info (session_id / price_sats / expires_unix) from ACK output.
+
+    Line-scoped like parse_tollgate_log_line(): a line that does not mention
+    "tollgate" is skipped, and for each field the FIRST hit on a TollGate line
+    wins (the same ordering the unscoped version had, now restricted to TollGate
+    lines). This closes the last unscoped parse in this module — the D6 defect
+    class was exactly a pattern reading a non-TollGate line (TAG="TRACKER"
+    telemetry), and re-widening the three field patterns to accept the
+    whitespace-only form makes that class reachable again for a caller that
+    passes raw captures.
+
+    No behaviour change on the live path: run_pay_round() calls this with a
+    single line it has ALREADY accepted through parse_tollgate_log_line(), so
+    that line is TollGate-scoped by construction and the per-line gate here is a
+    no-op for it. Producer scan at this commit: no non-TollGate producer line in
+    this tree prints session_id/price/expires at all (only the two TollGate
+    producers noted above do).
+    """
     info = {}
-    match = SESSION_ID_PATTERN.search(text)
-    if match:
-        info["session_id"] = int(match.group(1))
-    match = PRICE_PATTERN.search(text)
-    if match:
-        info["price_sats"] = int(match.group(1))
-    match = EXPIRES_PATTERN.search(text)
-    if match:
-        info["expires_unix"] = int(match.group(1))
+    for line in (text or "").split("\n"):
+        if not TOLLGATE_LINE_PATTERN.search(line):
+            continue
+        for pattern, key in ((SESSION_ID_PATTERN, "session_id"),
+                             (PRICE_PATTERN, "price_sats"),
+                             (EXPIRES_PATTERN, "expires_unix")):
+            if key in info:
+                continue
+            match = pattern.search(line)
+            if match:
+                info[key] = int(match.group(1))
     return info
 
 
