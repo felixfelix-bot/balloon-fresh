@@ -58,10 +58,10 @@ exact ACK handling path may need adjustment based on firmware behavior.
 The tollgate component on Board B may automatically ACK or may require
 firmware changes to process PAY messages and respond with ACK.
 
-EXIT CODES:
-  0 — PAY sent and ACK received with matching seq + valid session info
-  1 — PAY sent but ACK not received or seq mismatch
-  2 — PAY could not be sent at all
+EXIT CODES (computed by compute_verdict() — single source of truth):
+  0 — PASS: every round sent a PAY, got an ACK, and the seq echoed exactly
+  1 — PARTIAL: at least one ACK/NACK was seen, but not all rounds matched
+  2 — FAIL: no PAY could be sent, or no ACK/NACK was ever received
   3 — setup error (lock acquisition, serial open, etc.)
 """
 
@@ -74,16 +74,35 @@ import subprocess
 import struct
 from pathlib import Path
 
-# Ensure we can import BoardSerial from the tools directory
+# Ensure we can import BoardSerial from the tools directory.
+# NOTE: that import is deferred to load_board_serial() so the log-parsing
+# helpers in this module stay importable on a host without pyserial — the
+# host-only regression tests (test/test_tollgate_payack_parse.py) import this
+# module and must not require serial hardware or pyserial.
 TOOLS_DIR = os.path.expanduser("~/repos/balloon-fresh/tools")
 sys.path.insert(0, TOOLS_DIR)
 
-try:
-    from board_serial import BoardSerial
-except ImportError:
-    print("ERROR: board_serial.py not found in {TOOLS_DIR}".format(TOOLS_DIR=TOOLS_DIR), file=sys.stderr)
-    print("       Ensure balloon-fresh repo is cloned at ~/repos/balloon-fresh", file=sys.stderr)
-    sys.exit(3)
+BoardSerial = None  # populated lazily by load_board_serial()
+
+
+def load_board_serial():
+    """Import the mandated serial wrapper (board_serial.py) on first use.
+
+    Exits 3 with a clear message when the wrapper or pyserial is unavailable,
+    preserving the harness's documented setup-error exit code.
+    """
+    global BoardSerial
+    if BoardSerial is not None:
+        return BoardSerial
+    try:
+        from board_serial import BoardSerial as _BoardSerial
+    except (ImportError, SystemExit) as exc:
+        print("ERROR: board_serial.py not usable ({e})".format(e=exc), file=sys.stderr)
+        print("       Ensure balloon-fresh repo is cloned at ~/repos/balloon-fresh", file=sys.stderr)
+        print("       and pyserial is installed: pip install pyserial", file=sys.stderr)
+        sys.exit(3)
+    BoardSerial = _BoardSerial
+    return BoardSerial
 
 LOCK_SCRIPT = os.path.join(TOOLS_DIR, "balloon-board-lock.py")
 BOARD_A_PORT = "/dev/ttyACM0"
@@ -102,15 +121,156 @@ TG_MSG_PAY = 0x01
 TG_MSG_ACK = 0x02
 TG_MSG_NACK = 0x03
 
-# Regex patterns for parsing serial output
-SEQ_PATTERN = re.compile(r"seq[:\s]+(\d+)", re.IGNORECASE)
-SESSION_ID_PATTERN = re.compile(r"session[_\s]*id[:\s]+(\d+)", re.IGNORECASE)
-PRICE_PATTERN = re.compile(r"price[:\s]+(\d+)\s*sats?", re.IGNORECASE)
-EXPIRES_PATTERN = re.compile(r"expires?[:\s]+(\d+)", re.IGNORECASE)
+# ---------------------------------------------------------------------------
+# Log parsing — host-testable, no serial required
+# ---------------------------------------------------------------------------
+#
+# Two things make the raw patterns unsafe on their own, so every parse goes
+# through parse_tollgate_log_line(), which scopes a line to the TollGate
+# subsystem first:
+#
+#   1. Every TollGate producer prints `seq=%u` (main/app_main.cpp:645,
+#      main/app_task.cpp:121,140), so the sequence pattern must accept '=' as
+#      well as ':'/whitespace.
+#   2. The tracker log tag is "TRACKER" (main/app_main.cpp:83) — it CONTAINS
+#      the substring "ack" — and the telemetry line
+#      `TX %d bytes (seq %d)...` (main/app_main.cpp:902) has a `seq` field of
+#      its own. Neither may be counted as a TollGate ACK/sequence.
+
+TOLLGATE_LINE_PATTERN = re.compile(r"tollgate", re.IGNORECASE)
+
+SEQ_PATTERN = re.compile(r"\bseq\s*[:=]\s*(\d+)", re.IGNORECASE)
+SESSION_ID_PATTERN = re.compile(r"session[_\s]*id\s*[:=]\s*(\d+)", re.IGNORECASE)
+PRICE_PATTERN = re.compile(r"price\s*[:=]\s*(\d+)\s*sats?", re.IGNORECASE)
+EXPIRES_PATTERN = re.compile(r"expires?\s*[:=]\s*(\d+)", re.IGNORECASE)
 QUEUED_PATTERN = re.compile(r"queued\s+\d+\s+bytes", re.IGNORECASE)
-ACK_PATTERN = re.compile(r"(?:ACK|ack|accepted|payment.*?accepted)", re.IGNORECASE)
-NACK_PATTERN = re.compile(r"(?:NACK|nack|rejected|payment.*?rejected)", re.IGNORECASE)
+# \b stops "NACK" (and words like "stack"/"feedback") from matching as an ACK.
+ACK_PATTERN = re.compile(r"(?:\bACK\b|\baccepted\b)", re.IGNORECASE)
+NACK_PATTERN = re.compile(r"(?:\bNACK\b|\brejected\b)", re.IGNORECASE)
+PAY_PATTERN = re.compile(r"(?:\bPAY\b|send_pay)", re.IGNORECASE)
 RSSI_PATTERN = re.compile(r"RSSI[:\s]+(-?\d+)\s*dBm", re.IGNORECASE)
+
+
+def parse_tollgate_log_line(line: str):
+    """Parse one firmware log line into a TollGate record, or None.
+
+    None means "not a TollGate line" (e.g. the TRACKER telemetry line). The
+    returned dict has: kind ("pay"|"ack"|"nack"|"other"), the raw line, and
+    any of seq/session_id/price_sats/expires_unix that the line carries.
+
+    A parsed seq of 0 is a legitimate value: test for it with `is not None`,
+    never with truthiness (u16 wrap reaches 0).
+    """
+    if not TOLLGATE_LINE_PATTERN.search(line):
+        return None
+
+    if NACK_PATTERN.search(line):
+        kind = "nack"
+    elif ACK_PATTERN.search(line):
+        kind = "ack"
+    elif PAY_PATTERN.search(line):
+        kind = "pay"
+    else:
+        kind = "other"
+
+    rec = {"kind": kind, "line": line, "seq": None}
+
+    match = SEQ_PATTERN.search(line)
+    if match:
+        rec["seq"] = int(match.group(1))
+    match = SESSION_ID_PATTERN.search(line)
+    if match:
+        rec["session_id"] = int(match.group(1))
+    match = PRICE_PATTERN.search(line)
+    if match:
+        rec["price_sats"] = int(match.group(1))
+    match = EXPIRES_PATTERN.search(line)
+    if match:
+        rec["expires_unix"] = int(match.group(1))
+    return rec
+
+
+def classify_tollgate_output(text: str) -> dict:
+    """Split a block of serial output into TollGate records, grouped by kind."""
+    out = {"pay": [], "ack": [], "nack": [], "other": []}
+    for rec in parse_tollgate_output(text):
+        out[rec["kind"]].append(rec)
+    return out
+
+
+def parse_tollgate_output(text: str) -> list:
+    """Flat list of TollGate records found in a block of serial output."""
+    recs = []
+    for line in (text or "").split("\n"):
+        rec = parse_tollgate_log_line(line)
+        if rec is not None:
+            recs.append(rec)
+    return recs
+
+
+def extract_seq(text: str):
+    """Sequence number of the first TollGate log line that carries one."""
+    for line in (text or "").split("\n"):
+        rec = parse_tollgate_log_line(line)
+        if rec is not None and rec["seq"] is not None:
+            return rec["seq"]
+    return None
+
+
+def extract_session_info(text: str) -> dict:
+    """Extract session info from ACK output."""
+    info = {}
+    match = SESSION_ID_PATTERN.search(text)
+    if match:
+        info["session_id"] = int(match.group(1))
+    match = PRICE_PATTERN.search(text)
+    if match:
+        info["price_sats"] = int(match.group(1))
+    match = EXPIRES_PATTERN.search(text)
+    if match:
+        info["expires_unix"] = int(match.group(1))
+    return info
+
+
+def seq_match_of(result: dict):
+    """True/False if both sequences are known, else None.
+
+    Single source of truth for the PAY/ACK echo check: an exact u16 equality
+    (seq is an opaque echo token — see the contract in
+    main/tollgate_payment_proto.h). `is not None` keeps a legal seq of 0 in
+    play instead of treating it as "missing".
+    """
+    if result.get("pay_seq") is None or result.get("ack_seq") is None:
+        return None
+    return result["pay_seq"] == result["ack_seq"]
+
+
+def summarize_results(all_results) -> dict:
+    """Counts used for the run summary and the verdict."""
+    return {
+        "rounds": len(all_results),
+        "pays_sent": sum(1 for r in all_results if r["pay_sent"]),
+        "acks_received": sum(1 for r in all_results if r["ack_received"]),
+        "nacks_received": sum(1 for r in all_results if r["nack_received"]),
+        "seq_matches": sum(1 for r in all_results if seq_match_of(r) is True),
+        "seq_mismatches": sum(1 for r in all_results if seq_match_of(r) is False),
+    }
+
+
+def compute_verdict(all_results):
+    """Single source of truth for the harness exit verdict.
+
+    Returns (exit_code, label) using the exit codes documented at the top of
+    this file: 0 = PASS, 1 = PARTIAL, 2 = FAIL.
+    """
+    s = summarize_results(all_results)
+    if s["pays_sent"] == 0:
+        return 2, "FAIL (no PAY messages could be sent)"
+    if s["rounds"] > 0 and s["acks_received"] == s["rounds"] and s["seq_matches"] == s["rounds"]:
+        return 0, "PASS (all PAY\u2192ACK rounds successful)"
+    if s["acks_received"] > 0 or s["nacks_received"] > 0:
+        return 1, "PARTIAL (some rounds succeeded)"
+    return 2, "FAIL (no ACKs received)"
 
 
 def acquire_lock(board: str, purpose: str, timeout: int = 120) -> bool:
@@ -169,29 +329,6 @@ def send_and_read(ser, command: str, wait: float = 2.0) -> str:
     return read_all(ser, wait)
 
 
-def extract_seq(text: str):
-    """Extract sequence number from serial output."""
-    match = SEQ_PATTERN.search(text)
-    if match:
-        return int(match.group(1))
-    return None
-
-
-def extract_session_info(text: str) -> dict:
-    """Extract session info from ACK output."""
-    info = {}
-    match = SESSION_ID_PATTERN.search(text)
-    if match:
-        info["session_id"] = int(match.group(1))
-    match = PRICE_PATTERN.search(text)
-    if match:
-        info["price_sats"] = int(match.group(1))
-    match = EXPIRES_PATTERN.search(text)
-    if match:
-        info["expires_unix"] = int(match.group(1))
-    return info
-
-
 def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> dict:
     """
     Execute a single PAY→ACK round.
@@ -206,6 +343,7 @@ def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> d
         "ack_received": False,
         "ack_seq": None,
         "nack_received": False,
+        "nack_seq": None,
         "session_info": {},
         "rssi": None,
         "errors": [],
@@ -228,7 +366,8 @@ def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> d
         result["pay_sent"] = True
         seq = extract_seq(response)
         result["pay_seq"] = seq
-        print("  [A] PAY queued (seq={seq})".format(seq=seq if seq else "unknown"))
+        print("  [A] PAY queued (seq={seq})".format(
+            seq=seq if seq is not None else "unknown"))
     elif "error" in response.lower() or "failed" in response.lower():
         result["errors"].append("PAY send failed: {r}".format(r=response.strip()[:100]))
         print("  [A] PAY FAILED: {r}".format(r=response.strip()[:100]))
@@ -250,47 +389,50 @@ def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> d
     # Also read Board A output (in case ACK comes back to A)
     tx_output = read_all(tx_ser, wait=1.0)
 
-    # Parse Board B output for PAY receipt / ACK
+    # Parse Board B output. Only TollGate log lines are considered — the
+    # TRACKER tag itself contains "ack" and the telemetry line carries its own
+    # `seq`, so unscoped matching produced phantom ACKs (defect D6).
     for line in rx_lines:
-        line_lower = line.lower()
-        if ACK_PATTERN.search(line):
-            result["ack_received"] = True
-            ack_seq = extract_seq(line)
-            if ack_seq:
-                result["ack_seq"] = ack_seq
-            session = extract_session_info(line)
-            if session:
-                result["session_info"].update(session)
-            print("  [B] ACK detected: {line}".format(line=line.strip()[:80]))
-
-        if NACK_PATTERN.search(line):
-            result["nack_received"] = True
-            nack_seq = extract_seq(line)
-            if nack_seq:
-                result["ack_seq"] = nack_seq
-            print("  [B] NACK detected: {line}".format(line=line.strip()[:80]))
-
         rssi = RSSI_PATTERN.search(line)
         if rssi:
             result["rssi"] = int(rssi.group(1))
 
+        rec = parse_tollgate_log_line(line)
+        if rec is None:
+            continue
+
+        if rec["kind"] == "ack":
+            result["ack_received"] = True
+            if rec["seq"] is not None:  # seq 0 is valid — no truthiness
+                result["ack_seq"] = rec["seq"]
+            session = extract_session_info(line)
+            if session:
+                result["session_info"].update(session)
+            print("  [B] ACK detected: {line}".format(line=line.strip()[:80]))
+        elif rec["kind"] == "nack":
+            result["nack_received"] = True
+            if rec["seq"] is not None:
+                result["nack_seq"] = rec["seq"]  # kept separate from ack_seq
+            print("  [B] NACK detected: {line}".format(line=line.strip()[:80]))
+
     # Parse Board A output for ACK receipt (if ACK is relayed back)
     if not result["ack_received"] and not result["nack_received"]:
         for line in tx_output.split("\n"):
-            if ACK_PATTERN.search(line):
+            rec = parse_tollgate_log_line(line)
+            if rec is None:
+                continue
+            if rec["kind"] == "ack":
                 result["ack_received"] = True
-                ack_seq = extract_seq(line)
-                if ack_seq:
-                    result["ack_seq"] = ack_seq
+                if rec["seq"] is not None:
+                    result["ack_seq"] = rec["seq"]
                 session = extract_session_info(line)
                 if session:
                     result["session_info"].update(session)
                 print("  [A] ACK received back: {line}".format(line=line.strip()[:80]))
-            if NACK_PATTERN.search(line):
+            elif rec["kind"] == "nack":
                 result["nack_received"] = True
-                nack_seq = extract_seq(line)
-                if nack_seq:
-                    result["ack_seq"] = nack_seq
+                if rec["seq"] is not None:
+                    result["nack_seq"] = rec["seq"]
                 print("  [A] NACK received back: {line}".format(line=line.strip()[:80]))
 
     # Print relevant RX output for debugging
@@ -301,18 +443,14 @@ def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> d
             if line.strip():
                 print("    {line}".format(line=line.strip()[:80]))
 
-    # Verify sequence match
-    if result["pay_seq"] is not None and result["ack_seq"] is not None:
-        if result["pay_seq"] == result["ack_seq"]:
-            result["seq_match"] = True
-            print("  Seq match: PAY seq={ps} == ACK seq={acks}".format(
-                ps=result["pay_seq"], acks=result["ack_seq"]))
-        else:
-            result["seq_match"] = False
-            print("  Seq MISMATCH: PAY seq={ps} != ACK seq={acks}".format(
-                ps=result["pay_seq"], acks=result["ack_seq"]))
-    else:
-        result["seq_match"] = None
+    # Verify sequence match (exact u16 echo equality; seq 0 is a valid value)
+    result["seq_match"] = seq_match_of(result)
+    if result["seq_match"] is True:
+        print("  Seq match: PAY seq={ps} == ACK seq={acks}".format(
+            ps=result["pay_seq"], acks=result["ack_seq"]))
+    elif result["seq_match"] is False:
+        print("  Seq MISMATCH: PAY seq={ps} != ACK seq={acks}".format(
+            ps=result["pay_seq"], acks=result["ack_seq"]))
 
     return result
 
@@ -386,9 +524,10 @@ Examples:
     try:
         # Open serial connections
         print("\n--- Opening Serial Connections ---")
+        BoardSerialCls = load_board_serial()
         try:
-            tx_ser = BoardSerial(args.port_a, BAUD_RATE, timeout=1)
-            rx_ser = BoardSerial(args.port_b, BAUD_RATE, timeout=1)
+            tx_ser = BoardSerialCls(args.port_a, BAUD_RATE, timeout=1)
+            rx_ser = BoardSerialCls(args.port_b, BAUD_RATE, timeout=1)
         except Exception as e:
             print("FATAL: Failed to open serial: {e}".format(e=e), file=sys.stderr)
             sys.exit(3)
@@ -428,42 +567,30 @@ Examples:
     print("TOLLGATE PAY->ACK TEST SUMMARY")
     print("=" * 60)
 
-    total = len(all_results)
-    pays_sent = sum(1 for r in all_results if r["pay_sent"])
-    acks_received = sum(1 for r in all_results if r["ack_received"])
-    nacks_received = sum(1 for r in all_results if r["nack_received"])
-    seq_matches = sum(1 for r in all_results if r.get("seq_match") is True)
-    seq_mismatches = sum(1 for r in all_results if r.get("seq_match") is False)
+    summary = summarize_results(all_results)
 
-    print("  Rounds executed: {n}".format(n=total))
-    print("  PAY messages sent: {n}".format(n=pays_sent))
-    print("  ACK received: {n}".format(n=acks_received))
-    print("  NACK received: {n}".format(n=nacks_received))
-    print("  Seq matches: {n}".format(n=seq_matches))
-    print("  Seq mismatches: {n}".format(n=seq_mismatches))
+    print("  Rounds executed: {n}".format(n=summary["rounds"]))
+    print("  PAY messages sent: {n}".format(n=summary["pays_sent"]))
+    print("  ACK received: {n}".format(n=summary["acks_received"]))
+    print("  NACK received: {n}".format(n=summary["nacks_received"]))
+    print("  Seq matches: {n}".format(n=summary["seq_matches"]))
+    print("  Seq mismatches: {n}".format(n=summary["seq_mismatches"]))
 
-    # Session info details
+    # Per-round detail (NACK seqs are reported separately from ACK seqs)
     for r in all_results:
         if r["session_info"]:
             print("  Round {n} session: {info}".format(
                 n=r["round"], info=r["session_info"]))
+        if r["nack_seq"] is not None:
+            print("  Round {n} NACK seq: {s}".format(n=r["round"], s=r["nack_seq"]))
         if r["rssi"] is not None:
             print("  Round {n} RSSI: {rssi} dBm".format(
                 n=r["round"], rssi=r["rssi"]))
 
-    # Exit code determination
-    if pays_sent == 0:
-        print("\n  RESULT: FAIL (no PAY messages could be sent)")
-        sys.exit(2)
-    elif acks_received == total and seq_matches == total:
-        print("\n  RESULT: PASS (all PAY→ACK rounds successful)")
-        sys.exit(0)
-    elif acks_received > 0 or nacks_received > 0:
-        print("\n  RESULT: PARTIAL (some rounds succeeded)")
-        sys.exit(1)
-    else:
-        print("\n  RESULT: FAIL (no ACKs received)")
-        sys.exit(2)
+    # Exit code determination — single source of truth is compute_verdict()
+    exit_code, label = compute_verdict(all_results)
+    print("\n  RESULT: {label}".format(label=label))
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
