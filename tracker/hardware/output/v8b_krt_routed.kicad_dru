@@ -1,0 +1,26 @@
+(version 1)
+# =====================================================================
+# S1 FROZEN RULE SET - the ONE rule file used for EVERY S1 routing
+# attempt (KRT A* and Freerouting).  Do not edit during the campaign:
+# comparability of the drc_score.py rows depends on this file's sha256.
+#
+# JLCPCB standard capability, 4-layer, 1oz outer copper (checked 2026-09-16):
+#   min track width      0.10 mm  -> we freeze at 0.20 mm (2x margin)
+#   min copper clearance 0.10 mm  -> we freeze at 0.20 mm (2x margin)
+#   min via diameter     0.45 mm  -> we freeze at 0.60 mm
+#   min via hole         0.20 mm  -> we freeze at 0.30 mm
+#   min hole to hole     0.25 mm  -> frozen at 0.25 mm
+#
+# The Default net class in output/v_c3_flight_4layer_placed.kicad_pro
+# carries the SAME numbers (clearance 0.2 / track 0.2 / via 0.6 / drill
+# 0.3), so the routers are told exactly what this referee enforces and
+# the "clearance 0.2mm; actual 0.1mm" class cannot be a rule-mismatch
+# artifact.
+# =====================================================================
+(rule "S1 frozen JLCPCB clearance" (constraint clearance (min 0.20mm)))
+(rule "S1 frozen JLCPCB track width" (constraint track_width (min 0.20mm)))
+(rule "S1 frozen JLCPCB via diameter" (constraint via_diameter (min 0.60mm)))
+(rule "S1 frozen JLCPCB via hole"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.30mm)))
+(rule "S1 frozen JLCPCB hole to hole" (constraint hole_to_hole (min 0.25mm)))
