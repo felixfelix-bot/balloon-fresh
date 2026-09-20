@@ -276,13 +276,18 @@ def make_gps_pads() -> list:
 
 
 def make_ldo_pads() -> list:
-    """TPS7A02 SOT-23-5: 5 pads (IN, GND, EN, OUT, NC)."""
+    """TPS7A02 DBV SOT-23-5: 5 pads - 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT (TI SBVS277C Table 5-1, p.3).
+
+    Was (IN, GND, EN, OUT, NC): OUT/NC were on the wrong pins. TI figure 5-2 / table 5-1
+    put OUT on DBV pin 5 and NC on DBV pin 4; gen_pcb.py and the flight board already
+    carry it that way, so this table was the outlier.
+    """
     return [
         PadDef(number="1", net="VCAP",  dx=-0.95, dy=-0.75, w=0.6, h=0.4, layer=F_CU),  # IN
         PadDef(number="2", net="GND",   dx=0,     dy=-0.75, w=0.6, h=0.4, layer=F_CU),  # GND
         PadDef(number="3", net="VCAP",  dx=0.95,  dy=-0.75, w=0.6, h=0.4, layer=F_CU),  # EN (tie to IN)
-        PadDef(number="4", net="3V3",   dx=0.95,  dy=0.75,  w=0.6, h=0.4, layer=F_CU),  # OUT
-        PadDef(number="5", net="",      dx=-0.95, dy=0.75,  w=0.6, h=0.4, layer=F_CU),  # NC
+        PadDef(number="4", net="",      dx=0.95,  dy=0.75,  w=0.6, h=0.4, layer=F_CU),  # NC
+        PadDef(number="5", net="3V3",   dx=-0.95, dy=0.75,  w=0.6, h=0.4, layer=F_CU),  # OUT
     ]
 
 

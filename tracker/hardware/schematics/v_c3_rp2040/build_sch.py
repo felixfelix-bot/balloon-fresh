@@ -98,9 +98,9 @@ ex, ey = stub("U5", "2", 5)
 sch.add_power("GND", ex, ey, 0)
 ex, ey = stub("U5", "3", 5)
 sch.add_label("VBAT", ex, ey, 0)  # EN pulled to VBAT (always-on)
-ex, ey = stub("U5", "4", 5)
-sch.add_label("3V3", ex, ey, 0)
-nc("U5", "5")
+ex, ey = stub("U5", "5", 5)
+sch.add_label("3V3", ex, ey, 0)  # OUT is DBV pin 5 (TI SBVS277C Table 5-1, p.3)
+nc("U5", "4")                    # DBV pin 4 is NC: "connect to ground or leave floating"
 
 # --- C2 10uF LDO output ---
 sch.add_symbol("Device:C", "C2", "10uF", "Capacitor_SMD:C_0603_1608Metric", "~", 145, 50, 0)

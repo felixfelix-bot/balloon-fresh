@@ -121,20 +121,23 @@ introduced nor removed one.
 **The detailed, pad-by-pad audit of record is
 `tracker/hardware/PCB-S0-NETLIST-AUDIT.md`** (produced in parallel, with a pin
 function and a confidence per pad; machine-readable copy
-`output/v_c3_flight_4layer_placed_netlist_audit.json`).  Its split: **11 GAP
-(4 HIGH / 1 LOW / 6 MEDIUM) and 16 intentional.**  This file does not restate that
-table — it records where the two independent audits agree, where they differ, and
-what would settle it:
+`output/v_c3_flight_4layer_placed_netlist_audit.json`).  **PCB-S0b (card `t_a1f8e389`) closed it.**  The table below now carries the settled
+verdict per pad: **3 FIXED + 23 INTENTIONAL (cited) + 1 BLOCKED-ON-OPERATOR +
+1 non-pad item, 0 "unknown"**.  The pre-S0b split was 11 GAP (4 HIGH / 1 LOW / 6
+MEDIUM) + 16 intentional.  The netlist of record is
+`output/v_c3_flight_4layer_placed_netfix.kicad_pcb` (sha256 `aa76fbbb85ce…`); the
+placement anchor `f3cf0143e7de…` is left byte-identical (net ties only, no part
+added or moved, so no re-freeze):
 
 | pads | both audits agree | residual difference / what settles it |
 |---|---|---|
 | `U1` × 9 unnumbered `0.7×0.7 mm` SMD pads (3×3 grid) | **intentional (mechanical)** — WROOM-02 library footprint has 9 unnamed pads; an unnamed pad cannot be netted | none |
 | `J1.6` | **intentional (spare pin)** — pads 1–5 carry GND/+3V3/EN/UART0_TX/UART0_RX | mark no-connect in the schematic so ERC stops reporting it |
-| `U4.3` | **GAP** — SOT-23-5 pin 3 is the regulator EN and it is floating; every in-repo source agrees on pin 3 | tie EN to VCAP (always-on) or to a GPIO |
-| `U3.11` | **GAP, functional-critical** — it is the MAX-form-factor RF input and NOTHING on the board feeds it: there is no GPS antenna part and no RF net touching U3 | add the antenna feed, or fit a module variant with an integral antenna |
-| `U2.7`, `U2.11`, `U2.15`, `U2.16` | both: netless, and NOT certifiable from this repo | **DISPUTED**: the HOPERF RFM9XW 16-pad reference pinout reads 7/11/15/16 as the spare modem DIO lines (DIO5/DIO3/DIO1/DIO2 ⇒ intentional), while the parallel audit reads 11/16 as ground tabs that must be grounded and 7 as an unmodelled I/O. The board mixes a NiceRF LR2021F33 value with an RFM9XW footprint, and the repo's own module tables (`footprints/nicerf-lora2021*.json`) describe a THIRD, 18-pin package — so no in-repo artefact can arbitrate. **Settle with the NiceRF LR2021F33 (or HOPERF RFM9XW) drawing before fab.** |
-| `U3.4`, `U3.5`, `U3.6`, `U3.9`, `U3.13`–`U3.18` (10) | both: netless | split by the parallel audit into 6 intentional optional/IO-only pins (TIMEPULSE, EXTINT, LNA_EN, VCC_RF, SDA, SCL) and 4 inputs/power pins whose floating state is undefined (`V_BCKP` power_in, `VIO_SEL` IO-reference select, `~RESET`, `~SAFEBOOT`). The u-blox pin table could not be fetched from this host (vendor PDF returned an HTML error page; browser daemon down) and no MAX-M10S datasheet exists in the repo, so treat the 4 as GAPS to confirm |
-| `U4.4` | both: netless | **DISPUTED, LOW confidence**: this audit reads it as NC (TI DBV arrangement, pad 5 = OUT — the board matches that); the parallel audit notes the repo's own symbol (`balloon_symbols.kicad_sym`) says pin 4 = OUT, pin 5 = NC, i.e. symbol and board contradict each other. Arbitrate against the TI datasheet and fix whichever artefact is wrong |
+| `U4.3` | **FIXED (S0b)** — TPS7A02 DBV pin 3 = EN; TI SBVS277C Table 5-1, p.3 gives EN an internal pulldown, so a floating EN *disables* the regulator and the rail never comes up. Tied to the input rail `VCAP` (= IN, pin 1): the datasheet's always-on configuration (electrical characteristics specified at V_EN = V_IN; abs max V_EN 6.5 V, p.4). This is path 2 of the card's three — no resistor, no new footprint. Part: TPS7A02, SOT-23-5 (DBV) | none — done |
+| `U3.11` | **BLOCKED-ON-OPERATOR** — MAX-M10S `RF_IN` (UBX-20035208 Table 10, p.9: "GNSS signal input") has no antenna feed on the board: no GPS antenna part and no RF net touches U3 (the only RF part is `ANT1`, the 2.4 GHz U.FL). Not closed by declaration. Four options costed in `PCB-S0-NETLIST-AUDIT.md` §3.1 (recommended: U.FL + matching network); any option adds a part and therefore **forces a re-freeze** | operator decision |
+| `U2.7`, `U2.11`, `U2.15`, `U2.16` | **SETTLED — all four INTENTIONAL (S0b)**. The land pattern on the board is the 16-pad HOPERF RFM9XW, and the vendor drawing it comes from (`HOPERF RFM95/96/97/98(W) data sheet §1.4 "Pin Description", p.11`) reads **7 = DIO5, 11 = DIO3, 15 = DIO1, 16 = DIO2** — four spare, software-configured digital I/O, *not* ground tabs. The parallel audit's "probable GROUND tab" reading is therefore refuted (grounding a DIO line would be the defect). The board's netted pads match that same table pin-for-pin: 2 MISO / 3 MOSI / 4 SCK / 5 NSS / 6 RESET / 9 ANT (`RF_OUT`) / 13 3.3V (`+3V3`) / 14 DIO0 (`LR_DIO0`), 1+8+10 GND, and pad 12 (vendor DIO4) used as `LR_BUSY` | declared no-connect. Separate operator item: the `U2` Value (`LR2021F33`) and the BOM ("NiceRF LoRa2021") describe 18-pin modules that cannot fit these 16-pad lands — audit §4.3 |
+| `U3.4`, `U3.5`, `U3.6`, `U3.9`, `U3.13`–`U3.18` (10) | **SETTLED from the datasheet (S0b)** — the U3 footprint is the **full 18-pad module** (`ublox_MAX`), so every Table 10 pin exists on the board. **3 FIXED:** `U3.6` V_BCKP → `+3V3` (backup supply 1.65–3.6 V, electrical spec p.11 — the board's only 1 F cell is the `VCAP` supercap on the LDO input, a different net, so no supercap is intended here); `U3.9` RESET_N → `+3V3` (active low; Table 11, p.10 lists RESET_N as "Input pull-up" in every mode, so the internal pull-up makes the tie safe *and* deterministic). **6 INTENTIONAL no-connect:** `U3.4` TIMEPULSE (output), `U3.5` EXTINT ("leave open if not used"), `U3.13` LNA_EN (no external LNA), `U3.14` VCC_RF (no active antenna), `U3.16` SDA + `U3.17` SCL (module used over UART), `U3.18` SAFEBOOT_N ("leave open if not used"; footnote 15, p.9: internally linked to TIMEPULSE through 1 kΩ, so pad 4 must stay open too — it does). **1 INTENTIONAL that must stay open:** `U3.15` VIO_SEL — Table 10, p.9: "Connect to GND for 1.8 V supply, or leave open for 3.3 V supply"; the board's V_IO (pad 7) and the ESP32-C3 I/O are `+3V3`, and the electrical spec (p.11) allows V_IO up to 3.6 V only when VIO_SEL is open (tying it to GND caps V_IO at 1.98 V) | only `U3.11` RF_IN remains open (row above) |
+| `U4.4` | **SETTLED — INTENTIONAL (S0b)**. TI SBVS277C Figure 5-2 / Table 5-1, p.3: DBV pin 4 = **NC** ("not internally connected. Connect to ground or leave floating.") and pin 5 = **OUT** — which is exactly what the board carries (`+3V3` on pad 5). **Two repo artefacts were wrong and were corrected**: `balloon_symbols.kicad_sym::TPS7A0233PDBVR` (pin 4/5 function order swapped, both in-repo copies) and `full_pipeline.py::make_ldo_pads()` (pad table + docstring), with `build_sch.py`'s RP2040-variant wiring moved to pin 5 for consistency | none on the board |
 
 **Structural finding (this is the part that matters).** `schematics/v_c3_flight.kicad_sch`
 is a STUB: it contains exactly ONE symbol (U2) and its `(nets)` section is empty.
@@ -184,7 +187,11 @@ unregistered coordinate table).
 
 ## 5. Handoff to S1 (routing) — and the caveats
 
-* Build ONLY on `output/v_c3_flight_4layer_placed.kicad_pcb`
+* **S0b (netlist of record):** build NEW routing on
+  `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` (sha256 `aa76fbbb85ce…`) — same placement,
+  three pads tied. The pre-fix board floats `U4.3` EN, which leaves the 3V3 rail disabled
+  (`PCB-S0-NETLIST-AUDIT.md` §2), so any board routed from it is dead on arrival.
+* Build the PLACEMENT comparison on `output/v_c3_flight_4layer_placed.kicad_pcb`
   (`f3cf0143e7de…`); S1's comparability anchor is this sha256 + one frozen
   `.kicad_dru`.
 * The board carries the 3 zone definitions (In1.Cu GND pour, In2.Cu +3V3 pour,
@@ -200,3 +207,30 @@ Items requiring a human decision before fab (not blockers for S1):
    strategy against the u-blox MAX-M10S datasheet.
 3. The schematic is a stub — the board has no netlist provenance. ADR-028 says
    schematic first; a netlist re-derivation would close the whole class.
+
+## 6. PCB-S0b — netlist closure (card `t_a1f8e389`)
+
+The 27 netless pads of the frozen placement are closed: **3 FIXED, 23 INTENTIONAL (cited),
+1 BLOCKED-ON-OPERATOR, 0 unknown** (full per-pad table + citations in
+`PCB-S0-NETLIST-AUDIT.md`).
+
+| item | value |
+|---|---|
+| netlist of record | `output/v_c3_flight_4layer_placed_netfix.kicad_pcb` |
+| sha256 | `aa76fbbb85ce89ffd6b5e346ca7b5f53575035ba611ec137f3c086ac4dc0809a` |
+| frozen placement | unchanged at `f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6` |
+| gate25 (`output/s0b/gate25_netfix.json`) | fp 20 · pads 125 · segments 0 · vias 0 · zones 3 · netless 24 · pad_overlap_pairs_0.2 mm 0 · courtyards_overlap 0 · violations_total 4 (all `silk_edge_clearance`) · shorting_items 0 · clearance 0 · unconnected 67 · **PASS** |
+| `placement_guard.py --gate25` | **exit 0** — `gate25: fp=20 pad_overlaps=0 segments=0 -> PASS`, `violations: []` |
+| re-freeze triggered? | **no** — ties to nets that already exist; 20 footprints identical in position/rotation/identity, 0 tracks, 0 vias, 22-net table unchanged (`output/s0b/netlist_fix_report.json`) |
+
+Ties applied (each to a net that already exists on the board):
+
+| pad | function | from → to | authority |
+|---|---|---|---|
+| `U4.3` | TPS7A02 EN | (floating) → `VCAP` (= IN) | TI SBVS277C Table 5-1 p.3 + §6.5 (internal pulldown; EC at V_EN = V_IN) |
+| `U3.9` | MAX-M10S RESET_N | (floating) → `+3V3` | UBX-20035208 Table 10 p.9 + Table 11 p.10 |
+| `U3.6` | MAX-M10S V_BCKP | (floating) → `+3V3` | UBX-20035208 Table 10 p.9 + supply table p.11 (1.65–3.6 V) |
+
+Still open for the operator (neither is a netlist typo, neither was closed by guessing):
+`U3.11` RF_IN has no GNSS antenna feed (options + recommendation in the audit §3.1; a feed part
+forces a re-freeze), and the `U2` lands/part mismatch (audit §4.3).
