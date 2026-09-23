@@ -152,8 +152,48 @@ Consequences:
   still enforced in the host-tested core, but the cap is a compliance limit,
   not a substitute for a connected antenna.
 
+### SX1280PA RF switch — located from LILYGO's board header, driven, still `-901`
+
+LILYGO's `utilities.h` distinguishes the two T3S3 2.4 GHz SKUs:
+
+```c
+#elif defined(USING_SX1280)            // plain: no front-end pins
+#elif defined(USING_SX1280PA)          // this board (OLED: "Radio SX1280PA")
+#define RADIO_RX_PIN  21               // RF switch: RX enable  (idle state = HIGH)
+#define RADIO_TX_PIN  10               // RF switch: TX enable  (idle state = LOW)
+```
+
+Their board init parks `TX_PIN` LOW / `RX_PIN` HIGH, so the polarity used here
+(RX: RX_EN=HIGH/TX_EN=LOW, TX: RX_EN=LOW/TX_EN=HIGH, idle: both LOW) matches.
+This firmware now installs a RadioLib RF switch table
+(`SX128x::setRfSwitchTable`, pin list padded to `RFSWITCH_MAX_PINS`=5), and the
+official ranging example caps the PA SKU at **+3 dBm**
+(*"Cannot be greater than 3 dbm"*), which the boot sequence now applies through
+the tested `PA` handler.
+
+Measured after flashing (verified on-board by `pa=3` in `STAT?`):
+
+```
+ranging 1..5/5    master: RANGE TIMEOUT
+                  slave : ERR slave=-901
+```
+
+So **the front-end switch was real but not the whole story**: with the RF path
+now explicitly enabled, both ends still fail to complete a ranging exchange.
+Remaining explanations, in order:
+
+1. **No antennas fitted** — still the largest untested variable (open 2.4 GHz
+   port = reflection-dominated front end).
+2. **Ranging parameter/library mismatch.** LILYGO's working example uses
+   `SX12XX-LT` (not RadioLib) with 2445 MHz, BW 800 kHz, SF8, CR 4/5, a manual
+   `setRangingCalibration(11350)`, and averages 10 exchanges per measurement,
+   while this firmware uses RadioLib at 2440 MHz / 812.5 kHz / SF7 / CR 4/7 with
+   the default AN1200.29 table. A RadioLib ranging-IRQ-mask mismatch would
+   produce exactly this symmetric timeout.
+3. Hardware fault (dead PA) — cannot be excluded from software.
+
 **Operator action before any further RF:** fit both antennas. Until then this
-firmware is left `role=idle` at `pa=-18` and no ranging command is issued.
+firmware is left `role=idle` and no ranging command is issued.
 
 Also unconfirmed and requested from the operator: more physical separation than
 the ~10 cm both-boards-on-one-laptop bench imposes.

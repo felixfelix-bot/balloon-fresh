@@ -45,6 +45,20 @@
 #define RADIO_BUSY  36
 #define RADIO_DIO1  9
 
+/* ---- RF front-end switch (SX1280PA variant ONLY) -------------------------
+ * LILYGO's own board header for `USING_SX1280PA` defines two extra pins that
+ * the plain `USING_SX1280` block does NOT have:
+ *     RADIO_RX_PIN 21   RADIO_TX_PIN 10
+ * They gate an external PA/LNA (FEM). Leaving them undriven (the reset state
+ * is input) disables the RF path entirely: SPI still answers perfectly and the
+ * chip reports err=0, but nothing is transmitted or received, so a ranging
+ * exchange times out on BOTH ends with RADIOLIB_ERR_RANGING_TIMEOUT (-901) at
+ * every power / spreading factor / role assignment — measured 2026-09-23.
+ * RadioLib switches these automatically per mode via the RF switch table.
+ * Boards without the FEM (plain SX1280 SKU) simply ignore these pins. */
+#define RADIO_RX_EN 21
+#define RADIO_TX_EN 10
+
 /* ---- radio ---------------------------------------------------------------
  * RadioLib's findChip() picks the chip class by comparing the silicon's
  * 16-byte version string (register 0x01F0) against a hard-coded SKU string.
@@ -75,6 +89,20 @@ static SPIClass spiRf(HSPI);
 static Module radioModule(RADIO_NSS, RADIO_DIO1, RADIO_RST, RADIO_BUSY, spiRf);
 static SX128xRanging radio(&radioModule);
 static char g_chip_ver[17] = { 0 };
+
+/* RF switch table: (RX enable, TX enable). idle = both off, RX = RX_EN only,
+ * TX = TX_EN only. RADIOLIB_NC terminates the pin list. */
+/* RadioLib takes the pin list as a reference to an array of EXACTLY
+ * Module::RFSWITCH_MAX_PINS (5) entries; unused slots are RADIOLIB_NC. */
+static const uint32_t rfswitch_pins[] = {
+    RADIO_RX_EN, RADIO_TX_EN, RADIOLIB_NC, RADIOLIB_NC, RADIOLIB_NC
+};
+static const Module::RfSwitchMode_t rfswitch_table[] = {
+    { Module::MODE_IDLE, { LOW,  LOW  } },
+    { Module::MODE_RX,   { HIGH, LOW  } },
+    { Module::MODE_TX,   { LOW,  HIGH } },
+    END_OF_MODE_TABLE
+};
 
 /* ---- e28_io_t seams ------------------------------------------------------ */
 
@@ -254,7 +282,17 @@ void setup()
     rawChipVersion(g_chip_ver);
     const bool chipOk = radio.adoptSilicon(g_chip_ver);
 
+    /* Enable the external PA/LNA front end (SX1280PA). Must be set before
+     * begin(): RadioLib applies the table whenever the radio changes mode. */
+    radio.setRfSwitchTable(rfswitch_pins, rfswitch_table);
+
     e28_range_init(&e28_io, FW_GIT_HASH);
+
+    /* Ranging on the PA variant must stay low power: LILYGO's own ranging
+     * example for this board pins RangingTXPower at 3 dBm with the comment
+     * "Cannot be greater than 3 dbm". Set that through the tested PA handler
+     * (which clamps to the +10 dBm indoor cap regardless). */
+    e28_range_feed_line("PA 3");
 
     char banner[128];
     snprintf(banner, sizeof banner,
