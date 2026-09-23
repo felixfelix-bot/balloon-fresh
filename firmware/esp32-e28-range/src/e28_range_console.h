@@ -70,6 +70,24 @@ void e28_range_init(const e28_io_t* io, const char* fw_sha7);
 /** Feed one console line (no CRLF; case-insensitive parser strips blanks). */
 void e28_range_feed_line(const char* line);
 
+/** Decode the SX128x 16-byte version string (register 0x01F0) as returned by a
+ *  raw burst read. The burst may or may not carry a status byte before the
+ *  first data byte and/or interleaved with each data byte, so every plausible
+ *  alignment is tried and the one carrying the ASCII "SX1" signature wins.
+ *  Always writes a NUL-terminated 16-char string to out[17].
+ *
+ *  Rationale: RadioLib's findChip() compares this string against a hard-coded
+ *  SKU ("SX1282"), so getting the decode wrong is indistinguishable from a
+ *  dead SPI bus — that exact confusion cost a hardware bring-up round on
+ *  2026-09-23. */
+void e28_decode_chip_version(const uint8_t raw[17], char out[17]);
+
+/** True when the decoded version string belongs to a chip whose ranging engine
+ *  this firmware can drive: SX1280 and SX1282 (SX1282 inherits SX1280's
+ *  range()/startRanging()/finishRanging()). SX1281 is rejected — RadioLib's
+ *  SX1281 has no ranging implementation, and SX126x has no ranging at all. */
+bool e28_chip_supports_ranging(const char* version);
+
 /** Current config (introspection for firmware glue / tests). */
 uint32_t e28_range_freq_hz(void);
 uint8_t  e28_range_sf(void);

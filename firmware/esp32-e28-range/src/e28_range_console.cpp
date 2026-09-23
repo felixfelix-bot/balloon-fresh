@@ -45,10 +45,36 @@
 #define RADIO_BUSY  36
 #define RADIO_DIO1  9
 
-/* ---- radio --------------------------------------------------------------- */
+/* ---- radio ---------------------------------------------------------------
+ * RadioLib's findChip() picks the chip class by comparing the silicon's
+ * 16-byte version string (register 0x01F0) against a hard-coded SKU string.
+ * The T3S3 carrier ships with either the SX1280 (+13 dBm) or the "with PA"
+ * SX1282 (+22 dBm) part, and this firmware must not care which — the first
+ * hardware run on 2026-09-23 failed with RADIOLIB_ERR_CHIP_NOT_FOUND (-2)
+ * purely because the build assumed "SX1282" while the silicon reports
+ * "SX1280". This subclass adopts whatever the silicon reports.
+ * Ranging lives in SX1280 (SX1282 inherits it); SX1281 has NO ranging engine
+ * and is explicitly rejected rather than silently accepted.
+ */
+class SX128xRanging : public SX1280 {
+  public:
+    explicit SX128xRanging(Module* mod) : SX1280(mod) {}
+
+    /** Adopt the probed silicon version string. `ver` must outlive the radio
+     *  object (callers pass a static buffer). Capability gating is done by the
+     *  host-tested core. */
+    bool adoptSilicon(const char* ver)
+    {
+        if (!e28_chip_supports_ranging(ver)) return false;
+        this->chipType = ver;
+        return true;
+    }
+};
+
 static SPIClass spiRf(HSPI);
 static Module radioModule(RADIO_NSS, RADIO_DIO1, RADIO_RST, RADIO_BUSY, spiRf);
-static SX1282 radio(&radioModule);
+static SX128xRanging radio(&radioModule);
+static char g_chip_ver[17] = { 0 };
 
 /* ---- e28_io_t seams ------------------------------------------------------ */
 
@@ -89,17 +115,124 @@ static const e28_io_t e28_io = {
 static char lineBuf[128];
 static size_t lineLen = 0;
 
+/* Probe commands are handled in the firmware glue, before the host-testable
+ * core, because they need raw SPI access that the core's e28_io_t seam does
+ * not expose (and must work even when RadioLib init failed). */
+static void probe_chip(void);   /* raw CHIP? silicon probe — defined below */
+
+static void dispatchLine(const char* line)
+{
+    if (strncmp(line, "CHIP?", 5) == 0) { probe_chip(); return; }
+    e28_range_feed_line(line);
+}
+
 static void feedConsoleByte(char c)
 {
     if(c == '\r') return;
     if(c == '\n') {
         lineBuf[lineLen] = 0;
-        e28_range_feed_line(lineBuf);
+        dispatchLine(lineBuf);
         lineLen = 0;
         return;
     }
     if(lineLen + 1 < sizeof lineBuf) lineBuf[lineLen++] = c;
     /* overflow: silently drop (host tools must not exceed 127 chars/line) */
+}
+
+/* ---- CHIP? raw silicon probe (diagnostic) --------------------------------
+ * Reads the 16-byte version string at SX128x register 0x01F0 directly over
+ * SPI (READ_REGISTER 0x19, 16-bit addr), at several SCK rates. This is what
+ * RadioLib findChip() compares against the chipType string ("SX1282"), so it
+ * answers three questions at once:
+ *   - is the silicon a SX128x at all, or a sub-GHz SX126x,
+ *   - does the SPI bus work on this pinout,
+ *   - does 20 MHz (over the 18 MHz SX128x datasheet max) break the read.
+ * Output is plain ASCII on the console, no RadioLib state required.
+ */
+static char printable_or_dot(uint8_t b)
+{
+    return (b >= 32 && b < 127) ? (char)b : '.';
+}
+
+/* Read the 16-byte version string at reg 0x01F0 with a raw SPI sequence and
+ * decode it into `out` (NUL-terminated). The layout/alignment logic lives in
+ * the host-tested core (e28_decode_chip_version) so a decode bug cannot hide
+ * as a hardware fault. Safe to call before RadioLib is initialised — that is
+ * the whole point, since findChip() is what needs this string. */
+static void rawChipVersion(char out[17])
+{
+    uint8_t raw[17] = { 0 };
+    pinMode(RADIO_RST, OUTPUT);
+    digitalWrite(RADIO_RST, HIGH);      /* never leave the radio in reset */
+    pinMode(RADIO_NSS, OUTPUT);
+    digitalWrite(RADIO_NSS, HIGH);
+    spiRf.begin(RADIO_SCK, RADIO_MISO, RADIO_MOSI, RADIO_NSS);
+    spiRf.setFrequency(4000000);        /* conservative: well under the 18 MHz max */
+    spiRf.setDataMode(SPI_MODE0);
+    delay(2);
+
+    digitalWrite(RADIO_NSS, LOW);
+    delayMicroseconds(20);
+    spiRf.transfer(RADIOLIB_SX128X_CMD_READ_REGISTER);
+    spiRf.transfer((uint8_t)((RADIOLIB_SX128X_REG_VERSION_STRING >> 8) & 0xFF));
+    spiRf.transfer((uint8_t)(RADIOLIB_SX128X_REG_VERSION_STRING & 0xFF));
+    for (uint8_t i = 0; i < 17; i++) raw[i] = spiRf.transfer(0x00);
+    digitalWrite(RADIO_NSS, HIGH);
+
+    e28_decode_chip_version(raw, out);
+}
+
+static void probe_at(uint32_t hz)
+{
+    pinMode(RADIO_NSS, OUTPUT);
+    digitalWrite(RADIO_NSS, HIGH);
+    spiRf.begin(RADIO_SCK, RADIO_MISO, RADIO_MOSI, RADIO_NSS);
+    spiRf.setFrequency(hz);
+    spiRf.setDataMode(SPI_MODE0);
+    delay(2);
+
+    uint8_t raw[17];
+    digitalWrite(RADIO_NSS, LOW);
+    delayMicroseconds(20);
+    spiRf.transfer(RADIOLIB_SX128X_CMD_READ_REGISTER);
+    spiRf.transfer((uint8_t)((RADIOLIB_SX128X_REG_VERSION_STRING >> 8) & 0xFF));
+    spiRf.transfer((uint8_t)(RADIOLIB_SX128X_REG_VERSION_STRING & 0xFF));
+    for (uint8_t i = 0; i < 17; i++) raw[i] = spiRf.transfer(0x00);
+    digitalWrite(RADIO_NSS, HIGH);
+
+    char hex[3 * 17 + 1];
+    size_t p = 0;
+    for (uint8_t i = 0; i < 17; i++)
+        p += snprintf(hex + p, sizeof hex - p, "%02X ", raw[i]);
+
+    char straight[18];
+    for (uint8_t i = 0; i < 16; i++) straight[i] = printable_or_dot(raw[i + 1]);
+    straight[16] = 0;
+
+    char even[9], odd[9];   /* in case a status byte is interleaved per word */
+    for (uint8_t i = 0; i < 8; i++) {
+        even[i] = printable_or_dot(raw[1 + 2 * i]);
+        odd[i]  = printable_or_dot(raw[2 + 2 * i]);
+    }
+    even[8] = 0;
+    odd[8] = 0;
+
+    char line[160];
+    snprintf(line, sizeof line, "CHIP? %luHz raw=%s ascii=\"%s\" even=\"%s\" odd=\"%s\"\r\n",
+             (unsigned long)hz, hex, straight, even, odd);
+    Serial.write(line);
+}
+
+static void probe_chip(void)
+{
+    pinMode(RADIO_RST, OUTPUT);
+    digitalWrite(RADIO_RST, HIGH);   /* never leave the radio held in reset */
+    delay(5);
+    probe_at(20000000);
+    probe_at(16000000);
+    probe_at(8000000);
+    probe_at(2000000);
+    Serial.write("CHIP? done\r\n");
 }
 
 /* ---- Arduino entry points ------------------------------------------------ */
@@ -110,15 +243,29 @@ void setup()
     const uint32_t t0 = millis();
     while(!Serial && millis() - t0 < 3000) delay(10);
 
-    /* SPI bus: 20 MHz, mode 0 */
+    /* SPI bus: 16 MHz, mode 0 (SX128x datasheet max is 18 MHz; the original
+     * 20 MHz was over spec and is not needed for either build or ranging). */
     spiRf.begin(RADIO_SCK, RADIO_MISO, RADIO_MOSI, RADIO_NSS);
-    spiRf.setFrequency(20000000);
+    spiRf.setFrequency(16000000);
     spiRf.setDataMode(SPI_MODE0);
+
+    /* Identify the silicon BEFORE RadioLib init and adopt it, so the firmware
+     * works on both the SX1280 and the "with PA" SX1282 T3S3 SKUs. */
+    rawChipVersion(g_chip_ver);
+    const bool chipOk = radio.adoptSilicon(g_chip_ver);
 
     e28_range_init(&e28_io, FW_GIT_HASH);
 
-    Serial.write("\r\n" E28_RANGE_BOARD_NAME " " E28_RANGE_FW_VERSION
-                 " fw=" FW_GIT_HASH "\r\n");
+    char banner[128];
+    snprintf(banner, sizeof banner,
+             "\r\n" E28_RANGE_BOARD_NAME " " E28_RANGE_FW_VERSION
+             " fw=" FW_GIT_HASH " chip=\"%s\" ranging_capable=%d\r\n",
+             g_chip_ver, chipOk ? 1 : 0);
+    Serial.write(banner);
+    if (!chipOk) {
+        Serial.write("ERR unsupported radio: ranging needs SX1280/SX1282 "
+                     "(SX1281 has no ranging engine)\r\n");
+    }
     Serial.write("ready\r\n");
 }
 
