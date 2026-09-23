@@ -123,5 +123,37 @@ separates "DIO1/RF path broken" (plain packets also fail) from "ranging-specific
 (plain packets pass). Needs two new console commands, then the same bench
 harness.
 
-Also unconfirmed and requested from the operator: antenna(s) attached, and more
-physical separation than the ~10 cm both-boards-on-one-laptop bench imposes.
+## Pinout + antenna verified against vendor sources (same session)
+
+Two authoritative sources checked afterwards, both agreeing with the pins used
+here:
+
+- `slack-t/sx1280-flrc-kiss-tnc` (field-proven firmware on this exact board),
+  `firmware/src/config.h`: `RADIO_SCK 5 / MISO 3 / MOSI 6 / NSS 7 / RST 8 /
+  BUSY 36 / DIO1 9` — identical to this firmware. Its radio is constructed
+  exactly as ours is (`new Module(NSS, DIO1, RST, BUSY)`), it drives DIO1 as an
+  ISR and transmits successfully at +5 dBm.
+- LILYGO's own `T3 S3 SX1280` hardware page (vendored as
+  `docs/t3_s3_sx1280_hw.md` in that repo): same pin set, states *"T3-S3 V1.2 and
+  T3-S3 V1.3 use the same pins"*.
+
+Consequences:
+
+- **The pinout is not the problem** — no PA-enable / RF-switch GPIO is required
+  by the reference firmware, so the `DIO1` mapping hypothesis is now weak
+  (a wrong DIO1 would break that project too).
+- **The missing antennas are a first-order explanation for `-901`.** Neither
+  board had its SMA/pigtail antenna fitted during every run above; a 2.4 GHz
+  front end with an open port receives a reflection-dominated signal, and the
+  vendor page explicitly says: *"Please be sure to connect the antenna before
+  transmitting, otherwise it is easy to damage the RF module."*
+- The board's OLED (factory firmware) identifies the module as `Radio SX1280PA`
+  — the SX1280 **with PA**. This firmware's indoor cap of +10 dBm conducted is
+  still enforced in the host-tested core, but the cap is a compliance limit,
+  not a substitute for a connected antenna.
+
+**Operator action before any further RF:** fit both antennas. Until then this
+firmware is left `role=idle` at `pa=-18` and no ranging command is issued.
+
+Also unconfirmed and requested from the operator: more physical separation than
+the ~10 cm both-boards-on-one-laptop bench imposes.
