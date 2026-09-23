@@ -77,6 +77,13 @@ class SX128xRanging : public SX1280 {
     /** Adopt the probed silicon version string. `ver` must outlive the radio
      *  object (callers pass a static buffer). Capability gating is done by the
      *  host-tested core. */
+    /** SX128x::clearIrqStatus is protected; expose it for the TXPROBE
+     *  diagnostic (a derived class may reach protected members). */
+    int16_t clearIrqPublic(uint16_t mask = RADIOLIB_SX128X_IRQ_ALL)
+    {
+        return this->clearIrqStatus(mask);
+    }
+
     bool adoptSilicon(const char* ver)
     {
         if (!e28_chip_supports_ranging(ver)) return false;
@@ -148,11 +155,13 @@ static size_t lineLen = 0;
  * not expose (and must work even when RadioLib init failed). */
 static void probe_chip(void);   /* raw CHIP? silicon probe — defined below */
 static void probe_rssi(void);   /* receive-only RSSI check — defined below */
+static void probe_tx(void);     /* TX-completion vs IRQ-pin discriminator */
 
 static void dispatchLine(const char* line)
 {
     if (strncmp(line, "CHIP?", 5) == 0) { probe_chip(); return; }
     if (strncmp(line, "RSSI?", 5) == 0) { probe_rssi(); return; }
+    if (strncmp(line, "TXPROBE", 7) == 0) { probe_tx(); return; }
     e28_range_feed_line(line);
 }
 
@@ -289,6 +298,38 @@ static void probe_rssi(void)
      * and is the real ambient-energy reading we want here. */
     snprintf(line, sizeof line, "RSSI %.1f dBm inst=%.1f dBm state=%d (%s)\r\n",
              (double)radio.getRSSI(), (double)radio.getRSSI(false), (int)st, verdict);
+    Serial.write(line);
+}
+
+/* TXPROBE — transmit ONE short packet at the current (minimum) power, then
+ * compare two independent signals that must agree:
+ *   (a) the radio's own IRQ status register  -> did the chip finish the TX?
+ *   (b) the level of the DIO1 GPIO           -> did that IRQ reach the host?
+ * RadioLib's range()/transmit() block on (b) for up to 10 s, so if (a) says
+ * done while (b) stays low, every interrupt-driven operation times out even
+ * though the radio is perfectly healthy -- exactly the signature measured on
+ * 2026-09-23 (all register reads fine, everything IRQ-driven returns -901).
+ * Deliberately does NOT wait on the IRQ line. */
+static void probe_tx(void)
+{
+    static const uint8_t payload[12] = {
+        'E','2','8','P','R','O','B','E','0','1','0','1'
+    };
+    radio.clearIrqPublic();
+    const int16_t st = radio.startTransmit(payload, sizeof payload);
+
+    /* let the TX play out; poll the wall clock, not the IRQ line */
+    const uint32_t t0 = millis();
+    while (millis() - t0 < 400) delay(5);
+
+    const int dio1 = digitalRead(RADIO_DIO1);
+    const uint16_t irq = radio.getIrqStatus();
+    radio.finishTransmit();
+
+    char line[192];
+    snprintf(line, sizeof line,
+             "TXPROBE start=%d txdone_irqbit=%d dio1_pin=%d irqstatus=0x%04X\r\n",
+             (int)st, (irq & RADIOLIB_SX128X_IRQ_TX_DONE) ? 1 : 0, dio1, (unsigned)irq);
     Serial.write(line);
 }
 
