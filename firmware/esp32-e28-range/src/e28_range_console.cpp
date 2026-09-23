@@ -147,10 +147,12 @@ static size_t lineLen = 0;
  * core, because they need raw SPI access that the core's e28_io_t seam does
  * not expose (and must work even when RadioLib init failed). */
 static void probe_chip(void);   /* raw CHIP? silicon probe — defined below */
+static void probe_rssi(void);   /* receive-only RSSI check — defined below */
 
 static void dispatchLine(const char* line)
 {
     if (strncmp(line, "CHIP?", 5) == 0) { probe_chip(); return; }
+    if (strncmp(line, "RSSI?", 5) == 0) { probe_rssi(); return; }
     e28_range_feed_line(line);
 }
 
@@ -261,6 +263,33 @@ static void probe_chip(void)
     probe_at(8000000);
     probe_at(2000000);
     Serial.write("CHIP? done\r\n");
+}
+
+/* RSSI? — RECEIVE-ONLY channel scan. Transmits nothing (no PA keying, no RF
+ * output), so it is safe to run with the antenna port open, and it is the
+ * non-destructive way to tell whether an antenna is actually attached to the
+ * port the SX1280 is wired to: a real 2.4 GHz antenna picks up ambient energy
+ * (roughly -95..-85 dBm indoors) while a floating/open port sits at the chip
+ * noise floor (about -110 dBm). LILYGO's own reference firmware uses
+ * scanChannel() the same way for listen-before-talk. */
+static void probe_rssi(void)
+{
+    char line[160];
+    const int16_t st = radio.scanChannel();
+    /* NOTE: the two successful scan outcomes are NEGATIVE constants --
+     * RADIOLIB_PREAMBLE_DETECTED (-14) and RADIOLIB_CHANNEL_FREE (-15). Only
+     * anything else is a failure (first version of this function treated every
+     * negative value as an error and threw the RSSI away). */
+    const char* verdict = (st == RADIOLIB_PREAMBLE_DETECTED) ? "lora-preamble"
+                        : (st == RADIOLIB_CHANNEL_FREE)     ? "channel-free"
+                        : "scan-error";
+    /* getRSSI() with no argument reads the PACKET STATUS register, which is 0
+     * until a packet is received -- that produced a bogus "-0.0 dBm". The
+     * instantaneous-RSSI accessor (packet=false) reads the RssiInst register
+     * and is the real ambient-energy reading we want here. */
+    snprintf(line, sizeof line, "RSSI %.1f dBm inst=%.1f dBm state=%d (%s)\r\n",
+             (double)radio.getRSSI(), (double)radio.getRSSI(false), (int)st, verdict);
+    Serial.write(line);
 }
 
 /* ---- Arduino entry points ------------------------------------------------ */
