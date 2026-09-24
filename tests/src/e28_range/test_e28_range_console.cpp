@@ -299,6 +299,59 @@ int main(void) {
   e28_range_feed_line("BOGUS");
   CHECK(out_buf.find("ERR") != std::string::npos, "unknown command -> ERR");
 
+  // ============ chip version decode (SX128x reg 0x01F0) ===================
+  // The 17-byte raw burst capture may or may not carry a status byte before
+  // the first data byte and/or interleaved with each data byte. The decoder
+  // must find the ASCII "SX1" signature in whichever alignment holds it.
+  // This is the exact failure that broke the first hardware run (2026-09-23):
+  // the firmware was built for the "SX1282" SKU while the silicon reports
+  // "SX1280", so RadioLib's findChip() returned RADIOLIB_ERR_CHIP_NOT_FOUND.
+  {
+    char ver[17];
+
+    // (a) no status byte at all: version string starts at raw[0]
+    uint8_t noStatus[17] = { 'S','X','1','2','8','0', 0, 0,0,0,0,0,0,0,0,0,0 };
+    e28_decode_chip_version(noStatus, ver);
+    CHECK(strcmp(ver, "SX1280") == 0, "decode: no-status layout -> SX1280");
+
+    // (b) one leading status byte, then straight data
+    uint8_t lead[17] = { 0xAA, 'S','X','1','2','8','0', 0,0,0,0,0,0,0,0,0,0 };
+    e28_decode_chip_version(lead, ver);
+    CHECK(strcmp(ver, "SX1280") == 0, "decode: leading status byte -> SX1280");
+
+    // (c) status byte interleaved before each data byte
+    uint8_t interl[17] = { 0xAA, 'S', 0xAA, 'X', 0xAA, '1', 0xAA, '2', 0xAA,
+                           '8', 0xAA, '0', 0xAA, 0xAA, 0xAA, 0xAA, 0xAA };
+    e28_decode_chip_version(interl, ver);
+    CHECK(strcmp(ver, "SX1280") == 0, "decode: interleaved status bytes -> SX1280");
+
+    // (d) dead bus (all 0xFF): must NOT claim an SX1xx chip, must be empty
+    uint8_t dead[17];
+    memset(dead, 0xFF, sizeof dead);
+    e28_decode_chip_version(dead, ver);
+    CHECK(strncmp(ver, "SX1", 3) != 0, "decode: dead bus 0xFF does not claim SX1xx");
+    CHECK(strlen(ver) == 0, "decode: dead bus 0xFF decodes to empty string");
+
+    // (e) empty bus (all 0x00) — same rule
+    uint8_t zero[17];
+    memset(zero, 0x00, sizeof zero);
+    e28_decode_chip_version(zero, ver);
+    CHECK(strncmp(ver, "SX1", 3) != 0, "decode: dead bus 0x00 does not claim SX1xx");
+    CHECK(strlen(ver) == 0, "decode: dead bus 0x00 decodes to empty string");
+
+    // (g) NUL padding is trimmed to the bare chip name
+    uint8_t pad1282[17] = { 'S','X','1','2','8','2', 0,0,0,0,0,0,0,0,0,0,0 };
+    e28_decode_chip_version(pad1282, ver);
+    CHECK(strcmp(ver, "SX1282") == 0, "decode: NUL padding trimmed -> SX1282");
+
+    // (f) ranging capability gate (SX1281 has no ranging engine in RadioLib)
+    CHECK(e28_chip_supports_ranging("SX1280") == true, "SX1280 supports ranging");
+    CHECK(e28_chip_supports_ranging("SX1282") == true, "SX1282 supports ranging (inherits SX1280)");
+    CHECK(e28_chip_supports_ranging("SX1281") == false, "SX1281 rejected (no ranging engine)");
+    CHECK(e28_chip_supports_ranging("SX1262") == false, "SX1262 rejected (sub-GHz, no ranging)");
+    CHECK(e28_chip_supports_ranging(NULL) == false, "NULL version rejected");
+  }
+
   if(failures == 0) {
     printf("E28 range console: ALL CHECKS PASSED\n");
     return(0);

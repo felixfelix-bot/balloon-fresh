@@ -271,6 +271,59 @@ void e28_range_init(const e28_io_t* io, const char* fw_sha7)
     push_config();
 }
 
+/* ---- chip version decode (SX128x reg 0x01F0) ----------------------------- */
+
+/** Try one (offset, stride) alignment of the raw capture. The version field is
+ *  ASCII, NUL-padded; a non-printable byte therefore ends the name. Returns
+ *  true and fills tmp[17] when the alignment carries the "SX1" signature. */
+static bool ver_try_alignment(const uint8_t* raw, uint8_t off, uint8_t stride, char* tmp)
+{
+    uint8_t n = 0;
+    while(n < 16) {
+        uint8_t idx = (uint8_t)(off + stride * n);
+        if(idx >= 17) break;
+        uint8_t b = raw[idx];
+        if(b < 32 || b >= 127) break;
+        tmp[n] = (char)b;
+        n++;
+    }
+    tmp[n] = 0;
+    return (n >= 3) && (strncmp(tmp, "SX1", 3) == 0);
+}
+
+void e28_decode_chip_version(const uint8_t raw[17], char out[17])
+{
+    if(!out) return;
+    out[0] = 0;
+    if(!raw) return;
+
+    /* Four plausible layouts of a 17-byte capture:
+     *   (0,1) no status byte, straight data
+     *   (1,1) one leading status byte, then straight data
+     *   (1,2) status byte before each data byte
+     *   (2,2) as above, offset by one */
+    static const uint8_t offsets[4] = { 0, 1, 1, 2 };
+    static const uint8_t strides[4] = { 1, 1, 2, 2 };
+
+    for(uint8_t c = 0; c < 4; c++) {
+        char tmp[17];
+        if(ver_try_alignment(raw, offsets[c], strides[c], tmp)) {
+            memcpy(out, tmp, strlen(tmp) + 1);
+            return;
+        }
+    }
+
+    /* No signature anywhere: an empty string is the honest answer (a dead bus
+     * reads all 0x00/0xFF, a SX126x reads a non-SX128x name). Callers show the
+     * raw hex alongside this so the failure is diagnosable. */
+}
+
+bool e28_chip_supports_ranging(const char* version)
+{
+    if(!version) return false;
+    return (strncmp(version, "SX1280", 6) == 0) || (strncmp(version, "SX1282", 6) == 0);
+}
+
 void e28_range_feed_line(const char* line)
 {
     char buf[128];
