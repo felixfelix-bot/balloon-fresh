@@ -3,6 +3,12 @@
 **Status:** HARM-T9. This is the entry point for anyone (human or agent) who has
 to run, extend, or audit a cross-board bench measurement.
 **Board families:** E80 (STM32F103 + LR2021-class), ESP32 (ESP32-C3 + LR2021 via RadioLib), RP2040 (RP2040 + LR2021).
+**Delivery state:** this package is delivered on branch **`harm/t9-docs`** of
+`balloon-fresh` (`https://github.com/felixfelix-bot/balloon-fresh.git`), branched
+off `main` and awaiting merge. The adoption sections in
+`esp32-balloon-integration-fresh` and in the `range-tests` lane point at
+`docs/HARMONIZED-BENCH-PACKAGE.md` on `main`; if that path 404s there, read it
+from `harm/t9-docs` until the branch is merged.
 
 This document is deliberately self-contained: every repository, branch, path, and
 command below is spelled out, because two of the names used inside the project
