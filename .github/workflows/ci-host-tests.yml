@@ -4,6 +4,7 @@ name: Host Unit Tests
 # Test suites:
 #   - nostr_store    (7 tests)    — tracker/firmware/components/nostr_store
 #   - relay-pipeline (12 tests)   — tracker/firmware/main/test/test_relay_pipeline.c
+#   - payment-proto  (133 tests)  — tracker/firmware/main/test/test_tollgate_payment_proto.c
 #   - tollgate       (~350 tests) — mesh-stack/tollgate/tests/unit (Makefile, 13 binaries)
 #   - ehash-relay    (65 tests)   — mesh-stack/ehash-relay/test
 #   - stratorelay    (11 tests)   — tracker/firmware/components/stratorelay/test
@@ -44,6 +45,19 @@ jobs:
             main/tollgate_payment_proto.c \
             components/nostr_store/nostr_store.c
           /tmp/test_relay_pipeline
+
+      # ── Suite 2b: payment-proto (133 tests) ─────────────────────
+      # Covers the tollgate PAY/ACK header: packed layout, encode/decode
+      # round-trips, truncation + bad msg_type rejection, buffer-too-small
+      # (canary-checked, nothing written), and seq/price_sats boundaries.
+      - name: Build & run tollgate payment-proto tests
+        run: |
+          cd tracker/firmware
+          gcc -Wall -Wextra -O2 -I main \
+            -o /tmp/test_tollgate_payment_proto \
+            main/test/test_tollgate_payment_proto.c \
+            main/tollgate_payment_proto.c
+          /tmp/test_tollgate_payment_proto
 
       # ── Suite 3: tollgate (~350 tests across 13 binaries) ───────
       - name: Build & run tollgate unit tests
