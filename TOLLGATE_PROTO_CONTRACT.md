@@ -1,7 +1,8 @@
 # TOLLGATE_PROTO_CONTRACT.md — Authoritative API Contract for `tollgate_payment_proto.h`
 
 **Scope:** `tracker/firmware/main/tollgate_payment_proto.{h,c}` on branch `autonomous/mesh-baseline`.
-**Revision:** 2 (2026-09-27, card `balloon:t_c360db44`) — see §0 for what changed.
+**Revision:** 3 (2026-09-27, card `balloon:t_c360db44`) — see §0 for what changed and §0.5
+for the review that prompted it.
 **Status:** Normative **for the API shape** (field layouts, wire format, prototypes,
 return-value semantics, error codes). The code and the pinned tests are normative **for the
 values they assert**: where this document and the code disagree on a number the tests pin,
@@ -16,22 +17,37 @@ contract from the implementation.
 
 ## 0. Provenance, revision status, and reconciliation (read this first)
 
-**Revision 2**, reconciled 2026-09-27 by card `balloon:t_c360db44`. Revision 1 (commit
-`01f09534`) was authored when the four recon inputs this card was meant to synthesize did
-not yet exist.
+**Revision 3**, 2026-09-27, card `balloon:t_c360db44`: revision 1 (commit `01f09534`) was
+authored when the four recon inputs this card was meant to synthesize did not exist;
+revision 2 reconciled the document with the shipped code and pinned tests; revision 3 applies
+the six lineage-accuracy corrections raised by the cold cross-family review of revision 2
+(§0.5). The normative content is unchanged from revision 2.
 
-### 0.1 Inputs — all four now exist and are cited in place of the missing-note workaround
+### 0.1 Inputs — what exists, and which of the four inputs actually ship on this branch
 
-| Recon input | Status | Location / commit |
+Revision 1 worked around four recon inputs that did not exist yet. All four now exist **on
+the local lineage** (`autonomous/mesh-baseline`), but only **one** of them is tracked on
+`origin/main` — the branch that carries this file (measured 2026-09-27 with
+`git ls-tree -r origin/main --name-only | grep -iE "recon|PROTO_API|payack"`). The lineage
+column below is therefore load-bearing: a reader on the published branch can open exactly
+one row of this table.
+
+| Recon input | Ships on `origin/main`? | Location / commit |
 |---|---|---|
-| spec search (upstream) | **PRESENT** | `tracker/firmware/TOLLGATE_PROTO_API.md` (commit `2ab5058e`) + `docs/tollgate-payack-upstream-audit-2026-09-14.md` (commit `a9b9126f`) |
-| app_task call sites | **PRESENT** | `docs/recon/tollgate_proto_app_task_callsites.md` (commit `c45dec77`, 452 lines) |
-| test/mock usage | **PRESENT** | `docs/recon/tollgate_proto_test_mock.md` (504 lines, **untracked** on this worktree — see §7, gap G1) |
-| framing + config | **PRESENT** | `docs/recon/tollgate_proto_framing_config.md` (commit `b7db8b31`) + `docs/recon/.tollgate_framing_notes.md` (untracked) |
+| spec search (upstream) | **NO — local lineage only** | `tracker/firmware/TOLLGATE_PROTO_API.md` (commit `2ab5058e`) + `docs/tollgate-payack-upstream-audit-2026-09-14.md` (commit `a9b9126f`) |
+| app_task call sites | **NO — local lineage only** | `docs/recon/tollgate_proto_app_task_callsites.md` (commit `c45dec77`, 452 lines) |
+| test/mock usage | **YES — tracked** | `docs/recon/tollgate_proto_test_mock.md` (514 lines, tracked by `b8aa95bf`) |
+| framing + config | **NO — local lineage only** | `docs/recon/tollgate_proto_framing_config.md` (commit `b7db8b31`) + `docs/recon/.tollgate_framing_notes.md` (untracked on both lineages) |
 
 Cross-check: the sibling index `tracker/firmware/.tollgate-recon-index.md` (card
-`balloon:t_7676d001`) independently records the same three producer reports and their
-commits.
+`balloon:t_7676d001`, local lineage only) independently records the same three producer
+reports and their commits.
+
+Because three of the four inputs are absent from the published branch, **this file is
+written to stand alone**: every value, layout, prototype and citation it needs is restated
+in §2–§5, and the one input that does ship is the mock-usage recon
+(`docs/recon/tollgate_proto_test_mock.md`). Nothing here requires the local-only files to
+be readable.
 
 The card body referenced repo path `~/repos/balloon-fresh/tracker/firmware/`; that path
 does **not** exist on this machine. The actual worktree is `~/repos/balloon` (repo root,
@@ -48,6 +64,11 @@ revision; the division of labour is:
 |---|---|
 | `tracker/firmware/TOLLGATE_PROTO_API.md` | Wire-format + API contract for the tracker-firmware copy, including it, with worked byte-layout examples and the full symbol coverage table |
 | **this file** (`TOLLGATE_PROTO_CONTRACT.md`, repo root) | Same contract expressed as a **call-site conformance checklist**: field layouts, prototypes, return-value semantics, and a line-by-line mapping from every consumer back to the clause it depends on |
+
+**Lineage caveat:** `tracker/firmware/TOLLGATE_PROTO_API.md` is **local-lineage-only** — it is
+absent from `origin/main` (measured 2026-09-27). A reader on the published branch cannot open
+it, so its §7 content is summarised in the table below and nothing in this file depends on
+the sibling document being present.
 
 `TOLLGATE_PROTO_API.md` §7 recorded three points where revision 1 of this file contradicted
 the shipped code and pinned tests. Revision 2 resolves all three in favour of the code and
@@ -69,7 +90,7 @@ error value below is byte-for-byte what the pinned tests assert.
 |---|---|
 | Spec search (upstream) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h`, `.../include/tollgate_payment_proto.h`, `.../src/tollgate_payment_proto.c`; `docs/adr/002-tollgate-over-fips-mesh-udp.md` |
 | app_task call sites | `tracker/firmware/main/app_task.cpp` lines 32–33, 114–145 |
-| Test/mock usage | `tracker/firmware/main/test/test_relay_pipeline.c` (lines 76–83, 101–164, 200–215, TEST 4/5/8/12); `tracker/firmware/main/test/test_tollgate_payment_proto.c` (14 test functions) |
+| Test/mock usage | `tracker/firmware/main/test/test_relay_pipeline.c` (lines 76–83, 101–164, 200–215, TEST 4/5/8/12); `tracker/firmware/main/test/test_tollgate_payment_proto.c` (14 test functions locally / 10 on `origin/main`) |
 | Framing + config | `tracker/firmware/main/relay_types.h`; `main/Kconfig.projbuild` lines 141–147; `main/CMakeLists.txt` lines 29–31; `sdkconfig` line 576 |
 | Shipped header + impl | `tracker/firmware/main/tollgate_payment_proto.h`, `tracker/firmware/main/tollgate_payment_proto.c` |
 
@@ -85,9 +106,13 @@ carry `38360fb1` yet. Measured difference, 2026-09-27:
 |---|---|---|
 | `tollgate_payment_proto.c` | 66 lines, `tg_type_is_valid()` bounds check in encode **and** decode | 53 lines, **no** bounds check |
 | `tollgate_payment_proto.h` | return-value docs name the invalid-msg_type case | docs omit it |
-| `test_tollgate_payment_proto.c` | 14 tests / **133 assertions** → 133 passed, 0 failed | 334 lines / **83 assertions** → 83 passed, 0 failed |
+| `test_tollgate_payment_proto.c` | 550 lines / 14 test functions / **133 assertions** → 133 passed, 0 failed | 334 lines / 10 test functions / **83 assertions** → 83 passed, 0 failed |
 | `test_relay_pipeline.c` | 12/12 passed | 12/12 passed (byte-identical) |
 | `app_task.cpp`, `relay_types.h` | byte-identical | byte-identical |
+| `sdkconfig` line 576 | `CONFIG_ENABLE_TOLLGATE=y` (set by `55d79702`, local-only) | `# CONFIG_ENABLE_TOLLGATE is not set` — **feature compiled out at this head** (§6 item 5) |
+
+All four test counts above were re-measured on the published head
+`68c27cdda74f0f87b57029be42dd118b633f9c24` on 2026-09-27 (see §9 re-verification record).
 
 Consequences for a reader on a branch whose base is `origin/main`:
 
@@ -96,15 +121,41 @@ Consequences for a reader on a branch whose base is `origin/main`:
   card must close.
 - **Clauses satisfied only where `38360fb1` is present:** §5 E2 (encode rejects a `type`
   outside 0x01..0x06 without touching the buffer), §5 D5 (decode rejects such a type), and
-  the canary/no-write guarantees proven by unit tests 11–13. On `origin/main` these are
-  **unimplemented**, and unit tests 11–13 do not exist there (hence 83 vs 133 assertions).
+  the canary/no-write guarantees proven by unit tests 11–14. On `origin/main` these are
+  **unimplemented**, and unit tests 11–14 do not exist there (the published test file has 10
+  test functions, hence 83 vs 133 assertions — the 50-assertion gap is exactly tests 11–14).
   A fix card that ports `38360fb1` closes this gap.
+- **Compiled out unless enabled:** at the published head the whole payment feature is
+  disabled (§6 item 5) — `tollgate_payment_proto.c` is not in the build and the PAY dispatch
+  arm is compiled out. Any reader acting on this contract on `origin/main` must enable
+  `CONFIG_ENABLE_TOLLGATE` first (or port `55d79702`); otherwise nothing here is executable.
 - **Nothing in this document is contradicted by either lineage.** Every clause is either
   already implemented on both, or named here as a defect on one/both.
 
 This document is therefore the **target** contract: it is normative for what the code must
 do, not a description of what every branch does today. Before filing a "the contract is
 wrong" bug, check which lineage you are on and re-read §7.1.
+
+### 0.5 Revision 3 — cold-review corrections (F1–F6)
+
+Revision 2 was reviewed cold and cross-family (card `balloon:t_9a5c6230`, reviewer
+`glm-5.3`, tier `tier/review-glm`; author family deepseek) against published head
+`68c27cdd`. Verdict: **CHANGES-REQUESTED** — the normative core (§5 clauses, DEF-1/DEF-2,
+their blast radius) was independently re-derived and confirmed, but six statements were
+false *on the lineage this file ships on*. Revision 3 applies all six; every number below
+was re-measured first-hand on `origin/main`@`68c27cdd` before the edit.
+
+| # | Finding (rev 2) | Fix in rev 3 |
+|---|---|---|
+| F1 | §6.5 claimed `CONFIG_ENABLE_TOLLGATE=y` in the tracked sdkconfig; on `origin/main` it reads `# CONFIG_ENABLE_TOLLGATE is not set`, so the feature is compiled out at the published head | §6 item 5 rewritten for the published value; §0.4 table row added |
+| F2 | §0.1/§0.2/§0.3 treated all four recon inputs and the sibling spec as readable; only `docs/recon/tollgate_proto_test_mock.md` exists on `origin/main` | §0.1 relabelled by lineage + stand-alone statement; §0.2 lineage caveat; new gap §7.2 G2 |
+| F3 | §0.1/§7.2 G1 called the mock recon "untracked, 504 lines"; it is tracked by `b8aa95bf` and is 514 lines | §0.1 row corrected; G1 closed for that file, remaining untracked files listed |
+| F4 | §9 printed only 133/133 under a heading that applies to both lineages; the published branch yields 83/83 | §9 records split by lineage, both re-run first-hand; tests 11–14 marked local-only |
+| F5 | §0.4 said "unit tests 11–13 do not exist there"; tests 11–**14** are absent (10 vs 14 test functions) | §0.4 corrected to 11–14 with measured file sizes |
+| F6 | §5 E4 and §7.1 cited `.c:39`/`.c:53` — local-lineage numbers that point at unrelated code on `origin/main` | both lineages' line numbers now given, with the `origin/main` mapping stated |
+
+No normative value, offset, prototype or error code changed in rev 3, and the two filed
+defects (DEF-1/DEF-2) are unchanged and still open.
 
 ---
 
@@ -298,8 +349,9 @@ Writes `[hdr(8)][payload(payload_len)]` into `buf`. Returns:
   `payload_len == 0` — both real call sites rely on exactly that:
   `build_tollgate_pay_packet` passes `NULL, 0`; `app_task.cpp`/`app_main.cpp` always pass a
   real pointer with a non-zero length. Reason the lenient behaviour is forbidden: the
-  shipped `.c` (line 39) skips the `memcpy` yet still writes `hdr->payload_len = N` and
-  returns `8 + N`, i.e. it emits a frame that claims N payload bytes which were never
+  shipped `.c` (`.c:39-41` on the local lineage = `:28-30` on `origin/main`) skips the
+  `memcpy` yet still writes `hdr->payload_len = N` and returns `8 + N` (local `.c:43` /
+  `origin/main` `.c:32`), i.e. it emits a frame that claims N payload bytes which were never
   written — a corrupt frame that the receiver cannot detect. **The shipped `.c` violates
   clause E4 today — filed as defect DEF-1 in §7.1.**
 - Note: `buf_len` is `uint16_t`; the ACK call site passes `RELAY_PACKET_MAX_SIZE - 1` (511).
@@ -315,7 +367,8 @@ Parses `[hdr(8)][payload]` from `data` (already tag-stripped). Returns:
 - **−1 on error**, and `*payload` is never written on failure:
   - **D1 — `hdr == NULL` MUST return −1 with no writes.** (Revision 1 was silent;
     `TOLLGATE_PROTO_API.md` §7.3 flagged it.) Passing `hdr == NULL` today is undefined
-    behaviour, not a defined failure: the shipped `.c` (line 53) calls
+    behaviour, not a defined failure: the shipped `.c` (`:53` on the local lineage,
+    `:42` on `origin/main`) calls
     `memcpy(hdr, ...)` unconditionally and segfaults. No pinned test and no consumer passes
     `hdr == NULL`. **Defect DEF-2 (§7.1).**
   - **D2 — `data == NULL`;**
@@ -348,9 +401,18 @@ consumers and build system:
 4. **app_task.cpp:114-145** — the entire `case RELAY_TYPE_TOLLGATE_PAY:` dispatch arm is
    wrapped in `#ifdef CONFIG_ENABLE_TOLLGATE ... #endif`. When disabled, PAY-tagged packets
    fall through to the `default:` "unknown packet type" arm (no ACK, no crash).
-5. **sdkconfig:576** — `CONFIG_ENABLE_TOLLGATE=y` in the tracked sdkconfig (restored by
-   commit 55d79702 after a stale flag silently compiled the feature out — the exact failure
-   mode this guard pattern can hide; verify the flag after any sdkconfig regeneration).
+5. **sdkconfig:576** — on the **published lineage** (`origin/main`, the branch that carries
+   this file) the tracked sdkconfig reads **`# CONFIG_ENABLE_TOLLGATE is not set`**
+   (measured 2026-09-27: `git show origin/main:tracker/firmware/sdkconfig | sed -n '576p'`;
+   it is the only `ENABLE_TOLLGATE` occurrence in the file). With Kconfig `default n`
+   (item 1) and the CMake guard (item 2), **the feature is compiled out at that head**:
+   `tollgate_payment_proto.c` is not in the build and the whole `case RELAY_TYPE_TOLLGATE_PAY:`
+   arm (item 4) is preprocessed away, so PAY-tagged packets fall through to `default:`.
+   Enabling the feature therefore requires a sdkconfig change (or porting commit `55d79702`,
+   which exists only on the local lineage `autonomous/mesh-baseline`, where the same line
+   reads `CONFIG_ENABLE_TOLLGATE=y`). A stale flag silently compiling the feature out is the
+   exact failure mode this guard pattern can hide; verify the flag after any sdkconfig
+   regeneration, and check **which lineage you are on** before trusting this line.
 
 Any new consumer of the header must follow the same pattern: `#ifdef CONFIG_ENABLE_TOLLGATE`
 around include and use, plus the CMake guard if a new .c file is added. The header must
@@ -367,20 +429,37 @@ fails, and no existing consumer breaks when it is.
 
 | ID | Clause | `.c` today | Required behaviour | Blast radius |
 |---|---|---|---|---|
-| **DEF-1** | §5 clause E4 | `payload_len > 0 && payload == NULL` → skips `memcpy`, still writes `hdr->payload_len = N`, returns `8 + N` (`.c:39-43`) | return −1, write nothing | none — no call site passes `NULL` with `payload_len > 0` |
-| **DEF-2** | §5 clause D1 | `memcpy(hdr, data, 8)` with no NULL check (`.c:53`) → segfault | return −1, write nothing | none — no call site passes `NULL` |
+| **DEF-1** | §5 clause E4 | `payload_len > 0 && payload == NULL` → skips `memcpy`, still writes `hdr->payload_len = N`, returns `8 + N` (local `.c:39-43` = `origin/main` `.c:28-32`) | return −1, write nothing | none — no call site passes `NULL` with `payload_len > 0` |
+| **DEF-2** | §5 clause D1 | `memcpy(hdr, data, 8)` with no NULL check (local `.c:53` = `origin/main` `.c:42`) → segfault | return −1, write nothing | none — no call site passes `NULL` |
+
+Line numbers are given for **both** lineages: the local `autonomous/mesh-baseline` copy is 66
+lines (hardening `38360fb1`), the published `origin/main` copy is 53 lines. A `.c` citation
+without a lineage label is meaningless here — e.g. `origin/main` `.c:39` is the *decode*
+guard `if (!data || len < 8) return -1;`, not the DEF-1 encode skip.
 
 Both defects are detectable only by reading the implementation, which is why revision 1
 listed the first one as a "wart" and missed the second entirely.
 
 ### 7.2 Documentation gaps
 
-- **G1 — `docs/recon/tollgate_proto_test_mock.md` is untracked.** It is 504 lines of
-  source-derived recon that this contract cites (§0.1) yet it is not in git, so a fresh
-  clone cannot read the evidence. Same for `tracker/firmware/docs/recon/raw_doc_scan.md`,
+- **G1 — CLOSED for the mock-protocol recon; still open for the rest of the recon set.**
+  `docs/recon/tollgate_proto_test_mock.md` is **tracked** on this branch by commit
+  `b8aa95bf` ("docs(recon): track tollgate_proto_test_mock.md — the mock-protocol recon
+  input was untracked"), 514 lines; §0.1's earlier claim that it was untracked was true only
+  before that commit, which is the immediately preceding commit of the branch that carries
+  this file. Still untracked (on both lineages): `tracker/firmware/docs/recon/raw_doc_scan.md`,
   `tracker/firmware/.tollgate-recon-index.md` and `docs/recon/.tollgate_framing_notes.md`.
-  The recon index deliberately declares itself untracked; the 504-line report did not
-  intend to be (its producer's commit was blocked by a permission gate).
+  The recon index deliberately declares itself untracked; the others were blocked by a
+  permission gate.
+- **G2 — three of the four recon inputs exist only on the local lineage.** On `origin/main`
+  only `docs/recon/tollgate_proto_test_mock.md` is present; the app-task call-site recon
+  (`c45dec77`), the framing/config recon (`b7db8b31`), the sibling spec
+  `tracker/firmware/TOLLGATE_PROTO_API.md` (`2ab5058e`) and the upstream audit
+  (`a9b9126f`) are absent (measured 2026-09-27 with `git ls-tree -r origin/main --name-only
+  | grep -iE "recon|PROTO_API|payack"`; none of those commits is an ancestor of
+  `origin/main`). This file is therefore written to stand alone (§0.1) — porting those docs
+  onto the published branch would let a fresh clone read the primary evidence instead of
+  taking this document's word for it.
 
 ### 7.3 Constraints that are not defects
 
@@ -460,7 +539,8 @@ listed the first one as a "wart" and missed the second entirely.
 - [x] L503-515 mixed traffic: exactly 4 ACKs, tag byte on each, decode `> 0`, `TG_MSG_ACK`, seq window 200–203 preserved
 - [x] L622-626 TEST 12 pins relay tag constants 0x01/0x02/0x03/0x04/0xFF (§4)
 
-**test_tollgate_payment_proto.c** (wire-level pins, all 14 tests / 133 assertions PASS):
+**test_tollgate_payment_proto.c** (wire-level pins — tests 1–10 exist and pass on **both**
+lineages; tests 11–14 exist **only on the local lineage** `autonomous/mesh-baseline`):
 
 - [x] Test 1: `sizeof(hdr) == 8`, field offsets 0/1/2/4/6 (§2)
 - [x] Test 2/3: encode returns `8 + payload_len`; header-only returns 8; `reserved` written 0 (§2, §5)
@@ -471,22 +551,18 @@ listed the first one as a "wart" and missed the second entirely.
 - [x] Test 8: `payload_len` > available → −1; exact fit succeeds; total one-byte-short → −1 (§5)
 - [x] Test 9: round-trip PAY/ACK/NACK/INFO with payload equality
 - [x] Test 10: `sizeof(tollgate_ack_payload_t) == 14`; ACK struct round-trips through encode/decode (§3)
-- [x] Test 11: decode rejects type 0x00/0x07/0xFF, accepts boundary 0x01/0x06 (§4)
-- [x] Test 12: encode rejects type 0/99/0xFF **without touching the buffer** (§5)
-- [x] Test 13: canary — short encode writes nothing; exact fit leaves trailing bytes untouched; hdr-only fit; truncated decode leaves hdr + canary intact (§5)
-- [x] Test 14: seq ∈ {0,1,0xFFFF} and price_sats ∈ {0,1,0xFFFF} round-trip; all-max ACK fields round-trip (§2, §3)
+- [x] Test 11 *(local lineage only)*: decode rejects type 0x00/0x07/0xFF, accepts boundary 0x01/0x06 (§4)
+- [x] Test 12 *(local lineage only)*: encode rejects type 0/99/0xFF **without touching the buffer** (§5)
+- [x] Test 13 *(local lineage only)*: canary — short encode writes nothing; exact fit leaves trailing bytes untouched; hdr-only fit; truncated decode leaves hdr + canary intact (§5)
+- [x] Test 14 *(local lineage only)*: seq ∈ {0,1,0xFFFF} and price_sats ∈ {0,1,0xFFFF} round-trip; all-max ACK fields round-trip (§2, §3)
 
-**Verification record (2026-09-14, this worktree):**
-`test_tollgate_payment_proto` → 133 passed, 0 failed (exit 0).
-`test_relay_pipeline` → 12/12 passed (exit 0). Build lines as documented in each test header.
-
-**Re-verification record (2026-09-27, card `balloon:t_c360db44`, revision 2):**
-both suites rebuilt from source in `tracker/firmware/` and re-run, unchanged results:
+**Verification record — local lineage** (`autonomous/mesh-baseline`, `~/repos/balloon`,
+2026-09-14, re-run 2026-09-27):
 
 ```
 gcc -Wall -O2 -I main -o /tmp/test_tgproto main/test/test_tollgate_payment_proto.c \
     main/tollgate_payment_proto.c          && /tmp/test_tgproto
-  → === Results: 133 passed, 0 failed ===   (exit 0)
+  → === Results: 133 passed, 0 failed ===   (exit 0)   # 14 test functions
 
 gcc -Wall -O2 -I main -I components/nostr_store/include -o /tmp/test_relay \
     main/test/test_relay_pipeline.c main/tollgate_payment_proto.c \
@@ -494,16 +570,43 @@ gcc -Wall -O2 -I main -I components/nostr_store/include -o /tmp/test_relay \
   → === Results: 12/12 passed ===           (exit 0)
 ```
 
+**Re-verification record — published branch** (`origin/main`, head
+`68c27cdda74f0f87b57029be42dd118b633f9c24`, in the `~/worktrees/tollgate-contract-recon`
+worktree, 2026-09-27, card `balloon:t_c360db44`): the *same* commands run against the tree
+that actually carries this file yield **different, smaller** totals, because hardening
+`38360fb1` and tests 11–14 are not on this lineage:
+
+```
+cd tracker/firmware
+gcc -Wall -O2 -I main -o /tmp/test_tgproto_om main/test/test_tollgate_payment_proto.c \
+    main/tollgate_payment_proto.c          && /tmp/test_tgproto_om
+  → === Results: 83 passed, 0 failed ===    (exit 0)   # 10 test functions, 334-line file
+gcc -Wall -O2 -I main -I components/nostr_store/include -o /tmp/test_relay_om \
+    main/test/test_relay_pipeline.c main/tollgate_payment_proto.c \
+    components/nostr_store/nostr_store.c   && /tmp/test_relay_om
+  → === Results: 12/12 passed ===           (exit 0)
+```
+
+So: **133/133 is the local-lineage figure and 83/83 is the published-branch figure** — the
+earlier revision of this section printed only the local number under a §9 heading that
+applies to both, which is not reproducible on the branch the file ships on. Tests 1–10 and
+`test_relay_pipeline`'s 12 tests run green on both lineages.
+
 No warning on either build leg (`-Wall`). The two tests exercised the **real**
 `tollgate_payment_proto.c`; the mock protocol that revision 1 of the card body referenced at
 `test_relay_pipeline.c:75` was already removed by the time the header landed (mock lines
 75–83 now state that the header exists and all tests exercise the real implementation).
 
 Every clause above was additionally re-confirmed line-by-line against `app_task.cpp:85-145`
-and `test_relay_pipeline.c:200-215` on 2026-09-27; all cited line numbers hold.
+and `test_relay_pipeline.c:200-215` on 2026-09-27; all cited line numbers hold — those two
+files are byte-identical on both lineages (`git diff --stat origin/main --
+tracker/firmware/main/app_task.cpp tracker/firmware/main/relay_types.h` is empty), so their
+citations need no lineage qualifier. The `.c` citations in §5/§7.1 do, and now carry one.
 
 ---
 
-*End of contract. Revision 2 is documentation-only: no implementation file was changed in
-producing it. The two code defects it records (§7.1 DEF-1/DEF-2) are filed, not fixed, and
-must be fixed in their own card with a failing test first.*
+*End of contract. Revisions 2 and 3 are documentation-only: no implementation file was changed
+in producing them. Revision 3 corrects lineage accuracy only (F1–F6, §0.5) — no normative
+value, offset, prototype or error code moved between revisions 2 and 3. The two code defects
+it records (§7.1 DEF-1/DEF-2) are filed, not fixed, and must be fixed in their own card with
+a failing test first.*
