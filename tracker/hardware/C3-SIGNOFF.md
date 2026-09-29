@@ -2,141 +2,292 @@
 
 **Task:** t_daadf24e (C3-P7: Consultant sign-off)
 **Reviewer:** worker-inspector (independent — no implementation context)
-**Date:** 2026-08-05
-**Toolchain:** kicad-cli 9.0.8, git (branch `autonomous/mesh-baseline`)
+**Date:** 2026-09-29
+**Toolchain:** kicad-cli 9.0.8, git (branch `autonomous/mesh-baseline`, tip `10c51ce`)
 **Reference plan:** `tracker/hardware/PCB-EXECUTION-PLAN.md` (ADR-028)
-**Expected deliverables:** `tracker/hardware/schematics/v_c3_flight.kicad_sch`, `tracker/hardware/v_c3_flight_2layer.kicad_pcb`, `tracker/hardware/gerbers_v_c3/`
+**Supersedes:** the 2026-08-05 REJECT (`2252dca`) which was written when no C3
+artefact existed. The artefacts now exist and have been re-checked from scratch.
 
 ---
 
-## VERDICT: REJECT — board does not exist, sign-off cannot be performed
+## VERDICT: REJECT — board artefacts exist, but the board is not manufacturable
 
-The Balloon-C3 flight board was **never built**. The consultant sign-off gate
-cannot be passed because there is no artefact to verify. Every upstream pipeline
-phase that the sign-off depends on (P1 schematic → P2 ERC → P3 layout → P4 route
-→ P5 DRC → P6 gerbers) is either `todo` or `ready` in the board — none completed.
+The 2026-08-05 rejection reason no longer applies: the schematic, a routed
+`.kicad_pcb` and a full gerber set now exist and are pushed. This re-run is a
+**fresh REJECT on substance**, not on absence:
 
-This task was dispatched against an empty pipeline. Signing off would be
-certifying a board that does not exist.
+1. **DRC fails the P5 gate** — 1 short, 12 track crossings, 3 clearance
+   violations, 4 keepout violations, 49 unconnected (independent re-run).
+2. **ERC fails the P2 gate** — 159 violations (97 errors).
+3. **GPIO18/GPIO19 are wired on the board** — the exact rule this sign-off
+   exists to enforce is violated on U1 pads 13 and 14.
+4. **The board netlist does not match the firmware** — 2 of 8 pins disagree,
+   and both mismatches are the forbidden GPIO18/19 pins.
+
+Ordering any of these gerbers would produce a non-functional board.
 
 ---
 
-## 1. Deliverable presence check (BLOCKING)
+## 1. Deliverable presence check — PASS (improved since 2026-08-05)
 
-| Expected artefact | Path | Present? | Size |
+| Expected artefact | Path | Present? | Evidence |
 |---|---|---|---|
-| KiCad project | `tracker/hardware/schematics/v_c3_flight.kicad_pro` | YES | 165 lines — **project settings stub only** (design rules, no board/schematic) |
-| Schematic (P1) | `tracker/hardware/schematics/v_c3_flight.kicad_sch` | **NO** | — |
-| PCB board (P3/P4) | `tracker/hardware/v_c3_flight_2layer.kicad_pcb` | **NO** | — |
-| Gerbers (P6) | `tracker/hardware/gerbers_v_c3/` | **NO** | — |
+| KiCad project | `tracker/hardware/schematics/v_c3_flight.kicad_pro` | YES | 3,930 B |
+| Schematic (P1) | `tracker/hardware/schematics/v_c3_flight.kicad_sch` | YES | 4,475 lines, 117,790 B, sha256 `e50eaee7cbe4` |
+| PCB board (P3/P4) | `tracker/hardware/output/v_c3_flight_final.kicad_pcb` | YES | 158,674 B, sha256 `0318e7fbb938` |
+| Gerbers (P6) | `tracker/hardware/output/gerbers_v_c3/` | YES | 28 files, 284 KB, tracked on the pushed tip |
 
-Verified by:
-- `find` over the entire repo for `*v_c3*` → only the `.kicad_pro` stub.
-- `git log --all -- '*v_c3*'` → the C3 board/schematic/gerbers were **never committed in any branch**.
-- Sibling worker workspaces (`t_c5b818c9`, `t_58b8d370`, `t_64c61c6d`) → none contain a C3 flight board; `t_64c61c6d` (C3-P4) is in fact holding V2-ADC artefacts (`flight-pcba-v02*`), not C3.
+Note the board lives at `output/v_c3_flight_final.kicad_pcb`, **not** at the
+`tracker/hardware/v_c3_flight_2layer.kicad_pcb` path the P7 task body names.
+The naming drift is cosmetic but should be settled so P5/P6/P7 all point at one
+canonical path.
 
-All other `.kicad_pcb` files in the repo belong to V1, V2-ADC, `hub_board`, or `f33` variants — **none is the ESP32-C3 flight board**.
+Board/gerber hashes agree with the pushed remote tip `10c51ce`
+(`git ls-tree github/autonomous/mesh-baseline` → `fd6d576c` for the board,
+`72b10d18` for `-F_Cu.gtl`); the working copy hashes to the same blobs.
 
-## 2. DRC re-run
+## 2. DRC re-run — FAIL (P5 gate = 0 violations / 0 unconnected)
 
-**Could not run.** `kicad-cli pcb drc` on the only C3 artefact (the `.kicad_pro`
-stub) returns `Failed to load board` — it is not a board file. There is no
-`v_c3_flight_2layer.kicad_pcb` to feed the checker.
+Independent re-run, `kicad-cli pcb drc --format json` on
+`output/v_c3_flight_final.kicad_pcb`:
 
-| Gate | Required | Result |
+```
+Found 44 violations
+Found 49 unconnected items
+```
+
+By category:
+
+| Category | Count | Class |
 |---|---|---|
-| DRC 0 violations / 0 unconnected | 0 / 0 | **N/A — no board** |
+| `tracks_crossing` | 12 | **REAL** |
+| `items_not_allowed` (keepout) | 4 | **REAL** |
+| `clearance` (0.115–0.165 mm vs 0.2 mm rule) | 3 | **REAL** |
+| `shorting_items` | 1 | **REAL / fatal** |
+| `track_dangling` | 14 | cosmetic (unfinished routing) |
+| `silk_overlap` / `silk_over_copper` / `silk_edge_clearance` | 7 | cosmetic |
+| `courtyards_overlap` | 2 | cosmetic |
+| `isolated_copper` | 1 | cosmetic |
 
-## 3. Checks that could not be performed (artefact absent)
+**Real electrical/structural violations: 20. Unconnected: 49.**
 
-- **0.6 mm thickness** — no `.kicad_pcb` `(thickness ...)` token to read.
-- **Gerber sizes** — no `gerbers_v_c/` directory; nothing to measure.
-- **Footprint count** (>10 per P3 gate) — no board, no footprints.
-- **Board-level GPIO18/19 absence** — no netlist/pads to inspect.
+The single short is `LED_DRIVE ↔ SPI_NSS` (a crossing track pair at the
+`(26.5, 12)` / `(30.475, 12)` region of F.Cu). `SPI_NSS` shorted to the LED
+net means chip-select is not controllable — the radio cannot be addressed.
 
----
+Unconnected, by net: `+3V3` 18, `GND` 14, `VDIV_MID` 3, `I2C_SDA` 3,
+`GPS_TX` 2, then 1 each for `VCAP`, `EN`, `SPI_SCK`, `SPI_MOSI`, `LR_RST`,
+`LR_BUSY`, `LR_DIO0`, `I2C_SCL`, `UART0_RX`. Power rails unfinished means the
+board would not boot even ignoring the short.
 
-## 4. Checks that COULD be performed (firmware + plan review)
+Three further candidate boards were re-run as well; **none passes**:
 
-Although the board is absent, the firmware and plan are present. Reviewing them
-surfaces issues the layout worker must fix **before** a board can pass this gate.
+| Board | Violations | Unconnected |
+|---|---|---|
+| `output/v_c3_flight_final.kicad_pcb` (the gerber source) | 44 | 49 |
+| `output/v_c3_flight_v7_routed.kicad_pcb` | 69 | 40 |
+| `output/v_c3_flight_4layer_routed_v3.kicad_pcb` | 71 | 8 |
+| `output/v_c3_flight_clean_routed.kicad_pcb` (best) | 10 | 20 |
 
-### 4.1 GPIO-to-firmware cross-check
+The best variant still carries 1 short, 1 clearance violation, 2 keepout
+violations and 20 unconnected items.
 
-Authoritative ESP32-C3 firmware: `firmware/esp32-c3-flrc/main/main.cpp:37-44`.
+**DoD gate note:** the 2026-09-16 PCB card definition of done requires ONE
+`drc_score.py` row per attempt in `drc_snapshots/history.jsonl` (path +
+`sha256_12` + shorts + clearance + unconnected + fp), with progress counted only
+when `shorts + clearance + unconnected` falls. This tree has **no**
+`drc_score.py` and **no** `drc_snapshots/history.jsonl`; the only snapshot files
+present are V1/V2-ADC legacy JSONs. There is no scored, comparable row for any
+C3 attempt — so the card cannot close on evidence even if the raw counts were
+acceptable.
 
-| Function | Plan §2.4 | Firmware (`main.cpp`) | Match? |
+## 3. ERC re-run — FAIL (P2 gate = 0 violations)
+
+`kicad-cli sch erc` on `schematics/v_c3_flight.kicad_sch`:
+
+```
+Found 159 violations
+```
+
+| Type | Count | Severity |
+|---|---|---|
+| `pin_not_connected` | 72 | error (97 errors total) |
+| `endpoint_off_grid` | 55 | warning (62 warnings total) |
+| `label_dangling` | 25 | error |
+| `footprint_link_issues` | 6 | warning |
+| `lib_symbol_issues` | 1 | warning |
+
+`endpoint_off_grid` at this scale means wires and symbol pins are not on the
+same connection grid — which is why 72 pins read as unconnected even where a
+net label sits next to them. `footprint_link_issues` includes
+`Footprint 'NiceRF_Lora1276-C1' not found in library 'RF_Module'`, and
+`lib_symbol_issues` reports the symbol library `balloon-custom` is not
+configured. The schematic therefore does not produce a trustworthy netlist,
+which is the whole point of the ADR-028 schematic-first rule.
+
+## 4. Thickness — PASS the 0.6 mm rule, but the spec conflict is UNRESOLVED
+
+- Board `(general (thickness 0.6))` → **0.6 mm as required by this sign-off**.
+  Confirmed independently in the exported `v_c3_flight_final-job.gbrjob`
+  (`"BoardThickness": 0.6`).
+- `PCB-EXECUTION-PLAN.md` §4.2 (JLCPCB Order Specs) still says
+  `| Thickness | 1.6mm |`, and §3.1 explicitly computes the 50Ω RF width
+  "on 1.6mm FR4".
+
+So the artefact satisfies one of two mutually contradictory documents. A 0.6 mm
+4-layer FR4 order is possible but unusual, and the RF trace width (0.76 mm) was
+derived from the 1.6 mm stackup — the impedance claim is unverified for the
+0.6 mm board actually exported. This was flagged in the 2026-08-05 reject and is
+still unreconciled.
+
+## 5. Gerber sizes / completeness — PARTIAL
+
+`output/gerbers_v_c3/` (28 files, 284 KB) contains: 4 copper layers
+(`F_Cu`, `In1_Cu`, `In2_Cu`, `B_Cu`), F/B mask, F/B silkscreen, F/B paste,
+F/B adhesive, F/B fab, F/B courtyard, Edge.Cuts, Margin, User_1..4,
+User_Comments, User_Drawings, User_Eco1/2, `.drl` drill and `.gbrjob`.
+
+Authenticity verified: a **fresh** `kicad-cli pcb export gerbers` from
+`v_c3_flight_final.kicad_pcb` reproduces every file byte-identically after
+stripping the generation-date comment — the committed gerbers really are the
+export of the committed board and were not hand-edited.
+
+`.gbrjob` declares `LayerNumber: 4`, `BoardThickness: 0.6`,
+`Size: 55.15 × 45.15`, `Finish: "None"`.
+
+Gaps:
+
+- **No BOM and no CPL/position file** anywhere in either gerber directory. Per
+  the JLCPCB order-package checklist (and the 2026-08-05 lesson) the package is
+  not PCBA-orderable; only a bare-PCB order would be possible.
+- **`Finish: "None"`** while the plan requires ENIG (§4.2). Surface finish is
+  not carried in the job file, so the fab order would default to HASL.
+- Board is **55.15 × 45.15 mm**, not the 50 × 40 mm the plan §3.2 specifies.
+  Not a defect by itself, but it means the §3.2 dimension table and the artifact
+  disagree.
+- `output/gerbers_v_c3_final/` is a second, near-duplicate 28-file set. Its
+  files differ only in the embedded `G04 … date` comment. Two gerber
+  directories for one board invites ordering the wrong one; delete or document
+  which is canonical.
+
+## 6. Footprint count — PASS
+
+20 footprints on the board (> 10 required by the P3 gate):
+
+`ANT1, R_LED, R_DIV1, U2, U4, U5, D1, C_CAP, C2, J2, R_PD, C3, SOLAR, C1,
+LED1, R_DIV2, C4, U1, J1, U3`.
+
+Two observations for the next layout pass:
+
+- `U2` is instantiated with the footprint `HOPERF_RFM9W_SMD` (an RFM9x proxy),
+  not the LR2021F33 footprint. The plan allows `NiceRF_Lora1276-C1` "as proxy"
+  but the schematic's own footprint link is broken (§3), so the physical
+  radio's pad geometry is unverified against the part being flown.
+- `U5` is populated on the board with I2C nets but the plan lists BMP280 as
+  "optional"; `C4`/`C3` decoupling exist as required.
+
+## 7. GPIO18/19 rule — FAIL (this is the headline)
+
+Sign-off rule: **no GPIO18/19 on C3.** Resolved against the official KiCad
+esp32 symbol (`RF_Module:ESP32-C3-WROOM-02`: pin 13 = IO18, pin 14 = IO19):
+
+| U1 pad | SoC pin | Net on the board | Rule |
 |---|---|---|---|
-| SPI SCK | GPIO6 | `PIN_SCK = 6` | OK |
-| SPI MOSI | GPIO7 | `PIN_MOSI = 7` | OK |
-| SPI MISO | GPIO2 | `PIN_MISO = 2` | OK |
-| SPI NSS | GPIO10 | `PIN_CS = 10` | OK |
-| LR2021 BUSY | GPIO4 | `PIN_BUSY = 4` | OK |
-| LR2021 DIO9 (IRQ) | GPIO5 | `PIN_IRQ = 5` | OK |
-| LR2021 RST | GPIO3 | `PIN_RST = 3` | OK |
-| **STATUS_LED** | **GPIO9** | **`PIN_LED = 8`** | **MISMATCH** |
+| 13 | **IO18** | `LR_DIO0` (radio IRQ) | **VIOLATION** |
+| 14 | **IO19** | `LED_DRIVE` (status LED) | **VIOLATION** |
 
-The 7 LR2021/SPI pins agree. **The status LED does not:** the plan assigns
-STATUS_LED to GPIO9 (a strapping pin w/ pull-up) and marks GPIO8 as "unused /
-strapping", while the firmware drives the LED on **GPIO8**. Whichever pin the
-board routes, it must match the firmware that will actually run. The schematic
-worker (P1) must reconcile this before drawing the symbol.
+Both USB D−/D+ pins are committed to signals. The plan §2.3 had the same defect
+(`FEM_TX → GPIO19`) and the 2026-08-05 reject told the layout worker to remove
+it; the defect has moved rather than been fixed. USB is forfeited on this board,
+and the `BOOT` strapping net (`J1.pad 6`) is left unconnected as a result.
 
-### 4.2 GPIO18 / GPIO19 absence (sign-off rule)
+## 8. GPIO ↔ firmware cross-check — FAIL (2 of 8 mismatch)
 
-Sign-off rule: **no GPIO18/19 on C3.**
+Authoritative firmware: `firmware/esp32-c3-flrc/main/main.cpp:37-44`.
 
-- Firmware (`esp32-c3-flrc`): uses **only** GPIO {2,3,4,5,6,7,8,10}. GPIO18/19
-  not referenced. PASSES the rule.
-- **Plan netlist (§2.3) VIOLATES the rule:** it maps `FEM_TX → U1.GPIO19`, and
-  §2.4 lists GPIO18 (USB_D−) / GPIO19 (USB_D+) as "available if USB disabled".
-  GPIO18/19 on the ESP32-C3-MINI-1 are the dedicated USB D−/D+ pins; reusing
-  them forfeits USB and conflicts with this gate. The schematic must **not**
-  route GPIO18/GPIO19 to FEM or anything else. (FEM is optional anyway — leave
-  it unconnected or move FEM_TX to a free non-USB GPIO.)
+| Function | Firmware | Board (U1 pad → net) | Match |
+|---|---|---|---|
+| SPI SCK | `PIN_SCK 6` | pad 5 (IO6) → `SPI_SCK` | OK |
+| SPI MOSI | `PIN_MOSI 7` | pad 6 (IO7) → `SPI_MOSI` | OK |
+| SPI MISO | `PIN_MISO 2` | pad 16 (IO2) → `SPI_MISO` | OK |
+| SPI NSS | `PIN_CS 10` | pad 10 (IO10) → `SPI_NSS` | OK |
+| LR2021 BUSY | `PIN_BUSY 4` | pad 3 (IO4) → `LR_BUSY` | OK |
+| LR2021 RST | `PIN_RST 3` | pad 15 (IO3) → `LR_RST` | OK |
+| **LR2021 IRQ** | **`PIN_IRQ 5`** | **pad 13 (IO18) → `LR_DIO0`** | **MISMATCH** |
+| **STATUS LED** | **`PIN_LED 8`** | **pad 14 (IO19) → `LED_DRIVE`** | **MISMATCH** |
 
-### 4.3 Thickness specification conflict
+The firmware's own struct would drive GPIO5/GPIO8 while the board routes the
+interrupt to GPIO18 and the LED to GPIO19 — the board compiles, boots, and
+silently fails to see radio interrupts. This is the exact silent-runtime-corruption
+class the 2026-08-05 reject warned about.
 
-- P3 task body: "Set 0.6mm".
-- This sign-off rule: "verify 0.6mm thickness".
-- Plan §4.2 (JLCPCB Order Specs): **"Thickness | 1.6mm"**.
+Two further electrical mismatches against the plan's pin map:
 
-The execution tasks (0.6 mm) and the order spec (1.6 mm) disagree. The
-consultant cannot verify 0.6 mm against a plan that specifies 1.6 mm. Resolve
-explicitly (0.6 mm is plausible for a 2-layer flex-ish carrier but unusual for a
-4-layer FR4 JLCPCB order; 1.6 mm is the JLCPCB default). Document the decision in
-the plan before layout.
+- `VDIV_MID` (supercap ADC) is on **IO5** (pad 4). Plan §2.4 assigns it GPIO0.
+  On ESP32-C3 only GPIO0–GPIO4 are ADC-capable, so IO5 cannot sample the
+  divider at all. (`LR_BUSY` correctly holds GPIO4, so the ADC pin has in fact
+  been spent elsewhere.)
+- `I2C_SDA`/`I2C_SCL` are on **IO8/IO9** (pads 7/8). Plan §2.4 assigns
+  GPIO20/GPIO21. IO9 is a strapping pin with pull-up, and IO8 is the strapping
+  pin the plan explicitly says to leave unconnected.
+
+## 9. Net-name divergence between schematic and board
+
+The schematic labels nets `LR2021_DIO9` and `STATUS_LED`; the board's netlist
+names the same functions `LR_DIO0` and `LED_DRIVE`
+(`(net 15 "LR_DIO0")`, `(net 18 "LED_DRIVE")`). The board also uses a different
+net vocabulary throughout (`RF_OUT` vs the plan's `RF_SUB_868`,
+`+3V3` vs `3V3`). Any future netlist import/compare between schematic and board
+will mismatch by name, and this is one reason the ERC cannot be reconciled
+against the board. One naming scheme has to win and be applied on both sides.
 
 ---
 
-## 5. Quality-gate scorecard
+## 10. Quality-gate scorecard
 
 | Gate | Required | Status |
 |---|---|---|
-| G1: Board artefact exists | yes | **FAIL** (absent) |
-| G2: DRC 0 violations / 0 unconnected | 0 / 0 | **BLOCKED** (no board) |
-| G3: Thickness 0.6 mm | verify | **BLOCKED** (no board) |
-| G4: Gerbers present & sized | yes | **FAIL** (absent) |
-| G5: Footprint count > 10 | > 10 | **BLOCKED** (no board) |
-| G6: GPIO matches firmware | yes | **PARTIAL FAIL** (LED GPIO9 vs 8) |
-| G7: No GPIO18/19 | yes | **PLAN FAIL** (FEM_TX→GPIO19 in §2.3); firmware OK |
-| G8: Commit + push sign-off | yes | PASS (this report committed) |
+| G1: Board artefact exists | yes | **PASS** (schematic + board + gerbers present on pushed tip) |
+| G2: DRC 0 violations / 0 unconnected | 0 / 0 | **FAIL** — 20 real violations, 49 unconnected |
+| G3: Thickness 0.6 mm | verify | **PASS on artefact** (0.6); plan §4.2 still says 1.6 mm |
+| G4: Gerbers present & sized | yes | **PARTIAL** — 28 files, authentic; no BOM/CPL, `Finish: None` |
+| G5: Footprint count > 10 | > 10 | **PASS** (20) |
+| G6: GPIO matches firmware | yes | **FAIL** — IRQ (5→18) and LED (8→19) mismatch |
+| G7: No GPIO18/19 | yes | **FAIL** — pads 13/14 are GPIO18/19 |
+| G8: Commit + push sign-off | yes | PASS (this report) |
+
+## 11. Remediation — required before P7 can pass
+
+1. **Remove GPIO18/19 from the board.** Move the radio IRQ to GPIO5 and the LED
+   to GPIO8 (both free per the firmware), re-run ERC, then re-route. The
+   `BOOT` strapping net on `J1.pad 6` must also be either wired or formally
+   waived in writing.
+2. **Reconcile the pin map against the firmware** — one document of record for
+   SCK/MOSI/MISO/NSS/BUSY/IRQ/RST/LED, and fix `VDIV_MID` (needs an
+   ADC-capable GPIO0–4) and the I2C pins off the strapping pins.
+3. **Get DRC to 0/0.** Start from the best variant
+   (`v_c3_flight_clean_routed`: 10 violations / 20 unconnected) and clear the
+   remaining short, clearance and keepout violations and the unfinished power
+   rails. Record every attempt as a `drc_score.py` row in
+   `drc_snapshots/history.jsonl` (shorts + clearance + unconnected must fall).
+4. **Get ERC to 0** — fix the 55 off-grid endpoints first; that alone removes
+   most of the 72 unconnected pins. Restore the `RF_Module`/`balloon-custom`
+   library links so the schematic is self-contained.
+5. **Settle thickness**: 0.6 mm or 1.6 mm, in both the plan §4.2 and §3.1
+   (the RF 0.76 mm width depends on it), then re-verify the RF impedance claim
+   for the chosen stackup.
+6. **Finish the P6 package**: BOM + CPL, correct surface finish (ENIG per
+   §4.2), and delete the duplicate `gerbers_v_c3_final/` directory or document
+   which set is canonical.
+7. **Re-run P7** only after 1–6 land and the DRC row shows 0/0/0 with
+   `fp >= 10`.
 
 ---
 
-## 6. Remediation (re-open P1–P6, do not re-run P7 until done)
+## 12. Status
 
-1. **Resolve the spec conflicts in `PCB-EXECUTION-PLAN.md` first:**
-   - Pin STATUS_LED: GPIO8 (match firmware) or GPIO9 (match plan) — pick one and fix the other side.
-   - Remove `FEM_TX → GPIO19` from netlist §2.3; FEM optional/unconnected or moved to a non-USB GPIO.
-   - Settle thickness: 0.6 mm or 1.6 mm — make plan §4.2 and the layout task agree.
-2. **Execute the pipeline in order:** P1 schematic → P2 ERC clean → P3 layout (+0.6 mm + Edge.Cuts) → P4 route → P5 DRC 0/0 → P6 gerbers. None of these currently produce a C3 artefact.
-3. **Re-run P7 (this task)** only after P1–P6 are `done` and `v_c3_flight_2layer.kicad_pcb` + `gerbers_v_c3/` exist and are committed.
-
----
-
-## 7. Status
-
-**REJECT.** Do not order / fabricate. No C3 flight board exists to fabricate.
-Re-open the C3 layout pipeline; revisit this sign-off once P1–P6 deliver the
-artefacts defined above.
+**REJECT. Do not order / fabricate.** The board exists — unlike the 2026-08-05
+run — but it shorts SPI_NSS to the LED net, leaves both power rails unconnected,
+routes the radio IRQ and status LED onto the forbidden USB pins GPIO18/GPIO19,
+and disagrees with the firmware on two of eight pins. Ordering it would burn a
+JLCPCB batch on a board that cannot work.
