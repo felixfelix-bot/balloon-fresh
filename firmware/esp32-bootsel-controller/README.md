@@ -63,9 +63,9 @@ Other environments:
 
 ## Serial commands
 
-Single letter, optionally with a trailing CR/LF. Commands are matched **exactly**
-— a line that merely starts with a command letter is an error, because these
-commands move hardware.
+Single letter or long alias, optionally with a trailing CR/LF. Commands are
+matched **exactly** — a line that merely starts with a command letter is an
+error, because these commands move hardware.
 
 | command | long alias | action |
 |---|---|---|
@@ -84,14 +84,27 @@ alive without polling. `RESET` / `BOOTSEL` / `STATUS` are the words the older
 The ESP32-C3 SuperMini "USB JTAG/serial debug unit" (VID 303a:1001) has a broken
 console: `Serial.print()` emits zero bytes and `Serial.available()` never returns
 true, measured across 10+ reflashes and both cores. This firmware therefore
-accepts the same commands on the **hardware UART** as well:
+accepts the same commands on the **hardware UART** (`Serial1`) as well:
 
 ```
-UART0  TX = GPIO21, RX = GPIO20, 115200 8N1
+UART0  TX = GPIO21, RX = GPIO20, 115200 8N1     (bench defaults)
 ```
 
-Drive it from a USB-serial adapter, or from the RP2040's own UART bridge. When
-the USB CDC console does work (other board revisions), it works too.
+Drive it from a USB-serial adapter, or from the RP2040's own UART bridge.
+
+**PIN CONFLICT on the flight board.** Those two pins are free on the bench dev
+boards, but `docs/FLIGHT-BOARD-AUTO-BOOTSEL.md` assigns GPIO20 *and* GPIO21 to
+the BMP280 I2C bus. Before building for the flight board, move the console — the
+pin budget leaves GPIO0 free as a UART TX:
+
+```bash
+pio run -e esp32c3 --build-flag=-DBOOTSEL_UART_TX_PIN=0 \
+                   --build-flag=-DBOOTSEL_UART_RX_PIN=<free pin>
+```
+
+The console pins are the only bench-specific choice here. The BOOTSEL/RUN pins
+are fixed in `src/bootsel_controller.h` because the soldered circuit is wired to
+GPIO1/GPIO8.
 
 ## BOOTSEL entry sequence (order-critical)
 
