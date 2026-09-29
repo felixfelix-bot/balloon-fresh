@@ -330,9 +330,12 @@ class TestCliRejectsTheLossyFallback:
     distinguishes the two, and these tests pin it."""
 
     def _run(self, argv):
+        # `sys.executable`, not the script's /usr/bin/python3.14 shebang: the CI
+        # runner has no such interpreter (observed 2026-09-29, workflow run
+        # 36542684711).  The argument-validation cases below need no pcbnew, so
+        # they run there too.
         return subprocess.run(
-            ["/usr/bin/python3.14", os.path.join(HW_DIR, "import_tracks_fixed.py")]
-            + argv,
+            [sys.executable, os.path.join(HW_DIR, "import_tracks_fixed.py")] + argv,
             capture_output=True, text=True, timeout=300)
 
     def test_missing_explicit_ses_is_refused(self, tmp_path):
