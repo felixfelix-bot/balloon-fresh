@@ -7,6 +7,8 @@ name: Host Unit Tests
 #   - tollgate       (~350 tests) — mesh-stack/tollgate/tests/unit (Makefile, 13 binaries)
 #   - ehash-relay    (65 tests)   — mesh-stack/ehash-relay/test
 #   - stratorelay    (11 tests)   — tracker/firmware/components/stratorelay/test
+#   - integration-harness-parsers (31 tests) — tracker/firmware/test
+#     (Phase 5/6/7 harness log parsers, pinned to real firmware output)
 # Any failing suite fails the entire job.
 
 on:
@@ -75,3 +77,16 @@ jobs:
             tracker/firmware/components/stratorelay/test/test_stratorelay.cpp \
             -o /tmp/test_stratorelay
           /tmp/test_stratorelay
+
+      # ── Suite 6: integration harness log parsers (31 tests) ─────
+      # Host-only regression tests for the Phase 5/6/7 integration harness
+      # parsers in tracker/firmware/test/integration/. These have no boards to
+      # talk to, so they pin the parsers to the EXACT producer formats printed
+      # by tracker/firmware/main/{app_main,app_task}.cpp — the class of bug a
+      # cold review of t_1153953b found (parsers that matched output the
+      # firmware never emits, yielding false-green/false-red results).
+      - name: Run integration harness parser tests
+        run: |
+          cd tracker/firmware/test
+          python3 test_integration_parsers.py
+          python3 test_tollgate_payack_parse.py
