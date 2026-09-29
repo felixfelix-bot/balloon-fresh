@@ -882,7 +882,7 @@ class GridRouter:
     pads/segments block it. unblock_net_pads only decrements counts for
     cells that the current net's pads actually blocked — it does NOT
     remove blocks created by adjacent nets' pads. This prevents tracks
-    from routing through other pads' clearance zones."""
+    from routing through other pads' clearance areas."""
 
     def __init__(self, board_w_mm=BOARD_WIDTH_MM, board_h_mm=BOARD_HEIGHT_MM,
                  grid_mm=GRID_RESOLUTION_MM, clearance_mm=CLEARANCE_MM):
@@ -935,7 +935,7 @@ class GridRouter:
         """Block grid cells for a pad.
 
         Blocks only the cells the pad physically covers + 1 cell margin.
-        With 0.25mm grid, this creates a minimal blocked zone:
+        With 0.25mm grid, this creates a minimal blocked area:
         ESP32-C3 pad (1.0x0.6): blocks ~4x3 cells + 1 margin = ~6x5
         LR2021 pad (1.2x0.8): blocks ~5x4 cells + 1 margin = ~7x6
         Small pad (0.6x0.5): blocks ~3x2 cells + 1 margin = ~5x4
