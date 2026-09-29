@@ -102,3 +102,20 @@ jobs:
           python3 -m pip install --quiet pytest \
             || python3 -m pip install --quiet --break-system-packages pytest
           python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short
+
+      # ── Suite 8: power_manager supercap-monitoring guard (V1 + V2) ──
+      # Gate 1/2 evidence for t_807f52d4: the ADC path is compiled out on V1
+      # (no free ADC pin; ADC1_CH0 = GPIO0 = GPS TX). Runs BOTH sides of the
+      # #ifdef so the contract is proven in each direction — the V1 build
+      # asserts the out-of-range sentinel (a literal 0 would assert LOW_POWER),
+      # the V2 build asserts failed-init retry / failed-read sentinel.
+      - name: Build & run power_manager guard tests (V1 + V2)
+        run: |
+          cd tracker/firmware/components/power_manager
+          gcc -Wall -Wextra -O2 -I . -I test/stubs -I ../../../../tests/host_stubs -o /tmp/test_pm_legacy test/test_power_manager.c
+          /tmp/test_pm_legacy
+          gcc -Wall -Wextra -O2 -I . -I test/stubs -I ../../../../tests/host_stubs -o /tmp/test_pm_v1 test/test_power_manager_guard.c
+          /tmp/test_pm_v1
+          gcc -Wall -Wextra -O2 -DSUPERCAP_MONITORING \
+            -I . -I test/stubs -I ../../../../tests/host_stubs -o /tmp/test_pm_v2 test/test_power_manager_guard.c
+          /tmp/test_pm_v2

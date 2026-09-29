@@ -729,7 +729,10 @@ extern "C" void app_main(void)
 #ifdef SUPERCAP_MONITORING
     ESP_LOGI(TAG, "Supercap: %d mV", cap_mv);
 #else
-    ESP_LOGI(TAG, "Supercap: monitoring disabled for V1 (no free ADC pin)");
+    /* cap_mv is POWER_MANAGER_MV_INVALID (0xFFFF) here: V1 has no supercap ADC,
+     * and telemetry reuses that out-of-range value as the "not measured" marker
+     * so a ground station never reads it as a real (flat) 0 mV. */
+    ESP_LOGI(TAG, "Supercap: monitoring disabled for V1 (no free ADC pin, telemetry voltage=0xFFFF)");
 #endif
 
     setup_cli();
