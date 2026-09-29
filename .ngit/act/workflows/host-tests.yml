@@ -114,3 +114,24 @@ jobs:
           python3 -m pip install --quiet pytest \
             || python3 -m pip install --quiet --break-system-packages pytest
           python3 -m pytest tests/test_pcb_pipeline_gates.py -v --tb=short
+
+      # ── Suite 9: auto-BOOTSEL interposer board (t_48a0fa82) ───────
+      # The interposer PCB's 25 assertions.  The netlist, orientation,
+      # mass-model and "harness can fail" checks run anywhere; the two
+      # kicad-cli checks (the fab DRC gate and Gate 2.5 on the unrouted
+      # placement) self-skip when kicad-cli is absent, which is the case in
+      # the stock act image — hence the explicit skip line, so a green lane
+      # is never mistaken for "the DRC gate ran here".
+      - name: Run auto-BOOTSEL board tests
+        run: |
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          if command -v kicad-cli >/dev/null 2>&1; then
+            echo "kicad-cli present: the DRC + Gate 2.5 checks will run"
+          else
+            echo "SKIP: kicad-cli absent - the DRC/Gate 2.5 checks are skipped"
+            echo "      by their own skipif; netlist/orientation/mass checks run"
+          fi
+          python3 -m pytest \
+            tracker/hardware/auto_bootsel/tests/test_auto_bootsel_pcb.py \
+            -v --tb=short
