@@ -102,3 +102,16 @@ jobs:
           python3 -m pip install --quiet pytest \
             || python3 -m pip install --quiet --break-system-packages pytest
           python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short
+
+      # ── Suite 8: PCB auto-route pipeline gates (t_80d91470) ──────
+      # The PCB-V2 Phase 1 card's five quality gates, expressed as
+      # assertions so they cannot silently rot (a previous run reported
+      # "zone=0" against a file containing two `zone` hits in prose).
+      # The static gates run anywhere.  The behavioural gates need
+      # pcbnew (KiCad) and self-skip on a runner without it — they are
+      # covered locally, where the pipeline is actually exercised.
+      - name: Run PCB pipeline gate tests
+        run: |
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          python3 -m pytest tests/test_pcb_pipeline_gates.py -v --tb=short
