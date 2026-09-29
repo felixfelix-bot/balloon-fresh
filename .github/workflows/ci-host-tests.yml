@@ -103,7 +103,7 @@ jobs:
             || python3 -m pip install --quiet --break-system-packages pytest
           python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short
 
-      # ── Suite 8: ESP32-C3 TX hot-loop P0.2 invariants (10 tests) ──────
+      # ── Suite 8: ESP32-C3 TX hot-loop P0.2 invariants (16 tests) ──────
       # t_19807e87: locks the P0.2 remediation. Asserts the timeout-recovery
       # branch clears the sticky error register UNCONDITIONALLY (the old
       # `irqStatus & 0x00030000` guard could never fire once rfClearIrq() had
@@ -111,7 +111,10 @@ jobs:
       # packet's IRQ/DIO9, and that the machine-parseable TX_DONE_STATS burst
       # summary + per-250 progress line are present. Also asserts the happy path
       # still carries no per-packet CLR_ERRORS/CLR_TX_FIFO, so the P0.2 win
-      # cannot be silently undone. Host-side only, no boards needed.
+      # cannot be silently undone — the region it inspects is brace-matched and
+      # asserted to span the WHOLE loop, after round-1 review found the first
+      # revision's lazy `.*?` stopped at the poll's inner brace (16 tests).
+      # Host-side only, no boards needed.
       - name: Run ESP32-C3 TX hot-loop P0.2 invariant tests
         run: |
           python3 -m pip install --quiet pytest \

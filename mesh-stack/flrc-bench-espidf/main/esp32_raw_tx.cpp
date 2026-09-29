@@ -3,7 +3,9 @@
  *
  * Direct port of RP2040 flrc_raw_tx.cpp v4.  Uses EspHalC3 GDMA SPI.
  * Sends 1000 packets, then repeats every 15 s.
- * TX hot loop: clearIrq → writeTxFifo → setTx → poll TX_DONE (DIO9 + IRQ bit 19).
+ * TX hot loop: clearIrq → writeTxFifo → setTx → poll DIO9 (level high) for up
+ * to TX_POLL_TIMEOUT_US, then, on a timeout, read the IRQ status word once as
+ * recovery evidence. No IRQ-status poll is performed on the happy path.
  * rfClearTxFifo() / rfClearErrors() are OFF the happy path: they run only in the
  * timeout-recovery branch. The LR2021 datasheet is the reason ClearTxFifo stays
  * in recovery at all — it documents ClearTxFifo only as a host command that
@@ -48,6 +50,9 @@ static const char *TAG = "RAWTX";
 #define FLRC_FREQ_MHZ   2440.0f
 #define FLRC_PKT_SIZE   255
 #define TX_PKT_COUNT    1000
+// Per-packet TX_DONE poll budget. Named so the header comment and the loop
+// cannot drift apart (round-1 review finding 2).
+#define TX_POLL_TIMEOUT_US  50000
 #define TX_POWER_DBM    12
 
 // Sync word — MUST match RX
@@ -269,8 +274,11 @@ static void runTransmit() {
         rfWriteTxFifo(pkt, FLRC_PKT_SIZE);
         rfSetTx();
 
-        uint32_t timeout = esp_timer_get_time() + 50000;
+        uint32_t timeout = esp_timer_get_time() + TX_POLL_TIMEOUT_US;
         bool txDone = false;
+        // Poll DIO9 only on the happy path: no SPI traffic per packet, which is
+        // the whole point of P0.2. The IRQ status word is read ONCE, in the
+        // timeout-recovery branch below, as failure evidence — not per poll.
         while (esp_timer_get_time() < timeout) {
             if (gpio_get_level((gpio_num_t)PIN_DIO9) == 1) { txDone = true; break; }
         }
