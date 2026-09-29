@@ -39,6 +39,7 @@ static uint32_t              s_frame_seq;
 static uint16_t              s_pkt_rx;
 static uint16_t              s_pkt_tx;
 static uint16_t              s_crc_err;
+static uint32_t              s_mesh_seq;   /* payload seq, monotonic */
 
 /* Radio state machine code reported in MESH_STATUS.state. */
 enum {
@@ -49,7 +50,7 @@ enum {
 };
 
 static uint8_t  s_radio_state = RP_STATE_IDLE;
-static int16_t  s_rssi_half_dbm = -280;   /* -140.0 dBm = "no signal yet" */
+static int16_t  s_rssi_half_dbm = UART_TLM_RSSI_NO_SIGNAL; /* -140.0 dBm, no packet yet */
 static int8_t   s_snr_qdb;
 static uint8_t  s_chan;
 static bool     s_mesh_joined;
@@ -171,7 +172,9 @@ void uart_tlm_rp_send_mesh_status(void)
         flags |= UART_TLM_M_RX_OVERRUN;
     }
 
-    m.seq           = millis() / 1000u;
+    /* Monotonic frame counter, not a clock — see the C3 driver for why a
+     * seconds counter is wrong here (it collides above 1 Hz). */
+    m.seq           = s_mesh_seq++;
     m.uptime_ms     = millis();
     m.rssi_half_dbm = s_rssi_half_dbm;
     m.snr_qdb       = s_snr_qdb;

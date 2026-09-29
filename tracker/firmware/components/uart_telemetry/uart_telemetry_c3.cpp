@@ -42,6 +42,7 @@ static const char *TAG = "UART_TLM";
 
 static uart_tlm_decoder_t     s_dec;
 static uint8_t                s_frame_seq;
+static uint32_t               s_telemetry_seq;   /* payload seq, monotonic */
 static uart_tlm_mesh_status_t s_mesh;
 static bool                   s_mesh_fresh;
 static uint32_t               s_last_mesh_ms;
@@ -84,7 +85,8 @@ esp_err_t uart_tlm_c3_init(void)
         return err;
     }
     uart_tlm_decoder_init(&s_dec);
-    s_frame_seq  = 0;
+    s_frame_seq     = 0;
+    s_telemetry_seq = 0;
     s_mesh_fresh = false;
     memset(&s_gps, 0, sizeof s_gps);
     return ESP_OK;
@@ -150,7 +152,12 @@ void uart_tlm_c3_build(uart_tlm_telemetry_t *t, uint8_t flags)
         return;
     }
     memset(t, 0, sizeof(*t));
-    t->seq            = now_ms() / 1000u;   /* 1 Hz frame rate */
+    /* The payload-level `seq` is a MONOTONIC telemetry counter, not a clock:
+     * it must not repeat while the 1 Hz scheduler is alive, so it counts
+     * frames.  A seconds counter would collide the moment the task runs
+     * faster than 1 Hz (the doc allows up to 10 Hz), which would make the
+     * receiver's sequence-gap accounting report phantom loss. */
+    t->seq            = s_telemetry_seq++;
     t->uptime_ms      = now_ms();
     t->lat_deg1e7     = s_gps.latitude;
     t->lon_deg1e7     = s_gps.longitude;

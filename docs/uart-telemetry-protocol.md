@@ -97,15 +97,26 @@ set covers all four call sites; there is no second CRC dialect in this repo.
 
 The CRC covers `VER..PAYLOAD` and starts at offset 2. Two consequences:
 
-1. The value `0xAA55` **cannot** be produced by corrupted covered bytes in a way
-   that also keeps the CRC valid — a decoder that re-syncs on `0xAA 0x55` can
-   never lock onto a false marker inside a valid frame.
+1. A **false SOF is harmless once the decoder is locked.** It is already
+   counting bytes towards `expect` for the frame in flight, so a `0xAA 0x55`
+   appearing inside a covered region (which is entirely possible — latitude
+   and longitude bytes hit it regularly) is consumed as ordinary payload and
+   can never be mistaken for a frame boundary.
 2. A dropped/inserted byte shifts every subsequent field, so the CRC fails and
    the decoder re-synchronises rather than silently mis-parsing.
 
-Verified in `test_frame_size_and_sof()`: the CRC over the *whole* frame
-(including SOF) differs from the CRC over the covered range, so the two can
-never be confused.
+Note what is **not** claimed: excluding SOF does *not* make `0xAA55`
+unproducible inside the covered range, and it does not change the CRC's
+detection strength. CRC-16/CCITT-FALSE gives a residual undetected-error rate
+of about 2⁻¹⁶ per frame, i.e. roughly one undetected corruption per 18 hours of
+continuous 1 Hz traffic on a noisy link. That is acceptable for a periodic
+telemetry broadcast with no ARQ (§6), and it is the reason the sequence
+counters — not the CRC alone — are the link-health signal.
+
+The `test_frame_size_and_sof()` assertion that the whole-frame CRC differs from
+the covered-range CRC is a wiring check, not a proof of the above; the
+behaviour it protects is pinned by `test_decoder_corruption()` (a good frame
+immediately after a corrupt one still decodes).
 
 ### 2.4 Reserved / reserved-value handling
 
@@ -173,7 +184,7 @@ The C3 only requests `FLRC`/`LORA` when the back-channel reports
 |--------|------|-------|--------------|
 | 0 | `uint32` | `seq` | RP2040-side counter. |
 | 4 | `uint32` | `uptime_ms` | Milliseconds since RP2040 boot. |
-| 8 | `int16` | `rssi_half_dbm` | RSSI in **0.5 dBm** steps: `-145` = −72.5 dBm. Not `dBm × 10`. |
+| 8 | `int16` | `rssi_half_dbm` | RSSI in **0.5 dBm** steps: `-145` = −72.5 dBm. Not `dBm × 10`. `-280` (−140.0 dBm) is the `UART_TLM_RSSI_NO_SIGNAL` sentinel for "no packet received yet" and is accepted by the validator. |
 | 10 | `int8` | `snr_qdb` | SNR in 0.25 dB steps: `-12` = −3.0 dB. |
 | 11 | `uint8` | `flags` | See §4.1. |
 | 12 | `uint16` | `pkt_rx` | Packets received since boot (wraps). |
@@ -235,6 +246,29 @@ The decoder is a byte-fed state machine (`uart_tlm_decoder_t`). It must:
 6. **Only write the caller's payload buffer after the CRC passes.** A rejected
    frame must never partially clobber live sensor state.
 
+Be precise about what step 3 buys. "Aborts immediately" holds for a `LEN` that
+is *out of range*. A `LEN` corrupted to a different **in-range** value (say
+32 → 20) cannot be detected at byte 4: the decoder waits for the wrong byte
+count, swallows the bytes of the next frame, and only fails at the CRC. The
+frame that was swallowed is lost until the sender's next frame re-locks the
+pair. This is inherent to length-prefixed framing, not a defect, and it is why
+the recovery time matters more than the recovery trigger — see the resync rule
+below.
+
+The assembler also carries a `have >= UART_TLM_MAX_FRAME` backstop that drops a
+frame and re-hunts. With the current field widths it is **unreachable** (the
+`LEN` check at byte 4 caps `expect` at `MAX_FRAME`, and the frame is finished
+the moment `have == expect`); it is kept as a bound on `buf[]` in case the
+`LEN` validation is ever loosened, and `len_errors` counts it so a future
+reachability change cannot be silent.
+
+**Re-synchronisation keeps a partial SOF.** When a frame is abandoned, the
+decoder retains the trailing bytes that could *begin* a frame — a lone `0xAA`,
+or a complete `0xAA 0x55` — and discards everything else. Retaining only a lone
+`0xAA` would drop a valid frame whose SOF arrived inside the tail of a
+corrupted (or truncated) frame, costing one whole frame period instead of a
+partial frame's worth of bytes.
+
 ### 5.1 Error codes
 
 | Code | Value | Cause |
@@ -242,7 +276,7 @@ The decoder is a byte-fed state machine (`uart_tlm_decoder_t`). It must:
 | `UART_TLM_OK` | `0` | Byte consumed, or a valid frame produced. |
 | `UART_TLM_ERR_CRC` | `-1` | Frame boundary found, CRC mismatch. |
 | `UART_TLM_ERR_LEN` | `-2` | `LEN` is `0` or exceeds 64. |
-| `UART_TLM_ERR_TYPE` | `-3` | Unknown `TYPE`, or unknown `VER`. |
+| `UART_TLM_ERR_TYPE` | `-3` | Bad `SOF` pair, unknown `TYPE`, or unknown `VER`. |
 | `UART_TLM_ERR_PAYLOAD_SIZE` | `-4` | `LEN` ≠ the fixed size for that type. |
 | `UART_TLM_ERR_OVERFLOW` | `-5` | Caller output buffer too small. |
 | `UART_TLM_ERR_ARG` | `-6` | `NULL` or otherwise invalid argument. |

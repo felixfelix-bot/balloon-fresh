@@ -70,7 +70,21 @@ uint8_t uart_tlm_payload_len(uint8_t type)
     }
 }
 
-/* ── Payload serialisation ───────────────────────────────────────────────── */
+/* ── Payload (de)serialisation ───────────────────────────────────────────── */
+
+/* The decoder is byte-fed: the byte count it is waiting for is known only once
+ * VER/TYPE/LEN have arrived.  A frame always yields to exactly one call of
+ * feed(), so a caller that does not care which frame it got only needs to
+ * ignore the return value and watch frames_ok / crc_errors / len_errors.
+ *
+ * Windowed re-scan is deliberately NOT attempted: on a rejected frame the
+ * decoder re-hunts from the next byte.  The cost is that a frame which begins
+ * inside the tail of a rejected frame is consumed as continuation bytes and is
+ * not recovered.  At a 1 Hz frame rate over a short board-to-board link that is
+ * a rare, self-healing loss (the sender's next frame resyncs the pair), and it
+ * is strictly better than a partial decode: the alternative — trusting bytes
+ * from an unverified frame — silently mis-assigns sensor fields.
+ */
 
 void uart_tlm_telemetry_to_bytes(const uart_tlm_telemetry_t *t,
                                  uint8_t payload[UART_TLM_TELEMETRY_LEN])
@@ -176,9 +190,13 @@ bool uart_tlm_telemetry_valid(const uart_tlm_telemetry_t *t)
     if (t->tx_mode > UART_TLM_TXMODE_IDLE) {
         return false;
     }
-    /* Altitude: -500 m .. 50 km covers every balloon flight regime. */
-    if (t->alt_mm < -500000 || t->alt_mm > 50000000) {
-        return false;
+    /* Altitude is also a position field: without a fix it is stale or never
+     * written, so only check it when the fix flag says it is meaningful. */
+    if (t->flags & UART_TLM_F_GPS_VALID) {
+        /* -500 m .. 50 km covers every balloon flight regime. */
+        if (t->alt_mm < -500000 || t->alt_mm > 50000000) {
+            return false;
+        }
     }
     return true;
 }
@@ -188,9 +206,13 @@ bool uart_tlm_mesh_status_valid(const uart_tlm_mesh_status_t *m)
     if (m == NULL) {
         return false;
     }
-    /* rssi_half_dbm is dBm*2 in an int16; a real radio never reports outside
-     * -140..0 dBm.  Anything else is a decode/endianness bug. */
-    if (m->rssi_half_dbm < -280 || m->rssi_half_dbm > 0) {
+    /* rssi_half_dbm is dBm*2 in an int16.  -280 (-140.0 dBm) is the "no signal
+     * yet" sentinel that uart_tlm_rp2040.cpp initialises to, so it must stay
+     * ACCEPTED: one step stricter and the C3 would silently discard every
+     * MESH_STATUS frame until the first packet arrived, which is exactly when
+     * the grant decision is needed.  Anything outside -140..0 dBm is a
+     * decode/endianness bug. */
+    if (m->rssi_half_dbm < UART_TLM_RSSI_NO_SIGNAL || m->rssi_half_dbm > 0) {
         return false;
     }
     /* snr_qdb is an int8 in 0.25 dB steps, so every bit pattern is a value in
@@ -277,10 +299,28 @@ void uart_tlm_decoder_init(uart_tlm_decoder_t *d)
  * arrived cannot be lost when we resynchronise. */
 static void resync(uart_tlm_decoder_t *d)
 {
-    /* Look for a SOF pair in the bytes we have; keep the trailing byte if it is
-     * a possible SOF0, drop everything else. */
+    /* A rejected frame's buffer can ALREADY contain the SOF of the next frame:
+     * a `LEN` corrupted to a larger in-range value makes the decoder swallow
+     * the head of the following frame before the CRC fails, so the next frame's
+     * `AA 55` sits inside the buffer, not at its tail.  Keep everything from
+     * the LAST `AA 55` in the buffer; failing that, keep a lone trailing 0xAA.
+     * A false positive costs one extra failed frame (the next CRC check
+     * rejects it and we resync again); discarding a real SOF costs a whole
+     * frame period. */
     uint16_t keep = 0;
-    if (d->have >= 1u && d->buf[d->have - 1u] == UART_TLM_SOF0) {
+    if (d->have >= 3u) {
+        /* start > 0 only: a match at offset 0 is the SOF of the frame we are
+         * abandoning, and keeping it would re-enter the same bad frame. */
+        for (uint16_t i = (uint16_t)(d->have - 1u); i > 1u; i--) {
+            if (d->buf[i - 1u] == UART_TLM_SOF0 && d->buf[i] == UART_TLM_SOF1) {
+                const uint16_t start = (uint16_t)(i - 1u);
+                keep = (uint16_t)(d->have - start);
+                memmove(d->buf, &d->buf[start], keep);
+                break;
+            }
+        }
+    }
+    if (keep == 0u && d->have >= 1u && d->buf[d->have - 1u] == UART_TLM_SOF0) {
         d->buf[0] = UART_TLM_SOF0;
         keep = 1u;
     }
@@ -300,6 +340,16 @@ static int finish_frame(uart_tlm_decoder_t *d, uint8_t *type_out, uint8_t *seq_o
         d->crc_errors++;
         resync(d);
         return UART_TLM_ERR_CRC;
+    }
+
+    /* A frame whose CRC is good can still be uninterpretable: if LEN does not
+     * match the fixed size for TYPE, the payload struct decode would read past
+     * the bytes that actually arrived.  Reject it here, at the protocol layer,
+     * so no consumer has to remember to check LEN itself. */
+    if (len != uart_tlm_payload_len(d->buf[3])) {
+        d->len_errors++;
+        resync(d);
+        return UART_TLM_ERR_PAYLOAD_SIZE;
     }
 
     if (type_out)        { *type_out = d->buf[3]; }
@@ -367,8 +417,10 @@ int uart_tlm_decoder_feed(uart_tlm_decoder_t *d, uint8_t byte,
     }
     d->buf[d->have++] = byte;
 
-    /* Once the length byte has arrived the total frame size is known. */
-    if (d->have == 5u) {
+    /* Once the length byte has arrived the total frame size is known.  Keyed on
+     * `expect == 0` rather than `have == 5` because a resync can carry more
+     * than five bytes of a following frame into the buffer at once. */
+    if (d->expect == 0u && d->have >= 5u) {
         const uint8_t len = d->buf[4];
         if (len == 0u || len > UART_TLM_MAX_PAYLOAD) {
             d->len_errors++;
@@ -384,7 +436,7 @@ int uart_tlm_decoder_feed(uart_tlm_decoder_t *d, uint8_t byte,
         return UART_TLM_ERR_TYPE;
     }
 
-    if (d->expect != 0u && d->have == d->expect) {
+    if (d->expect != 0u && d->have >= d->expect) {
         return finish_frame(d, type_out, seq_out, payload_out, payload_len_out);
     }
 

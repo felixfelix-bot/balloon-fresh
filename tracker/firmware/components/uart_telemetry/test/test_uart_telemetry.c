@@ -342,7 +342,6 @@ static void test_decoder_corruption(void)
     (void)uart_tlm_decoder_feed_block(&d5, biglen, sizeof biglen, &type, &seq, payload, &plen);
     CHECK(d5.len_errors == 1, "oversized length counted as a length error (got %u)", d5.len_errors);
     CHECK(d5.frames_ok == 0, "oversized length produces no frame");
-
     /* Wrong version byte -> rejected without emitting. */
     uart_tlm_decoder_t d6;
     uart_tlm_decoder_init(&d6);
@@ -351,6 +350,67 @@ static void test_decoder_corruption(void)
     badver[2] = 0x7E;
     (void)uart_tlm_decoder_feed_block(&d6, badver, (uint32_t)n, &type, &seq, payload, &plen);
     CHECK(d6.frames_ok == 0, "unknown version produces no frame");
+}
+
+/* ── Decoder: a rejected frame must not swallow the NEXT frame's SOF ─────── */
+
+static void test_resync_keeps_pending_frame(void)
+{
+    uart_tlm_telemetry_t t;
+    memset(&t, 0, sizeof t);
+    t.flags = UART_TLM_F_GPS_VALID;
+    t.lat_deg1e7 = 480000000;
+    t.lon_deg1e7 = 110000000;
+    t.sats = 7;
+
+    uint8_t good[UART_TLM_MAX_FRAME];
+    int gn = uart_tlm_encode_telemetry(good, sizeof good, 2, &t);
+    CHECK(gn == (int)(UART_TLM_HDR_SIZE + UART_TLM_TELEMETRY_LEN + UART_TLM_CRC_SIZE),
+          "reference frame is 40 bytes (got %d)", gn);
+
+    /* Corrupt frame 1's LEN to a LARGER in-range value (32 -> 40).  The
+     * decoder cannot detect this at byte 4: it waits for 48 bytes, swallows
+     * the first 8 bytes of frame 2, and only then fails the CRC.  Frame 2's
+     * SOF is therefore INSIDE the buffer when the frame is abandoned. */
+    uint8_t bad[UART_TLM_MAX_FRAME];
+    uart_tlm_telemetry_t b;
+    memset(&b, 0, sizeof b);
+    int bn = uart_tlm_encode_telemetry(bad, sizeof bad, 1, &b);
+    CHECK(bn == gn, "both frames are the same size");
+    bad[4] = 40;                       /* LEN lie: in-range, wrong */
+
+    uint8_t stream[2 * UART_TLM_MAX_FRAME];
+    memcpy(stream, bad, (size_t)bn);
+    memcpy(stream + bn, good, (size_t)gn);
+
+    uart_tlm_decoder_t d;
+    uart_tlm_decoder_init(&d);
+    uint8_t type = 0, seq = 0, plen = 0;
+    uint8_t payload[UART_TLM_MAX_PAYLOAD];
+    memset(payload, 0, sizeof payload);
+
+    uint32_t frames = uart_tlm_decoder_feed_block(&d, stream, (uint32_t)(bn + gn),
+                                                  &type, &seq, payload, &plen);
+    CHECK(frames == 1, "the good frame behind a lying LEN still decodes (got %u)", frames);
+    CHECK(type == UART_TLM_TYPE_TELEMETRY, "decoded type is TELEMETRY");
+    CHECK(seq == 2, "decoded seq is the surviving frame's (got %u)", seq);
+
+    uart_tlm_telemetry_t back;
+    memset(&back, 0, sizeof back);
+    CHECK(uart_tlm_bytes_to_telemetry(payload, &back), "surviving payload decodes");
+    CHECK(back.sats == t.sats && back.lat_deg1e7 == t.lat_deg1e7,
+          "surviving payload is frame 2's, not a splice of both");
+
+    /* Same thing byte-at-a-time: the decoder must not depend on block feeds. */
+    uart_tlm_decoder_t d2;
+    uart_tlm_decoder_init(&d2);
+    uint32_t frames2 = 0;
+    for (uint32_t i = 0; i < (uint32_t)(bn + gn); i++) {
+        const uint32_t before = d2.frames_ok;
+        (void)uart_tlm_decoder_feed(&d2, stream[i], &type, &seq, payload, &plen);
+        if (d2.frames_ok != before) frames2++;
+    }
+    CHECK(frames2 == 1, "byte-at-a-time feed agrees (got %u)", frames2);
 }
 
 /* ── Sequence gap accounting ────────────────────────────────────────────── */
@@ -426,13 +486,30 @@ static void test_validators(void)
     t.tx_mode = 99;
     CHECK(!uart_tlm_telemetry_valid(&t), "unknown tx_mode is rejected");
 
-    /* Absurd altitude -> rejected. */
+    /* Absurd altitude -> rejected (with a claimed fix, so altitude is trusted). */
     memset(&t, 0, sizeof t);
+    t.flags = UART_TLM_F_GPS_VALID;
+    t.lat_deg1e7 = 480000000;
+    t.lon_deg1e7 = 110000000;
     t.alt_mm = 60000000;
     CHECK(!uart_tlm_telemetry_valid(&t), "altitude above 50 km is rejected");
     memset(&t, 0, sizeof t);
+    t.flags = UART_TLM_F_GPS_VALID;
+    t.lat_deg1e7 = 480000000;
+    t.lon_deg1e7 = 110000000;
     t.alt_mm = -600000;
     CHECK(!uart_tlm_telemetry_valid(&t), "altitude below -500 m is rejected");
+
+    /* Altitude is a POSITION field: without a fix it is stale or never
+     * written, so it must not sink an otherwise valid no-fix packet. */
+    memset(&t, 0, sizeof t);
+    t.alt_mm = 60000000;
+    CHECK(uart_tlm_telemetry_valid(&t),
+          "altitude is ignored while GPS_VALID is clear (no fix yet)");
+    memset(&t, 0, sizeof t);
+    t.alt_mm = INT32_MIN;
+    CHECK(uart_tlm_telemetry_valid(&t),
+          "an unwritten altitude does not reject a no-fix packet");
 
     /* NULL is not valid. */
     CHECK(!uart_tlm_telemetry_valid(NULL), "NULL telemetry is not valid");
@@ -557,6 +634,7 @@ int main(void)
     test_decoder_stream();
     test_decoder_resync_noise();
     test_decoder_corruption();
+    test_resync_keeps_pending_frame();
     test_sequence_gaps();
     test_validators();
     test_decode_frame_buffer();

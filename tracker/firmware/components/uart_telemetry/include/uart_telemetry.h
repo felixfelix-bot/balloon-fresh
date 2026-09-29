@@ -79,6 +79,13 @@ extern "C" {
 #define UART_TLM_M_PA_ENABLED    (1u << 3)
 #define UART_TLM_M_RX_OVERRUN    (1u << 4)
 
+/* rssi_half_dbm sentinel for "the radio has not reported a packet yet", in
+ * 0.5 dBm steps: -280 == -140.0 dBm, the bottom of the usable range.  Both
+ * drivers and the validator MUST agree on this value; it is deliberately
+ * ACCEPTED by uart_tlm_mesh_status_valid() so the first (still-empty)
+ * MESH_STATUS frame is not discarded before the first packet arrives. */
+#define UART_TLM_RSSI_NO_SIGNAL  (-280)
+
 /* Decoder error codes (negative, errno-ish) */
 #define UART_TLM_OK                 0
 #define UART_TLM_ERR_CRC           -1   /* frame boundary found, CRC mismatch   */
