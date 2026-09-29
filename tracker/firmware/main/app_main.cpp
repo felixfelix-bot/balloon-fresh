@@ -82,7 +82,7 @@ extern QueueHandle_t g_tx_queue;
 
 static const char *TAG = "TRACKER";
 
-#define LED_GPIO 18  /* moved from GPIO10 (was colliding with LR2021 NSS) */
+#define LED_GPIO 9   /* GPIO9 — was I2C SDA, repurposed to LED (BMP280 dropped for V1) */
 
 /* LR2021 pin reference (matching lr2021_spi.h defaults / EspHalLr2021Radio) */
 #define LR2021_SCK   6
@@ -475,6 +475,7 @@ static void cli_cmd_relay_send_nostr(const char *args) {
 }
 #endif /* CONFIG_ENABLE_RELAY_MODE && CONFIG_ENABLE_NOSTR_STORE */
 
+#ifdef CONFIG_ENABLE_BMP280
 static void cli_cmd_i2c_scan(const char *args) {
     (void)args;
     printf("Scanning I2C bus (SDA=8, SCL=9)...\n");
@@ -493,6 +494,14 @@ static void cli_cmd_i2c_scan(const char *args) {
     }
     printf("Scan complete: %d device(s) found\n", found);
 }
+#else
+/* I2C dropped for V1 flight: GPIO9 repurposed from I2C SDA to LED.
+ * No I2C bus is installed unless BMP280 is enabled, so i2c_scan is compiled out. */
+static void cli_cmd_i2c_scan(const char *args) {
+    (void)args;
+    printf("I2C scan disabled (BMP280 dropped for V1 flight)\n");
+}
+#endif /* CONFIG_ENABLE_BMP280 */
 
 #ifdef CONFIG_ENABLE_NOSTR_STORE
 /*
@@ -717,7 +726,11 @@ extern "C" void app_main(void)
 
     power_manager_init();
     uint16_t cap_mv = power_manager_read_supercap_mv();
+#ifdef SUPERCAP_MONITORING
     ESP_LOGI(TAG, "Supercap: %d mV", cap_mv);
+#else
+    ESP_LOGI(TAG, "Supercap: monitoring disabled for V1 (no free ADC pin)");
+#endif
 
     setup_cli();
     printf("> ");
@@ -742,6 +755,8 @@ extern "C" void app_main(void)
 
 #ifdef CONFIG_ENABLE_BMP280
     memset(&bmp, 0, sizeof(bmp));
+    /* BMP280 uses I2C_NUM_0, SDA=GPIO8, SCL=GPIO9 — but GPIO9 is now the LED.
+     * If BMP280 is ever re-enabled (V2, ESP32-S3), SCL must move to a free pin. */
     esp_err_t bmp_ret = bmp280_init(&bmp, I2C_NUM_0, 8, 9, 400000);
     if (bmp_ret != ESP_OK) {
         ESP_LOGW(TAG, "BMP280 not found, continuing without sensor");
@@ -830,7 +845,9 @@ extern "C" void app_main(void)
             tpkt.flags |= TELEMETRY_FLAG_GPS_VALID;
         }
 #endif
+#ifdef SUPERCAP_MONITORING
         tpkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+#endif
         telemetry_fill(&tpkt, temp, pressure, (float)tpkt.altitude_m, cap_mv, relay_seq);
 
         /* Queue telemetry for radio_task to TX */
@@ -892,7 +909,9 @@ extern "C" void app_main(void)
     }
 #endif
 
+#ifdef SUPERCAP_MONITORING
     pkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+#endif
 
     telemetry_fill(&pkt, temp, pressure, (float)pkt.altitude_m, cap_mv, rtc_seq);
 
