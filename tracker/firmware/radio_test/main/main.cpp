@@ -22,7 +22,7 @@
  *
  * ═══ PINS (Lr2021PinConfig defaults) ═══
  *   SCK=GPIO6  MISO=GPIO2  MOSI=GPIO7  CS=GPIO10
- *   BUSY=GPIO4 IRQ=GPIO5   RST=GPIO3   LED=GPIO8
+ *   BUSY=GPIO4 IRQ=GPIO5   RST=GPIO3   LED=GPIO9
  *
  * ═══ RADIO CONFIG (Lr2021Config defaults) ═══
  *   Freq: 2440 MHz | Bitrate: 2600 kbps FLRC | TX: +12 dBm
@@ -49,7 +49,7 @@
 // ════════════════════════════════════════════════════════════════════
 #define TEST_PAYLOAD_LEN   16      // bytes per packet
 #define TX_INTERVAL_MS     1000    // TX sends every 1 second
-#define LED_PIN            8       // GPIO8 (active LOW on ESP32-C3 Mini V1)
+#define LED_PIN            9       // GPIO9 (active LOW on ESP32-C3 Mini V1) — was GPIO8, moved for PCB V1
 #define IRQ_POLL_MAX_MS    2000    // timeout for TX_DONE / RX_DONE
 
 // TX message: 12 ASCII chars — fills bytes [4..15] after 4-byte counter
