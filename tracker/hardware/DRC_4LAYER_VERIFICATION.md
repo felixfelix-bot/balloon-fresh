@@ -191,6 +191,26 @@ Verdict unchanged: **FAIL**. Nothing in the repo has touched this board between 
 
 ---
 
+## Third independent re-verification — 2026-09-29 23:50 CEST
+
+Re-run from scratch by `worker-layout` in the task worktree `t_9c0e1e8f`, against HEAD
+`5d9dd6a` (tip of `autonomous/mesh-baseline`, identical on github and ngit). All checks
+reproduced with fresh tool output:
+
+| Check | Result |
+|-------|--------|
+| `kicad-cli pcb drc --format json --severity-all` (fresh) | exit 0 → **1 violation** `invalid_outline`, **0 unconnected** |
+| `verify_4layer_evidence.py` (fresh run) | `copper_layer_count 2`, `copper_layers_enabled ['F.Cu','B.Cu']`, footprints 0, nets 0, pads 0, tracks 0, vias 0, zones 0, area 0.0 mm² |
+| board sha256 | `1f94ce86f45f554a7fa0331e8a5bee67b761658997ea827582ef931c6d5becda` — unchanged |
+| F_Cu gerber | 474 B, **0 copper ops**; drill 281 B, **no tool table** |
+| refreshed evidence | `output/v2_adc_4layer_drc_verify.json` sha256 `20adda226630dcab73ad8121994e14177dee14d0b54ebb5bdbbffd305fa53758` |
+
+Verdict remains **FAIL**. Five months and three re-verification passes on; the artifact has
+never changed. The remediation card **t_bba26596** (PCB-4LAYER-REDO, assignee `worker-pcb`)
+is the correct owner of the fix and is itself in `running` at the time of writing.
+
+---
+
 ## Reproduction
 
 ```bash
