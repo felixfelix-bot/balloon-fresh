@@ -173,6 +173,24 @@ verification; parent `t_c5f37d19`.
 
 ---
 
+## Re-verification run — 2026-09-29 22:59 CEST (fresh evidence)
+
+The whole check set was re-run from scratch in a second, independent session against the
+current tip of `autonomous/mesh-baseline` (`7c7dd90`). Nothing changed:
+
+| Check | Re-run result |
+|-------|---------------|
+| `kicad-cli pcb drc --format json --severity-all` | exit 0 → 1 violation (`invalid_outline`), 0 unconnected |
+| board object inventory | `copper_layer_count 2`, 0 footprints, 0 nets, 0 pads, 0 tracks, 0 zones, area 0.0 mm² |
+| board sha256 | `1f94ce86…5becda` — **identical** to the header of this report and to the git blob in `a34f092` |
+| gerbers | 26 files unchanged; `-F_Cu.gtl` 474 B / 0 copper ops; `.drl` 281 B / no tool table |
+| evidence file | `output/v2_adc_4layer_drc_verify.json` refreshed, sha256 `b952280e00ecfd14975c97590938850160860c4dd74ce4edd429e94d8be44cc5` |
+
+Verdict unchanged: **FAIL**. Nothing in the repo has touched this board between 2026-08-05 and
+2026-09-29; the design was built in memory, routed in memory, and never saved.
+
+---
+
 ## Reproduction
 
 ```bash
