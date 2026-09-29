@@ -116,12 +116,19 @@ jobs:
           python3 -m pytest tests/test_pcb_pipeline_gates.py -v --tb=short
 
       # ── Suite 9: auto-BOOTSEL interposer board (t_48a0fa82) ───────
-      # The interposer PCB's 25 assertions.  The netlist, orientation,
-      # mass-model and "harness can fail" checks run anywhere; the two
-      # kicad-cli checks (the fab DRC gate and Gate 2.5 on the unrouted
-      # placement) self-skip when kicad-cli is absent, which is the case in
-      # the stock act image — hence the explicit skip line, so a green lane
-      # is never mistaken for "the DRC gate ran here".
+      # The interposer PCB's 28 assertions.  The netlist, orientation,
+      # mass-model, reproducibility and vendored-footprint checks run
+      # anywhere; every kicad-cli-dependent check (the fab DRC gate, Gate 2.5
+      # on the unrouted placement, and the negative controls that drive DRC)
+      # self-skips when kicad-cli is absent, which is the case in the stock act
+      # image — hence the explicit skip line, so a green lane is never mistaken
+      # for "the DRC gate ran here".
+      #
+      # HISTORY (778d662 → b7599e1): "run anywhere" was FALSE.  The generator
+      # read its library footprints from /usr/share/kicad/footprints, so on
+      # this image eleven tests ERRORED at fixture setup and the lane was RED.
+      # The footprints are now vendored in-repo; the counts below are from an
+      # actual act-image run (15 passed / 13 skipped), not from a host run.
       - name: Run auto-BOOTSEL board tests
         run: |
           python3 -m pip install --quiet pytest \
@@ -131,6 +138,8 @@ jobs:
           else
             echo "SKIP: kicad-cli absent - the DRC/Gate 2.5 checks are skipped"
             echo "      by their own skipif; netlist/orientation/mass checks run"
+            echo "      EXPECTED HERE: no failed, no errors (they were 2 failed /"
+            echo "      9 errors at 778d662 because regeneration needed KiCad)"
           fi
           python3 -m pytest \
             tracker/hardware/auto_bootsel/tests/test_auto_bootsel_pcb.py \
