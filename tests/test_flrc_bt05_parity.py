@@ -235,8 +235,11 @@ class TestP05Docs:
     def test_spi_protocol_reference_states_bt05_on_both_platforms(self):
         """The canonical SPI reference must carry the P0.5 decision."""
         path = os.path.join(self.DOC_DIR, "lr2021-spi-protocol-reference.md")
-        if not os.path.isfile(path):
-            return
+        assert os.path.isfile(path), (
+            "docs/lr2021-spi-protocol-reference.md is missing — the canonical "
+            "LR2021 SPI reference is what keeps the two platforms aligned; a "
+            "rename/delete must not silently skip this assertion"
+        )
         text = _read(path)
         assert re.search(r"0x0?2\s*,\s*0x48\s*,\s*[\w\d]+\s*,\s*0x25", text, re.I), (
             "lr2021-spi-protocol-reference.md does not document the 0x25 "
