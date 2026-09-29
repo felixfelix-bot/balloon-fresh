@@ -321,7 +321,7 @@ class TestSesBuild:
 # The fallback must not be able to masquerade as the good path
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestCliRejectsTheLossyFallback:
+class TestLossyFallbackIsRefused:
     """A DSN-only import is a strict subset of the route (F3), and the shortfall
     is invisible in the imported geometry: the fallback board has no
     zero-length, sub-1um or off-outline track either, yet measures 464 DRC
@@ -354,19 +354,21 @@ class TestCliRejectsTheLossyFallback:
         out = str(tmp_path / "fallback.kicad_pcb")
         p = self._run(["--dsn", DSN, "--pcb", PCB_CLEAN, "--output", out])
         assert p.returncode == 1, p.stdout[-800:]
-        assert "source: DSN" in p.stdout, p.stdout[-800:]
-        assert "DSN fallback used" in p.stdout, p.stdout[-800:]
-        # The board is still written — refusing the *result* is the contract,
-        # not refusing to produce it.
-        assert os.path.isfile(out)
+        assert "FAIL" in p.stdout, p.stdout[-800:]
+        assert "no usable SES" in p.stdout, p.stdout[-800:]
+        # Refused BEFORE writing: a subset-route board must never reach disk by
+        # default, or the next consumer cannot tell it from a good one.
+        assert not os.path.isfile(out), "refused import still wrote a board"
 
     def test_fallback_allowed_when_asked_for_by_name(self, tmp_path):
         _pcbnew()
+        out = str(tmp_path / "ok.kicad_pcb")
         p = self._run(["--dsn", DSN, "--pcb", PCB_CLEAN,
-                       "--output", str(tmp_path / "ok.kicad_pcb"),
+                       "--output", out,
                        "--allow-dsn-fallback"])
         assert p.returncode == 0, p.stdout[-800:]
         assert "source: DSN" in p.stdout, p.stdout[-800:]
+        assert os.path.isfile(out)
 
     def test_ses_path_is_the_default_and_stays_exit_zero(self, tmp_path):
         _pcbnew()
@@ -374,3 +376,31 @@ class TestCliRejectsTheLossyFallback:
                        "--output", str(tmp_path / "ses.kicad_pcb")])
         assert p.returncode == 0, p.stdout[-800:]
         assert "source: SES" in p.stdout, p.stdout[-800:]
+
+    def test_unparseable_ses_is_a_clean_refusal(self, tmp_path):
+        """ImportSpecctraSES rejecting a garbage .ses must not fall through to
+        the DSN parser, and must not escape as a traceback."""
+        _pcbnew()
+        fake = tmp_path / "garbage.ses"
+        fake.write_text("this is not a specctra session file\n")
+        out = str(tmp_path / "nope.kicad_pcb")
+        p = self._run(["--dsn", DSN_WITH_SES, "--pcb", PCB_CLEAN,
+                       "--output", out, "--ses", str(fake)])
+        assert p.returncode == 1, p.stdout[-800:]
+        assert "FAIL" in p.stdout, p.stdout[-800:]
+        assert "refused" in p.stdout, p.stdout[-800:]
+        assert "Traceback" not in (p.stdout + p.stderr), (p.stdout + p.stderr)[-800:]
+        assert not os.path.isfile(out)
+
+    def test_library_call_is_guarded_too(self, tmp_path):
+        """The guard lives in build(), not only in main() — a library caller
+        must not be able to get a subset-route board without asking."""
+        _pcbnew()
+        out = str(tmp_path / "lib.kicad_pcb")
+        with pytest.raises(itf.LossyFallbackError):
+            itf.build(DSN, PCB_CLEAN, out)
+        assert not os.path.isfile(out), "refused library call still wrote a board"
+        # ...and the explicit opt-in still works.
+        stats = itf.build(DSN, PCB_CLEAN, out, allow_dsn_fallback=True)
+        assert stats["source"] == "dsn"
+        assert os.path.isfile(out)

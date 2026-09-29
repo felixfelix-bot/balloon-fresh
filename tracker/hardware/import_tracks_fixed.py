@@ -70,9 +70,14 @@ MIN_TRACK_LENGTH_NM = 1000  # 1 um
 # turns a fallback into a non-zero exit unless it was asked for by name.
 DSN_FALLBACK_IS_LOSSY = True
 
+
 # Board outline (measured from Edge.Cuts on the clean board: 0..50 x 0..40 mm).
 BOARD_X_NM = 50_000_000
 BOARD_Y_NM = 40_000_000
+
+
+class LossyFallbackError(RuntimeError):
+    """A board would have been produced from a strict subset of the route."""
 
 DEFAULT_WIDTH_NM = 250_000  # 0.25 mm — the DSN's `(rule (width 250.0))`
 
@@ -110,11 +115,6 @@ def parse_dsn_boundary(dsn_path: str) -> dict:
     x0, y0, x1, y1 = (float(v) for v in m.groups())
     return {"x_min": min(x0, x1), "y_min": min(y0, y1),
             "x_max": max(x0, x1), "y_max": max(y0, y1)}
-
-
-def outside_boundary(x_um: float, y_um: float, bnd: dict) -> bool:
-    return not (bnd["x_min"] <= x_um <= bnd["x_max"]
-                and bnd["y_min"] <= y_um <= bnd["y_max"])
 
 
 # =============================================================================
@@ -390,7 +390,7 @@ def ses_vs_dsn_segment_overlap(dsn_path: str, ses_path: str,
 # =============================================================================
 
 def build(dsn_path: str, pcb_path: str, output_path: str,
-          ses_path: str | None = None) -> dict:
+          ses_path: str | None = None, allow_dsn_fallback: bool = False) -> dict:
     """Import the routing into `pcb_path` and write `output_path`.
 
     **Primary path — SES.**  When a sibling `.ses` exists (Freerouting's own
@@ -408,6 +408,11 @@ def build(dsn_path: str, pcb_path: str, output_path: str,
     exists for DSNs whose SES was never kept, and it is honest about being a
     fallback: the returned stats carry ``"source": "dsn"``.
 
+    That honesty is also enforced, not just reported: with
+    ``allow_dsn_fallback=False`` (the default) a DSN-only import raises
+    ``LossyFallbackError``, so a library caller cannot get a written board from
+    the bad path without having asked for it by name.
+
     Placement, zones, footprints and the outline are untouched either way.
     """
     import pcbnew  # imported here so the DSN-side functions work without KiCad
@@ -416,6 +421,8 @@ def build(dsn_path: str, pcb_path: str, output_path: str,
         cand = os.path.splitext(dsn_path)[0] + ".ses"
         if os.path.isfile(cand):
             ses_path = cand
+    elif not os.path.isfile(ses_path):
+        raise FileNotFoundError("--ses %s does not exist" % ses_path)
 
     if ses_path and os.path.isfile(ses_path):
         board = pcbnew.LoadBoard(pcb_path)
@@ -425,11 +432,22 @@ def build(dsn_path: str, pcb_path: str, output_path: str,
         for t in list(board.GetTracks()):
             board.Remove(t)
         if not pcbnew.ImportSpecctraSES(board, ses_path):
-            raise RuntimeError("ImportSpecctraSES refused %s" % ses_path)
+            raise LossyFallbackError(
+                "KiCad's ImportSpecctraSES refused %s, and the DSN parser is a "
+                "lossy fallback that must not be taken by accident" % ses_path)
         board.BuildConnectivity()
         pcbnew.SaveBoard(output_path, board)
         return _summarize(output_path, {"source": "ses", "ses": ses_path,
                                         "removed": pre_existing})
+
+    if not allow_dsn_fallback:
+        raise LossyFallbackError(
+            "no usable SES for %s: a DSN-only import reconstructs a strict "
+            "subset of the route (measured 464 DRC violations / 31 "
+            "track_dangling / 36 tracks_crossing on this board) and the "
+            "shortfall is invisible in the imported geometry. Pass "
+            "allow_dsn_fallback=True to accept the loss deliberately."
+            % dsn_path)
 
     board = pcbnew.LoadBoard(pcb_path)
     if board is None:
@@ -544,18 +562,23 @@ def main(argv=None) -> int:
         if not os.path.isfile(p):
             print("FAIL: missing input %s" % p)
             return 1
-    if args.ses and not os.path.isfile(args.ses):
-        # An explicit --ses that does not exist is a mistake, not a reason to
-        # quietly take the lossy path.
-        print("FAIL: --ses %s does not exist" % args.ses)
-        return 1
 
     hist = raw_segment_length_histogram(args.dsn)
     print("DSN raw segments: %d  (zero=%d sub0.5um=%d ambiguous=%d 1-5um=%d real=%d)"
           % (hist["total"], hist["zero"], hist["sub_0p5"],
              hist["ambiguous_0p5_to_1"], hist["one_to_5"], hist["real"]))
 
-    stats = build(args.dsn, args.pcb, args.output, ses_path=args.ses)
+    try:
+        stats = build(args.dsn, args.pcb, args.output, ses_path=args.ses,
+                      allow_dsn_fallback=args.allow_dsn_fallback)
+    except LossyFallbackError as exc:
+        # A clean refusal, not a traceback: exit code is the contract, the
+        # message is the explanation.
+        print("FAIL: %s" % exc)
+        return 1
+    except FileNotFoundError as exc:
+        print("FAIL: %s" % exc)
+        return 1
     print("source: %s" % stats["source"].upper())
     print("Imported: tracks=%d vias=%d  (removed %d pre-existing)"
           % (stats["tracks"], stats["vias"], stats["removed"]))
@@ -564,12 +587,6 @@ def main(argv=None) -> int:
     print("Wrote %s" % args.output)
 
     problems = []
-    if stats["source"] == "dsn" and DSN_FALLBACK_IS_LOSSY and not args.allow_dsn_fallback:
-        problems.append(
-            "DSN fallback used, which imports a strict subset of the route "
-            "(measured 464 DRC violations / 31 track_dangling / 36 tracks_crossing "
-            "on this board) — point --dsn at the pair with a sibling .ses, or "
-            "pass --allow-dsn-fallback to accept the loss")
     if stats["zero_length"]:
         problems.append("%d zero-length tracks" % stats["zero_length"])
     if stats["sub_1um"]:

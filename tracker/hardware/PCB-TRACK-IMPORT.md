@@ -96,9 +96,17 @@ fallback board *also* has 0 zero-length, 0 sub-1 um and 0 off-outline tracks,
 so the geometry checks pass and the CLI used to print `PASS` and exit 0 for a
 board measuring **464** DRC violations (31 `track_dangling`, 36
 `tracks_crossing`). The loss is structural, not visible in any single track.
-The CLI therefore now exits 1 whenever the DSN fallback ran, unless
-`--allow-dsn-fallback` says the loss was accepted deliberately, and an explicit
-`--ses` that does not exist is a hard error rather than a silent fallback.
+So the fallback is now **refused before it writes**, in `build()` itself rather
+than only in the CLI: a DSN-only import raises `LossyFallbackError`, the CLI
+prints `FAIL` and exits 1, and no board reaches disk unless
+`--allow-dsn-fallback` / `allow_dsn_fallback=True` accepted the loss by name.
+An explicit `--ses` that does not exist is a hard error, and an unparseable SES
+is a clean refusal rather than a traceback or a quiet slide into the DSN parser.
+
+Two things the fix deliberately does *not* do: it does not delete the DSN
+parser (routing whose SES was never kept still needs it), and it does not
+pretend the fallback can be made safe — the subset relation is inherent to the
+format difference, so the only honest options are "refuse" and "opt in".
 
 ## Reproduce
 
@@ -112,9 +120,20 @@ kicad-cli pcb drc --format json --output /tmp/drc.json $HW/hub_board_v1_routed.k
 /usr/bin/python3 -m pytest tests/test_pcb_track_import.py -v
 ```
 
-Exit code is non-zero if any imported track is zero-length, sub-1 um, or outside
+Exit code is non-zero if any imported track is zero-length, sub-1um, or outside
 the outline — checked by re-loading the **written file**, never by trusting the
-importer's own claim.
+importer's own claim. It is also non-zero if the import would have taken the
+lossy DSN fallback without being asked to.
+
+## The other importers in this directory
+
+`ses_import.py` (hand-rolled SES parser, written when
+`ImportSpecctraSES` was believed to fail headless) and
+`s1_import_freerouting.py` (S1's SES importer, which also verifies the frozen
+placement did not move) both touch the same problem from different campaigns.
+They are siblings by history, not by design: this file is the Phase 1 fix and
+the only one that carries the DSN fallback guard. Consolidating them behind one
+entry point is Phase 2+ work, deliberately not smuggled into this fix.
 
 ## Artefact provenance note
 
