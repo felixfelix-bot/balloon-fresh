@@ -315,6 +315,218 @@ static void test_ack_payload_struct(void)
 
 /* ---- Main ---- */
 
+/* 11. Decode — bad msg_type rejected (outside valid enum range) */
+static void test_decode_bad_msg_type(void)
+{
+    printf("\n--- test_decode_bad_msg_type ---\n");
+    /* type = 0x00 (below TG_MSG_TYPE_MIN) */
+    static const uint8_t t0[] = {
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    /* type = 0x07 (above TG_MSG_TYPE_MAX) */
+    static const uint8_t t7[] = {
+        0x01, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    /* type = 0xFF (bogus) */
+    static const uint8_t tff[] = {
+        0x01, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    tollgate_msg_hdr_t hdr;
+    const uint8_t *payload = NULL;
+
+    int ret = tollgate_proto_decode(t0, (uint16_t)sizeof(t0), &hdr, &payload);
+    ASSERT_EQ_INT(-1, ret, "msg_type 0x00 (below min) → returns -1");
+
+    ret = tollgate_proto_decode(t7, (uint16_t)sizeof(t7), &hdr, &payload);
+    ASSERT_EQ_INT(-1, ret, "msg_type 0x07 (above max) → returns -1");
+
+    ret = tollgate_proto_decode(tff, (uint16_t)sizeof(tff), &hdr, &payload);
+    ASSERT_EQ_INT(-1, ret, "msg_type 0xFF → returns -1");
+
+    /* Valid boundary types must still be accepted */
+    static const uint8_t tmin[] = {
+        0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    static const uint8_t tmax[] = {
+        0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    ret = tollgate_proto_decode(tmin, (uint16_t)sizeof(tmin), &hdr, &payload);
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t), ret,
+                  "msg_type TG_MSG_PAY (min) still accepted");
+    ASSERT_EQ_INT(TG_MSG_PAY, hdr.type, "hdr.type == TG_MSG_PAY");
+
+    ret = tollgate_proto_decode(tmax, (uint16_t)sizeof(tmax), &hdr, &payload);
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t), ret,
+                  "msg_type TG_MSG_REVOKE (max) still accepted");
+    ASSERT_EQ_INT(TG_MSG_REVOKE, hdr.type, "hdr.type == TG_MSG_REVOKE");
+}
+
+/* 12. Encode — bad msg_type rejected, buffer left untouched */
+static void test_encode_bad_msg_type(void)
+{
+    printf("\n--- test_encode_bad_msg_type ---\n");
+    uint8_t buf[64];
+    uint8_t canary[64];
+
+    memset(canary, 0xA5, sizeof(canary));
+    memcpy(buf, canary, sizeof(buf));
+
+    int ret = tollgate_proto_encode(buf, sizeof(buf), (tollgate_msg_type_t)0,
+                                     1, "x", 1);
+    ASSERT_EQ_INT(-1, ret, "encode msg_type 0 (below min) → returns -1");
+
+    ret = tollgate_proto_encode(buf, sizeof(buf), (tollgate_msg_type_t)99,
+                                 1, "x", 1);
+    ASSERT_EQ_INT(-1, ret, "encode msg_type 99 (above max) → returns -1");
+
+    ret = tollgate_proto_encode(buf, sizeof(buf), (tollgate_msg_type_t)0xFF,
+                                 1, "x", 1);
+    ASSERT_EQ_INT(-1, ret, "encode msg_type 0xFF → returns -1");
+
+    ASSERT(memcmp(buf, canary, sizeof(buf)) == 0,
+           "rejected encode writes nothing (buffer untouched)");
+}
+
+/* 13. Canary — buffer-too-small returns negative and does not overflow */
+static void test_encode_canary_no_overflow(void)
+{
+    printf("\n--- test_encode_canary_no_overflow ---\n");
+    const char *json = "{\"token\":\"cashuAxyz\"}";  /* 21 bytes */
+    uint16_t json_len = (uint16_t)strlen(json);
+    const uint16_t need = (uint16_t)(sizeof(tollgate_msg_hdr_t) + json_len); /* 29 */
+
+    uint8_t canary[64];
+    memset(canary, 0xA5, sizeof(canary));
+
+    /* Case 1: one byte short — nothing in the guarded region may change */
+    uint8_t guard1[64];
+    memcpy(guard1, canary, sizeof(guard1));
+
+    int ret = tollgate_proto_encode(guard1, (uint16_t)(need - 1),
+                                     TG_MSG_PAY, 1, json, json_len);
+    ASSERT_EQ_INT(-1, ret, "buf_len = need-1 → returns -1");
+    ASSERT(memcmp(guard1, canary, sizeof(guard1)) == 0,
+           "no overflow: rejected encode writes nothing (canary intact)");
+
+    /* Case 2: exact fit — bytes past the end must stay canary */
+    uint8_t guard2[64];
+    memcpy(guard2, canary, sizeof(guard2));
+
+    ret = tollgate_proto_encode(guard2, need, TG_MSG_PAY, 1, json, json_len);
+    ASSERT_EQ_INT((int)need, ret, "exact-fit encode succeeds");
+    ASSERT(memcmp(guard2 + need, canary, sizeof(guard2) - need) == 0,
+           "no overflow: bytes past exact fit untouched (canary intact)");
+
+    /* Case 3: header-only (empty payload) — exact fit of 8 bytes */
+    uint8_t guard3[16];
+    memcpy(guard3, canary, sizeof(guard3));
+
+    ret = tollgate_proto_encode(guard3, (uint16_t)sizeof(tollgate_msg_hdr_t),
+                                 TG_MSG_PAY, 1, NULL, 0);
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t), ret,
+                  "hdr-only exact fit succeeds");
+    ASSERT(memcmp(guard3 + sizeof(tollgate_msg_hdr_t), canary,
+                  sizeof(guard3) - sizeof(tollgate_msg_hdr_t)) == 0,
+           "no overflow: bytes past hdr untouched (canary intact)");
+
+    /* Case 4: decode with truncated input leaves caller hdr + canary intact */
+    struct {
+        tollgate_msg_hdr_t hdr;
+        uint8_t canary[8];
+    } guarded;
+
+    memset(&guarded, 0xA5, sizeof(guarded));
+    uint8_t data[7];  /* shorter than the 8-byte header */
+    memset(data, 0x01, sizeof(data));
+
+    const uint8_t *payload = NULL;
+    ret = tollgate_proto_decode(data, (uint16_t)sizeof(data), &guarded.hdr, &payload);
+    ASSERT_EQ_INT(-1, ret, "decode len < sizeof(hdr) → returns -1");
+    {
+        uint8_t pat[sizeof(guarded)];
+        memset(pat, 0xA5, sizeof(pat));
+        ASSERT(memcmp(&guarded, pat, sizeof(guarded)) == 0,
+               "truncated decode leaves hdr and canary untouched");
+    }
+}
+
+/* 14. Boundary values — seq and price_sats at min/max */
+static void test_boundary_values(void)
+{
+    printf("\n--- test_boundary_values ---\n");
+
+    /* seq boundaries: 0, 1, 0xFFFF */
+    static const uint16_t seq_cases[] = { 0, 1, 0xFFFF };
+    for (size_t i = 0; i < sizeof(seq_cases) / sizeof(seq_cases[0]); i++) {
+        uint8_t buf[64];
+        int ret = tollgate_proto_encode(buf, sizeof(buf), TG_MSG_PAY,
+                                         seq_cases[i], NULL, 0);
+        ASSERT(ret > 0, "encode PAY (empty payload)");
+
+        tollgate_msg_hdr_t hdr;
+        const uint8_t *payload = NULL;
+        ret = tollgate_proto_decode(buf, (uint16_t)ret, &hdr, &payload);
+        ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t), ret, "decode PAY");
+        ASSERT_EQ_INT((int)seq_cases[i], (int)hdr.seq, "seq boundary round-trip");
+        ASSERT_EQ_INT(TG_MSG_PAY, hdr.type, "type preserved in round-trip");
+    }
+
+    /* price_sats boundaries in ACK payload: 0, 1, 0xFFFF */
+    static const uint16_t price_cases[] = { 0, 1, 0xFFFF };
+    for (size_t i = 0; i < sizeof(price_cases) / sizeof(price_cases[0]); i++) {
+        tollgate_ack_payload_t ack;
+        memset(&ack, 0, sizeof(ack));
+        ack.session_id   = 1;
+        ack.expires_unix = 1700000000;
+        ack.quota_bytes  = 0;
+        ack.price_sats   = price_cases[i];
+
+        uint8_t buf[64];
+        int ret = tollgate_proto_encode(buf, sizeof(buf), TG_MSG_ACK, 7,
+                                         (const char *)&ack,
+                                         (uint16_t)sizeof(ack));
+        ASSERT(ret > 0, "encode ACK");
+
+        tollgate_msg_hdr_t hdr;
+        const uint8_t *payload = NULL;
+        ret = tollgate_proto_decode(buf, (uint16_t)ret, &hdr, &payload);
+        ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t), ret, "decode ACK");
+
+        const tollgate_ack_payload_t *rack =
+            (const tollgate_ack_payload_t *)payload;
+        ASSERT_EQ_INT((int)price_cases[i], (int)rack->price_sats,
+                      "price_sats boundary round-trip");
+        ASSERT_EQ_INT(TG_MSG_ACK, hdr.type, "ACK type preserved");
+    }
+
+    /* All-fields-max ACK round-trip */
+    tollgate_ack_payload_t ack;
+    ack.session_id   = 0xFFFFFFFFu;
+    ack.expires_unix = 0xFFFFFFFFu;
+    ack.quota_bytes  = 0xFFFFFFFFu;
+    ack.price_sats   = 0xFFFF;
+
+    uint8_t buf[64];
+    int ret = tollgate_proto_encode(buf, sizeof(buf), TG_MSG_ACK, 0xFFFF,
+                                     (const char *)&ack,
+                                     (uint16_t)sizeof(ack));
+    ASSERT(ret > 0, "encode all-max ACK");
+
+    tollgate_msg_hdr_t hdr;
+    const uint8_t *payload = NULL;
+    ret = tollgate_proto_decode(buf, (uint16_t)ret, &hdr, &payload);
+    ASSERT_EQ_INT((int)sizeof(tollgate_msg_hdr_t), ret, "decode all-max ACK");
+    ASSERT_EQ_INT(0xFFFF, (int)hdr.seq, "seq 0xFFFF round-trip");
+
+    const tollgate_ack_payload_t *rack = (const tollgate_ack_payload_t *)payload;
+    ASSERT(rack->session_id == 0xFFFFFFFFu, "ACK session_id max round-trip");
+    ASSERT(rack->expires_unix == 0xFFFFFFFFu, "ACK expires_unix max round-trip");
+    ASSERT(rack->quota_bytes == 0xFFFFFFFFu, "ACK quota_bytes max round-trip");
+    ASSERT(rack->price_sats == 0xFFFF, "ACK price_sats max round-trip");
+}
+
 int main(void)
 {
     printf("=== test_tollgate_payment_proto (tracker standalone) ===");
@@ -329,6 +541,10 @@ int main(void)
     test_decode_truncated();
     test_roundtrip();
     test_ack_payload_struct();
+    test_decode_bad_msg_type();
+    test_encode_bad_msg_type();
+    test_encode_canary_no_overflow();
+    test_boundary_values();
 
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
