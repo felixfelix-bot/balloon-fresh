@@ -76,7 +76,7 @@ jobs:
             -o /tmp/test_stratorelay
           /tmp/test_stratorelay
 
-      # ── Suite 6: ESP32-C3 <-> RP2040 UART telemetry protocol (105) ─
+      # ── Suite 6: ESP32-C3 <-> RP2040 UART telemetry protocol (115) ─
       # t_79ae3ee7: the wire protocol between the two MCUs — frame format,
       # CRC-16/CCITT-FALSE, payload round-trips, decoder re-synchronisation
       # after noise, corruption/truncation handling and the sanity validators.

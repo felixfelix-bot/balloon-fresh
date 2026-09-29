@@ -355,12 +355,12 @@ to `uart_tlm_payload_len()` for the new `VER`, and keep the v1 path exact.
 | `uart_telemetry.c` | Portable core: CRC, encode, decode, re-sync, validation. No target headers. |
 | `uart_telemetry_c3.cpp` | ESP32-C3 producer driver (ESP-IDF UART + gps/bmp280/power_manager). Guarded by `UART_TLM_C3_TARGET`. |
 | `uart_telemetry_rp2040.cpp` | RP2040 consumer driver (earlephilhower Arduino core). Guarded by `UART_TLM_RP2040_TARGET`. |
-| `test/test_uart_telemetry.c` | 105 host assertions; `make test`. |
+| `test/test_uart_telemetry.c` | 115 host assertions; `make test`. |
 | `test/Makefile` | Host build of the core + suite. |
 
 ### 8.1 Integration checklist
 
-1. `cd tracker/firmware/components/uart_telemetry/test && make test` → `105 passed, 0 failed`.
+1. `cd tracker/firmware/components/uart_telemetry/test && make test` → `115 passed, 0 failed`.
 2. Register the component in the CMakeLists of whichever firmware links it, and
    declare the two guard macros above for the target builds only — the host
    suite must build the core alone, with no ESP-IDF or Pico-SDK headers.
