@@ -102,6 +102,24 @@ class TestFIPSTransport:
             pytest.skip("No Makefile for fips_transport")
 
 
+class TestUartTelemetryProtocol:
+    """ESP32-C3 <-> RP2040 UART telemetry protocol (card t_79ae3ee7).
+
+    Runs the component's own host Makefile so the portable core is compiled
+    with -Wall -Wextra -Werror and exercised by the full assertion set.  No
+    ESP-IDF / Pico-SDK headers are involved: the target drivers are guarded by
+    UART_TLM_C3_TARGET / UART_TLM_RP2040_TARGET, which this build does not set.
+    """
+
+    def test_uart_telemetry_host(self):
+        makefile_dir = os.path.join(COMPONENTS, "uart_telemetry", "test")
+        assert os.path.exists(os.path.join(makefile_dir, "Makefile")), \
+            "uart_telemetry test Makefile is missing"
+        out = _compile_with_makefile(makefile_dir)
+        assert "0 failed" in out, out
+        assert "RESULT: ALL PASS" in out, out
+
+
 class TestWirehair:
     def test_wirehair_host(self):
         wirehair_dir = os.path.join(COMPONENTS, "wirehair")

@@ -76,7 +76,19 @@ jobs:
             -o /tmp/test_stratorelay
           /tmp/test_stratorelay
 
-      # ── Suite 6: FLRC BT0.5 cross-platform parity (12 tests) ────
+      # ── Suite 6: ESP32-C3 <-> RP2040 UART telemetry protocol (105) ─
+      # t_79ae3ee7: the wire protocol between the two MCUs — frame format,
+      # CRC-16/CCITT-FALSE, payload round-trips, decoder re-synchronisation
+      # after noise, corruption/truncation handling and the sanity validators.
+      # Host-side only (no ESP-IDF / Pico-SDK headers), no boards needed.
+      - name: Build & run UART telemetry protocol tests
+        run: |
+          cd tracker/firmware/components/uart_telemetry/test
+          make clean
+          make
+          make test
+
+      # ── Suite 7: FLRC BT0.5 cross-platform parity (12 tests) ────
       # P0.5 (t_dc858d9b): proves the RP2040 and ESP32 FLRC bench firmware
       # program the same pulse shape (BT0.5 => 0x25), which is what makes a
       # raw-FLRC ESP32<->RP2040 link possible at all. Host-side only: it

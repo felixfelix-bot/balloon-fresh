@@ -84,3 +84,15 @@ jobs:
         run: |
           python3 -m pip install --quiet pytest
           python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short
+
+      # ── Suite 7: ESP32-C3 <-> RP2040 UART telemetry protocol (105) ─
+      # t_79ae3ee7: the wire protocol between the two MCUs — frame format,
+      # CRC-16/CCITT-FALSE, payload round-trips, decoder re-synchronisation
+      # after noise, corruption/truncation handling and the sanity validators.
+      # Host-side only (no ESP-IDF / Pico-SDK headers), no boards needed.
+      - name: Build & run UART telemetry protocol tests
+        run: |
+          cd tracker/firmware/components/uart_telemetry/test
+          make clean
+          make
+          make test
