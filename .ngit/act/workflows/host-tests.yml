@@ -74,3 +74,13 @@ jobs:
             tracker/firmware/components/stratorelay/test/test_stratorelay.cpp \
             -o /tmp/test_stratorelay
           /tmp/test_stratorelay
+
+      # ── Suite 6: FLRC BT0.5 cross-platform parity (12 tests) ────
+      # P0.5 (t_dc858d9b): proves the RP2040 and ESP32 FLRC bench firmware
+      # program the same pulse shape (BT0.5 => 0x25), which is what makes a
+      # raw-FLRC ESP32<->RP2040 link possible at all. Host-side only: it
+      # asserts the register bytes emitted, no boards needed.
+      - name: Run FLRC BT0.5 parity tests
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short

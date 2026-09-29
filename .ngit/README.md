@@ -5,14 +5,23 @@ Workloads:
 
 | workflow | what it runs | engine notes |
 |---|---|---|
-| `act/workflows/host-tests.yml` | the 5 host-side C/C++ unit suites (nostr_store 7, relay-pipeline 12, tollgate ~350, ehash-relay 65, stratorelay 11) | same commands as `.github/workflows/ci-host-tests.yml`; one harness fix serves both engines |
+| `act/workflows/host-tests.yml` | the 5 host-side C/C++ unit suites (nostr_store 7, relay-pipeline 12, tollgate ~350, ehash-relay 65, stratorelay 11) + suite 6 `tests/test_flrc_bt05_parity.py` (12) | same commands as `.github/workflows/ci-host-tests.yml`; one harness fix serves both engines |
+
+Suite 6 (`tests/test_flrc_bt05_parity.py`, added by P0.5 / t_dc858d9b) is the
+one pytest module that DOES run in CI: it is pure text/register-bytes
+assertion over the checked-in firmware sources, needs no hardware, and imports
+nothing outside the stdlib — so it is safe in the minimal act image
+(`python3 -m pip install pytest` is the only dependency). It guards the RP2040
+<-> ESP32 FLRC pulse-shape (BT0.5 => mod-params byte3 `0x25`) parity that makes
+a raw-FLRC cross-platform link work.
 
 What is NOT run under ngit-ci, and why:
 
 - `.github/workflows/test.yml` (`pytest tests/`) — several modules need
   hardware (RP2040, board-lock fixtures) and `telnetlib` (removed from the
   CPython stdlib in 3.13+); the lane would be red for environment reasons, so
-  it stays on GitHub/host runs where hardware can be attached.
+  it stays on GitHub/host runs where hardware can be attached. (The single
+  exception is suite 6 above, which is scoped to one hardware-free module.)
 - PCB/KiCad tooling (`tracker/hardware/`) — needs kicad-cli 9 + pcbnew, not
   available in the stock act image; verified locally/on-host instead.
 
