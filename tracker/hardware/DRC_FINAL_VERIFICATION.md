@@ -9,6 +9,7 @@
 **Board sha256:** `f96d4a68c240f7ae1e1f6879f29573c01e1597b43341626722e8f4e05d44c148`
 **Board git blob:** `0b280b1f356fc9a14b7d34c4d1f7822f632c39d4`
 **Toolchain:** kicad-cli 9.0.8, Python 3.11 (analysis parses artefacts only, no pcbnew needed)
+**Published:** `github/autonomous/mesh-baseline` (subject `verify(inspection): V2-ADC DRC re-verification 2026-09-29 — still FAILS, board unchanged since 2026-08-05`; find it with `git log -- tracker/hardware/DRC_FINAL_VERIFICATION.md`)
 
 ---
 
@@ -44,7 +45,7 @@ the parent card is archived and its later runs died as "dead worker pid"
 | Gate 1 | 0 `shorting_items` violations | **5** | ❌ FAIL |
 | Gate 2 | All critical nets connected | **8 of 12 critical nets unconnected** | ❌ FAIL |
 | Gate 3 | No zones (`grep -c zone` = 0) | 0 zones | ✅ PASS |
-| Gate 4 | Git commit + push verification report | this report (see §Reproduction for the commit) | ✅ PASS |
+| Gate 4 | Git commit + push verification report | report + raw DRC JSON + summary JSON + inspection script committed and pushed to `github/autonomous/mesh-baseline` | ✅ PASS |
 
 ### Additional checks from the card body
 
