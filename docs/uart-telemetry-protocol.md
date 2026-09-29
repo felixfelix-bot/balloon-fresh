@@ -298,11 +298,18 @@ reporting the damage afterwards.
    the old one.
 
 Within a version the payloads are **append-only**: new fields go on the end and
-`LEN` grows; existing offsets never move. A shorter `LEN` from an older peer
-must be accepted for the fields it does carry (forward compatibility), while a
-longer one from a newer peer is rejected with `ERR_PAYLOAD_SIZE` unless this
-build knows the new size. That asymmetry is deliberate: an old receiver must not
-guess at a field it has never seen.
+`LEN` grows; existing offsets never move. Version 1 rejects **any** `LEN` that is
+not the exact fixed size for the type (`ERR_PAYLOAD_SIZE`), in both directions —
+see `uart_tlm_encode()` and the `LEN == 0 || LEN > MAX_PAYLOAD` abort in
+`uart_tlm_decoder_feed()`.
+
+That is deliberately strict for v1, and it is what the tests pin: a partial
+decode would mean guessing at field semantics that no shipped peer has ever
+produced, and a 32-byte struct interpreted as a 30-byte one is exactly the class
+of bug that is invisible until it corrupts a flight. If a future peer needs
+shorter-payload tolerance, it is a **version** decision: add the tolerated size
+to `uart_tlm_payload_len()` for the new `VER`, and keep the v1 path exact.
+
 
 ---
 
