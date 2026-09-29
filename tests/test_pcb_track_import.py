@@ -117,7 +117,8 @@ class TestCoordinateTransform:
 class TestDegenerateCollapse:
 
     @pytest.fixture(scope="class")
-    def hist(self):
+    @classmethod
+    def hist(cls):
         return itf.raw_segment_length_histogram(DSN)
 
     def test_dsn_really_contains_degenerate_geometry(self, hist):
@@ -148,7 +149,8 @@ class TestDegenerateCollapse:
 class TestSegments:
 
     @pytest.fixture(scope="class")
-    def segments(self):
+    @classmethod
+    def segments(cls):
         return itf.dsn_to_segments(DSN)
 
     def test_no_zero_length_segments(self, segments):
@@ -232,7 +234,10 @@ class TestSesIsTheRouteOfRecord:
 class TestSesBuild:
 
     @pytest.fixture(scope="class")
-    def board_file(self, tmp_path_factory):
+    @classmethod
+    def board_file(cls, tmp_path_factory):
+        # classmethod form: pytest 9 deprecates a class-scoped fixture defined
+        # as an instance method (warned on in CI, run 36543938827).
         _pcbnew()
         out = tmp_path_factory.mktemp("pcb") / "ses.kicad_pcb"
         itf.build(DSN_WITH_SES, PCB_CLEAN, str(out), ses_path=SES)
@@ -339,7 +344,11 @@ class TestLossyFallbackIsRefused:
             capture_output=True, text=True, timeout=300)
 
     def test_missing_explicit_ses_is_refused(self, tmp_path):
-        """--ses pointing nowhere is a mistake, not a licence to fall back."""
+        """--ses pointing nowhere is a mistake, not a licence to fall back.
+
+        Deliberately NOT gated on pcbnew: the refusal is a property of the
+        arguments, so it must be the same message with or without KiCad — and
+        this is the case that runs in CI."""
         p = self._run(["--dsn", DSN, "--pcb", PCB_CLEAN,
                        "--output", str(tmp_path / "x.kicad_pcb"),
                        "--ses", str(tmp_path / "nope.ses")])
@@ -347,8 +356,10 @@ class TestLossyFallbackIsRefused:
         assert "does not exist" in p.stdout, p.stdout[-800:]
 
     def test_dsn_fallback_exits_nonzero(self, tmp_path):
-        """DSN of record has no sibling .ses — the fallback must say so loudly."""
-        _pcbnew()
+        """DSN of record has no sibling .ses — the fallback must say so loudly.
+        Also not gated on pcbnew: the subset-route refusal is decided from the
+        paths alone, so a KiCad-less runner checks it for real instead of
+        skipping."""
         assert not os.path.isfile(os.path.splitext(DSN)[0] + ".ses"), \
             "this DSN grew an SES sibling; pick another fallback fixture"
         out = str(tmp_path / "fallback.kicad_pcb")

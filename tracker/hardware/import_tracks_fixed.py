@@ -79,6 +79,14 @@ BOARD_Y_NM = 40_000_000
 class LossyFallbackError(RuntimeError):
     """A board would have been produced from a strict subset of the route."""
 
+
+_NO_SES_MESSAGE = (
+    "no usable SES for %s: a DSN-only import reconstructs a strict subset of "
+    "the route (measured 464 DRC violations / 31 track_dangling / 36 "
+    "tracks_crossing on this board) and the shortfall is invisible in the "
+    "imported geometry. Pass allow_dsn_fallback=True (CLI: "
+    "--allow-dsn-fallback) to accept the loss deliberately.")
+
 DEFAULT_WIDTH_NM = 250_000  # 0.25 mm — the DSN's `(rule (width 250.0))`
 
 # Layer name -> nothing; we resolve names against the target board so a 2-layer
@@ -415,14 +423,24 @@ def build(dsn_path: str, pcb_path: str, output_path: str,
 
     Placement, zones, footprints and the outline are untouched either way.
     """
-    import pcbnew  # imported here so the DSN-side functions work without KiCad
-
+    # Resolve and validate the SES BEFORE importing pcbnew: an argument error
+    # must surface as itself on a machine without KiCad, not as a
+    # ModuleNotFoundError from three frames deeper (observed in CI, run
+    # 36543938827 — the runner has no pcbnew, and the missing --ses was
+    # reported as "No module named 'pcbnew'").
     if ses_path is None:
         cand = os.path.splitext(dsn_path)[0] + ".ses"
         if os.path.isfile(cand):
             ses_path = cand
     elif not os.path.isfile(ses_path):
         raise FileNotFoundError("--ses %s does not exist" % ses_path)
+
+    if ses_path is None and not allow_dsn_fallback:
+        # Checked before pcbnew too — this refusal is a property of the inputs,
+        # not of the environment.
+        raise LossyFallbackError(_NO_SES_MESSAGE % dsn_path)
+
+    import pcbnew  # imported here so the DSN-side functions work without KiCad
 
     if ses_path and os.path.isfile(ses_path):
         board = pcbnew.LoadBoard(pcb_path)
@@ -439,15 +457,6 @@ def build(dsn_path: str, pcb_path: str, output_path: str,
         pcbnew.SaveBoard(output_path, board)
         return _summarize(output_path, {"source": "ses", "ses": ses_path,
                                         "removed": pre_existing})
-
-    if not allow_dsn_fallback:
-        raise LossyFallbackError(
-            "no usable SES for %s: a DSN-only import reconstructs a strict "
-            "subset of the route (measured 464 DRC violations / 31 "
-            "track_dangling / 36 tracks_crossing on this board) and the "
-            "shortfall is invisible in the imported geometry. Pass "
-            "allow_dsn_fallback=True to accept the loss deliberately."
-            % dsn_path)
 
     board = pcbnew.LoadBoard(pcb_path)
     if board is None:
