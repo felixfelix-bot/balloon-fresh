@@ -4,7 +4,7 @@ WHY IT EXISTS
 -------------
 `hub_board_v1_routed.kicad_pcb` (2026-08-05) shipped 651 traces of which 76 were
 exactly zero-length and 334 were sub-0.5 um artifacts, with **1221 of 1302 track
-endpoints at negative Y — outside the 0..40 mm board**.  DRC: 405 violations
+endpoints at negative Y — outside the 0..40 mm board**.  DRC: 402 violations
 (181 `track_dangling`) and 68 unconnected items.
 
 Three findings drive this spec, each measured, not assumed:
@@ -36,6 +36,7 @@ from __future__ import annotations
 import math
 import os
 import re
+import subprocess
 import sys
 
 import pytest
@@ -314,3 +315,59 @@ class TestSesBuild:
                                          for l in z.GetLayerSet().Seq()))
                  for z in b.Zones()]
         assert zones == [("GND", ["B.Cu"])], zones
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The fallback must not be able to masquerade as the good path
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestCliRejectsTheLossyFallback:
+    """A DSN-only import is a strict subset of the route (F3), and the shortfall
+    is invisible in the imported geometry: the fallback board has no
+    zero-length, sub-1um or off-outline track either, yet measures 464 DRC
+    violations (31 `track_dangling`, 36 `tracks_crossing`) against the SES
+    board's 175.  So the CLI's exit code — not the geometry checks — is what
+    distinguishes the two, and these tests pin it."""
+
+    def _run(self, argv):
+        return subprocess.run(
+            ["/usr/bin/python3.14", os.path.join(HW_DIR, "import_tracks_fixed.py")]
+            + argv,
+            capture_output=True, text=True, timeout=300)
+
+    def test_missing_explicit_ses_is_refused(self, tmp_path):
+        """--ses pointing nowhere is a mistake, not a licence to fall back."""
+        p = self._run(["--dsn", DSN, "--pcb", PCB_CLEAN,
+                       "--output", str(tmp_path / "x.kicad_pcb"),
+                       "--ses", str(tmp_path / "nope.ses")])
+        assert p.returncode == 1, p.stdout[-800:]
+        assert "does not exist" in p.stdout, p.stdout[-800:]
+
+    def test_dsn_fallback_exits_nonzero(self, tmp_path):
+        """DSN of record has no sibling .ses — the fallback must say so loudly."""
+        _pcbnew()
+        assert not os.path.isfile(os.path.splitext(DSN)[0] + ".ses"), \
+            "this DSN grew an SES sibling; pick another fallback fixture"
+        out = str(tmp_path / "fallback.kicad_pcb")
+        p = self._run(["--dsn", DSN, "--pcb", PCB_CLEAN, "--output", out])
+        assert p.returncode == 1, p.stdout[-800:]
+        assert "source: DSN" in p.stdout, p.stdout[-800:]
+        assert "DSN fallback used" in p.stdout, p.stdout[-800:]
+        # The board is still written — refusing the *result* is the contract,
+        # not refusing to produce it.
+        assert os.path.isfile(out)
+
+    def test_fallback_allowed_when_asked_for_by_name(self, tmp_path):
+        _pcbnew()
+        p = self._run(["--dsn", DSN, "--pcb", PCB_CLEAN,
+                       "--output", str(tmp_path / "ok.kicad_pcb"),
+                       "--allow-dsn-fallback"])
+        assert p.returncode == 0, p.stdout[-800:]
+        assert "source: DSN" in p.stdout, p.stdout[-800:]
+
+    def test_ses_path_is_the_default_and_stays_exit_zero(self, tmp_path):
+        _pcbnew()
+        p = self._run(["--dsn", DSN_WITH_SES, "--pcb", PCB_CLEAN,
+                       "--output", str(tmp_path / "ses.kicad_pcb")])
+        assert p.returncode == 0, p.stdout[-800:]
+        assert "source: SES" in p.stdout, p.stdout[-800:]

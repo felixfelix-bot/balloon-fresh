@@ -9,7 +9,7 @@
 
 | metric | before | after |
 |---|---|---|
-| DRC violations | **405** | **175** |
+| DRC violations | **402** | **175** |
 | `track_dangling` | **181** | **0** |
 | `copper_edge_clearance` | **58** | **0** |
 | `tracks_crossing` | 0 | **0** |
@@ -17,6 +17,11 @@
 | tracks on board | 651 | **160** (+14 vias) |
 
 Phase 1 gate (`DRC < 230`, `track_dangling` eliminated) — **PASS**.
+
+Both boards re-measured with `kicad-cli pcb drc --format json`; the pre-change
+figure is 402 (`405` appeared in an earlier draft and in the spec header — the
+what-matters part, 181 `track_dangling`, is exact, and the DRC type list is
+identical).
 
 ## The two defects in the old import
 
@@ -85,6 +90,15 @@ construction and produces no degenerate geometry (0 zero-length, 0 sub-1 um,
 0 outside the outline). The DSN parser is the documented fallback for routing
 whose SES was never kept, and `build()` reports which path it used via
 `stats["source"]` so a fallback can never masquerade as the good path.
+
+**That report is not enough on its own** (cold-review finding, 2026-09-29): the
+fallback board *also* has 0 zero-length, 0 sub-1 um and 0 off-outline tracks,
+so the geometry checks pass and the CLI used to print `PASS` and exit 0 for a
+board measuring **464** DRC violations (31 `track_dangling`, 36
+`tracks_crossing`). The loss is structural, not visible in any single track.
+The CLI therefore now exits 1 whenever the DSN fallback ran, unless
+`--allow-dsn-fallback` says the loss was accepted deliberately, and an explicit
+`--ses` that does not exist is a hard error rather than a silent fallback.
 
 ## Reproduce
 

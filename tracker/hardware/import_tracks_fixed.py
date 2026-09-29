@@ -30,11 +30,17 @@ Two independent root causes, each with its own fix and its own test group in
 USAGE
 -----
     /usr/bin/python3.14 tracker/hardware/import_tracks_fixed.py \
-        --dsn tracker/hardware/output/v1_freerouting_output.dsn \
+        --dsn tracker/hardware/output/v1_freerouting_routed.dsn \
         --pcb tracker/hardware/hub_board_v1_clean.kicad_pcb \
         --output tracker/hardware/hub_board_v1_routed.kicad_pcb
 
-Exit 0 = board written and every imported track is inside the outline.
+Point `--dsn` at the DSN that has its `.ses` twin from the same router run: the
+SES is the route of record and is picked up automatically.  A DSN with no
+sibling SES takes the lossy fallback described below, and the CLI then refuses
+the result (exit 1) unless `--allow-dsn-fallback` says the loss is accepted.
+
+Exit 0 = board written, the SES path was used, and every imported track is
+inside the outline.
 """
 from __future__ import annotations
 
@@ -54,6 +60,15 @@ UM_TO_NM = 1000
 # Collapse threshold.  Anything closer than this to the running vertex is the
 # exporter's rounding stub, not geometry (see module docstring).
 MIN_TRACK_LENGTH_NM = 1000  # 1 um
+
+# A DSN-only import is a strict subset of the router's route (measured: 60 of
+# the SES's 160 segments), and that shortfall is not detectable from the
+# imported geometry — the fallback board has no zero-length, sub-1um or
+# off-outline track, yet scores 464 DRC violations (31 track_dangling, 36
+# tracks_crossing) against the SES board's 175.  So "the board looks clean" is
+# never evidence that the good path ran: only `stats["source"]` is, and the CLI
+# turns a fallback into a non-zero exit unless it was asked for by name.
+DSN_FALLBACK_IS_LOSSY = True
 
 # Board outline (measured from Edge.Cuts on the clean board: 0..50 x 0..40 mm).
 BOARD_X_NM = 50_000_000
@@ -520,12 +535,20 @@ def main(argv=None) -> int:
     ap.add_argument("--pcb", required=True, help="input .kicad_pcb (tracks will be replaced)")
     ap.add_argument("--output", required=True, help="output .kicad_pcb")
     ap.add_argument("--ses", help="explicit SES path (default: sibling of --dsn)")
+    ap.add_argument("--allow-dsn-fallback", action="store_true",
+                    help="accept the lossy DSN parse when no SES is available "
+                         "(see DSN_FALLBACK_IS_LOSSY)")
     args = ap.parse_args(argv)
 
     for p in (args.dsn, args.pcb):
         if not os.path.isfile(p):
             print("FAIL: missing input %s" % p)
             return 1
+    if args.ses and not os.path.isfile(args.ses):
+        # An explicit --ses that does not exist is a mistake, not a reason to
+        # quietly take the lossy path.
+        print("FAIL: --ses %s does not exist" % args.ses)
+        return 1
 
     hist = raw_segment_length_histogram(args.dsn)
     print("DSN raw segments: %d  (zero=%d sub0.5um=%d ambiguous=%d 1-5um=%d real=%d)"
@@ -541,6 +564,12 @@ def main(argv=None) -> int:
     print("Wrote %s" % args.output)
 
     problems = []
+    if stats["source"] == "dsn" and DSN_FALLBACK_IS_LOSSY and not args.allow_dsn_fallback:
+        problems.append(
+            "DSN fallback used, which imports a strict subset of the route "
+            "(measured 464 DRC violations / 31 track_dangling / 36 tracks_crossing "
+            "on this board) — point --dsn at the pair with a sibling .ses, or "
+            "pass --allow-dsn-fallback to accept the loss")
     if stats["zero_length"]:
         problems.append("%d zero-length tracks" % stats["zero_length"])
     if stats["sub_1um"]:
