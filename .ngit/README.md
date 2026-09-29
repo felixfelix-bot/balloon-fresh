@@ -8,12 +8,24 @@ whose `on:` block matches.
 | workflow | what it runs | notes |
 |---|---|---|
 | `act/workflows/bootsel-controller.yml` | the ESP32-C3 auto-BOOTSEL controller: compiles and runs its host harness, then `tests/test_bootsel_controller.py` (47 tests) | host-side only, no boards, no packages beyond g++ + pytest, seconds to run |
-| `act/workflows/host-tests.yml` *(on the `ci/*` branches, not yet on master)* | the repository-wide host suites: nostr_store 7, relay-pipeline 12, tollgate ~350, ehash-relay 65, stratorelay 11, FLRC BT0.5 parity 12, UART telemetry 115 | the same five command blocks as `.github/workflows/ci-host-tests.yml` |
 
 Adding a lane here is how a code-tier kanban card can satisfy the `ci_evidence`
 gate: the gate's reader (`ngit_ci_evidence.py`) requires a **published commit**
 with a green kind-9842 result, not a landed one, so a card that must not touch
-`master` can push `refs/heads/ci/<slug>` and trigger this workflow at that ref.
+`master` can push `refs/heads/ci/<slug>` and trigger a workflow at that ref.
+
+**Every lane runs on every push.** A workflow that fails on master is therefore
+worse than no workflow: it turns the whole repository's CI red and blocks the
+`ci_evidence` gate for unrelated cards. Before adding one, run its command blocks
+on the branch you are pushing and delete it if they do not hold there.
+
+The repository-wide host suites (nostr_store, relay-pipeline, tollgate,
+ehash-relay, stratorelay, FLRC BT0.5 parity, UART telemetry) live on the `ci/*`
+branches as `.ngit/act/workflows/host-tests.yml`, not on master, because two of
+its steps reference files that do not exist on master
+(`tests/test_flrc_bt05_parity.py`, `tracker/firmware/components/uart_telemetry/`).
+Merging that lane to master requires adding those first — see
+`ci/uart-telemetry-protocol`.
 
 ## Adding a lane
 
@@ -24,7 +36,7 @@ with a green kind-9842 result, not a landed one, so a card that must not touch
    stays on GitHub/host runs.
 3. `python3 -m pip install <pkg>` needs the `--break-system-packages` fallback:
    the container's python3 is externally managed (PEP 668) and a bare install
-   exits 1, which fails the whole lane.
+   exits 1, which fails the whole lane (observed 2026-09-29 on `d3a3b45a`).
 4. Verify locally first — run the exact command blocks from the repo root.
 
 ## What deliberately does NOT run here
