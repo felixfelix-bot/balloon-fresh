@@ -242,8 +242,16 @@ class TestNetlist:
                if "(net 1)" in s]
         assert tie, "the two GND rails are not tied by any copper"
 
+    @needs_kicad
     def test_all_net_bearing_pads_are_connected(self, routed, tmp_path):
-        """The only netless pads may be the mounting holes' NPTH barrels."""
+        """The only netless pads may be the mounting holes' NPTH barrels.
+
+        Marked ``needs_kicad`` because the connectivity proof is the DRC run;
+        without kicad-cli this test used to reach ``subprocess.run(None, ...)``
+        and die with ``TypeError: expected str, bytes or os.PathLike object,
+        not NoneType`` instead of skipping - a FAILURE in the CI lane that
+        reports as a board defect.  Measured on a PATH without kicad-cli.
+        """
         d = drc(routed, tmp_path)
         assert d.get("unconnected_items", []) == []
 
@@ -488,4 +496,66 @@ class TestCheckedInArtifacts:
 
     def test_placed_copy_is_regenerated_byte_for_byte(self, checked_in_placed):
         assert checked_in_placed.read_text() == gen.build(routed=False), (
+            "tracker/hardware/auto_bootsel/"
             "auto-bootsel-interposer-placed.kicad_pcb is stale")
+
+
+# ---------------------------------------------------------------------------
+# 7. the vendored library footprints (regeneration without KiCad installed)
+# ---------------------------------------------------------------------------
+
+class TestVendoredFootprints:
+    """The generator's library footprints are committed, not read from /usr/share.
+
+    Before this, every fixture that called ``generate()`` needed
+    ``/usr/share/kicad/footprints``; the ngit-CI act image has no KiCad, so the
+    lane went RED at 778d662 with nine ERRORs and two FAILUREs while its own
+    step comment claimed the checks "run anywhere".  A test that cannot run
+    where CI runs is not a test, so the three files are vendored and asserted
+    here.
+    """
+
+    WANT = {
+        "Resistor_SMD": gen.RES_LIB_NAME,
+        "TestPoint": gen.TP_LIB_NAME,
+        "MountingHole": gen.MOUNT_HOLE,
+    }
+
+    def test_vendored_files_exist_for_every_library_part(self):
+        for lib, name in self.WANT.items():
+            p = gen.VENDOR_LIB / f"{name}.kicad_mod"
+            assert p.is_file(), f"missing vendored footprint {p}"
+
+    def test_build_reads_the_vendored_copy_not_the_system_library(self):
+        """Point the system library at nothing and regenerate: it must still work.
+
+        This is the actual regression guard - it fails if anyone reintroduces a
+        hard dependency on the host package, which is exactly what broke CI.
+        """
+        assert gen.library_footprint_path("Resistor_SMD", gen.RES_LIB_NAME) \
+            == gen.VENDOR_LIB / f"{gen.RES_LIB_NAME}.kicad_mod"
+        saved = gen.FP_LIB
+        gen.FP_LIB = Path("/nonexistent/kicad/footprints")
+        try:
+            text = gen.build(routed=True)
+        finally:
+            gen.FP_LIB = saved
+        assert "(footprint \"Resistor_SMD:R_0402_1005Metric\"" in text
+
+    @needs_kicad
+    def test_vendored_footprints_match_the_system_library(self):
+        """The vendored copies are byte-identical to the installed library.
+
+        Only runs where KiCad is installed; where it is not, the vendored copy
+        is the only source and this check is the one that would have caught the
+        copy being edited (KiCad reports ``lib_footprint_mismatch`` against an
+        altered footprint, which the DRC test already covers).
+        """
+        for lib, name in self.WANT.items():
+            sys_file = gen.FP_LIB / f"{lib}.pretty" / f"{name}.kicad_mod"
+            if not sys_file.is_file():
+                pytest.skip(f"{sys_file} not installed")
+            vend = gen.VENDOR_LIB / f"{name}.kicad_mod"
+            assert vend.read_bytes() == sys_file.read_bytes(), (
+                f"{name}: vendored copy differs from {sys_file}; re-vendor it "
+                "with the KiCad version the board is generated against")

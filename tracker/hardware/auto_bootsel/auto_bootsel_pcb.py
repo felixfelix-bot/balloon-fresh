@@ -78,6 +78,20 @@ TP_CHANNEL_BOOT = 16.0
 
 FP_LIB = Path("/usr/share/kicad/footprints")
 
+# Vendored library footprints.  The generator needs three authentic KiCad
+# footprints.  Reading them from /usr/share/kicad made regeneration depend on a
+# host package, which broke the ngit-CI lane: the act image has no KiCad, so the
+# eleven tests whose fixtures call ``generate()`` ERRORED on
+# ``FileNotFoundError: .../TestPoint_THTPad_D2.5mm_Drill1.2mm.kicad_mod`` while
+# the lane's step still said the checks ran anywhere (measured at 778d662,
+# kind-9842 conclusion=failure).  The three files are now committed next to the
+# generator and are the source the build actually uses; the system library stays
+# as a fallback so a host install keeps working.  Byte-identity is asserted by
+# ``test_vendored_footprints_match_the_system_library`` on any host that has
+# KiCad, so the vendored copy cannot silently drift from upstream.
+VENDOR_LIB = Path(__file__).resolve().parent / "library.pretty"
+
+
 # ---------------------------------------------------------------------------
 # Nets (index 0 must be the empty net for KiCad)
 # ---------------------------------------------------------------------------
@@ -305,8 +319,22 @@ def _findall(node, tag: str):
     return [c for c in node if isinstance(c, list) and c and c[0] == tag]
 
 
+def library_footprint_path(lib: str, name: str) -> Path:
+    """The footprint file this build reads: vendored first, system as fallback.
+
+    Vendored-first is what makes ``generate()`` runnable where KiCad is not
+    installed (the ngit-CI act image).  The fallback keeps working on a host
+    whose vendored copy was removed, and lets the test suite prove the two are
+    byte-identical instead of trusting the copy.
+    """
+    vend = VENDOR_LIB / f"{name}.kicad_mod"
+    if vend.exists():
+        return vend
+    return FP_LIB / f"{lib}.pretty" / f"{name}.kicad_mod"
+
+
 def load_library_footprint(lib: str, name: str) -> list:
-    path = FP_LIB / f"{lib}.pretty" / f"{name}.kicad_mod"
+    path = library_footprint_path(lib, name)
     if not path.exists():
         raise FileNotFoundError(path)
     return sexp_parse(path.read_text())
