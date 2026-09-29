@@ -82,5 +82,14 @@ jobs:
       # asserts the register bytes emitted, no boards needed.
       - name: Run FLRC BT0.5 parity tests
         run: |
-          python3 -m pip install --quiet pytest
+          # The act/debian image ships an apt-packaged python3 that is
+          # PEP 668 EXTERNALLY-MANAGED, so a bare `pip install pytest` dies with
+          # `error: externally-managed-environment` and takes the whole lane red
+          # (observed 2026-09-29 on refs/heads/ci/p05-bt05-unify). Use pytest if
+          # it is already present, otherwise install with the same graceful
+          # ladder the rest of this file uses for build dependencies.
+          python3 -c "import pytest" 2>/dev/null || \
+            python3 -m pip install --quiet pytest 2>/dev/null || \
+            python3 -m pip install --quiet --break-system-packages pytest 2>/dev/null || \
+            python3 -m pip install --user --quiet --break-system-packages pytest
           python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short

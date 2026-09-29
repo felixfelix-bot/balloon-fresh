@@ -10,10 +10,31 @@ Workloads:
 Suite 6 (`tests/test_flrc_bt05_parity.py`, added by P0.5 / t_dc858d9b) is the
 one pytest module that DOES run in CI: it is pure text/register-bytes
 assertion over the checked-in firmware sources, needs no hardware, and imports
-nothing outside the stdlib — so it is safe in the minimal act image
-(`python3 -m pip install pytest` is the only dependency). It guards the RP2040
-<-> ESP32 FLRC pulse-shape (BT0.5 => mod-params byte3 `0x25`) parity that makes
-a raw-FLRC cross-platform link work.
+nothing outside the stdlib — so it is safe in the minimal act image (pytest is
+the only dependency). It guards the RP2040 <-> ESP32 FLRC pulse-shape (BT0.5 =>
+mod-params byte3 `0x25`) parity that makes a raw-FLRC cross-platform link work.
+
+Pitfall measured 2026-09-29 (t_dc858d9b): the act/debian image's `python3` is
+apt-packaged and therefore PEP 668 `EXTERNALLY-MANAGED`, so a bare
+`python3 -m pip install pytest` fails with `error: externally-managed-environment`
+and takes the whole lane red. Suite 6 installs with the same graceful ladder the
+build-dependency step uses (skip if importable, then plain pip, then
+`--break-system-packages`, then `--user --break-system-packages`). Reproduce and
+validate the ladder in a throwaway container:
+
+```bash
+docker run --rm debian:12 bash -c '
+  apt-get update -qq >/dev/null 2>&1; apt-get install -y -qq python3 python3-pip >/dev/null 2>&1
+  python3 -c "import pytest" 2>/dev/null || \
+    python3 -m pip install --quiet pytest 2>/dev/null || \
+    python3 -m pip install --quiet --break-system-packages pytest 2>/dev/null || \
+    python3 -m pip install --user --quiet --break-system-packages pytest
+  python3 -m pytest --version'
+```
+
+Note GitHub's ubuntu-latest runner is NOT externally managed, so the GitHub lane
+passed on the same commit while the ngit lane failed — the two engines need the
+tolerant ladder even though "one harness fix serves both".
 
 What is NOT run under ngit-ci, and why:
 
