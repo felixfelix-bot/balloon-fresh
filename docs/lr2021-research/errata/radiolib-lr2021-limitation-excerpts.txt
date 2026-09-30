@@ -1,0 +1,14 @@
+LR2021-module/LR2021_cmds_radio.cpp:18:    state = this->setDCDCworkaround();
+LR2021-module/LR2021_cmds_radio.cpp:117:    state = this->resetDCDCworkaround();
+LR2021-module/LR2021_cmds_ook.cpp:18:    state = this->setDCDCworkaround();
+LR2021-module/LR2021_cmds_gfsk.cpp:19:    state = this->setDCDCworkaround();
+LR2021-module/LR2021.h:790:      The following limitations apply:
+LR2021-module/LR2021.h:1074:    // port of semtech's workaround
+LR2021-module/LR2021.h:1075:    int16_t setDCDCworkaround();
+LR2021-module/LR2021.h:1076:    int16_t resetDCDCworkaround();
+LR2021-module/LR2021_cmds_flrc.cpp:14:    state = this->setDCDCworkaround();
+LR2021-module/LR2021_cmds_lora.cpp:29:    state = this->setDCDCworkaround();
+LR2021-module/LR2021_cmds_chip_control.cpp:348:// workaround: port of semtech's code altered to use local freqMHz/highFreq - magic numbers are theirs
+LR2021-module/LR2021_cmds_chip_control.cpp:349:// https://github.com/Lora-net/usp/blob/351b20153506/smtc_rac_lib/radio_drivers/lr20xx_driver/src/lr20xx_workarounds.c
+LR2021-module/LR2021_cmds_chip_control.cpp:350:int16_t LR2021::setDCDCworkaround() {
+LR2021-module/LR2021_cmds_chip_control.cpp:381:int16_t LR2021::resetDCDCworkaround() {
