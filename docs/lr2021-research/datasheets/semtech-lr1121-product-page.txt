@@ -1,0 +1,704 @@
+LoRa Connect LR1121 for Multi-Band Global Connectivity | Semtech
+Skip to main content
+Cross Reference
+Parametric
+Shop
+Investors
+my S emtech
+EN
+EN
+CN
+(中文)
+JP
+(日本語)
+FR
+L o R a ®
+L o R a ® Overview
+L o R a Overview
+LoRa is the de facto wireless platform of Internet of Things (IoT). Semtech's LoRa chipsets connect sensors to the Cloud and enable real-time communication of data and analytics that can be utilized to enhance efficiency and productivity.
+Read More
+L o R a (PHY)
+Benefits of L o R a
+L o R a WAN®
+Standard
+Products
+Applications
+Applications Overview
+With an ever-increasing number of IoT vertical applications, LoRa devices and the LoRaWAN standard is creating business efficiencies and improving lives around the world.
+Read
+More
+Agriculture
+Cities
+Environment
+Healthcare
+Buildings
+Homes
+Industrial
+Control
+Retail
+Supply
+Chain and Logistics
+Electricity
+Gas
+Water
+Ecosystem
+Ecosystem Overview
+LoRa is bolstered by a diverse global ecosystem of hardware manufacturers, software designers, network providers, and industry associations.
+Read
+More
+L o R a Alliance®
+Featured
+Sensor Use Cases
+Gateways
+Software
+Networks
+Industry
+Alliances
+Resources
+Resources Overview
+Explore our top resources to help you learn more about LoRa devices and the LoRaWAN standard or bring a LoRa-based solution to market.
+Read More
+LoRa Products
+Overview
+Videos
+White
+Papers & Use Cases
+L o R a Developers
+&
+Tech Support
+L o R a Calculator
+Amazon Sidewalk
+Academy for L o R a WAN
+Logo Use
+Press
+Releases
+Press
+Coverage
+Contact
+Products
+Products Overview
+Products Overview
+Thousands of customers worldwide rely on our diverse product portfolio and world class technology roadmap for solutions in low power wireless communications, optical data transport, video broadcasting, power management, circuit protection, touch sensing, and more.
+Read More
+Quick Links
+Product
+Selector Guides
+Shop
+Parametric
+Search
+L o R a ®
+Wireless RF
+Products Overview
+LoRa®, a long range, low power platform, and the de facto wireless platform of Internet of Things, is highly integrated and cost-effective, boasting a notable battery life of up to 20 years, a 3-mile range in urban environments and a 30-mile range outdoors.
+Read
+More
+End-Nodes ICs
+ICs for Gateways
+LoRa Basics™ Modem & LoRa USP™
+Hardware Development Tools & Kits
+Circuit Protection
+Products Overview
+Sophisticated devices that protect sensitive circuitry from Electrostatic Discharge (ESD), Electrical Fast Transients (EFT), Cable Discharge Events (CDE), and other electrical overstress.
+Read
+More
+Circuit Protection Products
+ESD Protection Diodes
+TVS Diodes
+Interfaces
+USB
+HDMI
+Antenna
+Ethernet
+RS-485
+Automotive Ethernet
+Automotive High Speed
+VBUS
+Signal Integrity
+Products Overview
+A comprehensive portfolio of innovative optical, analog and mixed-signal semiconductor solutions that serve the rising global demand for high-speed data transmission products.
+Read
+More
+Data Center
+Passive Optical Networks
+Mobile Transport
+Professional AV
+Products Overview
+Advanced off-the-shelf technology that enables end-to-end systems and integrates advanced inline signal processing capabilities such as light compression, broadcast quality scaling and audio down-mixing.
+Read
+More
+BlueRiver®
+USB Extension
+Smart Sensing
+Products Overview
+Intelligent sensing solutions that transform human-machine interaction. Semtech's Smart Sensing portfolio delivers ultra-low power proximity detection, precision force measurement, and interface control for mobile, automotive, wearables, and industrial applications.
+Read
+More
+PerSe® Connect
+PerSe® Contact
+PerSe® Control
+IO Expanders
+Force Sensing Solutions
+Broadcast Video
+Products Overview
+Award-winning solutions designed specifically to push real-world broadcast boundaries in performance, reach, power, and signal integrity while reducing time to market and design risks.
+Read
+More
+AV Interface & Protocol Conversion
+Configurable EQ/CD
+Cable Drivers
+Cable Equalizers
+Crosspoints
+Receivers (Deserializers)
+Reclocking
+Transmitters (Serializers)
+Power Management
+Products Overview
+A pioneer in power management ICs across networking and industrial power, handheld power and automotive applications, Semtech leads the quest to enable a new class of greener, smarter and smaller end products.
+Read
+More
+Buck (Step Down)
+Boost (Step Up)
+HotSwitch/Load Switch
+Low Drop Out (LDO) Regulator
+Neo-Iso Solid State Relays
+Charge Pump
+Cellular IoT Solutions
+Products Overview
+Leading edge-to-Cloud solutions delivering the device, software and connectivity services needed to simplify and accelerate data-driven transformation with cellular IoT.
+Read
+More
+Managed Connectivity
+Modules
+Router Solutions
+Technology
+Technology Overview
+Technology Overview
+Our highly differentiated, disruptive analog and mixed-signal semiconductors and advanced algorithms enable today's most innovative electronics within some of the fastest growing verticals and markets.
+Read More
+Quick Links
+Related
+Applications
+LoRa
+White Papers & Infographics
+Product
+Selector Guides
+LoRa® Wireless RF
+For The IoT
+LoRa Wireless RF
+For The IoT Overview
+LoRa is the de facto wireless platform of Internet of Things (IoT). Semtech's LoRa chipsets connect sensors to the Cloud and enable real-time communication of data and analytics that can be utilized to enhance efficiency and productivity.
+Read More
+L o R a (PHY)
+Benefits of L o R a
+L o R a WAN®
+Standard
+PerSe® Smart Sensing
+PerSe® Smart Sensing Overview
+Semtech's PerSe technology intelligently senses human presence for optimized connectivity and enhanced user experience.
+Read More
+Quick Links
+Infographic
+Brochure
+Blogs
+Products
+Signal Integrity
+Signal Integrity Technologies
+Whether you need high-speed data center connectivity, low-latency wireless fronthaul, or efficient server connections, our FiberEdge®, DirectEdge™, Tri-Edge™, and CopperEdge™ solutions provide the signal integrity foundation for tomorrow's infrastructure challenges.
+Read More
+Quick Links
+FiberEdge® and DirectEdge™
+CopperEdge™
+Tri-Edge™ PAM4 CDR
+BlueRiver
+Platform For SDVoE™
+BlueRiver
+Platform For SDVoE™
+BlueRiver AV-over-IP chipsets are the world’s only chipsets to transport uncompressed, zero-latency Ultra HD/4K HDR over standard Ethernet and are the foundation for Software Defined Video Over Ethernet (SDVoE) technology.
+Read
+More
+B lue R iver
+OVERVIEW
+B lue R iver
+APPLICATIONS
+BlueRiver
+VERTICAL MARKETS
+SDV o E
+ALLIANCE®
+Circuit Protection
+Circuit Protection Overview
+Semtech is leading the way in Transient Voltage Suppression (TVS) protection solutions that safeguard electronics systems against damage or latch-up caused by electrostatic discharge (ESD), lightning (surge), and other destructive voltage transients.
+Read
+More
+Circuit
+Protection Overview
+Z-Platform
+Design Resources
+Design Resources Overview
+Design Resources Overview
+Semtech places a high importance on delivering superior design support and provides a wealth of tools and resources with the goal of shortening your time to revenue for your new product introductions.
+Read
+More
+Product Guides
+Development Support Documentation
+Parametric
+Search
+Quality
+Assurance
+L o R a GitHub
+LoRa PCB Design Review
+L o R a Calculator
+L o R a WAN Academy and Training
+Hardware Development Tools & Kits
+Product
+Cross Reference Search
+Frequently Asked Questions
+my S emtech Document Portal
+IoT Applications
+Internet of Things
+Award-winning LoRa Technology, ESD and surge protection, and smart control platforms for Internet of Things-enabled devices and low power, wide area network (LPWAN) infrastructure.
+Read More
+Smart Agriculture
+Smart Buildings
+Smart Cities
+Smart Emergency
+Smart Environment
+Smart Healthcare
+Smart Home
+Smart Industrial
+Smart Logistics
+Smart Utilities
+Smart Consumer
+Professional AV Applications
+Professional AV
+AptoVision BlueRiver™ Technology uses commercial-off-the-shelf Ethernet networks to deliver higher performance, flexibility, and scalability to the Pro AV industry.
+Read
+More
+AV Over IP
+BYOM Video Conferencing
+HDMI Extender
+HDMI Wall Plates
+Hybrid AV Distribution
+KVM Switches
+Multiviewers
+Point-to-Point Matrix Switching
+Presentation Switchers
+SDI Equipment
+SDVoE™ Integration
+Smart Display Modules (SDM)
+USB-C
+Video Walls
+Other
+Applications
+Other Applications
+Award-winning LoRa Technology, ESD and surge protection, and smart control platforms for Internet of Things-enabled devices and low power, wide area network (LPWAN) infrastructure.
+Read More
+Automotive
+Advanced Driver Assistance Systems
+Automotive Battery Management Systems
+Automotive USB Charger
+Infotainment Unit
+Remote Keyless Entry
+Telematics Unit
+Broadcast Video
+Broadcast Equipment
+Consumer Electronics
+Mobile Devices
+Wearables
+TVs, Set Top Boxes, Monitors
+Laptops, Tablets, Computers
+Appliances & White Goods
+Computers, Printers, Scanners
+Industrial
+Medical Equipment
+Factory Automation
+Energy, Smart Grids, Smart Metering
+Surveillance
+Test & Measurement
+Power Tools
+Infrastructure
+Data Centers
+Passive Optical Networks / Fiber to the Home
+Broadband
+Networking & Optical Communications
+Broadband
+Passive Optical Networks / Fiber to the Home
+ISM Networks
+Wireless Infrastructure, Base Stations
+Data Centers
+Quality
+Quality Overview
+Ethical standards drive peak customer satisfaction.
+Read More
+Quality Overview
+Reliability
+Product Testing
+Quality & Failure Analysis
+Search Pb(Lead)-Free/R o HS-Green
+Environmental Initiatives
+Quality Policy
+Quality Certifications
+IR Reflow Profiles
+About
+Company Overview
+Since our founding in 1960 as a manufacturer of high reliability products, Semtech has grown to become a multinational technology innovator, enabling solutions that help to make the world a better place.
+Read
+More
+Company Overview
+History
+Leadership
+Corporate Citizenship (ESG)
+Core Values
+News & Media
+Videos
+Blog
+Resources
+Events
+Careers
+Locations
+Security
+Contact
+Contact Us
+Order Estimates
+View Cart
+Home
+products
+Wireless RF
+End-Nodes ICs
+LoRa connect™
+LR1121
+LR1121
+LoRa Connect™ LR1121 for Multi-Band Global Connectivity
+Buy Now
+Datasheet
+Overview
+Documents
+Dev Kits & Shields
+Software
+Resources
+Support
+Overview
+The LR1121 is Semtech’s third generation ultra-low power LoRa® transceiver. It provides multi-band LoRa and Long Range - Frequency Hopping Spread Spectrum (LR-FHSS) communication over sub-GHz and 2.4GHz ISM bands as well as satellite S-Band and L-Band connectivity. The LR1121 is designed to comply with the physical layer requirements of the LoRaWAN® specification released by the LoRa Alliance®, while remaining configurable to meet different application requirements and proprietary protocols.
+Features
+Low-power high-sensitivity LoRa/(G)FSK half-duplex RF transceiver
+Worldwide ISM frequency bands support in the range 150 - 960MHz (sub-GHz) and 2.4GHz, as well as 2GHz S-Band and 1.55GHz L-Band
+Low noise figure RX front-end for enhanced LoRa/(G) FSK sensitivity
+High power PA path +22dBm in the sub-GHz band
+PA path up to +11.5dBm in the 2.4GHz band
+LR-FHSS modulator
+Integrated PA regulator supply selector to simplify dual power +15/+22dBm with one board implementation (sub-GHz)
+Able to support world-wide multi-region BOM, the circuit adapts to matching network to satisfy regulatory limits
+Fully compatible with SX1261/2/8 devices and the LoRaWAN standard, defined by the LoRa Alliance
+Cryptographic Engine
+Supports AES-128 encryption/decryption based algorithms
+Handles device parameters such as DevEUI and JoinEUI, as defined by the LoRa Alliance
+Protects confidential information such as encryption keys against unauthorized access
+Stores of NwkKey, AppKey, as defined in the LoRaWAN standard
+Packaging
+QFN32 5x5mm
+Order Codes
+LR1121IMLTRT
+PB Free/ROHS
+Learn More →
+BUY NOW
+Contact us to design your best solutions.
+CONTACT US
+Part Number
+QTY
+Unit Price (USD)
+Price
+$ 0
+$ 0
+Request Sample
+ADD TO CART
+Ordering functionality and fulfillment provided by Digi-Key Corporation. See terms here .
+SHOP FROM OUR DISTRIBUTORS
+Shop Now
+Documents
+Release Date
+Type
+Datasheets
+LR1121 Datasheet 2025-04-26 PDF
+Application Notes
+AN1200.57 LR11xx Program Memory Update 2026-04-02 PDF
+AN1200.58: Application note for Long-Range FHSS Demo 2023-03-27 PDF
+AN1200.59 - Selecting the Optimal Reference Clock 2026-07-16 PDF
+AN1200.62: Best Practices for FCC Pre-Compliance testing of LoRaWAN Modules 2023-10-10 PDF
+AN1200.64: LR-FHSS System Performance 2023-03-27 PDF
+AN1200.66: PCB Design Guidelines 2026-05-20 PDF
+AN1200.73: SX126x/LR11xx SigFox Modulation 2023-12-14 PDF
+AN1200.76 Application Note for LR11xx IPD Reference Design 2024-02-16 PDF
+AN1200.80: LoRa® Modem Doppler Immunity 2023-10-26 PDF
+AN1200.81: Doppler Immunity of the LR-FHSS Modem 2023-12-04 PDF
+AN1200.86 LoRa and LoRaWAN 2026-09-11 PDF
+AN1200.87 LoRaWAN Device Classes 2026-09-10 PDF
+AN1200.92: Modem-E Evaluation Guide 2026-04-02 PDF
+AN1200.94: LoRaWAN Theory for One Channel Hub 2025-05-01 PDF
+AN1200.96: One-Channel LoRa Hub Hardware and Regulatory Aspects 2025-06-06 PDF
+Reference Designs
+Design Files for LR1121DVK1TGKS kit @490MHz 2023-06-26 ZIP
+Design Files for LR1121DVK1TxKS kit @868MHz and @915MHz 2023-06-26 ZIP
+LR1121MB2THDAS 868MHz & 915MHz RF Module - Design Files 2026-08-25 ZIP
+LR1121MB2XHDAS 868MHz/915MHz RF section +22dBm, 0201 passive, XTAL - not purchasable, only design file 2026-07-27 ZIP
+LR1121MB2XLDAS 868MHz/915MHz RF section 14dBm, 0201 passive, XTAL - not purchasable, only design file 2026-07-27 ZIP
+User Guides
+LRDVK17INTERFACE: LoRa® Shield to EFR32 Interface Board User Guide 2025-09-10 PDF
+One-Channel Hub EVK User Guide 2025-03-12 PDF
+User Manual Hardware
+LoRa Basics Modem-E V2.0 Reference Manual 2026-04-02 PDF
+LR1121 User Manual 2026-04-02 PDF
+Devkits & Shields
+Name
+Development Kits
+LR1121DVK1TBKS
+LoRa Connect™ Development Kit, LR1121, LoRa 868MHz ISM Band for Europe and 2.4GHz ISM Band
+LR1121DVK1TCKS
+LoRa Connect™ Development Kit, LR1121, LoRa 915MHz ISM Band for North America and 2.4GHz ISM Band
+LR1121DVK1TGKS
+LoRa Connect™ Development Kit, LR1121, LoRa 490MHz ISM Band for China and 2.4GHz ISM Band
+Documents
+Release Date
+Type
+Software Releases (Firmware)
+Driver for LR11xx chips 2023-12-14 TXT
+LR1121 Transceiver Microcode 2023-12-14 TXT
+LR11xx firmware update procedure 2023-12-14 TXT
+SWDR007 - LR11xx Sidewalk Driver for EFR32MG24 2024-07-18 TXT
+SWL2001 - LoRa Basics Modem Library 2024-05-14 TXT
+SWSD003 - Code examples for SX126x and LR11XX 2024-10-11 TXT
+SWSD006 - LR11xx Multi-Stack SDK for nRF52840 2024-08-14 TXT
+Tools & Software
+LRDVK17INTERFACE: LoRa Shield to EFR32 Interface board Production Files 2025-09-10 ZIP
+Inventory
+Product
+Country
+Distributor
+Qty
+Buy
+Resources
+ALL
+WHITE PAPERS
+EBOOKS
+CUSTOMER STORIES
+INFOGRAPHICS
+VIDEOS
+BLOG
+PRESS RELEASE
+PRESS RELEASE
+Semtech’s LoRa Plus LR2021 Transceiver Wins…
+PRESS RELEASE
+Semtech SurgeSwitch Protects Cobots from…
+VIDEO
+Building a Gateway for a LoRaWAN Network With…
+VIDEO
+Safeguarding Forests: How Dryad's Silvanet…
+VIDEO
+Part 2: Getting up and running with LoRa…
+VIDEO
+Part 1: Introduction to LoRa Basics™ Modem-E
+Previous
+Next
+WHITE PAPER
+Beyond Four Walls: LoRaWAN® Asset Tracking…
+WHITE PAPER
+Enhancing Asset Tracking with LoRa® and…
+WHITE PAPER
+Build Smarter Micromobility Solutions with…
+WHITE PAPER
+Transforming Urban Landscapes: The Role of…
+WHITE PAPER
+LPWAN Networks Ideally Suited for Gas and…
+WHITE PAPER
+Why LoRaWAN® for Water Utilities in North…
+Previous
+Next
+EBOOK
+Disrupting Cold Chain Refrigeration &…
+EBOOK
+SAS Flood Prediction
+EBOOK
+There's No Place Like a LoRa Smart Home
+EBOOK
+Nationwide Smart Metering
+EBOOK
+Smart Island Management
+EBOOK
+Smart Water Leakage Detection
+Previous
+Next
+CUSTOMER STORY
+How WNE Digitalized a 20-Story High-Rise with…
+CUSTOMER STORY
+LoRa®-Powered Smart Parking Brings Precision…
+CUSTOMER STORY
+Protecting People Across Every Environment…
+CUSTOMER STORY
+Turning Foot Traffic into City Intelligence:…
+CUSTOMER STORY
+Real-Time LoRa® Container Tracking…
+CUSTOMER STORY
+Ahead of Every Arrival: How LoRaWAN® Smart…
+Previous
+Next
+INFOGRAPHIC
+Water Sanitation For All With LoRa
+INFOGRAPHIC
+Optimize Building Management
+INFOGRAPHIC
+Satellite-based IoT Connectivity
+INFOGRAPHIC
+A Day in a Life With LoRa
+INFOGRAPHIC
+LoRa Transforms Smart Utilities
+INFOGRAPHIC
+Utility Gas Safety System
+Previous
+Next
+VIDEO
+Building a Gateway for a LoRaWAN Network With…
+VIDEO
+LPO VIDEO SERIES - All You Need to Know About…
+VIDEO
+Powering Drone Vision with Ultra-Low Latency
+VIDEO
+Protecting 24V DC Industrial Systems from…
+VIDEO
+Unlock the Power of LoRa® Dual-Band Location…
+VIDEO
+ESD protection of automotive ethernet using…
+Previous
+Next
+PRESS RELEASE
+Semtech’s LoRa Plus LR2021 Transceiver Wins…
+PRESS RELEASE
+Semtech SurgeSwitch Protects Cobots from…
+PRESS RELEASE
+Semtech Wireless Expert to Present at TOP…
+PRESS RELEASE
+Semtech Launches New Electrostatic Discharge…
+PRESS RELEASE
+Semtech Releases New Surge Protection Product…
+PRESS RELEASE
+Semtech Introduces the HotSwitch® Platform…
+Previous
+Next
+Wireless links have traditionally forced a trade-off between speed and range. High-throughput technologies such as Bluetooth and Wi-Fi can move large amounts of data quickly, but their practical range is often limited. Long-range technologies can cover much greater distances, but typically at lower data rates. Fast Long-Range Protocol (FLRP) burst is designed for the gap between these two worlds: a kilometer-class range with megabit-per-second data transfer.
+BLOG
+Fast Long-Range Protocol Burst: Megabit Speeds…
+Solar panels get all the attention. But in a modern utility-scale solar installation, it is the trackers, inverters and cleaning robots that determine whether a farm meets its energy production targets. Trackers keep panels correctly oriented toward the sun, inverters convert what those panels produce into grid-usable AC power, and cleaning robots keep panel surfaces free of the dust and debris that silently erode energy yield between maintenance cycles. Between them, these three asset classes account for the majority of performance variability as well as costly failures.
+BLOG
+Closing the Solar Farm Monitoring Gap with LoRa®…
+Decision-makers evaluating linear pluggable optics (LPO) want numbers, not abstractions. If you're new to LPO, start with Blog 1: What Is Linear Pluggable Optics? , then come back here for the key quantitative parameters for 200G LPO deployment: power consumption by module type, optical reach, electrical loss tolerance, and host port calibration requirements.
+BLOG
+200G Linear Pluggable Optics (LPO) Power, Reach…
+Linear pluggable optics (LPO) is one of the most significant shifts in data center optical interconnect design in a decade — but the term still causes confusion. Is it a module type? A standard? A replacement for digital signal processing function or DSP-based optics entirely? This blog answers those questions from first principles.
+BLOG
+AI Data Center Basics: What Is Linear Pluggable…
+The USB Type-C connector has become the universal interface of modern electronics. From laptops and smartphones to Artificial Intelligence (AI) computing platforms and industrial edge devices, USB Type-C supports both high-speed data transfer and high-wattage power delivery through a single cable. With the adoption of USB Power Delivery (USB PD) 3.1 and its Extended Power Range (EPR), (Table 1) VBUS line voltages have scaled from the familiar 20V/100W standard power range to 28V, 36V and 48V — enabling power delivery of up to 240W over a USB-C cable.
+BLOG
+Advancing VBUS Protection for 48V USB Power…
+France's municipalities are moving from pilot projects to full-scale Internet of Things (IoT) deployments and REX TCD   Retours d'Expérience – Territoires Connectés et Durables (REX Connected and Sustainable Territories) has become the annual proving ground where that shift gets measured. Olivier Beaujard , Senior Director of the LoRa ® Ecosystem at Semtech and Chair of the Board at the LoRa Alliance ® attended the  3rd edition of REX TCD , held on June 16–17, 2026, at the Salons de l'Aveyron in Paris . Here’s what the event revealed about the state of connected territory development in France, and why LoRaWAN ® is increasingly at the center of it.
+BLOG
+REX TCD 2026 – Connected and Sustainable…
+Previous
+Next
+Talk With Us Today
+Semtech is here to help. When you have questions, our experts have answers.
+Sales and Product Information
+Restricted Document
+Portal
+Technical Support
+Contact Us
+Semtech
+Newsletter
+Get the latest on innovations, product launches, customer stories and news of wireless
+applications in the IoT space.
+Subscribe
+Products
+Technology
+Design Resources
+Quality
+About Semtech
+Quick Links
+Cross Reference Search
+Parametric Search
+mySemtech
+Blogs
+Careers
+Contact Us
+Security
+Facebook
+Twitter
+YouTube
+LinkedIn
+Privacy Policy | Terms & Conditions | | Accessibility | Supplier Responsibility | Statement Against Human Trafficking and Slavery | © 2026 All Rights
+Reserved
+Home
+LoRa®
+L o R a Overview
+L o R a (PHY)
+Benefits of L o R a
+L o R a WAN® Standard
+Applications
+Ecosystem
+Products
+Resources
+Products
+Products Overview
+Wireless RF
+Circuit Protection
+Signal Integrity
+Professional AV
+Smart Sensing
+Broadcast Video
+Power Management
+Cellular IoT Solutions
+Technology
+Technology Overview
+L o R a Wireless RF For The I o T
+T ri -E dge ™ PAM4 CDR
+B lue R iver ® Platform For SDV o E™
+B lue R iver OVERVIEW
+B lue R iver APPLICATIONS
+BlueRiver VERTICAL MARKETS
+SDV o E ALLIANCE™
+Circuit Protection
+Circuit Protection Overview
+Z-Platform
+Design Resources
+Design Resources Overview
+Design Resources
+Cross Reference Search
+Parametric Search
+my S emtech
+Quality
+Quality Overview
+Reliability
+Product Testing
+Quality & Failure Analysis
+Search Pb(Lead)-Free/R o HS-Green
+Environmental Initiatives
+Quality Policy
+Quality Certifications
+IR Reflow Profiles
+About
+Company Overview
+History
+Leadership
+Corporate Citizenship (ESG)
+Core Values
+News & Media
+Videos
+Blog
+Resources
+Events
+Careers
+Locations
+Security
+Contact
+More
+Parametric Search
+Shop
+Investors
+Blog
+mySemtech
+Contact
