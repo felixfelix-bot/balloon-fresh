@@ -115,3 +115,16 @@ jobs:
           python3 -m pip install --quiet pytest \
             || python3 -m pip install --quiet --break-system-packages pytest
           python3 -m pytest tests/test_pcb_pipeline_gates.py -v --tb=short
+
+      # ── Suite 9: PCB Phase 1 track-import spec (t_877751ec) ──────
+      # The import defect that cost 181 track_dangling violations: a hand-rolled
+      # DSN parser with no Y inversion and no degenerate-segment collapse.  The
+      # spec pins the coordinate transform against the board's own footprints,
+      # the collapse threshold against the DSN's length histogram, and prefers
+      # KiCad's ImportSpecctraSES over the DSN parser.  The DSN half runs
+      # anywhere; the board-level half self-skips without pcbnew.
+      - name: Run PCB track-import spec
+        run: |
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          python3 -m pytest tests/test_pcb_track_import.py -v --tb=short
