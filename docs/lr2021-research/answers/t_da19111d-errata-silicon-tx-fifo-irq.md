@@ -5,13 +5,14 @@ Date: 2026-10-01T00:19Z · Board: tollgate · Worker: worker-base · Branch: `pr
 Corpus home: `docs/lr2021-research/` in `felixfelix-bot/balloon-fresh` @ base `08d718b3`.
 Host: `c03rad0r-DQ05proplus`.
 
-**Bottom line (one line): NO errata document was located for the LR2021 — so every question in
-scope resolves to UNKNOWN — and of the three Semtech known-limitation artifacts that *were*
-inspected end-to-end (§22, USP `KNOWN_LIMITATIONS.md`, `lr20xx_workarounds.{h,c}` + driver
-README), the union of the four target features {continuous TX, auto-TX FIFO trigger, FIFO IRQ
-threshold, TX underrun} matches **zero** entries; the only LR2021 FIFO-related defect found
-anywhere is a *host-side RadioLib* bug (`configFifoIrq()` wire format, fixed 2026-08-11), not a
-silicon erratum.**
+**Bottom line (one line): no LR20xx errata document EXISTS in Semtech's public document library —
+the global catalogue's entire `Errata` category holds 5 documents, all SX127x-era (2018–2020) or
+unrelated product lines, and none LR20xx (L8, §1.5) — and of the three Semtech known-limitation
+artifacts that stand in for an errata sheet, all read end-to-end (§22, USP `KNOWN_LIMITATIONS.md`,
+`lr20xx_workarounds.{h,c}` + driver README), the union of the four target features {continuous TX,
+auto-TX FIFO trigger, FIFO IRQ threshold, TX underrun} matches **zero** entries; the only LR2021
+FIFO-related defect found anywhere is a *host-side RadioLib* bug (`configFifoIrq()` wire format,
+fixed 2026-08-11), not a silicon erratum.**
 
 Notation: **DS** = `semtech-official/LR2021_LR2022_LR2012_Datasheet_v2.2.pdf` (Semtech Final
 Datasheet **Rev 2.2**, `DS.LR20xx 29/07/26`, 250 pp; § / Table numbers are v2.2 numbering).
@@ -23,16 +24,18 @@ Datasheet **Rev 2.2**, `DS.LR20xx 29/07/26`, 250 pp; § / Table numbers are v2.2
 
 | Task's target feature | Any errata / silicon-revision note found? |
 |---|---|
-| continuous TX | **UNKNOWN** — no document located (see §5). No limitation note in the inspected known-limitation artifacts (§2–§4), but "not mentioned" ≠ "no erratum". |
-| auto-TX FIFO triggers | **UNKNOWN** — no document located. Note: the datasheet's auto-TX command (`SetAutoRxTx`) is *not* FIFO-driven at all, so the phrase "auto-TX **FIFO** trigger" has no counterpart register/command in DS Rev 2.2 (see §6.2). |
-| FIFO IRQ thresholds | **UNKNOWN** — no errata document located. One **host-driver** defect found (RadioLib `configFifoIrq()`), fixed in RadioLib, not silicon (§6.1). |
-| TX underrun | **UNKNOWN** — no document located. DS documents the *flag/IRQ* only and never the device *action* on underflow (§6.3); no errata note exists on top of that. |
+| continuous TX | **UNKNOWN — no LR20xx errata document exists in Semtech's public library (§1.5); no §22 limitation, `KNOWN_LIMITATIONS.md` entry, workaround function, or RadioLib item covers it (§2–§5).** |
+| auto-TX FIFO triggers | **UNKNOWN — same (§1.5).** Note: the datasheet's auto-TX command (`SetAutoRxTx`) is *not* FIFO-driven at all, so the phrase "auto-TX **FIFO** trigger" has no counterpart register/command in DS Rev 2.2 (see §6.2). |
+| FIFO IRQ thresholds | **UNKNOWN — same (§1.5).** One **host-driver** defect found (RadioLib `configFifoIrq()`), fixed in RadioLib, not silicon (§6.1). |
+| TX underrun | **UNKNOWN — same (§1.5).** DS documents the *flag/IRQ* only and never the device *action* on underflow (§6.3); no errata note exists on top of that. |
 
-**The load-bearing statement for downstream consumers: no stand-alone Semtech LR2021 errata sheet
-exists in the searchable record (independently re-verified this run — §1), and none of the three
-Semtech-authored known-limitation artifacts that stand in for it raises any of these four
-features.** Any downstream claim of the shape "per LR2021 errata, X" is unsourced and must be
-marked UNKNOWN.
+**The load-bearing statement for downstream consumers: no LR20xx errata document exists in
+Semtech's public document library — the global catalogue's entire `Errata` category holds 5
+documents, all SX127x-era (2018–2020) or unrelated product lines (§1.5, independently re-verified
+this run) — and none of the three Semtech-authored known-limitation artifacts that stand in for one
+raises any of these four features.** Any downstream claim of the shape "per LR2021 errata, X" is
+unsourced and must be marked UNKNOWN. (Scope of the negative: Semtech's *public* catalogue; it says
+nothing about NDA/internal errata, and app-note *contents* remain only partly covered — §8.)
 
 ---
 
@@ -67,6 +70,8 @@ Every location searched this run. "Result" is what the search *returned*, not an
 | L5 | `gh api 'search/commits?q=repo:jgromes/RadioLib+errata'` | 4 commits, **none LR2021**: CC1101 `b9c214db95`, SX127x `498b638234`/`d91c6d0712`, SX126x `02b6024e65` |
 | L6 | `gh api 'search/commits?q=repo:jgromes/RadioLib+silicon'` | 4 commits, **none LR2021** (Silicon Labs CI/EFR32, SX1231 `ec9bc64ce0`) |
 | L7 | `gh api 'repos/jgromes/RadioLib/commits?path=src/modules/LR2021&per_page=40'` + `search/commits?q=…+LR2021+workaround` | full LR2021 commit log inspected for errata/silicon/workaround-labelled work; findings in §5.2–§5.3 |
+| **L8** | **`https://www.semtech.com/design-support/development-support-documents/`** — Semtech's **global** document library (not the per-product page) | **HTTP 200, 813372 B. All 2006 document entries parsed out of the embedded JSON.** Category census: `Datasheets` 1008, `Application Notes` 363, `User Guides` 224, `Software Releases (Firmware)` 116, `Reference Designs` 112, `Reliability Report` 54, `Product Briefs` 54, `Tools & Software` 33, `User Manual Hardware` 20, `Design Guides` 7, `(blank)` 7, **`Errata` 5**, `Technical articles/White papers` 3. **The `Errata` category contains exactly 5 documents and none is LR20xx** — see §1.5. |
+| **L9** | same library, filtered for `LR20xx\|LR2021\|LR2012\|LR2022` across Platform + Description | **36 entries**; every one is `Datasheets` / `Application Notes` / `Reference Designs` (datasheet v2.2 ×3, AN1200.101/.102/.103/.104/.106/.107/.110/.114/.116, EVK/reference-design files, prescan test reports). **Errata entries matching LR20xx: 0.** |
 
 ### 1.3 Already-searched by the sourcing card (re-cited, not re-run)
 
@@ -78,14 +83,48 @@ repos/issues/code → 0 / 2 / 91, none an errata document), F13–F17 (RadioLib 
 404s + in-tree scan), F18–F19 (LoRa Alliance, no LR2021 results). Independently re-verified this
 run at L1–L6; **consistent**.
 
-### 1.4 NOT searched / still open (see §8)
+### 1.5 DECISIVE NEGATIVE: Semtech's entire public document library contains no LR20xx errata document
 
-- `AN1200.103` (LR20xx CPFSK Modem Improvements), `AN1200.106` (LR20xx Xtal Temperature drift
-  Mitigation), `AN1200.107` (LR20xx Analog Improvements) — listed on the product page (L1) but
-  **absent from this corpus and not retrieved**. The two "Improvements" notes that *are* in the
-  corpus (AN1200.101/.102, S4–S5) contain 0 errata terms, but they are different documents.
-- Semtech support/KB articles (login-gated; `support/technical-support` → 404, F7).
-- Any Semtech NDA/PCN channel.
+This is the strongest evidence in this card, and it is *new* relative to `provenance.md` (which
+only ever checked the **per-product** page for the literal word "errata"). L8 pulled Semtech's
+**global** development-support document library, which embeds its full catalogue as JSON, and parsed
+all **2006** entries.
+
+**Complete `Errata`-category enumeration — 5 documents, all 5 listed:**
+
+| # | Platform | Description | Posted | LR20xx? |
+|---|---|---|---|---|
+| 1 | LoRa Core | SX1276-7-8 Errata Note | 2019-07-02 | no |
+| 2 | LoRa Core | SX1276-7-8 Errata Note | 2019-07-02 | no |
+| 3 | LoRa Core | Corecell Reference design V1, PCB#e539V01a Errata note | 2020-04-09 | no |
+| 4 | Crosspoints | Crosspoints Ballout Errata | 2019-05-25 | no |
+| 5 | LoRa Core | SX1272 Errata Note | 2018-12-22 | no |
+
+Every Semtech errata document in the entire library is **SX127x-era (2018–2020) or unrelated
+product lines (Crosspoints broadcast video)**. **Zero LR20xx/LR2021/LR2012/LR2022 errata documents
+exist in Semtech's public catalogue as of 2026-10-01.** The library's most recent errata entry is
+from **2020-04-09** — five years before the LR2021 datasheet revision at issue — and the whole
+LoRa-errata set predates the LR20xx family's existence.
+
+This upgrades the card's headline from "no errata document *located*" to the much stronger
+**"no LR20xx errata document *exists in Semtech's public document library*"**, while still not
+asserting anything about internal/NDA errata.
+
+**Also resolved here — the §1.4 open item:** all three previously-unretrieved LR20xx app notes are
+confirmed to be **Application Notes, not errata**: `AN1200.103` "LR20xx CPFSK Modem
+Improvements v1.0" (posted 2025-10-23), `AN1200.106` "LR20xx Xtal Temperature drift Mitigation
+v1.0" (2025-10-25), `AN1200.107` "LR20xx Analog Improvements Application Note" (2025-12-18) — L9.
+Their **contents remain unretrieved** and that gap stands (see §8): delivery is
+login/session-gated — direct `curl` of their `semtech.my.salesforce.com/sfc/p/…` URLs returns a
+**1359-byte Salesforce interstitial** rather than the PDF (the sibling ANs `AN1200.101/.102/.104`
+in this corpus were obtained via a *session-scoped* link, per `provenance.md:43`). The remaining
+LR20xx gap is therefore **content, not category** — and two of the three are named for CPFSK or
+analog/RF matters, not FIFO or TX-continuous.
+
+**Residual honest caveat:** absent a full-text search across the *contents* of all 363 Application
+Notes, the negative covers the **errata category completely** but the AN family only by **title and
+description**. No AN title or description in the library mentions an errata sheet, FIFO, underrun,
+or a silicon revision.
 
 ---
 
@@ -304,7 +343,7 @@ only `{tx_power, ramp_time}` — no continuous field. (Enumerated in detail by c
 `t_e00b32dc`; restated here only to fix the feature's DS location.)
 
 **Errata status: no §22 entry, no `KNOWN_LIMITATIONS.md` entry, no workaround function, no
-RadioLib issue → UNKNOWN, with the caveat of §1.4.**
+RadioLib issue, and no errata document in Semtech's public library (§1.5) → UNKNOWN.**
 
 ### 6.2 "auto-TX FIFO trigger" — no such construct exists in DS Rev 2.2
 
@@ -379,14 +418,15 @@ card (see §8).
 
 ## 8. Explicit UNKNOWN statement, and what would falsify it
 
-**No LR2021 errata document was obtainable.** Per the task's step 4, this is stated as
-*no document located*, **not** as "no errata exist":
+**No LR2021 errata document is obtainable — and, new this run, none exists in Semtech's public
+document library.** Per the task's step 4 this is stated as *no document located*, **not** as "no
+errata exist" in any absolute sense:
 
-- **No stand-alone errata sheet** — independently re-verified (L1–L3; also `provenance.md` §3.1
-  F1–F12, F18–F19). There is no Semtech "errata" category on the LR2021 product page, no
-  errata-named file anywhere in this corpus (`provenance.md` §3.2: `errata|erratum|known issue` =
-  0 matches across the datasheet + AN1200.101/.102/.104), and GitHub global repo/issue search for
-  "LR2021 errata" yields no errata document.
+- **No stand-alone errata sheet, and the category itself is empty for LR20xx** — L8/§1.5 is the
+  decisive result: Semtech's global document library exposes 2006 documents and exactly **5** of
+  category `Errata`, every one SX127x-era (2018–2020) or broadcast-video; **0 match LR20xx**;
+  newest errata entry 2020-04-09. Independently corroborated by L1–L3 and by `provenance.md` §3.1
+  F1–F12/F18–F19, all of which scanned only the per-product page / site search.
 - **One in-datasheet limitations chapter does exist** (§22, E1) and **was read end-to-end** — it
   lists 4 limitations, **none** of the four target features. This is the "document found, lists no
   relevant errata" case, and it is reported as such.
@@ -396,14 +436,24 @@ card (see §8).
 - **RadioLib** has no LR2021 erratum claim anywhere (in-tree snapshot, commit log, or tracker);
   its only FIFO-relevant item is a host-driver wire-format bug (#1848/#1849).
 
-**Would falsify / is still open (candidate follow-up work, not attempted here):**
+**What is still open (the negative above does NOT close these):**
 
-1. `AN1200.103`, `AN1200.106`, `AN1200.107` (on the product page at L1, absent from the corpus) —
-   the "Improvements"-family app notes are where silicon changes are described; AN1200.101/.102 are
-   0-errata but are different documents.
-2. Semtech PRAM release notes / PRAM version history (DS §22.3 gives the version *read* path but no
-   changelog).
-3. Semtech support/KB (login-gated; `support/technical-support` → 404).
+1. **App-note contents, not categories.** `AN1200.103` (LR20xx CPFSK Modem Improvements),
+   `AN1200.106` (LR20xx Xtal Temperature drift Mitigation), `AN1200.107` (LR20xx Analog
+   Improvements) are confirmed `Application Notes` (L9) but their **PDF contents are unretrieved** —
+   delivery is login/session-gated (direct `curl` → 1359-byte Salesforce interstitial). Note
+   AN1200.101/.102/.104 *are* in the corpus and contain **0** errata terms (S4–S6). A silicon
+   change would most plausibly be described in an "…Improvements" note, so this is the highest-value
+   remaining gap.
+2. **PRAM release notes / PRAM version history** (DS §22.3 gives the version *read* path but no
+   changelog) — see §7.
+3. **Semtech support KB / NDA channels** (login-gated; `support/technical-support` → 404, F7).
+4. **No full-text search was run across the 363 Application Notes.** The `Errata`-category negative
+   is complete; the AN-family negative rests on title + description only (§1.5 caveat).
+
+**Would falsify the headline:** any `Errata`-category document added for LR20xx after 2026-10-01,
+or errata content inside AN1200.103/.106/.107, or a PRAM changelog naming a TX-FIFO/TX-continuous
+fix. None was found.
 
 ---
 
@@ -412,9 +462,9 @@ card (see §8).
 | Acceptance criterion | Where satisfied |
 |---|---|
 | Every erratum claim has a citation | §2 (DS §22, page/section + verbatim quotes), §3 (entry numbers), §4 (`.h`/`.c` file:line + README line), §5.2–§5.3 (issue/PR numbers, merge dates, commit SHAs, quoted bodies/diffs) |
-| Absence of evidence reported as UNKNOWN, never "no errata" | §0 and §8 — worded "no document located" / "UNKNOWN"; §2's negative result is separately worded "document found; lists no relevant errata" |
-| Search locations are listed | §1.1 (S1–S11, in-corpus, with commands), §1.2 (L1–L7, live re-verification), §1.3 (inherited F1–F19), §1.4 (still-open) |
-| Distinguish "no document" from "document with no relevant errata" | §1.4 + §8 vs §2/§3/§4 — the three documents *found* are enumerated in full and each entry's relevance is scored |
+| Absence of evidence reported as UNKNOWN, never "no errata" | §0 and §8 — worded "no document located" / "UNKNOWN"; §2's negative result is separately worded "document found; lists no relevant errata". §1.5 states the stronger, *evidenced* claim ("no LR20xx errata document exists in Semtech's public library") and keeps its scope explicit (public catalogue only; not NDA) |
+| Search locations are listed | §1.1 (S1–S11, in-corpus, with commands), §1.2 (L1–L9, live re-verification incl. the global document library), §1.3 (inherited F1–F19), §1.5 (what the global-library negative resolves), §8 (what stays open) |
+| Distinguish "no document" from "document with no relevant errata" | §1.5 + §8 (category empty) vs §2/§3/§4 — the three documents *found* are enumerated in full and each entry's relevance is scored |
 | Driver source / commit log checked for errata-labelled workarounds | §5.1 (in-tree grep), §5.2–§5.3 (commit log + `search/commits` for `errata`/`silicon`/`workaround`); the DCDC port is the only LR2021 workaround machinery and it is RX-path |
 | Revision scope + workaround recorded per hit | §4 (only revision statement in existence: "engineering samples, date code `2513`, version `0x0110`"; workaround per function), §7 (PRAM, `GetVersion`) |
 
@@ -442,12 +492,28 @@ grep -rn -i -E 'AutoRxTx|auto.?Tx|FifoUnderflow|underflow|tx_low_threshold|tx_hi
 
 # live re-verification
 curl -sL https://www.semtech.com/products/wireless-rf/lora-plus/lr2021 | grep -oiE 'errata|erratum|known issue' | wc -l   # 0
+curl -sL -o semtech-docs.html 'https://www.semtech.com/design-support/development-support-documents/'
+python3 - <<'PY'   # parse the embedded catalogue JSON -> category census + errata enumeration
+import re, json, collections
+t = open('semtech-docs.html', encoding='utf-8', errors='replace').read()
+recs = [json.loads(e) for e in re.findall(r'\{"document_entry_id":.*?\}', t)]
+print(len(recs))                                              # 2006
+print(collections.Counter(r.get('Category','?') for r in recs)['Errata'])   # 5
+print([r['Description'] for r in recs if r.get('Category') == 'Errata'])
+print([r['Description'] for r in recs if re.search(r'LR20xx|LR2021|LR2012|LR2022',
+      str(r.get('SemtechWebsitePlatform','')) + str(r.get('Description',''))) and r.get('Category') == 'Errata'])  # []
+PY
 gh api 'search/repositories?q=LR2021+errata' --jq .total_count                                                          # 0
 gh api 'search/issues?q=LR2021+errata' --jq .total_count                                                                # 2 (neither an errata doc)
 gh api 'search/issues?q=repo:jgromes/RadioLib+errata' --jq .total_count                                                 # 13 (none LR2021)
 gh api 'search/commits?q=repo:jgromes/RadioLib+errata' -H 'Accept: application/vnd.github.cloak-preview' --jq .total_count  # 4 (none LR2021)
 gh api repos/jgromes/RadioLib/issues/1848 ; gh api repos/jgromes/RadioLib/pulls/1849/files
 ```
+
+**Global-library negative (L8/L9) — the load-bearing number:** of 2006 catalogue entries, category
+`Errata` = **5**; of those 5, LR20xx matches = **0**; of all 36 entries whose platform/description
+mentions LR20xx/LR2021/LR2012/LR2022, category `Errata` = **0** (all Datasheets / Application Notes
+/ Reference Designs).
 
 Artifact hashes (this corpus, for citation stability): §22 extract `445b7e22…465a` ·
 `KNOWN_LIMITATIONS.md` `464c2ec1…7d44e` · driver README `50cd3407…b38c` · `workarounds.c`
