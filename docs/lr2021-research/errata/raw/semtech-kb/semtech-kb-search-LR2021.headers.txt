@@ -1,0 +1,14 @@
+HTTP/1.1 200 
+Set-Cookie: SDPSESSIONID=EA5AC6183856BE7FC7ACB4FFF486FFEE; Path=/; Secure; HttpOnly; SameSite=None
+Pragma: no-cache
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+vary: accept-encoding
+Content-Type: text/html;charset=UTF-8
+Date: Thu, 01 Oct 2026 03:46:37 GMT
+Cache-Control: no-cache, no-store
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-ancestors 'self'
+Connection: close
+Set-Cookie: TS015cc781=0108c0e1d13663681d63d088b827265efdeb8dfab59bcc18a03f98e5a99c38425d538de8a488b1f686ef5010a0297a547923eaaa19fef8f6da6d81f7eb2115e8b6f7387cb0; Path=/; Domain=.support.semtech.com
+
