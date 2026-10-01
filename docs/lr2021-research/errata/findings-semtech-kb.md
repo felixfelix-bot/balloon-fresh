@@ -230,3 +230,80 @@ The independent verifier card t_b2ed116b re-runs the same commands against the s
 All listed `location:` paths exist on disk. `retrieved_utc` values are real UTC timestamps taken
 from the file mtimes (`date -d @$(stat -c %Y <file>) -u +%Y-%m-%dT%H:%M:%SZ`), host clock
 `+0200` at capture; the wall-clock UTC of the capture run was `2026-10-01T03:54Z`.
+
+---
+
+## VERIFICATION (independent)
+
+**Verifier card:** `t_b2ed116b` (assignee `worker-reviewer-glm`, run 246).
+**Verified artifact:** `docs/lr2021-research/errata/findings-semtech-kb.md` — 14550 B, sha256 `bafa1f6675e5626e8411fa644606954d3e986e4351b36126fc8b931e87ff53f6`.
+**Verified against:** branch `pr/semtech-kb-findings` @ `452720070117b3cfd9ea4e75f368051efb35a6f7` (equals `origin/pr/semtech-kb-findings`).
+**Method:** every location was re-measured from disk with `stat -c %s` / `sha256sum`; blocks were parsed by a standalone script (`/tmp/verify_semtech_kb.py`) reading the document text directly. The author's own verification section was not relied upon.
+
+### Check results
+
+| # | check | verdict | evidence |
+|---|---|---|---|
+| 1 | file exists; required headings present | **PASS** | file present (14550 B); `## QUERIES RUN`, `## ARTIFACT BLOCKS`, `## FAILED / NOT FOUND (semtech-kb)` all found |
+| 2 | every artifact location exists; bytes + 64-hex sha256 match disk | **PASS** | 11/11 blocks; dead_paths=0; byte_mismatch=0; sha_mismatch=0 |
+| 3 | nine required keys in required order; `retrieved_utc` = `YYYY-MM-DDTHH:MM:SSZ` | **PASS** | 11/11 blocks carry exactly `location,url,http_status,revision_or_publication_date,retrieved_utc,bytes,sha256,notes` under a `### <slug>` heading; 11/11 timestamps match the UTC regex |
+| 4 | `notes` carry only article id / title as printed (no interpretation) | **PASS** | 0 flags over notes; all 11 notes are printed titles / `@file … @brief …` header lines / issue titles |
+| 5 | ≥5 distinct queries across both streams; every MISS has exact status + attempt count | **PASS** | 18 distinct query rows (Q1–Q18); streams {`portal`,`web`}; all 13 MISS rows resolve to an exact status (`HTTP 200/202/404` or `curl rc=56/6`) plus `(1)` in the FAILED section |
+| 6 | explicit 'NOT FOUND after N attempts' statement present and N matches the logged attempt count | **PASS** | KB section states NOT-FOUND-after-5-attempts; the KB block logs 5 attempts, each marked `(1)` → N=5 |
+
+### Exact commands run for the hash re-computation
+
+```
+cd docs/lr2021-research/errata/raw/semtech-kb
+stat -c %s semtech-usp-doc-KNOWN_LIMITATIONS.md        # 3440
+stat -c %s semtech-usp-lr20xx_driver-README.md          # 11504
+stat -c %s semtech-usp-lr20xx_driver-CHANGELOG.md       # 1960
+stat -c %s semtech-usp-lr20xx_workarounds.h             # 21680
+stat -c %s semtech-usp-lr20xx_workarounds.c             # 30073
+stat -c %s semtech-design-support-documents.html        # 813372
+stat -c %s semtech-lr2021-product.html                  # 226470
+stat -c %s semtech-quality.html                         # 111430
+stat -c %s semtech-design-support-faq.html              # 122863
+stat -c %s web-github-search-lr2021-errata.json         # 14920
+sha256sum semtech-usp-doc-KNOWN_LIMITATIONS.md \
+          semtech-usp-lr20xx_driver-README.md \
+          semtech-usp-lr20xx_driver-CHANGELOG.md \
+          semtech-usp-lr20xx_workarounds.h \
+          semtech-usp-lr20xx_workarounds.c \
+          semtech-design-support-documents.html \
+          semtech-lr2021-product.html \
+          semtech-quality.html \
+          semtech-design-support-faq.html \
+          web-github-search-lr2021-errata.json
+# scratch block (location: "SCRATCH: /tmp/…"):
+stat -c %s /tmp/lr2021-scratch/semtech-kb/web-github-hardware-doc-lr2021.md   # 60240
+sha256sum   /tmp/lr2021-scratch/semtech-kb/web-github-hardware-doc-lr2021.md
+# retrieved_utc cross-check (doc value == file mtime in UTC):
+date -d @$(stat -c %Y <file>) -u +%Y-%m-%dT%H:%M:%SZ
+# format/content parser:
+python3 /tmp/verify_semtech_kb.py
+```
+
+Re-measured digests (all identical to the document):
+
+```
+464c2ec1e9cb8ee557140594e7cc8c6bd34886177ebba68ccf8f57ad4d67d44e  semtech-usp-doc-KNOWN_LIMITATIONS.md
+50cd34077db00dd41b1c04ac25bbe71457abcfcb198a97c5e706fd44a9a7b38c  semtech-usp-lr20xx_driver-README.md
+85fdcd2fdc26fe1c1c7008cd36e8296d7c792518f78c7c0d2583da3b1dfcecf6  semtech-usp-lr20xx_driver-CHANGELOG.md
+1a3b6715c3bf2ba8301e140a281a15c01d68f7c72e477b19bae4679d8c31150e  semtech-usp-lr20xx_workarounds.h
+b219a288bf9435ec0df731835003030559b52e00438eafe06193a99632ee6976  semtech-usp-lr20xx_workarounds.c
+bf95846a8dd7677a2c39579d46e9071f6dee09d7630349b7b488b7797b82cfbd  semtech-design-support-documents.html
+43d55f4a21ef360f0f877453a919dc11b42617f66f44ffc7efd49d0607792b56  semtech-lr2021-product.html
+152d50b40df67cdec83f88ace1887a0f744ba7a18a44b60e0012e45581bd9a2f  semtech-quality.html
+169aa4bd5ea328d7090fc8c3dfdb4842a744f3f3b469f32b7bf4c7d7c3a4c9f3  semtech-design-support-faq.html
+14862800fcd71abcefcb4ab5d90dade3343db323980b4fd6aa127e5aa66a5008  web-github-search-lr2021-errata.json
+72fa21b2c27866a918e71d92365b6271c9ac5bc9e169cbd6d133d95f70f1e848  /tmp/lr2021-scratch/semtech-kb/web-github-hardware-doc-lr2021.md
+```
+
+### Corrections
+
+**None.** All 11 byte counts and all 11 sha256 values matched the files on disk; all 11 `location:` paths exist; all 11 `retrieved_utc` values are valid `YYYY-MM-DDTHH:MM:SSZ` and equal the corresponding file mtime in UTC. No before/after edits were required, and no block was modified.
+
+### Verdict
+
+`VERDICT: PASS` — 6/6 checks PASS, 0 deviations, 0 corrections. The document is left byte-identical to `45272007` apart from this appended verification section; every listed sha256 verifies on disk.
