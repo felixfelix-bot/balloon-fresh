@@ -1,0 +1,20 @@
+FILE                                           BYTES  D-CODES   DRAWS  FLASHES     ARCS
+F_Cu.gtl                                       22641       26     474      167        0
+B_Cu.gbl                                        5247        9      38       77        0
+In1_Cu.g1                                      60657        9    2381       77        0
+In2_Cu.g2                                      69046        9    2732       77        0
+F_Mask.gts                                      6049       22       0      116        0
+B_Mask.gbs                                      1638        4       0       14        0
+F_Paste.gtp                                     5302       17       0       98        0
+F_Silkscreen.gto                               37534        3    1564        0        2
+B_Silkscreen.gbo                                 472        0       0        0        0
+Edge_Cuts.gm1                                    576        1       5        0        0
+
+drill holes total: 77
+drill report:
+    T1  0.200mm  0.0079"  (3 holes)
+    T2  0.200mm  0.0079"  (12 holes)
+    T3  0.300mm  0.0118"  (48 holes)
+    T4  1.000mm  0.0394"  (14 holes)
+    Total plated holes count 77
+    Total unplated holes count 0
