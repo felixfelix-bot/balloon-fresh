@@ -42,10 +42,11 @@ v8h is the current fab-ready flight board: 55.15 x 45.15 mm, 4 copper layers, DR
 under `jlcpcb-s1-frozen.kicad_dru`, ordered through JLCPCB (bare-PCB ladder confirmed
 2026-10-05). It carries a single sub-GHz radio.
 
-v9 is the first board that must fly **three RF systems plus a Wi-Fi/BLE host on one
-55 x 45 mm board**: a long-range sub-GHz telemetry link, a 2.4 GHz ranging/link radio,
-GNSS L1 for position and time, and the ESP32-S3's own Wi-Fi/BT for configuration when the
-radios are idle. They are not near each other in frequency, and the GNSS receiver is
+v9 is the first board that must fly **four RF systems plus a Wi-Fi/BLE host on one
+55 x 45 mm board**: a long-range sub-GHz telemetry link, a 2.4 GHz link radio, a
+**dedicated 2.4 GHz ranging radio (SX1280, see D2b)**, GNSS L1 for position and time, and
+the ESP32-S3's own Wi-Fi/BT for configuration when the radios are idle.
+They are not near each other in frequency, and the GNSS receiver is
 60–75 dB weaker than everything else. Those two facts drive every decision below, and they
 are why the mechanical/electrical separation plan has to be a *decision*, not a layout
 habit that each schematic re-litigates.
@@ -155,6 +156,11 @@ recorded because a future two-radio board would have to re-plan that column, not
 | **ESP32-S3 with 2 MB PSRAM (`-1U-N8R2`)** | 2 MB is not a flight log, and it buys nothing else. Its one advantage — with *quad* PSRAM, IO35/IO36/IO37 stay usable — matters **only** for D2-alt, and even there those pins would have to be re-planned rather than trusted. |
 
 ### D2 — RF front end: **one** dual-band module, `LoRa2021F33-2G4`
+
+> **Read with D2b.** The operator retained an SX1280 alongside this module on 2026-10-05, so
+> D2's "one module" is now **the module *plus* a ranging radio**. The bullets below that
+> depend on the SX1280's absence are marked VOID inline; the rest of D2 — the module's
+> selection, its numbers and its firmware rules — stands unchanged.
 
 One module replaces the memo's two radios. It is a castellated 39 x 21 mm, 18-pin,
 ~2.0 mm-pitch module, chip = SEMTECH LR2021, with **independent 50 Ω ports**: pin 9 `ANT`
@@ -304,7 +310,7 @@ for v9 waits on O0.
 Four connectors: **GNSS L1**, **sub-GHz `ANT`**, **2.4 GHz `ANT-2G4`** (F33), **SX1280**.
 
 Rationale: on a 55 x 45 mm board the decisive separation is **off-board in 3D**. On a
-balloon the three antennas get 10+ cm of physical spacing and orthogonal orientations; a
+balloon the four antennas get 10+ cm of physical spacing and orthogonal orientations; a
 chip antenna forces the entire fight onto the PCB, where it cannot be won. This is
 precisely why the MCU is the `-1U` (external-antenna) variant — the Wi-Fi radiator is a
 pigtail too, so it can be routed to the opposite end of the payload (memo §2(a)).
@@ -534,12 +540,19 @@ test 5 is host-side and is the first thing to write.
 
 ### Positive
 
-- One controllable RF part (plus GNSS) instead of two: one power-up sequence, one
-  firmware driver, one band switch, one arbiter policy, one thermal source.
-- The board's hardest coupling (module ↔ module at 2.4 GHz) is designed out rather than
-  mitigated.
-- U.FL on all three feeds converts an unsolvable 55 x 45 mm problem into a solvable 3D one.
-- The stock-0 blocker on the sub-GHz chip disappears (the module is a consign item).
+- **Two controllable RF parts (plus GNSS) instead of three.** *(Revised 2026-10-05 by D2b:
+  was "one RF part".)* The F33 collapses the sub-GHz radio and the 2.4 GHz link into one
+  package, so what remains outside it is the SX1280 and the GNSS receiver. That still buys a
+  shorter power-up sequence, one band switch for the link, and one thermal source for the
+  30 dBm PA — but it is **no longer** "one firmware driver" or "one arbiter policy": the
+  arbiter now schedules three 2.4 GHz contenders (F33 port, SX1280, S3 Wi-Fi/BT).
+- ~~The board's hardest coupling (module ↔ module at 2.4 GHz) is designed out rather than
+  mitigated.~~ **False as written — voided 2026-10-05 by D2b.** The module ↔ module 2.4 GHz
+  coupling is back on the board and must be *mitigated*, not assumed away. See D2b(c).
+- The stock-0 blocker on the sub-GHz side does **not** improve: the F33 itself is JLC stock 0
+  and must be consigned. *(The only gain is that the SX1280 does not add a further consign
+  line — `SX1280IMLTRT` is in stock and SMT-placeable, ~$2.85, per the 2026-10-05 probe.)*
+- U.FL on all four feeds converts an unsolvable 55 x 45 mm problem into a solvable 3D one.
 - The v8h rule set and `.kicad_dru` carry over, so v9's DRC verdict is comparable to v8h's.
 
 ### Costs / risks accepted
