@@ -629,8 +629,19 @@ The requirement is not new. `docs/PRESSURE-TEST-PLAN.md` §2.1 already states it
 this mission's ceiling is far above that, so a BMP part reads nothing where it
 matters most.
 
-**Decision.** v9 fits **`MS5611-01BA03`** (TE Connectivity) on the I2C bus
-(GPIO20/21). JLCPCB stock verified 2026-10-05: **1671 units, $5.03**, extended part.
+**Decision.** v9 fits an `MS56xx` on the I2C bus (GPIO20/21). Two options, both
+verified in stock 2026-10-05, both 10–1200 mbar, both extended parts:
+
+| Part | Stock | Unit | Note |
+|---|---|---|---|
+| **`MS5607-02BA03`** | **1698** | **$2.43** | **cost pick** — same range, same family |
+| `MS5611-01BA03` | 1671 | $5.03 | the part already named in project docs + v8h stubs |
+
+They share the MS56xx family register/PROM interface (I2C 0x76), which is what the
+existing auto-detecting firmware reads, so either drops into the same driver and
+land pattern. **`MS5607-02BA03` is the recommendation** — the original ask was the
+cheapest stocked sensor that makes sense, and the MS5611's extra accuracy class is
+not needed to log balloon altitude.
 
 **Retraction.** An earlier recommendation in this session proposed BMP384 (979 in
 stock, $1.78) or BMP581 (2654, $1.64) as "a generation upgrade over the BMP280".
