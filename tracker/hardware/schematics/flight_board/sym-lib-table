@@ -1,0 +1,12 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "Connector")(type "KiCad")(uri "/usr/share/kicad/symbols/Connector.kicad_sym")(options "")(descr ""))
+	(lib (name "Connector_Generic")(type "KiCad")(uri "/usr/share/kicad/symbols/Connector_Generic.kicad_sym")(options "")(descr ""))
+	(lib (name "Device")(type "KiCad")(uri "/usr/share/kicad/symbols/Device.kicad_sym")(options "")(descr ""))
+	(lib (name "RF_GPS")(type "KiCad")(uri "/usr/share/kicad/symbols/RF_GPS.kicad_sym")(options "")(descr ""))
+	(lib (name "RF_Module")(type "KiCad")(uri "/usr/share/kicad/symbols/RF_Module.kicad_sym")(options "")(descr ""))
+	(lib (name "Regulator_Linear")(type "KiCad")(uri "/usr/share/kicad/symbols/Regulator_Linear.kicad_sym")(options "")(descr ""))
+	(lib (name "Sensor")(type "KiCad")(uri "/usr/share/kicad/symbols/Sensor.kicad_sym")(options "")(descr ""))
+	(lib (name "balloon_flight")(type "KiCad")(uri "${KIPRJMOD}/balloon_flight.kicad_sym")(options "")(descr ""))
+	(lib (name "power")(type "KiCad")(uri "/usr/share/kicad/symbols/power.kicad_sym")(options "")(descr ""))
+)
