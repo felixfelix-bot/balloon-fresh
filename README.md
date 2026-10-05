@@ -244,6 +244,10 @@ balloon-fresh/
 
 | Document | Description |
 |----------|-------------|
+| **[Harmonized Cross-Board Bench Package](docs/HARMONIZED-BENCH-PACKAGE.md)** | Entry point for cross-board (E80 / ESP32 / RP2040) bench work — real repo URLs and branches, build/flash per family, running a session, handing data back |
+| [Harmonized Results](docs/HARMONIZED-RESULTS.md) | Results summary by board-pair × band × LEN × BR, with raw CSV links; 868 MHz baseline vs 2.4 GHz semantics |
+| [Harmonized Run Report Template](docs/HARMONIZED-RUN-REPORT-TEMPLATE.md) | Fill-in template for one harmonized run (identity, provenance, matrix, acceptance, results, anomalies) |
+| [Bench Console Spec](docs/BENCH-CONSOLE-SPEC.md) | Normative cross-board console protocol (`ID?/SET/N/PKT/STAT?`, framing, bands) |
 | **[E80 Range Test Guide](firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md)** | Complete self-contained operator guide — hardware setup, flashing, TX/RX, merge, GPS, troubleshooting |
 | [E80 Flashing Guide](firmware/e80-stm32-bench/FLASHING.md) | Detailed flashing procedures (SWD, stm32flash) |
 | [Timing Tolerance Analysis](firmware/e80-stm32-bench/docs/timing-tolerance-analysis.md) | T0 sync mechanism analysis |

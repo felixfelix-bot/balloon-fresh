@@ -366,3 +366,38 @@ Full details in `REMOTES.md`. Key facts:
 - **Push commands:** `git push orangesync --all` (esp32-tollgate), `git push ngit-origin develop` (NerdQAxePlus)
 - **Backup bundles:** `/home/c03rad0r/mining-work-backup/`
 - Board A nsec: `9af47906b45aca5e238390f3d03c8274e154198e81aa2095065627d1e61ca968`
+
+---
+
+## Cross-Board Harmonized Bench (HARM chain)
+
+Before touching any E80 / ESP32 / RP2040 board for a bench measurement, read
+[`docs/HARMONIZED-BENCH-PACKAGE.md`](docs/HARMONIZED-BENCH-PACKAGE.md). It is the
+single entry point and it is deliberately self-contained.
+
+- **Repos and branches:** the plan names `balloon-e80bench` and
+  `balloon-range-tests`, but **neither is a GitHub repository** — the former is a
+  local directory name for a clone of `balloon-fresh`, the latter is the
+  `range-tests` branch of `balloon-fresh`. The bench console and the HARM chain
+  live on `balloon-fresh` branch `main` (not `master`; the two have diverged).
+  The ESP32 family is `esp32-balloon-integration-fresh` (private, default branch
+  `harm/t3-radiolib-fork`), whose RadioLib LR2021 driver is a **git submodule** —
+  run `git submodule update --init --recursive` before building there.
+- **Run the session:** `python3 tools/balloon_sweep.py --tx <e80|esp32|rp2040>
+  --rx <e80|esp32|rp2040> --session <yymmddHHMM>`; add `--dry-run` for a
+  pre-hardware spec check, `--only IDX...` to re-run a subset.
+- **Never work around a refusal.** `REFUSED (pre-hardware, spec enforcement): …`
+  means the plan violates `BENCH-CONSOLE-SPEC.md` (§6 LEN cap, §7 GAP for
+  LEN > 256, §9 frequency pair). Fix the plan.
+- **Never mix bands.** 868 MHz and 2.4 GHz rows go in separate tables and are
+  never compared; 2.4 GHz cross-board work is legal only on
+  `ESP32BENCH ↔ RP2040BENCH`. See `docs/HARMONIZED-RESULTS.md`.
+- **Reporting:** write the run up from
+  [`docs/HARMONIZED-RUN-REPORT-TEMPLATE.md`](docs/HARMONIZED-RUN-REPORT-TEMPLATE.md)
+  into `docs/runs/<run-id>.md`, then add the rows to
+  [`docs/HARMONIZED-RESULTS.md`](docs/HARMONIZED-RESULTS.md). Commit the report
+  and the CSVs in one commit.
+- **No data is better than invented data.** Unrun configs are written `not run`.
+  The E80↔E80 sweeps from 2026-08-21/22 are the *regression baseline* only; the
+  cross-board pairs (E80↔ESP32, E80↔RP2040, ESP32↔RP2040) have no measurements
+  yet.
