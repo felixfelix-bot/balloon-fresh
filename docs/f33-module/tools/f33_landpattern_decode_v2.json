@@ -1,0 +1,1111 @@
+{
+  "vendor": {
+    "file": "LORA2021F33-2G4 footprint_pads.pcb",
+    "bytes": 90821,
+    "format": "Altium binary PCB document (OLE-ish; '(Romansim Stroke Font)', layer 'Mechanical 1'/'Silkscreen Top', string 'LORA2021F33-2G4')",
+    "unit_per_mm": 1500000.0,
+    "pads": [
+      {
+        "pad": "1",
+        "tag": "0x08435AD8",
+        "off": 7290,
+        "x_mm": -11.7867,
+        "y_mm": -10.5,
+        "x2_mm": -11.7867,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          -17680049,
+          -15749998,
+          -17680049,
+          -15749998
+        ]
+      },
+      {
+        "pad": "2",
+        "tag": "0x08435AD8",
+        "off": 7326,
+        "x_mm": -7.8578,
+        "y_mm": -10.5,
+        "x2_mm": -7.8578,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          -11786699,
+          -15749998,
+          -11786699,
+          -15749998
+        ]
+      },
+      {
+        "pad": "3",
+        "tag": "0x08435AD8",
+        "off": 7362,
+        "x_mm": -3.9289,
+        "y_mm": -10.5,
+        "x2_mm": -3.9289,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          -5893349,
+          -15749998,
+          -5893349,
+          -15749998
+        ]
+      },
+      {
+        "pad": "4",
+        "tag": "0x08435AD8",
+        "off": 7398,
+        "x_mm": 0.0,
+        "y_mm": -10.5,
+        "x2_mm": 0.0,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          0,
+          -15749998,
+          0,
+          -15749998
+        ]
+      },
+      {
+        "pad": "5",
+        "tag": "0x08435AD8",
+        "off": 7434,
+        "x_mm": 3.9289,
+        "y_mm": -10.5,
+        "x2_mm": 3.9289,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          5893349,
+          -15749998,
+          5893349,
+          -15749998
+        ]
+      },
+      {
+        "pad": "6",
+        "tag": "0x08435AD8",
+        "off": 7470,
+        "x_mm": 7.8578,
+        "y_mm": -10.5,
+        "x2_mm": 7.8578,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          11786699,
+          -15749998,
+          11786699,
+          -15749998
+        ]
+      },
+      {
+        "pad": "7",
+        "tag": "0x08435AD8",
+        "off": 7506,
+        "x_mm": 11.7867,
+        "y_mm": -10.5,
+        "x2_mm": 11.7867,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          17680049,
+          -15749998,
+          17680049,
+          -15749998
+        ]
+      },
+      {
+        "pad": "8",
+        "tag": "0x08435AD8",
+        "off": 7542,
+        "x_mm": 15.7156,
+        "y_mm": -10.5,
+        "x2_mm": 15.7156,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          23573399,
+          -15749998,
+          23573399,
+          -15749998
+        ]
+      },
+      {
+        "pad": "9",
+        "tag": "0x08435AD8",
+        "off": 7578,
+        "x_mm": 15.7156,
+        "y_mm": 10.5,
+        "x2_mm": 15.7156,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          23573369,
+          15750006,
+          23573369,
+          15750006
+        ]
+      },
+      {
+        "pad": "10",
+        "tag": "0x08435AD8",
+        "off": 7614,
+        "x_mm": 11.7867,
+        "y_mm": 10.5,
+        "x2_mm": 11.7867,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          17680023,
+          15750006,
+          17680023,
+          15750006
+        ]
+      },
+      {
+        "pad": "11",
+        "tag": "0x08435AD8",
+        "off": 7650,
+        "x_mm": 7.8578,
+        "y_mm": 10.5,
+        "x2_mm": 7.8578,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          11786676,
+          15750006,
+          11786676,
+          15750006
+        ]
+      },
+      {
+        "pad": "12",
+        "tag": "0x08435AD8",
+        "off": 7686,
+        "x_mm": 3.9289,
+        "y_mm": 10.5,
+        "x2_mm": 3.9289,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          5893330,
+          15750006,
+          5893330,
+          15750006
+        ]
+      },
+      {
+        "pad": "13",
+        "tag": "0x08435AD8",
+        "off": 7722,
+        "x_mm": -0.0,
+        "y_mm": 10.5,
+        "x2_mm": -0.0,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          -15,
+          15750006,
+          -15,
+          15750006
+        ]
+      },
+      {
+        "pad": "14",
+        "tag": "0x08435AD8",
+        "off": 7758,
+        "x_mm": -3.9289,
+        "y_mm": 10.5,
+        "x2_mm": -3.9289,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          -5893361,
+          15750006,
+          -5893361,
+          15750006
+        ]
+      },
+      {
+        "pad": "15",
+        "tag": "0x08435AD8",
+        "off": 7794,
+        "x_mm": -7.8578,
+        "y_mm": 10.5,
+        "x2_mm": -7.8578,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          -11786707,
+          15750006,
+          -11786707,
+          15750006
+        ]
+      },
+      {
+        "pad": "16",
+        "tag": "0x08435AD8",
+        "off": 7830,
+        "x_mm": -11.7867,
+        "y_mm": 10.5,
+        "x2_mm": -11.7867,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          -17680053,
+          15750006,
+          -17680053,
+          15750006
+        ]
+      },
+      {
+        "pad": "17",
+        "tag": "0x08435AD8",
+        "off": 7866,
+        "x_mm": -15.7156,
+        "y_mm": 10.5,
+        "x2_mm": -15.7156,
+        "y2_mm": 10.5,
+        "coord_raw": [
+          -23573399,
+          15750006,
+          -23573399,
+          15750006
+        ]
+      },
+      {
+        "pad": "18",
+        "tag": "0x08435AD8",
+        "off": 7902,
+        "x_mm": -15.7156,
+        "y_mm": -10.5,
+        "x2_mm": -15.7156,
+        "y2_mm": -10.5,
+        "coord_raw": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "inferred": "ring closure (bottom row has 8 stored pads, the ring needs 9)"
+      }
+    ],
+    "warnings": [
+      "pad 18's coordinate field is all-zero in the file; ring closure places it at (-15.7156, -10.5000) -- the only unoccupied slot"
+    ],
+    "pad_block_first_tag_offset": 7290,
+    "pad_record_bytes": 36,
+    "record_layout": "int32 tag | 16B pad-name field | x1,y1,x2,y2 int32 (pad centre)",
+    "outline_corner_hits": [],
+    "body_outline_mm": [
+      39.0,
+      21.0
+    ],
+    "body_outline_source": "datasheet p.8 callouts 39.00+-0.5 / 21.00+-0.5 + repo package metadata; NOT encoded in the vendor .pcb (exact-value scan for +-19.5/+-10.5 mm -> 0 hits)",
+    "pads_with_coords": 17,
+    "rows": {
+      "-10.5": [
+        {
+          "pad": "1",
+          "tag": "0x08435AD8",
+          "off": 7290,
+          "x_mm": -11.7867,
+          "y_mm": -10.5,
+          "x2_mm": -11.7867,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            -17680049,
+            -15749998,
+            -17680049,
+            -15749998
+          ]
+        },
+        {
+          "pad": "2",
+          "tag": "0x08435AD8",
+          "off": 7326,
+          "x_mm": -7.8578,
+          "y_mm": -10.5,
+          "x2_mm": -7.8578,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            -11786699,
+            -15749998,
+            -11786699,
+            -15749998
+          ]
+        },
+        {
+          "pad": "3",
+          "tag": "0x08435AD8",
+          "off": 7362,
+          "x_mm": -3.9289,
+          "y_mm": -10.5,
+          "x2_mm": -3.9289,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            -5893349,
+            -15749998,
+            -5893349,
+            -15749998
+          ]
+        },
+        {
+          "pad": "4",
+          "tag": "0x08435AD8",
+          "off": 7398,
+          "x_mm": 0.0,
+          "y_mm": -10.5,
+          "x2_mm": 0.0,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            0,
+            -15749998,
+            0,
+            -15749998
+          ]
+        },
+        {
+          "pad": "5",
+          "tag": "0x08435AD8",
+          "off": 7434,
+          "x_mm": 3.9289,
+          "y_mm": -10.5,
+          "x2_mm": 3.9289,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            5893349,
+            -15749998,
+            5893349,
+            -15749998
+          ]
+        },
+        {
+          "pad": "6",
+          "tag": "0x08435AD8",
+          "off": 7470,
+          "x_mm": 7.8578,
+          "y_mm": -10.5,
+          "x2_mm": 7.8578,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            11786699,
+            -15749998,
+            11786699,
+            -15749998
+          ]
+        },
+        {
+          "pad": "7",
+          "tag": "0x08435AD8",
+          "off": 7506,
+          "x_mm": 11.7867,
+          "y_mm": -10.5,
+          "x2_mm": 11.7867,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            17680049,
+            -15749998,
+            17680049,
+            -15749998
+          ]
+        },
+        {
+          "pad": "8",
+          "tag": "0x08435AD8",
+          "off": 7542,
+          "x_mm": 15.7156,
+          "y_mm": -10.5,
+          "x2_mm": 15.7156,
+          "y2_mm": -10.5,
+          "coord_raw": [
+            23573399,
+            -15749998,
+            23573399,
+            -15749998
+          ]
+        }
+      ],
+      "10.5": [
+        {
+          "pad": "17",
+          "tag": "0x08435AD8",
+          "off": 7866,
+          "x_mm": -15.7156,
+          "y_mm": 10.5,
+          "x2_mm": -15.7156,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            -23573399,
+            15750006,
+            -23573399,
+            15750006
+          ]
+        },
+        {
+          "pad": "16",
+          "tag": "0x08435AD8",
+          "off": 7830,
+          "x_mm": -11.7867,
+          "y_mm": 10.5,
+          "x2_mm": -11.7867,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            -17680053,
+            15750006,
+            -17680053,
+            15750006
+          ]
+        },
+        {
+          "pad": "15",
+          "tag": "0x08435AD8",
+          "off": 7794,
+          "x_mm": -7.8578,
+          "y_mm": 10.5,
+          "x2_mm": -7.8578,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            -11786707,
+            15750006,
+            -11786707,
+            15750006
+          ]
+        },
+        {
+          "pad": "14",
+          "tag": "0x08435AD8",
+          "off": 7758,
+          "x_mm": -3.9289,
+          "y_mm": 10.5,
+          "x2_mm": -3.9289,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            -5893361,
+            15750006,
+            -5893361,
+            15750006
+          ]
+        },
+        {
+          "pad": "13",
+          "tag": "0x08435AD8",
+          "off": 7722,
+          "x_mm": -0.0,
+          "y_mm": 10.5,
+          "x2_mm": -0.0,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            -15,
+            15750006,
+            -15,
+            15750006
+          ]
+        },
+        {
+          "pad": "12",
+          "tag": "0x08435AD8",
+          "off": 7686,
+          "x_mm": 3.9289,
+          "y_mm": 10.5,
+          "x2_mm": 3.9289,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            5893330,
+            15750006,
+            5893330,
+            15750006
+          ]
+        },
+        {
+          "pad": "11",
+          "tag": "0x08435AD8",
+          "off": 7650,
+          "x_mm": 7.8578,
+          "y_mm": 10.5,
+          "x2_mm": 7.8578,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            11786676,
+            15750006,
+            11786676,
+            15750006
+          ]
+        },
+        {
+          "pad": "10",
+          "tag": "0x08435AD8",
+          "off": 7614,
+          "x_mm": 11.7867,
+          "y_mm": 10.5,
+          "x2_mm": 11.7867,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            17680023,
+            15750006,
+            17680023,
+            15750006
+          ]
+        },
+        {
+          "pad": "9",
+          "tag": "0x08435AD8",
+          "off": 7578,
+          "x_mm": 15.7156,
+          "y_mm": 10.5,
+          "x2_mm": 15.7156,
+          "y2_mm": 10.5,
+          "coord_raw": [
+            23573369,
+            15750006,
+            23573369,
+            15750006
+          ]
+        }
+      ]
+    },
+    "row_count": 2,
+    "row_separation_mm": 21.0,
+    "pads_per_row": {
+      "-10.5": 8,
+      "10.5": 9
+    },
+    "outer_pad_x_mm": 15.7156,
+    "pitch_mm_values": [
+      3.9289
+    ],
+    "pitch_mm": 3.9289,
+    "pitch_max_dev_mm": 0.0,
+    "row_y": [
+      -10.5,
+      10.5
+    ],
+    "edge_to_first_pad_mm": 3.7844,
+    "closure_check_mm": 39.0,
+    "closure_note": "2*edge_to_first_pad + 8*pitch = 39.0000 mm == module length 39.00 mm",
+    "pitch_over_rowsep": 0.18709,
+    "pitch_over_rowsep_datasheet": 0.187143,
+    "scale_error_pct": 0.0283,
+    "scale_note": "pitch/row-sep ratio 0.18709 vs datasheet 3.93/21.00 = 0.18714 -> unit consistent to 0.028%; two independent callout agreements (3.93 pitch, 21.00 row separation == module width) fix the scale",
+    "datasheet_callouts_p8": [
+      [
+        "3.78+0.1mm",
+        "top-left of the drawing",
+        "module edge -> first pad centre"
+      ],
+      [
+        "3.93+0.1mm",
+        "top of the pad view",
+        "pad-to-pad pitch along a pad row"
+      ],
+      [
+        "0.80+0.1mm",
+        "top-right of the pad view",
+        "pad protrusion beyond the module outline"
+      ],
+      [
+        "39.00+0.5mm",
+        "below the pad view",
+        "module LENGTH (39 mm edge)"
+      ],
+      [
+        "21.00+0.5mm",
+        "beside the pad view",
+        "module WIDTH    (21 mm edge)"
+      ],
+      [
+        "6.09+0.1mm",
+        "centre of the pad view",
+        "UNATTRIBUTED (no image read available)"
+      ],
+      [
+        "3.00+0.1mm",
+        "pad view centre + top-right view",
+        "UNATTRIBUTED, appears twice"
+      ],
+      [
+        "4.32+0.1mm",
+        "lower centre of pad view",
+        "UNATTRIBUTED (cannot be the pitch: 4.32 > 3.93)"
+      ],
+      [
+        "5.00+0.1mm",
+        "bottom of the right view",
+        "UNATTRIBUTED, appears twice"
+      ],
+      [
+        "3.30+0.1mm",
+        "bottom-right of right view",
+        "UNATTRIBUTED"
+      ]
+    ]
+  },
+  "datasheet_callouts_p8": [
+    [
+      "3.78+0.1mm",
+      "top-left of the drawing",
+      "module edge -> first pad centre"
+    ],
+    [
+      "3.93+0.1mm",
+      "top of the pad view",
+      "pad-to-pad pitch along a pad row"
+    ],
+    [
+      "0.80+0.1mm",
+      "top-right of the pad view",
+      "pad protrusion beyond the module outline"
+    ],
+    [
+      "39.00+0.5mm",
+      "below the pad view",
+      "module LENGTH (39 mm edge)"
+    ],
+    [
+      "21.00+0.5mm",
+      "beside the pad view",
+      "module WIDTH    (21 mm edge)"
+    ],
+    [
+      "6.09+0.1mm",
+      "centre of the pad view",
+      "UNATTRIBUTED (no image read available)"
+    ],
+    [
+      "3.00+0.1mm",
+      "pad view centre + top-right view",
+      "UNATTRIBUTED, appears twice"
+    ],
+    [
+      "4.32+0.1mm",
+      "lower centre of pad view",
+      "UNATTRIBUTED (cannot be the pitch: 4.32 > 3.93)"
+    ],
+    [
+      "5.00+0.1mm",
+      "bottom of the right view",
+      "UNATTRIBUTED, appears twice"
+    ],
+    [
+      "3.30+0.1mm",
+      "bottom-right of right view",
+      "UNATTRIBUTED"
+    ]
+  ],
+  "repo_footprints": [
+    {
+      "path": "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "pads": 18,
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ],
+      "body_mm": [
+        39.0,
+        21.0
+      ],
+      "distinct_pad_x": [
+        -19.5,
+        19.5
+      ],
+      "distinct_pad_y": [
+        -7.0,
+        -5.0,
+        -3.0,
+        -1.0,
+        1.0,
+        3.0,
+        5.0,
+        7.0,
+        9.0
+      ],
+      "pitch_x_mm": [
+        39.0
+      ],
+      "pitch_y_mm": [
+        2.0
+      ],
+      "pad_rows": "pads on the two 21.0 mm ENDS (x=+-19.5)",
+      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch",
+      "pad_at_list": [
+        [
+          -19.5,
+          -7.0
+        ],
+        [
+          -19.5,
+          -5.0
+        ],
+        [
+          -19.5,
+          -3.0
+        ],
+        [
+          -19.5,
+          -1.0
+        ],
+        [
+          -19.5,
+          1.0
+        ],
+        [
+          -19.5,
+          3.0
+        ],
+        [
+          -19.5,
+          5.0
+        ],
+        [
+          -19.5,
+          7.0
+        ],
+        [
+          -19.5,
+          9.0
+        ],
+        [
+          19.5,
+          -7.0
+        ],
+        [
+          19.5,
+          -5.0
+        ],
+        [
+          19.5,
+          -3.0
+        ],
+        [
+          19.5,
+          -1.0
+        ],
+        [
+          19.5,
+          1.0
+        ],
+        [
+          19.5,
+          3.0
+        ],
+        [
+          19.5,
+          5.0
+        ],
+        [
+          19.5,
+          7.0
+        ],
+        [
+          19.5,
+          9.0
+        ]
+      ],
+      "repo_rel": "tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod"
+    },
+    {
+      "path": "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "pads": 18,
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ],
+      "body_mm": [
+        39.0,
+        21.0
+      ],
+      "distinct_pad_x": [
+        -19.5,
+        19.5
+      ],
+      "distinct_pad_y": [
+        -7.0,
+        -5.0,
+        -3.0,
+        -1.0,
+        1.0,
+        3.0,
+        5.0,
+        7.0,
+        9.0
+      ],
+      "pitch_x_mm": [
+        39.0
+      ],
+      "pitch_y_mm": [
+        2.0
+      ],
+      "pad_rows": "pads on the two 21.0 mm ENDS (x=+-19.5)",
+      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch",
+      "pad_at_list": [
+        [
+          -19.5,
+          -7.0
+        ],
+        [
+          -19.5,
+          -5.0
+        ],
+        [
+          -19.5,
+          -3.0
+        ],
+        [
+          -19.5,
+          -1.0
+        ],
+        [
+          -19.5,
+          1.0
+        ],
+        [
+          -19.5,
+          3.0
+        ],
+        [
+          -19.5,
+          5.0
+        ],
+        [
+          -19.5,
+          7.0
+        ],
+        [
+          -19.5,
+          9.0
+        ],
+        [
+          19.5,
+          -7.0
+        ],
+        [
+          19.5,
+          -5.0
+        ],
+        [
+          19.5,
+          -3.0
+        ],
+        [
+          19.5,
+          -1.0
+        ],
+        [
+          19.5,
+          1.0
+        ],
+        [
+          19.5,
+          3.0
+        ],
+        [
+          19.5,
+          5.0
+        ],
+        [
+          19.5,
+          7.0
+        ],
+        [
+          19.5,
+          9.0
+        ]
+      ],
+      "repo_rel": "tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod"
+    },
+    {
+      "path": "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "pads": 18,
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ],
+      "body_mm": [
+        39.0,
+        21.0
+      ],
+      "distinct_pad_x": [
+        -19.5,
+        19.5
+      ],
+      "distinct_pad_y": [
+        -7.0,
+        -5.0,
+        -3.0,
+        -1.0,
+        1.0,
+        3.0,
+        5.0,
+        7.0,
+        9.0
+      ],
+      "pitch_x_mm": [
+        39.0
+      ],
+      "pitch_y_mm": [
+        2.0
+      ],
+      "pad_rows": "pads on the two 21.0 mm ENDS (x=+-19.5)",
+      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch",
+      "pad_at_list": [
+        [
+          -19.5,
+          -7.0
+        ],
+        [
+          -19.5,
+          -5.0
+        ],
+        [
+          -19.5,
+          -3.0
+        ],
+        [
+          -19.5,
+          -1.0
+        ],
+        [
+          -19.5,
+          1.0
+        ],
+        [
+          -19.5,
+          3.0
+        ],
+        [
+          -19.5,
+          5.0
+        ],
+        [
+          -19.5,
+          7.0
+        ],
+        [
+          -19.5,
+          9.0
+        ],
+        [
+          19.5,
+          -7.0
+        ],
+        [
+          19.5,
+          -5.0
+        ],
+        [
+          19.5,
+          -3.0
+        ],
+        [
+          19.5,
+          -1.0
+        ],
+        [
+          19.5,
+          1.0
+        ],
+        [
+          19.5,
+          3.0
+        ],
+        [
+          19.5,
+          5.0
+        ],
+        [
+          19.5,
+          7.0
+        ],
+        [
+          19.5,
+          9.0
+        ]
+      ],
+      "repo_rel": "tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod"
+    }
+  ],
+  "repo_board_instance": {
+    "source": "hub_board_f33.kicad_pcb",
+    "pads": 18,
+    "pad_size_mm": [
+      [
+        2.0,
+        1.0
+      ]
+    ],
+    "pad_at_list": [
+      [
+        -19.5,
+        -7.0
+      ],
+      [
+        -19.5,
+        -5.0
+      ],
+      [
+        -19.5,
+        -3.0
+      ],
+      [
+        -19.5,
+        -1.0
+      ],
+      [
+        -19.5,
+        1.0
+      ],
+      [
+        -19.5,
+        3.0
+      ],
+      [
+        -19.5,
+        5.0
+      ],
+      [
+        -19.5,
+        7.0
+      ],
+      [
+        -19.5,
+        9.0
+      ],
+      [
+        19.5,
+        -7.0
+      ],
+      [
+        19.5,
+        -5.0
+      ],
+      [
+        19.5,
+        -3.0
+      ],
+      [
+        19.5,
+        -1.0
+      ],
+      [
+        19.5,
+        1.0
+      ],
+      [
+        19.5,
+        3.0
+      ],
+      [
+        19.5,
+        5.0
+      ],
+      [
+        19.5,
+        7.0
+      ],
+      [
+        19.5,
+        9.0
+      ]
+    ]
+  },
+  "mismatch": {
+    "repo_pads": 18,
+    "coincident_within_0.05mm": 0,
+    "nearest_mm": 4.0708,
+    "worst_mm": 10.226
+  },
+  "verdict": "FAIL"
+}
