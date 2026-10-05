@@ -1,9 +1,13 @@
-# ADR-029 — v9 dual-band flight board (ESP32-S3-WROOM-1U + LoRa2021F33-2G4 + MAX-M10S)
+# ADR-029 — v9 tri-band flight board (ESP32-S3-WROOM-1U + LoRa2021F33-2G4 + SX1280 + MAX-M10S)
 
 - Status: **Proposed** — the *design direction* this ADR records was ratified by the
   operator on 2026-10-04; the *text* has not been accepted by a human, so it does not
   say Accepted. One item is left open for the operator (O5, the 5 V rail) and one
   form-factor question is recorded rather than decided (O0).
+- **Amended 2026-10-05 (operator decision, see D2b):** the SX1280 is **retained** for
+  ranging and the MAX-M10S is confirmed. The board is therefore **tri-band with four RF
+  parts**, and D2's single-module substitution is narrowed — read D2 together with D2b,
+  and disregard the sections D2b marks superseded.
 - Date: 2026-10-05
 - Decision owner: Felix (operator)
 - Author: worker-pcb (Hermes agent), promoting the manager's coexistence memo
@@ -67,8 +71,11 @@ title page in-repo — and that the LCSC/JLC listing `LoRa1121F33-2G4-868MHz` is
 
 Consequences of that, all recorded below as decisions rather than left implicit:
 
-1. v9 is **ESP32-S3-WROOM-1U + LoRa2021F33-2G4 + MAX-M10S** (three RF parts).
-2. The SX1280 disappears from v9. The 2.4 GHz role is served by the module's own port.
+1. v9 is **ESP32-S3-WROOM-1U + LoRa2021F33-2G4 + SX1280 + MAX-M10S** (four RF parts).
+   *(Superseded 2026-10-05 — this item originally read "three RF parts"; see D2b.)*
+2. ~~The SX1280 disappears from v9. The 2.4 GHz role is served by the module's own port.~~
+   **Superseded 2026-10-05 by D2b: the SX1280 is retained for ranging.** The F33's own
+   port no longer serves the ranging role; it does not follow that it leaves the board.
 3. The *symptom set* in the memo is unchanged in kind but worse in degree: the memo's
    assumed worst cases (LR2021 +22 dBm, SX1280 +13 dBm) are **stale**. The module delivers
    up to **+30 dBm (1 W) on both the 868 and the 2.4 GHz port at 5 V**, and the 2.4 GHz TX
@@ -158,6 +165,9 @@ Rationale:
 - **It removes a coupling path instead of managing it.** The memo's second 2.4 GHz
   interferer was the other module on the same board. With one module there is no
   inter-module blocking question and no second ground-return victim.
+  **[VOID as written — superseded 2026-10-05 by D2b.]** The SX1280 stays on the board, so
+  the second 2.4 GHz interferer — and the inter-module blocking question with it — returns.
+  D2b(c) records the three-way 2.4 GHz coexistence this now requires.
 - **It removes the LR2021 stock-0 blocker.** `LR2021IMLTRT` and
   `LoRa2021F33-2G4-868MHz` are both at JLC stock 0; the module is a consign/loose-part item
   by definition, which the project already accepted (JLCPCB will place consigned parts).
@@ -202,6 +212,71 @@ Rationale:
   sensitivity (−136 → −124 dBm). This is a firmware policy, held by the arbiter (§3), not a
   strap.
 
+### D2b — AMENDMENT (operator decision, 2026-10-05): the SX1280 is retained for ranging
+
+**Decision.** v9 keeps **both** the `LoRa2021F33-2G4` module (D2, sub-GHz + 2.4 GHz link)
+**and** an `SX1280` **as a dedicated ranging radio**, plus the `MAX-M10S` GNSS receiver.
+This is neither D2 (one module) nor D2-alt (bare `LoRa2021_Castellated` + SX1280) — it is
+D2's module **with** the SX1280 added back. Operator's words: *"Please keep the SX1280 as
+well so that we can have ranging. Also please include the MAX-M10S."*
+
+**Why the in-module RTToF did not satisfy this.** D2 argued that the module's RTToF ranging
+(at 2.4 GHz, with FLRC to 2.6 Mbps) served the role the SX1280 was bought for. That
+argument is about *capability*, and the operator's requirement is about *interoperability*:
+ranging has to work against the **existing SX1280 fleet** — the E28 modules, the
+`hub_board_v1_placed` SX1280, and the ranging firmware already written for them. The F33's
+RTToF is a different implementation whose on-air compatibility with SX1280 two-way ranging
+is **not established** and is not asserted here. A radio that can range only against itself
+does not replace one that ranges against the ground segment already in the field.
+
+**Answers O0 (partly).** O0 asked the operator to sign off on the module substitution rather
+than have it happen silently. The operator has now done so by *adding* to it, not by
+rejecting it: the F33 stands, and the SX1280 is re-instated alongside. D2-alt therefore
+remains the reverted configuration, but it is no longer the only two-radio shape on the
+table.
+
+**v9 RF complement (four radios):**
+
+| Role | Part | Port / band |
+|---|---|---|
+| Long-range sub-GHz telemetry | LoRa2021F33-2G4 | pin 9 `ANT`, 150–960 MHz |
+| 2.4 GHz link | LoRa2021F33-2G4 | pin 10 `ANT-2G4`, 1.9–2.5 GHz |
+| Ranging (fleet interop) | SX1280 | 2.4 GHz |
+| Position / time | MAX-M10S | GNSS L1 |
+| Config / telemetry when radios idle | ESP32-S3 Wi-Fi/BT | 2.4 GHz — shares the band, see (c) |
+
+**Consequences — what must now be re-derived, not assumed.** None of the following has been
+recomputed for this four-radio shape; they are recorded as required work, not as answers.
+
+- **(a) Both SPI masters are now committed.** The F33 exposes **no second SPI** (D1), so the
+  SX1280 must take the S3's **second** master. This is precisely the pin-budget argument
+  D1 recorded as applying *"in full only to D2-alt"* — it applies again. It also makes the
+  S3 mandatory: an ESP32-C3 could not carry it.
+- **(b) A pin re-plan is required.** Per D2-alt's note, SPI1's SCK/MOSI/MISO must be
+  re-planned **off IO35–37**. That was scoped for `LoRa2021_Castellated` + SX1280; the
+  F33 + SX1280 combination has never had a pin plan drawn. **Not done.**
+- **(c) Two independent 2.4 GHz transmitters — and a third in the S3.** The F33's 2.4 GHz
+  port, the SX1280, and the S3's Wi-Fi/BT all live in 2.4 GHz. The §3 TDM arbiter must
+  serialize them; inter-module 2.4 GHz blocking and 868-harmonic-into-SX1280 **return** as
+  coupling paths — the very paths D2 claimed to have *removed* are back, now three-way.
+  D2's bullet "it removes a coupling path instead of managing it" is **void** as written.
+- **(d) Antenna count becomes four, not three.** D3 as written specifies three U.FL pigtails
+  (GNSS, sub-GHz, 2.4 GHz). The SX1280 needs its own feed, so D3's connector count is
+  amended to **four**: GNSS L1, sub-GHz `ANT`, F33 `ANT-2G4`, SX1280.
+- **(e) Power budget is now incomplete.** No rail sum including the SX1280 exists; the O5
+  5 V decision must be re-costed against four radios.
+
+**Supply position (the one clear gain).** `SX1280IMLTRT` was probed on the JLCPCB parts API
+on 2026-10-05 (card `t_3b823ea8`) at **~1000 in stock, ~$2.85**, and it is an SMT part. The
+F33 module and the bare `LoRa2021` are both at **JLC stock 0** and must be consigned. So
+retaining the SX1280 **does not add a consign line** — it adds the only one of the three
+2.4 GHz/sub-GHz radios JLCPCB can actually place.
+
+**Status of this amendment:** recorded, not yet reviewed. Board area — 39 x 21 mm (F33) plus
+an SX1280 module on a 55 x 45 mm board — is now the tightest it has been, and ADR-030's
+placement gate runs earlier for exactly this reason. **No schematic, placement or routing
+work may start from this amendment until (a)–(e) are re-derived.**
+
 **D2-alt — the rejected/reverted configuration (kept live, not deleted).** If the operator
 rejects the module substitution, v9 reverts to **LoRa2021_Castellated** (19.81 x 14.98 x
 2.32 mm, 18 pads, 1.29 mm pitch, ANT = pin 9 — the v8h part) **+ SX1280** for 2.4 GHz. The
@@ -222,9 +297,11 @@ deltas, so the fallback is not re-researched:
 substitution and its evidence, and does **not** treat it as silently approved. BOM freeze
 for v9 waits on O0.
 
-### D3 — All three RF feeds are U.FL pigtails, not chip antennas
+### D3 — All RF feeds are U.FL pigtails, not chip antennas
 
-Three connectors: **GNSS L1**, **sub-GHz `ANT`**, **2.4 GHz `ANT-2G4`**.
+**Amended 2026-10-05 (D2b): four connectors, not three.**
+
+Four connectors: **GNSS L1**, **sub-GHz `ANT`**, **2.4 GHz `ANT-2G4`** (F33), **SX1280**.
 
 Rationale: on a 55 x 45 mm board the decisive separation is **off-board in 3D**. On a
 balloon the three antennas get 10+ cm of physical spacing and orthogonal orientations; a
