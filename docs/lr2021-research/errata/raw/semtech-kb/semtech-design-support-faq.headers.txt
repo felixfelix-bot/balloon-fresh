@@ -1,0 +1,28 @@
+HTTP/2 200 
+content-type: text/html; charset=UTF-8
+access-control-allow-origin: https://semtechcorp.sharepoint.com
+cache-control: no-cache="set-cookie"
+content-security-policy: default-src 'self'; script-src 'self' 'nonce-b4c63acd7bab99335e909d9feb79acf2' 'strict-dynamic' https://www.google.com https://www.gstatic.com *.semtech.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://js.hs-analytics.net https://js.hsadspixel.net https://snap.licdn.com https://cdn.sajari.com https://connect.facebook.net *.doubleclick.net https://script.hotjar.com https://static.hotjar.com https://code.jquery.com https://cdnjs.cloudflare.com https://cdn.datatables.net https://js.hs-scripts.com https://js.hsforms.net https://semtech.componentsearchengine.com https://cdn.cookielaw.org https://play.vidyard.com https://js.hs-banner.com https://plausible.io/js/script.js https://hackerone.com https://secure.agile-enterprise-365.com https://cdn.jsdelivr.net https://www.details-enterprise-7.com https://js.hubspot.com https://static.hsappstatic.net https://*.hsappstatic.net https://static.hsstatic.net https://*.hsstatic.net https://*.trustarc.com https://cdn-app.pathfactory.com https://cdn.propensity.com; object-src 'self'; font-src * data: https://*.trustarc.com; img-src * data: https: www.googletagmanager.com https://*.trustarc.com https://*.truste.com; style-src 'self' *.semtech.com https://cdn.datatables.net https://code.jquery.com https://fonts.googleapis.com 'unsafe-inline'; connect-src 'self' https://cdn.cookielaw.org https://jsonapi.sajari.net https://forms.hsforms.com https://geolocation.onetrust.com https://privacyportal.onetrust.com/request/v1/consentreceipts *.semtech.com *.semtech.cn *.semtech.jp *.semtech.fr https://www.google-analytics.com wss://ws.hotjar.com https://content.hotjar.io https://api.hubapi.com https://analytics.google.com https://metrics.hotjar.io https://stats.g.doubleclick.net https://ad.doubleclick.net https://updates.expressionengine.com https://plausible.io https://hackerone.com https://px.ads.linkedin.com *.algolia.net *.algolianet.com https://semtech.componentsearchengine.com https://pagead2.googlesyndication.com https://insights.algolia.io http://jsonapi.sajari.net/sajari.api.pipeline.v1.Query/Search https://idx.liadm.com https://surveystats.hotjar.io https://region1.analytics.google.com https://www.google.com https://cta-service-cms2.hubspot.com https://google.com https://static.hsappstatic.net https://*.hsappstatic.net https://static.hsstatic.net https://*.hsstatic.net https://*.trustarc.com https://cdn-app.pathfactory.com https://jukebox.pathfactory.com https://spcollector.pathfactory.com https://analytics.propensity-abm.com https://a.usbrowserspeed.com; frame-ancestors 'self' vidyard.com youtube.com *.cms-eqs.com https://investors.semtech.com; frame-src 'self' https://www.google.com https://www.gstatic.com *.semtech.com *.cms-eqs.com https://investors.semtech.com *.vidyard.com *.youtube.com https://semtech.componentsearchengine.com https://dilp.netcomponents.com https://www.google-analytics.com https://www.googletagmanager.com https://td.doubleclick.net https://hackerone.com https://forms.hsforms.com https://*.trustarc.com; upgrade-insecure-requests
+date: Thu, 01 Oct 2026 03:48:36 GMT
+expires: Mon, 26 Jul 1997 05:00:00 GMT
+last-modified: Thu, 01 Oct 2026 03:48:37 GMT
+permissions-policy: interest-cohort=()
+pragma: no-cache
+referrer-policy: strict-origin
+s: tutuksdfjhksdiP1hsfsd86
+server: Apache
+set-cookie: exp_tracker=%7B%220%22%3A%22design-support%2Ffaq%22%2C%22token%22%3A%22186e086139d30a6ee91800b825aee076a9839c55fba2c6acb7860c4fc1b9a5e166b11b05a03b47cc6d168370196e87bd%22%7D; path=/; domain=.semtech.com; secure; HttpOnly; SameSite=Lax; HttpOnly
+set-cookie: exp_csrf_token=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.semtech.com; secure; HttpOnly; SameSite=Lax; HttpOnly
+set-cookie: exp_csrf_token=b6d2697fcdc54235a0b5245090e082ae697bdd34; expires=Thu, 01-Oct-2026 05:48:36 GMT; Max-Age=7200; path=/; domain=.semtech.com; secure; HttpOnly; SameSite=Lax; HttpOnly
+set-cookie: AWSELB=011B7B0F12ED188DFE74E637E5325BF68E19653B828809F230DC00825E73F57536F93CD23FABB955A3F1FB2B4C3F0134F7205381A58A5EACC1C449DB987CBEDC74C36DAD23;PATH=/;MAX-AGE=60
+set-cookie: AWSELBCORS=011B7B0F12ED188DFE74E637E5325BF68E19653B828809F230DC00825E73F57536F93CD23FABB955A3F1FB2B4C3F0134F7205381A58A5EACC1C449DB987CBEDC74C36DAD23;PATH=/;MAX-AGE=60;SECURE;SAMESITE=None
+strict-transport-security: max-age=31536000; includeSubDomains
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+x-content-type-options: nosniff
+x-xss-protection: 1; mode=block
+vary: Accept-Encoding
+x-cache: Miss from cloudfront
+via: 1.1 192214f2b714ecde75ddd74c51389aaa.cloudfront.net (CloudFront)
+x-amz-cf-pop: TXL52-P2
+x-amz-cf-id: 1x1OIgYc9k_9OmtJtS2CKs7F7hnlKhBbKYJeFDXaV48E1vdbNq8wJw==
+

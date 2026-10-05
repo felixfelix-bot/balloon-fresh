@@ -1,0 +1,253 @@
+{
+  "total_count": 3,
+  "incomplete_results": false,
+  "items": [
+    {
+      "url": "https://api.github.com/repos/Lora-net/usp/issues/4",
+      "repository_url": "https://api.github.com/repos/Lora-net/usp",
+      "labels_url": "https://api.github.com/repos/Lora-net/usp/issues/4/labels{/name}",
+      "comments_url": "https://api.github.com/repos/Lora-net/usp/issues/4/comments",
+      "events_url": "https://api.github.com/repos/Lora-net/usp/issues/4/events",
+      "html_url": "https://github.com/Lora-net/usp/issues/4",
+      "id": 3982824050,
+      "node_id": "I_kwDOQCKgk87tZRJy",
+      "number": 4,
+      "title": "[LR2021] GFSK bitrate 1000 KBPS works, bitrate 1041 KBPS - does not",
+      "user": {
+        "login": "lyusupov",
+        "id": 5849637,
+        "node_id": "MDQ6VXNlcjU4NDk2Mzc=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/5849637?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/lyusupov",
+        "html_url": "https://github.com/lyusupov",
+        "followers_url": "https://api.github.com/users/lyusupov/followers",
+        "following_url": "https://api.github.com/users/lyusupov/following{/other_user}",
+        "gists_url": "https://api.github.com/users/lyusupov/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/lyusupov/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/lyusupov/subscriptions",
+        "organizations_url": "https://api.github.com/users/lyusupov/orgs",
+        "repos_url": "https://api.github.com/users/lyusupov/repos",
+        "events_url": "https://api.github.com/users/lyusupov/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/lyusupov/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "labels": [
+
+      ],
+      "state": "open",
+      "locked": false,
+      "assignees": [
+
+      ],
+      "milestone": null,
+      "comments": 3,
+      "created_at": "2026-02-24T10:29:09Z",
+      "updated_at": "2026-07-01T07:08:27Z",
+      "closed_at": null,
+      "assignee": null,
+      "author_association": "NONE",
+      "issue_field_values": [
+
+      ],
+      "type": null,
+      "active_lock_reason": null,
+      "sub_issues_summary": {
+        "total": 0,
+        "completed": 0,
+        "percent_completed": 0
+      },
+      "issue_dependencies_summary": {
+        "blocked_by": 0,
+        "total_blocked_by": 0,
+        "blocking": 0,
+        "total_blocking": 0
+      },
+      "body": "## Hardware\n\nSemtech LR2021 radio\n\n## Internal firmware version\n\n FWMajor: 0x01\n FWMinor: 0x18\n\n## To reproduce\n\n1) take 2 of LR2021 nodes\n2) use https://github.com/Lora-net/usp/tree/main/examples/main_examples/packet_error_rate_fsk_example example on both sides\n3) change FSK_BITRATE to 1000000 in the `packet_error_rate_fsk_example` example source code, update deviation and bandwidth values accordingly\n4) run the `packet_error_rate_fsk_example` on both sides - it should work nicely\n5)  change FSK_BITRATE to 1041000 and update both connection partners\n6) the `packet_error_rate_fsk_example`  example no longer works properly\n\n## Expected behavior\n\nGFSK modem of LR2021 radio should work with 1041 kbps data rate  _(in use by ADS-B UAT @ 978 MHz in North America and UK)_\n\n## Actual behavior\n\nIt looks for me that `Transmitter` component works fine with 1041 kbps bitrate.\n1041 kbps GFSK packets sent by LR2021 can be received by an SDR radio or Texas Instruments CC1352 receivers.\n\nHowever, the  LR2021 `Receiver` component does not work properly  with 1041 kbps bitrate. Received data is corrupt and **looks like been down sampled to a fixed data rate, such as 1000 kbps**.\n\n\n",
+      "reactions": {
+        "url": "https://api.github.com/repos/Lora-net/usp/issues/4/reactions",
+        "total_count": 0,
+        "+1": 0,
+        "-1": 0,
+        "laugh": 0,
+        "hooray": 0,
+        "confused": 0,
+        "heart": 0,
+        "rocket": 0,
+        "eyes": 0
+      },
+      "timeline_url": "https://api.github.com/repos/Lora-net/usp/issues/4/timeline",
+      "performed_via_github_app": null,
+      "state_reason": null,
+      "pinned_comment": null,
+      "score": 1.0
+    },
+    {
+      "url": "https://api.github.com/repos/Lora-net/usp/issues/5",
+      "repository_url": "https://api.github.com/repos/Lora-net/usp",
+      "labels_url": "https://api.github.com/repos/Lora-net/usp/issues/5/labels{/name}",
+      "comments_url": "https://api.github.com/repos/Lora-net/usp/issues/5/comments",
+      "events_url": "https://api.github.com/repos/Lora-net/usp/issues/5/events",
+      "html_url": "https://github.com/Lora-net/usp/issues/5",
+      "id": 4278217272,
+      "node_id": "I_kwDOQCKgk87_AGo4",
+      "number": 5,
+      "title": "[lbm-team] Radio Configuration for LR2021 LoRa Plus EVK for China or for specific PCBs",
+      "user": {
+        "login": "lbm-team",
+        "id": 127109064,
+        "node_id": "U_kgDOB5OHyA",
+        "avatar_url": "https://avatars.githubusercontent.com/u/127109064?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/lbm-team",
+        "html_url": "https://github.com/lbm-team",
+        "followers_url": "https://api.github.com/users/lbm-team/followers",
+        "following_url": "https://api.github.com/users/lbm-team/following{/other_user}",
+        "gists_url": "https://api.github.com/users/lbm-team/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/lbm-team/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/lbm-team/subscriptions",
+        "organizations_url": "https://api.github.com/users/lbm-team/orgs",
+        "repos_url": "https://api.github.com/users/lbm-team/repos",
+        "events_url": "https://api.github.com/users/lbm-team/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/lbm-team/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "labels": [
+
+      ],
+      "state": "open",
+      "locked": false,
+      "assignees": [
+
+      ],
+      "milestone": null,
+      "comments": 0,
+      "created_at": "2026-04-16T20:02:37Z",
+      "updated_at": "2026-04-16T20:02:37Z",
+      "closed_at": null,
+      "assignee": null,
+      "author_association": "CONTRIBUTOR",
+      "issue_field_values": [
+
+      ],
+      "type": null,
+      "active_lock_reason": null,
+      "sub_issues_summary": {
+        "total": 0,
+        "completed": 0,
+        "percent_completed": 0
+      },
+      "issue_dependencies_summary": {
+        "blocked_by": 0,
+        "total_blocked_by": 0,
+        "blocking": 0,
+        "total_blocking": 0
+      },
+      "body": "In USP examples, the default BSP configuration of LR20xx radios is focused on EU & US regions and LR2021 LoRa Plus EVK. \nWhen using the LR2021 LoRa Plus EVK for other regions, or when porting to dedicated PCBs designed for other frequency bands, make sure to update the radio BSP file `ral_lr20xx_bsp.c`, to enables full optimization.\nFor example, for LR2021 LoRa Plus EVK China (CN) versions, the PA table configuration shall be adjusted as defined in LR2021 Datasheet page 134 to (CN - 490Mhz) band for optimal performances. Similarly, the front end calibration frequencies may be more optimized for China version with the following frequencies in `ral_lr20xx_bsp_get_front_end_calibration_cfg()` : 470000000, 920000000, 2441000000 .\nNext releases will try to make easier such configuration.",
+      "reactions": {
+        "url": "https://api.github.com/repos/Lora-net/usp/issues/5/reactions",
+        "total_count": 0,
+        "+1": 0,
+        "-1": 0,
+        "laugh": 0,
+        "hooray": 0,
+        "confused": 0,
+        "heart": 0,
+        "rocket": 0,
+        "eyes": 0
+      },
+      "timeline_url": "https://api.github.com/repos/Lora-net/usp/issues/5/timeline",
+      "performed_via_github_app": null,
+      "state_reason": null,
+      "pinned_comment": null,
+      "score": 1.0
+    },
+    {
+      "url": "https://api.github.com/repos/Lora-net/usp/issues/3",
+      "repository_url": "https://api.github.com/repos/Lora-net/usp",
+      "labels_url": "https://api.github.com/repos/Lora-net/usp/issues/3/labels{/name}",
+      "comments_url": "https://api.github.com/repos/Lora-net/usp/issues/3/comments",
+      "events_url": "https://api.github.com/repos/Lora-net/usp/issues/3/events",
+      "html_url": "https://github.com/Lora-net/usp/issues/3",
+      "id": 3642971105,
+      "node_id": "I_kwDOQCKgk87ZI1Ph",
+      "number": 3,
+      "title": "Compilation advices",
+      "user": {
+        "login": "lbm-team",
+        "id": 127109064,
+        "node_id": "U_kgDOB5OHyA",
+        "avatar_url": "https://avatars.githubusercontent.com/u/127109064?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/lbm-team",
+        "html_url": "https://github.com/lbm-team",
+        "followers_url": "https://api.github.com/users/lbm-team/followers",
+        "following_url": "https://api.github.com/users/lbm-team/following{/other_user}",
+        "gists_url": "https://api.github.com/users/lbm-team/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/lbm-team/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/lbm-team/subscriptions",
+        "organizations_url": "https://api.github.com/users/lbm-team/orgs",
+        "repos_url": "https://api.github.com/users/lbm-team/repos",
+        "events_url": "https://api.github.com/users/lbm-team/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/lbm-team/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "labels": [
+
+      ],
+      "state": "closed",
+      "locked": false,
+      "assignees": [
+
+      ],
+      "milestone": null,
+      "comments": 1,
+      "created_at": "2025-11-19T14:23:04Z",
+      "updated_at": "2026-01-14T09:11:39Z",
+      "closed_at": "2026-01-14T09:11:39Z",
+      "assignee": null,
+      "author_association": "CONTRIBUTOR",
+      "issue_field_values": [
+
+      ],
+      "type": null,
+      "active_lock_reason": null,
+      "sub_issues_summary": {
+        "total": 0,
+        "completed": 0,
+        "percent_completed": 0
+      },
+      "issue_dependencies_summary": {
+        "blocked_by": 0,
+        "total_blocked_by": 0,
+        "blocking": 0,
+        "total_blocking": 0
+      },
+      "body": "Due to an issue in the examples/CMakeLists.txt, compilation is failing or building non usable examples.\nAs a workaround, please use this template :\n```\ncmake -L -S examples  -B build -DAPP=XXX -DCMAKE_BUILD_TYPE=Debug -DBOARD=NUCLEO_L476 -DRAC_RADIO=lr2021 -DLBM_RADIO=lr2021 -DYYY=ZZZ -G Ninja\ncmake --build build --target example\n```\n\nwhen `APP` can be :\n```\nPERIODICAL_UPLINK\nHW_MODEM\nRTTOF\nPORTING_TESTS\nLCTT_CERTIF\nMULTIPROTOCOL\nPING_PONG\nPER\nPER_FSK\nPER_FLRC\nLR_FHSS\nSPECTRAL_SCAN\nRF_CERTIFICATION\nTX_CW\nDIRECT_DRIVER_ACCESS\n```\n\nAs an example, for RTTOF, the workaround command line shall be :\n- For lr2021 shield (green)\n```\ncmake -L -S examples  -B build -DAPP=RTTOF -DCMAKE_BUILD_TYPE=Debug -DBOARD=NUCLEO_L476 -DRAC_RADIO=lr2021 -DLBM_RADIO=lr2021 -DRANGING_DEVICE_MODE=MANAGER -DCONTINUOUS_RANGING=false -DPERIODIC_UPLINK_ENABLED=false -DLEGACY_EVK_LR2021=ON -G Ninja\ncmake --build build --target example\n```\n- For LoRa Plus EVK (blue)\n```\ncmake -L -S examples  -B build -DAPP=RTTOF -DCMAKE_BUILD_TYPE=Debug -DBOARD=NUCLEO_L476 -DRAC_RADIO=lr2021 -DLBM_RADIO=lr2021 -DRANGING_DEVICE_MODE=MANAGER -DCONTINUOUS_RANGING=false -DPERIODIC_UPLINK_ENABLED=false -G Ninja\ncmake --build build --target example\n```\n\nfor per_tx on LoRa Plus EVK (blue) :\n```\ncmake -L -S examples  -B build -DAPP=PER -DCMAKE_BUILD_TYPE=Debug -DBOARD=NUCLEO_L476 -DRAC_RADIO=lr2021 -DLBM_RADIO=lr2021 -DROLE=TRANSMITTER -G Ninja\ncmake --build build --target example\n```\n\nThe defines `-DYYY=ZZZ` of the `cmake` command line are not yet described in the `usp` git repository (usp baremetal is still experimental). But you can get them in the `usp_zephyr` git repository for each sample. For example for per : https://github.com/Lora-net/usp_zephyr/tree/feature/usp_zephyr/samples/usp/sdk/packet_error_rate_lora\n\n| Parameter               | Default Value                  | Description                                      |\n|-------------------------|--------------------------------|--------------------------------------------------|\n| `ROLE`                  | *Required*                     | Device role: `RECEIVER` (1) or `TRANSMITTER` (2) |\n| `MAX_EXCHANGE_COUNT`    | `100`                          | Number of packets per test series                |\n| `RX_TIMEOUT`            | `30000`                        | Reception timeout in ms                          |\n| `INTER_EXCHANGE_DELAY`  | `20`                           | Delay between packets in ms                      |\n| `INTER_SERIES_DELAY`    | `10000`                        | Delay between test series in ms                  |\n| `RF_FREQ_IN_HZ`         | `868100000`                    | Operating frequency in Hz                        |\n| `TX_OUTPUT_POWER_DBM`   | `14`                           | Transmit power in dBm                            |\n| `LORA_SPREADING_FACTOR` | `RAL_LORA_SF9`                 | LoRa spreading factor                            |\n| `LORA_BANDWIDTH`        | `RAL_LORA_BW_125_KHZ`          | LoRa bandwidth                                   |\n| `LORA_CODING_RATE`      | `RAL_LORA_CR_4_5`              | LoRa coding rate                                 |\n| `LORA_PREAMBLE_LENGTH`  | `12`                           | Preamble length in symbols                       |\n| `LORA_PKT_LEN_MODE`     | `RAL_LORA_PKT_EXPLICIT`        | Packet length mode                               |\n| `LORA_IQ`               | `false`                        | LoRa IQ inversion setting                        |\n| `LORA_CRC`              | `true`                         | Enable/disable CRC                               |\n| `LORA_SYNCWORD`         | `LORA_PUBLIC_NETWORK_SYNCWORD` | Synchronization word                             |\n\n\nDue to the current issue in CMakeLists.txt in v0.5.1-alpha, It is currently not possible to compile all samples at once.",
+      "reactions": {
+        "url": "https://api.github.com/repos/Lora-net/usp/issues/3/reactions",
+        "total_count": 0,
+        "+1": 0,
+        "-1": 0,
+        "laugh": 0,
+        "hooray": 0,
+        "confused": 0,
+        "heart": 0,
+        "rocket": 0,
+        "eyes": 0
+      },
+      "timeline_url": "https://api.github.com/repos/Lora-net/usp/issues/3/timeline",
+      "performed_via_github_app": null,
+      "state_reason": "completed",
+      "pinned_comment": null,
+      "score": 1.0
+    }
+  ],
+  "search_type": "lexical"
+}
