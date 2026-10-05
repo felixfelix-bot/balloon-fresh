@@ -1,10 +1,36 @@
-# FLRC Throughput Optimization Plan — Breaking the 1391 kbps Ceiling
+# FLRC Throughput Optimization Plan — payload size and pipelining
 
-**Date:** 2026-07-16
-**Status:** ACTIVE — Phase 0 (ESP32) built, Phase 1 (LA) pending hardware
+**Date:** 2026-07-16 · **Status update 2026-10-06 (see §1.1 below)**
+**Status:** SUPERSEDED IN PART — the 1391 kbps baseline below is history; the live
+numbers are in §1.1
 **Repo:** balloon-fresh
 **Depends on:** ESP32-C3 firmware (built), logic analyzer (pending connection)
 **Blocks:** Nothing — runs in parallel with range testing
+
+---
+
+## 1.1 Status update — 2026-10-06 (read this before quoting anything below)
+
+Settled in `FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md` (+ `tools/flrc_512b_throughput_audit.py`).
+
+| Figure | Value | Status |
+|---|---|---|
+| **1391 kbps** (this plan's title figure) | superseded | RP2040 Arduino-SPI, LEN 127, 2026-07-16 |
+| **1484.9 kbps** sustained, 0.00 % PER | **live measured best** | `sustained-throughput-results-2026-07-23.md`, BR2600, LEN 127, TX-side-limited |
+| **2540 kbps** at 255 B / **2570 kbps** at 511 B | ceiling (zero host overhead) | arithmetic, datasheet-audit model |
+| **2550 / 2569 kbps** at 511 B | ceiling, driver model (actual fw config) | arithmetic, `tools/flrc_512b_throughput_audit.py` |
+| **2600 kbps** | **the configured AIR RATE, not goodput** | NiceRF "modulation rate up to 2.6 Mbps" |
+
+**The lever is payload size + pipelining, not a bigger packet count.** Doubling the
+payload 255 B → 511 B raises the ceiling only **1.2 %** (2540 → 2570 kbps): the air
+time doubles too. What payload size buys is amortisation of the fixed preamble/sync
+overhead. The 511 B row is *already demonstrated working* — 50/50 at BR650/1300/2600,
+PRBS-15 `bit_err = 0` (`full-sweep-report-20260821-175612.md`); it has just never been
+run at a gap small enough to produce a sustained goodput number. 512 B is **not a
+valid length** — the FLRC payload field is 9 bits, max 511.
+
+Below this line the 1391 kbps analysis stands as written; read it as the history of
+the RP2040 Arduino-SPI ceiling, not as the current capability.
 
 ---
 
@@ -13,6 +39,8 @@
 Maximize throughput on LR2021 FLRC link beyond the current 1391 kbps RP2040 ceiling.
 
 Theoretical maximum: 2540 kbps (air-time limited at 2600 kbps FLRC bitrate, 255B payload).
+(2026-10-06: 2570 kbps at 511 B. Both are ceilings assuming *zero* host overhead; the
+2600 kbps air rate itself is not reachable as goodput — see §1.1.)
 
 ---
 
