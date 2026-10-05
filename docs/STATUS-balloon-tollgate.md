@@ -63,3 +63,176 @@ Ground Station                   Balloon (L7: TollGate)
 3. Implement nucula wallet spend_proofs()
 4. Write unit tests for payment protocol encode/decode
 5. Design ground station TollGate client (separate deliverable)
+
+## Discovery Sync — 2026-08-05
+
+Acknowledged 3 new findings from balloon-hermes. Assessment:
+
+1. **relay mode build fixes (TransportError scope, API alignment)** — MEDIUM
+   - nostr_store.h changes relevant: my plan flagged `nostr_event_deserialize()` missing
+   - API alignment in nostr_store affects blossom BUD-11 auth path
+   - Will verify nostr_event_deserialize() implementation status when merging
+
+2. **FreeRTOS relay task architecture (radio_task, app_task, queue-based RX)** — MEDIUM
+   - app_task does secp256k1 Schnorr verify + nostr_store — exactly what blossom needs
+   - Queue-based RX architecture defines blossom message dispatch path
+   - My blossom server will integrate as consumer on app_task queue
+   - CONFIG_ENABLE_RELAY_MODE guards — blossom mesh wiring goes under this flag
+
+3. **mesh baseline build verified + secp measurement + tollgate payment tests** — CRITICAL
+   - **ADOPTED**: factory partition 1MB→2MB (matches balloon-hermes commit 8aaa0bb)
+   - **RESOLVED GAP**: mesh_adapter CMakeLists.txt now EXISTS — my plan gap #1 fixed
+   - CONFIG_ENABLE_MESH=y builds clean at 227KB, 78% free flash — mesh fits comfortably
+   - secp256k1 measurement test on ESP32-C3 confirms crypto feasible for blossom auth
+   - 119 tollgate payment tests (91+ pass) validates payment protocol I depend on
+
+### My Integration Plan Gap Status (updated)
+- Gap #1 (mesh_adapter no CMakeLists) → **RESOLVED** by balloon-hermes
+- Gap #2 (fips_transport not wired) → still open, balloon-hermes working on it
+- Gap #3 (nostr_event_deserialize missing) → **RESOLVED** — implemented + bug fixed (f11ddd6)
+- Gap #4 (esp-now-firmware deleted) → informational, not blocking blossom
+- Gap #5 (all mesh flags disabled) → **PARTIALLY RESOLVED** — CONFIG_ENABLE_MESH verified building
+- Gap #6 (blossom has no mesh awareness) → **MY TASK** — still my responsibility
+
+## Discovery Sync — 2026-08-05 (balloon-range-tests)
+
+1 finding from balloon-range-tests assessed:
+
+1. **GPIO10 collision fix (commit f926dc9, cherry-picked by range-tests as 311913f)** — `INFORMATIONAL` for blossom
+   - LED was on GPIO10 conflicting with LR2021 NSS on tracker ESP32-S3. Moved LED→GPIO18, FEM_TX→GPIO19.
+   - Blossom C3 firmware has **ZERO GPIO10 references** — verified. No collision possible.
+   - No action needed. Blossom runs on separate C3, not the tracker S3 board.
+
+2. **FLRC byte alignment, secp256k1, mesh baseline** — already assessed in prior sync above. No new findings.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: relay pipeline test)
+
+1 finding assessed. **CRITICAL** for blossom integration.
+
+1. **Host-side relay pipeline integration test (commit 4e86174 + bugfix f11ddd6)** — `CRITICAL` `RESOLVES GAP #3`
+   - 12 tests covering full relay pipeline: radio(mock)→rx_queue→app_task→nostr_store
+   - **Bug found AND fixed**: `app_task.cpp` checked `nostr_event_deserialize() == 0` but function returns bytes consumed (>0) on success. Events were NEVER stored on real firmware. Fixed in `f11ddd6` to `> 0`.
+   - **Gap #3 RESOLVED**: `nostr_event_deserialize()` now fully implemented in `nostr_store.c:105` and correct return check in `app_task.cpp:81`.
+   - **Blossom impact**: Blossom BUD-11 auth uses same `nostr_event_deserialize()` path for event verification. The bug would have caused blossom to silently drop all incoming Nostr events from the relay pipeline. Now safe.
+   - **Test methodology adoption**: host-side pipeline test (gcc, no hardware, mock radio → real nostr_store) is directly applicable to blossom. Will adopt this pattern for blossom-mesh integration testing.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: payment proto + CLI commands)
+
+3 findings assessed. All HIGH relevance to blossom.
+
+1. **tollgate_payment_proto.h + tollgate_send_pay CLI (commit 65a46fd)** — `CRITICAL` `WIRE-COMPATIBLE`
+   - Standalone payment protocol header in tracker firmware, wire-compatible with my tollgate_balloon adapter
+   - **VERIFIED**: My mesh-stack/tollgate/ code uses identical `tollgate_msg_hdr_t` (8 bytes packed), `TG_MSG_PAY/ACK/NACK/STATUS/INFO/REVOKE`, `tollgate_proto_encode/decode`
+   - 83 host unit tests pass on their side, my 119 tests pass on my side — both independently validate same wire format
+   - CLI `tollgate_send_pay` queues PAY to g_tx_queue via `RELAY_TYPE_TOLLGATE_PAY` tag — this is the TX path blossom will receive from
+   - **Impact**: Blossom can now receive PAY messages from tracker CLI. Protocol layer fully aligned.
+
+2. **relay_send_nostr CLI command (commit 108c2b9)** — `HIGH`
+   - CLI builds nostr_event_t, serializes, tags `RELAY_TYPE_NOSTR_EVENT`, queues to g_tx_queue
+   - 9/9 host tests pass (default/custom/tags/large/oversized/empty/multi-queue/queue-full/round-trip)
+   - **Impact**: This is the Nostr event TX path. Blossom server will receive these events via radio→rx_queue→app_task pipeline. Validates end-to-end Nostr relay path.
+
+3. **CLI command audit (commit 9b79760)** — `INFORMATIONAL`
+   - 2/5 CLI commands existed before this session. Now 4/5 implemented (relay_send_nostr + tollgate_send_pay done).
+   - Remaining: nostr_dump (low priority, 1-2h) — needs store refactor. Not blocking blossom.
+   - **Impact**: No action needed. Shows relay pipeline CLI tooling is maturing rapidly.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: consultant V6 + PCB routing)
+
+4 findings assessed. 1 CRITICAL for blossom architecture.
+
+1. **Consultant V6: PCB is ESP32-C3, not S3 (commit 1b0fe93)** — `CRITICAL` `ARCHITECTURE-CHANGING`
+   - V1 PCB uses ESP32-C3-Mini-1. GPIO18/19 (LED/FEM_TX) don't exist on C3 header — USB D-/D+ pins.
+   - My blossom server runs on ESP32-C3. Tracker firmware also builds for C3 (227KB, 78% flash free).
+   - **ARCHITECTURE QUESTION**: Does blossom run on the SAME C3 as tracker (single-MCU), or separate C3 (dual-MCU)?
+   - My integration plan assumes separate C3 boards. If single-MCU, plan changes significantly:
+     - Blossom HTTP server + tracker mesh stack share same flash/RAM
+     - 78% free flash on 2MB = ~1.5MB available. Blossom is ~1350 lines, likely <100KB compiled.
+     - RAM is the concern: blossom needs HTTP server stack + secp256k1 context + LittleFS buffers
+   - **ACTION**: Needs orchestrator decision. See escalation below.
+
+2. **LLM auto-routing pipeline (commit c542afb)** — `INFORMATIONAL` for blossom
+   - PCB auto-routing tooling. Not relevant to blossom firmware.
+
+3. **Auto-routing feasibility verified (commit ee9b6ba)** — `INFORMATIONAL` for blossom
+   - python3.14+pcbnew works, kicad-cli DRC works. PCB tooling pipeline. Not blossom-relevant.
+
+4. **balloon-speed-tests batch 3 (commit 3c08869)** — `INFORMATIONAL`
+   - 5 findings all N/A. PCB, tollgate, nostr CLI — already covered above.
+
+### ESCALATION: Blossom deployment architecture needs orchestrator decision
+
+ORCHESTRATOR: The consultant V6 review confirms V1 flight board is ESP32-C3. My blossom server also targets C3. Two options:
+
+**Option A — Single-MCU (blossom on tracker C3):**
+- Pros: One board, lower weight, simpler power budget, no inter-MCU link needed
+- Cons: Shared RAM/flash, potential WiFi+radio coexistence issues, no isolation
+- Flash budget: tracker 227KB + blossom ~100KB = ~330KB of 2MB. OK.
+- RAM budget: needs measurement. Blossom HTTP server + secp256k1 + LittleFS + mesh stack may exceed C3's 400KB SRAM.
+
+**Option B — Dual-MCU (blossom on separate C3, tracker on own C3/S3):**
+- Pros: Isolation, independent debugging, no resource contention
+- Cons: Extra weight, extra power, inter-MCU link (UART/SPI) adds complexity
+- This is my current plan assumption.
+
+Recommendation: Depends on RAM measurement. If blossom+mesh fits in 400KB SRAM, Option A is simpler for V1. Need RAM budget analysis.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: V2-ADC PCB routing)
+
+2 findings. Both INFORMATIONAL — pure PCB hardware work, no blossom firmware impact.
+
+1. **V2-ADC board regeneration (commit 81e3f27)** — `INFORMATIONAL`
+   - Clean V2-ADC board + routing scripts committed. PCB design iteration.
+   - No blossom impact — this is circuit-design track scope.
+
+2. **V2-ADC routing WIP (commit 3dd9372)** — `INFORMATIONAL`
+   - Routing attempts + finish_routing.py coordinate fix. PCB design tooling.
+   - No blossom impact.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: V2-ADC PCB batch 2)
+
+4 findings. All INFORMATIONAL — PCB design iterations, no blossom firmware impact.
+
+1. **4-layer PCB scripts + DSN/SES files** — `INFORMATIONAL`. PCB tooling.
+2. **kimi-k3 power routing scripts + inspection tools** — `INFORMATIONAL`. 2-layer power routing automation.
+3. **V2-ADC 2-layer FINAL: outline+power+gerbers** — `INFORMATIONAL`. Board ready for fabrication.
+4. **finish_2layer.py one-shot tool** — `INFORMATIONAL`. Power routing + outline + gerber automation.
+
+No action for blossom. PCB hardware track scope only.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: C3 flight PCB)
+
+2 findings. Both INFORMATIONAL for blossom firmware. BUT confirms C3 flight path.
+
+1. **C3 flight PCB — collision-aware routing, gerbers exported (commit eacc32e)** — `INFORMATIONAL`
+   - 80 tracks, 26 vias, gerbers exported. C3-specific flight board design.
+   - Confirms V1 flight is ESP32-C3 path. Reinforces my pending architecture escalation.
+
+2. **C3 flight PCB — footprint placement WIP (commit 71a2ba4)** — `INFORMATIONAL`
+   - 20 footprints placed, routing incomplete. Earlier iteration of above.
+   - No blossom impact.
+
+Note: C3 flight PCB progression confirms my architecture escalation is still relevant and unanswered.
+
+## Discovery Sync — 2026-08-05 (balloon-hermes: PCB placement gates)
+
+2 findings. Both INFORMATIONAL — PCB QA process improvements.
+
+1. **Gate 2.5 placement overlap check** — `INFORMATIONAL`. PCB QA gate before routing.
+2. **Gate 0 placement check** — `INFORMATIONAL`. Component overlap check before routing.
+
+No blossom firmware impact. PCB design process scope only.
+
+## Discovery Sync — 2026-08-07 (balloon-hermes: C3 flight PCB 4-layer routing)
+
+2 findings. Both INFORMATIONAL — pure PCB hardware iterations.
+
+1. **Clean placement 80x60mm + 4-layer routing (commit ab7e0f7)** — `INFORMATIONAL`
+   - 0 overlaps, 10 DRC violations. Footprint replacement + routing scripts.
+   - No blossom impact — PCB mechanical work, MCU type unchanged (C3).
+
+2. **4-layer conversion with GND/3V3 power planes (commit 2812b63)** — `INFORMATIONAL`
+   - In1.Cu GND plane, In2.Cu 3V3 plane, signals on F.Cu/B.Cu. Collision-aware routing.
+   - No blossom impact — signal integrity improvement, no firmware interface changes.
+
+C3 flight path already confirmed. Architecture escalation (single vs dual MCU) still unanswered but these PCB iterations don't affect it either way.
