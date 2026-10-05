@@ -1,9 +1,9 @@
 config ENABLE_BMP280
     bool "Enable BMP280 pressure/temperature sensor"
-    default y
+    default n
     help
-        Enable BMP280 sensor for pressure, temperature, and altitude readings.
-        Disable for Minimal variant to save weight and power.
+        BMP280 dropped for V1 flight. GPIO9 repurposed from I2C SDA to LED.
+        Re-enable in V2 with a larger MCU (ESP32-S3) that has more GPIOs.
 
 config ENABLE_GPS
     bool "Enable GPS module (u-blox MAX-M10S or compatible)"
@@ -37,13 +37,19 @@ config ENABLE_FEM
 
 config FEM_TX_PIN
     int "FEM TX_EN GPIO pin"
-    default 19
+    default -1
     depends on ENABLE_FEM
+    help
+        GPIO19 does not exist on ESP32-C3 Mini V1 (it is USB D+).
+        Set to -1 to disable. FEM removed for V1 flight (wire dipole only).
 
 config FEM_RX_PIN
     int "FEM RX_EN GPIO pin"
-    default 0
+    default -1
     depends on ENABLE_FEM
+    help
+        GPIO0 is GPS TX — must NOT be used for FEM. Set to -1 to disable.
+        FEM removed for V1 flight.
 
 config ENABLE_ANTENNA_SWITCH
     bool "Enable SP4T antenna switch"

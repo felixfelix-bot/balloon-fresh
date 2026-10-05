@@ -243,6 +243,43 @@ class TestPowerManager:
         )
         assert "5/5 passed" in out
 
+    # ── supercap-monitoring compile-time guard (t_807f52d4, review finding 2/3) ──
+    # This suite carries its own esp_adc stubs (test/stubs) so it can script the
+    # failure paths; that directory must come BEFORE tests/host_stubs on the
+    # include path, and every other ESP-IDF header still resolves to the shared
+    # stubs. BOTH sides of the #ifdef are run: V1 asserts the out-of-range
+    # sentinel (a literal 0 would assert LOW_POWER), V2 asserts failed-init
+    # retry / failed-read sentinel.
+    def _run_power_manager_guard(self, defines):
+        pm_dir = os.path.join(COMPONENTS, "power_manager")
+        test_src = os.path.join(pm_dir, "test", "test_power_manager_guard.c")
+        binary = os.path.join(tempfile.gettempdir(),
+                              "test_power_manager_guard_" + "_".join(defines or ["v1"]))
+        cmd = ["gcc", "-std=c11", "-Wall", "-Wextra", "-g", "-O0"]
+        cmd.extend(df for d in (defines or []) for df in ("-D", d))
+        cmd.extend(["-I", os.path.join(pm_dir, "test", "stubs")])
+        cmd.extend(["-I", HOST_STUBS])
+        cmd.extend(["-I", pm_dir, test_src, "-o", binary])
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            pytest.fail(f"Compile failed:\n{' '.join(cmd)}\n{result.stderr}")
+        result = subprocess.run([binary], capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            pytest.fail(f"Test failed (rc={result.returncode}):\n{result.stdout}\n{result.stderr}")
+        return result.stdout
+
+    def test_power_manager_guard_v1(self):
+        """V1: ADC compiled out — read must be POWER_MANAGER_MV_INVALID."""
+        out = self._run_power_manager_guard([])
+        assert "Results: all passed" in out
+        assert "FAIL" not in out
+
+    def test_power_manager_guard_v2(self):
+        """V2: ADC compiled in — failed init/read/calibration must not fake 0 mV."""
+        out = self._run_power_manager_guard(["SUPERCAP_MONITORING"])
+        assert "Results: all passed" in out
+        assert "FAIL" not in out
+
 
 class TestMeshAdapter:
     def test_mesh_adapter_host(self):

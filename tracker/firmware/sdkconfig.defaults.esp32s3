@@ -68,6 +68,10 @@ CONFIG_BENCH_TEST_MODE=y
 CONFIG_BENCH_TEST_INTERVAL_SEC=10
 
 # ── BMP280 sensor enabled ──
+# NOTE: this S3 defaults file is NOT the V1 flight board. The V1 flight boards are
+# ESP32-C3 and drop the BMP280 (GPIO9 SDA repurposed to LED); that decision lives
+# in the tracked C3 sdkconfig + main/Kconfig.projbuild (default n). S3 bench boards
+# still wire the sensor, so it stays enabled here.
 CONFIG_ENABLE_BMP280=y
 
 # ── GPS disabled (not wired on S3 bench boards) ──
