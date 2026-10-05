@@ -21,23 +21,31 @@ Mode matters far more than radio count. The SX1280 is not a LoRa-only part:
 | FLRC | high rate, short range |
 | GFSK | highest rate |
 
-The project has measured the LR2021 FLRC link at **1391 kbps** sustained
-(`docs/PLAN-speed-optimization.md`).
+The project has measured the LR2021 FLRC link at **1484.9 kbps sustained, 0.00 % PER**
+(`docs/sustained-throughput-results-2026-07-23.md`, BR2600, LEN 127 — it is TX-side
+limited). The older **1391 kbps** figure in `docs/PLAN-speed-optimization.md` is
+superseded RP2040 Arduino-SPI history.
 
-> **Caveat (2026-10-05): the figure is under re-verification.** The repo's own
-> datasheet audit (`lr2021-flrc-24ghz-datasheet-audit-2026-07-26.md`) shows 2600 kbps
-> is the **raw air rate**, not goodput, and computes a **~2540 kbps ceiling** at 255 B
-> payload against a **measured 1484.9 kbps**. The operator reports ~2.6 Mbps after
-> doubling the payload to 512 B (which raises the computed ceiling to ~2570 kbps —
-> still below 2600), but **that run could not be located on disk**. Card `t_6b68897c`
-> settles it before any doc number is changed.
+> **Settled 2026-10-06 (card `t_6b68897c`).** The **2600 kbps** figure is the FLRC
+> **PHY air rate, not goodput**, and goodput cannot reach it at any payload size: the
+> ceiling is **2540 kbps at 255 B** and **2570 kbps at 511 B** with *zero* host
+> overhead (2550 kbps at 511 B under the headers the firmware actually configures).
+> An operator report of ~2.6 Mbps attributed to doubling the payload 255 B → 512 B
+> was investigated and does not hold: **512 B is not a legal FLRC length** (9-bit
+> payload field, max 511), and no 512 B run exists on disk. What *is* demonstrated is
+> 511 B working — 50/50 delivered, PRBS-15 `bit_err = 0`, at BR650/1300/2600
+> (`full-sweep-report-20260821-175612.md`). Full audit:
+> `docs/FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md`,
+> `tools/flrc_512b_throughput_audit.py`.
 >
-> The *conclusion below does not depend on which figure wins* — a single high-rate
+> The conclusion below does not depend on which figure wins — a single high-rate
 > link beats N co-located radios under every candidate number.
 
 Four
 SX1280s in LoRa mode would land *below* the single FLRC link already in hand.
-**For raw throughput the lever is modulation mode, not radio count.**
+**For raw throughput the lever is modulation mode *plus payload size* (and host-side
+pipelining), not radio count** — payload size 255 B → 511 B is worth only ~1.2 % of
+ceiling, so do not expect packet size alone to be the lever either.
 
 ## 3. Why co-located radios cannot run in parallel
 
@@ -77,7 +85,7 @@ validated pin plan** — ADR-029 D2b (a)–(e) still owe one.
 | Architecture | Verdict |
 |---|---|
 | N radios on one flight board, parallel data | **No** — serialised by desense; pays N× for nothing |
-| One radio, high-rate mode (FLRC/GFSK) | **Yes** — the throughput lever, already in hand |
+| One radio, high-rate mode (FLRC/GFSK) + largest legal payload | **Yes** — the throughput lever, already in hand. Note the lever is *modulation mode first* (~2× from LoRa to FLRC) and *payload size second* (~1.2 % from 255 B to 511 B); radio count is not a lever at all |
 | Split function: one telemetry + one ranging | **Yes, and already the design** (F33 + SX1280) |
 | **Ground-station RX array**, N radios, N nodes | **Yes** — see below |
 
