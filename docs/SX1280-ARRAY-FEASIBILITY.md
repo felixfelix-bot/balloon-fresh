@@ -21,8 +21,21 @@ Mode matters far more than radio count. The SX1280 is not a LoRa-only part:
 | FLRC | high rate, short range |
 | GFSK | highest rate |
 
-The project already measured **1391 kbps** on the LR2021 FLRC link
-(`docs/PLAN-speed-optimization.md`) and is actively pushing that ceiling. Four
+The project has measured the LR2021 FLRC link at **1391 kbps** sustained
+(`docs/PLAN-speed-optimization.md`).
+
+> **Caveat (2026-10-05): the figure is under re-verification.** The repo's own
+> datasheet audit (`lr2021-flrc-24ghz-datasheet-audit-2026-07-26.md`) shows 2600 kbps
+> is the **raw air rate**, not goodput, and computes a **~2540 kbps ceiling** at 255 B
+> payload against a **measured 1484.9 kbps**. The operator reports ~2.6 Mbps after
+> doubling the payload to 512 B (which raises the computed ceiling to ~2570 kbps —
+> still below 2600), but **that run could not be located on disk**. Card `t_6b68897c`
+> settles it before any doc number is changed.
+>
+> The *conclusion below does not depend on which figure wins* — a single high-rate
+> link beats N co-located radios under every candidate number.
+
+Four
 SX1280s in LoRa mode would land *below* the single FLRC link already in hand.
 **For raw throughput the lever is modulation mode, not radio count.**
 

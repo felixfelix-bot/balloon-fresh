@@ -226,6 +226,14 @@ This is neither D2 (one module) nor D2-alt (bare `LoRa2021_Castellated` + SX1280
 D2's module **with** the SX1280 added back. Operator's words: *"Please keep the SX1280 as
 well so that we can have ranging. Also please include the MAX-M10S."*
 
+**Ratified 2026-10-05 (second restatement).** The operator re-affirmed inclusion with
+a second, independent reason: *"Let's include the SX1280 because it can do range
+measurement and because jlcpcb can solder it for us."* Both grounds are therefore on
+the record — **ranging capability**, and **JLC SMT-placeability** (it is the only one
+of the three 2.4 GHz/sub-GHz radios JLCPCB can actually place; see "Supply position"
+below). Neither reason depends on the other, so this decision is not contingent on the
+(a)–(e) derivations — those cost out the decision, they do not reopen it.
+
 **Why the in-module RTToF did not satisfy this.** D2 argued that the module's RTToF ranging
 (at 2.4 GHz, with FLRC to 2.6 Mbps) served the role the SX1280 was bought for. That
 argument is about *capability*, and the operator's requirement is about *interoperability*:
@@ -278,7 +286,13 @@ F33 module and the bare `LoRa2021` are both at **JLC stock 0** and must be consi
 retaining the SX1280 **does not add a consign line** — it adds the only one of the three
 2.4 GHz/sub-GHz radios JLCPCB can actually place.
 
-**Status of this amendment:** recorded, not yet reviewed. Board area — 39 x 21 mm (F33) plus
+**Status of this amendment:** **operator-RATIFIED 2026-10-05.** The operator restated
+the decision on 2026-10-05 for two explicit reasons: (i) the SX1280 does **range
+measurement**, which the F33's in-module RTToF cannot be assumed to replace on-air
+against the existing SX1280 fleet; and (ii) **JLCPCB can solder it** — `SX1280IMLTRT`
+is SMT-placeable (~1000 stock, ~$2.85), whereas the F33 module and the bare
+`LoRa2021` are both at JLC stock 0 and must be consigned. The *decision* is therefore
+closed; the consequences (a)–(e) remain open work. Board area — 39 x 21 mm (F33) plus
 an SX1280 module on a 55 x 45 mm board — is now the tightest it has been, and ADR-030's
 placement gate runs earlier for exactly this reason. **No schematic, placement or routing
 work may start from this amendment until (a)–(e) are re-derived.**
