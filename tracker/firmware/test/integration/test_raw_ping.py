@@ -2,24 +2,43 @@
 """
 test_raw_ping.py — Two-board LoRa raw ping integration test (Phase 5).
 
-Measures RSSI and throughput between two PCB-V2 boards (V1-FAST or V2-ADC)
-equipped with LR2021 radio modules. Board A transmits a known test packet,
-Board B receives it and reports RSSI. Roles are then swapped for bidirectional
-verification.
+Measures packet delivery rate (PDR) and RSSI between two PCB-V2 boards
+(V1-FAST or V2-ADC) equipped with LR2021 radio modules. Board A transmits test
+packets, Board B listens and reports RSSI; roles are then swapped for
+bidirectional verification.
+
+WHAT THE FIRMWARE ACTUALLY DOES (verified against tracker/firmware/main):
+  - `radio_test` (main/app_main.cpp:321) IGNORES its arguments and always
+    transmits a fixed TELEMETRY_SIZE (28) byte telemetry packet
+    (components/telemetry/telemetry.h:6). There is no "send this message"
+    path, so this harness verifies PACKET delivery of that telemetry frame —
+    not the round-trip of an arbitrary payload string.
+  - `radio_recv` (main/app_main.cpp:341) also ignores its argument and listens
+    for a hardcoded 30-second window, printing per packet:
+        RX <N> bytes, RSSI: <R> dBm, SNR: <S> dB
+          HEX: <hex>
+        [and, when N == 28 and the CRC validates:]
+          Valid telemetry! seq=<seq> voltage=<mv>mV
+    and finally `Listen done`.
+
+  Consequently: a received packet is counted ONLY from a real `RX <N> bytes`
+  line (optionally corroborated by `Valid telemetry!`). There is NO substring
+  / "did the word ping appear" fallback, which would count the TX-side command
+  echo as a received packet.
 
 PREREQUISITES:
-  - Two PCB-V2 boards flashed with balloon-fresh firmware (relay mode)
+  - Two PCB-V2 boards flashed with balloon-fresh firmware
   - Both boards connected via USB serial (/dev/ttyACM0, /dev/ttyACM1)
-  - Board locks must be acquirable (no other track using the boards)
+  - Board locks acquirable (no other track using the boards)
   - pyserial installed: pip install pyserial
   - balloon-board-lock.py and board_serial.py in ~/repos/balloon-fresh/tools/
 
 USAGE:
-  # Basic ping test (5 packets, default 30s timeout):
+  # Basic ping test (5 packets per direction, 30s RX window):
   python3 test_raw_ping.py
 
-  # Custom packet count and timeout:
-  python3 test_raw_ping.py --count 10 --timeout 60
+  # Custom packet count:
+  python3 test_raw_ping.py --count 10
 
   # Specify serial ports explicitly:
   python3 test_raw_ping.py --port-a /dev/ttyACM0 --port-b /dev/ttyACM1
@@ -32,50 +51,75 @@ USAGE:
 
 WHAT IT MEASURES:
   - Packet delivery rate (PDR): received / sent
-  - Average RSSI (dBm) from received packets
-  - Round-trip throughput (bytes/sec) based on packet size and time
+  - Average / min / max RSSI (dBm) from received packets
+  - Sparkline-ish per-packet RSSI list
   - Bidirectional verification (A→B then B→A)
-
-BOARD CLI COMMANDS USED:
-  - radio_test <1|2> <message>  — transmit a test packet
-  - radio_recv <seconds>        — listen for incoming packets
 
 EXIT CODES:
   0 — all packets received bidirectionally (PDR 100%)
   1 — partial success (some packets lost)
   2 — complete failure (no packets received)
-  3 — setup error (lock acquisition, serial open, etc.)
+  3 — setup error (lock acquisition, serial open, CLI misuse, etc.)
+
+The log parsers below are pure functions so they can be regression-tested on
+the host without boards: see tracker/firmware/test/test_integration_parsers.py
 """
 
 import argparse
+import os
 import re
+import statistics
+import subprocess
 import sys
 import time
-import os
-import subprocess
-import statistics
-from pathlib import Path
 
 # Ensure we can import BoardSerial from the tools directory
 TOOLS_DIR = os.path.expanduser("~/repos/balloon-fresh/tools")
 sys.path.insert(0, TOOLS_DIR)
 
-try:
-    from board_serial import BoardSerial
-except ImportError:
-    print("ERROR: board_serial.py not found in {TOOLS_DIR}".format(TOOLS_DIR=TOOLS_DIR), file=sys.stderr)
-    print("       Ensure balloon-fresh repo is cloned at ~/repos/balloon-fresh", file=sys.stderr)
-    sys.exit(3)
+
+def load_board_serial():
+    """Import BoardSerial lazily.
+
+    Deferred so that `--help` works on a host without pyserial installed
+    (board_serial.py imports pyserial at module scope and exits on failure).
+    """
+    try:
+        from board_serial import BoardSerial
+    except ImportError:
+        print("ERROR: board_serial.py not found in {TOOLS_DIR}".format(TOOLS_DIR=TOOLS_DIR), file=sys.stderr)
+        print("       Ensure balloon-fresh repo is cloned at ~/repos/balloon-fresh", file=sys.stderr)
+        sys.exit(3)
+    return BoardSerial
+
 
 LOCK_SCRIPT = os.path.join(TOOLS_DIR, "balloon-board-lock.py")
 BOARD_A_PORT = "/dev/ttyACM0"
 BOARD_B_PORT = "/dev/ttyACM1"
 BAUD_RATE = 115200
 DEFAULT_PACKET_COUNT = 5
-DEFAULT_TIMEOUT = 30  # seconds per receive window
-TEST_MESSAGE = "ping"
-RSSI_PATTERN = re.compile(r"RSSI[:\s]+(-?\d+)\s*dBm", re.IGNORECASE)
-RECV_PATTERN = re.compile(r"(?:received|RX|recv).*?(?:data|payload|packet)[:\s]+(.+)", re.IGNORECASE)
+DEFAULT_TIMEOUT = 30  # seconds; matches the firmware's hardcoded listen window
+TX_WINDOW_MAX = 30    # firmware hardcodes a 30 s radio_recv window
+TX_SPACING = 2.0      # seconds between radio_test transmissions
+TELEMETRY_SIZE = 28   # components/telemetry/telemetry.h:6
+
+# Firmware producer formats (main/app_main.cpp cli_cmd_radio_recv, :341):
+#   "RX 28 bytes, RSSI: -45 dBm, SNR: 9 dB"
+#   "  Valid telemetry! seq=7 voltage=4100mV"
+#   "TX test packet (28 bytes)... OK" | "... TIMEOUT"
+#   "Listening for 30s...", "Listen done"
+RX_LINE_PATTERN = re.compile(
+    r"\bRX\s+(\d+)\s+bytes,\s*RSSI:\s*(-?\d+)\s*dBm,\s*SNR:\s*(-?\d+)\s*dB",
+    re.IGNORECASE,
+)
+VALID_TELEMETRY_PATTERN = re.compile(
+    r"Valid telemetry!\s*seq=(\d+)\s*voltage=(\d+)mV",
+    re.IGNORECASE,
+)
+TX_RESULT_PATTERN = re.compile(
+    r"TX test packet\s*\((\d+)\s*bytes\)\.\.\.\s*(OK|TIMEOUT)",
+    re.IGNORECASE,
+)
 
 
 def acquire_lock(board: str, purpose: str, timeout: int = 120) -> bool:
@@ -97,29 +141,25 @@ def acquire_lock(board: str, purpose: str, timeout: int = 120) -> bool:
 
 
 def release_lock(board: str) -> None:
-    """Release board lock."""
+    """Release board lock, reporting a failure instead of assuming success."""
     env = os.environ.copy()
     env["BALLOON_TRACK"] = "balloon-hermes"
-    subprocess.run(
-        ["python3", LOCK_SCRIPT, "release", board],
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
+    try:
+        result = subprocess.run(
+            ["python3", LOCK_SCRIPT, "release", board],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception as e:  # noqa: BLE001 - surfaced, never swallowed
+        print("  LOCK RELEASE ERROR for {board}: {e}".format(board=board, e=e), file=sys.stderr)
+        return
+    if result.returncode != 0:
+        print("  LOCK RELEASE FAILED for {board}: {err}".format(
+            board=board, err=(result.stderr or result.stdout).strip()), file=sys.stderr)
+        return
     print("  Lock released: {board}".format(board=board))
-
-
-def send_command(ser, command: str, wait: float = 1.0) -> str:
-    """Send a CLI command to the board and read the response."""
-    ser.write((command + "\n").encode("utf-8"))
-    time.sleep(wait)
-    response = ""
-    while ser.in_waiting > 0:
-        chunk = ser.read(ser.in_waiting)
-        if chunk:
-            response += chunk.decode("utf-8", errors="replace")
-    return response
 
 
 def drain_serial(ser) -> None:
@@ -129,102 +169,128 @@ def drain_serial(ser) -> None:
         ser.read(ser.in_waiting)
 
 
-def extract_rssi(text: str):
-    """Extract RSSI value from board output text."""
-    match = RSSI_PATTERN.search(text)
-    if match:
-        return int(match.group(1))
-    return None
+def read_until(ser, deadline: float) -> str:
+    """Accumulate serial output until `deadline` (monotonic seconds)."""
+    out = ""
+    while True:
+        while ser.in_waiting > 0:
+            chunk = ser.read(ser.in_waiting)
+            if chunk:
+                out += chunk.decode("utf-8", errors="replace")
+        if time.monotonic() >= deadline:
+            return out
+        time.sleep(0.1)
 
 
-def extract_received_data(text: str):
-    """Check if text indicates a received packet and extract its data."""
-    match = RECV_PATTERN.search(text)
-    if match:
-        return match.group(1).strip()
-    # Also check for simpler patterns
-    if "hello" in text.lower() or TEST_MESSAGE in text.lower():
-        return TEST_MESSAGE
-    return None
+def parse_rx_line(line: str):
+    """Return {'len','rssi','snr'} for a real RX announcement, else None.
 
-
-def run_direction(tx_board_name: str, tx_port: str, tx_board_id: str,
-                  rx_board_name: str, rx_port: str, rx_board_id: str,
-                  count: int, timeout: int) -> dict:
+    Only the firmware's `RX <N> bytes, RSSI: <R> dBm, SNR: <S> dB` line counts.
+    A benign substring such as the echoed `radio_test` command is NOT a packet.
     """
-    Run ping test in one direction (TX board → RX board).
+    m = RX_LINE_PATTERN.search(line or "")
+    if not m:
+        return None
+    return {"len": int(m.group(1)), "rssi": int(m.group(2)), "snr": int(m.group(3))}
 
-    Returns dict with results: {sent, received, rssi_values[], pdr, avg_rssi}
+
+def parse_valid_telemetry(line: str):
+    """Return {'seq','voltage_mv'} for a validated telemetry decode, else None."""
+    m = VALID_TELEMETRY_PATTERN.search(line or "")
+    if not m:
+        return None
+    return {"seq": int(m.group(1)), "voltage_mv": int(m.group(2))}
+
+
+def parse_tx_result(line: str):
+    """Return (bytes, 'OK'|'TIMEOUT') for a radio_test result line, else None."""
+    m = TX_RESULT_PATTERN.search(line or "")
+    if not m:
+        return None
+    return int(m.group(1)), m.group(2).upper()
+
+
+def run_direction(tx_board_name: str, tx_port: str, rx_board_name: str,
+                  rx_port: str, count: int, window: int) -> dict:
+    """
+    Run the ping test in one direction (TX board → RX board).
+
+    Returns dict with {direction, sent, received, rssi_values[], pdr, avg_rssi}.
     """
     results = {
-        "direction": "{tx}→{rx}".format(tx=tx_board_name, rx=rx_board_name),
+        "direction": "{tx}\u2192{rx}".format(tx=tx_board_name, rx=rx_board_name),
         "sent": 0,
         "received": 0,
+        "telemetry_valid": 0,
         "rssi_values": [],
+        "snr_values": [],
         "errors": [],
     }
 
-    print("\n--- {direction}: {tx_name} TX → {rx_name} RX ---".format(
+    print("\n--- {direction}: {tx_name} TX \u2192 {rx_name} RX ---".format(
         direction=results["direction"],
         tx_name=tx_board_name,
         rx_name=rx_board_name,
     ))
 
-    # Open serial connections using BoardSerial wrapper
+    BoardSerial = load_board_serial()
     try:
         tx_ser = BoardSerial(tx_port, BAUD_RATE, timeout=1)
         rx_ser = BoardSerial(rx_port, BAUD_RATE, timeout=1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - reported, not fatal to the run
         err = "Failed to open serial: {e}".format(e=e)
         print("  ERROR: {err}".format(err=err), file=sys.stderr)
         results["errors"].append(err)
         return results
 
     try:
-        # Drain any pending data
         drain_serial(tx_ser)
         drain_serial(rx_ser)
 
-        # Start RX listener on the receive board
-        print("  Starting RX listener on {rx_name} ({timeout}s window)...".format(
-            rx_name=rx_board_name, timeout=timeout))
-        rx_ser.write("radio_recv {timeout}\n".format(timeout=timeout).encode("utf-8"))
-        time.sleep(0.5)  # Let RX start
+        # Start the RX listener. The firmware listens for a hardcoded 30 s.
+        print("  Starting RX listener on {rx_name} ({w}s firmware window)...".format(
+            rx_name=rx_board_name, w=window))
+        rx_ser.write(b"radio_recv\n")
+        time.sleep(0.5)  # let "Listening for 30s..." arrive
 
-        # Send packets from TX board
+        deadline = time.monotonic() + window
         for i in range(count):
-            msg = "{base}_{idx}".format(base=TEST_MESSAGE, idx=i + 1)
-            print("  TX [{i}/{count}]: radio_test 1 {msg}".format(
-                i=i + 1, count=count, msg=msg))
-            tx_ser.write("radio_test 1 {msg}\n".format(msg=msg).encode("utf-8"))
+            if time.monotonic() >= deadline:
+                print("  WARNING: {w}s RX window elapsed before all {n} packets were sent; "
+                      "decrease --count or move the boards closer".format(w=window, n=count))
+                break
+            print("  TX [{i}/{count}]: radio_test".format(i=i + 1, count=count))
+            tx_ser.write(b"radio_test\n")
             results["sent"] += 1
-            time.sleep(2.0)  # Spaced transmission
+            time.sleep(TX_SPACING)
 
-        # Wait for RX window to complete
-        remaining = timeout - (count * 2.0)
-        if remaining > 0:
-            time.sleep(remaining + 1)
+        rx_output = read_until(rx_ser, deadline)
 
-        # Read all RX output
-        rx_output = ""
-        while rx_ser.in_waiting > 0:
-            chunk = rx_ser.read(rx_ser.in_waiting)
-            if chunk:
-                rx_output += chunk.decode("utf-8", errors="replace")
+        # Parse TX-side confirmations (radio_test OK/TIMEOUT).
+        tx_confirmations = read_until(tx_ser, time.monotonic() + 0.5)
+        for line in tx_confirmations.split("\n"):
+            if parse_tx_result(line) is not None:
+                size, verdict = parse_tx_result(line)
+                if verdict != "OK":
+                    results["errors"].append("radio_test reported {v}".format(v=verdict))
 
-        # Parse received packets
-        lines = rx_output.split("\n")
-        for line in lines:
-            rssi = extract_rssi(line)
-            if rssi is not None:
-                results["rssi_values"].append(rssi)
-
-            data = extract_received_data(line)
-            if data is not None:
+        # Parse RX output — only real RX announcements count.
+        for line in rx_output.split("\n"):
+            rx = parse_rx_line(line)
+            if rx is not None:
                 results["received"] += 1
-                print("  RX received: {data} (RSSI: {rssi})".format(
-                    data=data,
-                    rssi=rssi if rssi else "N/A"))
+                results["rssi_values"].append(rx["rssi"])
+                results["snr_values"].append(rx["snr"])
+                print("    RX #{n}: {size} bytes, RSSI {rssi} dBm, SNR {snr} dB".format(
+                    n=results["received"], size=rx["len"], rssi=rx["rssi"], snr=rx["snr"]))
+                continue
+            tel = parse_valid_telemetry(line)
+            if tel is not None:
+                results["telemetry_valid"] += 1
+
+        if "Listen done" not in rx_output:
+            results["errors"].append("RX board never printed 'Listen done' — window may "
+                                     "have been cut short")
 
         # Calculate PDR
         if results["sent"] > 0:
@@ -234,14 +300,21 @@ def run_direction(tx_board_name: str, tx_port: str, tx_board_id: str,
                 received=results["received"],
                 sent=results["sent"],
                 pdr=pdr))
+            if results["telemetry_valid"] != results["received"]:
+                print("  NOTE: {v}/{r} received packets validated as telemetry (CRC)".format(
+                    v=results["telemetry_valid"], r=results["received"]))
         else:
             results["pdr"] = 0.0
 
-        # Calculate average RSSI
+        # Calculate RSSI statistics
         if results["rssi_values"]:
-            avg_rssi = statistics.mean(results["rssi_values"])
-            results["avg_rssi"] = avg_rssi
-            print("  Average RSSI: {avg:.1f} dBm".format(avg=avg_rssi))
+            results["avg_rssi"] = statistics.mean(results["rssi_values"])
+            results["min_rssi"] = min(results["rssi_values"])
+            results["max_rssi"] = max(results["rssi_values"])
+            print("  Average RSSI: {avg:.1f} dBm (range {lo} to {hi})".format(
+                avg=results["avg_rssi"],
+                lo=results["min_rssi"],
+                hi=results["max_rssi"]))
             if len(results["rssi_values"]) > 1:
                 results["rssi_stddev"] = statistics.stdev(results["rssi_values"])
                 print("  RSSI stddev: {std:.1f} dBm".format(std=results["rssi_stddev"]))
@@ -250,14 +323,11 @@ def run_direction(tx_board_name: str, tx_port: str, tx_board_id: str,
             print("  No RSSI values captured")
 
     finally:
-        try:
-            tx_ser.close()
-        except Exception:
-            pass
-        try:
-            rx_ser.close()
-        except Exception:
-            pass
+        for ser in (tx_ser, rx_ser):
+            try:
+                ser.close()
+            except Exception:  # noqa: BLE001 - close best-effort
+                pass
 
     return results
 
@@ -265,14 +335,20 @@ def run_direction(tx_board_name: str, tx_port: str, tx_board_id: str,
 def main():
     parser = argparse.ArgumentParser(
         description="Two-board LoRa raw ping integration test (Phase 5). "
-                    "Measures RSSI and packet delivery rate between two PCB-V2 boards.",
+                    "Measures packet delivery rate and RSSI between two PCB-V2 boards. "
+                    "The firmware's radio_test sends a fixed {n}-byte telemetry packet, so this "
+                    "verifies packet delivery of that frame (not an arbitrary message).".format(
+                        n=TELEMETRY_SIZE),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s                          # Basic 5-packet ping test
-  %(prog)s --count 10 --timeout 60  # 10 packets, 60s RX window
+  %(prog)s --count 10               # 10 packets per direction
   %(prog)s --tx-first b             # Board B transmits first
   %(prog)s --port-a /dev/ttyACM2    # Custom port for board A
+
+Note: the RX listen window is fixed at 30 s in the firmware
+(main/app_main.cpp cli_cmd_radio_recv), so --timeout is clamped to 30.
         """,
     )
     parser.add_argument(
@@ -281,7 +357,8 @@ Examples:
     )
     parser.add_argument(
         "--timeout", type=int, default=DEFAULT_TIMEOUT,
-        help="RX listen window in seconds per direction (default: {n})".format(n=DEFAULT_TIMEOUT),
+        help="RX listen window in seconds; clamped to the firmware's {w}s cap "
+             "(default: {n})".format(w=TX_WINDOW_MAX, n=DEFAULT_TIMEOUT),
     )
     parser.add_argument(
         "--port-a", default=BOARD_A_PORT,
@@ -301,13 +378,28 @@ Examples:
     )
     args = parser.parse_args()
 
+    # The firmware hardcodes the listen window; be honest about the clamp
+    # instead of waiting 60 s for a window the board closes after 30 s.
+    window = args.timeout
+    if window > TX_WINDOW_MAX:
+        print("  WARNING: firmware listens for a hardcoded {w}s (--timeout {t} ignored); "
+              "using {w}s".format(w=TX_WINDOW_MAX, t=args.timeout))
+        window = TX_WINDOW_MAX
+    if args.count < 1:
+        print("ERROR: --count must be >= 1", file=sys.stderr)
+        sys.exit(3)
+    if args.count * TX_SPACING > window:
+        print("  WARNING: {n} packets at {s}s spacing exceed the {w}s window; "
+              "only the first ~{m} will be sent".format(
+                  n=args.count, s=TX_SPACING, w=window, m=int(window // TX_SPACING)))
+
     print("=" * 60)
     print("PCB-V2 Phase 5: Raw Ping Integration Test")
     print("=" * 60)
     print("  Board A: {port}".format(port=args.port_a))
     print("  Board B: {port}".format(port=args.port_b))
     print("  Packets per direction: {n}".format(n=args.count))
-    print("  RX timeout: {t}s".format(t=args.timeout))
+    print("  RX window: {t}s (firmware hardcoded)".format(t=window))
     print("  TX first: {tx}".format(tx=args.tx_first.upper()))
 
     # Acquire board locks
@@ -329,42 +421,17 @@ Examples:
 
     all_results = []
     try:
-        # Direction 1
         if args.tx_first == "a":
-            r1 = run_direction(
-                "A", args.port_a, "board-a",
-                "B", args.port_b, "board-b",
-                args.count, args.timeout,
-            )
+            pairs = [("A", args.port_a, "B", args.port_b), ("B", args.port_b, "A", args.port_a)]
         else:
-            r1 = run_direction(
-                "B", args.port_b, "board-b",
-                "A", args.port_a, "board-a",
-                args.count, args.timeout,
-            )
-        all_results.append(r1)
+            pairs = [("B", args.port_b, "A", args.port_a), ("A", args.port_a, "B", args.port_b)]
 
-        # Brief pause between directions
-        print("\n  Pausing 3s before direction swap...")
-        time.sleep(3)
-
-        # Direction 2 (swap roles)
-        if args.tx_first == "a":
-            r2 = run_direction(
-                "B", args.port_b, "board-b",
-                "A", args.port_a, "board-a",
-                args.count, args.timeout,
-            )
-        else:
-            r2 = run_direction(
-                "A", args.port_a, "board-a",
-                "B", args.port_b, "board-b",
-                args.count, args.timeout,
-            )
-        all_results.append(r2)
-
+        for idx, (txn, txp, rxn, rxp) in enumerate(pairs):
+            if idx:
+                print("\n  Pausing 3s before direction swap...")
+                time.sleep(3)
+            all_results.append(run_direction(txn, txp, rxn, rxp, args.count, window))
     finally:
-        # Always release locks
         if locked:
             print("\n--- Releasing Board Locks ---")
             for b in locked:
@@ -381,36 +448,35 @@ Examples:
     for r in all_results:
         all_rssi.extend(r["rssi_values"])
         pdr = r.get("pdr", 0.0)
-        avg_rssi = r.get("avg_rssi", "N/A")
-        avg_str = "{:.1f} dBm".format(avg_rssi) if isinstance(avg_rssi, float) else str(avg_rssi)
-        print("  {dir}: {recv}/{sent} ({pdr:.1f}%), RSSI: {rssi})".format(
+        avg_rssi = r.get("avg_rssi")
+        avg_str = "{:.1f} dBm".format(avg_rssi) if isinstance(avg_rssi, float) else "N/A"
+        print("  {dir}: {recv}/{sent} ({pdr:.1f}%), avg RSSI: {rssi}".format(
             dir=r["direction"],
             recv=r["received"],
             sent=r["sent"],
             pdr=pdr,
             rssi=avg_str,
         ))
+        for err in r["errors"]:
+            print("    ! {err}".format(err=err))
 
     overall_pdr = (total_received / total_sent * 100) if total_sent > 0 else 0
     print("\n  Overall PDR: {recv}/{sent} ({pdr:.1f}%)".format(
         recv=total_received, sent=total_sent, pdr=overall_pdr))
     if all_rssi:
-        print("  Overall avg RSSI: {avg:.1f} dBm (range: {min} to {max})".format(
-            avg=statistics.mean(all_rssi),
-            min=min(all_rssi),
-            max=max(all_rssi),
-        ))
+        print("  Overall RSSI: avg {avg:.1f} dBm (min {min}, max {max})".format(
+            avg=statistics.mean(all_rssi), min=min(all_rssi), max=max(all_rssi)))
     else:
         print("  No RSSI data collected")
 
-    # Throughput estimate
-    if total_received > 0:
-        # Approximate payload size per packet (test message + framing)
-        est_payload = len(TEST_MESSAGE) + 10  # message + overhead
-        total_bytes = total_received * est_payload
-        total_time = 2 * (args.count * 2.0 + args.timeout)  # both directions
-        throughput = total_bytes / total_time if total_time > 0 else 0
-        print("  Estimated throughput: ~{tp:.1f} bytes/sec".format(tp=throughput))
+    # Goodput estimate from real packet bytes actually received (28 B payload).
+    if total_received > 0 and total_sent > 0:
+        measured = args.count * TX_SPACING  # seconds of known transmission schedule
+        total_bytes = total_received * TELEMETRY_SIZE
+        throughput = total_bytes / measured if measured > 0 else 0
+        print("  Estimated goodput: ~{tp:.1f} bytes/sec "
+              "({b} bytes over {t:.0f}s per direction)".format(
+                  tp=throughput, b=total_bytes, t=measured))
 
     # Exit code
     if overall_pdr == 100:
@@ -419,9 +485,8 @@ Examples:
     elif overall_pdr > 0:
         print("\n  RESULT: PARTIAL (some packet loss)")
         sys.exit(1)
-    else:
-        print("\n  RESULT: FAIL (no packets received)")
-        sys.exit(2)
+    print("\n  RESULT: FAIL (no packets received)")
+    sys.exit(2)
 
 
 if __name__ == "__main__":
