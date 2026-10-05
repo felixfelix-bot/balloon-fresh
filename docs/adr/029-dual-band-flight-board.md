@@ -297,7 +297,7 @@ an SX1280 module on a 55 x 45 mm board — is now the tightest it has been, and 
 placement gate runs earlier for exactly this reason. **No schematic, placement or routing
 work may start from this amendment until (a)–(e) are re-derived.**
 
-### D8 — PROPOSED (operator idea, 2026-10-05): nested dual footprint, F33 **or** bare LoRa2021
+### D8 — operator-**RATIFIED** 2026-10-05: nested dual footprint, F33 **or** bare LoRa2021
 
 Operator: *"put one of each on the JLCPCB board you're designing so that I can choose which
 one to fly at a later point in time."*
@@ -336,8 +336,17 @@ F33's ~39 × 21 mm site. The cost is entirely electrical:
    **not legal** on 868 MHz or 2.4 GHz in Germany without a licence (868 MHz main band is
    +14 dBm ERP; 2.4 GHz is +20 dBm EIRP). The F33 can only be flown at reduced power.
 
-**Status:** PROPOSED — not ratified, not costed. Tracked by card `t_1b12a7ab`. This does
-**not** change D2/D2b: the F33 remains the v9 baseline; D8 is an option on the same site.
+**Status:** operator-**RATIFIED** 2026-10-05, the same day it was proposed. The operator
+accepted the nested site so either module can be fitted at flight time. Ratification records
+the **cost** as accepted too: the selectable pin-1 rail is a **design requirement**, not a
+suggestion, and the DNP RF/FEM parts are part of the BOM. Grounds for accepting: (i) the
+option is **free in board area** — the bare module's pad field nests entirely inside the F33
+pad ring that D2 already reserves; (ii) it preserves the module choice *at flight time*, which
+is the operator's stated reason; (iii) the cost is **bounded and named** (one rail selector +
+DNP parts + presence detect), not open-ended. D8 does **not** change D2/D2b: the F33 remains
+the v9 baseline and the primary part; D8 adds the fallback on the same site. Build is gated
+behind (b) pin re-plan and (e) power budget, because the rail selector is part of the rail
+sum. Tracked by card `t_1b12a7ab`.
 
 **D2-alt — the rejected/reverted configuration (kept live, not deleted).** If the operator
 rejects the module substitution, v9 reverts to **LoRa2021_Castellated** (19.81 x 14.98 x
