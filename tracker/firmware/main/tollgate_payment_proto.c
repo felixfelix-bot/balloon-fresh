@@ -11,11 +11,22 @@
 #include "tollgate_payment_proto.h"
 #include <string.h>
 
+/* Valid tollgate_msg_type_t bounds — used by both encode and decode */
+#define TG_MSG_TYPE_MIN ((int)TG_MSG_PAY)
+#define TG_MSG_TYPE_MAX ((int)TG_MSG_REVOKE)
+
+static int tg_type_is_valid(int type)
+{
+    return type >= TG_MSG_TYPE_MIN && type <= TG_MSG_TYPE_MAX;
+}
+
 int tollgate_proto_encode(uint8_t *buf, uint16_t buf_len,
                            tollgate_msg_type_t type, uint16_t seq,
                            const char *payload, uint16_t payload_len)
 {
-    if (!buf || buf_len < (uint16_t)sizeof(tollgate_msg_hdr_t) + payload_len)
+    if (!buf || !tg_type_is_valid((int)type))
+        return -1;
+    if (buf_len < (uint16_t)sizeof(tollgate_msg_hdr_t) + payload_len)
         return -1;
 
     tollgate_msg_hdr_t *hdr = (tollgate_msg_hdr_t *)buf;
@@ -43,6 +54,8 @@ int tollgate_proto_decode(const uint8_t *data, uint16_t len,
 
     /* Validate */
     if (hdr->version != TOLLGATE_PROTO_VERSION)
+        return -1;
+    if (!tg_type_is_valid(hdr->type))
         return -1;
     if (hdr->payload_len > len - (uint16_t)sizeof(tollgate_msg_hdr_t))
         return -1;

@@ -85,11 +85,14 @@ typedef struct {
  *
  * @param buf         Output buffer
  * @param buf_len      Output buffer capacity
- * @param type         Message type (TG_MSG_PAY, TG_MSG_ACK, etc.)
+ * @param type         Message type (TG_MSG_PAY, TG_MSG_ACK, etc.; must be
+ *                     within TG_MSG_PAY..TG_MSG_REVOKE)
  * @param seq          Sequence number
  * @param payload      Payload data (may be NULL if payload_len == 0)
  * @param payload_len  Payload length in bytes
  * @return total bytes written (header + payload), or -1 on error
+ *         (NULL buffer, invalid msg_type, or buf_len too small — in which
+ *         case nothing is written)
  */
 int tollgate_proto_encode(uint8_t *buf, uint16_t buf_len,
                            tollgate_msg_type_t type, uint16_t seq,
@@ -103,6 +106,8 @@ int tollgate_proto_encode(uint8_t *buf, uint16_t buf_len,
  * @param hdr       Output: decoded header (caller-allocated)
  * @param payload   Output: pointer to payload within data (may be NULL)
  * @return sizeof(tollgate_msg_hdr_t) on success, or -1 on invalid header
+ *         (NULL data, truncated header, wrong version, or msg_type outside
+ *         TG_MSG_PAY..TG_MSG_REVOKE)
  */
 int tollgate_proto_decode(const uint8_t *data, uint16_t len,
                            tollgate_msg_hdr_t *hdr,
