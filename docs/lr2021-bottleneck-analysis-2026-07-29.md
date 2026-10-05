@@ -61,11 +61,22 @@ The ESP32-C3 is configured at 40 MHz SPI clock, which is 2.5× the datasheet max
 
 ### Code Reference
 
-- `EspHalC3.h:32` — `#define ESPHAL_C3_SPI_HZ (40 * 1000 * 1000)`
+- `EspHalC3.h:32` — `#define ESPHAL_C3_SPI_HZ (16 * 1000 * 1000)` ✅ (was `(40 * 1000 * 1000)`)
 
 ### Fix
 
 Change to `(16 * 1000 * 1000)`. Validate that throughput impact is minimal (SPI is not the dominant time component on ESP32 — protocol overhead is).
+
+**Status: FIXED 2026-07-29 (`8fd3d4e`), regression-gated + modelled 2026-09-11 (task `t_0b2f5534`).**
+The define is 16 MHz, `dev_cfg.clock_speed_hz` reads the macro, and
+`tests/test_c3_spi_clock.py` fails on any value above the datasheet maximum.
+Clean ESP-IDF builds for RAW_TX and RAW_RX give an app image whose compiled
+call-site constant is 16 000 000 (no 40/18 MHz constant remains).
+Modelled impact from the 40 MHz anchor (1781.7 kbps, 255 B, 2600 kbps FLRC) with
+the measured 332-byte-per-packet SPI budget: **−8.0%** (1639 kbps), well inside
+the 20% investigation threshold. The 1000-packet on-air confirmation is still
+outstanding (no LR2021/C3 boards attached on 2026-09-11) — see
+`docs/lr2021-p04-spi-clock-16mhz-2026-09-11.md`.
 
 ---
 
