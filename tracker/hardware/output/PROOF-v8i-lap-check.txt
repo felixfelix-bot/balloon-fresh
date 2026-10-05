@@ -1,0 +1,100 @@
+board           : tracker/hardware/output/v8i_krt_gnss.kicad_pcb
+sha256          : 638de56387721460100cd3048fb23229294f510f0a2d89795026c7e6c0cfd0ea
+sha256_12       : 638de5638772
+copper layers   : 4
+edge bbox       : -0.075,-0.075 .. 55.075,45.075  (55.150 x 45.150 mm)
+
+## placement + hash
+  ANT1|U.FL_Molex_MCRF_73412-0110_Vertical|51.0000|22.0000|0.0|U.FL
+  ANT2|U.FL_Molex_MCRF_73412-0110_Vertical|52.2000|42.0000|180.0|U.FL_GNSS
+  C1|C_0603_1608Metric|15.0000|23.0000|0.0|10uF
+  C2|C_0603_1608Metric|25.0000|9.0000|0.0|10uF
+  C3|C_0402_1005Metric|19.0000|25.0000|90.0|100nF
+  C4|C_0402_1005Metric|51.0000|11.0000|-90.0|100nF
+  C_CAP|CP_Radial_D10.0mm_P5.00mm|6.0000|30.0000|90.0|1F_5.5V
+  C_SH1|C_0402_1005Metric|50.0000|32.5000|0.0|DNP
+  C_SH2|C_0402_1005Metric|50.0000|37.0000|0.0|DNP
+  D1|D_SOD-123|24.0000|23.0000|180.0|BAT54
+  J1|PinHeader_1x06_P2.54mm_Vertical|20.0000|42.0000|90.0|Prog_Header
+  J2|PinHeader_1x04_P2.54mm_Vertical|40.0000|42.0000|90.0|Debug_Header
+  LED1|LED_0603_1608Metric|38.0000|36.0000|0.0|LED_RED
+  MNT1|MountingHole_2.2mm_M2|52.3000|2.9000|0.0|MountingHole
+  MNT2|MountingHole_2.2mm_M2|24.5500|28.6500|0.0|MountingHole
+  MNT3|MountingHole_2.2mm_M2|42.4500|37.0000|0.0|MountingHole
+  MNT4|MountingHole_2.2mm_M2|15.0000|42.0000|0.0|MountingHole
+  R_DIV1|R_0402_1005Metric|4.0000|36.0000|180.0|100k
+  R_DIV2|R_0402_1005Metric|9.0000|38.0000|0.0|100k
+  R_LED|R_0402_1005Metric|30.0000|32.0000|-90.0|330R
+  R_PD|R_0402_1005Metric|14.0000|36.0000|-90.0|10k
+  R_SER|R_0402_1005Metric|51.5000|34.5000|90.0|0R
+  SOLAR|PinHeader_1x02_P2.54mm_Vertical|4.0000|42.0000|90.0|Solar_In
+  U1|ESP32-C3-WROOM-02|13.0000|12.0000|0.0|ESP32-C3-WROOM-02
+  U2|LoRa2021_Castellated|38.0000|9.0000|180.0|LoRa2021_Gen4
+  U3|ublox_MAX|39.0000|27.0000|0.0|MAX-M10S
+  U4|SOT-23-5|19.0000|30.0000|0.0|TPS7A02
+  U5|Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering|23.0000|36.0000|0.0|BMP280
+PLACEMENT_HASH  : 3937af968f5b89c431cf313f4e7d609076995c449c98d9f6d258b89a4a8a7925
+PLACEMENT_HASH_12: 3937af968f5b
+footprints      : 28
+
+## D5 mounting holes (NPTH 2.2 mm)
+  MNT1 drill 2.20 at (52.300,2.900)  hole-edge to board edge 1.600 mm
+  MNT2 drill 2.20 at (24.550,28.650)  hole-edge to board edge 15.250 mm
+  MNT3 drill 2.20 at (42.450,37.000)  hole-edge to board edge 6.900 mm
+  MNT4 drill 2.20 at (15.000,42.000)  hole-edge to board edge 1.900 mm
+  [PASS] 4x M2 NPTH present (D5) -- 4 found
+  [PASS] all holes 2.2 mm drill
+  [PASS] mounting holes >= 9 mm apart (search constraint) -- min pair 16.414 mm
+
+## D1/D2 GNSS feed
+  RF_OUT    segments 8  length 23.081 mm  widths [0.39]  layers ['F.Cu']  vias 0
+  [PASS] RF_OUT width == 0.39 mm (RF_OUT basis) -- [0.39]
+  [PASS] RF_OUT on F.Cu only (D6) -- ['F.Cu']
+  [PASS] RF_OUT has ZERO vias (D6)
+  GNSS_RF   segments 4  length 12.460 mm  widths [0.39]  layers ['F.Cu']  vias 0
+  [PASS] GNSS_RF width == 0.39 mm (RF_OUT basis) -- [0.39]
+  [PASS] GNSS_RF on F.Cu only (D6) -- ['F.Cu']
+  [PASS] GNSS_RF has ZERO vias (D6)
+  GNSS_ANT  segments 4  length 7.210 mm  widths [0.39]  layers ['F.Cu']  vias 0
+  [PASS] GNSS_ANT width == 0.39 mm (RF_OUT basis) -- [0.39]
+  [PASS] GNSS_ANT on F.Cu only (D6) -- ['F.Cu']
+  [PASS] GNSS_ANT has ZERO vias (D6)
+  [PASS] U3.11 net == GNSS_RF -- ['GNSS_RF']
+  [PASS] R_SER.2 net == GNSS_RF -- ['GNSS_RF']
+  [PASS] C_SH1.2 net == GNSS_RF -- ['GNSS_RF']
+  [PASS] R_SER.1 net == GNSS_ANT -- ['GNSS_ANT']
+  [PASS] C_SH2.2 net == GNSS_ANT -- ['GNSS_ANT']
+  [PASS] ANT2.1 net == GNSS_ANT -- ['GNSS_ANT']
+  pi topology: C_SH1 shunt (radio side), R_SER 0R series, C_SH2 shunt (antenna side)
+  DNP flags   : C_SH1=True C_SH2=True
+
+## D4 no-connects on U3
+  [PASS] U3.13 stays no-connect -- ['']
+  [PASS] U3.14 stays no-connect -- ['']
+
+## F.Cu GNSS keep-out (rule area)
+  layer F.Cu forbid_pour=True  box 43.0,28.8 .. 54.5,44.6
+  [PASS] exactly one F.Cu GNSS rule area -- 1 rule area(s)
+  [PASS] no RF_OUT (2.4 GHz TX) copper inside the keep-out -- 0 segment(s)
+  GND vias inside the rule area: [(44.5, 29.2), (44.5, 31.4), (48.7, 32.5), (48.7, 37.0), (49.875, 42.0), (51.45, 43.5), (52.875, 42.0)]
+    wall-return ties (lap)     : [(44.5, 29.2), (44.5, 31.4)]
+    U.FL / pi ground returns   : [(48.7, 32.5), (48.7, 37.0), (49.875, 42.0), (51.45, 43.5), (52.875, 42.0)]
+  [PASS] no frozen GND stitching vias left inside the keep-out -- []
+  every copper item inside the rule area, by net: [('GND', 23), ('GNSS_ANT', 7), ('GNSS_RF', 7), ('I2C_SCL', 2), ('I2C_SDA', 3)]
+  LISTED DEVIATION: inherited low-speed signals inside the rule area: {'I2C_SDA': 3, 'I2C_SCL': 2}
+  [PASS] nothing inside the rule area except GND, the GNSS feed, and the two listed inherited I2C debug lanes -- []
+  [PASS] no F.Cu signal pour in the keep-out region -- F.Cu pour zones: 0
+
+## via histogram (fab margin)
+  0.60/0.30 : 62
+  [PASS] every via is 0.60/0.30 -- ['0.60/0.30']
+
+## RF parts and edges
+  ANT1 (U.FL) at (51.000,22.000) rot 0  origin to nearest edge 4.075 mm
+  ANT2 (U.FL_GNSS) at (52.200,42.000) rot 180  origin to nearest edge 2.875 mm
+  ANT1 origin -> ANT2 origin: 20.036 mm
+
+## totals
+  segments 409  vias 62  copper 842.1 mm  zones 3
+
+RESULT: ALL CHECKS PASSED

@@ -1,0 +1,175 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-05T04:20:23+0200",
+    "included_severities": [
+        "error",
+        "warning"
+    ],
+    "kicad_version": "9.0.8",
+    "schematic_parity": [],
+    "source": "v8i_krt_gnss.kicad_pcb",
+    "unconnected_items": [],
+    "violations": [
+        {
+            "description": "Silkscreen overlap",
+            "items": [
+                {
+                    "description": "Segment of ANT2 on F.Silkscreen",
+                    "pos": {
+                        "x": 52.9,
+                        "y": 40.5
+                    },
+                    "uuid": "1dfd981c-e8f5-4307-8eb3-b984ca99695d"
+                },
+                {
+                    "description": "Reference field of ANT2",
+                    "pos": {
+                        "x": 53.7,
+                        "y": 39.25
+                    },
+                    "uuid": "f4b22139-5e05-4985-9cee-6fd74a87b890"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_overlap"
+        },
+        {
+            "description": "Silkscreen overlap",
+            "items": [
+                {
+                    "description": "Reference field of ANT2",
+                    "pos": {
+                        "x": 53.7,
+                        "y": 39.25
+                    },
+                    "uuid": "f4b22139-5e05-4985-9cee-6fd74a87b890"
+                },
+                {
+                    "description": "Segment of ANT2 on F.Silkscreen",
+                    "pos": {
+                        "x": 53.7,
+                        "y": 40.5
+                    },
+                    "uuid": "f988019d-3e2f-4f95-8e9f-d2fa76e36e7e"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_overlap"
+        },
+        {
+            "description": "Silkscreen clipped by solder mask",
+            "items": [
+                {
+                    "description": "Segment of U2 on F.Silkscreen",
+                    "pos": {
+                        "x": 28.095,
+                        "y": 16.49
+                    },
+                    "uuid": "5921bf59-12a2-4da2-89bd-40625bbbc14c"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_over_copper"
+        },
+        {
+            "description": "Silkscreen clipped by solder mask",
+            "items": [
+                {
+                    "description": "Segment of U2 on F.Silkscreen",
+                    "pos": {
+                        "x": 47.905,
+                        "y": 1.51
+                    },
+                    "uuid": "1f9f887c-1879-4f4e-b60e-58eb38f0500f"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_over_copper"
+        },
+        {
+            "description": "Silkscreen clipped by solder mask",
+            "items": [
+                {
+                    "description": "Reference field of ANT2",
+                    "pos": {
+                        "x": 53.7,
+                        "y": 39.25
+                    },
+                    "uuid": "f4b22139-5e05-4985-9cee-6fd74a87b890"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_over_copper"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Reference field of C_CAP",
+                    "pos": {
+                        "x": -0.25,
+                        "y": 27.5
+                    },
+                    "uuid": "00004f66-c7a9-477d-b278-5481f11cdf71"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Segment of U1 on F.Silkscreen",
+                    "pos": {
+                        "x": 3.89,
+                        "y": -1.21
+                    },
+                    "uuid": "380d8099-7c5b-4de2-a3af-88522045d7fc"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Segment of U1 on F.Silkscreen",
+                    "pos": {
+                        "x": 22.11,
+                        "y": -1.21
+                    },
+                    "uuid": "34320074-08ac-4bb9-bce1-8d7923a96676"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        }
+    ]
+}
