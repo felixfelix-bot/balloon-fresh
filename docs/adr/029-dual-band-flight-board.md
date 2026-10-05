@@ -297,6 +297,48 @@ an SX1280 module on a 55 x 45 mm board — is now the tightest it has been, and 
 placement gate runs earlier for exactly this reason. **No schematic, placement or routing
 work may start from this amendment until (a)–(e) are re-derived.**
 
+### D8 — PROPOSED (operator idea, 2026-10-05): nested dual footprint, F33 **or** bare LoRa2021
+
+Operator: *"put one of each on the JLCPCB board you're designing so that I can choose which
+one to fly at a later point in time."*
+
+**Measured from the repo's own footprint files** (`tracker/hardware/hub_board_diy/custom.pretty/`,
+compared pad-for-pad 2026-10-05):
+
+- Both modules are **18 pads with identical pad numbering and identical pin functions** —
+  pin 1 VCC, pin 9 sub-GHz `ANT`, pin 10 `2.4G/S_ANT`, pins 3–7 SPI (MISO/MOSI/SCK/NSS) + BUSY,
+  pins 2/8/11 GND. The pinout is 1:1.
+- Geometry differs by ~2×: bare = **1.29 mm** pitch, 0.7 mm pads, body **20.41 × 15.58 mm**;
+  F33 = **2.0 mm** pitch, 1.0 mm pads, body **39.6 × 21.6 mm**.
+- The bare module's pad field (x ±9.905, y ±5.16) lies **entirely inside** the F33's pad ring
+  (x ±19.5, y ±9) — they do not collide. **Two concentric/nested 18-pad footprints are
+  therefore geometrically feasible.**
+
+So the "one of each" choice is **nearly free in board area**, because D2 already reserves the
+F33's ~39 × 21 mm site. The cost is entirely electrical:
+
+1. **Pin 1 VCC conflict — BLOCKING.** Bare module VCC = **1.8–3.6 V (use 3.3 V)**
+   (`nicerf-lora2021.json`). F33 = **5 V**, up to **~1200 mA**. Same pad number → same net.
+   Populating an F33 on a 3.3 V net destroys it, and a 3.3 V module on 5 V likewise.
+   **Requires a selectable rail on pin 1** (solder jumper or DNP regulator), or the option is
+   unsafe to build.
+2. **Two RF matching networks.** The F33's +30 dBm sub-GHz port and the bare module's +22 dBm
+   port need different matches and power handling. Place both, **DNP** the unused one — using
+   DNP pads, **not open stubs** (a stub on an 868/2440 MHz line detunes the populated chain).
+3. **The F33 removes the external FEM.** Per `lr2021-module-comparison.md`, the F33's built-in
+   PA eliminates the SKY66112 FEM. The bare-module variant therefore needs the FEM **and** its
+   control lines — all of which must be depopulated when the F33 flies.
+4. **Firmware is shared** (both are LR2021) — one driver. Add a **presence detect** (chip-ID or
+   RSSI probe) so firmware *reports* which module is fitted instead of being told.
+5. **Never populate both.** Enforce via silkscreen, a bring-up assertion, and CS handling on the
+   unused site.
+6. **Regulatory (EU/DE) — independent limit on the benefit.** +30 dBm (1 W) / +33 dBm (2 W) is
+   **not legal** on 868 MHz or 2.4 GHz in Germany without a licence (868 MHz main band is
+   +14 dBm ERP; 2.4 GHz is +20 dBm EIRP). The F33 can only be flown at reduced power.
+
+**Status:** PROPOSED — not ratified, not costed. Tracked by card `t_1b12a7ab`. This does
+**not** change D2/D2b: the F33 remains the v9 baseline; D8 is an option on the same site.
+
 **D2-alt — the rejected/reverted configuration (kept live, not deleted).** If the operator
 rejects the module substitution, v9 reverts to **LoRa2021_Castellated** (19.81 x 14.98 x
 2.32 mm, 18 pads, 1.29 mm pitch, ANT = pin 9 — the v8h part) **+ SX1280** for 2.4 GHz. The
