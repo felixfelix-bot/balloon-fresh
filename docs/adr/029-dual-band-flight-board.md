@@ -611,6 +611,68 @@ funding action that unblocks the U2 review unblocks this consultation.):**
   `feat/e80-spi-bypass` branch claims the same number. Whoever merges second must
   renumber or consolidate; flagged to the manager.
 
+### D6 — Barometric sensor: `MS5611-01BA03` (flight), not a Bosch BMP part
+
+**Amendment, 2026-10-05.** The schematic plan labels the optional I2C sensor
+"BMP280 (opt)" (U5). The BMP family cannot measure this mission's altitude range,
+so that label is corrected here.
+
+| Part family | Pressure range | Verdict for this board |
+|---|---|---|
+| BMP280 | 300–1100 mbar | **ground testing only** |
+| BMP384 / BMP388 / BMP581 | 300–1100 hPa | **same ~300 mbar floor — ground only** |
+| **MS5611-01BA03** | **10–1200 mbar** | **flight — full altitude to ~30 km** |
+
+The requirement is not new. `docs/PRESSURE-TEST-PLAN.md` §2.1 already states it:
+*"MS5611 covers 10-1200 mbar (full balloon altitude to ~30km), BMP280 covers
+300-1100 mbar (ground testing only)."* A Bosch BMP part reaches ~300 mbar ≈ 9 km;
+this mission's ceiling is far above that, so a BMP part reads nothing where it
+matters most.
+
+**Decision.** v9 fits **`MS5611-01BA03`** (TE Connectivity) on the I2C bus
+(GPIO20/21). JLCPCB stock verified 2026-10-05: **1671 units, $5.03**, extended part.
+
+**Retraction.** An earlier recommendation in this session proposed BMP384 (979 in
+stock, $1.78) or BMP581 (2654, $1.64) as "a generation upgrade over the BMP280".
+Both are **wrong for flight** — they share the BMP family's ~300 mbar floor.
+Cheapest-stocked was the wrong criterion; **range** was the criterion. Recorded so
+the same reasoning is not repeated.
+
+**Supporting evidence.**
+- v8h was already routed with **"I2C MS5611 stubs"**
+  (`docs/PLAN-DRC-CLEANUP-JLCPCB-ORDER.md`, DRC signal list) — the board
+  anticipated MS5611 even though the schematic text said BMP280.
+- Firmware exists: `tools/balloon_pressure_test/` auto-detects BMP280 then MS5611
+  (I2C 0x76, PROM read) — no new driver is needed.
+- Package differs from BMP280 (MS5611 LGA-8 is 5.0 x 3.0 mm vs 2.5 x 2.5 mm), so
+  the land pattern must be authored; KiCad ships no MS5611 footprint in its
+  standard libraries.
+
+### D7 — Parts availability is a gate BEFORE layout, not a discovery after
+
+**Amendment, 2026-10-05.** v8h reached fab-ready with **4 of 20 BOM lines
+non-assemblable at JLCPCB** — the LoRa2021F33 module, the BMP280, the 1F supercap
+and the through-hole headers (J1/J2/SOLAR). All four were found *after* routing,
+when changing them had stopped being free.
+
+**Decision.** Before the v9 schematic card opens, and before any BOM freeze, probe
+**every** MPN in the BOM with the existing tool:
+
+```bash
+python3 skills/hardware/pcb-fab-readiness-gating/scripts/jlc_parts_probe.py <MPN...>
+```
+
+It queries JLCPCB's parts API and reports per MPN whether a **vendor row with
+stock > 0** exists (assembleable) or only a `JLCPCB Assembly` placeholder row
+(stock 0 — consign or omit). Every non-assembleable line is decided before layout:
+substitute, consign, or plan hand-soldering.
+
+**Why this is the right gate.** Run against 13 candidate MPNs on 2026-10-05 it
+separated stocked from dead parts in a single command, and it is what exposed the
+BMP280's real status (only `JLCPCB Assembly` placeholder rows, stock 0). The same
+check before layout would have caught v8h's four lines while they were still free
+to change.
+
 ### Rollout
 
 1. This ADR lands on `pr/029-dual-band-flight-board` and merges to `main` — it is the gate
@@ -621,3 +683,13 @@ funding action that unblocks the U2 review unblocks this consultation.):**
    points), ADR-032 (LTspice/openEMS evidence for the matching, filter and rail) and
    ADR-030 (placement gate before copper, deterministic routing) as its method.
 4. O0 and O5 are decided by the operator before any BOM freeze or order.
+5. **D6** — the barometric part is fixed to `MS5611-01BA03` before the schematic
+   card; the stale "BMP280 (opt)" label is corrected, and its land pattern is
+   authored (KiCad ships none).
+6. **D7** — the availability probe runs against every BOM MPN before the v9
+   schematic card opens and before any BOM freeze.
+7. **(a)–(e) from D2b are NOW** (operator, 2026-10-05) — the pin plan, the
+   three-way 2.4 GHz arbiter, the four-antenna count, the power budget and the
+   SPI1 re-plan off IO35–37 gate the schematic card.
+8. The multi-SX1280 throughput question is analysed in
+   `docs/SX1280-ARRAY-FEASIBILITY.md` — **analysis only, no board authorised.**
