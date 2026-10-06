@@ -59,7 +59,6 @@ Acceptance: FLRC 8 BR rows crc_err=0 50/50, PRBS bit_err=0, seq monotonic,
 drops=0; FLRC L511 50/50 clean; LoRa LEN rows all tx_done 50/50; negative test
 ERR within 1 s recorded in error= col.
 
-<<<<<<< HEAD
 ---
 
 ## Resolution status (2026-09-16) — what is fixed, what is VERIFIED, what is not
