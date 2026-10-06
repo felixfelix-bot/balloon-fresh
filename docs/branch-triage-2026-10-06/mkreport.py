@@ -170,10 +170,24 @@ w("")
 w("The two branches that DO show a clean reverse-apply are the two already merged into the trunk in this round "
   "(`balloon-tollgate/dev` and `fix/t2-rx-start-len-gate`), which is a consistency check on the method, not a finding.")
 w("")
-w("## 5. Method / reproduction")
+w("## 5. Operator decisions (recorded so this is not re-litigated)")
+w("")
+w("- **`balloon-circuit-design` — ARCHIVE, do not merge** (operator-confirmed 2026-10-06). It carries an OLDER "
+  "`tracker/hardware/hub_board_v1.kicad_pcb` (43,526 B) than the trunk (44,438 B); the trunk received "
+  "`circuit-design-dev` on 2026-10-06, and `tracker/hardware` has had 52 commits since 2026-09-01. Merging it would move "
+  "the hub board backwards. Its tip is preserved by the annotated tag "
+  "`archive/consolidate-2026-10-05/balloon-circuit-design` on GitHub — nothing is discarded, only not merged.")
+w("- **`worker-balloon/pcb-phase1-t877` — ARCHIVE** (same reasoning: earlier attempt of the `-main` job). "
+  "Tag: `archive/consolidate-2026-10-05/worker-balloon/pcb-phase1-t877`.")
+w("- **`worker-balloon/pcb-phase1-t877-main` — REBASE** onto the trunk and resolve; it is open PR #15 and is the live "
+  "attempt. Not an archive case. Tag stays as the pre-rebase safety net.")
+w("")
+w("## 6. Method / reproduction")
 w("")
 w("- Conflict discovery: `git merge-tree --write-tree --name-only HEAD <ref>` (never touches worktree/index).")
-w("- Already-applied detection: `git cherry HEAD <ref>` (patch-id) + a grep of the branch's added lines against the trunk blob.")
+w("- Already-applied detection: `git cherry HEAD <ref>` (patch-id) for commit-level, and per-file "
+  "`git diff <merge-base> <ref> -- <file> | git apply --check -R -` for file-level. **The earlier grep of added lines "
+  "against the trunk blob was a false positive and is NOT used as evidence** (see section 4).")
 w("- Per-file class: three-way blob diff (`base` = merge-base, `ours` = trunk, `theirs` = branch); "
   "`COMPETING` when both sides modify/delete the same region; BINARY for non-line-based artifacts.")
 w("- Scripts: `~/reports/balloon-consolidation/{triage.py,meta.py,cherry.py,analyze.py,show.py}`.")
