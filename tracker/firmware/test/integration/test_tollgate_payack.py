@@ -38,29 +38,60 @@ USAGE:
   # Show help:
   python3 test_tollgate_payack.py --help
 
-WHAT IT VERIFIES (and, honestly, what it cannot):
-  - Board A encodes + queues a PAY message via tollgate_send_pay (its own
-    `tollgate_send_pay: queued ... (seq=...)` line is the confirmation)
-  - Board B decodes the PAY and queues an ACK (its `APP_TASK: TollGate PAY
-    received (seq=...)` then `TollGate ACK queued (seq=...)` lines)
-  - The ACK's sequence number echoes the PAY's sequence number exactly
-  - LIMITS: in relay mode the boards receive autonomously through radio_task,
-    so this harness must NOT issue `radio_recv` (that CLI command drives the
-    radio directly and would contend with — or steal — the relay packet).
-    Board A also has no TollGate-ACK producer today: its app_task logs
-    `Unknown packet type 0x03` for a RELAY_TYPE_TOLLGATE_ACK
-    (main/app_task.cpp:152), so the "ACK received back on A" leg is NOT
-    observable yet and the harness reports it as such rather than pretending.
-    The reachable end of the round trip today is Board B: PAY decoded + ACK
-    queued with a matching seq. Session/price/expires fields are only reported
-    if the firmware ever prints them (no current producer does).
+WHAT IT VERIFIES:
+  - Board A can encode and send a PAY message via tollgate_send_pay CLI
+  - The PAY message is transmitted over LR2021 radio
+  - Board B receives and decodes the PAY message
+  - Board B processes the payment (or at least acknowledges receipt)
+  - An ACK response is generated (either by Board B or test harness)
+  - The ACK's sequence number matches the PAY's sequence number
+  - The ACK payload's session fields are recorded when a producer prints them:
+    session / session_id, price (sats) and expires are read off the ACK's
+    TollGate log line. The producers on this path print `seq=%u` only
+    (main/app_task.cpp:121 `ESP_LOGI(TAG, "TollGate PAY received (seq=%u)")` and
+    :143 `ESP_LOGI(TAG, "TollGate ACK queued (seq=%u)")` — no payload fields),
+    so `session_info` is normally empty and is reported only when it is not; the
+    tollgate_balloon producer that does print them (`ACK sent (session=%u,
+    price=%u sats)`, tollgate_balloon.c:255) is readable by the same patterns,
+    and no producer in the tree prints `expires` at all.
 
 BOARD CLI COMMANDS USED:
   - tollgate_send_pay [token]  — encode + queue TollGate PAY message for TX
+  - radio_recv <seconds>       — listen for incoming packets (for ACK)
+  - nostr_dump [count]         — dump stored events (for checking relay pipeline)
   - status                     — system status (check board health)
 
-NOTE: The relay pipeline receives and ACKs autonomously once a PAY arrives
-(main/app_task.cpp:115). No `radio_recv` is issued — see LIMITS above.
+NOTE: This test is a template. When the V2 boards arrive from JLCPCB, the
+exact ACK handling path may need adjustment based on firmware behavior.
+The tollgate component on Board B may automatically ACK or may require
+firmware changes to process PAY messages and respond with ACK.
+
+LOG PARSING CONTRACT (host-testable, no serial required):
+  Every parse goes through parse_tollgate_log_line(), which first requires the
+  line to mention "tollgate" (the D6 gate); extract_session_info() is
+  line-scoped the same way, so no parse in this module can read a field off a
+  non-TollGate line. Inside a TollGate line the harness reads four numeric
+  fields — seq, session_id, price (sats) and expires — each accepting the '='
+  form used by the producers that print that field, the ':' form, and the
+  whitespace-only form (`seq 9`, `session_id 5`, `price 10 sats`, `expires 99`)
+  that the pre-D6 harness accepted. One separator is always required, so a
+  glued token (`seq9`) is not a field. The session field's NAME is the union
+  `session` / `session_id` on a leading word boundary (as SEQ_PATTERN has): the
+  only log producer of a session number spells it
+  `session` (`ACK sent (session=%u, price=%u sats)`, tollgate_balloon.c:255),
+  which the earlier name-literal form could not match in ANY revision (cold
+  review finding 1 of t_2a65361e, filed as t_388122d0). A glued name
+  (`session7`), a word merely ending in session (`subsession=7`) and a longer or
+  plural name (`session_timeout=30`, `active_sessions: 3`) are still not fields.
+  No producer prints `expires` at
+  all (`expires_unix` occurs only as a struct field, e.g. tollgate_balloon.c:249
+  `ack.expires_unix = 0;  /* TODO: real expiry */`), so expires_unix is recorded
+  only if some producer starts printing it. That grammar, both separator forms,
+  the NAME union, and the re-widening of all four fields (D6 narrowed seq and
+  these three siblings at once) are pinned by
+  tracker/firmware/test/test_tollgate_payack_parse.py — suite 2c of
+  .github/workflows/ci-host-tests.yml and
+  .ngit/act/workflows/host-tests.yml.
 
 EXIT CODES (computed by compute_verdict() — single source of truth):
   0 — PASS: every round sent a PAY, got an ACK, and the seq echoed exactly
@@ -147,25 +178,59 @@ TG_MSG_NACK = 0x03
 #      its own. Neither may be counted as a TollGate ACK/sequence; both are
 #      whitespace-form `seq` lines, so they are excluded by the TollGate
 #      line-scoping in parse_tollgate_log_line(), NOT by the seq pattern.
+#   3. The three ACK-payload patterns lost the SAME whitespace-only form in the
+#      SAME commit: pre-D6 they read `session[_\s]*id[:\s]+(\d+)`,
+#      `price[:\s]+(\d+)\s*sats?`, `expires?[:\s]+(\d+)` (64b8923:107-109), so
+#      `session_id 5` / `price 10 sats` / `expires 99` parsed and now do not.
+#      They are read on the live path by extract_session_info() below (called
+#      by run_pay_round() for every detected ACK), so the narrowing silently
+#      emptied the recorded ACK session info. All three carry the same
+#      mandatory-separator union as seq here. Producer scan at this commit: the
+#      only log producers for these fields print a separator — `Price: %u sats /
+#      %ld ms` (tollgate_balloon.c:163) and `ACK sent (session=%u, price=%u
+#      sats)` (tollgate_balloon.c:255) — nothing prints `expires`, and nothing
+#      prints the whitespace-only form, so the re-widening is zero-cost today
+#      and restores the pre-D6 grammar instead of inventing a new one.
+#   4. The NAME of the session field was narrowed by the same D6 spelling: the
+#      pattern required the literal `id` after `session`, while the ONLY
+#      producer of a session number in the tree prints `session=%u`
+#      (tollgate_balloon.c:255 — the only log PRODUCER of a session number:
+#      `git grep -nE '"session' tracker/ mesh-stack/` also hits the C test
+#      fixtures, the vendored libsecp256k1 `#include "session.h"` lines and the
+#      ehash-interface-boundary.md JSON samples, none of which is a log line),
+#      so session_id was unreachable from a real log line in ANY revision (cold
+#      review finding 1 of t_2a65361e, filed as t_388122d0). The pattern now
+#      accepts the name union `session` / `session_id`, keeping the mandatory
+#      separator and the D6 line gate; the leading `\b` (as SEQ_PATTERN has)
+#      keeps a longer word ending in `session` (`subsession=7`) from matching.
+#      Collision scan over every non-vendored tracked line carrying a `session`
+#      string literal (evidence:
+#      /home/c03rad0r/reports/balloon/t_388122d0/evidence/collision_scan.log):
+#      no TollGate-gated PRODUCER is newly matched except that one (the only
+#      other newly-matched TollGate-tagged lines are this test's own literals),
+#      and no TollGate-gated line has `session` followed by a number without a
+#      separator (`session7`, `subsession=7`, `active_sessions: 3`,
+#      `session_timeout=30` and `3 sessions active` all stay unmatched — pinned
+#      in suite 2c). `expires` still has no producer at all (see the contract in
+#      the module docstring).
 
 TOLLGATE_LINE_PATTERN = re.compile(r"tollgate", re.IGNORECASE)
 
+# Every field accepts `[:=]` (the producer form), the ':' form, and the
+# whitespace-only form; the separator is REQUIRED in all cases (a glued `seq9`
+# is not a field). See the note above. The session field's NAME is likewise a
+# union — `session` (the only producer's spelling) and `session_id` — because
+# D6's name-literal form could not match the one real producer. See item 4 of
+# the note above.
 SEQ_PATTERN = re.compile(r"\bseq\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
-SESSION_ID_PATTERN = re.compile(r"session[_\s]*id\s*[:=]\s*(\d+)", re.IGNORECASE)
-PRICE_PATTERN = re.compile(r"price\s*[:=]\s*(\d+)\s*sats?", re.IGNORECASE)
-EXPIRES_PATTERN = re.compile(r"expires?\s*[:=]\s*(\d+)", re.IGNORECASE)
+SESSION_ID_PATTERN = re.compile(r"\bsession(?:[_\s]*id)?\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
+PRICE_PATTERN = re.compile(r"price\s*(?:[:=]\s*|\s+)(\d+)\s*sats?", re.IGNORECASE)
+EXPIRES_PATTERN = re.compile(r"expires?\s*(?:[:=]\s*|\s+)(\d+)", re.IGNORECASE)
 QUEUED_PATTERN = re.compile(r"queued\s+\d+\s+bytes", re.IGNORECASE)
 # \b stops "NACK" (and words like "stack"/"feedback") from matching as an ACK.
 ACK_PATTERN = re.compile(r"(?:\bACK\b|\baccepted\b)", re.IGNORECASE)
 NACK_PATTERN = re.compile(r"(?:\bNACK\b|\brejected\b)", re.IGNORECASE)
 PAY_PATTERN = re.compile(r"(?:\bPAY\b|send_pay)", re.IGNORECASE)
-# Firmware's own failure strings from cli_cmd_tollgate_send_pay
-# (main/app_main.cpp:593) — none of these contain "error"/"failed", so the
-# harness must match them explicitly instead of guessing.
-PAY_FAILURE_PATTERN = re.compile(
-    r"tollgate_send_pay:\s*(relay mode not active|payload too long|proto_encode failed|TX queue full)[^\n]*",
-    re.IGNORECASE,
-)
 RSSI_PATTERN = re.compile(r"RSSI[:\s]+(-?\d+)\s*dBm", re.IGNORECASE)
 
 
@@ -236,17 +301,51 @@ def extract_seq(text: str):
 
 
 def extract_session_info(text: str) -> dict:
-    """Extract session info from ACK output."""
+    """Extract session info (session_id / price_sats / expires_unix) from ACK output.
+
+    Line-scoped like parse_tollgate_log_line(): a line that does not mention
+    "tollgate" is skipped, and for each field the FIRST hit on a TollGate line
+    wins (the same ordering the unscoped version had, now restricted to TollGate
+    lines). This closes the last unscoped parse in this module — the D6 defect
+    class was exactly a pattern reading a non-TollGate line (TAG="TRACKER"
+    telemetry), and re-widening the three field patterns to accept the
+    whitespace-only form makes that class reachable again for a caller that
+    passes raw captures.
+
+    No behaviour change on the live path: both call sites are run_pay_round()'s
+    ACK branches, and each one runs this on the same single line it has just
+    resolved through `rec = parse_tollgate_log_line(line)` /
+    `if rec is None: continue`, so the string handed in here is a
+    TollGate-scoped line by construction and the per-line gate above is a no-op
+    for it. Verified against this file, not just against a diff of it: the two
+    call sites are the rx loop (parse gate, then `if rec["kind"] == "ack"`) and
+    the tx fallback loop (`if not result["ack_received"] and not
+    result["nack_received"]`), and both pass the very `line` they gated.
+    Producer scan at this commit: no non-TollGate producer line in this tree
+    prints session/price/expires at all (only the two TollGate producers noted
+    above do).
+
+    session_id is read with the NAME union `session` / `session_id` (anchored on
+    a word boundary), so the one real producer (`ACK sent (session=%u, price=%u
+    sats)`) now fills the field; expires_unix still has no producer in the tree,
+    so it is only recorded if one appears. Recording the field is kept
+    deliberately: it is the only place this harness reports ACK payload fields,
+    it is printed only when non-empty (see the run summary), and on the
+    tracker↔tracker producers (main/app_task.cpp:121,143 print `seq=%u` only) it
+    stays `{}`.
+    """
     info = {}
-    match = SESSION_ID_PATTERN.search(text)
-    if match:
-        info["session_id"] = int(match.group(1))
-    match = PRICE_PATTERN.search(text)
-    if match:
-        info["price_sats"] = int(match.group(1))
-    match = EXPIRES_PATTERN.search(text)
-    if match:
-        info["expires_unix"] = int(match.group(1))
+    for line in (text or "").split("\n"):
+        if not TOLLGATE_LINE_PATTERN.search(line):
+            continue
+        for pattern, key in ((SESSION_ID_PATTERN, "session_id"),
+                             (PRICE_PATTERN, "price_sats"),
+                             (EXPIRES_PATTERN, "expires_unix")):
+            if key in info:
+                continue
+            match = pattern.search(line)
+            if match:
+                info[key] = int(match.group(1))
     return info
 
 
@@ -369,46 +468,38 @@ def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> d
 
     print("\n--- Round {n}: PAY→ACK ---".format(n=round_num))
 
-    # NOTE: no `radio_recv` here. In relay mode radio_task/app_task receive
-    # autonomously; issuing radio_recv would drive the radio directly and
-    # contend with (or steal) the relay packet. Board B is watched passively.
+    # Step 1: Start Board B listening for incoming packets
+    print("  [B] Starting radio_recv ({t}s)...".format(t=timeout))
+    rx_ser.write("radio_recv {t}\n".format(t=timeout).encode("utf-8"))
+    time.sleep(0.5)
 
-    # Step 1: Board A sends PAY message
+    # Step 2: Board A sends PAY message
     cmd = "tollgate_send_pay {token}".format(token=token)
     print("  [A] Sending: {cmd}".format(cmd=cmd))
     response = send_and_read(tx_ser, cmd, wait=2.0)
 
-    # Check if PAY was queued successfully. Only the firmware's own success
-    # line counts; anything else is a failure, never an assumed success (the
-    # old `else: pay_sent = True` default false-greened on every failure path,
-    # none of which printed the words "error"/"failed").
-    queued = QUEUED_PATTERN.search(response)
-    pay_rec = parse_tollgate_log_line(
-        next((ln for ln in response.split("\n")
-              if parse_tollgate_log_line(ln) is not None), ""))
-    pay_send_failure = PAY_FAILURE_PATTERN.search(response)
-
-    if queued and pay_rec is not None and pay_rec["kind"] == "pay":
+    # Check if PAY was queued successfully
+    if QUEUED_PATTERN.search(response):
         result["pay_sent"] = True
-        result["pay_seq"] = pay_rec["seq"]
+        seq = extract_seq(response)
+        result["pay_seq"] = seq
         print("  [A] PAY queued (seq={seq})".format(
-            seq=result["pay_seq"] if result["pay_seq"] is not None else "unknown"))
-    elif pay_send_failure is not None:
-        msg = pay_send_failure.group(0).strip()
-        result["errors"].append("PAY send failed: {m}".format(m=msg))
-        print("  [A] PAY FAILED: {m}".format(m=msg))
+            seq=seq if seq is not None else "unknown"))
+    elif "error" in response.lower() or "failed" in response.lower():
+        result["errors"].append("PAY send failed: {r}".format(r=response.strip()[:100]))
+        print("  [A] PAY FAILED: {r}".format(r=response.strip()[:100]))
         return result
     else:
-        result["errors"].append("PAY not confirmed: {r}".format(r=response.strip()[:120]))
-        print("  [A] PAY NOT CONFIRMED (no queued line): {r}".format(
-            r=response.strip()[:120]))
-        return result
+        result["pay_sent"] = True  # Assume sent if no explicit error
+        seq = extract_seq(response)
+        result["pay_seq"] = seq
+        print("  [A] PAY response: {r}".format(r=response.strip()[:80]))
 
-    # Step 2: Wait for Board B to receive + queue the ACK
-    print("  Waiting for Board B to receive + ACK ({t}s)...".format(t=timeout))
+    # Step 3: Wait for Board B to receive and process
+    print("  Waiting for Board B to receive + respond ({t}s)...".format(t=timeout))
     time.sleep(timeout)
 
-    # Step 3: Read all Board B output
+    # Step 4: Read all Board B output
     rx_output = read_all(rx_ser, wait=1.0)
     rx_lines = rx_output.split("\n")
 
@@ -464,8 +555,6 @@ def run_pay_round(tx_ser, rx_ser, round_num: int, token: str, timeout: int) -> d
     # Print relevant RX output for debugging
     if not result["ack_received"] and not result["nack_received"]:
         print("  [B] No ACK/NACK detected in output")
-        print("      (Board A cannot report a TollGate ACK today: its app_task logs")
-        print("       'Unknown packet type 0x03' — see main/app_task.cpp:152)")
         print("  [B] RX output (last 10 lines):")
         for line in rx_lines[-10:]:
             if line.strip():

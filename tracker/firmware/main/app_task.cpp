@@ -129,15 +129,20 @@ extern "C" void app_task(void *arg)
                 memset(&ack_payload, 0, sizeof(ack_payload));
                 ack_payload.price_sats = 0;  /* TODO: real price from config */
 
-                int ack_len = tollgate_proto_encode(ack_pkt.data + 1,
-                                                     RELAY_PACKET_MAX_SIZE - 1,
-                                                     TG_MSG_ACK, hdr.seq,
-                                                     (const char *)&ack_payload,
-                                                     sizeof(ack_payload));
+                /* Echo the requester's seq verbatim (u16 echo token contract,
+                 * tollgate_payment_proto.h) and let the encode path enforce
+                 * the relay payload budget. */
+                int ack_len = tollgate_proto_encode_relay(ack_pkt.data,
+                                                           RELAY_PACKET_MAX_SIZE,
+                                                           TG_MSG_ACK, hdr.seq,
+                                                           (const char *)&ack_payload,
+                                                           (uint16_t)sizeof(ack_payload));
                 if (ack_len > 0) {
-                    ack_pkt.len = ack_len + 1;
+                    ack_pkt.len = (size_t)(ack_len + 1);
                     xQueueSend(g_tx_queue, &ack_pkt, pdMS_TO_TICKS(100));
                     ESP_LOGI(TAG, "TollGate ACK queued (seq=%u)", hdr.seq);
+                } else {
+                    ESP_LOGE(TAG, "TollGate ACK encode failed (%d)", ack_len);
                 }
             }
             break;

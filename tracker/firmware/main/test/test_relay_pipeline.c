@@ -140,11 +140,11 @@ static void app_task_process_packet(app_task_ctx_t *ctx, const relay_packet_t *p
             memset(&ack, 0, sizeof(ack));
             ack.price_sats = 0;  /* TODO: real price from config */
 
-            int ack_len = tollgate_proto_encode(ack_pkt.data + 1,
-                                                 RELAY_PACKET_MAX_SIZE - 1,
-                                                 TG_MSG_ACK, hdr.seq,
-                                                 (const char *)&ack,
-                                                 (uint16_t)sizeof(ack));
+            int ack_len = tollgate_proto_encode_relay(ack_pkt.data,
+                                                       RELAY_PACKET_MAX_SIZE,
+                                                       TG_MSG_ACK, hdr.seq,
+                                                       (const char *)&ack,
+                                                       (uint16_t)sizeof(ack));
             if (ack_len > 0) {
                 ack_pkt.len = (size_t)(ack_len + 1);
                 mock_queue_send(ctx->tx_queue, &ack_pkt);
@@ -197,8 +197,12 @@ static void build_nostr_relay_packet(relay_packet_t *pkt, const nostr_event_t *e
     pkt->rssi = -70;
 }
 
-/* Build a relay_packet_t containing a tollgate PAY message */
-static void build_tollgate_pay_packet(relay_packet_t *pkt, uint32_t seq)
+/* Build a relay_packet_t containing a tollgate PAY message.
+ *
+ * seq is uint16_t on purpose: the wire field is u16 (tollgate_msg_hdr_t.seq),
+ * so the fixture carries the contract type instead of a u32 that the caller
+ * would have to narrow. */
+static void build_tollgate_pay_packet(relay_packet_t *pkt, uint16_t seq)
 {
     memset(pkt, 0, sizeof(*pkt));
     pkt->data[0] = RELAY_TYPE_TOLLGATE_PAY;
@@ -206,7 +210,7 @@ static void build_tollgate_pay_packet(relay_packet_t *pkt, uint32_t seq)
     /* Encode PAY with empty payload (matches app_task.cpp test pattern) */
     int enc_len = tollgate_proto_encode(pkt->data + 1,
                                          RELAY_PACKET_MAX_SIZE - 1,
-                                         TG_MSG_PAY, (uint16_t)seq,
+                                         TG_MSG_PAY, seq,
                                          NULL, 0);
     assert(enc_len > 0);
     pkt->len = (size_t)(enc_len + 1);
@@ -384,7 +388,7 @@ int main(void)
     /* ================================================================== */
     printf("TEST 5: Multiple tollgate PAY→ACK round-trips... ");
 
-    for (uint32_t seq = 100; seq < 105; seq++) {
+    for (uint16_t seq = 100; seq < 105; seq++) {
         relay_packet_t p;
         build_tollgate_pay_packet(&p, seq);
         mock_radio_receive(&rx_queue, &p);
@@ -627,12 +631,74 @@ int main(void)
 
     printf("PASS\n");
 
+    /* ================================================================== */
+    /* TEST 13: u16 seq wrap contract (65535 → 0)                        */
+    /* ================================================================== */
+    printf("TEST 13: u16 seq wrap 65535 → 0 payable + echoed... ");
+
+    /* Producer side: the documented counter wraps at 2^16 and keeps going */
+    assert(tollgate_seq_next(0) == 1);
+    assert(tollgate_seq_next(65534) == 65535);
+    assert(tollgate_seq_next(65535) == 0);
+
+    /* PAY at the top of the u16 range → ACK echoes 65535 verbatim */
+    relay_packet_t wrap_pay;
+    build_tollgate_pay_packet(&wrap_pay, 65535);
+    mock_radio_receive(&rx_queue, &wrap_pay);
+    assert(mock_queue_receive(&rx_queue, &rx) == 0);
+    app_task_process_packet(&app_ctx, &rx);
+    assert(tx_queue.count == 1);
+
+    relay_packet_t wrap_ack;
+    assert(mock_queue_receive(&tx_queue, &wrap_ack) == 0);
+    assert(wrap_ack.data[0] == RELAY_TYPE_TOLLGATE_ACK);
+    {
+        tollgate_msg_hdr_t h;
+        const uint8_t *pl = NULL;
+        assert(tollgate_proto_decode(wrap_ack.data + 1,
+                                     (uint16_t)(wrap_ack.len - 1), &h, &pl) > 0);
+        assert(h.type == TG_MSG_ACK);
+        assert(h.seq == 65535);
+        assert(tollgate_seq_equal(65535, h.seq));
+    }
+
+    /* The round AFTER the wrap uses seq 0. "0" is a real value: it must be
+     * carried, echoed back as 0, and compare equal — never be confused with
+     * "no sequence number". */
+    uint16_t wrapped_seq = tollgate_seq_next(65535);  /* == 0 */
+    assert(wrapped_seq == 0);
+
+    relay_packet_t zero_pay;
+    build_tollgate_pay_packet(&zero_pay, wrapped_seq);
+    mock_radio_receive(&rx_queue, &zero_pay);
+    assert(mock_queue_receive(&rx_queue, &rx) == 0);
+    app_task_process_packet(&app_ctx, &rx);
+    assert(tx_queue.count == 1);
+
+    relay_packet_t zero_ack;
+    assert(mock_queue_receive(&tx_queue, &zero_ack) == 0);
+    {
+        tollgate_msg_hdr_t h;
+        const uint8_t *pl = NULL;
+        assert(tollgate_proto_decode(zero_ack.data + 1,
+                                     (uint16_t)(zero_ack.len - 1), &h, &pl) > 0);
+        assert(h.type == TG_MSG_ACK);
+        assert(h.seq == 0);
+        assert(tollgate_seq_equal(wrapped_seq, h.seq));
+        /* Exact echo equality — 65535 and 0 are NOT interchangeable */
+        assert(!tollgate_seq_equal(65535, h.seq));
+    }
+
+    assert(tx_queue.count == 0);
+
+    printf("PASS\n");
+
     /* ---- Cleanup ---- */
     free(store);
     clean_test_dir();
 
-    printf("\n=== Results: 12/12 passed ===\n");
+    printf("\n=== Results: 13/13 passed ===\n");
     printf("Pipeline verified: radio_task(mock) → rx_queue → app_task → nostr_store\n");
-    printf("                 + tollgate PAY→ACK, telemetry, mixed traffic, edge cases\n");
+    printf("                 + tollgate PAY→ACK, seq wrap, telemetry, mixed traffic, edge cases\n");
     return 0;
 }
