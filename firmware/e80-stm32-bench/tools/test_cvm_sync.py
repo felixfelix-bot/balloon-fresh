@@ -24,6 +24,7 @@ import json
 import os
 import re
 import sys
+import time
 import unittest
 
 # Add tools dir for imports
@@ -102,6 +103,81 @@ class TestArmedBuild(unittest.TestCase):
         msg = build_armed("2608301440a3f", "50m", 1788096000, "abc", 1)
         # Must be JSON-serializable (it travels as the inner event content)
         json.dumps(msg)
+
+
+class TestStartedBuild(unittest.TestCase):
+    """STARTED carries the TX's echoed session id + the derived T0.
+
+    Anti split-brain: a TX start always announces itself on the SAME
+    session id the RX armed, so a manual TX start on an invented session
+    is visible before the analysis reports a false MISS/LOGGING GAP.
+    """
+
+    def test_build_started_has_all_fields(self):
+        from cvm_sync import build_started
+        msg = build_started(session_id="2608301440a3f", stop="50m",
+                            t_ready_utc=1788096000, t0=1788096030,
+                            preset_hash="abc123", role="tx", seq=1)
+        self.assertEqual(msg["type"], "STARTED")
+        self.assertEqual(msg["session_id"], "2608301440a3f")
+        self.assertEqual(msg["stop"], "50m")
+        self.assertEqual(msg["t_ready_utc"], 1788096000)
+        self.assertEqual(msg["t0"], 1788096030)
+        self.assertEqual(msg["preset_hash"], "abc123")
+        self.assertEqual(msg["role"], "tx")
+        self.assertEqual(msg["seq"], 1)
+        self.assertIn("created_at", msg)
+        self.assertIn("author", msg)
+        self.assertEqual(
+            set(msg), {"type", "session_id", "stop", "t_ready_utc", "t0",
+                       "preset_hash", "role", "seq", "created_at", "author"})
+
+    def test_build_started_coerces_ints(self):
+        from cvm_sync import build_started
+        msg = build_started(session_id="2608301440a3f", stop="50m",
+                            t_ready_utc="1788096000", t0=1788096030.9,
+                            seq="2")
+        self.assertIsInstance(msg["t_ready_utc"], int)
+        self.assertEqual(msg["t_ready_utc"], 1788096000)
+        self.assertIsInstance(msg["t0"], int)
+        self.assertEqual(msg["t0"], 1788096030)         # truncated, not rounded
+        self.assertIsInstance(msg["seq"], int)
+        self.assertEqual(msg["seq"], 2)
+
+    def test_role_defaults_to_tx(self):
+        from cvm_sync import build_started
+        msg = build_started("2608301440a3f", "50m", t_ready_utc=1788096000,
+                            t0=1788096030, preset_hash="abc")
+        self.assertEqual(msg["role"], "tx")
+        self.assertEqual(msg["seq"], 1)
+
+    def test_created_at_defaults_to_now(self):
+        from cvm_sync import build_started
+        before = int(time.time())
+        msg = build_started("2608301440a3f", "50m", t_ready_utc=1788096000,
+                            t0=1788096030)
+        self.assertGreaterEqual(msg["created_at"], before)
+        self.assertLessEqual(msg["created_at"], int(time.time()))
+
+    def test_created_at_explicit_wins(self):
+        from cvm_sync import build_started
+        msg = build_started("2608301440a3f", "50m", t_ready_utc=1788096000,
+                            t0=1788096030, created_at=1788096042)
+        self.assertEqual(msg["created_at"], 1788096042)
+
+    def test_optional_fields_default_to_none_and_empty_author(self):
+        from cvm_sync import build_started
+        msg = build_started("2608301440a3f", "?")
+        self.assertIsNone(msg["t_ready_utc"])
+        self.assertIsNone(msg["t0"])
+        self.assertEqual(msg["preset_hash"], "")
+        self.assertEqual(msg["author"], "")
+        self.assertEqual(msg["seq"], 1)
+
+    def test_build_started_serializes_to_json(self):
+        from cvm_sync import build_started
+        json.dumps(build_started("2608301440a3f", "50m", 1788096000,
+                                 t0=1788096030, preset_hash="abc"))
 
 
 class TestComputeT0(unittest.TestCase):

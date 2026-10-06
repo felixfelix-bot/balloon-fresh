@@ -532,6 +532,199 @@ make rx T0=1724515500 SESSION_ID=2408241425
 Both sides must use the same values. This bypasses the auto-computed
 5-minute boundary.
 
+### GO mode (`--sync cvm`): T0 from the ARMED message
+
+The default is `--sync boundary` — the 5-minute epoch boundary above,
+unchanged. `--sync cvm` replaces that wait with a **message-derived T0**
+(ADR-range-sync-cvm.md): the RX is the sole session authority, publishes
+an `ARMED` message, and both sides compute
+
+```
+T0         = armed["t_ready_utc"] + 30 s     # cvm_sync.T0_MARGIN — no boundary wait
+session_id = armed["session_id"]             # %y%m%d%H%M + 3-hex nonce (RX-generated)
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--sync {boundary,cvm}` | `boundary` (default) = legacy 5-min T0; `cvm` = derive T0 from the ARMED — only when `--t0` is **absent** |
+| `--stop <id>` | **Required in GO mode** — the stop id recorded in the `GO_MODE` banner and in the ARMED (`armed.json`). Default `?` means *not recorded* (see below) |
+| `--armed-file PATH` | GO mode without a live Nostr bus: a JSON file holding one ARMED object as relayed to the operator |
+| `--armed-out PATH` | RX writes the ARMED it generated (default `<run log dir>/armed.json`) |
+
+Rules that matter in the field:
+
+- **`--t0` always wins.** `--sync cvm --t0 <epoch>` is exactly the legacy
+  boundary/manual run: legacy T0-past guard, legacy
+  `logs/s<sid>-t0<epoch>/` log dir, `--session-id` still an int flag.
+- **Pass `--stop <id>` in GO mode — it is the only thing that attributes the
+  pass to a stop.** A GO dir has no `stop-<dist>` level, so the stop lives
+  *only* in the `stop=` token of the `GO_MODE` banner and in the ARMED /
+  `armed.json`. `--stop` defaults to `?`, which this toolchain uses everywhere
+  for *not recorded*: a launch that omits it prints
+  `WARNING: GO mode launched without --stop …` at launch time, and the log
+  then carries no stop id, so `range_check` can only keep it with an
+  *"records NO stop id … cannot verify it belongs to stop X"* note (score it
+  with the matching `--dist`). The pass is still scored — it is just no longer
+  attributable, which is exactly the mistake that gets made at the bench.
+- **Do not pass `--session-id` in GO mode** — it is a hard error
+  (`session_id comes from ARMED in GO mode`). The session id comes from the
+  ARMED and is never derived from T0.
+- **Split-brain guard.** A TX start always **echoes a live RX session id**
+  and announces itself with a `STARTED` message: in GO mode that is the
+  ARMED's `session_id` + its derived `t0` (published on the bus); a legacy
+  manual TX start (`--t0`) must echo the RX banner by hand via
+  `--session-id`. Without it the tool **refuses loudly**
+  (`SPLIT-BRAIN GUARD … split brain refused`) instead of inventing a
+  `%y%m%d%H%M` id. An invented id is how a pass ends up with the two sides
+  on *different* sessions — the analysis then reports a false
+  `MISS`/`LOGGING GAP` with no warning. `--dry-run` is exempt (nothing is
+  transmitted).
+- **`STARTED` is best effort.** If publishing it fails (relay pool down)
+  the TX prints a `WARNING` and **continues**: radio capture never depends
+  on the message layer. With no live bus the notice is printed *and*
+  written to `started.json` in the run's log dir (next to `--tx-log` /
+  `--rx-log`) — relay that file to the other operator (Signal fallback).
+- **GO-window guard.** GO is refused (loudly, non-zero exit) when less than
+  5 s (`GO_MODE_RX_LEAD_MIN`) remains to T0 — i.e. the arm window has
+  expired. The refusal says how many seconds ago the RX armed and tells you
+  to re-arm. Boundary/manual-t0 runs keep the legacy T0-past guard
+  (`T0 >= now+60 s`, `T0_MIN_LEAD_S`); GO mode replaces it, because 60 s of
+  wall-clock lead is exactly what the message-derived T0 no longer needs.
+- **Two 30 s margins, both real.** `T0` itself is derived with the arming
+  margin `armed["t_ready_utc"] + 30 s` (`cvm_sync.T0_MARGIN`, the RX publish →
+  relay → arm headroom); the *existing* scheduler then places the first cell
+  at `T0 + --t0-margin` (`t0_margin`, CLI default 30 s) exactly as it does in
+  boundary mode — that gap is the launch/preflight headroom the runners have
+  always used. The two are independent knobs: moving `--t0-margin` shifts the
+  first cell, it does **not** change the T0 derivation, and the derivation
+  margin is not exposed as a flag.
+- **`rx_lead` is clamped to >= 5 s** in GO mode (boundary mode keeps the 3 s
+  default). The clamp is applied to `args.rx_lead` itself, so `compute_cycle_len`
+  and the schedule builder consume the *same* value — the cycle length must be
+  byte-identical on TX and RX or the per-cycle re-anchor walks the two sides
+  apart.
+- **Both sides must agree on the preset *and* the timing knobs.** The ARMED
+  carries a fingerprint (`preset_hash`) over the config preset plus the knobs
+  that feed `compute_cycle_len` / `build_preset_schedule` / the RX arm instant
+  (`--t0-margin`, `--guard`, `--settle`, `--rx-lead`, `--swd-reset-s`,
+  `--band-swap-s`). `acquire_armed_for_go()` compares it against the local
+  fingerprint and **refuses loudly** (`GO mode preset/knob MISMATCH — refusing
+  to GO`) before any log dir is created. Without that check the two operators
+  could run the same preset with different timing and re-anchor to a different
+  `t0_cycle` from cycle 2 on, drifting apart mid-pass with nothing on the wire
+  to reveal it. An ARMED relayed from an older build (preset-only digest) is
+  still accepted.
+- **The board carries the u32 projection of the session id.** The firmware's
+  `SESSION` command takes a u32 (`src/bench_cmd.c`) and every PKT line echoes
+  it with `console_put_u32`, so the 3-hex nonce of a GO session can never
+  reach the wire. Both runners therefore send `SESSION <first 10 digits>`
+  (`e80_bench_ctl.board_session_id()`), and the analyzer accepts a PKT row
+  whose session equals that projection (`range_check._session_matches`).
+  Consequence to respect in the field: **never arm two passes inside the same
+  minute** — on the wire they are the same board session and only the ARMED
+  nonce (ARMED / log-dir / banner) tells them apart. A session id with no
+  numeric projection is refused at launch (`session_command()`), instead of
+  shipping `SESSION None` to the board.
+- **Monotonic anchor.** When the ARMED is accepted the tool captures
+  `time.monotonic()` alongside wall time and derives a *monotonic* T0
+  deadline; all GO-mode waits use it, so an NTP step mid-pass cannot shift
+  one side of the pass. The absolute wall T0 stays visible (`t0=<epoch>` in
+  operator output, ISO in the log header) for log correlation + GPS
+  stitching.
+- **Log dirs** default to `logs/s<sid>-go<t0>/<role>-log.csv` in GO mode;
+  legacy `s<sid>-t0<epoch>` dirs are untouched for boundary/manual runs, and
+  an explicit `--tx-log`/`--rx-log` always wins. Post-stop tools read **both**
+  schemes — see [Log layout & post-stop analysis](#log-layout--post-stop-analysis)
+  below: `range_check` joins the rx/tx logs on `session_id`, with the legacy
+  `t0` rule as the fallback.
+- **Fallback stays.** The 5-minute boundary + Signal relay path below is
+  unchanged and remains the boat / no-internet fallback.
+
+With `--armed-file` the freshness checks (`created_at` skew 60 s / stale
+30 s) are relaxed, because the operator relayed the message by hand; the
+GO-window guard still applies. Without `--armed-file` the TX uses the
+`cvm_sync` subscriber seam against a live bus, and the RX generates the
+ARMED and writes it to `--armed-out`.
+
+**The live bus has no production wiring yet.** `cvm_sync.ArmedSubscriber` is
+reachable only through the `main(bus=…)` injection point — there is no CLI
+flag and no relay subscriber in the shipped tool — so **in the field a GO TX
+always runs `--armed-file`** with the ARMED relayed by hand (Signal). The
+RP2/allowed-npub hardening in the ADR lands with that wiring: until then a
+GO TX must not be assumed to be relay-authenticated.
+
+Rehearsal without hardware:
+
+```bash
+# RX (generates the ARMED) — --stop is REQUIRED in GO mode
+python3 tools/e80_bench_ctl.py --mode rx --sync cvm \
+    --configs configs/per-stop/stop-50m.json --stop 50m \
+    --armed-file /tmp/armed.json --dry-run
+
+# TX on the other board, with the RX ARMED relayed by hand (Signal)
+python3 tools/e80_bench_ctl.py --mode tx --sync cvm \
+    --configs configs/per-stop/stop-50m.json --stop 50m \
+    --armed-file /tmp/armed.json
+```
+
+**`--stop` is not optional in GO mode:** it defaults to `?` (*not recorded*),
+and in GO mode it is the only thing that attributes the pass to a stop. A
+launch that omits it prints
+`WARNING: GO mode launched without --stop …` and the resulting log can then
+only be kept with a loose *"records NO stop id"* note — it is still scored, it
+is just not attributable (see the flag table above).
+
+**The Makefile cannot enter GO mode.** `make range-rx` / `make range-tx`
+always pass `--t0` and `--session-id`, and `--t0` always wins over
+`--sync cvm`, so a GO pass must be launched with the direct
+`e80_bench_ctl.py` invocations above. A GO-aware make target is P3 work.
+
+### Log layout & post-stop analysis
+
+GO mode adds a second log-dir scheme. **`range_check` and `merge_csvs` read
+both schemes** — the `(session, config)` join is normalised through the board
+u32 projection on each side, so a GO run merges like a boundary run.
+**`gps_stitch.py` does not**: it has no session/GO awareness and no
+`captured_ts` in harmonized GO rows, so pass it `--t0-epoch` explicitly for a
+GO stop.
+
+| Launch | Log dir | Stop distance encoded as |
+|--------|---------|--------------------------|
+| Boundary / manual `--t0` (sweep) | `logs/s<session>-t0<t0epoch>/stop-<dist>/rx-log-*.csv` | the `stop-<dist>/` path level |
+| Boundary / manual `--t0` (single run) | `logs/s<session>-t0<t0epoch>/{rx,tx}-log.csv` | not in the path — pass `RX=`/`TX=` |
+| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — carried by the `stop=` token of the `GO_MODE` banner, with the sibling `armed.json` as fallback. `range_check` refuses (exit 2) a GO log whose own stop differs from the requested `--dist` instead of printing a confident pass for a stop that was never run. A log with **no** stop id in either source (both `stop=?`/empty — a GO launch without `--stop`) is kept with a note, never refused |
+
+`<session>` is the legacy 10-digit int form (e.g. `2608281250`) for
+boundary/manual runs, and the RX-generated `%y%m%d%H%M` + 3-hex nonce
+(e.g. `2609130435a3f`) in GO mode.
+
+**The join key is `session_id`; `t0` is the fallback.** `range_check.py`
+reads the session of each log from two independent sources:
+
+1. the session dir name in the path — `s<session>-t0<epoch>` (legacy) or
+   `s<session>-go<epoch>` (GO);
+2. the `session=<sid>` token of the first launch-banner comment line
+   (`# DISTRIBUTED_TX_MODE session=… t0=…` or
+   `# GO_MODE sync=cvm source=… session=… stop=… t_ready=… t0=…`).
+
+If **both** logs expose at least one session and the sets disagree, the
+check fails loudly (`SESSION MISMATCH`, exit 2): the rx and tx logs are NOT
+from the same launch — a wrong log was picked up, or the two sides started
+split-brain with a session each. If the sessions agree, or only one side
+exposes one, the legacy rule applies verbatim: every readable `t0` (filename
+tag `-t0<epoch>` / `-go<epoch>`, and the banner `t0=<iso>`) must agree, else
+`T0 MISMATCH` (exit 2).
+
+Log discovery is best-first: session-tagged candidates for the requested
+session (newest first) → any other candidate (newest first) → the cwd-quirk
+`tools/rx-log.csv`. Because the GO dir carries no `stop-<dist>` level, a GO
+log of the requested session is a candidate for **any** `DIST`. The stop guard
+then decides: a log naming a *different* stop is refused (exit 2), a log naming
+*no* stop (`stop=?`/empty in both sources — launched without `--stop`) is
+analysed with an *unverifiable* note, and a matching stop is analysed silently.
+Exit codes
+are unchanged: `0` complete, `1` gaps / logging gap, `2` usage or log errors.
+
 ---
 
 ## 9. Config Presets
@@ -764,7 +957,31 @@ information on failed rows — filter on `crc_ok` first. Because it is an
 application-layer check on top of the radio CRC, it is also the integrity
 path used when the chip CRC is disabled and integrity is carried by the app
 layer (payload CRC + PRBS15 `bit_err`).
+### Launch banner comment lines
 
+Every log opens with a launch banner (comment lines starting with `#`) — the
+metadata the post-stop tools read:
+
+```
+# boundary / manual --t0
+# DISTRIBUTED_RX_MODE t0=2026-08-28T11:30:00 port=/dev/ttyUSB1 probe=203584200D2D0D42 loop=3
+# DISTRIBUTED_TX_MODE session=2608281250 t0=2026-08-28T11:30:00 port=/dev/ttyUSB0 loop=3
+
+# GO mode (--sync cvm): the DISTRIBUTED_*_MODE banner PLUS a GO_MODE line
+# GO_MODE sync=cvm source=generate session=2609130435a3f t_ready=2026-09-13T04:35:00 t0=2026-09-13T04:35:30 deadline_mono=123456.789 armed_seq=7
+```
+
+| Token | Meaning |
+|-------|---------|
+| `t0=<iso>` | Launch epoch the schedule anchors to; the `GO_MODE` line repeats the same value |
+| `session=<sid>` | Session id — the primary join key (GO: `%y%m%d%H%M` + 3-hex nonce, e.g. `2609130435a3f`; legacy: 10-digit int, e.g. `2608281250`) |
+| `t_ready` / `deadline_mono` / `armed_seq` | GO mode only: the ARMED message's ready time, the monotonic deadline the waits use, and the ARMED sequence number |
+
+The RX `DISTRIBUTED_RX_MODE` banner carries **no** `session=` token: in GO
+mode the RX session comes from the trailing `GO_MODE` line (and the log dir
+name), in legacy mode from the log dir name. `range_check` joins the rx/tx
+logs on this session id, with the `t0` rule as fallback — see
+[Log layout & post-stop analysis](#log-layout--post-stop-analysis).
 ### Die-temperature lines (`TEMP,...`) + interp logging
 
 The bench firmware emits a periodic **TEMP** line at ~1 Hz while the radio

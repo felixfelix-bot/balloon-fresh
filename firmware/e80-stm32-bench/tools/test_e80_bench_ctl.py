@@ -7,9 +7,12 @@ Run:  python3 -m unittest test_e80_bench_ctl -v
 import argparse
 import contextlib
 import io
+import json
 import os
+import re
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -27,12 +30,15 @@ def make_args(**kw):
         csv=None, band_override=True, site="siteA", stop="S3", dist_m="200",
         repeat=2, gps_tx="52.01,4.04", gps_rx="52.02,4.01", h_tx="1.5",
         h_rx="1.5", ground="grass", weather="12C clear", t0=None,
-        t0_margin=120, guard=20, rx_lead=10, settle=2, skip_fw_check=True,
+        t0_margin=30, guard=20, rx_lead=10, settle=2, skip_fw_check=True,
         # Distributed / preset-mode fields
         mode=None, configs=None, port=None, probe=None, session_id=None,
         tx_log="tx-log.csv", rx_log="rx-log.csv",
         skip_late_configs=False,
         prime_discard=2,
+        # Runner fields (existing tests never reached them; GO wiring does)
+        swd_reset_s=2, band_swap_s=30,
+        sync="boundary", armed_file=None, armed_out=None,
     )
     base.update(kw)
     return argparse.Namespace(**base)
@@ -1039,6 +1045,1129 @@ class FakeSubprocessResult:
         self.stdout = stdout
         self.stderr = stderr
         self.returncode = returncode
+
+
+# ===========================================================================
+# GO MODE — derived-T0 sync (--sync cvm, ADR-range-sync-cvm.md §2.1 / §3)
+#
+# Stage 1 (task E80-CVM-P2): T0 is derived from the ARMED message instead of
+# a 5-minute clock boundary; a GO-window guard replaces the legacy T0-past
+# guard; rx_lead is clamped to >= 5 s; waits are anchored to a monotonic
+# deadline captured when the ARMED is accepted; the session id comes from the
+# ARMED and the log dir is s<sid>-go<t0>.
+# ===========================================================================
+
+GO_SESSION = "2609130435a3f"          # %y%m%d%H%M + 3-hex nonce
+
+
+def _armed_dict(t_ready, session_id=GO_SESSION, stop="50m", created_at=None,
+                preset_hash="abc123def456", seq=1, author="cafe"):
+    """One ARMED object exactly as the RX publishes it (and relays by hand)."""
+    return {
+        "type": "ARMED",
+        "session_id": session_id,
+        "stop": stop,
+        "t_ready_utc": int(t_ready),
+        "preset_hash": preset_hash,
+        "seq": seq,
+        "created_at": int(created_at if created_at is not None else time.time()),
+        "author": author,
+    }
+
+
+class ImmediateBus:
+    """cvm_sync bus stand-in: fans pre-loaded events out on subscribe()."""
+
+    def __init__(self, messages=()):
+        self.messages = list(messages)
+        self.published = []
+
+    async def subscribe(self, handler):
+        for msg in self.messages:
+            await handler(msg)
+
+    async def publish(self, event):
+        self.published.append(event)
+
+
+class FailingBus(ImmediateBus):
+    """ImmediateBus whose publish() raises — relay pool unreachable.
+
+    The STARTED notice is best-effort: radio capture must never depend on
+    the CVM message layer, so a publish failure is a loud warning only.
+    """
+
+    async def publish(self, event):
+        raise RuntimeError("relay pool unreachable")
+
+
+class GoT0DerivationTests(unittest.TestCase):
+    """T0 = armed["t_ready_utc"] + 30 s (cvm_sync.T0_MARGIN) — no boundary wait."""
+
+    def test_t0_is_t_ready_plus_30(self):
+        armed = _armed_dict(1_780_000_000)
+        anchor = m.GoAnchor(armed, wall_at_event=1_780_000_000.0,
+                            mono_at_event=500.0)
+        self.assertEqual(anchor.t0_epoch, 1_780_000_030)
+        self.assertEqual(anchor.t_ready_utc, 1_780_000_000)
+
+    def test_derivation_matches_cvm_sync_compute_t0(self):
+        armed = _armed_dict(1_780_000_123)
+        anchor = m.GoAnchor(armed, wall_at_event=0.0, mono_at_event=0.0)
+        self.assertEqual(anchor.t0_epoch, m.cvm.compute_t0(armed))
+        self.assertEqual(anchor.t0_epoch, int(1_780_000_123 + m.cvm.T0_MARGIN))
+
+    def test_no_clock_boundary_snapping(self):
+        # t_ready is deliberately NOT near a 5-minute boundary: GO mode must
+        # never round T0 up to the next boundary (that wait is the thing the
+        # ARMED-derived T0 replaces).
+        t_ready = 1_780_000_001
+        anchor = m.GoAnchor(_armed_dict(t_ready), float(t_ready), 0.0)
+        self.assertEqual(anchor.t0_epoch, t_ready + 30)
+        self.assertNotEqual(anchor.t0_epoch % 300, 0)
+        next_boundary = (t_ready // 300 + 1) * 300
+        self.assertNotEqual(anchor.t0_epoch, next_boundary)
+
+    def test_session_id_comes_from_armed_never_from_t0(self):
+        armed = _armed_dict(1_780_000_000, session_id="2609130435a3f")
+        anchor = m.GoAnchor(armed, 1_780_000_000.0, 500.0)
+        self.assertEqual(anchor.session_id, "2609130435a3f")
+        self.assertIsInstance(anchor.session_id, str)
+        self.assertEqual(len(anchor.session_id), 13)     # yymmddhhmm + 3-hex
+        # must NOT be the legacy %y%m%d%H%M int of the derived T0
+        legacy = int(time.strftime("%y%m%d%H%M", time.gmtime(anchor.t0_epoch)))
+        self.assertNotEqual(anchor.session_id, str(legacy))
+
+    def test_deadline_is_a_monotonic_anchor(self):
+        armed = _armed_dict(1_780_000_000)
+        anchor = m.GoAnchor(armed, wall_at_event=1_779_999_990.0,
+                            mono_at_event=500.0)
+        # 40 s of wall time remained when the ARMED was accepted
+        self.assertEqual(anchor.deadline_mono, 540.0)
+        self.assertEqual(anchor.remaining_s(520.0), 20.0)
+        # wall schedule instants map onto the monotonic timeline
+        self.assertEqual(anchor.mono_target(anchor.t0_epoch), 540.0)
+        self.assertEqual(anchor.mono_target(anchor.t0_epoch + 30), 570.0)
+
+    def test_wall_now_mirrors_the_monotonic_anchor(self):
+        anchor = m.GoAnchor(_armed_dict(1_780_000_000), 1_779_999_990.0, 500.0)
+        self.assertEqual(anchor.wall_now(510.0), 1_780_000_000.0)
+
+
+class GoWindowGuardTests(unittest.TestCase):
+    """Pure GO-window guard: refuse when remaining-to-T0 < GO rx_lead (5 s)."""
+
+    T0 = 1_780_000_030
+
+    def test_accepts_when_remaining_equals_the_minimum(self):
+        ok, msg = m.go_window_ok(self.T0, now_mono=1_005.0, deadline_mono=1_010.0)
+        self.assertTrue(ok)
+        self.assertEqual(msg, "")
+
+    def test_accepts_with_full_30s_margin(self):
+        # a freshly accepted ARMED always clears the guard
+        armed = _armed_dict(1_780_000_000)
+        anchor = m.GoAnchor(armed, 1_780_000_000.0, 500.0)
+        ok, msg = m.go_window_ok(anchor.t0_epoch, now_mono=500.0,
+                                 deadline_mono=anchor.deadline_mono)
+        self.assertTrue(ok)
+        self.assertEqual(msg, "")
+
+    def test_refuses_when_remaining_below_the_minimum(self):
+        # 26 s after the RX armed (30 s margin, 4 s left) — window expired
+        ok, msg = m.go_window_ok(self.T0, now_mono=1_006.0, deadline_mono=1_010.0)
+        self.assertFalse(ok)
+        self.assertIn("GO window expired", msg)
+        self.assertIn("26s ago", msg)          # seconds since the RX armed
+        self.assertIn("Re-arm the RX", msg)
+        self.assertIn(time.strftime("%Y-%m-%dT%H:%M:%S",
+                                    time.localtime(self.T0)), msg)
+
+    def test_refuses_after_t0_has_passed(self):
+        ok, msg = m.go_window_ok(self.T0, now_mono=1_020.0, deadline_mono=1_010.0)
+        self.assertFalse(ok)
+        self.assertIn("40s ago", msg)
+
+    def test_minimum_lead_is_the_go_rx_lead(self):
+        self.assertEqual(m.GO_MODE_RX_LEAD_MIN, 5)
+        # remaining of exactly 4.99 s is refused, 5.0 s accepted
+        ok_lo, _ = m.go_window_ok(self.T0, 1_005.01, 1_010.0)
+        ok_hi, _ = m.go_window_ok(self.T0, 1_005.0, 1_010.0)
+        self.assertFalse(ok_lo)
+        self.assertTrue(ok_hi)
+
+    def test_wall_clock_step_does_not_move_the_guard(self):
+        """An NTP step mid-pass must not shift a side: the decision is made
+        against the monotonic deadline, so a +300 s wall jump is invisible."""
+        t_ready = 1_780_000_000
+        anchor = m.GoAnchor(_armed_dict(t_ready), wall_at_event=float(t_ready),
+                            mono_at_event=500.0)
+        mono_now = 510.0                     # 10 s of real elapsed time
+        ok, msg = m.go_window_ok(anchor.t0_epoch, mono_now, anchor.deadline_mono)
+        self.assertTrue(ok)
+        self.assertEqual(msg, "")
+        # the same instant, read off a stepped wall clock, would refuse
+        stepped_wall_now = float(t_ready) + 310.0
+        self.assertLess(anchor.t0_epoch - stepped_wall_now,
+                        m.GO_MODE_RX_LEAD_MIN)
+        # the monotonic translation is identical before/after the step
+        self.assertEqual(m.mono_deadline(anchor.t0_epoch, float(t_ready), 500.0),
+                         anchor.deadline_mono)
+        self.assertEqual(anchor.mono_target(anchor.t0_epoch), anchor.deadline_mono)
+        self.assertEqual(anchor.wall_now(mono_now), float(t_ready) + 10.0)
+
+
+class GoRxLeadClampTests(unittest.TestCase):
+    """GO mode arms RX >= 5 s early; boundary/manual-T0 mode is unchanged."""
+
+    def test_clamped_up_in_go_mode(self):
+        self.assertEqual(m.go_rx_lead(3, m.SYNC_CVM, None), 5)
+        self.assertEqual(m.go_rx_lead(0, m.SYNC_CVM, None), 5)
+        self.assertEqual(m.go_rx_lead(1, m.SYNC_CVM, None), 5)
+
+    def test_never_lowered(self):
+        self.assertEqual(m.go_rx_lead(8, m.SYNC_CVM, None), 8)
+        self.assertEqual(m.go_rx_lead(30, m.SYNC_CVM, None), 30)
+
+    def test_boundary_mode_unchanged(self):
+        self.assertEqual(m.go_rx_lead(3, m.SYNC_BOUNDARY, None), 3)
+        self.assertEqual(m.go_rx_lead(3, m.SYNC_BOUNDARY, 1_780_000_030), 3)
+
+    def test_manual_t0_with_sync_cvm_is_legacy(self):
+        # explicit --t0 always wins → untouched legacy rx_lead
+        self.assertEqual(m.go_rx_lead(3, m.SYNC_CVM, 1_780_000_030), 3)
+
+
+class GoLogPathTests(unittest.TestCase):
+    """GO-mode default log dir: logs/s<sid>-go<t0>/<role>-log.csv."""
+
+    def test_rx_go_dir_naming(self):
+        p = m.resolve_log_path("rx-log.csv", True, GO_SESSION, 1_780_000_030,
+                               "rx", repo_root="/tmp/repo", go=True)
+        self.assertEqual(
+            p, "/tmp/repo/logs/s2609130435a3f-go1780000030/rx-log.csv")
+
+    def test_tx_go_dir_naming(self):
+        p = m.resolve_log_path("tx-log.csv", True, GO_SESSION, 1_780_000_030,
+                               "tx", repo_root="/tmp/repo", go=True)
+        self.assertEqual(
+            p, "/tmp/repo/logs/s2609130435a3f-go1780000030/tx-log.csv")
+        self.assertNotIn("-t0", p)
+
+    def test_legacy_t0_dir_untouched(self):
+        p = m.resolve_log_path("tx-log.csv", True, 2609130435, 1_780_000_030,
+                               "tx", repo_root="/tmp/repo")
+        self.assertEqual(
+            p, "/tmp/repo/logs/s2609130435-t01780000030/tx-log.csv")
+
+    def test_explicit_path_always_wins(self):
+        self.assertEqual(
+            m.resolve_log_path("/elsewhere/rx.csv", False, GO_SESSION,
+                               1_780_000_030, "rx", go=True),
+            "/elsewhere/rx.csv")
+
+
+class GoArmedSeamTests:
+    """ARMED input seam (--armed-file / bus) — plain pytest class, tmp_path."""
+
+    def test_armed_file_roundtrip(self, tmp_path):
+        path = tmp_path / "armed.json"
+        path.write_text(json.dumps(_armed_dict(1_780_000_000)))
+        armed = m.load_armed_file(str(path))
+        assert armed["session_id"] == GO_SESSION
+        assert armed["type"] == "ARMED"
+
+    def test_armed_file_freshness_is_relaxed(self):
+        now = int(time.time())
+        stale = _armed_dict(now + 60, created_at=now - 600)   # hand-relayed
+        ok_strict, reason = m.cvm.validate_armed(stale, now=now)
+        assert not ok_strict, "strict freshness must reject the stale ARMED"
+        assert "skew" in reason
+        ok_relaxed, reason2 = m.validate_armed_relaxed(stale)
+        assert ok_relaxed, reason2
+
+    def test_relaxed_validation_still_structural(self):
+        broken = {"type": "ARMED", "session_id": GO_SESSION, "stop": "50m",
+                  "seq": 1}                                   # no t_ready/preset
+        ok, reason = m.validate_armed_relaxed(broken)
+        assert not ok
+        assert reason
+        assert m.validate_armed_relaxed({"type": "VERDICT"})[0] is False
+
+    def test_write_armed_out_roundtrip(self, tmp_path):
+        p = tmp_path / "run" / "armed.json"
+        armed = _armed_dict(1_780_000_000)
+        m.write_armed_out(str(p), armed)
+        assert json.loads(p.read_text()) == armed
+
+    def test_preset_hash_is_stable_and_sensitive(self):
+        a = [{"mod": "flrc", "br": 650, "plen": 51}]
+        b = [{"mod": "flrc", "br": 650, "plen": 51}]
+        c = [{"mod": "flrc", "br": 2600, "plen": 51}]
+        assert m.preset_hash(a) == m.preset_hash(b)
+        assert m.preset_hash(a) != m.preset_hash(c)
+
+    def test_bus_seam_returns_the_accepted_armed(self):
+        armed = _armed_dict(int(time.time()) + 30, created_at=int(time.time()))
+        got = m.wait_for_armed_on_bus(ImmediateBus([armed]), timeout_s=2.0)
+        assert got == armed
+
+    def test_bus_seam_ignores_a_stale_armed(self):
+        stale = _armed_dict(int(time.time()) + 30,
+                            created_at=int(time.time()) - 600)
+        got = m.wait_for_armed_on_bus(ImmediateBus([stale]), timeout_s=0.3)
+        assert got is None
+
+    def test_rx_generated_armed_is_valid_and_rx_authoritative(self):
+        cfgs = [{"mod": "flrc", "br": 650, "plen": 51, "label": "FLRC-650"}]
+        armed = m.build_go_armed(cfgs, GO_SESSION, "50m", 1_780_000_000)
+        ok, reason = m.cvm.validate_armed(armed, now=1_780_000_000)
+        assert ok, reason
+        assert armed["session_id"] == GO_SESSION
+        assert armed["preset_hash"] == m.preset_hash(cfgs)
+        assert armed["seq"] >= 1
+        assert m.cvm.compute_t0(armed) == 1_780_000_030
+
+
+class GoWiringTests(unittest.TestCase):
+    """run_tx_mode/run_rx_mode must consume the GO anchor (clamp + monotonic)."""
+
+    class _AbortLaunch(KeyboardInterrupt):
+        pass
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.cfgs = [{"mod": "flrc", "br": 650, "plen": 51, "n_pkts": 10,
+                      "pa": 10, "freq": 868000000, "gap": 5000,
+                      "label": "FLRC-650"}]
+        self.seen = {}
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _anchor(self, t_ready=None):
+        t_ready = int(time.time()) + 120 if t_ready is None else t_ready
+        return m.GoAnchor(_armed_dict(t_ready), wall_at_event=float(t_ready),
+                          mono_at_event=500.0)
+
+    def _spy_schedule(self):
+        seen = self.seen
+
+        def spy_cycle(cfgs, t0_margin=120, guard=20, settle=2.0, rx_lead=0,
+                      swd_reset_s=0, band_swap_s=0):
+            seen["cycle_rx_lead"] = rx_lead
+            return 600
+
+        def spy_apply(cfgs, starts, now, rx_lead, min_ahead_s=5.0,
+                      skip_late=False, mode_label=""):
+            seen["rx_lead"] = rx_lead
+            seen["starts"] = list(starts)
+            seen["mode_label"] = mode_label
+            raise GoWiringTests._AbortLaunch()
+
+        return spy_cycle, spy_apply
+
+    def _board_cls(self):
+        class StubBoard:
+            def __init__(self, port):
+                self.port = port
+                self.log = []
+
+            def drain(self, quiet=0.4):
+                pass
+
+            def close(self):
+                self.log.append("CLOSE")
+
+            def cmd(self, line, expect_ok=True, timeout=15.0):
+                self.log.append(line)
+                return "OK " + line.split()[0]
+
+            def query(self, line, prefixes=(), timeout=15.0):
+                self.log.append(line)
+                return "ID E80BENCH role=RX band=863-870MHz"
+
+            def stat(self):
+                return "STAT role=RX recv=0"
+
+        return StubBoard
+
+    def _run(self, mode, anchor=None, rx_lead=3, sync=None, t0=None):
+        spy_cycle, spy_apply = self._spy_schedule()
+        args = make_args(
+            mode=mode, configs=self.cfgs, session_id=GO_SESSION,
+            t0=t0 if t0 is not None else str(self._anchor().t0_epoch),
+            sync=sync if sync is not None else m.SYNC_BOUNDARY,
+            rx_lead=rx_lead, skip_fw_check=True, loop=1,
+            format="harmonized", no_swd_reset=True, skip_late_configs=True,
+            prime_discard=0, probe="PX1", port="/dev/ttyUSB9",
+            tx_log=os.path.join(self.dir.name, "tx.csv"),
+            rx_log=os.path.join(self.dir.name, "rx.csv"))
+        buf = io.StringIO()
+        with mock.patch.object(m, "_detect_board_for_mode",
+                               return_value=("/dev/ttyUSB9", "PX1")), \
+             mock.patch.object(m, "id_preflight", lambda *a, **k: "ID"), \
+             mock.patch.object(m, "compute_cycle_len", side_effect=spy_cycle), \
+             mock.patch.object(m, "apply_late_skip", side_effect=spy_apply), \
+             contextlib.redirect_stdout(buf):
+            if mode == "tx":
+                rc = m.run_tx_mode(args, board_cls=self._board_cls(),
+                                   go_anchor=anchor)
+            else:
+                rc = m.run_rx_mode(args, board_cls=self._board_cls(),
+                                   go_anchor=anchor)
+        return rc, buf.getvalue()
+
+    def test_rx_mode_uses_go_lead_and_derived_t0(self):
+        anchor = self._anchor()
+        rc, out = self._run("rx", anchor=anchor, rx_lead=3, sync=m.SYNC_CVM)
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.seen["cycle_rx_lead"], 5)   # clamp reached cycle_len
+        self.assertEqual(self.seen["rx_lead"], 5)         # and the late-skip guard
+        self.assertEqual(self.seen["starts"][0],
+                         anchor.t0_epoch + 30)            # T0 + t0_margin
+        self.assertIn("GO MODE", out)
+        self.assertIn(anchor.session_id, out)
+
+    def test_tx_mode_cycle_len_uses_the_same_go_lead(self):
+        # cycle_len must be identical on both sides or the cycles desync
+        anchor = self._anchor()
+        rc, out = self._run("tx", anchor=anchor, rx_lead=3, sync=m.SYNC_CVM)
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.seen["cycle_rx_lead"], 5)
+        self.assertIn("GO MODE", out)
+
+    def test_boundary_mode_leads_unchanged(self):
+        t0 = int(time.time()) + 600
+        rc, out = self._run("rx", anchor=None, rx_lead=3, t0=str(t0))
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.seen["cycle_rx_lead"], 3)
+        self.assertEqual(self.seen["rx_lead"], 3)
+        self.assertEqual(self.seen["starts"][0], t0 + 30)
+        self.assertNotIn("GO MODE", out)
+
+
+class GoMainWiringTests(unittest.TestCase):
+    """main() GO-mode routing: derivation, override precedence, loud refusals."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.preset = os.path.join(self.dir.name, "preset.json")
+        with open(self.preset, "w") as f:
+            json.dump({"configs": [{"mod": "flrc", "br": 650, "plen": 51,
+                                    "n_pkts": 10, "pa": 10, "freq": 868000000,
+                                    "gap": 5000, "label": "FLRC-650"}]}, f)
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _armed_file(self, t_ready, name="armed.json", **kw):
+        # A hand-relayed ARMED must carry the fingerprint of THIS preset +
+        # the CLI timing knobs (blocker 4): acquire_armed_for_go refuses an
+        # ARMED built for another preset/knob set, so the fixture has to be
+        # self-consistent with the run it is relayed into.
+        kw.setdefault("preset_hash", preset_knobs_hash(self.preset))
+        p = os.path.join(self.dir.name, name)
+        with open(p, "w") as f:
+            json.dump(_armed_dict(t_ready, **kw), f)
+        return p
+
+    def _armed_msg(self, t_ready, **kw):
+        kw.setdefault("preset_hash", preset_knobs_hash(self.preset))
+        return _armed_dict(t_ready, **kw)
+
+    def _main(self, argv, bus=None):
+        captured = {}
+
+        def fake_run(args, board_cls=None, go_anchor=None):
+            captured["args"] = args
+            captured["anchor"] = go_anchor
+            captured["runs"] = captured.get("runs", 0) + 1
+            return 0
+
+        old_argv = sys.argv
+        sys.argv = ["e80_bench_ctl.py"] + argv
+        buf, err = io.StringIO(), io.StringIO()
+        code = 0
+        try:
+            with mock.patch.object(m, "run_tx_mode", side_effect=fake_run), \
+                 mock.patch.object(m, "run_rx_mode", side_effect=fake_run), \
+                 mock.patch("os.makedirs"), \
+                 contextlib.redirect_stdout(buf), \
+                 contextlib.redirect_stderr(err):
+                try:
+                    code = m.main(bus=bus)
+                except SystemExit as e:
+                    if isinstance(e.code, str):
+                        err.write(str(e.code) + "\n")
+                        code = 1
+                    else:
+                        code = e.code or 0
+        finally:
+            sys.argv = old_argv
+        return code, buf.getvalue() + err.getvalue(), captured
+
+    def test_go_mode_derives_t0_and_session_from_armed_file(self):
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertIn("args", cap)
+        args = cap["args"]
+        self.assertEqual(args.session_id, GO_SESSION)      # from ARMED, not T0
+        self.assertEqual(args.t0, str(t_ready + 30))       # derived T0
+        self.assertEqual(args.rx_lead, 5)                  # GO clamp
+        self.assertIsNotNone(cap["anchor"])
+        self.assertEqual(cap["anchor"].source, "file")
+        self.assertEqual(cap["anchor"].t0_epoch, t_ready + 30)
+        # default log dir switches to the GO scheme
+        self.assertEqual(
+            os.path.basename(os.path.dirname(args.rx_log)),
+            "s{}-go{}".format(GO_SESSION, t_ready + 30))
+        self.assertTrue(args.rx_log.startswith(
+            m.default_logs_root() + os.sep))
+        # absolute wall T0 stays visible for log correlation / GPS stitch
+        self.assertIn("GO MODE", out)
+        self.assertIn(GO_SESSION, out)
+        self.assertIn("t0={}".format(t_ready + 30), out)
+
+    def test_go_mode_warns_when_stop_is_the_sentinel(self):
+        # --stop defaults to "?" (the unknown sentinel). A GO launch that
+        # omits it writes stop=? into BOTH stop sources, so the log can never
+        # be attributed to a stop: say so AT LAUNCH, not after the stop when
+        # the operator scores the pass.
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertIn("GO mode launched without --stop", out)
+        self.assertIn("--dist", out)
+        self.assertEqual(cap["args"].stop, "?")
+
+    def test_go_mode_has_no_stop_warning_when_a_stop_is_given(self):
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm", "--stop", "50m",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertNotIn("launched without --stop", out)
+        self.assertEqual(cap["args"].stop, "50m")
+
+    def test_legacy_mode_has_no_go_stop_warning(self):
+        # the warning belongs to GO mode only: a boundary run's --stop is CSV
+        # metadata, and its log dir already carries the stop level.
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "rx", "--t0", str(t0), "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertNotIn("launched without --stop", out)
+
+    def test_go_mode_rejects_explicit_session_id(self):
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm",
+                "--armed-file", self._armed_file(t_ready),
+                "--session-id", "2609130435", "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertNotEqual(code, 0)
+        self.assertIn("session_id comes from ARMED in GO mode", out)
+        self.assertNotIn("args", cap)          # refused before any launch
+
+    def test_go_mode_refuses_an_expired_go_window(self):
+        t_ready = int(time.time()) - 60        # armed a minute ago
+        argv = ["--mode", "tx", "--sync", "cvm",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertNotEqual(code, 0)
+        self.assertIn("GO window expired", out)
+        self.assertIn("Re-arm the RX", out)
+        self.assertNotIn("args", cap)
+
+    def test_manual_t0_wins_over_sync_cvm(self):
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "rx", "--sync", "cvm", "--t0", str(t0),
+                "--session-id", "1234", "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        args = cap["args"]
+        self.assertEqual(args.t0, str(t0))
+        self.assertEqual(args.session_id, 1234)            # int, legacy flag
+        self.assertIsNone(cap["anchor"])                   # legacy path
+        self.assertEqual(args.rx_lead, 3)                  # no GO clamp
+        # legacy s<sid>-t0<epoch> log scheme preserved
+        self.assertEqual(os.path.basename(os.path.dirname(args.rx_log)),
+                         "s1234-t0{}".format(t0))
+
+    def test_boundary_default_is_legacy(self):
+        t0 = int(time.time()) + 300
+        for extra in ([], ["--sync", "boundary"]):
+            argv = ["--mode", "tx", "--t0", str(t0), "--session-id", "42",
+                    "--configs", self.preset] + extra
+            code, out, cap = self._main(argv)
+            self.assertEqual(code, 0, out)
+            self.assertIsNone(cap["anchor"])
+            self.assertEqual(cap["args"].session_id, 42)
+            self.assertEqual(os.path.basename(
+                os.path.dirname(cap["args"].tx_log)), "s42-t0{}".format(t0))
+
+    # ------------------------------------------------------------------
+    # Split-brain guard: a TX start always echoes a LIVE RX session id and
+    # announces itself with a STARTED notice. There is no code path where
+    # TX starts without echoing a live RX session id.
+    # ------------------------------------------------------------------
+
+    def test_legacy_tx_refuses_a_start_without_an_echoed_session_id(self):
+        """A manual TX start with no --session-id is refused loudly.
+
+        main() used to silently invent one (%y%m%d%H%M); the RX stayed on
+        its own session and the analysis reported a false MISS/LOGGING GAP
+        with no warning — the split-brain failure mode.
+        """
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "tx", "--t0", str(t0), "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertNotEqual(code, 0)
+        self.assertIn("split brain", out.lower())
+        self.assertIn("--session-id", out)
+        self.assertIn("RX", out)               # echo the RX banner value
+        self.assertNotIn("runs", cap)          # refused before any launch
+
+    def test_legacy_tx_dry_run_without_session_id_is_not_refused(self):
+        t0 = int(time.time()) + 300
+        argv = ["--mode", "tx", "--t0", str(t0), "--configs", self.preset,
+                "--dry-run"]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("split brain", out.lower())
+
+    def test_legacy_tx_writes_started_json_next_to_tx_log(self):
+        t0 = int(time.time()) + 300
+        tx_log = os.path.join(self.dir.name, "tx-log.csv")
+        argv = ["--mode", "tx", "--t0", str(t0), "--session-id", "2609130435",
+                "--configs", self.preset, "--tx-log", tx_log]
+        # Scope the session-collision scan to the temp dir: the real
+        # <repo>/logs can hold an s2609130435-t0<other>/ dir from an earlier
+        # manual CLI run (this test's session id is a fixed echo).
+        with mock.patch.object(m, "default_logs_root",
+                               return_value=self.dir.name):
+            code, out, cap = self._main(argv)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(cap["runs"], 1)
+        path = os.path.join(self.dir.name, "started.json")
+        self.assertTrue(os.path.exists(path), out)
+        with open(path) as f:
+            notice = json.load(f)
+        self.assertEqual(notice["type"], "STARTED")
+        self.assertEqual(notice["session_id"], "2609130435")   # echoed, not made up
+        self.assertEqual(notice["t0"], t0)
+        self.assertEqual(notice["t_ready_utc"], t0 - int(m.T0_MARGIN))
+        self.assertEqual(notice["role"], "tx")
+        self.assertEqual(notice["preset_hash"],
+                         m.preset_hash(m.load_config_preset(self.preset)))
+        self.assertIn("STARTED", out)
+        self.assertIn(path, out)               # absolute artefact path
+        self.assertIn("relay", out.lower())    # Signal fallback instruction
+
+    def test_go_tx_publishes_started_on_the_bus_with_the_armed_session(self):
+        t_ready = int(time.time()) + 60
+        bus = ImmediateBus([self._armed_msg(t_ready)])
+        argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
+        code, out, cap = self._main(argv, bus=bus)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(cap["runs"], 1)
+        started = [msg for msg in bus.published if msg.get("type") == "STARTED"]
+        self.assertEqual(len(started), 1, bus.published)
+        self.assertEqual(started[0]["session_id"], GO_SESSION)
+        self.assertEqual(started[0]["session_id"], cap["anchor"].session_id)
+        self.assertEqual(started[0]["t0"], t_ready + 30)
+        self.assertEqual(started[0]["t_ready_utc"], t_ready)
+        self.assertEqual(started[0]["role"], "tx")
+        self.assertIn("STARTED", out)
+        self.assertIn(GO_SESSION, out)
+        self.assertIn("published", out)
+
+    def test_started_publish_failure_is_a_loud_warning_not_a_stop(self):
+        t_ready = int(time.time()) + 60
+        bus = FailingBus([self._armed_msg(t_ready)])
+        argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
+        code, out, cap = self._main(argv, bus=bus)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(cap["runs"], 1)       # radio capture still ran
+        self.assertIn("WARNING", out)
+        self.assertIn("STARTED", out)
+
+    def test_build_started_notice_defaults_stop_and_derives_the_fields(self):
+        args = argparse.Namespace(stop=None, t0="1789000000",
+                                  session_id="2609130435")
+        notice = m.build_started_notice(args, [{"mod": "flrc"}])
+        self.assertEqual(notice["type"], "STARTED")
+        self.assertEqual(notice["stop"], "?")
+        self.assertEqual(notice["session_id"], "2609130435")
+        self.assertEqual(notice["t0"], 1789000000)
+        self.assertEqual(notice["t_ready_utc"], 1789000000 - int(m.T0_MARGIN))
+        self.assertEqual(notice["role"], "tx")
+        self.assertTrue(notice["preset_hash"])
+
+    def test_go_rx_without_armed_file_generates_and_writes_armed_out(self):
+        out_path = os.path.join(self.dir.name, "armed-out.json")
+        argv = ["--mode", "rx", "--sync", "cvm", "--configs", self.preset,
+                "--armed-out", out_path, "--stop", "50m"]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertEqual(cap["anchor"].source, "generate")
+        self.assertTrue(os.path.exists(out_path))
+        with open(out_path) as f:
+            written = json.load(f)
+        self.assertEqual(written["type"], "ARMED")
+        self.assertEqual(written["session_id"], cap["args"].session_id)
+        self.assertEqual(written["stop"], "50m")
+        self.assertTrue(written["preset_hash"])
+        # session id format: %y%m%d%H%M + 3-hex nonce, never T0-derived
+        self.assertRegex(written["session_id"], r"^[0-9]{10}[0-9a-f]{3}$")
+
+    def test_go_tx_without_an_armed_source_hard_errors(self):
+        argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertNotEqual(code, 0)
+        self.assertIn("--armed-file", out)
+        self.assertIn("ARMED", out)
+        # no live RX session was echoed → no STARTED may be emitted at all
+        self.assertNotIn("STARTED", out)
+        self.assertNotIn("runs", cap)
+
+    def test_go_tx_uses_the_bus_seam(self):
+        t_ready = int(time.time()) + 60
+        bus = ImmediateBus([self._armed_msg(t_ready)])
+        argv = ["--mode", "tx", "--sync", "cvm", "--configs", self.preset]
+        code, out, cap = self._main(argv, bus=bus)
+        self.assertEqual(code, 0)
+        self.assertEqual(cap["anchor"].source, "bus")
+        self.assertEqual(cap["anchor"].session_id, GO_SESSION)
+        self.assertEqual(cap["anchor"].t0_epoch, t_ready + 30)
+
+    def test_go_dry_run_needs_no_t0(self):
+        t_ready = int(time.time()) + 60
+        argv = ["--mode", "rx", "--sync", "cvm", "--dry-run",
+                "--armed-file", self._armed_file(t_ready),
+                "--configs", self.preset]
+        code, out, cap = self._main(argv)
+        self.assertEqual(code, 0)
+        self.assertIn("DRY RUN", out)
+        self.assertIn("FLRC-650", out)
+        self.assertIn("t0={}".format(t_ready + 30), out)
+
+
+    # --- a --dry-run writes NO run artefacts -----------------------------
+
+    def _run_main(self, argv, bus=None):
+        """main() with the REAL artefact-writing path (no runner/fs mocks).
+
+        A --dry-run GO RX returns before any board or countdown is touched, so
+        this exercises the write itself rather than a mocked stand-in.
+        """
+        old_argv = sys.argv
+        sys.argv = ["e80_bench_ctl.py"] + argv
+        buf, err = io.StringIO(), io.StringIO()
+        code = 0
+        try:
+            with contextlib.redirect_stdout(buf), \
+                 contextlib.redirect_stderr(err):
+                code = m.main(bus=bus)
+        except SystemExit as e:
+            if isinstance(e.code, str):
+                err.write(str(e.code) + "\n")
+                code = 1
+            else:
+                code = e.code or 0
+        finally:
+            sys.argv = old_argv
+        return code, buf.getvalue() + err.getvalue()
+
+    def test_go_rx_dry_run_writes_no_armed_out_file(self):
+        # the --armed-out write used to sit ABOVE the --dry-run gate, so a
+        # rehearsal left a real ARMED artefact behind for a run that never
+        # happened (and its logs/s<sid>-go<t0>/ dir with it).
+        out_path = os.path.join(self.dir.name, "armed-dry-run.json")
+        argv = ["--mode", "rx", "--sync", "cvm", "--dry-run",
+                "--configs", self.preset, "--stop", "50m",
+                "--armed-out", out_path]
+        code, out = self._run_main(argv)
+        self.assertEqual(code, 0, out)
+        self.assertIn("DRY RUN", out)
+        self.assertIn("ARMED not written", out)
+        self.assertFalse(os.path.exists(out_path),
+                         "a --dry-run must not create the ARMED artefact")
+
+    def test_go_rx_dry_run_creates_no_log_dir_either(self):
+        # default --armed-out is <rx-log dir>/armed.json — INSIDE the per-run
+        # logs/s<sid>-go<t0>/ dir. Creating it from a dry run made the next
+        # live launch trip the session-collision guard on a dir no run wrote.
+        argv = ["--mode", "rx", "--sync", "cvm", "--dry-run",
+                "--configs", self.preset, "--stop", "50m"]
+        code, out = self._run_main(argv)
+        self.assertEqual(code, 0, out)
+        m_dry = re.search(r"ARMED not written \((.+?)\)", out)
+        self.assertIsNotNone(m_dry, out)
+        path = m_dry.group(1)
+        self.assertFalse(os.path.exists(path), path)
+        self.assertFalse(
+            os.path.exists(os.path.dirname(path)),
+            "dry run created the run's log dir: {}".format(
+                os.path.dirname(path)))
+
+
+class GoBoardSessionTests(unittest.TestCase):
+    """The board session a GO run sends to the firmware.
+
+    src/bench_cmd.c parses `SESSION <id>` with bench_parse_u32 and PKT lines
+    echo it with console_put_u32, so a GO session id (10 digits + 3-hex nonce)
+    can never be carried on the wire. The board gets the numeric projection;
+    the full id stays at the message/join layer (ARMED, log-dir name, banner).
+    """
+
+    def test_numeric_session_passes_through(self):
+        self.assertEqual(m.board_session_id(2609130435), 2609130435)
+        self.assertEqual(m.board_session_id("2609130435"), 2609130435)
+
+    def test_go_session_projects_to_its_digit_prefix(self):
+        self.assertEqual(m.board_session_id("2609130435a3f"), 2609130435)
+
+    def test_projection_fits_a_u32(self):
+        self.assertLess(m.board_session_id("2609130435a3f"), 2 ** 32)
+
+    def test_same_minute_arms_share_one_board_session(self):
+        # Documents the constraint the ARMED nonce exists to work around: two
+        # arms inside one minute are the SAME board session on the wire.
+        self.assertEqual(m.board_session_id("2609130435a3f"),
+                         m.board_session_id("2609130435b71"))
+
+    def test_unprojectable_session_is_none(self):
+        self.assertIsNone(m.board_session_id("bench-a"))
+        self.assertIsNone(m.board_session_id(None))
+        self.assertIsNone(m.board_session_id(""))
+
+    def test_session_command_uses_the_projection(self):
+        self.assertEqual(m.session_command("2609130435a3f"),
+                         "SESSION 2609130435")
+        self.assertEqual(m.session_command(42), "SESSION 42")
+
+    def test_session_command_refuses_an_unprojectable_id(self):
+        with self.assertRaises(SystemExit):
+            m.session_command("bench-a")
+
+    def test_parse_pkt_line_keeps_a_non_numeric_session(self):
+        # Regression: int(p[1]) killed the whole row (ValueError -> None), so
+        # every config of such a log read as MISS with no warning.
+        line = ",".join(["PKT", "2609130435a3f"] + [str(i) for i in range(2, 24)])
+        p = m.parse_pkt_line(line)
+        self.assertIsNotNone(p)
+        self.assertEqual(p["session_id"], "2609130435a3f")
+
+    def test_wire_session_id_is_what_the_logs_carry(self):
+        # Every row a run writes (PKT + STAT, both sides) must use the wire
+        # spelling, or range_check/merge_csvs compare a u32 against the full
+        # GO id and report a false LOGGING GAP / an all-MISS merge.
+        self.assertEqual(m.wire_session_id("2609130435a3f"), 2609130435)
+        self.assertEqual(m.wire_session_id(2609130435), 2609130435)
+        self.assertEqual(m.wire_session_id("bench-a"), "bench-a")
+
+
+# The --mode CLI timing-knob defaults (main()'s argparse): the GO fingerprint
+# hashes them, so a hand-built ARMED in a test must use the same values.
+CLI_KNOBS = {"t0_margin": 30.0, "guard": 5.0, "settle": 1.0, "rx_lead": 3.0,
+             "swd_reset_s": 2.0, "band_swap_s": 30.0}
+
+
+def preset_knobs_hash(preset_path, knobs=None):
+    """preset_hash() of a preset FILE + a knob set (default: the CLI defaults)."""
+    return m.preset_hash(m.load_config_preset(preset_path),
+                         CLI_KNOBS if knobs is None else knobs)
+
+
+class RecordingAnchor(m.GoAnchor):
+    """GoAnchor that records every mono_target(ts) instant (white-box spy).
+
+    Used to pin that a capture/poll window is bounded by the ANCHOR (monotonic
+    image of the window end) instead of a bare time.time() deadline.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.targets = []
+
+    def mono_target(self, ts):
+        self.targets.append(float(ts))
+        return super().mono_target(ts)
+
+
+class GoFingerprintTests(unittest.TestCase):
+    """Blocker 4: preset_hash is compared, and covers the schedule knobs.
+
+    ADR §2.1: the ARMED carries `preset_hash` and both sides must match. The
+    knobs that feed compute_cycle_len / build_preset_schedule must be inside
+    the fingerprint too, or the two operators can run different timing and
+    re-anchor apart from cycle 2 on with no detection.
+    """
+
+    CFGS = [{"mod": "flrc", "br": 650, "plen": 51, "n_pkts": 10, "pa": 10,
+             "freq": 868000000, "gap": 5000, "label": "FLRC-650"}]
+
+    def test_preset_hash_without_knobs_is_unchanged(self):
+        # legacy callers / docs keep the preset-only digest
+        self.assertEqual(m.preset_hash(self.CFGS),
+                         m.preset_hash(json.loads(json.dumps(self.CFGS))))
+        self.assertNotEqual(m.preset_hash(self.CFGS),
+                            m.preset_hash(self.CFGS, CLI_KNOBS))
+
+    def test_schedule_knobs_covers_every_cycle_len_knob(self):
+        knobs = m.schedule_knobs(make_args())
+        self.assertEqual(set(knobs), {"t0_margin", "guard", "settle",
+                                      "rx_lead", "swd_reset_s", "band_swap_s"})
+        # every knob that compute_cycle_len / build_preset_schedule consume
+        self.assertEqual(knobs["guard"], 20.0)
+        self.assertEqual(knobs["rx_lead"], 10.0)
+
+    def test_fingerprint_is_stable_and_knob_sensitive(self):
+        base = m.schedule_knobs(make_args())
+        self.assertEqual(m.preset_hash(self.CFGS, base),
+                         m.preset_hash(self.CFGS, dict(base)))
+        for knob, value in (("guard", 35.0), ("settle", 9.0),
+                            ("t0_margin", 130.0), ("rx_lead", 12.0),
+                            ("swd_reset_s", 7.0), ("band_swap_s", 45.0)):
+            tweaked = dict(base, **{knob: value})
+            self.assertNotEqual(m.preset_hash(self.CFGS, base),
+                                m.preset_hash(self.CFGS, tweaked), knob)
+
+    def test_generated_armed_fingerprints_the_knobs(self):
+        args = make_args(mode="rx", stop="50m")
+        armed, src, _wall, _mono = m.acquire_armed_for_go(args, self.CFGS, None)
+        self.assertEqual(src, "generate")
+        self.assertEqual(armed["preset_hash"],
+                         m.preset_hash(self.CFGS, m.schedule_knobs(args)))
+        other, _s, _w, _mo = m.acquire_armed_for_go(
+            make_args(mode="rx", stop="50m", guard=35), self.CFGS, None)
+        self.assertNotEqual(armed["preset_hash"], other["preset_hash"])
+
+
+class GoFingerprintCompareTests(unittest.TestCase):
+    """acquire_armed_for_go() refuses an ARMED built for another preset/knobs."""
+
+    CFGS = GoFingerprintTests.CFGS
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _armed_file(self, preset_hash, t_ready=None, **kw):
+        p = os.path.join(self.dir.name, "armed.json")
+        with open(p, "w") as f:
+            json.dump(_armed_dict(
+                int(t_ready if t_ready is not None else time.time() + 30),
+                preset_hash=preset_hash, **kw), f)
+        return p
+
+    def _args(self, path, **kw):
+        return make_args(mode="tx", sync=m.SYNC_CVM, armed_file=path,
+                         configs=self.CFGS, stop="50m", **kw)
+
+    def _refusal(self, args, bus=None):
+        """Run acquire_armed_for_go and return the SystemExit message."""
+        with self.assertRaises(SystemExit) as exc:
+            m.acquire_armed_for_go(args, self.CFGS, bus)
+        return str(exc.exception.code if exc.exception.code else "")
+
+    def test_matching_fingerprint_is_accepted(self):
+        path = self._armed_file(
+            m.preset_hash(self.CFGS, m.schedule_knobs(make_args())))
+        armed, src, _w, _mo = m.acquire_armed_for_go(
+            self._args(path), self.CFGS, None)
+        self.assertEqual(src, "file")
+        self.assertEqual(armed["session_id"], GO_SESSION)
+
+    def test_another_preset_is_refused(self):
+        # the reviewer's repro: preset_hash=deadbeefcafe with a stop-50m preset
+        # passed every check and walked the two sides apart from cycle 2 on.
+        path = self._armed_file("deadbeefcafe")
+        msg = self._refusal(self._args(path))
+        self.assertIn("deadbeefcafe", msg)
+        self.assertIn("preset", msg.lower())
+        self.assertIn("ARMED", msg)
+
+    def test_another_knob_set_is_refused(self):
+        # same preset, different --guard: cycle_len differs (240s vs 480s), so
+        # every cycle from 2 on re-anchors to a different t0_cycle.
+        path = self._armed_file(
+            m.preset_hash(self.CFGS, dict(CLI_KNOBS, guard=20.0)))
+        msg = self._refusal(self._args(path))
+        self.assertIn("guard", msg)
+        self.assertIn("20", msg)
+
+    def test_bus_armed_from_another_knob_set_is_refused(self):
+        armed = _armed_dict(int(time.time()) + 30,
+                            preset_hash=m.preset_hash(
+                                self.CFGS, dict(CLI_KNOBS, settle=9.0)))
+        msg = self._refusal(self._args(None), bus=ImmediateBus([armed]))
+        self.assertIn("settle", msg)
+
+
+class GoAnchorBoundWaitTests(unittest.TestCase):
+    """Blocker 5: every GO-mode capture/poll window is bounded by the anchor.
+
+    A bare time.time() deadline ends the RX capture early on a forward NTP
+    step (silently fewer packets -> false THIN/MISS) and stretches it on a
+    backward step (past the next config's arm point, so the burst is captured
+    under the previous config header).
+    """
+
+    def test_monotonic_deadline_closes_and_opens_the_window(self):
+        self.assertTrue(m.poll_left(100.0, None, mono_fn=lambda: 99.9))
+        self.assertFalse(m.poll_left(100.0, None, mono_fn=lambda: 100.0))
+
+    def test_forward_wall_step_does_not_close_a_monotonic_window(self):
+        # the wall clock jumped +1e6 s; the monotonic deadline is untouched
+        self.assertTrue(m.poll_left(600.0, None, mono_fn=lambda: 599.0,
+                                    wall_fn=lambda: 1_000_000.0))
+        # the same instant read off the wall clock would have ended it
+        self.assertFalse(m.poll_left(None, 500.0, wall_fn=lambda: 1_000_000.0))
+
+    def test_legacy_wall_deadline_unchanged(self):
+        self.assertTrue(m.poll_left(None, 100.0, wall_fn=lambda: 99.0))
+        self.assertFalse(m.poll_left(None, 100.0, wall_fn=lambda: 100.0))
+
+
+class GoWaitBoundsTests(unittest.TestCase):
+    """White-box: run_rx_mode/run_tx_mode hand the ANCHOR the window end."""
+
+    class _AbortCycle(KeyboardInterrupt):
+        pass
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        # ONE config + a clearly non-zero expected_s: with one config the only
+        # mono_target() calls today are the arm instant and the config start,
+        # so the capture/poll bound is unambiguous (no next-config arm instant
+        # can coincidentally equal the window end).
+        self.cfgs = [{"mod": "flrc", "br": 650, "plen": 51, "n_pkts": 100,
+                      "pa": 10, "freq": 868000000, "gap": 5000, "label": "A"}]
+        self.seen = {}
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _anchor(self):
+        """An anchor whose whole timeline is already past → every wait is a
+        no-op, so the test measures WHICH bound is used, not real sleeping."""
+        t_ready = int(time.time()) - 130          # T0 = now - 100 s
+        return RecordingAnchor(_armed_dict(t_ready), wall_at_event=float(t_ready),
+                               mono_at_event=time.monotonic() - 500.0)
+
+    def _board_cls(self):
+        class StubSerial:
+            def read(self, n=0):
+                return b""
+
+            def close(self):
+                pass
+
+        class StubBoard:
+            def __init__(self, port):
+                self.port = port
+                self.ser = StubSerial()
+                self.log = []
+
+            def drain(self, quiet=0.4):
+                pass
+
+            def close(self):
+                self.log.append("CLOSE")
+
+            def cmd(self, line, expect_ok=True, timeout=15.0):
+                self.log.append(line)
+                return "OK " + line.split()[0]
+
+            def query(self, line, prefixes=(), timeout=15.0):
+                self.log.append(line)
+                return "ID E80BENCH role=RX band=863-870MHz"
+
+            def stat(self):
+                # sent_ok == n_pkts so the TX completion poll ends on the first
+                # read (this test measures the BOUND, not the fw timing).
+                return ("STAT role=TX sent=100 sent_ok=100 rx=0 crc_err=0 "
+                        "per_x1e6=0 elapsed_s=1.0 kbps=1 rssi_avg_dbm=0.0 "
+                        "snr_avg_db=0.0 drops=0")
+
+        return StubBoard
+
+    def _run(self, mode, anchor):
+        calls = {"n": 0}
+
+        def spy_apply(cfgs, starts, now, rx_lead, min_ahead_s=5.0,
+                      skip_late=False, mode_label=""):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                self.seen["starts"] = list(starts)
+                return cfgs, starts
+            raise GoWaitBoundsTests._AbortCycle()
+
+        args = make_args(
+            mode=mode, configs=self.cfgs, session_id=GO_SESSION,
+            t0=str(anchor.t0_epoch), sync=m.SYNC_CVM, stop="50m", rx_lead=3,
+            settle=0, guard=0, skip_fw_check=True, loop=1,
+            format="harmonized", no_swd_reset=True, skip_late_configs=True,
+            prime_discard=0, probe="PX1", port="/dev/ttyUSB9",
+            tx_log=os.path.join(self.dir.name, "tx.csv"),
+            rx_log=os.path.join(self.dir.name, "rx.csv"))
+        buf = io.StringIO()
+        with mock.patch.object(m, "_detect_board_for_mode",
+                               return_value=("/dev/ttyUSB9", "PX1")), \
+             mock.patch.object(m, "id_preflight", lambda *a, **k: "ID"), \
+             mock.patch.object(m, "apply_late_skip", side_effect=spy_apply), \
+             contextlib.redirect_stdout(buf):
+            fn = m.run_tx_mode if mode == "tx" else m.run_rx_mode
+            rc = fn(args, board_cls=self._board_cls(), go_anchor=anchor)
+        return rc, args
+
+    def test_rx_capture_window_is_bounded_by_the_anchor(self):
+        anchor = self._anchor()
+        rc, args = self._run("rx", anchor)
+        self.assertEqual(rc, 0)
+        loaded = m.load_config_preset(self.cfgs)
+        start = self.seen["starts"][0]
+        capture_end = start + loaded[0]["expected_s"] + args.settle + args.guard
+        self.assertIn(capture_end, anchor.targets,
+                      "RX capture window must end on the anchor's monotonic "
+                      "image of start+capture_duration: {}".format(anchor.targets))
+
+    def test_tx_stat_poll_is_bounded_by_the_anchor(self):
+        anchor = self._anchor()
+        rc, args = self._run("tx", anchor)
+        self.assertEqual(rc, 0)
+        loaded = m.load_config_preset(self.cfgs)
+        start = self.seen["starts"][0]
+        poll_end = start + loaded[0]["expected_s"] + 120
+        self.assertIn(poll_end, anchor.targets,
+                      "TX stat poll must end on the anchor, not time.time(): "
+                      "{}".format(anchor.targets))
+
+    def test_go_banners_carry_the_stop_token(self):
+        # blocker 3: the GO session dir has no stop-<dist> level, so the stop
+        # token in the banner is what lets range_check verify the log.
+        anchor = self._anchor()
+        for mode in ("rx", "tx"):
+            rc, args = self._run(mode, anchor)
+            self.assertEqual(rc, 0)
+            path = args.rx_log if mode == "rx" else args.tx_log
+            with open(path) as f:
+                header = f.read()
+            self.assertIn("stop=50m", header, (mode, header))
+            self.assertIn("GO_MODE", header, (mode, header))
 
 
 if __name__ == "__main__":
