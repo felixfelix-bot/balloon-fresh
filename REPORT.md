@@ -137,20 +137,23 @@ connected to PWR_FLAG power output) — not a connectivity error.
 
 ## 7. Commit and remote SHAs
 
-Observed in tool output:
+Observed in tool output (tip of `pr/v8k-sch-board-sync`):
 
 ```
 $ git rev-parse HEAD
-cdb4d8e970f8299704e7f8dc36745b611091c1c3
+c27ab681ee61a836443e27d0bb53b81088d3dde8
 
 $ git ls-remote github refs/heads/pr/v8k-sch-board-sync
-cdb4d8e970f8299704e7f8dc36745b611091c1c3	refs/heads/pr/v8k-sch-board-sync
+c27ab681ee61a836443e27d0bb53b81088d3dde8	refs/heads/pr/v8k-sch-board-sync
 
 $ git ls-remote ngit refs/heads/pr/v8k-sch-board-sync
-cdb4d8e970f8299704e7f8dc36745b611091c1c3	refs/heads/pr/v8k-sch-board-sync
+c27ab681ee61a836443e27d0bb53b81088d3dde8	refs/heads/pr/v8k-sch-board-sync
 ```
 
 Local HEAD == github remote SHA == ngit remote SHA.
+
+The main sync commit is `cdb4d8e` (20→28 components, generator + regenerated
+outputs); `c27ab68` is this SHA-fill doc update on top of it.
 
 ## 8. Files touched (explicit git add list)
 
