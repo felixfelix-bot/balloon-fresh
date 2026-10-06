@@ -24,6 +24,11 @@ empirical spot-tests (flrc-retest-20260821.md).
   range-tests' old Match1 (0x4C) produced the same failure family (9b740aa).
 - Co-required (H2): bench NEVER calls lr20xx_radio_fifo_clear_rx() (0 grep
   matches). RadioLib clears after every read; 9b740aa fix #3 was exactly this.
+  FIXED (FIX-T4, branch fix/t4-fifo-clear): radio_bench_rx_arm() clears the
+  RX FIFO on every re-arm (IRQ-handler re-arm path => every packet) and
+  radio_bench_tx_packet() clears the TX FIFO before each FIFO write; pinned
+  byte-exact by host tests (tests/test_radio_bench_fifo.c, opcodes 0x011E/
+  0x011F, ordering after SetPacketParams / before SetRx+write).
 - Fallback if hw verify fails: CRC_OFF + app-layer pcrc16/PRBS (range-tests'
   final architecture; pcrc16 field already in flashed fw).
 - SNR=0.0 in FLRC is BY DESIGN (radio_bench.c:432/459 sets snr_qdb=0) — document.
@@ -96,3 +101,88 @@ The acceptance criteria at the end of this plan are unmet, not waived.
   the two `drops=` counters, per-modulation LEN limits) are documented in
   `firmware/e80-stm32-bench/README.md` ("Bench Protocol Limits & Radio Notes")
   and `firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md` (§10).
+
+---
+
+## FIX-T3 results (2026-08-21, branch fix/t3-flrc-match123)
+
+**Match1 → Match123 shipped.** `src/radio_bench.c` FLRC pkt params now set
+`match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3`.
+Rationale unchanged (BUG 2 above): Match1 + 32-bit sync word leaks sync
+bytes into the payload → chip CRC fails 100% while packets still demodulate.
+
+**Golden pkt-params bytes pinned by host tests** (`tests/test_radio_bench_cfg.c`,
+runs in ctest): the test harness fake-HALs the lr20xx driver and captures
+every SPI command emitted by the REAL `radio_bench.c` + REAL vendored driver.
+FLRC SetPacketParams (opcode 0x0249, 6 B) on-wire golden values, verified
+across apply_cfg / rx_arm(255) / tx_packet(len=255):
+
+- byte[2] = 0x1E — PREAMBLE_LEN_32_BITS (0x07<<2) | SYNCWORD_LENGTH_4_BYTES (0x02)
+- byte[3] = 0x7D — CRC_2_BYTES (0x01) | PKT_FIX_LEN (0x01<<2) |
+  MATCH_1_OR_2_OR_3 (0x07<<3) | TX_SYNCWORD_1 (0x01<<6)
+  (before the fix: 0x4D = Match1; balloon-range-tests 9b740aa raw cfg was
+  0x7C = same as 0x7D but CRC_OFF)
+- byte[4..5] = pld_len (0x00FF at apply_cfg; patched per op by rx_arm/tx)
+
+Plus a Match1 tripwire test: decoded match field must equal Match123 and must
+NOT equal Match1 — fires if anyone reintroduces the bug. Do not "fix" that test.
+
+**LEN=255 branch hunt: NO firmware branch exists.** Greps over the full fw
+payload path (`src/radio_bench.c`, `src/bench.c`, `src/buffer.c`, vendored
+`lr20xx_radio_fifo.c` + `radio_hal/lr20xx_hal.c`) for 255/0xFF boundary
+conditions found none. All 255s are constants (defaults, demo parity) or the
+correct per-mod cap gate `len > max_len` (bench.c:688; 255 LoRa / 511 FLRC,
+boundary values themselves allowed, as intended). RSSI readout has no
+length-dependent path (FLRC rssi_avg from get_pkt_status, radio_bench.c:430).
+
+Conclusion: the LEN=255-exactly CRC failure and the +35 dB RSSI step at
+LEN>=255 (BUG 3) are NOT explainable by a host-MCU firmware branch — they are
+chip-side (LR2021 silicon RSSI-averaging window / FLRC demod behavior) or
+RF-side. Match123 removes the known config-side CRC killer; the remaining
+boundary anomaly still needs the on-hardware LEN bisect 254/255/256/300
+(FIX-T6) with the new fw.
+
+---
+
+## FIX-T6 pre-flight (2026-09-16) — HOLD, tool gate added
+
+**Read `docs/FIX-T6-preflight-verdict-20260916.md` before running FIX-T6.** It
+records, with hardware evidence, that FIX-T5 never flashed (the card is `done`
+only via the fleet write-back), that only ONE E80 board (RX probe
+`203584200D2D0D42`, fw=`5fa7912`) is attached to the fleet and that the TX board
+probe is absent — so no sweep may be claimed as FIX-T6 evidence until
+`t_52ede356` (FIX-R2) flashes the reconciled head.
+
+Three defects were found and fixed on branch `fix/t6-sweep-preflight`
+(base `origin/main` b862357) so the resumed run cannot silently produce a
+misleading verdict:
+
+1. **Console baud contract (silent failure).** `src/main.h` default is **115200**,
+   but `tools/e80_sweep_full.py` and `tools/e80_bench_ctl.py` hardcoded
+   `BAUD = 2000000` (the unmerged `feat/2g4-sweep` fw). Against a `main`-based
+   board every command is dropped and the CSV reads as RF death. The sweep tool
+   now derives the baud from the firmware header (`fw_default_baud()` /
+   `resolve_baud()`, `E80_BAUD` override) and the pre-flight gate makes a
+   mismatch fatal. Verified on hardware: the DQ05 board answers at 115200.
+2. **The chain tip cannot cover the acceptance set.** `07dbb8d`'s
+   `build_configs()` has no FLRC LEN matrix (only `LEN_SWEEP` applied to LoRa,
+   uncapped), so 256/300/384/448 rows do not exist and an illegal LoRa L511 row
+   is emitted — measured: 33 failed / 1 passed for this card's gate suite against
+   that tree. The GREEN implementation (`2e4a2c6`, T1 tip) is **not an ancestor**
+   of the chain tip; the reconciled head must fold it in.
+3. **Duplicated `(br650, pa5, plen64)` row** (sections D and G) broke knob-tuple
+   section selection (9 rows for an 8-row section); each section is now its own
+   builder reached via `SECTION_BUILDERS`. (Tagging the config dicts with a `flag`
+   key was the first attempt and is WRONG here: it breaks the dict-for-dict parity
+   test with `balloon_sweep.build_configs()` in `tools/test_balloon_sweep.py`.
+   That test hid behind a same-named pre-existing ctest failure — compare failure
+   REASONS, not test names.)
+
+New gate: `tools/test_e80_sweep_preflight.py` (40 tests, no pyserial needed) is
+wired into `make test-host` and pins the matrix coverage, the baud contract and
+the pre-flight decision — including that the gate only ever sends `ID?`. The
+sweep now refuses to key the radio unless `--preflight` passes for both boards
+and (with `--expected-fw <sha7>`) the boards report the firmware under test;
+`fw_measured` is recorded in the run metadata JSON. With the tool's `serial`
+import made tolerant, `make test-host` is **21/21 (100%)** on this branch, versus
+19/20 on base.

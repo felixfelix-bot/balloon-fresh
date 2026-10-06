@@ -25,6 +25,39 @@ without further operator input (plan §5). N per cell follows the plan §3
 regime rule: 10^4 when the previous stop's same-mod Wilson ci_hi <= 2 %,
 else 10^3; SF12 is time-capped at 10^3. Results append to --csv.
 
+GO mode — derived T0 from the ARMED message (--sync cvm, ADR-range-sync-cvm.md):
+    ./e80_bench_ctl.py --mode rx --sync cvm --stop 50m \
+        --configs configs/per-stop/stop-50m.json
+            # RX is the session authority: generates + publishes the ARMED
+            # (session_id = %y%m%d%H%M+3hex), writes it to --armed-out for
+            # relay, then GOes on T0 = t_ready_utc + 30s — no 5-minute wait.
+    ./e80_bench_ctl.py --mode tx --sync cvm --armed-file /tmp/armed.json \
+        --configs configs/per-stop/stop-50m.json
+            # TX derives the same T0 from the relayed ARMED (no live bus
+            # needed); --armed-file relaxes the freshness checks, the
+            # GO-window guard still applies. Without --armed-file the TX uses
+            # the cvm_sync subscriber seam (main(bus=...)).
+    ./e80_bench_ctl.py --mode rx --sync cvm --t0 1789000030 --session-id 2609130435
+            # an explicit --t0 ALWAYS wins: this is exactly the legacy
+            # boundary/manual run (legacy guard + s<sid>-t0<epoch> log dir).
+
+GO-mode rules: --session-id is a hard error (the ARMED supplies it); rx_lead is
+clamped to >= 5s (GO_MODE_RX_LEAD_MIN); GO is refused when < 5s remain to T0
+("GO window expired … Re-arm the RX"); all waits use a MONOTONIC deadline
+captured when the ARMED is accepted, so an NTP step mid-pass cannot shift one
+side; the absolute wall T0 stays visible (t0=<epoch>/ISO) for log correlation +
+GPS stitching; default log dirs become logs/s<sid>-go<t0>/<role>-log.csv.
+
+Split-brain guard: a TX start ALWAYS echoes a LIVE RX session id and announces
+it with a STARTED notice (cvm_sync.build_started — published on the bus when a
+bus is available, else printed + written to started.json next to --tx-log for
+Signal relay). A legacy manual TX start (--t0 path) without --session-id is
+refused loudly instead of auto-generating %y%m%d%H%M: an invented id means the
+two sides run different sessions and the analysis reports a false
+MISS/LOGGING GAP. A failed STARTED publish is a loud WARNING only — radio
+capture never depends on the message layer. --dry-run is exempt (no
+transmission).
+
 Safety policy: freq outside 863-870 MHz (EU SRD) is rejected host-side unless
 --band-override is given (firmware window 410-2483 MHz, pin-gated). +dBm above
 10 requires POWER MODE OUTDOOR 2026 on the TX board; the tool issues both
@@ -32,8 +65,11 @@ unlocks and verifies acceptance via ID? (band=/pcap= echo) before any TX.
 Ctrl-C at any time sends STOP to both boards and marks the stop ABORTED.
 """
 import argparse
+import asyncio
 import csv
 import datetime
+import hashlib
+import json
 import math
 import os
 import re
@@ -52,6 +88,20 @@ except ImportError:
     parse_fw_hash = None
     validate_fw_hash = None
     fmt_session_start = None
+
+# CVM range-sync message layer (P1 — docs/ADR-range-sync-cvm.md). Imported from
+# this file's own directory so both the Makefile's `cd $(TOOLDIR) && …` and
+# pytest resolve it. GO mode (--sync cvm) hard-errors without it.
+_HERE_TOOLS = os.path.dirname(os.path.abspath(__file__))
+if _HERE_TOOLS not in sys.path:
+    sys.path.insert(0, _HERE_TOOLS)
+try:
+    import cvm_sync as cvm
+except ImportError:      # pragma: no cover — only when tools/ is stripped
+    cvm = None
+
+# T0 = armed["t_ready_utc"] + T0_MARGIN (mirrors cvm_sync.T0_MARGIN).
+T0_MARGIN = cvm.T0_MARGIN if cvm is not None else 30.0
 
 BAUD = 2000000
 PARITY = "N"
@@ -95,6 +145,19 @@ BOOT_BANNER_TIMEOUT = 10.0  # seconds to wait for FW_HASH in boot banner
 ID_PREFLIGHT_TIMEOUT_S = 10.0    # banner-time ID? reply budget (seconds)
 T0_MIN_LEAD_S = 60               # live launches need T0 >= now + 60 s
 POWER_OUTDOOR_RETRY_S = 2.0      # retry delay for POWER MODE OUTDOOR sends
+
+# T0 sync sources (--sync). "boundary" = legacy next-5-minute-boundary T0;
+# "cvm" = T0 derived from the RX ARMED message (GO mode, ADR-range-sync-cvm.md).
+SYNC_BOUNDARY = "boundary"
+SYNC_CVM = "cvm"
+
+# GO mode (--sync cvm with a derived T0):
+GO_MODE_RX_LEAD_MIN = 5      # rx_lead clamp AND the GO-window minimum lead (s)
+GO_ARMED_WAIT_S = 300.0      # bus budget for the first accepted ARMED (s)
+
+# Split-brain guard: the TX-start artefact written next to --tx-log when no
+# live bus is available (relayed to the RX operator by hand, Signal fallback).
+STARTED_NOTICE_FILENAME = "started.json"
 
 
 def firmware_hash_gate(board, port_label, skip=False):
@@ -170,6 +233,538 @@ def check_t0_future(t0_epoch, now, min_lead_s=T0_MIN_LEAD_S):
             "5-minute boundary, or pass --t0 explicitly.)".format(
                 iso, lead, min_lead_s))
     return True, ""
+
+
+# ---------------------------------------------------------------------------
+# GO mode — derived T0 from the ARMED message (ADR-range-sync-cvm.md §2.1/§3,
+# task E80-CVM-P2 stage 1). The RX is the sole session authority: it publishes
+# an ARMED message; both sides derive T0 = t_ready_utc + T0_MARGIN (30 s) and
+# anchor every wait to a MONOTONIC deadline captured when the ARMED is
+# accepted, so an NTP step mid-pass cannot shift one side of the pass.
+# ---------------------------------------------------------------------------
+
+def _require_cvm():
+    """Return the P1 message layer, or exit loudly without it."""
+    if cvm is None:
+        sys.exit("ERROR: --sync cvm needs tools/cvm_sync.py on sys.path "
+                 "(range-sync message layer — docs/ADR-range-sync-cvm.md)")
+    return cvm
+
+
+def go_rx_lead(rx_lead, sync, t0=None):
+    """Effective RX arm lead (seconds) for this run.
+
+    GO mode (--sync cvm with a DERIVED T0, i.e. no explicit --t0) arms RX at
+    least GO_MODE_RX_LEAD_MIN (5 s) before cell 1: rx_lead = max(rx_lead, 5).
+    Boundary mode — and any run with an explicit --t0, which always wins —
+    keeps the legacy value untouched (CLI default 3).
+
+    Pure: the caller supplies both the CLI value and the sync mode.
+    """
+    if sync == SYNC_CVM and t0 is None:
+        return max(int(rx_lead), GO_MODE_RX_LEAD_MIN)
+    return rx_lead
+
+
+def mono_deadline(t0_epoch, wall_at_event, mono_at_event):
+    """Map an absolute wall T0 onto the monotonic clock.
+
+    Captured when the ARMED is accepted:
+        deadline_mono = mono_at_event + (t0_epoch - wall_at_event)
+    A later NTP step moves the wall clock but not time.monotonic(), so the
+    deadline — and every wait derived from it — is unaffected.
+    """
+    return float(mono_at_event) + (float(t0_epoch) - float(wall_at_event))
+
+
+def go_window_ok(t0_epoch, now_mono, deadline_mono,
+                 min_lead_s=GO_MODE_RX_LEAD_MIN, t0_margin=None):
+    """GO-window guard — the GO-mode replacement for check_t0_future().
+
+    GO is REFUSED when the remaining time to T0 is below the GO-mode RX lead
+    (GO_MODE_RX_LEAD_MIN = 5 s): by then the arm window is over, the RX could
+    not arm before the burst, and a late launch would silently desync the
+    pass. Returns (ok, message); the message is empty when ok and otherwise
+    says how many seconds ago the RX armed and to re-arm.
+
+    Injected monotonic clocks only (now_mono / deadline_mono) — pure,
+    unit-testable and NTP-step immune. t0_margin (the ARMED-derived T0
+    margin) is used solely to report how long ago the RX armed.
+    """
+    if t0_margin is None:
+        t0_margin = T0_MARGIN
+    remaining = float(deadline_mono) - float(now_mono)
+    if remaining >= min_lead_s:
+        return True, ""
+    armed_ago = max(0.0, float(t0_margin) - remaining)
+    iso = datetime.datetime.fromtimestamp(t0_epoch).isoformat()
+    return False, (
+        "GO window expired: the RX armed {ago:.0f}s ago — only {rem:+.1f}s "
+        "remain to T0 ({iso}), less than the {lead}s GO-mode RX lead. "
+        "Re-arm the RX (it generates a fresh session_id + T0) and relay the "
+        "new ARMED before re-running.".format(
+            ago=armed_ago, rem=remaining, iso=iso, lead=min_lead_s))
+
+
+def poll_left(deadline_mono, deadline_wall,
+              mono_fn=time.monotonic, wall_fn=time.time):
+    """Whether a bounded wait may keep polling (blocker 5).
+
+    GO mode bounds every capture/poll window with the MONOTONIC image of the
+    window end (`GoAnchor.mono_target`), passed as `deadline_mono`. A bare
+    `time.time()` deadline is NTP-step sensitive: a forward step ends the RX
+    capture early (silently fewer packets -> false THIN/MISS) and a backward
+    step stretches it past the next config's arm point (the burst is captured
+    under the previous config's header). `deadline_mono` therefore WINS when
+    both are given; `deadline_wall` is the legacy path, unchanged.
+
+    Both clocks are injected for testability: the function reads only the
+    deadlines it is handed, never the system clock directly.
+    """
+    if deadline_mono is not None:
+        return mono_fn() < float(deadline_mono)
+    if deadline_wall is not None:
+        return wall_fn() < float(deadline_wall)
+    return False
+
+
+class GoAnchor:
+    """Derived-T0 anchor for a GO-mode run.
+
+    Built the instant the ARMED is accepted: carries the wall T0
+    (t_ready_utc + T0_MARGIN), the RX-authoritative session id (never derived
+    from T0), and the monotonic deadline every GO-mode wait is measured
+    against.
+    """
+
+    def __init__(self, armed, wall_at_event, mono_at_event, source="?"):
+        _require_cvm()
+        self.armed = armed
+        self.source = source
+        self.session_id = armed["session_id"]
+        self.t_ready_utc = int(armed["t_ready_utc"])
+        self.wall_at_event = float(wall_at_event)
+        self.mono_at_event = float(mono_at_event)
+        self.t0_epoch = _require_cvm().compute_t0(armed)
+        self.deadline_mono = mono_deadline(self.t0_epoch, self.wall_at_event,
+                                           self.mono_at_event)
+
+    def remaining_s(self, mono_now):
+        """Seconds from a monotonic instant to T0 (negative once past)."""
+        return self.deadline_mono - float(mono_now)
+
+    def mono_target(self, ts):
+        """Monotonic instant for an absolute wall schedule time `ts`."""
+        return self.deadline_mono + (float(ts) - float(self.t0_epoch))
+
+    def wall_now(self, mono_now):
+        """Wall-clock estimate that tracks the monotonic anchor.
+
+        Used for the anchor-relative late-join check: after an NTP step the
+        real wall clock no longer agrees with the pass timeline, this mirror
+        still does.
+        """
+        return self.wall_at_event + (float(mono_now) - self.mono_at_event)
+
+
+# ---------------------------------------------------------------------------
+# Board session projection (GO mode vs the firmware's u32 SESSION command)
+# ---------------------------------------------------------------------------
+# src/bench_cmd.c parses `SESSION <id>` with bench_parse_u32 and src/bench_pkt.c
+# echoes it into every PKT line with console_put_u32, so whatever the RX
+# announces in the ARMED (cvm_sync.generate_session_id -> %y%m%d%H%M + 3-hex
+# nonce) CANNOT be carried on the wire. The board session is therefore the
+# numeric PROJECTION of the session id: the digits themselves for a legacy id,
+# the leading GO_SESSION_DIGITS digits for a GO id. The 3-hex nonce is a
+# message/join-layer identity only (ARMED + log-dir name + banner), which is
+# what lets the analysis separate two arms inside one minute; the boards
+# cannot, so never arm twice in the same minute.
+GO_SESSION_DIGITS = 10
+
+
+def board_session_id(session_id):
+    """The u32 the firmware's SESSION command can carry for `session_id`.
+
+    Legacy numeric ids pass through; a GO id (`%y%m%d%H%M` + 3-hex nonce)
+    projects to its 10-digit prefix. None when there is no numeric projection.
+    """
+    s = str(session_id).strip() if session_id is not None else ""
+    if s.isdigit():
+        return int(s)
+    digits = s[:GO_SESSION_DIGITS]
+    if len(digits) == GO_SESSION_DIGITS and digits.isdigit():
+        return int(digits)
+    return None
+
+
+def wire_session_id(session_id):
+    """Session spelling used INSIDE a run's logs (PKT rows, STAT rows, the
+    merge keys): the board projection when there is one.
+
+    The board can only carry the u32 projection (see board_session_id), so
+    every row a run writes must use that same spelling or the analysis tools
+    compare a u32 against the full GO id and report a false LOGGING GAP
+    (STAT side) / an all-MISS merge (PKT side).
+    """
+    n = board_session_id(session_id)
+    return n if n is not None else str(session_id)
+
+
+def session_command(session_id):
+    """The exact `SESSION <n>` console line for this run (fail-fast on an
+    unprojectable id instead of shipping `SESSION None` to the board)."""
+    n = board_session_id(session_id)
+    if n is None:
+        sys.exit("ERROR: session id {!r} has no numeric projection the bench "
+                 "board can carry (SESSION is a u32; see src/bench_cmd.c) — "
+                 "pass a numeric --session-id, or use a GO id of the form "
+                 "%y%m%d%H%M + 3-hex nonce.".format(session_id))
+    return "SESSION {}".format(n)
+
+
+def parse_session_token(tok):
+    """Session field of a PKT row: int for the legacy numeric form, the
+    stripped string otherwise (a GO id, should a board ever emit one).
+
+    Never raises: int(p[1]) used to turn a non-numeric session into a
+    ValueError, parse_pkt_line returned None, and range_check silently scored
+    the whole log as MISS with no warning.
+    """
+    t = (tok or "").strip()
+    return int(t) if t.isdigit() else t
+
+
+def preset_hash(cfgs, knobs=None):
+    """sha256 (first 12 hex) over the canonical JSON of a loaded preset.
+
+    Both sides must hash the same config list to the same value; the ARMED
+    carries it so a preset mismatch is visible before GO.
+
+    knobs (optional) extends the fingerprint over the timing knobs that feed
+    compute_cycle_len / build_preset_schedule (see schedule_knobs): without
+    them two operators can run the SAME preset with different timing and
+    re-anchor to different t0_cycle from cycle 2 on with nothing on the wire
+    to detect it (cold-review blocker 4). Omitted (None) keeps the preset-only
+    digest — the legacy behaviour every existing caller and log header uses.
+    """
+    if knobs is None:
+        payload = cfgs
+    else:
+        payload = {"cfgs": cfgs,
+                   "knobs": {str(k): float(v) for k, v in knobs.items()}}
+    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:12]
+
+
+# Every CLI knob that feeds compute_cycle_len / build_preset_schedule, or the
+# RX arm instant (start - rx_lead): the GO fingerprint must cover all of them.
+GO_SCHEDULE_KNOBS = ("t0_margin", "guard", "settle", "rx_lead",
+                     "swd_reset_s", "band_swap_s")
+
+
+def schedule_knobs(args):
+    """The timing knobs a GO-mode ARMED fingerprint covers (blocker 4).
+
+    Read RAW (unclamped) from the CLI namespace: the fingerprint compares
+    operator intent, and both sides must be launched with the same knobs for
+    their cycle_len / schedule / arm instants to agree.
+    """
+    return {name: float(getattr(args, name)) for name in GO_SCHEDULE_KNOBS}
+
+
+def schedule_knobs_str(knobs):
+    """`name=value` list for diagnostics, in GO_SCHEDULE_KNOBS order."""
+    return " ".join("{}={}".format(n, knobs.get(n)) for n in GO_SCHEDULE_KNOBS)
+
+
+def assert_armed_matches_knobs(armed, cfgs, knobs, source_label="ARMED"):
+    """Refuse an ARMED built for another preset or another knob set.
+
+    Cold-review blocker 4: preset_hash was computed, shipped in the ARMED and
+    never compared, so two operators with different presets — or the same
+    preset with different timing knobs — re-anchored to a different t0_cycle
+    from cycle 2 on with no detection (the boat-trip drift class). The RX is
+    the session authority, so a mismatch is REFUSED loudly here, before any
+    GO/burst, never silently absorbed.
+
+    Accepts the plain preset-only digest (a legacy/hand-relayed ARMED) as well
+    as the knob-extended one, so old ARMEDs still relay; anything else is a
+    different preset or different knobs and exits non-zero.
+    """
+    got = armed.get("preset_hash")
+    preset_only = preset_hash(cfgs or [])
+    with_knobs = preset_hash(cfgs or [], knobs)
+    if got in (preset_only, with_knobs):
+        return
+    sys.exit(
+        "ERROR: GO mode preset/knob MISMATCH — refusing to GO.\n"
+        "  ARMED fingerprint: {}  (from the {} the RX published)\n"
+        "  local fingerprint: {}  (this run's preset + timing knobs)\n"
+        "  local preset:      {} config(s); local knobs: {}\n"
+        "The ARMED's digest matches neither this run's preset-only digest "
+        "({}) nor its preset+knobs digest, so the preset and/or the timing "
+        "knobs differ. The two sides would run different cycle lengths and "
+        "re-anchor to a different t0_cycle from cycle 2 on, with nothing on "
+        "the wire to detect it (the boat-trip drift class; see "
+        "docs/ADR-range-sync-cvm.md §2.1). Fix it: re-arm the RX with this "
+        "machine's preset + timing knobs (it is the session authority — its "
+        "ARMED carries the fingerprint), or re-run this side with the preset "
+        "+ knobs the ARMED was built for.".format(
+            got, source_label, with_knobs, len(cfgs or []),
+            schedule_knobs_str(knobs), preset_only))
+
+
+# `--stop` (and `--dist-m`, `--site`, …) default to this sentinel, and every
+# CSV/notice field uses it for "not recorded". It is NOT a stop id: a GO log
+# whose only stop tokens are sentinels has no stop source at all, and
+# range_check must read it as unknown (kept, with a note) rather than refuse
+# it as "the log of stop ?" — which made a documented-default GO launch
+# impossible to score (round-2 review, 2026-09-13).
+UNKNOWN_STOP = "?"
+
+
+def is_unknown_stop(stop):
+    """True when a stop token names no stop (None / "" / the "?" sentinel)."""
+    if stop is None:
+        return True
+    return str(stop).strip() in ("", UNKNOWN_STOP)
+
+
+def go_stop_warning(args):
+    """Loud launch warning when a GO run carries no real `--stop`, else None.
+
+    --stop is optional and defaults to the sentinel, but in GO mode the value
+    is written into BOTH stop sources (`stop=` in the GO_MODE banner and
+    `stop` in armed.json), so a run without it produces a log that cannot be
+    attributed to any stop: range_check keeps it with an "unverifiable" note
+    and the operator has to remember which stop the pass was. Warn at LAUNCH —
+    the operator is still at the bench and can restart — instead of only when
+    the pass is scored afterwards.
+    """
+    if not is_unknown_stop(getattr(args, "stop", None)):
+        return None
+    return ("WARNING: GO mode launched without --stop (stop={!r}) — this run's "
+            "log will carry no stop id, so range_check cannot verify which "
+            "stop it belongs to: score it with the matching --dist, and pass "
+            "`--stop <id>` next time. See docs/RANGE-TEST-GUIDE.md §8 GO mode "
+            "(--sync cvm).".format(getattr(args, "stop", None)))
+
+
+def build_go_armed(cfgs, session_id, stop, t_ready_utc, knobs=None):
+    """RX-authority ARMED message for a GO-mode run (cvm_sync.build_armed).
+
+    knobs (the timing knobs that feed the schedule; see schedule_knobs) are
+    folded into preset_hash so the TX can detect a knob mismatch before GO
+    (blocker 4). omitting knobs keeps the legacy preset-only digest.
+    """
+    return _require_cvm().build_armed(session_id, stop, int(t_ready_utc),
+                                      preset_hash(cfgs, knobs), seq=1)
+
+
+def build_started_notice(args, cfgs, go_anchor=None):
+    """STARTED notice for a TX start — the session id it ECHOES, never one it invented.
+
+    Anti split-brain (docs/RANGE-TEST-GUIDE.md §8 GO mode): whoever starts a
+    TX says so, on the session id the RX armed.
+
+    GO mode (go_anchor given): session_id / T0 / t_ready all come from the
+    ARMED-derived anchor — the TX is echoing the live RX session.
+
+    Legacy manual start (go_anchor None): the operator copied the RX banner
+    by hand, so session_id = --session-id (validated in main()) and
+    t_ready_utc is back-derived from --t0 as t0 - T0_MARGIN.
+    """
+    stop = getattr(args, "stop", None) or "?"
+    if go_anchor is not None:
+        session_id = go_anchor.session_id
+        t0 = int(go_anchor.t0_epoch)
+        t_ready_utc = int(go_anchor.t_ready_utc)
+    else:
+        session_id = str(args.session_id)
+        t0 = int(parse_t0(args.t0))
+        t_ready_utc = t0 - int(T0_MARGIN)
+    return _require_cvm().build_started(
+        session_id, stop, t_ready_utc=t_ready_utc, t0=t0,
+        preset_hash=preset_hash(cfgs), role="tx", seq=1)
+
+
+def emit_started_notice(notice, args, bus=None):
+    """Announce a TX start. Best effort — radio capture never depends on CVM.
+
+    bus is not None: publish the STARTED on the live bus (async seam) and
+    print a one-liner. A publish failure is a LOUD warning and nothing more:
+    the TX burst must never be blocked, delayed or aborted by the message
+    channel.
+
+    bus is None: print the JSON notice plus the operator relay instruction
+    (Signal fallback) and write started.json next to --tx-log — that file is
+    the artefact the RX operator relays. Returns the path written, or None.
+    """
+    session_id = notice.get("session_id", "?")
+    if bus is not None:
+        try:
+            asyncio.run(bus.publish(notice))
+        except Exception as e:      # noqa: BLE001 — a notice must never stop a run
+            print("WARNING: STARTED notice for session {} was NOT published "
+                  "on the CVM bus ({}: {}) — continuing the TX run anyway; "
+                  "relay STARTED by hand (Signal) so the RX sees this "
+                  "start.".format(session_id, type(e).__name__, e))
+            return None
+        print("STARTED published (session {}) — TX echoes the RX session id "
+              "on the CVM bus.".format(session_id))
+        return None
+    print(json.dumps(notice, indent=2, sort_keys=True))
+    print("STARTED: relay this notice to the RX operator (Signal fallback) "
+          "— no live CVM bus in this run, so the RX cannot otherwise see "
+          "TX session {} start.".format(session_id))
+    path = os.path.join(os.path.dirname(os.path.abspath(args.tx_log)),
+                        STARTED_NOTICE_FILENAME)
+    try:
+        _d = os.path.dirname(path)
+        if _d:
+            os.makedirs(_d, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(notice, f, indent=2, sort_keys=True)
+            f.write("\n")
+    except OSError as e:
+        print("WARNING: STARTED notice could not be written to {} ({}) — "
+              "relay it by hand (Signal).".format(path, e))
+        return None
+    print("STARTED notice written: {}".format(path))
+    return path
+
+
+def load_armed_file(path):
+    """Read one ARMED object from an operator-relayed JSON file."""
+    with open(path) as f:
+        return json.load(f)
+
+
+def validate_armed_relaxed(msg):
+    """Structural ARMED validation with freshness relaxed (--armed-file).
+
+    The operator relayed the message by hand, so the created_at skew bound
+    (MAX_CREATED_AT_SKEW, 60 s) is not applied — but every structural check
+    cvm_sync.validate_armed performs still is, and the GO-window guard still
+    rejects an ARMED whose arm window has expired.
+    """
+    created = msg.get("created_at") if isinstance(msg, dict) else None
+    now = int(created) if created is not None else int(time.time())
+    return _require_cvm().validate_armed(msg, now=now)
+
+
+def write_armed_out(path, armed):
+    """Write the ARMED the RX generated (--armed-out) for hand relay."""
+    d = os.path.dirname(os.path.abspath(path))
+    if d:
+        os.makedirs(d, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(armed, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def wait_for_armed_on_bus(bus, timeout_s=GO_ARMED_WAIT_S,
+                          now_fn=time.time, mono_fn=time.monotonic,
+                          poll_s=0.2):
+    """Block (sync) until cvm_sync's subscriber accepts an ARMED on `bus`.
+
+    Reuses the P1 subscriber seam (ArmedSubscriber: freshness watchdog —
+    created_at skew > 60 s rejected, stale re-broadcasts ignored) against an
+    injected bus object with `async subscribe(handler)`. Returns the armed
+    dict, or None when no fresh ARMED arrived within timeout_s.
+    """
+    async def _wait():
+        sub = _require_cvm().ArmedSubscriber(bus, now_fn=now_fn)
+        await sub.start()
+        deadline = mono_fn() + float(timeout_s)
+        while mono_fn() < deadline:
+            if sub.last_armed is not None:
+                return sub.last_armed
+            await asyncio.sleep(poll_s)
+        return None
+
+    return asyncio.run(_wait())
+
+
+def acquire_armed_for_go(args, cfgs=None, bus=None, now_fn=time.time,
+                         mono_fn=time.monotonic):
+    """Resolve the ARMED for a GO-mode run.
+
+    Returns (armed, source, wall_at_event, mono_at_event) where source is one
+    of "file" (--armed-file, operator relay), "generate" (RX is the session
+    authority and builds it) or "bus" (TX subscribed via cvm_sync). The caller
+    stamps the anchor — wall AND monotonic — at acceptance.
+    """
+    armed_file = getattr(args, "armed_file", None)
+    knobs = schedule_knobs(args)
+    if armed_file:
+        armed = load_armed_file(armed_file)
+        ok, reason = validate_armed_relaxed(armed)
+        if not ok:
+            sys.exit("ERROR: bad --armed-file {}: {}".format(armed_file,
+                                                             reason))
+        # Blocker 4: the relayed ARMED must have been built for THIS preset
+        # and THESE timing knobs, or the two sides re-anchor apart from
+        # cycle 2 on with nothing on the wire to detect it.
+        assert_armed_matches_knobs(armed, cfgs, knobs,
+                                   source_label="--armed-file {}".format(
+                                       armed_file))
+        return armed, "file", now_fn(), mono_fn()
+    if getattr(args, "mode", None) == "rx":
+        armed = build_go_armed(cfgs or [],
+                               _require_cvm().generate_session_id(now_fn()),
+                               getattr(args, "stop", "?"), int(now_fn()),
+                               knobs=knobs)
+        ok, reason = _require_cvm().validate_armed(armed, now=int(now_fn()))
+        if not ok:      # pragma: no cover — the RX's own message must pass
+            sys.exit("ERROR: generated ARMED failed validation: "
+                     "{}".format(reason))
+        return armed, "generate", now_fn(), mono_fn()
+    if bus is None:
+        sys.exit("ERROR: GO mode TX needs an ARMED source — pass --armed-file "
+                 "PATH (operator relay) or run with a live cvm bus "
+                 "(main(bus=...)); see docs/ADR-range-sync-cvm.md")
+    _require_cvm()
+    armed = wait_for_armed_on_bus(bus, now_fn=now_fn, mono_fn=mono_fn)
+    if armed is None:
+        sys.exit("ERROR: GO mode: no fresh ARMED from the RX within {}s — the "
+                 "RX is not armed (or its re-broadcasts are stale). Re-arm "
+                 "the RX and re-run.".format(int(GO_ARMED_WAIT_S)))
+    ok, reason = _require_cvm().validate_armed(armed, now=int(now_fn()))
+    if not ok:
+        sys.exit("ERROR: GO mode: ARMED rejected: {}".format(reason))
+    # Blocker 4, bus branch: same refusal as the --armed-file branch — an
+    # ARMED published for another preset/knob set must never start a GO.
+    assert_armed_matches_knobs(armed, cfgs, knobs, source_label="CVM bus")
+    return armed, "bus", now_fn(), mono_fn()
+
+
+def assert_go_window(anchor, mono_fn=time.monotonic):
+    """Enforce the GO-window guard: loud, non-zero exit when the arm window has
+    expired. GO is refused — the run is never launched late."""
+    ok, msg = go_window_ok(anchor.t0_epoch, mono_fn(), anchor.deadline_mono)
+    if not ok:
+        sys.exit(msg)
+    print("  GO window:   OK (T0 in {:.1f}s; monotonic deadline)".format(
+        anchor.remaining_s(mono_fn())))
+
+
+def print_go_banner(args, anchor):
+    """Operator banner for a GO-mode run: ARMED source, the RX-authoritative
+    session id, and the ABSOLUTE wall T0 (kept visible for log correlation +
+    GPS stitching)."""
+    print("== GO MODE (--sync cvm — derived T0, no boundary wait) ==")
+    print("  ARMED source: {}".format(anchor.source))
+    print("  Session ID:  {}  (from ARMED — RX is the session authority)".format(
+        anchor.session_id))
+    print("  ARMED t_ready: {} ({})".format(
+        datetime.datetime.fromtimestamp(anchor.t_ready_utc).isoformat(),
+        anchor.t_ready_utc))
+    print("  T0 (derived):  {}  t0={}  (t_ready + {:g}s)".format(
+        datetime.datetime.fromtimestamp(anchor.t0_epoch).isoformat(),
+        anchor.t0_epoch, T0_MARGIN))
+    print("  Mode:        {}   rx_lead: {}s".format(args.mode, args.rx_lead))
+    print()
 
 
 def send_power_outdoor(board, port_label,
@@ -369,13 +964,15 @@ def parse_t0(s):
 
 
 def resolve_log_path(log_path, is_default, session_id, t0_epoch, role,
-                     repo_root=None):
+                     repo_root=None, go=False):
     """Resolve an RX/TX log path to its final location (durable directive).
 
-    Default (is_default=True): per-run unique, T0+SESSION-embedded, ABSOLUTE
-    path under <repo_root>/logs/s<SESSION>-t0<T0EPOCH>/<role>-log.csv.
-    Absolute + repo-root anchored so the `cd $(TOOLDIR)` in the Makefile
-    range targets cannot redirect a relative default into the bench dir.
+    Default (is_default=True): per-run unique, SESSION-embedded, ABSOLUTE path
+    under <repo_root>/logs/ — GO mode (go=True, --sync cvm with a derived T0)
+    uses s<SESSION>-go<T0EPOCH>/, legacy boundary/manual-t0 runs keep
+    s<SESSION>-t0<T0EPOCH>/. Absolute + repo-root anchored so the
+    `cd $(TOOLDIR)` in the Makefile range targets cannot redirect a relative
+    default into the bench dir.
 
     Explicit override (is_default=False): returned untouched — the operator
     (or an RX_LOG=/TX_LOG= make override) always wins.
@@ -388,10 +985,10 @@ def resolve_log_path(log_path, is_default, session_id, t0_epoch, role,
         # this file: <repo_root>/firmware/e80-stm32-bench/tools/e80_bench_ctl.py
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.dirname(os.path.abspath(__file__)))))
-    return os.path.join(
-        repo_root, "logs",
-        "s{session}-t0{t0}".format(session=session_id, t0=int(t0_epoch)),
-        "{role}-log.csv".format(role=role))
+    dirname = ("s{session}-go{t0}" if go else "s{session}-t0{t0}").format(
+        session=session_id, t0=int(t0_epoch))
+    return os.path.join(repo_root, "logs", dirname,
+                        "{role}-log.csv".format(role=role))
 
 
 def default_logs_root(repo_root=None):
@@ -1065,7 +1662,12 @@ def ts_now(now_fn):
 # ---------------------------------------------------------------------------
 
 def load_config_preset(preset_or_path):
-    """Load a config preset from a JSON file path or a dict.
+    """Load a config preset from a JSON file path, a dict, or a config list.
+
+    Accepts:
+      - a path to a preset JSON file ({"configs": [...]}), or
+      - the preset dict itself, or
+      - an already-collected list of raw config dicts.
 
     Returns a list of validated config dicts with added fields:
       idx, airtime_s, expected_s
@@ -1100,8 +1702,12 @@ def load_config_preset(preset_or_path):
             preset = _json.load(f)
     elif isinstance(preset_or_path, dict):
         preset = preset_or_path
+    elif isinstance(preset_or_path, (list, tuple)):
+        # In-process callers (and the host tests) hand over a config list
+        # directly; wrap it so the same validation/normalisation runs.
+        preset = {"configs": list(preset_or_path)}
     else:
-        raise ValueError("preset must be a file path or dict")
+        raise ValueError("preset must be a file path, dict or config list")
 
     if "configs" not in preset:
         raise ValueError("preset missing 'configs' key")
@@ -1390,7 +1996,7 @@ def parse_pkt_line(line):
         return None
     try:
         return {
-            "session_id": int(p[1]),
+            "session_id": parse_session_token(p[1]),
             "config_id": int(p[2]),
             "replicate": int(p[3]),
             "seq": int(p[4]),
@@ -1728,27 +2334,45 @@ class HarmonizedTxLogWriter:
             f.write("# {}\n".format(text))
             f.flush()
 
-def run_tx_mode(args, board_cls=None):
+def run_tx_mode(args, board_cls=None, go_anchor=None):
     """TX-only distributed mode. Sends bursts on T0-anchored schedule.
 
     With --loop N (default 1), the schedule is repeated N times (0 = infinite).
     Every cycle is anchored to the SHARED --t0: t0_cycle = T0 + (cycle-1) *
     compute_cycle_len(...). The cycle number (1-based) is used as the
     replicate counter in CSV log lines.
+
+    go_anchor (GO mode, --sync cvm with a derived T0): the GoAnchor captured
+    when the ARMED was accepted. The wall schedule is unchanged, but every
+    wait is measured against the anchor's MONOTONIC deadline (an NTP step
+    mid-pass must not shift one side) and rx_lead is clamped to >= 5 s so the
+    cycle length stays identical on both sides.
     """
 
     # Load config preset
     cfgs = load_config_preset(args.configs)
     t0 = parse_t0(args.t0)
 
-    # T0-past guard (incident (b)): hard-error at banner, no countdown/no
-    # launch when T0 < now+60s (stale $T0 shell var, replayed command, …).
-    _ok, _msg = check_t0_future(t0, time.time())
-    if not _ok:
-        sys.exit(_msg)
+    if go_anchor is None:
+        # T0-past guard (incident (b)): hard-error at banner, no countdown/no
+        # launch when T0 < now+60s (stale $T0 shell var, replayed command, …).
+        # GO mode replaces this with the GO-window guard (assert_go_window,
+        # enforced in main() before any log dir exists).
+        _ok, _msg = check_t0_future(t0, time.time())
+        if not _ok:
+            sys.exit(_msg)
 
     # Auto-detect board
     port, probe_serial = _detect_board_for_mode("tx", args.port, args.probe)
+
+    # GO mode arms RX >= GO_MODE_RX_LEAD_MIN early; cycle_len must be
+    # identical on both sides or the per-cycle re-anchor drifts apart.
+    # The clamp is written BACK to args.rx_lead so every consumer in this run
+    # (cycle_len, the schedule build, the RX arm instant) sees the same
+    # effective lead — compute_cycle_len and build_preset_schedule must agree
+    # or TX and RX cycles desync.
+    if go_anchor is not None:
+        args.rx_lead = max(int(args.rx_lead), GO_MODE_RX_LEAD_MIN)
 
     loop_count = getattr(args, "loop", 1)
     cycle_len = compute_cycle_len(cfgs, args.t0_margin, args.guard,
@@ -1766,6 +2390,8 @@ def run_tx_mode(args, board_cls=None):
     print("  Loop:       {}".format("infinite (Ctrl-C to stop)" if loop_count == 0 else loop_count))
     print("  Cycle len:  {}s (cycles anchored to T0, no drift)".format(int(cycle_len)))
     print()
+    if go_anchor is not None:
+        print_go_banner(args, go_anchor)
 
     # Open board
     board = (board_cls or BoardSerial)(port)
@@ -1794,14 +2420,34 @@ def run_tx_mode(args, board_cls=None):
 
     use_harmonized = getattr(args, "format", "harmonized") == "harmonized"
     if use_harmonized:
-        log = HarmonizedTxLogWriter(args.tx_log, session_id=args.session_id)
+        log = HarmonizedTxLogWriter(args.tx_log, session_id=wire_session_id(args.session_id))
     else:
         log = TxLogWriter(args.tx_log, session_id=args.session_id)
     log.comment("DISTRIBUTED_TX_MODE session={} t0={} port={} probe={} loop={}".format(
         args.session_id, datetime.datetime.fromtimestamp(t0).isoformat(),
         port, probe_serial or "?", loop_count))
+    if go_anchor is not None:
+        log.comment("GO_MODE sync=cvm source={} session={} stop={} t_ready={} t0={} "
+                    "deadline_mono={:.3f} armed_seq={}".format(
+                        go_anchor.source, go_anchor.session_id,
+                        getattr(args, "stop", "?"),
+                        go_anchor.t_ready_utc,
+                        datetime.datetime.fromtimestamp(
+                            go_anchor.t0_epoch).isoformat(),
+                        go_anchor.deadline_mono,
+                        go_anchor.armed.get("seq", "?")))
 
     def wait_until(ts):
+        if go_anchor is not None:
+            # GO mode: measure against the MONOTONIC deadline captured when
+            # the ARMED was accepted — an NTP step mid-pass must not shift
+            # this side of the pass.
+            target = go_anchor.mono_target(ts)
+            while True:
+                d = target - time.monotonic()
+                if d <= 0:
+                    return
+                time.sleep(min(d, 30.0))
         while True:
             d = ts - time.time()
             if d <= 0:
@@ -1839,9 +2485,14 @@ def run_tx_mode(args, board_cls=None):
                         fmt_offset(s, t0_cycle)))
                 print()
 
-            # Launch-lateness guard
+            # Launch-lateness guard. In GO mode the check is measured against
+            # the anchor's NTP-step-immune wall mirror (wall_now of the
+            # monotonic clock) instead of the system clock, which a step can
+            # move mid-pass; the rule itself is unchanged.
+            now_skip = (time.time() if go_anchor is None
+                        else go_anchor.wall_now(time.monotonic()))
             cfgs_cycle, starts_cycle = apply_late_skip(
-                cfgs, starts, time.time(),
+                cfgs, starts, now_skip,
                 rx_lead=0,
                 skip_late=args.skip_late_configs,
                 mode_label="TX",
@@ -1875,7 +2526,7 @@ def run_tx_mode(args, board_cls=None):
                     send_power_outdoor(board, port)
 
                 # Session/config tagging
-                board.cmd("SESSION {}".format(args.session_id))
+                board.cmd(session_command(args.session_id))
                 board.cmd("CONFIG {} {}".format(cfg["idx"], cycle))
 
                 # Radio config
@@ -1903,11 +2554,24 @@ def run_tx_mode(args, board_cls=None):
                 actual_start = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 board.cmd(start_line, timeout=max(30.0, cfg["expected_s"] + 60))
 
-                # Poll for completion
-                deadline = time.time() + cfg["expected_s"] + 120
+                # Poll for completion. In GO mode the window end is the
+                # ANCHOR's monotonic image of start + expected_s + 120
+                # (blocker 5): a bare time.time() deadline ends the poll early
+                # on a forward NTP step (a false TIMEOUT for a burst still in
+                # flight) and stretches it on a backward step, past the next
+                # config's arm point. The legacy wall deadline is unchanged.
                 sent_ok = 0
                 error = ""
-                while time.time() < deadline:
+                if go_anchor is not None:
+                    poll_deadline_mono = go_anchor.mono_target(
+                        start + cfg["expected_s"] + 120)
+                    poll_deadline_wall = None
+                else:
+                    poll_deadline_mono = None
+                    poll_deadline_wall = (time.time() + cfg["expected_s"]
+                                          + 120)
+                while poll_left(poll_deadline_mono, poll_deadline_wall,
+                                mono_fn=time.monotonic, wall_fn=time.time):
                     try:
                         s = parse_stat(board.stat())
                         sent_ok = s.get("sent_ok", 0)
@@ -1974,19 +2638,27 @@ def run_tx_mode(args, board_cls=None):
             pass
 
     print("\n== TX MODE COMPLETE: {} ==".format(args.tx_log))
+    return 0
 
 
 # ---------------------------------------------------------------------------
 # Distributed RX mode
 # ---------------------------------------------------------------------------
 
-def run_rx_mode(args, board_cls=None):
+def run_rx_mode(args, board_cls=None, go_anchor=None):
     """RX-only distributed mode. Arms RX and captures PKT lines on schedule.
 
     With --loop N (default 1), the schedule is repeated N times (0 = infinite).
     Every cycle is anchored to the SHARED --t0: t0_cycle = T0 + (cycle-1) *
     compute_cycle_len(...). The cycle number (1-based) is used as the
     replicate counter in CSV log lines.
+
+    go_anchor (GO mode, --sync cvm with a derived T0): the GoAnchor captured
+    when the ARMED was accepted (RX is the session authority and generated it).
+    The wall schedule is unchanged, but every wait is measured against the
+    anchor's MONOTONIC deadline (an NTP step mid-pass must not shift one side),
+    rx_lead is clamped to >= 5 s so the cycle length stays identical on both
+    sides, and the generated ARMED is written to --armed-out for relay.
     """
     import subprocess as _sp
 
@@ -1994,14 +2666,24 @@ def run_rx_mode(args, board_cls=None):
     cfgs = load_config_preset(args.configs)
     t0 = parse_t0(args.t0)
 
-    # T0-past guard (incident (b)): hard-error at banner, no countdown/no
-    # launch when T0 < now+60s (stale $T0 shell var, replayed command, …).
-    _ok, _msg = check_t0_future(t0, time.time())
-    if not _ok:
-        sys.exit(_msg)
+    if go_anchor is None:
+        # T0-past guard (incident (b)): hard-error at banner, no countdown/no
+        # launch when T0 < now+60s (stale $T0 shell var, replayed command, …).
+        # GO mode replaces this with the GO-window guard (assert_go_window,
+        # enforced in main() before any log dir exists).
+        _ok, _msg = check_t0_future(t0, time.time())
+        if not _ok:
+            sys.exit(_msg)
 
     # Auto-detect board
     port, probe_serial = _detect_board_for_mode("rx", args.port, args.probe)
+
+    # GO mode arms RX >= GO_MODE_RX_LEAD_MIN early; cycle_len must be
+    # identical on both sides or the per-cycle re-anchor drifts apart. Written
+    # BACK to args.rx_lead so cycle_len, the schedule build and the arm instant
+    # (start - rx_lead) all use the same effective lead.
+    if go_anchor is not None:
+        args.rx_lead = max(int(args.rx_lead), GO_MODE_RX_LEAD_MIN)
 
     loop_count = getattr(args, "loop", 1)
     cycle_len = compute_cycle_len(cfgs, args.t0_margin, args.guard,
@@ -2018,6 +2700,8 @@ def run_rx_mode(args, board_cls=None):
     print("  Loop:       {}".format("infinite (Ctrl-C to stop)" if loop_count == 0 else loop_count))
     print("  Cycle len:  {}s (cycles anchored to T0, no drift)".format(int(cycle_len)))
     print()
+    if go_anchor is not None:
+        print_go_banner(args, go_anchor)
 
     # SWD reset if available (non-fatal if openocd missing)
     def swd_reset_maybe(label="RX"):
@@ -2105,27 +2789,74 @@ def run_rx_mode(args, board_cls=None):
     log_comment = "# DISTRIBUTED_RX_MODE t0={} port={} probe={} loop={}\n".format(
         datetime.datetime.fromtimestamp(t0).isoformat(),
         port, probe_serial or "?", loop_count)
+    if go_anchor is not None:
+        # Absolute wall T0 stays in the log header for correlation + GPS
+        # stitching; the monotonic deadline is recorded for post-hoc timing
+        # forensics (NTP step mid-pass).
+        log_comment += (
+            "# GO_MODE sync=cvm source={} session={} stop={} t_ready={} t0={} "
+            "deadline_mono={:.3f} armed_seq={}\n".format(
+                go_anchor.source, go_anchor.session_id,
+                getattr(args, "stop", "?"),
+                go_anchor.t_ready_utc,
+                datetime.datetime.fromtimestamp(
+                    go_anchor.t0_epoch).isoformat(),
+                go_anchor.deadline_mono,
+                go_anchor.armed.get("seq", "?")))
     with open(args.rx_log, "a") as f:
         f.write(log_comment)
 
+    # GO mode: persist the ARMED this RX generated so the operator can relay
+    # it to the TX (hand relay / --armed-file) before GO. main() writes the
+    # same file for the routing path; the write is idempotent, and this one
+    # keeps the seam working when the runner is invoked directly (wrappers,
+    # tests, a future napplet). Goes out BEFORE the countdown so the relay has
+    # the whole T0 margin. A --dry-run writes NO run artefacts (it does not
+    # reach here from main(), but keep the guard at the writer too).
+    if (go_anchor is not None and getattr(go_anchor, "source", None) == "generate"
+            and getattr(args, "armed_out", None)
+            and not getattr(args, "dry_run", False)):
+        write_armed_out(args.armed_out, go_anchor.armed)
+        print("  ARMED written: {} (relay to TX now)".format(args.armed_out))
+
     def wait_until(ts):
+        if go_anchor is not None:
+            # GO mode: measure against the MONOTONIC deadline captured when
+            # the ARMED was accepted — an NTP step mid-pass must not shift
+            # this side of the pass.
+            target = go_anchor.mono_target(ts)
+            while True:
+                d = target - time.monotonic()
+                if d <= 0:
+                    return
+                time.sleep(min(d, 30.0))
         while True:
             d = ts - time.time()
             if d <= 0:
                 return
             time.sleep(min(d, 30.0))
 
-    def drain_pkt_lines(ser, duration_s):
+    def drain_pkt_lines(ser, duration_s, deadline_mono=None):
         """Read serial lines for duration_s, return parsed PKT dicts.
 
         Uses harmonized parse_pkt_line when format=harmonized, legacy
         parse_pkt_line_legacy when format=legacy.
+
+        deadline_mono (GO mode): the ANCHOR's monotonic image of the window
+        end. The capture is then bounded by the monotonic clock (blocker 5) —
+        a forward NTP step can no longer truncate the capture (silent false
+        THIN/MISS) nor a backward step stretch it under the next config's
+        header. None keeps the legacy `time.time() + duration_s` window.
         """
         parser = parse_pkt_line if use_harmonized else parse_pkt_line_legacy
         pkts = []
-        deadline = time.time() + duration_s
+        if deadline_mono is None:
+            deadline_wall = time.time() + duration_s
+        else:
+            deadline_wall = None
         buf = ""
-        while time.time() < deadline:
+        while poll_left(deadline_mono, deadline_wall,
+                        mono_fn=time.monotonic, wall_fn=time.time):
             data = ser.read(2048)
             if data:
                 buf += data.decode("ascii", errors="replace")
@@ -2170,9 +2901,14 @@ def run_rx_mode(args, board_cls=None):
                         fmt_offset(s - args.rx_lead, t0_cycle)))
                 print()
 
-            # Launch-lateness guard
+            # Launch-lateness guard. In GO mode the check is measured against
+            # the anchor's NTP-step-immune wall mirror (wall_now of the
+            # monotonic clock) instead of the system clock, which a step can
+            # move mid-pass; the rule itself is unchanged.
+            now_skip = (time.time() if go_anchor is None
+                        else go_anchor.wall_now(time.monotonic()))
             cfgs_cycle, starts_cycle = apply_late_skip(
-                cfgs, starts, time.time(),
+                cfgs, starts, now_skip,
                 rx_lead=args.rx_lead,
                 skip_late=args.skip_late_configs,
                 mode_label="RX",
@@ -2227,7 +2963,7 @@ def run_rx_mode(args, board_cls=None):
                     send_power_outdoor(board, port)
 
                 # Session/config tagging
-                board.cmd("SESSION {}".format(args.session_id))
+                board.cmd(session_command(args.session_id))
                 board.cmd("CONFIG {} {}".format(cfg["idx"], cycle))
 
                 # Radio config
@@ -2251,7 +2987,14 @@ def run_rx_mode(args, board_cls=None):
                 # Wait for burst start + duration + settle
                 wait_until(start)
                 capture_duration = cfg["expected_s"] + args.settle + args.guard
-                pkts = drain_pkt_lines(board.ser, capture_duration)
+                # Blocker 5: the capture window ends on the ANCHOR's monotonic
+                # image of the window end, never a bare time.time() deadline.
+                capture_deadline_mono = (
+                    None if go_anchor is None
+                    else go_anchor.mono_target(
+                        start + cfg["expected_s"] + args.settle + args.guard))
+                pkts = drain_pkt_lines(board.ser, capture_duration,
+                                       deadline_mono=capture_deadline_mono)
 
                 # Discard prime (AGC warmup) packets before logging
                 prime_discard = getattr(args, 'prime_discard', 0)
@@ -2295,7 +3038,7 @@ def run_rx_mode(args, board_cls=None):
                 # STAT? recv includes prime packets — subtract them
                 adjust_stat_for_prime(rx_stat, prime_discard)
                 if use_harmonized:
-                    log.stat_line("RX", rx_stat, args.session_id, cfg["idx"],
+                    log.stat_line("RX", rx_stat, wire_session_id(args.session_id), cfg["idx"],
                                   replicate=cycle)
                 print("  [{}/{}] {} recv={}/{} rssi={} snr={}".format(
                     idx + 1, len(cfgs_cycle), cfg["label"],
@@ -2461,7 +3204,13 @@ def dry_run(args):
 # CLI
 # ---------------------------------------------------------------------------
 
-def main():
+def main(bus=None):
+    """CLI entry point.
+
+    `bus` is the CVM sync seam (a `subscribe`/`publish` object, cf.
+    cvm_sync): production callers leave it None and GO mode TX falls back to
+    --armed-file, tests/wrappers inject one.
+    """
     ap = argparse.ArgumentParser(
         description="E80 two-board bench controller — single-shot FLRC-650, "
                     "range-campaign matrix, or distributed TX/RX split modes")
@@ -2485,7 +3234,27 @@ def main():
                          "rx-log.csv under the repo root — per-run unique, absolute; "
                          "an explicit value always wins)")
     ap.add_argument("--session-id", dest="session_id", type=int, default=None,
-                    help="session ID (auto-generated from timestamp if omitted)")
+                    help="session ID (auto-generated from timestamp if omitted; "
+                         "GO mode takes it from the ARMED instead and rejects "
+                         "this flag)")
+    ap.add_argument("--sync", choices=[SYNC_BOUNDARY, SYNC_CVM],
+                    default=SYNC_BOUNDARY,
+                    help="T0 rendezvous mode. '%s' (default) = legacy clock "
+                         "boundary + --t0 as today. '%s' = GO mode: derive "
+                         "T0 = ARMED.t_ready_utc + %g s from the RX's ARMED "
+                         "message (no boundary wait; rx_lead >= %d s); an "
+                         "explicit --t0 always wins and stays legacy."
+                         % (SYNC_BOUNDARY, SYNC_CVM, T0_MARGIN,
+                            GO_MODE_RX_LEAD_MIN))
+    ap.add_argument("--armed-file", dest="armed_file", default=None,
+                    help="GO mode: JSON file holding one ARMED message "
+                         "(operator relay of the RX's ARMED). Freshness checks "
+                         "are relaxed for a hand relay; the GO-window guard "
+                         "still applies.")
+    ap.add_argument("--armed-out", dest="armed_out", default=None,
+                    help="GO mode RX: where to write the ARMED it generated "
+                         "(default: armed.json in the run's log dir) so the "
+                         "operator can relay it to the TX")
     # --- Legacy single-shot + matrix mode ---
     ap.add_argument("--tx", default="/dev/ttyUSB3", help="TX board serial port")
     ap.add_argument("--rx", default="/dev/ttyUSB4", help="RX board serial port")
@@ -2580,8 +3349,58 @@ def main():
     if args.mode:
         if not args.configs:
             sys.exit("--mode {} requires --configs <preset.json>".format(args.mode))
-        if not args.t0 and not args.dry_run:
+        # GO mode (--sync cvm) derives T0 from the RX's ARMED message. An
+        # explicit --t0 ALWAYS wins (fallback path) and stays legacy.
+        go_mode = (args.sync == SYNC_CVM and args.t0 is None)
+        if go_mode and args.session_id is not None:
+            sys.exit("session_id comes from ARMED in GO mode — drop "
+                     "--session-id (the RX is the session authority; see "
+                     "docs/ADR-range-sync-cvm.md)")
+        if not go_mode and not args.t0 and not args.dry_run:
             sys.exit("--mode {} requires --t0 'YYYY-MM-DD HH:MM:SS'".format(args.mode))
+        go_anchor = None
+        _cfgs = None
+        if go_mode:
+            # --stop is optional and defaults to the sentinel, but in GO mode
+            # it is the ONLY thing that attributes the log to a stop (the dir
+            # carries no stop-<dist> level). Warn before anything is written.
+            _stop_warn = go_stop_warning(args)
+            if _stop_warn:
+                print(_stop_warn)
+            _cfgs = load_config_preset(args.configs)
+            _armed, _src, _wall_ev, _mono_ev = acquire_armed_for_go(
+                args, _cfgs, bus)
+            go_anchor = GoAnchor(_armed, wall_at_event=_wall_ev,
+                                 mono_at_event=_mono_ev, source=_src)
+            # Derived T0 + RX-authoritative session id; the monotonic deadline
+            # inside the anchor carries the schedule so an NTP step mid-pass
+            # cannot shift this side.
+            args.session_id = go_anchor.session_id
+            args.t0 = str(go_anchor.t0_epoch)
+            args.rx_lead = go_rx_lead(args.rx_lead, SYNC_CVM, None)
+            print_go_banner(args, go_anchor)
+        # Split-brain guard (legacy TX starts only). A manual TX start MUST
+        # echo the RX session id from the RX banner: main() used to silently
+        # invent one right here (%y%m%d%H%M), and the two sides then ran
+        # different session ids — the analysis reported a false MISS/LOGGING
+        # GAP with no warning. Refuse BEFORE the auto-generation line below
+        # (an invented id is never transmitted), and loudly enough that the
+        # operator re-arms the RX and copies its session id. --dry-run is
+        # exempt: nothing is transmitted.
+        if (args.mode == "tx" and not args.dry_run and not go_mode
+                and args.session_id is None):
+            sys.exit(
+                "SPLIT-BRAIN GUARD — split brain refused: this TX start has "
+                "no --session-id, so the tool would have to invent one "
+                "(%y%m%d%H%M). The RX is the sole session authority: a "
+                "manual TX start must ECHO the live RX session id from the "
+                "RX banner (or its ARMED message) — pass "
+                "--session-id <RX session id>. Do not invent a session id: "
+                "the two sides would then run different sessions and the "
+                "analysis would report a false MISS/LOGGING GAP with no "
+                "warning. To have the TX take the session id automatically, "
+                "run GO mode instead (--sync cvm + the RX ARMED). A dry run "
+                "(--dry-run) is exempt.")
         if args.session_id is None:
             args.session_id = int(datetime.datetime.now().strftime("%y%m%d%H%M"))
         # Durable directive: default log filenames embed SESSION + T0 and are
@@ -2592,24 +3411,47 @@ def main():
             (int(time.time()) // 300 + 1) * 300)  # next 5-min boundary
         args.tx_log = resolve_log_path(
             args.tx_log, args.tx_log == "tx-log.csv",
-            args.session_id, _t0_for_logs, "tx")
+            args.session_id, _t0_for_logs, "tx", go=go_mode)
         args.rx_log = resolve_log_path(
             args.rx_log, args.rx_log == "rx-log.csv",
-            args.session_id, _t0_for_logs, "rx")
+            args.session_id, _t0_for_logs, "rx", go=go_mode)
+        if go_mode and go_anchor is not None and go_anchor.source == "generate":
+            # RX is the session authority: publish the ARMED it generated for
+            # relay to the TX (default: armed.json in this run's log dir).
+            if not args.armed_out:
+                args.armed_out = os.path.join(
+                    os.path.dirname(os.path.abspath(args.rx_log)), "armed.json")
+            if args.dry_run:
+                # A dry run writes NO run artefacts: this write used to happen
+                # before the --dry-run gate below, so a rehearsal left
+                # logs/s<sid>-go<t0>/armed.json behind — and the next live
+                # launch then tripped the session-collision guard on a log dir
+                # that no run ever wrote. Path is still reported for review.
+                print("  dry run:     ARMED not written ({})".format(
+                    args.armed_out))
+            else:
+                write_armed_out(args.armed_out, go_anchor.armed)
         if not args.dry_run:
-            # T0-past guard at the earliest possible point (before any log
-            # dir is created): incident (b), 2026-08-28 — a stale $T0 shell
-            # var printed "T0 in -64s" at the banner and STILL launched.
-            _ok, _msg = check_t0_future(_t0_for_logs, time.time())
-            if not _ok:
-                sys.exit(_msg)
+            if go_mode:
+                # Stale-T0 is meaningless for an event: the legacy T0-past
+                # guard is replaced by the GO-window check (arm still recent
+                # enough for the RX lead).
+                assert_go_window(go_anchor)
+            else:
+                # T0-past guard at the earliest possible point (before any log
+                # dir is created): incident (b), 2026-08-28 — a stale $T0 shell
+                # var printed "T0 in -64s" at the banner and STILL launched.
+                _ok, _msg = check_t0_future(_t0_for_logs, time.time())
+                if not _ok:
+                    sys.exit(_msg)
             # Session-collision guard: session id already on disk with a
             # DIFFERENT t0 → refuse before creating any dir. PKT data is
             # keyed by session id; one id must map to one T0.
             _coll = find_session_collisions(args.session_id, _t0_for_logs)
             if _coll:
-                _new_dir = "s{session}-t0{t0}".format(
-                    session=args.session_id, t0=int(_t0_for_logs))
+                _new_dir = "s{session}-{tag}{t0}".format(
+                    session=args.session_id, tag="go" if go_mode else "t0",
+                    t0=int(_t0_for_logs))
                 _existing = ", ".join(
                     "{} (t0={})".format(name, other)
                     for name, other in _coll)
@@ -2628,11 +3470,23 @@ def main():
                     os.makedirs(_d, exist_ok=True)
         if args.dry_run:
             return dry_run_preset(args)
+        if args.mode == "tx":
+            # Anti split-brain: the TX announces its start on the session it
+            # echoes — GO mode from the ARMED anchor, legacy from the
+            # operator-echoed --session-id (guarded above). Best effort: a
+            # publish failure is a warning, never a reason to skip the burst.
+            emit_started_notice(
+                build_started_notice(
+                    args,
+                    _cfgs if _cfgs is not None
+                    else load_config_preset(args.configs),
+                    go_anchor),
+                args, bus)
         try:
             if args.mode == "tx":
-                return run_tx_mode(args)
+                return run_tx_mode(args, go_anchor=go_anchor)
             else:
-                return run_rx_mode(args)
+                return run_rx_mode(args, go_anchor=go_anchor)
         except RuntimeError as e:
             sys.exit("ERROR: {}".format(e))
         except KeyboardInterrupt:
