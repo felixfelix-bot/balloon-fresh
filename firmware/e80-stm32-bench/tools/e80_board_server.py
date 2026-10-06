@@ -32,11 +32,17 @@ output into a buffer, preventing kernel TTY buffer overflow during long
 bursts (10,000+ packets). When a command is being processed (holding the
 serial lock), the drain thread waits.
 
+Security:
+    The TCP control channel is UNAUTHENTICATED. It binds 127.0.0.1 by default;
+    use --host 0.0.0.0 only on a trusted, firewalled bench network. See
+    docs/SECURITY-FINDINGS.md (E80-2026-01) and issue #21.
+
 Usage:
-    python3 e80_board_server.py                           # auto-detect + serve
+    python3 e80_board_server.py                           # auto-detect + serve (loopback)
     python3 e80_board_server.py --role TX                # assert TX
     python3 e80_board_server.py --port /dev/ttyUSB3       # skip detection
-    python3 e80_board_server.py --port 7780              # TCP port (default 7780)
+    python3 e80_board_server.py --tcp-port 7780           # TCP port (default 7780)
+    python3 e80_board_server.py --host 0.0.0.0            # expose on all interfaces (bench)
     python3 e80_board_server.py --daemon                 # detach to background
 """
 
@@ -66,6 +72,32 @@ from e80_detect import (
     detect_board,
     find_openocd,
 )
+
+
+LOOPBACK_HOSTS = {"", "127.0.0.1", "::1", "localhost"}
+
+
+def is_loopback_host(host: str) -> bool:
+    """True if binding *host* stays local (no network exposure)."""
+    return host.strip().lower() in LOOPBACK_HOSTS
+
+
+def warn_if_unauthenticated_exposure(host: str, port: int) -> bool:
+    """Warn when the unauthenticated channel is bound to a non-loopback address.
+
+    Returns True if a warning was emitted. See E80-2026-01 / issue #21 and
+    docs/SECURITY-FINDINGS.md.
+    """
+    if is_loopback_host(host):
+        return False
+    print(
+        f"WARNING: binding {host}:{port} exposes an UNAUTHENTICATED board-control "
+        f"channel (docs/SECURITY-FINDINGS.md E80-2026-01, issue #21). "
+        f"Use 127.0.0.1, or restrict the port with a firewall.",
+        file=sys.stderr,
+        flush=True,
+    )
+    return True
 
 
 # -----------------------------------------------------------------------
@@ -218,7 +250,7 @@ class BoardController:
 class BoardTCPServer:
     """Simple threaded TCP server wrapping a BoardController."""
 
-    def __init__(self, controller: BoardController, host="0.0.0.0", port=7780):
+    def __init__(self, controller: BoardController, host="127.0.0.1", port=7780):
         self.ctrl = controller
         self.host = host
         self.port = port
@@ -347,7 +379,7 @@ class BoardTCPServer:
 # -----------------------------------------------------------------------
 
 def run_server(port_spec: str, tcp_port: int = 7780, role: str | None = None,
-               daemon: bool = False) -> int:
+               daemon: bool = False, host: str = "127.0.0.1") -> int:
     """Start the board server.
 
     Args:
@@ -355,6 +387,8 @@ def run_server(port_spec: str, tcp_port: int = 7780, role: str | None = None,
         tcp_port: TCP listen port
         role: assert TX or RX (for auto-detect verification)
         daemon: if True, fork to background
+        host: bind address; defaults to loopback (127.0.0.1). Use "0.0.0.0" to
+            expose the unauthenticated channel on the bench network.
     """
     if daemon:
         _daemonize()
@@ -414,9 +448,10 @@ def run_server(port_spec: str, tcp_port: int = 7780, role: str | None = None,
         print(f"ERROR: cannot open {serial_port}: {e}", file=sys.stderr)
         return 1
 
-    server = BoardTCPServer(ctrl, host="0.0.0.0", port=tcp_port)
+    warn_if_unauthenticated_exposure(host, tcp_port)
+    server = BoardTCPServer(ctrl, host=host, port=tcp_port)
     server.start()
-    print(f"[server] Listening on 0.0.0.0:{tcp_port} (role={ctrl.role})",
+    print(f"[server] Listening on {host}:{tcp_port} (role={ctrl.role})",
           file=sys.stderr, flush=True)
 
     # Stay alive until killed
@@ -451,12 +486,15 @@ def main():
                     help="serial port ('auto' for auto-detection, or /dev/ttyUSB3)")
     ap.add_argument("--tcp-port", type=int, default=7780,
                     help="TCP listen port (default 7780)")
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="bind address (default 127.0.0.1; use 0.0.0.0 to expose "
+                         "the unauthenticated channel on the bench network)")
     ap.add_argument("--role", choices=["TX", "RX"], default=None,
                     help="assert the local board is this role")
     ap.add_argument("--daemon", action="store_true",
                     help="run as background daemon")
     args = ap.parse_args()
-    sys.exit(run_server(args.port, args.tcp_port, args.role, args.daemon))
+    sys.exit(run_server(args.port, args.tcp_port, args.role, args.daemon, args.host))
 
 
 if __name__ == "__main__":
