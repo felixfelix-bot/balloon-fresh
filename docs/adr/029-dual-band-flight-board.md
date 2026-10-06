@@ -370,21 +370,57 @@ for v9 waits on O0.
 
 ### D3 — All RF feeds are U.FL pigtails, not chip antennas
 
-**Amended 2026-10-05 (D2b): four connectors, not three.**
+**Amended 2026-10-06 (D2b consequence (d)): four connectors, not three.**
 
-Four connectors: **GNSS L1**, **sub-GHz `ANT`**, **2.4 GHz `ANT-2G4`** (F33), **SX1280**.
+The board has exactly four RF U.FL landing zones: **GNSS L1**, sub-GHz **`ANT`**,
+F33 2.4 GHz **`ANT-2G4`**, and the dedicated **SX1280**. The ESP32-S3-WROOM-1U's
+Wi-Fi/BT U.FL is a fifth, module-integrated connector and is not counted in this
+four-connector D3 amendment; it remains part of the -1U module placement.
 
 Rationale: on a 55 x 45 mm board the decisive separation is **off-board in 3D**. On a
-balloon the four antennas get 10+ cm of physical spacing and orthogonal orientations; a
-chip antenna forces the entire fight onto the PCB, where it cannot be won. This is
-precisely why the MCU is the `-1U` (external-antenna) variant — the Wi-Fi radiator is a
-pigtail too, so it can be routed to the opposite end of the payload (memo §2(a)).
+balloon the four external radio/GNSS antennas get 10+ cm of physical spacing and
+orthogonal orientations; chip antennas force the entire fight onto the PCB, where it
+cannot be won. The -1U module's Wi-Fi/BT pigtail is also routed off-board.
 
-Board-level placement rule that follows (not decoration — it is the electrical reason the
-choice works): GNSS U.FL on the **+Y sky-facing edge**, sub-GHz U.FL on the **−Y edge**,
-2.4 GHz U.FL on a **side edge at mid-point**, each with its own solid reference-plane patch
-and a keep-out to the header and to each other; the two 2.4 GHz-capable feeds never
-co-polarised closer than λ/2 (~6 cm at 2.4 GHz).
+#### D3 placement-feasibility sketch (55 x 45 mm)
+
+The sketch is a landing-zone/keep-out envelope, not a routed copper drawing. Each `U#`
+zone is 4 x 4 mm minimum (U.FL body + pad/fanout envelope), with a 2 mm board-edge
+clearance and a 2 mm no-copper/no-other-connector keep-out around it. The four zones
+are non-overlapping and are placed outside the 39 x 21 mm F33 module envelope; the
+SX1280 module occupies the remaining centre-right island. Exact library courtyard and
+edge-clearance checks remain an ADR-030 placement-gate input.
+
+```
+                         55 mm (+X)
+       +-------------------------------------------------------+
+       | U1 GNSS L1       GNSS keep-out / sky-facing edge      |
+       | [4x4]       +-------------------------+              |
+       |             | F33 39 x 21 mm          | U3 F33        |
+       | U2 sub-GHz  | (nested bare option)    | ANT-2G4 [4x4]|
+45 mm  | [4x4]       +-------------------------+              |
+(+Y)   |                         +----------------+             |
+       |                         | SX1280         |             |
+       |                         | module         |             |
+       |                         +----------------+ U4 SX1280   |
+       |                         SX1280 keep-out       [4x4]    |
+       +-------------------------------------------------------+
+```
+
+This is feasible at the envelope level: 4 x 4 mm landing zones plus their 2 mm
+keep-outs fit on the four edges without overlap, while the large F33 envelope remains
+39 x 21 mm and the SX1280 is kept as a separate island. The placement must be frozen
+and checked by ADR-030's deterministic courtyard/edge/keep-out guard before routing;
+this sketch is not a substitute for that gate.
+
+**Opposite-end routing required by §2(a): U1 (GNSS) is the explicit opposite-end feed.**
+The S3/Wi-Fi U.FL is routed to the opposite end of the payload (the original §2(a)
+separation path); among the four amended D3 zones, U1 GNSS is on the +Y sky-facing edge
+and U2 sub-GHz is on the -Y edge, while U3 and U4 use separate side/end zones. Thus no
+new SX1280 feed is silently assigned the old Wi-Fi opposite-end route: the Wi-Fi U.FL
+retains it, and U4 gets its own independent pigtail. The four external feeds retain
+individual reference-plane patches and keep-outs; the two 2.4 GHz RF zones (U3/U4) are
+not co-polarised and are separated off-board by antenna placement.
 
 ### D4 — Coexistence is enforced by **one firmware arbiter + hardware BUSY polling**, not by convention
 
@@ -467,9 +503,11 @@ its own ground return starred at the battery node; GNSS at the **sky-facing edge
 keep-out free of any TX trace and of via stitching; no TX trace and no via ring inside the
 GNSS keep-out.
 
-**(e) Physical separation on the PCB (the cheap, biggest win).** As D3: three U.FL on three
-edges, each with its own reference patch and keep-out; the decisive separation happens
-off-board in 3D.
+**(e) Physical separation on the PCB (the cheap, biggest win).** As D3: four external U.FL
+landing zones on the board perimeter (GNSS, sub-GHz, F33 2.4 GHz, and SX1280), each with
+its own reference patch and keep-out; the decisive antenna separation happens off-board
+in 3D. The S3/Wi-Fi U.FL remains integrated with the -1U module and retains the
+opposite-end payload routing called out in §2(a).
 
 **(f) Supply and return.** Each radio rail gets its own ferrite + bulk cap from 3V3; TX
 bursts (<800 mA @868, <900 mA @2.4 GHz, <1200 mA at 433) must not modulate another rail or
