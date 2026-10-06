@@ -137,9 +137,20 @@ connected to PWR_FLAG power output) — not a connectivity error.
 
 ## 7. Commit and remote SHAs
 
-(See the final reply for the observed SHAs — they are filled in after the
-push succeeds and quoted verbatim from `git rev-parse HEAD` and
-`git ls-remote`.)
+Observed in tool output:
+
+```
+$ git rev-parse HEAD
+cdb4d8e970f8299704e7f8dc36745b611091c1c3
+
+$ git ls-remote github refs/heads/pr/v8k-sch-board-sync
+cdb4d8e970f8299704e7f8dc36745b611091c1c3	refs/heads/pr/v8k-sch-board-sync
+
+$ git ls-remote ngit refs/heads/pr/v8k-sch-board-sync
+cdb4d8e970f8299704e7f8dc36745b611091c1c3	refs/heads/pr/v8k-sch-board-sync
+```
+
+Local HEAD == github remote SHA == ngit remote SHA.
 
 ## 8. Files touched (explicit git add list)
 
