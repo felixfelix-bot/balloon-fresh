@@ -42,6 +42,7 @@ ESP32-C3_Mini_V1 GND  →  Breadboard - rail
 | Pin 15 | DIO9 (IRQ) | GPIO5 | D5 | Brown |
 | Pin 16 | DIO8 | GPIO1 | D1 | (optional, leave NC) |
 | Pin 17 | DIO7 | GPIO0 | D0 | (optional, leave NC) |
+| Pin 13 | VTCXO | **NC** | — | **Leave floating** — chip-controlled TCXO power output |
 | Pin 18 | GND | GND | GND | Black |
 
 ### Decoupling
