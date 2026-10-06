@@ -5,7 +5,7 @@ Workloads:
 
 | workflow | what it runs | engine notes |
 |---|---|---|
-| `act/workflows/host-tests.yml` | the host-side C/C++ unit suites (nostr_store 7, relay-pipeline 13, tracker tollgate-proto 106, payack-parser 15, tollgate ~350, ehash-relay 65, stratorelay 11) | same commands as `.github/workflows/ci-host-tests.yml`; one harness fix serves both engines |
+| `act/workflows/host-tests.yml` | the host-side C/C++ unit suites (nostr_store 7, relay-pipeline 13, tracker tollgate-proto 106, payack-parser 16, tollgate ~350, ehash-relay 65, stratorelay 11) | same commands as `.github/workflows/ci-host-tests.yml`; one harness fix serves both engines |
 
 What is NOT run under ngit-ci, and why:
 

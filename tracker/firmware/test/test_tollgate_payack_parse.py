@@ -25,6 +25,17 @@ whitespace-only form (cold review of t_3a5cfe25, finding 1) is pinned by
 test_seq_whitespace_only_form_is_parsed_without_regressing_d6_scoping, which
 also re-asserts the D6 TollGate-line scoping.
 
+The SAME D6 commit narrowed the three sibling ACK-payload patterns
+(SESSION_ID_PATTERN / PRICE_PATTERN / EXPIRES_PATTERN) the same way — pre-D6
+they read `session[_\s]*id[:\s]+(\d+)`, `price[:\s]+(\d+)\s*sats?`,
+`expires?[:\s]+(\d+)` (64b8923:107-109) — so `session_id 5`, `price 10 sats`
+and `expires 99` also parsed before D6 and did not after it. They are read on
+the live harness path by extract_session_info(), which run_pay_round() calls
+for every detected ACK, so the narrowing silently emptied the recorded ACK
+session info. All three now carry the same mandatory-separator union, pinned by
+test_session_price_expires_accept_the_whitespace_only_forms (both forms, the
+glued-field rejection, and the unchanged D6 line gate).
+
 Run:
   python3 test/test_tollgate_payack_parse.py     # standalone (exit 0 = pass)
   pytest test/test_tollgate_payack_parse.py      # or under pytest
@@ -141,6 +152,64 @@ def test_seq_whitespace_only_form_is_parsed_without_regressing_d6_scoping():
     # The separator requirement is deliberate: a glued `seq9` token is not a
     # seq field. Accepted: `seq=%u` (all producers), `seq: 9`, `seq 9`.
     assert h.extract_seq("I (1) TRACKER: TollGate ACK queued (seq9)") is None
+
+
+def test_session_price_expires_accept_the_whitespace_only_forms():
+    """The three sibling patterns lost the same whitespace-only form in D6.
+
+    D6 (6099487) narrowed SESSION_ID_PATTERN / PRICE_PATTERN / EXPIRES_PATTERN
+    from the pre-D6 `[:\s]+` separator (64b8923:107-109) to a mandatory `[:=]`,
+    so `session_id 5` / `price 10 sats` / `expires 99` silently became None.
+    All three are read on the LIVE harness path by extract_session_info(), which
+    run_pay_round() calls for every detected ACK, so the narrowing silently
+    emptied the recorded ACK session info. Both separator forms are pinned here;
+    the separator itself stays REQUIRED, so a glued field (`session_id5`,
+    `price5 sats`, `expires99`) is still not a field.
+    """
+    eq = ("I (1) TRACKER: TollGate ACK queued "
+          "(seq=1, session_id=5, price=10 sats, expires=99)")
+    colon = ("I (1) TRACKER: TollGate ACK queued "
+             "(seq: 1, session_id: 5, price: 10 sats, expires: 99)")
+    spaced = ("I (1) TRACKER: TollGate ACK queued (seq 1) "
+              "session_id 5 price 10 sats expires 99")
+    expected = {"session_id": 5, "price_sats": 10, "expires_unix": 99}
+
+    for line in (eq, colon, spaced):
+        rec = h.parse_tollgate_log_line(line)
+        assert rec is not None and rec["kind"] == "ack", line
+        assert rec["seq"] == 1, line
+        assert rec["session_id"] == 5, line
+        assert rec["price_sats"] == 10, line
+        assert rec["expires_unix"] == 99, line
+        assert h.extract_session_info(line) == expected, line
+
+    # One separator is still mandatory: a glued field is not a field.
+    glued = ("I (1) TRACKER: TollGate ACK queued "
+             "(session_id5, price5 sats, expires99)")
+    assert h.extract_session_info(glued) == {}
+    rec = h.parse_tollgate_log_line(glued)
+    assert rec is not None and rec["kind"] == "ack"
+    assert "session_id" not in rec and "price_sats" not in rec
+    assert "expires_unix" not in rec
+
+    # The widening must not weaken the D6 line gate: a NON-TollGate line
+    # carrying all three field names is still not a TollGate record, and
+    # extract_session_info() is line-scoped too, so it must not read the
+    # fields off that line either (widening the three patterns made the
+    # unscoped version of the helper reachable for exactly this input).
+    telemetry = ("I (1) TRACKER: TX 26 bytes (seq 7) "
+                 "session_id 5 price 10 sats expires 99")
+    assert h.parse_tollgate_log_line(telemetry) is None
+    assert h.classify_tollgate_output(telemetry) == {
+        "pay": [], "ack": [], "nack": [], "other": []}
+    assert h.extract_session_info(telemetry) == {}
+
+    # ...and a block where only the non-TollGate lines carry the fields still
+    # yields nothing, while a TollGate ACK line in the same block does.
+    block = telemetry + "\nI (2) TRACKER: TollGate ACK queued (seq=1)\n"
+    assert h.extract_session_info(block) == {}
+    block += "I (3) TRACKER: TollGate ACK queued expires 99\n"
+    assert h.extract_session_info(block) == {"expires_unix": 99}
 
 
 def test_wrapped_seq_is_parsed_both_directions():
