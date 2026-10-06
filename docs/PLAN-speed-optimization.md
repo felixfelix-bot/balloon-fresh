@@ -16,18 +16,24 @@ Settled in `FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md` (+ `tools/flrc_512b_throug
 | Figure | Value | Status |
 |---|---|---|
 | **1391 kbps** (this plan's title figure) | superseded | RP2040 Arduino-SPI, LEN 127, 2026-07-16 |
-| **1484.9 kbps** sustained, 0.00 % PER | **live measured best** | `sustained-throughput-results-2026-07-23.md`, BR2600, LEN 127, TX-side-limited |
-| **2540 kbps** at 255 B / **2570 kbps** at 511 B | ceiling (zero host overhead) | arithmetic, datasheet-audit model |
-| **2550 / 2569 kbps** at 511 B | ceiling, driver model (actual fw config) | arithmetic, `tools/flrc_512b_throughput_audit.py` |
+| **1484.9 kbps** sustained, 0.00 % PER | **live measured best** | `sustained-throughput-results-2026-07-23.md`, BR2600, LEN 127, TX-side-limited (~1487 kbps) |
+| **2540 kbps** at 255 B / **2570 kbps** at 511 B | ceiling *if uncoded* (CR NONE) — the datasheet-audit model, zero host overhead | arithmetic; not what the firmware configures |
+| **1871 kbps** at 255 B / **1910 kbps** at 511 B | **ceiling with the shipped configuration (CR 3/4)**, zero host overhead | arithmetic, LR20xx driver time-on-air numerator; agrees to 0.6 % with the repo's independent 1921.8 kbps on-air figure (`full-sweep-report-20260821-175612.md:99`) |
 | **2600 kbps** | **the configured AIR RATE, not goodput** | NiceRF "modulation rate up to 2.6 Mbps" |
 
 **The lever is payload size + pipelining, not a bigger packet count.** Doubling the
-payload 255 B → 511 B raises the ceiling only **1.2 %** (2540 → 2570 kbps): the air
-time doubles too. What payload size buys is amortisation of the fixed preamble/sync
-overhead. The 511 B row is *already demonstrated working* — 50/50 at BR650/1300/2600,
-PRBS-15 `bit_err = 0` (`full-sweep-report-20260821-175612.md`); it has just never been
-run at a gap small enough to produce a sustained goodput number. 512 B is **not a
-valid length** — the FLRC payload field is 9 bits, max 511.
+payload 255 B → 511 B raises the CR-3/4 ceiling only **2.1 %** (1871 → 1910 kbps): the
+air time doubles too. What payload size buys is amortisation of the fixed
+preamble/sync/AGC overhead. The 511 B row is *already demonstrated working* — 50/50 at
+BR650/1300/2600, PRBS-15 `bit_err = 0` (`full-sweep-report-20260821-175612.md`); it has
+just never been run at a gap small enough to produce a sustained goodput number. 512 B
+is **not a valid length** — the driver's documented range is `[6:511]`
+(`lr20xx_radio_flrc_types.h:210`), enforced at runtime by `bench.c`.
+
+**rev 2 (2026-10-06):** this table originally quoted "2550 / 2569 kbps" as the driver
+model. That model omitted the coding rate; the firmware ships **CR 3/4**
+(`radio_bench.c:55`) and the LR20xx numerator scales by it, so the real ceiling is a
+third lower. See §7 of `FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md` for the correction log.
 
 Below this line the 1391 kbps analysis stands as written; read it as the history of
 the RP2040 Arduino-SPI ceiling, not as the current capability.
@@ -39,8 +45,10 @@ the RP2040 Arduino-SPI ceiling, not as the current capability.
 Maximize throughput on LR2021 FLRC link beyond the current 1391 kbps RP2040 ceiling.
 
 Theoretical maximum: 2540 kbps (air-time limited at 2600 kbps FLRC bitrate, 255B payload).
-(2026-10-06: 2570 kbps at 511 B. Both are ceilings assuming *zero* host overhead; the
-2600 kbps air rate itself is not reachable as goodput — see §1.1.)
+(2026-10-06: 2570 kbps at 511 B. Both are *uncoded* ceilings assuming zero host
+overhead. The firmware ships CR 3/4, so the achievable ceiling is ~1871 kbps at 255 B
+and ~1910 kbps at 511 B; the 2600 kbps air rate itself is not reachable as goodput —
+see §1.1 and `FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md`.)
 
 ---
 

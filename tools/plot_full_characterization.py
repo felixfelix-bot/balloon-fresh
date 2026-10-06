@@ -90,8 +90,9 @@ def main():
         (1, "HF-LoRa-SF9", "HF", "LoRa", "SF9", 2440),
         (2, "HF-LoRa-SF12", "HF", "LoRa", "SF12", 2440),
         # "2600k(air)": 2600 kbps is the FLRC PHY air rate, NOT goodput. Payload
-        # goodput ceiling at 255 B / 511 B is 2540 / 2570 kbps with zero host
-        # overhead; best measured sustained is 1484.9 kbps (LEN 127). See
+        # goodput ceiling at 255 B / 511 B is 1871 / 1910 kbps under the shipped
+        # CR 3/4 configuration (or 2540 / 2570 kbps if uncoded); best measured
+        # sustained is 1484.9 kbps (LEN 127). See
         # docs/FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md.
         (3, "HF-FLRC-2600", "HF", "FLRC", "2600k(air)", 2440),
         (4, "HF-FLRC-1300", "HF", "FLRC", "1300k", 2440),
