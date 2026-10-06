@@ -340,6 +340,7 @@
 			(size 1.325 0.6)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 3 "VCAP")
 			(uuid "4fdb64e9-4688-4be4-9fb0-7f79900074c9")
 		)
 		(pad "4" smd roundrect
