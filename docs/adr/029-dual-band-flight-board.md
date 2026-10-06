@@ -766,6 +766,9 @@ to change.
    schematic card opens and before any BOM freeze.
 7. **(a)–(e) from D2b are NOW** (operator, 2026-10-05) — the pin plan, the
    three-way 2.4 GHz arbiter, the four-antenna count, the power budget and the
-   SPI1 re-plan off IO35–37 gate the schematic card.
+   SPI1 re-plan off IO35–37 gate the schematic card. The F33+SX1280 pin plan is
+   recorded in `docs/adr/029-f33-sx1280-pin-plan.md`; it leaves IO35–37 and the
+   four S3 strapping pins (IO0, IO3, IO45, IO46) unassigned and calls out the
+   accepted native-JTAG trade-off on IO39–42.
 8. The multi-SX1280 throughput question is analysed in
    `docs/SX1280-ARRAY-FEASIBILITY.md` — **analysis only, no board authorised.**
