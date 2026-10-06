@@ -3,9 +3,8 @@ name: Host Unit Tests
 # Runs all host-side C/C++ unit test suites on every push and PR.
 # Test suites:
 #   - nostr_store    (7 tests)    — tracker/firmware/components/nostr_store
-#   - relay-pipeline (13 tests)   — tracker/firmware/main/test/test_relay_pipeline.c
-#   - tollgate-proto (106 asserts)— tracker/firmware/main/test/test_tollgate_payment_proto.c
-#   - payack-parser  (17 tests)   — tracker/firmware/test/test_tollgate_payack_parse.py
+#   - relay-pipeline (12 tests)   — tracker/firmware/main/test/test_relay_pipeline.c
+#   - payment-proto  (133 tests)  — tracker/firmware/main/test/test_tollgate_payment_proto.c
 #   - tollgate       (~350 tests) — mesh-stack/tollgate/tests/unit (Makefile, 13 binaries)
 #   - ehash-relay    (65 tests)   — mesh-stack/ehash-relay/test
 #   - stratorelay    (11 tests)   — tracker/firmware/components/stratorelay/test
@@ -36,7 +35,7 @@ jobs:
             nostr_store.c test/test_nostr_store.c
           /tmp/test_nostr_store
 
-      # ── Suite 2: relay-pipeline (13 tests) ───────────────────────
+      # ── Suite 2: relay-pipeline (12 tests) ───────────────────────
       - name: Build & run relay pipeline tests
         run: |
           cd tracker/firmware
@@ -47,7 +46,10 @@ jobs:
             components/nostr_store/nostr_store.c
           /tmp/test_relay_pipeline
 
-      # ── Suite 2b: tracker tollgate payment proto (106 asserts) ───
+      # ── Suite 2b: payment-proto (133 tests) ─────────────────────
+      # Covers the tollgate PAY/ACK header: packed layout, encode/decode
+      # round-trips, truncation + bad msg_type rejection, buffer-too-small
+      # (canary-checked, nothing written), and seq/price_sats boundaries.
       - name: Build & run tracker tollgate proto tests
         run: |
           cd tracker/firmware
@@ -98,3 +100,56 @@ jobs:
             tracker/firmware/components/stratorelay/test/test_stratorelay.cpp \
             -o /tmp/test_stratorelay
           /tmp/test_stratorelay
+
+      # ── Suite 6: ESP32-C3 <-> RP2040 UART telemetry protocol (115) ─
+      # t_79ae3ee7: the wire protocol between the two MCUs — frame format,
+      # CRC-16/CCITT-FALSE, payload round-trips, decoder re-synchronisation
+      # after noise, corruption/truncation handling and the sanity validators.
+      # Host-side only (no ESP-IDF / Pico-SDK headers), no boards needed.
+      - name: Build & run UART telemetry protocol tests
+        run: |
+          cd tracker/firmware/components/uart_telemetry/test
+          make clean
+          make
+          make test
+
+      # ── Suite 7: FLRC BT0.5 cross-platform parity (12 tests) ────
+      # P0.5 (t_dc858d9b): proves the RP2040 and ESP32 FLRC bench firmware
+      # program the same pulse shape (BT0.5 => 0x25), which is what makes a
+      # raw-FLRC ESP32<->RP2040 link possible at all. Host-side only: it
+      # asserts the register bytes emitted, no boards needed.
+      - name: Run FLRC BT0.5 parity tests
+        run: |
+          # PEP 668: the runner's python3 may be externally managed, which makes a
+          # plain `pip install` exit 1 and takes the whole lane down (observed in the
+          # ngit act container on d3a3b45a, 2026-09-29).  Prefer a normal install,
+          # fall back to the documented override.
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          python3 -m pytest tests/test_flrc_bt05_parity.py -v --tb=short
+
+      # ── Suite 8: PCB auto-route pipeline gates (t_80d91470) ──────
+      # The PCB-V2 Phase 1 card's five quality gates, expressed as
+      # assertions so they cannot silently rot (a previous run reported
+      # "zone=0" against a file containing two `zone` hits in prose).
+      # The static gates run anywhere.  The behavioural gates need
+      # pcbnew (KiCad) and self-skip on a runner without it — they are
+      # covered locally, where the pipeline is actually exercised.
+      - name: Run PCB pipeline gate tests
+        run: |
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          python3 -m pytest tests/test_pcb_pipeline_gates.py -v --tb=short
+
+      # ── Suite 9: PCB Phase 1 track-import spec (t_877751ec) ──────
+      # The import defect that cost 181 track_dangling violations: a hand-rolled
+      # DSN parser with no Y inversion and no degenerate-segment collapse.  The
+      # spec pins the coordinate transform against the board's own footprints,
+      # the collapse threshold against the DSN's length histogram, and prefers
+      # KiCad's ImportSpecctraSES over the DSN parser.  The DSN half runs
+      # anywhere; the board-level half self-skips without pcbnew.
+      - name: Run PCB track-import spec
+        run: |
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          python3 -m pytest tests/test_pcb_track_import.py -v --tb=short
