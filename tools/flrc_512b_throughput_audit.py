@@ -7,9 +7,11 @@ exists on disk. This tool does three things that need no radio:
 
   1. Evidence audit: enumerates the on-disk FLRC payload sweeps and proves which
      payload sizes were ever measured (and therefore which were not).
-  2. Ceiling arithmetic: recomputes the goodput ceiling for LEN in {255, 511}
-     under both plausible header models, and shows whether 2600 kbps goodput is
-     reachable at all.
+  2. Ceiling arithmetic: recomputes the goodput ceiling for LEN in {127, 255, 511}
+     under three explicit models — the repo's *uncoded* model, that model + CRC,
+     and the model the shipped firmware actually airs (CR 3/4, per the LR20xx
+     driver's own time-on-air numerator). Shows whether 2600 kbps goodput is
+     reachable at all, under any of them.
   3. Firmware-capability check: confirms that 511 B is a *legal* FLRC length for
      this hardware (E80 firmware + LR20xx driver + RadioLib), i.e. that the
      255-byte ceiling that the RP2040 docs assume is an SX1280/legacy artefact.
@@ -32,55 +34,78 @@ import json
 import os
 import sys
 
-# ── FLRC on-air model ────────────────────────────────────────────────────────
+# ── FLRC on-air models ───────────────────────────────────────────────────────
 #
-# The E80 bench firmware configures FLRC packets with
-#   lr20xx_radio_flrc_pkt_params_t { preamble_len = 32 bits, sync_word_len = 4 B,
-#                                    header_type = FIX_LEN, crc_type = 2 B }
-# (src/radio_bench.c).  The LR20xx driver's own on-air numerator
-# (lr20xx_radio_flrc.c: lr20xx_get_flrc_time_on_air_numerator) counts, in bits:
-#     preamble + sync + (payload + crc) * 8
-# i.e. the fixed 4-byte sync is NOT charged as payload*8.
+# Three explicit models. They are NOT interchangeable, and the difference is the
+# whole point of this audit: the repo's published ceiling (2540/2570 kbps) is an
+# *uncoded* bound, while the shipped firmware runs coding rate 3/4.
 #
-# The 2026-07-26 datasheet audit used the other model (sync as 32 payload bits,
-# no CRC):  (16 + 32 + payload*8).  Both are computed here; at BR2600/uncoded
-# the difference is worth ~1.5% and does not change any verdict below.
+#   MODEL_AUDIT      16 b preamble + 32 b sync + payload*8, no CRC
+#                    -> the 2026-07-26 datasheet-audit model; reproduces its
+#                       0.803 ms / 2540 kbps at 255 B and the card's 2570 at 511 B
+#   MODEL_AUDIT_CRC  MODEL_AUDIT plus a 2-byte CRC field
+#                    -> nearest simple bound with the fw's CRC setting
+#   MODEL_FW_CR34    the LR20xx driver's own time-on-air numerator
+#                    (lr20xx_radio_flrc.c: lr20xx_get_flrc_time_on_air_numerator)
+#                    with the parameters src/radio_bench.c actually configures:
+#                      cr = CR_3_4, header = FIX_LEN, crc = 2 B,
+#                      preamble = 32 bits, sync = 4 B
+#                    numerator = ceil(12 * n_coded / ceil_den) + n_uncoded
+#                      n_coded   = header_bits + tail_bits + crc*8 + payload*8
+#                      n_uncoded = preamble_bits + 21 (AGC) + sync_bits
+#                      ceil_den  = 9 for CR 3/4 (lr20xx_get_flrc_cr_scalled_numerator)
+#                    -> this is what the radio actually puts on air, so it is the
+#                       honest ceiling for our measurements.
+#
+# 1 kbps == 1000 bit/s, so a numerator expressed in bits divides by br_kbps*1000.
 
 FLRC_BR_2600_KBPS = 2600.0
-# LR20xx driver: lr20xx_get_flrc_time_on_air_numerator() = payload_bits + 32 (CRC).
-# 1 kbps == 1000 bit/s; numerator is in kbit units => divide by 1000.
-NUMERATOR_KBITS_DIVISOR = 1000.0
 
+MODEL_AUDIT = dict(preamble_bits=16, sync_bits=32, crc_bytes=0, agc_bits=0)
+MODEL_AUDIT_CRC = dict(preamble_bits=16, sync_bits=32, crc_bytes=2, agc_bits=0)
+# Deprecated alias: kept so older callers/tests that imported MODEL_DRIVER keep
+# working. It is NOT the driver's model — see MODEL_FW_CR34 for that.
+MODEL_DRIVER = MODEL_AUDIT_CRC
 
-# Two explicit header models. They differ by ~2% and by whether CRC is charged;
-# both are reported so no reader has to guess which one produced a number.
-#
-#   MODEL_AUDIT  16-bit preamble + 32-bit sync + payload*8         (no CRC)
-#                 -> reproduces the repo's 0.803 ms / 2540 kbps at 255 B
-#   MODEL_DRIVER 32-bit preamble + 4-byte sync + (payload+2)*8     (CRC 2 B)
-#                 -> what src/radio_bench.c + lr20xx_radio_flrc.c actually air
-MODEL_AUDIT = dict(preamble_bits=16, sync_bits=32, crc_bytes=0, sync_in_payload_units=True)
-MODEL_DRIVER = dict(preamble_bits=32, sync_bits=32, crc_bytes=2, sync_in_payload_units=False)
+# Firmware's real configuration (src/radio_bench.c:52-69, 171-180, 314).
+FW_CR_DEN = 9      # LR20XX_RADIO_FLRC_CR_3_4 -> ceil(12 * n / 9)
+FW_TAIL_BITS = 6   # lr20xx_radio_flrc_get_tail_len_in_bits(CR 3/4)
+FW_HEADER_BITS = 0  # LR20XX_RADIO_FLRC_PKT_FIX_LEN
 
 
 def airtime_s(payload_b: int, br_kbps: float = FLRC_BR_2600_KBPS,
               preamble_bits: int = 32, sync_bits: int = 32, crc_bytes: int = 2,
-              sync_in_payload_units: bool = False) -> float:
-    """On-air time in seconds for one FLRC packet.
-
-    sync_in_payload_units=True  -> sync is charged as 32 payload bits, no CRC field
-    sync_in_payload_units=False -> sync is 4 bytes on the wire, CRC is an extra field
-    """
-    if sync_in_payload_units:
-        bits = preamble_bits + sync_bits + payload_b * 8
-    else:
-        bits = preamble_bits + sync_bits + (payload_b + crc_bytes) * 8
+              agc_bits: int = 0) -> float:
+    """On-air time in seconds for one FLRC packet, uncoded (no CR scaling)."""
+    bits = preamble_bits + agc_bits + sync_bits + (payload_b + crc_bytes) * 8
     return bits / (br_kbps * 1000.0)
 
 
 def goodput_ceiling_kbps(payload_b: int, **kw) -> float:
     """Payload goodput assuming ZERO host/SPI overhead (pure air-time limit)."""
     return payload_b * 8 / airtime_s(payload_b, **kw) / 1000.0
+
+
+def fw_airtime_s(payload_b: int, br_kbps: float = FLRC_BR_2600_KBPS,
+                 cr_den: int = FW_CR_DEN, tail_bits: int = FW_TAIL_BITS,
+                 crc_bytes: int = 2, preamble_bits: int = 32, sync_bits: int = 32,
+                 agc_bits: int = 21) -> float:
+    """On-air time in seconds using the LR20xx driver's time-on-air numerator.
+
+    Mirrors lr20xx_get_flrc_time_on_air_numerator():
+        n_coded_after_decode = ceil(12 * n_coded / cr_den)
+        numerator            = n_coded_after_decode + preamble + agc + sync
+        airtime              = numerator / bitrate
+    """
+    n_coded = FW_HEADER_BITS + tail_bits + crc_bytes * 8 + payload_b * 8
+    n_coded_after_decode = (12 * n_coded + cr_den - 1) // cr_den
+    numerator = n_coded_after_decode + preamble_bits + agc_bits + sync_bits
+    return numerator / (br_kbps * 1000.0)
+
+
+def fw_goodput_ceiling_kbps(payload_b: int, **kw) -> float:
+    """Payload goodput ceiling under the firmware's real (CR 3/4) configuration."""
+    return payload_b * 8 / fw_airtime_s(payload_b, **kw) / 1000.0
 
 
 # ── 1. Evidence audit ────────────────────────────────────────────────────────
@@ -136,6 +161,7 @@ def flrc_rows(root: str, min_payload: int = 255) -> list[dict]:
                         "file": os.path.basename(path),
                         "label": row.get("label", ""),
                         "br": row.get("br", ""),
+                        "freq": row.get("freq", ""),
                         "plen": plen,
                         "rx": int(row.get("rx_pkts") or 0),
                         "crc_err": int(row.get("crc_err") or 0),
@@ -149,33 +175,40 @@ def flrc_rows(root: str, min_payload: int = 255) -> list[dict]:
     return rows
 
 
+def probe(root: str, rel: str, needle: str) -> dict:
+    """Does `needle` appear in repo-relative file `rel`?"""
+    path = os.path.join(root, rel)
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            blob = fh.read()
+    except OSError:
+        return {"path": rel, "present": False, "token": needle, "token_found": False}
+    return {"path": rel, "present": True, "token": needle, "token_found": needle in blob}
+
+
 def firmware_capability(root: str) -> dict:
-    """Grep the three code layers that bound FLRC payload length."""
-    probes = {
-        "e80_firmware_clamp": (
-            "firmware/e80-stm32-bench/src/bench.c",
-            "MAX 255 LORA / 511 FLRC"),
-        "e80_driver_crc_allowance": (
+    """Grep every code layer that bounds FLRC payload length and coding rate."""
+    return {
+        # runtime clamp in the bench firmware: LEN=<6-511> for FLRC
+        "e80_firmware_clamp": probe(
+            root, "firmware/e80-stm32-bench/src/bench.c", "MAX 255 LORA / 511 FLRC"),
+        # the driver's documented legal range for pld_len_in_bytes
+        "driver_pld_len_range": probe(
+            root,
+            "firmware/e80-stm32-bench/third_party/Radio/lr20xx_driver/inc/"
+            "lr20xx_radio_flrc_types.h",
+            "FLRC payload length in byte - in [6:511]"),
+        # the driver's CR-aware time-on-air numerator (why CR 3/4 matters)
+        "driver_cr_scaled_numerator": probe(
+            root,
             "firmware/e80-stm32-bench/third_party/Radio/lr20xx_driver/src/"
-            "lr20xx_radio_flrc.c", "num_additional_bytes"),
-        "radiolib_flrc_max": (
-            "RadioLib:src/modules/LR2021/LR2021.h",
-            "MAX_PACKET_LENGTH_FLRC                  511"),
+            "lr20xx_radio_flrc.c",
+            "lr20xx_get_flrc_cr_scalled_numerator"),
+        # the CR the bench firmware actually ships with
+        "fw_flrc_cr_3_4": probe(
+            root, "firmware/e80-stm32-bench/src/radio_bench.c",
+            ".cr    = LR20XX_RADIO_FLRC_CR_3_4"),
     }
-    found: dict[str, object] = {}
-    for name, (rel, needle) in probes.items():
-        path = os.path.join(root, rel)
-        if name.startswith("radiolib"):
-            continue  # lives in a separate checkout; reported separately
-        try:
-            with open(path, encoding="utf-8", errors="replace") as fh:
-                blob = fh.read()
-        except OSError:
-            found[name] = {"path": rel, "present": False}
-            continue
-        found[name] = {"path": rel, "present": True, "token": needle,
-                       "token_found": needle in blob}
-    return found
 
 
 def radio_lib_flrc_max(repo_root: str) -> dict:
@@ -202,14 +235,17 @@ def build_report(root: str) -> dict:
     radio_lib = radio_lib_flrc_max(root)
 
     ceilings = {}
-    for payload in (255, 511):
+    for payload in (127, 255, 511):
         ceilings[payload] = {
-            # card's model (matches the 2540/2570 kbps figures quoted in the repo)
+            # card's / datasheet-audit model: uncoded, no CRC
             "audit_model_kbps": round(goodput_ceiling_kbps(payload, **MODEL_AUDIT), 1),
             "audit_airtime_us": round(airtime_s(payload, **MODEL_AUDIT) * 1e6, 1),
-            # what the firmware actually airs (32 b preamble + 4 B sync + 2 B CRC)
-            "driver_model_kbps": round(goodput_ceiling_kbps(payload, **MODEL_DRIVER), 1),
-            "driver_airtime_us": round(airtime_s(payload, **MODEL_DRIVER) * 1e6, 1),
+            # same model with the fw's 2-byte CRC
+            "audit_crc_model_kbps": round(goodput_ceiling_kbps(payload, **MODEL_AUDIT_CRC), 1),
+            "audit_crc_airtime_us": round(airtime_s(payload, **MODEL_AUDIT_CRC) * 1e6, 1),
+            # the shipped configuration: CR 3/4 + CRC 2 B + FIX_LEN
+            "fw_cr34_kbps": round(fw_goodput_ceiling_kbps(payload), 1),
+            "fw_cr34_airtime_us": round(fw_airtime_s(payload) * 1e6, 1),
         }
 
     absent = sorted(p for p in (512, 513) if p not in meas)
@@ -219,24 +255,39 @@ def build_report(root: str) -> dict:
         "flrc_payload_sources": {str(k): sorted(set(v)) for k, v in sorted(meas.items())},
         "payload_sizes_never_measured": absent,
         "flrc_rows_payload_ge_255": rows,
-        "ceilings_kbps_2600_uncoded": ceilings,
+        "ceilings_kbps_2600": ceilings,
         "radio_lib_flrc_max": radio_lib,
         "firmware_capability": firmware_capability(root),
+        "fw_cr_config": {"cr": "3/4", "cr_den": FW_CR_DEN, "tail_bits": FW_TAIL_BITS,
+                         "crc_bytes": 2, "preamble_bits": 32, "sync_bits": 32,
+                         "agc_bits": 21, "header": "FIX_LEN"},
         "verdict": {
             "i_or_ii": "(i) the 2.6 M figure is the CONFIGURED AIR RATE, not measured goodput",
             "why": (
-                "2600 kbps is the FLRC raw symbol rate. Even with zero host overhead "
-                "the payload goodput ceiling at 511 B is "
-                f"{ceilings[511]['driver_model_kbps']} kbps (driver model) / "
-                f"{ceilings[511]['audit_model_kbps']} kbps (audit model) -- both "
-                "below 2600. The best measured sustained figure on disk is "
-                "1484.9 kbps (2026-07-23, LEN=127); the best on-air-rate figure "
-                "anywhere in the repo is 1921.8 kbps (2026-08-21, BR2600 L511, "
-                "PHY-only). Neither is 2600."
+                "2600 kbps is the FLRC raw air rate (BR_2_600_BW_2_666). Under the "
+                "repo's uncoded model the payload ceiling at 511 B is "
+                f"{ceilings[511]['audit_model_kbps']} kbps; under the firmware's "
+                "actual configuration (CR 3/4, CRC 2 B, FIX_LEN) the LR20xx driver's "
+                "own time-on-air numerator puts it at "
+                f"{ceilings[511]['fw_cr34_kbps']} kbps -- which is within 1 % of the "
+                "independently computed 1921.8 kbps on-air payload rate in "
+                "full-sweep-report-20260821-175612.md. Every model, and every legal "
+                "payload length, is below 2600. The best measured sustained figure on "
+                "disk is 1484.9 kbps (2026-07-23, LEN=127) = "
+                f"{round(1484.9 / ceilings[127]['fw_cr34_kbps'] * 100, 1)} % of the "
+                "CR-3/4 ceiling at that length (57.1 % of the raw 2600). "
+                "512 is not a legal length at all."
+            ),
+            "part_ii_note": (
+                "the repo's 2540/2570 ceiling model IS wrong, but it is wrong "
+                "optimistically: it assumes uncoded (CR NONE) air. With the firmware's "
+                "CR 3/4 the ceiling FALLS to ~1871 kbps (255 B) / ~1910 kbps (511 B), "
+                "so correcting the model cannot rescue a 2.6 Mbps goodput figure."
             ),
             "512b_measured": False,
             "511b_measured": 511 in meas,
             "511b_delivers": "confirmed 50/50 at BR650/1300/2600 (2026-08-21, fw 88a00cf)",
+            "511b_needs_sustained_run": True,
         },
     }
 
@@ -257,23 +308,38 @@ def selftest() -> int:
        abs(goodput_ceiling_kbps(255, **MODEL_AUDIT) - 2540.0) < 2.0)
     ck("audit model reproduces the card's 2570 kbps ceiling at 511 B",
        abs(goodput_ceiling_kbps(511, **MODEL_AUDIT) - 2570.0) < 2.0)
-    ck("driver model: 511 B airtime ~1.603 ms",
-       abs(airtime_s(511, **MODEL_DRIVER) * 1e6 - 1603.0) < 2.0)
-    ck("driver model: 255 B airtime ~815 us",
-       abs(airtime_s(255, **MODEL_DRIVER) * 1e6 - 815.0) < 2.0)
+    ck("audit+CRC model: 511 B airtime ~1.597 ms",
+       abs(airtime_s(511, **MODEL_AUDIT_CRC) * 1e6 - 1596.9) < 2.0)
+
+    # The firmware's real configuration (CR 3/4) — the model the docs must quote.
+    ck("fw(CR3/4) model: 511 B airtime = 2.140 ms",
+       abs(fw_airtime_s(511) * 1e6 - 2140.4) < 1.0)
+    ck("fw(CR3/4) model: 511 B ceiling ~1910 kbps",
+       abs(fw_goodput_ceiling_kbps(511) - 1910.0) < 1.5)
+    ck("fw(CR3/4) model: 255 B ceiling ~1871 kbps",
+       abs(fw_goodput_ceiling_kbps(255) - 1871.1) < 1.5)
+    ck("fw(CR3/4) model: 127 B ceiling ~1798 kbps",
+       abs(fw_goodput_ceiling_kbps(127) - 1798.2) < 1.5)
+    ck("fw(CR3/4) ceiling agrees with the repo's independent 1921.8 kbps "
+       "on-air figure to within 1 %",
+       abs(fw_goodput_ceiling_kbps(511) - 1921.8) / 1921.8 < 0.01)
+    ck("CR 3/4 costs 4/3 in airtime vs the uncoded model",
+       abs(fw_airtime_s(255) / airtime_s(255, **MODEL_AUDIT_CRC) - 4 / 3) < 0.02)
+
     ck("every ceiling is strictly below the 2600 air rate",
-       all(goodput_ceiling_kbps(p, **m) < 2600
-           for p in (255, 511) for m in (MODEL_AUDIT, MODEL_DRIVER)))
+       all(goodput_ceiling_kbps(p, **m) < 2600 for p in (255, 511)
+           for m in (MODEL_AUDIT, MODEL_AUDIT_CRC))
+       and all(fw_goodput_ceiling_kbps(p) < 2600 for p in range(6, 512)))
     ck("larger payload raises the ceiling (255 -> 511)",
-       goodput_ceiling_kbps(511, **MODEL_DRIVER) >
-       goodput_ceiling_kbps(255, **MODEL_DRIVER))
-    ck("goodput can never exceed the air rate, any payload",
-       all(goodput_ceiling_kbps(p, **m) <= 2600.0
-           for p in range(6, 512) for m in (MODEL_AUDIT, MODEL_DRIVER)))
+       fw_goodput_ceiling_kbps(511) > fw_goodput_ceiling_kbps(255))
+    ck("goodput can never exceed the air rate, any payload (CR3/4 model)",
+       all(fw_goodput_ceiling_kbps(p) <= 2600.0 for p in range(6, 512)))
     ck("airtime is monotonic in payload",
-       all(airtime_s(p) < airtime_s(p + 1) for p in range(6, 511)))
+       all(fw_airtime_s(p) < fw_airtime_s(p + 1) for p in range(6, 511)))
     ck("a 511 B packet carries more payload per second than a 255 B one",
-       (511 * 8) / airtime_s(511) > (255 * 8) / airtime_s(255))
+       fw_goodput_ceiling_kbps(511) > fw_goodput_ceiling_kbps(255))
+    ck("the uncoded repo model overstates the fw ceiling by more than a third",
+       goodput_ceiling_kbps(511, **MODEL_AUDIT) / fw_goodput_ceiling_kbps(511) > 1.33)
 
     ok = 0
     for name, passed in checks:
@@ -320,16 +386,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {r['file']:38} {r['label']:26} {r['plen']:5} {r['rx']:4} "
               f"{r['crc_err']:4} {r['bit_err']:4} {r['tx_done']}")
 
-    print("\nGoodput ceiling @ BR2600 uncoded (zero host overhead):")
-    print(f"  {'LEN':>4} | {'audit model':>26} | {'driver model (actual fw cfg)':>30}")
-    print(f"  {'':>4} | {'airtime/us':>11} {'ceiling/kbps':>14} | "
-          f"{'airtime/us':>11} {'ceiling/kbps':>15}")
-    for payload, c in rep["ceilings_kbps_2600_uncoded"].items():
-        print(f"  {payload:>4} | {c['audit_airtime_us']:>11} {c['audit_model_kbps']:>14} | "
-              f"{c['driver_airtime_us']:>11} {c['driver_model_kbps']:>15}")
-    print("  (2600 kbps air rate is ABOVE every ceiling — goodput cannot reach it)")
-    print("  audit model = 16b preamble + 32b sync + payload*8, no CRC (the repo's model)")
-    print("  driver model = 32b preamble + 4B sync + (payload+2)*8, CRC present")
+    print("\nGoodput ceiling @ BR2600, zero host overhead:")
+    print(f"  {'LEN':>4} | {'uncoded/repo':>22} | {'uncoded+CRC':>22} | {'fw CR3/4':>22}")
+    print(f"  {'':>4} | {'airtime/us  ceil/kbps':>22} | {'airtime/us  ceil/kbps':>22} | "
+          f"{'airtime/us  ceil/kbps':>22}")
+    for payload, c in rep["ceilings_kbps_2600"].items():
+        print(f"  {payload:>4} | {c['audit_airtime_us']:>11} {c['audit_model_kbps']:>10} | "
+              f"{c['audit_crc_airtime_us']:>11} {c['audit_crc_model_kbps']:>10} | "
+              f"{c['fw_cr34_airtime_us']:>11} {c['fw_cr34_kbps']:>10}")
+    print("  (the 2600 kbps air rate is ABOVE every ceiling — goodput cannot reach it)")
+    print("  uncoded/repo = 16b preamble + 32b sync + payload*8        (no CRC, no CR)")
+    print("  uncoded+CRC  = 16b preamble + 32b sync + (payload+2)*8    (CRC, no CR)")
+    print("  fw CR3/4     = LR20xx driver numerator with the shipped config "
+          "(CR 3/4, CRC 2 B, FIX_LEN)")
+    print("                 => 4/3 more on-air bits than the uncoded models; cross-checks "
+          "the repo's")
+    print("                    independently computed 1921.8 kbps on-air rate at 511 B")
 
     print(f"\nRadioLib FLRC max payload: {rep['radio_lib_flrc_max']['value']} B "
           f"({rep['radio_lib_flrc_max']['path']})")
@@ -341,6 +413,7 @@ def main(argv: list[str] | None = None) -> int:
     v = rep["verdict"]
     print("\nVERDICT: " + v["i_or_ii"])
     print("  " + v["why"].replace(". ", ".\n  "))
+    print("\n  ON THE CARD'S (ii) BRANCH: " + v["part_ii_note"])
     return 0
 
 
