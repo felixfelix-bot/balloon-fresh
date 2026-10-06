@@ -1,0 +1,1 @@
+2026-10-06: selected MS5607-02BA03 cost pick and replaced stale BMP280 references in v9 schematic plan; authored custom 5.0 x 3.0 mm MS56xx LGA-8 footprint → verification pending → tracker/hardware/SCHEMATIC-PLAN.md, tracker/hardware/custom.pretty/MS56xx_LGA-8_5.0x3.0mm_P0.8mm.kicad_mod
