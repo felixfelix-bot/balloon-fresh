@@ -1,8 +1,15 @@
-Created own worktree bf-adr-radio based on pr/029-dual-band-flight-board tip 4059860
-Verified next-free ADR numbers 034/035 across all branches (033 claimed elsewhere)
-Wrote docs/adr/034-radio-band-split-433-tx-2g4-rx.md
-Wrote docs/adr/035-tdm-radio-schedule.md
-Patched docs/adr/029-dual-band-flight-board.md header with one-line supersede pointer to ADR-034/035
-Committed two ADRs + ADR-029 header + PROGRESS.md to branch adr/radioband-tdm
-Pushed adr/radioband-tdm to github and ngit and verified both remote SHAs with git ls-remote
-Wrote REPORT.md
+# PROGRESS — adr/energy-policy (ADR-036)
+
+Base: 697fb73 (tip of `adr/radioband-tdm`). Branch: `adr/energy-policy`. Documentation only.
+
+## Steps
+
+- [x] Read brief `reports/balloon-adr/ADR-BRIEF-3-energy-policy.md`.
+- [x] Read ADR-006, ADR-029, ADR-034, ADR-035 in `bf-adr-radio`.
+- [x] Number check: 036 free (002/017/018/019/020/025/028/029 collide; 031/032/034/035 taken; 033 used elsewhere).
+- [x] Create worktree `bf-adr-energy` + branch `adr/energy-policy` at 697fb73.
+- [x] Write `docs/adr/036-energy-policy-burst-storage-daylight-only-tx.md`.
+- [x] Add one-line supersede pointer to `docs/adr/006-supercapacitor-power.md`.
+- [ ] Commit (explicit paths).
+- [ ] Push github, then ngit.
+- [ ] Verify with `git ls-remote`.

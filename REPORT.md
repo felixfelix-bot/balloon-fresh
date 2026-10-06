@@ -1,58 +1,28 @@
-# Task report — balloon v9 radio decisions, 2026-10-07
+# REPORT — ADR-036 energy policy
 
-## What was done
+## Outcome
 
-Wrote two new Architecture Decision Records on a dedicated worktree
-(`bf-adr-radio`, branch `adr/radioband-tdm`) stacked on the tip of
-`pr/029-dual-band-flight-board` (4059860), updated ADR-029's header with a
-one-line supersede pointer, committed, and pushed to both `github` and `ngit`.
+Wrote ADR-036 recording the operator's 2026-10-07 energy-policy decision, and amended
+ADR-006 in part with a one-line pointer.
 
-## New files
+- **ADR number:** 036 (checked 002, 017, 018, 019, 020, 025, 028, 029 — all collide;
+  031, 032, 034, 035 taken; 033 claimed elsewhere; 036/037/038 free).
+- **New file:** `docs/adr/036-energy-policy-burst-storage-daylight-only-tx.md`.
+- **Amended:** `docs/adr/006-supercapacitor-power.md` — one-line pointer added after
+  `Status: Akzeptiert` ("Superseded in part by ADR-036 ..."). Solar architecture left
+  untouched.
+- **Cross-references:** ADR-035 D7 (hook → policy), ADR-029 O5 (5 V rail, still open).
+- **Consequences stated:** overnight/shadow telemetry gaps, flight recorder as primary
+  evidence, night LOG gap as the real risk (with µA sleep-current arithmetic, left
+  open), mandatory night deep sleep, dawn cold start + GNSS cost.
+- **Open items recorded (not decided):** burst energy vs modulation mode (FLRC ~2 mJ vs
+  LoRa SF12 ~4 J), FLRC availability on the F33 sub-GHz port (unverified), cold
+  characterisation at -60 C, night sleep current.
 
-- `docs/adr/034-radio-band-split-433-tx-2g4-rx.md` — records the operator's 2026-10-07
-  band split: TX on 433 MHz via the F33-2G4 module's 2 W sub-GHz port, RX on 2.4 GHz
-  via a separate bare `LoRa2021`, and why a single-module half-duplex chip cannot
-  provide simultaneous TX/RX. Includes filtering obligations, the recorded SX1280-as-RX
-  alternative (D6), the open 5 V rail item, and the 433 MHz DE-legality flag.
-- `docs/adr/035-tdm-radio-schedule.md` — records the operator's 2026-10-07 windowed
-  ranging decision and the TDM contract: dedicated ranging, TX, RX, and idle windows;
-  one transmitter at a time; GNSS continuous; the firmware schedule contract and
-  testability requirement; the energy-opportunistic TX hook; the unresolved storage
-  element and 433 duty-cycle open items.
+## Working notes
 
-## Modified files
-
-- `docs/adr/029-dual-band-flight-board.md` — added one header line:
-  `Superseded in part by ADR-034 (433 MHz TX / 2.4 GHz RX on two chips) and ADR-035 (TDM radio schedule).`
-
-## Numbering verification
-
-Next-free-number checks run on the worktree:
-
-```
-git ls-tree -r --name-only HEAD docs/adr
-git log --all --oneline --name-only --pretty=format: -- 'docs/adr/*' | sort -u
-```
-
-Result: 033 is claimed on an unmerged branch
-(`docs/adr/033-giftwrap-single-construction-path.md`); 034 and 035 are free on every
-branch inspected.
-
-## Branch and commit
-
-- Local branch: `adr/radioband-tdm`
-- Local HEAD after commit: `0d3fe4778c7d800998f8f8db80d6a55a2cafb776`
-- Remote `github`: `0d3fe4778c7d800998f8f8db80d6a55a2cafb776`
-- Remote `ngit`: `0d3fe4778c7d800998f8f8db80d6a55a2cafb776`
-
-All three observed equal after push, confirmed by `git ls-remote github adr/radioband-tdm`
-and `git ls-remote ngit adr/radioband-tdm`.
-
-## What was NOT done
-
-No schematic, placement, routing, or firmware source code was changed — the task was
-documentation-only, intended to gate downstream hardware work.
-
-## Blockers
-
-None encountered.
+- Worktree `/home/c03rad0r/worktrees/bf-adr-energy`, branch `adr/energy-policy`, base
+  `697fb73`.
+- Documentation only; no schematic/placement/routing work.
+- No supersede line existed in ADR-006 before my edit; none duplicated.
+- No absolute `/home/` paths in committed files (Gate 5 aware).
