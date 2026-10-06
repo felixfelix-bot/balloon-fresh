@@ -263,7 +263,7 @@ def generate_hub_schematic():
     lora_irq  = Net("LR2021_DIO9")  # RP2040 GP7 ← LR2021 Pin 15
     lora_rst  = Net("LR2021_RST")   # RP2040 GP8  → LR2021 Pin 14
 
-    # --- I2C bus (ESP32 ↔ BMP280) ---
+    # --- I2C bus (ESP32 ↔ MS5611) ---
     i2c_sda = Net("I2C_SDA")  # ESP GPIO8
     i2c_scl = Net("I2C_SCL")  # ESP GPIO9
 

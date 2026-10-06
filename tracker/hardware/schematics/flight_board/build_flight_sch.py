@@ -60,9 +60,18 @@ PART_MAP = {
     "RF_GPS:ublox_MAX": "RF_GPS:MAX-M10S",
     "Package_TO_SOT_SMD:SOT-23-5": "Regulator_Linear:TPS7A0533PDBV",
     "Package_LGA:Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering":
-        "Sensor:BME280",
+        "Sensor_Pressure:MS5611-01BA",
+    "Package_LGA:LGA-8_3x5mm_P1.25mm":
+        "Sensor_Pressure:MS5611-01BA",
 }
 
+# Barometer: design intent is MS5611-01BA (10-1200 hPa) for the stratospheric flight
+# profile. The frozen S0 placement PCB still labels this footprint as BMP280 because
+# it predates the operator decision to switch; the generated schematic/netlist must
+# reflect the intended part.
+BARO_REF = "U5"
+BARO_VALUE = "MS5611-01BA"
+BARO_FOOTPRINT = "Package_LGA:LGA-8_3x5mm_P1.25mm"
 # Custom inline symbol: the LR2021F33 module as the board actually wires it.
 # The board uses the 16-pad HOPERF RFM9xW footprint; pad names below follow the
 # RFM9xW reference pinout cited in PCB-S0-NETLIST-AUDIT.md, NOT the 18-pin
@@ -443,8 +452,9 @@ def emit(footprints):
         lib_id = r["lib_id"]
         sx, sy = pos[ref]
         pins = symbol_pins(r["block"])
-        padnums = sorted({p["num"] for p in fp["pads"] if p["num"] != ""},
-                         key=lambda s: (len(s), s))
+        # design intent override for the barometer (frozen PCB labels it BMP280)
+        value = BARO_VALUE if ref == BARO_REF else fp["value"]
+        footprint = BARO_FOOTPRINT if ref == BARO_REF else "%s:%s" % (FP_LIBNAME, fp["leaf"])
         pin_txt = "".join('\t\t(pin "%s"\n\t\t\t(uuid "%s")\n\t\t)\n' % (n, uid())
                           for n in padnums)
         body.append(
@@ -464,8 +474,8 @@ def emit(footprints):
             "\t\t\t\t(path \"/%s\"\n\t\t\t\t\t(reference \"%s\")\n"
             "\t\t\t\t\t(unit 1)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n"
             % (lib_id, fmt(sx), fmt(sy), uid(), ref, fmt(sx + 2.54),
-               fmt(sy - 6.35), fp["value"], fmt(sx + 2.54), fmt(sy + 2.54),
-               "%s:%s" % (FP_LIBNAME, fp["leaf"]), fmt(sx), fmt(sy),
+               fmt(sy - 6.35), value, fmt(sx + 2.54), fmt(sy + 2.54),
+               footprint, fmt(sx), fmt(sy),
                pin_txt, uid(), ref))
 
         # netless-pad handling, keyed on the audit verdicts
