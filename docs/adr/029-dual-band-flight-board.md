@@ -19,6 +19,7 @@
   LTspice + openEMS + stackup impedance), ADR-028 (three-variant PCB design),
   ADR-015 (three-board hardware strategy), ADR-025 (shared-hardware flock mutex),
   ADR-022 (mandatory test coverage).
+- **Superseded in part by ADR-034 (433 MHz TX / 2.4 GHz RX on two chips) and ADR-035 (TDM radio schedule).**
 - Related artefacts in this repo:
   `docs/COEXISTENCE-V9.md` (the source memo, committed here so this ADR is auditable),
   `docs/f33-module/LoRa2021F33-2G4-datasheet-v1.1.pdf` (G-NiceRF, Rev 1.1),
