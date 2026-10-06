@@ -6,3 +6,5 @@ Patched docs/adr/029-dual-band-flight-board.md header with one-line supersede po
 Committed two ADRs + ADR-029 header + PROGRESS.md to branch adr/radioband-tdm
 Pushed adr/radioband-tdm to github and ngit and verified both remote SHAs with git ls-remote
 Wrote REPORT.md
+Audited ADR-034/035 against standing decisions; added "Relationship to standing decisions" sections to both ADRs
+Updated PROGRESS.md and REPORT.md with audit table, commit SHA, and observed remote SHAs

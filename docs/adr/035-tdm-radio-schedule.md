@@ -122,6 +122,62 @@ cycle but does **not** resolve the legal ceiling; that stays open.
 
 ---
 
+## Relationship to standing decisions
+
+This ADR records the TDM schedule that makes ADR-034's band split flyable. It
+cross-references the older ADR set; contradictions are stated, not resolved
+silently.
+
+### Decisions that remain in force and are unaffected
+
+- **ADR-020 `020-deprecate-radiolib-adopt-raw-lr2021-spi.md`: "Accepted (2026-07-23)" — raw 2-byte opcode protocol.**
+  The schedule is implemented above the raw LR2021/SX1280 drivers. ADR-020's
+  protocol mandate is unchanged.
+- **ADR-022 `022-mandatory-test-coverage.md`: "Accepted" — mandatory test coverage.**
+  ADR-035 D6's firmware schedule table and assertions are a testable contract
+  under ADR-022.
+- **ADR-029 `029-dual-band-flight-board.md`: "Proposed" — arbiter framework remains in force.**
+  ADR-035 extends ADR-029 §3's arbiter from a two-port single-module schedule
+  to a multi-chip schedule. The `radio_arbiter_acquire/release` interface, the
+  `BUSY`-line honesty rule, and the TTL-reclaim rules are carried forward.
+- **ADR-030/031/032 (placement, isolation, simulation evidence).**
+  These records remain in force as implementation methods; the schedule does
+  not change their scope.
+
+### Decisions these records supersede in part
+
+- **ADR-029 `029-dual-band-flight-board.md`: "Proposed" — supersedes the §3 slot table.**
+  ADR-029 §3 scheduled two ports of one half-duplex module. ADR-035 replaces
+  that with a four-slot multi-chip schedule (ranging, TX, RX, idle) that owns
+  the F33-2G4, the bare LoRa2021, the SX1280 and the Wi-Fi/BT transmitter.
+- **ADR-017 `017-lr2021-only-ban-sx1280.md`: "SUPERSEDED by ADR-020" — no live SX1280 ban exists.**
+  The original ADR-017 incorrectly banned the SX1280 and was superseded by
+  ADR-020. ADR-035's use of an SX1280 as a dedicated ranging radio is therefore
+  **not a violation of any standing decision**.
+
+### Decisions that conflict and are left open
+
+- **ADR-006 `006-supercapacitor-power.md`: "Akzeptiert" — energy-opportunistic TX vs. storage element.**
+  ADR-035 D7 records the schedule as the hook for energy-opportunistic TX but
+  deliberately does **not** decide whether a storage element (supercap) is kept.
+  That question is carried as an open item. ADR-006's supercap decision remains
+  in force for the older architecture but is **not reconciled** with the v9
+  power budget; a new power ADR (or an amendment to ADR-006) is required.
+- **ADR-005 `005-sky66112-fem.md`: "Akzeptiert" — 2.4 GHz FEM no longer in the v9 path.**
+  The v9 schedule assumes the bare LoRa2021's 2.4 GHz RX is unamplified (D1 of
+  ADR-034). ADR-005's SKY66112 FEM remains in force for older boards but is not
+  part of the v9 schedule's RF plan.
+- **ADR-026 `026-dual-mcu-radio-architecture.md`: "ACCEPTED" — dual-MCU architecture not adopted for v9 schedule.**
+  ADR-035 assumes a single ESP32-S3 host runs the arbiter. The accepted
+  dual-MCU (ESP32-C3 + RP2040) architecture has not been formally superseded;
+  it remains an open fork that the operator must resolve for v9.
+- **433 MHz duty-cycle / power legality in DE — carried open item.**
+  The schedule can bound TX duty cycle, but it cannot resolve the legal
+  operating power. Remains unresolved until the operator/regulatory check is
+  done.
+
+---
+
 ## Open items (kept open, not resolved here)
 
 - **Storage element kept or dropped?** — operator question pending (D7). The

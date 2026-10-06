@@ -145,6 +145,78 @@ vs the bare LR2021's 2.4 GHz RX before it may be adopted.
 
 ---
 
+## Relationship to standing decisions
+
+This ADR was written for the v9 board (ESP32-S3 + four RF parts) described in
+ADR-029. It cross-references the older ADR set; contradictions are stated, not
+resolved silently.
+
+### Decisions that remain in force and are unaffected
+
+- **ADR-002 `002-lr2021-as-rf-chip.md`: "Akzeptiert" — LR2021 as primary RF chip.**
+  ADR-034 keeps both TX and RX radios in the LR2021 family (F33-2G4 + bare
+  `LoRa2021`). The LR2021 selection is unchanged.
+- **ADR-020 `020-deprecate-radiolib-adopt-raw-lr2021-spi.md`: "Accepted (2026-07-23)" — raw 2-byte opcode protocol.**
+  Both LR2021 radios in this design use the same raw-SPI protocol recorded in
+  ADR-020. No protocol change is introduced.
+- **ADR-022 `022-mandatory-test-coverage.md`: "Accepted" — mandatory test coverage.**
+  The bench measurements required by ADR-034 D6 and the arbiter extensions in
+  ADR-035 fall under ADR-022's coverage gate.
+- **ADR-024 `024-extract-only-source-repository-policy.md`: "ACCEPTED" — source-only repo policy.**
+  This ADR references only committed in-repo artefacts; it does not introduce
+  binary deliverables.
+- **ADR-030/031/032 (placement, isolation, simulation evidence).**
+  These newer records are downstream enablers, not contradictions. They remain
+  in force as methods for the v9 board.
+
+### Decisions these records supersede in part
+
+- **ADR-029 `029-dual-band-flight-board.md`: "Proposed" — supersedes D2's single-module collapse.**
+  ADR-029 D2 held that one `LoRa2021F33-2G4` module could carry both sub-GHz and
+  2.4 GHz link directions on its two ports. ADR-034 reverses that collapse: TX
+  is on the F33-2G4's 433 MHz port and RX is on a separate bare `LoRa2021` at
+  2.4 GHz. The SX1280-ranging decision (ADR-029 D2b) and the U.FL/GNSS/arbiter
+  framework remain in force; only the single-module collapse is superseded.
+
+### Decisions that conflict and are left open
+
+- **ADR-006 `006-supercapacitor-power.md`: "Akzeptiert" — single 3.3 V rail + supercap storage + 12-cell solar + single LR2021 + SKY66112 FEM.**
+  ADR-006 is the authoritative power-architecture record. It fixes a **3.3 V**
+  rail (`TPS7A02 3.3 V LDO`), 12 solar cells (4 wings × 3 cells), a **single**
+  LR2021 radio, and a **SKY66112 2.4 GHz FEM**. ADR-034 now uses **two** LR2021
+  radios, drops the SKY66112 in favour of the F33-2G4's built-in PA and an
+  unamplified 2.4 GHz RX, and the F33-2G4 requires **5 V** for its 2 W / 33 dBm
+  output (ADR-029 O5, carried into ADR-034 as an open item). These differences
+  are **not reconciled here**: ADR-006's 3.3 V rail, cell count and storage
+  element are in force until a new ADR explicitly updates them, and ADR-034's
+  5 V rail question is left open. This is an **open conflict**: a board built
+  exactly to ADR-006 cannot simultaneously meet ADR-034's 5 V / 1200 mA TX
+  requirement and dual-LR2021 radio count without a further power-ADR decision.
+- **ADR-001 `001-esp32-c3-as-mcu.md`: "Akzeptiert" — ESP32-C3 as MCU.**
+  ADR-029 already selected the ESP32-S3 (D1) because the v9 pin budget requires
+  it. ADR-034 inherits that S3 choice. The C3-vs-S3 question is therefore
+  already superseded by ADR-029 for v9; ADR-034 does not re-open it, but the
+  standing ADR-001 record remains in force for any non-v9 board that reverts to
+  the older architecture.
+- **ADR-005 `005-sky66112-fem.md`: "Akzeptiert" — SKY66112 2.4 GHz FEM.**
+  ADR-034 deliberately uses an **unamplified** 2.4 GHz RX (bare LoRa2021) and
+  the F33-2G4's internal PA for TX, so the external SKY66112 FEM is no longer
+  part of the v9 RF path. ADR-005 remains in force for older boards; on v9 it is
+  superseded in part by D1/D2.
+- **ADR-026 `026-dual-mcu-radio-architecture.md`: "ACCEPTED" — RP2040 radio processor + ESP32-C3 application.**
+  ADR-026 describes a dual-MCU flight architecture (ESP32-C3 application, RP2040
+  radio processor). ADR-029/034/035 assume a single ESP32-S3 host plus the raw
+  LR2021 driver. The dual-MCU architecture is **not adopted for v9** here, but
+  it has not been formally superseded by a later ADR either; it remains an open
+  architectural fork. The operator must decide whether v9 keeps the S3-only
+  approach or re-adopts the RP2040 radio processor.
+- **433 MHz power legality in DE (carried open item).**
+  ADR-034 D2 records the F33-2G4's +33 dBm / 2 W capability at 433 MHz as a
+  capability, not an asserted legal operating point. The actual German ISM/Amateur
+  power ceiling is unresolved and must be decided before flight.
+
+---
+
 ## Open items (kept open, not resolved here)
 
 - **The 5 V rail (ADR-029 O5).** The F33-2G4 reaches full output only at 5 V (its 2 W /
