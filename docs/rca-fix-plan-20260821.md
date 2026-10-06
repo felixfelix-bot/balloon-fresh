@@ -10,6 +10,11 @@ empirical spot-tests (flrc-retest-20260821.md).
 - Fix: host START-reply validation (fail fast, error= column) + LoRa LEN rows
   capped at 255 + NEW FLRC LEN sweep section (16..511 @BR650) where 511 is legal.
 - Secondary: RX-board START lacks the cap (cosmetic parity, fix it).
+  - FIXED (FIX-T2, branch fix/t2-rx-start-len-gate): gate extracted into
+    `bench_start_len_ok(mod,len)` + `bench_start_len_err_str()` in bench_cmd.c;
+    BOTH the RX and TX START branches now reject with the identical
+    `ERR LEN (MAX 255 LORA / 511 FLRC)` reply. Truth table
+    LEN {6,255,256,511,512} x {LORA,FLRC} pinned in tests/test_bench_cmd.c.
 
 ## BUG 2 — FLRC CRC: root cause high confidence
 - Primary (H1): FLRC RX sync-match `MATCH_SYNCWORD_1` broken for 32-bit sync
