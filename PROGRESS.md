@@ -1,0 +1,2 @@
+2026-10-06 — Reconstructed ADR-029 D2b assumptions and identified F33 5 V peaks (<800/<900 mA), SX1280 +13 dBm budget, GNSS/MS5607 loads, and unresolved O5 — status: source evidence captured — files touched: docs/POWER-BUDGET-V9-D2BE.md
+2026-10-06 — Added four-radio rail sum, duty-cycle assumptions, valid/invalid worst cases, 1 F supercap energy math, cold-altitude limitations, and O5 blocked verdict — status: draft complete — files touched: docs/POWER-BUDGET-V9-D2BE.md, docs/adr/029-dual-band-flight-board.md

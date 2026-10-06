@@ -664,10 +664,12 @@ funding action that unblocks the U2 review unblocks this consultation.):**
   dominates a 55 x 45 mm board and the 5 V/1 W consequences in D2 are real costs. D2-alt is
   the fully specified fallback if the operator prefers the smaller 19.81 x 14.98 mm module
   and a separate SX1280. No BOM freeze before that is settled.
-- **O5 — the 5 V rail.** Full output needs 5 V; at 3.3 V the module loses ~3.5 dB on both
-  bands. `docs/F33-MODULE-PLAN.md` records three candidate power chains (5 V LDO, boost
-  converter, or run at 3.3 V) and the 1200 mA burst / supercap question as undecided. This
-  ADR does not decide the rail.
+- **O5 — the 5 V rail: BLOCKED pending evidence.** The four-radio rail sum is recorded in
+  `docs/POWER-BUDGET-V9-D2BE.md`. It requires a specified 5 V chain demonstrated at >=1.2 A
+  load-step capability, a 3.3 V rail at >=0.60 A transient capacity, and cold supercap/
+  regulator evidence. Keep the 5 V option selectable in the schematic, but do not freeze
+  the BOM or approve flight on an unmeasured chain; if the evidence fails, operate the F33
+  at 3.3 V with reduced output rather than claim +30 dBm.
 - **O6 — measured 868↔2.4 GHz band-switch + TCXO-settle time.** The §3 slot table assumes a
   guard interval; with one module every band change is a re-tune, not a second
   transceiver. It must be measured before slot durations are frozen, and it is part of
