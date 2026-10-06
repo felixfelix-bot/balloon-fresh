@@ -1,0 +1,786 @@
+{
+ "head": "f2a8629f81d85321fddf6255ce49066d53a227ea",
+ "unmerged": [
+  {
+   "branch": "balloon-circuit-design",
+   "ref": "github/balloon-circuit-design",
+   "behind": 678,
+   "ahead": 3,
+   "clean": false,
+   "conflicts": [
+    "tracker/hardware/hub_board_v1.kicad_pcb"
+   ],
+   "kinds": [
+    "other"
+   ]
+  },
+  {
+   "branch": "balloon-mesh-wiring/radio-glue",
+   "ref": "github/balloon-mesh-wiring/radio-glue",
+   "behind": 807,
+   "ahead": 7,
+   "clean": false,
+   "conflicts": [
+    "tracker/firmware/main/CMakeLists.txt",
+    "tracker/firmware/sdkconfig",
+    "tracker/firmware/sdkconfig.defaults"
+   ],
+   "kinds": [
+    "build",
+    "code"
+   ]
+  },
+  {
+   "branch": "balloon-nostr/dev",
+   "ref": "github/balloon-nostr/dev",
+   "behind": 676,
+   "ahead": 5,
+   "clean": false,
+   "conflicts": [
+    "docs/INTEGRATION-ASSESSMENT.md",
+    "tracker/firmware/components/nostr_store/include/nostr_store.h",
+    "tracker/firmware/components/nostr_store/nostr_store.c",
+    "tracker/firmware/components/nostr_store/test/test_nostr_store.c",
+    "tracker/firmware/main/Kconfig.projbuild",
+    "tracker/firmware/main/app_main.cpp",
+    "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.h"
+   ],
+   "kinds": [
+    "code",
+    "docs"
+   ]
+  },
+  {
+   "branch": "balloon-tollgate-extract",
+   "ref": "github/balloon-tollgate-extract",
+   "behind": 678,
+   "ahead": 2,
+   "clean": false,
+   "conflicts": [
+    "mesh-stack/tollgate/CMakeLists.txt",
+    "mesh-stack/tollgate/components/radio_adapter/CMakeLists.txt"
+   ],
+   "kinds": [
+    "build"
+   ]
+  },
+  {
+   "branch": "balloon-tollgate/dev",
+   "ref": "github/balloon-tollgate/dev",
+   "behind": 676,
+   "ahead": 11,
+   "clean": false,
+   "conflicts": [
+    "docs/STATUS-balloon-tollgate.md"
+   ],
+   "kinds": [
+    "docs"
+   ]
+  },
+  {
+   "branch": "docs/harm-t9-adoption",
+   "ref": "github/docs/harm-t9-adoption",
+   "behind": 678,
+   "ahead": 16,
+   "clean": false,
+   "conflicts": [
+    ".gitignore",
+    "AGENTS.md",
+    "README.md",
+    "docs/INTEGRATION-ASSESSMENT.md",
+    "firmware/rp2040/platformio.ini",
+    "tracker/firmware/main/Kconfig.projbuild",
+    "tracker/firmware/main/app_main.cpp"
+   ],
+   "kinds": [
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "feat/c3-harmonization",
+   "ref": "github/feat/c3-harmonization",
+   "behind": 1043,
+   "ahead": 2,
+   "clean": false,
+   "conflicts": [
+    "docs/coordination/DISCOVERIES.md",
+    "firmware/e80-stm32-bench/Makefile",
+    "firmware/e80-stm32-bench/README.md",
+    "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md",
+    "firmware/e80-stm32-bench/src/bench.c",
+    "firmware/e80-stm32-bench/src/bench_cmd.c",
+    "firmware/e80-stm32-bench/src/bench_cmd.h",
+    "firmware/e80-stm32-bench/src/bench_pkt.c",
+    "firmware/e80-stm32-bench/src/bench_pkt.h",
+    "firmware/e80-stm32-bench/src/console.c",
+    "firmware/e80-stm32-bench/src/console.h",
+    "firmware/e80-stm32-bench/src/main.h",
+    "firmware/e80-stm32-bench/src/radio_bench.c",
+    "firmware/e80-stm32-bench/src/radio_bench.h",
+    "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+    "firmware/e80-stm32-bench/tests/test_bench_cmd.c",
+    "firmware/e80-stm32-bench/tests/test_bench_config.c",
+    "firmware/e80-stm32-bench/tests/test_bench_pkt.c",
+    "firmware/e80-stm32-bench/tools/e80_bench_ctl.py",
+    "firmware/e80-stm32-bench/tools/e80_detect.py",
+    "firmware/e80-stm32-bench/tools/merge_csvs.py",
+    "firmware/e80-stm32-bench/tools/test_e80_bench_ctl.py",
+    "firmware/e80-stm32-bench/tools/test_e80_detect.py"
+   ],
+   "kinds": [
+    "build",
+    "code",
+    "docs"
+   ]
+  },
+  {
+   "branch": "feat/e80-7-crc-logging",
+   "ref": "github/feat/e80-7-crc-logging",
+   "behind": 485,
+   "ahead": 1,
+   "clean": false,
+   "conflicts": [
+    "firmware/e80-stm32-bench/CMakeLists.txt",
+    "firmware/e80-stm32-bench/src/bench.c",
+    "firmware/e80-stm32-bench/src/bench_cmd.c",
+    "firmware/e80-stm32-bench/src/bench_cmd.h",
+    "firmware/e80-stm32-bench/src/bench_pkt.c",
+    "firmware/e80-stm32-bench/src/bench_pkt.h",
+    "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+    "firmware/e80-stm32-bench/tests/test_bench_pkt.c"
+   ],
+   "kinds": [
+    "build",
+    "code"
+   ]
+  },
+  {
+   "branch": "feat/e80-cvm-go-mode",
+   "ref": "github/feat/e80-cvm-go-mode",
+   "behind": 235,
+   "ahead": 20,
+   "clean": false,
+   "conflicts": [
+    "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md",
+    "firmware/e80-stm32-bench/tools/cvm_sync.py",
+    "firmware/e80-stm32-bench/tools/test_cvm_sync.py"
+   ],
+   "kinds": [
+    "code"
+   ]
+  },
+  {
+   "branch": "feat/e80-spi-bypass",
+   "ref": "github/feat/e80-spi-bypass",
+   "behind": 521,
+   "ahead": 10,
+   "clean": false,
+   "conflicts": [
+    "docs/data-handover/DATA-INVENTORY-2026-08-19.md",
+    "docs/data-handover/FIRMWARE-HARMONIZATION-2026-08-19.md",
+    "mesh-stack/flrc-bench-espidf/main/range_test.cpp",
+    "tests/test_firmware_hash_gate.py",
+    "tests/test_session_manager.py",
+    "tools/firmware_hash_gate.py",
+    "tools/rx_range_logger.py",
+    "tools/session_manager.py"
+   ],
+   "kinds": [
+    "code",
+    "docs"
+   ]
+  },
+  {
+   "branch": "feat/host-driven-bench",
+   "ref": "github/feat/host-driven-bench",
+   "behind": 678,
+   "ahead": 29,
+   "clean": false,
+   "conflicts": [
+    ".gitignore",
+    "docs/INTEGRATION-ASSESSMENT.md",
+    "firmware/rp2040/platformio.ini",
+    "tracker/firmware/main/Kconfig.projbuild",
+    "tracker/firmware/main/app_main.cpp"
+   ],
+   "kinds": [
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "feat/tracker-tx-tempcomp",
+   "ref": "github/feat/tracker-tx-tempcomp",
+   "behind": 253,
+   "ahead": 14,
+   "clean": false,
+   "conflicts": [
+    ".github/workflows/ci-host-tests.yml",
+    ".ngit/README.md",
+    ".ngit/act/workflows/host-tests.yml",
+    "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.h",
+    "tracker/firmware/test/integration/test_tollgate_payack.py",
+    "tracker/firmware/test/test_tollgate_payack_parse.py"
+   ],
+   "kinds": [
+    "build",
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "fix/t1-sweep-start-validation",
+   "ref": "github/fix/t1-sweep-start-validation",
+   "behind": 452,
+   "ahead": 2,
+   "clean": false,
+   "conflicts": [
+    "firmware/e80-stm32-bench/README.md",
+    "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+    "firmware/e80-stm32-bench/tools/e80_sweep_full.py"
+   ],
+   "kinds": [
+    "build",
+    "code"
+   ]
+  },
+  {
+   "branch": "fix/t2-rx-start-len-gate",
+   "ref": "github/fix/t2-rx-start-len-gate",
+   "behind": 452,
+   "ahead": 2,
+   "clean": false,
+   "conflicts": [
+    "firmware/e80-stm32-bench/src/bench_cmd.h"
+   ],
+   "kinds": [
+    "code"
+   ]
+  },
+  {
+   "branch": "fix/t3-flrc-match123",
+   "ref": "github/fix/t3-flrc-match123",
+   "behind": 452,
+   "ahead": 2,
+   "clean": false,
+   "conflicts": [
+    "docs/rca-fix-plan-20260821.md",
+    "firmware/e80-stm32-bench/tests/CMakeLists.txt"
+   ],
+   "kinds": [
+    "build",
+    "docs"
+   ]
+  },
+  {
+   "branch": "fix/t4-fifo-clear",
+   "ref": "github/fix/t4-fifo-clear",
+   "behind": 452,
+   "ahead": 4,
+   "clean": false,
+   "conflicts": [
+    "docs/rca-fix-plan-20260821.md",
+    "firmware/e80-stm32-bench/src/radio_bench.c",
+    "firmware/e80-stm32-bench/tests/CMakeLists.txt"
+   ],
+   "kinds": [
+    "build",
+    "code",
+    "docs"
+   ]
+  },
+  {
+   "branch": "fix/t6-sweep-preflight",
+   "ref": "github/fix/t6-sweep-preflight",
+   "behind": 231,
+   "ahead": 4,
+   "clean": false,
+   "conflicts": [
+    "docs/rca-fix-plan-20260821.md"
+   ],
+   "kinds": [
+    "docs"
+   ]
+  },
+  {
+   "branch": "fix/tollgate-payack-harness-seq",
+   "ref": "github/fix/tollgate-payack-harness-seq",
+   "behind": 253,
+   "ahead": 5,
+   "clean": false,
+   "conflicts": [
+    ".github/workflows/ci-host-tests.yml",
+    ".ngit/README.md",
+    ".ngit/act/workflows/host-tests.yml",
+    "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.h",
+    "tracker/firmware/test/integration/test_tollgate_payack.py",
+    "tracker/firmware/test/test_tollgate_payack_parse.py"
+   ],
+   "kinds": [
+    "build",
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "fix/tollgate-payack-seq-whitespace",
+   "ref": "github/fix/tollgate-payack-seq-whitespace",
+   "behind": 253,
+   "ahead": 7,
+   "clean": false,
+   "conflicts": [
+    ".github/workflows/ci-host-tests.yml",
+    ".ngit/README.md",
+    ".ngit/act/workflows/host-tests.yml",
+    "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.h",
+    "tracker/firmware/test/integration/test_tollgate_payack.py"
+   ],
+   "kinds": [
+    "build",
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "fix/tollgate-payack-sid-price-exp",
+   "ref": "github/fix/tollgate-payack-sid-price-exp",
+   "behind": 253,
+   "ahead": 11,
+   "clean": false,
+   "conflicts": [
+    ".github/workflows/ci-host-tests.yml",
+    ".ngit/README.md",
+    ".ngit/act/workflows/host-tests.yml",
+    "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.c",
+    "tracker/firmware/main/tollgate_payment_proto.h",
+    "tracker/firmware/test/integration/test_tollgate_payack.py",
+    "tracker/firmware/test/test_tollgate_payack_parse.py"
+   ],
+   "kinds": [
+    "build",
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "phase1-interop-test",
+   "ref": "github/phase1-interop-test",
+   "behind": 1356,
+   "ahead": 8,
+   "clean": false,
+   "conflicts": [
+    "firmware/rp2040/src/main.cpp",
+    "firmware/rp2040/src/radio.cpp",
+    "mesh-stack/flrc-bench-espidf/main/bench_main.cpp",
+    "mesh-stack/flrc-bench-espidf/main/fast_rx.cpp",
+    "mesh-stack/flrc-bench-espidf/main/fifo_tx.cpp",
+    "mesh-stack/flrc-bench-espidf/sdkconfig.defaults"
+   ],
+   "kinds": [
+    "code",
+    "other"
+   ]
+  },
+  {
+   "branch": "pr/029-dual-band-flight-board",
+   "ref": "github/pr/029-dual-band-flight-board",
+   "behind": 151,
+   "ahead": 1,
+   "clean": true,
+   "conflicts": [],
+   "kinds": []
+  },
+  {
+   "branch": "range-tests",
+   "ref": "github/range-tests",
+   "behind": 678,
+   "ahead": 15,
+   "clean": false,
+   "conflicts": [
+    ".gitignore",
+    "docs/INTEGRATION-ASSESSMENT.md",
+    "firmware/rp2040/platformio.ini",
+    "tracker/firmware/main/Kconfig.projbuild",
+    "tracker/firmware/main/app_main.cpp"
+   ],
+   "kinds": [
+    "code",
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "speed-sustained-sweep",
+   "ref": "github/speed-sustained-sweep",
+   "behind": 1071,
+   "ahead": 22,
+   "clean": false,
+   "conflicts": [
+    "docs/INTEGRATION-ASSESSMENT.md",
+    "firmware/esp32-c3-flrc/main/main.cpp",
+    "firmware/rp2040/platformio.ini",
+    "firmware/rp2040/src/flrc_cont_tx_fast.cpp",
+    "firmware/rp2040/src/flrc_range_rx_auto.cpp",
+    "firmware/rp2040/src/flrc_range_rx_gps.cpp",
+    "firmware/rp2040/src/flrc_range_tx_auto.cpp",
+    "firmware/rp2040/src/flrc_range_tx_gps.cpp",
+    "firmware/rp2040/src/gps_test.cpp",
+    "tools/balloon-board-lock.py"
+   ],
+   "kinds": [
+    "code",
+    "docs"
+   ]
+  },
+  {
+   "branch": "worker-balloon/flrc-512b-audit",
+   "ref": "github/worker-balloon/flrc-512b-audit",
+   "behind": 253,
+   "ahead": 4,
+   "clean": true,
+   "conflicts": [],
+   "kinds": []
+  },
+  {
+   "branch": "worker-balloon/pcb-phase1-t877",
+   "ref": "github/worker-balloon/pcb-phase1-t877",
+   "behind": 520,
+   "ahead": 3,
+   "clean": false,
+   "conflicts": [
+    "Makefile",
+    "TOLLGATE_PROTO_CONTRACT.md"
+   ],
+   "kinds": [
+    "docs",
+    "other"
+   ]
+  },
+  {
+   "branch": "worker-balloon/pcb-phase1-t877-main",
+   "ref": "github/worker-balloon/pcb-phase1-t877-main",
+   "behind": 188,
+   "ahead": 6,
+   "clean": false,
+   "conflicts": [
+    ".ngit/act/workflows/host-tests.yml",
+    "Makefile",
+    "tracker/hardware/drc_snapshots/history.jsonl"
+   ],
+   "kinds": [
+    "other"
+   ]
+  }
+ ],
+ "clusters": {
+  "tracker/hardware/hub_board_v1.kicad_pcb": [
+   "balloon-circuit-design"
+  ],
+  "tracker/firmware/main/CMakeLists.txt": [
+   "balloon-mesh-wiring/radio-glue"
+  ],
+  "tracker/firmware/sdkconfig": [
+   "balloon-mesh-wiring/radio-glue"
+  ],
+  "tracker/firmware/sdkconfig.defaults": [
+   "balloon-mesh-wiring/radio-glue"
+  ],
+  "docs/INTEGRATION-ASSESSMENT.md": [
+   "balloon-nostr/dev",
+   "docs/harm-t9-adoption",
+   "feat/host-driven-bench",
+   "range-tests",
+   "speed-sustained-sweep"
+  ],
+  "tracker/firmware/components/nostr_store/include/nostr_store.h": [
+   "balloon-nostr/dev"
+  ],
+  "tracker/firmware/components/nostr_store/nostr_store.c": [
+   "balloon-nostr/dev"
+  ],
+  "tracker/firmware/components/nostr_store/test/test_nostr_store.c": [
+   "balloon-nostr/dev"
+  ],
+  "tracker/firmware/main/Kconfig.projbuild": [
+   "balloon-nostr/dev",
+   "docs/harm-t9-adoption",
+   "feat/host-driven-bench",
+   "range-tests"
+  ],
+  "tracker/firmware/main/app_main.cpp": [
+   "balloon-nostr/dev",
+   "docs/harm-t9-adoption",
+   "feat/host-driven-bench",
+   "range-tests"
+  ],
+  "tracker/firmware/main/test/test_tollgate_payment_proto.c": [
+   "balloon-nostr/dev",
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  "tracker/firmware/main/tollgate_payment_proto.c": [
+   "balloon-nostr/dev",
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  "tracker/firmware/main/tollgate_payment_proto.h": [
+   "balloon-nostr/dev",
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  "mesh-stack/tollgate/CMakeLists.txt": [
+   "balloon-tollgate-extract"
+  ],
+  "mesh-stack/tollgate/components/radio_adapter/CMakeLists.txt": [
+   "balloon-tollgate-extract"
+  ],
+  "docs/STATUS-balloon-tollgate.md": [
+   "balloon-tollgate/dev"
+  ],
+  ".gitignore": [
+   "docs/harm-t9-adoption",
+   "feat/host-driven-bench",
+   "range-tests"
+  ],
+  "AGENTS.md": [
+   "docs/harm-t9-adoption"
+  ],
+  "README.md": [
+   "docs/harm-t9-adoption"
+  ],
+  "firmware/rp2040/platformio.ini": [
+   "docs/harm-t9-adoption",
+   "feat/host-driven-bench",
+   "range-tests",
+   "speed-sustained-sweep"
+  ],
+  "docs/coordination/DISCOVERIES.md": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/Makefile": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/README.md": [
+   "feat/c3-harmonization",
+   "fix/t1-sweep-start-validation"
+  ],
+  "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md": [
+   "feat/c3-harmonization",
+   "feat/e80-cvm-go-mode"
+  ],
+  "firmware/e80-stm32-bench/src/bench.c": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging"
+  ],
+  "firmware/e80-stm32-bench/src/bench_cmd.c": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging"
+  ],
+  "firmware/e80-stm32-bench/src/bench_cmd.h": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging",
+   "fix/t2-rx-start-len-gate"
+  ],
+  "firmware/e80-stm32-bench/src/bench_pkt.c": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging"
+  ],
+  "firmware/e80-stm32-bench/src/bench_pkt.h": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging"
+  ],
+  "firmware/e80-stm32-bench/src/console.c": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/src/console.h": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/src/main.h": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/src/radio_bench.c": [
+   "feat/c3-harmonization",
+   "fix/t4-fifo-clear"
+  ],
+  "firmware/e80-stm32-bench/src/radio_bench.h": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tests/CMakeLists.txt": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging",
+   "fix/t1-sweep-start-validation",
+   "fix/t3-flrc-match123",
+   "fix/t4-fifo-clear"
+  ],
+  "firmware/e80-stm32-bench/tests/test_bench_cmd.c": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tests/test_bench_config.c": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tests/test_bench_pkt.c": [
+   "feat/c3-harmonization",
+   "feat/e80-7-crc-logging"
+  ],
+  "firmware/e80-stm32-bench/tools/e80_bench_ctl.py": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tools/e80_detect.py": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tools/merge_csvs.py": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tools/test_e80_bench_ctl.py": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/tools/test_e80_detect.py": [
+   "feat/c3-harmonization"
+  ],
+  "firmware/e80-stm32-bench/CMakeLists.txt": [
+   "feat/e80-7-crc-logging"
+  ],
+  "firmware/e80-stm32-bench/tools/cvm_sync.py": [
+   "feat/e80-cvm-go-mode"
+  ],
+  "firmware/e80-stm32-bench/tools/test_cvm_sync.py": [
+   "feat/e80-cvm-go-mode"
+  ],
+  "docs/data-handover/DATA-INVENTORY-2026-08-19.md": [
+   "feat/e80-spi-bypass"
+  ],
+  "docs/data-handover/FIRMWARE-HARMONIZATION-2026-08-19.md": [
+   "feat/e80-spi-bypass"
+  ],
+  "mesh-stack/flrc-bench-espidf/main/range_test.cpp": [
+   "feat/e80-spi-bypass"
+  ],
+  "tests/test_firmware_hash_gate.py": [
+   "feat/e80-spi-bypass"
+  ],
+  "tests/test_session_manager.py": [
+   "feat/e80-spi-bypass"
+  ],
+  "tools/firmware_hash_gate.py": [
+   "feat/e80-spi-bypass"
+  ],
+  "tools/rx_range_logger.py": [
+   "feat/e80-spi-bypass"
+  ],
+  "tools/session_manager.py": [
+   "feat/e80-spi-bypass"
+  ],
+  ".github/workflows/ci-host-tests.yml": [
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  ".ngit/README.md": [
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  ".ngit/act/workflows/host-tests.yml": [
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp",
+   "worker-balloon/pcb-phase1-t877-main"
+  ],
+  "tracker/firmware/test/integration/test_tollgate_payack.py": [
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-seq-whitespace",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  "tracker/firmware/test/test_tollgate_payack_parse.py": [
+   "feat/tracker-tx-tempcomp",
+   "fix/tollgate-payack-harness-seq",
+   "fix/tollgate-payack-sid-price-exp"
+  ],
+  "firmware/e80-stm32-bench/tools/e80_sweep_full.py": [
+   "fix/t1-sweep-start-validation"
+  ],
+  "docs/rca-fix-plan-20260821.md": [
+   "fix/t3-flrc-match123",
+   "fix/t4-fifo-clear",
+   "fix/t6-sweep-preflight"
+  ],
+  "firmware/rp2040/src/main.cpp": [
+   "phase1-interop-test"
+  ],
+  "firmware/rp2040/src/radio.cpp": [
+   "phase1-interop-test"
+  ],
+  "mesh-stack/flrc-bench-espidf/main/bench_main.cpp": [
+   "phase1-interop-test"
+  ],
+  "mesh-stack/flrc-bench-espidf/main/fast_rx.cpp": [
+   "phase1-interop-test"
+  ],
+  "mesh-stack/flrc-bench-espidf/main/fifo_tx.cpp": [
+   "phase1-interop-test"
+  ],
+  "mesh-stack/flrc-bench-espidf/sdkconfig.defaults": [
+   "phase1-interop-test"
+  ],
+  "firmware/esp32-c3-flrc/main/main.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "firmware/rp2040/src/flrc_cont_tx_fast.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "firmware/rp2040/src/flrc_range_rx_auto.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "firmware/rp2040/src/flrc_range_rx_gps.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "firmware/rp2040/src/flrc_range_tx_auto.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "firmware/rp2040/src/flrc_range_tx_gps.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "firmware/rp2040/src/gps_test.cpp": [
+   "speed-sustained-sweep"
+  ],
+  "tools/balloon-board-lock.py": [
+   "speed-sustained-sweep"
+  ],
+  "Makefile": [
+   "worker-balloon/pcb-phase1-t877",
+   "worker-balloon/pcb-phase1-t877-main"
+  ],
+  "TOLLGATE_PROTO_CONTRACT.md": [
+   "worker-balloon/pcb-phase1-t877"
+  ],
+  "tracker/hardware/drc_snapshots/history.jsonl": [
+   "worker-balloon/pcb-phase1-t877-main"
+  ]
+ }
+}
