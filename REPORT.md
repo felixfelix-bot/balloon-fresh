@@ -50,9 +50,12 @@ commit and correctly records that ADR-034/035 supersede parts of ADR-029.
 ## Branch and commit
 
 - Local branch: `adr/radioband-tdm`
-- New commit SHA: `<to be observed after commit>`
-- Remote `github`: `<to be observed after push>`
-- Remote `ngit`: `<to be observed after push>`
+- New commit SHA: `2f62ccf6aeb378b64a3e443ad6cdf587132d18cc`
+- Remote `github`: `2f62ccf6aeb378b64a3e443ad6cdf587132d18cc`
+- Remote `ngit`: `2f62ccf6aeb378b64a3e443ad6cdf587132d18cc`
+
+All three observed equal after push, confirmed by `git ls-remote github adr/radioband-tdm`
+and `git ls-remote ngit adr/radioband-tdm`.
 
 ## What was NOT done
 
