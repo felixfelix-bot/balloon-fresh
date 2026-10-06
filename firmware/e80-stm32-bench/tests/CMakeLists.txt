@@ -39,8 +39,19 @@ add_bench_test(test_bench_pkt ${SRC_DIR}/bench_pkt.c)
 # CONFIG_START transition marker test (E80-8/O4): portable, no STM32 deps.
 add_bench_test(test_bench_config_start ${SRC_DIR}/bench_pkt.c)
 
-# Radio bench cfg test: needs radio_bench.h (lr20xx type headers are header-only).
-add_bench_test(test_radio_bench_cfg)
+# Radio bench cfg test (FIX-T3): host-compiles the REAL src/radio_bench.c
+# against the REAL vendored lr20xx_driver sources; the test file provides a
+# fake capturing lr20xx HAL. Pins the exact FLRC SetPacketParams bytes.
+set(LR20XX_DRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/src)
+add_bench_test(test_radio_bench_cfg
+    ${SRC_DIR}/radio_bench.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_fifo.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_system.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_regmem.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_workarounds.c)
 target_include_directories(test_radio_bench_cfg PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
