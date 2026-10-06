@@ -162,7 +162,13 @@ CAPTURES_DIR := captures
 # Users can pass the full env name or the short name.
 
 .PHONY: flash capture capture-byte capture-batch capture-compare build \
-	analyze list-captures setup help
+	analyze list-captures setup help \
+	esp32-build esp32-flash capture-esp32 decode-esp32
+
+# ESP32 LR2021 firmware (ESP-IDF). Override port with ESP_PORT=/dev/ttyACMx.
+ESP32_FLRC_DIR := firmware/esp32-c3-flrc
+ESP_PORT ?= /dev/ttyACM0
+ESP_IDF_EXPORT := ~/esp/esp-idf/export.sh
 
 ## ─── flash ───────────────────────────────────────────────────────────
 ## Flash RP2040 via picotool (BOOTSEL mode required).
@@ -217,10 +223,13 @@ capture: ## Capture SPI with sigrok-cli. Usage: make capture [DURATION=1] [OUTPU
 	fi
 
 ## ─── capture-byte ─────────────────────────────────────────────────────
-## Build + flash raw_tx (per-byte), then capture.
-capture-byte: ## Build+flash raw_tx, capture. Usage: make capture-byte [DURATION=1]
-	$(MAKE) build ENV=rp2040-raw-tx
-	$(MAKE) flash ENV=rp2040-raw-tx
+## Build + flash cont_tx (continuous TX), then capture.
+capture-byte: ## Build+flash cont_tx, capture. Usage: make capture-byte [DURATION=1]
+	$(MAKE) build ENV=rp2040-cont-tx
+	$(MAKE) flash ENV=rp2040-cont-tx
+	@echo "=== Send RUN command to start continuous TX ==="
+	@PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	if [ -n "$$PORT" ]; then sleep 2; echo "RUN" > $$PORT; sleep 1; fi
 	$(MAKE) capture DURATION=$(or $(DURATION),2) OUTPUT=$(CAPTURES_DIR)/byte-transfer.sr
 
 ## ─── capture-batch ───────────────────────────────────────────────────
@@ -228,7 +237,112 @@ capture-byte: ## Build+flash raw_tx, capture. Usage: make capture-byte [DURATION
 capture-batch: ## Build+flash cont_tx, capture. Usage: make capture-batch [DURATION=1]
 	$(MAKE) build ENV=rp2040-cont-tx
 	$(MAKE) flash ENV=rp2040-cont-tx
+	@PORT=$$(ls /dev/ttyACM* 2>/dev/null | head -1); \
+	if [ -n "$$PORT" ]; then sleep 2; echo "RUN" > $$PORT; sleep 1; fi
 	$(MAKE) capture DURATION=$(or $(DURATION),2) OUTPUT=$(CAPTURES_DIR)/batch-transfer.sr
+
+## ─── decode (SPI protocol decoder) ────────────────────────────────────
+## Decode SPI bytes from a capture file.
+## Usage: make decode FILE=captures/byte-transfer.sr
+decode: ## Decode SPI protocol from capture file.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode FILE=captures/foo.sr"; exit 1; fi
+	@echo "Decoding SPI from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-A spi 2>&1 | grep -v "^spi-1: [01]$"
+
+## ─── decode-hex (SPI bytes in hex) ────────────────────────────────────
+## Show decoded SPI transactions as hex bytes.
+## Usage: make decode-hex FILE=captures/byte-transfer.sr
+decode-hex: ## Show SPI hex dump from capture.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode-hex FILE=captures/foo.sr"; exit 1; fi
+	@echo "SPI hex dump from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-B spi=mosi 2>&1 | xxd | head -100
+
+## ─── zip-capture (compress capture for sharing) ───────────────────────
+## Usage: make zip-capture FILE=captures/foo.sr
+zip-capture: ## Compress capture file for sharing.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make zip-capture FILE=captures/foo.sr"; exit 1; fi
+	@BASENAME=$$(basename $(FILE) .sr); \
+	DIR=$$(dirname $(FILE)); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Created: $$DIR/$$BASENAME.zip"
+
+## ─── decode-tx (group SPI bytes into CS-framed transactions) ──────────
+## Show each SPI transaction (CS-low pulse) as a hex byte group.
+## Usage: make decode-tx FILE=captures/foo.sr
+decode-tx: ## Group SPI bytes per CS cycle.
+	@if [ -z "$(FILE)" ]; then echo "Usage: make decode-tx FILE=captures/foo.sr"; exit 1; fi
+	@echo "SPI transactions from $(FILE)..."
+	@sigrok-cli -i $(FILE) \
+		--protocol-decoders spi:cs=D0:clk=D1:mosi=D2:miso=D3 \
+		-P spi \
+		-B spi=mosi 2>&1 | xxd -p | tr -d '\n' | \
+		sed 's/../0x& /g' | fold -w 48
+
+## ─── capture-compare ─────────────────────────────────────────────────
+## Capture both per-byte and batch for comparison.
+## (ESP32 equivalents of the RP2040 capture/decode targets live just below.)
+
+# ═══════════════════════════════════════════════════════════════════════
+# ESP32-C3 LR2021 Capture Targets
+# ═══════════════════════════════════════════════════════════════════════
+# Same logic-analyzer parameters and channel map as the RP2040 targets above
+# (fx2lafw, 24 MHz sample, D0=CS D1=SCK D2=MOSI D3=MISO D4=BUSY D5=IRQ D6=RST)
+# so captures from either MCU are directly comparable with the same SPI decoder.
+# Override the serial port with: make capture-esp32 ESP_PORT=/dev/ttyACM0
+# Benchmark plan: docs/PLAN-esp32-vs-rp2040-benchmark.md
+
+## ─── esp32-build ──────────────────────────────────────────────────────
+## Build the ESP32-C3 LR2021 firmware with ESP-IDF.
+## Usage: make esp32-build
+esp32-build: ## Build ESP32-C3 LR2021 firmware (ESP-IDF).
+	@if [ ! -f $(ESP_IDF_EXPORT) ]; then \
+		echo "ERROR: ESP-IDF not found at $(ESP_IDF_EXPORT)"; \
+		echo "Install ESP-IDF v5.4.1 or set ESP_IDF_EXPORT=/path/to/export.sh"; \
+		exit 1; \
+	fi
+	@echo "Building ESP32-C3 LR2021 firmware ($(ESP32_FLRC_DIR))..."
+	@bash -c 'source $(ESP_IDF_EXPORT) && cd $(ESP32_FLRC_DIR) && idf.py build'
+
+## ─── esp32-flash ──────────────────────────────────────────────────────
+## Flash the ESP32-C3 LR2021 firmware.
+## Usage: make esp32-flash [ESP_PORT=/dev/ttyACM0]
+esp32-flash: ## Flash ESP32 firmware. Usage: make esp32-flash [ESP_PORT=/dev/ttyACM0]
+	@if [ ! -f $(ESP_IDF_EXPORT) ]; then \
+		echo "ERROR: ESP-IDF not found at $(ESP_IDF_EXPORT)"; exit 1; \
+	fi
+	@if [ ! -e $(ESP_PORT) ]; then \
+		echo "ERROR: ESP32 serial port $(ESP_PORT) not found."; \
+		echo "List ports: make identify-ports"; \
+		echo "Override: make esp32-flash ESP_PORT=/dev/ttyACMx"; \
+		exit 1; \
+	fi
+	@echo "Flashing ESP32 via $(ESP_PORT)..."
+	@bash -c 'source $(ESP_IDF_EXPORT) && cd $(ESP32_FLRC_DIR) && idf.py -p $(ESP_PORT) flash'
+
+## ─── capture-esp32 ───────────────────────────────────────────────────
+## Build + flash ESP32 cont-TX firmware, then capture SPI.
+## Same LA params/channel map as RP2040 captures.
+## Usage: make capture-esp32 [ESP_PORT=/dev/ttyACM0] [DURATION=1] [OUTPUT=captures/bench-esp32.sr]
+capture-esp32: ## Build+flash ESP32 cont-TX, capture. Usage: make capture-esp32 [ESP_PORT=/dev/ttyACM0] [DURATION=1]
+	$(MAKE) esp32-build
+	$(MAKE) esp32-flash ESP_PORT=$(ESP_PORT)
+	@echo "=== ESP32 firmware running — starting TX (firmware should auto-start) ==="
+	@sleep 2
+	$(MAKE) capture DURATION=$(or $(DURATION),1) \
+		OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/bench-esp32.sr)
+
+## ─── decode-esp32 ────────────────────────────────────────────────────
+## Decode SPI from the ESP32 benchmark capture.
+## Same SPI decoder + pins as the RP2040 decode target.
+## Usage: make decode-esp32 [FILE=captures/bench-esp32.sr]
+decode-esp32: ## Decode SPI from ESP32 capture (defaults to bench-esp32.sr).
+	$(MAKE) decode FILE=$(or $(FILE),$(CAPTURES_DIR)/bench-esp32.sr)
 
 ## ─── capture-compare ─────────────────────────────────────────────────
 ## Capture both per-byte and batch for comparison.
@@ -596,6 +710,83 @@ sweep-esp32: ## ESP32-C3 payload size sweep (32/64/128/255 bytes).
 	done
 	@echo ""; echo "=== ESP32 SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/esp32-sweep-*.sr"
 
+## ─── debug-esp32 (ESP32-C3 one-command workflow) ─────────────────────
+## Build ESP32-C3 firmware with CONTINUOUS_TX, flash via ESP-IDF, auto-start TX, capture.
+## Usage: make debug-esp32 [PORT=/dev/ttyUSB0] [DURATION=1] [OUTPUT=captures/esp32-debug.sr]
+## ESP32 firmware auto-starts TX on boot — no serial RUN command needed.
+## Prerequisites: ESP32-C3 connected, logic analyzer connected, ESP-IDF at ~/esp/esp-idf
+.PHONY: debug-esp32
+debug-esp32: ## ESP32-C3: build (CONTINUOUS_TX) + flash + auto-TX + capture.
+	@echo "=== Balloon Speed Tests — ESP32-C3 Debug Workflow ==="
+	@echo ""
+	@echo "Step 1/4: Building ESP32-C3 firmware (CONTINUOUS_TX)..."
+	@source ~/esp/esp-idf/export.sh 2>/dev/null && \
+		cd $(ESP32_DIR) && \
+		idf.py -DCONTINUOUS_TX=1 $(BUILD_ARGS) build
+	@echo ""
+	@echo "Step 2/4: Detecting ESP32 port + flashing..."
+	@source ~/esp/esp-idf/export.sh 2>/dev/null && \
+		ESP_PORT="$(filter-out /dev/ttyACM1,$(PORT))"; \
+		if [ -z "$$ESP_PORT" ]; then \
+			echo "No explicit PORT — auto-detecting ESP32 (VID 303a)..."; \
+			for p in /dev/ttyACM[0-9] /dev/ttyUSB[0-9]; do \
+				[ -e "$$p" ] || continue; \
+				VID=$$(udevadm info -q property "$$p" 2>/dev/null | grep "ID_VENDOR_ID=" | cut -d= -f2); \
+				echo "  $$p: VID=$$VID"; \
+				if [ "$$VID" = "303a" ]; then ESP_PORT="$$p"; break; fi; \
+			done; \
+		fi; \
+		if [ -z "$$ESP_PORT" ]; then \
+			echo "ERROR: No ESP32 found (VID 303a). Pass PORT=/dev/ttyUSB0 explicitly."; \
+			exit 1; \
+		fi; \
+		echo "Using port: $$ESP_PORT"; \
+		cd $(ESP32_DIR) && idf.py -p $$ESP_PORT flash
+	@echo ""
+	@echo "Step 3/4: Waiting for ESP32 TX to start..."
+	@echo "ESP32 firmware auto-starts TX on boot (no RUN command needed)."
+	@echo "Settling 3s for LA USB re-enumeration..."
+	@sleep 3
+	@echo ""
+	@echo "Step 4/4: Capturing SPI signals ($(or $(DURATION),1)s)..."
+	@mkdir -p $(CAPTURES_DIR)
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/esp32-debug.sr); \
+	echo "Capturing to $$OUTPUT ..."; \
+	echo "Channel mapping: D0=CS, D1=SCK, D2=MOSI, D3=MISO, D4=BUSY, D5=IRQ, D6=RST"; \
+	sigrok-cli --driver fx2lafw --config samplerate=24mhz --samples $(or $(DURATION),1)000000 \
+		--channels D0,D1,D2,D3,D4,D5,D6 -o $$OUTPUT 2>&1 || \
+		{ echo "ERROR: sigrok-cli failed. Check logic analyzer is plugged in."; \
+		echo "Try: sigrok-cli --list"; exit 1; }
+	@echo ""
+	@echo "=== Done! ==="
+	@OUTPUT=$(or $(OUTPUT),$(CAPTURES_DIR)/esp32-debug.sr); \
+	BASENAME=$$(basename $$OUTPUT .sr); \
+	DIR=$$(cd $$(dirname $$OUTPUT) && pwd); \
+	cd $$DIR && zip $$BASENAME.zip $$BASENAME.sr; \
+	echo "Zip ready: $$DIR/$$BASENAME.zip"
+
+## ─── sweep-esp32 (ESP32-C3 payload size sweep) ───────────────────────
+## Runs 4 captures with different packet sizes: 32, 64, 128, 255 bytes.
+## Each size rebuilds with -DTX_PKT_SIZE=<N> and re-flashes.
+## Results in captures/esp32-sweep-*.sr
+.PHONY: sweep-esp32
+sweep-esp32: ## ESP32-C3 payload size sweep (32/64/128/255 bytes).
+	@for SIZE in 32 64 128 255; do \
+		echo ""; \
+		echo "========================================"; \
+		echo "ESP32 SWEEP: $${SIZE}-byte packets"; \
+		echo "========================================"; \
+		$(MAKE) debug-esp32 \
+			DURATION=1 \
+			OUTPUT=$(CAPTURES_DIR)/esp32-sweep-$${SIZE}.sr \
+			BUILD_ARGS="-DTX_PKT_SIZE=$${SIZE}" \
+			|| { echo "ESP32 SWEEP FAILED at $${SIZE}-byte step"; exit 1; }; \
+		echo ""; \
+		echo "Waiting 2s before next size..."; \
+		sleep 2; \
+	done
+	@echo ""; echo "=== ESP32 SWEEP COMPLETE ==="; echo "All captures in $(CAPTURES_DIR)/esp32-sweep-*.sr"
+
 ## ─── setup ────────────────────────────────────────────────────────────
 ## Run the ansible playbook to install all dependencies.
 setup: ## Install all deps via ansible playbook.
@@ -675,10 +866,18 @@ help: ## Show this help message.
 	@echo "  make flash [ENV=rp2040-raw-tx]    Flash RP2040 via picotool (BOOTSEL required)"
 	@echo ""
 	@echo "Capture (logic analyzer):"
-	@echo "  make capture [DURATION=1] [OUTPUT=capture.sr]  Capture SPI signals"
-	@echo "  make capture-byte [DURATION=2]     Build+flash raw_tx, capture per-byte transfer"
+	@echo "  make capture [DURATION=1] [OUTPUT=x.sr]  Capture SPI signals"
+	@echo "  make decode FILE=captures/foo.sr        Decode SPI commands from capture"
+	@echo "  make decode-hex FILE=captures/foo.sr    Hex dump SPI bytes from capture"
+	@echo "  make capture-byte [DURATION=2]     Build+flash cont_tx, capture byte transfer"
 	@echo "  make capture-batch [DURATION=2]    Build+flash cont_tx, capture batch/DMA transfer"
 	@echo "  make capture-compare [DURATION=2]  Capture both byte+batch for comparison"
+	@echo ""
+	@echo "ESP32 capture (LR2021):"
+	@echo "  make capture-esp32 [ESP_PORT=/dev/ttyACM0] [DURATION=1]  Build+flash+capture ESP32"
+	@echo "  make decode-esp32 [FILE=captures/bench-esp32.sr]        Decode ESP32 SPI capture"
+	@echo "  make esp32-build / esp32-flash  Build / flash ESP32 firmware only"
+	@echo "  Benchmark plan: docs/PLAN-esp32-vs-rp2040-benchmark.md"
 	@echo ""
 	@echo "Analysis:"
 	@echo "  make analyze FILE=captures/byte-transfer.sr  Open capture in pulseview or print sigrok hints"

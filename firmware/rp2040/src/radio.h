@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #define IRQ_RX_DONE          (1UL << 3)
+#define IRQ_TX_DONE          (1UL << 7)   // LR11x0 TxDone bit
 #define MAX_PKT_SIZE         255
 
 struct PacketTiming {
@@ -42,6 +43,7 @@ int radio_init(int mode);
 void radio_start_rx(void);
 void radio_standby(void);
 int radio_read_packet(uint8_t *buf, size_t len, PacketTiming *timing);
+int radio_send_packet(const uint8_t *data, size_t len);
 void radio_clear_irq(void);
 float radio_get_rssi(void);
 bool radio_poll_irq(void);
