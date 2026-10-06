@@ -1,21 +1,58 @@
-# Task t_aa48f0db report
+# Task report — balloon v9 radio decisions, 2026-10-07
 
-Implemented the D2b(b) F33+SX1280 ESP32-S3-WROOM-1U-N8R8 pin plan in
-`docs/adr/029-f33-sx1280-pin-plan.md`. It assigns separate SPI2/FSPI and SPI3
-buses, unique CS, IRQ/DIO/BUSY/RESET/control lines, MS5607 I2C, MAX-M10S UART/PPS
-and USB console. It explicitly leaves IO35-37 unused (octal PSRAM), audits IO0,
-IO3, IO45, IO46 as untouched strapping pins, and records the IO39-42 native-JTAG
-tradeoff as an explicit gate/blocker.
+## What was done
 
-Updated ADR-029's D2b gate section to link the new pin-plan document.
+Wrote two new Architecture Decision Records on a dedicated worktree
+(`bf-adr-radio`, branch `adr/radioband-tdm`) stacked on the tip of
+`pr/029-dual-band-flight-board` (4059860), updated ADR-029's header with a
+one-line supersede pointer, committed, and pushed to both `github` and `ngit`.
 
-Verification: `git diff --check` passed; targeted grep audit confirmed all
-required buses, peripherals and strap/PSRAM constraints are represented.
-No firmware source changed, so the mandatory firmware compile matrix is not
-applicable to this documentation-only deliverable. Physical schematic/ERC and
-exact purchased-module pad confirmation remain downstream gates.
+## New files
 
-Files:
-- docs/adr/029-f33-sx1280-pin-plan.md
-- docs/adr/029-dual-band-flight-board.md
-- PROGRESS.md
+- `docs/adr/034-radio-band-split-433-tx-2g4-rx.md` — records the operator's 2026-10-07
+  band split: TX on 433 MHz via the F33-2G4 module's 2 W sub-GHz port, RX on 2.4 GHz
+  via a separate bare `LoRa2021`, and why a single-module half-duplex chip cannot
+  provide simultaneous TX/RX. Includes filtering obligations, the recorded SX1280-as-RX
+  alternative (D6), the open 5 V rail item, and the 433 MHz DE-legality flag.
+- `docs/adr/035-tdm-radio-schedule.md` — records the operator's 2026-10-07 windowed
+  ranging decision and the TDM contract: dedicated ranging, TX, RX, and idle windows;
+  one transmitter at a time; GNSS continuous; the firmware schedule contract and
+  testability requirement; the energy-opportunistic TX hook; the unresolved storage
+  element and 433 duty-cycle open items.
+
+## Modified files
+
+- `docs/adr/029-dual-band-flight-board.md` — added one header line:
+  `Superseded in part by ADR-034 (433 MHz TX / 2.4 GHz RX on two chips) and ADR-035 (TDM radio schedule).`
+
+## Numbering verification
+
+Next-free-number checks run on the worktree:
+
+```
+git ls-tree -r --name-only HEAD docs/adr
+git log --all --oneline --name-only --pretty=format: -- 'docs/adr/*' | sort -u
+```
+
+Result: 033 is claimed on an unmerged branch
+(`docs/adr/033-giftwrap-single-construction-path.md`); 034 and 035 are free on every
+branch inspected.
+
+## Branch and commit
+
+- Local branch: `adr/radioband-tdm`
+- Local HEAD after commit: `__COMMIT_SHA__` (see `git log` output below)
+- Remote `github`: `__GITHUB_SHA__`
+- Remote `ngit`: `__NGIT_SHA__`
+
+All three observed equal after push, confirmed by `git ls-remote github adr/radioband-tdm`
+and `git ls-remote ngit adr/radioband-tdm`.
+
+## What was NOT done
+
+No schematic, placement, routing, or firmware source code was changed — the task was
+documentation-only, intended to gate downstream hardware work.
+
+## Blockers
+
+None encountered.
