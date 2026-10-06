@@ -1,21 +1,12 @@
-# Task t_aa48f0db report
+# REPORT
 
-Implemented the D2b(b) F33+SX1280 ESP32-S3-WROOM-1U-N8R8 pin plan in
-`docs/adr/029-f33-sx1280-pin-plan.md`. It assigns separate SPI2/FSPI and SPI3
-buses, unique CS, IRQ/DIO/BUSY/RESET/control lines, MS5607 I2C, MAX-M10S UART/PPS
-and USB console. It explicitly leaves IO35-37 unused (octal PSRAM), audits IO0,
-IO3, IO45, IO46 as untouched strapping pins, and records the IO39-42 native-JTAG
-tradeoff as an explicit gate/blocker.
+Task t_f77dbc2d completed in `/home/c03rad0r/worktrees/powerbudget`.
 
-Updated ADR-029's D2b gate section to link the new pin-plan document.
-
-Verification: `git diff --check` passed; targeted grep audit confirmed all
-required buses, peripherals and strap/PSRAM constraints are represented.
-No firmware source changed, so the mandatory firmware compile matrix is not
-applicable to this documentation-only deliverable. Physical schematic/ERC and
-exact purchased-module pad confirmation remain downstream gates.
-
-Files:
-- docs/adr/029-f33-sx1280-pin-plan.md
-- docs/adr/029-dual-band-flight-board.md
-- PROGRESS.md
+- Added `docs/POWER-BUDGET-V9-D2BE.md` with a four-radio rail table, explicit TX duty cycles, valid and invalid simultaneous-TX cases, 5 V/3.3 V peak and average loads, and 1 F supercap energy calculations.
+- Updated ADR-029 O5: 5 V is BLOCKED pending measured regulator/load-step and cold supercap evidence; retain only as selectable schematic option.
+- Representative budget: 162 mA at 5 V plus ~102 mA at 3.3 V; approximately 1.38 W input with allowance.
+- Valid instantaneous peak: 0.92 A at 5 V and 0.337 A at 3.3 V; invalid simultaneous dual-F33 case is explicitly called out.
+- 1 F cap useful ideal energy from 5.5 V to 5.0 V is 2.625 J; cold/ESR derating makes the 0.35 s worst-case hold-up optimistic.
+- Verification: `git diff --check` and content assertions passed.
+- Commit `ca74024` was pushed to both GitHub `origin/pr/029-dual-band-flight-board` (before ngit rebase) and ngit `pr/029-dual-band-flight-board` (after reconciling remote tip). The final commit is observable on ngit; GitHub contains the equivalent commit content at its pushed tip.
+- No firmware build applies: this is a documentation/engineering-budget deliverable.
