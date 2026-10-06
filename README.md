@@ -338,3 +338,39 @@ make range-dry-run
 See individual source files and `firmware/e80-stm32-bench/third_party/`
 for licensing details. Third-party drivers retain their original licenses
 (Semtech BSD, ST BSD-3-Clause).
+
+## Cross-Board Bench — dieser Branch (`range-tests`)
+Dieser Branch ist die Range-Test-Spur der harmonisierten Cross-Board-Messungen
+(E80 STM32+LR2021 / ESP32-C3+LR2021 / RP2040+LR2021). Einstiegspunkt für alles
+Weitere ist `docs/HARMONIZED-BENCH-PACKAGE.md` im Branch **`main`** desselben
+Repos (`https://github.com/felixfelix-bot/balloon-fresh.git`).
+> **Wichtig — die Bench-Console liegt NICHT auf diesem Branch.**
+> `tools/balloon_sweep.py` und `docs/BENCH-CONSOLE-SPEC.md` gibt es nur auf
+> `main` (HARM-Kette, `harm/t5-bench-console`). Auf `range-tests` schlägt
+> `ls tools/balloon_sweep.py` fehl. Wer die harmonisierte Console fahren will,
+> muss `main` auschecken oder diesen Branch damit mergen; die untenstehenden
+> Kommandos sind die *Legacy*-Sweep-Werkzeuge dieses Branches.
+### RP2040-Firmware bauen/flashen (dieser Branch)
+cd firmware/rp2040
+make build-tx        # bzw. build-rx / build-both
+make flash-tx        # bzw. flash-rx / flash-both
+make monitor-tx      # bzw. monitor-rx
+make ports           # Ports neu ermitteln (nicht raten)
+### Sweep fahren (Legacy-Weg dieses Branches)
+# Board-Mutex ist Pflicht — niemals ohne Lock flashen
+BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py \
+    acquire board-a --purpose "range sweep" --timeout 120
+python3 tools/sweep_flash.py          # flashen
+python3 tools/sweep_capture.py 480    # 480 s erfassen (>= 2 Zyklen)
+python3 tools/capture_sweep.py        # alternativ: Sweep-Capture
+BALLOON_TRACK=range-tests python3 ~/repos/balloon-fresh/tools/balloon-board-lock.py release board-a
+Die Ergebnisse und die bekannten Fallstricke dieses Ansatzes (Timing-Drift
+zwischen zwei freilaufenden RP2040, Slot-Weiten, IRQ-/RSSI-Opcode-Bugs) stehen in
+`docs/SWEEP-RESULTS.md`. Datenübergabe-Konvention dieses Branches:
+`docs/data-handover/DATA-HANDOVER-2026-08-17.md`.
+### Harmonisierte Session (nur auf `main`)
+git checkout main     # Console liegt dort
+python3 tools/balloon_sweep.py --tx rp2040 --rx esp32 --session <yymmddHHMM> --dry-run
+`REFUSED (pre-hardware, spec enforcement): …` heisst: der Plan verletzt die Spec
+(LEN-Cap 255/511, GAP >= 40 000 us bei LEN > 256, Frequenz-Paar). Plan
+korrigieren, nicht umgehen. 2.4-GHz-Cross-Board ist nur RP2040<->ESP32 erlaubt.

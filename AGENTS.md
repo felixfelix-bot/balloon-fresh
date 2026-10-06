@@ -401,3 +401,40 @@ single entry point and it is deliberately self-contained.
   The E80↔E80 sweeps from 2026-08-21/22 are the *regression baseline* only; the
   cross-board pairs (E80↔ESP32, E80↔RP2040, ESP32↔RP2040) have no measurements
   yet.
+
+## Cross-Board Harmonized Bench (HARM chain) — `range-tests` branch
+This branch is the range-test lane of the harmonized cross-board bench
+(E80 / ESP32 / RP2040). Entry point:
+`docs/HARMONIZED-BENCH-PACKAGE.md` on branch **`main`** of this same repo
+(`https://github.com/felixfelix-bot/balloon-fresh.git`), together with
+`docs/HARMONIZED-RESULTS.md` and `docs/HARMONIZED-RUN-REPORT-TEMPLATE.md`.
+**The harmonized bench console is not on this branch.** `tools/balloon_sweep.py`,
+`docs/BENCH-CONSOLE-SPEC.md` and the harmonized docs exist only on `main`
+(HARM chain, `harm/t5-bench-console`); on this branch `tools/balloon_sweep.py`
+does not exist. Check out `main`, or merge it into this branch, before trying to
+drive a harmonized session. What this branch *does* carry is the legacy RP2040
+sweep path below.
+### Bench console / RP2040 build + flash
+cd firmware/rp2040
+make build-tx | build-rx | build-both      # firmware
+make flash-tx | flash-rx | flash-both      # via picotool / BOOTSEL
+make monitor-tx | monitor-rx
+make ports                                  # re-detect ports; never guess
+Legacy sweep drive (this branch):
+BALLOON_TRACK=range-tests python3 tools/balloon-board-lock.py acquire board-a \
+    --purpose "range sweep" --timeout 120      # lock is mandatory before flashing
+python3 tools/sweep_flash.py
+python3 tools/sweep_capture.py 480             # >= 2 full cycles
+BALLOON_TRACK=range-tests python3 tools/balloon-board-lock.py release board-a
+Harmonized session (after switching to `main`):
+python3 tools/balloon_sweep.py --tx rp2040 --rx esp32 --session <yymmddHHMM> --dry-run
+Rules:
+- Never flash without the board lock; never work around a
+  `REFUSED (pre-hardware, spec enforcement): …` result — it means the plan
+  violates the spec (LEN cap 255/511, GAP >= 40 000 us for LEN > 256, frequency
+  pair).
+- 868 MHz and 2.4 GHz results are never mixed; 2.4 GHz cross-board is legal only
+  on RP2040 ↔ ESP32.
+- Report runs from `docs/HARMONIZED-RUN-REPORT-TEMPLATE.md`; record unrun configs
+  as `not run`. Data-handover convention for this branch:
+  `docs/data-handover/DATA-HANDOVER-2026-08-17.md`.
