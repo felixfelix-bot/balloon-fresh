@@ -1,0 +1,19 @@
+{
+  "tool": "pcb_order_gate",
+  "status": "PASS",
+  "errors": 0,
+  "warnings": 8,
+  "unconnected": 0,
+  "excluded": 0,
+  "reason": "",
+  "rules": {
+    "violations:silk_overlap": 2,
+    "violations:silk_over_copper": 3,
+    "violations:silk_edge_clearance": 3
+  },
+  "board": "v8i_krt_gnss.kicad_pcb",
+  "board_sha256": "638de56387721460100cd3048fb23229294f510f0a2d89795026c7e6c0cfd0ea",
+  "fab": "tracker/hardware/fab-v8i",
+  "fab_sha256": "6690142e47e820b54b36ee42331c7e64f28e62ace70a8fd9c42a768681f403d8",
+  "kicad_version": "9.0.8"
+}
