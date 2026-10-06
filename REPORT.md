@@ -41,9 +41,9 @@ branch inspected.
 ## Branch and commit
 
 - Local branch: `adr/radioband-tdm`
-- Local HEAD after commit: `__COMMIT_SHA__` (see `git log` output below)
-- Remote `github`: `__GITHUB_SHA__`
-- Remote `ngit`: `__NGIT_SHA__`
+- Local HEAD after commit: `0d3fe4778c7d800998f8f8db80d6a55a2cafb776`
+- Remote `github`: `0d3fe4778c7d800998f8f8db80d6a55a2cafb776`
+- Remote `ngit`: `0d3fe4778c7d800998f8f8db80d6a55a2cafb776`
 
 All three observed equal after push, confirmed by `git ls-remote github adr/radioband-tdm`
 and `git ls-remote ngit adr/radioband-tdm`.
