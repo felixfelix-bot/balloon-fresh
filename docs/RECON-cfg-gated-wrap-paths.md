@@ -46,7 +46,7 @@ No CI workflow and no release artifact ever enables them.
 
 ## 2. Method — exact commands and output summary
 
-All commands run from `/home/c03rad0r/repos/balloon-e80bench` unless noted.
+All commands run from `<repo>` unless noted.
 `tools/` shorthand = `firmware/e80-stm32-bench/tools/`.
 
 | # | Command (verbatim) | Output summary |
@@ -125,11 +125,11 @@ invoked, and what the release/CI scripts copy.
 
 | Gate | Where (absolute path : line) | Default | What enables it | Ships in a real build? | Judgement |
 |---|---|---|---|---|---|
-| Interpreter selection | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/Makefile:34` `PYTHON ?= python3` | `python3` (no `nostr_sdk`) | `PYTHON=<sdk-capable python>` override | No build pins it; CI never sets it; zip's README says `pip install pyserial` only | **The effective master gate**: all 3 production wrap sites are unreachable under repo defaults |
+| Interpreter selection | `<repo>/firmware/e80-stm32-bench/Makefile:34` `PYTHON ?= python3` | `python3` (no `nostr_sdk`) | `PYTHON=<sdk-capable python>` override | No build pins it; CI never sets it; zip's README says `pip install pyserial` only | **The effective master gate**: all 3 production wrap sites are unreachable under repo defaults |
 | `nostr_sdk` dependency | absent from `pyproject.toml`, `uv.lock`, every manifest (C20, C57) | not declared | operator pip-installs it manually | Not in any artifact | undeclared lazy dep — the wrap path is opt-in by environment, not by build |
-| Release artifact content | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/create-range-test-zip.sh` (tools loop, `for f in e80_bench_ctl.py e80_detect.py gps_stitch.py merge_csvs.py countdown.py`) | excludes all `cvm_*.py` | nothing — no flag can include them | The shipped zip contains **zero wrap code** | wrap paths are repo-only, not shipped |
-| CI coverage | `/home/c03rad0r/repos/balloon-e80bench/.github/workflows/ci-host-tests.yml` (C suites only), `test.yml` (root `tests/` only) | never runs `tools/` Python | nothing | No CI config enables a wrap path | dead-in-CI, not shipped — but **reachable by an operator** |
-| Firmware CMake | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/CMakeLists.txt` | no options | — | n/a | no gate exists |
+| Release artifact content | `<repo>/firmware/e80-stm32-bench/tools/create-range-test-zip.sh` (tools loop, `for f in e80_bench_ctl.py e80_detect.py gps_stitch.py merge_csvs.py countdown.py`) | excludes all `cvm_*.py` | nothing — no flag can include them | The shipped zip contains **zero wrap code** | wrap paths are repo-only, not shipped |
+| CI coverage | `<repo>/.github/workflows/ci-host-tests.yml` (C suites only), `test.yml` (root `tests/` only) | never runs `tools/` Python | nothing | No CI config enables a wrap path | dead-in-CI, not shipped — but **reachable by an operator** |
+| Firmware CMake | `<repo>/firmware/e80-stm32-bench/CMakeLists.txt` | no options | — | n/a | no gate exists |
 
 ### 3.2 Runtime gates — environment variables
 
@@ -138,7 +138,7 @@ they supply keys, relays, or the auth allow-list.
 
 | Env var | Absolute path : line | Enclosing block | Effect | Judgement |
 |---|---|---|---|---|
-| `CVM_SERVER_HEX` | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_board_server.py:757` | `main()` argparse default | server key (hex) — required together with `--nsec` or the server exits 2 (`:770-773`); `serve()` raises if `server_keys is None` (`:489-490`) | **gate ON the server wrap site** — without it, `_send_reply` is unreachable |
+| `CVM_SERVER_HEX` | `<repo>/firmware/e80-stm32-bench/tools/cvm_board_server.py:757` | `main()` argparse default | server key (hex) — required together with `--nsec` or the server exits 2 (`:770-773`); `serve()` raises if `server_keys is None` (`:489-490`) | **gate ON the server wrap site** — without it, `_send_reply` is unreachable |
 | `CVM_SERVER_NSEC` | `.../cvm_board_server.py:759` | `main()` argparse default | alternate key spelling | same gate, second key |
 | `CVM_ALLOWED_CLIENTS` | `.../cvm_board_server.py:762` | `main()` argparse default | allow-list; empty string → `[...] or None` at `:782-783` → **`None` = accept ALL clients** (`:430` skips check) | **default-open auth gate** — see candidate #4 |
 | `CVM_CONFIGS` | `.../cvm_board_server.py:765` | `main()` argparse default | initial preset push at startup (`:707-720`) | not a wrap toggle |
@@ -164,7 +164,7 @@ they supply keys, relays, or the auth allow-list.
 
 | # | Gate | Absolute path : line | Enclosing function | What enables the wrap path | Judgement |
 |---|---|---|---|---|---|
-| G1 | `if self.transport is not None: return await self._call_via_mock(...)` / `return await self._call_via_nostr(...)` | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py:143-145` (mock guard also `:101-102` in `connect()`) | `CVMClient.call()` | `transport=None` (production default, `amain:531-533`) → nostr wrap; any object → **wrap bypassed entirely** | **the only bypass of wrapping in the code** — but every `transport=` caller is a test (C9); **test-only alternate path** |
+| G1 | `if self.transport is not None: return await self._call_via_mock(...)` / `return await self._call_via_nostr(...)` | `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py:143-145` (mock guard also `:101-102` in `connect()`) | `CVMClient.call()` | `transport=None` (production default, `amain:531-533`) → nostr wrap; any object → **wrap bypassed entirely** | **the only bypass of wrapping in the code** — but every `transport=` caller is a test (C9); **test-only alternate path** |
 | G2 | `if RETRY_COUNT == 0: raise TimeoutError` — else second literal `gift_wrap` at `:208` | `.../cvm_campaign.py:191` (constant `:69` `RETRY_COUNT = 1`) | `CVMClient._call_via_nostr()` | module constant, **not settable by env/CLI**; =1 today | reachable second construction site (timeout-retry); flag-free |
 | G3 | `if p_tag is None or p_tag != server_pk_hex: return` (before unwrap) | `.../cvm_board_server.py:544` | `CVMBoardServer._handle_request()` | p-tag match | unwrap gate, not construction |
 | G4 | allow-list: `if self.allowed_clients is not None and sender_pk not in self.allowed_clients` | `.../cvm_board_server.py:430` | `CVMBoardServer.dispatch_rpc()` | **`None` (default) = accept all**; set via `--allowed-client-npubs`/`CVM_ALLOWED_CLIENTS` (`:782-800`) | auth gate, default-open |
@@ -179,7 +179,7 @@ they supply keys, relays, or the auth allow-list.
 ## 4. Candidates (numbered)
 
 1. **TCP board server — live unwrapped bypass channel.**
-   `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/e80_board_server.py:218`
+   `<repo>/firmware/e80-stm32-bench/tools/e80_board_server.py:218`
    (`class BoardTCPServer`, bind `0.0.0.0:7780` at `:221/:232/:417`),
    entry `main():447`, `run_server():349`.
    What enables it: `tools/Makefile` targets `tx-server`/`rx-server`/`auto-server`/`range-test`/`all-in-one`
@@ -196,7 +196,7 @@ they supply keys, relays, or the auth allow-list.
    8685 — stale vs code 7780, C80.)
 
 2. **MockTransport wrap bypass — test-only.**
-   `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py:143-145`
+   `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py:143-145`
    in `CVMClient.call()`, with the guard `:101-102` in `connect()`.
    What enables it: passing `transport=` to the `CVMClient` constructor
    (`:84`). Every single caller that does is a test file
@@ -206,7 +206,7 @@ they supply keys, relays, or the auth allow-list.
    configuration — but it is the seam a future "local mode" flag would use.
 
 3. **Retry-wrap second construction site — reachable, constant-gated.**
-   `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py:208`
+   `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py:208`
    in `CVMClient._call_via_nostr()`, gated by `RETRY_COUNT` (`:69` = 1, checked
    `:191`). Enabled by: module constant only — no env/CLI/manifest knob.
    Judgement: **reachable alternate path** (fires on a reply timeout), but not
@@ -215,7 +215,7 @@ they supply keys, relays, or the auth allow-list.
    constant, the closest thing this Python codebase has to a `#[cfg]`.
 
 4. **Default-open auth gate on the wrap channel.**
-   `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_board_server.py:430`
+   `<repo>/firmware/e80-stm32-bench/tools/cvm_board_server.py:430`
    in `dispatch_rpc()`, with the `[...] or None` normalization at `:782-783`.
    An unset `CVM_ALLOWED_CLIENTS` / omitted `--allowed-client-npubs` makes the
    allow-list `None` → **every client is accepted**. The gate exists but its
@@ -223,7 +223,7 @@ they supply keys, relays, or the auth allow-list.
    Judgement: **reachable**; the "gate" is default-permissive.
 
 5. **Interpreter-gated reachability of ALL production wrap sites.**
-   `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/Makefile:34`
+   `<repo>/firmware/e80-stm32-bench/Makefile:34`
    (`PYTHON ?= python3`) + `tools/Makefile:18` + `nostr_sdk` absent from
    `pyproject.toml`/`uv.lock` (C20, C57). Under repo defaults, `import
    nostr_sdk` fails in `serve()`/`_call_via_nostr()`/`test_one_relay()`, i.e.
@@ -246,7 +246,7 @@ they supply keys, relays, or the auth allow-list.
    construction) — plan `docs/plans/cvm-e28-integration-audit.md` documents it.
 
 7. **Zero-config diagnostic self-wrap.**
-   `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_relay_test.py:82`
+   `<repo>/firmware/e80-stm32-bench/tools/cvm_relay_test.py:82`
    in `test_one_relay()`, wired to `make range-cvm-test`
    (`Makefile:724-727`). Enabled by: **nothing** — it generates ephemeral keys
    (`:37`) and gift-wraps to itself; the only wrap site reachable with no
