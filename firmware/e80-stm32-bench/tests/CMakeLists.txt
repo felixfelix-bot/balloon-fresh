@@ -86,4 +86,7 @@ if(HOST_PYTHON3)
     # (no hardware; tests/golden/*.txt per docs/BENCH-CONSOLE-SPEC.md).
     add_test(NAME test_balloon_sweep_python
              COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/test_balloon_sweep.py)
+    # Sweep tool: START-reply fail-fast validation + LEN caps (task FIX-T1).
+    add_test(NAME test_e80_sweep_full_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_e80_sweep_full.py)
 endif()

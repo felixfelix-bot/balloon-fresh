@@ -246,6 +246,24 @@ def arm_and_stream(tx, rx, cfg, npkts, toa=None, wait_extra=8):
     rx.reset_input_buffer()
     tx.write(f"START N={npkts} LEN={cfg['plen']} GAP={cfg['gap']}\r\n".encode())
     start_reply = readline(tx, 3.0)
+
+    # FIX-T1: validate the START reply before waiting on the burst. The
+    # firmware refuses illegal configs synchronously (e.g. 'ERR LEN (MAX 255
+    # LORA / 511 FLRC)', 'ERR NOT ARMED ...'); a None reply means the board
+    # never answered. Record the refusal in error= and skip the burst wait,
+    # so an invalid config does not stall in drain_lines() for the full
+    # (~90 s at SF12) window.
+    if not start_reply or not start_reply.startswith("OK START"):
+        err = start_reply if start_reply else "no reply to START (timeout)"
+        return {
+            "start_reply": start_reply,
+            "tx_lines": [],
+            "rx_lines": [],
+            "toa": toa,
+            "wait_s": 0,
+            "error": err,
+        }
+
     tx_lines = drain_lines(tx, wait_s)
     rx_lines = drain_lines(rx, 5)
     return {
@@ -335,12 +353,26 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port, npkts=NPKTS):
 
     # Burst — arm_and_stream lets campaign controller reuse this phase
     burst = arm_and_stream(tx, rx, cfg, npkts, toa=None)
+    t_cfg_end = time.monotonic()
+    cfg_t_end_iso = datetime.now().isoformat()
+    if burst.get("error"):
+        return {
+            "idx": idx, "label": cfg["label"], "mod": mod,
+            "sf": cfg.get("sf", ""), "bw": cfg.get("bw", ""),
+            "br": cfg.get("br", ""), "pa": cfg["pa"], "freq": cfg["freq"],
+            "plen": cfg["plen"], "gap_us": cfg["gap"], "toa_s": 0,
+            "dur_s": round(t_cfg_end - t_cfg_start, 3),
+            "cfg_t_start": cfg_t_start_iso, "cfg_t_end": cfg_t_end_iso,
+            "rx_pkts": 0, "crc_err": 0,
+            "rssi_avg": None, "rssi_min": None, "rssi_max": None,
+            "snr_avg": None, "snr_min": None,
+            "bit_err_total": 0, "tx_done": False,
+            "start_reply": burst["start_reply"], "pkts": [], "error": burst["error"],
+        }
     tx_lines = burst["tx_lines"]
     rx_lines = burst["rx_lines"]
     start_reply = burst["start_reply"]
     toa = burst["toa"]
-    t_cfg_end = time.monotonic()
-    cfg_t_end_iso = datetime.now().isoformat()
     tx_done = any("TX DONE" in l for l in tx_lines)
 
     stat = cmd(rx, "STAT?")
@@ -365,6 +397,7 @@ def run_config(idx, cfg, tx, rx, session_id, tx_port, rx_port, npkts=NPKTS):
         "snr_min": round(min(snr), 1) if snr else None,
         "bit_err_total": sum(p["bit_err"] for p in pkts),
         "tx_done": tx_done, "start_reply": start_reply, "pkts": pkts,
+        "error": "",
     }
 
 
@@ -555,8 +588,10 @@ def main():
         try:
             r = run_config(i, cfg, tx, rx, session_id, tx_port, rx_port)
             results.append(r)
-            # Surface invalid configs (e.g. LEN > chip cap) in the error column
-            err_msg = r.get("start_reply", "") if r.get("invalid") else ""
+            # Surface invalid/fail-fast configs in the error column
+            err_msg = r.get("error", "")
+            if not err_msg and r.get("invalid"):
+                err_msg = r.get("start_reply", "")
             row = [r.get(k, "") for k in SUMMARY_FIELDS[:-1]] + [err_msg[:60]]
             print(f"rx={r['rx_pkts']}/{NPKTS} rssi={r['rssi_avg']} snr={r['snr_avg']} "
                   f"crc={r['crc_err']} done={r['tx_done']}", flush=True)
