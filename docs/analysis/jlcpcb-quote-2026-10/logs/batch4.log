@@ -1,0 +1,35 @@
+===== g_102_4L_16
+ dims_readback: ['102', '102']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$8.00", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== g_102p5_4L_16
+ dims_readback: ['102.5', '102.5']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.50", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.50", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== g_102p9_4L_16
+ dims_readback: ['102.9', '102.9']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.60", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== g_100x106_4L_16
+ dims_readback: ['100', '106']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.60", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== g_106x100_4L_16
+ dims_readback: ['106', '100']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.60", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== g_103_4L_16_repeat
+ dims_readback: ['103', '103']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.60", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== g_89_4L_16_repeat
+ dims_readback: ['89', '89']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$8.00", "shipping": "$23.21", "weight": "0.26kg", "build_time_lines": {}}

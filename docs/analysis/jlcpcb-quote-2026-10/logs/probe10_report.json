@@ -1,0 +1,805 @@
+[
+  {
+    "dims": 89,
+    "target_layers": null,
+    "target_surf": null,
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "after_surf": "HASL(with lead)",
+    "after_layers": "2",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 89,
+    "target_layers": "2",
+    "target_surf": "LeadFree HASL",
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_surf": {
+      "clicked": "LeadFree HASL",
+      "now": "LeadFree HASL"
+    },
+    "set_layers": {
+      "clicked": "2",
+      "now": "2"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "2",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 89,
+    "target_layers": "4",
+    "target_surf": "ENIG",
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_surf": {
+      "clicked": "ENIG",
+      "now": "ENIG"
+    },
+    "set_layers": {
+      "clicked": "4",
+      "now": "4"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "4",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 103,
+    "target_layers": "2",
+    "target_surf": "LeadFree HASL",
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_surf": {
+      "clicked": "LeadFree HASL",
+      "now": "LeadFree HASL"
+    },
+    "set_layers": {
+      "clicked": "2",
+      "now": "2"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "2",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 103,
+    "target_layers": "4",
+    "target_surf": "ENIG",
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_surf": {
+      "clicked": "ENIG",
+      "now": "ENIG"
+    },
+    "set_layers": {
+      "clicked": "4",
+      "now": "4"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "4",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 103,
+    "target_layers": "2",
+    "target_surf": "HASL(with lead)",
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_surf": {
+      "clicked": "HASL(with lead)",
+      "now": "HASL(with lead)"
+    },
+    "set_layers": {
+      "clicked": "2",
+      "now": "2"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "2",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 103,
+    "target_layers": "4",
+    "target_surf": "HASL(with lead)",
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_surf": {
+      "clicked": "HASL(with lead)",
+      "now": "HASL(with lead)"
+    },
+    "set_layers": {
+      "clicked": "4",
+      "now": "4"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "4",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 103,
+    "target_layers": "2",
+    "target_surf": null,
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_layers": {
+      "clicked": "2",
+      "now": "2"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "2",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  },
+  {
+    "dims": 103,
+    "target_layers": "4",
+    "target_surf": null,
+    "pristine_layers": "2",
+    "pristine_surf": "HASL(with lead)",
+    "pristine_thick": [
+      {
+        "t": "0.4mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ],
+    "set_layers": {
+      "clicked": "4",
+      "now": "4"
+    },
+    "after_surf": "HASL(with lead)",
+    "after_layers": "4",
+    "thick_states": [
+      {
+        "t": "0.4mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.6mm",
+        "dis": true,
+        "cur": false
+      },
+      {
+        "t": "0.8mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.0mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.2mm",
+        "dis": false,
+        "cur": false
+      },
+      {
+        "t": "1.6mm",
+        "dis": false,
+        "cur": true
+      },
+      {
+        "t": "2.0mm",
+        "dis": false,
+        "cur": false
+      }
+    ]
+  }
+]

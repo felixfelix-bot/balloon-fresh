@@ -1,0 +1,2916 @@
+[
+  {
+    "name": "b_100_4L_08",
+    "at": "2026-10-07T23:32:51",
+    "dims": [
+      100,
+      100
+    ],
+    "dims_readback": [
+      "100",
+      "100"
+    ],
+    "qty": 5,
+    "note": "",
+    "layers": "4",
+    "thickness": "0.8mm",
+    "surface_finish": "LeadFree HASL",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.8mm",
+        "got": "0.8mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$13.30",
+    "shipping": "$23.21",
+    "weight": "0.22kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$5.30"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "b_100_4L_16",
+    "at": "2026-10-07T23:34:39",
+    "dims": [
+      100,
+      100
+    ],
+    "dims_readback": [
+      "100",
+      "100"
+    ],
+    "qty": 5,
+    "note": "tier boundary <=100",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$8.00",
+    "shipping": "$23.21",
+    "weight": "0.29kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "b_101_4L_16",
+    "at": "2026-10-07T23:35:18",
+    "dims": [
+      101,
+      101
+    ],
+    "dims_readback": [
+      "101",
+      "101"
+    ],
+    "qty": 5,
+    "note": "1mm over the boundary",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$8.00",
+    "shipping": "$23.21",
+    "weight": "0.29kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "b_103_4L_08",
+    "at": "2026-10-07T23:31:33",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "",
+    "layers": "4",
+    "thickness": "0.8mm",
+    "surface_finish": "LeadFree HASL",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.8mm",
+        "got": "0.8mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$36.90",
+    "shipping": "$23.21",
+    "weight": "0.22kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$5.30"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "b_103_4L_16",
+    "at": "2026-10-07T23:30:15",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "b_89_4L_08",
+    "at": "2026-10-07T23:32:11",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "",
+    "layers": "4",
+    "thickness": "0.8mm",
+    "surface_finish": "LeadFree HASL",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.8mm",
+        "got": "0.8mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$13.20",
+    "shipping": "$23.21",
+    "weight": "0.20kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$5.20"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "b_89_4L_16",
+    "at": "2026-10-07T23:30:54",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$8.00",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "c_100_2L_06",
+    "at": "2026-10-07T23:36:39",
+    "dims": [
+      100,
+      100
+    ],
+    "dims_readback": [
+      "100",
+      "100"
+    ],
+    "qty": 5,
+    "note": "0.6mm at the cap",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Surface Finish",
+        "want": "LeadFree HASL",
+        "got": "LeadFree HASL",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.6mm",
+        "err": "DISABLED",
+        "option": "0.6mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$4.00",
+    "shipping": "$23.21",
+    "weight": "0.29kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "c_103_2L_06",
+    "at": "2026-10-07T23:35:57",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "0.6mm has a 100x100 cap",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Surface Finish",
+        "want": "LeadFree HASL",
+        "got": "LeadFree HASL",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.6mm",
+        "err": "DISABLED",
+        "option": "0.6mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$9.20",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$5.20"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "c_89_2L_06",
+    "at": "2026-10-07T23:37:20",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "0.6mm inside the cap",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Surface Finish",
+        "want": "LeadFree HASL",
+        "got": "LeadFree HASL",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.6mm",
+        "err": "DISABLED",
+        "option": "0.6mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$4.00",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_100x106_4L_16",
+    "at": "2026-10-07T23:48:19",
+    "dims": [
+      100,
+      106
+    ],
+    "dims_readback": [
+      "100",
+      "106"
+    ],
+    "qty": 5,
+    "note": "area test: 10600 mm2 same as 103x103",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_102_4L_16",
+    "at": "2026-10-07T23:46:22",
+    "dims": [
+      102,
+      102
+    ],
+    "dims_readback": [
+      "102",
+      "102"
+    ],
+    "qty": 5,
+    "note": "pin the tier boundary",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$8.00",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_102p5_4L_16",
+    "at": "2026-10-07T23:47:01",
+    "dims": [
+      102.5,
+      102.5
+    ],
+    "dims_readback": [
+      "102.5",
+      "102.5"
+    ],
+    "qty": 5,
+    "note": "pin the tier boundary",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.50",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.50"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_102p9_4L_16",
+    "at": "2026-10-07T23:47:40",
+    "dims": [
+      102.9,
+      102.9
+    ],
+    "dims_readback": [
+      "102.9",
+      "102.9"
+    ],
+    "qty": 5,
+    "note": "pin the tier boundary",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_103_4L_16_repeat",
+    "at": "2026-10-07T23:49:37",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "reproducibility repeat",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_106x100_4L_16",
+    "at": "2026-10-07T23:48:58",
+    "dims": [
+      106,
+      100
+    ],
+    "dims_readback": [
+      "106",
+      "100"
+    ],
+    "qty": 5,
+    "note": "area test reversed",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "g_89_4L_16_repeat",
+    "at": "2026-10-07T23:50:16",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "reproducibility repeat",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$8.00",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "h_100_2L_16",
+    "at": "2026-10-07T23:56:36",
+    "dims": [
+      100,
+      100
+    ],
+    "dims_readback": [
+      "100",
+      "100"
+    ],
+    "qty": 5,
+    "note": "2-layer at the cap",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$4.00",
+    "shipping": "$23.21",
+    "weight": "0.29kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "h_103_2L_16",
+    "at": "2026-10-07T23:55:57",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "2-layer matched pair",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$9.20",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$5.20"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "h_89_2L_16",
+    "at": "2026-10-07T23:55:18",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "2-layer matched pair",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$4.00",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "i_103_2L_06_LF",
+    "at": "2026-10-07T23:52:04",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "2L+0.6mm at 103",
+    "layers": "2",
+    "thickness": "0.6mm",
+    "surface_finish": "LeadFree HASL",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Surface Finish",
+        "want": "LeadFree HASL",
+        "got": "LeadFree HASL",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.6mm",
+        "got": "0.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$10.50",
+    "shipping": "$23.21",
+    "weight": "0.20kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$1.30"
+      ],
+      [
+        "Board",
+        "$5.20"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3 days",
+        "$0.00"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3 days",
+        "$0.00"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "i_103_4L_04_ENIG",
+    "at": "2026-10-07T23:53:36",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "4L+0.4mm needs ENIG",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "ENIG",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Surface Finish",
+        "want": "ENIG",
+        "got": "ENIG",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.4mm",
+        "err": "DISABLED",
+        "option": "0.4mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$49.40",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$17.80"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "i_89_2L_06_LF",
+    "at": "2026-10-07T23:52:50",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "2L+0.6mm at 89",
+    "layers": "2",
+    "thickness": "0.6mm",
+    "surface_finish": "LeadFree HASL",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Surface Finish",
+        "want": "LeadFree HASL",
+        "got": "LeadFree HASL",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.6mm",
+        "got": "0.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$9.20",
+    "shipping": "$23.21",
+    "weight": "0.18kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$1.30"
+      ],
+      [
+        "Board",
+        "$3.90"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3 days",
+        "$0.00"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3 days",
+        "$0.00"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "i_89_4L_04_ENIG",
+    "at": "2026-10-07T23:54:23",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "100",
+      "100"
+    ],
+    "qty": 5,
+    "note": "4L+0.4mm needs ENIG",
+    "layers": "2",
+    "thickness": null,
+    "surface_finish": "HASL(with lead)",
+    "via_covering": null,
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "2",
+        "took": false
+      },
+      {
+        "heading": "Surface Finish",
+        "want": "ENIG",
+        "got": "HASL(with lead)",
+        "took": false
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.4mm",
+        "err": "DISABLED",
+        "option": "0.4mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$0.00",
+    "shipping": "Charge: Choose destination country first",
+    "weight": null,
+    "panel_pairs": [
+      [
+        "PCB Build Time",
+        null
+      ]
+    ],
+    "build_time_options": [],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "j_103_4L_16_dd2",
+    "at": "2026-10-08T00:08:46",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "two designs on one order",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "2",
+    "delivery_format": "Panel by Customer",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Different Design",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$48.14",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Panel",
+        "$16.54"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "j_103_4L_16_repeat2",
+    "at": "2026-10-08T00:10:19",
+    "dims": [
+      103,
+      103
+    ],
+    "dims_readback": [
+      "103",
+      "103"
+    ],
+    "qty": 5,
+    "note": "headline repeat",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.60"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "j_50_4L_04_ENIG",
+    "at": "2026-10-08T00:07:09",
+    "dims": [
+      50,
+      50
+    ],
+    "dims_readback": [
+      "50",
+      "50"
+    ],
+    "qty": 5,
+    "note": "4L+0.4mm well inside the cap",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "ENIG",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Surface Finish",
+        "want": "ENIG",
+        "got": "ENIG",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.4mm",
+        "err": "DISABLED",
+        "option": "0.4mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$24.90",
+    "shipping": "$23.21",
+    "weight": "0.17kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$16.90"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "j_89_2L_16_repeat",
+    "at": "2026-10-08T00:09:36",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "2-layer repeat",
+    "layers": "2",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Tented",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$4.00",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$4.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "2 days",
+        "$0.00"
+      ],
+      [
+        "24 hours",
+        "$7.60"
+      ],
+      [
+        "24 hours PCBA Only",
+        "$0.00"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "j_89_4L_04_ENIG",
+    "at": "2026-10-08T00:06:21",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "4L+0.4mm at 89 (retry; earlier attempt failed to enter dims)",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "ENIG",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Surface Finish",
+        "want": "ENIG",
+        "got": "ENIG",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "0.4mm",
+        "err": "DISABLED",
+        "option": "0.4mm",
+        "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+        "took": false
+      }
+    ],
+    "calculated_price": "$25.50",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Special Offer",
+        "$8.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$17.50"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "j_89_4L_16_dd2",
+    "at": "2026-10-08T00:07:56",
+    "dims": [
+      89,
+      89
+    ],
+    "dims_readback": [
+      "89",
+      "89"
+    ],
+    "qty": 5,
+    "note": "two designs on one order",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "2",
+    "delivery_format": "Panel by Customer",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "Different Design",
+        "want": "2",
+        "got": "2",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$46.44",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Panel",
+        "$16.54"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$4.90"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "k_100x104_4L_16",
+    "at": "2026-10-07T23:57:16",
+    "dims": [
+      100,
+      104
+    ],
+    "dims_readback": [
+      "100",
+      "104"
+    ],
+    "qty": 5,
+    "note": "mechanism: area 10400 vs max-dim 104",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.50",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.50"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "k_104x100_4L_16",
+    "at": "2026-10-07T23:57:56",
+    "dims": [
+      104,
+      100
+    ],
+    "dims_readback": [
+      "104",
+      "100"
+    ],
+    "qty": 5,
+    "note": "mechanism reversed",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$31.50",
+    "shipping": "$23.21",
+    "weight": "0.30kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$6.50"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  },
+  {
+    "name": "k_50x103_4L_16",
+    "at": "2026-10-07T23:58:34",
+    "dims": [
+      50,
+      103
+    ],
+    "dims_readback": [
+      "50",
+      "103"
+    ],
+    "qty": 5,
+    "note": "mechanism: non-square, small area, max dim 103",
+    "layers": "4",
+    "thickness": "1.6mm",
+    "surface_finish": "HASL(with lead)",
+    "via_covering": "Plugged",
+    "outer_copper": "1 oz",
+    "different_design": "1",
+    "delivery_format": "Single PCB",
+    "steps": [
+      {
+        "heading": "Layers",
+        "want": "4",
+        "got": "4",
+        "took": true,
+        "attempts": 1
+      },
+      {
+        "heading": "PCB Thickness",
+        "want": "1.6mm",
+        "got": "1.6mm",
+        "took": true,
+        "attempts": 1
+      }
+    ],
+    "calculated_price": "$28.20",
+    "shipping": "$23.21",
+    "weight": "0.21kg",
+    "panel_pairs": [
+      [
+        "Engineering fee",
+        "$25.00"
+      ],
+      [
+        "Via Covering",
+        "$0.00"
+      ],
+      [
+        "Surface Finish",
+        "$0.00"
+      ],
+      [
+        "Board",
+        "$3.20"
+      ],
+      [
+        "PCB Build Time",
+        null
+      ],
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "build_time_options": [
+      [
+        "3-4 days",
+        "$0.00"
+      ],
+      [
+        "3 days PCBA Only",
+        "$0.00"
+      ],
+      [
+        "2-3 days",
+        "$66.20"
+      ]
+    ],
+    "page_load": "FRESH navigation (new tab) -> isolated"
+  }
+]
