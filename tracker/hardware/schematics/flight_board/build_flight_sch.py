@@ -24,6 +24,15 @@ import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
+
+# The F33 land pattern is DERIVED from the vendor's own land file at generation
+# time (scripts/gen_f33_landpattern.py), never copied from a hand-maintained
+# custom.pretty file.  That script exits 2 if the vendor file will not decode or
+# fails its own self-checks, so a stale/hand-edited F33 pattern cannot re-enter
+# the v9 design of record unnoticed.
+sys.path.insert(0, os.path.join(REPO, "scripts"))
+import gen_f33_landpattern as F33GEN  # noqa: E402
+
 PCB = os.path.join(REPO, "tracker", "hardware", "output",
                    "v8i_krt_gnss.kicad_pcb")
 OUT_SCH = os.path.join(HERE, "v_c3_flight.kicad_sch")
@@ -2117,18 +2126,37 @@ def v9_emit():
         sys.exit(3)
 
     # ---- footprints: hand the .pretty the fixed F33 + bare + the new SX1280
+    # The F33 land pattern is DERIVED AT GENERATION TIME from the vendor's own
+    # land file (docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb,
+    # via scripts/gen_f33_landpattern.py) instead of being copied out of a
+    # custom.pretty file, so a stale or hand-edited copy cannot re-enter the v9
+    # design of record.  F33GEN.decode_vendor() raises if the vendor file stops
+    # decoding to 18 pads / pitch 3.9289mm / rows on the two 39mm edges, and the
+    # coincidence test below fails the build if the emitted pads are not on the
+    # vendor land pattern (a pad COUNT match alone is not a geometry match).
+    f33_body = F33GEN.footprint_text(V9_LIBNAME, "LoRa2021F33_2G4")
+    f33_vendor = F33GEN.decode_vendor()
+    f33_hit, f33_near, f33_worst = F33GEN.coincidence(f33_body, f33_vendor["pads"])
+    if f33_hit != len(f33_vendor["pads"]):
+        sys.exit("v9: F33 footprint is NOT on the vendor land pattern "
+                 "(%d/%d pads coincident, nearest %.3f mm, worst %.3f mm)"
+                 % (f33_hit, len(f33_vendor["pads"]), f33_near, f33_worst))
+    print("F33 land pattern: %s" % F33GEN.describe(F33GEN.signature(f33_body)))
+    print("                  %d/%d pads coincident with the vendor land file "
+          "(nearest %.3f mm); land size TODO(unverified)"
+          % (f33_hit, len(f33_vendor["pads"]), f33_near))
     fp_sources = [
-        (os.path.join(V9_SRC_PRETTY, "LoRa2021F33_2G4.kicad_mod"),
-         "LoRa2021F33_2G4"),
+        (None, "LoRa2021F33_2G4", f33_body),
         (os.path.join(V9_SRC_PRETTY, "LoRa2021_Castellated.kicad_mod"),
-         "LoRa2021_Castellated"),
-        (V9_SX_FP, "SX1280_QFN24"),
+         "LoRa2021_Castellated", None),
+        (V9_SX_FP, "SX1280_QFN24", None),
     ]
     written = []
-    for src, leaf in fp_sources:
-        if not os.path.exists(src):
-            sys.exit("v9: missing footprint source %s" % src)
-        body = open(src).read()
+    for src, leaf, body in fp_sources:
+        if body is None:
+            if not os.path.exists(src):
+                sys.exit("v9: missing footprint source %s" % src)
+            body = open(src).read()
         body = re.sub(r'\(footprint\s+"[^"]*"',
                       '(footprint "%s:%s"\n\t\t(version 20250114)\n'
                       '\t\t(generator "pcbnew")\n\t\t(generator_version "9.0")'

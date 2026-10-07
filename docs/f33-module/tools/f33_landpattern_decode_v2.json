@@ -681,7 +681,7 @@
   ],
   "repo_footprints": [
     {
-      "path": "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "path": "tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod",
       "pads": 18,
       "pad_size_mm": [
         [
@@ -689,111 +689,131 @@
           1.0
         ]
       ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
       "body_mm": [
         39.0,
         21.0
       ],
       "distinct_pad_x": [
-        -19.5,
-        19.5
+        -15.7156,
+        -11.7867,
+        -7.8578,
+        -3.9289,
+        0.0,
+        3.9289,
+        7.8578,
+        11.7867,
+        15.7156
       ],
       "distinct_pad_y": [
-        -7.0,
-        -5.0,
-        -3.0,
-        -1.0,
-        1.0,
-        3.0,
-        5.0,
-        7.0,
-        9.0
+        -10.5,
+        10.5
       ],
       "pitch_x_mm": [
-        39.0
+        3.9289
       ],
       "pitch_y_mm": [
-        2.0
+        21.0
       ],
-      "pad_rows": "pads on the two 21.0 mm ENDS (x=+-19.5)",
-      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch",
+      "pad_rows": "pads on the two LONG edges (y=+-10.5)",
+      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module (LR2021 + 2W PA + TCXO), 39x21mm. Pad CENTRES decoded from the vendor land file LORA2021F33-2G4 footprint_pads.pcb (pitch 3.9289mm, 9 pads on each 39mm edge). Land size 2.0x1.0 mm TODO(unverified): datasheet s9 p8 is a raster with no text layer.",
       "pad_at_list": [
         [
-          -19.5,
-          -7.0
+          -15.7156,
+          -10.5
         ],
         [
-          -19.5,
-          -5.0
+          -15.7156,
+          10.5
         ],
         [
-          -19.5,
-          -3.0
+          -11.7867,
+          -10.5
         ],
         [
-          -19.5,
-          -1.0
+          -11.7867,
+          10.5
         ],
         [
-          -19.5,
-          1.0
+          -7.8578,
+          -10.5
         ],
         [
-          -19.5,
-          3.0
+          -7.8578,
+          10.5
         ],
         [
-          -19.5,
-          5.0
+          -3.9289,
+          -10.5
         ],
         [
-          -19.5,
-          7.0
+          -3.9289,
+          10.5
         ],
         [
-          -19.5,
-          9.0
+          0.0,
+          -10.5
         ],
         [
-          19.5,
-          -7.0
+          -0.0,
+          10.5
         ],
         [
-          19.5,
-          -5.0
+          3.9289,
+          -10.5
         ],
         [
-          19.5,
-          -3.0
+          3.9289,
+          10.5
         ],
         [
-          19.5,
-          -1.0
+          7.8578,
+          -10.5
         ],
         [
-          19.5,
-          1.0
+          7.8578,
+          10.5
         ],
         [
-          19.5,
-          3.0
+          11.7867,
+          -10.5
         ],
         [
-          19.5,
-          5.0
+          11.7867,
+          10.5
         ],
         [
-          19.5,
-          7.0
+          15.7156,
+          -10.5
         ],
         [
-          19.5,
-          9.0
+          15.7156,
+          10.5
         ]
       ],
       "repo_rel": "tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod"
     },
     {
-      "path": "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "path": "tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod",
       "pads": 18,
       "pad_size_mm": [
         [
@@ -801,111 +821,131 @@
           1.0
         ]
       ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
       "body_mm": [
         39.0,
         21.0
       ],
       "distinct_pad_x": [
-        -19.5,
-        19.5
+        -15.7156,
+        -11.7867,
+        -7.8578,
+        -3.9289,
+        0.0,
+        3.9289,
+        7.8578,
+        11.7867,
+        15.7156
       ],
       "distinct_pad_y": [
-        -7.0,
-        -5.0,
-        -3.0,
-        -1.0,
-        1.0,
-        3.0,
-        5.0,
-        7.0,
-        9.0
+        -10.5,
+        10.5
       ],
       "pitch_x_mm": [
-        39.0
+        3.9289
       ],
       "pitch_y_mm": [
-        2.0
+        21.0
       ],
-      "pad_rows": "pads on the two 21.0 mm ENDS (x=+-19.5)",
-      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch",
+      "pad_rows": "pads on the two LONG edges (y=+-10.5)",
+      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module (LR2021 + 2W PA + TCXO), 39x21mm. Pad CENTRES decoded from the vendor land file LORA2021F33-2G4 footprint_pads.pcb (pitch 3.9289mm, 9 pads on each 39mm edge). Land size 2.0x1.0 mm TODO(unverified): datasheet s9 p8 is a raster with no text layer.",
       "pad_at_list": [
         [
-          -19.5,
-          -7.0
+          -15.7156,
+          -10.5
         ],
         [
-          -19.5,
-          -5.0
+          -15.7156,
+          10.5
         ],
         [
-          -19.5,
-          -3.0
+          -11.7867,
+          -10.5
         ],
         [
-          -19.5,
-          -1.0
+          -11.7867,
+          10.5
         ],
         [
-          -19.5,
-          1.0
+          -7.8578,
+          -10.5
         ],
         [
-          -19.5,
-          3.0
+          -7.8578,
+          10.5
         ],
         [
-          -19.5,
-          5.0
+          -3.9289,
+          -10.5
         ],
         [
-          -19.5,
-          7.0
+          -3.9289,
+          10.5
         ],
         [
-          -19.5,
-          9.0
+          0.0,
+          -10.5
         ],
         [
-          19.5,
-          -7.0
+          -0.0,
+          10.5
         ],
         [
-          19.5,
-          -5.0
+          3.9289,
+          -10.5
         ],
         [
-          19.5,
-          -3.0
+          3.9289,
+          10.5
         ],
         [
-          19.5,
-          -1.0
+          7.8578,
+          -10.5
         ],
         [
-          19.5,
-          1.0
+          7.8578,
+          10.5
         ],
         [
-          19.5,
-          3.0
+          11.7867,
+          -10.5
         ],
         [
-          19.5,
-          5.0
+          11.7867,
+          10.5
         ],
         [
-          19.5,
-          7.0
+          15.7156,
+          -10.5
         ],
         [
-          19.5,
-          9.0
+          15.7156,
+          10.5
         ]
       ],
       "repo_rel": "tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod"
     },
     {
-      "path": "/home/c03rad0r/repos/balloon-fresh/tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "path": "tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod",
       "pads": 18,
       "pad_size_mm": [
         [
@@ -913,105 +953,125 @@
           1.0
         ]
       ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
       "body_mm": [
         39.0,
         21.0
       ],
       "distinct_pad_x": [
-        -19.5,
-        19.5
+        -15.7156,
+        -11.7867,
+        -7.8578,
+        -3.9289,
+        0.0,
+        3.9289,
+        7.8578,
+        11.7867,
+        15.7156
       ],
       "distinct_pad_y": [
-        -7.0,
-        -5.0,
-        -3.0,
-        -1.0,
-        1.0,
-        3.0,
-        5.0,
-        7.0,
-        9.0
+        -10.5,
+        10.5
       ],
       "pitch_x_mm": [
-        39.0
+        3.9289
       ],
       "pitch_y_mm": [
-        2.0
+        21.0
       ],
-      "pad_rows": "pads on the two 21.0 mm ENDS (x=+-19.5)",
-      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, 2.0mm pitch",
+      "pad_rows": "pads on the two LONG edges (y=+-10.5)",
+      "descr": "NiceRF LoRa2021F33-2G4, 18-pin castellated module (LR2021 + 2W PA + TCXO), 39x21mm. Pad CENTRES decoded from the vendor land file LORA2021F33-2G4 footprint_pads.pcb (pitch 3.9289mm, 9 pads on each 39mm edge). Land size 2.0x1.0 mm TODO(unverified): datasheet s9 p8 is a raster with no text layer.",
       "pad_at_list": [
         [
-          -19.5,
-          -7.0
+          -15.7156,
+          -10.5
         ],
         [
-          -19.5,
-          -5.0
+          -15.7156,
+          10.5
         ],
         [
-          -19.5,
-          -3.0
+          -11.7867,
+          -10.5
         ],
         [
-          -19.5,
-          -1.0
+          -11.7867,
+          10.5
         ],
         [
-          -19.5,
-          1.0
+          -7.8578,
+          -10.5
         ],
         [
-          -19.5,
-          3.0
+          -7.8578,
+          10.5
         ],
         [
-          -19.5,
-          5.0
+          -3.9289,
+          -10.5
         ],
         [
-          -19.5,
-          7.0
+          -3.9289,
+          10.5
         ],
         [
-          -19.5,
-          9.0
+          0.0,
+          -10.5
         ],
         [
-          19.5,
-          -7.0
+          -0.0,
+          10.5
         ],
         [
-          19.5,
-          -5.0
+          3.9289,
+          -10.5
         ],
         [
-          19.5,
-          -3.0
+          3.9289,
+          10.5
         ],
         [
-          19.5,
-          -1.0
+          7.8578,
+          -10.5
         ],
         [
-          19.5,
-          1.0
+          7.8578,
+          10.5
         ],
         [
-          19.5,
-          3.0
+          11.7867,
+          -10.5
         ],
         [
-          19.5,
-          5.0
+          11.7867,
+          10.5
         ],
         [
-          19.5,
-          7.0
+          15.7156,
+          -10.5
         ],
         [
-          19.5,
-          9.0
+          15.7156,
+          10.5
         ]
       ],
       "repo_rel": "tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod"
@@ -1020,6 +1080,26 @@
   "repo_board_instance": {
     "source": "hub_board_f33.kicad_pcb",
     "pads": 18,
+    "pad_numbers": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18"
+    ],
     "pad_size_mm": [
       [
         2.0,
@@ -1101,11 +1181,185 @@
       ]
     ]
   },
+  "graded": [
+    {
+      "subject": "tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "pads": 18,
+      "coincident": 18,
+      "nearest_mm": 0.0,
+      "worst_mm": 0.0,
+      "verdict": "PASS",
+      "bbox_mm": [
+        31.4312,
+        21.0
+      ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "subject": "tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "pads": 18,
+      "coincident": 18,
+      "nearest_mm": 0.0,
+      "worst_mm": 0.0,
+      "verdict": "PASS",
+      "bbox_mm": [
+        31.4312,
+        21.0
+      ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "subject": "tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod",
+      "pads": 18,
+      "coincident": 18,
+      "nearest_mm": 0.0,
+      "worst_mm": 0.0,
+      "verdict": "PASS",
+      "bbox_mm": [
+        31.4312,
+        21.0
+      ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "subject": "hub_board_f33.kicad_pcb  (shipped board instance; STALE, superseded)",
+      "pads": 18,
+      "coincident": 0,
+      "nearest_mm": 4.0708,
+      "worst_mm": 10.226,
+      "verdict": "FAIL",
+      "bbox_mm": [
+        39.0,
+        16.0
+      ],
+      "pad_numbers": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
+      "pad_size_mm": [
+        [
+          2.0,
+          1.0
+        ]
+      ]
+    }
+  ],
   "mismatch": {
-    "repo_pads": 18,
-    "coincident_within_0.05mm": 0,
-    "nearest_mm": 4.0708,
-    "worst_mm": 10.226
+    "tracker/hardware/hub_board_f33_jlcpcb/custom.pretty/LoRa2021F33_2G4.kicad_mod": {
+      "pads": 18,
+      "coincident_within_0.05mm": 18,
+      "nearest_mm": 0.0,
+      "worst_mm": 0.0
+    },
+    "tracker/hardware/hub_board_diy/custom.pretty/LoRa2021F33_2G4.kicad_mod": {
+      "pads": 18,
+      "coincident_within_0.05mm": 18,
+      "nearest_mm": 0.0,
+      "worst_mm": 0.0
+    },
+    "tracker/hardware/output/pcb-handoff/custom.pretty/LoRa2021F33_2G4.kicad_mod": {
+      "pads": 18,
+      "coincident_within_0.05mm": 18,
+      "nearest_mm": 0.0,
+      "worst_mm": 0.0
+    },
+    "hub_board_f33.kicad_pcb  (shipped board instance; STALE, superseded)": {
+      "pads": 18,
+      "coincident_within_0.05mm": 0,
+      "nearest_mm": 4.0708,
+      "worst_mm": 10.226
+    }
   },
   "verdict": "FAIL"
 }

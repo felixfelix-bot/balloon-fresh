@@ -28,7 +28,15 @@ import struct, os, re, json, collections, sys
 
 UNIT = 1_500_000.0
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.expanduser("~/repos/balloon-fresh")
+# Resolve the repo root from THIS file's own location (docs/f33-module/tools ->
+# repo root) instead of a hard-coded checkout path.  The original hard-coded
+# `~/repos/balloon-fresh` graded whatever branch that shared primary checkout
+# happened to be on: on 2026-10-07 it was on feat/tracker-tx-tempcomp, i.e. a
+# branch that still carried the pre-fix pattern, so a re-run of this script did
+# NOT grade the branch under test.  Override with --repo if the tree is elsewhere.
+REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
+if len(sys.argv) > 1 and sys.argv[1] == "--repo":
+    REPO = os.path.abspath(sys.argv[2])
 VENDOR_REL = "docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb"
 BOARD_REL = "tracker/hardware/hub_board_f33.kicad_pcb"
 SUBJECT_RELS = [
@@ -189,6 +197,9 @@ def parse_kicad_footprint(path):
     py = [round(ys[i + 1] - ys[i], 4) for i in range(len(ys) - 1)]
     return {"path": path, "pads": len(pads),
             "pad_size_mm": sorted({(float(a[3]), float(a[4])) for a in pads}),
+            # the identity signature's 4th component: the pad-number string in
+            # file order (a count match alone is NOT a geometry match)
+            "pad_numbers": [a[0] for a in pads],
             "body_mm": [w, h],
             "distinct_pad_x": xs, "distinct_pad_y": ys,
             "pitch_x_mm": sorted(set(px)), "pitch_y_mm": sorted(set(py)),
@@ -212,12 +223,14 @@ def parse_board_instance(path):
                       seg)
     ats = sorted({(float(p[1]), float(p[2])) for p in pads})
     return {"source": os.path.basename(path), "pads": len(pads),
+            "pad_numbers": [p[0] for p in pads],
             "pad_size_mm": sorted({(float(p[3]), float(p[4])) for p in pads}),
             "pad_at_list": ats}
 
 
 def main():
     vendor_path = os.path.join(REPO, VENDOR_REL)
+    print("repo root   :", REPO)
     print("=" * 100)
     print("SOURCE A -- vendor pad file:", vendor_path)
     v = decode_vendor(vendor_path)
@@ -260,6 +273,11 @@ def main():
             continue
         fp = parse_kicad_footprint(p)
         fp["repo_rel"] = rel
+        # keep the evidence JSON portable: repo-relative, never an absolute
+        # checkout/worktree path (both the shared checkout and worker worktrees
+        # appear in this project, and a baked-in path is what made the original
+        # hard-coded REPO grade the wrong branch).
+        fp["path"] = rel
         subjects.append(fp)
         print("  %s" % rel)
         print("     descr=%r" % fp["descr"])
@@ -273,23 +291,57 @@ def main():
         print("     pads=%d size=%s" % (b["pads"], b["pad_size_mm"]))
         print("     pad centres=%s" % b["pad_at_list"])
 
-    # ---- mismatch metrics: best-case (nearest) distance repo-pad -> vendor-pad
+    # ---- mismatch metrics, PER SUBJECT: nearest repo-pad -> vendor-pad distance.
+    # A matching pad COUNT is necessary but NOT sufficient: the identity signature
+    # is (pad count, pad bbox, pad-size histogram, pad-number string).  Report all
+    # four for every subject, then the same against the shipped board instance -
+    # the board is a SEPARATE artifact and can be stale while the footprints are
+    # fixed (that is exactly the state after the d5a2e47 fix: the three
+    # custom.pretty copies were corrected, hub_board_f33.kicad_pcb was not).
     vp = [(p["x_mm"], p["y_mm"]) for p in v["pads"]]
-    rp = b["pad_at_list"] if b else subjects[0]["pad_at_list"]
-    dists = sorted(min(((rx - vx) ** 2 + (ry - vy) ** 2) ** 0.5 for vx, vy in vp)
-                   for rx, ry in rp)
-    coincident = sum(1 for d in dists if d < 0.05)
+
+    def grade(label, ats, numbers, pads, sizes):
+        dists = sorted(min(((rx - vx) ** 2 + (ry - vy) ** 2) ** 0.5 for vx, vy in vp)
+                       for rx, ry in ats)
+        hit = sum(1 for d in dists if d < 0.05)
+        xs = [q[0] for q in ats]
+        ys = [q[1] for q in ats]
+        ok = hit == len(vp)
+        print("  %-4s %s" % ("PASS" if ok else "FAIL", label))
+        print("       pads=%d  bbox=%.4f x %.4f mm  pad sizes=%s"
+              % (pads, max(xs) - min(xs), max(ys) - min(ys),
+                 ";".join("%gx%g" % tuple(s) for s in sorted(set(sizes)))))
+        print("       numbers=[%s]" % ",".join(numbers))
+        print("       vendor-coincident pads %d/%d  nearest %.3f mm  worst %.3f mm"
+              % (hit, len(vp), dists[0], dists[-1]))
+        return dict(subject=label, pads=pads, coincident=hit, nearest_mm=round(dists[0], 4),
+                    worst_mm=round(dists[-1], 4), verdict="PASS" if ok else "FAIL",
+                    bbox_mm=[round(max(xs) - min(xs), 4), round(max(ys) - min(ys), 4)],
+                    pad_numbers=numbers, pad_size_mm=sorted(set(sizes)))
+
     print()
-    print("  MISMATCH : repo pads coincident with a vendor pad (<=0.05 mm): %d of %d"
-          % (coincident, len(rp)))
-    print("             best-case (nearest) misalignment: %.3f mm   worst: %.3f mm"
-          % (dists[0], dists[-1]))
+    print("  PAD IDENTITY SIGNATURE + coincidence (count / bbox / size histogram /")
+    print("  pad-number string), graded against the vendor land file:")
+    graded = [grade(fp["repo_rel"], fp["pad_at_list"], fp["pad_numbers"], fp["pads"],
+                    fp["pad_size_mm"]) for fp in subjects]
+    if b:
+        graded.append(grade(b["source"] + "  (shipped board instance; STALE, superseded)",
+                            b["pad_at_list"], b.get("pad_numbers", []), b["pads"],
+                            b["pad_size_mm"]))
+
+    overall = "PASS" if all(g["verdict"] == "PASS" for g in graded) else "FAIL"
+    print()
+    print("  VERDICT  : %s -- %d of %d graded artifacts carry the vendor land pattern"
+          % (overall, sum(1 for g in graded if g["verdict"] == "PASS"), len(graded)))
 
     res = {"vendor": v, "datasheet_callouts_p8": DATASHEET_CALLOUTS_P8,
            "repo_footprints": subjects, "repo_board_instance": b,
-           "mismatch": {"repo_pads": len(rp), "coincident_within_0.05mm": coincident,
-                        "nearest_mm": round(dists[0], 4), "worst_mm": round(dists[-1], 4)},
-           "verdict": "FAIL"}
+           "graded": graded,
+           "mismatch": {g["subject"]: {"pads": g["pads"],
+                                       "coincident_within_0.05mm": g["coincident"],
+                                       "nearest_mm": g["nearest_mm"],
+                                       "worst_mm": g["worst_mm"]} for g in graded},
+           "verdict": overall}
     json.dump(res, open(os.path.join(HERE, "f33_landpattern_decode_v2.json"), "w"), indent=2)
     return res
 
