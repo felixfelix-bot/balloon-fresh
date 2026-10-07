@@ -16,6 +16,17 @@ import time
 import subprocess
 import pytest
 
+# ── Collection control ──
+# `p1b_ab_test.py` is NOT a test: it is a standalone hardware runner whose own
+# docstring says "Usage: python3 -u tests/p1b_ab_test.py", and it needs TWO
+# physical ESP32 boards on /dev/ttyACM2..9. It runs `argparse.parse_args()` and
+# then `sys.exit(1)` at IMPORT time when those ports are absent, so pytest
+# collected it and died with an INTERNALERROR (SystemExit: 1 before any test
+# ran). That made the suite unrunnable as a whole, which is why every
+# verification on this project had to fall back to naming individual test files.
+# It is meant to be invoked directly, not discovered -- so do not collect it.
+collect_ignore = ["p1b_ab_test.py"]
+
 # Board identification
 TX_SERIAL = "E663B035977F242D"
 RX_SERIAL = "E663B035973B8332"
