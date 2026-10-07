@@ -144,5 +144,22 @@ And root docs:
 
 ## 6. Commit and remote SHAs
 
-Pushed after this report was written; see `PROGRESS.md` and `git ls-remote` output
-for observed SHAs.
+Observed in tool output (tip of `pr/v8k-sch-board-sync`):
+
+```
+$ git rev-parse HEAD
+59b2d65e4ccd1a3dbed3d57ae7e99a2faa53b2db
+
+$ git ls-remote github refs/heads/pr/v8k-sch-board-sync
+59b2d65e4ccd1a3dbed3d57ae7e99a2faa53b2db\trefs/heads/pr/v8k-sch-board-sync
+
+$ git ls-remote ngit refs/heads/pr/v8k-sch-board-sync
+59b2d65e4ccd1a3dbed3d57ae7e99a2faa53b2db\trefs/heads/pr/v8k-sch-board-sync
+
+$ git ls-remote origin refs/heads/pr/v8k-sch-board-sync
+59b2d65e4ccd1a3dbed3d57ae7e99a2faa53b2db\trefs/heads/pr/v8k-sch-board-sync
+```
+
+Local HEAD == github remote SHA == ngit remote SHA == origin remote SHA.
+
+The main tie-off resolution commit is `59b2d65`.
