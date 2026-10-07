@@ -107,6 +107,43 @@ When the orchestrator (balloon-hermes) asks for a status update, fill the templa
 
 ---
 
+## DECISION RECORDS — READ BEFORE CHANGING ANYTHING (added 2026-10-08)
+
+This repo is **ADR-first**: a design change without a landed ADR is a draft, not a decision.
+
+- **`docs/adr/INDEX.md`** — every architecture decision, numbered. If two records disagree, the one
+  that explicitly supersedes wins. **A contradiction that names no winner is a DEFECT, not an
+  ambiguity** — fix the record; never pick a side silently.
+- **`docs/analysis/`** — findings and measurements, not decisions. Each must state its method and
+  the command that reproduces it. An analysis with no re-verification path is a claim, not evidence.
+- **Single-source-of-truth parameter registry** (`docs/`, when present) — owns the ONE authoritative
+  value for each contested parameter (outline, land size, flash size, band split, wing orientation,
+  cell class). A record asserting a different value for a registered parameter is **stale by
+  definition**: fix the record, never the registry.
+- ADRs carrying a **"For future sessions"** section state the one-line rule, the file paths and the
+  reproduce command. Read that section first.
+
+**Known defect class — FOUR instances measured on 2026-10-07/08.** Two records asserting different
+values for the same parameter, with nothing surfacing it: hub outline (22x22 vs 55x45 vs 103 mm);
+ESP32-S3 flash (16 MB vs 8 MB); "2.4 GHz RX on the F33" (vs the bare LoRa2021); wing plane
+orientation (ADR-049 vertical vs WING-TO-HUB-SOCKET-SPEC sec 1 "horizontal"). **When you assert a
+parameter, grep the repo for a competing value and cite the record that owns it.**
+
+**Environment gotchas — measured, each cost real time:**
+- KiCad's Python bindings (`pcbnew`) load **only under `/usr/bin/python3.14`**, NOT the 3.11 the test
+  suite uses. Importing `pcbnew` under 3.11 **segfaults the interpreter** and kills the whole pytest
+  run — probe it in a subprocess, never in-process.
+- `KICAD9_3DMODEL_DIR` is **unset** and no 3D model library is installed, so `kicad-cli pcb render`
+  draws **substrate + copper + silkscreen only**. Never infer component bodies from a render, and
+  never trust a vision description of one.
+- The suite is green (`python3 -m pytest tests/ -q --continue-on-collection-errors`). Under load,
+  `tests/test_board_lock.py::test_lock_status` can flake on a 10 s lock timeout — that is
+  **contention, not a regression**; re-run the single file to check.
+- **Before pruning worktrees, run `python3 scripts/worktree_unpushed_sweep.py`** — it exits 2 if any
+  worktree holds unpushed commits or uncommitted edits. `/tmp` is tmpfs; worktrees there are lost on
+  reboot. Keep worktrees in `~/worktrees/`.
+
+---
 # AGENTS.md — Instructions for AI Coding Agents
 
 ## Project Overview
