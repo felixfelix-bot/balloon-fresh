@@ -57,13 +57,55 @@ PCB_CLEAN = os.path.join(HW_DIR, "hub_board_v1_clean.kicad_pcb")
 import import_tracks_fixed as itf  # noqa: E402
 
 
+_PCBNEW_PROBE = None
+
+
+def _pcbnew_usable():
+    """Probe KiCad's python module in a SUBPROCESS, once, and cache the verdict.
+
+    `pytest.importorskip` alone is NOT sufficient here, and the reason is worth
+    writing down because it silently destroyed this suite's usefulness as a
+    gate: `importorskip` catches `ImportError`, but on this host the module is
+    FOUND and then **segfaults** while loading.  `/usr/lib/python3/dist-packages/
+    _pcbnew.so` is a symlink to `_pcbnew.kiface` (the KiCad kiface build, bound
+    to a different CPython ABI than the 3.11 interpreter the suite runs under),
+    so `import pcbnew` dies with SIGSEGV.
+
+    A segfault is not catchable in-process: it took the whole 518-item run down
+    at 73%, which is why every worker on this project has had to fall back to
+    running individual test files.  A child process is the only place a crash is
+    observable as a plain return code, so probe there and let the caller skip
+    loudly instead of dying.
+    """
+    global _PCBNEW_PROBE
+    if _PCBNEW_PROBE is None:
+        probe = ("import sys; "
+                 "sys.path.insert(0, '/usr/lib/python3/dist-packages'); "
+                 "import pcbnew; print('OK')")
+        try:
+            r = subprocess.run([sys.executable, "-c", probe],
+                               capture_output=True, timeout=120)
+            ok = r.returncode == 0 and b"OK" in r.stdout
+            why = "ok" if ok else (
+                f"import crashed, exit {r.returncode}"
+                + (" (SIGSEGV)" if r.returncode == -11 else ""))
+            _PCBNEW_PROBE = (ok, why)
+        except (OSError, subprocess.SubprocessError) as exc:
+            _PCBNEW_PROBE = (False, f"probe could not run: {exc!r}")
+    return _PCBNEW_PROBE
+
+
 def _pcbnew():
     """KiCad's python module, or a skip.
 
-    `exc_type=ImportError` matters: without it pytest 9.1 turns the import
-    failure into an error, so the spec would break CI on a machine that has no
-    KiCad instead of skipping the board-level half.
+    Skips -- rather than erroring or crashing -- when the module is absent OR
+    when importing it kills the interpreter (see `_pcbnew_usable` above).  Only
+    the board-level half of this spec is skipped; the pure-geometry half, which
+    is the part that encodes findings F1-F3, still runs everywhere.
     """
+    usable, why = _pcbnew_usable()
+    if not usable:
+        pytest.skip(f"KiCad python module unusable on this host ({why})")
     sys.path.insert(0, "/usr/lib/python3/dist-packages")
     return pytest.importorskip("pcbnew", exc_type=ImportError,
                                reason="KiCad python module absent")
