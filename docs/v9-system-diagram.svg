@@ -141,7 +141,7 @@
   <text x="977" y="239" font-size="10.5" fill="#c9d1d9">+33 dBm / 2 W at 5 V · 1100 mA burst</text>
   <text x="977" y="257" font-size="10.5" font-weight="700" fill="#f0b132">feed: PRE-REGULATOR (raw VSCAP)</text>
   <text x="977" y="275" font-size="10.5" fill="#c9d1d9">SPI2: SCK/MOSI/MISO/CS/BUSY/IRQ/RST</text>
-  <text x="977" y="293" font-size="10.5" fill="#c9d1d9">ANT1 = sub-GHz port · ANT2 = 2G4 port</text>
+  <text x="977" y="293" font-size="10.5" fill="#c9d1d9">ANT1 = sub-GHz port · ANT2 = 2G4 ranging (SX1280)</text>
   <text x="977" y="311" font-size="10.5" fill="#8b949e">F33_VSENSE divider → ESP32 ADC</text>
 
   <rect x="1268" y="162" width="282" height="160" rx="7" fill="#12202f" stroke="#58a6ff" stroke-width="1.6"/>
@@ -161,7 +161,7 @@
   <text x="1581" y="239" font-size="10.5" font-weight="700" fill="#f85149">NOT the timing authority</text>
   <text x="1581" y="257" font-size="10.5" fill="#c9d1d9">two-way ranging slot (ADR-035)</text>
   <text x="1581" y="275" font-size="10.5" fill="#c9d1d9">SPI3 + DIO1/DIO2/DIO3 + ANT_SW</text>
-  <text x="1581" y="293" font-size="10.5" fill="#8b949e">RFIO / VDD pins: TODO(unverified)</text>
+  <text x="1581" y="293" font-size="10.5" fill="#8b949e">RFIO-&gt;ANT2, VDD-&gt;+3V3; pad# TODO</text>
   <text x="1581" y="311" font-size="10.5" fill="#8b949e">in the netlist — ERC pin_not_connected</text>
 
   <!-- antennas -->
@@ -174,8 +174,8 @@
 
   <rect x="1182" y="336" width="200" height="100" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.4"/>
   <text x="1192" y="355" font-size="12.5" font-weight="700" fill="#e6edf3">ANT2</text>
-  <text x="1192" y="372" font-size="10.5" fill="#c9d1d9">U.FL_2G4_TXRX</text>
-  <text x="1192" y="392" font-size="11" font-weight="700" fill="#58a6ff">2.4 GHz (F33 port 2)</text>
+  <text x="1192" y="372" font-size="10.5" fill="#c9d1d9">U.FL_2G4_RANGE</text>
+  <text x="1192" y="392" font-size="11" font-weight="700" fill="#58a6ff">2.4 GHz (SX1280 RFIO)</text>
   <text x="1192" y="410" font-size="10" fill="#8b949e">wire dipole on the HUB</text>
   <text x="1192" y="426" font-size="10" fill="#8b949e">(ADR-009)</text>
 
@@ -383,7 +383,7 @@
   <text x="1246" y="1352" font-size="10.5" fill="#c9d1d9">• barometer MS5611-01BA (schematic) vs</text>
   <text x="1246" y="1368" font-size="10.5" fill="#c9d1d9">  MS5607-02BA03 (ADR-108) — reconcile</text>
   <text x="1246" y="1390" font-size="10.5" fill="#c9d1d9">• HUB_CONVERTER output rail TODO(unverified)</text>
-  <text x="1246" y="1406" font-size="10.5" fill="#c9d1d9">• D_CLAMP set point; U4 VDD / RFIO pins</text>
+  <text x="1246" y="1406" font-size="10.5" fill="#c9d1d9">• D_CLAMP set point; U4 pad NUMBERS only (nets set)</text>
   <text x="1246" y="1422" font-size="10.5" fill="#c9d1d9">• cut-driver part number</text>
   <text x="1246" y="1436" font-size="10.5" fill="#c9d1d9">• R_NTC1 / TH_NTC1 DNP — no NTC path (ADR-059)</text>
 </svg>

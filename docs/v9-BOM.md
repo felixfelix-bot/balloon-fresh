@@ -12,7 +12,7 @@ Every column except FUNCTION is read out of the netlist. The FUNCTION column
 and the ratings section are prose authored against in-repo sources; anything with
 no source carries `TODO(unverified)`.
 
-**Total component count: 46** (single hub+4-wing variant; netlist exports 47 nets). Count the rows below against `grep -c '(comp (ref ' tracker/hardware/schematics/flight_board/v9_flight.net` if you want to check this table against the schematic itself.
+**Total component count: 46** (single hub+4-wing variant; netlist exports 51 nets). Count the rows below against `grep -c '(comp (ref ' tracker/hardware/schematics/flight_board/v9_flight.net` if you want to check this table against the schematic itself.
 
 Title block on the schematic: *Balloon v9 Tri-Band Flight Board*, rev *v9-design-intent*.
 
@@ -23,7 +23,7 @@ Title block on the schematic: *Balloon v9 Tri-Band Flight Board*, rev *v9-design
 | # | Reference | Value | Footprint / library id | DNP | Function |
 |---:|---|---|---|---|---|
 | 1 | `ANT1` | `U.FL_433_TX` | `Connector_Coaxial : U.FL_Molex_MCRF_73412-0110_Vertical` / `Connector:Conn_Coaxial` | populated | 433 MHz DOWNLINK U.FL coaxial tap for the F33 sub-GHz port; hub wire dipole (ADR-009, ADR-034). |
-| 2 | `ANT2` | `U.FL_2G4_TXRX` | `Connector_Coaxial : U.FL_Molex_MCRF_73412-0110_Vertical` / `Connector:Conn_Coaxial` | populated | 2.4 GHz U.FL coaxial tap for the F33's second 50 ohm port (TX/RX); hub wire dipole. |
+| 2 | `ANT2` | `U.FL_2G4_RANGE` | `Connector_Coaxial : U.FL_Molex_MCRF_73412-0110_Vertical` / `Connector:Conn_Coaxial` | populated | 2.4 GHz U.FL coaxial tap for the F33's second 50 ohm port (TX/RX); hub wire dipole. |
 | 3 | `ANT3` | `U.FL_2G4_RX` | `Connector_Coaxial : U.FL_Molex_MCRF_73412-0110_Vertical` / `Connector:Conn_Coaxial` | populated | 2.4 GHz UPLINK-RX U.FL coaxial tap for the bare LoRa2021 receiver; hub wire dipole. |
 | 4 | `ANT4` | `U.FL_GNSS_L1` | `Connector_Coaxial : U.FL_Molex_MCRF_73412-0110_Vertical` / `Connector:Conn_Coaxial` | populated | GNSS L1 U.FL coaxial tap for the MAX-M10S; hub wire dipole with ground plane. |
 | 5 | `C4` | `10uF` | `Capacitor_SMD : C_0402_1005Metric` / `Device:C` | populated | GNSS rail decoupling on GNSS_VCC, after the R_F1 series element. |
@@ -61,7 +61,7 @@ Title block on the schematic: *Balloon v9 Tri-Band Flight Board*, rev *v9-design
 | 37 | `U3` | `LoRa2021_Castellated` | `balloon_flight_v9 : LoRa2021_Castellated` / `balloon_flight_v9:LR2021_BARE` | populated | LoRa2021 (bare, castellated) - 2.4 GHz UPLINK RX, crystal only (no TCXO), 1.8-3.6 V (ADR-034). |
 | 38 | `U4` | `SX1280` | `balloon_flight_v9 : SX1280_QFN24` / `balloon_flight_v9:SX1280` | populated | SX1280 - 2.4 GHz RANGING only: not a link carrier and not the timing authority (ADR-060). |
 | 39 | `U5` | `MAX-M10S` | `RF_GPS : ublox_MAX` / `RF_GPS:MAX-M10S` | populated | MAX-M10S GNSS receiver; its 1PPS on TIMEPULSE is the zero-gram clock-discipline source (ADR-056 D3). |
-| 40 | `U6` | `MS5611-01BA` | `Package_LGA : LGA-8_3x5mm_P1.25mm` / `Sensor_Pressure:MS5611-01BA` | populated | MS5611-01BA barometer on I2C. NOTE: ADR-108 names MS5607-02BA03 - see discrepancy note below. |
+| 40 | `U6` | `MS5611-01BA` | `Package_LGA : LGA-8_3x5mm_P1.25mm` / `balloon_flight_v9:MS5611_BARO` | populated | MS5611-01BA barometer on I2C. NOTE: ADR-108 names MS5607-02BA03 - see discrepancy note below. |
 | 41 | `U7` | `TPS7A02` | `Package_TO_SOT_SMD : SOT-23-5` / `balloon_flight_v9:TPS7A0233` | populated | TPS7A0233 LDO producing the 3V3 rail from VSCAP; rated ~200 mA (KiCad lib) / 300 mA (ADR-006) and CANNOT feed the F33. |
 | 42 | `U_CUT1` | `latched cut driver + cut-sense (part TODO(unverified))` | `—` / `balloon_flight_v9:CUT_CHANNEL` | populated | Latched cut driver for wing 1 (nichrome), powered from the post-BAT54/pre-LDO VSCAP node so a cut still works with the converter dead. |
 | 43 | `U_CUT2` | `latched cut driver + cut-sense (part TODO(unverified))` | `—` / `balloon_flight_v9:CUT_CHANNEL` | populated | Latched cut driver for wing 2 (nichrome); VSCAP-powered. |
@@ -144,7 +144,7 @@ Per-reference nets (for auditing any row above against the schematic):
 | Reference | Nets |
 |---|---|
 | `ANT1` | `/ANT1_433_TX`, `GND` |
-| `ANT2` | `/ANT2_2G4_TXRX`, `GND` |
+| `ANT2` | `/ANT2_2G4_RANGE`, `GND` |
 | `ANT3` | `/ANT3_2G4_RX`, `GND` |
 | `ANT4` | `/ANT4_GNSS_L1`, `GND` |
 | `C4` | `/GNSS_VCC`, `GND` |
@@ -177,12 +177,12 @@ Per-reference nets (for auditing any row above against the schematic):
 | `R_MON2` | `/F33_VSENSE`, `GND` |
 | `R_NTC1` | `/NTC_SENSE`, `/VTCXO_VNTC` |
 | `TH_NTC1` | `/NTC_SENSE`, `GND` |
-| `U1` | `+3V3`, `/F33_BUSY`, `/F33_CS_N`, `/F33_IRQ`, `/F33_MISO`, `/F33_MOSI`, `/F33_RESET_N`, `/F33_SCK`, `/F33_VSENSE`, `/GNSS_PPS`, `/GNSS_RX`, `/GNSS_TX`, `/I2C_SCL`, `/I2C_SDA`, `/SX1280_ANT_SW`, `/SX1280_BUSY`, `/SX1280_CS_N`, `/SX1280_DIO1`, `/SX1280_DIO2`, `/SX1280_DIO3`, `/SX1280_MISO`, `/SX1280_MOSI`, `/SX1280_RESET_N`, `/SX1280_SCK`, `GND`, `GND`, `GND` |
-| `U2` | `+3V3`, `/ANT1_433_TX`, `/ANT2_2G4_TXRX`, `/F33_BUSY`, `/F33_CS_N`, `/F33_IRQ`, `/F33_MISO`, `/F33_MOSI`, `/F33_RESET_N`, `/F33_SCK`, `/F33_VCC`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND` |
-| `U3` | `+3V3`, `/ANT3_2G4_RX`, `/F33_MISO`, `/F33_MOSI`, `/F33_SCK`, `/VTCXO_VNTC`, `GND`, `GND`, `GND`, `GND`, `GND` |
-| `U4` | `/SX1280_ANT_SW`, `/SX1280_BUSY`, `/SX1280_CS_N`, `/SX1280_DIO1`, `/SX1280_DIO2`, `/SX1280_DIO3`, `/SX1280_MISO`, `/SX1280_MOSI`, `/SX1280_RESET_N`, `/SX1280_SCK`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND` |
+| `U1` | `+3V3`, `/F33_BUSY`, `/F33_CS_N`, `/F33_IRQ`, `/F33_MISO`, `/F33_MOSI`, `/F33_RESET_N`, `/F33_SCK`, `/F33_VSENSE`, `/GNSS_PPS`, `/GNSS_RX`, `/GNSS_TX`, `/I2C_SCL`, `/I2C_SDA`, `/SX1280_ANT_SW`, `/SX1280_BUSY`, `/SX1280_CS_N`, `/SX1280_DIO1`, `/SX1280_DIO2`, `/SX1280_DIO3`, `/SX1280_MISO`, `/SX1280_MOSI`, `/SX1280_RESET_N`, `/SX1280_SCK`, `/U3_BUSY`, `/U3_CS_N`, `/U3_IRQ`, `/U3_RESET_N`, `GND`, `GND`, `GND` |
+| `U2` | `+3V3`, `/ANT1_433_TX`, `/F33_BUSY`, `/F33_CS_N`, `/F33_IRQ`, `/F33_MISO`, `/F33_MOSI`, `/F33_RESET_N`, `/F33_SCK`, `/F33_VCC`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND` |
+| `U3` | `+3V3`, `/ANT3_2G4_RX`, `/F33_MISO`, `/F33_MOSI`, `/F33_SCK`, `/U3_BUSY`, `/U3_CS_N`, `/U3_IRQ`, `/U3_RESET_N`, `/VTCXO_VNTC`, `GND`, `GND`, `GND`, `GND`, `GND` |
+| `U4` | `+3V3`, `+3V3`, `/ANT2_2G4_RANGE`, `/SX1280_ANT_SW`, `/SX1280_BUSY`, `/SX1280_CS_N`, `/SX1280_DIO1`, `/SX1280_DIO2`, `/SX1280_DIO3`, `/SX1280_MISO`, `/SX1280_MOSI`, `/SX1280_RESET_N`, `/SX1280_SCK`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND`, `GND` |
 | `U5` | `+3V3`, `+3V3`, `+3V3`, `/ANT4_GNSS_L1`, `/GNSS_PPS`, `/GNSS_RX`, `/GNSS_TX`, `/GNSS_VCC`, `GND`, `GND`, `GND` |
-| `U6` | `+3V3`, `/I2C_SCL`, `/I2C_SDA`, `GND` |
+| `U6` | `+3V3`, `+3V3`, `+3V3`, `/I2C_SCL`, `/I2C_SDA`, `GND`, `GND`, `GND` |
 | `U7` | `+3V3`, `/VSCAP`, `/VSCAP`, `GND` |
 | `U_CUT1` | `/CUT_SENSE_W1`, `/VSCAP`, `GND` |
 | `U_CUT2` | `/CUT_SENSE_W2`, `/VSCAP`, `GND` |
