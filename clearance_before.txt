@@ -1,0 +1,94 @@
+violations=174 unconnected=11
+violation keys: ['description', 'items', 'severity', 'type']
+
+=== clearance item-pair histogram ===
+    14  Via [GND] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     8  Via [+3V3] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     8  PTH pad 19 [GND] of U1 + Zone [+3V3] on In2.Cu, priority 0
+     5  Via [VCAP] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     5  Via [VCAP] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     4  Via [GPS_TX] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     4  Via [GPS_TX] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     4  Via [SPI_SCK] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     4  Via [SPI_SCK] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [SPI_NSS] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [SPI_NSS] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [SOLAR_IN] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [SOLAR_IN] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [LR_BUSY] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [LR_BUSY] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [LR_IRQ] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [LR_IRQ] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [I2C_SDA] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [SPI_MISO] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [I2C_SDA] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [SPI_MISO] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [I2C_SCL] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [I2C_SCL] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+     2  Via [LED_DRIVE] on F.Cu - B.Cu + Zone [GND] on In1.Cu, priority 0
+     2  Via [LED_DRIVE] on F.Cu - B.Cu + Zone [+3V3] on In2.Cu, priority 0
+
+=== clearance item kinds ===  (desc, layers) -> count
+    70  'Zone [+3V3] on In2.C' layers=()
+    68  'Zone [GND] on In1.Cu' layers=()
+    14  'Via [GND] on F.Cu - ' layers=()
+    10  'Via [VCAP] on F.Cu -' layers=()
+     8  'Via [+3V3] on F.Cu -' layers=()
+     8  'Via [GPS_TX] on F.Cu' layers=()
+     8  'Via [SPI_SCK] on F.C' layers=()
+     8  'PTH pad 19 [GND] of ' layers=()
+     4  'Via [SPI_NSS] on F.C' layers=()
+     4  'Via [SOLAR_IN] on F.' layers=()
+     4  'Via [LR_BUSY] on F.C' layers=()
+     4  'Via [LR_IRQ] on F.Cu' layers=()
+     4  'Via [I2C_SDA] on F.C' layers=()
+     4  'Via [SPI_MISO] on F.' layers=()
+     4  'Via [I2C_SCL] on F.C' layers=()
+     4  'Via [LED_DRIVE] on F' layers=()
+     4  'Via [UART0_RX] on F.' layers=()
+     4  'Via [SPI_MOSI] on F.' layers=()
+     3  'Track [I2C_SCL] on I' layers=()
+     2  'Track [SPI_NSS] on I' layers=()
+     2  'Track [VCAP] on In1.' layers=()
+     2  'Track [+3V3] on In1.' layers=()
+     2  'Track [SOLAR_IN] on ' layers=()
+     2  'Track [LED_DRIVE] on' layers=()
+     2  'Via [UART0_TX] on F.' layers=()
+
+=== all non-clearance violations (detail) ===
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.200 :: PTH pad 19 [GND] of U1
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: Track [LED_DRIVE] on F.Cu, length 13.2936 mm | NPTH pad of MNT2
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT3 | Zone [GND] on In1.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT3 | Zone [+3V3] on In2.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT4 | Zone [GND] on In1.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT4 | Zone [+3V3] on In2.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT2 | Zone [GND] on In1.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT2 | Zone [+3V3] on In2.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT1 | Zone [GND] on In1.Cu, priority 0
+  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actu :: NPTH pad of MNT1 | Zone [+3V3] on In2.Cu, priority 0
+  [silk_overlap] Silkscreen overlap :: Segment of U5 on F.Silkscreen | Reference field of U5
+  [silk_overlap] Silkscreen overlap :: Segment of ANT2 on F.Silkscreen | Reference field of ANT2
+  [silk_overlap] Silkscreen overlap :: Reference field of ANT2 | Segment of ANT2 on F.Silkscreen
+  [silk_over_copper] Silkscreen clipped by solder mask :: Segment of U2 on F.Silkscreen
+  [silk_over_copper] Silkscreen clipped by solder mask :: Segment of U2 on F.Silkscreen
+  [silk_over_copper] Silkscreen clipped by solder mask :: Reference field of ANT2
+  [lib_footprint_mismatch] Footprint 'LGA-8_3x5mm_P1.25mm' does not match copy in library 'Package_LGA'. :: Footprint U5
+  [silk_edge_clearance] Silkscreen clipped by board edge :: Rectangle on Edge.Cuts | Reference field of C_CAP
+  [silk_edge_clearance] Silkscreen clipped by board edge :: Rectangle on Edge.Cuts | Segment of U1 on F.Silkscreen
+  [silk_edge_clearance] Silkscreen clipped by board edge :: Rectangle on Edge.Cuts | Segment of U1 on F.Silkscreen
+  [track_dangling] Track has unconnected end :: Track [EN] on F.Cu, length 0.8485 mm
+  [track_dangling] Track has unconnected end :: Track [I2C_SDA] on F.Cu, length 8.3439 mm
+  [via_dangling] Via is not connected or connected on only one layer :: Via [I2C_SDA] on F.Cu - B.Cu
+  [track_dangling] Track has unconnected end :: Track [I2C_SCL] on F.Cu, length 16.6000 mm
+  [track_dangling] Track has unconnected end :: Track [I2C_SCL] on F.Cu, length 17.9605 mm
