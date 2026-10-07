@@ -17,6 +17,10 @@
   `adr/energy-policy`),
   `docs/adr/029-dual-band-flight-board.md` (branch `adr/radioband-tdm`),
   `docs/LR2021-LESSONS-2026-09.md` (branch `docs/lr2021-lessons`).
+- Datasheet source for **Addendum A** (amendment, 2026-10-07):
+  `docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf` and
+  `docs/data-handover/HARMONIZATION-GAP-ANALYSIS.md` (row N4) — both on branch
+  `docs/lr2021-lessons` (commit `581b38b`).
 
 > Numbering note: 042 was selected because 036–038 are taken on concurrent branches
 > (`adr/energy-policy`, `adr/radioband-tdm`/`adr/mcu-s3-no-fem`, `adr/wifi-bt-disabled`),
@@ -59,6 +63,11 @@ pre-distortion characterised in the cryo bath, (3) wider channel plan / LoRa car
 tolerance. The deciding number — carrier offset tolerance versus actual drift — is
 currently unquantified and is the gate that decides whether any mitigation is needed at
 all.**
+
+> **Amendment (2026-10-07, Addendum A):** the runtime temperature sensor is confirmed; the
+> 100 K NTC-on-pin-3 fix is ranked alongside the TCXO and strictly above the heater; a
+> temperature-triggered recalibration requirement and the ±10 ppm / −20…+70 °C characterised
+> window are recorded. §D1's heater arithmetic is **unchanged and still stands**.
 
 ### D1 — Reject the board heater
 
@@ -146,8 +155,10 @@ project can characterise it once and offset the synthesizer by the inverse.
    or counter; compute `Δf(T) = f_measured(T) − f_nominal`.
 5. **Fit:** fit a cubic (or vendor-recommended) polynomial `Δf(T)` over the sweep range.
 6. **Apply:** firmware writes `f_set = f_nominal − Δf(T)` into the LR2021 frequency
-   synthesizer, using a temperature reading from an on-board sensor or from the last known
-   soak temperature if no runtime sensor exists.
+   synthesizer, using a **runtime** temperature reading. *(Correction, Addendum A point 1: a
+   runtime sensor **does** exist — the LR2021 exposes `GetTemp` (raw or °C, with a selectable
+   source). The "on-board sensor or … last known soak temperature **if no runtime sensor
+   exists**" fallback that stood here is retracted; see Addendum A.)*
 7. **Pass criterion:** after applying the correction at each soak temperature, residual
    carrier offset is **< 50 % of the uncorrected offset at that temperature**, across the
    whole −60 °C … +40 °C range, AND the residual offset stays inside the LoRa carrier-offset
@@ -261,6 +272,164 @@ therefore protects both the energy budget and the altitude telemetry.
   still stand because no heater is needed.
 - A bench measurement showing the F33's TCXO does not meet its 0.5 ppm spec at −60 °C
   would reopen the TCXO-first choice.
+
+## Addendum A — datasheet correction: a runtime temperature sensor exists, and the NTC fix
+
+**Added 2026-10-07 as an AMENDMENT to this ADR — not a rewrite.** Every quote below was
+verified against the in-tree datasheet `docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf`
+(branch `docs/lr2021-lessons`; Semtech *Final Datasheet Rev. 2.1*, `DS.LR20xx 13/04/26`,
+243 pp) using `pdftotext -layout`; the chapter/table and the quoted line are given per point.
+Nothing in §D1 (the heater-rejection arithmetic) is removed or re-derived.
+
+### A1 — CORRECTION: a runtime temperature sensor DOES exist
+
+§D3 step 6 previously read "…using a temperature reading from an on-board sensor or from the
+last known soak temperature **if no runtime sensor exists**". **That premise is wrong and is
+retracted here.** The LR2021 has a temperature measurement command:
+
+- **§6.5.2 `GetTemp`** (datasheet p.113), `Table 6-32: GetTemp Command` /
+  `Table 6-33: GetTemp Response`. Quoted: *"The GetTemp command retrieves the current value of
+  the temperature in the specified Format."*
+- The command-table row (`Table 5-3: System Configuration Commands (Sheet 2 of 2)`, p.83) gives
+  `GetTemp 0x0125`, described as *"Measures and returns raw temperature measurement, or the
+  temperature in °C"*, with fields `Source(1:0)`, `Format`, `Resolution(2:0)`.
+- **`Source(1:0)`** — "sets the temperature sensor source for temperature measurement"
+  (§6.5.2, p.114): `0x00` Built-in junction temperature Vbe; `0x01` Built-in junction
+  temperature close to XOSC; `0x02` **NTC**; `0x03` RFU. `Format` selects raw vs °C.
+
+So firmware can read a real, runtime, **source-selectable** temperature — from the die, the die
+near the oscillator, or an external NTC. The "last known soak temperature" fallback is not
+needed for this reason.
+
+### A2 — THE CHEAP HARDWARE FIX (rank ABOVE the heater, alongside the TCXO)
+
+The LR2021 already contains the correct closed loop. The datasheet describes it directly:
+
+- **§1.9.2 "32MHz Crystal"** (datasheet p.32; footer "32 of 243"). Quoted: *"The optional XTAL
+  temperature compensation mechanism measures the XTAL temperature change and compensates on
+  chip for the induced frequency shift. When the temperature compensation mechanism is used,
+  the VTCXO pin can be used to power an external temperature sensor (R and NTC) monitoring the
+  XTAL temperature. The NTC output is then fed into the chip via pin NTC and measured by an
+  increase in ADC. The resulting temperature information is used by the chip to automatically
+  compensate, to some extent, the frequency shift due to XTAL heating."* (Figure 1-15
+  "NTC Connection".)
+- **§6.12 "Temperature Compensation"** (p.128), quoted: *"The temperature compensation is
+  useful to limit frequency drift during high power transmissions."*
+- **§6.12.1 `SetTempCompCfg`** (p.129), `Table 6-69: SetTempCompCfg Command`, opcode
+  **`0x0132`**: *"The SetTempCompCfg command configures the heating compensation block in Tx if
+  an XTAL 32MHz is used."* Fields: `ntc` (1 = Enables NTC, 0 = Disables NTC) and
+  `comp_mode(1:0)` (0x0 Disabled, 0x1 Relative, 0x2 Absolute, 0x3 RFU). Same section: *"If an
+  NTC source is available, it is used to compensate the variation in temperature of the
+  crystal, while the internal temperature measurement can always be used to compensate the
+  frequency deviation due to chip self heating."*
+- **§6.12.2 `SetNtcParams`** (`Table 6-70`, opcode `0x0133`) enters the `ntc_r_ratio` and
+  `ntc_beta` parameters the loop needs.
+- **Pin 3 = `NTC`** — `Table 2-1: Pin-out Description (Sheet 1 of 2)` (p.34), quoted:
+  *"Negative Temperature Coefficient (NTC) resistor connection"*.
+
+**On our module the loop is open.** `docs/LR2021-LESSONS-2026-09.md` line 22 (branch
+`docs/lr2021-lessons`, commit `581b38b`) records the module census: the **NiceRF LoRa2021
+(PLAIN — ours, 4x)** = *"crystal, no TCXO, no NTC (carlhodder deshielded to verify)"*. Line 24
+records the **Waveshare Core2021-XF** as the *"only NTC variant found"* — *"NTC 100K mounted,
+beta unverified (~4250K assumed)"*. So on the plain module pin 3 is **UNPOPULATED** and the
+chip's compensation engine is idle: `SetTempCompCfg` would configure a sensor that is not
+fitted.
+
+**Fitting a 100 K NTC on pin 3 closes the loop** — one component (plus a series R to the VTCXO
+rail), a microwatt-scale bias current, and it corrects the **frequency** rather than trying to
+hold a temperature. Two structural advantages over a board heater:
+
+- It needs **no continuous power** to fight an ambient gradient: the loop dissipates nothing and
+  draws only the NTC bias current from the VTCXO regulator (specified `ILTCXO` 1.5 mA typ /
+  4 mA max in `Table 3-25: TCXO Regulator Specifications (LR20xx)`, p.68 — the NTC bias is a
+  small fraction of that).
+- It needs **no awake MCU** — the compensation runs on-chip. This is the point the heater cannot
+  answer: a heater/oven is worthless at night (A3), whereas this loop is passive hardware inside
+  the transceiver.
+
+**Module-level constraint — `TODO(unverified)`.** On the NiceRF PLAIN module the 32 MHz crystal
+sits under the **RF shield can** (per the deshield provenance in the lessons line above). The
+exact NTC placement, its bonding point on the XTAL, the series-R value, and **whether pin 3 is
+even broken out on the NiceRF module's castellation pads** are all `TODO(unverified)`. What
+settles it: the **module mechanical drawing** (the module's pin-out, not just the chip's) or a
+**deshield photo** of a PLAIN sample. Until then this is a high-confidence, cheap, best-fit fix,
+not a shippable one.
+
+**Ranking.** With the runtime sensor confirmed and the loop physically inside the part, the
+mitigation ranking becomes **(1) TCXO stability, (1b) 100 K NTC on pin 3 for a crystal-only
+module, (2) firmware f(T) pre-distortion, (3) wider channel plan.** The NTC fix sits alongside
+the TCXO (both hardware frequency fixes, zero firmware) and strictly above the heater; the
+heater was already rejected in §D1.
+
+### A3 — Why a board-level oven / closed-loop heater still fails (arithmetic kept)
+
+§D1's arithmetic stands and is not restated; it is joined here by the structural reasons:
+
+1. **Heat-only control means the setpoint must exceed the hottest ambient.** A loop that can
+   only add heat must reach the highest ambient it meets; with the ambient spanning roughly
+   −60 °C to +20 °C the setpoint must sit above that band — up to ~80 K of lift. The lift, not
+   the setpoint, is what the bank pays for (§D1: 55 K ≈ 0.55 W ⇒ 18 kJ/night ⇒ ≈1235 F vs the
+   fitted 1.65 F).
+2. **A control loop requires the MCU awake**, contradicting ADR-036's mandatory night
+   deep-sleep (ADR-036: 1 mW × 10 h = 36 J is already "not feasible" with the fitted bank). Any
+   *controlled* heater needs a sensor read + duty update at night.
+3. **The loop controls the wrong node.** Sensor, heater, and crystal are separated by FR4, so
+   there is a thermal gradient across the board: the loop regulates the *sensor's* temperature,
+   not the *crystal's*. An NTC bonded at the XTAL (A2) measures the node that matters; a board
+   heater under the module measures the board.
+4. **The MS5611 conflict stands** (§D6): heating the board for the radio biases the pressure
+   sensor and corrupts altitude telemetry.
+
+### A4 — NEW CONSTRAINT: temperature-triggered recalibration (firmware requirement)
+
+The chip itself says temperature moves the calibration state, so firmware owes a
+temperature-triggered recalibration cycle:
+
+- **§6.4 "Chip Auto Calibration"** (p.109), quoted: *"Image calibration is necessary if there
+  is a frequency change > 10MHz, or a temperature change > 10°C."*
+- **§6.4.1 "Calibrate"** (p.110): *"It is advised to perform the PLL and AAF calibrations again
+  for an RF frequency change greater than 50MHz, or for a temperature change beyond +/-20C."*
+
+A launch-to-float temperature swing (ground conditions → stratospheric ≈ −60 °C) far exceeds
+10 °C — and exceeds the ±20 °C PLL/AAF guidance too. **Firmware requirement:** after the
+transceiver has seen a temperature change **> 10 °C** (and again past **±20 °C**), issue
+`Calibrate` (opcode `0x0122`; `blocks_to_calibrate` = AAF/PLL/MU as needed) and refresh the
+image calibration **before the next flight-critical TX**. The trigger is available at runtime
+from `GetTemp` (A1). Recorded as a sourced firmware requirement, not a suggestion.
+
+### A5 — Characterised window: ±10 ppm over −20…+70 °C (the mission is outside it)
+
+- `Table 3-24: 32MHz Crystal Specifications. (LR20xx) For example NDK_NX2016SA` (p.68, §3.5
+  "Reference Oscillator Crystal Specification", p.68) lists **`FRTOLHF` "Crystal frequency
+  accuracy"**, conditions **"Over temperature (−20 to 70 °C)"** → **±10 ppm** (the same table:
+  Initial ±10 ppm; Aging over 10 years ±10 ppm).
+- The same §3.5 gives `Table 3-25: TCXO Regulator Specifications (LR20xx)` — the supply side of
+  the TCXO option.
+
+The balloon mission's −60 °C is **outside** this characterised window. The two ways of dealing
+with it are exactly the two hardware fixes in A2/D2: the **NTC / on-chip compensation loop** and
+the **TCXO**. **Neither gives a guaranteed ppm figure outside −20…+70 °C** — the ±10 ppm number
+is not valid there and this ADR does **not** claim one. Quantifying the residual at −60 °C is the
+cold-sweep measurement already named in §D5.
+
+Supporting ratings, for completeness: §3.1 `Table 3-1: Absolute Maximum Ratings` `Tmr`
+= **−55…125 °C**; §3.2 `Table 3-2: Operating Range` `Top` (ambient) = **−40…85 °C**, `Tmaxj`
+= **105 °C**. −60 °C is below both the operating-range minimum (−40 °C) and the absolute-maximum
+minimum (−55 °C) — a second reason the cold end must be measured rather than assumed.
+
+### A6 — The ESP32's on-die sensor is available and unused: log, don't tune
+
+The MCU already carries a temperature sensor that firmware does not read. `git grep` on `master`
+finds `CONFIG_SOC_TEMP_SENSOR_SUPPORTED=y` in every ESP-IDF `sdkconfig` (e.g.
+`tracker/firmware/sdkconfig:15`, `firmware/esp32-c3-flrc/sdkconfig:15`), and
+`docs/data-handover/HARMONIZATION-GAP-ANALYSIS.md` row **N4** (branch `docs/lr2021-lessons`)
+records: *"C3: ESP32 `CONFIG_SOC_TEMP_SENSOR_SUPPORTED=y` in `sdkconfig` but no code
+reads/emits it"*, closing *"None emit voltage or temperature."*
+
+**Disposition: a free logging channel, not a control input.** The ESP32 die sensor is at the MCU,
+not at the crystal, so it is the wrong node for closed-loop control (A3 point 3), but it is a
+zero-cost telemetry field. Log it; do not tune on it. The LR2021 `GetTemp` source `0x02` (NTC)
+is the node that matters once A2 is fitted.
 
 ## Pending pointer conflicts
 
