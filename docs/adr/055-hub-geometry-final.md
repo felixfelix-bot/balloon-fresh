@@ -333,7 +333,31 @@ therefore effectively **single-face**, and "upper face" is the face that sees th
 
 ---
 
-## 3. Known dependency — the hub-outline CONTRADICTION (another task's job)
+## 3. RESOLVED — the hub-outline contradiction
+
+**RESOLVED 2026-10-07 by `docs/analysis/hub-outline-authority.md` (merged). The current outline is
+55 × 45 mm (24.90 cm²).** The 22 × 22 mm figure is **STALE INHERITED PROSE**: it appears only in
+`docs/hardware-design.md:13` (committed 2026-05-20), a v1 concept doc whose hub court is superseded
+by ADR-037/038/029/030 — and **no generated artifact on main encodes it**. The v1 hubs actually
+drawn are 50 × 40, 45 × 38 and 75 × 55 mm; 22 × 22 appears never to have been drawn at all (its only
+code appearance is a `print()` in a placeholder gerber script).
+
+The decisive evidence is a **generated file rather than prose**: `tracker/hardware/output/v8i_krt_gnss.kicad_pcb:8136`
+contains `(gr_rect (start 0 0) (end 55 45) … "Edge.Cuts")`, and the same rectangle appears in v8h,
+v8j, v8b, v8f and `v_c3_flight_final`. The "55.15" is **the same rectangle plus its 0.15 mm
+Edge.Cuts stroke** (edge bbox −0.075…55.075, `PROOF-v8i-lap-check.txt:5`) — not a second outline.
+
+**Consequence for this record: the growth resolves to the LOW end — 106.1 / 24.90 = 4.3×, NOT 21.9×.**
+D5's ≈103 mm square destination is unchanged; only the starting point is now settled.
+
+**Also resolved:** no v9 hub PCB exists, so nothing is frozen in a board file and the outline remains
+ours to set. **What still must be re-frozen before the outline is drawn** is the geometry *derived
+from the stale 22 mm figure*: ADR-046's 6.0 mm insertion depth, the socket spec's `(22−9)/2`
+arithmetic, ADR-048's corner-radius check, and the load-bearing `R0 = 0.011` (half of 22 mm) in the
+wing mass model — the 16-file list is in `docs/analysis/hub-outline-authority.md`.
+
+*The original "KNOWN DEPENDENCY" framing and the two-figure table below are retained for provenance
+and are superseded by the resolution above.*
 
 **The repo carries two mutually inconsistent hub-outline figures, and a separate task is
 resolving that contradiction. This record does NOT pick a winner between them.**
