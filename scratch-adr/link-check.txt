@@ -1,0 +1,2 @@
+checked 113 docs/adr reference(s) across 631 markdown file(s)
+OK: every docs/adr/*.md reference resolves

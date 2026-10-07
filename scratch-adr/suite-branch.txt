@@ -1,0 +1,6 @@
+  File "/home/c03rad0r/.local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 253 in _console_main
+  File "/home/c03rad0r/.local/lib/python3.11/site-packages/pytest/__main__.py", line 9 in <module>
+  File "<frozen runpy>", line 88 in _run_code
+  File "<frozen runpy>", line 198 in _run_module_as_main
+
+Extension modules: _pcbnew (total: 1)

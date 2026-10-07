@@ -1,5 +1,7 @@
 # ADR-018: TX Board Must Operate Fully Autonomously
 
+Renumbered from ADR-018 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 ## Status
 
 Superseded (partial) — 2026-07-27. The original text stated TX should

@@ -1,5 +1,7 @@
 # ADR-029: Firmware Output Harmonization
 
+Renumbered from ADR-029 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 **Date:** 2026-08-19
 **Status:** APPROVED
 **Decision Maker:** Felix
@@ -83,7 +85,7 @@ No duplicate work. The decode-gaps tasks that remain relevant (those not overlap
 Both handover documents and this ADR committed to the repo at:
 - `docs/data-handover/DATA-INVENTORY-2026-08-19.md`
 - `docs/data-handover/FIRMWARE-HARMONIZATION-2026-08-19.md`
-- `docs/adr/029-firmware-output-harmonization.md`
+- `docs/adr/109-firmware-output-harmonization.md`
 
 ## Consequences
 

@@ -48,7 +48,7 @@ Both approaches correctly extract UTC time from RMC sentences with `V` status (n
 
 **Classification: CONFLICT.** This is the single most important decision for the merge.
 - **Master's philosophy** (2752fa1): start fast, fix desync later. TX transmits unsynced but becomes synced when GPS locks.
-- **Range-tests' philosophy** (ADR-018, commit `98795c0`): **never transmit without GPS fix** (Felix's requirement). TX stays silent on a power bank until satellites are acquired. The sweep loop still runs (radio reconfigs continue) so TX is phase-ready the instant fix returns.
+- **Range-tests' philosophy** (ADR-103, commit `98795c0`): **never transmit without GPS fix** (Felix's requirement). TX stays silent on a power bank until satellites are acquired. The sweep loop still runs (radio reconfigs continue) so TX is phase-ready the instant fix returns.
 
 **Recommendation**: keep range-tests' approach for balloon deployments; keep master's 5s probe as a documented bench-mode shortcut only.
 
@@ -77,7 +77,7 @@ Both approaches correctly extract UTC time from RMC sentences with `V` status (n
 | TX-13 | **SF12 recovery delay (500ms extra)** | BUG_FIX_IN_RANGE_NOT_IN_MASTER | Extra settle time after SF12 phases. |
 | TX-14 | **CDC watchdog guard `if (Serial && ...)`** | BUG_FIX_IN_RANGE_NOT_IN_MASTER | Prevents reboot on power bank (no USB host). Master would reboot and lose `utcOffset`. Commit `3efdebe`. |
 | TX-15 | **CDC watchdog disarmed on SET_TIME** | BUG_FIX_IN_RANGE_NOT_IN_MASTER | `lastCdcSuccessMs = 0` after time sync — bench mode stays stable. Commit `3efdebe`. |
-| TX-16 | **GPS fix gate (TX never transmits without fix)** | CONFLICT with 2752fa1 | See Q3 above. Commit `98795c0` (ADR-018). |
+| TX-16 | **GPS fix gate (TX never transmits without fix)** | CONFLICT with 2752fa1 | See Q3 above. Commit `98795c0` (ADR-103). |
 | TX-17 | **`totalCycleMs` — ms-precision phase computation** | BUG_FIX_IN_RANGE_NOT_IN_MASTER | Eliminates 15-28s accumulated truncation drift over 56 phases. Master uses seconds-only. Commit `e303327`. |
 | TX-18 | **Beacon removed** (`BEACON_INTERVAL_MS`, `lastBeaconMs`, `sendBeacon()`) | SUPERSEDED | Master's 2752fa1 added beacon; range-tests removed it (status in heartbeat). |
 | TX-19 | **RMC parser: single-sscanf vs two-step** | CONFLICT with 0880443 | See Q2 above. |
@@ -189,7 +189,7 @@ Both approaches correctly extract UTC time from RMC sentences with `V` status (n
 
 ### Conflict 1: TX Boot Gate (TX-16, TX-22)
 - **Master** (`2752fa1`): 5s GPS probe → start sweeping on `millis()` → switch to GPS when available.
-- **Range-tests** (`98795c0`, ADR-018): 60s gate → WAITING_FOR_GPS state → **never transmit without fix**.
+- **Range-tests** (`98795c0`, ADR-103): 60s gate → WAITING_FOR_GPS state → **never transmit without fix**.
 - **Resolution**: **Keep range-tests.** It implements Felix's hard requirement ("TX shouldn't transmit without satellite fix"). Master's approach transmits unsynced packets that can never be decoded by RX.
 
 ### Conflict 2: RMC Time Parser (TX-19)

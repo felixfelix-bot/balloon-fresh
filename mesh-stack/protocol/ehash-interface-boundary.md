@@ -4,8 +4,8 @@
 **Date:** 2026-07-29
 **Tracks:** balloon-pow ↔ tollgate
 **Related:**
-- [ADR-025](../../docs/adr/025-e-hash-relay-transport-layer.md) — full e-hash relay architecture
-- [ADR-025 Decisions D1–D10](../../docs/adr/adr-e-hash-relay-DECISIONS.md) — locked design decisions
+- [ADR-106](../../docs/adr/106-e-hash-relay-transport-layer.md) — full e-hash relay architecture
+- [ADR-106 Decisions D1–D10](../../docs/adr/adr-e-hash-relay-DECISIONS.md) — locked design decisions
 - [Binary Encoding Spec](ehash-spec.md) — EHASH_TEMPLATE/NONCE/RESULT/CREDIT wire format
 - [C Header](ehash_messages.h) — packed structs and encode/decode prototypes
 
@@ -452,7 +452,7 @@ All bound to `127.0.0.1` only. No external network exposure.
 
 ### 9.3 Integration Test (Joint)
 
-Phase D (per ADR-025) brings both together on the Pi with real radio
+Phase D (per ADR-106) brings both together on the Pi with real radio
 hardware and a real Bitaxe. The interface contracts in §4 are the
 acceptance criteria.
 

@@ -3,7 +3,7 @@
 **Date:** 2026-07-29 (updated)
 **Author:** balloon-tollgate sub-manager
 **Branch:** balloon-tollgate-extract @ 7b1e342
-**Related:** ADR-002, PLAN-fix-blockers.md
+**Related:** ADR-100, PLAN-fix-blockers.md
 
 ## Overview
 

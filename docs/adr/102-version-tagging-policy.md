@@ -1,5 +1,7 @@
 # ADR 017: Version Tagging Policy — Tag on Progress Without Regressions
 
+Renumbered from ADR-017 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 ## Status
 
 Accepted

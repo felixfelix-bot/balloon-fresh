@@ -1,5 +1,7 @@
 # V9 D2b(b) — LoRa2021F33 + SX1280 pin plan
 
+Renumbered from ADR-029 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 Status: proposed implementation baseline, pending schematic ERC and module-datasheet
 review. This is the pin plan for **ESP32-S3-WROOM-1U-N8R8** (octal PSRAM),
 LoRa2021F33-2G4, SX1280, MS5607-02BA03 and MAX-M10S. It supersedes the old

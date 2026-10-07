@@ -55,7 +55,7 @@ Configurations named by population: **{LP}** = one LP module, **{HP}** = one HP 
 
 ### 3.1 GPIO delta
 
-Base pin plan is `docs/adr/029-f33-sx1280-pin-plan.md` (F33 on SPI2, SX1280 on SPI3).
+Base pin plan is `docs/adr/108-f33-sx1280-pin-plan.md` (F33 on SPI2, SX1280 on SPI3).
 A **second, independent radio** costs additional control lines, per the dual-LR memo §5:
 
 | Config | Radios fitted | GPIO delta vs single-radio baseline | Bus situation | Source |
@@ -68,7 +68,7 @@ A **second, independent radio** costs additional control lines, per the dual-LR 
 - The **+7 GPIO** independent-bus case (adds SCK/MOSI/MISO) is **not available** on v9: the
   S3's two general SPI masters are already committed (SPI2 = F33, SPI3 = SX1280), and the
   `-N8R8` octal-PSRAM part reserves IO35/36/37. Source: `docs/V9-DUAL-LR-DESIGN-MEMO.md` §5;
-  `docs/adr/029-f33-sx1280-pin-plan.md` (PSRAM pins).
+  `docs/adr/108-f33-sx1280-pin-plan.md` (PSRAM pins).
 - **UNVERIFIED:** whether the F33-specific `CE`/`DIO5` enable lines add further GPIO over the
   bare module when the HP part is at Site A. The memo notes "a bare module normally does not
   provide the F33-specific CE/DIO5 pair; if the selected variant requires additional

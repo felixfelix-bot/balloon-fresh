@@ -1,5 +1,7 @@
 # ADR-020: Reproducible Build, Flash, and Test via Make Targets + pytest
 
+Renumbered from ADR-020 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 ## Status
 
 Accepted
@@ -10,8 +12,8 @@ Accepted
 
 ## Related
 
-- ADR-018: TX Autonomy Requirement
-- ADR-019: TX-RX Sync Invariant
+- ADR-103: TX Autonomy Requirement
+- ADR-104: TX-RX Sync Invariant
 - PlatformIO build config: `firmware/rp2040/platformio.ini`
 
 ## Context

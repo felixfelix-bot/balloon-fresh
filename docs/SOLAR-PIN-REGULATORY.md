@@ -154,7 +154,7 @@ concludes ("comfortable fit on the S3, a squeeze on the C3").
 | GPIO9 (weak pull-up) | Boot-mode bit; read HIGH at reset, so an output that drives it LOW at boot breaks boot. |
 
 The S3 (WROOM-1U-N8R8) instead exposes IO0–21 + IO35–48 with two SPI masters; the
-committed pin plan `docs/adr/029-f33-sx1280-pin-plan.md` already assigns the F33 (SPI2)
+committed pin plan `docs/adr/108-f33-sx1280-pin-plan.md` already assigns the F33 (SPI2)
 and SX1280 (SPI3) + GNSS on separate buses, reserving IO0/IO3/IO45/IO46 as strapping and
 IO35/36/37 as octal-PSRAM — no strap is touched. **SOURCED** (that file).
 

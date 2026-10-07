@@ -186,7 +186,7 @@ The whole vendored tree is tracked (not a submodule): `firmware/e80-stm32-bench/
 | `docs/PLAN-E80-LR2021-EVAL-2026-08-15.md` | md | 8256 | 140 | tracked@2e9d297e last=445d1992 | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/RP2040-LR2021-BASELINE-v1.0.0.md` | md | 3384 | 89 | tracked@2e9d297e last=90549678 | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/adr/002-lr2021-as-rf-chip.md` | md | 2451 | 50 | tracked@2e9d297e last=a69212e4 | first-party-analysis-secondary | none (no command/register tokens observed) |
-| `docs/adr/017-lr2021-only-ban-sx1280.md` | md | 1621 | 35 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | none (no command/register tokens observed) |
+| `docs/adr/101-lr2021-only-ban-sx1280.md` | md | 1621 | 35 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md` | md | 5036 | 117 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | ARX, FIFO, IRQ, CALIB (token-presence only) |
 | `docs/adr/ADR-001-tollgate-over-lr2021.md` | md | 4860 | 91 | tracked@2e9d297e last=cc04e7cf | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/coordination/LR2021-FULL-CHARACTERIZATION-PLAN.md` | md | 27584 | 597 | tracked@2e9d297e last=44f50d2b | first-party-analysis-secondary | TXP, ARX, FIFO, IRQ, CALIB, ERRATA (token-presence only) |

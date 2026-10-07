@@ -1,5 +1,7 @@
 # ADR-002: TollGate Payment Messages Transport Over FIPS Mesh UDP
 
+Renumbered from ADR-002 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 **Date:** 2026-07-29
 **Status:** ACCEPTED
 **Decision Maker:** Felix (operator)

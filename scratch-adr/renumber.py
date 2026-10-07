@@ -56,7 +56,8 @@ EXPLICIT = [
 EXTS = (".md", ".py", ".sh", ".bash", ".c", ".h", ".hpp", ".cpp", ".cc", ".cxx",
         ".yaml", ".yml", ".json", ".toml", ".txt", ".mk", ".js", ".ts", ".html",
         ".css", ".ini", ".cfg", ".sql")
-SKIP_PREFIX = ("graphify-out/", ".hermes/", ".ngit/", "node_modules/", ".keep-staging/")
+SKIP_PREFIX = ("graphify-out/", ".hermes/", ".ngit/", "node_modules/", ".keep-staging/",
+               "scratch-adr/")
 
 
 def resolve(num, path, line):

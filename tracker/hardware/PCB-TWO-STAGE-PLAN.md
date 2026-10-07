@@ -3,7 +3,7 @@
 **Date:** 2026-08-05
 **Author:** worker-balloon (PCB consultant)
 **Supersedes:** `PCB-EXECUTION-PLAN.md` (kimi-k3:cloud author — quota exhausted, model replaced)
-**Related:** ADR-028 (Three-Variant PCB Design), ADR-026 (Dual-MCU), `full_pipeline.py`, `tracker/firmware/main/app_main.cpp`
+**Related:** ADR-107 (Three-Variant PCB Design), ADR-026 (Dual-MCU), `full_pipeline.py`, `tracker/firmware/main/app_main.cpp`
 
 ---
 

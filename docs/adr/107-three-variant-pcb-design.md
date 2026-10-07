@@ -1,5 +1,7 @@
 # ADR-028: Three-Variant PCB Design (C3, S3, C3+RP2040)
 
+Renumbered from ADR-028 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 ## Status
 
 Proposed

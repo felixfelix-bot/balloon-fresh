@@ -3,7 +3,7 @@
 ehash_codec.py — Binary encode/decode for EHASH relay messages.
 
 Python port of mesh-stack/protocol/ehash_messages.h.
-Implements all four L7 message types defined in ADR-025 / ehash-spec.md:
+Implements all four L7 message types defined in ADR-106 / ehash-spec.md:
 
     EHASH_TEMPLATE  (0x10) — Binary block template (downlink, broadcast)
     EHASH_NONCE     (0x11) — Binary nonce submission (uplink, unicast)

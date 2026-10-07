@@ -2,7 +2,7 @@
 
 ## Status
 Accepted (2026-07-23)
-**Supersedes ADR-017** (which incorrectly banned SX1280 and mandated RadioLib).
+**Supersedes ADR-101** (which incorrectly banned SX1280 and mandated RadioLib).
 
 ## Context
 
