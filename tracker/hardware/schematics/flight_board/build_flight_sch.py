@@ -664,7 +664,7 @@ def emit(footprints):
 
 
 # =====================================================================
-# v9 TRI-BAND FLIGHT BOARD  (ADR-029 / 029-f33-sx1280-pin-plan / 034 / 035 /
+# v9 TRI-BAND FLIGHT BOARD  (ADR-029 / 108-f33-sx1280-pin-plan / 034 / 035 /
 # 036-043)
 # ---------------------------------------------------------------------
 # The C3 schematic above is DERIVED from a frozen PCB sha256.  No v9 PCB
@@ -1644,7 +1644,7 @@ def v9_emit():
 
 def main_v9():
     print("v9 schematic variant (design-intent, NOT derived from a PCB)")
-    print("records  : ADR-029, docs/adr/029-f33-sx1280-pin-plan.md, ADR-034,")
+    print("records  : ADR-029, docs/adr/108-f33-sx1280-pin-plan.md, ADR-034,")
     print("           ADR-035, ADR-036-045, docs/DUAL-VARIANT-DESIGN.md,")
     print("           docs/V9-RADIO-SITE-MATRIX.md,")
     print("           ADR-044 (power rails) + ADR-044a (F33 max-draw provisioning),")

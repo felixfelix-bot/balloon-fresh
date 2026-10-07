@@ -251,7 +251,7 @@ def build(adr_dir: Path) -> str:
     out.append("## Non-conforming filenames (not `NNN-description.md`)")
     out.append("")
     out.append("These are listed so they are not mistaken for free numbers. They are NOT")
-    out.append("renamed by this script (see the rule). Note that `ADR-001-tollgate-over-lr2021.md`")
+    out.append("renamed by this script (see the rule). Note that `110-tollgate-over-lr2021.md`")
     out.append("effectively competes for number **001** with `001-esp32-c3-as-mcu.md`; it is")
     out.append("recorded here rather than silently renumbered, and that pair also needs an")
     out.append("operator decision.")

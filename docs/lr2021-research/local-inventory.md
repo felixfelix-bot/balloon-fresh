@@ -188,7 +188,7 @@ The whole vendored tree is tracked (not a submodule): `firmware/e80-stm32-bench/
 | `docs/adr/002-lr2021-as-rf-chip.md` | md | 2451 | 50 | tracked@2e9d297e last=a69212e4 | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/adr/101-lr2021-only-ban-sx1280.md` | md | 1621 | 35 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md` | md | 5036 | 117 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | ARX, FIFO, IRQ, CALIB (token-presence only) |
-| `docs/adr/ADR-001-tollgate-over-lr2021.md` | md | 4860 | 91 | tracked@2e9d297e last=cc04e7cf | first-party-analysis-secondary | none (no command/register tokens observed) |
+| `docs/adr/110-tollgate-over-lr2021.md` | md | 4860 | 91 | tracked@2e9d297e last=cc04e7cf | first-party-analysis-secondary | none (no command/register tokens observed) |
 | `docs/coordination/LR2021-FULL-CHARACTERIZATION-PLAN.md` | md | 27584 | 597 | tracked@2e9d297e last=44f50d2b | first-party-analysis-secondary | TXP, ARX, FIFO, IRQ, CALIB, ERRATA (token-presence only) |
 | `docs/e80-900mbl-02-eval/lr2021-datasheet-id4393.pdf` | PDF | 21870805 | binary | tracked@2e9d297e last=19524138 | vendor-document | n/a (pdf text not extracted) |
 | `docs/lr2021-bottleneck-analysis-2026-07-29.md` | md | 15089 | 302 | tracked@2e9d297e last=0658ff3b | first-party-analysis-secondary | ARX, FIFO (token-presence only) |

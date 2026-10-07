@@ -24,7 +24,7 @@
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
 Generated from `docs/adr/`: **57** distinct
-numbers, **57** numbered files, **1** non-conforming filenames.
+numbers, **57** numbered files, **2** non-conforming filenames.
 
 ## Collisions
 
@@ -96,10 +96,11 @@ None.
 ## Non-conforming filenames (not `NNN-description.md`)
 
 These are listed so they are not mistaken for free numbers. They are NOT
-renamed by this script (see the rule). Note that `ADR-001-tollgate-over-lr2021.md`
+renamed by this script (see the rule). Note that `110-tollgate-over-lr2021.md`
 effectively competes for number **001** with `001-esp32-c3-as-mcu.md`; it is
 recorded here rather than silently renumbered, and that pair also needs an
 operator decision.
 
 - `adr-e-hash-relay-DECISIONS.md` — ADR: E-Hash Relay Transport — LOCKED DECISIONS LOG (own Status: UNKNOWN)
+- `044a-v9-power-provisioning.md` — v9 F33 power provisioning: over-provisioning the 5 V PA rail for the module's maximum draw (own Status: Proposed)
 

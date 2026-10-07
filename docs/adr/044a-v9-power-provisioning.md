@@ -19,7 +19,7 @@
 - Related records: ADR-006 (`docs/adr/006-supercapacitor-power.md`, **Accepted** — the power
   architecture of record), ADR-029 (`docs/adr/029-dual-band-flight-board.md`, **item D8** the
   operator-ratified selectable pin-1 rail and **O5** the open 5 V-rail item),
-  ADR-029 pin plan (`docs/adr/029-f33-sx1280-pin-plan.md`), ADR-034
+  ADR-029 pin plan (`docs/adr/108-f33-sx1280-pin-plan.md`), ADR-034
   (`docs/adr/034-radio-band-split-433-tx-2g4-rx.md`, 433 MHz TX band), ADR-035
   (`docs/adr/035-tdm-radio-schedule.md`, the slot durations), ADR-036
   (`docs/adr/036-energy-policy-burst-storage-daylight-only-tx.md`, burst-sized storage and the
