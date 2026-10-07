@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **65** distinct
-numbers, **65** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **66** distinct
+numbers, **66** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -88,6 +88,7 @@ None.
 | 052 | `052-cell-mounting-end-only.md` | Bare cells are mounted END-ONLY: no adhesive bond, no bonded-and-vented carrier | Proposed |
 | 053 | `053-per-cell-bypass-diodes.md` | Per-cell / per-group bypass Schottky diodes: a cracked or shaded cell costs one cell, not the whole series string | Proposed |
 | 054 | `054-array-topology-final.md` | Array topology, final: the 12-cell series string is RETAINED, the hub-side per-interface bypass diode is MANDATORY, per-cell bypass is REJECTED, and the bypass-diode mechanism is CORRECTED | Proposed |
+| 056 | `056-thermal-and-frequency-drift.md` | Thermal and frequency drift: no oscillator heater, TCXO where a radio needs one, and GPS 1PPS discipline as the zero-mass/zero-watt provision | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
