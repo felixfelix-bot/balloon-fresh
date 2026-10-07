@@ -47,4 +47,17 @@
 
 ## Verification done
 
-- Doc committed and pushed to `github` then `ngit` separately; SHAs recorded in the final summary.
+Pushed to `github` then `ngit` **separately**; all three SHAs verified equal with `git ls-remote`:
+
+| Remote | Ref | SHA |
+|---|---|---|
+| local `HEAD` | `analysis/pico-balloon-solar` | `55a1d76b78e99cedaffde013628d08dcccaf67b0` |
+| `github` (`felixfelix-bot/balloon-fresh`) | `refs/heads/analysis/pico-balloon-solar` | `55a1d76b78e99cedaffde013628d08dcccaf67b0` |
+| `ngit` (`relay.ngit.dev/balloon-fresh`) | `refs/heads/analysis/pico-balloon-solar` | `55a1d76b78e99cedaffde013628d08dcccaf67b0` |
+
+No force-push; no push to `main`/`master`. Pre-push secret scan reported
+`✓ No secrets detected in full repo history.`
+
+Note: `REPORT.md` and `PROGRESS.md` are matched by the repo-wide `.gitignore`
+(lines 66–67), so they were added with `git add -f` to make the branch
+self-contained; the survey doc was added normally.
