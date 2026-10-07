@@ -281,6 +281,20 @@ their content.** Note for the manager: the sibling's commit message refers to "A
 branch carries **no `docs/adr` file at all**, so its record number (if it needs one) is
 `TODO(unverified)` and **must not be assumed**. This record stays out of that collision.
 
+> **RESOLVED on merge (2026-10-07, appended by the merging manager).** The collision flagged above
+> is closed, and the paragraph above is now stale in two facts — kept, not rewritten, so the
+> sequence stays legible. The sibling's tip on merge was **`de8151d`** (not `5bbea32`), and it
+> **does** now carry `docs/adr/058-onboard-temp-compensation.md`, so its record number is **058** —
+> neither the `"ADR-057"` in the commit subject the author observed nor `TODO(unverified)`. The
+> sibling retargeted its own references in `de8151d` (*"fix(firmware): retarget temp_comp module
+> references from ADR-057 to ADR-058"*). **This record takes 059.** Arbitration rule applied: the
+> earlier-claimed and more general record keeps the lower number — 058 is the *scheme* (ADR plus
+> `firmware/rp2040/src/temp_comp.{h,cpp}`), 059 is this *hardware provision* implementing one
+> mechanism of that scheme. The four records therefore land consecutive with no gaps and no
+> duplicates — **057** (FLRC), **058** (on-board scheme + firmware), **059** (this NTC provision),
+> **060** (SX1280) — all on `main` as of `c18f685`. The D5 interface quoted above is unchanged:
+> this record owns the land and the pins, the sibling owns the runtime.
+
 **Division of labour, stated so the two records cannot contradict:** ADR-059 owns the **hardware
 provision** (the land, the pins, the mutual exclusion, the siting rule, the module blocker).
 The concurrent record owns the **runtime** (per-unit calibration, the 1PPS discipline, firmware
