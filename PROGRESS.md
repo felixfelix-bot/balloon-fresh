@@ -39,4 +39,6 @@ Task: salvage a timed-out (3600 s) JLCPCB quoting run by documenting the on-disk
 - [x] `git add docs/analysis/jlcpcb-size-tier-quote.md` (only the doc; raw JSONs NOT committed).
 - [x] `git add -f PROGRESS.md REPORT.md` (both gitignored at .gitignore:67/68 — forced onto THIS
   branch only; they are NOT pushed to main).
-- [ ] Push `github` FIRST, then `ngit` SEPARATELY (no --atomic); verify with `git ls-remote`.
+- [x] Push `github` FIRST, then `ngit` SEPARATELY (no --atomic); verify with `git ls-remote`.
+      github and ngit both report the branch tip = local HEAD. `github` `main` untouched at
+      `716974a`.
