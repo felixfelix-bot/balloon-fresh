@@ -1,0 +1,10 @@
+key,rated_min_c,rated_max_c,source
+LoRa2021_Gen4,-40,85,"docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf (Semtech DS.LR20xx, Final Datasheet Rev. 2.1, 13/04/26), p.37 sec.3.2 'Operating Range (LR20xx)', Table 3-2: Top ambient operating temperature -40 .. +85 C (Tmaxj max junction 105 C; Tmr storage -55 .. +125 C)"
+1F_5.5V,-40,70,docs/adr/006-supercapacitor-power.md:63
+3.3F,-40,70,docs/adr/006-supercapacitor-power.md:63
+1.65F,-40,70,docs/adr/006-supercapacitor-power.md:63
+ESP32-C3-WROOM-02,-40,85,"Espressif ESP32-C3-WROOM-02 Datasheet v1.7, sec.6.2 'Recommended Operating Conditions', Table 6-2: TA operating ambient temperature min -40 C (module ships as -40..85 C or -40..105 C variant, sec.1)"
+MAX-M10S,-40,85,"u-blox MAX-M10S data sheet UBX-20035208-R08, sec.4.2 'Operating conditions', Table 13 'General operating conditions': Topr operating temperature -40 .. +85 C"
+BMP280,-40,85,"Bosch Sensortec BMP280 data sheet BST-BMP280-DS001-26 (rev 1.26, Oct 2021), Table 2 'Parameter specification': operating temperature range TA (operational) -40 .. +85 C"
+TPS7A02,-40,125,"TI TPS7A02 data sheet SBVS277C (rev Sep 2022), sec.6.3 'Recommended Operating Conditions': TJ operating junction temperature -40 .. +125 C"
+DNP,,,not populated - no rating applicable
