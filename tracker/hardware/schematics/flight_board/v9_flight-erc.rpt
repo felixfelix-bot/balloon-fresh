@@ -1,19 +1,10 @@
-ERC report (2026-10-07T11:48:40+0200, Encoding UTF8)
+ERC report (2026-10-07T12:16:46+0200, Encoding UTF8)
 Report includes: Errors, Warnings
 
 ***** Sheet /
 [pin_not_connected]: Pin not connected
     ; error
-    @(27.94 mm, 33.02 mm): Symbol U5 Pin 7 [VCC_IO, Power input, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(30.48 mm, 33.02 mm): Symbol U5 Pin 6 [V_BCKP, Power input, Line]
-[pin_not_connected]: Pin not connected
-    ; error
     @(15.24 mm, 58.42 mm): Symbol U5 Pin 18 [~{SAFEBOOT}, Input, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(15.24 mm, 60.96 mm): Symbol U5 Pin 9 [~{RESET}, Input, Line]
 [pin_not_connected]: Pin not connected
     ; error
     @(15.24 mm, 63.50 mm): Symbol U5 Pin 15 [VIO_SEL, Input, Line]
@@ -34,9 +25,6 @@ Report includes: Errors, Warnings
     @(91.44 mm, 63.50 mm): Symbol U1 Pin 20 [IO12, Bidirectional, Line]
 [pin_not_connected]: Pin not connected
     ; error
-    @(91.44 mm, 66.04 mm): Symbol U1 Pin 21 [IO13, Bidirectional, Line]
-[pin_not_connected]: Pin not connected
-    ; error
     @(20.32 mm, 116.84 mm): Symbol U6 Pin 4 [CSB, Input, Line]
 [pin_not_connected]: Pin not connected
     ; error
@@ -52,17 +40,7 @@ Report includes: Errors, Warnings
     @(121.92 mm, 73.66 mm): Symbol U1 Pin 25 [IO48, Bidirectional, Line]
 [pin_not_connected]: Pin not connected
     ; error
-    @(15.24 mm, 160.02 mm): Symbol U7 Pin 3 [EN, Input, Line]
-[pin_not_connected]: Pin not connected
-    ; error
     @(45.72 mm, 154.94 mm): Symbol U7 Pin 4 [NC, Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(167.64 mm, 40.64 mm): Symbol U2 Pin 1 [VCC, Power input, Line]
-[pin_to_pin]: Pins of type Output and Output are connected
-    ; error
-    @(198.12 mm, 55.88 mm): Symbol U2 Pin 16 [MISO, Output, Line]
-    @(243.84 mm, 45.72 mm): Symbol U3 Pin 3 [MISO, Output, Line]
 [pin_not_connected]: Pin not connected
     ; error
     @(243.84 mm, 53.34 mm): Symbol U3 Pin 6 [NSS, Input, Line]
@@ -96,11 +74,5 @@ Report includes: Errors, Warnings
 [pin_not_connected]: Pin not connected
     ; error
     @(350.52 mm, 35.56 mm): Symbol U4 Pin 14 [RFIO, Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(411.48 mm, 54.61 mm): Symbol C_CAP1 Pin 2 [Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(411.48 mm, 212.09 mm): Symbol R_F1 Pin 2 [Passive, Line]
 
- ** ERC messages: 33  Errors 33  Warnings 0
+ ** ERC messages: 24  Errors 24  Warnings 0
