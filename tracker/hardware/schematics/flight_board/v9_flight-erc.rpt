@@ -1,4 +1,4 @@
-ERC report (2026-10-07T12:57:06+0200, Encoding UTF8)
+ERC report (2026-10-07T16:01:46+0200, Encoding UTF8)
 Report includes: Errors, Warnings
 
 ***** Sheet /
@@ -74,17 +74,5 @@ Report includes: Errors, Warnings
 [pin_not_connected]: Pin not connected
     ; error
     @(350.52 mm, 35.56 mm): Symbol U4 Pin 14 [RFIO, Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(607.06 mm, 49.53 mm): Symbol J_W1 Pin 3 [RF_FEED, Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(607.06 mm, 82.55 mm): Symbol J_W2 Pin 3 [RF_FEED, Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(607.06 mm, 115.57 mm): Symbol J_W3 Pin 3 [RF_FEED, Passive, Line]
-[pin_not_connected]: Pin not connected
-    ; error
-    @(607.06 mm, 148.59 mm): Symbol J_W4 Pin 3 [RF_FEED, Passive, Line]
 
- ** ERC messages: 28  Errors 28  Warnings 0
+ ** ERC messages: 24  Errors 24  Warnings 0

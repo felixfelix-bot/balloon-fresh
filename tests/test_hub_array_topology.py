@@ -341,27 +341,45 @@ def test_unparseable_input_is_non_zero(tmp_path):
 
 
 def test_real_v9_netlist_is_not_a_silent_pass():
-    """The shipped v9 schematic carries no hub array yet, so the gate must refuse."""
+    """ADR-051 is now IMPLEMENTED on the shipped v9 sheet, so the gate must be PASS.
+
+    This test used to assert UNDETERMINED (exit 2) with "ADR-051 is not
+    implemented", because the shipped netlist carried no hub array.  ADR-051 §6.3
+    and ADR-054 §6.3 direct the array into the v9 generator, so the shipped
+    netlist now carries HUB_PV_P / HUB_PV_MID<n> / HUB_PV_N on their own
+    converter input.  The gate must therefore reach a DETERMINATE answer - and it
+    must be PASS on the independence EVIDENCE, not on the absence of a finding.
+    A silent pass stays forbidden: every asserted string below is a rule that
+    actually fired.
+    """
     if not REAL_V9_NET.is_file():
         pytest.skip("v9 netlist not present")
     r = run_checker(REAL_V9_NET)
-    assert r.returncode == EXIT_UNDETERMINED, r.stdout + r.stderr
-    assert "ADR-051 is not implemented" in r.stdout
-    # it DID read the wing interfaces, so the refusal is about the hub array only
+    assert r.returncode == EXIT_PASS, r.stdout + r.stderr
+    assert "ADR-051 is not implemented" not in r.stdout
+    # it read the wing interfaces AND the hub array, and it proved independence
     assert "R1 four wing interfaces present" in r.stdout
+    assert "R4 hub-array hot net /HUB_PV_P shares no node with the wing series chain" \
+        in r.stdout
+    # ADR-051 §2.6: the reserved RF_FEED lands carry the cut-sense lines
+    assert "R8 cut-sense wired on interface(s): W1, W2, W3, W4" in r.stdout
 
 
 def test_real_v9_netlist_wing_lands_are_exactly_once():
-    """On the shipped board the 8 wing solar lands must already be exactly once."""
+    """On the shipped board the 8 wing solar lands must be exactly once, and the
+    hub array must now be independently present (ADR-051 §2.1 implemented)."""
     if not REAL_V9_NET.is_file():
         pytest.skip("v9 netlist not present")
     r = run_checker(REAL_V9_NET, "--json")
     report = json.loads(r.stdout)
-    assert report["verdict"] == "UNDETERMINED"
+    assert report["verdict"] == "PASS", report
     r2_hits = [c for c in report["checks"] if c.startswith("R2")]
     assert len(r2_hits) == 8, r2_hits
     assert not [f for f in report["failures"] if f.startswith("R2")], report["failures"]
     assert not [f for f in report["failures"] if f.startswith("R6")], report["failures"]
+    # ADR-051: the hub array is present, independent and reaches its own converter
+    assert any(c.startswith("R3 hub-array nets present") for c in report["checks"])
+    assert any(c.startswith("R7 hub-array hot net") for c in report["checks"])
 
 
 # --------------------------------------------------------------------------- #
