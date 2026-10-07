@@ -13,7 +13,7 @@ SRC_DIR   = ../src
 
 # --- test targets (add new test_*.cpp here) --------------------------------
 
-TESTS = test_stats test_safety test_cmd test_bw_codes test_radio test_dispatch
+TESTS = test_stats test_safety test_cmd test_bw_codes test_radio test_dispatch test_temp_comp
 
 # `all` is declared below; make it the default goal so a bare `make` builds
 # every test (the first explicit rule would otherwise become the default).
@@ -47,6 +47,11 @@ test_dispatch: test_dispatch.cpp $(SRC_DIR)/flrc_range_host_dispatch.cpp \
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^
 
 # --- catch-all ------------------------------------------------------------
+
+# ADR-057: LR2021 on-chip (XOSC-adjacent) temperature-sensor drift
+# compensation — pure-C++ module linked against src/temp_comp.cpp.
+test_temp_comp: test_temp_comp.cpp $(SRC_DIR)/temp_comp.cpp
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^ -lm
 
 .PHONY: all clean
 all: $(TESTS)
