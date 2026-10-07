@@ -108,6 +108,20 @@ is the only authority available here and it stacks pins 4/5 as one CSB net.
 Every mutation went through pcbnew/KRT; no `read_file`→`write_file` round-trip of
 the 384 KB board. Commands live in `PROGRESS.md` → "Pipeline used".
 
+## Push evidence (each ref verified with `git ls-remote`, observed SHAs)
+
+Commit `8590439f4d55e481be267b144b8203d758defc72` on `pr/v8j-ms5611-reroute`,
+pushed SEQUENTIALLY (no force-push anywhere; feature ref only, never main/master):
+
+| remote | push result | `git ls-remote <remote> refs/heads/pr/v8j-ms5611-reroute` |
+|---|---|---|
+| github | `d6ef953..8590439  pr/v8j-ms5611-reroute -> pr/v8j-ms5611-reroute` | `8590439f4d55e481be267b144b8203d758defc72` |
+| ngit | `d6ef953..8590439  pr/v8j-ms5611-reroute -> pr/v8j-ms5611-reroute` (PR update published to 2/4 relays) | `8590439f4d55e481be267b144b8203d758defc72` |
+| origin | `Everything up-to-date` (same GitHub URL as `github`) | `8590439f4d55e481be267b144b8203d758defc72` |
+
+Progressive saves on the branch: `fe22daa` (diagnosis) → `389cf0a` (0 unconnected,
+159 errors cleared) → `8590439` (gate PASS).
+
 ## Residual / honest limitations
 
 - 3 `track_dangling` + 1 `via_dangling` + 9 silk + 1 `lib_footprint_mismatch`
