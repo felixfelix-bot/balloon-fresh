@@ -19,6 +19,7 @@
   LTspice + openEMS + stackup impedance), ADR-028 (three-variant PCB design),
   ADR-015 (three-board hardware strategy), ADR-025 (shared-hardware flock mutex),
   ADR-022 (mandatory test coverage).
+- **Superseded in part by ADR-034 (433 MHz TX / 2.4 GHz RX on two chips) and ADR-035 (TDM radio schedule).**
 - Related artefacts in this repo:
   `docs/COEXISTENCE-V9.md` (the source memo, committed here so this ADR is auditable),
   `docs/f33-module/LoRa2021F33-2G4-datasheet-v1.1.pdf` (G-NiceRF, Rev 1.1),
@@ -766,6 +767,9 @@ to change.
    schematic card opens and before any BOM freeze.
 7. **(a)–(e) from D2b are NOW** (operator, 2026-10-05) — the pin plan, the
    three-way 2.4 GHz arbiter, the four-antenna count, the power budget and the
-   SPI1 re-plan off IO35–37 gate the schematic card.
+   SPI1 re-plan off IO35–37 gate the schematic card. The F33+SX1280 pin plan is
+   recorded in `docs/adr/029-f33-sx1280-pin-plan.md`; it leaves IO35–37 and the
+   four S3 strapping pins (IO0, IO3, IO45, IO46) unassigned and calls out the
+   accepted native-JTAG trade-off on IO39–42.
 8. The multi-SX1280 throughput question is analysed in
    `docs/SX1280-ARRAY-FEASIBILITY.md` — **analysis only, no board authorised.**
