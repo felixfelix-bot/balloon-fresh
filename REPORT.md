@@ -118,27 +118,32 @@ re-score of the old board.
 | `scripts/hub_array_topology_check.py` | PASS | **PASS** |
 | `scripts/bypass_diode_check.py` | PASS | **PASS** |
 | `gen_f33_landpattern.py --verify-all` | n/a | **exit 0, 4/4 copies 18/18** |
-| `pytest tests/ -q --ignore=tests/p1b_ab_test.py` | **EXIT 139 (segfault in `tests/test_pcb_track_import.py`, `_pcbnew`)** + 6 collection errors | **identical** (same segfault, same per-file progress, same 6 collection errors) |
+| `pytest tests/ -q --ignore=tests/p1b_ab_test.py` | **EXIT 139 (segfault in `tests/test_pcb_track_import.py`, `_pcbnew`)** + 6 collection errors | see §7 — the segfault was fixed on `main` by `1351ed2e`, which is merged into this branch; **4 failed, 481 passed, 23 skipped, 16 errors**, all pre-existing |
 
-The pytest gate is **not green in this environment and was not green before this
-branch** — the run dies in a pre-existing `_pcbnew` segfault. No test imports any
-file this branch changed (verified by grep). See §7 for the reduced run that gets
-past the segfault and shows the tally is unchanged.
+No test imports any file this branch changed (verified by grep). See §7 for the
+tallies and the exact-command caveat.
 
-## 7. Reduced pytest run (excluding the segfaulting module)
+## 7. pytest — the merge, and the tallies
 
-`python3 -m pytest tests/ -q --ignore=tests/p1b_ab_test.py
---ignore=tests/test_pcb_track_import.py --continue-on-collection-errors`
-run against (a) an untouched worktree at the merge base `94c3c4d` and (b) this
-branch:
+The base of this branch is `github/main` `94c3c4d`; while it was in progress
+`main` advanced to **`1351ed2e`** (*"fix(tests): make the suite runnable as a
+whole — two defects destroyed the run"*), touching only `tests/conftest.py` and
+`tests/test_pcb_track_import.py` — **zero overlap** with this branch's files. It
+was **merged** in (`33e6179`, clean, no conflicts) so the pytest gate could be
+evaluated against the repaired suite; the pre-existing `_pcbnew` segfault that
+killed the run is gone.
 
-| tree | result |
-|---|---|
-| baseline `94c3c4d` (no changes) | `4 failed, 466 passed, 10 skipped, 16 errors` (188.9 s) |
-| this branch | `4 failed, 466 passed, 10 skipped, 16 errors` (185.9 s) |
+| run | command | result |
+|---|---|---|
+| pre-merge, untouched baseline `94c3c4d` | `… --ignore=tests/p1b_ab_test.py --ignore=tests/test_pcb_track_import.py --continue-on-collection-errors` | `4 failed, 466 passed, 10 skipped, 16 errors` |
+| pre-merge, this branch | same | `4 failed, 466 passed, 10 skipped, 16 errors` (identical FAILED/ERROR set) |
+| post-merge, this branch | the literal gate command, `… --ignore=tests/p1b_ab_test.py` | **EXIT 2** — aborts with `6 errors during collection` (missing serial devices / missing files, no `--continue-on-collection-errors`) |
+| post-merge, this branch | `… --ignore=tests/p1b_ab_test.py --continue-on-collection-errors` | **`4 failed, 481 passed, 23 skipped, 16 errors`** (199.9 s, EXIT 1) |
 
-The FAILED/ERROR **set is byte-identical** (4 pre-existing failures: 3 in
-`tests/src/test_phase1_runner.py`, 1 in `tests/test_board_lock.py`; 16 errors, all
-serial-device / missing-file / missing-hardware). So the branch has a **zero test
-delta**. The remaining failures are pre-existing environment state (no ESP32
-boards attached, no serial devices, `_pcbnew` segfault), not regressions.
+The 4 failures (3 in `tests/src/test_phase1_runner.py`, 1 in
+`tests/test_board_lock.py`) and the 16 errors (serial-device / missing-file /
+absent-hardware) are **pre-existing and identical on the untouched baseline** —
+this branch has a **zero test delta**. The literal gate command exits non-zero
+only because collection errors abort the session; that is environment state (no
+ESP32 boards, no serial devices), not a code defect, and main's own test fix did
+not change it.

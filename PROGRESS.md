@@ -72,3 +72,24 @@ Base: `github/main` @ `94c3c4d`. Nothing pushed to main/master; no force-push.
   `c7a51a51…`; v9 F33 footprint `0a5dbe6c…`.
 * Gates after: check_sch_gates v9 PASS (ERC 19, unchanged), hub_array PASS,
   bypass PASS, generator `--verify-all` exit 0.
+
+## Cluster 5 — merge of github/main and final gate run (done)
+
+`github/main` advanced from `94c3c4d` to `1351ed2e` while this branch was in
+progress: *"fix(tests): make the suite runnable as a whole — two defects destroyed
+the run"*, touching ONLY `tests/conftest.py` + `tests/test_pcb_track_import.py`
+(zero overlap with this branch). Merged in as `33e6179` (clean, no conflicts) so
+the pytest gate could be evaluated against the repaired suite. The pre-existing
+`_pcbnew` segfault that killed the pre-merge runs is gone.
+
+Final gate run on the merged branch:
+
+* `check_sch_gates.py v9` → ALL GATES PASS / V9 GATES PASS; ERC 19
+  (`pin_not_connected`, unchanged); v9 sch sha `c7a51a519e485e73` (unchanged).
+* `hub_array_topology_check.py` → PASS. `bypass_diode_check.py` → PASS.
+* `gen_f33_landpattern.py --verify-all` → exit 0, 4/4 copies 18/18.
+* `pytest tests/ -q --ignore=tests/p1b_ab_test.py` (literal) → EXIT 2, aborts on
+  `6 errors during collection` (missing serial devices / missing files).
+* `… --continue-on-collection-errors` → **4 failed, 481 passed, 23 skipped, 16
+  errors** (199.9 s, EXIT 1). Same 4 pre-existing failures and 16 environment
+  errors as the untouched baseline `94c3c4d` → **zero test delta**.
