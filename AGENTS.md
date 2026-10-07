@@ -324,6 +324,42 @@ make test-relay-nip11
 make test-cvm-roundtrip
 ```
 
+## Single-Source-of-Truth Parameter Registry (READ BEFORE CITING A VALUE)
+
+This repo has repeatedly carried **two records asserting different values for the
+same physical parameter, with nothing surfacing the disagreement** — four cases in
+one day (hub outline, ESP32-S3 flash size, the 2.4 GHz RX radio, the wing plane
+orientation), plus the F33 castellation land size.
+
+The list is machine-readable and lives in **`docs/ssot/parameters.json`** — one
+entry per contested parameter: the single record that OWNS it, the canonical
+value, an anchor that proves the owner still asserts it, the records that
+historically asserted something else, and a `forbid` regex for the conflicting
+value.
+
+**Before you write a dimension/part/size into a record, check the registry. If a
+value is genuinely open, register it as open rather than picking one.** When you
+find a second record asserting a different value, add the entry (or the
+conflicting record) the same day; do NOT resolve it by editing the losing
+record's body — append a `CORRECTION` block citing the registry (the repo's
+convention, see ADR-042/ADR-056 and the 2026-10-08 corrections in
+ADR-048 / `WING-TO-HUB-SOCKET-SPEC.md` / ADR-040 / `hardware-design.md`).
+
+```bash
+# the gate — FAIL-CLOSED (exit 0 pass / 1 conflict / 2 cannot determine)
+python3 scripts/param_ssot_check.py
+python3 scripts/param_ssot_check.py --json
+python3 scripts/param_ssot_check.py --list      # show the registry
+
+# its test (also collected by `pytest tests/`)
+python3 -m pytest tests/test_param_ssot.py -q
+```
+
+A conflicting value is allowed only when it is **annotated history**: the matched
+line carries a marker (`was`, `stale`, `superseded`, `guess`, `TODO(unverified)`,
+`→` …) or the file carries an appended **CORRECTION** block / cites
+`docs/ssot/parameters.json`. An UN-annotated conflicting assertion fails the gate.
+
 ## Build & Flash
 
 ```bash

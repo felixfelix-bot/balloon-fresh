@@ -1903,15 +1903,23 @@ V9_TODO = [
      "layers only); and whether the hub placement gate's component-to-interface "
      "clearance exceeds the 1.5 mm of socket spec s4. No v9 hub PCB exists, so "
      "none of these can be measured yet."),
-    ("OPEN-23 ASSEMBLY ORIENTATION OF THE WING AT THE HUB (CONFLICTING RECORDS)",
-     "Socket spec s1 says the wing's long axis is 'perpendicular to the hub "
-     "plane' and then, in the next sentence, that wings 1-2 are 'horizontal' "
-     "in the hub plane (and 3-4 inclined ~30 deg below it); ADR-046 s4.1 says "
-     "'90 deg to the hub plane, wing plane normal to the hub plane'. The two "
-     "readings cannot both hold. TODO(unverified): the intended attach "
-     "orientation, which the ADR-048 footprint deliberately does NOT assert - "
-     "the land row, slot and keep-outs are laid out on a stated, newly decided "
-     "datum (interface edge x slot centre line) and no rotation is fixed."),
+    ("OPEN-23 WING ATTACH ORIENTATION — RESOLVED 2026-10-08 (ADR-049 s5 item 6)",
+     "RESOLVED: the wing plane is VERTICAL (a blade) — long axis radial in the "
+     "hub plane and pointing outward, 25 mm width vertical. Governing record: "
+     "ADR-049 s5 item 6, resolved by the tab/slot arithmetic (ADR-046 s4.1: a "
+     "0.9 mm slot admits a 0.6 mm tab plus a 0.30 mm gap, and a 9.0 mm tab "
+     "cannot fit a 6.0 mm in-plane slot), corroborated by ADR-046 s4.1 ('90 deg "
+     "to the hub plane, wing plane normal to the hub plane'), ADR-051 s1.4 and "
+     "ADR-055 s1. The stale 'wings 1-2 horizontal' / 'long axis perpendicular "
+     "to the hub plane' reading in WING-TO-HUB-SOCKET-SPEC s1 is v1-era prose "
+     "(docs/hardware-design.md s3D-Assembly, an ANTENNA-coverage statement for "
+     "a wing that carried a Yagi - V2-only and absent on v9, ADR-046 s2.4) and "
+     "now carries an appended CORRECTION. The ADR-048 footprint's own decision "
+     "is UNCHANGED: it asserts no rotation (datum = interface edge x slot "
+     "centre line). Registered as 'wing_plane_orientation' in "
+     "docs/ssot/parameters.json; gate scripts/param_ssot_check.py. STILL OPEN: "
+     "TODO(unverified) whether the ~30 deg droop of wings 3-4 is retained on v9 "
+     "- it had an antenna-coverage rationale only and no v9 record fixes it."),
     ("OPEN-24 HAND-SOLDER JOINT DIMENSIONS NOT MEASURED",
      "The v9 hub does not exist and neither the wing tab's nor the cells' real "
      "contact geometry has been measured: ADR-046 s7 item 1 files the 52 x 19 mm "
