@@ -41,10 +41,27 @@ INPUTS
                      Treat a row whose `source` starts with TODO/UNVERIFIED as
                      CANNOT-VERIFY (fail-closed on unprovenanced ratings).
 
-PROVENANCE
-----------
-Every rating used here MUST carry a `source` in the ratings DB.  A rating with
-no source is unprovenanced; use --strict-provenance to fail it closed.
+PROVENANCE (ADR-043)
+--------------------
+Every rating in the ratings DB MUST cite a real document + line/table/page.
+A rating that is unprovenanced, or that is an invented "typical range" class
+guess rather than a document citation, MUST NOT silently produce a PASS or a
+FAIL verdict -- it is CANNOT-VERIFY.  Therefore:
+
+  * a row with `source` empty, or starting with TODO/UNVERIFIED, is
+    unprovenanced                              -> CANNOT-VERIFY;
+  * a `source` that reads as a class guess (contains "typical") is not a
+    document citation                         -> CANNOT-VERIFY;
+  * `--strict-provenance` is the HONEST mode and is the mode to use for a real
+    qualification call.  Without it an unprovenanced rating is taken at face
+    value -- and a guessed number that reads like a rating is worse than no
+    number, because it drives a verdict off a fabrication.
+
+A `source` is a claim about provenance, not proof of it: `--strict-provenance`
+cannot detect a citation that is simply wrong.  What keeps the gate sound is
+curation -- every retained rating cites a specific document+location, and rows
+that cannot be sourced are DELETED (leaving the part at CANNOT-VERIFY), never
+guessed.  See the ADR-043 addendum for the hardened per-part rating table.
 """
 
 from __future__ import annotations
@@ -158,7 +175,11 @@ def parse_pcb(path: str):
 
 def _provenance_unverified(source: str) -> bool:
     s = (source or "").strip().upper()
-    return s.startswith("TODO") or s.startswith("UNVERIFIED") or s == ""
+    if s.startswith("TODO") or s.startswith("UNVERIFIED") or s == "":
+        return True
+    # An invented class rating ("... typical range") is a guess, not a document
+    # citation, and must not silently drive a PASS/FAIL verdict (ADR-043).
+    return bool(re.search(r"\bTYPICAL\b", s))
 
 
 def check(items, mission_min_c: float, strict_provenance: bool):

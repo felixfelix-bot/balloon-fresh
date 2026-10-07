@@ -127,6 +127,42 @@ def test_pcb_parser_finds_28_footprints():
     assert "LoRa2021_Gen4" in vals
 
 
+def test_strict_provenance_flags_invented_typical_source(tmp_path):
+    """An invented class rating is not provenance: strict mode fails it closed.
+
+    A guessed number that reads like a rating must never drive a PASS/FAIL
+    verdict (ADR-043 addendum).
+    """
+    bom = _write(str(tmp_path / "b.csv"), [
+        ("R1", "10k", "", "-55", "155", "AEC-Q200-grade 0402 thick-film resistor typical range"),
+    ])
+    ratings = _write(str(tmp_path / "r.csv"), [], header=("key", "rated_min_c", "rated_max_c", "source"))
+    assert _run(bom, ratings, strict=False) == g.EXIT_FAIL      # face value: -55 > -60
+    assert _run(bom, ratings, strict=True) == g.EXIT_CANNOT_VERIFY
+    assert g._provenance_unverified("X7R 0402 MLCC typical range") is True
+
+
+def test_shipped_ratings_db_is_sourced_and_free_of_invented_typical_claims():
+    """The shipped DB may only carry ratings with a real document source.
+
+    Regression guard for the ADR-043 hardening: no TODO/UNVERIFIED, no blank
+    source, and no invented "typical range" class guess on any rated row.
+    """
+    path = os.path.join(HERE, "bom_ratings.csv")
+    with open(path, newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    assert rows, "ratings DB is empty"
+    for row in rows:
+        rmin = (row.get("rated_min_c") or "").strip()
+        if rmin == "":
+            continue  # no rating -> the gate returns CANNOT-VERIFY
+        src = (row.get("source") or "").strip()
+        assert src, "rated row %r has no source" % row.get("key")
+        assert not g._provenance_unverified(src), (
+            "rated row %r carries unprovenanced/invented source: %r" % (row.get("key"), src)
+        )
+
+
 def _run_all():
     import tempfile
     import pathlib
