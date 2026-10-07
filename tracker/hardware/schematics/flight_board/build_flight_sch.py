@@ -706,6 +706,14 @@ V9_F33_PINS = [
 
 # --- bare LoRa2021 castellated 18-pad module.  Pad names from
 # docs/DUAL-VARIANT-DESIGN.md (V1 table: GP2..GP8 wiring + "GND pins 2,8,11,12,18").
+# Pad 13 is `VTCXO` (was the placeholder `PAD13_??`): the value vendor pin table
+# docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf 7 "Pin definition"
+# enumerates all 18 pads and names pad 13 `VTCXO`, `O`, "Can provide power for an
+# external TCXO."  This is a NAMING correction with a source (ADR-058 s1.3), not a
+# connectivity change: pad 13 carries the chip's VTCXO/VNTC rail (chip pin 6) and
+# is the bias rail of the ADR-058 NTC temperature-compensation provision.
+# NOTE: the module breaks out VTCXO but NOT the chip's `NTC` sense input (chip
+# pin 3) - see OPEN-29 and ADR-058 D6.  Pads 16/17 stay `PAD16_??`/`PAD17_??`.
 V9_BARE_PINS = [
     ("1", "VCC", "power_in"), ("2", "GND", "power_in"),
     ("3", "MISO", "tri_state"), ("4", "MOSI", "input"),
@@ -713,7 +721,7 @@ V9_BARE_PINS = [
     ("7", "BUSY", "output"), ("8", "GND", "power_in"),
     ("9", "ANT", "passive"),
     ("10", "2G4_ANT", "passive"), ("11", "GND", "power_in"),
-    ("12", "GND", "power_in"), ("13", "PAD13_??", "passive"),
+    ("12", "GND", "power_in"), ("13", "VTCXO", "passive"),
     ("14", "RESET", "input"), ("15", "IRQ_DIO9", "output"),
     ("16", "PAD16_??", "passive"), ("17", "PAD17_??", "passive"),
     ("18", "GND", "power_in"),
@@ -1102,6 +1110,42 @@ V9_COMPONENTS = [
      "GND. POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1. This "
      "is the only one whose anode sits on GND, because wing 4's SOLAR_N IS the "
      "stack bottom (ADR-046 s2.3)."),
+    # --- ADR-058: THE LR2021 ON-CHIP NTC TEMPERATURE-COMPENSATION PROVISION.
+    # The LR2021 silicon contains the XTAL compensation engine; it needs only an
+    # external NTC thermistor + bias resistor at the crystal (Semtech DS 2.2
+    # s1.9.2 "Figure 1-15: NTC Connection"; SetTempCompCfg opcode 0x0132 and
+    # SetNtcParams opcode 0x0133 per Tables 6-69/6-70; chip pin 3 = NTC, chip
+    # pin 6 = VTCXO/VNTC per Table 2-1).  Both parts are DNP, with the reason
+    # recorded in the net note and OPEN-29: on the OWNED bare NiceRF module the
+    # chip's NTC sense pin has NO castellation (the vendor pin table
+    # docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7 enumerates all 18
+    # pads and the only oscillator pad is 13 = VTCXO), so the sense node has no
+    # path back to the chip and the loop cannot be closed.  The land is provided
+    # now because there is no v9 hub PCB yet, so it costs no respin: a module (or
+    # revision) that breaks the pin out closes the loop at zero cost.  Values are
+    # TODO(unverified) because they must be characterised from the populated part
+    # (ADR-058 D4), not guessed.
+    ("R_NTC1", "Device:R", "TODO(unverified) (sets ntc_r_ratio)",
+     "Resistor_SMD:R_0402_1005Metric", True,
+     "ADR-058 D1/D4: series/bias resistor of the on-chip NTC temperature-"
+     "compensation divider, from the VTCXO/VNTC bias rail to the NTC sense node. "
+     "Its value must be characterised against the populated NTC (it sets "
+     "SetNtcParams ntc_r_ratio = RBiasRatio, 'the ratio between the resistor bias "
+     "value and the NTC resistor value at 25 degC, 10 bits with 9 fractional bits "
+     "(10,9)' - DS 2.2 Table 6-70) -> TODO(unverified). DNP, not populated: the "
+     "sense node has no path back to the chip on the owned bare module (OPEN-29, "
+     "ADR-058 D6)."),
+    ("TH_NTC1", "Device:Thermistor_NTC", "TODO(unverified) (NTC, R25/beta TODO)",
+     "Resistor_SMD:R_0402_1005Metric", True,
+     "ADR-058 D1/D3/D4: the NTC thermistor of the on-chip temperature-"
+     "compensation provision - sense node to GND. SITING RULE (ADR-058 D3): it "
+     "must be thermally coupled to the radio's XTAL, NOT parked on the far side "
+     "of the board, and NOT sited where a self-heating neighbour dominates its "
+     "reading (the F33 2 W PA, the hub converter). Part, R25 and beta are "
+     "TODO(unverified): they must be read from the chosen part's datasheet and "
+     "matched to ntc_beta (DS 2.2 Table 6-70: 'NTC temperature in 2 Kelvin/lsb') "
+     "and to the -60 degC design case - see OPEN-30.  0402 land because an 0402 "
+     "NTC uses the same land as an 0402 resistor. DNP (OPEN-29, ADR-058 D6)."),
 ]
 
 # --- ADR-051 §2.1: the hub array.  Its cell count is a PARAMETER, not a
@@ -1194,7 +1238,7 @@ V9_NETS = [
              ("C_MON", "2"),
              ("ANT1", "2"), ("ANT2", "2"), ("ANT3", "2"), ("ANT4", "2"),
              ("J_W1", "2"), ("J_W2", "2"), ("J_W3", "2"), ("J_W4", "2"),
-             ("J_W4", "4"), ("D_BP4", "2")],
+             ("J_W4", "4"), ("D_BP4", "2"), ("TH_NTC1", "2")],
      "Ground. F33 GND pads 2,3,4,6,7,8,11; bare GND pads 2,8,11,12,18 "
      "(docs/DUAL-VARIANT-DESIGN.md). J_W1..J_W4 pin 2 are the four wing "
      "interfaces' GND lands: socket spec s3 makes each interface's GND land tie "
@@ -1333,6 +1377,29 @@ V9_NETS = [
      "ADR-034 D1: bare LoRa2021 2.4 GHz feed."),
     ("ANT4_GNSS_L1", [("U5", "11"), ("ANT4", "1")],
      "ADR-029 D3: MAX-M10S RF_IN -> GNSS L1 U.FL."),
+    # --- ADR-058: the LR2021 on-chip NTC temperature-compensation provision. ---
+    ("VTCXO_VNTC", [("U3", "13"), ("R_NTC1", "1")],
+     "ADR-058 D1: the VTCXO/VNTC bias rail of the on-chip temperature-"
+     "compensation divider, taken from the bare module's pad 13 = VTCXO (vendor "
+     "pin table docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7: "
+     "'Can provide power for an external TCXO'). DS 2.2 Table 2-1 names the chip "
+     "pin it carries, pin 6 = VTCXO/VNTC, 'External TCXO supply voltage "
+     "(REG_TCXO) / NTC supply'; DS 2.2 s1.9.2 says this pin 'can be used to power "
+     "an external temperature sensor (R and NTC)'. R_NTC1 pin 1 sits on it - the "
+     "divider is the only load here, a microwatt fraction of the regulator's "
+     "ILTCXO 1.5 mA typ / 4 mA max (DS 2.2 Table 3-25). NO PWR_FLAG is implied: "
+     "the net carries passive pins only."),
+    ("NTC_SENSE", [("R_NTC1", "2"), ("TH_NTC1", "1")],
+     "ADR-058 D1/D6: the divider's midpoint - THE NORMAL SENSE NODE that the "
+     "chip's NTC input (chip pin 3, DS 2.2 Table 2-1 'Negative Temperature "
+     "Coefficient (NTC) resistor connection') is meant to read. It is a "
+     "DELIBERATELY OPEN LOOP on the owned bare module: the chip's NTC pin is NOT "
+     "broken out on the NiceRF module's 18 castellations (the vendor pin table "
+     "enumerates all 18 pads and the only oscillator pad is 13 = VTCXO; module "
+     "pad 3 is MISO), so this node has no path back to the chip. The parts are "
+     "DNP for exactly that reason and the node is left as the two-part divider "
+     "node rather than given an invented chip-side net. A module that DOES break "
+     "the pin out closes the loop here - see OPEN-29."),
 ]
 
 # --- ADR-051 §2.1: the hub array's OWN nets, and the cut-sense lines. --------
@@ -1449,7 +1516,15 @@ V9_TODO = [
      "Unused under ADR-034 (U3 is the 2.4 GHz RX). An RF port is not tied off "
      "without a decision - left open."),
     ("OPEN-5 BARE-MODULE PAD FUNCTIONS (U3 pins 13,16,17)",
-     "PAD13/PAD16/PAD17 functions are unverified (v8i audit: DECLARED_GAP)."),
+     "PAD13/PAD16/PAD17 functions were unverified (v8i audit: DECLARED_GAP). "
+     "PARTLY CLOSED by ADR-058 s1.3: pad 13 = VTCXO - the vendor pin table "
+     "docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7 enumerates all 18 "
+     "pads and names pad 13 'VTCXO', O, 'Can provide power for an external TCXO', "
+     "so the generator's placeholder 'PAD13_??' is renamed 'VTCXO' (a naming "
+     "correction with a source; no connectivity added). STILL OPEN: pads 16 and 17 "
+     "(PAD16_??/PAD17_??) - the vendor table calls them DIO8 and DIO7 but the "
+     "generator's bare-module pin map has not been reconciled with it. See also "
+     "OPEN-29 (the chip's NTC pin has no castellation)."),
     ("OPEN-6 F33 DIO5 (U1 pin 19)",
      "The pin plan assigns F33_DIO5 to GPIO11, but the F33's 18-pad map has no "
      "DIO5 pad. Which F33 pad carries DIO5 is unresolved - left open."),
@@ -1616,6 +1691,56 @@ V9_TODO = [
      "are the sense divider (OPEN-25), the on-time cap and the inter-cut "
      "interval.  Also open: the trigger mode - ground-commanded vs automatic "
      "(ADR-051 s2.5.7)."),
+    ("OPEN-29 NTC PROVISION: THE MODULE PIN BREAK-OUT (ADR-058 D6, THE BLOCKER)",
+     "Whether the LR2021 chip's NTC sense input (chip pin 3, 'Negative "
+     "Temperature Coefficient (NTC) resistor connection', DS 2.2 Table 2-1) is "
+     "broken out on the OWNED bare NiceRF module. EVIDENCE IN HAND SAYS NO: the "
+     "vendor pin table (docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7) "
+     "enumerates ALL 18 pads - 1 VCC / 2,8,11,12,18 GND / 3 MISO / 4 MOSI / 5 SCK "
+     "/ 6 NSS / 7 BUSY / 9 ANT / 10 2.4/S_ANTA / 13 VTCXO / 14 RST / 15 DIO9 / 16 "
+     "DIO8 / 17 DIO7 - and the only oscillator pad is 13 = VTCXO, described only "
+     "as 'Can provide power for an external TCXO'. So the module brings out the "
+     "VTCXO/VNTC BIAS rail but NOT the NTC SENSE input, and the divider midpoint "
+     "(net NTC_SENSE) has no path back to the chip: SetTempCompCfg would configure "
+     "a sensor that cannot be read. THAT is why R_NTC1/TH_NTC1 are DNP. WHAT WOULD "
+     "SETTLE IT: the module MECHANICAL DRAWING (the vendor's pin-out drawing, not "
+     "just the pin-definition table) or a DESHIELD PHOTO of a bare module's "
+     "castellations. Until then the finding is strong but NOT promoted to 'proven "
+     "absent' - a pin table can be an abbreviation and a module revision can "
+     "differ (TODO(unverified); ADR-042 Addendum A2 files the same request). "
+     "FALLBACK if unavailable (ADR-058 D6): do not fit the NTC on a bare module; "
+     "fly the F33 (internal 0.5 ppm TCXO) or a TCXO-bearing LR2021 module; else "
+     "firmware f(T) pre-distortion + GPS 1PPS discipline (ADR-056 D3)."),
+    ("OPEN-30 NTC PART SELECTION AND ITS COLD RATING (ADR-058 D4/OPEN-2)",
+     "TH_NTC1's part is NOT chosen. Required in this order: (1) read R25 and beta "
+     "from the chosen part's own datasheet - they set SetNtcParams ntc_beta ('NTC "
+     "temperature in 2 Kelvin/lsb', DS 2.2 Table 6-70) and, with R_NTC1, "
+     "ntc_r_ratio; (2) CHECK THE COLD RATING against the -60 degC design case, with "
+     "the same rigour the array work applied: ADR-054 s4 records that EVERY "
+     "verified semiconductor there is rated -55 degC (diodes) or -40 degC "
+     "(converters) against the -60 degC case, and the LR2021 silicon itself is Top "
+     "-40...85 degC / Tmr -55...125 degC (DS 2.2 Tables 3-1/3-2, p.38). A "
+     "commercial-grade '-40 degC' thermistor is NOT a -60 degC part - do not "
+     "assume the thermistor is exempt from the cold-rating gate. All "
+     "TODO(unverified)."),
+    ("OPEN-31 SetNtcParams VALUES NOT CHARACTERISED (ADR-058 D4)",
+     "The three SetNtcParams inputs are TODO(unverified) and must NOT be invented: "
+     "ntc_r_ratio (10 bits with 9 fractional bits, the ratio of the bias resistor "
+     "to the NTC at 25 degC), ntc_beta (2 K/lsb) and delay (first-order time delay "
+     "coefficient) - DS 2.2 Table 6-70. They must be derived from the POPULATED "
+     "part + bias resistor via the datasheet's own identity (RRatio = RNTC/RNTC_25 "
+     "= RBiasRatio*(Raw/8192)/(1-Raw/8192); T = Beta/(ln(RRatio)+Beta/298.15) - "
+     "273.15). AN1200.106, the datasheet's reference for this maths, is NOT "
+     "committed in this repo - obtain it first. A forum figure ('assume 4250 K') is "
+     "a bench placeholder, never a characterisation."),
+    ("OPEN-32 F33 PA SELF-HEATING vs A NEARBY NTC (ADR-058 D3)",
+     "Whether the F33's 2 W PA self-heating perturbs a nearby NTC has NOT been "
+     "measured (TODO(unverified)). ADR-058 D3 is the siting RULE that this "
+     "open item exists to protect: the NTC must be thermally coupled to the radio's "
+     "XTAL / XOSC node and must NOT be sited where a self-heating neighbour "
+     "dominates its reading (the F33 PA, the hub converter). The provision on THIS "
+     "sheet sits on the bare-module (U3) side, which is why the rule is stated "
+     "explicitly rather than left to layout."),
 ]
 
 
@@ -1726,6 +1851,11 @@ def v9_emit():
         ["PVA%d" % _hci for _hci in range(1, V9_HUB_ARRAY_CELLS + 1)]
         + ["D_HUB%d" % _hci for _hci in range(1, V9_HUB_ARRAY_CELLS + 1)]
         + ["U_HUB_CVT"] + ["U_CUT%d" % _hci for _hci in range(1, 5)],
+        # ADR-058: the on-chip NTC temperature-compensation provision (both parts
+        # DNP).  Appended LAST for the same reason as the hub column above:
+        # col_x accumulates left-to-right, so a new trailing column moves no
+        # already-placed component.
+        ["R_NTC1", "TH_NTC1"],
     ]
     V9_COL_TITLES = [
         "GNSS / BARO / POWER",
@@ -1741,6 +1871,9 @@ def v9_emit():
         "3 RF = CUT_SENSE_W<n> (ADR-051 s2.6) / 4 SOLAR_N + 4 POPULATED bypass "
         "Schottky (SS24, 2 A / 40 V)",
         "INDEPENDENT HUB ARRAY (ADR-051 s2.1) + 4 LATCHED CUT CHANNELS (s2.5/s2.6)",
+        "LR2021 ON-CHIP NTC TEMP-COMP PROVISION (ADR-058) - R_NTC1 + TH_NTC1, "
+        "BOTH DNP: the chip's NTC sense pin (chip pin 3) is NOT broken out on the "
+        "owned bare NiceRF module (OPEN-29 / ADR-058 D6)",
     ]
     placed_refs = [r for col in V9_COLUMNS for r in col]
     missing = [c[0] for c in comps if c[0] not in placed_refs]
