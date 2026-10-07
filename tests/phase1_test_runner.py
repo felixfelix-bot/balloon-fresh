@@ -367,6 +367,14 @@ def parse_result_line(line: str) -> Optional[dict]:
     RP2040:  RESULT,recv,unique,dup,err,tput,min,avg,max
     ESP32:   I (<n>) BENCH: RESULT,received,...
     Canonical/unknown RESULT,<key>=<val>,<key>=<val>... is also accepted.
+
+    Returns ``None`` when the line is not a RESULT footer *or* when none of its
+    fields parse as numbers.  A RESULT footer is machine-generated, so an
+    unparseable token means the line is malformed input, not a result with
+    missing fields: ``RESULT,garbage`` used to yield ``{"received": None}``,
+    which silently turned garbage into a result record (and made
+    :meth:`Phase1Runner._collect` report a bogus footer for any line that
+    merely *contains* "RESULT").
     """
     s = line.strip()
     m = _BENCH_RESULT_RE.match(s)
@@ -382,17 +390,25 @@ def parse_result_line(line: str) -> Optional[dict]:
     positional_keys = ["received", "unique", "duplicates", "errors",
                        "throughput_kbps", "min_us", "avg_us", "max_us"]
     if "=" not in body[0] and len(body) <= len(positional_keys):
+        # Every positional field must be numeric. Validation uses _to_float for
+        # all fields so the accept/reject decision is independent of the
+        # int-vs-float coercion applied below (a "140.0"-style min_us is still
+        # a well-formed footer, just not an int).
+        if any(_to_float(val) is None for val in body):
+            return None
         out = {}
         for key, val in zip(positional_keys, body):
             out[key] = _to_float(val) if key in {"throughput_kbps", "avg_us"} \
                 else _to_int(val)
         return out
-    # key=value form.
+    # key=value form: keep the numeric fields only.
     out = {}
     for chunk in body:
         if "=" in chunk:
             k, _, v = chunk.partition("=")
-            out[k] = _to_float(v)
+            num = _to_float(v)
+            if num is not None:
+                out[k] = num
     return out or None
 
 

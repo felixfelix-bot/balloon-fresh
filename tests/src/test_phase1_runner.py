@@ -188,9 +188,20 @@ class TestMockBackend:
 # --------------------------------------------------------------------------- #
 # End-to-end orchestration (mock serial, no hardware)
 # --------------------------------------------------------------------------- #
-class TestOrchestration:
+class _MockOrchestrationMixin:
+    """Mock-backend helpers shared by the orchestration tests and the
+    regression locks below (a plain mixin, so pytest does not collect it)."""
+
     def _runner_with_mocks(self, runner, rx_script, tx_count=1):
-        """Build a Phase1Runner wired to mock nodes emitting rx_script."""
+        """Build a Phase1Runner wired to mock nodes emitting rx_script.
+
+        Every node is given the same ``rx_on_write`` emitter, mirroring
+        :func:`phase1_test_runner.make_mock_nodes`.  Which node is RX varies
+        across the matrix (1D/1E use an ESP32 as RX, 1F uses two receivers), so
+        the emitter must be installed on *all* nodes: otherwise a mode whose RX
+        node has a no-op ``on_write`` silently collects zero packets and the
+        dual-RX merge (mode 1F) is never actually exercised.
+        """
         def rx_on_write(text):
             if not text.strip().lower().startswith("s"):
                 return []
@@ -200,9 +211,9 @@ class TestOrchestration:
             "RP2040-A": runner.MockSerialBackend(boot_lines=["READY"],
                                                  on_write=rx_on_write),
             "ESP32-B": runner.MockSerialBackend(boot_lines=["READY"],
-                                                on_write=lambda _t: []),
+                                                on_write=rx_on_write),
             "ESP32-C": runner.MockSerialBackend(boot_lines=["READY"],
-                                                on_write=lambda _t: []),
+                                                on_write=rx_on_write),
         }
         node_ports = {n: n for n in nodes}
         factory = runner.mock_backend_factory(nodes)
@@ -225,6 +236,8 @@ class TestOrchestration:
         lines.append(f"RESULT,{n},{n},0,0,2600.0,140,140.0,140")
         return lines
 
+
+class TestOrchestration(_MockOrchestrationMixin):
     @pytest.mark.simulate
     def test_single_tx_rx_mode_1A(self, runner, tmp_path):
         r_inst, _nodes = self._runner_with_mocks(runner, self._script(runner, n=480))
@@ -272,12 +285,27 @@ class TestOrchestration:
         res = r_inst.run_mode(runner.TEST_MODES["1E"])
         csv_path = runner.write_mode_csv(res, tmp_path)
         text = csv_path.read_text()
-        assert "pkt,seq,rssi" in text.splitlines()[0]
+        lines = text.splitlines()
+        # The header is this file's own per-packet schema (runner.CSV_FIELDS):
+        # its first column is "index" (the receiver-side arrival index), which
+        # is a different quantity from "seq" (the transmitter's sequence
+        # number).  "pkt,seq,rssi,..." is the *firmware* output dialect that
+        # parse_packet_line consumes (and explicitly rejects as a non-packet
+        # line) -- it is not the header of this CSV.
+        assert lines[0] == ",".join(runner.CSV_FIELDS)
+        assert "index,seq,rssi" in lines[0]
         assert "# packet_loss_pct" in text
         assert "# rssi_avg" in text
         # Footer stat lines parse as "# key,value".
-        footer = [ln for ln in text.splitlines() if ln.startswith("# ")]
-        assert any("0.00" in ln for ln in footer)  # 0% loss
+        footer = {}
+        for ln in lines:
+            if ln.startswith("# ") and "," in ln:
+                k, _, v = ln[2:].partition(",")
+                footer[k] = v
+        assert int(footer["packets_received"]) == 500
+        assert int(footer["unique_seqs"]) == 500
+        assert float(footer["packet_loss_pct"]) == pytest.approx(0.0)  # 0% loss
+        assert float(footer["rssi_avg"]) == pytest.approx(-73.0)
 
 
 # --------------------------------------------------------------------------- #
@@ -335,3 +363,112 @@ class TestCLI:
         assert rc == 0
         assert (tmp_path / "test-1D.csv").exists()
         assert (tmp_path / "summary.json").exists()
+
+
+# --------------------------------------------------------------------------- #
+# Regression locks (2026-10-07 suite triage)
+#
+# These three defects were invisible while the suite could not run as a whole
+# (two collection-time defects destroyed the run before 1351ed2). Each test
+# below fails against the pre-triage code and locks the fix in.
+# --------------------------------------------------------------------------- #
+class TestRegressions(_MockOrchestrationMixin):
+    @pytest.mark.simulate
+    def test_result_line_never_invents_a_record_from_garbage(self, runner):
+        """BUG 1: parse_result_line accepted garbage and invented a dict.
+
+        ``parse_result_line("RESULT,garbage")`` returned ``{"received": None}``
+        instead of ``None``: the positional branch zipped the key list against
+        whatever tokens were present and stored ``None`` for each unparseable
+        one, so *any* malformed line was reported as a result footer.
+        """
+        for line in [
+            "RESULT,garbage",
+            "RESULT,x,y,z",
+            "RESULT,500,garbage",           # partially numeric
+            "RESULT,status=ok",             # no numeric field at all
+            "RESULT,received=notanumber",
+        ]:
+            assert runner.parse_result_line(line) is None, line
+
+        # Well-formed footers (both dialects) must still parse, and the values
+        # must still be typed as before (ints for counts/timing, floats for
+        # throughput/avg).
+        pos = runner.parse_result_line("RESULT,500,498,2,0,2600.0,140,141.2,143")
+        assert pos is not None and pos["received"] == 500
+        assert isinstance(pos["received"], int) and isinstance(pos["unique"], int)
+        assert pos["avg_us"] == 141.2
+        kv = runner.parse_result_line("RESULT,received=100,loss_pct=2.5")
+        assert kv == {"received": 100.0, "loss_pct": 2.5}
+        # A float-formatted timing field is still a valid footer.
+        assert runner.parse_result_line("RESULT,5,5,0,0,2600,140.0,140.0,143.0")
+
+    @pytest.mark.simulate
+    def test_dual_rx_merge_sums_both_receivers(self, runner):
+        """BUG 2: mode 1F must merge packets from *both* RX nodes.
+
+        Two receivers hearing the same 500-packet transmission each report the
+        same 500 seqs, so the merged tally is 1000 received / 500 unique / 500
+        duplicates.  The mock fixture used to leave the second RX node with a
+        no-op ``on_write``, so the merge was never exercised and the mode
+        silently reported half the traffic.
+        """
+        r_inst, _nodes = self._runner_with_mocks(runner, self._script(runner, n=500))
+        res = r_inst.run_mode(runner.TEST_MODES["1F"])
+        assert res.ok
+        assert res.mode == "1F"
+        assert set(res.rx_nodes) == {"RP2040-A", "ESP32-C"}
+        assert res.stats.packets_received == 1000
+        assert res.stats.unique_seqs == 500
+        assert res.stats.duplicates == 500
+        assert res.stats.packet_loss_pct == 0.0
+        assert len(res.packets) == 1000
+        # Both receivers' contributions must be individually visible, so a
+        # silent/dead RX node can never hide behind the aggregate again.
+        per_node = {}
+        for n in res.rx_nodes:
+            prefixed = [ln for ln in res.raw_log if ln.startswith(f"[{n}] ")]
+            parsed = [runner.parse_packet_line(ln.split("] ", 1)[1])
+                      for ln in prefixed]
+            per_node[n] = sum(1 for p in parsed if p is not None)
+        assert per_node == {"RP2040-A": 500, "ESP32-C": 500}
+
+    @pytest.mark.simulate
+    def test_single_rx_mode_is_not_double_counted(self, runner):
+        """Guard for BUG 2's fix: a one-receiver mode must not sum twice."""
+        r_inst, _nodes = self._runner_with_mocks(runner, self._script(runner, n=500))
+        res = r_inst.run_mode(runner.TEST_MODES["1A"])  # ESP32-B TX -> RP2040-A RX
+        assert res.stats.packets_received == 500
+        assert res.stats.unique_seqs == 500
+        assert res.stats.duplicates == 0
+        assert [ln for ln in res.raw_log if not ln.startswith("[RP2040-A] ")] == []
+
+    @pytest.mark.simulate
+    def test_csv_header_and_footer_are_the_runner_schema(self, runner, tmp_path):
+        """BUG 3: the CSV header/footer contract is the runner's own schema.
+
+        The stale assertion expected the firmware dialect header
+        (``pkt,seq,rssi``) in the runner's output CSV, whose first column is
+        ``index`` (runner.CSV_FIELDS).  Lock the real contract, and the footer
+        values, in place.
+        """
+        r_inst, _nodes = self._runner_with_mocks(runner, self._script(runner, n=500))
+        res = r_inst.run_mode(runner.TEST_MODES["1A"])
+        path = runner.write_mode_csv(res, tmp_path)
+        lines = path.read_text().splitlines()
+        assert lines[0] == ",".join(runner.CSV_FIELDS)
+
+        footer = {}
+        for ln in lines:
+            if ln.startswith("# ") and "," in ln:
+                k, _, v = ln[2:].partition(",")
+                footer[k] = v
+        s = res.stats
+        assert int(footer["packets_received"]) == s.packets_received == 500
+        assert int(footer["unique_seqs"]) == s.unique_seqs == 500
+        assert int(footer["duplicates"]) == s.duplicates == 0
+        assert int(footer["expected_packets"]) == s.expected_packets == 500
+        assert float(footer["packet_loss_pct"]) == pytest.approx(s.packet_loss_pct)
+        # One CSV data row per parsed packet.
+        data_rows = [ln for ln in lines if ln and not ln.startswith("#")][1:]
+        assert len(data_rows) == len(res.packets) == 500

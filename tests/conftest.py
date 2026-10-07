@@ -179,3 +179,61 @@ def parse_gps_unix(line: str) -> int | None:
         return None
     m = re.search(r'unix=(\d+)', line)
     return int(m.group(1)) if m else None
+
+
+# ── pytest options for the RP2040 speed harness ────────────────────────
+#
+# tests/src/test_rp2040_speed.py documents `--tx-port` / `--rx-port` (and its
+# `hardware` fixture calls request.config.getoption("--tx-port")), but the
+# options were only ever parsed by that file's `__main__` argparse block --
+# never registered with pytest. With no registration, getoption() raised
+# ValueError inside the fixture and all six TestHardwareSpeed tests ERRORed
+# at setup instead of skipping. Options must be registered from a conftest.
+def pytest_addoption(parser):
+    """Register the serial-port overrides used by the hardware test module."""
+    parser.addoption(
+        "--tx-port", default=None, metavar="PORT",
+        help="TX board serial port for the RP2040 speed test "
+             "(default: first auto-detected port)")
+    parser.addoption(
+        "--rx-port", default=None, metavar="PORT",
+        help="RP2040 serial port for the RP2040 speed test "
+             "(default: second auto-detected port)")
+
+
+# ── Module loaders for the shipped tools under test ────────────────────
+#
+# test_ground_station.py / test_link_budget.py / test_telemetry_to_nostr.py
+# test the shipped tools by path: those live outside tests/ (tracker/,
+# tools/) and are not importable packages. These loaders were added with the
+# test modules in e19e773 and dropped when c6265ba rewrote this file, which
+# broke collection of all three modules with
+# "ImportError: cannot import name 'load_<x>' from 'conftest'".
+def _load_module(name: str, path: str):
+    """Load a Python source file by path as a module named ``name``."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def load_link_budget():
+    return _load_module("link_budget",
+                        os.path.join(REPO_ROOT, "tools", "link_budget.py"))
+
+
+def load_telemetry_to_nostr():
+    return _load_module(
+        "telemetry_to_nostr",
+        os.path.join(REPO_ROOT, "tracker", "ground-station", "nostr_bridge",
+                     "telemetry_to_nostr.py"),
+    )
+
+
+def load_ground_station():
+    return _load_module(
+        "ground_station",
+        os.path.join(REPO_ROOT, "tracker", "ground-station",
+                     "ground_station.py"),
+    )
