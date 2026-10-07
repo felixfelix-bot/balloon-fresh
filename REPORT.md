@@ -36,4 +36,11 @@ number, and recorded the MS5611 self-heating conflict.
 
 ## Verification of refs after push
 
-(To be filled after sequential push to github, ngit, origin.)
+All three remotes now carry `adr/thermal-drift-strategy` at commit `fa457523d77fd5694d8c67d45f85f6e3b07b5d5c`:
+
+- `github`: `fa457523d77fd5694d8c67d45f85f6e3b07b5d5c	refs/heads/adr/thermal-drift-strategy`
+- `ngit`: `fa457523d77fd5694d8c67d45f85f6e3b07b5d5c	refs/heads/adr/thermal-drift-strategy`
+- `origin`: `fa457523d77fd5694d8c67d45f85f6e3b07b5d5c	refs/heads/adr/thermal-drift-strategy`
+
+`ngit` push reported a failed state-event publish to some public relays, but the git refs
+published to `gitnostr.com` and `relay.ngit.dev` were confirmed by `git ls-remote ngit`.
