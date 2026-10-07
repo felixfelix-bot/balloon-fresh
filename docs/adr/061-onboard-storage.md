@@ -1,4 +1,4 @@
-# ADR-059 — On-board storage: the module's own 8 MB flash is sufficient; no external storage part is fitted; the TX buffer is sized to the link, not to the flash
+# ADR-061 — On-board storage: the module's own 8 MB flash is sufficient; no external storage part is fitted; the TX buffer is sized to the link, not to the flash
 
 - Status: **Proposed** — the *design direction* this record takes (the cheapest storage is the
   storage already bought; the buffer is sized by transmission energy, not flash capacity; no
@@ -15,8 +15,27 @@
   (base `23a621c`). **057 is not free** — a sibling worker claimed it
   (`docs/adr/057-flrc-drift-strategy.md` on branch `adr/flrc-drift-strategy`); checked across
   ALL refs, **057, 058 and 060 are taken (and 058 is claimed twice)** and **059 is free on
-  every branch inspected**. The number is therefore **059**, taken from the allocator's
-  range but not hard-coded to its raw output. No file is renamed.
+  every branch inspected**. The number was therefore taken as **059** from the allocator's
+  range but not hard-coded to its raw output. **No file is renamed.**
+- **Renumber record (059 → 061, appended on merge by the merging manager, 2026-10-07).** This
+  record is now **061**, not 059. The renumber is a **numbering arbitration, not a technical
+  change**: the body below is unchanged. **059 became occupied after this record was written**
+  — a knock-on from a *different* collision being resolved. The sequence of events, recorded so
+  it does not look like a mistake:
+  1. Two workers each claimed **058** (`adr/onboard-temp-compensation` and
+     `adr/ntc-temp-compensation-provision`), neither able to see the other's unpushed branch.
+     The manager arbited that: **058 = the on-board scheme**, and the NTC provision was moved
+     to **059**.
+  2. This record had already been written as **059** — correctly, on the information available:
+     the reference check above is accurate for the state of the branches at the time, since the
+     NTC branch held `058-…` then and nothing held 059.
+  3. So the NTC provision took 059 and this record moved to **061**, the next number free on
+     every ref. **058** (scheme), **059** (NTC provision), **060** (SX1280) and **061** (this
+     record) therefore land consecutive with **no gaps and no duplicates**.
+  Arbitration rule applied consistently to both collisions: **the earlier-claimed and more
+  general record keeps the lower number.** No cross-reference in this record needed changing —
+  its many references to **ADR-058** mean the on-board compensation *scheme*, which is still
+  058, and they are all correct as written.
 - Related records:
   - **ADR-036** (`docs/adr/036-energy-policy-burst-storage-daylight-only-tx.md`) — burst-sized
     storage, daylight-only TX, **night deep-sleep mandatory**, the **100 µW night anchor**, and

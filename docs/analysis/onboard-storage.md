@@ -2,7 +2,7 @@
 
 **STATUS: this is an ANALYSIS, not a decision record.** It assembles evidence, does
 arithmetic, and ranks options. The *decision* it feeds is recorded separately in
-`docs/adr/059-onboard-storage.md`. Nothing here is a fabrication authority and **no
+`docs/adr/061-onboard-storage.md`. Nothing here is a fabrication authority and **no
 hardware is ordered by it** (design work only).
 
 - Date: 2026-10-07
