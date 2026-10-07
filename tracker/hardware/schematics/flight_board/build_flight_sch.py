@@ -713,7 +713,7 @@ V9_F33_PINS = [
 # connectivity change: pad 13 carries the chip's VTCXO/VNTC rail (chip pin 6) and
 # is the bias rail of the ADR-058 NTC temperature-compensation provision.
 # NOTE: the module breaks out VTCXO but NOT the chip's `NTC` sense input (chip
-# pin 3) - see OPEN-29 and ADR-058 D6.  Pads 16/17 stay `PAD16_??`/`PAD17_??`.
+# pin 3) - see OPEN-29 and ADR-058 D6.  Pads 16/17 are now NAMED `DIO8`/`DIO7` - a naming correction with a source (the vendor pin table docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7 and docs/inventory.md line 28), no connectivity added. Their MCU ASSIGNMENT is still OPEN (OPEN-5).
 V9_BARE_PINS = [
     ("1", "VCC", "power_in"), ("2", "GND", "power_in"),
     ("3", "MISO", "tri_state"), ("4", "MOSI", "input"),
@@ -723,7 +723,7 @@ V9_BARE_PINS = [
     ("10", "2G4_ANT", "passive"), ("11", "GND", "power_in"),
     ("12", "GND", "power_in"), ("13", "VTCXO", "passive"),
     ("14", "RESET", "input"), ("15", "IRQ_DIO9", "output"),
-    ("16", "PAD16_??", "passive"), ("17", "PAD17_??", "passive"),
+    ("16", "DIO8", "passive"), ("17", "DIO7", "passive"),
     ("18", "GND", "power_in"),
 ]
 
@@ -960,7 +960,7 @@ V9_COMPONENTS = [
      "ADR-029 D2b + ADR-035: dedicated 2.4 GHz ranging radio."),
     ("U5", "RF_GPS:MAX-M10S", "MAX-M10S", "RF_GPS:ublox_MAX", False,
      "ADR-029 D2b: GNSS L1 position/time; receive-only, continuous (ADR-035 D3)."),
-    ("U6", "Sensor_Pressure:MS5611-01BA", "MS5611-01BA",
+    ("U6", "balloon_flight_v9:MS5611_BARO", "MS5611-01BA",
      "Package_LGA:LGA-8_3x5mm_P1.25mm", False,
      "Barometer, 10-1200 hPa flight profile (ADR-029 pin plan: I2C on GPIO1/2)."),
     ("U7", "balloon_flight_v9:TPS7A0233", "TPS7A02",
@@ -1215,7 +1215,7 @@ for _i in range(1, 5):
 # net -> [(ref, pin), ...].  Each entry carries its citation.
 V9_NETS = [
     ("+3V3", [("U1", "2"), ("U2", "5"), ("U3", "1"), ("U5", "6"), ("U5", "7"),
-              ("U5", "9"), ("U6", "1"), ("U7", "5"), ("R_F1", "1"),
+              ("U5", "9"), ("U6", "1"), ("U6", "4"), ("U7", "5"), ("R_F1", "1"),
               ("J_VCC", "3")],
      "ADR-006 3.3 V rail (TPS7A02 OUT); U2 pin 5 CE strapped to 3V3 per the "
      "ADR-029 pin plan (blocker 3: confirm CE vs the purchased revision). "
@@ -1224,7 +1224,13 @@ V9_NETS = [
      "RF_GPS:MAX-M10S symbol (v8i_krt_gnss.kicad_pcb U3 pads 6,7,8,9 = +3V3; "
      "the v8i board is sha256-pinned in this generator). J_VCC pin 3 is the "
      "3.3 V position of the ADR-029 D8 pin-1 selector (nested bare LoRa2021). "
-     "R_F1 pin 1 feeds the GNSS RC filter per ADR-029 2(d)."),
+     "R_F1 pin 1 feeds the GNSS RC filter per ADR-029 2(d). "
+     "OPEN-7 CLOSURE (2026-10-07): U6 pin 4 (CSB) is tied to +3V3 on the "
+     "precedent of the frozen v8j MS5611 board "
+     "(tracker/hardware/output/v8j_krt_ms5611.kicad_pcb), which carries the "
+     "SAME Package_LGA:LGA-8_3x5mm_P1.25mm barometer footprint in the SAME "
+     "I2C mode (its pads 7/8 are I2C_SDA / I2C_SCL, exactly this sheet U6 "
+     "pins 7/8) and ties pad 4 = +3V3, pad 2 = GND, pad 6 = GND."),
     ("GND", [("U1", "1"),
              ("U2", "2"), ("U2", "3"), ("U2", "4"), ("U2", "6"), ("U2", "7"),
              ("U2", "8"), ("U2", "11"),
@@ -1232,7 +1238,7 @@ V9_NETS = [
              ("U4", "3"), ("U4", "15"), ("U4", "16"), ("U4", "17"), ("U4", "18"),
              ("U4", "19"), ("U4", "20"), ("U4", "21"), ("U4", "22"), ("U4", "23"),
              ("U4", "24"), ("U4", "25"),
-             ("U5", "1"), ("U6", "3"), ("U7", "2"), ("C_CAP2", "2"),
+             ("U5", "1"), ("U6", "2"), ("U6", "3"), ("U6", "6"), ("U7", "2"), ("C_CAP2", "2"),
              ("R_DIV2", "2"), ("C4", "2"), ("R_BAL2", "2"),
              ("C_BULK", "2"), ("C_HF", "2"), ("D_CLAMP", "2"), ("R_MON2", "2"),
              ("C_MON", "2"),
@@ -1246,7 +1252,12 @@ V9_NETS = [
      "GND except W4_SOLAR_N'. J_W4 pin 4 and D_BP4 pin 2 are that single "
      "exception: wing 4's SOLAR_N IS the 6.0 V stack bottom (ADR-046 s2.3 "
      "'stack_bot = W4.SOLAR_N -> system GND'). Wings 1-3 SOLAR_N are on the "
-     "W1_SOLAR_N / W2_SOLAR_N / W3_SOLAR_N hub links, NOT here."),
+     "W1_SOLAR_N / W2_SOLAR_N / W3_SOLAR_N hub links, NOT here. "
+     "OPEN-7 CLOSURE (2026-10-07): U6 pin 2 (PS) and U6 pin 6 (SDO) are "
+     "tied to GND on the precedent of the frozen v8j MS5611 board "
+     "(tracker/hardware/output/v8j_krt_ms5611.kicad_pcb) - the SAME "
+     "Package_LGA:LGA-8_3x5mm_P1.25mm footprint, same I2C mode - which ties "
+     "its pad 2 and pad 6 to GND."),
     ("VSCAP", [("D1", "1"), ("C_CAP1", "1"), ("U7", "1"), ("U7", "3"),
                ("R_DIV1", "1"), ("R_BAL1", "1"), ("J_VCC", "1")],
      "ADR-006 chain: BAT54 cathode -> supercap bank (top) -> TPS7A02 IN ->, for "
@@ -1487,6 +1498,15 @@ V9_NC = [
     ("U5", "14", "MAX-M10S VCC_RF unused (v8i board audit)."),
     ("U5", "16", "MAX-M10S SDA unused - v9 GNSS is UART, not I2C (v8i audit)."),
     ("U5", "17", "MAX-M10S SCL unused - v9 GNSS is UART, not I2C (v8i audit)."),
+    ("U1", "19", "IO11 = F33_DIO5 has NO destination: the F33 module "
+                 "(G-NiceRF LoRa2021F33-2G4, datasheet Rev 1.1 s7, quoted "
+                 "in-repo at ADR-059 s1.3) enumerates all 18 pads and has no "
+                 "DIO5 pad, and no DIO5 pin exists in the v9 F33 symbol "
+                 "(v9_lib/balloon_flight_v9.kicad_sym). The F33 front-end "
+                 "DIOs (DIO5-8) are INTERNAL to the module and written into "
+                 "the chip over SPI, not brought to MCU GPIOs "
+                 "(docs/F33-MODULE-PLAN.md; docs/LR2021-LESSONS-2026-09.md). "
+                 "CLOSES OPEN-6."),
 ]
 
 # --- explicit TODO(unverified) open questions, never guessed ---------------
@@ -1499,7 +1519,12 @@ V9_NC = [
 V9_TODO = [
     ("OPEN-1 SX1280 SUPPLY (U4 pins 1,2)",
      "SX1280 VDD_IN/VDD_IO rail not fixed by any record and the Semtech "
-     "datasheet is unreachable here. Left open deliberately."),
+     "datasheet is unreachable here. Left open deliberately. ADR-060 s5 "
+     "(2026-10-07) RE-FILES this as unfixed, which is why it stays open. The "
+     "conflict to resolve: ADR-047 states the 3.3 V rail also carries the "
+     "SX1280, and docs/POWER-BUDGET-V9-D2BE.md s2 lists both SX1280 states on "
+     "the 3.3 V rail - so a one-line amendment moving U4 pins 1,2 onto +3V3 is "
+     "what closes it. OWNER: the ADR-108 pin-plan revision."),
     ("OPEN-2 SX1280 RF PORT (U4 pin 14 RFIO)",
      "No antenna feed is assigned to the SX1280 RFIO. ADR-029 D3 enumerates the "
      "FOUR connectors as {GNSS, F33 sub-GHz, F33 ANT-2G4, SX1280}, but ADR-034 "
@@ -1507,14 +1532,22 @@ V9_TODO = [
      "feed. Exactly one of the two is left without a listed feed - resolve "
      "before fabricating. No tie-off guessed. ADR-045 D1 records the SX1280's "
      "antenna pin number itself as TODO(unverified) (no datasheet committed), "
-     "so not even the pad is certain."),
+     "so not even the pad is certain. ADR-060 s5 re-files this too (U4 pin 14). "
+     "OWNER: the ADR-108 pin-plan revision, which must also settle the "
+     "four-connector / five-feed count (ADR-029 D3 vs ADR-034 D1)."),
     ("OPEN-3 BARE-MODULE CONTROL LINES (U3 pins 6,7,14,15)",
      "ADR-034 adds the bare LoRa2021 but NO record assigns its NSS/BUSY/RESET/"
      "IRQ GPIOs (the ADR-029 pin plan predates ADR-034). Left floating - "
-     "the +4 GPIO budget in V9-RADIO-SITE-MATRIX 3.1 must be spent first."),
+     "the +4 GPIO budget in V9-RADIO-SITE-MATRIX 3.1 must be spent first. No "
+     "record assigns NSS/BUSY/RESET/IRQ for the bare module (ADR-108 covers "
+     "F33 + SX1280 only). OWNER: the ADR-108 pin-plan revision together with "
+     "the ADR-040 / V9-RADIO-SITE-MATRIX 3.1 GPIO-budget decision."),
     ("OPEN-4 BARE-MODULE SUB-GHz PORT (U3 pin 9 ANT)",
      "Unused under ADR-034 (U3 is the 2.4 GHz RX). An RF port is not tied off "
-     "without a decision - left open."),
+     "without a decision - left open. OWNER: the ADR-034 / ADR-040 population "
+     "decision - in the {LP} configuration a bare module can be the 433 MHz "
+     "TX (V9-RADIO-SITE-MATRIX 3.3), so this port is not unconditionally "
+     "unused and no no-connect is asserted."),
     ("OPEN-5 BARE-MODULE PAD FUNCTIONS (U3 pins 13,16,17)",
      "PAD13/PAD16/PAD17 functions were unverified (v8i audit: DECLARED_GAP). "
      "PARTLY CLOSED by ADR-058 s1.3: pad 13 = VTCXO - the vendor pin table "
@@ -1524,32 +1557,71 @@ V9_TODO = [
      "correction with a source; no connectivity added). STILL OPEN: pads 16 and 17 "
      "(PAD16_??/PAD17_??) - the vendor table calls them DIO8 and DIO7 but the "
      "generator's bare-module pin map has not been reconciled with it. See also "
-     "OPEN-29 (the chip's NTC pin has no castellation)."),
-    ("OPEN-6 F33 DIO5 (U1 pin 19)",
-     "The pin plan assigns F33_DIO5 to GPIO11, but the F33's 18-pad map has no "
-     "DIO5 pad. Which F33 pad carries DIO5 is unresolved - left open."),
-    ("OPEN-7 MS5611 TIE-OFFS (U6 pins 2,4,6)",
-     "MS5611 PS / CSB / SDO tie-off levels (I2C mode) are not in any record. "
-     "The v8i board's barometer pads are NOT transferable: v8i fits a Bosch "
-     "LGA-8 2.5x2.5 mm footprint, this design fits LGA-8 3x5 mm."),
+     "OPEN-29 (the chip's NTC pin has no castellation). Pads 16/17 are now NAMED "
+     "DIO8/DIO7 (vendor pin table s7 + docs/inventory.md line 28 - a naming "
+     "correction, no connectivity); what REMAINS OPEN is the MCU ASSIGNMENT, "
+     "which no record fixes. OWNER: the ADR-108 pin-plan revision."),
+    ("OPEN-6 F33 DIO5 (U1 pin 19) - CLOSED 2026-10-07",
+     "ADDRESSED: F33_DIO5 has NO destination on the fitted F33 module, so U1 "
+     "pin 19 (IO11) is a no-connect. The F33's own 18-pad table (G-NiceRF "
+     "LoRa2021F33-2G4 datasheet Rev 1.1 s7, quoted in-repo at ADR-059 s1.3) "
+     "enumerates EVERY pad - 1 VCC / 2,3,4,6,7,8,11 GND / 5 CE / 9 ANT / 10 "
+     "ANT-2G4 / 12 SCK / 13 NSS / 14 BUSY / 15 MOSI / 16 MISO / 17 RESET / 18 "
+     "IRQ - and lists NO DIO5 pad, and the v9 F33 symbol defines no DIO5 pin. "
+     "docs/F33-MODULE-PLAN.md (No DIO7/DIO8/DIO9 pins - only IRQ (Pin 18) as "
+     "digital interface) and docs/LR2021-LESSONS-2026-09.md (DIO5-8 are "
+     "LR2021 DIOs wired to the on-module front-end; setRfSwitchTable writes "
+     "the mode mask into the CHIP, not MCU GPIOs) both confirm the F33 "
+     "front-end DIOs are internal. No net was invented and nothing was "
+     "silenced: IO11 is NC. OWNER: a future ADR-108 pin-plan revision must "
+     "re-assign IO11 if a DIO5-class interrupt is ever needed."),
+    ("OPEN-7 MS5611 TIE-OFFS (U6 pins 2,4,6) - CLOSED 2026-10-07",
+     "ADDRESSED by the frozen v8j MS5611 board: "
+     "tracker/hardware/output/v8j_krt_ms5611.kicad_pcb carries the barometer "
+     "on the SAME footprint this sheet uses - Package_LGA:LGA-8_3x5mm_P1.25mm "
+     "- in the SAME I2C mode (its pads 7/8 are I2C_SDA / I2C_SCL, exactly "
+     "this sheet U6 pins 7/8), and it ties pad 2 = GND, pad 4 = +3V3 and pad "
+     "6 = GND. A frozen board carrying the same footprint is citable "
+     "authority for a pin tie-off, so this sheet follows it: U6.2 (PS) -> "
+     "GND, U6.4 (CSB) -> +3V3, U6.6 (SDO) -> GND. The v8i board is NOT the "
+     "precedent (its barometer is a Bosch LGA-8 2.5x2.5 mm pad field, a "
+     "different part footprint); v8j is. TODO(unverified): no MS5611 "
+     "datasheet is committed, so the tie-off LEVELS come from the board "
+     "precedent rather than a vendor table. OWNER: none - closed from the "
+     "landed v8j artefact."),
     ("OPEN-8 MAX-M10S TIE-OFFS (U5 pins 15,18)",
      "VIO_SEL (15) and ~SAFEBOOT (18) were netless DECLARED_GAP pins on the "
      "frozen v8i board and no record fixes them. V_BCKP / VCC_IO / ~RESET "
      "(pins 6/7/9) are NO LONGER open: the v8i board - same ublox_MAX footprint "
      "and same RF_GPS:MAX-M10S symbol - ties 6/7/8/9 to +3V3, and this sheet "
-     "follows that precedent."),
+     "follows that precedent. VERIFIED against the frozen board: "
+     "tracker/hardware/output/v8i_krt_gnss.kicad_pcb (same ublox_MAX "
+     "footprint + RF_GPS:MAX-M10S symbol) leaves pads 15 and 18 UNNETTED - "
+     "the precedent records the gap rather than deciding it, so no tie-off is "
+     "adopted and no no-connect is asserted. OWNER: the ADR-108 pin-plan "
+     "revision (no MAX-M10S datasheet is committed here)."),
     ("OPEN-9 TPS7A02 NC (U7 pin 4)",
      "TPS7A02 pin 4 is a real pad with an unverified function: the v8i board "
      "leaves it netless (DECLARED_GAP 'TPS7A02 pin 4 function / tie-off'), and "
      "no datasheet for the part is committed here. Deliberately NOT given an "
      "invented tie-off or a no_connect flag, because the flag would assert a "
-     "decision no record makes."),
+     "decision no record makes. NOTE the sheet's own repo-local symbol "
+     "(v9_lib/balloon_flight_v9.kicad_sym) names U7 pin 4 'NC', which "
+     "CONTRADICTS this entry, and the frozen boards are inconsistent too "
+     "(v8i/v8j/v8b/v8c/v8f tie the SOT-23-5 pad 4 to +3V3; output/v8_krt_routed "
+     "and hub_board_v1 leave it netless). No tie-off is adopted from a "
+     "contradiction. OWNER: the ADR-108 pin-plan revision, once a TPS7A02 "
+     "datasheet is obtained."),
     ("OPEN-10 ESP32-S3 EN and USB (U1 pins 3,13,14)",
      "Module EN strap and the USB_D-/USB_D+ pads have no v9 connector or "
      "recorded tie-off. The ADR-029 pin plan calls USB-Serial-JTAG the assumed "
      "debug path, so these are not unused - they lack a termination. The reset "
      "RC is also absent from the v9 BOM "
-     "(docs/coordination/SCHEMATIC-PLAN-3VARIANTS.md 5 item 2)."),
+     "(docs/coordination/SCHEMATIC-PLAN-3VARIANTS.md 5 item 2). ADR-108 assigns "
+     "the FUNCTION of GPIO19/20 (USB_D-/D+ = USB-Serial-JTAG console, no "
+     "external radio use) but names no connector and no EN reset RC, and the "
+     "v9 BOM has neither. OWNER: the ADR-108 pin-plan revision - a connector "
+     "part and the reset-RC values must be named before either can be netted."),
     ("OPEN-11 SUPERCAP ADC GPIO",
      "ADR-006 puts the supercap ADC on GPIO0; the ADR-029 pin plan reserves "
      "IO0 as a boot strap and forbids loading it. The divider tap net exists "
@@ -1571,7 +1643,12 @@ V9_TODO = [
      "The ADR-029 pin plan does not assign these, and the strapping audit only "
      "clears IO0/IO3/IO45/IO46 as straps and IO35-IO37 as PSRAM. Left floating "
      "rather than guessed: assign them deliberately in a pin-plan revision, or "
-     "mark them no_connect on the record."),
+     "mark them no_connect on the record. ADR-108 (the pin plan) assigns IO0, "
+     "IO3, IO45 and IO46 'none' - they are NC on this sheet - and reserves "
+     "IO35-37 for octal PSRAM, but it states NO disposition for IO12, IO47 and "
+     "IO48, and this register's own instruction is that a RECORD must decide "
+     "them. Undecided -> not silenced. OWNER: the ADR-108 pin-plan "
+     "revision."),
     ("OPEN-15 SUPERCAP CELL ESR + COLD BANK BEHAVIOUR",
      "ADR-047 3/4: the AVX SCC 3.3 F 2.7 V cell's ESR is NOT in this "
      "repository, at 25 C or at -60 C. Every rail-step number in ADR-047 is "
@@ -1754,14 +1831,58 @@ def v9_emit():
     custom = v9_custom_symbols()
     comps = list(V9_COMPONENTS)
 
+    # ---- ADR-058 / OPEN-7 (2026-10-07): re-home the barometer symbol --------
+    # The MS5611 runs in I2C mode on this sheet, so its SDO pad is NOT a data
+    # output: the frozen v8j board (SAME Package_LGA:LGA-8_3x5mm_P1.25mm
+    # footprint, same I2C mode - its pads 7/8 are I2C_SDA/I2C_SCL exactly as
+    # this sheet's U6 pins 7/8) ties pad 6 to GND.  The stock KiCad symbol types
+    # that pin `output`, and tying an `output` pin to the GND net - which
+    # necessarily carries a PWR_FLAG, i.e. a synthetic `power output` - makes
+    # kicad-cli ERC report "Pins of type Output and Power output are connected":
+    # an artefact of the synthetic flag, not a wiring defect.  Correcting the
+    # TYPE to `passive` is the same class of fix this sheet already applies to
+    # the F33 MISO pins (see the F33_MISO net note).  The corrected symbol is
+    # RE-HOMED into the project's OWN library (balloon_flight_v9:MS5611_BARO,
+    # written to v9_lib/balloon_flight_v9.kicad_sym) so the sheet's cached
+    # symbol still matches a library entry - overriding the stock entry in
+    # place would raise a lib_symbol_mismatch warning.  Geometry is copied
+    # VERBATIM: no pin moves.  NO CONNECTIVITY CHANGES - U6 pin 6 stays on GND.
+    _BARO_DST = V9_LIBNAME + ":MS5611_BARO"
+    _b = load_lib_symbol("Sensor_Pressure", "MS5611-01BA")
+    _m = [m for m in PIN_RE.finditer(_b)
+          if m.group(6) == "6" and m.group(1) == "output"]
+    if not _m:
+        sys.exit("MS5611 SDO pin-type correction: no `output` pin 6 in the "
+                 "stock symbol - re-check OPEN-7")
+    _mm = _m[0]
+    _b = _b[:_mm.start(1)] + "passive" + _b[_mm.end(1):]
+    _b = _b.replace('(symbol "Sensor_Pressure:MS5611-01BA"',
+                    '(symbol "%s"' % _BARO_DST, 1)
+    _b = _b.replace('"MS5611-01BA_0_1"', '"MS5611_BARO_0_1"')
+    _b = _b.replace('"MS5611-01BA_1_1"', '"MS5611_BARO_1_1"')
+    assert '(symbol "%s"' % _BARO_DST in _b, "baro symbol rename failed"
+
     # ---- resolve a lib_symbol block for every component -------------------
     lib_blocks = dict(custom)
+    lib_blocks[_BARO_DST] = _b
     for (ref, lib_id, value, footprint, dnp, note) in comps:
         if lib_id in lib_blocks:
             continue
         lib, name = lib_id.split(":")
         lib_blocks[lib_id] = load_lib_symbol(lib, name)
 
+    # ---- ADR-058 / OPEN-7 (2026-10-07): the barometer item is a TIE-OFF -------
+    # The MS5611 runs in I2C mode on this sheet, so its SDO pad is NOT a data
+    # output: the frozen v8j board (SAME LGA-8 3x5 mm footprint, same I2C mode,
+    # its pads 7/8 = I2C_SDA/I2C_SCL exactly as here) ties pad 6 to GND.  The
+    # stock KiCad symbol types that pin `output`, and tying an `output` pin to
+    # the GND net - which necessarily carries a PWR_FLAG, i.e. a synthetic
+    # `power output` - makes kicad-cli ERC report "Pins of type Output and Power
+    # output are connected".  That is an artefact of the synthetic flag, not a
+    # wiring defect, so the pin TYPE is corrected to `passive`: exactly the
+    # correction this sheet already applies to the F33 MISO pins for the same
+    # class of false pin_to_pin finding (see the F33_MISO net note).  The pin
+    # drives nothing here.  NO CONNECTIVITY CHANGES - U6 pin 6 stays on GND.
     # ---- validate: every net endpoint must exist as a symbol pin ----------
     problems = []
     by_ref = {c[0]: c for c in comps}
