@@ -47,13 +47,19 @@
 
 ## Verification done
 
-Pushed to `github` then `ngit` **separately**; all three SHAs verified equal with `git ls-remote`:
+Pushed to `github` then `ngit` **separately**; all three SHAs verified equal with `git ls-remote`.
+Final branch tip after the PROGRESS.md fix-up commit:
 
 | Remote | Ref | SHA |
 |---|---|---|
-| local `HEAD` | `analysis/pico-balloon-solar` | `55a1d76b78e99cedaffde013628d08dcccaf67b0` |
-| `github` (`felixfelix-bot/balloon-fresh`) | `refs/heads/analysis/pico-balloon-solar` | `55a1d76b78e99cedaffde013628d08dcccaf67b0` |
-| `ngit` (`relay.ngit.dev/balloon-fresh`) | `refs/heads/analysis/pico-balloon-solar` | `55a1d76b78e99cedaffde013628d08dcccaf67b0` |
+| local `HEAD` | `analysis/pico-balloon-solar` | `7b8715b5fd6166bcf86d4b69879ac944507659bd` |
+| `github` (`felixfelix-bot/balloon-fresh`) | `refs/heads/analysis/pico-balloon-solar` | `7b8715b5fd6166bcf86d4b69879ac944507659bd` |
+| `ngit` (`relay.ngit.dev/balloon-fresh`) | `refs/heads/analysis/pico-balloon-solar` | `7b8715b5fd6166bcf86d4b69879ac944507659bd` |
+
+Commit `55a1d76b78e99cedaffde013628d08dcccaf67b0` is the content commit (survey + REPORT + PROGRESS);
+`7b8715b` adds only the SHA record above. The ngit remote rejected the first attempt at the second
+push (`failed to push to any git server`) and accepted it on retry — the rejection was transient, not
+a content problem.
 
 No force-push; no push to `main`/`master`. Pre-push secret scan reported
 `✓ No secrets detected in full repo history.`
@@ -61,3 +67,4 @@ No force-push; no push to `main`/`master`. Pre-push secret scan reported
 Note: `REPORT.md` and `PROGRESS.md` are matched by the repo-wide `.gitignore`
 (lines 66–67), so they were added with `git add -f` to make the branch
 self-contained; the survey doc was added normally.
+
