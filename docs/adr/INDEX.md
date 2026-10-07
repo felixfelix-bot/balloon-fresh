@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **64** distinct
-numbers, **64** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **65** distinct
+numbers, **65** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -87,6 +87,7 @@ None.
 | 051 | `051-hub-array-and-cut-topology.md` | Hub-mounted solar array as an INDEPENDENT string: the wing cut topology and the cut-sense provision | Proposed |
 | 052 | `052-cell-mounting-end-only.md` | Bare cells are mounted END-ONLY: no adhesive bond, no bonded-and-vented carrier | Proposed |
 | 053 | `053-per-cell-bypass-diodes.md` | Per-cell / per-group bypass Schottky diodes: a cracked or shaded cell costs one cell, not the whole series string | Proposed |
+| 054 | `054-array-topology-final.md` | Array topology, final: the 12-cell series string is RETAINED, the hub-side per-interface bypass diode is MANDATORY, per-cell bypass is REJECTED, and the bypass-diode mechanism is CORRECTED | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -98,7 +99,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 054 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 055 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
