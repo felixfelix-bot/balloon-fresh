@@ -1,0 +1,33 @@
+violations=14 unconnected=0
+
+=== by type ===
+     3  silk_overlap
+     3  silk_over_copper
+     3  silk_edge_clearance
+     3  track_dangling
+     1  lib_footprint_mismatch
+     1  via_dangling
+
+=== violation items by description (dedup) ===
+     3  [silk_overlap] Silkscreen overlap
+     3  [silk_over_copper] Silkscreen clipped by solder mask
+     3  [silk_edge_clearance] Silkscreen clipped by board edge
+     3  [track_dangling] Track has unconnected end
+     1  [lib_footprint_mismatch] Footprint 'LGA-8_3x5mm_P1.25mm' does not match copy in library 'Package_LGA'.
+     1  [via_dangling] Via is not connected or connected on only one layer
+
+=== position clusters (rounded to 1mm) ===
+     3  silk_edge_clearance      @ (0, 0)
+     1  silk_overlap             @ (22, 33)
+     1  silk_overlap             @ (53, 40)
+     1  silk_overlap             @ (54, 39)
+     1  silk_over_copper         @ (28, 16)
+     1  silk_over_copper         @ (48, 2)
+     1  silk_over_copper         @ (54, 39)
+     1  lib_footprint_mismatch   @ (23, 36)
+     1  track_dangling           @ (21, 39)
+     1  track_dangling           @ (31, 34)
+     1  track_dangling           @ (30, 41)
+     1  via_dangling             @ (24, 33)
+
+=== unconnected detail ===

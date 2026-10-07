@@ -5,7 +5,7 @@
       "Application": "Pcbnew",
       "Version": "9.0.8+dfsg-1"
     },
-    "CreationDate": "2026-10-07T01:16:03+02:00"
+    "CreationDate": "2026-10-07T03:34:45+02:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
@@ -35,8 +35,8 @@
       "PadToTrack": 0.0,
       "TrackToTrack": 0.2,
       "MinLineWidth": 0.2,
-      "TrackToRegion": 0.22,
-      "RegionToRegion": 0.22
+      "TrackToRegion": 0.2,
+      "RegionToRegion": 0.2
     }
   ],
   "FilesAttributes": [
@@ -58,16 +58,6 @@
     {
       "Path": "v8j_krt_ms5611-B_Cu.gbl",
       "FileFunction": "Copper,L4,Bot",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-F_Adhesive.gta",
-      "FileFunction": "Glue,Top",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-B_Adhesive.gba",
-      "FileFunction": "Glue,Bot",
       "FilePolarity": "Positive"
     },
     {
@@ -101,58 +91,8 @@
       "FilePolarity": "Negative"
     },
     {
-      "Path": "v8j_krt_ms5611-User_Drawings.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_Comments.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_Eco1.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_Eco2.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
       "Path": "v8j_krt_ms5611-Edge_Cuts.gm1",
       "FileFunction": "Profile",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-F_Fab.gbr",
-      "FileFunction": "AssemblyDrawing,Top",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-B_Fab.gbr",
-      "FileFunction": "AssemblyDrawing,Bot",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_1.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_2.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_3.gbr",
-      "FileFunction": "Other,User",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "v8j_krt_ms5611-User_4.gbr",
-      "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     }
   ],

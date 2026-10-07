@@ -52,8 +52,14 @@ for v in under:
         v.SetPosition(new)
     v.SetWidth(int(round(NEW_W * MM)))
     v.SetDrill(int(round(NEW_D * MM)))
+
+# The zone antipads were filled for the OLD via size, so a wider via violates the
+# plane clearance until the fill is regenerated.  Refill before saving.
+filler = pcbnew.ZONE_FILLER(b)
+filler.Fill(b.Zones())
 pcbnew.SaveBoard(path, b)
-print(f'legalised -> {NEW_W:.2f}/{NEW_D:.2f}', os.path.getsize(path), 'bytes')
+print(f'legalised -> {NEW_W:.2f}/{NEW_D:.2f} + refilled {len(list(b.Zones()))} zones',
+      os.path.getsize(path), 'bytes')
 
 with tempfile.TemporaryDirectory() as td:
     out = os.path.join(td, 'd.json')

@@ -37,21 +37,25 @@ DST = 'tracker/hardware/output/v8j_krt_ms5611_unrouted.kicad_pcb'
 LIBS = '/usr/share/kicad/footprints'
 MM = 1e6
 
-# MS5611-01BA I2C pad-to-net mapping (datasheet + KiCad MS5607/MS5611 symbol).
+# MS5611-01BA I2C pad-to-net mapping (official KiCad Sensor_Pressure:MS5611-01BA
+# symbol, which extends MS5607-02BA and matches Package_LGA:LGA-8_3x5mm_P1.25mm
+# pad-for-pad).
 # Pin  function     net
 #  1   VDD          +3V3
-#  2   GND          GND
+#  2   PS           GND  (GND => I2C protocol selected)
 #  3   GND          GND
-#  4   PS           GND  (GND => I2C protocol selected)
-#  5   CSB          +3V3 (high => I2C addr 0x76)
-#  6   SDO          GND  (low => addr LSB 0)
+#  4   CSB          +3V3 (high => I2C addr 0x76)
+#  5   CSB          +3V3 (pins 4 and 5 are the SAME CSB net: they MUST share a
+#                         net.  An earlier revision of this table put pin 4 on
+#                         GND while pin 5 was +3V3, which shorts GND to +3V3.)
+#  6   SDO          GND  (low => addr LSB = 0)
 #  7   SDI/SDA      I2C_SDA
 #  8   SCLK/SCL     I2C_SCL
 MS5611_NETS = {
     '1': '+3V3',
     '2': 'GND',
     '3': 'GND',
-    '4': 'GND',
+    '4': '+3V3',
     '5': '+3V3',
     '6': 'GND',
     '7': 'I2C_SDA',

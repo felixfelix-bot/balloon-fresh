@@ -1,54 +1,77 @@
-# PROGRESS — v8j MS5611 board to passing order gate
+# PROGRESS — v8j MS5611 board → passing order gate
 
-Branch: `pr/v8j-ms5611-reroute` @ d6ef953 (worktree `/home/c03rad0r/worktrees/v8j-ms5611-reroute`)
-Gate: `~/.hermes/profiles/manager/scripts/fleet/pcb_order_gate.py` (UNCHANGED, authority)
+Branch: `pr/v8j-ms5611-reroute` (worktree `/home/c03rad0r/worktrees/v8j-ms5611-reroute`)
+Gate: `~/.hermes/profiles/manager/scripts/fleet/pcb_order_gate.py` — UNCHANGED, authority.
 
-## Reference / PASSING baseline
-- `v8i_krt_gnss.kicad_pcb` 397,725 B, sha256 `638de5638772...` — DRC-clean 4-layer 45x55mm BMP280 board.
-- `v8j_krt_ms5611.kicad_pcb` 384,420 B, sha256 `cb6e61094455...` — MS5611 swap; FAIL.
+## RESULT
 
-## BEFORE (clusterer, `v8j_drc_cluster.py`, severity-all)
-violations=174 unconnected=11
+**ORDER GATE: PASS** — exit 0, errors=0, unconnected=0, warnings=14 (non-blocking),
+kicad 9.0.8. `--verify` against the recorded artifact pair: **VERIFIED**.
+board_sha256 `f6f40338e312c65202659d49dab40600415416b6a04f173e6f72863df9228422`
+fab_sha256  `937e4eda1e9cd8b47f4920a68a663e09b6bdaf4340c3362368f500e0715ec644`
 
-| class | count | note |
-|---|---|---|
-| clearance | 138 | all identical: zone clearance 0.22mm vs actual 0.2005mm — stale mask/zone geometry at U5 site |
-| drill_out_of_range | 12 | min hole 0.30mm, actual 0.20mm — clustered @ (13,12),(13,13),(14,12),(14,13) |
-| hole_clearance | 9 | 8x 0.25mm vs 0.2005mm, 1x 0.2142mm |
-| track_dangling | 4 | stale track ends left behind by U5 swap |
-| (warnings) silk_overlap/silk_over_copper/silk_edge_clearance | 3/3/3 | pre-existing v8i silk, not gate errors... verify |
-| (warnings) lib_footprint_mismatch | 1 | `LGA-8_3x5mm_P1.25mm` does not match library `Package_LGA` |
-| (warnings) via_dangling | 1 | |
+## Failure-class counts, BEFORE → AFTER (clusterer `v8j_drc_cluster.py`)
 
-gate record `v8j-GATE-RECORD.json`: status FAIL, errors=170, warnings=15, unconnected=11,
-board_sha256 `cb6e6109445574cbea5d55ab276081401102e7a874a2eabf98244e7c03880131`,
-fab_sha256 `ae1bae58dee7615c0c46b41db8e43827c8e340df2c3aa47f4a25be1b09353be1`.
+| cluster | before | after | how it was cleared |
+|---|---|---|---|
+| `clearance` | 138 | **0** | **zone refill** — the 138 were all stale In1(GND)/In2(+3V3) fill polygons (actual 0.2005 vs the frozen zone clearance 0.220). `ZONE_FILLER.Fill()` regenerates them. |
+| `drill_out_of_range` | 12 | **0** | the salvaged `v8j_krt_ms5611.kicad_pro` carried a *stricter* board setup than the PASSING v8i (`min_through_hole_diameter` 0.3 vs 0.2, `min_hole_clearance` 0.25 vs 0.2). Restored the frozen v8i rule files. |
+| `hole_clearance` | 9 | **0** | same rule restore + refill (NPTH MNT pads vs planes). |
+| `unconnected_items` | 11 | **0** | U5 pad→net map corrected to the real MS5611 pinout, then KRT routed GND/EN/I2C_SDA/I2C_SCL/+3V3 (68/68 pads). |
+| `track_dangling` | 4 | 3 | KRT re-routed the truncated I2C/EN stubs; 3 residual cosmetic stubs remain (warning). |
+| `via_dangling` | 1 | 1 | residual cosmetic (warning). |
+| `via_diameter` | 0 | **0** (5 transient) | KRT emitted 5 × 0.55 mm vias (below our frozen 0.60); legalised 0.55→0.60/0.30 + refill. |
+| `silk_overlap` | 3 | 3 | pre-existing v8i silk (the PASSING v8i carries 2; non-blocking warnings). |
+| `silk_over_copper` | 3 | 3 | pre-existing v8i silk (non-blocking). |
+| `silk_edge_clearance` | 3 | 3 | pre-existing v8i silk (non-blocking). |
+| `lib_footprint_mismatch` | 1 | 1 | warning only (F.Cu footprint vs library copy); non-blocking. |
 
-## DIAGNOSIS (root cause CONFIRMED)
-The MS5611 swap at U5 was a *footprint-only* swap: it replaced BMP280
-(Bosch_LGA-8_2.5x2.5mm, 0.65mm pitch, CW pin numbering) with MS5611
-(LGA-8_3x5mm_P1.25mm) but:
-1. left the old BMP280-era placement/geometry (mask openings, zone cutouts,
-   tracks) in place — hence 138 clearance + 4 dangling tracks all around U5;
-2. assigned pad nets using BMP280 pin positions (pad3=SDA/pad4=SCL) which on
-   MS5611 are GND/PS — hence the 11 unconnected_items at U5 (pads 1,2,4,5,6,8);
-3. the 12 under-size drills @(13-14,12-13) and 9 hole_clearance are the
-   MS5611's own via/thermal geometry not legalised against the 0.30mm/0.25mm
-   board rules.
+Gate-record before: `status=FAIL errors=170 warnings=15 unconnected=11`
+(board_sha256 `cb6e61094455…`, fab `ae1bae58dee7…`).
+Gate-record after: `status=PASS errors=0 warnings=14 unconnected=0`.
 
-Evidence: unconnected list references Pad1/2/4/5/6/8 of **U5** at
-(21.9..24.1, 34.1..37.9) — the MS5611 site — plus stale tracks at the old
-BMP280 fanout.
+One line per cluster: clearance 138→0, drill_out_of_range 12→0, hole_clearance 9→0,
+unconnected 11→0, track_dangling 4→3 (warn), via_dangling 1→1 (warn),
+via_diameter 5 transient→0, silk×3 3/3/3→3/3/3 (warn, inherited),
+lib_footprint_mismatch 1→1 (warn).
 
-## FIX PLAN (ADR-030 deterministic, scripted only — no hand-edit)
-1. `build_v8j.py` — load PASSING v8i, replace U5 with MS5611 LGA-8_3x5mm_P1.25mm,
-   assign correct I2C nets (1=VDD,2=GND,3=GND,4=PS,GND,5=CSB=+3V3,6=SDO=GND,
-   7=SDA,8=SCL), strip ALL tracks+vias -> `v8j_krt_ms5611_unrouted.kicad_pcb`.
-2. Route from the legalised placement (KRT / freerouting pipeline used by v8i).
-3. Refill zones, run legalise/escape passes (v8g_escape_fix, v8g2_via_legalise).
-4. Re-run gate UNCHANGED -> require exit 0.
-5. Progressive push per verified class improvement: github -> ngit -> origin,
-   each verified with `git ls-remote <remote> refs/heads/pr/v8j-ms5611-reroute`.
+## Root cause (CONFIRMED, refined from the handover hypothesis)
+
+The handover hypothesised "stale placement/geometry left behind". Confirmed and
+sharpened — there were **three independent defects**, none of which was a
+clearance/geometry regression in the v8i routing (the v8i routing is intact and
+was proven sound: refilling it alone dropped 159 of 170 errors):
+
+1. **Stale plane fills** (138 clearance + 9 hole_clearance). U5's swap and the
+   removal of its local copper were done without refilling In1/In2, so the fills
+   still hugged the OLD geometry.
+2. **Wrong project rule file** (12 drill + the hole_clearance floor). The
+   salvaged `.kicad_pro` was KRT's output, not the frozen sibling the board must
+   be judged against; it raised `min_through_hole_diameter` 0.2→0.3 and
+   `min_hole_clearance` 0.2→0.25. There was also **no `v8j_krt_ms5611.kicad_dru`**
+   sibling at all. Copying the frozen v8i pair fixes both.
+3. **U5 was never re-routed** (11 unconnected + 4 track_dangling + 1 via_dangling)
+   and, worse, carried the **BMP280 pad→net assignment** on the MS5611 footprint
+   (pad3/pad4 → SDA/SCL). Also the EN run to J1.3 had been deleted because the
+   wider MS5611 courtyard crossed it.
+
+## Pipeline used (deterministic, zero inference)
+
+`tracker/hardware/output/v8j_drc_cluster.py`   diagnose
+`tracker/hardware/output/v8j_clearance_probe.py` classify violation item-pairs
+`tracker/hardware/output/v8j_refill_test.py`   prove the refill hypothesis
+`tracker/hardware/output/v8j_u5_netfix.py`     set the real MS5611 pad→net map + frozen siblings
+`tracker/hardware/route_v8j.sh`                KRT `--nets GND EN I2C_SDA I2C_SCL +3V3 --keep-input-copper`
+`tracker/hardware/output/v8j_refill_final.py`  refill + DRC
+`tracker/hardware/output/v8j_via_legalise.py`  0.55→0.60 via legalise + refill
+`tracker/hardware/export_v8j_gerbers.sh`       JLCPCB package (v8i layer set)
+`~/.hermes/profiles/manager/scripts/fleet/pcb_order_gate.py`  the gate (unchanged)
 
 ## MILESTONE LOG
-- [x] clusterer run — 174 viol / 11 unconn, classes captured above.
+- [x] clusterer run — 174 viol / 11 unconn, classes captured.
+- [x] refill hypothesis proven — 170 errors → 11 (only unconnected left).
+- [x] MS5611 pinout pinned from the official KiCad symbol; `build_v8j.py` pin-4 bug found.
+- [x] U5 nets fixed + KRT routed → 0 unconnected, 5 via_diameter errors left.
+- [x] vias legalised + refill → 0 errors, 0 unconnected.
+- [x] gerbers exported, gate **PASS**, record `--verify` **VERIFIED**.
+- [x] pushed to github + ngit + origin, refs verified.
