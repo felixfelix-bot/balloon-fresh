@@ -28,11 +28,9 @@
 ## Branch and observed SHAs
 
 - Branch: `docs/power-mass-reconciled`
-- Local HEAD after final commit: `TBD`
-- Remote `github`: `TBD`
-- Remote `ngit`: `TBD`
-
-(These will be filled in after the push step below.)
+- Local HEAD after final commit: `4d5e81da55867239d62b7265ab13928f2d26481d`
+- Remote `github`: `4d5e81da55867239d62b7265ab13928f2d26481d`
+- Remote `ngit`: `4d5e81da55867239d62b7265ab13928f2d26481d`
 
 ## Modified files
 
@@ -48,11 +46,11 @@ in this task.
 
 ## Reconciled numbers
 
-- **FLRC burst buffer**: ~1 mF (~0.2 g)
+- **FLRC burst buffer**: ~1 mF (~0.2 g, `TODO(unverified)`)
 - **LoRa SF12/BW125 burst buffer**: ~0.5 F (tenths-of-a-farad range)
 - **Known/computed mass subtotal**: 5.76 g
 - **Unverified mass lines**: 11 of 13 (all other items marked `TODO(unverified)`)
-- **TODO(unverified) count in the power/mass doc**: 20
+- **TODO(unverified) count in the power/mass doc**: 21
 - **Contradictions found**: 5 (listed in §5 of the budget doc)
 
 ## Open items carried forward

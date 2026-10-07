@@ -137,7 +137,7 @@ Required capacitance for 5.4 V → 5.0 V droop:
     = 2 × 1.85 mJ / (5.4² − 5.0²)
     = 3.70 mJ / 4.16 V²
     = 0.89 mF ≈ 1 mF
-Mass estimate: ~0.2 g (millifarad-class ceramic/small electrolytic).
+Mass estimate: ~0.2 g (millifarad-class ceramic/small electrolytic) — `TODO(unverified)`.
 ```
 
 ### Case B — LoRa SF12 / BW125
@@ -155,8 +155,8 @@ Required capacitance for 5.4 V → 3.5 V droop (full bank usable range):
 
 So the LoRa case needs a buffer in the **tenths-of-a-farad** range and can be
 served by the ADR-006 1.65 F bank with large margin; the FLRC case needs only a
-**~1 mF** buffer (~0.2 g) but only if FLRC is available on the **433 MHz port** of
-the F33.
+**~1 mF** buffer (~0.2 g, `TODO(unverified)`) but only if FLRC is available on the
+**433 MHz port** of the F33.
 
 `TODO(unverified)`: whether FLRC at ~2.6 Mbps is available on the **sub-GHz port**
 of the F33, or only at 2.4 GHz. This measurement decides which buffer mass applies.
