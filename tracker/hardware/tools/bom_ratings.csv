@@ -1,25 +1,10 @@
 key,rated_min_c,rated_max_c,source
-LoRa2021_Gen4,-40,85,"docs/assets/lr2021/README.md:137 (LR2021 Operating Temperature -40 / 25 / 85 C; TODO(unverified): path not present in this worktree at time of writing)"
+LoRa2021_Gen4,-40,85,"docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf (Semtech DS.LR20xx, Final Datasheet Rev. 2.1, 13/04/26), p.37 sec.3.2 'Operating Range (LR20xx)', Table 3-2: Top ambient operating temperature -40 .. +85 C (Tmaxj max junction 105 C; Tmr storage -55 .. +125 C)"
 1F_5.5V,-40,70,docs/adr/006-supercapacitor-power.md:63
 3.3F,-40,70,docs/adr/006-supercapacitor-power.md:63
 1.65F,-40,70,docs/adr/006-supercapacitor-power.md:63
-ESP32-C3-WROOM-02,-40,85,TODO(unverified): Espressif ESP32-C3-WROOM-02 datasheet thermal section
-MAX-M10S,-40,85,TODO(unverified): u-blox MAX-M10S datasheet operating temperature
-MS5611-01BA,-40,85,TODO(unverified): TE MS5611-01BA datasheet operating temperature
-BMP280,-40,85,TODO(unverified): Bosch BMP280 datasheet operating temperature
-TPS7A02,-40,125,TODO(unverified): TI TPS7A02 datasheet operating junction temperature
-BAT54,-65,125,TODO(unverified): Vishay/onsemi BAT54 datasheet storage/operating range
-100k,-55,155,TODO(unverified): AEC-Q200-grade 0402 thick-film resistor typical range
-10k,-55,155,TODO(unverified): AEC-Q200-grade 0402 thick-film resistor typical range
-330R,-55,155,TODO(unverified): AEC-Q200-grade 0402 thick-film resistor typical range
-0R,-55,155,TODO(unverified): AEC-Q200-grade 0402 jumper typical range
-100nF,-55,125,TODO(unverified): X7R 0402 MLCC typical range
-10uF,-55,85,TODO(unverified): X5R/X7R 0603 MLCC typical range
-LED_RED,-40,85,TODO(unverified): 0603 LED typical range
-U.FL,-40,90,TODO(unverified): Hirose U.FL series operating temperature
-U.FL_GNSS,-40,90,TODO(unverified): Hirose U.FL series operating temperature
-Debug_Header,-40,105,TODO(unverified): 2.54mm pin header typical range
-Prog_Header,-40,105,TODO(unverified): 2.54mm pin header typical range
-Solar_In,-40,105,TODO(unverified): 2.54mm pin header typical range
-MountingHole,-55,150,TODO(unverified): mechanical, no active silicon
+ESP32-C3-WROOM-02,-40,85,"Espressif ESP32-C3-WROOM-02 Datasheet v1.7, sec.6.2 'Recommended Operating Conditions', Table 6-2: TA operating ambient temperature min -40 C (module ships as -40..85 C or -40..105 C variant, sec.1)"
+MAX-M10S,-40,85,"u-blox MAX-M10S data sheet UBX-20035208-R08, sec.4.2 'Operating conditions', Table 13 'General operating conditions': Topr operating temperature -40 .. +85 C"
+BMP280,-40,85,"Bosch Sensortec BMP280 data sheet BST-BMP280-DS001-26 (rev 1.26, Oct 2021), Table 2 'Parameter specification': operating temperature range TA (operational) -40 .. +85 C"
+TPS7A02,-40,125,"TI TPS7A02 data sheet SBVS277C (rev Sep 2022), sec.6.3 'Recommended Operating Conditions': TJ operating junction temperature -40 .. +125 C"
 DNP,,,not populated - no rating applicable
