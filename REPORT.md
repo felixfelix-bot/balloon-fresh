@@ -1,5 +1,10 @@
 # REPORT — ADR-037
 
+## Commit + remotes (observed)
+- Commit: `7c052ddf06fafe9a93486e8a5ac6c491392630a8`
+- github: `7c052ddf06fafe9a93486e8a5ac6c491392630a8`
+- ngit:   `7c052ddf06fafe9a93486e8a5ac6c491392630a8`
+
 ## Deliverable
 - **ADR-037** at `docs/adr/037-mcu-s3-no-fem.md` — records operator's 2026-10-07 decisions:
   1. v9 MCU = ESP32-S3-WROOM-1U-N8R8 (confirms ADR-029 D1; ADR-001 scoped to bench board).
