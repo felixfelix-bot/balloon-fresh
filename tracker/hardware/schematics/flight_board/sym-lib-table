@@ -3,7 +3,6 @@
 	(lib (name "Connector")(type "KiCad")(uri "/usr/share/kicad/symbols/Connector.kicad_sym")(options "")(descr ""))
 	(lib (name "Device")(type "KiCad")(uri "/usr/share/kicad/symbols/Device.kicad_sym")(options "")(descr ""))
 	(lib (name "Diode")(type "KiCad")(uri "/usr/share/kicad/symbols/Diode.kicad_sym")(options "")(descr ""))
-	(lib (name "Jumper")(type "KiCad")(uri "/usr/share/kicad/symbols/Jumper.kicad_sym")(options "")(descr ""))
 	(lib (name "RF_GPS")(type "KiCad")(uri "/usr/share/kicad/symbols/RF_GPS.kicad_sym")(options "")(descr ""))
 	(lib (name "RF_Module")(type "KiCad")(uri "/usr/share/kicad/symbols/RF_Module.kicad_sym")(options "")(descr ""))
 	(lib (name "Sensor_Pressure")(type "KiCad")(uri "/usr/share/kicad/symbols/Sensor_Pressure.kicad_sym")(options "")(descr ""))

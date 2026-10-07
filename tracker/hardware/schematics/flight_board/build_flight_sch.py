@@ -841,6 +841,20 @@ def v9_custom_symbols():
             "TI TPS7A02 3.3 V ultra-low-Iq LDO (25 nA), SOT-23-5 - ADR-006 3.3 V "
             "rail. EN/NC tie-off not fixed by any record.",
             "", V9_TPS7A02_PINS),
+        # A repo-local 3-pad solder-jumper symbol, deliberately NOT taken from
+        # KiCad's `Jumper` library: the shared sym-lib-table is written by BOTH
+        # generators, and the C3 generator's union does not carry `Jumper`.
+        # Keeping the selector inside balloon_flight_v9 keeps the sheet
+        # resolvable in either generation order.
+        "balloon_flight_v9:F33_VCC_SEL": _v9_symbol(
+            V9_LIBNAME, "F33_VCC_SEL", "F33_VCC_SEL (5V raw | 3V3)",
+            "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm",
+            "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a "
+            "3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw "
+            "supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) "
+            "to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2.",
+            "", [("1", "A_VSCAP", "passive"), ("2", "COM", "passive"),
+                 ("3", "B_3V3", "passive")]),
     }
 
 
@@ -899,12 +913,13 @@ V9_COMPONENTS = [
      "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical", False,
      "ADR-029 D3: GNSS L1 feed, +Y sky-facing edge."),
     # --- ADR-044a: the F33 5 V PA rail provision (operator directive 2026-10-07) ---
-    ("J_VCC", "Jumper:SolderJumper_3_Open", "F33_VCC_SEL",
+    ("J_VCC", "balloon_flight_v9:F33_VCC_SEL", "F33_VCC_SEL (5V raw | 3V3)",
      "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm", False,
      "ADR-029 D8 (operator-RATIFIED 2026-10-05): the mandatory SELECTABLE pin-1 "
-     "rail. pin 2 = common -> F33_VCC; pin 1 = VSCAP (raw supercap node, PRE-LDO) "
-     "for the F33; pin 3 = +3V3 (TPS7A02 OUT) for the nested bare LoRa2021. "
-     "ADR-044 option (a) + ADR-044a 2."),
+     "rail (3-pad solder jumper). pin 2 = COM -> F33_VCC; pin 1 = VSCAP (raw "
+     "supercap node, PRE-LDO) for the F33; pin 3 = +3V3 (TPS7A02 OUT) for the "
+     "nested bare LoRa2021. ADR-044 option (a) + ADR-044a 2. Rendered with a "
+     "repo-local symbol so no new symbol library is required."),
     ("C_BULK", "Device:C", "100uF",
      "Capacitor_SMD:C_1206_3216Metric", False,
      "ADR-044a 4: local bulk cap AT THE MODULE PIN, sized for the current step "

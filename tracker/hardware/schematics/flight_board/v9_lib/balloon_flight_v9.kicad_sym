@@ -1458,4 +1458,125 @@
 			)
 		)
 	)
+	(symbol "F33_VCC_SEL"
+		(pin_names
+			(offset 1.016)
+			(hide no)
+		)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(property "Reference" "U"
+			(at 0 6.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "F33_VCC_SEL (5V raw | 3V3)"
+			(at 0 -6.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm"
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2."
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(symbol "F33_VCC_SEL_0_1"
+			(rectangle
+				(start -12.7 3.81)
+				(end 12.7 -3.81)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type background)
+				)
+			)
+		)
+		(symbol "F33_VCC_SEL_1_1"
+			(pin passive line
+				(at -15.24 1.27 0)
+				(length 2.54)
+				(name "A_VSCAP"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at -15.24 -1.27 0)
+				(length 2.54)
+				(name "COM"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "2"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 15.24 1.27 180)
+				(length 2.54)
+				(name "B_3V3"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "3"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+	)
 )

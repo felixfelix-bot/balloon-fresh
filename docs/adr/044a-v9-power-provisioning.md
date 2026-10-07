@@ -133,6 +133,14 @@ Solar array (12 cells, 4×3 in series, 6.0 V / 400 mA / 2.4 W peak)  [ADR-006]
               U2 pin 1 (VCC)  LoRa2021F33-2G4, 2 W PA
 ```
 
+**Schematic rendering of the selector (for the reviewer).** `J_VCC` is drawn as a
+**3-pad solder jumper** (`Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm`) whose symbol is
+emitted from the repo-local `balloon_flight_v9` library rather than KiCad's `Jumper` library:
+the shared project `sym-lib-table` is written by *both* schematic generators, and the C3
+generator's union does not carry `Jumper`, so pulling the symbol from a stock library would
+have left the v9 sheet unresolvable whenever the C3 target was regenerated. Keeping the symbol
+repo-local makes the sheet generation-order independent. Pin 2 is the common pad.
+
 ### 2.2 Why the selector exists (it is not this record's invention)
 
 ADR-029 **D8** (operator-**RATIFIED** 2026-10-05, quoted in ADR-044 §1) requires it:
