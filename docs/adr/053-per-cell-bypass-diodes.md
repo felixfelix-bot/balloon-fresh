@@ -30,6 +30,13 @@
 > ADR-052; the all-branch answer is 053. If a human prefers a different number, the file is the
 > only thing to rename and no code references it yet.
 
+> **CORRECTED IN PART (2026-10-07) by [ADR-054](054-array-topology-final.md) (Proposed) — the
+> PLACEMENT only.** ADR-054 §3.2 corrects this record's §1.7/§2.5 wing-board placement: for any
+> cutter-carrying flight the per-group bypass diodes must be **HUB-SIDE PER-INTERFACE** (across
+> `W<n>_SOLAR_P` ↔ `W<n>_SOLAR_N`), because a cut jettisons the wing and every diode soldered to it.
+> This record's **RETAINED conclusion — per-GROUP over per-CELL — is CONFIRMED and STRENGTHENED**.
+> The correction is appended at the end of this file (§8); nothing above is rewritten or deleted.
+
 - Status: **Proposed** — the *text* has **NOT** been accepted by a human. The direction (design the
   circuit so the converter tolerates individual cracked cells, using bypass Schottky diodes) is the
   operator's own and he **approved** it (2026-10-07); the record below is put to him for acceptance,
@@ -586,3 +593,49 @@ fail is itself tested (§6, and ADR-051 §2.1.3 for the same doctrine).
   invariant must be able to **fail a build**, and the test must prove it **can** fail, or the gate is
   decoration.
 - **No hardware is ordered by this record.** It is design work only.
+
+---
+
+## 8. Amendment (2026-10-07) — CORRECTION to the diode PLACEMENT (§1.7, §2.5): HUB-SIDE PER-INTERFACE
+
+> Appended by [ADR-054](054-array-topology-final.md) (Proposed) §3.2, from the landed adversarial
+> analysis `docs/analysis/array-topology-adversarial.md` F3. **This section corrects a placement; it
+> does not rewrite §1.7 or §2.5 and does not delete their original wording.** §1.7's and §2.5's
+> wing-board framing remains above, legible as the record of what was first written. This record's
+> **retained conclusion (per-GROUP over per-CELL) is CONFIRMED and STRENGTHENED.**
+
+**What §1.7/§2.5 record:** *"the diodes live on the WING boards (and on the hub array)"*, with the
+hub offered as an *alternative* for the per-group case (§1.7: the per-group diode *"can sit either
+on the hub … or on the wing board itself"*).
+
+**Why the wing-board placement is wrong for the cut case.** The wings are jettisonable (ADR-051 §0,
+§1.1). **A diode soldered to the wing leaves with the wing**, and it cannot bridge the gap because
+it is on the wrong side of the gap (adversarial F3). If the per-group bypass diodes are on the wing
+boards, **a cut jettisons them and the array dies on the first cut** — the socket lands go open, the
+string opens, and the array delivers **0.00 W**. A flight with per-cell (or per-wing) diodes and no
+populated hub-side per-interface diodes is **worse off than the baseline**: the first cut kills the
+array and the wing-mounted diodes did nothing. This also resolves the package-placement
+contradiction ADR-049 §Consequences clause 5 flags in ADR-046 (*"bypass Schottky placed on the hub
+(§2.3) but specified per-wing in the build brief"*): **for the cut, the hub placement is the one
+that works.**
+
+**Correction — the placement is HUB-SIDE PER-INTERFACE.** For any cutter-carrying flight, one
+bypass diode per wing sits **on the hub**, across the interface lands
+`W<n>_SOLAR_P` ↔ `W<n>_SOLAR_N`, cathode to `W<n>_SOLAR_P`, **populated** (ADR-051 §2.4 decision
+4.2). That is where the `D_BP1…D_BP4` provision already IS (§1.5), and it is the only placement a
+cut cannot jettison. The wing-board option is **not** admissible for a cutter-carrying flight.
+
+**Confirmed and strengthened — the per-GROUP-over-per-CELL conclusion (this record's §1.6/§2.4) is
+CONFIRMED.** The adversarial analysis reaches the same ranking independently: per-cell buys ≈ 1.2 W
+of peak on a 15.85× peak-to-average surplus (its F4), and adds +24 hand-soldered joints (+75 % on a
+12-cell array) plus a reversed-diode risk on an end-only, no-bond mount (its F5) — the record's
+512 mg deciding number and its granularity argument stand. **The one reopening condition is
+unchanged and is now stated with its measurement:** if the bench crack test shows **soft shunts
+dominate** (ADR-054 §4 item 1), per-cell bypass becomes **load-bearing for hot-spot safety** and
+moves from rejected to required (ADR-053 §5 already names this falsifier).
+
+**Retained, not superseded:** §1.3's permanent-continuous-current rule, §1.6's per-group
+recommendation, §2.1–§2.4 (grouping and the 512 mg trade), §2.6 (the single wing respin), §2.7
+(relationship to ADR-051) and §2.8 (the checker) are all **retained**. **Only the placement is
+corrected**, and the wing respin (§2.6) is no longer a home for the bypass diodes for a
+cutter-carrying flight.
