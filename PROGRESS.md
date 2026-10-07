@@ -49,11 +49,26 @@ Key evidence located:
 7. **Price tier:** measured cliff at 102/102.5 mm (103 mm 4L = $31.60; 102 mm = $8.00). A 60 mm
    outline is far inside the cheap class; the 103 mm board is just over the cliff.
 
-## Cluster 3 — writes (IN PROGRESS)
+## Cluster 3 — writes (DONE)
 
-- [ ] `docs/analysis/hub-array-overhang-and-support.md`
-- [ ] ADR-055 amendment (appended section only)
-- [ ] ADR-063 (allocator: next free = 063; verified across all refs)
-- [ ] `docs/adr/INDEX.md` regenerated
-- [ ] `python3 -m pytest tests/ -q --continue-on-collection-errors`
-- [ ] push github, then ngit (separately); verify both with `git ls-remote`
+- [x] `docs/analysis/hub-array-overhang-and-support.md`
+- [x] ADR-055 amendment (appended §9 only; body untouched)
+- [x] ADR-063 (allocator = 063; verified free across all refs: `git log --all` for
+      `docs/adr/063*` = 0; highest sequential = 062; 506 github refs + 87 ngit refs)
+- [x] `docs/adr/INDEX.md` regenerated (063 present; next free 064)
+- [x] `python3 -m pytest tests/ -q --continue-on-collection-errors` → **549 passed, 1 failed,
+      37 skipped**; the one failure is `tests/test_board_lock.py::test_lock_status`, a **10 s
+      subprocess timeout under heavy load** (`git show --stat`: the commit is docs-only; no test
+      imports the new model). Re-run in isolation: **2 passed, 6 skipped in 2.81 s** → contention,
+      not a regression (exactly the flake the brief predicted).
+- [x] pushed `github` then `ngit` separately; all three SHAs equal.
+
+## Cluster 4 — settlement (DONE)
+
+`hub_board_v9.kicad_pcb` byte-untouched (`git diff --stat` empty), no other board/schematic/
+netlist/footprint changed, nothing ordered. Existing 103 mm placement marked PROVISIONAL.
+
+**Decision reachable?** YES for the reachable part → ADR-063 written: the **decoupling**, the
+**component-driven outline (≈ 60 × 60 mm)**, and the **separate overhanging two-edge rib carrier**.
+NO for the **rib pitch / max overhang / area ceiling** → carried OPEN in ADR-063 D4 and ADR-055 §9.2,
+closed only by the `S_crack` coupon bend test (no flexural strength in the record; none invented).

@@ -58,4 +58,12 @@
 
 ## Push
 
-`github` first, then `ngit`, separately (no `--atomic`). SHAs recorded in the final reply.
+`github` first, then `ngit`, separately (no `--atomic`). All three SHAs equal — see final reply.
+
+## Tests after (`python3 -m pytest tests/ -q --continue-on-collection-errors`)
+
+**549 passed, 1 failed, 37 skipped in 381.57 s (0:06:21)** on a load-~13 box. The failure is
+`tests/test_board_lock.py::test_lock_status` — a **10 s subprocess timeout** spawning
+`tools/board-lock.py status`. This is the flake the brief predicted: the commit is **docs-only**
+(no test imports anything it adds), and the test **passes in isolation** (`2 passed, 6 skipped in
+2.81 s`). **Contention, not a regression.**
