@@ -298,3 +298,41 @@ Recorded as required pre-flight tests (design work only; nothing is run or order
   ancestor of `main` (merge `d33b29c`), its ADR-042 and ADR-043 are on `main`, and a `backup/` tag
   preserves the branch. Nothing it produced was thrown away; this record extends it.
 - **No hardware is ordered by this record.** It is design work only.
+
+---
+
+## 8. Correction (2026-10-07, appended by ADR-057) — the tolerance analysis here is LoRa-based; FLRC governs
+
+**Appended, not a rewrite.** Nothing above is changed or deleted; the history stays legible.
+This section records only that one half of this record rests on the wrong modulation.
+
+This record's **carrier-offset-tolerance half** is stated in "LoRa/FLRC" terms: §D3's pass
+criterion and open items 4 and 6 both use a LoRa/BW-SF budget, and §D1/§D6 name "the
+LoRa/FLRC carrier-offset budget" as the gate.
+
+**The vehicle flies FLRC, not LoRa, and FLRC's tolerance is materially different.** FLRC's
+tolerance is **band-independent in absolute Hz** — about **±64–76 kHz at 650 kbps** (Semtech
+AN1200.101 §5.2 Tables 3/4/5, pp. 8–9, verified against the in-tree PDF) — which is
+**≈±148–175 ppm at 433 MHz but only ≈±26–32 ppm at 2.4 GHz**. LoRa's tolerance is
+proportional to bandwidth (±25 %BW legacy / ±33 %BW Gen4 extended; ±100 ppm at SF12;
+LR2021 datasheet Rev. 2.2 Table 3-17). **The FLRC budget is tighter in ppm at 2.4 GHz than
+the LoRa figures this record used, not looser.**
+
+**Consequences for this record:**
+
+- **§D3's pass criterion and §D6's cold-soak pass criterion must use the FLRC budget**, i.e.
+  **±26–32 ppm at 2.4 GHz at 650 kbps** — not a LoRa BW/SF figure.
+- **Open item 4** ("The LoRa/FLRC carrier-offset tolerance for the chosen BW/SF") is resolved
+  to FLRC for the flight link; its LoRa half no longer governs.
+- **Open item 6** (the module census) is unaffected by the modulation correction and is
+  repeated in ADR-057's open items because the on-chip NTC route turns on it.
+- **The no-heater decision (§D1), the per-radio reference census (§D2) and the GPS 1PPS
+  discipline provision (§D3's mechanism) stand unchanged**, and §D3's correction mechanism (a
+  measured, table-free path) is consistent with ADR-057's Rank-1 mitigation. **No `GetFreqError`
+  readout and no AFC were found**, so that mechanism must measure via a 1PPS-gated cycle
+  counter, not a radio register — recorded in ADR-057.
+
+**See ADR-057** (`docs/adr/057-flrc-drift-strategy.md`, Status Proposed) for the FLRC
+strategy: the band-independence fact, the per-band verdict, the corrected degradation ladder
+(never reduce the FLRC rate), the corrected Tx/Rx budget understanding, and the ranked
+mitigations.
