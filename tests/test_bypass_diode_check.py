@@ -278,21 +278,27 @@ def test_dnp_is_a_note_by_default_and_a_failure_with_the_flag(tmp_path):
 # 5. the real repo netlist, and the JSON interface
 # --------------------------------------------------------------------------- #
 
-def test_real_v9_netlist_does_not_silent_pass():
-    """The shipped v9 netlist carries the DNP BAT54 the socket spec names.
+def test_real_v9_netlist_is_populated_and_rerated():
+    """The shipped v9 netlist's bypass diodes are now POPULATED and >= 2 A / 40 V.
 
-    The gate must not silently pass it: the provision is present but every diode
-    is the disqualified 200 mA part (ADR-051 §2.7, ADR-053 §2.2), so the verdict
-    is FAIL.  (When the parts are re-rated to ≥2 A / 40 V and populated, this test
-    should be updated to expect PASS — it is a statement about the *shipped* design,
-    not about ADR-053 being unimplemented.)
+    This test used to assert FAIL and to look for "BAT54", because the shipped
+    design carried the DNP BAT54 the socket spec named.  ADR-051 §2.7 and
+    ADR-053 §2.2 (as amended by ADR-054 §3.2) re-rate them off the disqualified
+    200 mA / 30 V part, and ADR-054 §6.3 directs the change into the v9
+    generator.  So the gate must now PASS the shipped netlist - and PASS on
+    evidence: every group covered, every part in the >= 2 A / 40 V class, none
+    DNP.  The strict cutter-flight flag is asserted too, so the population
+    requirement cannot regress silently.
     """
     if not REAL_V9_NET.is_file():
         pytest.skip("v9 netlist not present in this worktree")
     r = run_checker(REAL_V9_NET)
-    assert r.returncode != EXIT_PASS, r.stdout + r.stderr
-    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
-    assert "B4" in r.stdout and "BAT54" in r.stdout
+    assert r.returncode == EXIT_PASS, r.stdout + r.stderr
+    assert "SS24" in r.stdout
+    assert "BAT54" not in r.stdout
+    # ADR-051 §2.4 decision 4.2: a cutter flight needs them FITTED, not provided
+    r2 = run_checker(REAL_V9_NET, "--require-populated")
+    assert r2.returncode == EXIT_PASS, r2.stdout + r2.stderr
 
 
 def test_json_report_shape(tmp_path):
