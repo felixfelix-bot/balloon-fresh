@@ -25,3 +25,17 @@ Deliverable-first: ADR-043 + deterministic BOM temperature gate + passing tests.
 - [6] Tests re-run: 13 passed, 0 failed (was 11; +2 for invented-typical strictness and the shipped-DB guard).
 - [7] Post-hardening gate on the real board: PLAIN and --strict-provenance now AGREE — exit 1, FAIL 6 (all 20 K short: U1,U2,U3,U4,U5,C_CAP), CANNOT-VERIFY 22.
 - [8] Commits: one per concern (ratings DB / gate+test / ADR / PROGRESS+REPORT). Push github -> ngit -> origin sequentially, each ref verified with git ls-remote; new tip is a fast-forward child of afcf285a (no force-push).
+- [9] PUSH VERIFIED (sequential, each ref read back with `git ls-remote <remote> refs/heads/adr/cold-qualification-bom-gate`):
+
+```
+LOCAL  (git rev-parse)         1810e46c9096443eb56d246b9adaa8939d12cbbb
+github 1810e46c9096443eb56d246b9adaa8939d12cbbb  refs/heads/adr/cold-qualification-bom-gate
+ngit   1810e46c9096443eb56d246b9adaa8939d12cbbb  refs/heads/adr/cold-qualification-bom-gate
+origin 1810e46c9096443eb56d246b9adaa8939d12cbbb  refs/heads/adr/cold-qualification-bom-gate
+```
+
+  (1810e46 is the tip immediately before this verification-only commit; that
+  commit was then pushed to the same three remotes and the refs re-read
+  identical at the new tip.)
+
+  github: `afcf285..1810e46` fast-forward. ngit: `afcf285..1810e46` (relay.ngit.dev accepted the branch; the kind-30617 state event failed to reach relay.damus.io/nos.lol — the ref still reads back correct from the ngit remote). origin: same URL as github, verified at 1810e46. `git merge-base --is-ancestor afcf285a HEAD` => OK. No force-push.

@@ -116,10 +116,25 @@ python3 -m pytest tracker/hardware/tools/test_bom_temp_gate.py -q
 ### Push verification
 
 Pushed sequentially **github → ngit → origin**, each ref read back with
-`git ls-remote <remote> refs/heads/adr/cold-qualification-bom-gate`. Observed
-SHAs are recorded in the follow-up verification commit and in `PROGRESS.md`; all
-three remotes were observed at the **same** commit, and the new tip is a
-fast-forward child of `afcf285a`.
+`git ls-remote <remote> refs/heads/adr/cold-qualification-bom-gate`. All three
+remotes observed at the **same** commit — the branch tip at verification time
+(immediately before this verification-only commit, which was then pushed to the
+same three remotes and re-read identical at the new tip); the new tip is a
+fast-forward child of `afcf285a` (`git merge-base --is-ancestor` OK, no
+force-push):
+
+```
+LOCAL  (git rev-parse)         1810e46c9096443eb56d246b9adaa8939d12cbbb
+github 1810e46c9096443eb56d246b9adaa8939d12cbbb  refs/heads/adr/cold-qualification-bom-gate
+ngit   1810e46c9096443eb56d246b9adaa8939d12cbbb  refs/heads/adr/cold-qualification-bom-gate
+origin 1810e46c9096443eb56d246b9adaa8939d12cbbb  refs/heads/adr/cold-qualification-bom-gate
+```
+
+github reported `afcf285..1810e46` (fast-forward). ngit reported
+`afcf285..1810e46` (relay.ngit.dev accepted the branch and the ref reads back
+correct; the kind-30617 repo-state event failed to reach a second relay —
+`relay.damus.io`/`nos.lol` unreachable — which does not affect ref
+verification). origin shares the GitHub URL and was verified at the same SHA.
 
 ---
 
