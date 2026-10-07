@@ -1,17 +1,43 @@
 (footprint "balloon_flight_v9:LoRa2021F33_2G4"
 		(version 20250114)
 		(generator "pcbnew")
-		(generator_version "9.0") (version 20250114) (generator "pcbnew")
+		(generator_version "9.0")
+  (version 20250114)
+  (generator "gen_f33_landpattern.py")
   (layer "F.Cu")
   (attr smd)
-  (descr "NiceRF LoRa2021F33-2G4, 18-pin castellated module with built-in 2W PA, 39x21mm, vendor pad-file geometry (pitch 3.9289mm, rows on 39mm edges)")
-  (tags "LoRa LR2021 NiceRF F33 castellated PA 2W")
-  (property "Reference" "U2" (at 0 -12 0) (layer "F.SilkS") (uuid "fp-ref") (effects (font (size 1 1) (thickness 0.15))))
-  (property "Value" "LoRa2021F33_2G4" (at 0 12.5 0) (layer "F.Fab") (uuid "fp-val") (effects (font (size 1 1) (thickness 0.15))))
+  (descr "NiceRF LoRa2021F33-2G4, 18-pin castellated module (LR2021 + 2W PA + TCXO), 39x21mm. Pad CENTRES decoded from the vendor land file LORA2021F33-2G4 footprint_pads.pcb (pitch 3.9289mm, 9 pads on each 39mm edge). Land size 2.0x1.0 mm TODO(unverified): datasheet s9 p8 is a raster with no text layer.")
+  (tags "LoRa LR2021 NiceRF F33 castellated PA 2W vendor-land-pattern")
+  ;; ================================================================
+  ;; GENERATED FILE - do not hand-edit.
+  ;;   python3 scripts/gen_f33_landpattern.py
+  ;; Pad CENTRES decoded from the VENDOR land file
+  ;;   docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb
+  ;;   sha256 c66ea27c4409a3af58f1bfd967cddec60214d446d4b15f620f2eef82e86ee7ac
+  ;;   (18 x 36-byte records, tag 0x08435AD8, 1.5e6 units/mm)
+  ;; Verified against the vendor file and the datasheet drawing:
+  ;;   pad count 18, names 1..18, 9 per row; rows on the two 39mm
+  ;;   edges at y=+/-10.5000; pitch 3.9289mm (drawing 3.93+-0.1);
+  ;;   outer pad centre 3.7844mm from the 39mm end (drawing 3.78+-0.1);
+  ;;   closure 2*3.7844 + 8*3.9289 = 39.0000mm = module length 39.00.
+  ;; NOT verified (do not read this as verified):
+  ;;   pad LAND SIZE 2.0 x 1.0 mm  <-- TODO(unverified)
+  ;;     the vendor pad records store CENTRES ONLY; the datasheet
+  ;;     s9 p8 mechanical drawing is a raster JPEG with no text layer
+  ;;     (pdftotext -raw -f 8 -l 8 prints only the page header), so no
+  ;;     land callout can be attributed to a feature. Set it via
+  ;;     --land-length/--land-width once the drawing is read, then drop
+  ;;     the TODO. F33-LANDPATTERN-VERIFICATION.md s7 documents this.
+  ;;   pin-1 ORIENTATION anchor: pads 9/10 (ANT / ANT-2G4) are the
+  ;;     adjacent pair at the +x end; pad 18 (IRQ) sits beside pad 1
+  ;;     (VCC) at the -x end. The vendor file carries no body outline.
+  ;; ================================================================
+  (property "Reference" "U2" (at 0 -12 0) (layer "F.SilkS")
+    (uuid "fp-ref") (effects (font (size 1 1) (thickness 0.15))))
+  (property "Value" "LoRa2021F33_2G4" (at 0 12.5 0) (layer "F.Fab")
+    (uuid "fp-val") (effects (font (size 1 1) (thickness 0.15))))
 
-  ;; Module outline: 39x21mm, centered at origin -> x: +/-19.5, y: +/-10.5
-  ;; Pad geometry from vendor pad file (docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb):
-  ;;   pitch 3.9289mm, pad rows on the two 39mm edges (y=+/-10.5), outermost pad centre 3.7844mm from the 39mm ends.
+  ;; Module outline 39 x 21 mm, centred on the origin
   (fp_line (start -19.5 -10.5) (end 19.5 -10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-1"))
   (fp_line (start 19.5 -10.5) (end 19.5 10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-2"))
   (fp_line (start 19.5 10.5) (end -19.5 10.5) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "outline-3"))
@@ -23,32 +49,32 @@
   (fp_line (start 19.5 10.5) (end -19.5 10.5) (stroke (width 0.1) (type solid)) (layer "F.Fab") (uuid "fab-3"))
   (fp_line (start -19.5 10.5) (end -19.5 -10.5) (stroke (width 0.1) (type solid)) (layer "F.Fab") (uuid "fab-4"))
 
-  ;; Courtyard
+  ;; Courtyard: module + 0.3mm
   (fp_line (start -19.8 -10.8) (end 19.8 -10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-1"))
   (fp_line (start 19.8 -10.8) (end 19.8 10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-2"))
   (fp_line (start 19.8 10.8) (end -19.8 10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-3"))
   (fp_line (start -19.8 10.8) (end -19.8 -10.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "crtyd-4"))
 
-  ;; Pin 1 marker (circle near pad 1 at (-11.7867, -10.5000))
-  (fp_circle (center -13.7 -9.4) (end -13.4 -9.4) (stroke (width 0.12) (type solid)) (fill none) (layer "F.SilkS") (uuid "pin1-mark"))
+  ;; Pin 1 marker (circle beside pad 1 at (-11.7867, -10.5))
+  (fp_circle (center -13.6867 -9.4) (end -13.3867 -9.4) (stroke (width 0.12) (type solid)) (fill none) (layer "F.SilkS") (uuid "pin1-mark"))
 
-  (pad "1" smd rect (at -11.7867 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-1"))
-  (pad "2" smd rect (at -7.8578 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-2"))
-  (pad "3" smd rect (at -3.9289 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-3"))
-  (pad "4" smd rect (at 0.0000 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-4"))
-  (pad "5" smd rect (at 3.9289 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-5"))
-  (pad "6" smd rect (at 7.8578 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-6"))
-  (pad "7" smd rect (at 11.7867 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-7"))
-  (pad "8" smd rect (at 15.7156 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-8"))
-  (pad "9" smd rect (at 15.7156 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-9"))
-  (pad "10" smd rect (at 11.7867 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-10"))
-  (pad "11" smd rect (at 7.8578 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-11"))
-  (pad "12" smd rect (at 3.9289 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-12"))
-  (pad "13" smd rect (at -0.0000 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-13"))
-  (pad "14" smd rect (at -3.9289 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-14"))
-  (pad "15" smd rect (at -7.8578 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-15"))
-  (pad "16" smd rect (at -11.7867 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-16"))
-  (pad "17" smd rect (at -15.7156 10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-17"))
-  (pad "18" smd rect (at -15.7156 -10.5000) (size 2 1.0) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-18"))
+  (pad "1" smd rect (at -11.7867 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-1"))
+  (pad "2" smd rect (at -7.8578 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-2"))
+  (pad "3" smd rect (at -3.9289 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-3"))
+  (pad "4" smd rect (at 0.0000 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-4"))
+  (pad "5" smd rect (at 3.9289 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-5"))
+  (pad "6" smd rect (at 7.8578 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-6"))
+  (pad "7" smd rect (at 11.7867 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-7"))
+  (pad "8" smd rect (at 15.7156 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-8"))
+  (pad "9" smd rect (at 15.7156 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-9"))
+  (pad "10" smd rect (at 11.7867 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-10"))
+  (pad "11" smd rect (at 7.8578 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-11"))
+  (pad "12" smd rect (at 3.9289 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-12"))
+  (pad "13" smd rect (at -0.0000 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-13"))
+  (pad "14" smd rect (at -3.9289 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-14"))
+  (pad "15" smd rect (at -7.8578 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-15"))
+  (pad "16" smd rect (at -11.7867 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-16"))
+  (pad "17" smd rect (at -15.7156 10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-17"))
+  (pad "18" smd rect (at -15.7156 -10.5000) (size 2 1) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "pad-18"))
 )
 

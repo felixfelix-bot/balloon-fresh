@@ -184,12 +184,16 @@ python3 f33_landpattern_verify.py          # prints the full comparison, writes 
 #   f33_landpattern_decode_v2.json
 ```
 
+(The script now resolves the repo root from its own location — run it from the
+repo, optionally with `--repo <tree>`. See the addendum in §10.)
+
 Raw one-liner for the decode (no dependencies beyond the stdlib):
 
 ```bash
 python3 - <<'EOF'
-import struct
-d=open('~/repos/balloon-fresh/docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb','rb').read()
+import struct, os
+p=os.path.expanduser('~/repos/balloon-fresh/docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb')
+d=open(p,'rb').read()
 for k in range(18):
     o=7290+36*k
     x,y=struct.unpack_from('<ii',d,o+20)
@@ -206,3 +210,106 @@ EOF
 * Decoder/verifier: `docs/f33-module/tools/f33_landpattern_verify.py` (stdlib only), evidence JSON
   alongside it as `f33_landpattern_decode_v2.json`.
 * Verification performed read-only on `balloon-fresh` @ the commit named in the card handoff.
+
+---
+
+## 10. ADDENDUM — 2026-10-07: verdict re-checked, fix landed, what is still stale
+
+**Branch:** `fix/f33-landpattern` (base `github/main` `94c3c4d`). Nothing above is
+rewritten: §1–§9 are the original card record and their numbers are reproduced
+below unchanged.
+
+### 10.1 Was the FAIL correct? — YES, and it is a REAL geometry error (case i)
+
+Re-decoded the vendor file independently (`scripts/gen_f33_landpattern.py`,
+stdlib only, same 36-byte record layout, tag `0x08435AD8`, first record at byte
+7290, 1.5e6 units/mm) with the scale pinned by the same three agreements:
+pitch 3.9289 mm ↔ callout 3.93 ±0.1; row separation 21.0000 mm = module width;
+closure `2 × 3.7844 + 8 × 3.9289 = 39.0000 mm` = module length 39.00 ±0.5.
+All nine self-checks pass, including `pad18_zeroed_in_file` and
+`outer_pad_3.7844_from_end`.
+
+Measured coincidence of each artifact against the vendor pad centres
+(nearest-pad distance, ≤0.05 mm = coincident), using the identity signature the
+`pcb-fab-readiness-gating` skill requires (pad count, pad bbox, pad-size
+histogram, pad-number string):
+
+| artifact | pads | pad-centre bbox | pad sizes | numbers | coincident | nearest | worst |
+|---|---|---|---|---|---|---|---|
+| all four artifacts **BEFORE** (pre-fix tree `d5a2e47^`) | 18 | 39.0000 × 16.0000 mm | 2 × 1 | 1..18 | **0/18** | **4.071 mm** | **10.226 mm** |
+| the three `custom.pretty` copies **AFTER** | 18 | 31.4312 × 21.0000 mm | 2 × 1 | 1..18 | **18/18** | 0.000 mm | 0.000 mm |
+| `hub_board_f33.kicad_pcb` (still stale) | 18 | 39.0000 × 16.0000 mm | 2 × 1 | 1..18 | **0/18** | 4.071 mm | 10.226 mm |
+
+The 4.071 / 10.226 mm figures reproduce §1 exactly, from a different
+implementation — so the original verdict stands: the pattern was rotated 90°
+(pads on the two 21 mm ends) with a wrong pitch (2.0 mm vs 3.9289 mm). Pad
+count and pad-number string matched all along, which is why no DRC/ERC gate
+could see it.
+
+### 10.2 A checker defect found on the way (case ii, secondary)
+
+`docs/f33-module/tools/f33_landpattern_verify.py` hard-coded
+`REPO = ~/repos/balloon-fresh`. That shared checkout was on
+`feat/tracker-tx-tempcomp` on 2026-10-07, i.e. a branch that still carried the
+pre-fix pattern, so **re-running the checker did not grade the branch under
+test**. Fixed: the repo root is derived from the script's own location, with a
+`--repo` override; the evidence JSON now stores repo-relative paths. The script
+also now prints the four-part identity signature and grades the footprints and
+the shipped board **separately** (a fixed footprint set does not make the stale
+board orderable).
+
+Reproduce both states:
+
+```bash
+python3 docs/f33-module/tools/f33_landpattern_verify.py            # AFTER (this branch)
+git worktree add /tmp/bf-prefix --detach d5a2e47^
+python3 docs/f33-module/tools/f33_landpattern_verify.py --repo /tmp/bf-prefix   # BEFORE
+```
+
+### 10.3 The authoritative source, and the one thing that is still UNVERIFIED
+
+* **Pad centres — VERIFIED.** The vendor's own land file is in-tree and
+  machine-readable: `docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb`
+  (sha256 `c66ea27c4409a3af58f1bfd967cddec60214d446d4b15f620f2eef82e86ee7ac`).
+  Datasheet §7's pin table is also text-extractable (`pdftotext`) and agrees on
+  the 18 pins.
+* **Pad LAND SIZE — STILL UNVERIFIED, and not guessed.** §9 "Mechanism
+  Dimension" (p.8) is two embedded JPEGs with **no text layer**:
+  `pdftotext -raw -f 8 -l 8 <pdf>` prints only the page header, and
+  `pdfimages -list -f 8 -l 8 <pdf>` shows the two images. OCR with tesseract (a
+  text extractor, not `vision_analyze`) reproduces §4's callouts —
+  `3.78 / 3.93 / 0.80 / 3.00 ×2 / 6.09 / 5.00 ×2 / 4.32 / 39.00 / 9.00 / 3.30`
+  — but their positions cannot be attributed to a feature without reading the
+  drawing, so the emitted land size stays 2.0 × 1.0 mm and is marked
+  `TODO(unverified)` in the footprint, in the generator and in this doc. A
+  guessed land is worse than a flagged one, because it looks verified.
+
+### 10.4 What was fixed, and how it stays fixed
+
+* `scripts/gen_f33_landpattern.py` — **new**, the reproducible generator: decodes
+  the vendor land file, refuses to emit anything if the file drifts (pinned
+  sha256) or fails its self-checks, and writes the footprint with its provenance
+  in the header. `--check` / `--verify-all` grade any copy against the vendor
+  centres; `--install` refreshes every registered copy.
+* `tracker/hardware/schematics/flight_board/build_flight_sch.py` (v9) — now
+  **derives** the F33 footprint from that generator at generation time instead of
+  copying a `custom.pretty` file, and **fails the build** if the emitted pads are
+  not all on the vendor land pattern. Regeneration is byte-identical across two
+  consecutive runs.
+* The four committed footprint copies are now generator output (identical
+  geometry; header/comment text normalised with the provenance block).
+* Pad-centre geometry is unchanged from the `d5a2e47` correction — this work
+  makes it reproducible and closes the remaining stale artifacts, it does not
+  move a pad.
+
+### 10.5 What is left stale, on purpose
+
+`hub_board_f33.kicad_pcb`, `tracker/hardware/gerbers_f33/*`,
+`hub_board_f33_jlcpcb.zip`, `pcb_handoff.zip`, `output/pcb-handoff.zip` and the
+`gen_pcb.py` `gen_v2` generator that produces them are **superseded, not
+deleted** — they are history and `gen_pcb.py` still reproduces the board. They
+must not be ordered, quoted to a fab, or assembled. Full register, with hashes
+and the pre-order checklist: `docs/f33-module/F33-SUPERSEDED-ARTIFACTS.md`.
+A replacement F33 board is a **re-route** (placement + routing) from the
+corrected footprint, not a re-score.
+
