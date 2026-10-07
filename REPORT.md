@@ -67,8 +67,16 @@ PCB parser finds 28 footprints.
 ## Push verification
 
 github / ngit / origin refs verified with `git ls-remote` after sequential push
-(ngit helper has no --atomic). SHAs recorded below.
+(ngit helper has no --atomic). All three observed at the SAME commit:
 
 ```
-<pending>
+LOCAL  fcaf84d938a577038c8ad85298c983c991cd611f
+github fcaf84d938a577038c8ad85298c983c991cd611f  refs/heads/adr/cold-qualification-bom-gate
+ngit   fcaf84d938a577038c8ad85298c983c991cd611f  refs/heads/adr/cold-qualification-bom-gate
+origin fcaf84d938a577038c8ad85298c983c991cd611f  refs/heads/adr/cold-qualification-bom-gate
 ```
+
+ngit note: `Published 1 state event to 1/2 relays (failed: nos.lol)` — the
+`relay.ngit.dev` relay accepted the branch; `nos.lol` was unreachable. The ref
+reads back correct from the ngit remote, so the push is verifiably landed.
+No force-push was used.

@@ -6,5 +6,5 @@ Deliverable-first: ADR-043 + deterministic BOM temperature gate + passing test.
 - [cluster A] BOM source: parsed 28 footprints+values from real PCBs v8i_krt_gnss.kicad_pcb and v8j_krt_ms5611.kicad_pcb (read-only, sibling worktree v8j-ms5611-reroute). Ignored legacy v_c3_flight.kicad_sch.
 - [cluster B] wrote docs/adr/043-cold-qualification-heating.md (negative heating result + arithmetic + per-part table + two offenders).
 - [cluster C] wrote tracker/hardware/tools/bom_temp_gate.py + test_bom_temp_gate.py + bom_ratings.csv + bom_v8i_gnss.csv.
-- [cluster C] test result: see REPORT.md.
-- [cluster D] push github -> ngit -> origin, each verified with git ls-remote.
+- [cluster C] test result: 11 passed, 0 failed (pytest + standalone runner, exit 0). Gate on real v8i PCB -> exit 1, names both offenders.
+- [cluster D] push github -> ngit -> origin, verified with git ls-remote: all three at fcaf84d (see REPORT.md).
