@@ -1,0 +1,12 @@
+[
+{"name":"i_103_2L_06_LF","x":103,"y":103,"opts":[["Layers","2"],["Surface Finish","LeadFree HASL"],["PCB Thickness","0.6mm"]],"note":"2L+0.6mm at 103"},
+{"name":"i_89_2L_06_LF","x":89,"y":89,"opts":[["Layers","2"],["Surface Finish","LeadFree HASL"],["PCB Thickness","0.6mm"]],"note":"2L+0.6mm at 89"},
+{"name":"i_103_4L_04_ENIG","x":103,"y":103,"opts":[["Layers","4"],["Surface Finish","ENIG"],["PCB Thickness","0.4mm"]],"note":"4L+0.4mm needs ENIG"},
+{"name":"i_89_4L_04_ENIG","x":89,"y":89,"opts":[["Layers","4"],["Surface Finish","ENIG"],["PCB Thickness","0.4mm"]],"note":"4L+0.4mm needs ENIG"},
+{"name":"h_89_2L_16","x":89,"y":89,"opts":[["Layers","2"],["PCB Thickness","1.6mm"]],"note":"2-layer matched pair"},
+{"name":"h_103_2L_16","x":103,"y":103,"opts":[["Layers","2"],["PCB Thickness","1.6mm"]],"note":"2-layer matched pair"},
+{"name":"h_100_2L_16","x":100,"y":100,"opts":[["Layers","2"],["PCB Thickness","1.6mm"]],"note":"2-layer at the cap"},
+{"name":"k_100x104_4L_16","x":100,"y":104,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"mechanism: area 10400 vs max-dim 104"},
+{"name":"k_104x100_4L_16","x":104,"y":100,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"mechanism reversed"},
+{"name":"k_50x103_4L_16","x":50,"y":103,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"mechanism: non-square, small area, max dim 103"}
+]

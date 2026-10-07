@@ -1,0 +1,8 @@
+[
+{"name":"d_103_4L_04_ENIG","x":103,"y":103,"surf":"ENIG","opts":[["Layers","4"],["PCB Thickness","0.4mm"]],"note":"0.4mm requires ENIG"},
+{"name":"d_89_4L_04_ENIG","x":89,"y":89,"surf":"ENIG","opts":[["Layers","4"],["PCB Thickness","0.4mm"]],"note":"0.4mm requires ENIG"},
+{"name":"e_103_4L_16_q1","x":103,"y":103,"qty":1,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"qty 1"},
+{"name":"e_89_4L_16_q1","x":89,"y":89,"qty":1,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"qty 1"},
+{"name":"f_103_4L_16_dd2","x":103,"y":103,"opts":[["Layers","4"],["PCB Thickness","1.6mm"],["Different Design","2"]],"note":"two designs on one order"},
+{"name":"f_89_4L_16_dd2","x":89,"y":89,"opts":[["Layers","4"],["PCB Thickness","1.6mm"],["Different Design","2"]],"note":"two designs on one order"}
+]

@@ -1,0 +1,151 @@
+24
+SMT
+0
+
+Select Product
+
+Standard PCB/PCBA
+
+Advanced PCB/PCBA
+
+SMT Stencil
+
+Flex Heater
+
+Mechatronic Parts
+
+3D Printing
+
+CNC Machining
+
+PCB Layout
+
+Sheet Metal
+
+Online PCB Quote
+Instructions For Ordering>
+ Add gerber file
+Only accept zip or rar, Max 100 MB, View example >
+ All uploads are secure and confidential.
+Base Material
+FR-4
+Flex
+Aluminum
+Copper Core
+Rogers
+PTFE Teflon
+Layers
+124
+Dimensions
+ *  
+PCB Qty
+5
+Product Type
+Industrial/Consumer electronicsAerospaceMedical
+PCB Specifications
+Different Design
+1 234 
+Delivery Format
+Single PCB Panel by Customer Panel by JLCPCB
+PCB Thickness
+0.4mm0.6mm0.8mm1mm
+PCB Color
+Green
+ 
+Red
+ 
+Yellow
+ 
+Blue
+ 
+White
+ 
+Black
+Silkscreen
+White
+Surface Finish
+OSP
+New
+ HASL(with lead) LeadFree HASL ENIG
+High-spec Options
+Outer Copper Weight
+1 oz2 oz
+Min via hole size/diameter
+Mark on PCB
+Remove Mark
+Electrical Test
+Flying Probe Fully Test
+Gold Fingers
+No Yes
+Castellated Holes
+No Yes
+PCB Remark 
+PCB Assembly
+Assemble your PCB boards
+Stencil
+Stencil Order Guide>
+Order together with PCB
+Charge Details
+PCB Build Time 
+Calculated Price
+$0.00
+SAVE TO CART
+Shipping Estimate
+Charge: Choose destination country first
+Weight 
+kg
+Coupons 
+View your coupons 
+Online Chat >
+Chat with our live agent for fast reply.
+Mon-Fri: 24 hours, Sat: 9am-6pm, GMT+8
+Email Us >
+Contact us at supportjlcpcb.com
+Typically reply within hours.
+Help Center >
+Get instant answers.
+24/7 Available.
+PCB Service
+FR-4 PCBs
+Flexible PCBs
+Metal Core PCBs
+High-Frequency PCBs
+PCBA Service
+PCB Layout
+SMT Stencil
+Flex Heater
+Support
+Help Center
+Contact Us
+Community
+Shipping Guide
+Payment Methods
+How to Order
+How to Track
+After-Sales Service
+Blog
+Company
+About Us
+Quality Assurance
+How We Work
+Certifications
+Security
+Environment
+JLCAPI
+News
+Cooperation
+Electronics
+EasyEDA
+JLCPCB
+JLCDFM
+LCSC
+OSHWLAB
+Mechanical
+JLC3DP
+JLCCNC
+JLCMC
+CONNECT WITH US
+© 2026 JLCPCB.COM All Rights Reserved.
+Privacy Policy
+Terms & Conditions
+Cookies Policy

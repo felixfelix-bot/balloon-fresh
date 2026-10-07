@@ -1,0 +1,9 @@
+[
+{"name":"g_102_4L_16","x":102,"y":102,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"pin the tier boundary"},
+{"name":"g_102p5_4L_16","x":102.5,"y":102.5,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"pin the tier boundary"},
+{"name":"g_102p9_4L_16","x":102.9,"y":102.9,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"pin the tier boundary"},
+{"name":"g_100x106_4L_16","x":100,"y":106,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"area test: 10600 mm2 same as 103x103"},
+{"name":"g_106x100_4L_16","x":106,"y":100,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"area test reversed"},
+{"name":"g_103_4L_16_repeat","x":103,"y":103,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"reproducibility repeat"},
+{"name":"g_89_4L_16_repeat","x":89,"y":89,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"reproducibility repeat"}
+]
