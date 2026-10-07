@@ -855,6 +855,31 @@ def v9_custom_symbols():
             "to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2.",
             "", [("1", "A_VSCAP", "passive"), ("2", "COM", "passive"),
                  ("3", "B_3V3", "passive")]),
+        # --- the HUB-SIDE wing interface (ADR-046 s2.1/s2.2/s4.1 +
+        # docs/WING-TO-HUB-SOCKET-SPEC.md, implemented by ADR-048).  FOUR of these
+        # sit on the v9 hub, one per edge, at 90 deg spacing; each one is the
+        # socket land set that one wing tab solders onto.  Pin names are the
+        # WING-side names of ADR-046 s2.1 (1 SOLAR_P, 2 GND, 3 RF_FEED, 4 SOLAR_N);
+        # the hub NET of each pin is fixed per interface by the socket spec s3.
+        # Pin TYPE is 'passive' on every pin on purpose: this is a hand-soldered
+        # copper land set with no driver, so no ERC power/PA/RF termination is
+        # asserted here.  Pin 3 (RF_FEED) is an unnetted V2 provision on v9
+        # (ADR-046 s2.4) and is deliberately left with no net and no no_connect
+        # flag - see OPEN-21.
+        "balloon_flight_v9:WING_SOCKET_4P": _v9_symbol(
+            V9_LIBNAME, "WING_SOCKET_4P", "WING_SOCKET_4P (hub wing interface)",
+            "Tracker_Mechanical:Wing_Tab_4P",
+            "Hub-side wing interface / socket land set for the v9 3D hub+4-wing "
+            "assembly: 4 lands per face on BOTH outer layers = 8 copper lands per "
+            "interface, land 4.0 x 1.2 mm, pitch 1.8 mm, insertion depth 6.0 mm, "
+            "routed slot 0.9 mm +/-0.10 mm, 90 deg attach, edge clearance "
+            ">= 1.0 mm (ADR-046 s2.2 over the socket spec's >= 0.5 mm - see "
+            "ADR-048 D-1). Pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO "
+            "NET) / SOLAR_N. Geometry lives in the real footprint "
+            "Tracker_Mechanical:Wing_Tab_4P; NOT human-accepted (ADR-046 + "
+            "ADR-048 are Status Proposed).",
+            "", [("1", "SOLAR_P", "passive"), ("2", "GND", "passive"),
+                 ("3", "RF_FEED", "passive"), ("4", "SOLAR_N", "passive")]),
     }
 
 
@@ -953,6 +978,53 @@ V9_COMPONENTS = [
      "they were missing from this sheet."),
     ("R_BAL2", "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", False,
      "ADR-006 / ADR-044: balancing resistor, lower cell."),
+    # --- ADR-046 / WING-TO-HUB-SOCKET-SPEC / ADR-048: the FOUR wing-mount
+    # interfaces.  One hub edge each, at 90 deg spacing.  Every pad count, net
+    # name and net assignment is cited in the component note; the physical land
+    # geometry lives in the real footprint Tracker_Mechanical:Wing_Tab_4P, not in
+    # a generic pin header.
+    ("J_W1", "balloon_flight_v9:WING_SOCKET_4P", "WING_SOCKET_4P (hub wing interface 1)",
+     "Tracker_Mechanical:Wing_Tab_4P", False,
+     "ADR-046 s1/s2 + socket spec s1: wing interface 1 of 4. 4 lands per face x 2 "
+     "faces = 8 lands, pad order 1 SOLAR_P / 2 GND / 3 RF_FEED(v9 provision, no "
+     "net) / 4 SOLAR_N. Net assignment (socket spec s3.1): pad 1 = stack TOP "
+     "W1_SOLAR_P -> BAT54; pad 2 = GND; pad 4 = W1_SOLAR_N, linked to wing 2's "
+     "W2_SOLAR_P on the hub. Land 4.0 x 1.2 mm, pitch 1.8 mm, insertion 6.0 mm "
+     "(ADR-046 s2.2/s4.1)."),
+    ("J_W2", "balloon_flight_v9:WING_SOCKET_4P", "WING_SOCKET_4P (hub wing interface 2)",
+     "Tracker_Mechanical:Wing_Tab_4P", False,
+     "ADR-046 s1/s2 + socket spec s1: wing interface 2 of 4. Same 8-land socket. "
+     "pad 2 = GND; pad 4 = W2_SOLAR_N linked to wing 3's W3_SOLAR_P; pad 1 lands "
+     "on the W1_SOLAR_N / W2_SOLAR_P hub-link node (socket spec s3.1)."),
+    ("J_W3", "balloon_flight_v9:WING_SOCKET_4P", "WING_SOCKET_4P (hub wing interface 3)",
+     "Tracker_Mechanical:Wing_Tab_4P", False,
+     "ADR-046 s1/s2 + socket spec s1: wing interface 3 of 4. Same 8-land socket. "
+     "pad 2 = GND; pad 4 = W3_SOLAR_N linked to wing 4's W4_SOLAR_P; pad 1 lands "
+     "on the W2_SOLAR_N / W3_SOLAR_P hub-link node (socket spec s3.1)."),
+    ("J_W4", "balloon_flight_v9:WING_SOCKET_4P", "WING_SOCKET_4P (hub wing interface 4)",
+     "Tracker_Mechanical:Wing_Tab_4P", False,
+     "ADR-046 s1/s2 + socket spec s1: wing interface 4 of 4. Same 8-land socket. "
+     "pad 2 = GND; pad 4 = W4_SOLAR_N = the stack BOTTOM, tied to the hub GND "
+     "plane (ADR-046 s2.3: 'stack_bot = W4.SOLAR_N -> system GND'); DO NOT tie "
+     "any other W<n>_SOLAR_N to GND (socket spec s3). pad 1 lands on the "
+     "W3_SOLAR_N / W4_SOLAR_P hub-link node (socket spec s3.1)."),
+    ("D_BP1", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
+     "ADR-046 s2.3 + socket spec s5: bypass Schottky ACROSS wing 1 - cathode to "
+     "W1_SOLAR_P, anode to W1_SOLAR_N. Without it a shaded wing collapses and "
+     "reverse-stresses the 6.0 V series string. DNP for the first prototype "
+     "build, pads routed so it can be fitted later. Package: SOD-323 (socket "
+     "spec s5 'SOD-323 or SMA'; BAT54 family as ADR-006)."),
+    ("D_BP2", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
+     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 2 - cathode to "
+     "W2_SOLAR_P (= the W1_SOLAR_N hub link), anode to W2_SOLAR_N. DNP."),
+    ("D_BP3", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
+     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 3 - cathode to "
+     "W3_SOLAR_P (= the W2_SOLAR_N hub link), anode to W3_SOLAR_N. DNP."),
+    ("D_BP4", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
+     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 4 - cathode to "
+     "W4_SOLAR_P (= the W3_SOLAR_N hub link), anode to W4_SOLAR_N = GND. DNP. "
+     "This is the only one whose anode sits on GND, because wing 4's SOLAR_N IS "
+     "the stack bottom (ADR-046 s2.3)."),
 ]
 
 # --- nets ------------------------------------------------------------------
@@ -980,9 +1052,17 @@ V9_NETS = [
              ("R_DIV2", "2"), ("C4", "2"), ("R_BAL2", "2"),
              ("C_BULK", "2"), ("C_HF", "2"), ("D_CLAMP", "2"), ("R_MON2", "2"),
              ("C_MON", "2"),
-             ("ANT1", "2"), ("ANT2", "2"), ("ANT3", "2"), ("ANT4", "2")],
+             ("ANT1", "2"), ("ANT2", "2"), ("ANT3", "2"), ("ANT4", "2"),
+             ("J_W1", "2"), ("J_W2", "2"), ("J_W3", "2"), ("J_W4", "2"),
+             ("J_W4", "4"), ("D_BP4", "2")],
      "Ground. F33 GND pads 2,3,4,6,7,8,11; bare GND pads 2,8,11,12,18 "
-     "(docs/DUAL-VARIANT-DESIGN.md)."),
+     "(docs/DUAL-VARIANT-DESIGN.md). J_W1..J_W4 pin 2 are the four wing "
+     "interfaces' GND lands: socket spec s3 makes each interface's GND land tie "
+     "DIRECTLY to the hub ground plane and warns 'Do not tie any W<n>_SOLAR_N to "
+     "GND except W4_SOLAR_N'. J_W4 pin 4 and D_BP4 pin 2 are that single "
+     "exception: wing 4's SOLAR_N IS the 6.0 V stack bottom (ADR-046 s2.3 "
+     "'stack_bot = W4.SOLAR_N -> system GND'). Wings 1-3 SOLAR_N are on the "
+     "W1_SOLAR_N / W2_SOLAR_N / W3_SOLAR_N hub links, NOT here."),
     ("VSCAP", [("D1", "1"), ("C_CAP1", "1"), ("U7", "1"), ("U7", "3"),
                ("R_DIV1", "1"), ("R_BAL1", "1"), ("J_VCC", "1")],
      "ADR-006 chain: BAT54 cathode -> supercap bank (top) -> TPS7A02 IN ->, for "
@@ -998,9 +1078,36 @@ V9_NETS = [
      "C_CAP2 straight across the rail (a 2.7 V-rated cap on a 5.4 V node) and "
      "left C_CAP1 pin 2 floating. R_BAL1/R_BAL2 (2x 10 kOhm, ADR-006) balance "
      "the two cells here."),
-    ("SOLAR_IN", [("D1", "2")],
-     "ADR-006: 4 wings x 3 cells = 6.0 V / ~2.4 W peak. The solar INPUT "
-     "connector is not in the v9 component list -> source end TODO(unverified)."),
+    ("W1_SOLAR_P", [("J_W1", "1"), ("D1", "2"), ("D_BP1", "1")],
+     "ADR-046 s2.3 / socket spec s3.1: stack TOP = wing 1's solar POSITIVE "
+     "terminal (W1_SOLAR_P) -> BAT54 (D1) -> supercap bank (ADR-006). This net "
+     "carries the socket spec's W1_SOLAR_P LAND of wing interface 1; it is the "
+     "v9 sheet's former 1-pad `SOLAR_IN` net (which had only the D1 anode end and "
+     "was filed as OPEN-12 'solar input connector not in the component list'). "
+     "It is now the whole 4-wing array input: the four wing interfaces ARE the "
+     "solar source, so OPEN-12 is closed by ADR-048. It is renamed from SOLAR_IN "
+     "to W1_SOLAR_P because that is the land net name the socket spec s3 fixes. "
+     "D_BP1 pin 1 is its cathode: the bypass Schottky's cathode goes to the "
+     "wing's SOLAR_P (ADR-046 s2.3)."),
+    ("W1_SOLAR_N", [("J_W1", "4"), ("J_W2", "1"), ("D_BP1", "2"), ("D_BP2", "1")],
+     "ADR-046 s2.3 / socket spec s3.1: the first HUB LINK. ADR-046 s2.3 mandates "
+     "`W1.SOLAR_N == W2.SOLAR_P (hub link)`, so this is ONE electrical node: it "
+     "carries wing interface 1's SOLAR_N land (socket spec net name "
+     "`W1_SOLAR_N`) AND wing interface 2's SOLAR_P land (socket spec net name "
+     "`W2_SOLAR_P`). The node is named after the first of the pair; the "
+     "land-to-node mapping for all 8 spec land names is tabulated in "
+     "docs/adr/048-v9-hub-wing-interfaces.md. D_BP1 pin 2 (anode) and D_BP2 pin "
+     "1 (cathode) sit across wings 1 and 2 respectively (socket spec s5)."),
+    ("W2_SOLAR_N", [("J_W2", "4"), ("J_W3", "1"), ("D_BP2", "2"), ("D_BP3", "1")],
+     "ADR-046 s2.3 / socket spec s3.1: the second HUB LINK - `W2.SOLAR_N == "
+     "W3.SOLAR_P` is one electrical node carrying wing interface 2's SOLAR_N "
+     "land and wing interface 3's SOLAR_P land (socket spec land net names "
+     "W2_SOLAR_N and W3_SOLAR_P). D_BP2 anode / D_BP3 cathode."),
+    ("W3_SOLAR_N", [("J_W3", "4"), ("J_W4", "1"), ("D_BP3", "2"), ("D_BP4", "1")],
+     "ADR-046 s2.3 / socket spec s3.1: the third HUB LINK - `W3.SOLAR_N == "
+     "W4.SOLAR_P` is one electrical node carrying wing interface 3's SOLAR_N "
+     "land and wing interface 4's SOLAR_P land (socket spec land net names "
+     "W3_SOLAR_N and W4_SOLAR_P). D_BP3 anode / D_BP4 cathode."),
     ("F33_VCC", [("J_VCC", "2"), ("U2", "1"), ("C_BULK", "1"), ("C_HF", "1"),
                  ("D_CLAMP", "1"), ("R_MON1", "1")],
      "ADR-044 option (a) + ADR-047 2: the F33's pin 1 VCC. Fed from the RAW "
@@ -1164,9 +1271,13 @@ V9_TODO = [
      "IO0 as a boot strap and forbids loading it. The divider tap net exists "
      "but its MCU end is unresolved. (Note: this sheet's NEW rail monitor does "
      "not use GPIO0 - see OPEN-17.)"),
-    ("OPEN-12 SOLAR INPUT SOURCE",
-     "The 4-wing x 3-cell solar array input connector is not in the v9 "
-     "component list; SOLAR_IN has only the D1 anode end so far."),
+    ("OPEN-12 SOLAR INPUT SOURCE (CLOSED by ADR-048)",
+     "ADDRESSED: the 4-wing x 3-cell solar array input IS the four wing-mounted "
+     "interfaces J_W1..J_W4 added by ADR-048 (ADR-046 s1/s2.3 + socket spec s1). "
+     "The net that used to be a 1-pad `SOLAR_IN` (D1 anode only) is now "
+     "W1_SOLAR_P and carries J_W1 pad 1 as the stack top. What is NOT closed: "
+     "the wing-side array-coverage / bypass re-budget of ADR-046 s2.3 (the 6.0 V "
+     "/ 2.4 W ADR-006 budget is only valid with all four wings illuminated)."),
     ("OPEN-13 SX1280 PIN NUMBERS + LAND PATTERN",
      "The Semtech SX1280 datasheet could not be retrieved on this host. The "
      "symbol's QFN pad numbering and SX1280_QFN24.kicad_mod geometry are "
@@ -1210,6 +1321,54 @@ V9_TODO = [
      "the placement freezes. ADR-045 D1 leaves the SX1280 antenna pad and the "
      "MAX-M10S RF_IN pad TODO(unverified), which is why OPEN-2 and OPEN-13 "
      "cannot be closed here."),
+    ("OPEN-20 HUB-SIDE LAND DATUM + EDGE CLEARANCE (ADR-048 D-1)",
+     "The socket spec s2 gives the land row's along-insertion offset twice and "
+     "incompatibly: 'Land centre offset from the hub's outer edge 1.0 mm inboard' "
+     "versus its own parenthetical 'lands span 0.0...4.0 mm from the edge' "
+     "(centre 2.0 mm) - a 1.0 mm self-contradiction - while ADR-046 s2.2 fixes "
+     "copper-to-board-edge clearance >= 1.0 mm and the socket spec s2/s4 says "
+     ">= 0.5 mm. ADR-048 implements the ADR number (>= 1.0 mm) and therefore sets "
+     "the land row's near edge 1.0 mm inboard and its centre 3.0 mm from the "
+     "interface edge; the lands then span 1.0..5.0 mm, inside the 6.0 mm "
+     "insertion depth. TODO(unverified): which datum the records intend (land "
+     "inboard edge at 1.0 mm, as implemented, or land centre at 1.0 mm, as the "
+     "spec's table line reads). No in-repo source resolves it."),
+    ("OPEN-21 W<n>_RF PROVISION LANDS ARE UNNETTED (4 NEW ERC ERRORS, BY DESIGN)",
+     "ADR-046 s2.4 and socket spec s3.2 mandate that each interface's pad 3 "
+     "(RF_FEED) keeps its copper land but carries NO NET on v9, and explicitly "
+     "say 'Do not tie it to GND'. The sheet therefore leaves J_W1..J_W4 pin 3 "
+     "floating and does NOT add a no_connect flag: a no_connect would assert a "
+     "termination decision (and an RF tie-off) that no record makes. KiCad ERC "
+     "reports each unnetted pin as pin_not_connected, so these 4 are EXPECTED, "
+     "RECORDED additions to the v9 ERC error count, not a regression and not "
+     "something that has been silenced."),
+    ("OPEN-22 HUB v9 STACK-UP / SLOT KEEP-OUT / FAB TOLERANCE",
+     "Socket spec s8 items 1-4 are all still open: the hub's actual component "
+     "keep-out at the slot (which owns whether the 6.0 mm slot depth is legally "
+     "routable and whether the slot keep-out may exceed the +1.0 mm of s4); "
+     "JLCPCB's routed-slot width tolerance (0.9 mm +/-0.10 mm is an ASSUMPTION, "
+     "ADR-046 s4.3); the v9 hub layer count (the lands are on the two outer "
+     "layers only); and whether the hub placement gate's component-to-interface "
+     "clearance exceeds the 1.5 mm of socket spec s4. No v9 hub PCB exists, so "
+     "none of these can be measured yet."),
+    ("OPEN-23 ASSEMBLY ORIENTATION OF THE WING AT THE HUB (CONFLICTING RECORDS)",
+     "Socket spec s1 says the wing's long axis is 'perpendicular to the hub "
+     "plane' and then, in the next sentence, that wings 1-2 are 'horizontal' "
+     "in the hub plane (and 3-4 inclined ~30 deg below it); ADR-046 s4.1 says "
+     "'90 deg to the hub plane, wing plane normal to the hub plane'. The two "
+     "readings cannot both hold. TODO(unverified): the intended attach "
+     "orientation, which the ADR-048 footprint deliberately does NOT assert - "
+     "the land row, slot and keep-outs are laid out on a stated, newly decided "
+     "datum (interface edge x slot centre line) and no rotation is fixed."),
+    ("OPEN-24 HAND-SOLDER JOINT DIMENSIONS NOT MEASURED",
+     "The v9 hub does not exist and neither the wing tab's nor the cells' real "
+     "contact geometry has been measured: ADR-046 s7 item 1 files the 52 x 19 mm "
+     "cell tab geometry as TODO(unverified), ADR-046 s7 item 8 files the tab "
+     "fillet's structural adequacy under the ~176 mm cantilever as unanalysed, "
+     "and ADR-046 s4.3 flags that a slot which comes out equal to the 0.6 mm tab "
+     "is worse than no slot. The 0.30 mm nominal solder gap (0.9 mm slot - 0.6 mm "
+     "tab, ADR-046 s4.1) is therefore the only gap number and it is unproven. "
+     "Do not order a hub on these numbers alone."),
 ]
 
 
@@ -1284,10 +1443,16 @@ def v9_emit():
             fh.write(clean(body) + "\n")
         written.append(leaf)
     with open(V9_FPTABLE, "w") as fh:
-        fh.write('(fp_lib_table\n\t(version 7)\n\t(lib (name "%s")'
+        fh.write('(fp_lib_table\n\t(version 7)\n\t(lib (name "Tracker_Mechanical")'
+                 '(type "KiCad")(uri "${KIPRJMOD}/../../footprints/'
+                 'tracker_mechanical.pretty")(options "")(descr "Repo-local '
+                 'mechanical footprints for the v9 hub/wing assembly; holds the '
+                 'real hub-side wing socket land set Wing_Tab_4P - ADR-048"))'
+                 '\n\t(lib (name "%s")'
                  '(type "KiCad")(uri "${KIPRJMOD}/v9_lib/%s.pretty")'
                  '(options "")(descr "v9 flight board footprints: fixed F33 '
-                 'land pattern (d5a2e47) + bare LoRa2021 + SX1280 (UNVERIFIED)"))'
+                 'land pattern (d5a2e47) + bare LoRa2021 + SX1280 (UNVERIFIED) + '
+                 'Wing_Tab_4P"))'
                  '\n)\n' % (V9_LIBNAME, V9_LIBNAME))
 
     # ---- placement: one component per grid slot, columns left to right ----
@@ -1301,6 +1466,12 @@ def v9_emit():
         ["C_CAP1", "C_CAP2", "R_BAL1", "R_BAL2", "D1", "R_DIV1", "R_DIV2",
          "R_F1", "C4"],
         ["ANT1", "ANT2", "ANT3", "ANT4"],
+        # ADR-048: the FOUR wing-mount interfaces (one per hub edge, 90 deg
+        # apart) and their four DNP bypass Schottky provisions.  Each J_W<n> is
+        # drawn as one 4-pad socket land set; the series-stack links between
+        # adjacent interfaces are the hub-link nets of ADR-046 s2.3.
+        ["J_W1", "J_W2", "J_W3", "J_W4",
+         "D_BP1", "D_BP2", "D_BP3", "D_BP4"],
     ]
     V9_COL_TITLES = [
         "GNSS / BARO / POWER",
@@ -1311,6 +1482,9 @@ def v9_emit():
         "F33 RAIL PROVISION (ADR-047): pin-1 selector / bulk / clamp / monitor",
         "SUPERCAP BANK (SERIES + BALANCING) / BAT54 / DIVIDER / GNSS RC",
         "U.FL ANTENNAS (see the four-feed conflict)",
+        "FOUR WING INTERFACES at 90 deg (ADR-046 / ADR-048): 4 lands per face x "
+        "2 faces = 8 lands each, 4.0 x 1.2 mm, pitch 1.8 mm; 1 SOLAR_P / 2 GND / "
+        "3 RF (NO NET on v9) / 4 SOLAR_N + 4 DNP bypass Schottky",
     ]
     placed_refs = [r for col in V9_COLUMNS for r in col]
     missing = [c[0] for c in comps if c[0] not in placed_refs]
@@ -1337,7 +1511,7 @@ def v9_emit():
     # ---- body ------------------------------------------------------------
     body = ['\t(text "BALLOON v9 TRI-BAND FLIGHT BOARD - DESIGN-INTENT '
             'schematic from the v9 decision records (ADR-029/034/035/036-043, '
-            'ADR-044/044a/045). NOT derived from a PCB."\n\t\t(exclude_from_sim no)\n'
+            'ADR-044/044a/045/046/047/048). NOT derived from a PCB."\n\t\t(exclude_from_sim no)\n'
             '\t\t(at 30.48 20.32 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
             '(size 2.54 2.54)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n'
             '\t\t(uuid "%s")\n\t)' % uid(),
@@ -1350,6 +1524,24 @@ def v9_emit():
             'Full +33 dBm needs >=5.0 V rail; +30 dBm needs >=3.54 V interpolated '
             '(ADR-044 S8 table). Firmware must gate TX on the LOADED rail."\n'
             '\t\t(exclude_from_sim no)\n\t\t(at 30.48 24.13 0)\n\t\t(effects\n'
+            '\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n'
+            '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-046 + ADR-048 (wing interface, Status PROPOSED - not '
+            'human-accepted): the v9 hub carries FOUR wing-mount interfaces at '
+            '90 deg spacing, J_W1..J_W4. Each is one socket land set: 4 copper '
+            'lands per face on BOTH outer layers = 8 lands per interface, land '
+            '4.0 x 1.2 mm, pitch 1.8 mm, insertion depth 6.0 mm. Net order 1 '
+            'SOLAR_P / 2 GND / 3 RF_FEED (v9 provision, NO NET) / 4 SOLAR_N. '
+            'Series stack wired on the hub: W1_P -> BAT54 (D1) -> supercap; '
+            'W1_N == W2_P, W2_N == W3_P, W3_N == W4_P (hub links); W4_N = stack '
+            'bottom = GND. Each interface GND land ties to the hub ground plane. '
+            'One DNP bypass Schottky per interface (D_BP1..D_BP4) across '
+            'W<n>_SOLAR_P (K) - W<n>_SOLAR_N (A). Geometry lives in the real '
+            'footprint Tracker_Mechanical:Wing_Tab_4P. ADR-048 D-1: the socket '
+            'spec s2/s4 say >= 0.5 mm copper-to-edge clearance, ADR-046 s2.2 '
+            'says >= 1.0 mm and the ADR number is implemented. OPEN-20/21/22/23/24 '
+            'hold the open questions; see REPORT.md."\n'
+            '\t\t(exclude_from_sim no)\n\t\t(at 30.48 26.67 0)\n\t\t(effects\n'
             '\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n'
             '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid()]
     for ci, title in enumerate(V9_COL_TITLES):
@@ -1621,6 +1813,14 @@ def v9_emit():
                  '\t(lib (name "balloon_flight")(type "KiCad")'
                  '(uri "${KIPRJMOD}/balloon_flight.pretty")(options "")'
                  '(descr "Flight board footprints exported from the frozen PCB"))\n'
+                 # ADR-048: the repo's own mechanical library, so the wing socket
+                 # land set resolves in the v9 project without reusing a generic
+                 # pin-header footprint.  Written by the v9 target only.
+                 '\t(lib (name "Tracker_Mechanical")(type "KiCad")'
+                 '(uri "${KIPRJMOD}/../../footprints/tracker_mechanical.pretty")'
+                 '(options "")(descr "Repo-local mechanical footprints for the v9 '
+                 'hub/wing assembly; holds the real hub-side wing socket land set '
+                 'Wing_Tab_4P - ADR-046/ADR-048"))\n'
                  '\t(lib (name "%s")(type "KiCad")'
                  '(uri "${KIPRJMOD}/v9_lib/%s.pretty")(options "")'
                  '(descr "v9 flight board footprints"))\n)\n'
@@ -1648,6 +1848,7 @@ def main_v9():
     print("           ADR-035, ADR-036-045, docs/DUAL-VARIANT-DESIGN.md,")
     print("           docs/V9-RADIO-SITE-MATRIX.md,")
     print("           ADR-044 (power rails) + ADR-047 (F33 max-draw provisioning),")
+    print("           ADR-046 (wing tab/socket) + ADR-048 (v9 hub wing interfaces),")
     print("           frozen v8i netlist tracker/hardware/output/v8i_krt_gnss.kicad_pcb")
     stats = v9_emit()
     print("components    :", stats["comp"])

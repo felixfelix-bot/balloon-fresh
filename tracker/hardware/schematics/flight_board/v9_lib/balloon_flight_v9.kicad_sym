@@ -1579,4 +1579,143 @@
 			)
 		)
 	)
+	(symbol "WING_SOCKET_4P"
+		(pin_names
+			(offset 1.016)
+			(hide no)
+		)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(property "Reference" "U"
+			(at 0 6.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "WING_SOCKET_4P (hub wing interface)"
+			(at 0 -6.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Tracker_Mechanical:Wing_Tab_4P"
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Hub-side wing interface / socket land set for the v9 3D hub+4-wing assembly: 4 lands per face on BOTH outer layers = 8 copper lands per interface, land 4.0 x 1.2 mm, pitch 1.8 mm, insertion depth 6.0 mm, routed slot 0.9 mm +/-0.10 mm, 90 deg attach, edge clearance >= 1.0 mm (ADR-046 s2.2 over the socket spec's >= 0.5 mm - see ADR-048 D-1). Pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO NET) / SOLAR_N. Geometry lives in the real footprint Tracker_Mechanical:Wing_Tab_4P; NOT human-accepted (ADR-046 + ADR-048 are Status Proposed)."
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(symbol "WING_SOCKET_4P_0_1"
+			(rectangle
+				(start -12.7 3.81)
+				(end 12.7 -3.81)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type background)
+				)
+			)
+		)
+		(symbol "WING_SOCKET_4P_1_1"
+			(pin passive line
+				(at -15.24 1.27 0)
+				(length 2.54)
+				(name "SOLAR_P"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at -15.24 -1.27 0)
+				(length 2.54)
+				(name "GND"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "2"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 15.24 1.27 180)
+				(length 2.54)
+				(name "RF_FEED"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "3"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 15.24 -1.27 180)
+				(length 2.54)
+				(name "SOLAR_N"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "4"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+	)
 )
