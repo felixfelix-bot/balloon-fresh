@@ -26,11 +26,11 @@ The document analyses the operator's German amateur-radio licence regime for the
 2. Whether German primary law explicitly requires a 10-minute identification interval (ITU RR floor is hourly).
 
 ## Pushes
-Pushed sequentially (github first, then ngit). Observed after push:
+Pushed sequentially (github first, then ngit). Observed after the second push:
 
-* Local commit SHA: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
-* GitHub `refs/heads/docs/regulatory-amateur`: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
-* ngit `refs/heads/docs/regulatory-amateur`: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
-* origin `refs/heads/docs/regulatory-amateur`: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
+* Local tip SHA: `0fe4d4eccf2a1fe8e1357b0314c18e6a89e567bf`
+* GitHub `refs/heads/docs/regulatory-amateur`: `0fe4d4eccf2a1fe8e1357b0314c18e6a89e567bf`
+* ngit `refs/heads/docs/regulatory-amateur`: `0fe4d4eccf2a1fe8e1357b0314c18e6a89e567bf`
+* origin `refs/heads/docs/regulatory-amateur`: `0fe4d4eccf2a1fe8e1357b0314c18e6a89e567bf`
 
-All four SHAs match.
+All four SHAs match. The first content commit was `6d36d3e6b32e9a33d30462c1591aec243c9238d8`; the second commit added these observed SHAs to `REPORT.md`.
