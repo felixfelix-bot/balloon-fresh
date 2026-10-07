@@ -481,3 +481,73 @@ a decision this record makes. **This record picks no winner** (`TODO` → §"Ope
   as live. **Nothing unverified is asserted as measured**; the `≈25 cm²` radio area (D7), the
   launch latitude/season, the standoff height, the 0.4 mm stack-up and the loaded `Vmp` are all
   flagged. **No hardware is ordered by this record.**
+
+---
+
+## 8. Appended 2026-10-07 — D4's 0.4 mm STIFFNESS CHECK has been RUN: **it cannot be settled from the record**
+
+> **Appended, not a rewrite.** Nothing above this line is changed or deleted; the history stays
+> legible. This section records the outcome of the check D4 itself demands and Open item 3
+> carries. It **does not** change D4's decision (0.4 mm remains the target) and it **does not**
+> close Open item 3, which is closed only **in part**.
+
+**The check.** `docs/analysis/hub-thickness-deflection.md` (+ its committed model,
+`docs/analysis/hub_thickness_deflection_model.py`) runs the closed-form plate / end-only-joint
+analysis D4 asked for: the 103 × 103 mm plate, the four ~176 mm vertical-blade wings
+(ADR-049 §5 item 6), the end-only unbonded cells (ADR-052), and the pad-to-tab socket joint
+(ADR-049 §5 item 4, plain pads, no slot). **Verdict: `cannot be settled from the record`.**
+
+**Why not — the record is missing every decisive input.** The check needs seven quantities and
+the repo contains **none** of them: (1) the plate's **boundary condition** (mount count,
+positions, standoff stiffness — only the v1 `docs/hardware-design.md` 158–165 prose exists, and
+D6 leaves the standoff height `TODO(unverified)`); (2) FR4's **elastic modulus** (the repo's own
+mass model carries FR4 *density* only); (3) the end-only solder joint's **allowable shear
+strain**; (4) the cell's **float gap / fillet height**; (5) the wing **orientation**, which
+ADR-048 `OPEN-23` still carries as an unresolved contradiction (it changes the governing root
+moment **7×**); (6) any **rotation rate**; (7) any **launch/release/drop acceleration**. The
+same arithmetic therefore yields **opposite verdicts** on the honest readings: 0.4 mm sits
+**inside** a defensible joint budget under the global-plate model and **1.4–2.7× outside** it
+under the local-socket model. **A single coupon bend test (named in the analysis, §13) collapses
+the whole question to one number.**
+
+**What the check DOES establish, and it is worth recording:**
+
+1. **The 4.5 g prize is confirmed exactly: 4.514 g** (13.542 g → 9.028 g at 106.1 cm²) — D4's
+   figure and §1.5's arithmetic both check out.
+2. **The lever's price is exact and assumption-free: 3.375× the deflection and 2.250× the plate
+   surface strain** at equal load (`δ ∝ 1/t³`, `ε ∝ 1/t²`).
+3. **Thermal is NOT a differentiator.** The FR4↔Si CTE-mismatch term (752–1232 µε over a
+   78.55 mm cell) is **independent of plate thickness**; cold *helps* the plate's stiffness.
+   ADR-052's end-only mount is what makes it survivable, and that is already decided.
+4. **The binding question is LOCAL, not global.** The wing's root moment enters through a 9 mm
+   tab at the plate edge, so the socket land row — not the plate's mid-span — is where the
+   thinned plate bites. Global plate deflection at 0.4 mm computes to **0.34 mm (0.33 % of
+   span)**, i.e. smaller than ordinary bare-FR4 panel warpage; the *local* socket surface
+   strain doubles from **152 µε (0.6 mm) to 343 µε (0.4 mm)**.
+5. **A local stiffener (4 glued 0.4 mm doublers over the socket land rows, ≈0.613 g) recovers
+   MORE socket margin than 0.6 mm has** (86 µε vs 152 µε) while still banking **3.90 g** — but
+   it is **4 added hand joints** on a hand-soldered, minimum-part-count payload (ADR-049/ADR-052
+   doctrine) and it does **not** help the global case. **If the question is settled
+   mechanically, the likely answer is "adequate only with local stiffening" — a ~0.6 g, four-
+   joint cost, NOT a free 4.5 g.**
+6. **Live inconsistency found while reading the inputs, recorded so it is not frozen blindly:**
+   ADR-051 §2.2 recommends H2 = 2 LARGE cells (61.2 cm²) while this record's D5 sizes the plate
+   at 106.1 cm², which needs ≥4 LARGE cells (3 × 30.6 = 91.8 < 106.1). D3's "ceiling" framing
+   means they are not strictly contradictory, but the **cell count on the plate is unsettled**
+   (~3 g of on-plate mass). It does not change the stiffness verdict.
+
+**Consequence for this record's own text.**
+
+- **D4 stands unchanged.** 0.4 mm is still the target; the check found **no evidence it is
+  inadequate for the global plate load**, and it found the *reason* the thickness lever is
+  cheap-or-expensive is a **local socket detail**, not the plate size.
+- **Open item 3 is now PARTLY closed.** Its *mechanical* half has been analysed and **answered
+  as a named gap with a specified bench test**, not with an invented modulus (per the repo's
+  own honesty rule, and per D4's own words about the check being required). Its *stack-up* half
+  — whether a 0.4 mm layer count is fabricable on the chosen supplier — **remains open and is a
+  supplier question**.
+- **D4's "The stiffness trade is noted" sentence is superseded in form, not in direction:** the
+  trade is no longer a bare note; it is quantified in `docs/analysis/hub-thickness-deflection.md`
+  with the verdict `cannot be settled from the record` and a named measurement.
+- **No fab, schematic, netlist, placement, BOM or order change is authorised by this section.
+  Order nothing. No thickness is frozen.**
