@@ -70,7 +70,7 @@
 			(pin passive line
 				(at -13.97 8.89 0)
 				(length 2.54)
-				(name "GND"
+				(name "VCC"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -88,7 +88,7 @@
 			(pin passive line
 				(at -13.97 6.35 0)
 				(length 2.54)
-				(name "MISO"
+				(name "GND"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -106,7 +106,7 @@
 			(pin passive line
 				(at -13.97 3.81 0)
 				(length 2.54)
-				(name "MOSI"
+				(name "MISO"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -124,7 +124,7 @@
 			(pin passive line
 				(at -13.97 1.27 0)
 				(length 2.54)
-				(name "SCK"
+				(name "MOSI"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -142,7 +142,7 @@
 			(pin passive line
 				(at -13.97 -1.27 0)
 				(length 2.54)
-				(name "NSS"
+				(name "SCK"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -160,7 +160,7 @@
 			(pin passive line
 				(at -13.97 -3.81 0)
 				(length 2.54)
-				(name "RESET"
+				(name "NSS"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -178,7 +178,7 @@
 			(pin passive line
 				(at -13.97 -6.35 0)
 				(length 2.54)
-				(name "IO7"
+				(name "BUSY"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -232,7 +232,7 @@
 			(pin passive line
 				(at 13.97 -6.35 180)
 				(length 2.54)
-				(name "GND"
+				(name "PAD10"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -250,7 +250,7 @@
 			(pin passive line
 				(at 13.97 -3.81 180)
 				(length 2.54)
-				(name "GND_TAB11"
+				(name "GND"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -268,7 +268,7 @@
 			(pin passive line
 				(at 13.97 -1.27 180)
 				(length 2.54)
-				(name "BUSY"
+				(name "GND"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -286,7 +286,7 @@
 			(pin passive line
 				(at 13.97 1.27 180)
 				(length 2.54)
-				(name "VCC"
+				(name "PAD13"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -304,7 +304,7 @@
 			(pin passive line
 				(at 13.97 3.81 180)
 				(length 2.54)
-				(name "DIO0"
+				(name "RESET"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -322,7 +322,7 @@
 			(pin passive line
 				(at 13.97 6.35 180)
 				(length 2.54)
-				(name "IO15"
+				(name "DIO0"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -340,7 +340,7 @@
 			(pin passive line
 				(at 13.97 8.89 180)
 				(length 2.54)
-				(name "GND_TAB16"
+				(name "PAD16"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -348,6 +348,42 @@
 					)
 				)
 				(number "16"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 13.97 11.43 180)
+				(length 2.54)
+				(name "PAD17"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "17"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 13.97 13.97 180)
+				(length 2.54)
+				(name "GND"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "18"
 					(effects
 						(font
 							(size 1.27 1.27)

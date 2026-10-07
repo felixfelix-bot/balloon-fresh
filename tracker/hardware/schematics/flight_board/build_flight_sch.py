@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Derive a loading KiCad 9 schematic for the C3 flight board FROM the frozen PCB.
 
-Direction of truth: the placed/routed PCB (`output/v_c3_flight_4layer_placed.kicad_pcb`)
+Direction of truth: the placed/routed PCB (`output/v8i_krt_gnss.kicad_pcb`)
 plus the tested firmware are authoritative; this generated schematic is a MIRROR of
 that netlist, never the other way round.  Nothing here invents connectivity: every
 net, every pin and every declared no-connect is read out of the PCB file.
@@ -25,7 +25,7 @@ import uuid
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 PCB = os.path.join(REPO, "tracker", "hardware", "output",
-                   "v_c3_flight_4layer_placed.kicad_pcb")
+                   "v8i_krt_gnss.kicad_pcb")
 OUT_SCH = os.path.join(HERE, "v_c3_flight.kicad_sch")
 OUT_LIBTABLE = os.path.join(HERE, "sym-lib-table")
 OUT_FPLIB = os.path.join(HERE, "balloon_flight.pretty")
@@ -34,7 +34,7 @@ OUT_CUSTOM_SYM = os.path.join(HERE, "balloon_flight.kicad_sym")
 SYMDIR = "/usr/share/kicad/symbols"
 FP_LIBNAME = "balloon_flight"
 
-FROZEN_SHA256 = "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6"
+FROZEN_SHA256 = "638de56387721460100cd3048fb23229294f510f0a2d89795026c7e6c0cfd0ea"
 
 POWER_NETS = ("+3V3", "GND")
 
@@ -57,21 +57,34 @@ PART_MAP = {
         "Connector:Conn_Coaxial",
     "RF_Module:ESP32-C3-WROOM-02": "RF_Module:ESP32-C3-WROOM-02",
     "RF_Module:HOPERF_RFM9XW_SMD": "balloon_flight:LR2021F33",
+    "custom:LoRa2021_Castellated": "balloon_flight:LR2021F33",
+    "MountingHole:MountingHole_2.2mm_M2": "Mechanical:MountingHole",
     "RF_GPS:ublox_MAX": "RF_GPS:MAX-M10S",
     "Package_TO_SOT_SMD:SOT-23-5": "Regulator_Linear:TPS7A0533PDBV",
     "Package_LGA:Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering":
         "Sensor:BME280",
+    "Package_LGA:LGA-8_3x5mm_P1.25mm":
+        "Sensor:BME280",
 }
 
-# Custom inline symbol: the LR2021F33 module as the board actually wires it.
-# The board uses the 16-pad HOPERF RFM9xW footprint; pad names below follow the
-# RFM9xW reference pinout cited in PCB-S0-NETLIST-AUDIT.md, NOT the 18-pin
-# castellated map in the NiceRF datasheet (that mismatch is an open question).
+# Barometer: design intent is MS5611-01BA (10-1200 hPa) for the stratospheric flight
+# profile. The frozen S0 placement PCB still labels this footprint as BMP280 because
+# it predates the operator decision to switch; the generated schematic/netlist must
+# reflect the intended part.  The BME280 *symbol* (Sensor:BME280) is used because it
+# shares the BMP280 clockwise LGA-8 pad numbering that the board is wired for; only
+# the Value and Footprint fields are overridden to MS5611-01BA / LGA-8_3x5mm_P1.25mm.
+BARO_REF = "U5"
+BARO_VALUE = "MS5611-01BA"
+BARO_FOOTPRINT = "Package_LGA:LGA-8_3x5mm_P1.25mm"
+# Custom inline symbol: the LR2021 Gen4 LoRa module as the board actually wires it.
+# The board uses the 18-pin castellated LoRa2021_Castellated footprint; pad names
+# below are derived from the v8i board netlist, with un-routed pads left neutral.
 LR2021_PINS = [
-    ("1", "GND"), ("2", "MISO"), ("3", "MOSI"), ("4", "SCK"),
-    ("5", "NSS"), ("6", "RESET"), ("7", "IO7"), ("8", "GND"),
-    ("9", "ANT"), ("10", "GND"), ("11", "GND_TAB11"), ("12", "BUSY"),
-    ("13", "VCC"), ("14", "DIO0"), ("15", "IO15"), ("16", "GND_TAB16"),
+    ("1", "VCC"), ("2", "GND"), ("3", "MISO"), ("4", "MOSI"),
+    ("5", "SCK"), ("6", "NSS"), ("7", "BUSY"), ("8", "GND"),
+    ("9", "ANT"), ("10", "PAD10"), ("11", "GND"), ("12", "GND"),
+    ("13", "PAD13"), ("14", "RESET"), ("15", "DIO0"), ("16", "PAD16"),
+    ("17", "PAD17"), ("18", "GND"),
 ]
 
 # Pads declared deliberately unconnected (INTENTIONAL rows of the audit).
@@ -81,17 +94,13 @@ INTENTIONAL_NC = {
 }
 # Pads in the audit whose GAP verdict is still open (PCB-S0b owns the ruling).
 DECLARED_GAP = {
-    ("U2", "7"): "unmodelled RF module I/O",
-    ("U2", "11"): "probable GND tab left floating",
-    ("U2", "15"): "unmodelled RF module I/O",
-    ("U2", "16"): "probable GND tab left floating",
-    ("U3", "6"): "V_BCKP power_in, nothing drives it",
-    ("U3", "9"): "~RESET floating",
-    ("U3", "11"): "RF_IN, no GPS antenna feed on this board",
-    ("U3", "15"): "VIO_SEL floating",
-    ("U3", "18"): "~SAFEBOOT floating",
-    ("U4", "3"): "EN floating, rail never explicitly enabled",
-    ("U4", "4"): "OUT/NC contradiction between in-repo sources",
+    ("U2", "10"): "TODO(unverified): LoRa2021 Gen4 pad 10 function / termination",
+    ("U2", "13"): "TODO(unverified): LoRa2021 Gen4 pad 13 function / termination",
+    ("U2", "16"): "TODO(unverified): LoRa2021 Gen4 pad 16 function / termination",
+    ("U2", "17"): "TODO(unverified): LoRa2021 Gen4 pad 17 function / termination",
+    ("U3", "15"): "TODO(unverified): MAX-M10S VIO_SEL tie-off required",
+    ("U3", "18"): "TODO(unverified): MAX-M10S ~SAFEBOOT inactive level tie-off required",
+    ("U4", "4"): "TODO(unverified): TPS7A02 pin 4 function / tie-off",
 }
 
 # Functional column layout: (column index, ordered refs)
@@ -99,15 +108,17 @@ COLUMNS = [
     ["SOLAR", "D1", "C_CAP", "U4", "C1", "C3", "R_DIV1", "R_DIV2"],
     ["U1", "C2", "C4", "R_PD", "R_LED", "LED1"],
     ["U2", "ANT1"],
-    ["U3"],
+    ["U3", "ANT2", "R_SER", "C_SH1", "C_SH2"],
     ["U5", "J1", "J2"],
+    ["MNT1", "MNT2", "MNT3", "MNT4"],
 ]
 COLUMN_TITLES = [
     "SOLAR INPUT / SUPERCAP / 3V3 LDO",
     "ESP32-C3-WROOM-02 + SUPPORT",
-    "LR2021F33 RADIO (16-pad footprint)",
-    "MAX-M10S GNSS",
-    "BME280 + PROGRAMMING / DEBUG HEADERS",
+    "LR2021F33 RADIO (18-pin castellated)",
+    "MAX-M10S GNSS + ANT2 FEED",
+    "MS5611 + PROGRAMMING / DEBUG HEADERS",
+    "MOUNTING HOLES",
 ]
 
 
@@ -419,7 +430,7 @@ def emit(footprints):
     # ---- body
     body, notes = [], []
     body.append('\t(text "BALLOON C3 FLIGHT BOARD - netlist mirror of '
-                'v_c3_flight_4layer_placed.kicad_pcb"\n\t\t(exclude_from_sim no)\n'
+                'v8i_krt_gnss.kicad_pcb"\n\t\t(exclude_from_sim no)\n'
                 '\t\t(at 25.4 25.4 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
                 '(size 2.54 2.54)\n\t\t\t)\n\t\t\t(justify left bottom)\n'
                 '\t\t)\n\t\t(uuid "%s")\n\t)' % uid())
@@ -443,8 +454,9 @@ def emit(footprints):
         lib_id = r["lib_id"]
         sx, sy = pos[ref]
         pins = symbol_pins(r["block"])
-        padnums = sorted({p["num"] for p in fp["pads"] if p["num"] != ""},
-                         key=lambda s: (len(s), s))
+        # design intent override for the barometer (frozen PCB labels it BMP280)
+        value = BARO_VALUE if ref == BARO_REF else fp["value"]
+        footprint = BARO_FOOTPRINT if ref == BARO_REF else "%s:%s" % (FP_LIBNAME, fp["leaf"])
         pin_txt = "".join('\t\t(pin "%s"\n\t\t\t(uuid "%s")\n\t\t)\n' % (n, uid())
                           for n in padnums)
         body.append(
@@ -464,8 +476,8 @@ def emit(footprints):
             "\t\t\t\t(path \"/%s\"\n\t\t\t\t\t(reference \"%s\")\n"
             "\t\t\t\t\t(unit 1)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n"
             % (lib_id, fmt(sx), fmt(sy), uid(), ref, fmt(sx + 2.54),
-               fmt(sy - 6.35), fp["value"], fmt(sx + 2.54), fmt(sy + 2.54),
-               "%s:%s" % (FP_LIBNAME, fp["leaf"]), fmt(sx), fmt(sy),
+               fmt(sy - 6.35), value, fmt(sx + 2.54), fmt(sy + 2.54),
+               footprint, fmt(sx), fmt(sy),
                pin_txt, uid(), ref))
 
         # netless-pad handling, keyed on the audit verdicts
