@@ -8,7 +8,7 @@
   - `docs/adr/029-dual-band-flight-board.md` (amended line 261 config row)
   - `PROGRESS.md` (new)
   - `REPORT.md` (new)
-- Commit SHA (local, before push): **COMMIT_SHA_TBD** — this report will be updated after push.
+- Commit SHA: **b211253f6985d1e848b0b71cda611253cf2f9a79**.
 
 ## Datasheet verification (cited)
 - ESP32-S3 Series Datasheet v2.2, §1: ESP32-S3 is an SoC *"with integrated 2.4 GHz Wi-Fi and Bluetooth® 5 (LE)"* — PHY is on-die.
@@ -31,5 +31,5 @@
   bench measurement with `CONFIG_ESP_WIFI_ENABLED=n` / `CONFIG_ESP_BT_ENABLED=n`.
 
 ## Push verification
-- github SHA after push: **TBD**
-- ngit SHA after push: **TBD**
+- github SHA after push: **b211253f6985d1e848b0b71cda611253cf2f9a79** (observed via `git ls-remote github adr/wifi-bt-disabled`).
+- ngit SHA after push: **b211253f6985d1e848b0b71cda611253cf2f9a79** (observed via `git ls-remote ngit adr/wifi-bt-disabled`).
