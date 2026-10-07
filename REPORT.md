@@ -32,7 +32,15 @@ laid out or built, and no Variant A artefact — board, schematic, netlist, plac
 - Verdict: **B is a SEPARATE BOARD.** Thickness target **0.4 mm** (−2.60 g).
 
 ## Push verification
-- local HEAD / github / ngit: see the three SHAs printed by the push-verify step below.
+All three SHAs equal — **`e2ee2c43d66b98bcf5f7614a176245fe48d026b5`** (local HEAD = github = ngit):
+```
+local:  e2ee2c43d66b98bcf5f7614a176245fe48d026b5
+github: e2ee2c43d66b98bcf5f7614a176245fe48d026b5   (felixfelix-bot/balloon-fresh)
+ngit:   e2ee2c43d66b98bcf5f7614a176245fe48d026b5   (nostr://...relay.ngit.dev/balloon-fresh)
+```
+Pushed to `github` first, then `ngit` separately. One ngit relay (`relay.damus.io`,
+`nos.lol`) failed to publish a state event; the ngit push itself succeeded and the
+branch SHA verifies equal via `git ls-remote ngit`.
 
 ## Blockers / caveats
 - `docs/analysis/hub-thickness-deflection.md` (concurrent worker) **absent** from all refs —

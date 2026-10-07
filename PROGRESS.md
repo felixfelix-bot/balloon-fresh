@@ -7,7 +7,7 @@
       `git log --all --name-only` -> **0** hits for `docs/adr/062`.
 - [x] Derived B's own mass, energy and array numbers (all arithmetic printed in the ADR).
 - [x] Wrote `docs/adr/062-variant-b-design-basis.md`.
-- [ ] Regenerate `docs/adr/INDEX.md`; run `tests/test_adr_numbering.py`.
-- [ ] Commit, push to `github` then `ngit`, verify SHAs on both.
+- [x] Regenerated docs/adr/INDEX.md; tests/test_adr_numbering.py green (3 passed).
+- [x] Committed, pushed to github then ngit; all three SHAs equal (see REPORT.md).
 
 Branch: `adr/variant-b-design-basis` (never main).
