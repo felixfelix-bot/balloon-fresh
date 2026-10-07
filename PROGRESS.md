@@ -1,6 +1,7 @@
 # PROGRESS — docs/v9-system-diagram (worktree `bf-sysdiag`)
 
 Branch: `docs/v9-system-diagram`, based on `github/main` tip `e4d0569`.
+Commit: `8eee7a1e9a85bb8786f929c64364736b9d6c39ec`.
 
 ## Cluster 1 — recon (DONE)
 - Worktree created from `github/main` (`e4d0569`); schematic files present at
