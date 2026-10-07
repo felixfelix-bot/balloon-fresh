@@ -551,3 +551,80 @@ the whole question to one number.**
   with the verdict `cannot be settled from the record` and a named measurement.
 - **No fab, schematic, netlist, placement, BOM or order change is authorised by this section.
   Order nothing. No thickness is frozen.**
+
+---
+
+## 9. Appended 2026-10-08 — the operator's OVERHANG decision **SUPERSEDES D5's "board area = array area" coupling**
+
+> **Appended, not a rewrite.** Nothing above this line is changed or deleted; the history stays
+> legible. This section records a decision the **operator** has taken since the record was written,
+> states exactly which of this record's items it changes, and re-states the rest. It **does not**
+> accept the record (its Status remains **Proposed**), it **does not** freeze any number, and it
+> **does not** authorise any board change. **Order nothing.**
+
+**The decision, verbatim, 2026-10-08:**
+
+> **"I'm fine with panels overhang[ing] the board. No need to waste board space."**
+
+**What it supersedes.** Until this section, this record's **D5** couples the hub outline to the
+array: *"106.1 cm² implies a continuous single-face square of √106.1 cm² ≈ 103 mm."* **That
+coupling is superseded. The hub board is sized by its COMPONENTS and its attachment lands, and the
+array is permitted to overhang it.** Board area and array area are now **two independent numbers**.
+
+**Why the coupling had to go — it was also arithmetically unsatisfiable.** D5's own board could not
+carry the cells D5 sized it for. A LARGE cell is **78.55 × 38.90 mm**; in a **103 × 103 mm** square
+at most **two** stack on their 38.90 mm side (**2 × 30.5559 = 61.11 cm² = 58 % of the 106.1 cm²
+target**), while the area minimum for 106.1 cm² is **4 LARGE cells** (3 × 30.6 = 91.8 < 106.1),
+which needs a **157.1 × 77.8 mm** block — **54 mm wider than the board** (analysis
+`docs/analysis/hub-array-overhang-and-support.md` §2, model
+`docs/analysis/hub_array_overhang_model.py`). **The 106.1 cm² "full duty" figure was never
+realisable on the 103 mm board this record specified.**
+
+### 9.1 What it changes, item by item
+
+| This record's item | Disposition | Basis |
+|---|---|---|
+| **D3 — the array AREA is a DUTY CHOICE** | **STILL OPEN — and it is still the operator's.** | The overhang decision **raises the ceiling** (removing the board-size coupling) and makes the choice cheaper, but it **does not choose the duty**. The array area remains a ceiling, not a frozen number: ≈106 / ≈80 / ≈53 cm² for full / ≈75 % / ≈50 % duty. |
+| **D4 — 0.4 mm FR4 thickness target** | **AMENDED (target stands; prize re-quantified)** | The target **stays 0.4 mm**, but the prize **shrinks with the board**: **4.514 g at 103 × 103 mm** (§1.5 / §8 here) **→ 1.532 g at a ≈ 60 × 60 mm outline** (36.0 cm²: 4.595 g → 3.064 g). D4's "**LARGER than any other single lever left on the hub**" **no longer holds at the new outline**, and Open item 3's stiffness check becomes a **different** problem — a smaller plate that **carries no cells** and therefore has no cell-joint strain budget. |
+| **D5 — the hub grows to ≈103 mm square for 106 cm²** | **SUPERSEDED** | The coupling it rests on is broken; and the board could not hold its own array anyway (§9 above). The outline is now **component-driven: ≈ 60 × 60 mm (36.0 cm²)**, from the **measured 2582 mm² component courtyard** (`tracker/hardware/PLACEMENT-S0-FREEZE-v9-hub.md` §3) at a realistic 72–80 % packing. |
+| **D6 — cells on the upper face, raised attachment** | **RETAINED** | Unaffected; the array is still single-face (upper) and the attachment is still raised. |
+| **D7 — integrated vs split carrier** | **RESOLVED for the hub: SPLIT** | The array is no longer confined to the board, so a **separate overhanging carrier** exists by construction — the **spine-and-ribs** pattern of ADR-049, **unbonded** (ADR-052), overhanging on **two opposite edges** (the two-edge form keeps one support axis on the board and avoids the cantilever case). (ADR-055 D7 remains open for **Variant B**, governed by ADR-062.) |
+
+### 9.2 What this section does NOT decide — the one unmeasured number
+
+**D1's own buildup argument (this record, §1.7, and ADR-052 §2.1) is that the cells are 0.21 mm
+bare silicon mounted END-ONLY with NO bond. Once a cell overhangs the board, the board is no longer
+its support across the overhanging span — something else must carry it, and the amount a 0.21 mm
+wafer can span unsupported is the number that sets the CARRIER'S PITCH.** That number is **not in
+the record**: the repo carries the cell's geometry, its areal mass (48.93 mg/cm²) and one elastic
+constant (Si modulus 170 GPa, carried as "standard" in `docs/analysis/hub-thickness-deflection.md`
+§3), but **no flexural strength or modulus of rupture**. ADR-049's own open item already says so
+(*"whether spine-and-ribs leaves unsupported silicon spans that crack; **the frame's rib pitch is
+set by that answer**"*).
+
+**Therefore this section freezes NO pitch, NO maximum overhang and NO array-area ceiling.** It
+records the **demand** instead (self-weight, derived: `σ = 3ρgL²/(4t)`, `δ = 5ρgL⁴/(32Et²)`) —
+**78.55 mm span at 1 g = 0.504 MPa / 18.1 µm; at 2 g = 1.007 MPa / 36.2 µm; the cantilever (one end
+uncarried) = 4 × σ / 9.6 × δ = 2.01 MPa / 174 µm** — and names the measurement that closes it:
+**support one real cell end-only over a growing gap `S` and load it to cracking; record `S_crack`
+at −55 °C. Then `pitch ≤ S_crack`.** That is the operator's own bench work (ADR-052 §2.7).
+
+### 9.3 What this section does to the records below it
+
+- **`tracker/hardware/hub_board_v9.kicad_pcb` (the first v9 hub placement, 103 × 103 mm, S0 PASS)
+  is now PROVISIONAL.** Its outline is retired by this section; its seats and hash are not a design
+  of record. It **must be re-placed** on the new outline once §9.2's measurement lands.
+  **No re-place, re-route or regeneration is performed or authorised here.**
+- **`docs/analysis/hub-thickness-deflection.md` (this record's own §8 append) was written for the
+  103 mm plate under the four wings.** Its verdict and its 4.514 g figure stand for that board; at
+  the new ≈ 60 × 60 mm outline the **prize is 1.532 g** and the local-socket finding does not
+  transfer unchanged (there are no cells on the electronics plate).
+- **ADR-051's "the hub grows to a panel sized by the array" form-factor change** is superseded in
+  its *direction*: the hub **shrinks** to its components, and the **array** is what grows beyond the
+  board.
+- **The new record is [ADR-063](063-decouple-board-area-from-array-overhang.md) (Proposed)**, which
+  carries these dispositions as decisions and holds the pitch open with the same measurement.
+
+**Order nothing. No outline, thickness or pitch is frozen. No board, schematic, netlist or
+footprint is changed by this section.**
+
