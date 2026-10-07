@@ -19,10 +19,15 @@ force-push; push branch to `github` then `ngit` separately; verify with `git ls-
 - [x] Write `docs/analysis/wing-electrical.md` (sections 1–10, comparison tables, 8
       `TODO(unverified)` items).
 - [x] Write `REPORT.md`.
-- [ ] Commit on `analysis/wing-electrical`.
-- [ ] Push to `github` (never main).
-- [ ] Push to `ngit` (never main).
-- [ ] `git ls-remote` both remotes; paste local/github/ngit SHAs.
+- [x] Commit on `analysis/wing-electrical` (`c32c5ec`).
+- [x] Push to `github` (exit 0, new branch; never main).
+- [x] Push to `ngit` (exit 0, new branch; never main; one damus/ nos.lol state-event relay
+      failed but relay.ngit.dev accepted — exit 0).
+- [x] `git ls-remote` both remotes — observed:
+      LOCAL  = c32c5ecff0daa989ea57ec73da451081522f9386
+      GITHUB = c32c5ecff0daa989ea57ec73da451081522f9386  ✓
+      NGIT   = c32c5ecff0daa989ea57ec73da451081522f9386  ✓
+      main on BOTH remotes still 76dd04d88c4b14c2468c80d5e77cb921b1c356a0 (untouched).
 
 ## Notes / honesty
 
