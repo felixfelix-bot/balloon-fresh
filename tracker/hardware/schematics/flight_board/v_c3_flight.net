@@ -1,7 +1,7 @@
 (export (version "E")
   (design
-    (source "v_c3_flight.kicad_sch")
-    (date "2026-10-07T01:43:25+0200")
+    (source "/home/c03rad0r/worktrees/bf-pin-tieoffs/tracker/hardware/schematics/flight_board/v_c3_flight.kicad_sch")
+    (date "2026-10-07T02:19:12+0200")
     (tool "Eeschema 9.0.8+dfsg-1")
     (sheet (number "1") (name "/") (tstamps "/")
       (title_block
@@ -685,14 +685,14 @@
         (pin (num "7") (name "BUSY") (type "passive"))
         (pin (num "8") (name "GND") (type "passive"))
         (pin (num "9") (name "ANT") (type "passive"))
-        (pin (num "10") (name "PAD10") (type "passive"))
+        (pin (num "10") (name "ANT_2G4") (type "passive"))
         (pin (num "11") (name "GND") (type "passive"))
         (pin (num "12") (name "GND") (type "passive"))
-        (pin (num "13") (name "PAD13") (type "passive"))
+        (pin (num "13") (name "VTCXO") (type "passive"))
         (pin (num "14") (name "RESET") (type "passive"))
         (pin (num "15") (name "DIO0") (type "passive"))
-        (pin (num "16") (name "PAD16") (type "passive"))
-        (pin (num "17") (name "PAD17") (type "passive"))
+        (pin (num "16") (name "DIO8") (type "passive"))
+        (pin (num "17") (name "DIO7") (type "passive"))
         (pin (num "18") (name "GND") (type "passive")))))
   (libraries
     (library (logical "Connector")
@@ -712,7 +712,7 @@
     (library (logical "Sensor")
       (uri "/usr/share/kicad/symbols/Sensor.kicad_sym"))
     (library (logical "balloon_flight")
-      (uri "balloon_flight.kicad_sym")))
+      (uri "/home/c03rad0r/worktrees/bf-pin-tieoffs/tracker/hardware/schematics/flight_board/balloon_flight.kicad_sym")))
   (nets
     (net (code "1") (name "+3V3") (class "Default")
       (node (ref "C1") (pin "1") (pintype "passive"))

@@ -82,9 +82,9 @@ BARO_FOOTPRINT = "Package_LGA:LGA-8_3x5mm_P1.25mm"
 LR2021_PINS = [
     ("1", "VCC"), ("2", "GND"), ("3", "MISO"), ("4", "MOSI"),
     ("5", "SCK"), ("6", "NSS"), ("7", "BUSY"), ("8", "GND"),
-    ("9", "ANT"), ("10", "PAD10"), ("11", "GND"), ("12", "GND"),
-    ("13", "PAD13"), ("14", "RESET"), ("15", "DIO0"), ("16", "PAD16"),
-    ("17", "PAD17"), ("18", "GND"),
+    ("9", "ANT"), ("10", "ANT_2G4"), ("11", "GND"), ("12", "GND"),
+    ("13", "VTCXO"), ("14", "RESET"), ("15", "DIO0"), ("16", "DIO8"),
+    ("17", "DIO7"), ("18", "GND"),
 ]
 
 # Pads declared deliberately unconnected (INTENTIONAL rows of the audit).
@@ -92,15 +92,29 @@ INTENTIONAL_NC = {
     ("J1", "6"), ("U3", "4"), ("U3", "5"), ("U3", "13"),
     ("U3", "14"), ("U3", "16"), ("U3", "17"),
 }
-# Pads in the audit whose GAP verdict is still open (PCB-S0b owns the ruling).
-DECLARED_GAP = {
-    ("U2", "10"): "TODO(unverified): LoRa2021 Gen4 pad 10 function / termination",
-    ("U2", "13"): "TODO(unverified): LoRa2021 Gen4 pad 13 function / termination",
-    ("U2", "16"): "TODO(unverified): LoRa2021 Gen4 pad 16 function / termination",
-    ("U2", "17"): "TODO(unverified): LoRa2021 Gen4 pad 17 function / termination",
-    ("U3", "15"): "TODO(unverified): MAX-M10S VIO_SEL tie-off required",
-    ("U3", "18"): "TODO(unverified): MAX-M10S ~SAFEBOOT inactive level tie-off required",
-    ("U4", "4"): "TODO(unverified): TPS7A02 pin 4 function / tie-off",
+# Pads left unconnected because a vendor document PRESCRIBES "leave
+# open/unconnected" for them (resolved from TODO(unverified) in brief 6).
+# Each value cites the document + section that prescribes the treatment.
+RESOLVED_NC = {
+    ("U2", "10"): "NC: 2.4G/S-band antenna port, unused RF pin -> leave "
+                  "unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 "
+                  "DS v2.2 s23.5 'Unused RF pins: Leave unconnected')",
+    ("U2", "13"): "NC: VTCXO is a TCXO supply OUTPUT, no external TCXO on "
+                  "board -> leave unconnected (NiceRF LoRa2021 DS V1.3 s7; "
+                  "Semtech LR2021 DS v2.2 s1.9.2/s1.9.3)",
+    ("U2", "16"): "NC: DIO8 multipurpose I/O, unused DIO -> leave "
+                  "unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 "
+                  "DS v2.2 s23.5 'Unused DIOs: Leave unconnected')",
+    ("U2", "17"): "NC: DIO7 multipurpose I/O, unused DIO -> leave "
+                  "unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 "
+                  "DS v2.2 s23.5 'Unused DIOs: Leave unconnected')",
+    ("U3", "15"): "NC: VIO_SEL, 3.3 V design -> leave open "
+                  "(u-blox MAX-M10S IM UBX-20053088 R05 s4.1.2, Table 1)",
+    ("U3", "18"): "NC: SAFEBOOT_N, normal operation -> leave open "
+                  "(u-blox MAX-M10S IM UBX-20053088 R05 Table 1, s3.2.3.2)",
+    ("U4", "4"): "NC: no-connect pin, not internally connected -> connect "
+                 "to GND or leave floating (TI TPS7A02 DS SBVS277C "
+                 "Table 5-1)",
 }
 
 # Functional column layout: (column index, ordered refs)
@@ -447,7 +461,7 @@ def emit(footprints):
                     % (title, fmt(round(col_x[ci] / 1.27) * 1.27), uid()))
 
     power_syms, wires, labels, ncs, flags = [], [], [], [], []
-    stats = dict(pins=0, nets=set(), labels=0, power=0, nc=0, gap=0, unnamed=0)
+    stats = dict(pins=0, nets=set(), labels=0, power=0, nc=0, resolved=0, unnamed=0)
 
     for r in resolved:
         ref, fp, lib_id = r["fp"]["ref"], r["fp"], None
@@ -492,10 +506,10 @@ def emit(footprints):
             if pad["net"] == "":
                 ncs.append((px, py))
                 stats["nc"] += 1
-                if key in DECLARED_GAP:
-                    stats["gap"] += 1
-                    notes.append((px, py, "GAP %s.%s: %s"
-                                  % (ref, pad["num"], DECLARED_GAP[key])))
+                if key in RESOLVED_NC:
+                    stats["resolved"] += 1
+                    notes.append((px, py, "RESOLVED %s.%s: %s"
+                                  % (ref, pad["num"], RESOLVED_NC[key])))
                 elif key not in INTENTIONAL_NC:
                     notes.append((px, py, "NETLESS %s.%s: unclassified"
                                   % (ref, pad["num"])))
@@ -594,7 +608,7 @@ def emit(footprints):
         body.append('\t(no_connect\n\t\t(at %s %s)\n\t\t(uuid "%s")\n\t)\n'
                     % (fmt(x), fmt(y), uid()))
 
-    # gap / netless annotations: honest, visible, cites the audit
+    # resolved / netless annotations: honest, visible, cites the vendor docs
     seen_notes = set()
     for (x, y, txt) in notes:
         if txt in seen_notes:
@@ -671,7 +685,7 @@ def main():
     print("symbols placed:", len(resolved))
     print("PCB pads (num):", stats["pins"])
     print("unnamed pads  :", stats["unnamed"], "(mechanical, cannot be netted)")
-    print("no_connect    :", stats["nc"], "of which declared GAP:", stats["gap"])
+    print("no_connect    :", stats["nc"], "of which resolved/annotated:", stats["resolved"])
     print("non-power fins:", stats["labels"])
     print("power pins    :", stats["power"])
     print("pwr_flags     :", stats["flags"])

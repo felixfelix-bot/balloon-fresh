@@ -12,7 +12,7 @@ numbers and the script exits non-zero if any gate fails.
                                 and every PCB net exists in the schematic
   GATE 3  node parity BOTH WAYS: per net, the (ref,pin) sets are equal
   GATE 4  netless pads:         27 netless pads, each classified
-                                INTENTIONAL_NC / DECLARED_GAP / unnamed
+                                INTENTIONAL_NC / RESOLVED_NC / unnamed
                                 mechanical, 0 unclassified (ties into PCB-S0b)
   GATE 5  pad coverage:         every numbered PCB pad has a symbol pin
                                 (build_flight_sch.py exits 2 otherwise)
@@ -176,11 +176,11 @@ for fp in B.parse_pcb(B.PCB):
             netless.append((fp["ref"], pad["num"]))
 unnamed = [k for k in netless if k[1] == ""]
 intentional = [k for k in netless if k in B.INTENTIONAL_NC]
-declared = [k for k in netless if k in B.DECLARED_GAP]
+declared = [k for k in netless if k in B.RESOLVED_NC]
 unclassified = [k for k in netless if k[1] and k not in B.INTENTIONAL_NC
-                and k not in B.DECLARED_GAP]
+                and k not in B.RESOLVED_NC]
 print("== GATE 4: netless pads classified ==")
-print("   total=%d  unnamed-mechanical=%d  INTENTIONAL=%d  DECLARED_GAP=%d"
+print("   total=%d  unnamed-mechanical=%d  INTENTIONAL=%d  RESOLVED_NC=%d"
       "  unclassified=%d" % (len(netless), len(unnamed), len(intentional),
                              len(declared), len(unclassified)))
 if unclassified:

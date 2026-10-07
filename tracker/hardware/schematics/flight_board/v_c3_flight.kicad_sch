@@ -242,7 +242,7 @@
 			(pin passive line
 				(at 13.97 -6.35 180)
 				(length 2.54)
-				(name "PAD10"
+				(name "ANT_2G4"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -296,7 +296,7 @@
 			(pin passive line
 				(at 13.97 1.27 180)
 				(length 2.54)
-				(name "PAD13"
+				(name "VTCXO"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -350,7 +350,7 @@
 			(pin passive line
 				(at 13.97 8.89 180)
 				(length 2.54)
-				(name "PAD16"
+				(name "DIO8"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -368,7 +368,7 @@
 			(pin passive line
 				(at 13.97 11.43 180)
 				(length 2.54)
-				(name "PAD17"
+				(name "DIO7"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -9675,7 +9675,7 @@
 		(at 152.4 53.34)
 		(uuid "f7c6cb3e-b01f-52c4-a05c-ac1935e35fb6")
 	)
-	(text "GAP U4.4: TODO(unverified): TPS7A02 pin 4 function / tie-off"
+	(text "RESOLVED U4.4: NC: no-connect pin, not internally connected -> connect to GND or leave floating (TI TPS7A02 DS SBVS277C Table 5-1)"
 		(exclude_from_sim no)
 		(at 31.75 119.38 0)
 		(effects
@@ -9686,7 +9686,7 @@
 		)
 		(uuid "77babcfc-8d5d-5927-b271-e73736d35048")
 	)
-	(text "GAP U2.10: TODO(unverified): LoRa2021 Gen4 pad 10 function / termination"
+	(text "RESOLVED U2.10: NC: 2.4G/S-band antenna port, unused RF pin -> leave unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 DS v2.2 s23.5 'Unused RF pins: Leave unconnected')"
 		(exclude_from_sim no)
 		(at 132.08 52.07 0)
 		(effects
@@ -9697,7 +9697,7 @@
 		)
 		(uuid "c60dd3b3-13db-539c-9e73-ae7fc925045d")
 	)
-	(text "GAP U2.13: TODO(unverified): LoRa2021 Gen4 pad 13 function / termination"
+	(text "RESOLVED U2.13: NC: VTCXO is a TCXO supply OUTPUT, no external TCXO on board -> leave unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 DS v2.2 s1.9.2/s1.9.3)"
 		(exclude_from_sim no)
 		(at 132.08 44.45 0)
 		(effects
@@ -9708,7 +9708,7 @@
 		)
 		(uuid "0c6f0949-2622-57b9-9ac8-c8ffed0373eb")
 	)
-	(text "GAP U2.16: TODO(unverified): LoRa2021 Gen4 pad 16 function / termination"
+	(text "RESOLVED U2.16: NC: DIO8 multipurpose I/O, unused DIO -> leave unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 DS v2.2 s23.5 'Unused DIOs: Leave unconnected')"
 		(exclude_from_sim no)
 		(at 132.08 36.83 0)
 		(effects
@@ -9719,7 +9719,7 @@
 		)
 		(uuid "003f4dd1-d115-5977-8da0-e27924ab7ddc")
 	)
-	(text "GAP U2.17: TODO(unverified): LoRa2021 Gen4 pad 17 function / termination"
+	(text "RESOLVED U2.17: NC: DIO7 multipurpose I/O, unused DIO -> leave unconnected (NiceRF LoRa2021 DS V1.3 s7; Semtech LR2021 DS v2.2 s23.5 'Unused DIOs: Leave unconnected')"
 		(exclude_from_sim no)
 		(at 132.08 34.29 0)
 		(effects
@@ -9730,7 +9730,7 @@
 		)
 		(uuid "6acfadf5-b615-50f5-89cc-2c3aba26cf5f")
 	)
-	(text "GAP U3.15: TODO(unverified): MAX-M10S VIO_SEL tie-off required"
+	(text "RESOLVED U3.15: NC: VIO_SEL, 3.3 V design -> leave open (u-blox MAX-M10S IM UBX-20053088 R05 s4.1.2, Table 1)"
 		(exclude_from_sim no)
 		(at 153.67 58.42 0)
 		(effects
@@ -9741,7 +9741,7 @@
 		)
 		(uuid "64a07d5f-965d-567c-85f5-5c045cada518")
 	)
-	(text "GAP U3.18: TODO(unverified): MAX-M10S ~SAFEBOOT inactive level tie-off required"
+	(text "RESOLVED U3.18: NC: SAFEBOOT_N, normal operation -> leave open (u-blox MAX-M10S IM UBX-20053088 R05 Table 1, s3.2.3.2)"
 		(exclude_from_sim no)
 		(at 153.67 53.34 0)
 		(effects
