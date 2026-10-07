@@ -25,7 +25,7 @@ stratosphere.
 | # | Part | Rated minimum | Mission minimum | Margin | Source |
 |---|------|---------------|-----------------|--------|--------|
 | 1 | Supercapacitor bank (2× 3.3 F 2.7 V series, C_CAP) | **-40 °C** | -60 °C | **20 K below rating** | `docs/adr/006-supercapacitor-power.md` line 63 (`-40C bis +70C`); agreed by `docs/component-guide.md` line 84 (`Supercaps funktionieren bis -40 C`) |
-| 2 | LR2021 radio (U2, LoRa2021_Gen4) | **-40 °C** | -60 °C | **20 K below rating** | `docs/assets/lr2021/README.md` line 137 (LR2021 Operating Temperature `-40 / 25 / 85 C`) — TODO(unverified): this path was not present in the worktree at time of writing; line 137 per the task brief |
+| 2 | LR2021 radio (U2, LoRa2021_Gen4) | **-40 °C** | -60 °C | **20 K below rating** | `docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf` §3.2, Table 3-2 (`Top` = -40 … +85 °C ambient; `Tmaxj` 105 °C; `Tmr` -55 … +125 °C) — in-tree Semtech datasheet, verified with `pdftotext -layout` (see Addendum; supersedes the earlier `docs/assets/lr2021/README.md:137` reference) |
 
 Both parts are 20 K below the mission minimum. Suitability of the supercap was
 already an open item: `docs/FLIGHT-TEST-READINESS-2026-07-29.md` line 70
@@ -110,9 +110,14 @@ derived from the real 28-footprint flight PCB
 (`tracker/hardware/output/v8i_krt_gnss.kicad_pcb`) and the MS5611 variant,
 seeded as `tracker/hardware/tools/bom_v8i_gnss.csv`.
 
+> **Superseded by the Addendum below (2026-10-07).** `TODO(unverified)` rows no
+> longer exist in the DB: every retained rating is sourced to a document, and
+> every row that could not be sourced was deleted so the gate returns
+> CANNOT-VERIFY for it.
+
 | Ref | Part / value | Rated min | Source |
 |-----|--------------|-----------|--------|
-| U2 | LoRa2021_Gen4 (LR2021 radio) | -40 °C | `docs/assets/lr2021/README.md` line 137 — TODO(unverified) path |
+| U2 | LoRa2021_Gen4 (LR2021 radio) | -40 °C | `docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf` §3.2 "Operating Range (LR20xx)", Table 3-2 (`Top` ambient -40 … +85 °C) |
 | C_CAP | 1F_5.5V supercap (bank: 2× 3.3 F series) | -40 °C | `docs/adr/006-supercapacitor-power.md` line 63 |
 | U1 | ESP32-C3-WROOM-02 | -40 °C | TODO(unverified): Espressif datasheet thermal section |
 | U3 | MAX-M10S (GNSS) | -40 °C | TODO(unverified): u-blox datasheet operating temperature |
@@ -148,10 +153,107 @@ CANNOT-VERIFY under `--strict-provenance` and orders them after any hard FAIL.
   `--strict-provenance` demotes exactly those to CANNOT-VERIFY. Tightening the
   seed ratings to real datasheets is follow-up work, and the gate is the thing
   that will hold the line when it happens.
+  *Addendum note (2026-10-07): the seed `-55 °C` passives were invented
+  "typical range" guesses and have been deleted. The systemic finding stands and
+  is stated, with the gate's own output, in the Addendum below.*
 * Closing the two sourced FAILs requires part selection or an explicit
   accepted-and-characterised decision, tracked as follow-up work.
 * Cold is documented as *beneficial* for the RF front end and the solar array,
   so future "keep it warm" proposals must argue against that, not for it.
+
+## Addendum (2026-10-07): ratings DB hardened — no invented ratings, fail-closed
+
+### What was wrong
+
+The seed ratings DB shipped 24 rows, 20 of them `TODO(unverified)` — and most of
+those 20 were not *unverified citations* but **invented "typical range"
+claims**: `2.54mm pin header typical range`, `0603 LED typical range`,
+`AEC-Q200-grade 0402 thick-film resistor typical range`, `X7R 0402 MLCC typical
+range`, `AEC-Q200-grade 0402 jumper typical range`, `mechanical`. A guessed
+number that reads like a rating is worse than no number: in plain (non-strict)
+mode every one of those guesses drove a **FAIL verdict off a fabrication** (25
+FAILs against the 2 the ADR names), burying the real headline in noise the gate
+could not distinguish from evidence.
+
+### The rule now enforced
+
+* A rating is retained only if it cites a **specific document + table/section/page**
+  for a part whose identity is fixed by the value recorded on the BOM.
+* A row that cannot be sourced is **deleted**, so the gate returns
+  **CANNOT-VERIFY** naming that part — the designed fail-closed outcome. No
+  substitute guess, and the mission minimum (-60 °C) is unchanged.
+* `--strict-provenance` is the **honest mode** and is the mode to use for a real
+  qualification call. It now also fails closed on any `source` that reads as a
+  class guess (contains "typical"), so an invented rating cannot silently drive a
+  PASS or a FAIL even if one is re-added later
+  (`bom_temp_gate._provenance_unverified`).
+
+### Retained ratings (every row sourced)
+
+| Key | Min | Max | Source (document · location) |
+|-----|-----|-----|------------------------------|
+| LoRa2021_Gen4 (U2) | -40 °C | +85 °C | `docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf` — Semtech DS.LR20xx, Final Datasheet Rev. 2.1 (13/04/26), **p.37 §3.2 "Operating Range (LR20xx)", Table 3-2**: `Top` ambient operating temperature -40 … +85 °C (`Tmaxj` max junction 105 °C; `Tmr` storage -55 … +125 °C) |
+| 1F_5.5V / 3.3F / 1.65F (C_CAP bank) | -40 °C | +70 °C | `docs/adr/006-supercapacitor-power.md:63` (`-40C bis +70C`) |
+| ESP32-C3-WROOM-02 (U1) | -40 °C | +85 °C | Espressif ESP32-C3-WROOM-02 Datasheet **v1.7**, §6.2 "Recommended Operating Conditions", **Table 6-2**: `TA` min -40 °C (module ships as -40…85 °C or -40…105 °C variant, §1) |
+| MAX-M10S (U3) | -40 °C | +85 °C | u-blox MAX-M10S data sheet **UBX-20035208-R08**, §4.2 "Operating conditions", **Table 13 "General operating conditions"**: `Topr` -40 … +85 °C |
+| BMP280 (U5, v8i) | -40 °C | +85 °C | Bosch Sensortec BMP280 data sheet **BST-BMP280-DS001-26** (rev 1.26, Oct 2021), **Table 2 "Parameter specification"**: operating temperature range `TA` (operational) -40 … +85 °C |
+| TPS7A02 (U4) | -40 °C | +125 °C | TI TPS7A02 data sheet **SBVS277C** (rev Sep 2022), §6.3 "Recommended Operating Conditions": `TJ` operating junction temperature -40 … +125 °C |
+| DNP (C_SH1/C_SH2) | n/a | n/a | not populated — no rating applicable |
+
+### Deleted ratings (unsourceable → CANNOT-VERIFY, by design)
+
+| Value (refs) | Why deleted |
+|---|---|
+| 100k / 10k / 330R / 0R (0402) | invented class claim "AEC-Q200-grade 0402 thick-film resistor/jumper typical range"; BOM records no MPN |
+| 100nF (0402) / 10uF (0603) | invented class claim "X7R 0402 / X5R-X7R 0603 MLCC typical range"; no MPN |
+| LED_RED (0603) | invented class claim "0603 LED typical range"; no MPN |
+| Debug_Header / Prog_Header / Solar_In | invented class claim "2.54 mm pin header typical range"; no MPN |
+| MountingHole (MNT1–4) | "mechanical" carries no document; no active silicon, and the gate deliberately has no N/A escape hatch |
+| U.FL / U.FL_GNSS (ANT1/2) | "U.FL" is a multi-vendor form factor (Hirose / I-PEX MHF / Amphenol) with no MPN; no datasheet retrievable and none filed in-repo |
+| BAT54 (D1) | generic multi-vendor part number (Diodes Inc / onsemi / Nexperia / Vishay) whose ratings differ by vendor; BOM records no vendor MPN. The Diodes Incorporated datasheet (DS11005 Rev. 34-2, "Thermal Characteristics": `TJ,TSTG` -65 … +150 °C) was located but is not authoritative for an unknown fitted vendor |
+| MS5611-01BA (U5, v8j) | sole-source TE part, but its datasheet could not be retrieved in this environment and is not filed in-repo; left at CANNOT-VERIFY rather than guessed |
+
+### The LR2021 (U2) citation is closed
+
+The previous row cited `docs/assets/lr2021/README.md:137` with the note "path not
+present in this worktree". That reference is **replaced** by the in-tree primary
+source — `docs/LR2021_LR2022_LR2012_Datasheet_Rev2.1.pdf`, §3.2, Table 3-2
+(`Top` = -40 … +85 °C ambient; `Tmaxj` = 105 °C; `Tmr` = -55 … +125 °C) —
+verified with `pdftotext -layout`. The "path not present" caveat is withdrawn:
+the U2 rating is now a hard, cited FAIL, not a TODO.
+
+### Systemic finding — this is not two offenders
+
+Run against the real 28-footprint flight board
+`/home/c03rad0r/worktrees/v8j-ms5611-reroute/tracker/hardware/output/v8i_krt_gnss.kicad_pcb`
+(397,725 bytes), the gate's own output shows the pattern is board-wide, not two
+parts. With the **seed DB** (plain mode, before this addendum):
+
+```
+FAIL -- parts used below their rated minimum:   (25 of 28 parts)
+  ... 0402/0603 passives   rated_min -55C ABOVE mission_min -60C by 5 K   (typical-range guesses)
+  ... ICs/connectors       rated_min -40C ABOVE mission_min -60C by 20 K
+RESULT: FAIL (25 part(s) above mission minimum; 2 cannot-verify)
+```
+
+That is the headline: against the -60 °C mission the **passives commonly sit 5 K
+below their rated minimum and the ICs/headers 20 K below** — most of the board
+sits 5–20 K below its rated minimum, not two parts. After hardening, plain and
+`--strict-provenance` agree (every retained rating is sourced):
+
+```
+FAIL -- 6 parts, all 20 K below rating:
+  U1 ESP32-C3-WROOM-02 · U2 LoRa2021_Gen4 · U3 MAX-M10S · U4 TPS7A02 · U5 BMP280 · C_CAP 1F_5.5V
+CANNOT-VERIFY -- 22 parts without a sourced rating (named: all passives, headers, U.FL, BAT54, DNP)
+RESULT: FAIL (6 part(s) above mission minimum; 22 cannot-verify)
+```
+
+The two **headline** offenders the ADR identifies remain the worst cases and are
+the two whose ratings were already document-sourced: the supercapacitor bank
+(-40 °C, `docs/adr/006-supercapacitor-power.md:63`) and the LR2021 radio (-40 °C,
+in-tree datasheet Table 3-2). They are the worst cases, **not the whole story**:
+the systemic fact is that the -60 °C mission sits roughly 5 K below the common
+-55 °C passive rating and 20 K below the common -40 °C IC/module rating.
 
 ## Related
 
