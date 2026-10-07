@@ -1,5 +1,5 @@
 # ESP32-S3 build defaults for balloon-tracker
-# S3 boards: 16MB flash, 8MB PSRAM (octal)
+# S3 boards: 8MB flash, 8MB PSRAM (octal) — fitted part = ESP32-S3-WROOM-1U-N8R8
 # GPIO pins are same as C3 (all valid via S3 GPIO matrix — no conflicts)
 # See sdkconfig.defaults for the C3 baseline.
 
@@ -41,9 +41,9 @@ CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 # ── Deep sleep ──
 CONFIG_ESP_SYSTEM_DEEP_SLEEP_WAKEUP_DELAY=1000
 
-# ── Flash: 16MB (S3 boards have 16MB) ──
-CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
-CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+# ── Flash: 8MB (the fitted part is ESP32-S3-WROOM-1U-**N8**R8 = 8MB flash) ──
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="8MB"
 
 # ── PSRAM: 8MB octal PSRAM on S3 boards ──
 CONFIG_SPIRAM=y
