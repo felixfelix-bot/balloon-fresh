@@ -359,6 +359,33 @@ all.** Two caveats, stated so they are not hidden:
   a 30 ppm part (72 kHz) would exceed the two slowest rates. Another reason not to fly a
   bare crystal at 2.4 GHz.
 
+> **CORRECTION (2026-10-07, appended by ADR-057) — the 2.4 GHz path is NOT F33-referenced.**
+> The caveat above (`the 2.4 GHz path is **RX on the F33**, whose internal 0.5 ppm TCXO
+> gives 1.2 kHz … TCXO-referenced either way`) is **stale and wrong for the flight
+> configuration**. Per **ADR-034 D4** and `V9-RADIO-SITE-MATRIX`, the band split is:
+> **433 MHz downlink = TX on the `LoRa2021F33-2G4`** (internal 0.5 ppm TCXO, non-overridable —
+> see §A2), and **2.4 GHz uplink = RX on the bare `LoRa2021`**, which is **crystal-only**
+> (no TCXO, and pad 13 `VTCXO` is an output, not a clock input — see §A4). So the 2.4 GHz
+> receive path in this design **is exactly the bare-crystal case** the caveat below warns
+> against, and it is **not** TCXO-referenced "either way".
+>
+> Two consequences, both now normative in **ADR-057** (`docs/adr/057-flrc-drift-strategy.md`,
+> Status Proposed):
+> 1. **FLRC governs, not LoRa.** This document's §C1 tolerance half is a **LoRa** analysis
+>    (±25 %BW / ±33 %BW, SF12 ±100 ppm). The operator flies **FLRC**. FLRC's tolerance is
+>    **band-independent in absolute Hz**, so the same Hz budget is ~5.7× tighter in ppm at
+>    2.4 GHz than at 433 MHz, and the 2.4 GHz bare-crystal uplink is **outside budget**.
+> 2. **A crystal receiver is not safe by default.** The FLRC budget is the error
+>    *between* Tx and Rx, so a bare-crystal receiver consumes the **same** budget a
+>    bare-crystal transmitter would. Any framing that treats the RX side as tolerant is
+>    corrected in ADR-057 §6.2.
+>
+> **Note the internal agreement:** the FLRC figures quoted in the bullet above from
+> `LR2021 … Rev2.1` Table 3-13 (**±70 kHz @ 650 kbps**, ±50 kHz @ 520 kbps) land inside the
+> range independently extracted from Semtech **AN1200.101** Tables 3/4/5
+> (**±64–76 kHz @ 650 kbps**) in ADR-057. Two unrelated sources agreeing is the reason
+> ADR-057 treats the number as load-bearing rather than indicative.
+
 ### C2 — The real risk is time/phase, and GPS fixes it (zero grams, zero watts)
 
 Reading the phase/time records — `docs/adr/017-phase-sync-via-reference-clocks.md`,
