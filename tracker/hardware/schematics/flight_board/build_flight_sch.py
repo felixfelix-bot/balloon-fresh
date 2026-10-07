@@ -833,7 +833,9 @@ def v9_custom_symbols():
             "balloon_flight_v9:LoRa2021F33_2G4",
             "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, "
             "built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from "
-            "docs/DUAL-VARIANT-DESIGN.md; land pattern from commit d5a2e47.",
+            "docs/DUAL-VARIANT-DESIGN.md; pad centres from the vendor land "
+            "file (d5a2e47), pad SIZE derived from the operator-supplied "
+            "castellation hole diameter 0.80 +- 0.1 mm (datasheet s9 p8).",
             "https://www.nicerf.com/pdf/lora2021f33-2g4-2w-high-power-high-speed-"
             "multi-band-lr2021-wireless-communication-module-v1.1.pdf",
             V9_F33_PINS),
@@ -2143,8 +2145,15 @@ def v9_emit():
                  % (f33_hit, len(f33_vendor["pads"]), f33_near, f33_worst))
     print("F33 land pattern: %s" % F33GEN.describe(F33GEN.signature(f33_body)))
     print("                  %d/%d pads coincident with the vendor land file "
-          "(nearest %.3f mm); land size TODO(unverified)"
-          % (f33_hit, len(f33_vendor["pads"]), f33_near))
+          "(nearest %.3f mm); land size %g x %g mm DERIVED from the "
+          "operator-supplied"
+          % (f33_hit, len(f33_vendor["pads"]), f33_near,
+             F33GEN.LAND_LENGTH_MM, F33GEN.LAND_WIDTH_MM))
+    print("                  castellation hole diameter D = %g +/- %g mm "
+          "(datasheet s9 p8, read by the operator); land = D + 2*%g mm "
+          "solder-fillet margin."
+          % (F33GEN.CASTELLATION_D_MM, F33GEN.CASTELLATION_D_TOL_MM,
+             F33GEN.LAND_FILLET_MARGIN_MM))
     fp_sources = [
         (None, "LoRa2021F33_2G4", f33_body),
         (os.path.join(V9_SRC_PRETTY, "LoRa2021_Castellated.kicad_mod"),

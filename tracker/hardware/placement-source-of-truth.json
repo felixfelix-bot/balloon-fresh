@@ -158,12 +158,19 @@
   ],
   "referee": "placement_guard.py --gate25 + gate25_check.py (0 pad-box overlaps at 0.2 mm, courtyards_overlap 0, 0 segments, fp >= 10)",
   "frozen_artefact": "hub_board_v9.kicad_pcb",
-  "sha256": "2f0a66733b7a853b0052062e1e73833e7194fc7c38dcc257a749965314ab9238",
+  "sha256": "07b0683bcfa967a25840f2855a4d8bd657d28d1785b4db864614fc3c611a3217",
   "reproducible_input": "output/hub_board_v9_seed.kicad_pcb",
-  "reproducible_input_sha256": "8748e7587d596dbd0f950b85e08f4c0c035a78ea9c9506a7fe5e41000e9d1533",
+  "reproducible_input_sha256": "06ac5c92baa3214f11d89a30033e5815b07a07f3376f67f1d76256b55a832abf",
   "outline": "103.0 x 103.0 mm (ADR-051 s2.3 implied square / ADR-055 D5 destination)",
   "stage": "S0 PLACEMENT ONLY - 0 segments, 0 vias, unrouted by design",
   "decided_by": "feat/v9-hub-placement, 2026-10-07",
+  "superseded_sha256": {
+    "sha256": "2f0a66733b7a853b0052062e1e73833e7194fc7c38dcc257a749965314ab9238",
+    "input_sha256": "8748e7587d596dbd0f950b85e08f4c0c035a78ea9c9506a7fe5e41000e9d1533",
+    "superseded_by": "fix/f33-land-size, 2026-10-07",
+    "why": "The F33 castellated pad LAND SIZE was re-derived from the operator-supplied castellation hole diameter D = 0.80 +/- 0.10 mm (was the guess 2.0 x 1.0 mm).  The frozen board embeds that footprint, so its bytes change even though the placement does not move."
+  },
+  "f33_land_size_change": "RE-VERIFICATION ONLY.  Only U2 (the F33 itself) shifted, by +0.15 mm in y (12.00 -> 12.15), through the generator's own pad-box proxy; the other 38 footprints are byte-identical in position AND geometry, no component left its floorplan seat, and the S0 gates still hold (pad overlaps 0, courtyard overlaps 0).  This is NOT a re-place and NOT a re-route.  The board rebuilds byte-identically twice from the same corrected footprint.  See docs/f33-module/F33-LANDPATTERN-VERIFICATION.md s11.",
   "_note": "Any later placement change goes through the same chain: `python3 build_hub_board_v9.py --publish`.  Do not add a nudge script or a new coordinate table.  The 103.0 mm outline is a PLACEMENT-STAGE floorplan, not a frozen fab outline: ADR-051 and ADR-055 are Status Proposed and the array AREA is the operator's open duty choice."
  }
 }

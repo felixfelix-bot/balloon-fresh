@@ -54,7 +54,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; land pattern from commit d5a2e47."
+		(property "Description" "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; pad centres from the vendor land file (d5a2e47), pad SIZE derived from the operator-supplied castellation hole diameter 0.80 +- 0.1 mm (datasheet s9 p8)."
 			(at 0 0 0)
 			(effects
 				(font
