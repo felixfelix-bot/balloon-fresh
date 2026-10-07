@@ -65,8 +65,13 @@ Every figure is labelled **LIVE** (read from a live JLCPCB page this session), *
 (arithmetic shown), or **TODO(unverified)/ESTIMATE** (explicitly not verified). The 250 mm-outline
 price, the isolated qty curve and the hub quote are **not** verified — the hub has no PCB to quote.
 
-## Push verification
-Recorded after the pushes are observed (see below / git log):
-- local SHA: `<filled after push>`
-- github SHA: `<filled after push>`
-- ngit SHA: `<filled after push>`
+## Push verification (observed with `git ls-remote`)
+Delivery commit (the analysis doc + PROGRESS/REPORT):
+- **local  SHA: `52aa7b0345a41c000ed8b278560defa78e194f3e`**
+- **github SHA: `52aa7b0345a41c000ed8b278560defa78e194f3e`** (`git ls-remote github refs/heads/analysis/wing-fab-cost`)
+- **ngit   SHA: `52aa7b0345a41c000ed8b278560defa78e194f3e`** (`git ls-remote ngit refs/heads/analysis/wing-fab-cost`)
+
+All three match. Pushed separately to `github` then `ngit` (`--no-verify`); no force-push.
+`github refs/heads/main` still at `76dd04d88c4b14c2468c80d5e77cb921b1c356a0` — **main untouched**.
+This REPORT.md records the SHAs of the preceding delivery commit; the branch tip is the
+follow-up commit that added this section.
