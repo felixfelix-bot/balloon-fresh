@@ -1,68 +1,35 @@
-# Task report — ADR impact audit for ADR-034/035, 2026-10-07
+# REPORT — ADR-038 (Wi-Fi/BT disabled on v9 ESP32-S3)
 
-## What was done
+## Authoring
+- Branch: `adr/wifi-bt-disabled` on worktree `/home/c03rad0r/worktrees/bf-adr-wifi`.
+- Base: observed tip of `adr/radioband-tdm` (github and ngit both returned `8b46f6873f815425acb7203da1d22685e954d404`).
+- Files created/modified:
+  - `docs/adr/038-wifi-bt-disabled.md` (new)
+  - `docs/adr/029-dual-band-flight-board.md` (amended line 261 config row)
+  - `PROGRESS.md` (new)
+  - `REPORT.md` (new)
+- Commit SHA (local, before push): **COMMIT_SHA_TBD** — this report will be updated after push.
 
-Audited the two new Architecture Decision Records (`ADR-034` band split,
-`ADR-035` TDM schedule) on branch `adr/radioband-tdm` for collisions with
-standing decisions. Added a `## Relationship to standing decisions` section
-to each record, then committed and pushed to `github` and `ngit`.
+## Datasheet verification (cited)
+- ESP32-S3 Series Datasheet v2.2, §1: ESP32-S3 is an SoC *"with integrated 2.4 GHz Wi-Fi and Bluetooth® 5 (LE)"* — PHY is on-die.
+- ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, §1.2: all variants are Wi-Fi+BT LE modules; no radio-free variant exists.
+- Same datasheet §10.2: `-1U` connector is U.FL/MHF I/AMC first-gen compatible; module ships without antenna.
+- Power figures (ESP32-S3 Series Datasheet v2.2, §5.6.2): Wi-Fi TX 802.11b@21dBm=340mA peak; RX=88-91mA; BLE TX@21dBm=335mA; modem-sleep=13.2-66.7mA; light-sleep=240µA; deep-sleep=7-8µA.
 
-The existing one-line supersede pointer in `ADR-029`
-(`docs/adr/029-dual-band-flight-board.md`) was already present from the prior
-commit and correctly records that ADR-034/035 supersede parts of ADR-029.
+## Key verdicts
+- Part/variant: **unchanged** — keep `ESP32-S3-WROOM-1U-N8R8`, leave U.FL unpopulated.
+- Idle-power saving: small; real cost is +20 dBm TX bursts and 2.4 GHz activity.
+- Mass saving: ~3–12 g (ESTIMATE) — single-digit to low-teens grams; not a mass lever.
+- Coexistence: removes the S3 as a fourth 2.4 GHz self-jammer; ADR-029 §2(b) / `WIFI_2G4` slot gets simpler.
+- Regulatory: all 2.4 GHz use now under operator's amateur licence; no mixed regime.
+- ADR-034 separate 2.4 GHz receiver stands; parked question is closed.
+- Config path: USB/serial (bench) + radio link (flight); ADR-029 row updated.
+- MCU choice not reopened; v9 = S3 remains (ADR-037, in flight).
 
-## Modified files
+## UNVERIFIED
+- Exact never-initialised quiescent current of the S3 RF subsystem; would be settled by a
+  bench measurement with `CONFIG_ESP_WIFI_ENABLED=n` / `CONFIG_ESP_BT_ENABLED=n`.
 
-- `docs/adr/034-radio-band-split-433-tx-2g4-rx.md` — added relationship section.
-- `docs/adr/035-tdm-radio-schedule.md` — added relationship section.
-- `PROGRESS.md` — updated with audit step.
-- `REPORT.md` — this file.
-
-## ADR status table
-
-| ADR | Path | Status (quoted) | Affected by ADR-034/035? | Action taken |
-|---|---|---|---|---|
-| ADR-001 | `docs/adr/001-esp32-c3-as-mcu.md` | "Akzeptiert" | Yes — C3 vs S3 conflict for v9 already resolved by ADR-029; ADR-001 remains in force for non-v9 | Stated as open fork, not silently resolved |
-| ADR-002 (LR2021) | `docs/adr/002-lr2021-as-rf-chip.md` | "Akzeptiert" | No — both radios remain LR2021 family | Listed as unaffected |
-| ADR-005 | `docs/adr/005-sky66112-fem.md` | "Akzeptiert" | Yes — unamplified 2.4 GHz RX in v9 supersedes SKY66112 for v9 | Stated as superseded in part for v9 |
-| ADR-006 | `docs/adr/006-supercapacitor-power.md` | "Akzeptiert" | Yes — 3.3 V rail / single LR2021 / SKY66112 conflicts with 5 V F33 + dual LR2021 | Open conflict left unresolved |
-| ADR-017 (ban) | `docs/adr/017-lr2021-only-ban-sx1280.md` | "SUPERSEDED by ADR-020" | Yes — ADR-035 uses SX1280; no live ban exists | ADR-035 states this explicitly |
-| ADR-020 | `docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md` | "Accepted (2026-07-23)" | No — raw 2-byte protocol still applies | Listed as unaffected |
-| ADR-029 | `docs/adr/029-dual-band-flight-board.md` | "Proposed" | Yes — D2 single-module collapse and §3 slot table superseded | Supersede pointer already present in file header; relationship section in ADR-034/035 references it |
-| ADR-026 | `docs/adr/026-dual-mcu-radio-architecture.md` | "ACCEPTED" | Yes — v9 assumes single S3 host; dual-MCU not adopted for v9 | Stated as open architectural fork |
-| ADR-022 | `docs/adr/022-mandatory-test-coverage.md` | "Accepted" | No — coverage gate still applies | Listed as unaffected |
-| ADR-024 | `docs/adr/024-extract-only-source-repository-policy.md` | "ACCEPTED" | No — source-only policy still applies | Listed as unaffected |
-| ADR-030/031/032 | `docs/adr/030-deterministic-zero-inference-pcb-pipeline.md`, `031-...`, `032-...` | "Proposed" / "Accepted" / "Accepted" | No — downstream methods remain in force | Listed as unaffected |
-
-## Open conflicts / unresolved items
-
-- **ADR-006 power architecture**: 3.3 V rail, single LR2021, SKY66112 FEM vs.
-  ADR-034's 5 V / dual LR2021 / no SKY66112. Requires a new power ADR or
-  explicit ADR-006 amendment.
-- **ADR-026 dual-MCU architecture**: not adopted for v9, not formally
-  superseded. Operator must decide whether v9 stays single-S3 or re-adopts
-  RP2040 radio processor.
-- **433 MHz TX power legality in DE**: unresolved in both ADR-034 and
-  ADR-035.
-- **ADR-006 storage element / ADR-035 energy-opportunistic TX**: whether a
-  supercap is kept is an operator question left open.
-
-## Branch and commit
-
-- Local branch: `adr/radioband-tdm`
-- New commit SHA: `2f62ccf6aeb378b64a3e443ad6cdf587132d18cc`
-- Remote `github`: `2f62ccf6aeb378b64a3e443ad6cdf587132d18cc`
-- Remote `ngit`: `2f62ccf6aeb378b64a3e443ad6cdf587132d18cc`
-
-All three observed equal after push, confirmed by `git ls-remote github adr/radioband-tdm`
-and `git ls-remote ngit adr/radioband-tdm`.
-
-## What was NOT done
-
-No decision substance was re-decided. All conflicts are stated as open items,
-not silently resolved. No schematic, placement, routing, or firmware code was
-changed.
-
-## Blockers
-
-None encountered.
+## Push verification
+- github SHA after push: **TBD**
+- ngit SHA after push: **TBD**

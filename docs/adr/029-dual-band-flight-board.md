@@ -258,7 +258,7 @@ table.
 | 2.4 GHz link | LoRa2021F33-2G4 | pin 10 `ANT-2G4`, 1.9–2.5 GHz |
 | Ranging (fleet interop) | SX1280 | 2.4 GHz |
 | Position / time | MAX-M10S | GNSS L1 |
-| Config / telemetry when radios idle | ESP32-S3 Wi-Fi/BT | 2.4 GHz — shares the band, see (c) |
+| Config / telemetry when radios idle | ~~ESP32-S3 Wi-Fi/BT~~ → see ADR-038: Wi-Fi/BT never enabled; config is USB/serial (bench) + radio link (flight) | — |
 
 **Consequences — what must now be re-derived, not assumed.** None of the following has been
 recomputed for this four-radio shape; they are recorded as required work, not as answers.
