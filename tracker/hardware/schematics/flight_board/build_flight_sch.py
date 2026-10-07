@@ -880,6 +880,58 @@ def v9_custom_symbols():
             "ADR-048 are Status Proposed).",
             "", [("1", "SOLAR_P", "passive"), ("2", "GND", "passive"),
                  ("3", "RF_FEED", "passive"), ("4", "SOLAR_N", "passive")]),
+        # --- ADR-051 s2.1: the HUB-MOUNTED array as its OWN series string.
+        # Symbol name mandated by ADR-051 s2.1.1.  The pin FUNCTIONS `P` / `N`
+        # are load-bearing: scripts/bypass_diode_check.py resolves an on-board
+        # cell's polarity from exactly these two function strings, and
+        # scripts/hub_array_topology_check.py identifies the cell by its `PVA<n>`
+        # reference.  Footprint is deliberately EMPTY: the hub outline is a
+        # form-factor decision owned by another task (ADR-051 s2.3).
+        "balloon_flight_v9:PVA_CELL": _v9_symbol(
+            V9_LIBNAME, "PVA_CELL", "SolarCell_78x39mm",
+            "balloon_flight_v9:PVA_CELL",
+            "Hub-mounted solar cell of the INDEPENDENT hub array string "
+            "(ADR-051 s2.1, LARGE class per ADR-049: 78.55 x 38.90 mm, 30.6 cm2, "
+            "~0.5 V / ~1.2 A). Pin 1 = P (+), pin 2 = N (-). The CELL COUNT and "
+            "the MOUNTING PLANE are OPEN (ADR-051 s2.2 + s4 items 3/4/5, ADR-054 "
+            "s4.5) - the count on this sheet is a documented PLACEHOLDER, not a "
+            "sizing decision. Footprint NOT fixed: the hub outline does not exist yet.",
+            "", [("1", "P", "passive"), ("2", "N", "passive")]),
+        # --- ADR-051 s2.1 decision 1: the hub string's OWN converter input.
+        # A PROVISION - which part (sub-uA harvester H2/H3 vs the main converter
+        # M5/M6) is unresolved (ADR-051 s4 items 3 and 5; ADR-054 s1.3).
+        "balloon_flight_v9:HUB_CONVERTER": _v9_symbol(
+            V9_LIBNAME, "HUB_CONVERTER", "HUB_PV input (part TODO(unverified))",
+            "balloon_flight_v9:HUB_CONVERTER",
+            "The hub array's OWN converter / harvester input (ADR-051 s2.1 "
+            "decision 1 - the hub string is never in series with, and never a tap "
+            "on, the wing chain). Pin 1 = PV_P (HUB_PV_P), pin 2 = GND (the ONE "
+            "node this string may share with the wing system), pin 3 = PV_N "
+            "(HUB_PV_N). The chosen part is OPEN: ADR-051 s2.2 recommends a "
+            "2-cell H2 string on a sub-uA harvester (bq25570 class) but the "
+            "H2/H3 vs M5/M6 fork and the harvester's peak-input rating are "
+            "unresolved (ADR-051 s4 items 3/5/6, OPEN-26).",
+            "", [("1", "PV_P", "passive"), ("2", "GND", "passive"),
+                 ("3", "PV_N", "passive")]),
+        # --- ADR-051 s2.5 decision item 5 + s2.6: one latched cut driver and
+        # cut-sense channel per wing.  Both halves share the wing's RF_FEED
+        # land: ONE conductor plus the shared ground return does the nichrome
+        # drive AND the continuity sense.
+        "balloon_flight_v9:CUT_CHANNEL": _v9_symbol(
+            V9_LIBNAME, "CUT_CHANNEL",
+            "latched cut driver + cut-sense (part TODO(unverified))",
+            "balloon_flight_v9:CUT_CHANNEL",
+            "Per-wing cutter channel provision (ADR-051 s2.5 decision item 5 + "
+            "s2.6). Pin 1 = VSCAP (raw supercap node, post-BAT54, PRE-LDO, so the "
+            "channel works with the converter dead - ADR-047 s2.1), pin 2 = GND, "
+            "pin 3 = the wing's RF_FEED land (cut DRIVE and continuity SENSE on "
+            "one conductor plus the shared ground). THE DRIVE MUST BE A LATCHED "
+            "ONE-SHOT: cutting is irreversible and a level-sensitive driver can "
+            "re-fire on a reset, a brown-out, a firmware retry or a floating "
+            "gate (ADR-051 s2.5.1). Exact part, the sense divider and the GPIO "
+            "assignment are all TODO(unverified) - see OPEN-25 and OPEN-28.",
+            "", [("1", "VSCAP", "passive"), ("2", "GND", "passive"),
+                 ("3", "CUT_W", "passive")]),
     }
 
 
@@ -1008,24 +1060,112 @@ V9_COMPONENTS = [
      "plane (ADR-046 s2.3: 'stack_bot = W4.SOLAR_N -> system GND'); DO NOT tie "
      "any other W<n>_SOLAR_N to GND (socket spec s3). pad 1 lands on the "
      "W3_SOLAR_N / W4_SOLAR_P hub-link node (socket spec s3.1)."),
-    ("D_BP1", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky ACROSS wing 1 - cathode to "
-     "W1_SOLAR_P, anode to W1_SOLAR_N. Without it a shaded wing collapses and "
-     "reverse-stresses the 6.0 V series string. DNP for the first prototype "
-     "build, pads routed so it can be fitted later. Package: SOD-323 (socket "
-     "spec s5 'SOD-323 or SMA'; BAT54 family as ADR-006)."),
-    ("D_BP2", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 2 - cathode to "
-     "W2_SOLAR_P (= the W1_SOLAR_N hub link), anode to W2_SOLAR_N. DNP."),
-    ("D_BP3", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 3 - cathode to "
-     "W3_SOLAR_P (= the W2_SOLAR_N hub link), anode to W3_SOLAR_N. DNP."),
-    ("D_BP4", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 4 - cathode to "
-     "W4_SOLAR_P (= the W3_SOLAR_N hub link), anode to W4_SOLAR_N = GND. DNP. "
-     "This is the only one whose anode sits on GND, because wing 4's SOLAR_N IS "
-     "the stack bottom (ADR-046 s2.3)."),
+    # --- ADR-051 s2.7 / ADR-053 s2.2 (as amended by ADR-054 s3.2): the four
+    # HUB-SIDE per-interface bypass diodes.  POPULATED (not DNP) and re-rated:
+    # a cutter-carrying flight needs them, and the DNP BAT54 the socket spec
+    # named is disqualified twice over.
+    #   1. WHY HUB-SIDE.  A cut jettisons the wing AND every part soldered to
+    #      it, so a wing-board diode leaves with the wing and cannot bridge the
+    #      gap it was fitted to bridge (ADR-054 s2.2, adversarial F3).  Only a
+    #      hub-side, per-interface diode can restore the broken PATH.  Without
+    #      it a cutter flight is WORSE than baseline: the first cut opens the
+    #      string and the array delivers 0.00 W.
+    #   2. WHY >= 2 A / 40 V AND NOT THE 200 mA BAT54.  Post-cut the other wings
+    #      drive the array's FULL 1.2 A continuously through this diode for the
+    #      rest of the flight - a PERMANENT CONTINUOUS bypass duty, not the
+    #      shading transient a 200 mA part is sold as (ADR-051 s2.4 decisions
+    #      4.2/4.3, s2.7); and the reverse rating must clear the ~9.58 V cold
+    #      open-circuit stack against a 30 V part (ADR-050 s3.2).  SS24 = 2 A /
+    #      40 V, in the class ADR-051 s2.7 names ("SS24 or PMEG4020ER class").
+    #   3. WHY THE PACKAGE MOVES.  SOD-323 cannot carry 2 A (ADR-051 s2.7), so
+    #      the land pattern moves to SMA.  See OPEN-11 for the delta = 1 derate
+    #      still owed and OPEN-28 for the hub re-layout this forces.
+    ("D_BP1", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2/s3.2 (HUB-SIDE placement): bypass Schottky "
+     "ACROSS wing interface 1 - cathode to W1_SOLAR_P, anode to W1_SOLAR_N. "
+     "POPULATED (ADR-051 s2.4 decision 4.2 supersedes the DNP instruction of "
+     "ADR-046 s6 / socket spec s5 for any cutter-carrying flight). SS24 = 2 A / "
+     "40 V: the post-cut bypass path is a PERMANENT CONTINUOUS 1.2 A path, and "
+     "the 200 mA / 30 V BAT54 is disqualified against it. SMA land, not SOD-323: "
+     "SOD-323 cannot carry 2 A."),
+    ("D_BP2", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2: bypass Schottky across wing interface 2 - "
+     "cathode to W2_SOLAR_P (= the W1_SOLAR_N hub link), anode to W2_SOLAR_N. "
+     "POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1."),
+    ("D_BP3", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2: bypass Schottky across wing interface 3 - "
+     "cathode to W3_SOLAR_P (= the W2_SOLAR_N hub link), anode to W3_SOLAR_N. "
+     "POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1."),
+    ("D_BP4", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2: bypass Schottky across wing interface 4 - "
+     "cathode to W4_SOLAR_P (= the W3_SOLAR_N hub link), anode to W4_SOLAR_N = "
+     "GND. POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1. This "
+     "is the only one whose anode sits on GND, because wing 4's SOLAR_N IS the "
+     "stack bottom (ADR-046 s2.3)."),
 ]
+
+# --- ADR-051 §2.1: the hub array.  Its cell count is a PARAMETER, not a
+# decision.  *** THE COUNT BELOW IS A DOCUMENTED PLACEHOLDER *** ADR-051 §2.2
+# recommends H2 = 2 LARGE cells (H3 = 3 is the fallback); the count, the
+# MOUNTING PLANE and the harvester part are all OPEN (ADR-051 §4 items 3/4/5/6;
+# ADR-054 §4.5), and the hub OUTLINE is a form-factor decision owned by another
+# task (ADR-051 §2.3) - which is why the cells' footprint field is left EMPTY.
+# Changing this one number regenerates the cells, the HUB_PV_MID<n> interiors,
+# the per-cell hub bypass diodes and the whole hub string.  Nothing else in this
+# file hard-codes the hub cell count.
+V9_HUB_ARRAY_CELLS = 2
+
+for _i in range(1, V9_HUB_ARRAY_CELLS + 1):
+    V9_COMPONENTS.append(
+        ("PVA%d" % _i, "balloon_flight_v9:PVA_CELL", "SolarCell_78x39mm",
+         "", False,
+         "Cell %d of the INDEPENDENT hub-array string (ADR-051 §2.1, LARGE "
+         "class per ADR-049: 78.55 x 38.90 mm, 30.6 cm2, ~0.5 V / ~1.2 A). The "
+         "string is its OWN series string with its OWN converter input; it is "
+         "NEVER in series with, and never a tap on, the wing chain - the only "
+         "node it may share with the wing system is GND. Enforced by "
+         "scripts/hub_array_topology_check.py. CELL COUNT / MOUNTING PLANE / "
+         "OUTLINE ARE OPEN (OPEN-26); this ref is a PLACEHOLDER." % _i))
+    V9_COMPONENTS.append(
+        ("D_HUB%d" % _i, "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+         "Bypass Schottky across hub-array cell PVA%d: cathode to the cell's + "
+         "node, anode to its - node. ADR-051 §2.2 places the hub cells on the "
+         "hub and says they 'need their own diodes'; ADR-053 §1.6/§2.4 keeps "
+         "per-GROUP over per-CELL as the general rule, and ADR-054 §4.5 leaves "
+         "the hub's OWN granularity explicitly OPEN (OPEN-27). Populated at the "
+         "same >=2 A / 40 V class as the per-interface diodes (SS24) so a hub "
+         "cell failure is contained BY A PATH that survives any wing cut." % _i))
+
+V9_COMPONENTS.append(
+    ("U_HUB_CVT", "balloon_flight_v9:HUB_CONVERTER",
+     "HUB_PV input (part TODO(unverified))", "", False,
+     "The hub array's OWN converter / harvester input provision (ADR-051 §2.1 "
+     "decision 1: 'its positive terminal feeds its own converter/harvester "
+     "input, on its own net'). Pin 1 = HUB_PV_P, pin 2 = GND (the ONE shared "
+     "node), pin 3 = HUB_PV_N. The PART is unresolved: ADR-051 §2.2 recommends "
+     "the 2-cell H2 string on a sub-uA harvester of the bq25570 class, but the "
+     "H2/H3 vs M5/M6 fork and the harvester's peak-input-power rating against "
+     "the array's face-on peak are OPEN (OPEN-26; ADR-051 §4 items 3/5/6)."))
+
+for _i in range(1, 5):
+    V9_COMPONENTS.append(
+        ("U_CUT%d" % _i, "balloon_flight_v9:CUT_CHANNEL",
+         "latched cut driver + cut-sense (part TODO(unverified))", "", False,
+         "Wing %d cut channel (ADR-051 §2.5 decision item 5 + §2.6): the "
+         "nichrome cutter drive AND the cut-sense continuity line on the wing's "
+         "ONE reserved RF_FEED conductor plus the shared ground. Pin 1 = VSCAP "
+         "(raw supercap node, post-BAT54, PRE-LDO, so the cut works with the "
+         "converter dead - ADR-047 §2.1); pin 2 = GND; pin 3 drives/senses "
+         "CUT_SENSE_W%d = J_W%d pad 3 (RF_FEED). THE DRIVE IS MANDATED TO BE A "
+         "LATCHED ONE-SHOT (ADR-051 §2.5.1): cutting is irreversible, and a "
+         "level-sensitive driver can re-fire on a reset, brown-out, retry or "
+         "floating gate - each fire costing ~2.59 J of the bank\'s 16.63 J at "
+         "the moment the bank matters. Firmware must also serialise cuts "
+         "(4 simultaneous fires = 9.9 A = 2.4x the IRLML2502 class rating) and "
+         "log a silently-failed cut below the ~3.3 V arming threshold. Part, "
+         "sense divider, GPIO and the latch's exact topology: TODO(unverified) "
+         "- OPEN-25 and OPEN-28." % (_i, _i, _i)))
+
 
 # --- nets ------------------------------------------------------------------
 # net -> [(ref, pin), ...].  Each entry carries its citation.
@@ -1120,7 +1260,7 @@ V9_NETS = [
      "ADR-047 6: F33 rail monitor. Divider ratio 0.5 (4.7 M / 4.7 M) -> "
      "5.4 V reads 2.70 V at ESP32-S3 IO13 (U1 pin 21). Firmware must inhibit TX "
      "below the LOADED-rail threshold for the wanted output power: >=5.0 V for "
-     "the full 33.0 dBm, and >=3.54 V (interpolated) + the bank's ESR step for "
+     "the full 33.0 dBm, and >=3.54 V (interpolated) + the bank\'s ESR step for "
      "+30 dBm. See OPEN-17 for the ADC-channel TODO."),
     ("GNSS_VCC", [("R_F1", "2"), ("C4", "1"), ("U5", "8")],
      "ADR-029 2(d): the FILTERED GNSS rail - 'a dedicated RC/ferrite feed (e.g. "
@@ -1194,6 +1334,75 @@ V9_NETS = [
     ("ANT4_GNSS_L1", [("U5", "11"), ("ANT4", "1")],
      "ADR-029 D3: MAX-M10S RF_IN -> GNSS L1 U.FL."),
 ]
+
+# --- ADR-051 §2.1: the hub array's OWN nets, and the cut-sense lines. --------
+# These nets carry the hub string and NOTHING ELSE: no W<n>_SOLAR_P and no
+# W<n>_SOLAR_N land appears on any HUB_PV_* net, and the only node the hub
+# string shares with the wing system is GND (through U_HUB_CVT pin 2).  That is
+# the whole invariant ADR-051 §2.1 exists to protect - a hub array in series
+# with, or tapped onto, the wing chain dies on the first cut, which turns the
+# cut into suicide.  scripts/hub_array_topology_check.py is the mechanical
+# enforcement (R3/R3b/R4/R5/R7).
+V9_NETS.append(
+    ("HUB_PV_P",
+     [("PVA1", "1"), ("D_HUB1", "1"), ("U_HUB_CVT", "1")],
+     "ADR-051 §2.1.1: the hub string's POSITIVE terminal and its own converter "
+     "input node. Feeds U_HUB_CVT pin 1 - the hub array's OWN harvester/converter "
+     "input, never the wing chain's BAT54/supercap node. D_HUB1 pin 1 is the "
+     "first hub cell's bypass cathode."))
+for _k in range(1, V9_HUB_ARRAY_CELLS):
+    V9_NETS.append(
+        ("HUB_PV_MID%d" % _k,
+         [("PVA%d" % _k, "2"), ("PVA%d" % (_k + 1), "1"),
+          ("D_HUB%d" % _k, "2"), ("D_HUB%d" % (_k + 1), "1")],
+         "ADR-051 §2.1.1: interior node %d of the hub series string (between "
+         "hub cells %d and %d). It is INTERNAL to the hub array: it carries no "
+         "wing land, and sharing it with the wing chain is exactly the tap the "
+         "topology checker fails on (R4)." % (_k, _k, _k + 1)))
+V9_NETS.append(
+    ("HUB_PV_N",
+     [("PVA%d" % V9_HUB_ARRAY_CELLS, "2"),
+      ("D_HUB%d" % V9_HUB_ARRAY_CELLS, "2"), ("U_HUB_CVT", "3")],
+     "ADR-051 §2.1.1: the hub string's NEGATIVE terminal, wired to the hub "
+     "converter\'s own PV_N input (U_HUB_CVT pin 3) and to the last hub cell's "
+     "bypass anode. It carries NO wing land: the only node the hub string "
+     "shares with the wing system is GND, and that is through the converter\'s "
+     "ground pin, not through a W<n>_SOLAR_N land. (ADR-051 §2.1.2.)"))
+
+for _i in range(1, 5):
+    V9_NETS.append(
+        ("CUT_SENSE_W%d" % _i,
+         [("J_W%d" % _i, "3"), ("U_CUT%d" % _i, "3")],
+         "ADR-051 §2.6: the per-wing cut-sense / cutter line on the wing "
+         "tab's RESERVED pin 3 (RF_FEED). Netting it CLOSES the four "
+         "pin_not_connected ERC errors the unnetted provision produced, at "
+         "zero connector cost - the land and the position were already paid "
+         "for. Honest caveat: on the v9 WING, RF_FEED is a copper land with no "
+         "net, so the continuity measurement only becomes meaningful once the "
+         "wing is re-spun to tie RF_FEED into the cut loop\'s return (OPEN-25, "
+         "ADR-051 §2.6 caveat + §4 item 9)."))
+
+# --- ADR-051: the new hub-array / cut-channel components' power and ground pins.
+# Their OWN nets are appended above; the two SHARED rails are extended here so
+# every added pin lands on the same node the rest of the sheet already uses.
+# This is deliberate: a new component with an unnetted pin would ADD a
+# pin_not_connected ERC error, and the point of netting the RF_FEED lands is to
+# CLOSE errors, not trade them.
+_GND_EXTRA = [("U_HUB_CVT", "2")] + [("U_CUT%d" % _i, "2") for _i in range(1, 5)]
+_VSCAP_EXTRA = [("U_CUT%d" % _i, "1") for _i in range(1, 5)]
+for _idx, (_n, _nodes, _src) in enumerate(V9_NETS):
+    if _n == "GND":
+        V9_NETS[_idx] = (_n, list(_nodes) + _GND_EXTRA,
+                         _src + " ADR-051: this net also carries the hub "
+                         "converter's ground pin (U_HUB_CVT.2) and the four "
+                         "latched cut channels' ground pins (U_CUT1..4.2) - it is "
+                         "the ONE node the hub string shares with the wing system.")
+    elif _n == "VSCAP":
+        V9_NETS[_idx] = (_n, list(_nodes) + _VSCAP_EXTRA,
+                         _src + " ADR-051 s2.5: this net is also the cut "
+                         "channels' drive rail (U_CUT1..4.1) - VSCAP is the raw "
+                         "supercap node, post-BAT54 and PRE-LDO, so a cut still "
+                         "works with the converter dead (ADR-047 s2.1).")
 
 # --- deliberately unconnected pins, each with the record that says so ------
 V9_NC = [
@@ -1333,15 +1542,16 @@ V9_TODO = [
      "insertion depth. TODO(unverified): which datum the records intend (land "
      "inboard edge at 1.0 mm, as implemented, or land centre at 1.0 mm, as the "
      "spec's table line reads). No in-repo source resolves it."),
-    ("OPEN-21 W<n>_RF PROVISION LANDS ARE UNNETTED (4 NEW ERC ERRORS, BY DESIGN)",
-     "ADR-046 s2.4 and socket spec s3.2 mandate that each interface's pad 3 "
-     "(RF_FEED) keeps its copper land but carries NO NET on v9, and explicitly "
-     "say 'Do not tie it to GND'. The sheet therefore leaves J_W1..J_W4 pin 3 "
-     "floating and does NOT add a no_connect flag: a no_connect would assert a "
-     "termination decision (and an RF tie-off) that no record makes. KiCad ERC "
-     "reports each unnetted pin as pin_not_connected, so these 4 are EXPECTED, "
-     "RECORDED additions to the v9 ERC error count, not a regression and not "
-     "something that has been silenced."),
+    ("OPEN-21 W<n>_RF PROVISION LANDS (CLOSED by ADR-051 s2.6)",
+     "ADDRESSED: ADR-046 s2.4 / socket spec s3.2 left each interface's pad 3 "
+     "(RF_FEED) with its copper land but NO net, and explicitly said 'Do not tie "
+     "it to GND'; that produced 4 pin_not_connected ERC errors by design. "
+     "ADR-051 s2.6 now NETS that land as CUT_SENSE_W<n>, so those 4 errors are "
+     "CLOSED at zero connector cost. The 'do not tie it to GND' prohibition "
+     "STANDS and is honoured - the land sits on a named sense net, not on GND. "
+     "What is NOT closed: the GPIO/divider assignment (OPEN-25) and the wing "
+     "re-spin without which the continuity sense reads a floating pad "
+     "(ADR-051 s2.6 caveat + s4 item 9)."),
     ("OPEN-22 HUB v9 STACK-UP / SLOT KEEP-OUT / FAB TOLERANCE",
      "Socket spec s8 items 1-4 are all still open: the hub's actual component "
      "keep-out at the slot (which owns whether the 6.0 mm slot depth is legally "
@@ -1369,6 +1579,43 @@ V9_TODO = [
      "is worse than no slot. The 0.30 mm nominal solder gap (0.9 mm slot - 0.6 mm "
      "tab, ADR-046 s4.1) is therefore the only gap number and it is unproven. "
      "Do not order a hub on these numbers alone."),
+    ("OPEN-25 CUT-SENSE GPIO / DIVIDER AND THE WING RE-SPIN",
+     "ADR-051 s2.6 fixes the MECHANISM (per-wing CUT_SENSE_W<n> on the reserved "
+     "RF_FEED land) but NOT the GPIO count: four dedicated GPIOs, or one GPIO "
+     "plus a 4:1 analogue mux / resistor-ladder encoding, are both compatible "
+     "and the sense divider values are not chosen. GPIO budget is the "
+     "constraint (ADR-029 free-GPIO audit; OPEN-14 records IO12/IO47/IO48 "
+     "unassigned). Separately, the sense is only meaningful after the WING is "
+     "re-spun to tie its RF_FEED land into the cut loop\'s return (ADR-051 s2.6 "
+     "caveat + s4 item 9)."),
+    ("OPEN-26 HUB ARRAY: CELL COUNT, MOUNTING PLANE, HARVESTER, OUTLINE",
+     "ADR-051 s2.1's independence invariant is IMPLEMENTED on this sheet, but "
+     "the array's PARAMETERS are not: the cell count (H2 = 2 recommended / H3 = "
+     "3 fallback), the mounting plane (vertical 0.3051 vs horizontal 0.1865 "
+     "day-mean - load-bearing for the area), the converter/harvester part and "
+     "its peak-input-power rating, and the hub OUTLINE.  The count on this sheet "
+     "is a DOCUMENTED PLACEHOLDER (V9_HUB_ARRAY_CELLS in "
+     "build_flight_sch.py) because the hub outline is a form-factor decision "
+     "owned by another task (ADR-051 s2.3). See ADR-051 s2.2 for H2's own 6 % "
+     "shortfall and s4 items 3/4/5/6."),
+    ("OPEN-27 HUB-ARRAY BYPASS GRANULARITY (PER-CELL vs PER-GROUP)",
+     "ADR-051 s2.2 places the hub cells on the hub and says they 'need their own "
+     "diodes'; ADR-054 s4.5 explicitly leaves the hub array's per-cell-over-"
+     "per-group trade OPEN.  This sheet carries the MINIMAL per-cell provision "
+     "(D_HUB<n>, one SS24 across each hub cell) because "
+     "scripts/bypass_diode_check.py requires every solar series group - "
+     "including an on-board cell - to be covered, and a determinate answer is "
+     "worth more than a silent gap.  If the trade lands on per-group, the "
+     "hub diodes regroup and this note is superseded."),
+    ("OPEN-28 CUT-DRIVER LATCH TOPOLOGY AND ITS PART",
+     "ADR-051 s2.5.1 mandates a LATCHED one-shot with a persistent NVS fired "
+     "flag per channel plus a hardware series arming gate, but names no part: "
+     "the IRLML2502 in the repo's own precedent is the switch, not the latch.  "
+     "U_CUT1..U_CUT4 are PROVISION symbols whose pin set (VSCAP / GND / the "
+     "wing RF_FEED line) is fixed and whose internals are TODO(unverified), as "
+     "are the sense divider (OPEN-25), the on-time cap and the inter-cut "
+     "interval.  Also open: the trigger mode - ground-commanded vs automatic "
+     "(ADR-051 s2.5.7)."),
 ]
 
 
@@ -1472,6 +1719,13 @@ def v9_emit():
         # adjacent interfaces are the hub-link nets of ADR-046 s2.3.
         ["J_W1", "J_W2", "J_W3", "J_W4",
          "D_BP1", "D_BP2", "D_BP3", "D_BP4"],
+        # ADR-051: the INDEPENDENT hub-array string (its own cells, its own
+        # converter input) and the four per-wing latched cut channels.  Appended
+        # LAST on purpose: col_x accumulates left-to-right, so appending a column
+        # moves no already-placed component.
+        ["PVA%d" % _hci for _hci in range(1, V9_HUB_ARRAY_CELLS + 1)]
+        + ["D_HUB%d" % _hci for _hci in range(1, V9_HUB_ARRAY_CELLS + 1)]
+        + ["U_HUB_CVT"] + ["U_CUT%d" % _hci for _hci in range(1, 5)],
     ]
     V9_COL_TITLES = [
         "GNSS / BARO / POWER",
@@ -1484,7 +1738,9 @@ def v9_emit():
         "U.FL ANTENNAS (see the four-feed conflict)",
         "FOUR WING INTERFACES at 90 deg (ADR-046 / ADR-048): 4 lands per face x "
         "2 faces = 8 lands each, 4.0 x 1.2 mm, pitch 1.8 mm; 1 SOLAR_P / 2 GND / "
-        "3 RF (NO NET on v9) / 4 SOLAR_N + 4 DNP bypass Schottky",
+        "3 RF = CUT_SENSE_W<n> (ADR-051 s2.6) / 4 SOLAR_N + 4 POPULATED bypass "
+        "Schottky (SS24, 2 A / 40 V)",
+        "INDEPENDENT HUB ARRAY (ADR-051 s2.1) + 4 LATCHED CUT CHANNELS (s2.5/s2.6)",
     ]
     placed_refs = [r for col in V9_COLUMNS for r in col]
     missing = [c[0] for c in comps if c[0] not in placed_refs]
@@ -1511,7 +1767,7 @@ def v9_emit():
     # ---- body ------------------------------------------------------------
     body = ['\t(text "BALLOON v9 TRI-BAND FLIGHT BOARD - DESIGN-INTENT '
             'schematic from the v9 decision records (ADR-029/034/035/036-043, '
-            'ADR-044/044a/045/046/047/048). NOT derived from a PCB."\n\t\t(exclude_from_sim no)\n'
+            'ADR-044/044a/045/046/047/048/049/050/051/052/053/054). NOT derived from a PCB."\n\t\t(exclude_from_sim no)\n'
             '\t\t(at 30.48 20.32 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
             '(size 2.54 2.54)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n'
             '\t\t(uuid "%s")\n\t)' % uid(),
@@ -1535,15 +1791,19 @@ def v9_emit():
             'Series stack wired on the hub: W1_P -> BAT54 (D1) -> supercap; '
             'W1_N == W2_P, W2_N == W3_P, W3_N == W4_P (hub links); W4_N = stack '
             'bottom = GND. Each interface GND land ties to the hub ground plane. '
-            'One DNP bypass Schottky per interface (D_BP1..D_BP4) across '
+            'One POPULATED bypass Schottky per interface (D_BP1..D_BP4, SS24 = 2 A / 40 V on an SMA land) across '
             'W<n>_SOLAR_P (K) - W<n>_SOLAR_N (A). Geometry lives in the real '
             'footprint Tracker_Mechanical:Wing_Tab_4P. ADR-048 D-1: the socket '
             'spec s2/s4 say >= 0.5 mm copper-to-edge clearance, ADR-046 s2.2 '
             'says >= 1.0 mm and the ADR number is implemented. OPEN-20/21/22/23/24 '
-            'hold the open questions; see REPORT.md."\n'
+            'hold the open questions; see REPORT.md. ADR-051 s2.1 adds the INDEPENDENT hub array: its OWN nets (HUB_PV_P / HUB_PV_MID<n> / HUB_PV_N) and its OWN converter input, never in series with and never a tap on the wing chain (the only shared node is GND). ADR-051 s2.6 nets interface pin 3 (RF_FEED) as CUT_SENSE_W<n>; ADR-051 s2.5 gives one LATCHED one-shot cut driver per wing. See the ADR-051/053/054 notes below."\n'
             '\t\t(exclude_from_sim no)\n\t\t(at 30.48 26.67 0)\n\t\t(effects\n'
             '\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n'
-            '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid()]
+            '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.7 / ADR-054 s2.2+s3.2 - THE PER-INTERFACE BYPASS DIODES ARE POPULATED AND RE-RATED, AND THEY SIT HUB-SIDE. D_BP1..D_BP4 bridge each wing interface (W<n>_SOLAR_P cathode -> W<n>_SOLAR_N anode) and are now SS24 = 2 A / 40 V on an SMA land, not DNP BAT54 = 200 mA / 30 V on SOD-323. WHY HUB-SIDE: a cut jettisons the wing AND every part soldered to it, so only a HUB-side diode can bridge the gap the cut leaves; a wing-board diode leaves with the wing and the array delivers 0.00 W on the first cut. WHY 2 A / 40 V: after a cut the remaining wings drive the array FULL 1.2 A through that diode CONTINUOUSLY for the rest of the flight - a permanent-continuous bypass duty, not a shading transient - so 200 mA is disqualified, and 30 V cannot clear the ~9.58 V cold open-circuit stack. SOD-323 cannot carry 2 A, hence SMA."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 29.21 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.1 - THE HUB ARRAY IS AN INDEPENDENT SERIES STRING. It has its OWN nets (HUB_PV_P positive, HUB_PV_MID<n> interior, HUB_PV_N negative) and its OWN converter/harvester input (U_HUB_CVT), and it is NEVER in series with, and never a tap on, the wing chain - the ONLY node it may share with the wing system is GND, and only through the converter\'s ground pin. If it were wired into the wing chain the FIRST wing cut would remove the hub array\'s path together with the wing\'s cells and the cut would become suicide. scripts/hub_array_topology_check.py enforces this mechanically. *** CELL COUNT IS A DOCUMENTED PLACEHOLDER *** (currently 2 cells; ADR-051 s2.2 recommends H2 = 2, H3 = 3 is the fallback) - the count, the mounting plane, the harvester part and the hub OUTLINE are all OPEN (OPEN-26)."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 30.48 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.5 decision item 5 - THE CUT DRIVE MUST BE A LATCHED ONE-SHOT, one per wing (U_CUT1..U_CUT4). Cutting is IRREVERSIBLE, and a level-sensitive driver can RE-FIRE an already-fired channel on a reset, a brown-out, a firmware retry or a floating gate - each fire costing ~2.59 J of the bank\'s 16.63 J usable energy at the exact moment the bank matters (ADR-051 s2.5.1). The mandate: a firmware one-shot with a persistent NVS fired flag per channel PLUS a hardware series gate that requires an explicit arming sequence, so no single event can fire a channel twice. Firmware must also serialise cuts - 4 simultaneous fires draw 9.9 A = 2.4x the IRLML2502 class rating - require the bank above ~3.3 V, cap the on-time (<=193 ms / <=3.33 J) and LOG a cut that silently fails. The exact part and the latch topology are TODO(unverified) (OPEN-28)."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 31.75 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.6 - THE RESERVED RF_FEED LAND IS NOW THE PER-WING CUT-SENSE / CUTTER LINE. J_W<n> pad 3 carries CUT_SENSE_W<n>, which does the nichrome cutter drive AND the continuity sense on ONE conductor plus the shared ground - four independently controllable cutters at ZERO connector cost, because the land and the position were already paid for. Netting it closes the four pin_not_connected ERC errors an unnetted provision produced. HONEST CAVEAT (ADR-051 s2.6 + s4 item 9): on the v9 WING, RF_FEED is a copper land with NO net, so the continuity measurement only becomes meaningful after a wing re-spin ties RF_FEED into the cut loop\'s return. The GPIO/divider assignment is OPEN (OPEN-25). The \'do not tie it to GND\' prohibition of ADR-046 s2.4 STANDS."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 33.02 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),]
     for ci, title in enumerate(V9_COL_TITLES):
         body.append('\t(text "%s"\n\t\t(exclude_from_sim no)\n'
                     '\t\t(at %s 43.18 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
