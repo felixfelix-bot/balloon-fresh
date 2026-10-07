@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **60** distinct
-numbers, **60** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **61** distinct
+numbers, **61** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -83,6 +83,7 @@ None.
 | 047 | `047-v9-power-provisioning.md` | v9 F33 power provisioning: over-provisioning the 5 V PA rail for the module's maximum draw | Proposed |
 | 048 | `048-v9-hub-wing-interfaces.md` | v9 hub-side wing interfaces: four socket land sets at 90° | Proposed |
 | 049 | `049-wing-architecture.md` | Wing architecture: cell class, structure, orientation and protection | Proposed |
+| 050 | `050-mppt-charge-path.md` | Charge-path converter between the solar array and the supercap bank | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -94,7 +95,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 050 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 051 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
