@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **66** distinct
-numbers, **66** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **67** distinct
+numbers, **67** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -89,6 +89,7 @@ None.
 | 053 | `053-per-cell-bypass-diodes.md` | Per-cell / per-group bypass Schottky diodes: a cracked or shaded cell costs one cell, not the whole series string | Proposed |
 | 054 | `054-array-topology-final.md` | Array topology, final: the 12-cell series string is RETAINED, the hub-side per-interface bypass diode is MANDATORY, per-cell bypass is REJECTED, and the bypass-diode mechanism is CORRECTED | Proposed |
 | 055 | `055-hub-geometry-final.md` | Hub geometry, final: the array plane is HORIZONTAL (flat, no tilt, zero ripple), the area is a DUTY CHOICE, the board is 0.4 mm, the hub is ≈103 mm square, and the cells go on the UPPER face under a raised attachment standoff | Proposed |
+| 056 | `056-thermal-and-frequency-drift.md` | Thermal and frequency drift: no oscillator heater, TCXO where a radio needs one, and GPS 1PPS discipline as the zero-mass/zero-watt provision | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -100,7 +101,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 056 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 057 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
