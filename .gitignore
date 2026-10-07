@@ -62,3 +62,10 @@ firmware/rp2040/host-tests/test_cmd
 firmware/rp2040/host-tests/test_bw_codes
 firmware/rp2040/host-tests/test_radio
 firmware/rp2040/host-tests/test_dispatch
+# worker scratch logs — per-task, never merged (v9 consolidation, 2026-10-07)
+PROGRESS.md
+REPORT.md
+# v8j DRC triage scratch (worker logs; evidence kept on the pr/v8j branch + backup/ tag)
+clearance_before.txt
+cluster_before.txt
+cluster_after.txt
