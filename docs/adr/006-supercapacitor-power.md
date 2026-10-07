@@ -4,6 +4,7 @@
 Akzeptiert
 
 > Superseded in part by ADR-036 (`docs/adr/036-energy-policy-burst-storage-daylight-only-tx.md`): the storage bank is now sized to one transmission burst, not to the mission, and TX is daylight-only.
+> **Superseded in part by ADR-050 (`docs/adr/050-mppt-charge-path.md`, Proposed) — the direct-connection element only** (`Solarzellen → Schottky-Diode → Supercapacitor-Bank` gains a charge-path converter between the array and the bank). The storage, solar-wing-count and LDO decisions below are RETAINED unchanged.
 > **Stale load list (ADR-037, 2026-10-07):** the power-architecture chain below names the
 > SKY66112 FEM, which ADR-037 omits from v9. The chain is stale for v9 and needs a re-draw
 > (tracked as a follow-up in ADR-037); it is not corrected inline here.
