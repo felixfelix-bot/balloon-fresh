@@ -3,6 +3,8 @@
 ## Status
 Akzeptiert
 
+> Superseded in part by ADR-036 (`docs/adr/036-energy-policy-burst-storage-daylight-only-tx.md`): the storage bank is now sized to one transmission burst, not to the mission, and TX is daylight-only.
+
 ## Kontext
 Der Ballon hat keinen Zugriff zu Batterien die bei -60C in der Stratosphaere funktionieren. Die Energie muss ueber Solarzellen gewonnen und in Supercapacitors gepuffert werden.
 
