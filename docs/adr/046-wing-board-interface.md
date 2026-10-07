@@ -222,19 +222,38 @@ dimension along the wing (x)**, so the stack runs tip-ward from the tab — the 
   because it is the one the word "wing" and the `docs/hardware-design.md` §3D-Assembly
   4-arm radial describe, and because it keeps the wing narrow at the hub.
 
+### 3.4b Bottom copper on the v9 wing is unused (deviation, stated)
+
+`docs/hardware-design.md` line 64 gives the wing as "2 layers (Top: Solar + Antenne,
+Bottom: GND)". **On the v9 wing the bottom copper is NOT populated** — the v9 board routes
+everything on F.Cu and carries no B.Cu pour or plane, so the plotted B.Cu gerber is empty.
+Reason: ADR-046 §2.4 makes the wing RF a V2 provision, so there is no antenna ground to
+return on v9, and the wing's single `GND` pin is a provision land. Adding a B.Cu pour would
+be dead copper on v9 and would need thermal reliefs around a net that has one pad.
+`TODO(unverified)`: the V2 wing **will** need a B.Cu ground for the 2.4 GHz CPW, so a V2
+wing is a different board, not a population change.
+
 ### 3.4 Solar-cell lands
 
 - **One land per cell terminal** (two per cell → 6 lands total), because each cell's two
   terminals are at the cell's two **x** ends.
-- Land size: **1.6 mm (x) × 14.0 mm (y)**, SMD, F.Cu + F.Mask, centred on y = 12.5 mm.
-- Land x positions: `SC1+` 2.0, `SC1−` 58.0, `SC2+` 60.0, `SC2−` 116.0, `SC3+` 118.0, `SC3−` 174.0.
-- The 14 mm y-extent is deliberate: the cell's contact position along its 52 mm edge is
-  **not** known from any in-repo source, so the land is sized to meet a contact anywhere in
-  the cell's central band. `TODO(unverified)`: the **exact solder-tab geometry of the
-  52 × 19 mm cell** (contact width, contact pitch, contact distance from the cell edge).
-  No in-repo source carries it; `docs/component-guide.md` line 107 lists only
-  "52x19mm (0.5V 400mA)". Until it is measured, the land is a deliberately oversized
-  target, **not** a matched land pattern.
+- Land size: **1.6 mm (x) × 4.0 mm (y)**, SMD, F.Cu + F.Mask + F.Paste, centred on y = 12.5 mm
+  (y span 10.5…14.5 mm).
+- Land x positions: `SC1+` 2.0, `SC1−` 58.0, `SC2+` 60.0, `SC2−` 116.0, `SC3+` 118.0, `SC3−` 174.0
+  (all mm, board-local, absolute x). On the board these are the pads of the three
+  `SolarCell_52x19mm` footprints, whose origins are the cell centres x = 30 / 88 / 146 mm.
+- **Why the land is 4.0 mm and not more**: the 4 tab pins occupy y = 9.8…15.2 mm, and the
+  SOLAR_P / SOLAR_N tracks must reach pins 1 and 4 along y = 9.8 / 15.2 mm respectively
+  without entering the SC1 land. A 4.0 mm land (10.5…14.5 mm) leaves 0.7 mm of clearance
+  above and below that pair of tracks, which is what makes the board routable with
+  **0 errors and 0 unconnected items** (see §6 evidence). A taller land would have to be
+  approached on B.Cu, and a via pair at the tab would then sit inside the tab's 9 mm width.
+- The land is therefore a **routing-constrained** land, not a matched land pattern.
+  `TODO(unverified)`: the **exact solder-tab geometry of the 52 × 19 mm cell** (contact
+  width, contact pitch, contact distance from the cell edge). No in-repo source carries it;
+  `docs/component-guide.md` line 107 lists only "52x19mm (0.5V 400mA)". **If the measured
+  contact is wider than 4.0 mm the land must grow and the routing must move to B.Cu** — this
+  is the single most likely reason for a respin after the cells are measured.
 
 ---
 
@@ -371,6 +390,26 @@ in-repo source, and it changes the wing quantity from 5 to 10.
 8. `TODO(unverified)` — structural adequacy of the tab fillet under the 4-arm cantilever load.
 9. `TODO(unverified)` — the operator's preferred cell packing (long-thin 176 × 25 vs
    stacked 65 × 57); this ADR picks long-thin and says so.
+
+## 7b. Evidence actually observed for the companion board
+
+All figures below are from tool output on branch `feat/wing-board-v9`
+(`tracker/hardware/wing_board/wing_board_v9.kicad_pcb`, built by
+`tracker/hardware/wing_board/build_wing_v9.py`):
+
+| Check | Command | Result |
+|---|---|---|
+| repo DRC scorecard | `python3 tracker/hardware/drc_score.py wing_board/wing_board_v9.kicad_pcb --label wing-v9 --tool skidl-script` | `fab_ready: 1`, `fp: 12`, `shorts: 0`, `clearance: 0`, `unconnected: 0`, `vias: 0`, `copper_mm: 212.0` |
+| fleet order gate | `pcb_order_gate.py wing_board_v9.kicad_pcb --fab gerbers_wing_v9 --out wing_v9-GATE-RECORD.json` (tool: `/home/c03rad0r/.hermes/profiles/manager/scripts/fleet/pcb_order_gate.py` — the SAME tool that wrote `tracker/hardware/v8j-GATE-RECORD.json`; the repo has no in-tree copy) | **`ORDER GATE: PASS`, exit 0**, `errors=0 unconnected=0 warnings=23 kicad=9.0.8` |
+| pair verification | `pcb_order_gate.py … --verify wing_v9-GATE-RECORD.json` | `ORDER GATE: VERIFIED`, exit 0 |
+| board sha256 | — | `8448d76b3a4e108f12016e1980bb954f068625d27522a1640a07ffc72fa3682c` (deterministic: two consecutive builder runs produced this same digest) |
+| fab (gerber dir) sha256 | — | `90cb2480a28b2dce7388f490b439ca299b41dde9feeae0570889824dd2159477` (the digest `pcb_order_gate.py` binds) |
+| fab (order zip) sha256 | — | `dab1e8dcfb075d6563f7208a93ef1eb88f83c597e3fe1ca851dac376c77766f5` |
+
+The 23 items the gate counts are **warnings only** (12 `lib_footprint_issues`, 6
+`silk_edge_clearance`, 2 `silk_overlap`, 2 `text_height`, 1 `silk_over_copper`) — the gate's
+contract is 0 errors / 0 unconnected, which is met. There are **0 errors** and **0
+unconnected items**.
 
 ## 8. Status of this text
 

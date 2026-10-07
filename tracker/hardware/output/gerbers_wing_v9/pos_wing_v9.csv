@@ -1,0 +1,13 @@
+Ref,Val,Package,PosX,PosY,Rot,Side
+"FB1","FerriteBead_0402_DNP_V2only","FerriteBead_0402_V2provision",58.000000,-1.700000,0.000000,top
+"FID1","Fiducial_1mm_Mask2mm","Fiducial_1mm_Mask2mm",30.000000,-1.700000,0.000000,top
+"FID2","Fiducial_1mm_Mask2mm","Fiducial_1mm_Mask2mm",105.000000,-1.700000,0.000000,top
+"FID3","Fiducial_1mm_Mask2mm","Fiducial_1mm_Mask2mm",145.000000,-1.700000,0.000000,top
+"H1","MountingHole_NPTH_2.2mm","MountingHole_2.2mm_NPTH",8.000000,-1.700000,0.000000,top
+"H2","MountingHole_NPTH_2.2mm","MountingHole_2.2mm_NPTH",88.000000,-1.700000,0.000000,top
+"H3","MountingHole_NPTH_2.2mm","MountingHole_2.2mm_NPTH",170.000000,-1.700000,0.000000,top
+"J1","WingTab_v9_4pin","WingTab_v9_4pin",0.000000,0.000000,0.000000,top
+"RF1","RF_ProvisionPad_v2only","RF_ProvisionPad_v2only",118.000000,-1.700000,0.000000,top
+"SC1","SolarCell_52x19mm_0.5V","SolarCell_52x19mm",30.000000,-12.500000,0.000000,top
+"SC2","SolarCell_52x19mm_0.5V","SolarCell_52x19mm",88.000000,-12.500000,0.000000,top
+"SC3","SolarCell_52x19mm_0.5V","SolarCell_52x19mm",146.000000,-12.500000,0.000000,top
