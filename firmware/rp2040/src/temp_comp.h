@@ -1,7 +1,7 @@
 /**
  * @file    temp_comp.h
  * @brief   On-board temperature-sensor-based drift compensation for the LR2021
- *          (ADR-057).  Pure C API — no Arduino, no SPI hardware dependency, so
+ *          (ADR-058).  Pure C API — no Arduino, no SPI hardware dependency, so
  *          the whole module is unit-testable on the host
  *          (`make -C firmware/rp2040/host-tests && ./host-tests/test_temp_comp`).
  *
@@ -13,7 +13,7 @@
  * ADJACENT TO THE CRYSTAL — so it measures the temperature of the thing that
  * actually drifts, not a board-level proxy.
  *
- * Layers (ADR-057 D2):
+ * Layers (ADR-058 D2):
  *   (a) read TEMP_SOURCE_XOSC over SPI                      -> read functions
  *   (b) per-unit calibration curve (bench-characterised)    -> temp_comp_curve_t
  *   (c) apply the correction (static trim and/or on-chip
@@ -265,8 +265,8 @@ typedef struct
 /**
  * The per-unit curve.  EMPTY (n == 0) means IDENTITY: compensation is exactly
  * 0.0 ppm.  The module never invents coefficients — the array stays empty until
- * the bench characterisation (ADR-057 D5, -60..+25 °C) fills it, and the bench
- * result is stored in NON-VOLATILE storage (ADR-057 D4).
+ * the bench characterisation (ADR-058 D5, -60..+25 °C) fills it, and the bench
+ * result is stored in NON-VOLATILE storage (ADR-058 D4).
  */
 typedef struct
 {

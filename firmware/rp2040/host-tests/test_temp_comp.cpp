@@ -1,6 +1,6 @@
 /**
  * @file    test_temp_comp.cpp
- * @brief   Host unit tests for the ADR-057 temperature-compensation module
+ * @brief   Host unit tests for the ADR-058 temperature-compensation module
  *          (src/temp_comp.cpp): the LR2021 GetTemp argument packing and °C
  *          conversion, the per-unit calibration curve (identity until the bench
  *          fills it), the verified command-frame builders, the honest

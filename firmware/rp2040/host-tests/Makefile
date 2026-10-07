@@ -48,7 +48,7 @@ test_dispatch: test_dispatch.cpp $(SRC_DIR)/flrc_range_host_dispatch.cpp \
 
 # --- catch-all ------------------------------------------------------------
 
-# ADR-057: LR2021 on-chip (XOSC-adjacent) temperature-sensor drift
+# ADR-058: LR2021 on-chip (XOSC-adjacent) temperature-sensor drift
 # compensation — pure-C++ module linked against src/temp_comp.cpp.
 test_temp_comp: test_temp_comp.cpp $(SRC_DIR)/temp_comp.cpp
 	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -o $@ $^ -lm

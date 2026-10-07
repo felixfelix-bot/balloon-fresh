@@ -1,6 +1,6 @@
 /**
  * @file    temp_comp.cpp
- * @brief   ADR-057 implementation: LR2021 on-chip (XOSC-adjacent) temperature
+ * @brief   ADR-058 implementation: LR2021 on-chip (XOSC-adjacent) temperature
  *          read, per-unit calibration curve, correction-application hook,
  *          1PPS-gated discipline state machine, and the MS5611 cross-check.
  *
