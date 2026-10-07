@@ -6,6 +6,8 @@
 > `python3 scripts/adr_next_number.py` → `52` (exit 0) **in this worktree**, because this worktree is
 > at `github/main` (`ce2366e`) and `docs/adr/052-…` is **not on main** — it is in flight on branch
 > `adr/cell-mounting-end-only` (commit `cfdec0d`, `docs/adr/052-cell-mounting-end-only.md`).
+> **(That branch has since been merged: `github/main` is now `15c936a` and carries
+> `docs/adr/052-cell-mounting-end-only.md`, which confirms 053 was the correct next free number.)**
 > ADR-051's and ADR-052's own headers both state the corpus rule: *the next free number is checked
 > across **all branches**, not just this checkout.* Applying that rule:
 >
