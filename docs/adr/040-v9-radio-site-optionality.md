@@ -189,3 +189,19 @@ git for-each-ref --format='%(refname:short)' refs/remotes | grep -i adr
 
 038 is the highest committed number; 039 is reserved by a concurrently-written worker
 (licence-exempt design point); **040 is free and taken here**.
+
+---
+
+## Correction (2026-10-08, `fix/record-contradictions`) — the "55 × 45 mm v9 board" figure is STALE
+
+This ADR's sizing argument ("Two F33 modules cannot fit on the **55 × 45 mm v9
+board**", §below) rests on the inherited v8h outline, which was the then-current
+figure when this ADR was written. The v9 hub was subsequently MEASURED and set:
+the first v9 hub PCB is **103.0 × 103.0 mm**
+(`tracker/hardware/hub_board_v9.kicad_pcb`, S0 placement;
+`tracker/hardware/placement-source-of-truth.json`), and 55 × 45 mm was explicitly
+rejected (39 footprinted components need 2582 mm² of courtyard against a 2475 mm²
+board). **Read the two-F33-modules statement against 103 × 103 mm, not 55 × 45 mm.**
+The radio-site conclusion is unaffected — it is a keep-out/feed-count argument,
+and a larger board only relaxes it. Registered as `hub_outline` in
+`docs/ssot/parameters.json`; gate `scripts/param_ssot_check.py`.
