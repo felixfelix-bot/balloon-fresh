@@ -1,7 +1,7 @@
 /*
  * tollgate_client.c — ground station TollGate client state machine
  *
- * Implements ADR-002: TollGate payment protocol client side.
+ * Implements ADR-100: TollGate payment protocol client side.
  *
  * State machine:
  *   IDLE     → QUERYING   (query_price sends STATUS)

@@ -1,7 +1,7 @@
 /*
  * tollgate_balloon.c — Mesh transport adapter for TollGate
  *
- * Implements ADR-002: UDP payment messages over FIPS mesh.
+ * Implements ADR-100: UDP payment messages over FIPS mesh.
  * Wraps tollgate_core with mesh node IDs instead of WiFi IP/MAC.
  *
  * IMPLEMENTED:

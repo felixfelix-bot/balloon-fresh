@@ -5,7 +5,7 @@
  * over the relay pipeline. Wire-compatible with the tollgate component's
  * version (mesh-stack/tollgate/components/tollgate_balloon/).
  *
- * Wire format (ADR-002):
+ * Wire format (ADR-100):
  *   [hdr(8 bytes, packed)] [payload(N bytes)]
  *
  * Header layout (little-endian, packed):

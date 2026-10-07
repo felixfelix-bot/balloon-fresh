@@ -1395,7 +1395,7 @@ void loop() {
     // Last known position is preserved in gps.lat/lon — parseNMEA only updates
     // those fields on a valid fix. When fix returns, position updates automatically.
     // Bench mode (laptop SET_TIME) is exempt — allows testing without GPS.
-    // ─── GPS FIX GATE (ADR-018): TX NEVER transmits without satellite fix ───
+    // ─── GPS FIX GATE (ADR-103): TX NEVER transmits without satellite fix ───
     // This is UNCONDITIONAL — no laptop exemption. Per Felix's requirement:
     // "when we don't have a satellite fix, the TX board shouldn't transmit at all."
     // The sweep loop keeps running (phase computation + radio reconfig above)

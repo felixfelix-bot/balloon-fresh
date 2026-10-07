@@ -1,6 +1,6 @@
 /*
  * test_tollgate_payment_proto.c — host unit tests for tollgate payment
- * protocol encode/decode (ADR-002), tracker firmware standalone version.
+ * protocol encode/decode (ADR-100), tracker firmware standalone version.
  *
  * Tests the wire-level message format:
  *   [hdr(8 bytes, packed)] [payload(N bytes)]

@@ -72,7 +72,7 @@ The original ESP32 TollGate keeps its WiFi + BitChat + captive portal stack for 
 ## Consequences
 
 - The captive_portal.c and dns_server.c files we kept are NOT needed for balloon. They remain useful for the original WiFi TollGate but should not be ported to the balloon radio variant.
-- A new **radio payment protocol** needs to be designed (ADR-002 candidate).
+- A new **radio payment protocol** needs to be designed (ADR-100 candidate).
 - The C3 build is still useful — it validates the business logic layer compiles and the nucula wallet works on C3 hardware.
 - Cross-track coordination needed: balloon-range-tests / balloon-firmware tracks own LR2021 driver. TollGate track consumes their radio API.
 
@@ -86,6 +86,6 @@ The original ESP32 TollGate keeps its WiFi + BitChat + captive portal stack for 
 ## Related
 
 - BALLOON-SCOPE-DECISIONS.md (component keep/drop)
-- ADR-017 (from balloon-fresh repo — LR2021 throughput)
+- ADR-102 (from balloon-fresh repo — LR2021 throughput)
 - balloon-range-tests track: LR2021 driver
 - balloon-firmware track: RP2040/ESP32 FLRC board firmware

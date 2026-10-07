@@ -1,5 +1,7 @@
 # ADR-019: TX-RX Synchronization Invariant — Same 56-Phase Sweep
 
+Renumbered from ADR-019 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
+
 ## Status
 
 Accepted
@@ -11,7 +13,7 @@ Accepted
 ## Related
 
 - ADR-017: Phase Sync via Reference Clocks
-- ADR-018: TX Autonomy Requirement
+- ADR-103: TX Autonomy Requirement
 - TX firmware: `firmware/rp2040/src/multi_radio_sweep_gps_v4.cpp`
 - RX firmware: `firmware/rp2040/src/multi_radio_sweep_rx_v4.cpp`
 

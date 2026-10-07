@@ -150,8 +150,8 @@ silently.
   ADR-029 §3 scheduled two ports of one half-duplex module. ADR-035 replaces
   that with a four-slot multi-chip schedule (ranging, TX, RX, idle) that owns
   the F33-2G4, the bare LoRa2021, the SX1280 and the Wi-Fi/BT transmitter.
-- **ADR-017 `017-lr2021-only-ban-sx1280.md`: "SUPERSEDED by ADR-020" — no live SX1280 ban exists.**
-  The original ADR-017 incorrectly banned the SX1280 and was superseded by
+- **ADR-101 `101-lr2021-only-ban-sx1280.md`: "SUPERSEDED by ADR-020" — no live SX1280 ban exists.**
+  The original ADR-101 incorrectly banned the SX1280 and was superseded by
   ADR-020. ADR-035's use of an SX1280 as a dedicated ranging radio is therefore
   **not a violation of any standing decision**.
 

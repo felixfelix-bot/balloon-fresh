@@ -82,7 +82,7 @@ class TestDecode:
 
 @pytest.mark.hw
 class TestTxAutonomy:
-    """Test TX autonomous operation (ADR-018)."""
+    """Test TX autonomous operation (ADR-103)."""
 
     def test_tx_no_set_time_still_runs(self, tx_port):
         """TX should boot and output NMEA WITHOUT receiving SET_TIME."""

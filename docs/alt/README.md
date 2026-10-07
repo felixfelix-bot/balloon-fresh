@@ -33,7 +33,7 @@ authorship, not an old-vs-new pair.
 **Which one is live, and why:** the trunk document, because it is the one with a
 **revision lineage to the shipped code and the pinned tests** (rev 2 reconciled
 against both; rev 3 applied the F1–F6 cold-review corrections) and it is the one
-cross-referenced by the repo's own commits and ADR-002. The retained copy is
+cross-referenced by the repo's own commits and ADR-100. The retained copy is
 **branch-scoped** by its own header ("Status: AUTHORITATIVE for branch
 `autonomous/mesh-baseline`") and has no review lineage. The live doc also states an
 explicit precedence rule: where the doc and the tests disagree on a pinned number,

@@ -16,7 +16,7 @@ Design invariants (ADR-020):
      capture processes can ever read the same port.
   6. Clean shutdown on SIGINT/SIGTERM — flushes, releases lock, closes port.
   7. Optional --resync: continuously send "SET_TIME <epoch>" to the RX every
-     10s so its UTC phase clock tracks the laptop NTP clock (ADR-019 sync).
+     10s so its UTC phase clock tracks the laptop NTP clock (ADR-104 sync).
 
 Firmware output (RX board, multi_radio_sweep_rx_v4.cpp) is plain ASCII:
     PHASE_START <n> <name> pktSize=<n>
@@ -284,8 +284,8 @@ def _send_resync(conn: RxConnection) -> bool:
     RX firmware (multi_radio_sweep_rx_v4.cpp) accepts:
         SET_TIME <unix_timestamp>\n
     Sending this every 10s keeps the RX's computePhaseFromUTC() aligned with
-    the laptop's NTP-disciplined clock (ADR-019 invariant: phase offset < 500ms).
-    TX gets its time from GPS autonomously (ADR-018) — never needs this.
+    the laptop's NTP-disciplined clock (ADR-104 invariant: phase offset < 500ms).
+    TX gets its time from GPS autonomously (ADR-103) — never needs this.
     """
     epoch = int(time.time())
     ok = conn.write(f"SET_TIME {epoch}\n".encode()) > 0
@@ -349,7 +349,7 @@ def run(serial_suffix: str, baud: int, out_dir: Path, rotate_min: int,
                 # Idle tick — avoid busy loop.
                 time.sleep(0.05)
 
-            # Continuous resync (ADR-019): keep RX phase clock aligned.
+            # Continuous resync (ADR-104): keep RX phase clock aligned.
             if resync and time.monotonic() - last_resync >= resync_interval:
                 if _send_resync(conn):
                     last_resync = time.monotonic()
@@ -380,7 +380,7 @@ def main():
                    help="log rotation interval in minutes (default: 30)")
     p.add_argument("--resync", action="store_true",
                    help="continuously send SET_TIME to RX every N seconds "
-                        "(keeps RX phase clock aligned to laptop NTP, ADR-019)")
+                        "(keeps RX phase clock aligned to laptop NTP, ADR-104)")
     p.add_argument("--resync-interval", type=float, default=10.0,
                    help="seconds between SET_TIME resyncs (default: 10)")
     args = p.parse_args()

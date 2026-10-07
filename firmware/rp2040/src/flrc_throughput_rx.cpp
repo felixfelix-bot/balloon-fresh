@@ -1,6 +1,6 @@
 /*
  * DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
- * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+ * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-101.
  * Use firmware/rp2040-flrc-max/ instead (RadioLib LR2021 driver).
  *
  * flrc_throughput_rx.cpp — Max-throughput FLRC RX for RP2040 + LR2021

@@ -47,7 +47,7 @@ We have 9 individually-proven components that have NEVER been tested together in
 
 ### 1.5 PoW E-Hash Relay — PROVEN (host-side)
 - 8+35 tests pass
-- Balloon NEVER hashes (pure L7 transport, per ADR-025)
+- Balloon NEVER hashes (pure L7 transport, per ADR-106)
 - Binary wire format: TEMPLATE(55-823B), NONCE(21B), RESULT(7B), CREDIT(16B)
 - Radio abstracted behind callbacks — host and C3 compatible
 

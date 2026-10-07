@@ -149,7 +149,7 @@ FLRC)"*. Confirmed:
 
 * **It is an SX1280 limit only.** That file is explicitly marked
   *"DEPRECATED — DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip).
-  Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017."* (`:2-3`). The 127 B
+  Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-101."* (`:2-3`). The 127 B
   ceiling is an artefact of dead code written for the wrong radio. (The LR20xx
   driver retains an SX1280-compat range note of `[6:127]` alongside the real
   `[6:511]` — *that* is the "127" that leaked into the comment.)

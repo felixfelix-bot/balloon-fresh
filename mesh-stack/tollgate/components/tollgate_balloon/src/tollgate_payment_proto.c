@@ -1,7 +1,7 @@
 /*
  * tollgate_payment_proto.c — UDP payment message encode/decode
  *
- * Implements ADR-002: TollGate payment over FIPS mesh UDP.
+ * Implements ADR-100: TollGate payment over FIPS mesh UDP.
  * Message format: [hdr(8 bytes, packed)] [payload(N bytes, JSON)]
  */
 

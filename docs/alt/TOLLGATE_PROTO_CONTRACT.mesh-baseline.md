@@ -4,7 +4,7 @@
 **Scope:** `tracker/firmware/main/tollgate_payment_proto.h` / `.c` — the TollGate
 PAY/ACK message format as it crosses the tracker relay pipeline.
 **Date:** 2026-09-27
-**Supersedes:** the inline "Wire format (ADR-002)" comments in
+**Supersedes:** the inline "Wire format (ADR-100)" comments in
 `tracker/firmware/main/tollgate_payment_proto.h:8-19` and
 `tracker/firmware/main/tollgate_payment_proto.c:4-8`, and the `RELAY_TYPE_*` /
 `TG_MSG_*` prose scattered across `relay_types.h`, `app_task.cpp`, `app_main.cpp`.
@@ -51,7 +51,7 @@ Primary sources actually used:
 | Upstream spec (payload structs, prototypes) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h` |
 | Upstream reference implementation | `mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_payment_proto.c` |
 | Upstream 1-byte framing analogue | `mesh-stack/tollgate/components/mesh_service_mux/include/mesh_service_mux.h` |
-| Decision record | `docs/adr/002-tollgate-over-fips-mesh-udp.md` |
+| Decision record | `docs/adr/100-tollgate-over-fips-mesh-udp.md` |
 | Tracker header / impl | `tracker/firmware/main/tollgate_payment_proto.h` / `.c` |
 | Relay framing | `tracker/firmware/main/relay_types.h` |
 | Call sites | `tracker/firmware/main/app_task.cpp`, `tracker/firmware/main/app_main.cpp` |
@@ -568,8 +568,8 @@ must translate the tag. This invention is the direct cause of the numeric collis
 in §4.3.
 
 **PROVENANCE-INVENTED-3 — the ACK payload is a raw packed binary struct, not
-JSON.** ADR-002 explicitly leaves the message format open and *proposes* JSON
-(`docs/adr/002-tollgate-over-fips-mesh-udp.md:83-84`), and upstream's proto header
+JSON.** ADR-100 explicitly leaves the message format open and *proposes* JSON
+(`docs/adr/100-tollgate-over-fips-mesh-udp.md:83-84`), and upstream's proto header
 comment says "Payloads are JSON for v1" while simultaneously declaring the packed
 binary structs (an internal contradiction upstream). The tracker resolved it to
 binary-packed, justified by its only call site: `app_task.cpp:135` passes
@@ -582,7 +582,7 @@ This is a documented deviation from the ADR's proposal, not an oversight.
 **PROVENANCE-INVENTED-4 — decode tolerates trailing bytes; `payload_len` over-claim
 is the only truncation signal.** Upstream's `if (hdr->payload_len > len -
 sizeof(hdr))` happens to behave this way, but neither the upstream comment nor
-ADR-002 states the tolerance as a rule. It is stated here because the tracker's
+ADR-100 states the tolerance as a rule. It is stated here because the tracker's
 frame is radio-delivered and may be padded.
 
 **PROVENANCE-INVENTED-5 — `reserved` must be ignored by receivers.** Upstream labels
@@ -609,12 +609,12 @@ components are not Kconfig-gated per feature; the tracker's guard convention (an
 compile the header with no sdkconfig. The silent-compile-out failure mode is
 evidenced by commit `97ac756`.
 
-**PROVENANCE-INVENTED-9 — ADR-002 is cited but does not specify this layout.**
-`tollgate_payment_proto.h:8` says "Wire format (ADR-002)". A full read of ADR-002
+**PROVENANCE-INVENTED-9 — ADR-100 is cited but does not specify this layout.**
+`tollgate_payment_proto.h:8` says "Wire format (ADR-100)". A full read of ADR-100
 shows it specifies the *transport* (TollGate as L7 over FIPS mesh UDP, port 2121,
 nucula wallet unchanged) and leaves "Payment message format: JSON over UDP? CBOR?
 Protocol buffers?" as an **Open Question** (lines 83-84). The byte-level 8-byte header
-comes from the `tollgate_balloon` component code, not from ADR-002. The citation is
+comes from the `tollgate_balloon` component code, not from ADR-100. The citation is
 therefore loose; this document is the correct byte-level authority.
 
 ### 8.3 Upstream capabilities the tracker does NOT implement (honest scope)

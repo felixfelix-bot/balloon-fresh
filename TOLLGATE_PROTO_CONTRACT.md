@@ -9,7 +9,7 @@ values they assert**: where this document and the code disagree on a number the 
 the tests win and this document is a bug — but where this document names a clause the code
 violates, the code is the defect and gets a card (§7.1 D1/D2). Do not silently re-derive the
 contract from the implementation.
-**Related:** ADR-002 (`docs/adr/002-tollgate-over-fips-mesh-udp.md`), upstream component
+**Related:** ADR-100 (`docs/adr/100-tollgate-over-fips-mesh-udp.md`), upstream component
 `mesh-stack/tollgate/components/tollgate_balloon/`, sibling spec
 `tracker/firmware/TOLLGATE_PROTO_API.md` (§0.2).
 
@@ -88,7 +88,7 @@ error value below is byte-for-byte what the pinned tests assert.
 
 | Topic | Source |
 |---|---|
-| Spec search (upstream) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h`, `.../include/tollgate_payment_proto.h`, `.../src/tollgate_payment_proto.c`; `docs/adr/002-tollgate-over-fips-mesh-udp.md` |
+| Spec search (upstream) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h`, `.../include/tollgate_payment_proto.h`, `.../src/tollgate_payment_proto.c`; `docs/adr/100-tollgate-over-fips-mesh-udp.md` |
 | app_task call sites | `tracker/firmware/main/app_task.cpp` lines 32–33, 114–145 |
 | Test/mock usage | `tracker/firmware/main/test/test_relay_pipeline.c` (lines 76–83, 101–164, 200–215, TEST 4/5/8/12); `tracker/firmware/main/test/test_tollgate_payment_proto.c` (14 test functions locally / 10 on `origin/main`) |
 | Framing + config | `tracker/firmware/main/relay_types.h`; `main/Kconfig.projbuild` lines 141–147; `main/CMakeLists.txt` lines 29–31; `sdkconfig` line 576 |
@@ -471,7 +471,7 @@ listed the first one as a "wart" and missed the second entirely.
   future decision (chunking, compression, or cap) — out of scope here, but the contract
   must not pretend it fits.
 - **Upstream divergence on payload kind:** the upstream header documents JSON payloads
-  (ADR-002 open question 2 chose "JSON initially") and names the parameter `json_payload`.
+  (ADR-100 open question 2 chose "JSON initially") and names the parameter `json_payload`.
   The tracker copy renamed it to `payload` and sends the **packed binary**
   `tollgate_ack_payload_t` — wire-incompatible with an upstream JSON ACK. The two copies are
   header/struct-compatible but payload-interpretation is per-deployment.
@@ -483,7 +483,7 @@ listed the first one as a "wart" and missed the second entirely.
 
 ## 8. Provenance
 
-### Inherited from upstream (mesh-stack `tollgate_balloon` component / ADR-002)
+### Inherited from upstream (mesh-stack `tollgate_balloon` component / ADR-100)
 
 | Item | Upstream source |
 |---|---|
@@ -495,7 +495,7 @@ listed the first one as a "wart" and missed the second entirely.
 | `tollgate_nack_payload_t`, `TG_ERR_*` codes −1..−5 | upstream `tollgate_payment_proto.h:37-47` |
 | `tollgate_pay_payload_t` (`char token[2048]`) | upstream `tollgate_payment_proto.h:24-26` |
 | encode/decode function shapes, "total bytes written" / "payload offset" returns | upstream `tollgate_payment_proto.h:60-75` |
-| `[hdr(8)][payload]` wire format, UDP port 2121 framing | ADR-002 |
+| `[hdr(8)][payload]` wire format, UDP port 2121 framing | ADR-100 |
 
 ### Tracker-local inventions / deltas (with reasons)
 
@@ -505,7 +505,7 @@ listed the first one as a "wart" and missed the second entirely.
 | Parameter renamed `json_payload` → `payload` | `app_task.cpp:135` passes a packed binary struct (`(const char *)&ack_payload`), not JSON — the tracker use is payload-kind-agnostic (see §7 divergence note) |
 | `tg_type_is_valid()` bounds check (1..6) in **encode** and **decode** | Upstream validated neither; hardening demanded by unit tests 11/12 (commit 38360fb1) — a bogus type byte must not enter or leave the device |
 | No-write-on-failure guarantee pinned for encode; hdr-untouched pinned for truncated decode | Canary tests 12/13 (commit 38360fb1) — encode rejections must not partially scribble a radio buffer |
-| `RELAY_TYPE_*` 1-byte tag prefix framing | Tracker relay pipeline (relay_types.h / radio↔app queues) — upstream framing was a bare UDP datagram on port 2121 with no tag byte. This is the transport delta of ADR-002 → tracker pipeline |
+| `RELAY_TYPE_*` 1-byte tag prefix framing | Tracker relay pipeline (relay_types.h / radio↔app queues) — upstream framing was a bare UDP datagram on port 2121 with no tag byte. This is the transport delta of ADR-100 → tracker pipeline |
 | Guard pattern: include + dispatch arm + CMake all behind `CONFIG_ENABLE_TOLLGATE`, header itself unguarded | Kconfig feature-gating (default n) while keeping host tests compilable |
 | **Not ported:** `tollgate_proto_build_info_json()` | No tracker call site builds INFO JSON; keeping it out avoids a malloc'd-string API on device |
 

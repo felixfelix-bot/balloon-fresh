@@ -7,7 +7,7 @@ Board A sends a PAY message (Cashu token) via LR2021 radio, Board B receives it,
 decodes the payment, and sends back an ACK with session info. Board A receives
 the ACK and the test verifies the sequence number and session details match.
 
-The test uses the tollgate_payment_proto wire format (ADR-002):
+The test uses the tollgate_payment_proto wire format (ADR-100):
   - PAY message:  header(8 bytes) + token payload
   - ACK message:  header(8 bytes) + session_id + expires + quota + price
 

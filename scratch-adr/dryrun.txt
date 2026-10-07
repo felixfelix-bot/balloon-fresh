@@ -1,0 +1,349 @@
+### Rename map (10 moves)
+  002-tollgate-over-fips-mesh-udp.md -> 100-tollgate-over-fips-mesh-udp.md
+  017-lr2021-only-ban-sx1280.md -> 101-lr2021-only-ban-sx1280.md
+  017-version-tagging-policy.md -> 102-version-tagging-policy.md
+  018-tx-autonomy-requirement.md -> 103-tx-autonomy-requirement.md
+  019-tx-rx-sync-invariant.md -> 104-tx-rx-sync-invariant.md
+  020-reproducible-build-flash-test.md -> 105-reproducible-build-flash-test.md
+  025-e-hash-relay-transport-layer.md -> 106-e-hash-relay-transport-layer.md
+  028-three-variant-pcb-design.md -> 107-three-variant-pcb-design.md
+  029-f33-sx1280-pin-plan.md -> 108-f33-sx1280-pin-plan.md
+  029-firmware-output-harmonization.md -> 109-firmware-output-harmonization.md
+
+### Reference rewrites: 107 line(s) in 57 file(s)
+
+--- TOLLGATE-SYMBOL-INVENTORY.md (2)
+  L351   - ./test/integration/test_tollgate_payack.py:10:The test uses the tollgate_payment_proto wire format (ADR-002):
+         + ./test/integration/test_tollgate_payack.py:10:The test uses the tollgate_payment_proto wire format (ADR-100):
+  L354   - ./main/app_main.cpp:589: * tollgate_payment_proto.c (ADR-002 wire format).
+         + ./main/app_main.cpp:589: * tollgate_payment_proto.c (ADR-100 wire format).
+
+--- TOLLGATE_PROTO_CONTRACT.md (6)
+  L12    - **Related:** ADR-002 (`docs/adr/002-tollgate-over-fips-mesh-udp.md`), upstream component
+         + **Related:** ADR-100 (`docs/adr/100-tollgate-over-fips-mesh-udp.md`), upstream component
+  L91    - | Spec search (upstream) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h`, `.../include/tollgate_payment_proto.h`, `.../src/tollgate_payment
+         + | Spec search (upstream) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h`, `.../include/tollgate_payment_proto.h`, `.../src/tollgate_payment
+  L474   - (ADR-002 open question 2 chose "JSON initially") and names the parameter `json_payload`.
+         + (ADR-100 open question 2 chose "JSON initially") and names the parameter `json_payload`.
+  L486   - ### Inherited from upstream (mesh-stack `tollgate_balloon` component / ADR-002)
+         + ### Inherited from upstream (mesh-stack `tollgate_balloon` component / ADR-100)
+  L498   - | `[hdr(8)][payload]` wire format, UDP port 2121 framing | ADR-002 |
+         + | `[hdr(8)][payload]` wire format, UDP port 2121 framing | ADR-100 |
+  L508   - | `RELAY_TYPE_*` 1-byte tag prefix framing | Tracker relay pipeline (relay_types.h / radio↔app queues) — upstream framing was a bare UDP datagram on port 2121 with no tag
+         + | `RELAY_TYPE_*` 1-byte tag prefix framing | Tracker relay pipeline (relay_types.h / radio↔app queues) — upstream framing was a bare UDP datagram on port 2121 with no tag
+
+--- docs/CHANGELOG.md (1)
+  L30    - See `docs/adr/ADR-017-version-tagging-policy.md` for the full policy.
+         + See `docs/adr/102-version-tagging-policy.md` for the full policy.
+
+--- docs/FLIGHT-TEST-READINESS-2026-07-29.md (1)
+  L29    - - GPS FIX GATE (ADR-018) — won't transmit without satellite lock
+         + - GPS FIX GATE (ADR-103) — won't transmit without satellite lock
+
+--- docs/FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md (1)
+  L152   - Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017."* (`:2-3`). The 127 B
+         + Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-101."* (`:2-3`). The 127 B
+
+--- docs/PLAN-fix-blockers.md (1)
+  L5     - **Related:** ADR-001, ADR-002, ADR-024
+         + **Related:** ADR-001, ADR-100, ADR-024
+
+--- docs/PLAN-three-tasks.md (1)
+  L6     - **Related:** ADR-002, PLAN-fix-blockers.md
+         + **Related:** ADR-100, PLAN-fix-blockers.md
+
+--- docs/SOLAR-PIN-REGULATORY.md (1)
+  L157   - committed pin plan `docs/adr/029-f33-sx1280-pin-plan.md` already assigns the F33 (SPI2)
+         + committed pin plan `docs/adr/108-f33-sx1280-pin-plan.md` already assigns the F33 (SPI2)
+
+--- docs/STATUS-balloon-pow.md (3)
+  L15    - 1. ADR-025 E-Hash mining relay design (balloon = L7 transport, never hashes)
+         + 1. ADR-106 E-Hash mining relay design (balloon = L7 transport, never hashes)
+  L90    - - Per ADR-025 D1: balloon never hashes, never verifies signatures. So sig field doesn't change e-hash relay logic.
+         + - Per ADR-106 D1: balloon never hashes, never verifies signatures. So sig field doesn't change e-hash relay logic.
+  L113   - - Wire-compatible with mesh-stack/tollgate/components/tollgate_balloon/ (ADR-002)
+         + - Wire-compatible with mesh-stack/tollgate/components/tollgate_balloon/ (ADR-100)
+
+--- docs/STATUS-balloon-tollgate.md (2)
+  L19    - 5. 76acae6 — ADR-002 (FIPS mesh UDP transport)
+         + 5. 76acae6 — ADR-100 (FIPS mesh UDP transport)
+  L27    - 3. ADR-002: TollGate = L7 app over FIPS mesh UDP (port 2121)
+         + 3. ADR-100: TollGate = L7 app over FIPS mesh UDP (port 2121)
+
+--- docs/V9-RADIO-SITE-MATRIX.md (2)
+  L58    - Base pin plan is `docs/adr/029-f33-sx1280-pin-plan.md` (F33 on SPI2, SX1280 on SPI3).
+         + Base pin plan is `docs/adr/108-f33-sx1280-pin-plan.md` (F33 on SPI2, SX1280 on SPI3).
+  L71    - `docs/adr/029-f33-sx1280-pin-plan.md` (PSRAM pins).
+         + `docs/adr/108-f33-sx1280-pin-plan.md` (PSRAM pins).
+
+--- docs/adr/019-tx-rx-sync-invariant.md (1)
+  L14    - - ADR-018: TX Autonomy Requirement
+         + - ADR-103: TX Autonomy Requirement
+
+--- docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md (1)
+  L5     - **Supersedes ADR-017** (which incorrectly banned SX1280 and mandated RadioLib).
+         + **Supersedes ADR-101** (which incorrectly banned SX1280 and mandated RadioLib).
+
+--- docs/adr/020-reproducible-build-flash-test.md (2)
+  L13    - - ADR-018: TX Autonomy Requirement
+         + - ADR-103: TX Autonomy Requirement
+  L14    - - ADR-019: TX-RX Sync Invariant
+         + - ADR-104: TX-RX Sync Invariant
+
+--- docs/adr/029-dual-band-flight-board.md (4)
+  L19    - LTspice + openEMS + stackup impedance), ADR-028 (three-variant PCB design),
+         + LTspice + openEMS + stackup impedance), ADR-107 (three-variant PCB design),
+  L31    - > Numbering note: `docs/adr/029-firmware-output-harmonization.md` exists on the **unmerged**
+         + > Numbering note: `docs/adr/109-firmware-output-harmonization.md` exists on the **unmerged**
+  L678   - - **O7 — ADR numbering collision.** `029-firmware-output-harmonization.md` on the unmerged
+         + - **O7 — ADR numbering collision.** `109-firmware-output-harmonization.md` on the unmerged
+  L773   - recorded in `docs/adr/029-f33-sx1280-pin-plan.md`; it leaves IO35–37 and the
+         + recorded in `docs/adr/108-f33-sx1280-pin-plan.md`; it leaves IO35–37 and the
+
+--- docs/adr/029-firmware-output-harmonization.md (1)
+  L86    - - `docs/adr/029-firmware-output-harmonization.md`
+         + - `docs/adr/109-firmware-output-harmonization.md`
+
+--- docs/adr/030-deterministic-zero-inference-pcb-pipeline.md (1)
+  L30    - > carries an unmerged `docs/adr/029-firmware-output-harmonization.md`; that collision is
+         + > carries an unmerged `docs/adr/109-firmware-output-harmonization.md`; that collision is
+
+--- docs/adr/035-tdm-radio-schedule.md (2)
+  L153   - - **ADR-017 `017-lr2021-only-ban-sx1280.md`: "SUPERSEDED by ADR-020" — no live SX1280 ban exists.**
+         + - **ADR-101 `101-lr2021-only-ban-sx1280.md`: "SUPERSEDED by ADR-020" — no live SX1280 ban exists.**
+  L154   - The original ADR-017 incorrectly banned the SX1280 and was superseded by
+         + The original ADR-101 incorrectly banned the SX1280 and was superseded by
+
+--- docs/adr/037-mcu-s3-no-fem.md (3)
+  L46    - pin plan (§4, `docs/adr/029-f33-sx1280-pin-plan.md`). ADR-001 (ESP32-C3) is **scoped to
+         + pin plan (§4, `docs/adr/108-f33-sx1280-pin-plan.md`). ADR-001 (ESP32-C3) is **scoped to
+  L56    - (`docs/adr/029-f33-sx1280-pin-plan.md`); that work stands and is referenced, not redone.
+         + (`docs/adr/108-f33-sx1280-pin-plan.md`); that work stands and is referenced, not redone.
+  L117   - (`docs/adr/029-f33-sx1280-pin-plan.md`). That work stands; it is referenced, not redone.
+         + (`docs/adr/108-f33-sx1280-pin-plan.md`). That work stands; it is referenced, not redone.
+
+--- docs/adr/ADR-001-tollgate-over-lr2021.md (2)
+  L75    - - A new **radio payment protocol** needs to be designed (ADR-002 candidate).
+         + - A new **radio payment protocol** needs to be designed (ADR-100 candidate).
+  L89    - - ADR-017 (from balloon-fresh repo — LR2021 throughput)
+         + - ADR-102 (from balloon-fresh repo — LR2021 throughput)
+
+--- docs/alt/README.md (1)
+  L36    - cross-referenced by the repo's own commits and ADR-002. The retained copy is
+         + cross-referenced by the repo's own commits and ADR-100. The retained copy is
+
+--- docs/alt/TOLLGATE_PROTO_CONTRACT.mesh-baseline.md (8)
+  L7     - **Supersedes:** the inline "Wire format (ADR-002)" comments in
+         + **Supersedes:** the inline "Wire format (ADR-100)" comments in
+  L54    - | Decision record | `docs/adr/002-tollgate-over-fips-mesh-udp.md` |
+         + | Decision record | `docs/adr/100-tollgate-over-fips-mesh-udp.md` |
+  L571   - JSON.** ADR-002 explicitly leaves the message format open and *proposes* JSON
+         + JSON.** ADR-100 explicitly leaves the message format open and *proposes* JSON
+  L572   - (`docs/adr/002-tollgate-over-fips-mesh-udp.md:83-84`), and upstream's proto header
+         + (`docs/adr/100-tollgate-over-fips-mesh-udp.md:83-84`), and upstream's proto header
+  L585   - ADR-002 states the tolerance as a rule. It is stated here because the tracker's
+         + ADR-100 states the tolerance as a rule. It is stated here because the tracker's
+  L612   - **PROVENANCE-INVENTED-9 — ADR-002 is cited but does not specify this layout.**
+         + **PROVENANCE-INVENTED-9 — ADR-100 is cited but does not specify this layout.**
+  L613   - `tollgate_payment_proto.h:8` says "Wire format (ADR-002)". A full read of ADR-002
+         + `tollgate_payment_proto.h:8` says "Wire format (ADR-100)". A full read of ADR-100
+  L617   - comes from the `tollgate_balloon` component code, not from ADR-002. The citation is
+         + comes from the `tollgate_balloon` component code, not from ADR-100. The citation is
+
+--- docs/coordination/CLI-COMMAND-AUDIT.md (1)
+  L108   - - Created `main/tollgate_payment_proto.h` — standalone header with `tollgate_msg_hdr_t`, `tollgate_ack_payload_t`, `TG_MSG_PAY`/`TG_MSG_ACK`/etc., `tollgate_proto_encode(
+         + - Created `main/tollgate_payment_proto.h` — standalone header with `tollgate_msg_hdr_t`, `tollgate_ack_payload_t`, `TG_MSG_PAY`/`TG_MSG_ACK`/etc., `tollgate_proto_encode(
+
+--- docs/coordination/CONSULTANT-PLAN-REVIEW-V2.md (1)
+  L288   - **The balloon never hashes (per ADR-025).** E-hash is a pure L7 transport wrapper. For the first integration, skip it entirely. Send raw Nostr event bytes over raw LoRa. 
+         + **The balloon never hashes (per ADR-106).** E-hash is a pure L7 transport wrapper. For the first integration, skip it entirely. Send raw Nostr event bytes over raw LoRa. 
+
+--- docs/coordination/CONSULTANT-PROJECT-REVIEW.md (1)
+  L50    - - Balloon NEVER hashes (pure L7 transport, per ADR-025)
+         + - Balloon NEVER hashes (pure L7 transport, per ADR-106)
+
+--- docs/coordination/DISCOVERIES.md (6)
+  L373   - ### [balloon-pre-stretching] docs: discovery sync batch 6 — ADR-028 three-variant PCB, weight estimates at ri (2026-08-05) | tags: HARDWARE
+         + ### [balloon-pre-stretching] docs: discovery sync batch 6 — ADR-107 three-variant PCB, weight estimates at ri (2026-08-05) | tags: HARDWARE
+  L376   - - **Full message:** docs: discovery sync batch 6 — ADR-028 three-variant PCB, weight estimates at risk
+         + - **Full message:** docs: discovery sync batch 6 — ADR-107 three-variant PCB, weight estimates at risk
+  L2516  - - **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md (+8 more)
+         + - **Files:** AGENTS.md, docs/adr/101-lr2021-only-ban-sx1280.md, docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md (+8 more)
+  L2521  - ### [balloon-hermes] ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files (2026-07-23) | tags: RADIO
+         + ### [balloon-hermes] ban SX1280 from codebase: ADR-101 + AGENTS.md warning + deprecate 5 source files (2026-07-23) | tags: RADIO
+  L2523  - - **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/coordination/DISCOVERIES.md (+6 more)
+         + - **Files:** AGENTS.md, docs/adr/101-lr2021-only-ban-sx1280.md, docs/coordination/DISCOVERIES.md (+6 more)
+  L2524  - - **Full message:** ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files
+         + - **Full message:** ban SX1280 from codebase: ADR-101 + AGENTS.md warning + deprecate 5 source files
+
+--- docs/lr2021-research/local-inventory.md (1)
+  L189   - | `docs/adr/017-lr2021-only-ban-sx1280.md` | md | 1621 | 35 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | none (no command/register tokens observed)
+         + | `docs/adr/101-lr2021-only-ban-sx1280.md` | md | 1621 | 35 | tracked@2e9d297e last=811a156b | first-party-analysis-secondary | none (no command/register tokens observed)
+
+--- docs/plans/BRANCH-CONSOLIDATION-PLAN.md (5)
+  L39    - - ✅ GPS fix-gate (ADR-018)
+         + - ✅ GPS fix-gate (ADR-103)
+  L54    - CONFLICTS with ADR-018 (range-tests): unconditional GPS fix-gate
+         + CONFLICTS with ADR-103 (range-tests): unconditional GPS fix-gate
+  L55    - - ADR-018: TX never transmits without GPS fix
+         + - ADR-103: TX never transmits without GPS fix
+  L57    - - RESOLUTION: Make GPS gate configurable. Default ON for range tests (ADR-018),
+         + - RESOLUTION: Make GPS gate configurable. Default ON for range tests (ADR-103),
+  L193   - - Default: ADR-018 (GPS fix-gate ON for outdoor range tests)
+         + - Default: ADR-103 (GPS fix-gate ON for outdoor range tests)
+
+--- docs/plans/BUG-FIX-REGISTRY.md (3)
+  L51    - - **Range-tests' philosophy** (ADR-018, commit `98795c0`): **never transmit without GPS fix** (Felix's requirement). TX stays silent on a power bank until satellites are 
+         + - **Range-tests' philosophy** (ADR-103, commit `98795c0`): **never transmit without GPS fix** (Felix's requirement). TX stays silent on a power bank until satellites are 
+  L80    - | TX-16 | **GPS fix gate (TX never transmits without fix)** | CONFLICT with 2752fa1 | See Q3 above. Commit `98795c0` (ADR-018). |
+         + | TX-16 | **GPS fix gate (TX never transmits without fix)** | CONFLICT with 2752fa1 | See Q3 above. Commit `98795c0` (ADR-103). |
+  L192   - - **Range-tests** (`98795c0`, ADR-018): 60s gate → WAITING_FOR_GPS state → **never transmit without fix**.
+         + - **Range-tests** (`98795c0`, ADR-103): 60s gate → WAITING_FOR_GPS state → **never transmit without fix**.
+
+--- docs/recon/tollgate-payack-spec-recon-2026-09-27.md (2)
+  L95    - Wire format (ADR-002):  [hdr(8, packed)] [payload(N)]
+         + Wire format (ADR-100):  [hdr(8, packed)] [payload(N)]
+  L124   - - Its ADR citation is misleading: `docs/adr/002-tollgate-over-fips-mesh-udp.md` decides
+         + - Its ADR citation is misleading: `docs/adr/100-tollgate-over-fips-mesh-udp.md` decides
+
+--- docs/recon/tollgate_proto_test_mock.md (1)
+  L60    - 79|/* encode/decode functions matching ADR-002. The mock has been removed */
+         + 79|/* encode/decode functions matching ADR-100. The mock has been removed */
+
+--- firmware/rp2040/src/flrc_raw_tx_pipe.cpp (1)
+  L3     - * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+         + * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-101.
+
+--- firmware/rp2040/src/flrc_throughput_rx.cpp (1)
+  L3     - * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+         + * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-101.
+
+--- firmware/rp2040/src/flrc_throughput_tx.cpp (1)
+  L3     - * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-017.
+         + * Our chip is LR2021 (Gen 4), NOT SX1280. See ADR-101.
+
+--- firmware/rp2040/src/multi_radio_sweep_gps_v4.cpp (1)
+  L1398  - // ─── GPS FIX GATE (ADR-018): TX NEVER transmits without satellite fix ───
+         + // ─── GPS FIX GATE (ADR-103): TX NEVER transmits without satellite fix ───
+
+--- firmware/rp2040/tests/test_hardware.py (1)
+  L85    - """Test TX autonomous operation (ADR-018)."""
+         + """Test TX autonomous operation (ADR-103)."""
+
+--- firmware/rp2040/tools/rx_capture.py (5)
+  L19    - 10s so its UTC phase clock tracks the laptop NTP clock (ADR-019 sync).
+         + 10s so its UTC phase clock tracks the laptop NTP clock (ADR-104 sync).
+  L287   - the laptop's NTP-disciplined clock (ADR-019 invariant: phase offset < 500ms).
+         + the laptop's NTP-disciplined clock (ADR-104 invariant: phase offset < 500ms).
+  L288   - TX gets its time from GPS autonomously (ADR-018) — never needs this.
+         + TX gets its time from GPS autonomously (ADR-103) — never needs this.
+  L352   - # Continuous resync (ADR-019): keep RX phase clock aligned.
+         + # Continuous resync (ADR-104): keep RX phase clock aligned.
+  L383   - "(keeps RX phase clock aligned to laptop NTP, ADR-019)")
+         + "(keeps RX phase clock aligned to laptop NTP, ADR-104)")
+
+--- mesh-stack/ehash-bridge/ehash_codec.py (1)
+  L6     - Implements all four L7 message types defined in ADR-025 / ehash-spec.md:
+         + Implements all four L7 message types defined in ADR-106 / ehash-spec.md:
+
+--- mesh-stack/ehash-relay/include/ehash_relay.h (2)
+  L3     - * @brief Phase C — Balloon-side e-hash relay module (ADR-025)
+         + * @brief Phase C — Balloon-side e-hash relay module (ADR-106)
+  L28    - *   - ADR-025 §Phase C
+         + *   - ADR-106 §Phase C
+
+--- mesh-stack/protocol/ehash-interface-boundary.md (3)
+  L7     - - [ADR-025](../../docs/adr/025-e-hash-relay-transport-layer.md) — full e-hash relay architecture
+         + - [ADR-106](../../docs/adr/106-e-hash-relay-transport-layer.md) — full e-hash relay architecture
+  L8     - - [ADR-025 Decisions D1–D10](../../docs/adr/adr-e-hash-relay-DECISIONS.md) — locked design decisions
+         + - [ADR-106 Decisions D1–D10](../../docs/adr/adr-e-hash-relay-DECISIONS.md) — locked design decisions
+  L455   - Phase D (per ADR-025) brings both together on the Pi with real radio
+         + Phase D (per ADR-106) brings both together on the Pi with real radio
+
+--- mesh-stack/protocol/ehash-spec.md (6)
+  L3     - **Status:** Phase A (ADR-025) — Proposed
+         + **Status:** Phase A (ADR-106) — Proposed
+  L5     - **Related:** [ADR-025](../../docs/adr/025-e-hash-relay-transport-layer.md), [SPEC.md §4](SPEC.md) (Fragmentation Layer)
+         + **Related:** [ADR-106](../../docs/adr/106-e-hash-relay-transport-layer.md), [SPEC.md §4](SPEC.md) (Fragmentation Layer)
+  L10    - L7 message types introduced in ADR-025 §1:
+         + L7 message types introduced in ADR-106 §1:
+  L88    - > **ADR-025 §Payload Size Fit** states templates are "~120–200 bytes, fits in
+         + > **ADR-106 §Payload Size Fit** states templates are "~120–200 bytes, fits in
+  L324   - payload without parsing message fields (ADR-025 invariant #1: balloon never hashes).
+         + payload without parsing message fields (ADR-106 invariant #1: balloon never hashes).
+  L335   - - **Template encryption** (ADR-025 O3): If adopted, a per-session key layer
+         + - **Template encryption** (ADR-106 O3): If adopted, a per-session key layer
+
+--- mesh-stack/protocol/ehash_messages.h (2)
+  L3     - * @brief E-Hash relay message binary encoding (ADR-025 Phase A)
+         + * @brief E-Hash relay message binary encoding (ADR-106 Phase A)
+  L13    - * ADR-025: docs/adr/025-e-hash-relay-transport-layer.md
+         + * ADR-106: docs/adr/106-e-hash-relay-transport-layer.md
+
+--- mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h (1)
+  L16    - * Wraps tollgate_core for FIPS mesh UDP transport (ADR-002).
+         + * Wraps tollgate_core for FIPS mesh UDP transport (ADR-100).
+
+--- mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h (1)
+  L12    - * TollGate Payment Protocol — UDP message format (ADR-002)
+         + * TollGate Payment Protocol — UDP message format (ADR-100)
+
+--- mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_balloon.c (1)
+  L4     - * Implements ADR-002: UDP payment messages over FIPS mesh.
+         + * Implements ADR-100: UDP payment messages over FIPS mesh.
+
+--- mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_payment_proto.c (1)
+  L4     - * Implements ADR-002: TollGate payment over FIPS mesh UDP.
+         + * Implements ADR-100: TollGate payment over FIPS mesh UDP.
+
+--- mesh-stack/tollgate/components/tollgate_client/include/tollgate_client.h (1)
+  L13    - * TollGate Client — ground station payment state machine (ADR-002)
+         + * TollGate Client — ground station payment state machine (ADR-100)
+
+--- mesh-stack/tollgate/components/tollgate_client/src/tollgate_client.c (1)
+  L4     - * Implements ADR-002: TollGate payment protocol client side.
+         + * Implements ADR-100: TollGate payment protocol client side.
+
+--- mesh-stack/tollgate/tests/unit/test_payment_proto.c (1)
+  L3     - * encode/decode functions (ADR-002).
+         + * encode/decode functions (ADR-100).
+
+--- mesh-stack/tollgate/tests/unit/test_tollgate_client.c (1)
+  L4     - * Tests the client-side payment protocol state machine (ADR-002):
+         + * Tests the client-side payment protocol state machine (ADR-100):
+
+--- tracker/firmware/main/app_main.cpp (1)
+  L598   - * tollgate_payment_proto.c (ADR-002 wire format), which enforces the tracker
+         + * tollgate_payment_proto.c (ADR-100 wire format), which enforces the tracker
+
+--- tracker/firmware/main/test/test_relay_pipeline.c (1)
+  L79    - /* encode/decode functions matching ADR-002. The mock has been removed */
+         + /* encode/decode functions matching ADR-100. The mock has been removed */
+
+--- tracker/firmware/main/test/test_tollgate_payment_proto.c (1)
+  L3     - * protocol encode/decode (ADR-002), tracker firmware standalone version.
+         + * protocol encode/decode (ADR-100), tracker firmware standalone version.
+
+--- tracker/firmware/main/tollgate_payment_proto.c (1)
+  L4     - * Wire format (ADR-002):
+         + * Wire format (ADR-100):
+
+--- tracker/firmware/main/tollgate_payment_proto.h (1)
+  L8     - * Wire format (ADR-002):
+         + * Wire format (ADR-100):
+
+--- tracker/firmware/test/integration/test_tollgate_payack.py (1)
+  L10    - The test uses the tollgate_payment_proto wire format (ADR-002):
+         + The test uses the tollgate_payment_proto wire format (ADR-100):
+
+--- tracker/hardware/PCB-TWO-STAGE-PLAN.md (1)
+  L6     - **Related:** ADR-028 (Three-Variant PCB Design), ADR-026 (Dual-MCU), `full_pipeline.py`, `tracker/firmware/main/app_main.cpp`
+         + **Related:** ADR-107 (Three-Variant PCB Design), ADR-026 (Dual-MCU), `full_pipeline.py`, `tracker/firmware/main/app_main.cpp`
+
+### Explicit-rule decisions
+  [EXPLICIT-REWRITE] docs/CHANGELOG.md:30  legacy ADR-prefixed path form; rewritten whole so the generic ADR-id rule cannot corrupt it into ADR-102-...
+  [EXPLICIT-KEEP] docs/adr/017-lr2021-only-ban-sx1280.md:34  self-referential past-tense narrative ('the original ADR-017 text'): the historical number is the point of the sentence; the new header line records the renumbering
+  [EXPLICIT-KEEP] docs/adr/017-lr2021-only-ban-sx1280.md:34  self-referential past-tense narrative, as above
+  [EXPLICIT-KEEP] docs/adr/030-deterministic-zero-inference-pcb-pipeline.md:30  only the file path moves (->109); the prose 'ADR-029' on this line is the number owner (kept at 029) and must not be rewritten
+
+APPLY=False

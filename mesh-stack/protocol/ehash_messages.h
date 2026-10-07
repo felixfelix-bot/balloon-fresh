@@ -1,6 +1,6 @@
 /**
  * @file ehash_messages.h
- * @brief E-Hash relay message binary encoding (ADR-025 Phase A)
+ * @brief E-Hash relay message binary encoding (ADR-106 Phase A)
  *
  * Defines the four L7 message types for Bitcoin stratum relay transport
  * over the balloon mesh network. The balloon acts as a pure transport node
@@ -10,7 +10,7 @@
  * See: mesh-stack/protocol/ehash-spec.md for the full specification.
  * See: mesh-stack/protocol/SPEC.md §4 for the L3 fragment layer.
  *
- * ADR-025: docs/adr/025-e-hash-relay-transport-layer.md
+ * ADR-106: docs/adr/106-e-hash-relay-transport-layer.md
  */
 
 #ifndef EHASH_MESSAGES_H

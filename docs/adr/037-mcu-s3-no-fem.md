@@ -43,7 +43,7 @@ the board already does — it is **not** a board change.
 ### D1 — MCU: v9 is `ESP32-S3-WROOM-1U-N8R8` (confirming ADR-029 D1)
 
 v9 uses the ESP32-S3-WROOM-1U `-N8R8` variant. This **confirms ADR-029 D1** and its
-pin plan (§4, `docs/adr/029-f33-sx1280-pin-plan.md`). ADR-001 (ESP32-C3) is **scoped to
+pin plan (§4, `docs/adr/108-f33-sx1280-pin-plan.md`). ADR-001 (ESP32-C3) is **scoped to
 the bench board** and is **not superseded** — it never claimed to govern the v9 flight
 board, and ADR-029's own rejected-alternatives table already records the C3 as the bench
 MCU. A one-line scope pointer is added to ADR-001 (see below); its argument is not
@@ -53,7 +53,7 @@ The consequence is honest and stated, not implied: the S3 changes the module foo
 and the pin map versus the C3. The v8i/v8h board carries the **C3** footprint, so **v9 is
 a new board, not a re-label** (ADR-029 §4 pin plan). Commit `4059860` already pinned the
 F33 and SX1280 off the S3's PSRAM pins
-(`docs/adr/029-f33-sx1280-pin-plan.md`); that work stands and is referenced, not redone.
+(`docs/adr/108-f33-sx1280-pin-plan.md`); that work stands and is referenced, not redone.
 
 ### D2 — FEM: the SKY66112 front-end module is omitted from v9
 
@@ -114,7 +114,7 @@ it.
    footprint, so v9 is a new board, not a re-label (ADR-029 §4). The `-N8R8` part also
    consumes IO35/36/37 to octal PSRAM (ADR-029 D1.1).
 2. **Commit `4059860` already pinned the F33 and SX1280 off the S3's PSRAM pins**
-   (`docs/adr/029-f33-sx1280-pin-plan.md`). That work stands; it is referenced, not redone.
+   (`docs/adr/108-f33-sx1280-pin-plan.md`). That work stands; it is referenced, not redone.
 3. **ADR-006's load list is stale.** ADR-006 line 32 lists the SKY66112 in the power
    architecture chain (`ESP32-C3 + LR2021 + SKY66112 + BMP280`). With the FEM omitted from
    v9, that list contradicts this ADR. A pointer is added to ADR-006 below; a full re-draw
