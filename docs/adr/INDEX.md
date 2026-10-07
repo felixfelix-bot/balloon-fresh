@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **57** distinct
-numbers, **57** numbered files, **2** non-conforming filenames.
+Generated from `docs/adr/`: **58** distinct
+numbers, **58** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -80,6 +80,7 @@ None.
 | 044 | `044-v9-power-rails.md` | v9 power rails: the F33 5 V rail (resolves ADR-029 item O5) | Proposed |
 | 045 | `045-antenna-solder-access.md` | Antenna solder-access constraint (hand-soldered RF parts must be reachable from outside the module body) | Proposed. The *decision* this ADR records is the operator's standing |
 | 046 | `046-wing-board-interface.md` | Wing-board interface: tab/socket geometry, 4-wire pinout, wing outline, order shape | Proposed |
+| 047 | `047-v9-power-provisioning.md` | v9 F33 power provisioning: over-provisioning the 5 V PA rail for the module's maximum draw | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -91,7 +92,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 047 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 048 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
@@ -102,5 +103,4 @@ recorded here rather than silently renumbered, and that pair also needs an
 operator decision.
 
 - `adr-e-hash-relay-DECISIONS.md` — ADR: E-Hash Relay Transport — LOCKED DECISIONS LOG (own Status: UNKNOWN)
-- `044a-v9-power-provisioning.md` — v9 F33 power provisioning: over-provisioning the 5 V PA rail for the module's maximum draw (own Status: Proposed)
 

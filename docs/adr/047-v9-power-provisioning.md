@@ -1,4 +1,8 @@
-# ADR-044a — v9 F33 power provisioning: over-provisioning the 5 V PA rail for the module's maximum draw
+# ADR-047 — v9 F33 power provisioning: over-provisioning the 5 V PA rail for the module's maximum draw
+
+> Numbered **047** on 2026-10-07 by `scripts/adr_next_number.py`. It was drafted as `047` as a
+> companion to ADR-044; the filename was brought into the sequential convention so the ADR
+> numbering gate (`tests/test_adr_numbering.py`) stays green. Numbering only - content unchanged.
 
 - Status: **Proposed** — the *text* has **NOT** been accepted by a human. It records the
   operator's directive (quoted verbatim below) and the design it forces, but it does not say

@@ -1510,7 +1510,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2."
+		(property "Description" "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2."
 			(at 0 0 0)
 			(effects
 				(font
@@ -4298,7 +4298,7 @@
 			(justify left bottom)
 		)
 		(uuid "7476595f-179b-551e-8dff-e1511466eba3")
-	)	(text "ADR-044a (operator directive 2026-10-07): F33 pin 1 VCC is provisioned for the MODULE MAXIMUM DRAW (1118 mA @ 5.5 V = 6.15 W DC) and is fed from the RAW supercap node (VSCAP, post-BAT54, PRE-LDO) through the ADR-029 D8 pin-1 selector J_VCC. It is NEVER fed through the TPS7A02 (<=300 mA vs 1118 mA = hard failure). Local bulk C_BULK + C_HF, clamp D_CLAMP, rail monitor R_MON1/R_MON2/C_MON -> IO13. Full +33 dBm needs >=5.0 V rail; +30 dBm needs >=3.54 V interpolated (ADR-044 S8 table). Firmware must gate TX on the LOADED rail."
+	)	(text "ADR-047 (operator directive 2026-10-07): F33 pin 1 VCC is provisioned for the MODULE MAXIMUM DRAW (1118 mA @ 5.5 V = 6.15 W DC) and is fed from the RAW supercap node (VSCAP, post-BAT54, PRE-LDO) through the ADR-029 D8 pin-1 selector J_VCC. It is NEVER fed through the TPS7A02 (<=300 mA vs 1118 mA = hard failure). Local bulk C_BULK + C_HF, clamp D_CLAMP, rail monitor R_MON1/R_MON2/C_MON -> IO13. Full +33 dBm needs >=5.0 V rail; +30 dBm needs >=3.54 V interpolated (ADR-044 S8 table). Firmware must gate TX on the LOADED rail."
 		(exclude_from_sim no)
 		(at 30.48 24.13 0)
 		(effects
@@ -4328,7 +4328,7 @@
 			(justify left bottom)
 		)
 		(uuid "ec7adcfb-60cd-545a-be44-67bc2743222d")
-	)	(text "U2 LoRa2021F33-2G4  (433 MHz TX) - VCC PRE-LDO, ADR-044a"
+	)	(text "U2 LoRa2021F33-2G4  (433 MHz TX) - VCC PRE-LDO, ADR-047"
 		(exclude_from_sim no)
 		(at 182.88 43.18 0)
 		(effects
@@ -4358,7 +4358,7 @@
 			(justify left bottom)
 		)
 		(uuid "e637b1c5-47bf-5738-baa8-5a0d393bc449")
-	)	(text "F33 RAIL PROVISION (ADR-044a): pin-1 selector / bulk / clamp / monitor"
+	)	(text "F33 RAIL PROVISION (ADR-047): pin-1 selector / bulk / clamp / monitor"
 		(exclude_from_sim no)
 		(at 411.48 43.18 0)
 		(effects
@@ -4528,7 +4528,7 @@
 			(justify left bottom)
 		)
 		(uuid "24fb2747-5734-5ee0-97d1-abc0633172c1")
-	)	(text "TODO(unverified) OPEN-15 SUPERCAP CELL ESR + COLD BANK BEHAVIOUR -- ADR-044a 3/4: the AVX SCC 3.3 F 2.7 V cell's ESR is NOT in this repository, at 25 C or at -60 C. Every rail-step number in ADR-044a is conditional on the assumed 0.10 Ohm/cell. ADR-029 5 test 4 (<20 mV rail dip during a worst-case burst) is NOT met by scaling this cell family: 16.7 mOhm would need ~12 cells in parallel per series position."
+	)	(text "TODO(unverified) OPEN-15 SUPERCAP CELL ESR + COLD BANK BEHAVIOUR -- ADR-047 3/4: the AVX SCC 3.3 F 2.7 V cell's ESR is NOT in this repository, at 25 C or at -60 C. Every rail-step number in ADR-047 is conditional on the assumed 0.10 Ohm/cell. ADR-029 5 test 4 (<20 mV rail dip during a worst-case burst) is NOT met by scaling this cell family: 16.7 mOhm would need ~12 cells in parallel per series position."
 		(exclude_from_sim no)
 		(at 30.48 403.86 0)
 		(effects
@@ -4538,7 +4538,7 @@
 			(justify left bottom)
 		)
 		(uuid "9322365f-4159-5f65-9a0b-d0d02da02bc5")
-	)	(text "TODO(unverified) OPEN-16 CLAMP SET POINT (D_CLAMP) -- ADR-044a 7: the clamp must conduct above the 5.4 V rail top and below the F33's damage threshold, which Rev 1.1 of the datasheet does not publish; the 12-cell array's open-circuit voltage at -60 C is also unmeasured. Part and set point cannot be finalised - do not order a guess."
+	)	(text "TODO(unverified) OPEN-16 CLAMP SET POINT (D_CLAMP) -- ADR-047 7: the clamp must conduct above the 5.4 V rail top and below the F33's damage threshold, which Rev 1.1 of the datasheet does not publish; the 12-cell array's open-circuit voltage at -60 C is also unmeasured. Part and set point cannot be finalised - do not order a guess."
 		(exclude_from_sim no)
 		(at 30.48 407.67 0)
 		(effects
@@ -4548,7 +4548,7 @@
 			(justify left bottom)
 		)
 		(uuid "aa1b5054-8084-5351-931c-b68fb2d61559")
-	)	(text "TODO(unverified) OPEN-17 RAIL-MONITOR ADC CHANNEL (U1 pin 21 = IO13) -- ADR-044a 6: IO13 is unassigned by the ADR-029 pin plan, and ADR-038 D1 makes Wi-Fi/BT never enabled (CONFIG_ESP_WIFI_ENABLED=n), which is the condition normally attached to ESP32-S3 ADC2 use. Those two facts are the whole basis for putting the monitor there. The ADC channel number and the ADC's required source impedance are NOT in this repository, and the pin plan has not yet been amended to record the assignment."
+	)	(text "TODO(unverified) OPEN-17 RAIL-MONITOR ADC CHANNEL (U1 pin 21 = IO13) -- ADR-047 6: IO13 is unassigned by the ADR-029 pin plan, and ADR-038 D1 makes Wi-Fi/BT never enabled (CONFIG_ESP_WIFI_ENABLED=n), which is the condition normally attached to ESP32-S3 ADC2 use. Those two facts are the whole basis for putting the monitor there. The ADC channel number and the ADC's required source impedance are NOT in this repository, and the pin plan has not yet been amended to record the assignment."
 		(exclude_from_sim no)
 		(at 30.48 411.48 0)
 		(effects
@@ -4558,7 +4558,7 @@
 			(justify left bottom)
 		)
 		(uuid "17429918-0928-563e-ac42-3744d65b25d5")
-	)	(text "TODO(unverified) OPEN-18 O5 EVIDENCE STILL OPEN -- ADR-029 O5 / ADR-044 7: no 5 V chain demonstrated at >=1.2 A load-step capability, no 3.3 V rail at >=0.60 A transient, no cold supercap or regulator evidence, no ADR-029 5 test 4. ADR-044a sizes for the maximum draw; it does not measure the chain. The BOM freeze stays gated on this."
+	)	(text "TODO(unverified) OPEN-18 O5 EVIDENCE STILL OPEN -- ADR-029 O5 / ADR-044 7: no 5 V chain demonstrated at >=1.2 A load-step capability, no 3.3 V rail at >=0.60 A transient, no cold supercap or regulator evidence, no ADR-029 5 test 4. ADR-047 sizes for the maximum draw; it does not measure the chain. The BOM freeze stays gated on this."
 		(exclude_from_sim no)
 		(at 30.48 415.29 0)
 		(effects

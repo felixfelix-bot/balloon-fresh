@@ -1,7 +1,7 @@
 (export (version "E")
   (design
-    (source "/home/c03rad0r/worktrees/bf-v9-sch2/tracker/hardware/schematics/flight_board/v9_flight.kicad_sch")
-    (date "2026-10-07T12:22:32+0200")
+    (source "/home/c03rad0r/worktrees/bf-v9-consolidate/tracker/hardware/schematics/flight_board/v9_flight.kicad_sch")
+    (date "2026-10-07T12:42:11+0200")
     (tool "Eeschema 9.0.8+dfsg-1")
     (sheet (number "1") (name "/") (tstamps "/")
       (title_block
@@ -195,7 +195,7 @@
         (field (name "Footprint") "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm")
         (field (name "Datasheet"))
         (field (name "Description")))
-      (libsource (lib "balloon_flight_v9") (part "F33_VCC_SEL") (description "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2."))
+      (libsource (lib "balloon_flight_v9") (part "F33_VCC_SEL") (description "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2."))
       (property (name "Sheetname") (value ""))
       (property (name "Sheetfile") (value "v9_flight.kicad_sch"))
       (sheetpath (names "/") (tstamps "/"))
@@ -619,13 +619,13 @@
         (pin (num "17") (name "RESET") (type "input"))
         (pin (num "18") (name "IRQ") (type "output"))))
     (libpart (lib "balloon_flight_v9") (part "F33_VCC_SEL")
-      (description "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2.")
+      (description "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2.")
       (fields
         (field (name "Reference") "U")
         (field (name "Value") "F33_VCC_SEL (5V raw | 3V3)")
         (field (name "Footprint") "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm")
         (field (name "Datasheet"))
-        (field (name "Description") "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2."))
+        (field (name "Description") "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2."))
       (pins
         (pin (num "1") (name "A_VSCAP") (type "passive"))
         (pin (num "2") (name "COM") (type "passive"))
@@ -717,7 +717,7 @@
     (library (logical "Sensor_Pressure")
       (uri "/usr/share/kicad/symbols/Sensor_Pressure.kicad_sym"))
     (library (logical "balloon_flight_v9")
-      (uri "/home/c03rad0r/worktrees/bf-v9-sch2/tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.kicad_sym")))
+      (uri "/home/c03rad0r/worktrees/bf-v9-consolidate/tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.kicad_sym")))
   (nets
     (net (code "1") (name "+3V3") (class "Default")
       (node (ref "J_VCC") (pin "3") (pinfunction "B_3V3") (pintype "passive"))

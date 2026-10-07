@@ -852,7 +852,7 @@ def v9_custom_symbols():
             "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a "
             "3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw "
             "supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) "
-            "to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2.",
+            "to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2.",
             "", [("1", "A_VSCAP", "passive"), ("2", "COM", "passive"),
                  ("3", "B_3V3", "passive")]),
     }
@@ -912,40 +912,40 @@ V9_COMPONENTS = [
     ("ANT4", "Connector:Conn_Coaxial", "U.FL_GNSS_L1",
      "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical", False,
      "ADR-029 D3: GNSS L1 feed, +Y sky-facing edge."),
-    # --- ADR-044a: the F33 5 V PA rail provision (operator directive 2026-10-07) ---
+    # --- ADR-047: the F33 5 V PA rail provision (operator directive 2026-10-07) ---
     ("J_VCC", "balloon_flight_v9:F33_VCC_SEL", "F33_VCC_SEL (5V raw | 3V3)",
      "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm", False,
      "ADR-029 D8 (operator-RATIFIED 2026-10-05): the mandatory SELECTABLE pin-1 "
      "rail (3-pad solder jumper). pin 2 = COM -> F33_VCC; pin 1 = VSCAP (raw "
      "supercap node, PRE-LDO) for the F33; pin 3 = +3V3 (TPS7A02 OUT) for the "
-     "nested bare LoRa2021. ADR-044 option (a) + ADR-044a 2. Rendered with a "
+     "nested bare LoRa2021. ADR-044 option (a) + ADR-047 2. Rendered with a "
      "repo-local symbol so no new symbol library is required."),
     ("C_BULK", "Device:C", "100uF",
      "Capacitor_SMD:C_1206_3216Metric", False,
-     "ADR-044a 4: local bulk cap AT THE MODULE PIN, sized for the current step "
+     "ADR-047 4: local bulk cap AT THE MODULE PIN, sized for the current step "
      "(holds 1.2 A within 20 mV for 1.67 us). Cited: "
      "docs/PCB-HANDOVER-FOR-JLCPCB.md 2.4 '>=100 uF low-ESR tantalum or ceramic at "
      "PA VCC'; ADR-029 2(f) 'each radio rail gets its own ferrite + bulk cap'."),
     ("C_HF", "Device:C", "100nF",
      "Capacitor_SMD:C_0402_1005Metric", False,
-     "ADR-044a 4: HF bypass at the module pin. Same citation as C_BULK "
+     "ADR-047 4: HF bypass at the module pin. Same citation as C_BULK "
      "('... plus 100 nF HF bypass')."),
     ("D_CLAMP", "Device:D_TVS", "TVS clamp (set point TODO(unverified))",
      "Diode_SMD:D_SOD-323", False,
-     "ADR-044 option (c) + ADR-044a 7: over-voltage INSURANCE on F33_VCC, made "
+     "ADR-044 option (c) + ADR-047 7: over-voltage INSURANCE on F33_VCC, made "
      "required by the operator's over-provisioning directive. The set point must "
      "sit above the 5.4 V rail top and below the F33's damage threshold, which "
      "Rev 1.1 of the datasheet does not publish -> part AND set point are "
      "TODO(unverified). See OPEN-16."),
     ("R_MON1", "Device:R", "4.7M", "Resistor_SMD:R_0402_1005Metric", False,
-     "ADR-044a 6: F33 rail-monitor divider (upper). 4.7 M keeps the lead at "
+     "ADR-047 6: F33 rail-monitor divider (upper). 4.7 M keeps the lead at "
      "0.574 uA / 3.1 uW so the divider pair does not eat ADR-036's 100 uW night "
      "anchor (the pre-existing 1M/1M SCAP divider already draws 14.6 uW)."),
     ("R_MON2", "Device:R", "4.7M", "Resistor_SMD:R_0402_1005Metric", False,
-     "ADR-044a 6: F33 rail-monitor divider (lower). Ratio 0.5 -> 5.4 V reads "
+     "ADR-047 6: F33 rail-monitor divider (lower). Ratio 0.5 -> 5.4 V reads "
      "2.70 V at the ESP32-S3 ADC."),
     ("C_MON", "Device:C", "10nF", "Capacitor_SMD:C_0402_1005Metric", False,
-     "ADR-044a 6: ADC sample-and-hold reservoir for the 2.35 MOhm-Thevenin "
+     "ADR-047 6: ADC sample-and-hold reservoir for the 2.35 MOhm-Thevenin "
      "monitor tap (tau = 23.5 ms). Without it the S/H cap cannot settle."),
     ("R_BAL1", "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", False,
      "ADR-006 / ADR-044 'already fixed': 2x 10 kOhm supercap balancing resistors "
@@ -1003,14 +1003,14 @@ V9_NETS = [
      "connector is not in the v9 component list -> source end TODO(unverified)."),
     ("F33_VCC", [("J_VCC", "2"), ("U2", "1"), ("C_BULK", "1"), ("C_HF", "1"),
                  ("D_CLAMP", "1"), ("R_MON1", "1")],
-     "ADR-044 option (a) + ADR-044a 2: the F33's pin 1 VCC. Fed from the RAW "
+     "ADR-044 option (a) + ADR-047 2: the F33's pin 1 VCC. Fed from the RAW "
      "supercap node PRE-LDO through the ADR-029 D8 pin-1 selector. It must NEVER "
      "be fed through the TPS7A02: that LDO is rated <=300 mA (ADR-006) / 200 mA "
      "(KiCad Regulator_Linear:TPS7A0533PDBV) against the F33's 1118 mA - a "
-     "3.7x-5.6x overload and a hard failure, not a hypothesis (ADR-044a 2.3)."),
+     "3.7x-5.6x overload and a hard failure, not a hypothesis (ADR-047 2.3)."),
     ("F33_VSENSE", [("R_MON1", "2"), ("R_MON2", "1"), ("C_MON", "1"),
                     ("U1", "21")],
-     "ADR-044a 6: F33 rail monitor. Divider ratio 0.5 (4.7 M / 4.7 M) -> "
+     "ADR-047 6: F33 rail monitor. Divider ratio 0.5 (4.7 M / 4.7 M) -> "
      "5.4 V reads 2.70 V at ESP32-S3 IO13 (U1 pin 21). Firmware must inhibit TX "
      "below the LOADED-rail threshold for the wanted output power: >=5.0 V for "
      "the full 33.0 dBm, and >=3.54 V (interpolated) + the bank's ESR step for "
@@ -1107,9 +1107,9 @@ V9_NC = [
 ]
 
 # --- explicit TODO(unverified) open questions, never guessed ---------------
-# NOTE (ADR-044a): OPEN-1 "5 V RAIL" is CLOSED. The operator's 2026-10-07
+# NOTE (ADR-047): OPEN-1 "5 V RAIL" is CLOSED. The operator's 2026-10-07
 # directive ("provision more than enough power for the maximum draw that F33 can
-# draw ... a hard design requirement") is implemented by ADR-044a on top of
+# draw ... a hard design requirement") is implemented by ADR-047 on top of
 # ADR-044 option (a): U2 pin 1 is now on F33_VCC, fed PRE-LDO from the supercap
 # node through the ADR-029 D8 pin-1 selector, with a local bulk cap, a clamp and
 # a rail monitor. The remaining entries below are still OPEN.
@@ -1178,18 +1178,18 @@ V9_TODO = [
      "rather than guessed: assign them deliberately in a pin-plan revision, or "
      "mark them no_connect on the record."),
     ("OPEN-15 SUPERCAP CELL ESR + COLD BANK BEHAVIOUR",
-     "ADR-044a 3/4: the AVX SCC 3.3 F 2.7 V cell's ESR is NOT in this "
-     "repository, at 25 C or at -60 C. Every rail-step number in ADR-044a is "
+     "ADR-047 3/4: the AVX SCC 3.3 F 2.7 V cell's ESR is NOT in this "
+     "repository, at 25 C or at -60 C. Every rail-step number in ADR-047 is "
      "conditional on the assumed 0.10 Ohm/cell. ADR-029 5 test 4 (<20 mV rail "
      "dip during a worst-case burst) is NOT met by scaling this cell family: "
      "16.7 mOhm would need ~12 cells in parallel per series position."),
     ("OPEN-16 CLAMP SET POINT (D_CLAMP)",
-     "ADR-044a 7: the clamp must conduct above the 5.4 V rail top and below the "
+     "ADR-047 7: the clamp must conduct above the 5.4 V rail top and below the "
      "F33's damage threshold, which Rev 1.1 of the datasheet does not publish; "
      "the 12-cell array's open-circuit voltage at -60 C is also unmeasured. "
      "Part and set point cannot be finalised - do not order a guess."),
     ("OPEN-17 RAIL-MONITOR ADC CHANNEL (U1 pin 21 = IO13)",
-     "ADR-044a 6: IO13 is unassigned by the ADR-029 pin plan, and ADR-038 D1 "
+     "ADR-047 6: IO13 is unassigned by the ADR-029 pin plan, and ADR-038 D1 "
      "makes Wi-Fi/BT never enabled (CONFIG_ESP_WIFI_ENABLED=n), which is the "
      "condition normally attached to ESP32-S3 ADC2 use. Those two facts are the "
      "whole basis for putting the monitor there. The ADC channel number and the "
@@ -1198,7 +1198,7 @@ V9_TODO = [
     ("OPEN-18 O5 EVIDENCE STILL OPEN",
      "ADR-029 O5 / ADR-044 7: no 5 V chain demonstrated at >=1.2 A load-step "
      "capability, no 3.3 V rail at >=0.60 A transient, no cold supercap or "
-     "regulator evidence, no ADR-029 5 test 4. ADR-044a sizes for the maximum "
+     "regulator evidence, no ADR-029 5 test 4. ADR-047 sizes for the maximum "
      "draw; it does not measure the chain. The BOM freeze stays gated on this."),
     ("OPEN-19 ANTENNA SOLDER ACCESS (ADR-045)",
      "ADR-045 does NOT change the antenna connector count or these net names: "
@@ -1247,7 +1247,7 @@ def v9_emit():
         elif pin not in symbol_pins(lib_blocks[by_ref[ref][1]]):
             problems.append("NC: %s has no pin %s" % (ref, pin))
     # a (ref,pin) may belong to exactly ONE net; a duplicate is a silent short
-    # (this check exists because the pre-ADR-044a sheet listed R_F1 pin 1 in
+    # (this check exists because the pre-ADR-047 sheet listed R_F1 pin 1 in
     # both +3V3 and VSCAP, which would have shorted the 3V3 rail to the raw
     # 5.4 V cap node).
     owner = {}
@@ -1305,10 +1305,10 @@ def v9_emit():
     V9_COL_TITLES = [
         "GNSS / BARO / POWER",
         "U1 ESP32-S3-WROOM-1U-N8R8",
-        "U2 LoRa2021F33-2G4  (433 MHz TX) - VCC PRE-LDO, ADR-044a",
+        "U2 LoRa2021F33-2G4  (433 MHz TX) - VCC PRE-LDO, ADR-047",
         "U3 bare LoRa2021  (2.4 GHz RX)",
         "U4 SX1280  (2.4 GHz ranging)  *** PINOUT UNVERIFIED ***",
-        "F33 RAIL PROVISION (ADR-044a): pin-1 selector / bulk / clamp / monitor",
+        "F33 RAIL PROVISION (ADR-047): pin-1 selector / bulk / clamp / monitor",
         "SUPERCAP BANK (SERIES + BALANCING) / BAT54 / DIVIDER / GNSS RC",
         "U.FL ANTENNAS (see the four-feed conflict)",
     ]
@@ -1341,7 +1341,7 @@ def v9_emit():
             '\t\t(at 30.48 20.32 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
             '(size 2.54 2.54)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n'
             '\t\t(uuid "%s")\n\t)' % uid(),
-            '\t(text "ADR-044a (operator directive 2026-10-07): F33 pin 1 VCC is '
+            '\t(text "ADR-047 (operator directive 2026-10-07): F33 pin 1 VCC is '
             'provisioned for the MODULE MAXIMUM DRAW (1118 mA @ 5.5 V = 6.15 W DC) '
             'and is fed from the RAW supercap node (VSCAP, post-BAT54, PRE-LDO) '
             'through the ADR-029 D8 pin-1 selector J_VCC. It is NEVER fed through '
@@ -1360,7 +1360,7 @@ def v9_emit():
                     % (title, fmt(round(col_x[ci] / 1.27) * 1.27), uid()))
 
     todo_x = 30.48
-    # start the TODO block clear of the deepest component column (ADR-044a added
+    # start the TODO block clear of the deepest component column (ADR-047 added
     # a new column and two more parts to the supercap column)
     todo_y = round((y_bottom + 10.16) / 1.27) * 1.27
     for (title, txt) in V9_TODO:
@@ -1443,7 +1443,7 @@ def v9_emit():
     flag_nets = {n for (n, _, _) in power_syms} - stats["power_out"]
     from_lab = {n for (n, _, _) in labels}
     flag_nets |= {n for n in from_lab if n.startswith("V") or n == "SOLAR_IN"}
-    # ADR-044a: any net that carries a power_in pin but has no power_out and no
+    # ADR-047: any net that carries a power_in pin but has no power_out and no
     # PWR_FLAG would raise "power pin not driven". F33_VCC (U2 pin 1, the 2 W PA)
     # and GNSS_VCC (U5 pin 8) are such nets: declare each as a source.
     pin_type = {}
@@ -1454,7 +1454,7 @@ def v9_emit():
                      if any(pin_type.get(nd) == "power_in" for nd in nodes)}
     flag_nets |= power_in_nets - stats["power_out"]
     flags = []
-    # ADR-044a: the old fixed "+5.08 in x" flag offset is unsafe on this sheet -
+    # ADR-047: the old fixed "+5.08 in x" flag offset is unsafe on this sheet -
     # U5's pins sit 2.54 mm apart on one horizontal line, so a flag stub landed
     # exactly on the neighbouring pin's +3V3 symbol and MERGED GNSS_VCC into 3V3
     # (ERC multiple_net_names + a bogus pin_to_pin). Place each flag stub on the
@@ -1647,7 +1647,7 @@ def main_v9():
     print("records  : ADR-029, docs/adr/108-f33-sx1280-pin-plan.md, ADR-034,")
     print("           ADR-035, ADR-036-045, docs/DUAL-VARIANT-DESIGN.md,")
     print("           docs/V9-RADIO-SITE-MATRIX.md,")
-    print("           ADR-044 (power rails) + ADR-044a (F33 max-draw provisioning),")
+    print("           ADR-044 (power rails) + ADR-047 (F33 max-draw provisioning),")
     print("           frozen v8i netlist tracker/hardware/output/v8i_krt_gnss.kicad_pcb")
     stats = v9_emit()
     print("components    :", stats["comp"])

@@ -1500,7 +1500,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-044a 2."
+		(property "Description" "ADR-029 D8 pin-1 rail selector (operator-RATIFIED 2026-10-05): a 3-pad solder jumper. pin 2 COMMON -> F33_VCC; pin 1 -> VSCAP (raw supercap node, PRE-LDO) to fly the F33; pin 3 -> +3V3 (TPS7A02 OUT) to fly the nested bare LoRa2021. ADR-044 option (a) / ADR-047 2."
 			(at 0 0 0)
 			(effects
 				(font
