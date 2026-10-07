@@ -1,0 +1,117 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_wing.py  (regenerate: python3 scripts/gen_3d_models_wing.py)
+# part       : SolarCell_SMALL -- bare polycrystalline silicon cell, one cell of the wing string
+# dims_mm    : 52.07 x 19.65 x 0.21 (x along the wing, y across the wing, z = thickness; cell centred on the footprint origin)
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : docs/adr/049-wing-architecture.md section "Measured inputs", small cell: "Outline | 52.07 x 19.65 x 0.20-0.21 mm".  Cross-refs: docs/adr/046-wing-board-interface.md §3.3 (the 52 x 19 mm land field) and tracker/hardware/wing_board/wing_board_v9.kicad_pcb (footprint "WingV9:SolarCell_52x19mm").
+# note       : the cell is modelled CENTRED on the footprint origin, which is what docs/adr/046-wing-board-interface.md §3.4 declares the cell centre to be (origins x = 30 / 88 / 146 mm).
+# note       : the 0.035 mm copper land + solder standoff under the cell is NOT modelled (it is 17 % of the cell thickness and would hide the lands).
+# note       : the illuminated face plate is lifted 0.001 mm above the body top only to stop the two shapes z-fighting on a shared face; it is a rendering epsilon, NOT a dimension (the modelled thickness stays 0.21 mm).
+# note       : TODO(unverified): solder-tab geometry of the cell (contact width, pitch, distance from the cell edge) -- no in-repo source carries it; ADR-049 files it as the order blocker
+# note       : TODO(unverified): whether the two terminations are BOTH on the front face, or one front and one back -- ADR-049 section "Measured inputs" says front+back for the small cell, while ADR-046 §3.4 assumes two lands at the two x ends
+DEF SolarCell_SMALL_face Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF SolarCell_SMALL_face_mat Material {
+          diffuseColor 0.09 0.1 0.42
+          emissiveColor 0 0 0
+          specularColor 0.55 0.55 0.55
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.85
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -10.250000 -3.868110 0.083071,
+          10.250000 -3.868110 0.083071,
+          10.250000 3.868110 0.083071,
+          -10.250000 3.868110 0.083071,
+          -10.250000 3.868110 0.082677,
+          10.250000 3.868110 0.082677,
+          10.250000 -3.868110 0.082677,
+          -10.250000 -3.868110 0.082677,
+          -10.250000 3.868110 0.082677,
+          -10.250000 3.868110 0.083071,
+          10.250000 3.868110 0.083071,
+          10.250000 3.868110 0.082677,
+          10.250000 -3.868110 0.082677,
+          10.250000 -3.868110 0.083071,
+          -10.250000 -3.868110 0.083071,
+          -10.250000 -3.868110 0.082677,
+          10.250000 3.868110 0.082677,
+          10.250000 3.868110 0.083071,
+          10.250000 -3.868110 0.083071,
+          10.250000 -3.868110 0.082677,
+          -10.250000 -3.868110 0.082677,
+          -10.250000 -3.868110 0.083071,
+          -10.250000 3.868110 0.083071,
+          -10.250000 3.868110 0.082677
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
+DEF SolarCell_SMALL_body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF SolarCell_SMALL_body_mat Material {
+          diffuseColor 0.55 0.56 0.6
+          emissiveColor 0 0 0
+          specularColor 0.25 0.25 0.25
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.2
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -10.250000 -3.868110 0.082677,
+          10.250000 -3.868110 0.082677,
+          10.250000 3.868110 0.082677,
+          -10.250000 3.868110 0.082677,
+          -10.250000 3.868110 0.000000,
+          10.250000 3.868110 0.000000,
+          10.250000 -3.868110 0.000000,
+          -10.250000 -3.868110 0.000000,
+          -10.250000 3.868110 0.000000,
+          -10.250000 3.868110 0.082677,
+          10.250000 3.868110 0.082677,
+          10.250000 3.868110 0.000000,
+          10.250000 -3.868110 0.000000,
+          10.250000 -3.868110 0.082677,
+          -10.250000 -3.868110 0.082677,
+          -10.250000 -3.868110 0.000000,
+          10.250000 3.868110 0.000000,
+          10.250000 3.868110 0.082677,
+          10.250000 -3.868110 0.082677,
+          10.250000 -3.868110 0.000000,
+          -10.250000 -3.868110 0.000000,
+          -10.250000 -3.868110 0.082677,
+          -10.250000 3.868110 0.082677,
+          -10.250000 3.868110 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

@@ -14,7 +14,7 @@
     "violations:silk_edge_clearance": 6
   },
   "board": "wing_board_v9.kicad_pcb",
-  "board_sha256": "8448d76b3a4e108f12016e1980bb954f068625d27522a1640a07ffc72fa3682c",
+  "board_sha256": "3bfd420749a6c8a779a84140eed4cee87e3672b47cd80f7fc7b98b3cb4296a86",
   "fab": "tracker/hardware/output/gerbers_wing_v9",
   "fab_sha256": "90cb2480a28b2dce7388f490b439ca299b41dde9feeae0570889824dd2159477",
   "kicad_version": "9.0.8"
