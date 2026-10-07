@@ -1,7 +1,7 @@
 (export (version "E")
   (design
-    (source "~/worktrees/bf-pinplan/tracker/hardware/schematics/flight_board/v9_flight.kicad_sch")
-    (date "2026-10-07T17:13:50+0200")
+    (source "/home/c03rad0r/worktrees/bf-f33land2/tracker/hardware/schematics/flight_board/v9_flight.kicad_sch")
+    (date "2026-10-07T23:38:41+0200")
     (tool "Eeschema 9.0.8+dfsg-1")
     (sheet (number "1") (name "/") (tstamps "/")
       (title_block
@@ -503,7 +503,7 @@
         (field (name "Footprint") "balloon_flight_v9:LoRa2021F33_2G4")
         (field (name "Datasheet"))
         (field (name "Description")))
-      (libsource (lib "balloon_flight_v9") (part "F33_2G4") (description "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; land pattern from commit d5a2e47."))
+      (libsource (lib "balloon_flight_v9") (part "F33_2G4") (description "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; pad centres from the vendor land file (d5a2e47), pad SIZE derived from the operator-supplied castellation hole diameter 0.80 +- 0.1 mm (datasheet s9 p8)."))
       (property (name "Sheetname") (value ""))
       (property (name "Sheetfile") (value "v9_flight.kicad_sch"))
       (sheetpath (names "/") (tstamps "/"))
@@ -837,14 +837,14 @@
         (pin (num "2") (name "GND") (type "passive"))
         (pin (num "3") (name "CUT_W") (type "passive"))))
     (libpart (lib "balloon_flight_v9") (part "F33_2G4")
-      (description "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; land pattern from commit d5a2e47.")
+      (description "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; pad centres from the vendor land file (d5a2e47), pad SIZE derived from the operator-supplied castellation hole diameter 0.80 +- 0.1 mm (datasheet s9 p8).")
       (docs "https://www.nicerf.com/pdf/lora2021f33-2g4-2w-high-power-high-speed-multi-band-lr2021-wireless-communication-module-v1.1.pdf")
       (fields
         (field (name "Reference") "U")
         (field (name "Value") "LoRa2021F33-2G4")
         (field (name "Footprint") "balloon_flight_v9:LoRa2021F33_2G4")
         (field (name "Datasheet") "https://www.nicerf.com/pdf/lora2021f33-2g4-2w-high-power-high-speed-multi-band-lr2021-wireless-communication-module-v1.1.pdf")
-        (field (name "Description") "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; land pattern from commit d5a2e47."))
+        (field (name "Description") "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from docs/DUAL-VARIANT-DESIGN.md; pad centres from the vendor land file (d5a2e47), pad SIZE derived from the operator-supplied castellation hole diameter 0.80 +- 0.1 mm (datasheet s9 p8)."))
       (pins
         (pin (num "1") (name "VCC") (type "power_in"))
         (pin (num "2") (name "GND") (type "power_in"))
@@ -1017,7 +1017,7 @@
     (library (logical "RF_Module")
       (uri "/usr/share/kicad/symbols/RF_Module.kicad_sym"))
     (library (logical "balloon_flight_v9")
-      (uri "~/worktrees/bf-pinplan/tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.kicad_sym")))
+      (uri "/home/c03rad0r/worktrees/bf-f33land2/tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.kicad_sym")))
   (nets
     (net (code "1") (name "+3V3") (class "Default")
       (node (ref "J_VCC") (pin "3") (pinfunction "B_3V3") (pintype "passive"))

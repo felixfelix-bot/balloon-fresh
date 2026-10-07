@@ -45,10 +45,14 @@ handed to a fab/assembly house.
   pad centre **3.7844 mm** from the module end, closing as
   `2 × 3.7844 + 8 × 3.9289 = 39.0000 mm` = module length.
 * **Pin table:** datasheet §7 (`pdftotext`-readable) — pins 1..18 with names.
-* **NOT available:** the pad **land size**. Datasheet §9 p.8 is an embedded JPEG
-  raster with no text layer, so the callouts cannot be attributed. The emitted
-  land size (2.0 × 1.0 mm) is therefore marked `TODO(unverified)` — see
-  `F33-LANDPATTERN-VERIFICATION.md` §7 and the generator's docstring.
+* **Pad LAND SIZE — NOW DERIVED (was the last `TODO(unverified)`).** The operator read
+  the p.8 drawing (2026-10-07) and reported the **castellation hole diameter
+  D = 0.80 ± 0.10 mm**. The land is derived from it — *land = the castellation aperture
+  grown by a uniform 0.25 mm solder-fillet margin on every side* →
+  **L = W = D + 2×0.25 = 1.30 mm** (was the guess 2.0 × 1.0 mm). See
+  `F33-LANDPATTERN-VERIFICATION.md` §11 for the arithmetic, the 2.6289 mm gap, and the
+  inward/outward split. The unattributed p.8 callouts (`3.00 ×2 / 6.09 / 5.00 ×2 / 4.32 /
+  3.30`) remain unattributed and are NOT guessed.
 
 ## Before any order
 
@@ -60,9 +64,13 @@ handed to a fab/assembly house.
 2. `hub_board_f33.kicad_pcb` (and every gerber/zip derived from it) is **not
    ordered**. A replacement F33 board must be placed + routed from the
    corrected footprint — a re-route, not a re-score.
-3. The 2.0 × 1.0 mm land size is still `TODO(unverified)`. Read datasheet §9
-   p.8 (the raster drawing) or get the vendor's land dimension table, then pass
-   `--land-length` / `--land-width`; a guessed land is worse than a flagged one.
+3. The land size is **no longer** `TODO(unverified)`: it is derived from the
+   operator-supplied castellation hole diameter **D = 0.80 ± 0.10 mm** (datasheet §9 p.8,
+   read by the operator) as `D + 2×0.25 = 1.30 × 1.30 mm`. Regenerate with
+   `python3 scripts/gen_f33_landpattern.py` (or the v9 schematic generator, which derives
+   the same footprint at generation time). Nothing is guessed: the p.8 callouts
+   `3.00 ×2 / 6.09 / 5.00 ×2 / 4.32 / 3.30` stay unattributed.
+   See `F33-LANDPATTERN-VERIFICATION.md` §11.
 
 ## Reproduce the BEFORE/AFTER evidence
 

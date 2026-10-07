@@ -313,3 +313,105 @@ and the pre-order checklist: `docs/f33-module/F33-SUPERSEDED-ARTIFACTS.md`.
 A replacement F33 board is a **re-route** (placement + routing) from the
 corrected footprint, not a re-score.
 
+---
+
+## 11. ADDENDUM — 2026-10-07: the land SIZE is now DERIVED, and the flag is dropped
+
+**Branch:** `fix/f33-land-size` (base `github/main` `8032cb4`). §1–§10 above are the
+prior record and are **not rewritten**; the one thing §10 called out as still
+`TODO(unverified)` — the pad **LAND SIZE** — is closed here.
+
+### 11.1 The operator-supplied datum (the last unknown on this part)
+
+> **The castellation hole diameter is 0.80 ± 0.10 mm.** — the operator's own words
+> (*"the diameter of the hole that the pin goes through … 0.8 +- 0.1mm"*), reading
+> section 9 "Mechanism Dimension", page 8 of
+> `docs/f33-module/LoRa2021F33-2G4-datasheet-v1.1.pdf`. That page is an **embedded
+> JPEG raster with no text layer**, which is exactly why §10 could not extract the
+> land size in-repo. The operator read the drawing, so the diameter is an
+> **operator-supplied datum — authoritative, not a guess** (and not a re-hash of the
+> unattributed OCR callouts).
+
+The module is **castellated** (`tracker/hardware/footprints/nicerf-lora2021f33-2g4.json`:
+`pin_type: "castellated"`). A castellation is a plated **half-hole** stamped into the
+module's long edge, so with a **0.80 mm** diameter it presents **0.80 mm of copper
+along the edge** and reaches only **0.40 mm (the radius) inward** from the module edge
+line (`y = ±10.5`).
+
+### 11.2 The rule, and the arithmetic
+
+**Rule (one line): the land is the castellation aperture grown by a uniform 0.25 mm
+solder-fillet margin on every side.**
+
+**Along the edge (x):**
+
+```
+LAND_LENGTH = D + 2 × 0.25 = 0.80 + 0.50 = 1.30 mm      (was 2.0 mm — 2.5 × D)
+gap to the neighbouring land = pitch − LAND_LENGTH
+                             = 3.9289 − 1.30 = 2.6289 mm   → no bridging risk
+```
+
+The old `2.0` mm had no source at all and was **2.5×** the castellation: every pad
+overhung its castellation by 0.6 mm on each side, onto the neighbouring (moulded)
+module edge. The new length carries 0.25 mm of land beyond the castellation on each
+side — a fillet — and is still comfortably below the physical ceiling recorded in §7
+(`land_length < pitch − creepage ≲ 3.4 mm`).
+
+**Across the edge (y):**
+
+The pad **centre** is pinned on the module edge line by the **vendor land file**
+(`y = ±10.5`) and must **not move**, so the land is necessarily **symmetric**:
+
+```
+half-width = D/2 + 0.25 = 0.65 mm   each side
+  inward  0.65 mm  ≥  D/2 = 0.40 mm   → the joint is under the castellation copper
+  outward 0.65 mm  ≥  inward 0.65 mm  → the DESIGN DRIVER: every joint on this vehicle
+                                         is HAND-SOLDERED, so the outward half is what
+                                         the iron tip lands on. 0.65 mm clears a 0.5 mm
+                                         chisel tip, and it is +0.15 mm MORE exposed
+                                         copper than the old guess (0.50 mm) — the same
+                                         uniform fillet margin, not a second invented
+                                         number.
+```
+
+**Tolerance band (D = 0.70 … 0.90 mm).** The rule is tolerance-independent:
+
+| D | land L = W | gap = 3.9289 − land | inward = outward |
+|---|---|---|---|
+| 0.70 (min) | 1.20 mm | 2.7289 mm | 0.60 mm (≥ D/2 = 0.35) |
+| **0.80 (nom)** | **1.30 mm** | **2.6289 mm** | **0.65 mm** |
+| 0.90 (max) | 1.40 mm | 2.5289 mm | 0.70 mm (≥ D/2 = 0.45) |
+
+### 11.3 Land size before → after
+
+| | land (x × y) | vs D | source |
+|---|---|---|---|
+| **before** | **2.0 × 1.0 mm** | 2.5 × D / 1.25 × D | hard-coded guess, `TODO(unverified)` |
+| **after** | **1.30 × 1.30 mm** | D + 2×0.25 (both axes, symmetric) | **DERIVED** from the operator datum |
+
+### 11.4 Pad POSITIONS did not move — proven
+
+The change is **size only**. The pad-centre list of **all four** generator consumers is
+byte-identical to the pre-change list:
+
+```
+sha256 (18 pad centres, before) = 960877b2d9d17346e51ed0936451d80bd427c968351a326ae8fff9334eacc4ef
+sha256 (18 pad centres, after ) = 960877b2d9d17346e51ed0936451d80bd427c968351a326ae8fff9334eacc4ef
+```
+
+The identity signature's pad-centre bbox is unchanged at `31.4312 × 21.0000 mm`; only the
+pad-size histogram moves `2 × 1` → `1.3 × 1.3`. `--verify-all` prints `18/18` vendor-coincident
+for every copy, nearest 0.000 mm (exit 0). Regenerating twice is byte-identical
+(sha256 `389e059cb2b10493ffbf76a21d6a309507abc6ff3bd3ec81ee8cf98046485e12`).
+
+### 11.5 Still UNVERIFIED — and NOT guessed
+
+* **Module thickness** — the module JSON says **2.5 mm**, but the drawing OCR also recovers the
+  p.8 callouts `3.00 (×2) / 6.09 / 5.00 (×2) / 4.32 / 3.30`, and **not one of them can be
+  attributed** to a feature without reading the drawing. They remain unattributed; **no
+  attribution is guessed**. (If one of them is *plausibly* a land or pad dimension, it cannot be
+  checked against the 1.30 mm derivation above without a feature read — so it stays open.)
+* The bare-LoRa2021 land pattern and the SX1280 land pattern are **out of scope** here and stay
+  `TODO(unverified)` on the v9 sheet.
+
+

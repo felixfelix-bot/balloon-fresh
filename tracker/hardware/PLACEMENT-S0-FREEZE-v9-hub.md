@@ -6,11 +6,22 @@
 `placement-source-of-truth.json`, `tracker/hardware/drc_snapshots/history.jsonl`.
 
 **Frozen artefact:** `tracker/hardware/hub_board_v9.kicad_pcb`
-**sha256:** `2f0a66733b7a853b0052062e1e73833e7194fc7c38dcc257a749965314ab9238`
+**sha256:** `07b0683bcfa967a25840f2855a4d8bd657d28d1785b4db864614fc3c611a3217`
 **Reproducible input (seed):** `tracker/hardware/output/hub_board_v9_seed.kicad_pcb`
-**seed sha256:** `8748e7587d596dbd0f950b85e08f4c0c035a78ea9c9506a7fe5e41000e9d1533`
+**seed sha256:** `06ac5c92baa3214f11d89a30033e5815b07a07f3376f67f1d76256b55a832abf`
 **Netlist of record:** `tracker/hardware/schematics/flight_board/v9_flight.net`
 **netlist sha256:** `d0708df92bd2ad357a9c91007c7a9e31d9c2fd1c92743ddb4a119f39cfa53db3`
+
+> **UPDATED 2026-10-07 by `fix/f33-land-size` — read §7 before trusting this sha.**
+> The F33 castellated pad **land size** was re-derived from the operator-supplied
+> castellation hole diameter **D = 0.80 ± 0.10 mm** (was the guess 2.0 × 1.0 mm). The
+> frozen board embeds that footprint, so its **bytes changed** even though the
+> **placement did not move**. A control run that restores the OLD footprint reproduces
+> the previous sha `2f0a6673…` **exactly**, which proves the only input that moved the
+> bytes is the land size. **Classification: RE-VERIFICATION ONLY — not a re-place, not a
+> re-route.** The figures recorded in §1 below were re-measured on the new board and are
+> unchanged (0 pad-box overlaps, 0 courtyard overlaps, `placement_gate PASS`); the DRC
+> class counts are identical to the table in §1.
 
 **This is a PLACEMENT. It is NOT routed.** `segments = 0`, `vias = 0`, `zones = 0` — by design.
 
@@ -246,3 +257,50 @@ and this task edited neither. Flagged so the socket spec's owner closes the loop
    no human sign-off requested (that comes only after a routed fab candidate is settled).
 
 *Placement only. Order nothing.*
+
+---
+
+## 7. ADDENDUM — 2026-10-07: F33 land-size correction. RE-VERIFIED, NOT re-placed
+
+**Change:** on `fix/f33-land-size` the F33 castellated pad **land size** was re-derived from
+the operator-supplied castellation hole diameter **D = 0.80 ± 0.10 mm** (datasheet §9 p8, read
+by the operator) as `land = D + 2 × 0.25 = 1.30 × 1.30 mm`, replacing the declared guess
+**2.0 × 1.0 mm** (`TODO(unverified)`, now dropped). Pad **centres did not move** — the 18
+pad-centre list is byte-identical (sha256 `960877b2…`) before and after.
+
+### 7.1 Does the placement need to change? — the classification
+
+The decision rule for a geometry edit *after* a placement freeze is which of three things
+it forces:
+
+| case | what changes | does it apply here? |
+|---|---|---|
+| **re-route** | only copper/tracks are redrawn; component seats unchanged | n/a — this board has **no tracks** (`segments = 0`), so there is nothing to redraw |
+| **re-place** | one or more components must move to a new floorplan **seat** | **NO** — see §7.2: no component left its seat; the frozen placement stands |
+| **re-verify only** | board bytes change because an embedded footprint changed, but every seat and every S0 criterion still holds | **YES — this is the case** |
+
+**Verdict: RE-VERIFICATION ONLY.** It is **not** a re-place (the placement is unchanged) and
+**not** a re-route (there is no routing yet — this is an S0 placement-only board).
+
+### 7.2 Evidence
+
+* **Frozen sha changed** — `2f0a6673…` → `07b0683bcfa967a25840f2855a4d8bd657d28d1785b4db864614fc3c611a3217`
+  (seed: `06ac5c92baa3214f11d89a30033e5815b07a07f3376f67f1d76256b55a832abf`). The board
+  embeds the footprint, so its bytes must change.
+* **Control run** — restoring the OLD footprint and re-running `--publish` reproduces the OLD
+  sha `2f0a66733b7a853b0052062e1e73833e7194fc7c38dcc257a749965314ab9238` **exactly**. So the
+  land size is the *only* input that moved the bytes.
+* **Board diff (frozen → new):** **38 of 39 footprints byte-identical** in position *and*
+  geometry. The **only** mover is **U2 (the F33 itself)**, `y 12.00 → 12.15` (+0.15 mm) — the
+  generator's own pad-box proxy re-seats it because its pad box shrank; **no other component
+  changed seat**, and no component left the board.
+* **S0 gates on the new board** — `gate25_check.py`: `pad_overlap_pairs_0.2mm = 0`,
+  `exact_pad_overlap_pairs_0.2mm = 0`, `courtyards_overlap = 0`, `placement_gate = PASS`;
+  `placement_guard.py --gate25`: `ok: true, fp=39 pad_overlaps=0 segments=0`. DRC class counts
+  identical to §1 (69 total, same six classes).
+* **Reproducible** — two consecutive `--publish` runs from the corrected footprint give the
+  same sha `07b0683b…`.
+
+**Nothing was ordered, routed, or frozen for fab. No pad position, net, or other part moved.
+The freeze record is updated, not left stale.**
+

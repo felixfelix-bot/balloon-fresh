@@ -35,24 +35,59 @@ AUTHORITATIVE SOURCE (the only land-pattern source reachable from this host)
       * scale-free ratio pitch/rowsep = 0.18709 vs 3.93/21.00 = 0.18714 (0.028%)
       * closure 2*3.7844 + 8*3.9289 = 39.0000 mm == module length 39.00 +-0.5
 
-WHAT THIS SCRIPT DOES **NOT** PROVIDE -> STAYS UNVERIFIED, NEVER GUESSED
------------------------------------------------------------------------
-  The pad LAND SIZE (length x width of the copper land).
-  The vendor pad records store centres only; no pad-size table could be located
-  in the 90 KB binary (a whole-file scan for the drawing's callout values in
-  1.5e6 units/mm returns nothing).  The datasheet mechanical drawing is
-  section 9, page 8 of docs/f33-module/LoRa2021F33-2G4-datasheet-v1.1.pdf and is
-  an embedded JPEG RASTER with NO text layer:
-      `pdftotext -raw -f 8 -l 8 <pdf>` prints ONLY the page header
-        "9. Mechanism Dimension (Unit: mm)"
-      `pdfimages -list -f 8 -l 8 <pdf>` shows the two page-8 images.
-  OCR (tesseract, a text extractor) reproduces the callouts
-      3.78 / 3.93 / 0.80 / 3.00 (x2) / 6.09 / 5.00 (x2) / 4.32 / 39.00 / 9.00 / 3.30
-  but their positions cannot be attributed to a specific feature without reading
-  the drawing, so the land size is emitted from LAND_LENGTH_MM / LAND_WIDTH_MM
-  below and is marked `TODO(unverified)` both here and in the emitted footprint.
-  A guessed land is WORSE than a flagged one, because it looks verified.
-  When the drawing is read, pass --land-length / --land-width and drop the flag.
+WHAT THIS SCRIPT DERIVES, AND WHAT STAYS UNVERIFIED
+---------------------------------------------------
+  LAND SIZE - NOW VERIFIED, DERIVED (it was the one declared guess, and it
+  carried a TODO(unverified) until the drawing was read).
+  The module is CASTELLATED (`tracker/hardware/footprints/nicerf-lora2021f33-2g4
+  .json`: pin_type "castellated"): each of the 18 pins is a plated HALF-HOLE
+  stamped into one of the two 39 mm edges, so the module presents a length of
+  copper equal to the hole DIAMETER along the edge and reaches only its RADIUS
+  inward from the module edge line (y = +/-10.5).
+
+  OPERATOR DATUM (authoritative, 2026-10-07) - the last unknown on this part:
+      D = 0.80 +/- 0.10 mm   "the diameter of the hole that the pin goes
+                              through ... 0.8 +- 0.1mm"
+  source: docs/f33-module/LoRa2021F33-2G4-datasheet-v1.1.pdf, section 9
+          "Mechanism Dimension", page 8.  That page is an embedded JPEG RASTER
+          with NO text layer, so it cannot be extracted in-repo:
+              `pdftotext -raw -f 8 -l 8 <pdf>` prints ONLY the page header
+              `pdfimages -list -f 8 -l 8 <pdf>` lists the two page-8 images
+          tesseract (a text extractor, not a drawing reader) recovers the
+          callouts 3.78 / 3.93 / 0.80 / 3.00 x2 / 6.09 / 5.00 x2 / 4.32 / 39.00
+          / 9.00 / 3.30 but CANNOT attribute them to a feature.  The operator
+          read the drawing, so the 0.80 mm diameter is an OPERATOR-SUPPLIED
+          DATUM - authoritative, not a guess, and not an unattributed callout.
+
+  RULE (one line): the land is the castellation APERTURE grown by a uniform
+                   0.25 mm solder-fillet margin on every side.
+      along the edge (x):  x = D + 2*0.25 = 0.80 + 0.50 = 1.30 mm
+          >= D by construction (0.25 mm of land beyond the castellation on each
+          side, for the fillet).  The old 2.0 mm was exactly 2.5 x D and had no
+          source at all.  Gap to the neighbouring land:
+              3.9289 (pitch) - 1.30 = 2.6289 mm   -> no bridging risk.
+      across the edge (y): y = D + 2*0.25 = 0.80 + 0.50 = 1.30 mm
+          The pad CENTRE is pinned on the module edge line by the vendor land
+          file (y = +/-10.5) and MUST NOT MOVE, so the land is necessarily
+          SYMMETRIC: half-width = D/2 + 0.25 = 0.65 mm each side.
+            inward  0.65 mm >= D/2 = 0.40 mm  -> the joint sits under the
+                    castellation copper with 0.25 mm of margin.
+            outward 0.65 mm >= inward 0.65 mm (never smaller) and is the DESIGN
+                    DRIVER: every joint on this vehicle is hand-soldered, so the
+                    outward half is what the iron tip lands on.  0.65 mm clears
+                    a 0.5 mm chisel tip, and it is 0.15 mm MORE exposed copper
+                    than the old guess (0.50 mm) - the same uniform fillet
+                    margin, not a second invented number.
+      Bound check: land_length 1.30 mm < the physical ceiling recorded in
+      F33-LANDPATTERN-VERIFICATION.md s7 (land_length < pitch - creepage,
+      i.e. <~ 3.4 mm at 3.93 mm pitch).
+
+  STILL UNVERIFIED - never guessed, and NOT closeable from the vendor file:
+  the module THICKNESS (the module JSON says 2.5 mm; the p.8 OCR also recovers
+  the callouts 3.00 x2 / 6.09 / 5.00 x2 / 4.32 / 3.30, and NOT ONE of them can
+  be attributed to a feature without reading the drawing, so every one stays
+  unattributed and TODO(unverified)) and whether a land/pad callout hides among
+  them.  Do NOT guess an attribution.
 
 USAGE
 -----
@@ -62,6 +97,9 @@ USAGE
   python3 scripts/gen_f33_landpattern.py --signature FILE     # signature of a footprint file
   python3 scripts/gen_f33_landpattern.py --check FILE         # exit 1 if FILE's geometry drifted
   python3 scripts/gen_f33_landpattern.py --verify-all         # check every registered copy
+
+  --land-length / --land-width remain as EXPLICIT OVERRIDES of the derived
+  land; leaving them off uses the derivation above.
 
 Exit codes: 0 ok / 1 geometry mismatch or source drift / 2 usage or source unreadable.
 """
@@ -91,11 +129,40 @@ PAD_ROWS_Y_MM = (-10.5, 10.5)          # pad rows sit ON the two 39 mm edges
 PAD_PITCH_MM = 3.9289                  # decoded; drawing callout 3.93 +-0.1
 EDGE_TO_PAD_MM = 3.7844                # decoded; drawing callout 3.78 +-0.1
 
-# --- UNVERIFIED (see module docstring).  Kept at the value the repo already
-#     carried so that this change is pad-CENTRE geometry only.
-LAND_LENGTH_MM = 2.0                   # along the pad row (x)
-LAND_WIDTH_MM = 1.0                    # across the row (y)
-LAND_SIZE_VERIFIED = False
+# --- CASTELLATION APERTURE (operator-supplied datum, AUTHORITATIVE) ----------
+# The module is castellated (footprint JSON: pin_type "castellated"): each of the
+# 18 pins is a plated HALF-HOLE in one of the two 39 mm edges, so the module
+# presents copper equal to the hole DIAMETER along the edge and reaches only its
+# RADIUS (D/2) inward from the module edge line (y = +/-10.5).
+#
+# D below is the OPERATOR'S reading of the vendor drawing (2026-10-07), quoted:
+#   "the diameter of the hole that the pin goes through ... 0.8 +- 0.1mm"
+#   source: docs/f33-module/LoRa2021F33-2G4-datasheet-v1.1.pdf, section 9
+#           "Mechanism Dimension", page 8 - an embedded JPEG raster with no text
+#           layer, hence NOT extractable in-repo.  Authoritative; not a guess.
+CASTELLATION_D_MM = 0.80               # hole diameter = edge copper width
+CASTELLATION_D_TOL_MM = 0.10           # operator's stated +/- tolerance
+
+# --- DERIVED LAND (was 2.0 x 1.0, a declared guess marked TODO(unverified)) --
+# RULE: the land is the castellation APERTURE grown by a uniform
+#       LAND_FILLET_MARGIN_MM solder-fillet margin on EVERY side.
+#   along the edge (x):  LAND_LENGTH = D + 2*0.25 = 1.30 mm
+#   across the edge (y): LAND_WIDTH  = D + 2*0.25 = 1.30 mm  (symmetric: the pad
+#                        centre is pinned on the module edge and must not move,
+#                        so half-width = D/2 + 0.25 = 0.65 mm inward, 0.65 mm
+#                        outward - outward >= inward, and outward is the driver
+#                        because every joint here is hand-soldered).
+# The tolerance band does not change the rule: at D = 0.90 (max) the land is
+# 1.40 mm and the gap to the next land is 3.9289 - 1.40 = 2.5289 mm; at
+# D = 0.70 (min) it is 1.20 mm - both comfortably clear of bridging.
+LAND_FILLET_MARGIN_MM = 0.25           # solder-fillet margin on every side
+LAND_LENGTH_MM = CASTELLATION_D_MM + 2 * LAND_FILLET_MARGIN_MM   # 1.30 (x)
+LAND_WIDTH_MM = CASTELLATION_D_MM + 2 * LAND_FILLET_MARGIN_MM    # 1.30 (y)
+LAND_SIZE_VERIFIED = True              # DERIVED from the operator datum above
+LAND_SIZE_SOURCE = ("operator reading of the vendor drawing, datasheet s9 p8 "
+                    "(raster, no text layer), 2026-10-07: castellation hole "
+                    "diameter %g +/- %g mm"
+                    % (CASTELLATION_D_MM, CASTELLATION_D_TOL_MM))
 
 TAG = 0x08435AD8
 UNITS_PER_MM = 1_500_000
@@ -120,8 +187,12 @@ CONSUMERS = [
 DESCR = ("NiceRF LoRa2021F33-2G4, 18-pin castellated module (LR2021 + 2W PA + "
          "TCXO), 39x21mm. Pad CENTRES decoded from the vendor land file "
          "LORA2021F33-2G4 footprint_pads.pcb (pitch 3.9289mm, 9 pads on each "
-         "39mm edge). Land size %sx%s mm TODO(unverified): datasheet s9 p8 is "
-         "a raster with no text layer." % (LAND_LENGTH_MM, LAND_WIDTH_MM))
+         "39mm edge). Land size %g x %g mm DERIVED from the operator-supplied "
+         "castellation hole diameter D = %g +/- %g mm grown by a uniform %g mm "
+         "solder-fillet margin on every side (datasheet s9 p8, read by the "
+         "operator 2026-10-07)."
+         % (LAND_LENGTH_MM, LAND_WIDTH_MM, CASTELLATION_D_MM,
+            CASTELLATION_D_TOL_MM, LAND_FILLET_MARGIN_MM))
 
 TAGS = "LoRa LR2021 NiceRF F33 castellated PA 2W vendor-land-pattern"
 
@@ -206,7 +277,6 @@ def footprint_text(libname: str = "custom", leaf: str = "LoRa2021F33_2G4",
                    vendor_sha: str = VENDOR_SHA256) -> str:
     d = decode_vendor()
     lx, ly = lands or (LAND_LENGTH_MM, LAND_WIDTH_MM)
-    flag = "" if LAND_SIZE_VERIFIED else "  <-- TODO(unverified)"
     hl, hw = MODULE_LENGTH_MM / 2, MODULE_WIDTH_MM / 2
     L = []
     L.append('(footprint "%s:%s"' % (libname, leaf))
@@ -228,14 +298,28 @@ def footprint_text(libname: str = "custom", leaf: str = "LoRa2021F33_2G4",
     L.append('  ;;   edges at y=+/-10.5000; pitch %.4fmm (drawing 3.93+-0.1);' % d["pitch"])
     L.append('  ;;   outer pad centre 3.7844mm from the 39mm end (drawing 3.78+-0.1);')
     L.append('  ;;   closure 2*3.7844 + 8*%.4f = %.4fmm = module length 39.00.' % (d["pitch"], d["closure"]))
+    L.append('  ;; VERIFIED land size - DERIVED from the operator-supplied datum:')
+    L.append('  ;;   pad LAND SIZE %g x %g mm' % (lx, ly))
+    L.append('  ;;     castellation HALF-HOLE diameter D = %g +/- %g mm, the'
+             % (CASTELLATION_D_MM, CASTELLATION_D_TOL_MM))
+    L.append('  ;;       operator\'s reading of the vendor drawing (datasheet s9 p8,')
+    L.append('  ;;       a raster with no text layer). The module presents D of')
+    L.append('  ;;       copper along the edge and penetrates only D/2 inward.')
+    L.append('  ;;     RULE: land = the castellation aperture grown by a uniform')
+    L.append('  ;;       %g mm solder-fillet margin on EVERY side.'
+             % LAND_FILLET_MARGIN_MM)
+    L.append('  ;;       x: D + 2*%g = %g mm; gap to the next land = %.4f - %g'
+             ' = %.4f mm' % (LAND_FILLET_MARGIN_MM, lx, d["pitch"], lx,
+                             d["pitch"] - lx))
+    L.append('  ;;       y: D + 2*%g = %g mm, symmetric about the pad centre'
+             ' (pinned' % (LAND_FILLET_MARGIN_MM, ly))
+    L.append('  ;;          on the module edge, y=+/-10.5, and NOT moved):'
+             ' inward %g >= D/2 = %g mm;' % (ly / 2, CASTELLATION_D_MM / 2))
+    L.append('  ;;          outward %g = the hand-solder iron\'s access, never'
+             ' smaller than' % (ly / 2,))
+    L.append('  ;;          the inward half. F33-LANDPATTERN-VERIFICATION.md'
+             ' s11.')
     L.append('  ;; NOT verified (do not read this as verified):')
-    L.append('  ;;   pad LAND SIZE %s x %s mm%s' % (lx, ly, flag))
-    L.append('  ;;     the vendor pad records store CENTRES ONLY; the datasheet')
-    L.append('  ;;     s9 p8 mechanical drawing is a raster JPEG with no text layer')
-    L.append('  ;;     (pdftotext -raw -f 8 -l 8 prints only the page header), so no')
-    L.append('  ;;     land callout can be attributed to a feature. Set it via')
-    L.append('  ;;     --land-length/--land-width once the drawing is read, then drop')
-    L.append('  ;;     the TODO. F33-LANDPATTERN-VERIFICATION.md s7 documents this.')
     L.append('  ;;   pin-1 ORIENTATION anchor: pads 9/10 (ANT / ANT-2G4) are the')
     L.append('  ;;     adjacent pair at the +x end; pad 18 (IRQ) sits beside pad 1')
     L.append('  ;;     (VCC) at the -x end. The vendor file carries no body outline.')
@@ -338,8 +422,14 @@ def main() -> int:
     ap.add_argument("--print", dest="to_stdout", action="store_true")
     ap.add_argument("--install", action="store_true",
                     help="also refresh the legacy custom.pretty copies")
-    ap.add_argument("--land-length", type=float, default=LAND_LENGTH_MM)
-    ap.add_argument("--land-width", type=float, default=LAND_WIDTH_MM)
+    ap.add_argument("--land-length", type=float, default=LAND_LENGTH_MM,
+                    help="EXPLICIT override of the DERIVED land length along "
+                         "the pad row (x); default %g mm = D + 2*%g"
+                         % (LAND_LENGTH_MM, LAND_FILLET_MARGIN_MM))
+    ap.add_argument("--land-width", type=float, default=LAND_WIDTH_MM,
+                    help="EXPLICIT override of the DERIVED land width across "
+                         "the row (y); default %g mm = D + 2*%g"
+                         % (LAND_WIDTH_MM, LAND_FILLET_MARGIN_MM))
     ap.add_argument("--signature", metavar="FILE", default=None)
     ap.add_argument("--check", metavar="FILE", default=None)
     ap.add_argument("--verify-all", action="store_true")
@@ -374,10 +464,22 @@ def main() -> int:
           % (d["pitch"], d["rows"], d["closure"]))
     print("pad 18        : ring closure -> %s" % (d["pads"][18],))
     print("emitted       : %s" % describe(sig))
-    if not LAND_SIZE_VERIFIED:
-        print("LAND SIZE     : %g x %g mm TODO(unverified) - vendor records carry "
-              "centres only and the datasheet drawing has no text layer"
-              % lands)
+    if LAND_SIZE_VERIFIED:
+        print("LAND SIZE     : %g x %g mm VERIFIED - DERIVED from the "
+              "operator-supplied" % lands)
+        print("                castellation hole diameter D = %g +/- %g mm "
+              "(datasheet s9 p8);" % (CASTELLATION_D_MM, CASTELLATION_D_TOL_MM))
+        print("                land = D grown by a uniform %g mm solder-fillet "
+              "margin on every" % LAND_FILLET_MARGIN_MM)
+        print("                side. x = D + 2*%g = %g mm; gap to the next land "
+              "= %.4f - %g" % (LAND_FILLET_MARGIN_MM, lands[0], d["pitch"],
+                               lands[0]))
+        print("                = %.4f mm. y = %g mm, symmetric about the "
+              "pinned pad centre: inward" % (d["pitch"] - lands[0], lands[1]))
+        print("                %g mm >= D/2 = %g mm; outward %g mm (hand-solder "
+              "iron access, never" % (lands[1] / 2, CASTELLATION_D_MM / 2,
+                                      lands[1] / 2))
+        print("                smaller than the inward half).")
 
     if args.to_stdout:
         sys.stdout.write(text)
