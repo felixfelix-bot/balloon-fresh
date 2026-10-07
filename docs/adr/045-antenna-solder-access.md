@@ -11,7 +11,7 @@
 - Related records in this repo (read as they exist today — see the numbering note):
   - `docs/adr/029-dual-band-flight-board.md` (ADR-029, v9 tri-band board + four RF parts;
     D3 = all four feeds are U.FL pigtails)
-  - `docs/adr/029-f33-sx1280-pin-plan.md` (ADR-029 pin plan; **duplicate 029 number**)
+  - `docs/adr/108-f33-sx1280-pin-plan.md` (ADR-029 pin plan; **duplicate 029 number**)
   - `docs/adr/034-radio-band-split-433-tx-2g4-rx.md` (ADR-034, 433 MHz TX / 2.4 GHz RX on
     two separate LR2021 parts)
   - `docs/adr/040-v9-radio-site-optionality.md` (ADR-040, Site A LP-or-HP + Site B LP-only,
@@ -29,7 +29,7 @@
   `tracker/hardware/tools/antenna_access_check.py` (the enforcement tool this ADR mandates).
 
 > **Numbering note (concurrent work, stated not resolved).** Two ADR numbers collide on
-> today's tree: `029-dual-band-flight-board.md` and `029-f33-sx1280-pin-plan.md`. Another
+> today's tree: `029-dual-band-flight-board.md` and `108-f33-sx1280-pin-plan.md`. Another
 > worker is **renumbering ADR files concurrently**, so the numbers cited above are the
 > numbers-as-of-today; they may move. This file takes **045** because it is the
 > next-free number on the v9 consolidation line at base `b1af5c9` (highest committed is

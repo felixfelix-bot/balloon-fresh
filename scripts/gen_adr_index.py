@@ -40,28 +40,28 @@ COLLISION_VERDICTS: dict[int, str] = {
     2: (
         "**LIVE:** `002-lr2021-as-rf-chip.md` (Status `Akzeptiert`) — the LR2021 "
         "chip selection. **SUPERSEDED:** none. The other file is an unrelated "
-        "Accepted record (`002-tollgate-over-fips-mesh-udp.md`, transport layer), "
+        "Accepted record (`100-tollgate-over-fips-mesh-udp.md`, transport layer), "
         "so no supersede chain joins them → "
         "`UNRESOLVED - needs an operator decision`."
     ),
     17: (
         "**LIVE:** `017-phase-sync-via-reference-clocks.md` and "
-        "`017-version-tagging-policy.md` (both Status `Accepted`, unrelated "
-        "topics). **SUPERSEDED:** `017-lr2021-only-ban-sx1280.md` — its own "
+        "`102-version-tagging-policy.md` (both Status `Accepted`, unrelated "
+        "topics). **SUPERSEDED:** `101-lr2021-only-ban-sx1280.md` — its own "
         "Status header reads `SUPERSEDED by ADR-020` (2026-07-23). Three "
         "unrelated records share 017 → "
         "`UNRESOLVED - needs an operator decision`."
     ),
     18: (
         "**LIVE:** `018-multi-mode-range-characterization.md` (Status "
-        "`Accepted (2026-07-22)`). **SUPERSEDED:** `018-tx-autonomy-requirement.md` "
+        "`Accepted (2026-07-22)`). **SUPERSEDED:** `103-tx-autonomy-requirement.md` "
         "— its own Status header reads `Superseded (partial) — 2026-07-27` and "
         "names no successor number, so the *number* is still not allocated → "
         "`UNRESOLVED - needs an operator decision`."
     ),
     19: (
         "**LIVE:** both — `019-gps-synchronized-mode-switching.md` (Status "
-        "`Accepted (2026-07-22)`) and `019-tx-rx-sync-invariant.md` (Status "
+        "`Accepted (2026-07-22)`) and `104-tx-rx-sync-invariant.md` (Status "
         "`Accepted`). **SUPERSEDED:** none; they are unrelated topics with no "
         "supersede pointer between them → "
         "`UNRESOLVED - needs an operator decision`."
@@ -69,13 +69,13 @@ COLLISION_VERDICTS: dict[int, str] = {
     20: (
         "**LIVE:** both — `020-deprecate-radiolib-adopt-raw-lr2021-spi.md` "
         "(Status `Accepted (2026-07-23)`, itself states it `Supersedes ADR-017`) "
-        "and `020-reproducible-build-flash-test.md` (Status `Accepted`). "
+        "and `105-reproducible-build-flash-test.md` (Status `Accepted`). "
         "**SUPERSEDED:** none (the 017 → 020 pointer is cross-number, it does not "
         "allocate 020) → `UNRESOLVED - needs an operator decision`."
     ),
     25: (
         "**LIVE:** both — `025-shared-hardware-flock-mutex.md` (Status "
-        "`ACCEPTED`) and `025-e-hash-relay-transport-layer.md` (Status "
+        "`ACCEPTED`) and `106-e-hash-relay-transport-layer.md` (Status "
         "`Proposed`). **SUPERSEDED:** none; unrelated topics, no supersede "
         "pointer → `UNRESOLVED - needs an operator decision`."
     ),
@@ -83,7 +83,7 @@ COLLISION_VERDICTS: dict[int, str] = {
         "**LIVE:** `028-schematic-first-three-variants.md` — cited as the "
         "**accepted ADR-028** by `docs/coordination/PCB-MASTER-EXECUTION-PLAN.md` "
         "(lines 10 and 683) and committed later (`862c0c5`, 2026-08-05). "
-        "**SUPERSEDED:** `028-three-variant-pcb-design.md` (`3356695`, same day, "
+        "**SUPERSEDED:** `107-three-variant-pcb-design.md` (`3356695`, same day, "
         "the earlier proposal); its own body says of the earlier script-generated "
         "workflow *\"The schematic-first approach replaces this entirely.\"* "
         "Both documents cover the same subject (three MCU variants), so this "
@@ -92,9 +92,9 @@ COLLISION_VERDICTS: dict[int, str] = {
     29: (
         "**LIVE:** `029-dual-band-flight-board.md` (Status `Proposed`) — the v9 "
         "design of record. **ANNEX (not a competing record):** "
-        "`029-f33-sx1280-pin-plan.md`, which declares itself the pin plan for this "
+        "`108-f33-sx1280-pin-plan.md`, which declares itself the pin plan for this "
         "ADR's D2b(b) and is named as such in ADR-029 §Rollout item 7. "
-        "**UNRESOLVED:** `029-firmware-output-harmonization.md` (Status "
+        "**UNRESOLVED:** `109-firmware-output-harmonization.md` (Status "
         "`APPROVED`) is an unrelated firmware record claiming the same number; "
         "ADR-029's own O7 flags it as unresolved → "
         "`UNRESOLVED - needs an operator decision`."
@@ -195,10 +195,15 @@ def build(adr_dir: Path) -> str:
     out.append("  non-zero if its target path already exists. Do not pick a number by hand.")
     out.append(f"- **{ALLOCATION_FLOOR:03d} and above are reserved for sequential allocation.**")
     out.append("  Numbers 001–043 are historical.")
-    out.append("- **Never rename or renumber an existing ADR file.** References to them exist")
+    out.append("- **Do not rename or renumber an existing ADR file again.** References to them exist")
     out.append("  outside `docs/adr/` (code, coordination docs, branch names, external links)")
-    out.append("  and a rename silently breaks them. A number used by two files is a")
-    out.append("  *collision*: record it here, do not fix it by renaming.")
+    out.append("  and a rename silently breaks them. The one authorised exception was the")
+    out.append("  **2026-10-07 duplicate-number fix** (branch `adr/renumber-collisions`): where two")
+    out.append("  or more files shared a number, the live record kept it and the displaced")
+    out.append("  historical records moved into the **100 range**, which is outside the sequential")
+    out.append("  allocation band so it can never race it. That displacement is done; treat the")
+    out.append("  100-range numbers as permanent. Any *new* collision is a defect to report,")
+    out.append("  never to fix by another rename.")
     out.append("- Where a collision cannot be resolved from evidence (a file's own Status")
     out.append("  header, or a supersede pointer inside a committed record), this index says")
     out.append("  `UNRESOLVED - needs an operator decision`. It never guesses.")

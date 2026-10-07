@@ -69,3 +69,5 @@ REPORT.md
 clearance_before.txt
 cluster_before.txt
 cluster_after.txt
+# ADR renumbering scratch (evidence archived to ~/reports/balloon-v9/scratch/renumber/)
+scratch-adr/

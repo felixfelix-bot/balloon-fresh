@@ -1,4 +1,4 @@
-# 025-e-hash-relay-transport-layer
+# 106-e-hash-relay-transport-layer
 
 Renumbered from ADR-025 on 2026-10-07 to remove a duplicate number; content otherwise unchanged.
 

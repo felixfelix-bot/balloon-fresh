@@ -1,5 +1,7 @@
 # ADR-001: TollGate Balloon Uses LR2021 Radio as Data Link
 
+> Renumbered from the non-conforming filename `ADR-001-tollgate-over-lr2021.md` on 2026-10-07 to remove an effective ADR-001 number collision with `001-esp32-c3-as-mcu.md`; content otherwise unchanged.
+
 **Date:** 2026-07-29
 **Status:** Proposed
 **Decision Maker:** Felix (operator)

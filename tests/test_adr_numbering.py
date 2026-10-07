@@ -23,12 +23,9 @@ from collections import defaultdict
 # Files in docs/adr/ that are intentionally outside the NNN-slug convention.
 # Anything here is excluded from BOTH checks. Each needs a reason.
 ALLOWLIST = {
-    "ADR-001-tollgate-over-lr2021.md": (
-        "Unnumbered legacy artefact: written before the NNN-slug convention and named "
-        "by hand after the ADR it responds to. It is deliberately left in place (and is "
-        "the counterpart of the 100-range displacement) because it does not claim a "
-        "sequential slot the way an NNN- file does; renaming it is out of scope for the "
-        "renumber-collision card."
+    "INDEX.md": (
+        "Generated index, not an ADR: produced mechanically by scripts/gen_adr_index.py "
+        "and rewritten on every regeneration. It carries no decision record and no number."
     ),
     "adr-e-hash-relay-DECISIONS.md": (
         "Unnumbered companion decision list for the e-hash relay ADR (D1-D10), not an ADR "
