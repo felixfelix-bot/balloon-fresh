@@ -1,0 +1,79 @@
+violations=174 unconnected=11
+
+=== by type ===
+   138  clearance
+    12  drill_out_of_range
+     9  hole_clearance
+     4  track_dangling
+     3  silk_overlap
+     3  silk_over_copper
+     3  silk_edge_clearance
+     1  lib_footprint_mismatch
+     1  via_dangling
+
+=== violation items by description (dedup) ===
+   138  [clearance] Clearance violation (zone clearance 0.2200 mm; actual 0.2005 mm)
+    12  [drill_out_of_range] Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.2000 mm)
+     8  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.2005 mm)
+     4  [track_dangling] Track has unconnected end
+     3  [silk_overlap] Silkscreen overlap
+     3  [silk_over_copper] Silkscreen clipped by solder mask
+     3  [silk_edge_clearance] Silkscreen clipped by board edge
+     1  [hole_clearance] Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.2142 mm)
+     1  [lib_footprint_mismatch] Footprint 'LGA-8_3x5mm_P1.25mm' does not match copy in library 'Package_LGA'.
+     1  [via_dangling] Via is not connected or connected on only one layer
+
+=== position clusters (rounded to 1mm) ===
+     4  clearance                @ (18, 29)
+     3  clearance                @ (30, 11)
+     3  clearance                @ (4, 35)
+     3  clearance                @ (25, 22)
+     3  clearance                @ (9, 14)
+     3  clearance                @ (33, 23)
+     3  clearance                @ (20, 14)
+     3  clearance                @ (29, 23)
+     3  clearance                @ (6, 10)
+     3  silk_edge_clearance      @ (0, 0)
+     2  drill_out_of_range       @ (13, 12)
+     2  drill_out_of_range       @ (13, 13)
+     2  drill_out_of_range       @ (14, 12)
+     2  drill_out_of_range       @ (14, 13)
+     2  clearance                @ (4, 36)
+     2  clearance                @ (46, 13)
+     2  clearance                @ (23, 18)
+     2  clearance                @ (18, 31)
+     2  clearance                @ (3, 9)
+     2  clearance                @ (30, 12)
+     2  clearance                @ (23, 24)
+     2  clearance                @ (26, 8)
+     2  clearance                @ (24, 10)
+     2  clearance                @ (43, 40)
+     2  clearance                @ (7, 39)
+     2  clearance                @ (16, 35)
+     2  clearance                @ (6, 17)
+     2  clearance                @ (23, 7)
+     2  clearance                @ (24, 11)
+     2  clearance                @ (33, 25)
+     2  clearance                @ (23, 12)
+     2  clearance                @ (26, 6)
+     2  clearance                @ (30, 6)
+     2  clearance                @ (30, 23)
+     2  clearance                @ (6, 12)
+     2  clearance                @ (30, 39)
+     2  clearance                @ (20, 12)
+     2  clearance                @ (30, 10)
+     2  clearance                @ (30, 8)
+     2  clearance                @ (7, 14)
+
+=== unconnected detail ===
+  Missing connection between items: Track [+3V3] on F.Cu, length 0.0625 mm @20.1,29.0 | Pad 1 [+3V3] of U5 on F.Cu @21.9,34.1
+  Missing connection between items: PTH pad 1 [GND] of J1 @20.0,42.0 | Pad 3 [GND] of U5 on F.Cu @21.9,36.6
+  Missing connection between items: Pad 2 [GND] of U5 on F.Cu @21.9,35.4 | Pad 3 [GND] of U5 on F.Cu @21.9,36.6
+  Missing connection between items: Pad 7 [GND] of U5 on F.Cu @24.1,35.4 | Pad 6 [GND] of U5 on F.Cu @24.1,36.6
+  Missing connection between items: Pad 7 [GND] of U5 on F.Cu @24.1,35.4 | Pad 8 [GND] of U5 on F.Cu @24.1,34.1
+  Missing connection between items: Pad 7 [GND] of U5 on F.Cu @24.1,35.4 | Pad 2 [GND] of U5 on F.Cu @21.9,35.4
+  Missing connection between items: Track [EN] on F.Cu, length 0.8485 mm @18.9,31.3 | PTH pad 3 [EN] of J1 @25.1,42.0
+  Missing connection between items: Pad 5 [I2C_SDA] of U5 on F.Cu @24.1,37.9 | Track [I2C_SDA] on F.Cu, length 8.3439 mm @31.2,34.3
+  Missing connection between items: Pad 5 [I2C_SDA] of U5 on F.Cu @24.1,37.9 | Track [I2C_SDA] on F.Cu, length 1.7000 mm @14.0,35.0
+  Missing connection between items: Pad 4 [I2C_SCL] of U5 on F.Cu @21.9,37.9 | Track [I2C_SCL] on F.Cu, length 16.6000 mm @29.8,40.8
+  Missing connection between items: Track [I2C_SCL] on F.Cu, length 17.9605 mm @23.1,26.8 | Pad 4 [I2C_SCL] of U5 on F.Cu @21.9,37.9
