@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **72** distinct
-numbers, **72** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **73** distinct
+numbers, **73** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -95,6 +95,7 @@ None.
 | 059 | `059-ntc-temp-compensation-provision.md` | LR2021 on-chip NTC temperature compensation: the provision, the TCXO-vs-NTC mutual exclusion, the thermal-coupling siting rule, and the module pin-breakout blocker | Proposed |
 | 060 | `060-sx1280-drift-strategy.md` | SX1280 drift strategy: the retained 2.4 GHz ranging radio, whether its ranging role needs drift control at all, and the ranked provisions | Proposed |
 | 061 | `061-onboard-storage.md` | On-board storage: the module's own 8 MB flash is sufficient; no external storage part is fitted; the TX buffer is sized to the link, not to the flash | Proposed |
+| 062 | `062-variant-b-design-basis.md` | Variant B design basis: a separate, under-20 g vehicle with its own mass, energy, array and outline | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -106,7 +107,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 062 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 063 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
