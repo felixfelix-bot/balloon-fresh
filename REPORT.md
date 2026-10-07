@@ -11,9 +11,9 @@ placement file was changed. No order was placed.**
 | field | value |
 |---|---|
 | `branch` | `docs/jlcpcb-pricing-and-outline-decision` |
-| `head_sha` | `632c6f173d6de8f93083346402b97578fd3608c7` (deliverables commit; branch tip after adding PROGRESS/REPORT is the push tip — see the push-verification table) |
-| `github_sha` | see push-verification table (github pushed FIRST) |
-| `ngit_sha` | see push-verification table (ngit pushed SEPARATELY, no `--atomic`) |
+| `head_sha` | `632c6f173d6de8f93083346402b97578fd3608c7` (deliverables commit A) · `043b633c19db0a05b5064853f5f29ac906df4a69` (commit B = push-verified tip; PROGRESS/REPORT added) · this file is amended in a further commit C — final tip is `git rev-parse HEAD` on the branch |
+| `github_sha` | `043b633c19db0a05b5064853f5f29ac906df4a69` (verified: `git ls-remote github refs/heads/docs/jlcpcb-pricing-and-outline-decision`) |
+| `ngit_sha` | `043b633c19db0a05b5064853f5f29ac906df4a69` (verified: `git ls-remote ngit refs/heads/docs/jlcpcb-pricing-and-outline-decision`) |
 | `adr_number` | `063` |
 | `adr_path` | `docs/adr/063-hub-outline-trim.md` |
 | `analysis_path` | `docs/analysis/jlcpcb-pricing-and-size-tier.md` |
@@ -47,9 +47,17 @@ placement file was changed. No order was placed.**
 
 | remote | command | sha |
 |---|---|---|
-| local | `git rev-parse HEAD` | _(filled after push)_ |
-| github (FIRST) | `git ls-remote github refs/heads/docs/jlcpcb-pricing-and-outline-decision` | _(filled after push)_ |
-| ngit (SEPARATELY) | `git ls-remote ngit refs/heads/docs/jlcpcb-pricing-and-outline-decision` | _(filled after push)_ |
+| local | `git rev-parse HEAD` (commit B) | `043b633c19db0a05b5064853f5f29ac906df4a69` |
+| github (FIRST) | `git push github HEAD:refs/heads/docs/jlcpcb-pricing-and-outline-decision`; verified `git ls-remote github …` | `043b633c19db0a05b5064853f5f29ac906df4a69` |
+| ngit (SEPARATELY, no `--atomic`) | `git push ngit HEAD:refs/heads/docs/jlcpcb-pricing-and-outline-decision`; verified `git ls-remote ngit …` | `043b633c19db0a05b5064853f5f29ac906df4a69` |
+
+**Round 1 note:** the FIRST `ngit` push was **rejected** (`remote rejected … failed to push to any git
+server`; relay reported a purgatory state event for an unrelated ref `worker-balloon/dual-board-detect`).
+A plain **retry** of the same push succeeded (`* [new branch]`, exit 0) — transient relay state, not a
+key/maintainer problem. It also emitted `failed to publish 1 state event to any relay (relay.damus.io
+nos.lol)` — advisory only; `relay.ngit.dev` accepted the branch and `git ls-remote ngit` confirms it.
+**Round 2** (commit C, this report's SHA backfill) re-pushes github-then-ngit; the final branch tip is
+`git rev-parse HEAD`.
 
 ## Notes / deviations
 
