@@ -1,0 +1,60 @@
+(footprint "balloon_flight_v9:SX1280_QFN24"
+  (version 20250114)
+  (generator "balloon_v9_hand")
+  (generator_version "9.0")
+  (layer "F.Cu")
+  (descr "Semtech SX1280/SX1281 2.4 GHz transceiver, QFN-24 4x4mm 0.5mm pitch + exposed pad. *** GEOMETRY NOT VERIFIED *** - the Semtech SX1280 datasheet could not be retrieved on this host, so every dimension below is a TODO(unverified) placeholder. DO NOT FABRICATE until the land pattern is checked against the datasheet mechanical drawing (SX1280 datasheet, 'Package Outline' / recommended land pattern).")
+  (tags "SX1280 SX1281 LoRa 2.4GHz QFN-24 UNVERIFIED-LANDPATTERN")
+  (attr smd)
+  (property "Reference" "U4" (at 0 -3.4 0) (layer "F.SilkS") (uuid "v9sx-ref") (effects (font (size 1 1) (thickness 0.15))))
+  (property "Value" "SX1280" (at 0 3.4 0) (layer "F.Fab") (uuid "v9sx-val") (effects (font (size 1 1) (thickness 0.15))))
+  (property "Footprint" "" (at 0 0 0) (layer "F.Fab") (uuid "v9sx-fp") (effects (font (size 1 1) (thickness 0.15)) hide))
+
+  ;; *** TODO(unverified): body outline 4.0 x 4.0 mm is a PLACEHOLDER ***
+  (fp_line (start -2.0 -2.0) (end 2.0 -2.0) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "v9sx-ol1"))
+  (fp_line (start 2.0 -2.0) (end 2.0 2.0) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "v9sx-ol2"))
+  (fp_line (start 2.0 2.0) (end -2.0 2.0) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "v9sx-ol3"))
+  (fp_line (start -2.0 2.0) (end -2.0 -2.0) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "v9sx-ol4"))
+
+  ;; *** TODO(unverified): courtyard 4.4 x 4.4 mm is a PLACEHOLDER ***
+  (fp_line (start -2.2 -2.2) (end 2.2 -2.2) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "v9sx-cy1"))
+  (fp_line (start 2.2 -2.2) (end 2.2 2.2) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "v9sx-cy2"))
+  (fp_line (start 2.2 2.2) (end -2.2 2.2) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "v9sx-cy3"))
+  (fp_line (start -2.2 2.2) (end -2.2 -2.2) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "v9sx-cy4"))
+
+  ;; Pin 1 marker
+  (fp_circle (center -2.3 -2.3) (end -2.05 -2.3) (stroke (width 0.12) (type solid)) (fill none) (layer "F.SilkS") (uuid "v9sx-p1"))
+
+  ;; *** TODO(unverified): ALL pad geometry below is a placeholder ***
+  ;; assumed QFN-24, 0.5 mm pitch, 0.25 x 0.80 mm pads, 0.20 mm pull-back from a 4.0 mm body
+  ;; left column, pins 1-6 top-to-bottom
+  (pad "1" smd rect (at -1.95 -1.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad1"))
+  (pad "2" smd rect (at -1.95 -0.75) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad2"))
+  (pad "3" smd rect (at -1.95 -0.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad3"))
+  (pad "4" smd rect (at -1.95 0.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad4"))
+  (pad "5" smd rect (at -1.95 0.75) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad5"))
+  (pad "6" smd rect (at -1.95 1.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad6"))
+  ;; bottom row, pins 7-12 left-to-right
+  (pad "7" smd rect (at -1.25 1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad7"))
+  (pad "8" smd rect (at -0.75 1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad8"))
+  (pad "9" smd rect (at -0.25 1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad9"))
+  (pad "10" smd rect (at 0.25 1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad10"))
+  (pad "11" smd rect (at 0.75 1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad11"))
+  (pad "12" smd rect (at 1.25 1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad12"))
+  ;; right column, pins 13-18 bottom-to-top
+  (pad "13" smd rect (at 1.95 1.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad13"))
+  (pad "14" smd rect (at 1.95 0.75) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad14"))
+  (pad "15" smd rect (at 1.95 0.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad15"))
+  (pad "16" smd rect (at 1.95 -0.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad16"))
+  (pad "17" smd rect (at 1.95 -0.75) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad17"))
+  (pad "18" smd rect (at 1.95 -1.25) (size 0.80 0.25) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad18"))
+  ;; top row, pins 19-24 right-to-left
+  (pad "19" smd rect (at 1.25 -1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad19"))
+  (pad "20" smd rect (at 0.75 -1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad20"))
+  (pad "21" smd rect (at 0.25 -1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad21"))
+  (pad "22" smd rect (at -0.25 -1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad22"))
+  (pad "23" smd rect (at -0.75 -1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad23"))
+  (pad "24" smd rect (at -1.25 -1.95) (size 0.25 0.80) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad24"))
+  ;; exposed pad -> GND (TODO(unverified): exposed-pad size not verified)
+  (pad "25" smd rect (at 0 0) (size 2.60 2.60) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "v9sx-pad-ep"))
+)
