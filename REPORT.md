@@ -26,4 +26,11 @@ The document analyses the operator's German amateur-radio licence regime for the
 2. Whether German primary law explicitly requires a 10-minute identification interval (ITU RR floor is hourly).
 
 ## Pushes
-To be completed in this session; github first, then ngit.
+Pushed sequentially (github first, then ngit). Observed after push:
+
+* Local commit SHA: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
+* GitHub `refs/heads/docs/regulatory-amateur`: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
+* ngit `refs/heads/docs/regulatory-amateur`: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
+* origin `refs/heads/docs/regulatory-amateur`: `6d36d3e6b32e9a33d30462c1591aec243c9238d8`
+
+All four SHAs match.
