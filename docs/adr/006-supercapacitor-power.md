@@ -3,6 +3,10 @@
 ## Status
 Akzeptiert
 
+> **Stale load list (ADR-037, 2026-10-07):** the power-architecture chain below names the
+> SKY66112 FEM, which ADR-037 omits from v9. The chain is stale for v9 and needs a re-draw
+> (tracked as a follow-up in ADR-037); it is not corrected inline here.
+
 ## Kontext
 Der Ballon hat keinen Zugriff zu Batterien die bei -60C in der Stratosphaere funktionieren. Die Energie muss ueber Solarzellen gewonnen und in Supercapacitors gepuffert werden.
 
