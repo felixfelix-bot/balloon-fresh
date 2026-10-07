@@ -14,7 +14,7 @@
 | Date | 2026-10-07 |
 | Author | subagent (Hermes), branch `analysis/array-power-architecture` |
 | Worktree | `/home/c03rad0r/worktrees/bf-wingarch` |
-| Base commit | `af9a672` (tip of `main`; verified present locally before branching) |
+| Base commit | `af9a672` — the tip of `main` when the task was issued, and an ancestor of `github/main`. **`github/main` has since advanced to `c54da64`** (the in-flight `analysis/wing-ngon` and `analysis/wing-ladder` studies merged); this branch does **not** include those two merges. They are geometry/insolation work cited as in flight in §9/§10, so nothing in this analysis depends on them |
 | Lens | **power topology, source/load matching, protection** — *not* mechanical, not geometry, not layout |
 | Model script | `docs/analysis/array_power_architecture_model.py` (stdlib only; every figure below is its own printed output) |
 | Scope ruled out | no board code, no schematic edit, no BOM change, no wing redraw in this document |
