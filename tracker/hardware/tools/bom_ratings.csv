@@ -1,0 +1,25 @@
+key,rated_min_c,rated_max_c,source
+LoRa2021_Gen4,-40,85,"docs/assets/lr2021/README.md:137 (LR2021 Operating Temperature -40 / 25 / 85 C; TODO(unverified): path not present in this worktree at time of writing)"
+1F_5.5V,-40,70,docs/adr/006-supercapacitor-power.md:63
+3.3F,-40,70,docs/adr/006-supercapacitor-power.md:63
+1.65F,-40,70,docs/adr/006-supercapacitor-power.md:63
+ESP32-C3-WROOM-02,-40,85,TODO(unverified): Espressif ESP32-C3-WROOM-02 datasheet thermal section
+MAX-M10S,-40,85,TODO(unverified): u-blox MAX-M10S datasheet operating temperature
+MS5611-01BA,-40,85,TODO(unverified): TE MS5611-01BA datasheet operating temperature
+BMP280,-40,85,TODO(unverified): Bosch BMP280 datasheet operating temperature
+TPS7A02,-40,125,TODO(unverified): TI TPS7A02 datasheet operating junction temperature
+BAT54,-65,125,TODO(unverified): Vishay/onsemi BAT54 datasheet storage/operating range
+100k,-55,155,TODO(unverified): AEC-Q200-grade 0402 thick-film resistor typical range
+10k,-55,155,TODO(unverified): AEC-Q200-grade 0402 thick-film resistor typical range
+330R,-55,155,TODO(unverified): AEC-Q200-grade 0402 thick-film resistor typical range
+0R,-55,155,TODO(unverified): AEC-Q200-grade 0402 jumper typical range
+100nF,-55,125,TODO(unverified): X7R 0402 MLCC typical range
+10uF,-55,85,TODO(unverified): X5R/X7R 0603 MLCC typical range
+LED_RED,-40,85,TODO(unverified): 0603 LED typical range
+U.FL,-40,90,TODO(unverified): Hirose U.FL series operating temperature
+U.FL_GNSS,-40,90,TODO(unverified): Hirose U.FL series operating temperature
+Debug_Header,-40,105,TODO(unverified): 2.54mm pin header typical range
+Prog_Header,-40,105,TODO(unverified): 2.54mm pin header typical range
+Solar_In,-40,105,TODO(unverified): 2.54mm pin header typical range
+MountingHole,-55,150,TODO(unverified): mechanical, no active silicon
+DNP,,,not populated - no rating applicable
