@@ -143,9 +143,11 @@ what brings the large 433 dish back into a feasible positioner class — at zero
    **and** cuts the wind moment to ~0.14–0.27 of a solid dish. **A solid 2.4 m+ 433 dish is
  mechanically infeasible on the strongest non-slew rotator in the BOM; the mesh version is
  comfortable.** **The edge of that rule is exact and must be quoted with it:** the mesh
- stays inside the BIG-RAS rating up to **2.62 m (0.65×)**; at **3.00 m the mesh is AT the
- rating — 0.97×, zero margin**; at **3.49 m it exceeds it (1.53×)**. So **≥ 3.0 m mesh ⇒
- the slew-drive rotator class (SPID SPX-05/06, €5,487) plus counterweights.**
+ stays *comfortably* inside the BIG-RAS rating up to **2.62 m (0.65×)**; at **3.00 m the
+ mesh value is 0.97× — nominally just under the line but with no usable margin** (3 %
+ nominal, smaller than the frame/rib wind area the model omits); at **3.49 m it exceeds the
+ line (1.53×)**. So **≥ 3.0 m mesh ⇒ the slew-drive rotator class (SPID SPX-05/06, €5,487)
+ plus counterweights.**
 
 5. **The ground dish is sized for MARGIN AND HORIZON, not for closure.** With the F33:
    0.74 m closes 2.6 Mbps at 649 km; **1.24 m** adds +2.2 dB (1,088 km); **1.9 m** adds

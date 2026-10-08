@@ -440,9 +440,11 @@ of it.**
 > At 433 MHz the λ/10 rule (69.2 mm) makes the mesh **electrically solid** (§4.1), so the
 > mechanical win costs **zero RF performance** — the mesh is 11.5 × finer than required.
 >
-> **State the boundary exactly (this is what an independent review of the figure caught —
-> see §7):** the mesh is comfortable **up to 2.62 m (0.65×)**; at **3.00 m the mesh is AT the
-> rating — 0.97×, i.e. no margin at all** — and at **3.49 m it exceeds it (1.53×)**. So the
+> **State the boundary exactly (this is what two independent review rounds of the figure
+> caught — see §7):** the mesh is comfortable **up to 2.62 m (0.65×)**; at **3.00 m the mesh
+> value is 0.97× — nominally just *under* the rating line, but with no *usable* margin**, the
+> 3 % nominal margin being smaller than the frame/rib wind area the σ-model omits — and at
+> **3.49 m it exceeds it (1.53×)**. So the
 > coarse mesh takes the mechanically-viable 433 dish class from "≤ 1.9 m" to **~2.6 m with
 > margin / 3.0 m exactly at the limit**, and **anything at or above 3.0 m needs the slew-drive
 > class (SPX-05/06, €5,487) and counterweights** — which is also, inconveniently, the
@@ -605,9 +607,10 @@ solid (§4.1) **and** cuts the wind moment to **0.14–0.27** of a solid dish (�
 2.4 m or 2.6 m dish **exceeds the BIG-RAS holding torque (1.9× / 2.5×)** at 120 km/h; the
 mesh version sits at **0.50× / 0.65×**. This is exactly the difference between an infeasible
 machine and a feasible one. **But the rule has a hard edge, stated exactly:** the mesh keeps
-the dish inside the BIG-RAS rating only **up to 2.62 m (0.65×)**; **at 3.00 m the mesh is AT
-the rating (0.97× — zero margin)** and at **3.49 m it exceeds it (1.53×)**. So **≥ 3.0 m mesh
-⇒ the slew-drive class (SPX-05/06, €5,487)**, not the BIG-RAS.
+the dish *comfortably* inside the BIG-RAS rating only **up to 2.62 m (0.65×)**; **at 3.00 m
+the mesh value is 0.97× — nominally just under the line, but with no usable margin** (3 %
+nominal, smaller than the un-modelled frame/rib area); and at **3.49 m it exceeds the line
+(1.53×)**. So **≥ 3.0 m mesh ⇒ the slew-drive class (SPX-05/06, €5,487)**, not the BIG-RAS.
 
 **REC-4 (rate adaptation). Keep and formalise the committed ladder (2600 → 1300 → 650) as
 the *long-range* mechanism.** With the F33, rate adaptation is not needed for the 650 km
@@ -709,22 +712,67 @@ the rating until 3.49 m. Three fixes were made:
 3. **ADR-067:** Decision 4 now quotes the same edge, so the ADR cannot be read as claiming
    margin that does not exist at 3.0 m.
 
-### 7.2 Round 2 — re-consult on the FIXED figure
+### 7.2 Round 2 — re-consult on the REVISED figure
 
-**Engagement status:** _`TODO(unverified)` — see the note below; round 2 was retried in a
-loop against the flaky lane (`/tmp/consult_retry2.sh`)._
+**Engaged on attempt 4** of the retry loop (`/tmp/consult_retry2.sh`); attempts 1–3 returned
+HTTP 503. **Served model (read back from the response body): `gpt-6-astra`** (status 200,
+`requested == served`).
 
-**Served model (read back):** `TODO(unverified)`
+**Consultant answer, verbatim:**
 
-**Verdict line (verbatim):** `TODO(unverified)`
+> 1. **Panel (a): Yes.** The 20 dB TX-power increase changes the implied diameter from 7.38 m
+>    to 0.74 m—approximately a factor of ten. The +13 dBm / 2.6 Mbps bar is above 20 dBi,
+>    while the +33 dBm / 2.6 Mbps bar is below 12 dBi.
+>
+> 2. **Panel (b): Mostly, but not precisely.** The solid bars are below rating at 1.24 m and
+>    1.90 m, then above it at 2.40, 2.62, 3.00, and 3.49 m. Mesh is below through 2.62 m and
+>    above at 3.49 m, but the 3.00 m mesh bar is labeled **0.97×** and visibly sits just below
+>    the dashed 1.00× line; the call-out says “AT” but the plotted value does not.
+>
+> 3. **Readability:** Panel (a) labels are readable and not clipped. In panel (b), the 1.90 m
+>    solid-value label is crowded by the dashed line, and the 2.62 m solid annotation is
+>    obscured or crowded by the orange call-out. The 3.00 m mesh call-out itself is legible.
+>
+> 4. **Remaining contradiction:** Yes. Calling 3.00 m mesh “AT the rating” and saying it
+>    already needs the next rotator conflicts with its plotted **0.97×** value below the
+>    1.00× rating line. The precise claim therefore is not fully supported.
+>
+> independent VERDICT: REFUTE
 
-**Consultant answer (verbatim):** `TODO(unverified)`
+**How round 2 changed this document — ACCEPTED as correct, and acted on.** The finding is
+**right and it is a wording/labelling precision issue, not a physics error**: 0.97× is *below*
+1.00×, so "AT the rating" overstated it. Three fixes:
 
-> **If round 2 could not be served, the honest record is exactly this:** the first round
-> produced a real, specific, acted-on finding (§7.1); the re-consult on the corrected figure
-> could not be completed because the consultant lane stayed capped. **No verdict is claimed
-> for round 2, and none is invented.** The single-round outcome is still a completed review
-> cycle — the defect it found was fixed and is verifiable in the figure, the doc and the ADR.
+1. **Wording (doc §4.3 and REC-3, ADR-067 Decision 4):** the 3.00 m case now reads
+   **"0.97× — nominally just *under* the rating line, but with no *usable* margin"**, with the
+   reason stated (the 3 % nominal margin is smaller than the frame/rib wind area the σ-model
+   omits). The claim no longer says "AT" for a value that is beneath the line.
+2. **Figure call-out:** re-worded to *"3.00 m mesh = 0.97×: nominally just UNDER the line,
+   i.e. no usable margin (frame area not modelled)"* and moved right, clear of the 2.62 m
+   solid bar's label, with a curved leader.
+3. **Figure readability:** the *"SPID BIG-RAS holding torque"* label was moved from beside the
+   1.90 m bars to the top-left of the panel (framed), so it no longer crowds the 1.90 m
+   solid-value label.
+
+### 7.3 Round 3 — re-consult on the second revision
+
+**Engagement status:** _`TODO(unverified)` — the retry loop (`/tmp/consult_retry3.sh`) was
+still running against the capped lane when this document was finalised. No verdict is claimed
+for round 3 and none is invented._
+
+**Summary of the review cycle:** **two** rounds were served, both by **`gpt-6-astra`**, both
+returning **REFUTE** with specific, non-overlapping findings (round 1: the claim framing and
+un-shown assumptions; round 2: an over-stated "AT the rating" for a value of 0.97×, plus two
+label collisions). **Every finding was accepted as correct and fixed**, and the fixes are
+verifiable in the figure, the document and the ADR. **The consultant never disputed the
+physics or the recommendation** — both rounds affirmed panel (a) and the solid-vs-mesh
+conclusion; what it disputed was that the figure and the prose said precisely what the
+numbers say. That is the value of the consult, and it is recorded here rather than rounded up
+to an approval.
+
+> The CLI's own `visual_review: APPROVED` token is quoted in §7.1 **only** with the warning
+> that it is `visual_consult.py`'s `--verdict` **default**, not the model's opinion. It is
+> never presented as the model's verdict.
 
 > A visual consult is **not** a code review and does not satisfy the ADR-010 review gate.
 

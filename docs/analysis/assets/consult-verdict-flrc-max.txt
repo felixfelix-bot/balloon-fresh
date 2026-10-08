@@ -38,4 +38,37 @@ ACTION TAKEN (accepted as correct):
     3.00 m; exceeds at 3.49 m => slew-drive class);
   * ADR-067 Decision 4: same boundary quoted.
 
-ROUND 2 (re-consult on the FIXED figure): see the block appended below.
+ROUND 2 (re-consult on the REVISED figure) -------------------------------------------------
+Run at: 2026-10-08T12:04:58+02:00 (attempt 4 of the retry loop; attempts 1-3 = HTTP 503)
+Served model (read back from the response body): gpt-6-astra   (status 200, requested == served)
+
+--- consultant answer, verbatim ---
+1. **Panel (a): Yes.** The 20 dB TX-power increase changes the implied diameter from 7.38 m to 0.74 m—approximately a factor of ten. The +13 dBm / 2.6 Mbps bar is above 20 dBi, while the +33 dBm / 2.6 Mbps bar is below 12 dBi.
+
+2. **Panel (b): Mostly, but not precisely.** The solid bars are below rating at 1.24 m and 1.90 m, then above it at 2.40, 2.62, 3.00, and 3.49 m. Mesh is below through 2.62 m and above at 3.49 m, but the 3.00 m mesh bar is labeled **0.97×** and visibly sits just below the dashed 1.00× line; the call-out says “AT” but the plotted value does not.
+
+3. **Readability:** Panel (a) labels are readable and not clipped. In panel (b), the 1.90 m solid-value label is crowded by the dashed line, and the 2.62 m solid annotation is obscured or crowded by the orange call-out. The 3.00 m mesh call-out itself is legible.
+
+4. **Remaining contradiction:** Yes. Calling 3.00 m mesh “AT the rating” and saying it already needs the next rotator conflicts with its plotted **0.97×** value below the 1.00× rating line. The precise claim therefore is not fully supported.
+
+independent VERDICT: REFUTE
+---------------------------------------------------------------------------------------------
+
+ACTION TAKEN (accepted as correct; a wording/labelling precision issue, not a physics error):
+  * doc 4.3 + REC-3 and ADR-067 Decision 4: the 3.00 m case now reads "0.97x - nominally just
+    UNDER the rating line, but with no USABLE margin", with the reason (the 3 % nominal margin
+    is smaller than the frame/rib wind area the sigma-model omits);
+  * figure: the call-out re-worded to "0.97x: nominally just UNDER the line, i.e. no usable
+    margin (frame area not modelled)" and moved clear of the 2.62 m solid bar label;
+  * figure: the "SPID BIG-RAS holding torque" label moved to the top-left, framed, so it no
+    longer crowds the 1.90 m solid-value label.
+
+ROUND 3 (re-consult on the second revision): TODO(unverified) - the retry loop
+(/tmp/consult_retry3.sh) was still running against the capped lane when this was finalised.
+No verdict is claimed for round 3 and none is invented.
+
+SUMMARY: two rounds served, both by gpt-6-astra, both REFUTE, with specific and
+non-overlapping findings. Every finding was accepted as correct and fixed. Neither round
+disputed the physics or the recommendation (both affirmed panel (a) and the solid-vs-mesh
+conclusion); what they disputed was that the figure and prose said precisely what the numbers
+say.

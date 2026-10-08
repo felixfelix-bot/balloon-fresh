@@ -81,14 +81,17 @@ ax2.bar_label(b1, fmt="%.2f\u00d7", fontsize=8.5)
 ax2.bar_label(b2, fmt="%.2f\u00d7", fontsize=8.5)
 ax2.axhline(1.0, ls="--", c="k", lw=1.4)
 # rating-line label placed left of the bars so it cannot collide with any bar label
-ax2.text(-0.42, 1.06, "SPID BIG-RAS holding torque 2,712 N\u00b7m  (1.00\u00d7 = the rating)",
-         ha="left", va="bottom", fontsize=8.5,
-         bbox=dict(fc="white", ec="none", alpha=0.85, pad=1.5))
+ax2.text(-0.55, 6.10, "SPID BIG-RAS holding torque 2,712 N\u00b7m  (1.00\u00d7 = the rating line)",
+         ha="left", va="top", fontsize=8.5,
+         bbox=dict(fc="white", ec="#888888", lw=0.7, alpha=0.95, pad=2.0))
 # explicit flag on the diameter that sits AT the line (7/12 the earlier claim's gap)
-ax2.annotate("3.00 m mesh = 0.97\u00d7: AT the rating, no margin",
-             xy=(4.2, mesh[4]), xytext=(2.35, 2.55), fontsize=8.5,
-             arrowprops=dict(arrowstyle="->", lw=1.1, color="#b9770e"),
+ax2.annotate("3.00 m mesh = 0.97\u00d7: nominally just UNDER the line,\n"
+             "i.e. no usable margin (frame area not modelled)",
+             xy=(4.2, mesh[4]), xytext=(4.62, 2.62), fontsize=8.5, ha="left",
+             arrowprops=dict(arrowstyle="->", lw=1.1, color="#b9770e",
+                             connectionstyle="arc3,rad=-0.25"),
              bbox=dict(fc="#fdf2e9", ec="#b9770e", lw=0.8, pad=2.5))
+ax2.set_xlim(-0.62, 7.05)
 ax2.set_xticks(list(pos))
 ax2.set_xticklabels([f"{d:.2f} m" for d in DISHES])
 ax2.set_xlabel("433 MHz dish diameter  (lever arm = 0.5 \u00d7 D ***stated assumption***)")

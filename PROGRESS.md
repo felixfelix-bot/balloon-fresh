@@ -30,9 +30,14 @@ real parts, deliver a cited doc + ADR + consultant verdict.
       NOTE: `visual_consult.py`'s `visual_review: APPROVED` line is the CLI's `--verdict`
       DEFAULT, not the model's opinion — the model's own verdict is in the answer body.
       Reported honestly.
-- [~] M5b consultant round 2 (re-consult on the FIXED figure) — retry loop running
-      (`/tmp/consult_retry2.sh`, log `/tmp/consult_retry2.log`); the lane is flaky (503
-      "all candidate lanes busy or capped" is the recurring failure).
+- [x] M5b consultant round 2 (re-consult on the revised figure): served on attempt 4,
+      **gpt-6-astra**, status 200, verdict **REFUTE** again — a precision finding (0.97x is
+      BELOW the 1.00x line, so "AT the rating" overstated it) + 2 label collisions. Accepted
+      and fixed in the doc (4.3/REC-3), ADR-067 Decision 4, and the figure (call-out
+      re-worded + moved; rating-line label moved to the framed top-left).
+- [~] M5c consultant round 3 (second revision) — retry loop `/tmp/consult_retry3.sh`, log
+      `/tmp/consult_retry3.log`; TODO(unverified) if not served. No verdict claimed.
+      Neither served round disputed the physics or the recommendation.
 - [x] M6 ADR-067 written; ADR-066 brought onto this branch and marked
       "Superseded by ADR-067"; `scripts/gen_adr_index.py` regenerated INDEX.md
       (066 = Superseded by ADR-067, 067 = Proposed, next free 068).
