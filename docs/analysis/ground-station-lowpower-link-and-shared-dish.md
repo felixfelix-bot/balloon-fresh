@@ -287,7 +287,8 @@ favourable:
 * **Surface accuracy is a non-issue.** A consumer offset Ku dish is built for ~10.7–12.75 GHz;
   at 2.4 GHz it is grossly over-accurate. Wikipedia (Parabolic antenna): *"To achieve the
   maximum gain, the shape of the dish needs to be accurate within a small fraction of a
-  wavelength"* — at 2.4 GHz that is ~mm–cm, versus an offset dish's Ku-tight tolerance
+  wavelength, around one sixteenth [of a wavelength]"* — at 2.4 GHz one sixteenth is
+  ~7.8 mm, versus an offset Ku dish's Ku-tight tolerance (< 1.5 mm)
   (<https://en.wikipedia.org/wiki/Parabolic_antenna>).
 * **Documented reuse builds exist.** A widely-cited amateur build repurposes a surplus
   **Primestar** Ku TV dish as an IEEE 802.11 (2.4 GHz) antenna: *"The resulting antenna has
@@ -391,7 +392,11 @@ solid (or fine-mesh) offset Ku dish, and the 433 element should be a **separate*
 antenna.
 
 > Grid-dish "penalties" beyond the λ/10 rule (edge effects, cross-polarisation from the
-> grid orientation) are `TODO(unverified)` here; the λ/10 rule is the citable core.
+> grid orientation) and a **named commercial grid-dish example with a datasheet hole size**
+> are `TODO(unverified)` here — web-search backends were unavailable for this item this
+> session, so no example is cited rather than a guessed one. The λ/10 rule above is the
+> citable core; the physics conclusion (coarse 433 mesh cannot also serve 2.4 GHz) does not
+> depend on it.
 
 ### 5.4 Boresighting a Yagi on the dish structure — blockage / interference
 
