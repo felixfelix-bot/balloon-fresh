@@ -46,9 +46,13 @@ real parts, deliver a cited doc + ADR + consultant verdict.
       ("The plotted values support the stated engineering claims ... the tenfold diameter
       change for a 20 dB TX-power change"). All four layout points fixed (panel (a) ylim 34.5;
       panel (b) legend -> top-right; call-out shortened + moved; rating label -> far right).
-- [~] M5e consultant round 5 (post-round-4 artifact) — retry loop
-      `/tmp/consult_retry5.sh`, log `/tmp/consult_retry5.log`; TODO(unverified) if not served.
-      Net cycle: REFUTE -> REFUTE -> CONFIRM -> REFUTE(layout only), all gpt-6-astra.
+- [x] M5e consultant round 5 (FINAL artifact): **CONFIRM** (attempt 1, gpt-6-astra, status
+      200) — "No text is clipped … do not overlap … All six solid/mesh value pairs are legible
+      … There is no remaining contradiction". No further change made.
+      **NET CYCLE: REFUTE -> REFUTE -> CONFIRM -> REFUTE(layout only) -> CONFIRM**, all
+      gpt-6-astra; every finding accepted and fixed; no round disputed the physics or the
+      recommendation.
+- [x] M7 REPORT.md + final commit/push (github then ngit, SHAs recorded).
 - Review-cycle note: NO served round disputed the physics, the trade arithmetic or the
   recommendation; both rejecting rounds disputed that the figure/prose said precisely what the
   numbers say, and both findings were fixed and are verifiable.

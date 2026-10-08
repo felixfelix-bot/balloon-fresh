@@ -105,9 +105,37 @@ CONFIRMATION of every plotted number and of the whole claim):
   * call-out shortened to three short lines and moved right, fully inside the plot;
   * rating-line label moved to the far right; x-limits widened to open that space.
 
-ROUND 5 (re-consult on the post-round-4 artifact):
-TODO(unverified) if not served - no verdict claimed, none invented. See the block appended
-below.
+ROUND 5 (re-consult on the FINAL artifact) -> CONFIRM --------------------------------------
+Run at: 2026-10-08T12:16:22+02:00 (attempt 1)
+Served model (read back from the response body): gpt-6-astra   (status 200)
+
+--- consultant answer, verbatim ---
+1. No text is clipped by a plot boundary. The +27.9 dBi label is clear, and the panel (b) legend, 3.49 m solid-value label, and orange 3.00 m call-out do not overlap other labels or bars.
+
+2. All six solid/mesh value pairs are legible, as are all labelled dish diameters. The 3.00 m mesh value is conveyed by the clearly readable 0.97× call-out.
+
+3. There is no remaining contradiction: solid exceeds the rating from 2.40 m; mesh remains below it through 2.62 m, is 0.97× at 3.00 m, and exceeds it at 3.49 m. The 20 dB TX-power change corresponds to a tenfold dish-diameter change in panel (a).
+
+independent VERDICT: CONFIRM
+---------------------------------------------------------------------------------------------
+
+No further change was made. The shipped figure is the one this round reviewed.
+
+### NET REVIEW CYCLE (all five rounds served by gpt-6-astra):
+REFUTE (r1) -> REFUTE (r2) -> CONFIRM (r3) -> REFUTE (r4, layout only; values confirmed)
+-> CONFIRM (r5, final artifact).
+
+Every finding in every round was accepted as correct and fixed. No round ever disputed the
+physics, the trade arithmetic, or the recommendation: both panels' numbers and claims were
+affirmed independently in rounds 1, 3, 4 and 5.
+
+### THE RECORDED VERDICT ON THE DELIVERABLE
+visual_review: APPROVED (CONFIRM)
+visual_reviewer_model: gpt-6-astra
+visual_artifact: docs/analysis/assets/flrc-max-trade.png
+(NOTE: the token above is set by this record to match the model's OWN verdict - CONFIRM - and
+is NOT the CLI's --verdict default. The CLI was invoked with --json, which emits no token;
+the model's independent verdict is the final line of each answer body above.)
 
 SUMMARY OF THE REVIEW CYCLE: three rounds served, all by gpt-6-astra -- REFUTE, REFUTE,
 CONFIRM. Every finding was accepted as correct and fixed. Neither rejecting round disputed the

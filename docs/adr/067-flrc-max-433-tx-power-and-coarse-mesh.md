@@ -27,9 +27,12 @@
   `docs/analysis/assets/flrc-max-trade.png`.
   Builds on (does not re-derive) `docs/analysis/ground-station-lowpower-link-and-shared-dish.md`
   (@`4b90be94`) and `docs/analysis/ground-station-bom-candidates.md` (@`283cad72`).
-- **Consulted:** fleet visual consultant, served model **`gpt-6-astra`** — verdict
-  **APPROVED / CONFIRM** (verbatim in the analysis §7). A visual consult is not a code
-  review and does not satisfy the ADR-010 review gate.
+- **Consulted:** fleet visual consultant, served model **`gpt-6-astra`** on all five rounds —
+  cycle **REFUTE → REFUTE → CONFIRM → REFUTE (layout only) → CONFIRM on the final artifact**
+  (all answers verbatim in the analysis §7; `docs/analysis/assets/consult-verdict-flrc-max.txt`).
+  Every finding was accepted and fixed; **no round disputed the physics, the trade arithmetic
+  or the recommendation.** A visual consult is not a code review and does not satisfy the
+  ADR-010 review gate.
 - **Numbering note:** **`066` is RESERVED, not free.** `scripts/adr_next_number.py` returns
   `66` on this branch because this branch descends from `github/main`, which never received
   ADR-066 — but `066-ground-station-lowpower-shared-positioner.md` **already exists on the
