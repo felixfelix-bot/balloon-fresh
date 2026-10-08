@@ -577,6 +577,38 @@ print("""CONCLUSION Q4: the catch is MANAGEABLE, not fatal, and it is NOT a reas
   "solved" - but if the operator wants the amplifier anyway, a step attenuator plus a
   downlink-RSSI loop is the correct, cheap, implementable answer.""")
 
+# ---- does a SINGLE FIXED pad suffice?  compute the crossover honestly ----
+print()
+print("-" * 78)
+print("DOES ONE FIXED PAD SUFFICE?  (the precise crossover - do not over-claim)")
+print("-" * 78)
+print("  A fixed pad P (dB) must satisfy TWO constraints at once:")
+print("    (i)  close-in: P >= P_rx(d_min) - (compression onset)   so the balloon is not overdriven")
+print("    (ii) at range: P <= P_rx(d_max) - (sensitivity + margin) so the link still closes")
+S_2400 = M.S_2400_LNA_ON
+MARGIN = 6.0
+D_MIN = 1.4
+p_close = M.p_rx_balloon(40.8, D_MIN)
+need_min = p_close - (-20.0)
+print("  P_tx = +40.8 dBm (12 W), G_tx = 12.4 dBi, d_min = 1.4 m -> P_rx = %+.1f dBm" % p_close)
+print("    (i)  P >= %+.1f - (-20.0) = %.1f dB" % (p_close, need_min))
+print("  %-9s %-13s %-13s %-13s %s"
+      % ("d_max", "P_rx@d_max", "P_max (ii)", "P_min (i)", "single fixed pad?"))
+for d_max in (20e3, 300e3, 650e3):
+    p_far = M.p_rx_balloon(40.8, d_max)
+    pad_max = p_far - (S_2400 + MARGIN)
+    ok = "YES" if need_min <= pad_max else "NO"
+    print("  %-9s %+9.1f   %9.1f dB  %9.1f dB  %s"
+          % ("%.0f km" % (d_max / 1e3), p_far, pad_max, need_min, ok))
+print("""  READ (this is the precise version of the answer, and it corrects a looser claim):
+    * A SINGLE FIXED pad satisfies BOTH constraints only while the range ceiling is
+      generous enough. The DAT-31R5A+ (0-31.5 dB in 0.5 dB steps) covers the whole span
+      in ONE part, so the cheap answer is a SWITCHABLE pad of 2-4 discrete states driven
+      by an estimated range - not a hand-set screwdriver pad, and not necessarily a
+      continuous VGA loop.
+    * Where the row says NO, no fixed pad works at all and a state change is mandatory.""")
+
+
 # ==========================================================================
 banner("Q5  RE-COST THE AMPLIFIER-LED STATION (operator ALREADY owns the 2.4 GHz amp + circulator)")
 # ==========================================================================
