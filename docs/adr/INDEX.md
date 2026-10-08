@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **76** distinct
-numbers, **76** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **78** distinct
+numbers, **78** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -99,6 +99,8 @@ None.
 | 063 | `063-decouple-board-area-from-array-overhang.md` | Hub board area and array area are DECOUPLED: panels may overhang, the outline follows the components, and the array rides a separate carrier | Proposed |
 | 064 | `064-hub-outline-trim.md` | Hub outline trim: 103 × 103 mm → 102 × 102 mm, to cross the JLCPCB size-tier boundary | Proposed |
 | 065 | `065-wing-skeletonised-double-sided.md` | Wing board: skeletonised frame carrier + double-sided cells | Accepted |
+| 066 | `066-ground-station-lowpower-shared-positioner.md` | Ground station for the low-power LR2021 433 MHz downlink: share the *positioner*, not the *reflector*; LoRa carries the far link, FLRC does not | Superseded by ADR-067 |
+| 067 | `067-flrc-max-433-tx-power-and-coarse-mesh.md` | 433 MHz FLRC-max-throughput downlink: the power belongs on the BALLOON (2 W F33), and any large 433 dish must be a COARSE MESH | Proposed — the analysis is complete and cited; the *text* has not been |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -110,7 +112,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 066 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 068 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
