@@ -102,7 +102,7 @@ FAILOVER_RELAYS = [
 DEAD_RELAYS = ("wss://relay.contextvm.org",)
 
 #: Exactly the fields build_armed() carries (schema pinned by the ADR).
-ARMED_FIELDS = ("type",) + tuple(ARMED_REQUIRED) + ("created_at", "author")
+ARMED_FIELDS = ("type",) + tuple(ARMED_REQUIRED) + ("author",)
 
 
 class EnvKeyError(RuntimeError):

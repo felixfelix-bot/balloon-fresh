@@ -44,7 +44,13 @@ RX is the **sole session authority**. At arm time RX generates:
 session_id = %y%m%d%H%M + 3-hex-nonce     # e.g. 2608301430a3f
 ```
 
-and publishes an `ARMED` message carrying:
+The 3-hex nonce (4096 space) disambiguates two arms inside the same minute and
+comes from the **CSPRNG** (`secrets.randbelow`), so a third party cannot predict
+the next session id. `cvm_sync.generate_session_id()` is a twin of the
+authoritative `cvm_armed_publisher.generate_session_id()` — a parity test pins
+that the two agree on shape and nonce source.
+
+RX then publishes an `ARMED` message carrying:
 
 | Field          | Meaning                                              |
 |----------------|------------------------------------------------------|
@@ -53,6 +59,7 @@ and publishes an `ARMED` message carrying:
 | `t_ready_utc`  | epoch seconds when RX is ready to receive            |
 | `preset_hash`  | sha256 of the config preset (both sides must match)  |
 | `seq`          | monotonic re-broadcast counter (idempotency)          |
+| `created_at`   | publish epoch seconds; **REQUIRED**, strict `int`    |
 
 Both sides compute `T0 = t_ready_utc + 30s` margin, then the **existing**
 T0-anchored cycle machinery runs unchanged (drift-safe re-anchor per cycle).
@@ -64,6 +71,13 @@ Absolute-T0 semantics are kept for log correlation + GPS stitching.
 - Re-broadcasts are **idempotent** (same `session_id`; `seq` increments).
 - TX-side freshness watchdog:
   - reject any `ARMED` whose `created_at` skew is **> 60 s**;
+  - `created_at` is a **required** ARMED field and must be a strict integer —
+    `cvm_sync.validate_armed()` never `int()`-casts a value off the wire, so a
+    malformed `created_at` is rejected with a reason instead of raising, and an
+    absent one can no longer skip the skew window (Gate-2.5 R1);
+  - the author allowlist is checked **before** any `created_at` parsing, so a
+    hostile payload is rejected on identity and can never reach the arithmetic
+    (no crash-before-authz);
   - **abort** if the last good `ARMED` is **stale > 30 s** (no fresh
     re-broadcast seen).
 
