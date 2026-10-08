@@ -34,17 +34,31 @@ number, gain or datasheet value in this document was invented.
    The **Diamond A-430S10R** (13.1 dBi, **€69**) is the best *marginal* gain-per-dollar:
    **€5.3 per dB** (§2.5).
 
-2. **A 433 MHz dish is a worse deal than a Yagi at every size that is purchasable today.**
-   The RF Hamdesign **1.9 m mesh dish (€901.45) + SPID BIG-RAS (€1,775) = €2,878** delivers
-   **16.84 dBi**. The **FlexaYagi FX 7073 (€215) on a Yaesu G-5500DC (€949) = €1,316**
-   delivers **18.0 dBi** — **more gain for 2.2× less money**. The dish only becomes
-   interesting above ~2.5 m, and then only as MESH — and those kits are out of stock (§2.4).
+2. **A 433 MHz dish is a worse deal than a Yagi at every size that is purchasable today —
+   under the entered price and datasheet assumptions.** The RF Hamdesign **1.9 m mesh dish
+   (€901.45) + SPID BIG-RAS (€1,775) = €2,878** delivers **16.84 dBi**. The **FlexaYagi
+   FX 7073 (€215) on a Yaesu G-5500DC (€949) = €1,316** delivers **18.0 dBi** — **more gain
+   for 2.2× less money**. The dish only becomes interesting above ~2.5 m, and then only as
+   MESH — and those kits are out of stock (§2.4).
+   > **Scoping, after the independent consultation (§10, point 2).** The 1.2 dB edge is
+   > *nominal* and lies inside the uncertainty of vendor Yagi dBd claims, feed loss, mismatch,
+   > construction error and installation. **The defensible claim is "this Yagi wins under the
+   > entered assumptions", NOT "Yagis universally beat dishes".** The dish's unpriced
+   > advantages (cleaner main beam, lower sidelobes, better cross-pol — which matter in a
+   > crowded 433 band) are registered as an explicit flip condition in §6.3.
 
 3. **The metric is NON-MONOTONIC, and the jumps are the whole story.** The clearest case:
    *the same 0.90 m dish* costs **€785 as mesh** and **€2,081 as solid** — **identical gain
    (10.35 dBi)**, because the solid dish's 0.636 m² projected area exceeds the Yaesu
    G-5500DC's **0.50 m² mast rating** and forces a **SPID BIG-RAS (€1,775)**. Mesh is not a
    cheaper reflector; it is a **cheaper positioner class** (§2.6, §4).
+   > **Scoping, after the independent consultation (§10, point 3).** This is a **procurement-
+   > threshold effect under the adopted rating rule**, not a property of solid dishes: the
+   > honest statement is *"the solid reflector crosses the mount's published rating and
+   > triggers a more expensive positioner"*. The discontinuity is real, but the **binary
+   > selection rule exaggerates it**, and "identical gain" ignores the mesh's own (unmeasured,
+   > `TODO(unverified)`) gain penalty. The model already tests **torque as well as area** and
+   > carries the gust/centre-of-pressure caveats in §2.7.
 
 4. **Metal fabrication is available online at retail scale, from €7 for a cut mesh panel to
    ~€40/part for a mid-size laser-cut aluminium part.** Instant-quote services that ship to DE
@@ -166,6 +180,19 @@ one.
 > (motors, reducers, encoders, drivers, controller, anemometer)** + mast + a build/filament
 > allowance; and `d_max` closes the 433 link for the **worst-case low-power LR2021 board**.
 
+> **⚠ STATUS OF M2 — amended after the independent consultation (§10, point 1).** M2 is a
+> **rank-*peak-capability*-per-euro** number. It is **NOT a mission-value function** and must
+> **not** be used as the sole ranking criterion. Its specific defect is **peak-operating-point
+> bias**: it takes the single best rate/range product and is silent about the rest of the
+> performance curve, and it treats 1 kbps as freely exchangeable for 1 km, which is an
+> arbitrary utility function. It carries no penalty for outage probability, loss of lock during
+> tracking, retransmissions, packet overhead, or adjacent-channel interference. **The stated
+> throughput-first caveat describes the bias; it does not justify it.** M2 is therefore to be
+> read **paired with an explicit coverage constraint of the form the consultant proposed:**
+> *maximise delivered goodput subject to a stated availability at a required range (e.g. 99 %
+> availability to 150 km) with a pointing-loss bound.* Implementing that simulation is
+> **future work, §8 item 13.** Read M2 as one diagnostic number, not as the decision.
+
 ### 1.6 What is inside `EUR_total` (the operator's explicit requirement)
 
 | Component | Value used | Basis |
@@ -270,14 +297,27 @@ FlexaYagi FX 7073                 18.00   215.00   949.00  1315.50   73.1   111.
 **Reading (the operator's actual answer):**
 
 * **Best €/(kbps·km): Diamond A-430S15R (0.0019) and 2× Sirio stacked (0.0019)**, then
-  FX 7073 and Sirio 10N (0.0023). Every one of these is **under €1,000 all-in** and delivers
-  **2.6 Mbps out to 150–217 km** with the *worst-case* board.
-* **The dish column is 1.7–2.2× worse per unit** than the best Yagis (0.0034–0.0058 vs
+  FX 7073 and Sirio 10N (0.0023). **Three of those four are under €1,000 all-in**
+  (€735 / €970.50 / €815.50; the FX 7073 is €1,315.50) and they deliver
+  **2.6 Mbps out to 137–217 km** with the *worst-case* board.
+* **The dish column is 1.8–3.1× worse per unit** than the best Yagis (0.0034–0.0058 vs
   0.0019) — and the DIY frames for the >1.9 m mesh dishes **cannot be bought** (§2.4).
 * **`d_LoRa` is 12,000–46,000 km for every candidate.** LoRa (SF12/62.5 kHz, −143 dBm) closes
   the 650 km link with **every** antenna in the table, including a 0 dBi omni. **The entire
   antenna decision on the 433 side is therefore driven by FLRC, not by LoRa** — this
   reproduces `ground-station-lowpower-link-and-shared-dish.md` §0 in €-per-unit terms.
+
+> **⚠ RANKING SCOPE — amended after the independent consultation (§10, point 2).** The
+> statement *"the Yagi wins"* above is only valid **under the entered price and datasheet
+> assumptions**. Two things it does **not** establish, and which the operator should weigh:
+> (a) the FlexaYagi dBd figures (14.4–15.8 dBd) are **vendor figures** and are optimistic
+> versus typical published 70 cm Yagi data (`bom-candidates` §1 caution); the ~1.2 dB nominal
+> edge of the 18.0 dBi Yagi over the 16.8 dBi dish is **inside** feed loss, mismatch,
+> construction error, cable loss and polarisation mismatch; (b) the metric **prices no
+> pattern advantage** — a dish's cleaner main beam, lower sidelobes and better cross-pol are
+> worth real interference margin in a crowded 433 MHz band and are absent from every column
+> here. **The defensible claim is "this Yagi wins under the entered assumptions"; the strong
+> claim "Yagis universally beat dishes" is NOT established.**
 
 ### 2.2 Table B — low-power LR2021 inside the licence-exempt cap (+12.15 dBm EIRP)
 
@@ -362,6 +402,7 @@ FlexaYagi FX 7073                 18.00     215.00   520.00   735.00   216.8    
 1.50 m mesh (RFH FPD 1M5)         14.79     549.73   520.00  1069.73   149.8      389366       72.3           0.002747
 1.90 m mesh (RFH FPD 1M9)         16.84     951.45  1346.00  2297.45   189.7      493197      136.4           0.004658
 2.40 m mesh (DIY, frame TODO)     18.87    1050.00  1346.00  2396.00   239.6      622986      127.0           0.003846
+2.60 m mesh (DIY, frame TODO)     19.57    1150.00  1346.00  2496.00   259.6      674901      127.6           0.003698
 3.00 m mesh (DIY, frame TODO)     20.81    1450.00  1346.00  2796.00   299.5      778732      134.4           0.003590
 3.50 m mesh (DIY, frame TODO)     22.15    1750.00  1346.00  3096.00   349.4      908521      139.8           0.003408
 2.40 m SOLID (DIY)                18.87    1050.00  1346.00  2396.00   239.6      622986      127.0           0.003846
@@ -701,9 +742,13 @@ All from `omc-stepperonline.com` (fetched this session, HTTP 200) unless noted:
    **FLRC** decision. This is the single most important framing: the operator's "maximise both
    range and throughput" resolves to "LoRa for range, FLRC for throughput," and only FLRC
    prices the antenna.
-3. **Within FLRC, the Yagi wins on every metric.** Best €/(kbps·km) (0.0019, Table A), best
-   €/km (2.3), best marginal €/dB (€5.3 for the first 13.1 dB, Table D). The dish is 1.7–2.2×
-   worse per unit and needs a **€1,346 positioner upgrade** to even exist above 1.5 m.
+3. **Within FLRC, the Yagi wins on every metric — under the entered price and datasheet
+   assumptions.** Best €/(kbps·km) (0.0019, Table A), best €/km (2.3), best marginal €/dB
+   (€5.3 for the first 13.1 dB, Table D). The dish is 1.8–3.1× worse per unit and needs a
+   **€1,346 positioner upgrade** to even exist above 1.5 m. **Scope (§10 point 2): the
+   ~1.2 dB edge of the 18 dBi Yagi over the 16.8 dBi dish is inside vendor-datasheet, feed,
+   mismatch and installation uncertainty, and the metric prices no pattern advantage — so the
+   honest claim is "this Yagi wins here", not "Yagis universally beat dishes".**
 4. **The dish only wins on absolute gain above ~2.5 m, and that is not purchasable.**
    The 1.9 m RFH FPD 1M9 (**16.84 dBi, €901**) is *beaten* by the **18.0 dBi FX 7073 (€215)**.
    The 2.4/3.0/3.5 m kits are **out of stock** and their formers are **DIY-only**
@@ -723,19 +768,32 @@ All from `omc-stepperonline.com` (fetched this session, HTTP 200) unless noted:
 
 ### 6.3 What would flip the recommendation (stated honestly)
 
+* **If the experiment requires a very narrow beam or a clean pattern** (interference rejection,
+  low sidelobes, polarisation purity, or precise boresight for a high-rate pass), the dish's
+  pattern is a feature, not a cost, and **the metric does not price it**. This is the
+  consultant's strongest point (§10 point 2, accepted) and the same qualification the visual
+  consultant made on the positioner study ("justified by pointing margin, interference
+  rejection, polarization, or operational robustness—not link closure alone",
+  `positioner-lowcost` §15). **In a crowded 433 MHz band this could reverse the ranking, and
+  the ranking should be re-examined if interference, not gain, turns out to be the binding
+  constraint.**
 * **If a >2.5 m mesh dish becomes purchasable** (former/rib kit back in stock, or a metal-shop
   quote for laser-cut ribs — §3), the €/(kbps·km) of the 3.5 m mesh (**0.0040**, Table A)
   approaches the Yagis and its **22.15 dBi** becomes the only way to FLRC at 650 km on the
   low-power board. My metric says this is *still* worse per euro, but it is the only route to
   that specific capability.
-* **If the experiment requires a very narrow beam** (interference rejection, or precise
-  boresight for a high-rate pass), the dish's narrow beamwidth is a feature, not a cost, and
-  the metric does not price it. This is the same qualification the visual consultant made on
-  the positioner study ("justified by pointing margin, interference rejection, polarization, or
-  operational robustness—not link closure alone", §15).
 * **If the F33 is excluded** (mass or licence), the fallback is **+22 dBm + 650 kbps** with the
   best Yagi, and **FLRC-max is reserved for ≤ ~150 km** — and the metric then *does* favour a
   dish, badly enough that the honest answer is "change the balloon, not the ground."
+* **The recommended option B carries the consultant's conditions (accepted):** the DIY tracker
+  must be **tested for backlash, repeatability, weather sealing and loss-of-lock recovery**
+  before it is trusted with a tracking pass. Until then, option B is a design, not a proven rig.
+* **The decisive next step is not a better antenna, it is a better question** (consultant §10
+  point 4, accepted): replace M2's single peak product with a **mission-level link simulation
+  of delivered goodput and availability over the balloon's range**, including pointing error,
+  wind-induced tracking error, **derated/measured gain**, polarisation loss, feed loss and
+  interference margin. That simulation is **§8 item 13**, and it is what would turn this
+  analysis from a cost ranking into a mission answer.
 
 ---
 
@@ -796,6 +854,17 @@ range**, and **the F33 fitted regardless** — it dominates every option on gain
     REC-6, and it must be resolved by an ADR before the F33 goes on the balloon.
 12. **Not modelled:** the 0.6 m 2.4 GHz dish's own mass/blockage effect on the shared
     positioner (treated as already inside the baseline rig, `positioner-lowcost` §4).
+13. **REQUIRED NEXT STEP (from the independent consultation, §10 point 4) — a mission-level
+    link simulation.** Replace M2's single peak product with **delivered goodput and
+    availability over the balloon's range**, including pointing error, wind-induced tracking
+    error, **measured or conservatively derated gain** (not vendor dBd), polarisation loss,
+    feed loss and an interference margin. Until that exists, M2 is **one diagnostic number,
+    not the ranking criterion** (see the M2 status note in §1.5). This is the single change
+    that would most improve the analysis.
+14. **`TODO(unverified)`** measured Yagi vs dish **installed** gain and pattern
+    (main-beam width, sidelobe level, cross-polar discrimination) at 433 MHz — the consultant's
+    point that nominal gain × datasheet is not installed-system performance. Needed to test the
+    ranking claim of §2.1/§6.2 properly.
 
 ---
 
@@ -846,14 +915,148 @@ domain). All web fetches used a browser User-Agent + `curl --compressed`.
 `visual-consultant` skill. This consult was asked to **challenge the metric itself and the
 ranking**, not to review a figure's layout.
 
-**Engagement status:** _(pending — recorded verbatim below; if the lane cannot be reached, the
-failure is recorded verbatim and no verdict is claimed.)_
+**Engagement status:** **engaged.** Artifact:
+`docs/analysis/assets/gain-per-dollar-challenge.png` (rendered from
+`docs/analysis/render_gain_per_dollar_figure.py`). **The first attempt failed** — not with the
+usual 503, but with an **HTTP timeout** at the script's default 180 s (`router unreachable:
+timed out`, exit 3), **while the same model answered an instant text probe in ~2 s.** The fix
+was to raise the HTTP timeout (`--timeout 900`), not to change the model. **Measurement worth
+reusing:** *`gpt-6-astra` is served by the router but is absent from its `/v1/models` list, and
+a large multimodal prompt on this verbose reasoner needs a timeout well above 180 s.* Evidence
+lines emitted (verbatim):
 
-**Served model (read back from the response `resp["model"]`, never the alias):** _(pending)_
+```
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+visual_artifact: /home/c03rad0r/worktrees/bf-gainperdollar/docs/analysis/assets/gain-per-dollar-challenge.png
+```
 
-**Verdict line (verbatim):** _(pending)_
+**Served model (read back from the response `resp["model"]`, never the alias sent):**
+**`gpt-6-astra`**
 
-**Consultant answer (verbatim):** _(pending)_
+**Verdict line (verbatim):**
+
+```
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+```
+
+**Consultant answer (verbatim, saved to
+`docs/analysis/assets/consult-verdict-gain-per-dollar.txt`):**
+
+> 1. **METRIC — M2 is mis-specified as a general value metric.**
+>
+>    \[
+>    M2=\frac{\mathrm{EUR}_{total}}{\max_R[R\,d_{\max}(R)]}
+>    \]
+>
+>    is defensible only if the mission objective is explicitly:
+>
+>    > maximize the single best value of **throughput × range**, with throughput weighted linearly and with no separate value assigned to coverage, availability, pointing robustness, or interference rejection.
+>
+>    Its specific bias is **peak-operating-point bias**. It selects whichever rate/range point gives the largest product and ignores the rest of the link-performance curve. A system that provides excellent service over the required area but has a lower peak \(R d\) can lose to a system optimized for a narrow, short-range high-rate point.
+>
+>    It also assumes that one kbps is linearly exchangeable for one kilometre. That is an arbitrary utility function. For many balloon missions, reliable coverage to a minimum range is more important than maximizing a mathematical product.
+>
+>    The stated caveat — “rate is weighted linearly and range logarithmically, therefore this is throughput-first” — **does not cure the problem**. It accurately describes the bias; it does not justify it. It says what the metric favors, not that the favoring is operationally correct.
+>
+>    Additional weaknesses are:
+>
+>    - no penalty for outage probability or fading margin beyond the chosen constant margin;
+>    - no penalty for loss of lock during tracking;
+>    - no representation of rate adaptation, packet overhead, retransmissions, or telemetry utility;
+>    - no accounting for interference or adjacent-channel operation;
+>    - `max_R` can conceal poor performance over most of the flight.
+>
+>    The metric should at least be accompanied by a required-coverage constraint, for example: maximize delivered goodput subject to 99% availability to 150 km and acceptable pointing loss.
+>
+> 2. **RANKING — the universal Yagi-over-dish claim is not established.**
+>
+>    “Every purchasable Yagi beats every purchasable dish” is much stronger than the displayed data support. The chart only ranks the particular cost, gain, feed, tracker, and vendor-spec assumptions entered into the model.
+>
+>    The strongest reason the claim can be wrong is that it treats **nominal gain as equivalent to usable link performance while assuming the positioner problem is essentially interchangeable**.
+>
+>    Specifically:
+>
+>    - The Yagi’s claimed 18.0 dBi and the dish’s 16.8 dBi are probably not equally trustworthy measurements. A 1.2 dB nominal advantage is small enough to disappear through feed loss, mismatch, construction error, cable loss, polarization mismatch, or an optimistic Yagi datasheet.
+>    - A dish generally offers a more predictable aperture, cleaner main beam, better sidelobe control, and often better cross-polarization performance. Those properties matter in a crowded 433 MHz band even if they do not appear in free-space link-budget gain.
+>    - A Yagi’s practical pattern can be highly sensitive to element dimensions, boom construction, nearby mast hardware, and polarization orientation. Its quoted forward gain is not automatically its installed-system gain.
+>    - The tracker cost is not necessarily common. Antenna beamwidth, inertia, wind torque, balance, acceleration, encoder resolution, backlash, and allowable tracking error all affect the real positioner. If the model assigns both systems essentially the same tracker burden, it may be hiding a major cost and reliability difference.
+>    - Conversely, a dish can also impose a much larger wind load and stricter pointing requirement. That must be calculated from actual beamwidth, torque, wind speed, and control performance, not assumed qualitatively.
+>
+>    For the specific 1.9 m dish versus 18 dBi Yagi comparison, the Yagi may indeed be the cheaper nominal choice under the current assumptions: EUR 1316 versus approximately EUR 2878, with a claimed 1.2 dB gain advantage. But the conclusion should be:
+>
+>    > “This Yagi wins under the entered price and datasheet assumptions.”
+>
+>    It should not be:
+>
+>    > “Yagis universally beat dishes.”
+>
+>    The model needs measured or conservatively derated installed gain, pattern and cross-polarization data, and an explicit pointing/wind/availability calculation before that ranking is credible.
+>
+> 3. **NON-MONOTONICITY — real procurement discontinuity, but probably exaggerated by the model.**
+>
+>    There is a genuine engineering effect if a mount has a hard allowable projected-area or wind-torque limit. Crossing that limit can force a jump from a cheap Yaesu-class rotator to a much larger SPID-class positioner. The resulting total cost can therefore be discontinuous. That part is real.
+>
+>    However, the stated result is not yet a sound engineering conclusion because projected area alone is an incomplete criterion:
+>
+>    - The relevant quantity is normally wind force and overturning torque, not merely area.
+>    - Mesh and solid reflectors have different drag coefficients and wind permeability.
+>    - The load depends on centre of pressure, balance, mounting geometry, gust speed, and dynamic effects.
+>    - The manufacturer’s 0.50 m² limit may have conditions, margins, or assumptions that are not equivalent to a blanket hard cutoff.
+>    - A well-balanced solid dish may impose a different motor torque than an unbalanced mesh assembly.
+>
+>    Therefore, “solid 0.90 m dish costs EUR 2081 because \(0.636>0.50\)” is partly a **model artefact caused by a binary hardware-selection rule**. The real statement should be:
+>
+>    > “Under the adopted mount rating rule, the solid reflector crosses a procurement threshold and triggers a more expensive positioner.”
+>
+>    It is not a property of solid dishes that their cost must jump by that factor, nor is identical gain between mesh and solid automatically guaranteed. The analysis should use wind torque and required survival wind speed, then apply mount limits with engineering margin.
+>
+> 4. **CHOICE — I would pick B, the balanced option.**
+>
+>    I would choose **B: the 14.8 dBi Diamond plus DIY P2 tracker and 0.6 m dish**, provided the tracker is tested for backlash, repeatability, weather sealing, and loss-of-lock recovery.
+>
+>    Reasons:
+>
+>    - It avoids relying on the optimistic 18 dBi Yagi claim.
+>    - It avoids the large cost and mechanical burden of the 1.9 m dish.
+>    - It provides a meaningful gain increase over the cheapest option.
+>    - It is more reproducible than a very large custom dish or an aggressively optimized Yagi.
+>    - It is less exposed to the model’s questionable assumption that peak throughput-distance is the mission objective.
+>
+>    I would not select C solely because it wins M2. The displayed advantage is too dependent on nominal gain, shared positioner assumptions, and the throughput-first metric. I would select D only if the actual mission has a hard long-range requirement that B cannot meet. E is attractive if independent testing shows reliable pattern combining and the mechanical implementation is straightforward, but stacking introduces phasing, spacing, feed-network, and calibration risks.
+>
+>    **The single most valuable change to the analysis:** replace M2’s single `max(R × dmax)` value with a mission-level link simulation that calculates delivered goodput and availability over the balloon’s range, including pointing error, wind-induced tracking error, measured/derated gain, polarization loss, feed loss, and interference margin.
+>
+>    In short: use M2 as one diagnostic number, not as the ranking criterion.
+
+### 10.1 Reconciliation — what I accept, what I change, and what I defend
+
+**All four points are accepted, and three changed the document.** The consultant's *choice*
+(option B) **agrees with this document's recommendation**, which is independent corroboration
+of the recommendation even though it disagrees with the *strength* of two of the claims that
+led there.
+
+| Consultant point | Accepted? | Action taken |
+|---|---|---|
+| 1. **M2 is mis-specified as a *general value* metric; it has peak-operating-point bias; the caveat describes but does not cure it.** | **YES — correct, and it is a real defect in the framing.** | §1.5 now states M2's status explicitly: **M2 ranks *peak capability per euro*; it is NOT a mission-value function.** The consultant's own required-coverage form is adopted as the pairing: *maximise delivered goodput subject to an availability constraint at a required range* (§1.5, §6.3, §8 item 13). |
+| 2. **"Every purchasable Yagi beats every purchasable dish" is not established; the 1.2 dB edge is inside datasheet/feed/installation uncertainty; dish beam/sidelobe/cross-pol advantages are not priced.** | **YES — the claim was stated too strongly.** | The claim is now **scoped** everywhere to *"under the entered price and datasheet assumptions"* (§0 item 2, §2.1, §6.2), and the **vendor-optimistic-Yagi-dBd** warning (already in `bom-candidates` §1) is promoted to the ranking section. §6.3 adds the dish's beam/sidelobe/cross-pol advantage as an explicit flip condition. |
+| 3. **Non-monotonicity is a real *procurement discontinuity*, but the €2,081-vs-€785 pair is partly an artefact of a *binary* hardware-selection rule; area alone is incomplete (torque, drag, centre of pressure, gust, balance matter).** | **YES — and the artefact is in the *selection rule*, not the physics.** | The 0.90 m pair is now labelled *"a procurement-threshold effect under the adopted rating rule"* rather than a property of solid dishes (§0 item 3, §2.6). The document already computes **wind torque** (`M20`) and tests **area OR torque**, and §2.7 already carries the gust/centre-of-pressure caveats — those are cross-referenced. A **mesh-vs-solid gain penalty** is already `TODO(unverified)` (§8 item 6) and is now named in the same breath as "identical gain". |
+| 4. **Pick option B; the most valuable change is a mission-level goodput/availability simulation.** | **YES — and it independently confirms the recommendation.** | Recorded as **future work** (§8 item 13) and in the ADR's consequences. **The recommendation is unchanged (option B)**, now with the consultant's tracker-test conditions attached (backlash, repeatability, weather sealing, loss-of-lock recovery). |
+
+**What I defend, with a reason:** the consultant notes that a dish has cleaner sidelobes and
+better cross-pol. That is true and **this document does not price it** — which is exactly why
+§6.3 lists it as a flip condition rather than a refutation. The metric answers *"what does gain
+cost?"*, and on that question the Yagi answer is not in doubt; on *"what does a clean pattern
+cost?"* the metric is silent, and the document now says so.
+
+**Effect on the deliverable:** the **metric is demoted from "the ranking criterion" to "one
+diagnostic number"**, the **ranking claims are scoped to the entered assumptions**, and the
+**recommendation is unchanged** — and is now supported by an independent party that reached the
+same option *B* from a more skeptical starting point.
+
+**Note:** a visual consult is **not** a code review and does not satisfy the D-128/ADR-010
+review gate (see the `visual-consultant` skill, pitfall 10).
 
 ---
 

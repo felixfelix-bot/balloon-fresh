@@ -21,10 +21,20 @@ Worktree: `/home/c03rad0r/worktrees/bf-gainperdollar`
       closed-loop + brake + stow), with sourced options/prices (StepperOnline CL drivers/motors,
       17-bit absolute-encoder AC servo kit $98.43, AS5600 class).
 - [x] M6 — doc written + committed early.
-- [ ] M7 — visual consultant engaged; verdict recorded VERBATIM with the served model named.
-- [ ] M8 — ADR 068 drafted (next free number checked = 068; 066 and 067 are taken on
-      `design/ground-station-lowpower-link` and `design/positioner-lowcost`).
-- [ ] M9 — push github THEN ngit separately; `git ls-remote` verification pasted.
+- [x] M7 — visual consultant ENGAGED. Served model **`gpt-6-astra`**, verdict **APPROVED**.
+      First attempt failed on the script's default 180 s HTTP timeout (`router unreachable:
+      timed out`) while the same model answered an instant text probe — fixed with
+      `--timeout 900`, not by changing the model. Verdict recorded VERBATIM in doc §10 with a
+      point-by-point reconciliation (§10.1). The consultant's own choice was **option B**, the
+      same as this document's recommendation. Its substantive demands were accepted and acted
+      on: M2 demoted from "ranking criterion" to "one diagnostic number", the ranking claims
+      scoped to the entered assumptions, the 0.90 m pair relabelled a procurement-threshold
+      effect, and a mission-level goodput/availability simulation registered as the required
+      next step (§8 item 13).
+- [x] M8 — ADR 068 drafted (next free number checked = 068; 066 and 067 are taken on
+      `design/ground-station-lowpower-link` and `design/positioner-lowcost`). INDEX.md
+      regenerated with `scripts/gen_adr_index.py` (it is a GENERATED file).
+- [ ] M9 — final push github THEN ngit separately; `git ls-remote` verification pasted.
 
 ## Key results (for a later reader)
 - Best M2: **Diamond A-430S15R 14.8 dBi, €74.50, on DIY P2 tracker → €735 all-in, 0.0019 €/(kbps·km)**.

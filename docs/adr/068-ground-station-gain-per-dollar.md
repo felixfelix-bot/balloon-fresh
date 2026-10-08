@@ -19,9 +19,14 @@
   answer, and the recommendation + choice table. Repro:
   `python3 docs/analysis/ground_station_gain_per_dollar_model.py` (prints every table
   verbatim); figure: `python3 docs/analysis/render_gain_per_dollar_figure.py`.
-- **Consulted:** fleet visual consultant, served model **`gpt-6-astra`** — verdict and
-  verbatim answer in the analysis §10. A visual consult is not a code review and does not
-  satisfy the ADR-010 review gate.
+- **Consulted:** fleet visual consultant, served model **`gpt-6-astra`** — verdict
+  **APPROVED**; the consultant's verbatim answer and the point-by-point reconciliation are in
+  the analysis **§10**. Its substantive effect on this ADR: **M2 is demoted from "the ranking
+  criterion" to "one diagnostic number"** (it has peak-operating-point bias and must be paired
+  with a coverage/availability constraint), and the **ranking claims are scoped to the entered
+  price and datasheet assumptions**. The consultant's *own choice was option B*, which is the
+  recommendation recorded below — independent corroboration from a more skeptical starting
+  point. A visual consult is not a code review and does not satisfy the ADR-010 review gate.
 - **Numbering note:** `scripts/adr_next_number.py` → `66`, but **`066` and `067` are taken on
   other branches** (`design/ground-station-lowpower-link` → `066-ground-station-lowpower-shared-positioner.md`;
   `design/positioner-lowcost` → `067-positioner-architecture.md`). `068` was verified free on
@@ -70,13 +75,20 @@ the positioner, not the reflector, dominates the cost above ~1.5 m.
 ## Decision
 
 **1. Adopt the metric `M2 = EUR_total / max over the rate ladder of (R · d_max(R))` — EUR per
-(kbps·km) — as the primary ground-station cost metric, with `M1` (average EUR/dB) and `M1m`
+(kbps·km) — as the ground-station **cost** metric, with `M1` (average EUR/dB) and `M1m`
 (marginal EUR/dB) retained as *diagnostic* metrics and `M3` (EUR/km at a fixed rate) as the
 range-first check. `EUR_total` MUST include the positioner/tracker, mast and build allowance —
-never the antenna alone.**
+never the antenna alone. **`M2` is a *peak-capability-per-euro* diagnostic, NOT a mission-value
+function** (independent consultation, §10): it must be read **paired with an explicit coverage
+constraint** (e.g. *delivered goodput subject to 99 % availability to a required range with a
+pointing-loss bound*). Building that mission-level goodput/availability simulation is a
+**required next step**, not an optional refinement (analysis §8 item 13).**
 
-**2. Buy a Yagi before a dish on the 433 side.** For every purchasable candidate the
-best gain-per-euro, the best EUR/(kbps·km) and the best EUR/km are all a **70 cm Yagi**. The
+**2. Buy a Yagi before a dish on the 433 side.** **Under the entered price and datasheet
+assumptions**, for every purchasable candidate the best gain-per-euro, the best EUR/(kbps·km)
+and the best EUR/km are all a **70 cm Yagi** — the ~1.2 dB nominal edge is inside
+datasheet/feed/mismatch uncertainty, so the claim is scoped, not universal (consultation §10
+point 2). The
 recommended rig is a **high-gain Yagi (Diamond A-430S15R 14.8 dBi €74.50, or FlexaYagi
 FX 7073 18.0 dBi €215) on the DIY printed tracker**, with the 0.6 m 2.4 GHz dish boresighted
 on the same positioner.
@@ -231,6 +243,12 @@ feedback + fail-safe spring-applied brake + anemometer stow.**
   because the bases differ (slew rating vs brake); per the repo rule a contradiction that names
   no winner is a **defect**. (ii) no vendor sells a **433 MHz prime-focus dish feed** or a
   **parabolic former above 1.9 m**.
+- **The metric is a cost lens, not a mission model (consultation §10).** The ranking here is
+  **peak-capability per euro under the entered datasheet gains**; it prices no outage
+  probability, no loss-of-lock, no retransmission and no interference. A **mission-level
+  goodput/availability simulation** (analysis §8 item 13) is the required next step before this
+  ranking is treated as a mission answer, and the recommended tracker must be **tested for
+  backlash, repeatability, weather sealing and loss-of-lock recovery** before use.
 - **Not covered:** procurement, the 2.4 GHz feed detail, and the control software.
 
 ## Alternatives considered and rejected
