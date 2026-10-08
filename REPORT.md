@@ -5,9 +5,13 @@
 
 ## SHAs (git ls-remote on BOTH remotes)
 
-- HEAD (local): _pending_
-- github `docs/program-gap-analysis`: _pending_
-- ngit   `docs/program-gap-analysis`: _pending_
+- HEAD (local): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+- github `docs/program-gap-analysis` (`git ls-remote github`): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+- origin `docs/program-gap-analysis` (`git ls-remote origin`): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+- ngit   `docs/program-gap-analysis` (`git ls-remote ngit`):   `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+
+All three match local HEAD. Pushed **github first, then ngit separately** (no `--atomic`).
+Commit: `398cc70` on top of `github/main` `09e1b69`.
 
 ## What was produced
 
