@@ -11,9 +11,14 @@ Cost + gain-per-euro only (regulatory explicitly out of scope per operator).
 - [x] M1 — `docs/analysis/ground-station-amplifier-vs-antenna.md` (full analysis, all sourced),
       `docs/analysis/ground_station_amp_vs_ant_model.py` (repro command), this file.
       → pushed github + ngit.
-- [ ] M2 — figure (beamwidth/tracker + €/dB) + visual-consultant verdict verbatim.
-- [ ] M3 — ADR draft `docs/adr/068-…` (068 verified free on all github/ngit branches).
-- [ ] M4 — REPORT.md, final push, ls-remote SHA evidence.
+- [x] M2 — figure (SVG→PNG, `docs/analysis/ground_station_amp_vs_ant_figure.py`) +
+      visual-consultant verdict verbatim in `docs/analysis/assets/consult-verdict-amp-vs-ant.txt`.
+      Consultant served model **`gpt-6-astra`**, `visual_review: APPROVED`; substance CONFIRMED
+      with qualifications; layout iterated 4 rounds → final CONFIRM.
+- [x] M3 — ADR draft `docs/adr/068-ground-station-amplifier-vs-antenna.md`
+      (068 verified free on **all** github/ngit branches; 066/067 already claimed elsewhere;
+      `scripts/adr_next_number.py` not present in this repo → manual check recorded in the ADR).
+- [x] M4 — REPORT.md + final push + ls-remote SHA evidence.
 
 ## Sourced price/spec base (all fetched, URLs in the doc)
 
