@@ -19,11 +19,15 @@ Base: `github/main` @ `09e1b69`. Worktree `/home/c03rad0r/worktrees/bf-levelctrl
 - [x] **M6 — ADR-084.** `docs/adr/084-ground-station-automatic-level-control.md`; INDEX regenerated
       (`scripts/gen_adr_index.py`); `tests/test_adr_numbering.py` green. Number 084 verified free
       prefix-anchored against every `github/*` branch (083 lives on `design/rf-gaps-harmonics-diy`).
-- [ ] **M7 — consultant.** `scripts/fleet/visual_consult.py --timeout 900` on the two figures +
-      the level-control plan (challenge: architecture, AGC dynamics/stability, failure modes for a
-      full-duplex gateway, checklist completeness). Record the served model and the model's own
-      final verdict line **verbatim**.
-- [ ] **M8 — refine from consult, final push.** Update §9 of the design doc with the consult record.
+- [x] **M7 — consultant.** `scripts/fleet/visual_consult.py` run twice on the figures. **Round 1**
+      (served model **`gpt-6-astra`**): model's own line **`VERDICT: REFUTE`**, structured field
+      `UNPARSED` (CONFIRM/REFUTE is not the parser's vocabulary). Twelve findings accepted/acted on.
+      **Round 2** (corrected figures, parser vocabulary): served **`gpt-6-astra`**, parser verdict
+      **`CHANGES_REQUESTED`**; its remaining findings (frame-latency budget, pre-LNA preselection,
+      TX→RX blocking row, figure annotations) all acted on, and a real label collision it caught was
+      fixed. Both rounds recorded verbatim in `docs/analysis/assets/level-control/consult-verdict.txt`.
+- [x] **M8 — refine from consult, final push.** §9 of the design doc carries the two-round consult
+      record; figures re-rendered and re-verified.
 
 ## Verified external facts (this session, 2026-10-08)
 

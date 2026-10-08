@@ -366,7 +366,11 @@ authority; beyond that range the level falls and the **rate ladder** carries the
 sufficient** (consult F4: a 100 ms *attack* leaves several frames exposed to a sudden overload):
 
 - **FAST attack** (overload guard): when the detected level exceeds the window top by more than the
-  deadband, step the gain **down within one frame** (≤ ~3 ms at the top rate).
+  deadband, step the gain **down within one frame**. **Latency caveat (consult round 2, F4):**
+  "within one frame" must budget **detector + ADC + MCU/SPI + VGA-settling** delay against the
+  **shortest (2.1 ms)** frame, not just the 42 ms one. A software-only loop may not meet it; where it
+  cannot, the attack path should be **hardware** (an analog detector-comparator that pulls the gain
+  down directly), with the MCU loop doing only the slow decay.
 - **SLOW decay** (level tracking): release the gain with **τ ≈ 10–100 ms** (≈ 1.6–16 Hz) — **below the
   ~72 Hz fade rate** so the loop does not pump on fades, and **above the ~0.01–1 Hz geometry rate** so
   it tracks the slow path-loss change.
@@ -393,7 +397,8 @@ the slow, filtered path. It converts fast amplitude
 | **Digital limit-cycle / hunting** | A **0.5 dB** step with a target deadband narrower than one step makes the gain bang-bang between two codes | Set the **deadband ≥ 1 step** (≥ 0.5 dB) and add **hysteresis**; only move the code when the error exceeds the deadband |
 | **Sampled-loop instability** | Updating once per frame with a delay = one frame period adds phase lag | Keep loop bandwidth ≪ 1/(2·frame period); a ~10 ms τ against a 2.6–42 ms frame is safe; do not close a loop faster than the frame rate |
 | **Latch / wind-up** | A detector blind (e.g. below its floor) drives the loop to full gain and latches there; the ballon then compresses the front end on the next close pass | Clamp the gain register at both ends; **blank the loop's integrator when the detector output is out of range** (standard AGC anti-windup); hold last-good gain |
-| **Blocker-driven gain reduction (BIGGEST — consult F5)** | The **AD8318 is broadband (1 MHz–8 GHz)**. Leaked 2.45 GHz TX energy (or any third-party blocker) reaching the detector makes it read *strong* while the 433 downlink is weak → the loop **reduces gain and desenses the wanted downlink**. | Put a **433 MHz BPF at the detector tap** so the detector sees only in-band energy (now on the figure + checklist). Band separation at the antenna is **not** a detector-isolation budget. |
+| **TX-to-RX RF-isolation failure / front-end blocking (consult round 2)** | Even with the detector band-limited, insufficient antenna isolation, BPF rejection, PA leakage or a strong out-of-band blocker can **saturate the LNA/VGA** and desense the RX **before** the detector, i.e. the loop is blind to it and cannot help. | This is ADR-072's territory: the **433 BPF before the LNA** and the measured isolation/desense acceptance criterion. Add **detection + limiting/default attenuation** in the fixed-gain fallback, and include this case in the end-to-end desense test. |
+| **Blocker-driven gain reduction (BIGGEST — consult F5)** | The **AD8318 is broadband (1 MHz–8 GHz)**. Leaked 2.45 GHz TX energy (or any third-party blocker) reaching the detector makes it read *strong* while the 433 downlink is weak → the loop **reduces gain and desenses the wanted downlink**. | Put a **433 MHz BPF at the detector tap** so the detector sees only in-band energy (now on the figure + checklist). **Detector filtering alone does not protect the LNA/VGA** — the separate **pre-LNA 433 preselection BPF** (ADR-072 INV-3) is still required (consult round 2). Band separation at the antenna is **not** a detector-isolation budget. |
 | **Wrong-band coupling** | The wideband LNA would amplify 2.4 GHz TX leakage into the loop's detector and corrupt the level reading | The **433 MHz BPF precedes the LNA** (ADR-072 INV-3); the detector is tapped **after** the BPF. This is also why the detector must be a *band-selective* tap, not a wideband one |
 
 ---
@@ -546,3 +551,13 @@ failure, common-mode faults and the autonomous-recovery requirement **(F6)**, le
 wording **(F7)**, the full-system-NF caveat **(F8/F12)**, the explicit 24.5 dB TX residual **(F10)** and
 separate RX/TX level-element instances **(F11)**. Four findings were noted as already-stated or out of
 scope, with reasons. **The corrections are in this document and in the re-rendered figures.**
+
+**Round 2** (corrected figures, `APPROVED`/`CHANGES_REQUESTED`/`PARTIAL` vocabulary so the parser has a
+token): served model **`gpt-6-astra`**, parser verdict **`CHANGES_REQUESTED`**, reason
+`tagged verdict 'CHANGES_REQUESTED'`. Round 1's F1/F2/F3 were confirmed resolved; round 2 added: the
+**frame-latency budget** for the fast attack incl. detector/ADC/MCU/VGA settling (use a hardware attack
+path if the software loop cannot meet 2.1 ms) **(R2-3)**, the **pre-LNA 433 preselection** reaffirmed
+**(R2-4)**, an explicit **TX-to-RX RF-isolation / front-end blocking** failure row **(R2-5)**, the
+unity-gain-worst-point and pre-LNA-loss annotations now on the figure **(R2-7)**, and a **label
+collision** on figure 1 (TQP3M9037 → ADL5240) which was **fixed** by re-laying out the diagram
+**(R2-8)**. All round-2 findings are acted on. Full record: `consult-verdict.txt`.
