@@ -665,6 +665,33 @@ python3 tools/cvm_armed_publisher.py --stop 50m \
     --configs configs/per-stop/stop-50m.json
 ```
 
+**The verdict side of that wiring ships** as `tools/cvm_verdict_publisher.py`:
+after `range_check` scores a stop, one command wraps its per-config
+`OK`/`THIN`/`MISS` rows + counts + the `resend-<stop>.json` content into a
+single NIP-59 kind-1059 verdict addressed to the TX npub — **exactly one
+message per completed config scan**, never one per packet. The message repeats
+the phase-1 `session_id` and `stop` (linkage) and, with `--armed`, refuses to
+publish unless they match the pinned `armed.json`. Keys/env rules are the same
+as the ARMED publisher (`CVM_RX_NSEC`/`CVM_RX_HEX`, `CVM_SERVER_*`, no CLI key
+args, client≠server).
+
+```bash
+# RX machine, after the stop: write the per-config rows `range_check` printed
+# into a small JSON file, then publish ONE verdict for the whole scan.
+# Accepted input: a bare list of rows, or
+#   {"per_config": [{"idx":0,"label":"cfg-0","n_pkts":10,"counted":10,
+#                    "status":"OK"}, ...],
+#    "stat_count": 9, "resend_json": { ... }}   # resend_json optional
+python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
+    --results rc-results.json \
+    --resend configs/resend/resend-50m-2609130435a3f.json \
+    --armed logs/s2609130435a3f-go<epoch>/armed.json
+
+# check the payload without touching a relay (still validates env keys):
+python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
+    --results rc-results.json --dry-run
+```
+
 The TX side still has no relay subscriber CLI in the shipped tool, so **in the
 field a GO TX must run `--armed-file`** with the ARMED relayed by hand unless the
 TX half of this wiring lands (P3). The RP2/allowed-npub hardening in the ADR
