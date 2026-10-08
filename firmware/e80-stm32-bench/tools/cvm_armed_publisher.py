@@ -85,6 +85,13 @@ ENV_SERVER_NSEC = "CVM_SERVER_NSEC"
 ENV_SERVER_HEX = "CVM_SERVER_HEX"
 ENV_TX_NPUB = "CVM_TX_NPUB"
 
+#: E80_* aliases (ADR §2.3). The studio's bench environment exports these
+#: names; they are accepted alongside the canonical CVM_* names. The canonical
+#: name always wins when both are set.
+ENV_CLIENT_E80_NSEC = "E80_RX_NSEC"
+ENV_CLIENT_E80_HEX = "E80_RX_HEX"
+ENV_TX_NPUB_E80 = "E80_TX_NPUB"
+
 #: Relay failover set (ADR §2.2). relay.contextvm.org is DEAD — never add it.
 FAILOVER_RELAYS = [
     "wss://nostr.mom",
@@ -96,7 +103,7 @@ FAILOVER_RELAYS = [
 DEAD_RELAYS = ("wss://relay.contextvm.org",)
 
 #: Exactly the fields build_armed() carries (schema pinned by the ADR).
-ARMED_FIELDS = ("type",) + tuple(ARMED_REQUIRED) + ("created_at", "author")
+ARMED_FIELDS = ("type",) + tuple(ARMED_REQUIRED) + ("author",)
 
 
 class EnvKeyError(RuntimeError):
@@ -182,23 +189,38 @@ def _first_env(env: Mapping[str, str], *names: str) -> Optional[str]:
 def load_env_secrets(env: Optional[Mapping[str, str]] = None) -> dict:
     """Read client + server key material from env vars ONLY.
 
-    Returns ``{"client": <str>, "server": <str>}`` (nsec or 64-hex).
+    Returns ``{"client": <str>, "server": <str>}`` (nsec or 64-hex). Accepted
+    client names, in precedence order: ``CVM_RX_NSEC``/``CVM_RX_HEX``,
+    ``CVM_CLIENT_NSEC``/``CVM_CLIENT_HEX``, then the ``E80_RX_NSEC`` /
+    ``E80_RX_HEX`` aliases (ADR §2.3).
     Raises EnvKeyError when either side is missing — there is deliberately no
     CLI fallback.
     """
     env = os.environ if env is None else env
     client = _first_env(env, ENV_CLIENT_NSEC, ENV_CLIENT_HEX,
-                        ENV_CLIENT_ALIAS_NSEC, ENV_CLIENT_ALIAS_HEX)
+                        ENV_CLIENT_ALIAS_NSEC, ENV_CLIENT_ALIAS_HEX,
+                        ENV_CLIENT_E80_NSEC, ENV_CLIENT_E80_HEX)
     server = _first_env(env, ENV_SERVER_NSEC, ENV_SERVER_HEX)
     if not client:
         raise EnvKeyError(
-            "missing RX client key: set {} or {} (env only, never a CLI arg)"
-            .format(ENV_CLIENT_NSEC, ENV_CLIENT_HEX))
+            "missing RX client key: set {} or {} (or the {} / {} aliases; "
+            "env only, never a CLI arg)"
+            .format(ENV_CLIENT_NSEC, ENV_CLIENT_HEX, ENV_CLIENT_E80_NSEC,
+                    ENV_CLIENT_E80_HEX))
     if not server:
         raise EnvKeyError(
             "missing board server key: set {} or {} (needed for the "
             "client!=server assertion)".format(ENV_SERVER_NSEC, ENV_SERVER_HEX))
     return {"client": client, "server": server}
+
+
+def tx_npub_from_env(env: Optional[Mapping[str, str]] = None) -> Optional[str]:
+    """TX npub from env: canonical ``CVM_TX_NPUB`` first, then ``E80_TX_NPUB``.
+
+    Returns ``None`` when neither is set (the CLI then requires ``--tx-npub``).
+    """
+    env = os.environ if env is None else env
+    return _first_env(env, ENV_TX_NPUB, ENV_TX_NPUB_E80)
 
 
 def assert_keys_differ(client_pub_hex: str, server_pub_hex: str) -> None:
@@ -449,8 +471,9 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--preset-hash", dest="preset_hash", default=None,
                     help="explicit preset fingerprint (default: hash --configs)")
     ap.add_argument("--tx-npub", dest="tx_npub",
-                    default=os.environ.get(ENV_TX_NPUB),
-                    help="TX npub to wrap ARMED for (env: {})".format(ENV_TX_NPUB))
+                    default=tx_npub_from_env(),
+                    help="TX npub to wrap ARMED for (env: {} or {})"
+                         .format(ENV_TX_NPUB, ENV_TX_NPUB_E80))
     ap.add_argument("--relays", default="",
                     help="extra relays (comma-separated; dead ones filtered)")
     ap.add_argument("--session-id", dest="session_id", default=None,
