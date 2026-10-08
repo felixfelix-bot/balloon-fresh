@@ -127,6 +127,15 @@ in §"The set" below.
 - A service definition (number of users, duty cycle, availability) is **not** recorded anywhere
   in this set; every range figure in these records is a link-budget range, not a delivered
   service radius.
+- **`TODO(unverified)` what "full duplex" means at the NETWORK/MAC layer** (independent consultant
+  finding, `docs/analysis/plan-review-consultant.md` §2 Q5): two RF paths are a *necessary* but not
+  a *sufficient* condition for a usable bidirectional Internet gateway. The MAC/scheduling contract
+  on the balloon side (ADR-035's TDM schedule) and the gateway's buffering/duty-cycle behaviour are
+  not written down in this set.
+- **Code-review note:** this record was challenged by the independent visual consultant on
+  2026-10-08 (verdict **QUALIFY**); the findings and their disposition are recorded in
+  `docs/analysis/plan-review-consultant.md`. A visual/plan consult is **not** a code review and does
+  not satisfy the ADR-010 review gate.
 
 ---
 

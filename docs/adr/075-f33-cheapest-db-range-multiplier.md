@@ -69,6 +69,22 @@ needs it** (the ADR-078 metric definition):
 dish+tracker (346–809) < 2.4 GHz ground PA (infinite).** No ground purchase competes with the
 balloon-side PA.
 
+**Baseline ambiguity in the headline numbers — read the multiplier with its baseline named.**
+The ledger carries **two** F33 readings and they imply **two** different multipliers:
+
+| reading | TX step | F33 range multiplier | F33 per needed dB |
+|---|---|---|---|
+| chip-max baseline: bare LR2021 **+22 dBm** → F33 **+33 dBm** | +11 dB | **3.55×** | 0.73 USD/dB |
+| licence-exempt baseline: **+12.15 dBm EIRP** → F33 **+33 dBm** | +20.85 dB | **≈11×** | 0.40 USD/dB |
+
+**The commonly quoted "3.55×" is the +22 dBm baseline**, i.e. the bare chip's own maximum — which
+is **above** the licence-exempt cap and is an **amateur-band** operating point on the low-power
+board. Quoted against the **licence-exempt** point (+12.15 dBm EIRP) the same module multiplies
+range by **≈11×**. **A range claim that does not name its baseline power is not usable** (this is an
+independent consultant finding, `docs/analysis/plan-review-consultant.md` §2 Q2/Q5). The ground
+sizing is unaffected (it is done on the low-power board either way), but **every published range
+must carry its baseline**.
+
 ## Decision
 
 **D1 — The F33 module is the cheapest dB in the system (≈ 0.40 USD/dB) and is the primary link
@@ -85,9 +101,13 @@ provisioned by ADR-047). **This record explicitly contradicts
 balloon vehicle, and the weight record must be corrected **by its own ADR**. Until then the F33
 stays a **design input** for the ground plan and a **gated option** for the flight.
 
-**D3 — Design the ground station for the low-power board; treat the F33 as a 3.55× range
-multiplier.** This is the ordering that makes one ground design serve both flight variants
-(ADR-074 D3) and it is the plan the recommended option B is costed under (ADR-081).
+**D3 — Design the ground station for the low-power board; treat the F33 as a range multiplier**
+(**3.55×** on the +22 dBm baseline; **≈11×** on the licence-exempt +12.15 dBm EIRP baseline — see
+the baseline table above). This is the ordering that makes one ground design serve both flight
+variants (ADR-074 D3) and it is the plan the recommended option B is costed under (ADR-081).
+**The multiplier applies where the 433 MHz downlink is the limiting link**: if the 2.45 GHz uplink,
+pointing/tracking, the receiver sensitivity or the regulatory ceiling limits instead, the range gain
+is smaller or zero (independent consultant finding, `docs/analysis/plan-review-consultant.md` §2 Q5).
 
 **D4 — The F33 makes the 433 downlink an amateur-band link, and that is the binding gate.** The
 entire +13…+33 dBm class exceeds the committed licence-exempt **+12.15 dBm EIRP** point

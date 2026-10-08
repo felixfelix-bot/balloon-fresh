@@ -112,8 +112,17 @@ or with an omni antenna, and even then the DSA stays in line for the closed loop
   sensitivity improves only 1–2 dB per FLRC step). Under the flat-20 dBm reading the uplink
   reaches much further. **The two readings disagree and neither is retired here** — see Open
   items.
-- The 68 dB isolation figure is a composite of norms, **not a measurement on this hardware**;
-  the first build must measure S21 between the two antennas.
+- The 68 dB isolation figure is a composite of norms, **not a measurement on this hardware**, and
+  the independent consultant review returned it as a **design hypothesis, not a demonstrated
+  margin**: the 20 dB antenna-pattern term is the weakest, because near-field coupling, mast and
+  cable coupling, polarisation leakage and positioner/metalwork reflections can differ from the
+  nominal far-field pattern (`docs/analysis/plan-review-consultant.md` §2 Q1). **Acceptance
+  criterion (the record's, adopted from that review):** a **measured** S21 between the two
+  antennas at the installed geometry, the BPF's **measured** rejection at 2.45 GHz and its
+  **in-band insertion loss** (counted in the noise figure), the LNA's input P1dB and blocker
+  tolerance, and an **end-to-end desense test** — measured packet-error-rate / sensitivity **with
+  the 2.45 GHz transmitter running at maximum permitted output**. A PIN limiter is not a substitute
+  for isolation.
 
 ## Open items (not assumed)
 

@@ -79,6 +79,16 @@ cost must name its tier.**
 printed tracker P2, with the 2.4 GHz element a modest panel/omni — ≈ EUR 735 all-in**, delivering
 **150 km at 2.6 Mbps** on the low-power board and **532 km with the F33**.
 
+> **D3a — every range claim MUST name its power baseline (binding).** The **150 km / 532 km** pair
+> is computed on the **+22 dBm (chip-max) baseline** and the F33's **+11 dB** step, i.e. the
+> **3.55×** reading of ADR-075 — **not** on the licence-exempt **+12.15 dBm EIRP** point, which is
+> the footing the low-power board is *flown on by an unlicensed operator*. On the licence-exempt
+> point the same station is materially shorter-ranged, and the **~6 dB** legal-ceiling disagreement
+> (20 dBm flat vs ≈14.26 dBm under the PSD rule) moves it again. This was the single strongest
+> finding of the independent consultant review (`docs/analysis/plan-review-consultant.md` §2 Q2/Q5):
+> **the 150/532 km figures are a prototype target, not a demonstrated service tier**, until one
+> ceiling and one baseline are frozen and the two-way budget is recalculated per rate.
+
 **D4 — Tier 0 is adopted as the accessible floor, in two variants, with one hard limit stated.**
 Tier 0 **cannot** carry **low-power FLRC at range** (without the F33, 650 km FLRC 2.6 Mbps needs
 +18.9 dBi, a ~2.6 m dish). It is a **LoRa (+ hand-aimed F33)** station **by design**, not a

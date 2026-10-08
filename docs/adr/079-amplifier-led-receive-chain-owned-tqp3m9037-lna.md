@@ -1,10 +1,14 @@
 # ADR-079 — Amplifier-led receive chain using the owned TQP3M9037 LNA
 
-- **Status:** **Accepted by operator** (Felix, 2026-10-08) — the operator owns the TQP3M9037 and
-  directed the receive chain to use it, accepting the wide-beam noise-temperature penalty.
-  **One contradiction is flagged, not resolved** (D5 / Open items): the operator's stated band
-  edge (**0.1 MHz–6 GHz**) is contradicted by the vendor figure captured on a sibling branch
-  (**0.7–6 GHz**), and the two disagree on whether the part covers the **433 MHz downlink at all**.
+- **Status:** **Accepted by operator (2026-10-08) — but CONDITIONAL, not "locked".** The operator
+  owns the TQP3M9037 and directed the receive chain to use it, accepting the wide-beam
+  noise-temperature penalty. **One contradiction is flagged, not resolved** (D5 / Open items): the
+  operator's stated band edge (**0.1 MHz–6 GHz**) is contradicted by the vendor figure captured on a
+  sibling branch (**0.7–6 GHz**), and the two disagree on whether the part covers the **433 MHz
+  downlink at all**. The independent consultant review (`docs/analysis/plan-review-consultant.md`
+  §2 Q3) returned this as a hard condition: **if 0.7–6 GHz is authoritative, the amplifier-led
+  433 receive chain does not stand and this record must be reopened** — so the decision is
+  **conditional on one datasheet read**, and must not be described as a locked decision until then.
 - **Date:** 2026-10-08
 - **Decision owner:** Felix (operator)
 - **Author:** Hermes subagent (consolidation pass), branch `design/adr-set-groundstation`

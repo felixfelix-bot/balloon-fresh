@@ -96,7 +96,12 @@ sole cause of the positioner class** and is removed by default.
 ADR-081): the **most-accessible** station (one 433 Yagi + a 2.4 GHz omni on a printed tracker,
 **≈ EUR 599**) is the default build and the measurement platform; the **best-bang-for-buck**
 station (4-bay 433 Yagi array + 0.75 m 2.4 GHz dish, **≈ EUR 2,166**) is the performance point that
-closes FLRC 2.6 Mbps **without crossing the cliff**. Two binding qualifications: size the array
+closes FLRC 2.6 Mbps **without crossing the cliff**. **The array's advantage over the single Yagi
+is 5.2 dB ≈ 1.82× range** (20.0 dBi array vs the 14.8 dBi A-430S15R), which is **not** trivial —
+it is rejected only because the F33 makes it unnecessary (D5), never as "equal to a Yagi" (an
+independent consultant finding, `docs/analysis/plan-review-consultant.md` §2 Q4); if a validated
+two-way budget later shows a specific shortfall that 5.2 dB closes, the array returns. Two binding
+qualifications: size the array
 against the rotator's **TOWER** rating (1.00 m², array at 45 %) — the **MAST** rating (0.50 m²)
 leaves only 9 % margin and is too thin once frame, ice and cable are counted — and the pessimistic
 drag case (1.104 m²) **exceeds the tower rating by ~10 % and is rejected** unless a higher-rated

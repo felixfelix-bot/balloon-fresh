@@ -101,6 +101,12 @@ those.
 
 ## Open items (not assumed)
 
+- **Highest-value missing artifact (independent consultant finding,
+  `docs/analysis/plan-review-consultant.md` §2 Q2/Q5): a per-rate TWO-WAY link budget.** Each rung
+  (2.6 / 1.3 / 0.65 Mbps) needs its own **occupied bandwidth, PSD calculation, total permitted
+  EIRP, receiver sensitivity, margin and range**, for **both** directions, showing which direction
+  limits the rung — and the whole ladder must be recomputed once one legal ceiling is frozen
+  (ADR-072 Open items). The 2.6 Mbps rung is the most exposed to the PSD reading.
 - **Not decided here:** the **minimum useful rate** and the **required range** for the service. The
   rule needs both; the ladder cannot substitute for them (and no service definition exists in the
   repo — ADR-071 Open items).
