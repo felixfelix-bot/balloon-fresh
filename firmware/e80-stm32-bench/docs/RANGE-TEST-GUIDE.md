@@ -646,12 +646,30 @@ GO-window guard still applies. Without `--armed-file` the TX uses the
 `cvm_sync` subscriber seam against a live bus, and the RX generates the
 ARMED and writes it to `--armed-out`.
 
-**The live bus has no production wiring yet.** `cvm_sync.ArmedSubscriber` is
-reachable only through the `main(bus=…)` injection point — there is no CLI
-flag and no relay subscriber in the shipped tool — so **in the field a GO TX
-always runs `--armed-file`** with the ARMED relayed by hand (Signal). The
-RP2/allowed-npub hardening in the ADR lands with that wiring: until then a
-GO TX must not be assumed to be relay-authenticated.
+**Live-bus wiring (RX side) now ships** as `tools/cvm_armed_publisher.py`: keys
+come from **env vars only** (`CVM_RX_NSEC`/`CVM_RX_HEX` for the RX publisher,
+`CVM_SERVER_NSEC`/`CVM_SERVER_HEX` for the board server — no CLI key args), the
+client key is **asserted to differ** from the server key at startup, the ARMED
+payload is published as a **NIP-59 kind-1059 gift wrap** to `--tx-npub` (never a
+plaintext kind-30315 tally), and the ARMED is re-broadcast every 10-15 s until a
+GO from TX is observed on the subscription. Relay failover set: nostr.mom,
+relay.primal.net, nos.lol, relay2.contextvm.org, relay.nostr.band
+(`relay.contextvm.org` is dead and filtered out even if supplied).
+
+```bash
+# RX machine: arm + publish until TX says GO
+export CVM_RX_NSEC=nsec1...      # RX publishing key (must differ from server)
+export CVM_SERVER_NSEC=nsec1...  # board server key
+export CVM_TX_NPUB=npub1...
+python3 tools/cvm_armed_publisher.py --stop 50m \
+    --configs configs/per-stop/stop-50m.json
+```
+
+The TX side still has no relay subscriber CLI in the shipped tool, so **in the
+field a GO TX must run `--armed-file`** with the ARMED relayed by hand unless the
+TX half of this wiring lands (P3). The RP2/allowed-npub hardening in the ADR
+lands with that TX wiring: until then a GO TX must not be assumed to be
+relay-authenticated.
 
 Rehearsal without hardware:
 
