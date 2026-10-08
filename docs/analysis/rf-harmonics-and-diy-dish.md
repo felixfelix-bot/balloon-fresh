@@ -164,16 +164,16 @@ This is exactly the `−685.8 (ε/λ)²` form. Evaluating the curve at 2.4 GHz (
 | RMS surface error ε | ε/λ | gain loss (Ruze) |
 |---:|---:|---:|
 | 0.5 mm | 0.0040 | 0.011 dB |
-| 1.0 mm | 0.0080 | 0.046 dB |
-| 2.0 mm | 0.0160 | 0.183 dB |
-| **3.38 mm** | 0.0270 | **0.50 dB** |
+| 1.0 mm | 0.0080 | 0.044 dB |
+| 2.0 mm | 0.0160 | 0.176 dB |
+| **3.37 mm** | 0.0270 | **0.50 dB** |
 | **4.77 mm** | 0.0382 | **1.00 dB** |
-| 6.0 mm | 0.0480 | 1.65 dB |
-| 8.0 mm | 0.0640 | 2.93 dB |
-| 10.0 mm | 0.0801 | 4.58 dB |
-| **12.49 mm (λ/10)** | 0.1000 | **6.86 dB** |
-| 15.0 mm | 0.1201 | 10.31 dB |
-| 20.0 mm | 0.1601 | 18.32 dB |
+| 6.0 mm | 0.0480 | 1.58 dB |
+| 8.0 mm | 0.0640 | 2.81 dB |
+| 10.0 mm | 0.0801 | 4.40 dB |
+| **12.49 mm (λ/10)** | 0.1000 | **6.87 dB** |
+| 15.0 mm | 0.1201 | 9.89 dB |
+| 20.0 mm | 0.1601 | 17.58 dB |
 
 The figure `docs/analysis/assets/rf-gaps/ruze-2g4-surface-error.svg` plots this curve with the two
 budget lines and the candidate construction methods marked.
@@ -182,18 +182,18 @@ budget lines and the candidate construction methods marked.
 
 | budget | RMS surface error allowed | in λ |
 |---|---:|---:|
-| < 0.5 dB | **≤ 3.30 mm** | ≈ λ/38 |
-| < 1.0 dB | **≤ 4.67 mm** | ≈ λ/27 |
-| < 2.0 dB | ≤ 6.61 mm | ≈ λ/19 |
-| < 3.0 dB | ≤ 8.09 mm | ≈ λ/15 |
-| λ/10 "rule" | 12.49 mm | λ/10 (= 6.86 dB!) |
+| < 0.5 dB | **≤ 3.37 mm** | ≈ λ/37 |
+| < 1.0 dB | **≤ 4.77 mm** | ≈ λ/26 |
+| < 2.0 dB | ≤ 6.75 mm | ≈ λ/18.5 |
+| < 3.0 dB | ≤ 8.26 mm | ≈ λ/15 |
+| λ/10 "rule" | 12.49 mm | λ/10 (= 6.87 dB!) |
 
 **The honest statement:** at 2.4 GHz a DIY reflector needs about **3.4 mm RMS for <0.5 dB** and
-about **4.7 mm RMS for <1 dB**. The λ/10 = 12.5 mm figure the task started from is **not** the
+about **4.8 mm RMS for <1 dB**. The λ/10 = 12.5 mm figure the task started from is **not** the
 <0.5 dB or <1 dB threshold — it is a **~6.9 dB** tolerance. The accurate rule of thumb is
-**λ/25–λ/30**, not λ/10, for a sub-1 dB reflector. That said, 3.4–4.7 mm is still a *large*
-allowance by Ku standards (a Ku dish works to ~1 mm), so the task's intuition is half-right: the
-**accuracy bar at 2.4 GHz is easy to clear**, it is just ~3× stricter than λ/10.
+**λ/37 (0.5 dB) to λ/26 (1 dB)**, not λ/10, for a sub-1 dB reflector. That said, 3.4–4.8 mm is
+still a *large* allowance by Ku standards (a Ku dish works to ~1 mm), so the task's intuition is
+half-right: the **accuracy bar at 2.4 GHz is easy to clear**, it is just ~2.6× stricter than λ/10.
 
 ### B.4 The DIY construction methods, scored
 
@@ -203,12 +203,12 @@ They are given as brackets for engineering reasoning and are labelled as such.
 
 | method | indicative RMS (ESTIMATE) | Ruze loss @2.4 GHz | meets <1 dB? | worth building? |
 |---|---:|---:|:--:|---|
-| aluminium kitchen foil, hand-formed | 8–25 mm | 2.9–28.6 dB | **no** | **no** — wrinkle-dominated; not a parabolic surface |
-| metal (aluminium) tape over foam/ribs | 5–15 mm | 1.2–10.3 dB | **no** | **no** — same wrinkle/step problem |
-| welded wire mesh on DIY ribs | 3–8 mm | 0.4–2.9 dB | borderline | **only** as coarse mesh on a *good* rib set — see below |
-| 3D-printed petal dish (FDM) | 1–3 mm | 0.05–0.41 dB | yes | marginal — accuracy is fine but the 0.75 m print **warps**, and it needs a rigid backing |
+| aluminium kitchen foil, hand-formed | 8–25 mm | 2.8–27.5 dB | **no** | **no** — wrinkle-dominated; not a parabolic surface |
+| metal (aluminium) tape over foam/ribs | 5–15 mm | 1.1–9.9 dB | **no** | **no** — same wrinkle/step problem |
+| welded wire mesh on DIY ribs | 3–8 mm | 0.4–2.8 dB | borderline | **only** as coarse mesh on a *good* rib set — see below |
+| 3D-printed petal dish (FDM) | 1–3 mm | 0.04–0.40 dB | yes | marginal — accuracy is fine but the 0.75 m print **warps**, and it needs a rigid backing |
 | fibreglass over a CNC'd plug/mould | 0.5–1.5 mm | 0.01–0.10 dB | yes | accuracy is fine, but **the mould is the expensive part** — you are buying a mould, not a dish |
-| **used production Ku DTH offset dish** | **0.3–1.0 mm** | **0.00–0.05 dB** | **yes** | **yes** — this is the one that beats the commercial dish |
+| **used production Ku DTH offset dish** | **0.3–1.0 mm** | **0.00–0.04 dB** | **yes** | **yes** — this is the one that beats the commercial dish |
 
 Two honest anchors for those brackets:
 
@@ -267,7 +267,7 @@ Notes that decide it:
 ### B.6 Part B verdict — plain
 
 > **A hand-built DIY reflector is surface-accuracy-feasible at 2.4 GHz (<1 dB needs only
-> ~4.7 mm RMS, easily cleared by a printed/fibreglass/used dish) but is NOT worth building: it
+> ~4.8 mm RMS, easily cleared by a printed/fibreglass/used dish) but is NOT worth building: it
 > does not beat the €94.90 Gibertini once a former/rib set and labour are counted, and the
 > assembly cost is 74 % feed-and-clamp, not reflector.** The one option that **does** beat the
 > commercial dish is a **used production Ku DTH offset dish (~€50 ESTIMATE)** — cheaper, more
@@ -281,7 +281,34 @@ Notes that decide it:
 
 ### B.7 Independent consultant verdict on the figure
 
-[see §B.6 of the ADR / the block below — filled in by the `visual_consult.py` run]
+The Part-B figure was submitted to the vision consultant
+(`/home/c03rad0r/hermes-orchestration/scripts/fleet/visual_consult.py`, one-shot CLI, `--timeout
+900`, `--emit-evidence --json`) on **2026-10-08**. The **served model was `gpt-6-astra`** (read
+back from the response's `model` field — *not* the alias sent; the model is served even though it
+is absent from `/v1/models`). Two rounds were run; the full verbatim answers are in
+`docs/analysis/assets/rf-gaps/consult-verdict.txt`.
+
+- **Round 1** (first render) — **`VERDICT: CONFIRM`** from `gpt-6-astra`, but it caught a **real
+  bug**: the figure's thresholds had been typed at 3.30 / 4.67 mm from a 2.45 GHz run while the
+  plot used the 2.400 GHz edge, where the correct values are **3.37 / 4.77 mm**. (It also noted the
+  foil band's 8–25 mm range is truncated by the 16 mm x-axis — a data-range clip, not a label clip.)
+- **Round 2** (corrected figure) — **`VERDICT: CONFIRM`** from `gpt-6-astra`: *"The title, axes,
+  legend, and annotations are readable, with no major label collisions or clipped text … the
+  plotted values are correct for the stated Ruze equation and wavelength of 124.91 mm … the first
+  three bands lie comfortably inside the 1 dB budget, while the entire foil and tape bands lie
+  outside it."* It restated the figure's own caveat correctly: *"the construction bands are
+  **estimates, not measured performance evidence** … it does not independently establish the
+  achievable accuracy of each construction method."*
+
+**Verdict of record: `VERDICT: CONFIRM` — served model `gpt-6-astra`** (round 2, corrected figure).
+
+> **Gate-provenance caveat (measured).** The CLI's `--emit-evidence` prints a `visual_review:`
+> line and its structured `verdict` field returned **`UNPARSED`**, because the model answered
+> `CONFIRM`, which is outside the CLI's `APPROVED` / `CHANGES_REQUESTED` / `PARTIAL` vocabulary.
+> Per the `visual-consultant` skill, the CLI's `--verdict` DEFAULT is *not* the model's opinion —
+> **only the model's own explicit `VERDICT:` line counts**, and it is `CONFIRM` here. The geometric
+> claims were also checked against the parsed SVG (0 label collisions, 0 out-of-bounds text) rather
+> than relayed raw.
 
 ---
 
@@ -366,5 +393,5 @@ Insensitive to the receiver NF (15 m Airborne 10 @433):
 | part | question | verdict |
 |---|---|---|
 | **A** | Do 433↔2.4 GHz harmonics/IM collide? | **Non-issue.** No harmonic/subharmonic/LO-harmonic/IM product in either band; only the station's own TX leakage (56–76 dB below the LNA P1dB) matters, handled by the ADR-072 ≥20 dB 433 BPF. **ADR-072 unchanged** (only add the ≥20 dB number). |
-| **B** | Does a DIY reflector beat the Gibertini 0.75 m + helix assembly? | **Hand-built: no.** 2.4 GHz needs only ~4.7 mm RMS for <1 dB, but no hand-built method beats €94.90 once a former/rib set is counted, and 74 % of the assembly is the feed+clamp. **A used production Ku dish (~€50 ESTIMATE) does beat it** (cheaper, more accurate, usually larger). → **ADR-083.** |
+| **B** | Does a DIY reflector beat the Gibertini 0.75 m + helix assembly? | **Hand-built: no.** 2.4 GHz needs only ~4.8 mm RMS for <1 dB, but no hand-built method beats €94.90 once a former/rib set is counted, and 74 % of the assembly is the feed+clamp. **A used production Ku dish (~€50 ESTIMATE) does beat it** (cheaper, more accurate, usually larger). → **ADR-083.** |
 | **C** | Masthead or shack-end LNA? | **Masthead, always.** Shack-end costs **1.2 dB @433/15 m**, **2.5 dB @2.4 GHz/15 m Ecoflex 15**, **4.9 dB @2.4 GHz/15 m Aircell 7** — 20–50 % of the LNA's whole +9.7 dB benefit. Confirms ADR-079 D1. |
