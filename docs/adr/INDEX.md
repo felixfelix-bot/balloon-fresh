@@ -99,6 +99,7 @@ None.
 | 063 | `063-decouple-board-area-from-array-overhang.md` | Hub board area and array area are DECOUPLED: panels may overhang, the outline follows the components, and the array rides a separate carrier | Proposed |
 | 064 | `064-hub-outline-trim.md` | Hub outline trim: 103 × 103 mm → 102 × 102 mm, to cross the JLCPCB size-tier boundary | Proposed |
 | 065 | `065-wing-skeletonised-double-sided.md` | Wing board: skeletonised frame carrier + double-sided cells | Accepted |
+| 070 | `070-ground-station-amplifier-hypothesis.md` | Ground station: do NOT build an amplifier-led design; the balloon-side F33 is the only gain per dollar that clears the bar (0.40 USD/dB) | Proposed |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -110,7 +111,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 066 | — |
+| ≥044 | *(reserved)* | **the `adr_next_number.py` → 066 line is STALE.** Verified 2026-10-08 against **every** `github/*` branch: **066** claimed (`design/ground-station-lowpower-link`, `design/ground-station-flrc-max`); **067** claimed **TWICE** (`design/ground-station-flrc-max` → `067-flrc-max-433-tx-power-and-coarse-mesh.md` and `design/positioner-lowcost` → `067-positioner-architecture.md` — a collision); **068** claimed (`design/gain-per-dollar`, `design/gain-per-dollar-cliff`); **069** claimed (`design/tier0-accessible`); **070** verified free and used by ADR-070. Re-run the script **and** re-check all branches before allocating. | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
