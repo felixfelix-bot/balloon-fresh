@@ -96,6 +96,22 @@ Absolute-T0 semantics are kept for log correlation + GPS stitching.
   `resend-<stop>.json` inline) into the same channel.
 - **Config-end granularity** (NOT per-packet) — one verdict per stop, matching
   `range_check`'s `verdict_line` output.
+  - Enforced (RX side) by `firmware/e80-stm32-bench/tools/cvm_verdict_publisher.py`:
+    `build_verdict()` normalizes the per-config rows to the pinned
+    (`idx`, `label`, `n_pkts`, `counted`, `status`) shape with `status` ∈
+    {`OK`, `THIN`, `MISS`}, inlines the `resend-<stop>.json` content **verbatim**
+    (deep copy, never a path), and carries the `session_id` + `stop` linkage
+    fields; `validate_session_link()` refuses a verdict that does not match the
+    pinned `armed.json` from phase 1. `RxVerdictPublisher.publish_config_end()`
+    publishes **exactly one** message per completed config scan — the wire
+    message count is independent of the packet count. The one-liner summary is
+    `range_check.verdict_line()` itself (no second formatter to drift), and the
+    empty-results LOGGING GAP variant is carried as `log_gap: true`. Transport,
+    env-only keys, client≠server assertion and the relay failover set are
+    reused from `cvm_armed_publisher.py`; the only send path is the NIP-59
+    kind-1059 gift wrap (inner envelope kind 25910) — no plaintext kind-30315.
+    Tests: `tools/test_cvm_verdict_publisher.py` (45 cases, no `nostr_sdk`
+    required).
 
 ## 3. Consequences
 
