@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-08 · **Branch:** `design/gain-per-dollar` (off `github/main` @ `09e1b69`)
 **Worktree:** `/home/c03rad0r/worktrees/bf-gainperdollar`
-**Status:** design analysis complete; pushed to github + ngit; consultant §10 pending (or
-recorded) at the time of this report.
+**Status:** COMPLETE. Design analysis, consultant verdict recorded, ADR-068 Proposed; pushed to
+github + ngit (verified). Final tip `c09c2e7edb83d6f932110f62c4cc641dd7d65b4a`.
 
 ## What was asked and what was delivered
 
@@ -64,9 +64,16 @@ recorded) at the time of this report.
 |---|---|---|---|
 | doc + model + PROGRESS | `6849a16257e3c488f7cbf778f68b3d02803be417` | ✓ | ✓ |
 | ADR-068 + figure + INDEX regen | `0ea36b4899bf9e684f432ac7eb365c49639e1104` | ✓ | ✓ |
+| consultant verdict + reconciliation | `bade837dab443de1ad5840ca1f9cb86c53d62a26` | ✓ | ✓ (retry) |
+| PROGRESS all-milestones | `c09c2e7edb83d6f932110f62c4cc641dd7d65b4a` | ✓ | ✓ (retry) |
 
+**Final: `local = github = ngit = c09c2e7edb83d6f932110f62c4cc641dd7d65b4a`.**
 `main` untouched at `09e1b69e1264074d87e61dc9bf3e448c2d602afb` (verified by `git ls-remote`).
 Pushed github **first**, then ngit **separately** (no `--atomic`); never force-pushed.
+The ngit relay rejected one push (`failed to push to any git server`) and then also reported
+`failed to publish 1 state event to any relay (failed: relay.damus.io nos.lol)` — **a
+transient relay/publish failure, not a git error**; the ref landed on retry and was verified
+with `git ls-remote`.
 
 ## Issues encountered (honest)
 
