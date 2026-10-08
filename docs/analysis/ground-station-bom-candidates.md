@@ -378,4 +378,89 @@ bot-walled) → prices `TODO(unverified)`.
 
 ---
 
-*(Sections 4–6 continue below — 433 mesh dish, positioners, coax.)*
+## 4. 433 MHz mesh / grid dish options + DIY route
+
+**Mesh-hole limit at 433 MHz.** A perforated/mesh reflector behaves as solid while the hole
+pitch is well under ~λ/10. At 433 MHz, λ = 692 mm → **λ/10 = 69 mm**. That is *coarse*: any
+practical mesh (window screen ≈ 1–2 mm, welded wire ≤ 25 mm) is 3–70× finer than required, so
+a mesh dish at 433 MHz is effectively a solid reflector **and** has far lower wind load
+(permeable). This is why a mesh dish is the right 433 MHz gain-element if a dish is wanted.
+
+### D1 — RF Hamdesign Mesh Dish Kit, 1.2 m (FPD 1M2 KIT)  ← recommended 433 mesh dish
+- **Vendor:** RF Hamdesign B.V. (NL) — webshop https://www.rfhamstore.com/ ·
+  **Price:** **€387.20** incl. Dutch VAT (€320.00 excl. VAT) · **P/N:** `FPD 1M2 KIT`
+- **URL:** https://www.rfhamdesign.com/products/parabolicdishkit/12meterdishkit/index.php
+  (price: https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf)
+- **Geometry:** 1.2 m diameter, **F/D 0.45 (prime focus)** · supplied as a DIY rivet kit:
+  pre-drilled ribs, CNC-milled aluminium hub, **6 mm square galvanised-steel mesh**, rivets,
+  all nuts/bolts/washers, heavy-duty mast clamp (max 52 mm), **3-leg feed support**
+- **Mesh:** standard 6 mm square mesh → **usable to 6 GHz**; optional **2.8 mm mesh** (+€48)
+  → usable to 11 GHz
+- **Mass:** 4.8 kg (6 mm mesh)
+- **Gain (vendor table, 6 mm mesh):**
+  | Freq | Gain (dBd) | Gain (dBi) | −3 dB angle |
+  |-----:|-----------:|-----------:|------------:|
+  | 1000 MHz | 17.1 | 19.3 | 16.8° |
+  | 1296 MHz | 20.3 | 22.5 | 14.4° |
+  | **2320 MHz** | **25.2** | **27.4** | **8.1°** |
+  | 3456 MHz | 28.4 | 30.6 | 5.4° |
+- **2.4 GHz use:** **25.2 dBd ≈ 27.4 dBi** — this *is* a home-buildable 27 dBi 2.4 GHz mesh
+  dish, matching the 2.4 GHz uplink target. Pair with the RF Hamdesign HORN-13 / RS-ONE feed
+  (both F/D 0.45 → exact match, section 3).
+- **433 MHz use:** 433 MHz is not tabulated. Scaling the aperture |G| ∝ (D/λ)² from the
+  1000 MHz row (17.1 dBd) down to 433 MHz gives 20·log₁₀(433/1000) = −7.3 dB →
+  **≈ 9.8 dBd ≈ 12 dBi** (INFERRED, aperture scaling only; the mesh is electrically solid).
+  This matches the analysis' 12.5 dBi figure in `docs/analysis/dualband-single-dish.md` §3.2.
+- **Status:** CONFIRMED (vendor page + price list); 433 MHz gain INFERRED.
+
+### D2 — RF Hamdesign Mesh Dish Kit, 1.5 m (FPD 1M5 KIT)
+- **Price:** **€499.73** incl. VAT (€413.00 excl.) · same F/D 0.45, 6 mm mesh
+- **URL:** https://www.rfhamdesign.com/products/parabolicdishkit/15meterdishkit/index.php
+- Gain scales +20·log₁₀(1.5/1.2) = +1.94 dB vs D1 → **~27.2 dBd @ 2320 MHz**,
+  **~11.7 dBd ≈ 13.9 dBi @ 433 MHz** (INFERRED).
+- **Status:** CONFIRMED price; gains INFERRED by scaling
+
+### D3 — RF Hamdesign Mesh Dish Kit, 1.9 m (FPD 1M9 KIT)
+- **Price:** **€901.45** incl. VAT (€745.00 excl.) · F/D 0.45, 6 mm mesh, Max 6 GHz
+- **URL:** https://www.rfhamdesign.com/products/parabolicdishkit/19meterdishkit/index.php
+- Gain scales +20·log₁₀(1.9/1.2) = +4.0 dB vs D1 → **~29.2 dBd ≈ 31.4 dBi @ 2320 MHz**,
+  **~13.8 dBd ≈ 15.9 dBi @ 433 MHz** (INFERRED). **This is the cheapest confirmed way to get
+  433 MHz dish gain into the 16–17 dBi class** if a dish (not Yagi) is wanted.
+- **Status:** CONFIRMED price; gains INFERRED by scaling
+
+### D4 — Brackets / accessories (RF Hamdesign)
+- **BR-50** fixed-elevation dish bracket (0–90° elevation, dishes ≤1.9 m, 2.5 kg): **€135.00**
+- **4TH-LEG** 4th feed-support leg (needed for 4-leg feed brackets): **€39.93**
+- **BR-08** adaptor plate to mount a mesh dish (≤1.9 m) on an SPX-01/SPX-02 rotor: **€38.00**
+- **CLX-10** adaptor for mast >55 mm: quote
+- **URL:** https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf
+- **Status:** CONFIRMED
+
+> **Not available / discontinued:** RF Hamdesign mesh dish kits **2.4 m, 3.0 m and 4.5 m are
+> “Out of production”** per the Oct-2026 price list. The 1.0 m (`FPD 1M0 KIT`, €342.43 incl.)
+> is available if a smaller dish is wanted.
+
+### D5 — DIY mesh route (cheapest, low wind)
+Because the 433 MHz hole limit is 69 mm, ordinary hardware-store mesh is a valid reflector.
+- **Reflector conductor options:** aluminium window screen (Fliegengitter/Alu-Gittergewebe),
+  welded/galvanised wire mesh (Schweißgitter) with ≤ 25 mm squares, aluminium insect mesh.
+- **Frames / support:** the mesh needs a parabolic former — either the RF Hamdesign rib kit
+  (D1–D3, buy without mesh is not offered) or a hand-formed rib set. Aluminium **tape** on a
+  moulded former is the alternative conductor.
+- **Suppliers (DE):** Bauhaus (https://www.bauhaus.info/), OBI (https://www.obi.de/),
+  Hornbach (https://www.hornbach.de/), Amazon.de (search “Fliegengitter Aluminium” /
+  “Schweißgitter Alu”). **Prices for specific mesh rolls → `TODO(unverified)`** (retail sites
+  were Cloudflare/JS-gated or the pages bot-walled during this pass).
+- **Design tolerance check:** at 433 MHz the reflector RMS tolerance is λ/20 = **34.6 mm**
+  (see `ground-station-dish.md` §2) → the mesh may sag centimetres and still be fine.
+- **Status:** INGREDIENTS confirmed as real product categories; specific prices TODO.
+
+> **Purchasable "433 MHz mesh dish" summary:** the only *confirmed, purchasable, spec'd*
+> mesh dish found is the **RF Hamdesign FPD series** (D1–D3). General-purpose consumer
+> 433 MHz mesh dishes are not a retail product; the practical alternatives are (a) an RF
+> Hamdesign mesh kit, or (b) a repurposed Wi-Fi 2.4 GHz grid (whose mesh is far finer than
+> 433 MHz needs) with the feed swapped.
+
+---
+
+*(Sections 5–6 continue below — positioners, coax.)*
