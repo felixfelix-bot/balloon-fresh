@@ -1,0 +1,170 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models.py  (regenerate: python3 scripts/gen_3d_models.py)
+# part       : SolarCell_LARGE_78.55x38.90
+# dims_mm    : 78.55 x 38.90 x 0.21 (cell centred on the footprint origin)
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : X/Y/Z: 78.55 x 38.90 x 0.21 mm - ADR-049 s'Measured inputs' (cited by ADR-051 s1.4): 'the LARGE cell as 78.55 x 38.90 x 0.21 mm, 30.6 cm2, ~0.5 V, ~1.2 A'.  The face is drawn deliberately DARK BLUE (diffuseColor 0.09 0.10 0.42) so a cell can never be read as copper or silkscreen.  The frame is light grey (0.55 0.56 0.60).  Two-material IndexedFaceSet ported from scripts/gen_3d_models_wing.py.
+# materials  : dark blue cell face (diffuseColor 0.09 0.10 0.42) + light grey frame (diffuseColor 0.55 0.56 0.60) -- two-material IndexedFaceSet, ported from scripts/gen_3d_models_wing.py
+# note       : the cell is a FACETED SOLID (IndexedFaceSet), NOT a bare Box -- this is what makes it read as a real dark cell, not a grey slab.
+# --------------------------------------------------------------------------
+
+DEF SolarCell_LARGE_78.55x38.90_face Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF SolarCell_LARGE_78.55x38.90_face_mat Material {
+          diffuseColor 0.09 0.1 0.42
+          emissiveColor 0 0 0
+          specularColor 0.55 0.55 0.55
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.85
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -15.462598 -7.657480 0.041732,
+          15.462598 -7.657480 0.041732,
+          15.462598 7.657480 0.041732,
+          -15.462598 7.657480 0.041732,
+          -15.462598 7.657480 0.041339,
+          15.462598 7.657480 0.041339,
+          15.462598 -7.657480 0.041339,
+          -15.462598 -7.657480 0.041339,
+          -15.462598 7.657480 0.041339,
+          -15.462598 7.657480 0.041732,
+          15.462598 7.657480 0.041732,
+          15.462598 7.657480 0.041339,
+          15.462598 -7.657480 0.041339,
+          15.462598 -7.657480 0.041732,
+          -15.462598 -7.657480 0.041732,
+          -15.462598 -7.657480 0.041339,
+          15.462598 7.657480 0.041339,
+          15.462598 7.657480 0.041732,
+          15.462598 -7.657480 0.041732,
+          15.462598 -7.657480 0.041339,
+          -15.462598 -7.657480 0.041339,
+          -15.462598 -7.657480 0.041732,
+          -15.462598 7.657480 0.041732,
+          -15.462598 7.657480 0.041339
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
+DEF SolarCell_LARGE_78.55x38.90_body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF SolarCell_LARGE_78.55x38.90_body_mat Material {
+          diffuseColor 0.55 0.56 0.6
+          emissiveColor 0 0 0
+          specularColor 0.25 0.25 0.25
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.2
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -15.462598 -7.657480 0.041339,
+          15.462598 -7.657480 0.041339,
+          15.462598 7.657480 0.041339,
+          -15.462598 7.657480 0.041339,
+          -15.462598 7.657480 0.000000,
+          15.462598 7.657480 0.000000,
+          15.462598 -7.657480 0.000000,
+          -15.462598 -7.657480 0.000000,
+          -15.462598 7.657480 0.000000,
+          -15.462598 7.657480 0.041339,
+          15.462598 7.657480 0.041339,
+          15.462598 7.657480 0.000000,
+          15.462598 -7.657480 0.000000,
+          15.462598 -7.657480 0.041339,
+          -15.462598 -7.657480 0.041339,
+          -15.462598 -7.657480 0.000000,
+          15.462598 7.657480 0.000000,
+          15.462598 7.657480 0.041339,
+          15.462598 -7.657480 0.041339,
+          15.462598 -7.657480 0.000000,
+          -15.462598 -7.657480 0.000000,
+          -15.462598 -7.657480 0.041339,
+          -15.462598 7.657480 0.041339,
+          -15.462598 7.657480 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
+Transform {
+  translation 0.000000 7.539370 0.086614
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.550 0.560 0.600 } }
+      geometry Box { size 30.925197 0.236220 0.007874 }
+    }
+  ]
+}
+Transform {
+  translation 0.000000 -7.539370 0.086614
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.550 0.560 0.600 } }
+      geometry Box { size 30.925197 0.236220 0.007874 }
+    }
+  ]
+}
+Transform {
+  translation 15.344488 0.000000 0.086614
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.550 0.560 0.600 } }
+      geometry Box { size 0.236220 15.314961 0.007874 }
+    }
+  ]
+}
+Transform {
+  translation -15.344488 0.000000 0.086614
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.550 0.560 0.600 } }
+      geometry Box { size 0.236220 15.314961 0.007874 }
+    }
+  ]
+}
+Transform {
+  translation 14.281496 0.000000 0.088583
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.550 0.560 0.600 } }
+      geometry Box { size 0.787402 5.360236 0.011811 }
+    }
+  ]
+}
+Transform {
+  translation -14.281496 0.000000 0.088583
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.550 0.560 0.600 } }
+      geometry Box { size 0.787402 5.360236 0.011811 }
+    }
+  ]
+}

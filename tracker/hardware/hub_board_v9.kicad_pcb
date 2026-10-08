@@ -130,7 +130,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "012c16c6-a949-413c-af95-b79327a1cf1f")
-		(at 53.975000 4.515000)
+		(at 53.975 4.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_BAL2"
@@ -265,7 +265,7 @@
 	(footprint "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm"
 		(layer "F.Cu")
 		(uuid "029a8869-1fbc-4fb3-884f-5841e97a31a5")
-		(at 40.345000 26.295000)
+		(at 40.345 26.295)
 		(descr "SMD Solder 3-pad Jumper, 1x1.5mm rounded Pads, 0.3mm gap, open")
 		(tags "solder jumper open")
 		(property "Reference" "J_VCC"
@@ -559,11 +559,22 @@
 			(uuid "458fa36a-07cb-4444-83f7-9cba7eb8f4f1")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "balloon_flight_v9:SX1280_QFN24"
 		(layer "F.Cu")
 		(uuid "0467901e-cd72-4d8e-881a-b90a64b8d712")
-		(at 49.250000 5.250000)
+		(at 49.25 5.25)
 		(descr "Semtech SX1280/SX1281 2.4 GHz transceiver, QFN-24 4x4mm 0.5mm pitch + exposed pad. *** GEOMETRY NOT VERIFIED *** - the Semtech SX1280 datasheet could not be retrieved on this host, so every dimension below is a TODO(unverified) placeholder. DO NOT FABRICATE until the land pattern is checked against the datasheet mechanical drawing (SX1280 datasheet, 'Package Outline' / recommended land pattern).")
 		(tags "SX1280 SX1281 LoRa 2.4GHz QFN-24 UNVERIFIED-LANDPATTERN")
 		(property "Reference" "U4"
@@ -880,6 +891,17 @@
 			(uuid "1a90c66f-6c61-4306-b3b8-af6866aba918")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/SX1280_QFN24.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 		(layer "F.Cu")
@@ -2953,7 +2975,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "0f8c0bfc-7a8a-4a73-bdcf-ff32647e65e4")
-		(at 95.545000 25.795000)
+		(at 95.545 25.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_HUB1"
@@ -3218,7 +3240,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "12f0677d-3fb5-4d14-b905-437bb8ae2b03")
-		(at 51.545000 10.795000)
+		(at 51.545 10.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP1"
@@ -3483,7 +3505,7 @@
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "134b4d83-e80a-40a7-9051-26546eb77e0a")
-		(at 66.955000 24.505000)
+		(at 66.955 24.505)
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C_MON"
@@ -5994,7 +6016,7 @@
 	(footprint "balloon_flight_v9:LoRa2021_Castellated"
 		(layer "F.Cu")
 		(uuid "1a435cad-ac6a-4fba-a5ec-867d156841eb")
-		(at 90.905000 8.835000)
+		(at 90.905 8.835)
 		(descr "NiceRF LoRa2021 Gen4, 18-pin castellated module, 19.81x14.98mm, 1.29mm pitch")
 		(tags "LoRa LR2021 NiceRF castellated")
 		(property "Reference" "U3"
@@ -6288,8 +6310,7 @@
 			(uuid "96881f89-603c-49de-a609-2c748efc7d7b")
 		)
 		(embedded_fonts no)
-		(model "${KICAD8_3DMODEL_DIR}/RF_Module.3dshapes/NiceRF_LoRa2021.wrl"
-			(hide yes)
+		(model "${KIPRJMOD}/footprints/3dmodels/NiceRF_LoRa2021.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -6555,6 +6576,183 @@
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Diode_SMD.3dshapes/D_SOD-323.step"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
+	)
+	(footprint "Array_Cells:SolarCell_LARGE_78x39mm"
+		(layer "F.Cu")
+		(uuid "22218197-1cc1-4f5c-a31d-8b479450a9ce")
+		(at 71.95 51.5 90)
+		(descr "BARE LARGE solar cell 78.55 x 38.90 x 0.21 mm, mounted END-ONLY (no bond, no carrier) on the hub array face. Body X/Y/Z CITED: ADR-049 s'Measured inputs' (78.55 x 38.90 x 0.21 mm, 30.6 cm2, ~0.5 V, ~1.2 A), reproduced by ADR-051 s1.4. ADR-052 s2.6 END-ONLY; ADR-055 D1/D3/D6 (horizontal plane, area is a DUTY CHOICE, cells on the sun-facing face). NO LANDS, measured 2026-10-08: (1) no in-repo record fixes the cell's terminal-land geometry, so any pad here would be a TODO(unverified) invention; (2) with lands present the S0 screen - gate25_check.py's LAYER-BLIND pad-box proxy - reported 5 pad-overlap pairs and 11 exact pad overlaps, ALL between a footprint on F.Cu and this cell on B.Cu (U1, U2, C_MON, D_HUB2, C_CAP2), i.e. physical non-issues on OPPOSITE copper faces, while the authority (kicad-cli pcb drc) reported courtyards_overlap 0 either way. Recommendation: make the S0 proxy layer-aware before lands are added. PLAIN PADS, NO SLOT: no routed slot and no NPTH feature (ADR-046 Option B). DNP: the array AREA is the operator's open duty choice (ADR-055 D3).")
+		(tags "solar cell LARGE 78x39 hub array ADR-051 ADR-052 ADR-055 DNP END-ONLY no-slot no-lands")
+		(property "Reference" "PVA2"
+			(at -36 21.5 90)
+			(layer "F.SilkS")
+			(uuid "ff66d0d7-5465-458b-954f-5751caebd1e6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "SolarCell_78x39mm"
+			(at 0 21.5 90)
+			(layer "F.Fab")
+			(uuid "9bb15332-5352-4162-8c60-297351545ae5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 90)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ba0d8be9-a7f1-4ed8-bbab-75013c79f31c")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" "BARE LARGE solar cell 78.55 x 38.90 x 0.21 mm, END-ONLY mount, NO LANDS, DNP"
+			(at 0 0 90)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e3a0b021-57eb-42d2-8275-9f0729089270")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(attr smd dnp)
+		(fp_line
+			(start 39.275 -19.45)
+			(end 35.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "01d29c28-bb63-414f-b46c-607061a1b211")
+		)
+		(fp_line
+			(start -31.275 -19.45)
+			(end -35.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "11ac224c-650f-43e5-90c7-8a117cfce9bd")
+		)
+		(fp_line
+			(start -39.275 -19.45)
+			(end -35.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "3cfde4d1-82a8-4596-9675-f88e4eca84a5")
+		)
+		(fp_line
+			(start -31.275 -15.45)
+			(end -31.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "fa9f47d3-bcc2-45d3-80cf-223f99bda380")
+		)
+		(fp_line
+			(start 39.275 19.45)
+			(end 35.275 19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "cd2a1c89-a425-4cff-9633-315a73548742")
+		)
+		(fp_line
+			(start -39.275 19.45)
+			(end -35.275 19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "4dc81e1d-0b93-4e1c-a6a7-6aaaee226c5f")
+		)
+		(fp_line
+			(start 39.525 -19.7)
+			(end 39.525 19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "d949b998-ec22-4073-b14d-0dec8d3c4582")
+		)
+		(fp_line
+			(start -39.525 -19.7)
+			(end 39.525 -19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "65c4e1ae-9afb-41d0-a4b0-30c435e9043e")
+		)
+		(fp_line
+			(start 39.525 19.7)
+			(end -39.525 19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "fac7dd47-e116-49d1-bf46-aca5ad2352f8")
+		)
+		(fp_line
+			(start -39.525 19.7)
+			(end -39.525 -19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "32a46485-3faa-4ecb-bc53-2a4aba28af8e")
+		)
+		(fp_rect
+			(start -39.275 -19.45)
+			(end 39.275 19.45)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.Fab")
+			(uuid "92ffd152-8bd5-4153-b912-b1c67b35fd27")
+		)
+		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/SolarCell_LARGE_78.55x38.90.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -6850,6 +7048,17 @@
 			(uuid "bac28ce7-ee88-4527-a500-f6f5fc50695b")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/Wing_Tab_4P.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
@@ -7296,6 +7505,17 @@
 			(uuid "9894e4a5-0382-4498-9f9d-44aa9a3487ad")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/LoRa2021F33-2G4.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical"
 		(layer "F.Cu")
@@ -7650,7 +7870,7 @@
 			(uuid "537a9b27-399c-4de6-9391-c41cd3aeda79")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/footprints/3dmodels/U.FL_Molex_MCRF_73412-0110_Vertical.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -8035,7 +8255,7 @@
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "4eae3898-7caf-4ed0-b445-1a89c49c5ddd")
-		(at 59.955000 25.505000)
+		(at 59.955 25.505)
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C4"
@@ -8156,6 +8376,183 @@
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.step"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
+	)
+	(footprint "Array_Cells:SolarCell_LARGE_78x39mm"
+		(layer "F.Cu")
+		(uuid "5fc8440d-9f02-4e2e-a99a-a0d99fc27eec")
+		(at 31.05 51.5 90)
+		(descr "BARE LARGE solar cell 78.55 x 38.90 x 0.21 mm, mounted END-ONLY (no bond, no carrier) on the hub array face. Body X/Y/Z CITED: ADR-049 s'Measured inputs' (78.55 x 38.90 x 0.21 mm, 30.6 cm2, ~0.5 V, ~1.2 A), reproduced by ADR-051 s1.4. ADR-052 s2.6 END-ONLY; ADR-055 D1/D3/D6 (horizontal plane, area is a DUTY CHOICE, cells on the sun-facing face). NO LANDS, measured 2026-10-08: (1) no in-repo record fixes the cell's terminal-land geometry, so any pad here would be a TODO(unverified) invention; (2) with lands present the S0 screen - gate25_check.py's LAYER-BLIND pad-box proxy - reported 5 pad-overlap pairs and 11 exact pad overlaps, ALL between a footprint on F.Cu and this cell on B.Cu (U1, U2, C_MON, D_HUB2, C_CAP2), i.e. physical non-issues on OPPOSITE copper faces, while the authority (kicad-cli pcb drc) reported courtyards_overlap 0 either way. Recommendation: make the S0 proxy layer-aware before lands are added. PLAIN PADS, NO SLOT: no routed slot and no NPTH feature (ADR-046 Option B). DNP: the array AREA is the operator's open duty choice (ADR-055 D3).")
+		(tags "solar cell LARGE 78x39 hub array ADR-051 ADR-052 ADR-055 DNP END-ONLY no-slot no-lands")
+		(property "Reference" "PVA1"
+			(at -36 21.5 90)
+			(layer "F.SilkS")
+			(uuid "eb9ca373-9263-4231-bc4d-d1da6cc4a7a0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "SolarCell_78x39mm"
+			(at 0 21.5 90)
+			(layer "F.Fab")
+			(uuid "61b072e3-6837-489e-8ce2-2c8bd83b87ed")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 90)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "433ff4b3-0ac9-4cfd-a0f5-990ee910dd7e")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" "BARE LARGE solar cell 78.55 x 38.90 x 0.21 mm, END-ONLY mount, NO LANDS, DNP"
+			(at 0 0 90)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "572f9483-6704-424b-8cf5-dc933449b5bf")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(attr smd dnp)
+		(fp_line
+			(start 39.275 -19.45)
+			(end 35.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "16918e82-0fa9-43d3-b464-45f3a77a6824")
+		)
+		(fp_line
+			(start -31.275 -19.45)
+			(end -35.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "007ec968-948f-4adc-8fe3-ab764a9b5e57")
+		)
+		(fp_line
+			(start -39.275 -19.45)
+			(end -35.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "f7f4a3cd-987f-44e7-882b-d378b23b02b3")
+		)
+		(fp_line
+			(start -31.275 -15.45)
+			(end -31.275 -19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "add322dc-75a3-4fc1-bea9-ff76d614c55a")
+		)
+		(fp_line
+			(start 39.275 19.45)
+			(end 35.275 19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "0f89f738-669d-4785-8200-b037779a178a")
+		)
+		(fp_line
+			(start -39.275 19.45)
+			(end -35.275 19.45)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "869c3f28-9dc4-4a16-ac73-76269e5a2edf")
+		)
+		(fp_line
+			(start 39.525 -19.7)
+			(end 39.525 19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "0abc5cfa-0dc0-41f2-a333-e5b354832fe5")
+		)
+		(fp_line
+			(start -39.525 -19.7)
+			(end 39.525 -19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "44bc651b-2770-49c8-97aa-44fa9fd95f8e")
+		)
+		(fp_line
+			(start 39.525 19.7)
+			(end -39.525 19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "02205521-2b18-42a7-9e8c-813ce77cae47")
+		)
+		(fp_line
+			(start -39.525 19.7)
+			(end -39.525 -19.7)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(layer "F.CrtYd")
+			(uuid "19b71e42-f13b-4d64-ac3a-cac7425aabc8")
+		)
+		(fp_rect
+			(start -39.275 -19.45)
+			(end 39.275 19.45)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.Fab")
+			(uuid "5649eb64-c3a5-480e-ad18-694f3ebd36fa")
+		)
+		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/SolarCell_LARGE_78.55x38.90.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -8451,11 +8848,22 @@
 			(uuid "6a580fe3-feba-456b-ae7b-c9d4ed1b4e10")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/Wing_Tab_4P.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "7a9cd31c-1b30-489b-991b-b92f82410c2f")
-		(at 51.545000 15.795000)
+		(at 51.545 15.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP2"
@@ -9205,7 +9613,7 @@
 			(uuid "72d502f0-1958-44fa-b4e0-8da141cbc676")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/footprints/3dmodels/U.FL_Molex_MCRF_73412-0110_Vertical.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -9220,7 +9628,7 @@
 	(footprint "Diode_SMD:D_SOD-123"
 		(layer "F.Cu")
 		(uuid "8a0f5a5b-1141-4829-a878-6443535ab5f8")
-		(at 46.395000 26.195000)
+		(at 46.395 26.195)
 		(descr "SOD-123")
 		(tags "SOD-123")
 		(property "Reference" "D1"
@@ -10241,7 +10649,7 @@
 			(uuid "5871c7de-49b0-42ad-a130-92492815333c")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/RF_Module.3dshapes/ESP32-S3-WROOM-1U.step"
+		(model "${KIPRJMOD}/footprints/3dmodels/ESP32-S3-WROOM-1U.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -10256,7 +10664,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "900da495-9dc8-4425-8a5a-cba3d4bea591")
-		(at 100.975000 23.515000)
+		(at 100.975 23.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_NTC1"
@@ -10741,7 +11149,7 @@
 			(uuid "0f59a398-bd10-4b6f-aa3b-88cb73ce0380")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/footprints/3dmodels/U.FL_Molex_MCRF_73412-0110_Vertical.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -10756,7 +11164,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "a1b9528a-75d4-455f-ad8c-39c8d8f7aa05")
-		(at 51.545000 20.795000)
+		(at 51.545 20.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP4"
@@ -11021,7 +11429,7 @@
 	(footprint "RF_GPS:ublox_MAX"
 		(layer "F.Cu")
 		(uuid "a220da54-8509-4e5f-89b9-15e694658b99")
-		(at 84.945000 24.345000)
+		(at 84.945 24.345)
 		(descr "ublox MAX 6/7/8, (https://www.u-blox.com/sites/default/files/MAX-8-M8-FW3_HardwareIntegrationManual_%28UBX-15030059%29.pdf)")
 		(tags "GPS ublox MAX 6/7/8")
 		(property "Reference" "U5"
@@ -11384,7 +11792,7 @@
 			(uuid "31c423b1-8b5b-4266-8969-6291ee711fe5")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/RF_GPS.3dshapes/ublox_MAX.step"
+		(model "${KIPRJMOD}/footprints/3dmodels/ublox_MAX.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -11815,11 +12223,22 @@
 			(uuid "574bf006-f98f-40b5-ad91-168bb179006f")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/Wing_Tab_4P.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "ad7f43fc-3731-45d8-8358-4612468802ef")
-		(at 33.545000 26.795000)
+		(at 33.545 26.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_HUB2"
@@ -12084,7 +12503,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "bb5e2a86-6eb6-4901-ac69-9c55144ba454")
-		(at 54.975000 7.515000)
+		(at 54.975 7.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_DIV1"
@@ -12489,7 +12908,7 @@
 	(footprint "Capacitor_SMD:C_1206_3216Metric"
 		(layer "F.Cu")
 		(uuid "ca2e3342-4aa3-42af-94bc-b88f7a45d091")
-		(at 52.345000 26.195000)
+		(at 52.345 26.195)
 		(descr "Capacitor SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C_BULK"
@@ -12974,7 +13393,7 @@
 			(uuid "433381a4-d855-4c49-8657-ba499ccb6f3e")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/footprints/3dmodels/U.FL_Molex_MCRF_73412-0110_Vertical.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -12989,7 +13408,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "ea056386-f1ff-42e5-9696-027c7da728d3")
-		(at 95.545000 20.795000)
+		(at 95.545 20.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP3"
@@ -13535,11 +13954,22 @@
 			(uuid "c61db335-c611-44d8-9c45-019f5316aa89")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/footprints/3dmodels/Wing_Tab_4P.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "f60604ec-485f-4325-9079-fe789bcc9ec6")
-		(at 56.975000 25.515000)
+		(at 56.975 25.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "TH_NTC1"
@@ -13674,7 +14104,7 @@
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "fa39c644-136a-41a8-95f9-18063c750657")
-		(at 62.955000 25.505000)
+		(at 62.955 25.505)
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C_HF"

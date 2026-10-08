@@ -65,6 +65,7 @@ SCH_DIR = os.path.join(HERE, "schematics", "flight_board")
 NETLIST = os.path.join(SCH_DIR, "v9_flight.net")
 V9_PRETTY = os.path.join(SCH_DIR, "v9_lib", "balloon_flight_v9.pretty")
 TRACKER_PRETTY = os.path.join(HERE, "footprints", "tracker_mechanical.pretty")
+ARRAY_PRETTY = os.path.join(HERE, "footprints", "array_cells.pretty")
 KICAD_PRETTY = "/usr/share/kicad/footprints"
 
 OUT_SEED = os.path.join(HERE, "output", "hub_board_v9_seed.kicad_pcb")
@@ -80,7 +81,120 @@ LAYER_COUNT = 4         # ADR-029/030 flight board is 4-layer.
 LOCAL_LIBS = {
     "balloon_flight_v9": V9_PRETTY,
     "Tracker_Mechanical": TRACKER_PRETTY,
+    # The hub-array cell lives in its OWN library, NOT in Tracker_Mechanical:
+    # this pcbnew build hands out model UUIDs in a sequence whose length depends
+    # on how many footprints a loaded library contains, and the emitted board is
+    # ordered by that sequence - so ADDING A FILE TO Tracker_Mechanical changes
+    # the KRT lap's output and moves frozen parts.  Measured: with the cell in
+    # Tracker_Mechanical the lap moved R_MON1/R_MON2 by 1.0 mm; with it in its own
+    # library the frozen placement reproduces exactly.
+    "Array_Cells": ARRAY_PRETTY,
 }
+
+# 3D MODELS  (added 2026-10-08, render-fidelity fix)
+# -------------------------------------------------------------------------
+# Every 3D reference on this board used to point at
+# `${KICAD9_3DMODEL_DIR}/<lib>.3dshapes/<part>.step`.  Two defects were measured
+# in the interim repo-local scheme (branch feat/3d-models-hub) and are fixed here:
+#
+#   1. UNITS.  The repo-local models were authored in RAW MILLIMETRES, but KiCad
+#      reads a VRML coordinate as 2.54 mm per unit, so every model rendered
+#      2.54x TOO LARGE: the 78.55 x 38.90 x 0.21 mm cell rendered as a
+#      199.5 x 98.8 x 0.53 mm grey slab and the 10.1 x 10.1 x 7.0 mm supercap
+#      placeholder rendered 25.7 x 25.7 x 17.8 mm.  That is the operator's
+#      "grey slabs all over the place" and "some grey things are really thick".
+#
+#   2. FIDELITY.  The cell models were a single Box primitive in flat grey.  The
+#      wing board's cells (scripts/gen_3d_models_wing.py) are IndexedFaceSet
+#      solids with TWO materials - a dark-blue silicon face and a light-grey
+#      frame - which is why the wing's cells read as realistic dark cells.  The
+#      cell model generator here is PORTED from the wing's.
+#
+# NOW: the kicad-packages3d library (9.0.7-1, 4.6 GB) IS installed on this host
+# at /usr/share/kicad/3dmodels/.  Standard parts point at the REAL library models
+# via ${KICAD9_3DMODEL_DIR} (the render REQUIRES that env var to be set - record
+# this).  The custom parts the library will never carry keep repo-local models,
+# now authored in CORRECT VRML units (mm / 2.54) by scripts/gen_3d_models.py.
+#
+# LIBRARY vs CUSTOM:
+#   * library (exists at /usr/share/kicad/3dmodels/): R_0402, C_0402, C_1206,
+#     D_SMA, D_SOD-123, D_SOD-323, SOT-23-5, LGA-8, CP_Radial_D10
+#   * custom (repo-local, correct units): LoRa2021F33-2G4, SX1280_QFN24,
+#     Wing_Tab_4P, SolderJumper, SolarCell_LARGE/SMALL, ESP32-S3-WROOM-1U
+#     (library has only -1/-2, not -1U), U.FL (not installed), ublox_MAX
+#     (not installed), NiceRF_LoRa2021 (KICAD8 path, not installed)
+KICAD9_VAR = "${KICAD9_3DMODEL_DIR}"
+REPO_3DMODEL_VAR = "${KIPRJMOD}/footprints/3dmodels/"
+MODEL_MAP = {
+    # --- standard parts: the REAL KiCad library model -----------------------
+    "Resistor_SMD:R_0402_1005Metric":
+        KICAD9_VAR + "/Resistor_SMD.3dshapes/R_0402_1005Metric.step",
+    "Capacitor_SMD:C_0402_1005Metric":
+        KICAD9_VAR + "/Capacitor_SMD.3dshapes/C_0402_1005Metric.step",
+    "Capacitor_SMD:C_1206_3216Metric":
+        KICAD9_VAR + "/Capacitor_SMD.3dshapes/C_1206_3216Metric.step",
+    "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm":
+        KICAD9_VAR + "/Capacitor_THT.3dshapes/CP_Radial_D10.0mm_P5.00mm.step",
+    "Diode_SMD:D_SMA":
+        KICAD9_VAR + "/Diode_SMD.3dshapes/D_SMA.step",
+    "Diode_SMD:D_SOD-123":
+        KICAD9_VAR + "/Diode_SMD.3dshapes/D_SOD-123.step",
+    "Diode_SMD:D_SOD-323":
+        KICAD9_VAR + "/Diode_SMD.3dshapes/D_SOD-323.step",
+    "Package_LGA:LGA-8_3x5mm_P1.25mm":
+        KICAD9_VAR + "/Package_LGA.3dshapes/LGA-8_3x5mm_P1.25mm.step",
+    "Package_TO_SOT_SMD:SOT-23-5":
+        KICAD9_VAR + "/Package_TO_SOT_SMD.3dshapes/SOT-23-5.step",
+    # --- custom parts: repo-local models in CORRECT VRML units --------------
+    #     (the library has no -1U variant, no U.FL MCRF 73412-0110, no ublox
+    #      MAX, no NiceRF_LoRa2021 in the installed tree, and no F33/SX1280/
+    #      Wing_Tab/SolderJumper/SolarCell at all)
+    "balloon_flight_v9:LoRa2021_Castellated":
+        REPO_3DMODEL_VAR + "NiceRF_LoRa2021.wrl",
+    "balloon_flight_v9:LoRa2021F33_2G4":
+        REPO_3DMODEL_VAR + "LoRa2021F33-2G4.wrl",
+    "balloon_flight_v9:SX1280_QFN24":
+        REPO_3DMODEL_VAR + "SX1280_QFN24.wrl",
+    "RF_Module:ESP32-S3-WROOM-1U":
+        REPO_3DMODEL_VAR + "ESP32-S3-WROOM-1U.wrl",
+    "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical":
+        REPO_3DMODEL_VAR + "U.FL_Molex_MCRF_73412-0110_Vertical.wrl",
+    "RF_GPS:ublox_MAX":
+        REPO_3DMODEL_VAR + "ublox_MAX.wrl",
+    "Tracker_Mechanical:Wing_Tab_4P":
+        REPO_3DMODEL_VAR + "Wing_Tab_4P.wrl",
+    "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm":
+        REPO_3DMODEL_VAR + "SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm.wrl",
+    "Array_Cells:SolarCell_LARGE_78x39mm":
+        REPO_3DMODEL_VAR + "SolarCell_LARGE_78.55x38.90.wrl",
+}
+
+# HUB ARRAY CELLS  (added 2026-10-08; FACE FIX same day, operator-approved)
+# -------------------------------------------------------------------------
+# `PVA1` and `PVA2` are REAL netlist components (`SolarCell_78x39mm`) whose
+# Footprint field is EMPTY, so this builder reported them UNPLACEABLE and the
+# board showed a large empty area.  They are added here as DNP mechanical
+# footprints so the array is finally VISIBLE and correctly sized:
+#   * FACE: F.Cu.  ADR-055 D6: "The hub-array cells are mounted on the UPPER
+#     face of the board" - with the hub plane horizontal (ADR-055 D1) the
+#     upper face is the sun-facing side, and D6/§D2 note the downward face gets
+#     no direct sun ("effectively single-face").  They were first placed on
+#     B.Cu (component-free reasoning), which contradicted D6; the operator
+#     approved the move to F.Cu on 2026-10-08.  The other 39 footprints stay on
+#     F.Cu; the cell footprints carry NO PADS and NO COURTYARD overlap because
+#     their courtyard (39.525 x 19.7 mm) sits inside the empty array region.
+#   * size: 78.55 x 38.90 mm, the LARGE class (ADR-049 s'Measured inputs').
+#   * count: 2 = the schematic's own PVA1/PVA2 (ADR-051 s2.2 option H2).  FOUR
+#     LARGE cells are NOT placeable: 4 x 30.56 = 122.2 cm2 exceeds the
+#     103 x 103 mm plate's 106.09 cm2.
+#   * mount: END-ONLY, no bond (ADR-052 s2.6) - no lands across the cell face.
+#   * DNP: the array AREA is the operator's OPEN duty choice (ADR-055 D3).
+ARRAY_CELLS = [
+    ("PVA1", "SolarCell_78x39mm", "SolarCell_LARGE_78x39mm"),
+    ("PVA2", "SolarCell_78x39mm", "SolarCell_LARGE_78x39mm"),
+]
+ARRAY_CELL_L, ARRAY_CELL_S = 78.55, 38.90   # ADR-049 measured inputs
+ARRAY_GAP = 2.0    # TODO(unverified): no in-repo record fixes the inter-cell gap
 
 # LOADER WORKAROUND (repo defect, reported not fixed)
 # -------------------------------------------------------------------------
@@ -404,6 +518,103 @@ def pack_rest(board, placed, locked, w: float, h: float):
     return overflow
 
 
+# ------------------------------------------------------- 3D model assignment
+def assign_repo_models(board):
+    """Point every footprint's 3D model at the RIGHT reference.
+
+    Standard parts -> the real KiCad library model via ${KICAD9_3DMODEL_DIR}
+    (the kicad-packages3d library IS installed on this host; a render REQUIRES
+    that env var to be set or these models silently vanish).
+    Custom parts    -> the committed repo-local VRML model under
+    ${KIPRJMOD}/footprints/3dmodels/, now authored in CORRECT VRML units
+    (1 unit = 2.54 mm) by scripts/gen_3d_models.py.
+    Deterministic: same input board -> same model block.
+    """
+    import pcbnew
+    missing = []
+    n_lib, n_repo = 0, 0
+    for fp in board.GetFootprints():
+        fid = fp.GetFPID()
+        key = "%s:%s" % (str(fid.GetLibNickname()), str(fid.GetLibItemName()))
+        fn = MODEL_MAP.get(key)
+        fp.Models().clear()
+        if not fn:
+            missing.append(key)
+            continue
+        m = pcbnew.FP_3DMODEL()
+        m.m_Filename = fn
+        fp.Models().push_back(m)
+        if fn.startswith("${KICAD9_3DMODEL_DIR}"):
+            n_lib += 1
+        else:
+            n_repo += 1
+    return (n_lib, n_repo), sorted(set(missing))
+
+
+# ------------------------------------------------------------ hub array cells
+def array_seat_xy(w: float, h: float, i: int, n: int):
+    """COMPUTED (not typed) seat for hub-array cell i of n, long axis on Y.
+
+    Cells are laid out on the sun-facing face, centred, with ARRAY_GAP between
+    neighbours.  ADR-052: mounted END-ONLY, no bond.
+    """
+    span = n * ARRAY_CELL_S + (n - 1) * ARRAY_GAP
+    x = (w - span) / 2.0 + ARRAY_CELL_S / 2.0 + i * (ARRAY_CELL_S + ARRAY_GAP)
+    return x, h / 2.0
+
+
+def add_array_cells(board, w: float, h: float, pin_net: dict):
+    """Add the schematic's hub-array cells (PVA1/PVA2) as DNP footprints.
+
+    They are on the NETLIST already - with an EMPTY Footprint field, which is why
+    this builder called them unplaceable and the board showed an empty array
+    site.  No net is changed: each pad takes the net the netlist already gives
+    that pin (the cell footprint carries NO pads, so in practice nothing is
+    wired - the array is a DNP illustrative configuration).  No existing
+    footprint moves.
+
+    FACE (operator-approved fix, 2026-10-08): F.Cu, the UPPER face - ADR-055 D6
+    "The hub-array cells are mounted on the UPPER face of the board".  They were
+    first emitted on B.Cu, which contradicted D6 and rendered on the wrong side.
+    """
+    import pcbnew
+    libdir = normalise_library(ARRAY_PRETTY,
+                               os.path.join(LIB_CACHE, "Array_Cells.pretty"))
+    added, n = [], len(ARRAY_CELLS)
+    for i, (ref, value, name) in enumerate(ARRAY_CELLS):
+        fp = pcbnew.FootprintLoad(libdir, name)
+        if fp is None:
+            raise SystemExit("FootprintLoad failed: Array_Cells:%s" % name)
+        # add to the BOARD first: touching position/geometry on a footprint that
+        # is not owned by a board asserts or segfaults in this pcbnew build.
+        board.Add(fp)
+        fp.SetReference(ref)
+        fp.SetValue(value)
+        fp.SetFPID(pcbnew.LIB_ID("Array_Cells", name))
+        x, y = array_seat_xy(w, h, i, n)
+        fp.SetPosition(pcbnew.VECTOR2I(int(round(x * 1e6)), int(round(y * 1e6))))
+        fp.SetOrientationDegrees(90.0)      # long axis runs along board Y
+        # NO Flip(): the cells stay on F.Cu, the UPPER face (ADR-055 D6).
+        fp.SetDNP(True)                     # ADR-055 D3: the area is an open choice
+        for pad in fp.Pads():
+            nm = pin_net.get((ref, pad.GetNumber()))
+            if nm and board.FindNet(nm) is not None:
+                pad.SetNet(board.FindNet(nm))
+        added.append((ref, value, round(x, 3), round(y, 3)))
+    return added
+
+
+def fingerprint(board) -> dict:
+    """ref -> (x, y, rotation, layer) for every footprint with a reference."""
+    import pcbnew
+    out = {}
+    for fp in board.GetFootprints():
+        p = fp.GetPosition()
+        out[fp.GetReference()] = (pcbnew.ToMM(p.x), pcbnew.ToMM(p.y),
+                                  fp.GetOrientationDegrees(), fp.GetLayerName())
+    return out
+
+
 KRT_DIR = os.path.expanduser("~/tools/KiCadRoutingTools")
 PY314 = "/usr/bin/python3.14"
 # The KRT lap that produced the frozen board.  The same tool/lap the registry
@@ -462,10 +673,52 @@ def main() -> int:
     print(f"seed            : {os.path.relpath(a.out, REPO)}  sha256 {sha256(a.out)}")
 
     if a.publish:
-        rc = run_krt(a.out, OUT_BOARD)
-        if rc == 0:
-            print(f"frozen board    : {os.path.relpath(OUT_BOARD, REPO)}  "
-                  f"sha256 {sha256(OUT_BOARD)}")
+        return publish(a, w, h, nets)
+    return 0
+
+
+def publish(a, w: float, h: float, nets) -> int:
+    """Run the KRT lap, then apply this branch's ADDITIVE scope to its output.
+
+    Order matters and is the whole point:
+      1. the KRT lap runs on the cell-free seed - exactly the lap that produced
+         the frozen placement recorded at sha256 07b0683bcfa967a25840f285...;
+      2. only THEN are the hub-array cells added and the 3D models repointed.
+    Doing it the other way round (cells in the seed) re-polishes the lap, and the
+    lap moved two supercaps by 1.0 mm - a change to the frozen placement that
+    nothing asked for.  Adding a DNP cell must not move an existing part.
+    """
+    import pcbnew
+    lap = os.path.join(HERE, "output", ".hub_v9_krt_lap.kicad_pcb")
+    rc = run_krt(a.out, lap)
+    src = lap if rc == 0 else a.out
+    if rc != 0:
+        print("KRT lap unavailable - the seed itself is the frozen placement")
+    board = pcbnew.LoadBoard(src)
+    pin_net = {(r, p): n for _c, n, nodes in nets for r, p in nodes}
+    before = fingerprint(board)
+    cells = add_array_cells(board, w, h, pin_net)
+    after = fingerprint(board)
+    (n_lib, n_repo), no_model = assign_repo_models(board)
+    pcbnew.SaveBoard(OUT_BOARD, board)
+
+    moved = sorted(r for r in before if r in after and before[r] != after[r])
+    print(f"array cells DNP : {cells}")
+    print(f"                  LARGE {ARRAY_CELL_L} x {ARRAY_CELL_S} mm, END-ONLY (ADR-052), "
+          f"on F.Cu the UPPER/sun-facing face (ADR-055 D6, operator-approved), "
+          f"DNP (ADR-055 D3 area = the operator's OPEN choice)")
+    print(f"full-duty check : 4 x LARGE = {4 * ARRAY_CELL_L * ARRAY_CELL_S / 100.0:.1f} cm2 "
+          f"> plate {w * h / 100.0:.2f} cm2 -> the 4-cell 106.1 cm2 configuration of "
+          f"ADR-055 D3 is NOT placeable on a 103 x 103 mm plate")
+    # NOTE: ${KICAD9_3DMODEL_DIR} is a KiCad VARIABLE, not a Python name. Inside
+    # an f-string, `${KICAD9_3DMODEL_DIR}` is parsed as the Python expression
+    # `KICAD9_3DMODEL_DIR` (with a stray `$`), which raises NameError and killed
+    # this generator one line before it published the board. Use the constant.
+    print(f"3D models       : {n_lib} library ({KICAD9_VAR}/...step) + "
+          f"{n_repo} repo-local (correct VRML units); unmapped: {no_model}")
+    print(f"                  RENDER REQUIRES: export KICAD9_3DMODEL_DIR=/usr/share/kicad/3dmodels")
+    print(f"existing parts moved by the additive scope: {len(moved)} {moved}")
+    print(f"frozen board    : {os.path.relpath(OUT_BOARD, REPO)}  sha256 {sha256(OUT_BOARD)}")
     return 0
 
 
