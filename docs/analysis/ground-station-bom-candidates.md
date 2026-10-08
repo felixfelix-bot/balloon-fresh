@@ -593,4 +593,100 @@ product page's attenuation table.
 
 ---
 
-*(Section 7 — recommended shortlist — follows.)*
+## 7. Recommended shortlist + indicative cost
+
+### 7.1 2.4 GHz uplink (dish + feed) — pick ONE dish + ONE feed
+
+| Option | Dish | Feed | Dish € | Feed € | Notes |
+|--------|------|------|-------:|-------:|-------|
+| **2.4-A (cheapest)** | used 90 cm Kathrein CAS 90 (Kleinanzeigen) | HORN-13 (quote) | ~50 | ~185 (RS-ONE priced proxy) | f/D must be matched to the feed; used → verify surface |
+| **2.4-B (recommended)** | Gibertini OP100SE 97×104 cm, f/D 0.66 | HORN-13 / RS-ONE (F/D 0.45) + CLX1 €46 | 143.90 | 185 + 46 | documented f/D 0.66; feed slightly mismatched (needs ~70° illumination) |
+| **2.4-C (matched, single vendor)** | RF Hamdesign FPD 1M2 1.2 m mesh, F/D 0.45 | HORN-13 (F/D 0.45, exact match) + CLX1 €46 | 387.20 | 185 + 46 | **exact f/D match**, 27.4 dBi @2.4 GHz, low wind; feed price is a quote |
+
+Feed row detail: HORN-13 is quoted "Email for price quote"; the **FPF RS-ONE ring feed at €185.00**
+is the *priced* confirmed stand-in (also F/D 0.45, N-female, tuneable 900–3400 MHz → covers
+2320 MHz). LH-13XL / LH-ISS helix feeds are €220.00.
+
+### 7.2 433 MHz downlink (Yagi) — pick ONE (or a stacked pair)
+
+| Option | Product | Gain | Boom | Price | Fit |
+|--------|---------|-----:|-----:|------:|-----|
+| **433-short** | FlexaYagi FX 7015V | 12.4 dBi | 1.19 m | €125.00 | low wind, low gain |
+| **433-mid (recommended)** | Sirio WY 400-10N | 14 dBi | 2.0 m | €155.00 | N-f, stackable, 400–470 MHz |
+| **433-mid-alt (cheapest)** | Diamond A-430S15R | 14.8 dBi | 1.39 m | €74.50 | PL socket, 430–440 MHz |
+| **433-high** | FlexaYagi FX 7044 | 16.6 dBi | 3.08 m | €164.00 | high gain, long boom |
+| **433-array** | 2 × Sirio WY 400-10N + divider | ~17 dBi | 2 × 2.0 m | €310 + divider | per Sirio "stacked and bayed array" spec |
+
+### 7.3 Positioner (AZ/EL) — pick ONE
+
+| Option | Product | Wind rating | Handles | Price |
+|--------|---------|-------------|---------|------:|
+| **POS-light** | Yaesu G-5500DC | 1.00 m² tower / 0.50 m² mast | ≤0.85 m dish (tower) | €949.00 |
+| **POS-medium** | SPID RAS AZ&EL | (datasheet TODO) | medium dishes | €1,260.82 |
+| **POS-heavy (recommended for 1.0–1.2 m)** | SPID BIG-RAS AZ&EL | dishes up to 5 m (vendor) | 1.0–1.2 m dish | €1,775.00 |
+| **POS-slew** | SPX-06 AZ&EL slew drive | 716 Nm, IP65 | heavy dish | €5,487.35 |
+
+### 7.4 Coax
+
+| Option | Product | 2.4 GHz loss | Price/m |
+|--------|---------|-------------:|--------:|
+| **CX-best** | Ecoflex 15 | 1.62 dB/10 m | €13.60 |
+| **CX-recommended** | Airborne 10 (LMR-400 class) | 1.92 dB/10 m | €6.50 |
+| **CX-cheap** | Aircell 7 | 3.38 dB/10 m | €4.06 |
+
+### 7.5 Indicative reference BOM (one row per band, "recommended" picks)
+
+| Line | Item | Qty | Unit € | Line € |
+|------|------|----:|-------:|-------:|
+| 2.4 GHz dish | Gibertini OP100SE (B1) | 1 | 143.90 | 143.90 |
+| 2.4 GHz feed | RF Hamdesign HORN-13 (quote; RS-ONE €185 proxy) (C1/C2) | 1 | 185.00 | 185.00 |
+| Feed clamp | RF Hamdesign CLX1 (C6) | 1 | 46.00 | 46.00 |
+| 433 Yagi | Sirio WY 400-10N (A3) | 1 | 155.00 | 155.00 |
+| Positioner | SPID BIG-RAS AZ&EL (E6) | 1 | 1,775.00 | 1,775.00 |
+| Coax 2.4 GHz | Ecoflex 15, 5 m | 1 | 68.00 | 68.00 |
+| Coax 433 MHz | Airborne 10, 15 m | 1 | 97.50 | 97.50 |
+| N/SMA connectors | misc | ~8 | ~6 | ~48.00 |
+| **Total (indicative, incl. Dutch/EU VAT where the vendor quotes it)** | | | | **≈ €2,518** |
+
+**Cheap prototype variant** (used dish, small feeding, no heavy rotator):
+used 90 cm Ku dish (~€50) + RS-ONE feed (€185) + CLX1 (€46) + Diamond A-430S15R (€74.50) +
+**Yaesu G-5500DC only if dish ≤0.85 m on a tower** (€949) + Airborne 10 15 m (€97.50) ≈ **€1,402**.
+> ⚠ The G-5500DC (0.50 m² mast rating) is **not** adequate for a 0.9–1.2 m dish on a mast; the
+> cheap variant only balances if the dish is ≤0.85 m and tower-mounted.
+
+---
+
+## 8. Open items / TODO(unverified)
+
+1. **FlexaYagi connector types** (A6–A9) — not printed on the vendor pages.
+2. **FlexaYagi dBd gain claims** (14.4–15.8 dBd) are vendor figures; verify against manufacturer.
+3. **Diamond A-430S15R connector** — not stated on the page.
+4. **f/D + wind load for Gibertini 85/75 and Kathrein CAS 80/90** — not printed on the vendor pages.
+5. **A *solid* 1.2 m offset Ku dish** (Gibertini OP120 / Fuba DAA 120 class) — no confirmed vendor
+   page located; the confirmed 1.2 m is the RF Hamdesign mesh kit.
+6. **433 MHz Yagi stacked-pair power divider** — the rfhamstore "70cm HAM Radio Dividers" category
+   is confirmed to exist, but no individual divider price was read.
+7. **Wi-Fi-grid antenna prices** (TL-ANT2424B, AirGuard M2, PowerBeam M2, L-com HG2424G) — pages
+   were JS- or bot-gated; models confirmed, prices TODO.
+8. **Priced 2.4 GHz cantenna** — none found; DIY only.
+9. **DIY mesh material prices** (aluminium screen / welded wire) — retail sites gated.
+10. **SPID/SPX wind-load area (m²)** — vendor datasheets returned HTTP 466; only the BIG-RAS
+    "dishes up to 5 m" statement is confirmed.
+11. **Yaesu wind-load reference wind speed** — the DX Engineering pages give the area but not the
+    survival wind speed.
+12. **LMR-400 own datasheet figure** — timesmicrowave.com returned HTTP 403; use Airborne 10's
+    confirmed table as the LMR-400-class number.
+13. **eBay.de** — 403 to scripted fetch; used-dish searching there is manual.
+
+## 9. Method / reproduction
+
+- Fetch helper used a browser User-Agent + `curl --compressed`; vendor pages that returned
+  Cloudflare challenges (wimo.com subcategories, conrad.de, tp-link.com) are marked as gated.
+- Prices: Shopware pages expose `itemprop="price" content="…"`; RF Hamdesign prices come from the
+  **Oct-2026 price list PDF** at
+  https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf (first column = EUR incl. 21 %
+  Dutch VAT; second = EUR excl. VAT for EU businesses/export).
+- **Search engines (Bing/DDG/Searx) bot-block curl** → discovery was done by fetching vendor
+  category pages and site search endpoints directly.
+
+*End of analysis.*

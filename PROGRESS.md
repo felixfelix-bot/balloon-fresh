@@ -7,14 +7,16 @@ write `docs/analysis/ground-station-bom-candidates.md`.
 
 - [x] M1 — repo/worktree setup; 433 MHz Yagi section (9 confirmed products, 4 vendors-worth of
       gains 7→18 dBi, Sirio/Diamond/FlexaYagi, + stacked-pair/divider path). COMMITTED.
-- [ ] M2 — Ku-band dishes 0.8–1.2 m (Gibertini OP100SE/85/75, Kathrein CAS 80/90, used on
-      Kleinanzeigen).
-- [ ] M3 — 2.4 GHz feeds matched to dish f/D (RF Hamdesign HORN-13 / RS-ONE / LH-13XL /
-      LH-ISS / CIR-2320) + Wi-Fi-grid alternatives.
-- [ ] M4 — 433 MHz mesh dish (RF Hamdesign mesh kits) + DIY mesh materials.
-- [ ] M5 — AZ/EL positioners with wind ratings (Yaesu family + SPID/SPX family).
-- [ ] M6 — low-loss coax (Ecoflex 10/15, Airborne 10, H2010 EVO, Aircell 7 + connectors).
-- [ ] M7 — recommended shortlist + indicative total; REPORT.md; final commit/push.
+- [x] M2 — Ku-band dishes 0.8–1.2 m (Gibertini OP100SE/85/75, Kathrein CAS 80/90, used on
+      Kleinanzeigen). COMMITTED.
+- [x] M3 — 2.4 GHz feeds matched to dish f/D (RF Hamdesign HORN-13 / RS-ONE / LH-13XL /
+      LH-ISS / CIR-2320) + Wi-Fi-grid alternatives. COMMITTED.
+- [x] M4 — 433 MHz mesh dish (RF Hamdesign mesh kits) + DIY mesh materials. COMMITTED.
+- [x] M5 — AZ/EL positioners with wind ratings (Yaesu family + SPID/SPX family). COMMITTED.
+- [x] M6 — low-loss coax (Ecoflex 10/15, Airborne 10, H2010 EVO, Aircell 7 + connectors). COMMITTED.
+- [x] M7 — recommended shortlist + indicative total; REPORT.md; final commit/push. COMMITTED.
+
+**DONE.** All 7 milestones committed and pushed to github + ngit.
 
 ## Sourcing toolchain notes (reusable)
 - Bing/DDG/Searx all bot-block curl → **fetch vendor sites directly** with a browser UA and
