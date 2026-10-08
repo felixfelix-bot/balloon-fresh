@@ -89,3 +89,82 @@ At 433 MHz the same reflector is so wide-beamed that a 1.2 m dish is not meaning
 
 ---
 
+## 4. The feed problem: illumination angle and electrical size at 433 MHz
+
+### 4.1 Illumination half-angle vs f/D
+
+For a paraboloid, the rim subtends a half-angle θ at the focus:
+
+`tan(θ/2) = 1 / (4 · f/D)`  →  `θ = 2 · arctan(1 / (4·f/D))`
+
+| f/D | θ (half-angle, deg) |
+|---:|---:|
+| 0.35 | 71.1° |
+| 0.40 | 64.0° |
+| 0.50 | 53.1° |
+| 0.60 | 45.2° |
+| 0.70 | 39.3° |
+
+Consumer offset-fed Ku dishes have an **effective f/D around 0.6–0.7**, so the feed must illuminate roughly **±40–45°**.  A 2.4 GHz feed of order λ/2 (≈60 mm) with a modest flare can cover this.
+
+### 4.2 The same physical feed at 433 MHz is electrically tiny
+
+A 2.4 GHz feed element that is λ/2 at 2.4 GHz is:
+
+`λ(2.4 GHz)/2 ≈ 62.5 mm`
+
+At 433 MHz, λ ≈ 692 mm, so the same 62.5 mm element is:
+
+`62.5 mm / 692 mm ≈ 0.09 λ`
+
+A 0.09 λ radiator is essentially an electrically small antenna.  Its pattern is broad and omni-like, not the ±40° pencil the dish needs.  Spillover will be large: much of the feed power misses the dish rim, and ground noise enters the receive path.
+
+### 4.3 Estimated efficiency loss from feed mismatch at 433 MHz
+
+A well-designed dish feed at its design frequency has an illumination efficiency ηᵢ of roughly 0.7–0.85.  When the feed is mismatched (wrong pattern, wrong phase centre, too wide/narrow):
+
+- Spillover can climb from ~5 % to 30–50 %.
+- Uneven illumination can drop aperture efficiency by another 3–6 dB.
+
+For this estimate we treat the 433 MHz feed as **mismatched by ~10 dB effective aperture loss** compared with a purpose-built 433 MHz feed for the same reflector.  The dominant mechanisms are:
+
+1. **Pattern mismatch:** a 0.09 λ element cannot form a ±40° beam; much power goes outside the rim.
+2. **Phase-centre instability:** an electrically small feed has no well-defined phase centre at the paraboloid focus.
+3. **Impedance mismatch:** a fixed-size 2.4 GHz feed is far off 50 Ω at 433 MHz.
+
+> **TODO(unverified):** the 10 dB estimate is a placeholder based on small-antenna pattern theory and dish-feed design rules (e.g. Balanis, *Antenna Theory*, Chap. 15).  It should be closed by NEC/MoM simulation or by measuring a candidate feed on the candidate dish.
+
+**Bottom line:** using the dish’s 2.4 GHz feed structure unchanged at 433 MHz likely throws away most of the 12 dBi the aperture formula promises, bringing the practical 433 MHz gain of a 1.2 m dish down into the **0–6 dBi range** — worse than a cheap Yagi.
+
+---
+
+## 5. Feed-positioning tolerance — the surprising result
+
+The classic rule: an axial feed defocus of λ/4 costs about 1 dB.
+
+| Frequency | λ/4 |
+|---|---:|
+| 433 MHz | **173 mm = 17.3 cm** |
+| 2.4 GHz | **31.2 mm = 3.1 cm** |
+
+A 2.4 GHz feed must sit within ~3 cm of the dish focus.  A 433 MHz feed, however, can be **17 cm away** before it suffers the same 1 dB defocus loss.
+
+### 5.1 Two-feed arrangement: 2.4 GHz feed at focus, 433 feed alongside
+
+If the 2.4 GHz feed is placed exactly at the focus and a separate 433 MHz feed is mounted a few centimetres away (say 5 cm axial offset, 5 cm lateral offset):
+
+- **2.4 GHz loss:** the 433 feed is close to the 2.4 GHz feed (a few cm), so it is effectively at the focus too.  A 5 cm lateral offset at 2.4 GHz is ~1.6 λ; defocus loss is small but may scatter/block some aperture.  Estimate **≤1 dB** if the 433 feed is small and not in the optical path.
+- **433 MHz loss:** 5 cm axial offset is 5/17.3 ≈ 0.29 λ/4.  Quadratic scaling from the λ/4 = 1 dB rule gives `1 dB × (0.29)² ≈ 0.08 dB`.  Lateral offset of 5 cm is similarly small.  **Total 433 penalty ≈ 0.1–0.2 dB**.
+
+**This is the key insight:** because 433 MHz is so much longer wavelength, **two separate feeds near the focus are mechanically viable** for the low-gain 433 path.  The earlier “bad idea” framing under-weighted this.
+
+> **TODO(unverified):** exact defocus loss vs offset should be closed by measurement or full-wave simulation.  The λ/4≈1 dB rule is widely cited (e.g. Ruze, “Axial Defocusing of a Parabolic Reflector”) but the small-offset quadratic approximation is an estimate.
+
+### 5.2 Lateral blocking by the 433 feed at 2.4 GHz
+
+A 433 MHz feed / dipole / small Yagi mounted near the focus will be tens of centimetres across at most.  A 1.2 m dish at 2.4 GHz has a 7.3° beam.  The 433 structure, if it is within the first Fresnel zone, blocks or scatters a fraction of the aperture.  A 5 cm wide object blocks roughly `(5 cm / 1.2 m)² ≈ 0.2 %` of the geometric area — negligible.  A 15 cm Yagi could block ~1.6 % → ~0.07 dB.  Still small.
+
+**Conclusion:** the two-feed arrangement does not destroy 2.4 GHz performance, and the 433 penalty is tiny.  The *real* penalty is not defocus; it is the feed-pattern mismatch from §4.
+
+---
+
