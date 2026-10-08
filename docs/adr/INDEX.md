@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **88** distinct
-numbers, **88** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **90** distinct
+numbers, **90** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -111,6 +111,8 @@ None.
 | 080 | `080-xr613-resistive-divider-bench-tool-not-array-combiner.md` | The XR-613 divider is a resistive bench tool, NOT an array combiner (resistive ⇒ 6 dB, no array gain) | Accepted by operator |
 | 081 | `081-ground-station-tier-ladder-and-option-b.md` | The ground-station tier ladder, and the recommended option B (Diamond A-430S15R + DIY tracker P2, ≈ EUR 735) | Proposed — the ladder is a recommendation with measured/estimated rungs; the |
 | 082 | `082-rate-adaptation-size-for-min-rate-at-max-range.md` | Rate adaptation: size the dish/antenna for the minimum useful rate at maximum range | Accepted by operator |
+| 083 | `083-2g4-reflector-production-ku-offset-dish.md` | The 2.4 GHz reflector is a BOUGHT production Ku offset dish (new or used), never a hand-built one | Proposed — an engineering recommendation with sourced prices and a computed |
+| 084 | `084-ground-station-automatic-level-control.md` | Automatic level control at the gateway: AGC on the 433 receive chain, telemetry-driven attenuation on the 2.4 GHz uplink | Accepted by operator |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
