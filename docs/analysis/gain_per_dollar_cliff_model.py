@@ -699,14 +699,12 @@ def sec_sweet():
     print("  frontier therefore has a HOLE: pre-cliff (Yagi arrays, <= ~21 dBi, cheap) and")
     print("  post-cliff (dishes, >= ~27 dBi at low power, expensive) with nothing between.")
 
-    print("== COMPARISON: Tier-B (2.6 m dish) for reference ==")
-    tb_ref = 4324.6   # TABLE 3 total E at 2.6 m
+    print("== COMPARISON: Tier-B (2.6 m dish) — see TABLE 9 for the bottom-up ==")
     print("  2.6 m mesh dish: 18.8-19.6 dBi, drag %.2f m2 (solid) / %.2f m2 (mesh)" %
           (area(2.6) * CD_SOLID, area(2.6) * CD_MESH))
     print("  requires >= SPID BIG-RAS EUR 1775 (or SPX-02 EUR 1249, no m2 rating)")
-    print("  Tier-B bottom-up (TABLE 9) is EUR 5577-9037 = %.1fx-%.1fx sweet spot (b) for a"
-          % (5577.44 / 2166.4, 9036.94 / 2166.4))
-    print("  433 gain (18.8-19.6 dBi) that is NOT higher than the 4-bay array's 20.0 dBi.")
+    print("  TABLE 9 total is ~2.6x-4.4x sweet spot (b) (EUR 2166) for a 433 gain")
+    print("  (18.8-19.6 dBi) that is NOT higher than the 4-bay array's 20.0 dBi.")
     print("  NOTE the model's rotator_price_for() does not PRICE the mast-vs-tower split:")
     print("  a solid 1.0-1.2 m dish exceeds the Yaesu MAST rating (0.50 m2) and forces a")
     print("  TOWER install, while the same dish MESH stays under the mast rating - an extra")
@@ -735,18 +733,25 @@ def sec_tierb():
     print("OUT OF STOCK, so 2.6 m is a DIY build - rib+mesh - not a purchase).\n")
     lines = [
         ("2.6 m reflector DIY: 16 ali ribs + hub ring + skin (ESTIMATE, see note)",
-         500.00, 900.00, "ESTIMATE (rib stock + machining; no 2.6 m kit exists)"),
-        ("Coarse mesh skin ~8 m2: 25x25 mm galv 1.75 mm (CITED metal-market.eu)",
-         60.00, 200.00, "CITED EUR 7.00 listing (unit ambiguous -> range)"),
+         500.00, 900.00, "ESTIMATE (rib stock + machining; the 2.4/3.0 kits are 'Out of production')"),
+        ("Coarse mesh skin ~8 m2: 25x25 mm galv 1.75 mm (CITED metal-market.eu, 'ab')",
+         60.00, 200.00, "CITED 'ab EUR 7,00' made-to-measure listing (unit ambiguous -> range)"),
         ("433 prime-focus feed for a 0.45 f/D mesh dish (TODO(unverified) price)",
-         150.00, 400.00, "TODO(unverified): RF Hamdesign feed page not read this session"),
-        ("Feed support tripod + clamp (ESTIMATE)", 60.00, 150.00, "ESTIMATE"),
-        ("SPID BIG-RAS AZ+EL (CITED BOM E6)", 1775.00, 1775.00, "CITED rfhamdesign.com"),
+         150.00, 400.00, "TODO: RF Hamdesign catalogue has NO 70cm dish feed (fetched: only 902/1296/2320/3400/5760/8500 MHz)"),
+        ("Feed support tripod + 4TH-LEG (CITED RF Hamdesign EUR 39.93)",
+         40.00, 150.00, "CITED pricelist; tripod part of the kit, 4th leg EUR 39.93"),
+        ("SPID BIG-RAS AZ+EL incl controller (CITED RF Hamdesign EUR 1775.00)",
+         1775.00, 1775.00, "CITED pricelist PDF, fetched this session (HTTP 200)"),
+        ("FPD-BR01 BIG-RAS <-> dish mounting bracket (CITED) + UA-02 CW bracket",
+         198.00, 822.36, "CITED EUR 198.00 (FPD-BR01) .. EUR 624.36 (UA-02, incl counterweights)"),
+        ("PW32015 PSU 18 V / 20 A for SPID RAS & BIG-RAS (CITED EUR 119.00)",
+         119.00, 119.00, "CITED pricelist, fetched this session"),
         ("Mast 4-6 m galv steel 100 mm + head plate (ESTIMATE)", 250.00, 500.00, "ESTIMATE"),
         ("Foundation: concrete pad + rebar + anchors (ESTIMATE)", 300.00, 900.00, "ESTIMATE"),
         ("Guy set: 3-4 stays, anchors, turnbuckles (ESTIMATE)", 150.00, 400.00, "ESTIMATE"),
         ("2.4 GHz dish Gibertini OP100SE 0.97 m (CITED BOM B1)", 143.90, 143.90, "CITED hm-sat"),
-        ("2.4 GHz feed LH-13XL + CLX1 clamp (CITED BOM C4/C6)", 266.00, 266.00, "CITED rfhamdesign"),
+        ("2.4 GHz feed LH-13XL + CLX1 clamp (CITED RF Hamdesign EUR 220 + 46)",
+         266.00, 266.00, "CITED pricelist, fetched this session"),
         ("Tracker controller + anemometer + LATCH (CITED + ESTIMATE)", 135.00, 300.00, "mixed"),
         ("Coax: Ecoflex 15 5 m + Airborne 10 20 m + N connectors (CITED BOM)", 280.50, 280.50, "CITED"),
         ("Build labour allowance: 40-80 h at EUR 25/h (ESTIMATE)", 1000.00, 2000.00, "ESTIMATE"),

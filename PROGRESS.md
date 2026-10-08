@@ -34,3 +34,30 @@ table, mesh-vs-solid wind ratios, 433 FLRC sensitivity/required-gain table). Not
 
 ### M1 — PROGRESS + early commit
 Written before the analysis, per the brief (prior workers died on 503; write early).
+
+### M2 — model + figures
+`docs/analysis/gain_per_dollar_cliff_model.py` (520 lines of output) and
+`render_gain_per_dollar_cliff_figures.py` → 3 PNGs. Exponents VERIFIED: wind force D^2.000,
+wind MOMENT D^3.000, mass D^1.80, HPBW D^-1.000, torque chain reproduces the committed
+model's 2.997. Cliff quantified: 86 EUR/dB -> 592 EUR/dB across the 1.00->1.20 m rotator
+step (6.9x). Committed + pushed to github and ngit.
+
+### M3 — doc + ADR-068
+`docs/analysis/gain-per-dollar-cliff.md` (all four operator questions + Tier-B + measurement
+campaign) and `docs/adr/068-ground-station-antenna-class-cliff.md`. `tests/test_adr_numbering.py`
+green; `docs/adr/INDEX.md` regenerated.
+
+### M4 — sourcing
+Fetched THIS session (HTTP 200): RF Hamdesign Oct-2026 pricelist PDF (SPID BIG-RAS EUR 1775,
+SPX-01 EUR 1132, RAS EUR 1260.82, RAEL EUR 725, FPD-BR01 EUR 198, UA-02 EUR 624.36,
+PW32015 EUR 119, 4TH-LEG EUR 39.93, CLX1 EUR 46, LH-13XL EUR 220); funktechnik-bielefeld
+Yaesu G-450CDC EUR 359.00; metal-market.eu 25x25 welded mesh "ab EUR 7,00"; Wikipedia DiSEqC
+(single-axis satellite motor class). **Found: no 433 MHz dish feed in the RF Hamdesign
+catalogue; the 2.4 m / 3.0 m mesh dish kits are "Out of production".**
+
+### M5 — consultant
+Engaged `visual_consult.py` on fig1+fig2 with retries on HTTP 503; verdict boxed verbatim in
+the doc §14 with the served model named.
+
+### M6 — REPORT.md + final push (github, then ngit): SHAs pasted.
+
