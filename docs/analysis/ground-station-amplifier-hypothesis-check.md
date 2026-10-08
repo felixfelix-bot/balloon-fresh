@@ -75,7 +75,7 @@ vendor/Wikipedia fetch**, as the repo's sourcing rule requires.
 3. **A Yagi array is ~€76–94 per dB and points worse.** A 2-way 430 MHz 2000 W splitter is
    **€61.40** and a 70 cm phase line **€63.00** ([WiMo power splitters/phasing harnesses](https://www.wimo.com/en/accessories/antenna-accessories/power-splitter-phasing-harnesses)),
    so the marginal cost of the second bay is the second antenna (€155) + harness, against a
-   hard-won +3.0 dB. That is **2.9×–3.6×** the F33's per-dB cost, before the wind/torque
+   hard-won +3.0 dB. That is **207×–255×** the F33's per-dB cost (**2.9×–3.6×** the 433 LNA's), before the wind/torque
    consequence.
 
 4. **"One cheap tracker per Yagi, combined" adds coverage, not gain.** The signal bookkeeping
@@ -132,7 +132,7 @@ zero needed dB.**
 * **A ground receive chain that closes the 433 downlink without the balloon-side F33.** If the
   regulatory or mass position excludes the F33, the ground LNA becomes the *primary* gain
   device rather than a margin device, and its €26.4/dB is then buying a link that would
-  otherwise fail — a different value proposition. The F33 is still 66× cheaper per dB.
+  otherwise fail — a different value proposition. The F33 is still ~72× cheaper per needed dB.
 * **A same-band (2.4 GHz bidirectional) architecture.** If the operator intends to run *both*
   directions at 2.4 GHz, the amplifier and circulator become architecturally relevant (though
   §5.2 shows a single circulator is still insufficient isolation), and a 2.4 GHz LNA becomes
@@ -274,7 +274,7 @@ Sources: [ssb-70cm-ism-lna](https://www.wimo.com/en/ssb-70cm-ism-lna),
   **~4.0 dB (433) / 1.5–2.8 dB (2.4 GHz)** that no amplifier can produce. That is the true
   half of the operator's intuition, and it is the *smaller* half.
 * They are **additive**, not alternatives. The correct sentence is: *"an amplifier makes sense
-  on the receiver too — and it costs 66× more per needed dB than the balloon-side PA does."*
+  on the receiver too — and it costs ~72× more per needed dB than the balloon-side PA does."*
 
 ---
 
@@ -398,8 +398,9 @@ where the cheap-tracker strategy was trying not to spend.
 ### 2.5 Q2 answer
 
 **DO NOT ARRAY.** A practical 433 Yagi is a **2–3 % / 9–13 MHz** antenna. Arraying narrows the
-match and the beam, and costs **€76.13/dB (2-bay)** / **€93.73/dB (4-bay)** — **2.9×–3.6× the
-F33's 0.40 USD/dB** — plus a doubled wind moment that can step the positioner a class. The
+match and the beam, and costs **€76.13/dB (2-bay)** / **€93.73/dB (4-bay)** — **207×–255× the
+F33's 0.40 USD/dB** (**2.9×–3.6× the 433 LNA**) — plus a doubled wind moment that can step the
+positioner a class. The
 final €/dB order is **F33 (0.40 USD/dB) ≪ 433 LNA (26.4 EUR/dB) < 2-bay array (76.1) < 4-bay
 array (93.7) < dish+tracker (346–809)**.
 
@@ -655,7 +656,7 @@ a close-range overdrive hazard on the balloon's receiver.
 
 **What the operator should build instead — and it is a BUILD, not a "do nothing":**
 
-1. **F33 module on the balloon** — ~USD 8, **+20 dB**, **0.40 USD/dB**. 66× better per needed dB
+1. **F33 module on the balloon** — ~USD 8, **+20 dB**, **0.40 USD/dB**. ~72× better per needed dB
    than anything on the ground. *(Gated: ADR-039 open item (a) and the
    `PAYLOAD-WEIGHT-ESTIMATES.md` §D "Ground Station Only" classification must both be settled
    first — inherited from `flrc-max` REC-6 and recorded in ADR-068 §Consequences.)*

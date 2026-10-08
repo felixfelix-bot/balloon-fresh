@@ -76,8 +76,8 @@ that uplink (a) already closes with an **omni**, (b) has **+23.1 dB of surplus**
 system noise figure (Friis), and against a bracketed model it buys **+6.8 … +12.3 dB** of
 system noise temperature on the 433 downlink (central case **+9.7 dB** at `T_ant` = 200 K,
 receiver NF 8 dB). The priced, fully-specified part is the **SSB Electronic LNA ISM 433 MHz
-(€257.00, 20 dB gain, 0.7 dB NF, OIP3 +32 dBm)**, worth **€26.4 per needed dB** — 66× the
-F33's cost but a real, needed dB. **It is a RECEIVE amplifier**, and it must be at the
+(€257.00, 20 dB gain, 0.7 dB NF, OIP3 +32 dBm)**, worth **€26.4 per needed dB** — ~72× the
+F33's per-needed-dB cost, but a real, needed dB. **It is a RECEIVE amplifier**, and it must be at the
 **masthead**.
 
 **3. What an LNA cannot buy is cold-sky directivity — and that is the *smaller* half.** With
@@ -89,8 +89,8 @@ its own **gain** — is separate (+8.15 dB for a 3.5 m dish over a 14 dBi Yagi).
 
 **4. DO NOT build a Yagi ARRAY for gain.** A practical 433 MHz Yagi is a **2–3 %
 (≈9–13 MHz)** antenna; arraying narrows both the match and the beam. Cost: **2-bay €228.40
-marginal for +3.0 dB = €76.13/dB**; **4-bay €562.40 for +6.0 dB = €93.73/dB** — **2.9×–3.6×
-the F33's per-dB cost**. A 2-bay narrows the stacked-plane beamwidth by **10 % (high-gain
+marginal for +3.0 dB = €76.13/dB**; **4-bay €562.40 for +6.0 dB = €93.73/dB** — **207×–255×
+the F33's per-dB cost** (**2.9×–3.6× the 433 LNA**). A 2-bay narrows the stacked-plane beamwidth by **10 % (high-gain
 10/15-el element) to 32 % (3-el element)**, a 4-bay by **33 %**; the heavier cost is the
 **doubled wind moment**, which can step the positioner a class (€80–€1,346). A narrower beam
 makes the tracker's job **harder**, which is the opposite of what an amplifier-led /
@@ -195,8 +195,8 @@ the balloon-side PA, and the *one* ground amplifier that buys needed dB is a **r
    the wrong band.
 2. **Treat the LNA as useless on receive (the operator's premise).** REJECTED — the Friis
    arithmetic gives it +6.8…+12.3 dB; the premise inverts the truth by ~10 dB.
-3. **Buy a Yagi array instead of a single Yagi.** REJECTED — €76–94/needed dB (2.9–3.6× the
-   F33), a narrower beam, and a doubled wind moment.
+3. **Buy a Yagi array instead of a single Yagi.** REJECTED — €76–94/needed dB (207–255× the
+   F33's per-dB cost, 2.9–3.6× the 433 LNA's), a narrower beam, and a doubled wind moment.
 4. **"One cheap tracker per Yagi, combined" as a gain scheme.** REJECTED as a gain scheme
    (+0.00 dB incoherent; coherent/MRC need phase coherence and N radios) — **ACCEPTED as a
    multi-sector COVERAGE scheme**, which removes the precision-tracking requirement at 0 dB

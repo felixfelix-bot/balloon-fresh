@@ -737,6 +737,15 @@ print("    3. 2-bay Yagi array               %.1f EUR/dB" % (marg2 / 3.0))
 print("    4. 4-bay Yagi array               %.1f EUR/dB" % (marg4 / 6.0))
 print("    5. 1.9 m mesh dish + tracker      %.0f-%.0f EUR/dB" % (2297.0 / (2.84 + 3.8), 2297.0 / 2.84))
 print("    6. 2.4 GHz ground PA            INF - buys ZERO needed dB (wrong direction)")
+print()
+print("  RATIOS against the bar (the numbers quoted in the doc and ADR):")
+f33_eur = 8.0 * 0.92 / 20.0
+print("    F33 in EUR/dB                     %.3f EUR/dB  (= %.2f USD/dB)" % (f33_eur, 8.0 / 20.0))
+print("    433 LNA   / F33                   %.0fx" % ((LNA433_EUR / lna_dbs) / f33_eur))
+print("    2-bay arr / F33                   %.0fx   (and %.2fx the 433 LNA)"
+      % ((marg2 / 3.0) / f33_eur, (marg2 / 3.0) / (LNA433_EUR / lna_dbs)))
+print("    4-bay arr / F33                   %.0fx   (and %.2fx the 433 LNA)"
+      % ((marg4 / 6.0) / f33_eur, (marg4 / 6.0) / (LNA433_EUR / lna_dbs)))
 
 # ==========================================================================
 banner("VERDICT")
