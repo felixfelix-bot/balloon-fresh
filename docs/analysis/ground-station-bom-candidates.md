@@ -539,4 +539,58 @@ one axis is handled another way.
 
 ---
 
-*(Section 6 continues below — coax.)*
+## 6. Low-loss coax
+
+**Band split matters.** The ground station has two RF runs: the **2.4 GHz uplink** (dish feed,
+where loss is worst and the run should be as short as possible — ideally put the PA at the
+dish and run only DC/LAN up the mast) and the **433 MHz downlink** (Yagi; loss is ~2.5× lower
+per metre, so a longer run is tolerable). All figures below are the **vendor's own attenuation
+table** (`Dämpfung dB/100 m`), converted to **dB/10 m**.
+
+Vendor: **Kabel-Kusch (DE)**, https://www.kabel-kusch.de/ — every row below was read from the
+product page's attenuation table.
+
+| Cable | Ø | Loss @433 MHz | Loss @2.4 GHz | Price/m | Product URL |
+|-------|---:|--------------:|--------------:|--------:|-------------|
+| **Ecoflex 15** | 14.6 mm | **0.61 dB/10 m** | **1.62 dB/10 m** | €13.60 | https://www.kabel-kusch.de/produkt/ecoflex-15/17 |
+| **Ecoflex 10** | 10.3 mm | 0.85 dB/10 m | 2.24 dB/10 m | €6.70 | https://www.kabel-kusch.de/produkt/ecoflex-10/14 |
+| **Airborne 10** (LMR-400 class) | 10.3 mm | 0.76 dB/10 m | 1.92 dB/10 m | €6.50 | https://www.kabel-kusch.de/produkt/airborne-10/2 |
+| **H2010 EVO** | 10.3 mm | 0.81 dB/10 m | 2.08 dB/10 m | €6.50 | https://www.kabel-kusch.de/produkt/h2010-evo/601 |
+| **Aircell 7** | 7.3 mm | 1.29 dB/10 m | 3.38 dB/10 m | €4.06 | https://www.kabel-kusch.de/produkt/aircell-7/4 |
+
+**Raw vendor figures (dB/100 m), as printed:**
+- Ecoflex 15: 432 MHz **6.10**, 2400 MHz **16.20**
+- Ecoflex 10: 432 MHz **8.46**, 2400 MHz **22.42**
+- Airborne 10: 430 MHz **7.60**, 2400 MHz **19.20**
+- H2010 EVO: 430 MHz **8.10**, 2400 MHz **20.80**
+- Aircell 7: 432 MHz **12.92**, 2400 MHz **33.82**
+
+- **Status:** ALL CONFIRMED (vendor attenuation tables + listed per-metre price).
+- **Note on the LMR-400 name:** *Airborne 10* is the Messi & Paoloni **LMR-400-class** 10.3 mm
+  cable with a confirmed attenuation table; it is the practical LMR-400 substitute in the EU.
+  LMR-400's own datasheet host (timesmicrowave.com) returned **HTTP 403** to scripted fetch →
+  LMR-400's own published figure is `TODO(unverified)` here; use Airborne 10's confirmed numbers.
+- **H100:** not stocked by kabel-kusch (the modern 10 mm equivalents H2010 EVO / Ecoflex 10 /
+  Airborne 10 cover the same niche) → `TODO(unverified)`.
+
+### Connectors (N-type, SMA) — Kabel-Kusch
+| Connector | For cable | Price | URL |
+|-----------|-----------|------:|-----|
+| N-Stecker crimp 7 mm (N 7 cr) | H2007 / Aircell 7 / LMR-300 | €6.00 | https://kabel-kusch.de/kategorie/stecker/n-stecker/22 |
+| N-Stecker crimp H155/HyperFlex 5 (N 155 cr) | 5.4 mm | €5.11 | https://kabel-kusch.de/kategorie/stecker/n-stecker/22 |
+| N-Buchse solder 7 mm (UG 22-7 TA) | 7 mm | €6.85 | https://kabel-kusch.de/kategorie/stecker/n-stecker/22 |
+| SMA-10 crimp | 10 mm cable | TODO(unverified) | https://kabel-kusch.de/produkt/sma-10/118 |
+
+- Connector categories: **N** https://kabel-kusch.de/kategorie/stecker/n-stecker/22 ·
+  **SMA** https://kabel-kusch.de/kategorie/stecker/sma-stecker/23
+- The N-Stecker 7 mm price (€6.00) and N-Buchse 7 mm (€6.85) and N 155 cr (€5.11) are CONFIRMED
+  from the category page; other sizes exist on the same page.
+
+> **Practical cable plan.** 2.4 GHz dish run: **Ecoflex 15** (1.62 dB/10 m) if the run is long,
+> else **Airborne 10 / Ecoflex 10** with the PA mounted at the feed. 433 MHz Yagi run: **Airborne 10
+> or Aircell 7** is ample (≤0.8–1.3 dB/10 m). Use **N-type** throughout for the antenna/rotator
+> ends (weatherproof) and **SMA** at the radio.
+
+---
+
+*(Section 7 — recommended shortlist — follows.)*
