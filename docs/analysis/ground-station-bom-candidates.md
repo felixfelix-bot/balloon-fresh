@@ -278,4 +278,104 @@ accuracy is over-specified anyway.
 
 ---
 
-*(Sections 3–6 continue below — 2.4 GHz feeds, 433 mesh dish, positioners, coax.)*
+## 3. 2.4 GHz feeds that match the dish's f/D
+
+**The matching rule.** A dish feed must illuminate the *rim angle* the reflector subtends at
+the focus. For a paraboloid the geometric full subtended angle is
+
+```
+θ_sub = 2 · atan( 1 / (4 · f/D) )
+```
+
+| f/D | θ_sub (full, geometric) | Typical feed pattern needed |
+|----:|------------------------:|-----------------------------|
+| 0.35 | 71.1° | very wide feed |
+| 0.40 | 64.0° | wide feed |
+| **0.45** | **58.1°** | **RF Hamdesign feeds are specified for this** |
+| 0.50 | 53.1° | medium feed |
+| 0.60 | 45.2° | narrow feed |
+| **0.66** | **41.5°** | **Gibertini OP100SE (needs a narrow feed)** |
+
+> **Reconcile with the Gibertini page.** The vendor quotes a **“required feed illumination:
+> 70°”** for the OP100SE (f/D 0.66). That is the feed's *rated illumination angle* (typically
+> the −10 dB figure, which is wider than the geometric rim angle). Both statements are
+> consistent in direction: the Gibertini needs a **narrower-pattern feed than a deep F/D 0.45
+> dish**. **Match the feed's stated f/D to the dish's f/D.** The clean, self-consistent pairing
+> is **RF Hamdesign mesh dish (F/D 0.45) + RF Hamdesign feed (F/D 0.45)**.
+
+**Scale check (why feeds at 433 MHz are hard):** at 2.4 GHz λ/2 ≈ 62.5 mm. The same 62.5 mm
+element is **0.09 λ at 433 MHz** — electrically tiny, with a broad, near-omni pattern that
+cannot form the ~58–70° pencil a dish needs. This is why the 433 band uses a Yagi (section 1),
+not the dish feed. See `docs/analysis/dualband-single-dish.md` §4.
+
+### C1 — RF Hamdesign HORN-13 S-band horn feed  ← primary 2.4 GHz feed
+- **Vendor:** RF Hamdesign B.V. (NL) · **Price:** quote (“Email for price quote” in the
+  Oct-2026 price list) · **P/N:** `HORN-13` (2.3–2.4 GHz single-pol), `HORN-13/DUAL`,
+  `HORN-13/CUSTOM` (tuneable 2.0–2.5 GHz, specify centre freq.)
+- **URL:** https://www.rfhamdesign.com/products/dish-feeds/single-band-dish-feed/index.php
+- **Spec:** horn, **N-female**, linear H or V (or dual H&V), return loss > 25 dB, usable BW
+  100 MHz (RL > 15 dB), **50 Ω**, **RF power 1000 W**, **F/D 0.45 (prime focus)**, waterproof,
+  **460 g**, supplied with a network-analyser plot · clamp CLX1
+- **TX at 2.4 GHz:** **yes — rated 1000 W**, explicitly a TX/RX dish feed.
+- **Status:** CONFIRMED (vendor page + Oct-2026 price list)
+
+### C2 — RF Hamdesign FPF RS-ONE ring feed (tuneable 0.9–3.4 GHz)
+- **Vendor:** RF Hamdesign (NL) · **Price:** **€185.00** (price list, incl. Dutch VAT)
+- **URL:** https://www.rfhamdesign.com/products/dish-feeds/single-band-dish-feed/index.php
+  (FPF RS-ONE also listed at https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf)
+- **Spec:** single-band ring dish feed, **tuneable to any centre frequency 900–3400 MHz**
+  (100 MHz usable BW), H or V polarisation, **N-female**, F/D 0.45, mount with CLX-01 clamp
+- **Use:** one part covers both 1296 MHz and 2320 MHz (order two, or the dual-band R2313 below).
+- **TX at 2.4 GHz:** TX/RX (ring feed, expected 1 kW class — exact power `TODO(unverified)`).
+- **Status:** CONFIRMED (price list)
+
+### C3 — RF Hamdesign LH-13XL helix feed (2.1–2.7 GHz, circular)
+- **Vendor:** RF Hamdesign (NL) · **Price:** **€220.00** (price list, incl. VAT)
+- **URL:** https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf
+- **Spec:** **LHCP or RHCP helix** dish feed, **2.1–2.7 GHz**, **N-connector**, F/D 0.45,
+  needs clamp CLX1. (Other frequencies available.)
+- **TX at 2.4 GHz:** TX/RX helix.
+- **Status:** CONFIRMED (price list)
+
+### C4 — RF Hamdesign LH-ISS helix feed (2.4–2.5 GHz, circular)
+- **Vendor:** RF Hamdesign (NL) · **Price:** **€220.00** (price list, incl. VAT)
+- **URL:** https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf
+- **Spec:** LHCP helix dish feed **2.4–2.5 GHz**, needs CLX1 clamp. Purpose-built for the
+  ISS HAM TV downlink band, i.e. squarely a 2.4 GHz dish feed.
+- **Status:** CONFIRMED (price list)
+
+### C5 — RF Hamdesign CIR-2320 dual-mode circular feed
+- **Vendor:** RF Hamdesign (NL) · **Price:** quote · **URL:** price list (above)
+- **Spec:** dual-mode **LHCP/RHCP** dish feed tuned at **2320 MHz**, RX & TX, N-female,
+  clamp CLX-06 (**€199.00**).
+- **Status:** CONFIRMED (price list)
+
+### C6 — Feed clamps / brackets
+- **CLX1** clamp (horn/helix/ring feed to a 3-leg dish support): **€46.00**
+- **CLX2**: **€47.00** · **CLX-06** (CIR-2320, CNC milled, 4-leg): **€199.00**
+- **URL:** https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf
+- **Status:** CONFIRMED
+
+### C7 — Wi-Fi-grid-style 2.4 GHz antennas (alternative to a repurposed Ku dish)
+If a repurposed Ku dish + feed is not wanted, an off-the-shelf 2.4 GHz grid/dish is an
+alternative with similar gain. These are **CONFIRMED model families but the exact 2026 prices
+were not verifiable here** (vendor pages are Cloudflare/JS-gated; Amazon listing pages
+bot-walled) → prices `TODO(unverified)`.
+- **TP-Link TL-ANT2424B** — 2.4 GHz, **24 dBi grid**, N-female, ±c. 10° beam. Manufacturer:
+  https://www.tp-link.com/ (product page is JS-gated to scripted fetch); search
+  “TL-ANT2424B” on a DE reseller to price. `TODO(unverified)` for price.
+- **TP-Link TL-ANT2415D** — 2.4 GHz, 15 dBi panel/reflector. `TODO(unverified)` price.
+- **Ubiquiti AirGrid M2 (AGM2)** — 2.4 GHz grid, 14/17/20 dBi variants, includes an integrated
+  feed. Ubiquiti store: https://store.ui.com/ · `TODO(unverified)` price.
+- **Ubiquiti PowerBeam M2-400** — 2.4 GHz, 18 dBi parabolic dish with integrated feed.
+  `TODO(unverified)` price.
+- **Cantenna (2.4 GHz):** no verified *purchasable* 2.4 GHz cantenna was found; it is a
+  well-documented DIY build (a waveguide can + probe). Marked as a **DIY route**, not a
+  BOM line → `TODO(unverified)` for any commercial product.
+- **L-com HG2424G** (24 dBi 2.4 GHz grid, N-female) — the L-com product page loads via JS
+  (spec table not in the HTML fetched), so gain/connector are confirmed by the product title
+  but **price/specs** → `TODO(unverified)`. https://www.l-com.com/
+
+---
+
+*(Sections 4–6 continue below — 433 mesh dish, positioners, coax.)*
