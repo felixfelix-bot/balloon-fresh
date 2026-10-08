@@ -133,3 +133,28 @@ Absolute-T0 semantics are kept for log correlation + GPS stitching.
 
 Phase 2 (`t_72586d0e`) wires derived-T0 GO mode into `e80_bench_ctl`; Phase 3
 (`t_f73fc5df`) adds TX waiter UX + `make range-cvm-test` preflight.
+
+### 4.1 Phase 3 progress — TX-side production listener
+
+`tools/cvm_tx_listener.py` (kanban `t_412706f8`) implements §2.4 + the §2.2
+watchdog against a real bus:
+
+- **broad subscribe** to kind-1059 (the `#p` filter is never pushed to the
+  relay) + **client-side npub allowlist** — the check keys off the *unwrapped
+  rumor author*, because the outer gift-wrap author is ephemeral; non-allowlisted
+  authors are dropped and events authored by SELF are ignored.
+- **payload validation**: `session_id` must match `%y%m%d%H%M` + 3 lowercase-hex
+  (10 digits + 3 hex), plus the required ADR fields
+  (`session_id`, `stop`, `t_ready_utc`, `preset_hash`, `seq`).
+- **freshness watchdog**: `MAX_CREATED_AT_SKEW` (60 s) strict-`>` rejection of
+  `created_at` skew, and `STALE_ABORT` (30 s) abort — from the last good ARMED,
+  or from start-up when no ARMED ever arrives — logging a clear abort reason.
+  Both thresholds are re-exported from `cvm_sync` so they cannot drift.
+- **relay failover set** identical to §2.3; dead `relay.contextvm.org` filtered
+  even if supplied.
+- **keys via env only** (`CVM_TX_NSEC`/`CVM_TX_HEX` + `CVM_SERVER_NSEC`/`_HEX`);
+  the CLI exposes no key-bearing option and client==server aborts startup.
+
+The RX counterpart (`tools/cvm_armed_publisher.py`, kanban `t_0049ed58`) lands
+separately; until both are merged a field GO TX still has the `--armed-file`
+fallback.
