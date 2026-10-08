@@ -85,11 +85,19 @@ ADR update + a consultant verdict.
   "0.97× — nominally just *under* the line, no *usable* margin (the 3 % nominal margin is
   smaller than the un-modelled frame/rib area)" in the doc, the ADR and the figure call-out;
   the rating-line label was moved to the top-left, framed; the call-out was moved clear.
-* **Round 3 (re-consult on the second revision):** the retry loop was still running against
-  the capped lane at finalisation ⇒ **`TODO(unverified)`, no verdict claimed, none invented.**
-* **Neither round disputed the physics or the recommendation** — both affirmed panel (a) and
-  the solid-vs-mesh conclusion. What they disputed was that the figure and the prose said
-  precisely what the numbers say. Recorded as-is, not rounded up to an approval.
+* **Round 3 (re-consult on the second revision): CONFIRM** — served on attempt 1, **`gpt-6-astra`**,
+  status 200. It verified all six diameter pairs (1.24 m 0.26×/0.07× … 3.49 m 5.78×/1.53×),
+  confirmed panel (a) (27.9 dBi > 20 dBi; 7.9 dBi < 12 dBi; 7.38 m → 0.74 m ≈ tenfold for 20 dB),
+  and reported **"no substantive contradiction between the figure and the precise claim"** —
+  with one cosmetic note (the gray rating-line label sat under the legend).
+* **Post-CONFIRM change:** only that one label was moved to the lower right (the change the
+  reviewer itself asked for; no plotted value changed). **Round 4 re-reviews that artifact** ⇒
+  see below.
+* **Net:** the review cycle is **REFUTE → REFUTE → CONFIRM** (three rounds served, all
+  `gpt-6-astra`). **Neither rejecting round disputed the physics, the trade arithmetic or the
+  recommendation** — both affirmed panel (a) and the solid-vs-mesh conclusion. What they
+  disputed, correctly, was that the figure and the prose said precisely what the numbers say.
+  Recorded as-is, **not** rounded up to a clean approval.
 
 **Honesty note:** `visual_consult.py` prints `visual_review: APPROVED` with
 `--emit-evidence` because `APPROVED` is the CLI's `--verdict` **default** — that token is

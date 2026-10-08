@@ -35,9 +35,17 @@ real parts, deliver a cited doc + ADR + consultant verdict.
       BELOW the 1.00x line, so "AT the rating" overstated it) + 2 label collisions. Accepted
       and fixed in the doc (4.3/REC-3), ADR-067 Decision 4, and the figure (call-out
       re-worded + moved; rating-line label moved to the framed top-left).
-- [~] M5c consultant round 3 (second revision) — retry loop `/tmp/consult_retry3.sh`, log
-      `/tmp/consult_retry3.log`; TODO(unverified) if not served. No verdict claimed.
-      Neither served round disputed the physics or the recommendation.
+- [x] M5c consultant round 3 (second revision): **CONFIRM** (attempt 1, gpt-6-astra, status
+      200). It verified all six diameter pairs, panel (a) (27.9 > 20 dBi; 7.9 < 12 dBi;
+      7.38 m -> 0.74 m tenfold) and reported "no substantive contradiction". One cosmetic
+      note (gray rating-line label under the legend) accepted and fixed (label moved to the
+      lower right; no plotted value changed).
+- [~] M5d consultant round 4 (final artifact, post-fix) — retry loop
+      `/tmp/consult_retry4.sh`, log `/tmp/consult_retry4.log`; TODO(unverified) if not served.
+      Net cycle so far: REFUTE -> REFUTE -> CONFIRM, all gpt-6-astra.
+- Review-cycle note: NO served round disputed the physics, the trade arithmetic or the
+  recommendation; both rejecting rounds disputed that the figure/prose said precisely what the
+  numbers say, and both findings were fixed and are verifiable.
 - [x] M6 ADR-067 written; ADR-066 brought onto this branch and marked
       "Superseded by ADR-067"; `scripts/gen_adr_index.py` regenerated INDEX.md
       (066 = Superseded by ADR-067, 067 = Proposed, next free 068).

@@ -63,12 +63,35 @@ ACTION TAKEN (accepted as correct; a wording/labelling precision issue, not a ph
   * figure: the "SPID BIG-RAS holding torque" label moved to the top-left, framed, so it no
     longer crowds the 1.90 m solid-value label.
 
-ROUND 3 (re-consult on the second revision): TODO(unverified) - the retry loop
-(/tmp/consult_retry3.sh) was still running against the capped lane when this was finalised.
-No verdict is claimed for round 3 and none is invented.
+ROUND 3 (re-consult on the second revision) -> CONFIRM ------------------------------------
+Run at: 2026-10-08T12:07:40+02:00 (attempt 1)
+Served model (read back from the response body): gpt-6-astra   (status 200, requested == served)
 
-SUMMARY: two rounds served, both by gpt-6-astra, both REFUTE, with specific and
-non-overlapping findings. Every finding was accepted as correct and fixed. Neither round
-disputed the physics or the recommendation (both affirmed panel (a) and the solid-vs-mesh
-conclusion); what they disputed was that the figure and prose said precisely what the numbers
-say.
+--- consultant answer, verbatim ---
+1. **Panel (b):** Yes. The six diameter pairs are: 1.24 m (**0.26× / 0.07×**), 1.90 m (**0.93× / 0.25×**), 2.40 m (**1.88× / 0.50×**), 2.62 m (**2.45× / 0.65×**), 3.00 m (**3.67× / 0.97×**), and 3.49 m (**5.78× / 1.53×**) for solid/mesh. Thus the stated transitions are supported. The 3.00 m mesh bar is orange, remains visibly below the dashed line, and is labelled consistently as **0.97×**.
+
+2. **Panel (a):** Yes. The +13 dBm / 2.6 Mbps bar is **27.9 dBi**, above 20 dBi, while the +33 dBm / 2.6 Mbps bar is **7.9 dBi**, below 12 dBi. The implied diameters, **7.38 m** and **0.74 m**, show approximately the required tenfold change for a 20 dB power difference.
+
+3. The key value labels are readable: the **1.90 m solid 0.93×** label and **2.62 m solid 2.45×** label do not overlap materially, and the orange call-out is legible and not clipped. However, the gray **rating-line label is partly obscured by/under the legend**, making it less cleanly readable than it should be. The other annotations appear usable.
+
+4. There is no substantive contradiction between the figure and the precise claim. The only remaining issue is the presentation overlap of the rating-line label; it does not alter the plotted values or the stated engineering conclusion.
+
+independent VERDICT: CONFIRM
+---------------------------------------------------------------------------------------------
+
+ACTION TAKEN: the single remaining note was accepted and fixed -- the gray rating-line label
+was moved to the lower right of panel (b), clear of the legend. That is the ONLY change made
+after the CONFIRM (the change the reviewer itself asked for; no plotted value, axis or claimed
+value changed).
+
+ROUND 4 (re-consult on the final artifact): see the block appended below.
+
+SUMMARY OF THE REVIEW CYCLE: three rounds served, all by gpt-6-astra -- REFUTE, REFUTE,
+CONFIRM. Every finding was accepted as correct and fixed. Neither rejecting round disputed the
+physics, the trade arithmetic or the recommendation (both affirmed panel (a) and the
+solid-vs-mesh conclusion); what they disputed, correctly, was that the figure and the prose
+said precisely what the numbers say.
+
+NOTE ON THE CLI TOKEN: `visual_review: APPROVED` in the section above is the default value of
+the CLI's `--verdict` argument, NOT the model's opinion. The model's own verdicts are the
+final lines of the three answer bodies above.
