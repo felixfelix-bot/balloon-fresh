@@ -463,4 +463,80 @@ Because the 433 MHz hole limit is 69 mm, ordinary hardware-store mesh is a valid
 
 ---
 
-*(Sections 5–6 continue below — positioners, coax.)*
+## 5. AZ/EL positioners / rotators with wind-load ratings
+
+**How rotators are rated.** Commercial rotators are sold with a **maximum wind-load antenna
+area (m²)** — the projected area of antenna they can hold in a survival wind. Yaesu quotes it
+in **sq ft** (and labels "inside tower" vs "mast mounted"); SPID/SPX quote a load/area in their
+datasheets. Because the ground station needs **both azimuth and elevation**, only the AZ+EL
+units are direct candidates — the pure-AZ units are listed because they are the cheap path if
+one axis is handled another way.
+
+**Reference wind load for the dish (from section B1):** a 1.2 m dish ≈ **1.13 m² geometric**
+(π·0.6²) and ~1.4 m² effective with a drag factor; the Gibertini OP100SE is rated 91 kg @ 120 km/h
+≈ 320 N at 20 m/s. So **any rotator must be able to hold ≈1.1–1.4 m² minimum.**
+
+### Yaesu family (prices: Funktechnik Bielefeld DE; wind ratings: DX Engineering US)
+
+| Model | Axes | Wind (tower) | Wind (mast) | Price | URL |
+|-------|------|-------------:|------------:|------:|-----|
+| **G-5500DC** | AZ+EL | **1.00 m²** | **0.50 m²** | €949.00 | price: https://www.funktechnik-bielefeld.de/yaesu-g-5500dc-satellitenrotor · wind: https://www.dxengineering.com/parts/ysu-g-5500dc |
+| G-450CDC | AZ+EL | 1.00 m² (G-450A) | 0.50 m² | €359.00 | price: https://www.funktechnik-bielefeld.de/yaesu-g-450cdc-antennenrotor-mit-steuergeraet · wind: https://www.dxengineering.com/parts/ysu-g-450a |
+| G-1000DXC | AZ | 2.20 m² (G-1000DXA) | 0.74 m² | €529.00 | price: https://www.funktechnik-bielefeld.de/yaesu-g-1000dxc-antennenrotor-mit-stecker/ohne-kabel · wind: https://www.dxengineering.com/parts/ysu-g-1000dxa |
+| G-2800DXC | AZ | 3.00 m² (G-2800DXA) | 1.00 m² | €1,049.00 | price: https://www.funktechnik-bielefeld.de/yaesu-g-2800dxc-antennenrotor-mit-stecker/ohne-kabel · wind: https://www.dxengineering.com/parts/ysu-g-2800dxa |
+| G-800DXA | AZ | 2.00 m² | 0.74 m² | TODO | wind: https://www.dxengineering.com/parts/ysu-g-800dxa |
+
+- **G-5500DC (E1)** is the classic affordable **AZ+EL** satellite rotator (funktechnik text: two
+  rotors G-400 + G-550 stacked with a supplied U-bracket; includes controller).
+  **IMPORTANT:** its **mast-mounted** wind rating is only **0.50 m²** — below a 1.2 m dish.
+  A 1.2 m dish would have to be **tower-mounted** (rating 1.00 m², still marginal) or the
+  mount stiffened. **Verdict: G-5500DC is fine for the 0.75–0.85 m dishes (B2/B3) and for a
+  small mesh dish, NOT for a 1.0–1.2 m dish on a mast.**
+- **E2 G-450CDC** — same wind class, cheaper; light AZ+EL.
+- **E3/E4** are **AZ-only**; they need a separate elevation axis.
+- The DXE pages state the wind **area** but **not the reference wind speed** → `TODO(unverified)`
+  for the survival wind speed (Yaesu's own manual quotes a reference; not seen on these pages).
+- **Status:** prices CONFIRMED (funktechnik), wind ratings CONFIRMED (DXE), reference wind speed TODO.
+
+### SPID / SPX family (RF Hamdesign NL — prices from Oct-2026 price list, incl. Dutch VAT)
+
+| Model | Axes | Rating / torque | Price | URL |
+|-------|------|-----------------|------:|-----|
+| SPID RAU | AZ | light AZ | €719.00 | https://www.rfhamdesign.com/downloads/rf-hamdesign-pricelist.pdf |
+| SPID RAK | AZ | AZ | €749.00 | price list |
+| SPID BIG-RAK | AZ | heavy AZ | €1,203.95 | price list |
+| **SPID RAS** | **AZ+EL** | AZ&EL, standard | **€1,260.82** | price list + https://www.rfhamdesign.com/products/spid-antenna--rotator/ras-az--el-rotor/index.php |
+| **SPID BIG-RAS** | **AZ+EL** | **“dishes up to 5 m”**, 22 kg, double worm drive | **€1,775.00** | https://www.rfhamdesign.com/products/spid-antenna--rotator/big-ras-az--el-rotor/index.php |
+| SPID RAEL | EL only | elevation axis | €725.00 | price list |
+| **SPX-01/MD-03** | **AZ+EL** | light duty, 0.5°/step | **€1,132.00** | https://www.rfhamdesign.com/products/spx-antenna-rotators/spx-01-az--el/index.php |
+| SPX-02/MD-03 | AZ+EL | medium duty | €1,249.00 | https://www.rfhamdesign.com/products/spx-antenna-rotators/spx-02-az--el/index.php |
+| SPX-03/MD-03 | AZ+EL | heavy duty | €1,629.00 | price list |
+| SPX-362 | AZ | medium AZ | €757.00 | price list |
+| **SPX-06/AZ&EL/ABS** | **AZ+EL** | **716 Nm**, IP65, absolute encoders, 0.1° | **€5,487.35** | price list |
+| SPX-05/XY/ABS | X/Y | 716 Nm, IP65 | €5,517.60 | price list |
+
+- **SPID BIG-RAS (E6)** — vendor states it **“will handle big systems, array's, dishes up to
+  5 Meter”**, weight 22 kg, azimuth 360°±180°, elevation 180°±20°, 0.5° resolution, magnetic
+  reed 0.5°/pulse, **double metal worm gear drive for holding position in the wind**. Comes
+  with Rot2Prog/MD-03 controller, USB track interface, emulates Yaesu GS-232 / Hy-Gain / Orion
+  protocols. **This is the confirmed heavy AZ+EL option for a 1.0–1.2 m dish.**
+- **SPX-01/02 (E7/E8)** are light/medium AZ+EL with 0.5°/step; SPX-06 (E9) is a **slew drive**
+  with a stated **716 Nm** holding torque and IP65 — the robust option.
+- **Controller/power:** all SPID/SPX include a controller; standalone MD-03 controller €526.35,
+  PS-03 PSU €482.00, PSU-1228 €129.00, Ethernet module €108.00 (price list).
+- **Wind-load area (m²) for SPID/SPX:** not printed on the product pages; the manufacturer
+  datasheets (`/downloads/spid-bigras-specifications.pdf` etc.) returned **HTTP 466 Access
+  Forbidden** to scripted fetch → **`TODO(unverified)`**. The vendor's *load statement*
+  (“dishes up to 5 m” for BIG-RAS) is the confirmed substitute.
+- **Status:** prices CONFIRMED; BIG-RAS load statement CONFIRMED; SPID/SPX wind area TODO.
+
+### Recommendation logic (see §7 shortlist)
+- **1.2 m dish + AZ/EL:** **SPID BIG-RAS** (€1,775) or **SPX-06 slew drive** (€5,487). The
+  G-5500DC (€949) is **not** rated for it on a mast.
+- **0.75–0.85 m dish + AZ/EL:** **Yaesu G-5500DC** (€949) on a tower, or **SPX-01** (€1,132).
+- **Cheap AZ-only + separate elevation:** G-1000DXC (€529, 2.2 m² tower) is the affordable
+  AZ workhorse; elevation would need a linear actuator or SPID RAEL (€725).
+
+---
+
+*(Section 6 continues below — coax.)*
