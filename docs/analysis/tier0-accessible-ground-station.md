@@ -61,13 +61,19 @@ session (Brave 429, DuckDuckGo 202, Mojeek captcha, Ecosia 403) — so the *new*
 |---|---|---|---|
 | **Tier 0a — no pointing at all** | **two omnis** on a fixed mast (2.4 GHz uplink + 433 LoRa downlink). No motors, no printing, no tracker. | **≈ €90–245** | Low-power LR2021 board: 433 **LoRa** downlink (+13.7 dB @650 km) and 2.4 GHz uplink (+5.7 dB @650 km). **Bit-rate limited.** |
 | **Tier 0b — hand-aimed** | one **13.1 dBi 433 Yagi** (€69) + 2.4 GHz omni, on a **manual pan-tilt/tripod**. Still no motors. | **≈ €145–305** | Adds **F33 FLRC 2.6 Mbps to 650 km** (+5.2 dB) with a human pointing the Yagi. |
-| **Tier A — re-costed** | same as before **minus the 2.4 GHz dish + feed** (€314.90), **plus** a cheap 8 dBi 2.4 GHz panel. | **≈ €545–685** (from **≈ €927–951** as line-itemed) | Everything Tier 0b does, **unattended**, + 433 margin (+6.9 dB @650 km on F33/2.6 Mbps). |
+| **Tier A — re-costed** | same as before **minus the 2.4 GHz dish + feed** (€325.90), **plus** a cheap 8 dBi 2.4 GHz panel. | **≈ €545–685** (from **≈ €927–951** as line-itemed) | Everything Tier 0b does, **unattended**, + 433 margin (+6.9 dB @650 km on F33/2.6 Mbps). |
 
-**The headline:** the 2.4 GHz dish was the single most expensive and most mechanically
-consequential item in Tier A, and the EIRP cap makes it **inert above 8 dBi**. Removing it
-**costs ~€30 (an 8 dBi panel)** and **saves ~€315** — and, more importantly, it removes the
-**only element in the whole station that needed a tight beam**, which is what lets **Tier 0
-exist at all** (Table 4).
+**The headline claim, stated precisely** (adopting the round-4 consultant's wording):
+
+> *At the 20 dBm EIRP cap, modelled 2.4 GHz **uplink** margin saturates at 8 dBi ground gain; this
+> supports removal of the dish under the stated system assumptions.*
+
+The dish was the single most expensive and most mechanically consequential item in Tier A.
+Removing it **costs €15–60 (an 8 dBi panel)** and **saves €266–311**. More importantly, it removes
+the **only element that needed a tight beam**, which **supports — but does not by itself prove —**
+a no-tracker Tier 0. The system-level case is derived in §4–§5 and is **conditional** on balloon
+attitude, 433 pattern, polarisation loss, acquisition and coverage; the link-margin plateau alone
+does not establish it.
 
 ---
 
@@ -187,10 +193,12 @@ regulation, so it is the correct model, not an artefact. But the claim must be s
 
 ## 2. Tier 0 — the ultra-low-cost tier BELOW Tier A
 
-**Definition.** Tier 0 exists **only because of the EIRP-cap finding**. Once the 2.4 GHz side
+**Definition.** Tier 0 is proposed **because of the EIRP-cap finding**. Once the 2.4 GHz side
 needs no gain, the 433 LoRa downlink also needs no gain (required −13.7 dBi @650 km), and **no
 element left in the station has a beam tighter than ~40°** (Table 4) — so the tracker, the worm
-reducers and the encoders all stop being load-bearing.
+reducers and the encoders all stop being load-bearing. **This is a proposal conditional on the
+system-level checks in §5 and §6** (attitude, pattern, polarisation, acquisition, coverage); it is
+not a link-budget-only proof.
 
 ### 2.1 Tier 0a — "no pointing at all"
 
@@ -244,7 +252,7 @@ This is the same conclusion the `flrc-max` document reaches from the other direc
 ## 3. Re-costed Tier A (no 2.4 GHz dish)
 
 The original Tier A' line items carried a **0.75 m Ku dish (€94.90)** + a **2.4 GHz feed
-(€231 incl. clamp)** = **€314.90** of hardware whose entire function is superseded by an
+(€231 incl. clamp)** = **€325.90** of hardware whose entire function is superseded by an
 **8 dBi panel (~€15–60)**. Re-costed, line by line:
 
 | line | original € | re-costed € | change | source |
@@ -266,8 +274,9 @@ The original Tier A' line items carried a **0.75 m Ku dish (€94.90)** + a **2.
 
 **The saving, stated precisely.** Like-for-like (low-to-low, high-to-high) the re-cost saves
 **€266–311**; allowing all endpoint combinations the figure spans **€242–335**. The saving *is* the
-**dish + feed** (€314.90 hardware) minus the **panel** that replaces it (€15–60) — arithmetic that
-is exact, not modelled. (Round-1 consultant, §8.1, correctly flagged that "€265–315" was being
+**dish + feed** (€325.90 hardware) minus the **panel** that replaces it (€15–60) = **€265.90–€310.90**
+(€266–311) — arithmetic that is exact, not modelled. (The old text said "€314.90"; that used the
+€220 LH-13XL feed instead of the €185 RS-ONE + €46 CLX1 actually quoted. Corrected to €325.90.) (Round-1 consultant, §8.1, correctly flagged that "€265–315" was being
 quoted as if it were a single exact interval; it is now given as a method-labelled range.)
 
 **Reconciliation with the previously-stated "~€700".** That figure was quoted for **antenna +
@@ -421,10 +430,36 @@ Its residual points and the actions taken:
 | "no uplink benefit above 8 dBi is valid only if 20 dBm is total EIRP and +12 dBm is the applicable PA limit" | **Accepted.** Added as an explicit conditions bullet (§1.3). |
 | Panel C is parts cost, not installed/lifecycle | **Accepted.** Stated in §4's preamble and the figure's Panel-C title. |
 
-### 8.3 Round 3 — figure after the round-2 fixes
+### 8.3 Rounds 3–5 (figure after each round's fixes)
 
-*(recorded after the round-3 consultation returns; the serve line and the verdict go here verbatim
-with the model named, and any refutation is kept as a result rather than smoothed over.)*
+**Round 3 — "Minor revision still required"** (`gpt-6-astra`, 200). Verbatim final line:
+
+> **VERDICT: Minor revision still required—principally to moderate panel B's "enough" claim and
+> clarify panel C's endpoint terminology; otherwise the figure is substantially clear, internally
+> consistent, and appropriately scoped.**
+
+Actions: panel-B title changed from *"F33 makes the plotted Yagi enough"* to *"Modeled 433 MHz
+margins at 650 km (plotted antennas)"*, defining F33 and low-power in the subtitle; panel-C endpoint
+terminology spelled out; panel-A labels moved above the axes.
+
+**Round 4 — "NOT YET ACCEPTABLE"** (`gpt-6-astra`, 200). Verbatim final line:
+
+> **VERDICT: NOT YET ACCEPTABLE.** The technical core is substantially improved, but the cost
+> figures are currently ambiguous, the Tier 0/no-tracker conclusion remains overstated relative to
+> the plotted evidence, and several important labels and the footnote are still clipped or
+> unreadable.
+
+This round **found a real defect and a real over-claim**, and both were fixed:
+
+| Round-4 finding | Action |
+|---|---|
+| "the savings numbers are inconsistent or at least ambiguous" (€266–311 vs €242–335) | **Accepted, and it exposed an arithmetic slip.** The dish+feed is **€325.90** (€94.90 + €231.00), not the €314.90 the first draft said (that used the €220 LH-13XL feed instead of the quoted €185 RS-ONE + €46 CLX1). Corrected throughout; the saving is **€325.90 − €15…60 = €266–311** exactly. |
+| "equivalent needs qualification … uplink-margin-equivalent under the EIRP/PA model" | **Accepted** (already scoped in §1.4; reinforced in the headline, which now uses the consultant's own suggested sentence). |
+| "'the dish can be removed' / Tier-0-no-tracker is a system-level claim" | **Accepted.** The headline now says the plateau **supports but does not prove** Tier 0; §2's definition says Tier 0 is **proposed and conditional** on §5/§6; the figure suptitle and footnote say so. |
+| clipped/overlapping labels + footnote | **Accepted.** Figure rebuilt: taller canvas, reserved top annotation band, two-line wrapped footnote with its own bottom margin, shortened top labels. |
+
+**Round 5 — figure after the round-4 rebuild.** *(serve line + verdict recorded verbatim below once
+round 5 returns; the cycle is reported as it happened, not rounded up to a single approval.)*
 
 ---
 

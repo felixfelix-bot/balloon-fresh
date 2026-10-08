@@ -54,7 +54,7 @@ removed.
 
 **2. Remove the 2.4 GHz dish + feed from Tier A; replace them with an ~8 dBi panel.**
 
-The 0.75 m Ku dish (**€94.90**) + 2.4 GHz feed (**€231.00**) = **€314.90** of hardware is
+The 0.75 m Ku dish (**€94.90**) + 2.4 GHz feed (**€231.00**) = **€325.90** of hardware is
 superseded by an **8 dBi panel (~€15–60)**, link-equivalent and roughly 10× less wind load.
 Re-costed Tier A: **≈ €616–685** (DIY printed tracker P1) or **≈ €546–615** (bought **Yaesu
 G-450CDC, €359**, now more than sufficient with no dish) — down from **≈ €927–951** as line-itemed.
@@ -105,7 +105,7 @@ F33)** station by design, not a compromise discovered late.
 ## Alternatives rejected
 
 - **Keep the 0.6 m dish for "margin".** Rejected: the margin is capped (Table 1), so the extra
-  aperture buys **zero** dB and costs 4× wind area, 1.5° pointing and ~€315.
+  aperture buys **zero** dB and costs 4× wind area, 1.5° pointing and ~€326.
 - **A bigger 2.4 GHz dish for a future high-rate uplink.** Rejected for now: the committed uplink
   is LoRa-class. If a 2.4 GHz FLRC uplink were ever required, re-open this ADR — it would change
   the answer, and that is stated rather than assumed away.
