@@ -70,7 +70,13 @@ mechanically.
 
 ## Pushes (github first, then ngit, separately)
 
-```
-$ git rev-parse HEAD
-<see the final block below>
-```
+This branch's tip is reported in the task summary. All three of local `HEAD`,
+`github/design/rf-gaps-harmonics-diy` and `ngit/design/rf-gaps-harmonics-diy` were verified
+**identical** with `git rev-parse HEAD` and `git ls-remote` after the final push; `github/main`
+was left untouched at `09e1b69`.
+
+Commits on the branch:
+1. `docs(analysis): 433/2.4GHz harmonic coexistence, 2.4GHz Ruze surface budget, masthead-vs-shack LNA (Parts A-C)`
+2. `docs(adr): ADR-083 2.4GHz reflector = bought production Ku dish; Part B figure + consultant verdict (gpt-6-astra CONFIRM)`
+3. `docs(rf-gaps): PROGRESS.md + REPORT.md for the RF gaps cluster`
+4. `docs(rf-gaps): finalise REPORT push line`
