@@ -50,3 +50,11 @@ Cost + gain-per-euro only (regulatory explicitly out of scope per operator).
   tree (that tree is on branch `feat/tracker-tx-tempcomp`); read from the `bf-amps` worktree.
 - curl needs a browser UA: digikey/mouser/minicircuits 403 on bare curl; wimo/rfhamdesign OK.
 - No matplotlib in system python; figures built as SVG then rasterised with `cairosvg`.
+
+## Push evidence (final)
+
+Branch `design/amplifier-substitution`:
+- LOCAL  : 02fb4a154d557969dfbde417817e5f44e84f8407
+- GITHUB : 02fb4a154d557969dfbde417817e5f44e84f8407
+- NGIT   : 02fb4a154d557969dfbde417817e5f44e84f8407
+(pushed github first, then ngit separately; verified with `git ls-remote` on BOTH.)

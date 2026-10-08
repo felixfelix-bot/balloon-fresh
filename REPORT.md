@@ -77,5 +77,17 @@ analysis §7.
 
 ## Push evidence
 
-Pushed **github first, then ngit separately** (never `--atomic`, never main). SHAs in the final
-message / `PROGRESS.md`.
+Pushed **github first, then ngit separately** (never `--atomic`, never `main`/`master`).
+
+Branch: `design/amplifier-substitution`
+
+| Where | SHA |
+|---|---|
+| LOCAL | `02fb4a154d557969dfbde417817e5f44e84f8407` |
+| GITHUB | `02fb4a154d557969dfbde417817e5f44e84f8407` |
+| NGIT   | `02fb4a154d557969dfbde417817e5f44e84f8407` |
+
+Verified with `git ls-remote github refs/heads/design/amplifier-substitution` and
+`git ls-remote ngit refs/heads/design/amplifier-substitution`. Commits: `478138f` (analysis + model)
+→ `02fb4a1` (figure + consult + ADR-068 + report). Milestone-1 push was verified green on both
+remotes before the second commit (same method).
