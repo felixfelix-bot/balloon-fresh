@@ -51,6 +51,14 @@ from "a small boresighted 433 antenna on the Ku positioner". So:
 * **LoRa downlink → CONFIRMED.** Ku dish (2.4 GHz) + boresighted 433 Yagi, one positioner.
 * **FLRC downlink at 650 km / low power → REFUTED.** The 433 side must become a dish.
 
+> **Consultant qualification (do not over-read "~20 dBi dish").** See §9: the independent
+> visual consultant (OpenAI `gpt-6-astra`) confirmed the split but correctly flagged that a
+> **nominal 20 dBi dish is NOT sufficient for every FLRC case** — the worst row
+> (FLRC 2.6 Mbps @ +13 dBm) requires **+27.9 dBi**, which even a 3.0 m dish (20.5 dBi) does
+> not provide. So the honest statement is *"FLRC at long range needs a **class** of antenna
+> from a large dish to something larger still; a 20 dBi dish only covers the middle of the
+> FLRC range."* That strengthens, not weakens, the conclusion: FLRC is a close-range mode.
+
 FLRC is a **short-range, high-rate** mode in this project's own budget
 (`docs/link-budget.md`: "FLRC @ 1.3 Mbps … → Distanz ~25–30 km … perfekt fuer direkten
 Ueberflug"). If that stays true, the refutation never binds and the architecture stands.
@@ -473,7 +481,59 @@ long-range / low-power case, where the 433 antenna must become a dish.
 
 ---
 
-## 8. Reproduce
+## 9. Independent consultation (visual consultant)
+
+**Consultant:** `scripts/fleet/visual_consult.py` (fleet script), pinned model
+**`gpt-6-astra`** (OpenAI Astra 6, `astra-consultant` profile — per
+`visual-consultant` skill). Artifact consulted:
+`docs/analysis/assets/lowpower-link-verdict.png` (rendered from
+`docs/analysis/render_lowpower_link_figure.py`).
+
+**Engagement status:** engaged. The first attempt returned HTTP 503 ("all candidate lanes
+busy or capped") — the same failure class that killed the two prior attempts at this task —
+but retries succeeded and the lane served **`gpt-6-astra`**. Verdict recorded verbatim below.
+
+**Served model (read back from the response):** `gpt-6-astra`
+
+**Verdict line (verbatim):**
+```
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+```
+
+**Consultant answer (verbatim, saved to `docs/analysis/assets/consult-verdict.txt`):**
+
+> 1. **Yes, broadly.** The LoRa bars are all left of the 0 dBi line, so even an approximately
+> isotropic 433 MHz antenna closes the link with margin. The FLRC bars require positive gain:
+> they are at or above the 12 dBi Yagi reference and extend beyond the 20 dBi dish line,
+> especially at 13 dBm TX power and higher data rates. Thus the figure supports the
+> LoRa/FLRC split.
+> *Qualification:* a nominal 20 dBi dish is not sufficient for every listed FLRC case—the
+> required gain reaches about 27.9 dBi.
+>
+> 2. **Yes.** The 433 MHz Yagi is sketched beside/below the dish aperture, not across the
+> Ku/2.4 GHz dish beam. The drawing explicitly labels it "beside the aperture."
+>
+> 3. **No obvious visual contradiction.** The bars, reference lines, antenna sketch, and
+> bottom verdict all consistently show LoRa as workable with a Yagi or lower-gain antenna,
+> while demanding FLRC cases require substantially more than a Yagi and may require a
+> dish-class antenna. The only qualification visible in the figure is that a 20 dBi dish is
+> not enough for all low-power/high-rate FLRC combinations.
+>
+> independent VERDICT: **CONFIRM**
+
+**How the consultation changed this document:** the consultant's qualification (item 1) was
+**accepted as correct** and folded into §0 and §6 — "~20 dBi dish" was shorthand that
+understated the worst FLRC case (+27.9 dBi). The recommendation is unchanged; the wording is
+now honest about the size.
+
+**Note:** a visual consult is not a cross-family *code* review — it does not satisfy the
+D-128/ADR-010 review gate (see `visual-consultant` skill, pitfall 10).
+
+---
+
+## 10. Reproduce
+
 
 ```bash
 python3 docs/analysis/ground_station_lowpower_link_model.py
