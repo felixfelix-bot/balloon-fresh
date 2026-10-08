@@ -764,13 +764,65 @@ model's opinion.** Only the model's own `VERDICT:` line, read from the end of th
 body, counts. Both lines are quoted below with an explicit statement of which is which,
 so this record is not repeatable as a false approval.
 
-**Engagement status / served model / verdict / verbatim answer:** _(recorded in §9.1 below
-after the consult completes; if the lane cannot be reached, the failure is recorded verbatim
-and no verdict is claimed.)_
+**Engagement status / served model / verdict / verbatim answer:** recorded in §9.1 below.
+The lane **was reachable** and served **`gpt-6-astra`** (read back from the response `served`
+key — the skill's required read-back; note that in the CLI's `--json` output the served id is
+**`served`**, while `model` merely echoes the request). The consult ran **three rounds** and
+**round 2 returned `VERDICT: REFUTE`** — a finding about the *claim's readability in the
+figure*, not about the physics. The whole cycle is recorded rather than rounded up to one
+approval.
 
-### 9.1 Consult record
+### 9.1 Consult record (verbatim, per round)
 
-_(pending)_
+#### Round 1 — layout-only probe on the FIRST render
+
+* **Ask:** *"Name any overlapping, clipped or unreadable label and give the panel."*
+* **`served`:** **`gpt-6-astra`** (`status` 200)
+* **Model's verbatim answer:**
+  > Panel C: the left-side bar labels are clipped by the image edge and partially unreadable
+  > (e.g., "433 masthead LNA" and the dish labels).
+  >
+  > VERDICT: CONFIRM
+* **Action taken:** widened the figure (16.5→18.5 in), raised the left margin 0.075→0.155,
+  raised `wspace` to 0.36 and shortened the panel-C row labels. **A real defect, fixed.**
+
+#### Round 2 — full adversarial consult (claims + layout) on the SECOND render
+
+* **`served`:** **`gpt-6-astra`** (`status` 200)
+* **Model's verdict line, verbatim:**
+  > VERDICT: REFUTE
+* **The model's substantive finding, verbatim (abridged to the load-bearing part):**
+  > *However, "needed dB" is not applied consistently with the plotted evidence in panel A.
+  > The panel-A stacks show: No LNA: 200+133+2246 = 2579 K. With LNA: approximately 252 K,
+  > not the 274 K stated in the header. Cold-sky dish: 92 K. Therefore the claimed LNA
+  > improvement of +9.73 dB is not supported by the bars as drawn. … Thus panel A's headline
+  > claim must be REFUTED as drawn. … Panel D: the "20 dBm AGC/LNA compression onset"
+  > annotation overlaps the plotted curve region, especially the green curve, reducing
+  > clarity.*
+* **Adjudication — the model is RIGHT about the ARTIFACT and WRONG about the PHYSICS, and
+  the difference is recorded rather than argued away:**
+  * **Its arithmetic is wrong because the artifact did not let it be right.** It read the
+    small stacked segments **off the pixels** and got 252 K and 92 K; the model's computed
+    values are **274.5 K** and **114.5 K** (`cascade()`, reproduced by the repro command).
+    The reason it had to measure rather than read is a **genuine defect**: the first render
+    only labelled segments larger than ~6 % of the tallest bar, so in the "+ LNA" and
+    "+ cold-sky" bars the **1.33 K and 22.5 K segments carried no labels at all**.
+  * **The claims were therefore UNVERIFIABLE FROM THE FIGURE — which is exactly what the
+    skill's pitfall 12 says the finding is about: the claim, not the layout.** The correct
+    response is to make the claim readable on the artifact, not to re-assert it in prose.
+* **Action taken (the fix, not a rebuttal):** every stacked segment is now **labelled**, and
+  the two deltas are **annotated as arrows with text** (`"LNA buys +9.73 dB"`,
+  `"cold sky adds +3.80 dB"`) so they are **read, not measured**. The panel-D annotation was
+  moved off the green curve and the legend relocated. Re-consulted as round 3.
+
+#### Round 3 — re-consult on the corrected render
+
+* **`served` / verdict / verbatim answer:** _(recorded below when the round completes; the
+  lane returned `RC=3 router unreachable: timed out` on the first attempt and was retried in a
+  background loop, per the skill's routine-503 guidance. **No verdict is claimed until it
+  lands**; if it does not land, the failure is recorded verbatim and the round-2 record above
+  stands as the last consult.)*
+
 
 ---
 
