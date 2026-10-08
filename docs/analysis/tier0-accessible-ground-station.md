@@ -61,12 +61,13 @@ session (Brave 429, DuckDuckGo 202, Mojeek captcha, Ecosia 403) — so the *new*
 |---|---|---|---|
 | **Tier 0a — no pointing at all** | **two omnis** on a fixed mast (2.4 GHz uplink + 433 LoRa downlink). No motors, no printing, no tracker. | **≈ €90–245** | Low-power LR2021 board: 433 **LoRa** downlink (+13.7 dB @650 km) and 2.4 GHz uplink (+5.7 dB @650 km). **Bit-rate limited.** |
 | **Tier 0b — hand-aimed** | one **13.1 dBi 433 Yagi** (€69) + 2.4 GHz omni, on a **manual pan-tilt/tripod**. Still no motors. | **≈ €145–305** | Adds **F33 FLRC 2.6 Mbps to 650 km** (+5.2 dB) with a human pointing the Yagi. |
-| **Tier A — re-costed** | same as before **minus the 2.4 GHz dish + feed** (€325.90), **plus** a cheap 8 dBi 2.4 GHz panel. | **≈ €545–685** (from **≈ €927–951** as line-itemed) | Everything Tier 0b does, **unattended**, + 433 margin (+6.9 dB @650 km on F33/2.6 Mbps). |
+| **Tier A — re-costed** | same as before **minus the 2.4 GHz dish + feed** (€325.90), **plus** a cheap 8 dBi 2.4 GHz panel. | **≈ €546–685** (from **≈ €927–951** as line-itemed) | Everything Tier 0b does, **unattended**, + 433 margin (+6.9 dB @650 km on F33/2.6 Mbps). |
 
 **The headline claim, stated precisely** (adopting the round-4 consultant's wording):
 
 > *At the 20 dBm EIRP cap, modelled 2.4 GHz **uplink** margin saturates at 8 dBi ground gain; this
-> supports removal of the dish under the stated system assumptions.*
+> supports replacing the dish **for the modelled uplink**, subject to the system-level assumptions
+> and the analysis-document checks in §§4–5.*
 
 The dish was the single most expensive and most mechanically consequential item in Tier A.
 Removing it **costs €15–60 (an 8 dBi panel)** and **saves €266–311**. More importantly, it removes
@@ -272,12 +273,13 @@ The original Tier A' line items carried a **0.75 m Ku dish (€94.90)** + a **2.
   a small panel, far inside the G-450's 0.50 m² mast rating. Before, a dish on a mast needed the
   G-5500DC (€949) or bigger — that step is gone.
 
-**The saving, stated precisely.** Like-for-like (low-to-low, high-to-high) the re-cost saves
-**€266–311**; allowing all endpoint combinations the figure spans **€242–335**. The saving *is* the
-**dish + feed** (€325.90 hardware) minus the **panel** that replaces it (€15–60) = **€265.90–€310.90**
-(€266–311) — arithmetic that is exact, not modelled. (The old text said "€314.90"; that used the
-€220 LH-13XL feed instead of the €185 RS-ONE + €46 CLX1 actually quoted. Corrected to €325.90.) (Round-1 consultant, §8.1, correctly flagged that "€265–315" was being
-quoted as if it were a single exact interval; it is now given as a method-labelled range.)
+**The saving, stated precisely.** Like-for-like (cheap-end vs cheap-end, dear-end vs dear-end) the
+re-cost saves **€266–311**: the **dish + feed** (€325.90 hardware) minus the **panel** that replaces
+it (€15–60) = **€265.90–€310.90**. Allowing the cross-endpoint extremes the figure spans
+**€242–335** (€927 − €685 and €951 − €616). *(Correction: the first draft said €314.90 for the
+dish+feed, which used the €220 LH-13XL feed instead of the quoted €185 RS-ONE + €46 CLX1; the round-4
+consultant's "inconsistent saving" finding is what surfaced it. Corrected to **€325.90** here, in the
+re-cost table, and in ADR-069.)*
 
 **Reconciliation with the previously-stated "~€700".** That figure was quoted for **antenna +
 positioner only** (no coax/connectors, and with the cheap 2.4 GHz choice). On that same
@@ -303,7 +305,7 @@ labour cost, and no tier's figure should be read as a guaranteed saving in every
 | 433 FLRC 2.6 Mbps @650 km (low-power, no F33) | fails (−18.9) | fails (−5.8) | fails (−4.1) |
 | unattended / automatic | yes (but LoRa only) | **no — human points** | yes |
 | moving parts / firmware | none | none | motors + controller |
-| **cost (parts)** | **€90–245** | **€145–305** | **€545–685** |
+| **cost (parts)** | **€90–245** | **€144–304** | **€546–685** |
 
 ---
 
@@ -458,8 +460,29 @@ This round **found a real defect and a real over-claim**, and both were fixed:
 | "'the dish can be removed' / Tier-0-no-tracker is a system-level claim" | **Accepted.** The headline now says the plateau **supports but does not prove** Tier 0; §2's definition says Tier 0 is **proposed and conditional** on §5/§6; the figure suptitle and footnote say so. |
 | clipped/overlapping labels + footnote | **Accepted.** Figure rebuilt: taller canvas, reserved top annotation band, two-line wrapped footnote with its own bottom margin, shortened top labels. |
 
-**Round 5 — figure after the round-4 rebuild.** *(serve line + verdict recorded verbatim below once
-round 5 returns; the cycle is reported as it happened, not rounded up to a single approval.)*
+**Round 5 — CONDITIONAL PASS** (`gpt-6-astra`, 200). It **verified the corrected arithmetic itself**
+(€326 − €60 = €266; €326 − €15 = €311; €927 − €685 = €242; €951 − €616 = €335 — all consistent).
+Verbatim final line:
+
+> **VERDICT: CONDITIONAL PASS — cost arithmetic and qualification are now consistent, but fix the
+> Panel A title/label collision and widen or rewrap Panel C's title so "€15–60" is not clipped.**
+
+Actions: panel-A title shortened to one line with extra pad (assumptions moved to the footnote);
+panel-C title wrapped to three short lines; headline reworded to the round-5 suggested phrasing
+("supports replacing the dish **for the modelled uplink**, subject to …").
+
+**Round 6 — PASS** (`gpt-6-astra`, 200). Verbatim final line:
+
+> **VERDICT: PASS — the round-5 presentation issues are resolved, with only the stated conditional
+> interpretation required.**
+
+with "No material new over-claim remains."
+
+**Cycle summary (6 rounds, one served model):** REFUTE → PASS WITH MINOR REVISION → Minor revision
+→ NOT YET ACCEPTABLE → CONDITIONAL PASS → **PASS**. Twelve distinct findings, **all accepted and
+fixed**, one (the "balloon→ground receive link" caveat) partially applied with the architectural
+reason stated. Two of the findings were substantive, not cosmetic: the scoping of "inert gain" to
+the *uplink under the cap*, and the **€314.90 → €325.90 dish+feed arithmetic correction**.
 
 ---
 

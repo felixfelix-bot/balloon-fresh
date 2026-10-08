@@ -54,11 +54,13 @@ the tightest element to the 433 Yagi's ~4°, which is *why* a no-tracker Tier 0 
 
 ## Consultation
 
-`scripts/fleet/visual_consult.py`, served model **`gpt-6-astra`** (read back from the response), three
-rounds: **round 1 qualified REFUTE** → **round 2 PASS WITH MINOR REVISION** → round 3 on the fixed
-figure. Verdicts recorded **verbatim** in the doc's §8, with every point actioned and the one
-partially-applied point (the "balloon→ground receive link" caveat, which does not apply because the
-2.4 GHz ground antenna is TX-only) explained rather than smoothed over.
+`scripts/fleet/visual_consult.py`, served model **`gpt-6-astra`** (read back from the response),
+**six rounds**: REFUTE → PASS WITH MINOR REVISION → Minor revision → **NOT YET ACCEPTABLE** →
+CONDITIONAL PASS → **PASS**. Verdicts recorded **verbatim** in the doc's §8, with every finding
+actioned. Two were substantive, not cosmetic: scoping "inert gain" to the *uplink under the cap*,
+and the consultant surfacing a **real arithmetic error** in the dish+feed cost (**€314.90 → €325.90**).
+The one partially-applied point (the "balloon→ground receive link" caveat) is explained, not smoothed
+over: the ground 2.4 GHz antenna is TX-only in this architecture.
 
 ## Git
 

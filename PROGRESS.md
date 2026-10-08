@@ -30,7 +30,19 @@ the 2.4 GHz dish is known to be unnecessary. Lead with the EIRP-cap question.
 - **Fixed** the figure (dish labels above the plot, legend lower-right, scoping footnote, panel
   titles) and the doc (§1.3 conditions, §1.4 qualification, §5 cross-reference, §4 parts-cost scope).
 - **Commit 2** `b8d4dd2` → github.
-- **Consult round 3** — running on the fixed figure; verdict to be appended to §8.3.
+- **Consult round 3** — `gpt-6-astra`, 200. **Minor revision still required** (panel-B "enough";
+  panel-C endpoint wording).
+- **Consult round 4** — `gpt-6-astra`, 200. **NOT YET ACCEPTABLE.** This round found a **real
+  defect**: the dish+feed is **€325.90**, not the €314.90 the first draft said — corrected
+  everywhere. Also: qualify "equivalent" (uplink-margin only), qualify Tier-0 as conditional,
+  rebuild the figure for label/footnote clearance.
+- **Consult round 5** — `gpt-6-astra`, 200. **CONDITIONAL PASS**; the model itself verified the
+  corrected arithmetic (€326−€60=€266 … €951−€616=€335). Fixed panel-A title collision + panel-C
+  title clipping; adopted the safer headline phrasing.
+- **Consult round 6** — `gpt-6-astra`, 200. **PASS**, "no material new over-claim".
+- **Cycle:** REFUTE → PASS-WITH-MINOR-REVISION → Minor → NOT-YET-ACCEPTABLE → CONDITIONAL PASS →
+  PASS (6 rounds, 12 findings, all fixed; §8 of the doc records every verdict verbatim).
+- **Commit 3** `cd4fe35` → github. **Commit 4** = rounds 3–6 + arithmetic fix → github + ngit.
 - **Search backends captcha-gated again** (Brave 429, DDG 202, Mojeek captcha, Ecosia 403, eBay 403,
   wimo/Reichelt search JS-gated) → new cheap items stay `TODO(unverified)`, never invented.
 
