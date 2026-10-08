@@ -34,7 +34,9 @@ Worktree: `/home/c03rad0r/worktrees/bf-gainperdollar`
 - [x] M8 — ADR 068 drafted (next free number checked = 068; 066 and 067 are taken on
       `design/ground-station-lowpower-link` and `design/positioner-lowcost`). INDEX.md
       regenerated with `scripts/gen_adr_index.py` (it is a GENERATED file).
-- [ ] M9 — final push github THEN ngit separately; `git ls-remote` verification pasted.
+- [x] M9 — pushed github THEN ngit separately (no `--atomic`); `git ls-remote` verified:
+      **local = github = ngit = `bade837dab443de1ad5840ca1f9cb86c53d62a26`**; `main` untouched at
+      `09e1b69e1264074d87e61dc9bf3e448c2d602afb`. Never force-pushed. Model + figure reproduce.
 
 ## Key results (for a later reader)
 - Best M2: **Diamond A-430S15R 14.8 dBi, €74.50, on DIY P2 tracker → €735 all-in, 0.0019 €/(kbps·km)**.
