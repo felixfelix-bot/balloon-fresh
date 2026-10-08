@@ -36,7 +36,7 @@ ax.set_title("Receive AGC chain — VGA AFTER the LNA (433 MHz downlink)", fonts
 chain = [("433 MHz\nantenna\n14.8 dBi", 0.15),
          ("433 MHz\nBPF\n(ADR-072 INV-3)", 2.35),
          ("LNA\nTQP3M9037\n+20 dB, NF 0.4", 4.55),
-         ("VGA / DVGA\n+15…-15 dB\nNF 2.8…8 dB", 6.75),
+         ("VGA / DVGA\nADL5240 ~+19..-12 dB\nADL5330 -35..+22 dB", 6.75),
          ("receiver\nLR2021 433", 8.95)]
 for label, x in chain:
     block(ax, x, 3.2, 2.0, 1.5, label)
@@ -44,7 +44,7 @@ for i in range(len(chain) - 1):
     arrow(ax, chain[i][1] + 2.0, 3.95, chain[i + 1][1], 3.95)
 
 # feedback: detector + control
-block(ax, 6.75, 0.7, 2.0, 1.2, "log detector\nAD8318 (1 MHz–8 GHz)\n70 dB, 10 ns", fc="#fdeaea", ec="#a33")
+block(ax, 6.75, 0.7, 2.0, 1.2, "log detector\nAD8318 (1 MHz–8 GHz)\n433 BPF AT THE TAP", fc="#fdeaea", ec="#a33")
 block(ax, 9.4, 0.7, 2.0, 1.2, "ADC + MCU\n(RP2040/ESP32-S3)\nSPI / VCTRL", fc="#eaf6ea", ec="#2a6")
 arrow(ax, 8.75, 3.2, 8.2, 1.9)     # coupler tap -> detector
 arrow(ax, 8.75, 1.3, 7.9, 1.3)
@@ -57,7 +57,7 @@ ax.text(11.55, 2.05,
         "LNA's 20 dB gain — that is why it goes second.",
         ha="left", va="center", fontsize=8.2, color="#1f4e79",
         bbox=dict(boxstyle="round,pad=0.4", fc="#f7f9fc", ec="#1f4e79"))
-ax.text(0.15, 2.3, "manual / commanded mode is the BASELINE;\nthe loop is the enhancement (operator decision).",
+ax.text(0.15, 2.3, "manual / commanded mode is the BASELINE; the loop is the enhancement.\nloop: FAST ATTACK (overload) + SLOW DECAY (level tracking); bandwidth below the fade rate.",
         ha="left", va="center", fontsize=8.0, style="italic", color="#555555")
 for ext in ("png", "svg"):
     fig.savefig(os.path.join(OUT, f"receive-agc-chain.{ext}"), dpi=160, bbox_inches="tight")
@@ -77,8 +77,8 @@ ax.semilogx(d, lvl, color="#1f4e79", lw=2.2, label="P_rx at ground (F33 +33 dBm,
 
 S_TOP = -99.0
 W = 35.0
-# fixed-gain window: centre it so the top rate closes at 650 km -> upper edge at 650 km level + W
-upper_fixed = prx(650.0) + W        # = -91.6 + 35 = -56.6 dBm
+# fixed-gain window: EXACTLY W dB tall, bottom at the top-rate sensitivity.
+upper_fixed = S_TOP + W          # = -64.0 dBm (compression onset)
 ax.axhspan(S_TOP, upper_fixed, color="#f2c200", alpha=0.18,
            label=f"fixed-gain usable window ({W:.0f} dB)")
 ax.axhline(S_TOP, color="#c0392b", ls="--", lw=1.3)

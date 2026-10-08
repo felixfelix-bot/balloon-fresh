@@ -19,6 +19,15 @@
   Extends `docs/analysis/rf-shopping-list-and-duplex-architecture.md` (source branch
   `design/rf-shopping-list` @ `eea1cbc00702`) and `docs/BASE-STATION-BOARD-CHECKLIST.md`.
   Reproduce: `python3 docs/analysis/level_control_model.py`.
+- **Independent review:** the two figures + the plan were submitted to `scripts/fleet/visual_consult.py`
+  (`--timeout 540 --json`), **served model `gpt-6-astra`** (read back from the response). The model's own
+  verdict line was **`VERDICT: REFUTE`** (round 1, 2026-10-08): *"The conditional Friis arithmetic is
+  sound, but contradictory gain windows, unproven loop dynamics, insufficient TX control range and
+  missing full-duplex self-interference analysis invalidate the plan's claimed coverage and safety."*
+  The structured `verdict` field returned `UNPARSED` (CONFIRM/REFUTE is not the parser's vocabulary —
+  parser declining, not the model disagreeing). Twelve findings were accepted and acted on (F1–F12);
+  the corrections are in D4 above, the design doc §9 and the checklist. Full record:
+  `docs/analysis/assets/level-control/consult-verdict.txt`.
 
 **Numbering and collision note.** Numbers **066–083 are claimed on sibling design branches**
 (066: `design/ground-station-lowpower-link` + `design/ground-station-flrc-max`; 067:
@@ -76,12 +85,15 @@ fleet). An **analog AGC loop** (VGA + detector + RC loop filter) is the accepted
 scope is the binding constraint. Either realisation must be **defeatable to the D1 manual mode at any
 time**.
 
-**D4 — The receive loop is SLOW: bandwidth BELOW the fade rate and ABOVE the geometry rate.**
-Attack/decay time constant **τ ≈ 10–100 ms** (≈ 1.6–16 Hz), below the ~72 Hz multipath fade rate
-(2v/λ at 433 MHz, v = 25 m/s) and above the ~0.01–1 Hz range/geometry rate. A fast AGC **hunts** and
-degrades throughput; fades are the **rate ladder's** job (ADR-082), not the AGC's. Digital loops carry a
-**deadband ≥ one step (≥ 0.5 dB) + hysteresis**; both realisations carry **anti-windup / bounded
-gain**.
+**D4 — The receive loop is ASYMMETRIC: FAST attack, SLOW decay.** Attack (overload protection) steps
+the gain **down within one frame**; **decay** (level tracking) releases with **τ ≈ 10–100 ms**
+(≈ 1.6–16 Hz) — **below** the ~72 Hz multipath fade rate (2v/λ at 433 MHz, v = 25 m/s) and **above**
+the ~0.01–1 Hz range/geometry rate. A single slow time constant is **not** sufficient (a slow attack
+leaves frames exposed to overload — independent review, `docs/analysis/assets/level-control/consult-verdict.txt`).
+Digital loops carry a **deadband ≥ one step (≥ 0.5 dB) + hysteresis**; both realisations carry
+**anti-windup / bounded gain**. **The AGC's detector input MUST be band-limited to 433 MHz** (its own
+BPF/resonator at the tap): the AD8318 is broadband, and leaked 2.45 GHz TX energy would otherwise drive
+the loop to reduce gain and desense the wanted downlink (blocker-driven gain reduction).
 
 **D5 — Transmit level control is a PRECOMPUTED range→attenuation LOOKUP TABLE, not a control loop.**
 The ground MCU maps the balloon's GNSS range to a **DSA attenuation** (PE43711-class, 0–31.75 dB,

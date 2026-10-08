@@ -35,7 +35,7 @@
 | 4 | RX 433 | input protection (optional insurance) | PIN-diode RF limiter, SMA, 10 MHz–6 GHz, 10–20 dBm class | **TO-BUY** | 1 | **4.39** · `aliexpress.com` item `1005012328874838` | **INSURANCE ONLY** (ADR-072 D3): residual TX leakage is −56 dBm nominal, 56–78 dB below the LNA's ratings. Choose the threshold **just above** the expected in-band signal. |
 | 5 | RX 433 | **level control (AGC element)** | **Analog Devices ADL5240** digital VGA: 100 MHz–4 GHz, +20.3/−12 dB, 6-bit DSA 0.5 dB step, NF 2.8 dB @450 MHz, SPI+parallel | **TO-BUY** | 1 | **≈ 2.09** (chip, "from") · `aliexpress.com` item `1005006722641749`; datasheet `analog.com/media/en/technical-documentation/data-sheets/ADL5240.pdf` | **AFTER the LNA** (ADR-084). Alternative: **ADL5330** (10 MHz–3 GHz, −35…+22 dB, analog 20 mV/dB, NF 8 dB) `…/ADL5330.pdf` ≈ €15.59; or the **PE43711-class SMA DSA module** below (row 6). |
 | 6 | LEVEL CTRL | **digital step attenuator (RX path alt / TX path)** | **pSemi PE43711**-class SMA DSA: 9 kHz–6 GHz, **0–31.75 dB, 0.25 dB step** | **TO-BUY** | 1 | **18.89** · `aliexpress.com` item `1005012321787574`; silicon `psemi.com/products/digital-step-attenuators/pe43711` | Same part family on **TX** (range→attenuation LUT, ADR-084 §3). **HOW TO VERIFY:** ≥ 6 GHz and 0.25 dB LSB on the listing; glitch-less. |
-| 7 | LEVEL CTRL | **log detector** (AGC feedback) | **Analog Devices AD8318**: 1 MHz–8 GHz, 70 dB, ±1.0 dB /55 dB, 10/12 ns | **TODO(unverified)** | 1 | price not confirmed · datasheet `analog.com/media/en/technical-documentation/data-sheets/AD8318.pdf` | Tap **after the BPF/LNA** (band-selective). Cheaper alt: **ADL5513** (1 MHz–4 GHz, 80 dB, −70 dBm) `…/ADL5513.pdf`. **HOW TO VERIFY:** the chip vs eval board; needs a power-detector **coupler/tap**. |
+| 7 | LEVEL CTRL | **log detector** (AGC feedback) | **Analog Devices AD8318**: 1 MHz–8 GHz, 70 dB, ±1.0 dB /55 dB, 10/12 ns | **TODO(unverified)** | 1 | price not confirmed · datasheet `analog.com/media/en/technical-documentation/data-sheets/AD8318.pdf` | Tap **after the BPF/LNA** (band-selective) **and put a 433 MHz BPF at the detector input** — the AD8318 is broadband and would otherwise let 2.45 GHz TX leakage drive the loop's gain down (consult F5). Cheaper alt: **ADL5513** (1 MHz–4 GHz, 80 dB, −70 dBm) `…/ADL5513.pdf`. **HOW TO VERIFY:** the chip vs eval board; needs a power-detector **coupler/tap**. |
 | 8 | LEVEL CTRL | **ADC + MCU** (digital AGC + TX LUT) | RP2040 board **or** ESP32-S3 module (ADC + SPI) | **TODO(unverified)** | 1 | ~4 (AliExpress RP2040-class board; exact listing/price not verified) | Runs the AGC state machine, the range→attenuation LUT, the mode switch and the bypass. **May be the same host that already does GNSS/housekeeping.** Keep the TX code path independent of the RX-loop state (ADR-084 §6). |
 | 9 | TX 2.4 | antenna | **Sirio SLP-17** log-periodic, 1700–2500 MHz, 11.1 dBi | **TO-BUY** | 1 | **59.00** · `funktechnik-bielefeld.de/sirio-slp-17-1800-2500-mhz-richtantenne` CONFIRMED | Above ~8 dBi the 2.4 GHz ground gain is EIRP-inert (ADR-081 D1); bought for pattern/polarisation. Boresighted with row 1 on one positioner (ADR-071 D3). |
 | 10 | TX 2.4 | band-pass filter | 2.4 GHz BPF | **TO-BUY** | 1 | **17.79** (alt 23.99) · `aliexpress.com` item `1005012653486194` (alt `32820151286`) | Cleans the uplink spectrum (ADR-072). |
@@ -47,6 +47,13 @@
 | 16 | bench (owned) | divider | **XR-613** resistive power divider (DC–5 GHz) | **OWNED** | 1 | — (owned) | **RESISTIVE ⇒ ~6 dB, NO array gain — bench tool only (ADR-080).** Never a gain stage in a link budget. |
 | 17 | bench (owned) | mixer (for an IF/downconverter path) | **unmarked RF/LO/IF mixer module** | **OWNED** | 1 | — (owned) | Specs and model number **unknown — `TODO(unverified)`** (inherited open item, ADR-080). Assumed LO/RF/IF → usable behind the Red Pitaya. |
 | 18 | mechanical | mast-head mounting / enclosure | mast clamps, weatherproof enclosure, cable glands | **TODO(unverified)** | 1 set | not priced | Mast-head hardware and wind load belong to ADR-076/077/078 (positioner/stow); this row is the **electronics enclosure + mast-head feedpoint** only. |
+
+> **Qty note (consult F11).** Rows 5–6 are the **level-control elements**, and they are **separate
+> physical instances** if both directions are automated: one in the **433 RX** path (the AGC element,
+> row 5) and one in the **2.4 GHz TX** path (the range→attenuation DSA, row 6). They are **not** one
+> part shared across bands — nothing in the duplex path may be required to pass both bands through one
+> narrowband element (ADR-072 INV-1). Count **qty 2** if both are populated; **qty 1 on TX only** is the
+> sufficient first-flight build (the RX chain then runs at manual/commanded gain).
 
 ### Rows deliberately OUT OF SCOPE here
 
@@ -60,13 +67,13 @@
 | Roll-up | Items | Indicative total (EUR) |
 |---|---|---:|
 | **OWNED subtotal** (rows 3, 15, 16, 17) | 4 line items | **€0 outlay** (already in hand) |
-| **TO-BUY subtotal, excluding the VNA** (rows 1, 2, 4, 5, 6, 9, 10, 12, 14-excl) | 8 priced rows | **≈ €275.58** |
-| **TO-BUY subtotal, including the VNA** (adds row 13) | 9 priced rows | **≈ €442.57** |
+| **TO-BUY subtotal, excluding the VNA** (rows 1, 2, 4, 5, 6, 9, 10, 12) | 8 priced rows | **≈ €274.58** |
+| **TO-BUY subtotal, including the VNA** (adds row 13) | 9 priced rows | **≈ €441.57** |
 | **Not counted (real gaps)** | rows 7, 8, 11, 14, 18 | **`TODO(unverified)` — not in the totals** |
 | **OPT (not counted)** | RF2126 PA €7.69 | €0 unless a higher legal footing is chosen |
 
 *Arithmetic, excluding the LiteVNA (row 13):* 74.50 + 24.19 + 4.39 + 2.09 + 18.89 + 59.00 + 17.79 +
-(64.50 + 5.74 + 3.49) = **275.58**. *Adding the LiteVNA 166.99* → **442.57**. The single largest line
+(64.50 + 5.74 + 3.49) = **274.58**. *Adding the LiteVNA 166.99* → **441.57**. The single largest line
 is the **LiteVNA 62** — it is deliberately included because it is what replaces the Red Pitaya for
 verifying the XR-613 and every passive at both bands.
 

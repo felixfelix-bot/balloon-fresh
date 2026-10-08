@@ -65,8 +65,11 @@
 5. **Level control BUYS dynamic range, not SNR.** It cannot manufacture signal. Quantitatively it
    recentres the receiver's usable window on a signal that swings **56.26 dB** across 1→650 km
    (plus a 15 dB fade allowance → 71.3 dB of mission span). A fixed gain accepts only the
-   **35 dB** window it is centred on (≈ **49 %** of the mission span); a 31.5 dB DSA raises that to
-   **66.5 dB (93 %)** and a 57 dB VGA to **92 dB (100 %)** (§4). The top FLRC rate has the **worst**
+   **35 dB** window it is centred on (≈ **49 %** of the mission's **dB span**); a 31.5 dB DSA raises
+   that to
+   **66.5 dB (93 %)** and a 57 dB VGA to **92 dB (100 %)** (§4). These percentages are fractions
+   of the mission's **level span** — **not** delivered-service availability or fraction of distance;
+   an availability figure needs an absolute link budget and a fade/outage model (consult F7). The top FLRC rate has the **worst**
    sensitivity, so it is the **first casualty** of a mis-set level — level control is worth up to
    **4×** the data rate at the far edge (2600 vs 650 kbps) and the whole link during the overhead pass.
 6. **Failure modes do NOT endanger the band-split duplex.** The AGC lives entirely in the **433 MHz
@@ -104,11 +107,11 @@ open item), and (b) the onset of compression. Call that window **W ≈ 35 dB** (
 LR2021 maximum-input figure is `TODO(unverified)` — see §7). Then:
 
 - **Fixed gain:** acceptance span = **35 dB** = a **56×** distance ratio = **49 %** of the 71 dB
-  mission. At one end of the flight the front end is driven toward compression; at the other the
+  level span (a *span* statistic — not a fraction of distance, time or availability). At one end of the flight the front end is driven toward compression; at the other the
   signal is at/below the top rate's sensitivity. You cannot have both.
 - **Fixed gain + 31.5 dB DSA (ADL5240 / PE43711):** span **66.5 dB** = **2113×** = **93 %** of the
   mission.
-- **Fixed gain + 57 dB VGA (ADL5330):** span **92 dB** = **39 811×** = **100 %** of the mission,
+- **Fixed gain + 57 dB VGA (ADL5330):** span **92 dB** = **39 811×** = **100 %** of the level span,
   with ~20 dB left for fades.
 
 **This is the throughput argument, made numeric.** The top rung of the rate ladder is **4.00×** the
@@ -166,6 +169,13 @@ VGA-before-LNA penalty is **largest when the attenuation is used** (attenuation 
 raises F1 directly), so the wrong order fails exactly when the station is at close range — the case
 level control exists to handle.
 
+**Two caveats the consultant is right to raise (F8/F12).** (a) 0.436 dB is a **two-stage** NF, not an
+antenna-referenced **system** NF — the pre-LNA **433 BPF + limiter + connector** losses add *directly*
+to it (a 1 dB pre-LNA loss makes the system NF ≥ 1.4 dB, dwarfing the LNA's own 0.4 dB), which
+*strengthens* the case for VGA-**second**: the dominant NF term is pre-LNA, and a post-LNA VGA is not
+in it. (b) The VGA-first figure assumes the VGA at **unity gain**; a real VGA's NF varies with gain, so
+the comparison is a worst-point *constraint check*, not a full gain-law sweep.
+
 **Second-order reason for the order:** putting the VGA *after* the LNA also keeps the **BPF first**
 (ADR-072 INV-3) and the **LNA at the masthead** (ADR-079 INV-1), so the lossy feedline sits after
 gain and the wideband LNA never sees unfiltered out-of-band energy.
@@ -213,6 +223,8 @@ prices are `TODO(unverified)` — item pages are JS-rendered, same caveat as the
 | ADL5240ACPZ | `ADL5240ACPZ-R7 … LFCSP-32` | **≈ €2.09** | `aliexpress.com` item `1005006722641749` (search `ADL5240`) |
 | ADL5330ACPZ | `1-20PCS ADL5330ACPZ …` | **≈ €15.59** | `aliexpress.com` (search `ADL5330`) |
 | ADL5243ACPZ | — | **TODO(unverified)** (search shows a €29.79 top listing) | `aliexpress.com` (search `ADL5243`) |
+
+**DSA range, stated precisely (consult F3):** the **ADL5240/ADL5243** digital step attenuator's own range is **31.5 dB** (datasheet: "31.5 dB gain control range"), while the **pSemi PE43711** is **0–31.75 dB**. They are **different parts**, not a contradiction; the 0.25 dB difference is immaterial (with 31.75 dB the acceptance span is 66.75 dB, versus 66.5 dB).
 
 The companion **DSA in the sibling list** — the ready-made SMA module "9 kHz–6 GHz, 0–31.75 dB,
 0.25 dB step" at **€18.89** (`aliexpress.com` item `1005012321787574`, title CONFIRMED on
@@ -301,7 +313,7 @@ at tens of metres. Two consequences, stated plainly:
 1. **This is the correct result, not a null result.** The DSA is what makes the station *compliant*
    (the sibling shopping list §2.1 computes a **14.26 dBm EIRP** ceiling at FLRC-max bandwidth, i.e.
    only **+3.2 dBm conducted** at 11.1 dBi, so the +12 dBm HF PA must be turned **down 8.8 dB** —
-   `level_control_model.py` §6). At power a **4 dB pad** does the compliance trim and the LUT handles
+   `level_control_model.py` §6). In practice a **4 dB fixed pad** does the compliance trim and the LUT handles
    the metres-range case. The operator's decision to set the regulatory ceiling aside for this task
    does not change the mechanism.
 2. **The LUT becomes a *throughput* device as soon as a PA is added.** With a +30 dBm ground PA the
@@ -313,7 +325,10 @@ at tens of metres. Two consequences, stated plainly:
 (the ballon's linear ceiling minus margin; `TODO(unverified)` pending the LR2021 max-input figure),
 never exceeding it. The table is a *level-holding* profile, so the balloon's receiver sees a roughly
 constant drive from 10 m to the range where the LUT reaches 0 dB, and then a monotonically falling
-level beyond it (which is where the rate ladder, ADR-082, takes over).
+level beyond it (which is where the rate ladder, ADR-082, takes over). **The residual is explicit** (consult F10): a
+**31.75 dB** DSA cannot flatten the full **56.26 dB** range loss by itself — it leaves **24.5 dB**
+uncompensated over 1→650 km. That is by design: the LUT holds a *constant* level only within its
+authority; beyond that range the level falls and the **rate ladder** carries the link (ADR-082).
 
 ---
 
@@ -347,12 +362,26 @@ level beyond it (which is where the rate ladder, ADR-082, takes over).
    formal deep-fade mechanism (2600 → 1300 → 650 kbps). A slow AGC and a rate ladder are complementary:
    the AGC keeps the level in-window; the ladder trades rate for the SNR that is irrecoverable.
 
-**Recommended dynamics:** attack/decay time constant **τ ≈ 10–100 ms for the digital loop**
+**Recommended dynamics — ASYMMETRIC (attack ≠ decay), because a single slow time constant is not
+sufficient** (consult F4: a 100 ms *attack* leaves several frames exposed to a sudden overload):
+
+- **FAST attack** (overload guard): when the detected level exceeds the window top by more than the
+  deadband, step the gain **down within one frame** (≤ ~3 ms at the top rate).
+- **SLOW decay** (level tracking): release the gain with **τ ≈ 10–100 ms** (≈ 1.6–16 Hz) — **below the
+  ~72 Hz fade rate** so the loop does not pump on fades, and **above the ~0.01–1 Hz geometry rate** so
+  it tracks the slow path-loss change.
+
+For the analog loop, make the detector's output RC pole dominant and **decouple the loop from the
+frame rate** by low-passing the detector output over several frames (an asymmetric fast-attack /
+slow-decay pair is two diodes + two RC legs).
 (≈ 1.6–16 Hz bandwidth; a few frames to tens of frames), i.e. **below the fade rate, above the
 geometry rate**. For the analog loop, make the detector's output RC pole the dominant one; also
 **decouple the loop from the frame rate** by low-passing the detector output over several frames.
 
-> **The trap to avoid:** an AGC faster than the fade rate **hunts**. It converts fast amplitude
+> **The trap to avoid:** a *continuously-tracking* fast loop **hunts** — hunting is a **loop-design**
+failure, not a *speed* (consult F4): a well-designed fast loop can be stable, and the **fast-attack /
+slow-decay** pair above is stable because the attack only ever commands *reduction* while the decay is
+the slow, filtered path. It converts fast amplitude
 > variation into gain variation, which is noise on the demodulator's decision variable — it *lowers*
 > throughput while looking "responsive".
 
@@ -364,6 +393,7 @@ geometry rate**. For the analog loop, make the detector's output RC pole the dom
 | **Digital limit-cycle / hunting** | A **0.5 dB** step with a target deadband narrower than one step makes the gain bang-bang between two codes | Set the **deadband ≥ 1 step** (≥ 0.5 dB) and add **hysteresis**; only move the code when the error exceeds the deadband |
 | **Sampled-loop instability** | Updating once per frame with a delay = one frame period adds phase lag | Keep loop bandwidth ≪ 1/(2·frame period); a ~10 ms τ against a 2.6–42 ms frame is safe; do not close a loop faster than the frame rate |
 | **Latch / wind-up** | A detector blind (e.g. below its floor) drives the loop to full gain and latches there; the ballon then compresses the front end on the next close pass | Clamp the gain register at both ends; **blank the loop's integrator when the detector output is out of range** (standard AGC anti-windup); hold last-good gain |
+| **Blocker-driven gain reduction (BIGGEST — consult F5)** | The **AD8318 is broadband (1 MHz–8 GHz)**. Leaked 2.45 GHz TX energy (or any third-party blocker) reaching the detector makes it read *strong* while the 433 downlink is weak → the loop **reduces gain and desenses the wanted downlink**. | Put a **433 MHz BPF at the detector tap** so the detector sees only in-band energy (now on the figure + checklist). Band separation at the antenna is **not** a detector-isolation budget. |
 | **Wrong-band coupling** | The wideband LNA would amplify 2.4 GHz TX leakage into the loop's detector and corrupt the level reading | The **433 MHz BPF precedes the LNA** (ADR-072 INV-3); the detector is tapped **after** the BPF. This is also why the detector must be a *band-selective* tap, not a wideband one |
 
 ---
@@ -394,7 +424,11 @@ narrowband element** across the two bands (ADR-072 INV-1). Therefore **no AGC fa
 latching, or a firmware bug — can move the transmit level, add TX→RX coupling, or compromise the
 band-split duplex of ADR-072.** The RX AGC's failure envelope is strictly the RX path. This is worth
 saying because the concern is natural for a full-duplex box: the answer is that the duplex is by
-*band*, and the AGC is only in one band.
+*band*, and the AGC is only in one band. **But band separation is not *service* independence**
+(consult F6): an RX-path failure still breaks the **bidirectional** gateway — the 433 downlink carries
+the service's responses *and* the operator's commands — even while the 2.45 GHz TX output stays
+perfectly nominal. That is why the recovery path below is **autonomous** and why mode 1 (fixed gain)
+is the default.
 
 **What the AGC *can* damage: downlink availability** — and the 433 MHz downlink is the **binding
 direction** (ADR-073). Enumerated:
@@ -406,6 +440,11 @@ direction** (ADR-073). Enumerated:
 | **Latched at min attenuation (no attenuation)** | Front end compresses at close range → **desense during the overhead pass**, all rates fail briefly | **YES, transiently** — during launch/recovery, the common close-range window |
 | **Detector blind / wind-up then over-correct** | Same as latch at min attenuation on the next pass | YES, transiently |
 | **Digital loop firmware fault** | Might also mis-drive the TX LUT **if the same MCU owns both** | **Avoidable by design** — see below |
+| **Wrong control polarity** | Feedback becomes *positive* → runaway to a rail | Bench-verify loop **sign** before enabling mode 3 |
+| **Detector / ADC failure** (open, short, saturated, stale, mis-calibrated) | Loop drives to a rail (either) | Plausibility check on the detector output; rail-clamped fallback to mode 1 |
+| **Common-mode MCU / SPI / supply fault** | A shared MCU, SPI bus, reset or supply can affect RX **and** TX even with separate software state | The **TX LUT is keyed on GNSS range only**, so an RX-loop fault cannot move it |
+| **Lost remote-recovery path** | A *commanded* bypass cannot arrive if the downlink (the command path) is dead | The **watchdog recovery is AUTONOMOUS** (on-board), so recovery does not depend on the downlink |
+| **Watchdog misdiagnosis** | Genuine fading/interference triggers repeated resets and prevents reacquisition | Act on a *sustained* link-health collapse with hysteresis, not a single frame |
 
 **Mitigations (all cheap, all adopted):**
 
@@ -483,6 +522,27 @@ the BPF does. This is stated so the AGC is not credited with a job it cannot do.
 
 ## 9. Independent consultant review
 
-*(recorded after the consult — see `docs/analysis/assets/level-control/consult-verdict.txt`)*
+**Lane:** `scripts/fleet/visual_consult.py` (`--timeout 540 --max-tokens 20000 --json`), date
+**2026-10-08**, artifacts = the two figures above. Full record incl. all findings and their
+disposition: `docs/analysis/assets/level-control/consult-verdict.txt`.
 
-**(to be filled from the completed consult round; served model and verbatim final line recorded there)**
+**Served model:** **`gpt-6-astra`** (read back from the response's `served`/`model` field, not from the
+request). The CLI's structured `verdict` field returned **`UNPARSED`** because the model answered with
+the **CONFIRM/REFUTE** vocabulary, which is *not* `parse_verdict`'s vocabulary — that is the parser
+declining, **not** the model disagreeing and **not** an approval.
+
+**The model's own verdict, verbatim (the opinion of record):**
+
+> **VERDICT: REFUTE — The conditional Friis arithmetic is sound, but contradictory gain windows,
+> unproven loop dynamics, insufficient TX control range and missing full-duplex self-interference
+> analysis invalidate the plan's claimed coverage and safety.**
+
+**Disposition (round 1 → fixes; full table in `consult-verdict.txt`):** twelve findings accepted and
+acted on — the contradictory figure gain-window label **(F1)**, the plot band being 42 dB where 35 dB
+was claimed **(F2, a real bug)**, the 31.5-vs-31.75 dB DSA distinction **(F3)**, **fast-attack /
+slow-decay** loop dynamics **(F4)**, **433 MHz band-limiting of the detector** against blocker-driven
+gain reduction **(F5, the most material)**, an extended failure table incl. wrong polarity, detector
+failure, common-mode faults and the autonomous-recovery requirement **(F6)**, level-span-vs-availability
+wording **(F7)**, the full-system-NF caveat **(F8/F12)**, the explicit 24.5 dB TX residual **(F10)** and
+separate RX/TX level-element instances **(F11)**. Four findings were noted as already-stated or out of
+scope, with reasons. **The corrections are in this document and in the re-rendered figures.**
