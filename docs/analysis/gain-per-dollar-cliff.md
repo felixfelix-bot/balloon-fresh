@@ -40,12 +40,12 @@ the only one with a published large-dish rating costs **EUR 1775** (SPID BIG-RAS
 (the wind moment genuinely scales as D³, verified to exponent 3.000), ~60 % market structure
 there is no cheap AZ+EL rotator between 1.0 m² and EUR 1132** (§5).
 
-**2. The dish's gain is not the reason to build it.** A 2.6 m dish gives **18.8 dBi**
-(η 0.55) to **19.6 dBi** (η 0.65, the vendor's own quoted 18.9 dBi at 2.4 m ≈ 20.0 dBi at
-3.0 m class) at 433 MHz. **A 4-bay stack of cheap 433 Yagis reaches ~20 dBi** (§7). So the
-dish buys *wind survival, interference rejection and circular polarisation* — **not** more
-433 dBi per euro. On pure 433 gain-per-euro the **2.4 m and 2.6 m dish rungs are
-Pareto-dominated by a Yagi array** (Table 8b).
+**2. The dish's gain is not the reason to build it.** A 2.6 m dish gives **18.8 dBi** at
+η 0.55 and **19.6 dBi** at η 0.65 (the vendor's own quoted figures bracket this: **18.9 dBi**
+at 2.4 m, **20.8 dBi** at 3.0 m) at 433 MHz. **A 4-bay stack of cheap 433 Yagis reaches
+~20 dBi** (§7). So the dish buys *wind survival, interference rejection and circular
+polarisation* — **not** more 433 dBi per euro. On pure 433 gain-per-euro the **2.4 m and 2.6 m
+dish rungs are Pareto-dominated by a Yagi array** (Table 8b).
 
 **3. The pre-cliff high-gain answer IS the Yagi array — say it plainly.** A 4-bay array of
 Diamond A-430S15R Yagis (14.8 dBi each; 4× EUR 74.50 ≈ **EUR 298** of antennas) reaches
@@ -367,7 +367,7 @@ Each lever, quantified, at the working points that matter.
   D=2.6 m: solid drag 6.37 m2 -> SPID BIG-RAS                    EUR 1775
             mesh  drag 2.66 m2 -> SPX-02/MD-03 'medium duty'     EUR 1249   (saving EUR 526)
   433 dB COST of mesh: ZERO. lam/10 at 433.05 MHz = 69.2 mm; the 6 mm mesh is
-  115.4x finer than required (CITED flrc-max §4.1); the mesh is electrically solid.
+  11.5x finer than required (CITED flrc-max §4.1); the mesh is electrically solid.
 ```
 
 **The mesh lever is worth a whole rotator class at 1.2 m**, and it is *free* in RF terms at
@@ -897,7 +897,7 @@ the primary consumer does; each row's URL is in the source document):
 |---|---|---|
 | Diameter-vs-TX-power table (7.38 m @+13 dBm … 0.74 m @+33 dBm for 2.6 Mbps) | — | `ground-station-flrc-max-throughput.md` §0 |
 | Mesh-vs-SPID-BIG-RAS wind ratios (2.40 m: solid 1.88× FAIL / mesh 0.50× PASS; 3.00 m: 3.67× / 0.97×) | — | `ground-station-flrc-max-throughput.md` §4.3 |
-| λ/10 = 69.2 mm at 433 MHz; 6 mm mesh = 115.4× finer than required | — | `ground-station-flrc-max-throughput.md` §4.1 |
+| λ/10 = 69.2 mm at 433 MHz; 6 mm mesh = 69.2/6 = **11.5× finer** than required | — | `ground-station-flrc-max-throughput.md` §4.1 |
 | Required ground gain (FLRC 2.6/1.04/0.65/0.325 Mbps @ +22 / +13 dBm, 650 km) | +18.9…+9.4 / +27.9…+18.4 dBi | `ground-station-lowpower-link-and-shared-dish.md` §2b |
 | LR2021 FLRC sensitivity (915 MHz, 1 % PER): 2.6 Mbps −100.5, 1.04 Mbps −105, 650 kbps −107, 325 kbps −110 dBm | — | `ground-station-lowpower-link-and-shared-dish.md` §1a (Semtech Table 3-12) |
 | 2.4 GHz uplink required ground gain: **−17.4 dBi @300 km / −10.7 dBi @650 km** (omni closes) | — | `positioner-lowcost-3dprinted.md` §3.1 |

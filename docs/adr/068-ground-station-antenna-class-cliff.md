@@ -75,7 +75,7 @@ gain-per-euro the 2.4–3.0 m dish rungs are **Pareto-dominated by the array** (
 **D3. Mesh, stow + a MECHANICAL LATCH + anemometer, and balanced-axis geometry are accepted
 levers; the counterweight is accepted for a *different* purpose than often assumed.**
 - **Mesh** (Cd 1.2 → ~0.5) is accepted and is **RF-free at 433 MHz** (λ/10 = 69.2 mm; the
-  vendor's 6 mm mesh is 115× finer than required). It is worth **a whole rotator class at
+  vendor's 6 mm mesh is 11.5× finer than required). It is worth **a whole rotator class at
   1.2 m** (EUR 1132 → EUR 359). Where a large dish is unavoidable, it must be **coarse mesh**.
 - **Stow + anemometer cutoff** is accepted **only as a unit with a positive mechanical latch
   or brake** — the committed consultant finding ("you cannot hold stow with motor torque")
