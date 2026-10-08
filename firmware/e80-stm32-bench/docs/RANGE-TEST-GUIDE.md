@@ -646,12 +646,29 @@ GO-window guard still applies. Without `--armed-file` the TX uses the
 `cvm_sync` subscriber seam against a live bus, and the RX generates the
 ARMED and writes it to `--armed-out`.
 
-**The live bus has no production wiring yet.** `cvm_sync.ArmedSubscriber` is
-reachable only through the `main(bus=…)` injection point — there is no CLI
-flag and no relay subscriber in the shipped tool — so **in the field a GO TX
-always runs `--armed-file`** with the ARMED relayed by hand (Signal). The
-RP2/allowed-npub hardening in the ADR lands with that wiring: until then a
-GO TX must not be assumed to be relay-authenticated.
+**The TX-side production listener now ships** (`tools/cvm_tx_listener.py`, P3).
+It subscribes **broad** to kind-1059 gift wraps (no restrictive server-side
+`#p` filter) and applies the **client-side npub allowlist** on receipt — the
+allowlist keys off the *unwrapped rumor author*, since the outer wrap author is
+ephemeral — plus the ADR §2.2 freshness watchdog: ARMED whose `created_at`
+skews more than `MAX_CREATED_AT_SKEW` (60 s) is dropped, and the session
+**aborts** (`[tx-armed] ABORT: …`) when no fresh ARMED arrives within
+`STALE_ABORT` (30 s) of the last one (or of start-up). Keys come from env vars
+only (`CVM_TX_*` + `CVM_SERVER_*`; the client key must differ from the server
+key) and the RX publisher is allowlisted via `--rx-npub` / `CVM_RX_NPUB`:
+
+```bash
+export CVM_TX_NSEC=nsec1...        # TX (client) key — env only, never a CLI arg
+export CVM_SERVER_NSEC=nsec1...    # board server key (must differ)
+export CVM_RX_NPUB=npub1...        # RX publisher -> the allowlist
+python3 tools/cvm_tx_listener.py --stop 50m
+```
+
+The RX half of the live bus (`tools/cvm_armed_publisher.py`) is a sibling
+deliverable and is not on this branch yet; until it lands, a GO TX can still
+fall back to `--armed-file` with the ARMED relayed by hand (Signal). The
+`--armed-file` freshness checks stay relaxed for that hand-relay path; the
+live-bus watchdog above is what a relay-authenticated TX uses.
 
 Rehearsal without hardware:
 
