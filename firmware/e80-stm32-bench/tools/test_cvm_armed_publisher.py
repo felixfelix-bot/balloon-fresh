@@ -451,5 +451,63 @@ class TestRepeatUntilGo(unittest.TestCase):
                                            "seq": 3}))  # newer
 
 
+# ===========================================================================
+# A4 (Gate-2.5 advisory) — the E80_* env aliases the studio already exports
+# must be accepted (and documented in ADR §2.3 alongside the CVM_* names).
+# ===========================================================================
+
+class TestE80EnvAliases(unittest.TestCase):
+    """ADR §2.3 lists the E80_* aliases alongside the canonical CVM_* names."""
+
+    def test_alias_names_are_documented_constants(self):
+        from cvm_armed_publisher import (
+            ENV_CLIENT_E80_NSEC, ENV_CLIENT_E80_HEX, ENV_TX_NPUB_E80)
+        self.assertEqual(ENV_CLIENT_E80_NSEC, "E80_RX_NSEC")
+        self.assertEqual(ENV_CLIENT_E80_HEX, "E80_RX_HEX")
+        self.assertEqual(ENV_TX_NPUB_E80, "E80_TX_NPUB")
+
+    def test_e80_client_nsec_alias_accepted(self):
+        from cvm_armed_publisher import load_env_secrets
+        secrets = load_env_secrets({
+            "E80_RX_NSEC": "nsec1e80client",
+            "CVM_SERVER_HEX": "ab" * 32,
+        })
+        self.assertEqual(secrets["client"], "nsec1e80client")
+        self.assertEqual(secrets["server"], "ab" * 32)
+
+    def test_e80_client_hex_alias_accepted(self):
+        from cvm_armed_publisher import load_env_secrets
+        secrets = load_env_secrets({
+            "E80_RX_HEX": "cd" * 32,
+            "CVM_SERVER_NSEC": "nsec1server",
+        })
+        self.assertEqual(secrets["client"], "cd" * 32)
+
+    def test_canonical_cvm_name_wins_over_e80_alias(self):
+        from cvm_armed_publisher import load_env_secrets
+        secrets = load_env_secrets({
+            "CVM_RX_NSEC": "nsec1canonical",
+            "E80_RX_NSEC": "nsec1alias",
+            "CVM_SERVER_HEX": "ab" * 32,
+        })
+        self.assertEqual(secrets["client"], "nsec1canonical")
+
+    def test_e80_tx_npub_alias_read(self):
+        from cvm_armed_publisher import tx_npub_from_env
+        self.assertEqual(tx_npub_from_env({"E80_TX_NPUB": "npub1e80"}),
+                         "npub1e80")
+
+    def test_tx_npub_prefers_canonical_name(self):
+        from cvm_armed_publisher import tx_npub_from_env
+        self.assertEqual(
+            tx_npub_from_env({"CVM_TX_NPUB": "npub1canonical",
+                              "E80_TX_NPUB": "npub1alias"}),
+            "npub1canonical")
+
+    def test_tx_npub_absent_is_none(self):
+        from cvm_armed_publisher import tx_npub_from_env
+        self.assertIsNone(tx_npub_from_env({}))
+
+
 if __name__ == "__main__":
     unittest.main()
