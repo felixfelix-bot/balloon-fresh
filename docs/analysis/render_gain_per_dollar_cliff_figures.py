@@ -78,10 +78,11 @@ def fig_cliff():
     ax1.set_ylabel("whole-station EUR per dB (vs 0.6 m rung)")
     style(ax1, "The cliff: whole-station EUR/dB vs 433 gain (dish path)")
     ax1.set_yscale("log")
+    offs = {0.9: (-30, 10), 1.0: (6, -14), 1.2: (6, 8), 2.6: (-40, 10), 3.0: (6, -14)}
     for i, r in enumerate(rows):
-        if r[0] in (0.6, 1.0, 1.2, 2.6, 3.0):
+        if r[0] in offs and eur_db[i] == eur_db[i]:
             ax1.annotate("%.1f m" % r[0], (G[i], eur_db[i]),
-                         textcoords="offset points", xytext=(4, 8),
+                         textcoords="offset points", xytext=offs[r[0]],
                          color=FG, fontsize=8)
 
     # Yagi-array frontier points on the right panel
@@ -118,58 +119,64 @@ def fig_cliff():
 
 # ---------------------------------------------------------------- fig 2
 def fig_yagi_vs_dish():
-    fig, ax = plt.subplots(figsize=(12, 6.4), facecolor=BG)
+    fig, ax = plt.subplots(figsize=(12, 6.6), facecolor=BG)
     style(ax, "Yagi array vs the 2.6 m dish: 433 gain against WIND DRAG AREA\n"
               "(down-and-right is good: more gain, less wind load)")
     ax.set_xlabel("433 MHz gain (dBi)")
     ax.set_ylabel("effective drag area  Cd*A (m$^2$)")
     ax.set_yscale("log")
+    ax.set_ylim(0.03, 12.0)
+    ax.set_xlim(9.0, 24.6)
 
-    # requirement lines
-    for lvl, lab, c in [(18.9, "FLRC 2.6 Mbps @+22 dBm: +18.9 dBi", "#ef5350"),
-                        (14.4, "FLRC 1.04 Mbps @+22 dBm: +14.4 dBi", "#ffa726"),
-                        (12.4, "FLRC 650 kbps @+22 dBm: +12.4 dBi", "#66bb6a")]:
-        ax.axvline(lvl, color=c, ls="--", lw=1.2, alpha=0.8)
-        ax.text(lvl + 0.1, 9, lab, rotation=90, color=c, fontsize=8, va="top")
-    # rotator class boundaries on drag area
-    for lim, lab, c in [(0.50, "Yaesu MAST 0.50 m2", "#2e7d32"),
-                        (1.00, "Yaesu TOWER 1.00 m2", "#7cb342"),
+    # requirement lines — labelled in the LEGEND, not inline (inline rotated text collided
+    # with the dish point labels; found by a bounding-box audit of the rendered figure).
+    req = [(18.9, "req: FLRC 2.6 Mbps @+22 dBm = +18.9 dBi", "#ef5350"),
+           (14.4, "req: FLRC 1.04 Mbps @+22 dBm = +14.4 dBi", "#ffa726"),
+           (12.4, "req: FLRC 650 kbps @+22 dBm = +12.4 dBi", "#66bb6a")]
+    for lvl, lab, c in req:
+        ax.axvline(lvl, color=c, ls="--", lw=1.3, alpha=0.9, label=lab)
+    # rotator class boundaries on drag area — also legend-labelled
+    for lim, lab, c in [(0.50, "Yaesu MAST rating 0.50 m2", "#2e7d32"),
+                        (1.00, "Yaesu TOWER rating 1.00 m2", "#7cb342"),
                         (2.65, "SPID BIG-RAS class ~2.65 m2", "#c62828")]:
-        ax.axhline(lim, color=c, ls=":", lw=1.2, alpha=0.8)
-        ax.text(9.2, lim * 1.05, lab, color=c, fontsize=8)
+        ax.axhline(lim, color=c, ls=":", lw=1.3, alpha=0.9, label=lab)
 
     # dish points
-    dx, dy, dl = [], [], []
+    dish_lab = {1.2: (5, 5), 1.9: (5, 5), 2.4: (7, -12), 2.6: (-46, 6), 3.0: (-40, 6)}
     for D in [1.2, 1.9, 2.4, 2.6, 3.0]:
-        dx.append(M.dish_gain_dBi(D, M.LAM_433))
-        dy.append(M.area(D) * M.CD_SOLID)
-        dl.append("%.1f m solid" % D)
-        dx.append(M.dish_gain_dBi(D, M.LAM_433))
-        dy.append(M.area(D) * M.CD_MESH)
-        dl.append("%.1f m mesh" % D)
-    ax.scatter(dx, dy, s=70, c="#ef5350", marker="s", label="dish (solid=upper, mesh=lower)", zorder=4)
-    for x, y, t in zip(dx, dy, dl):
-        ax.annotate(t, (x, y), textcoords="offset points", xytext=(5, 4), color=FG, fontsize=7)
+        x = M.dish_gain_dBi(D, M.LAM_433)
+        ys = M.area(D) * M.CD_SOLID
+        ym = M.area(D) * M.CD_MESH
+        ax.scatter([x, x], [ys, ym], s=64, c="#ef5350", marker="s",
+                   label="dish (upper=solid Cd1.2, lower=mesh Cd0.5)" if D == 1.2 else None,
+                   zorder=4)
+        ax.annotate("%.1f m solid" % D, (x, ys), textcoords="offset points",
+                    xytext=dish_lab[D], color=FG, fontsize=7)
+        ax.annotate("%.1f m mesh" % D, (x, ym), textcoords="offset points",
+                    xytext=(5, -11), color=FG, fontsize=7)
 
-    # Yagi array points
-    ax_x, ax_y, ax_l = [], [], []
+    # Yagi array points — only the three array rungs carry a label, staggered apart
     for name, (gdbi, boom, price, url) in M.YAGIS.items():
         g = M.yagi_geometry(boom_m=boom)
         for nb in (1, 2, 4):
             gain = gdbi + (M.db(nb) - (0.5 if nb == 2 else 0.8 if nb == 4 else 0.0))
             drag = nb * g["drag_m2"] + M.array_frame_area(nb, boom)
-            ax_x.append(gain)
-            ax_y.append(drag)
-            if nb in (2, 4) and name in ("Diamond A-430S15R", "FlexaYagi FX 7044", "FlexaYagi FX 7073"):
-                cost = 530.0 + nb * price + {1: 0.0, 2: 55.0, 4: 130.0}[nb] + 70.0
-                ax_l.append((gain, drag, "%dx %s\nEUR %.0f" %
-                             (nb, name.split()[-1], cost)))
-    ax.scatter(ax_x, ax_y, s=45, c="#ffb300", marker="o", label="Yagi / Yagi array", zorder=5)
-    for x, y, t in ax_l:
-        ax.annotate(t, (x, y), textcoords="offset points", xytext=(6, 6),
-                    color="#ffe082", fontsize=7)
-    ax.legend(fontsize=8, facecolor="#1a2026", edgecolor=GRID, labelcolor=FG, loc="lower right")
-    ax.set_xlim(9, 22)
+            ax.scatter([gain], [drag], s=45, c="#ffb300", marker="o",
+                       label="Yagi / Yagi array" if (name == "Sirio WY 400-6N" and nb == 1) else None,
+                       zorder=5)
+            if nb == 4 and name in ("Diamond A-430S15R", "FlexaYagi FX 7073"):
+                cost = 530.0 + nb * price + 130.0 + 70.0
+                off = (6, 6) if name == "Diamond A-430S15R" else (-64, -13)
+                ax.annotate("4x %s\nEUR %.0f" % (name.split()[-1], cost), (gain, drag),
+                            textcoords="offset points", xytext=off, color="#ffe082", fontsize=7)
+            if nb == 2 and name == "FlexaYagi FX 7044":
+                cost = 530.0 + nb * price + 55.0 + 70.0
+                ax.annotate("2x 7044\nEUR %.0f" % cost, (gain, drag),
+                            textcoords="offset points", xytext=(6, 4), color="#ffe082", fontsize=7)
+
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h, l, fontsize=6.5, facecolor="#1a2026", edgecolor=GRID, labelcolor=FG,
+              loc="lower right", ncol=1, framealpha=0.95)
     fig.tight_layout()
     p = os.path.join(OUT, "fig2-yagi-vs-dish.png")
     fig.savefig(p, dpi=140, facecolor=BG)
@@ -217,9 +224,10 @@ def fig_frontier():
     ax2.axvline(0.50, color="#2e7d32", ls=":", lw=1.2)
     ax2.axvline(1.00, color="#7cb342", ls=":", lw=1.2)
     ax2.axvline(2.65, color="#c62828", ls=":", lw=1.2)
-    ax2.text(0.52, 300, "Yaesu mast\n0.50 m2", color="#2e7d32", fontsize=7)
-    ax2.text(1.02, 300, "Yaesu tower\n1.00 m2", color="#7cb342", fontsize=7)
-    ax2.text(2.7, 300, "BIG-RAS\nclass", color="#c62828", fontsize=7)
+    # staggered so the two close verticals' labels do not collide (found by bbox audit)
+    ax2.text(0.52, 7000, "Yaesu mast\n0.50 m2", color="#2e7d32", fontsize=7)
+    ax2.text(1.02, 1900, "Yaesu tower\n1.00 m2", color="#7cb342", fontsize=7)
+    ax2.text(2.70, 7000, "BIG-RAS\nclass", color="#c62828", fontsize=7)
     style(ax2, "Station cost vs WIND drag area — the cliff is where the rotator class steps")
     ax2.set_xlabel("effective drag area  Cd*A (m$^2$)")
     ax2.set_ylabel("station cost (EUR)")

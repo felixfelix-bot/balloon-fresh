@@ -50,9 +50,12 @@ dish rungs are Pareto-dominated by a Yagi array** (Table 8b).
 **3. The pre-cliff high-gain answer IS the Yagi array — say it plainly.** A 4-bay array of
 Diamond A-430S15R Yagis (14.8 dBi each; 4× EUR 74.50 ≈ **EUR 298** of antennas) reaches
 **20.0 dBi** with an effective wind drag area of **0.454 m² — 7.1 % of a 2.6 m solid dish's
-6.37 m²** (Table 7). It fits the **EUR 359** Yaesu G-450CDC at its *mast* rating
-(0.454 ≤ 0.50 m²). It closes **FLRC 2.6 Mbps at 650 km with +1.1 dB** margin at the balloon's
-own +22 dBm, i.e. at the same requirement the 2.6 m dish is bought to satisfy.
+6.37 m²** (Table 7). It needs only the **EUR 359** Yaesu G-450CDC, using the **tower**
+rating (1.00 m², array at 45 % of rating) — the **mast** rating (0.50 m²) is only 9 % margin
+and is **too thin** once frame, ice and cable are counted. It closes **FLRC 2.6 Mbps at
+650 km with +1.1 dB** margin at the balloon's own +22 dBm, i.e. at the same requirement the
+2.6 m dish is bought to satisfy. A **2-bay** array (0.257 m², 19.1 dBi) is the
+mast-friendly variant.
 
 **4. Two sweet spots, both pre-cliff** (§8):
 
@@ -553,8 +556,14 @@ wind load than the dish** and **still inside the Yaesu tower class**. The lever 
 ```
 
 **This is the whole answer, in one table.** The 4-bay Yagi array fits the **EUR 359**
-rotator's *mast* rating with 9 % margin (0.454 ≤ 0.50 m²). The 2.6 m dish needs the
-**EUR 1775** rotator — **4.9× the price, for a station whose 433 gain is not higher.**
+rotator — but **mind the rating split, because it is thin.** 0.454 m² is **91 % of the
+Yaesu's 0.50 m² *mast* rating** (9 % margin), which is **not enough headroom** once array-frame
+tolerances, ice/wet snow, cable loops and baluns are added. The honest reading is therefore:
+* **4-bay array → mount on a TOWER (or a stiffened mast), using the 1.00 m² *tower* rating**
+  (same EUR 359 rotator): the array then sits at **45 % of rating** — real margin.
+* **or use the 2-bay array** (0.257 m² = **51 % of the mast rating**) — comfortable on a mast.
+The 2.6 m dish needs the **EUR 1775** rotator — **4.9× the price, for a station whose 433
+gain is not higher.**
 
 ### 7.5 The combining harness
 
@@ -587,9 +596,20 @@ build-quality risk, and it is measured, not assumed, if the array is built.
 
 > **A 4-bay 433 MHz Yagi array reaches the required ground gain (20.0 dBi vs +18.9 dBi
 > required for FLRC 2.6 Mbps at 650 km) at 7 % of the wind drag area of a 2.6 m dish and a
-> small fraction of its cost; it needs only the cheapest commercial AZ+EL rotator. It is the
-> pre-cliff high-gain answer, and the 2.6 m dish is Pareto-dominated by it on 433
-> gain-per-euro.**
+> small fraction of its cost; it needs only the cheapest commercial AZ+EL rotator (tower-
+> mounted). It is the pre-cliff high-gain answer.**
+
+**On "Pareto-dominated" — state the basis precisely.** The domination claim is made from the
+**model's cost-carrying frontier (Table 8b / §8.3), which includes reflector, rotator and
+mast/foundation cost**, NOT from Fig 2. Fig 2 carries **gain and drag area only** and
+therefore *cannot* by itself establish a cost argument — an independent consultant made this
+objection in round 1 and it is **accepted** (the correct figure for the cost claim is Fig 1).
+Read Table 8b as the cost evidence and Fig 2 as the wind-load evidence; **the two together,
+not either alone, make the case.** Likewise, "fits the EUR 359 rotator" is a statement about
+the **rotator's published wind-area rating vs the modelled Cd·A — nothing more**: it does not
+verify torque margin, bearing life or gust response, and the committed positioner analysis'
+own consultant found that a full gust/load case through the printed structure is
+**`TODO(unverified)`** (`positioner-lowcost-3dprinted.md` §11 point 10).
 
 ### 7.8 What a Yagi array CANNOT do that the dish can — stated plainly
 
@@ -957,6 +977,38 @@ Rendered by `python3 docs/analysis/render_gain_per_dollar_cliff_figures.py` into
 ![fig1](assets/gain-per-dollar/fig1-cost-cliff.png)
 ![fig2](assets/gain-per-dollar/fig2-yagi-vs-dish.png)
 ![fig3](assets/gain-per-dollar/fig3-frontier.png)
+
+### 13.1 Legibility — checked deterministically, not by eye
+
+`vision_analyze` returned **HTTP 503** (flat router, `glm-4.6v`, all providers exhausted) on the
+first attempt, so figure legibility was **not** judged by vision. Instead the layout was
+audited **mechanically**: the renderer is re-run with a monkeypatched `savefig` that takes
+every `Text`/`Annotation` window extent in display coordinates and reports **pairwise overlaps**
+and **edge clips**. The first render **failed** that audit:
+
+```
+== fig2-yagi-vs-dish.png  canvas (1200, 640)  texts 22
+   overlaps: [('FLRC 2.6 Mbps @+22 dBm: +18.9 dBi', '2.6 m solid', 10, 10),
+              ('FLRC 2.6 Mbps @+22 dBm: +18.9 dBi', '2.6 m mesh', 10, 10),
+              ('FLRC 650 kbps @+22 dBm: +12.4 dBi', '1.2 m solid', 10, 10),
+              ('4x A-430S15R/EUR 1028', '2x 7073/EUR 1085', 28.5, 4)]
+   edge-clipped: [('4x 7073/EUR 1590', ...)]
+== fig3-frontier.png
+   overlaps: [('Yaesu mast/0.50 m2', 'Yaesu tower/1.00 m2', 24.6, 21.6)]
+```
+
+Those collisions are the **same crowding the consultant independently reported in round 1**
+(§14). Fixed by moving the line labels into the legend and staggering the point labels; the
+re-audit is clean:
+
+```
+== fig1-cost-cliff.png  canvas (1300, 520)  overlaps: NONE  edge-clipped: NONE
+== fig2-yagi-vs-dish.png canvas (1200, 660) overlaps: NONE  edge-clipped: NONE
+== fig3-frontier.png     canvas (1300, 560) overlaps: NONE  edge-clipped: NONE
+```
+
+**This is the no-vision fallback: a plot's label collisions are measurable, so they are
+measured.**
 
 ---
 
