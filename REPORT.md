@@ -3,15 +3,19 @@
 **Deliverable:** `docs/analysis/PROGRAM-GAP-ANALYSIS.md`
 **Branch:** `docs/program-gap-analysis`  **Base:** `github/main` @ `09e1b69`
 
-## SHAs (git ls-remote on BOTH remotes)
+## SHAs
 
-- HEAD (local): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
-- github `docs/program-gap-analysis` (`git ls-remote github`): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
-- origin `docs/program-gap-analysis` (`git ls-remote origin`): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
-- ngit   `docs/program-gap-analysis` (`git ls-remote ngit`):   `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+- **Deliverable commit** (`docs/analysis/PROGRAM-GAP-ANALYSIS.md`): `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+- Verified on all three remotes at the time of that push:
+  - `git ls-remote github refs/heads/docs/program-gap-analysis` → `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+  - `git ls-remote origin refs/heads/docs/program-gap-analysis` → `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
+  - `git ls-remote ngit   refs/heads/docs/program-gap-analysis` → `398cc70862a8e13de5e6607a2f2a189de47c0e3f`
 
-All three match local HEAD. Pushed **github first, then ngit separately** (no `--atomic`).
-Commit: `398cc70` on top of `github/main` `09e1b69`.
+> **Branch tip advances with this file.** REPORT.md is gitignored and force-added, so every edit to it
+> is a new commit and moves the tip. The **doc commit** above is stable; the tip after the last report
+> commit must be read with `git ls-remote <remote> refs/heads/docs/program-gap-analysis`.
+> Pushed **github first, then ngit separately** (no `--atomic`).
+> Base: `github/main` @ `09e1b69`.
 
 ## What was produced
 
