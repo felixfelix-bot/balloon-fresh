@@ -126,6 +126,21 @@ for name, g in cands:
     m650 = eirp + G_BALLOON_24_RX_DBI - S_BALLOON_24_DBM - fspl_db(650.0, F_24)
     print(f"{name:<28}{g:>7.1f}{eirp:>10.1f}{inert:>10.1f}{m300:>12.1f}{m650:>12.1f}")
 
+rule("TABLE 1c — the 2.4 GHz uplink DEPENDS on the balloon-side LNA (do not hide this)")
+print("Same equation, three committed balloon RX sensitivities:")
+print("  -137 dBm bare LR2021 SF12 (best) ; -136 dBm F33+LNA (DIO5 HIGH) ; -124 dBm F33 NO-LNA (DIO5 LOW)")
+print("The no-LNA case is the repo's committed worst case (LINK-BUDGET-LICENCE-EXEMPT.md 1b/4.2).\n")
+print(f"{'antenna (G, EIRP)':<26}{'S=-137':>9}{'S=-136':>9}{'S=-124':>9}   @650 km")
+for name, g in [("omni (3 dBi -> 15 dBm)", WHIP_DBI), ("8 dBi panel (-> 20 dBm)", PANEL8_DBI)]:
+    eirp = min(LR2021_24GHZ_MAX_DBM + g, LE_24_EIRP_DBM)
+    out = []
+    for s in [-137.0, -136.0, -124.0]:
+        out.append(eirp + G_BALLOON_24_RX_DBI - s - fspl_db(650.0, F_24))
+    flag = "  <-- FAILS without the LNA" if out[-1] < 0 else ""
+    print(f"{name:<26}{out[0]:>9.1f}{out[1]:>9.1f}{out[2]:>9.1f}{flag}")
+print("\n=> Tier 0a/0b and Tier A all REQUIRE the balloon-side LNA at 650 km (the panel alone cannot")
+print("   rescue the no-LNA case: -2.3 dB at 650 km). At 300 km the no-LNA case closes (+4.4 dB).")
+
 # ----------------------------------------------------------------------------
 # 3. 433 MHz DOWNLINK — required ground gain and margin by class
 # ----------------------------------------------------------------------------
