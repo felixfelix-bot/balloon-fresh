@@ -180,6 +180,11 @@ Two honesty notes on the D³ law:
 
 ## 3. Cliff #1 — the rotator class, and the EUR/dB curve
 
+**Terminology, fixed after a consultant round (see §14):** the `EUR/dB` column below is
+**baseline-relative** — total station cost divided by the gain *consumed since the 0.6 m rung*.
+It is **not** the marginal cost of the next dB. The **marginal** value — the one that exposes
+the cliff — is Table 3b, and the two must not be conflated.
+
 **Table 2 — solid-dish drag area against the rotator ladder** (verbatim, condensed):
 
 ```
@@ -562,6 +567,19 @@ tolerances, ice/wet snow, cable loops and baluns are added. The honest reading i
 * **4-bay array → mount on a TOWER (or a stiffened mast), using the 1.00 m² *tower* rating**
   (same EUR 359 rotator): the array then sits at **45 % of rating** — real margin.
 * **or use the 2-bay array** (0.257 m² = **51 % of the mast rating**) — comfortable on a mast.
+
+**Design-margin requirement (accepted from consultant round 2, §14).** Three conditions attach
+to the tower reading, and none of them is optional: (i) the tower rating applies **only with
+the manufacturer-approved tower arrangement** (a mast-mounted 1.0 m² dish is still rated
+0.50 m² by the vendor); (ii) a **stated design margin** is required — **operating at or near a
+wind-area rating is not acceptable**; and (iii) the **pessimistic configuration
+(1.104 m², Cd 1.5 / 0.10 m² per antenna / heavy frame) EXCEEDS the 1.00 m² tower rating by
+≈10 % and must be rejected** unless a higher-rated rotator/support is selected or the array is
+redesigned (fewer bays, lighter frame, lower-Cd mounting). 45 % of a nominal area is a design
+*input*, not a guarantee: gust factor, ice, torque, eccentricity, structural flexibility and
+what the vendor's rating actually means all still apply, and the committed analysis' own open
+item (a full gust/load case through the printed structure) is unresolved.
+
 The 2.6 m dish needs the **EUR 1775** rotator — **4.9× the price, for a station whose 433
 gain is not higher.**
 
@@ -592,12 +610,48 @@ build-quality risk, and it is measured, not assumed, if the array is built.
   4 x FlexaYagi FX 7044    gain  21.8 dBi  antenna+harness EUR  786.00
 ```
 
-### 7.7 VERDICT on the array
+### 7.8 The moment check — what IS quantified, and what is NOT
+
+The consultant (round 2 and round 3) is right that **a Cd·A comparison is not a rotator-load
+comparison**, and asked for the moment to be shown. Here is the moment, from the same model
+(Table 7's `M@20` column), for the design wind at the *modelled* balanced lever:
+
+| config | drag Cd·A (m²) | F @ 20 m/s (N) | L est (m) | **M @ 20 m/s (N·m)** | M × SF 2 (N·m) |
+|---|---:|---:|---:|---:|---:|
+| **4-bay Diamond A-430S15R** | **0.454** | **111.1** | 0.69 | **77.2** | **154.4** |
+| 2-bay Diamond A-430S15R | 0.173 | 42.3 | 0.69 | 29.4 | 58.8 |
+| 2-bay FlexaYagi FX 7044 | 0.257 | 62.9 | 1.54 | 96.9 | 193.8 |
+| **2.6 m dish SOLID** | 6.371 | **1 560.9** | 0.65 | **1 014.6** | **2 029.2** |
+| 2.6 m dish MESH | 2.655 | 650.4 | 0.65 | 422.8 | 845.6 |
+
+**So the 4-bay array's modelled wind moment is 77 N·m — 7.6 % of the 2.6 m dish's
+1 015 N·m**, and at SF 2 it is **154 N·m**. That is the quantified part.
+
+**What is NOT quantified, and is therefore an explicit precondition — not a claim:**
+
+* the **gust/dynamic-pressure** case (20 m/s is the design wind in the committed model, not a
+  survival-wind specification; gust factors are not applied);
+* **eccentricity and asymmetry** (the array's wind moment is not one-dimensional, and the array
+  frame's own drag term dominates the 0.454 m²);
+* the **load path** through the array frame → mast/tower → rotator → foundation;
+* the **manufacturer's allowable moment** for the Yaesu G-450CDC — the vendor publishes a
+  **wind-load area in m², not an allowable moment**, so the moment above **cannot be compared
+  against a published limit** (`TODO(unverified)`: a Yaesu K-factor / allowable-torque figure
+  was not found);
+* the full **gust/load case through the printed structure** — the committed positioner
+  analysis' own open item (`positioner-lowcost-3dprinted.md` §11 point 10).
+
+**Therefore the conclusion below is a SCREENING conclusion — aerodynamic and economic — and is
+conditioned on completing the moment/gust/structural verification above.** It is not a
+validated mechanical substitution.
+
+### 7.9 VERDICT on the array
 
 > **A 4-bay 433 MHz Yagi array reaches the required ground gain (20.0 dBi vs +18.9 dBi
-> required for FLRC 2.6 Mbps at 650 km) at 7 % of the wind drag area of a 2.6 m dish and a
-> small fraction of its cost; it needs only the cheapest commercial AZ+EL rotator (tower-
-> mounted). It is the pre-cliff high-gain answer.**
+> required for FLRC 2.6 Mbps at 650 km) at ~7 % of the wind drag area and ~7.6 % of the modelled
+> wind moment of a 2.6 m dish, for a small fraction of its cost, and it needs only the cheapest
+> commercial AZ+EL rotator (tower-mounted, with a stated design margin). It is the pre-cliff
+> high-gain answer — as a SCREENING result, conditional on the load case in §7.8.**
 
 **On "Pareto-dominated" — state the basis precisely.** The domination claim is made from the
 **model's cost-carrying frontier (Table 8b / §8.3), which includes reflector, rotator and
@@ -611,7 +665,7 @@ verify torque margin, bearing life or gust response, and the committed positione
 own consultant found that a full gust/load case through the printed structure is
 **`TODO(unverified)`** (`positioner-lowcost-3dprinted.md` §11 point 10).
 
-### 7.8 What a Yagi array CANNOT do that the dish can — stated plainly
+### 7.10 What a Yagi array CANNOT do that the dish can — stated plainly
 
 1. **Narrow beam / interference rejection.** A 4-bay Yagi array's HPBW is ~15–20° at 433 MHz;
    a 2.6 m dish's is 18.6° at 433 MHz — comparable, so this is *not* a large array
@@ -943,6 +997,14 @@ the primary consumer does; each row's URL is in the source document):
 9. **A DiSEqC/USALS positioner price** with a viewable spec (pages gated this session).
 10. **Per-unit worm self-locking / backlash** (positioner doc `TODO`).
 11. **Array harness loss** — modelled at 0.5 / 0.8 dB (ESTIMATE); measure on the built array.
+12. **The Yaesu G-450CDC's allowable moment / K-factor** — the vendor publishes a wind-load
+    *area* (m²), not an allowable torque, so §7.8's 154 N·m (SF 2) **cannot be compared against
+    a published limit**. Needed before the array's rotator can be called verified.
+13. **Component-level array-frame Cd·A** — the frame is the dominant term (0.252 of 0.454 m²)
+    and is currently an ESTIMATE geometry; the consultant asked for measurement or a
+    component-level calculation.
+14. **The full gust/moment/structural load case** through the array frame → mast/tower →
+    rotator → foundation (the precondition on §7.9's screening verdict).
 
 ---
 
@@ -1014,14 +1076,221 @@ measured.**
 
 ## 14. Independent consultant verdict — recorded verbatim
 
-See the boxed section immediately below. The consultant was engaged via
-`/home/c03rad0r/hermes-orchestration/scripts/fleet/visual_consult.py` against **Fig 1 and
-Fig 2**, with the two claims restated in full and an explicit instruction to refute. The
-engine `visual_consult.py` reads the model pin from the `astra-consultant` profile and prints
-the **served** id; the served model is named below. Retries were applied on HTTP 503 per the
-`visual-consultant` skill.
+**Engine:** `/home/c03rad0r/hermes-orchestration/scripts/fleet/visual_consult.py` (one-shot
+vision consult through the local router; it reads the model pin from the `astra-consultant`
+profile and reports the **served** id from its JSON `served` key — per the `visual-consultant`
+skill, the CLI's own `visual_review:` token is a **default**, not the model's opinion, so the
+verdict is read from the **end of the answer body**).
+**Served model, every round: `gpt-6-astra`** (`--json` → `served: "gpt-6-astra"`, `status: 200`;
+the request `model` field echoes the same pin). Retries on HTTP-503 / socket timeout per the
+skill: round 1 landed attempt 1, round 2 landed attempt 1, round 3 attempt 1.
+**This is a two-(three-)round consult, and the findings were about the CLAIMS as much as the
+figures — which the skill says is the normal case.**
 
-<!--CONSULTANT_VERDICT-->
+### Round 1 — fig2 only, both claims asked of it
+
+> **VERDICT: QUALIFY** (served `gpt-6-astra`)
+>
+> 1. **Claim 1: the figure does not support the cost cliff.** The plot contains no cost axis,
+>    no dish prices, no 1.0 m dish point, and no marginal-cost calculation. It therefore cannot
+>    establish either the stated EUR/dB values or the 6.9× jump. The \(D^3\) argument is only
+>    partly applicable: wind force approximately scales as projected area, \(D^2\); the
+>    elevation-axis moment may scale approximately as \(D^3\), *if* the lever arm scales with
+>    diameter and the mounting geometry remains comparable. That does **not** imply that
+>    equipment cost scales as \(D^3\), nor that a particular commercial rotator class must be
+>    selected. Increasing diameter from 1.0 to 1.2 m gives a nominal moment ratio of only
+>    \(1.2^3 \approx 1.73\), not a 6.9× cost ratio. A commercial price discontinuity could
+>    certainly occur if a manufacturer's rating boundary is crossed, but that is an externally
+>    imposed procurement assumption, not something demonstrated by this figure. The figure
+>    shows a wind-load threshold crossing, not the claimed cost cliff or its attribution.
+> 2. **Claim 2: partly plausible, but not demonstrated and probably optimistic.** The gain
+>    arithmetic is reasonable as an idealized estimate … However, the plot does not
+>    independently establish the individual Yagi gain, stacking loss, harness loss, phasing
+>    accuracy, or realized array gain. … The stated \(0.454\ \mathrm{m^2}\) is plausible only if
+>    it is a carefully defined **effective \(C_dA\)**, and it *should not be treated as the
+>    complete wind load of the installed array* — likely omitted contributors include
+>    inter-element mounting rails and crossarms; boom clamps and rear support structure;
+>    mast-to-array brackets; baluns, feed cables and cable loops; junction boxes and phasing
+>    harnesses; **ice and wet snow loading**; nonuniform wind directions; and the force and
+>    moment from the array's offset from the elevation axis. **At 0.454 m², the claimed array
+>    is already about 91 % of a 0.50 m² class limit … Therefore "it fits the EUR 359 rotator"
+>    is not established.** … The statement that the array Pareto-dominates the dish is too
+>    strong … "Gain-per-euro" is especially unsupported because the figure does not provide
+>    comparable total-system costs.
+> 3. **The biggest flaw** is treating antenna-only \(C_dA\) points as if they prove complete
+>    station wind-load and rotator compatibility … That unsupported extrapolation is what
+>    drives the strongest conclusion — "fits the cheap rotator" and "Pareto-dominated".
+> 4. **Labels and readability.** … The vertical FLRC labels … are crowded by nearby plotted
+>    points and dish annotations. The +18.9 dBi label is particularly congested with the
+>    2.4/2.6 m dish labels. The "2.4 m solid," "2.4 m mesh," and "2.6 m mesh" annotations …
+>    are close enough to be ambiguous at normal size.
+> 5. **What a four-bay Yagi array cannot do:** … it cannot provide the dish's compact,
+>    single-aperture radiation pattern — the same narrow and approximately symmetric
+>    beamwidth in both principal planes, the same reflector-like sidelobe behaviour, or the
+>    same straightforward polarization/feed geometry.
+>
+> independent VERDICT: QUALIFY
+
+**Refutations accepted (all of them):**
+* **The cost-axis objection is CORRECT and is a defect of my consult setup, not of the work:**
+  Claim 1 was asked of Fig 2, which carries no cost axis. **Accepted**; round 2 supplied Fig 1
+  and the terminology was corrected (below). The cost claim lives in §3/Table 3b and Table 8b,
+  which *do* carry cost.
+* **The 91 %-of-mast-rating objection is CORRECT and material.** §0 / §7.4 were rewritten: the
+  4-bay array is **not** to be justified on the 0.50 m² mast rating; mount it on a **tower**
+  (1.00 m²) or use the **2-bay** array. This changed the recommendation.
+* **"Pareto-dominated" is now attributed to the cost-carrying model table, not to Fig 2**
+  (§7.9).
+* **The label-crowding findings matched my own deterministic bbox audit exactly** (§13.1) and
+  were fixed before round 2 — the consultant and the audit independently agreed.
+
+### Round 2 — fig1 (cost axis) + relabelled fig2
+
+> **VERDICT: QUALIFY** (served `gpt-6-astra`)
+>
+> 1. **C1 — substantially supported, but not literally as worded.** Figure 1 now carries the
+>    relevant cost axis and shows the intended discontinuity: the right panel shows marginal
+>    costs of approximately **EUR 50, 70, and 86/dB** before the transition; the
+>    **1.00-to-1.20 m** interval shows the approximately **EUR 592/dB** bar; the background
+>    class transition coincides with the increase from the Yaesu-class rotator to the SPX/SPID
+>    class; and the stated cause is consistent with the model: the \(D^3\) wind-moment scaling
+>    crosses the published rotator wind-area rating, producing a **EUR 773** rotator-price
+>    increase within the **EUR 938** station-cost increase. **However, the left-panel line is
+>    not showing the EUR 50–86/dB marginal values** — its label says whole-station EUR/dB
+>    *relative to the 0.6 m baseline*, so it is an average/incremental-from-baseline measure.
+>    The actual marginal values are in the right panel. Thus "whole-station marginal cost" is
+>    imprecise. … C1 is therefore supported after correcting the terminology.
+> 2. **C2 — broadly plausible and graphically supported, but not fully established as a
+>    like-for-like engineering comparison.** … Including the estimated mounting frame is an
+>    important correction, and the pessimistic value of **1.104 m²** is also useful. The
+>    remaining qualifications are significant: the exact **0.454 m²** and **1.104 m²** values
+>    are model inputs and cannot be read with precision from the plot; Yagi \(C_dA\) depends
+>    strongly on wind direction, element geometry, boom and mast exposure, spacing, frame
+>    shape, cabling and shielding, so the frame estimate needs measurement or a defensible
+>    component-level calculation; **a common \(C_dA\) comparison is not automatically a common
+>    rotator-load comparison** (wind moment also depends on centre of pressure, lever arm,
+>    array geometry and dynamic gust effects); and the dish/Yagi points should be matched by
+>    gain, polarization, bandwidth, feed loss and complete installation hardware.
+> 3. **The mast objection is not fully resolved merely by preferring the tower rating.** …
+>    0.454/0.50 = 91 % of the mast rating; 0.454/1.00 = 45 % of the tower rating; **the
+>    pessimistic 1.104 m² case exceeds the nominal 1.00 m² tower rating by about 10 %.** …
+>    Using the tower configuration is a meaningful improvement, but … it should not imply that
+>    45 % of the nominal area is automatically a comfortable design margin. Gust factors, ice,
+>    torque, eccentricity, structural flexibility and rating definitions still matter. The
+>    recommendation should therefore be strengthened to require: manufacturer or
+>    structural-engineer confirmation for the actual mount; a stated design margin rather than
+>    operation near a rating limit; and **rejection of the pessimistic configuration unless a
+>    higher-rated rotator/support is selected or the array is redesigned.**
+> 4. **Labels and readability.** I do not see a materially clipped label or an unresolvable
+>    text collision in either figure. The relabelling has improved the obvious collisions.
+>    Remaining presentation issues: fig1's right-panel legend occupies the upper-left plot area
+>    and may obscure low-gain bars or points; fig2's lower-right legend … can obscure low-area
+>    Yagi points; "2.6 m mesh" lies close to the BIG-RAS reference line; fig1's right panel
+>    does not label the bars by dish diameter; and the array values 0.454 and 1.104 m² are not
+>    directly annotated.
+> 5. **Biggest remaining overstatement:** treating \(C_dA\) as if it were directly
+>    interchangeable with a rotator's rated wind area and therefore implying that the Yagi
+>    array is safely substitutable for the dish. The array's lower calculated drag is
+>    persuasive, but it does not by itself establish adequate wind moment, gust, structural or
+>    rotator margin.
+>
+> independent VERDICT: QUALIFY
+
+**Refutations accepted (all of them):**
+* **Terminology: CORRECT.** The left panel is a baseline-relative *average*, not the marginal.
+  §3's "EUR/dB" column is now labelled **baseline-relative**, and the **marginal** figures are
+  stated as the cliff deltas (Table 3b) / the right panel. Fig 1's y-axis is relabelled
+  **"EUR per dB CONSUMED (vs 0.6 m baseline) [baseline-relative average, NOT the marginal]"**,
+  and the cliff bar is annotated.
+* **The 45 %-of-tower objection is CORRECT and material.** The recommendation now **requires
+  a stated design margin** and **rejects the pessimistic 1.104 m² configuration** (which
+  exceeds the 1.00 m² tower rating by ~10 %) unless a higher-rated rotator/support is chosen or
+  the array is redesigned; and it states that the tower rating applies only with the
+  manufacturer-approved tower arrangement. See §7.4 / §7.8 / §7.9.
+* **Cd·A ≠ rotator load: CORRECT.** §7.8/§7.9 now say "fits the rotator" means **only** modelled
+  Cd·A vs the published wind-area rating, and does not verify moment, CP, lever arm, gust,
+  eccentricity, bearing life or structure — with the open gust/load item named.
+* **Presentation findings were fixed** (legends moved, cliff bar labelled, armour annotated
+  0.454 / pess. 1.104 m²), re-verified by the bbox audit (§13.1).
+
+### Round 3 — the revised figures
+
+> **VERDICT: QUALIFY** (served `gpt-6-astra`)
+>
+> 1. **Point A — resolved.** Yes. The left-panel label now explicitly identifies the quantity
+>    as the **whole-station, baseline-relative average**, and explicitly says it is **not the
+>    marginal**. The subtitle directs the reader to the right panel for marginal values. The
+>    distinction is now unambiguous, and the right-panel title/axis reinforce it.
+> 2. **Point B — resolved, with an appropriate qualification.** Yes. The revised recommendation
+>    no longer treats 0.454 m² as comfortably fitting the 0.50 m² mast rating. The 91 % figure
+>    and the warning about frame, ice, cable, and design margin are appropriately cautious. …
+>    This is now an honest rating comparison rather than a claim of comfortable mechanical fit.
+> 3. **Point C — adequately disclosed, but not technically closed.** The wording is now
+>    correct: matching modelled \(C_dA\) to a published wind-area rating is not a rotator-load
+>    or structural verification. It explicitly excludes moment, centre of pressure, lever arm,
+>    gust effects, eccentricity, bearing life, and structural adequacy. **However, additional
+>    wind-moment quantification is still required before the array-versus-dish substitution can
+>    be called engineering-supported.** At minimum, the comparison should provide, for each
+>    relevant orientation and design wind case: resultant wind force and overturning torque at
+>    the rotator; centre-of-pressure location and effective lever arm; gust/dynamic pressure
+>    assumptions and relevant load combinations; eccentricity and asymmetry effects; load
+>    transfer through the array frame, mast/tower, rotator and foundation; and comparison with
+>    the manufacturer's allowable moment, axial, radial and combined-load limits, including
+>    the stated design margin. **The present material supports an aerodynamic and economic
+>    screening conclusion, not yet a validated mechanical substitution.**
+> 4. **Point D/E and figure legibility.** The cost-table attribution of "Pareto-dominated" is
+>    now properly separated from fig2 … The 4-bay annotation also identifies both the nominal
+>    \(C_dA\) and pessimistic value. The legend positions and cliff annotation are improved.
+>    **I do not see a material label collision or major clipping in either figure.** Minor
+>    presentation issues remain: several small annotations in fig2 are dense …; the 4-bay
+>    annotation is visually crowded near the plotted point …; and the vertical axis text in
+>    fig1 is long, although it remains legible. These are presentation refinements, not
+>    substantive defects.
+> 5. **Single biggest remaining overstatement.** … any wording that presents the 4-bay array as
+>    a **supported dish substitution or mechanically acceptable tower installation**, rather
+>    than as a promising model result conditional on a completed load case. The figures
+>    establish the economic/gain/\(C_dA\) comparison, but they do not establish wind moment,
+>    rotator life, or structural adequacy. The recommendation should therefore remain
+>    explicitly conditional: *economically attractive and within the nominal area rating only
+>    subject to completion and approval of the full gust/moment/structure verification.*
+>
+> independent VERDICT: QUALIFY
+
+**Refutations accepted:**
+* **Point C is CORRECT and is the round-3 result.** §7.8 was added: it now publishes the
+  **modelled wind moment** (4-bay array **77 N·m** at the balanced lever, **154 N·m** at
+  SF 2 — **7.6 %** of the 2.6 m dish's **1 015 N·m**), and then names, one by one, **what is
+  NOT quantified** (gust/dynamic pressure, eccentricity/asymmetry, the load path, the
+  **absent manufacturer allowable-moment figure** for the Yaesu, and the committed doc's open
+  gust/load case) as an **explicit precondition**. §7.9's verdict was **downgraded to a
+  SCREENING result, conditional on that load case.**
+* **The "biggest remaining overstatement" is accepted verbatim:** the array is presented as a
+  *screening* result, and the ADR's D2 now carries the same conditionality.
+* **Presentation refinements** (dense fig2 annotations, the crowded 4-bay callout, the long
+  fig1 y-label) are noted as **minor**; the y-label was kept for correctness (it is the
+  terminology fix round 2 asked for) and fig2's callout was expanded to carry the
+  nominal+pessimistic values the consultant asked for.
+
+### 14.2 Net effect of the consultation on this document
+
+| Consultant finding | Action taken |
+|---|---|
+| Fig 2 cannot support a *cost* cliff | Fig 1 supplied; cost claim attributed to §3/Table 3b/Table 8b; §7.9 states Fig 2 is wind-load evidence only |
+| 0.454 m² is 91 % of the mast rating | Recommendation changed to **tower** mounting (45 %) or the **2-bay** array (51 % of mast) |
+| Pessimistic 1.104 m² **exceeds** the tower rating by ~10 % | Pessimistic case now **rejected** unless a higher-rated rotator/support is chosen or the array is redesigned; a stated design margin is required |
+| Cd·A ≠ rotator load (moment, CP, lever arm, gust) | Stated explicitly in §7.8, **with the moment table added** (4-bay 77 N·m = 7.6 % of the dish's 1 015 N·m) and a named precondition list; conclusion downgraded to a SCREENING result |
+| "marginal" vs "baseline-relative" | Term clarified throughout; Fig 1 y-axis relabelled; Table 3's column re-captioned |
+| Label crowding | Confirmed independently by a deterministic bbox audit and fixed |
+| What the array cannot do (pattern, polarisation) | Already §7.10; corroborated by the consultant |
+
+**Nothing in the consultant verdict refuted the Yagi-array conclusion; every round's
+objections were about (a) which figure carries which axis, (b) margin discipline, (c)
+terminology, and (d) the depth of the mechanical verification — and each was accepted and acted
+on. The verdict was QUALIFY in all three rounds, never CONFIRM, and that is recorded honestly
+as the verdict.** The residual, un-closed item is the **full gust/moment/structural load case**,
+which this document cannot complete (it needs a structural computation and a vendor allowable
+moment that is not published): **the array is a SCREENING result, and the dish is not displaced
+until that load case closes.**
 
 ---
 

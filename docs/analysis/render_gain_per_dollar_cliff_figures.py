@@ -75,8 +75,10 @@ def fig_cliff():
 
     ax1.plot(G, eur_db, "-o", color="#4fc3f7", lw=2, ms=5)
     ax1.set_xlabel("433 MHz gain (dBi)")
-    ax1.set_ylabel("whole-station EUR per dB (vs 0.6 m rung)")
-    style(ax1, "The cliff: whole-station EUR/dB vs 433 gain (dish path)")
+    ax1.set_ylabel("whole-station EUR per dB CONSUMED (vs 0.6 m baseline)\n"
+                   "[baseline-relative average, NOT the marginal]")
+    style(ax1, "The cliff: whole-station EUR/dB vs 433 gain (dish path)\n"
+               "marginal values are in the RIGHT panel")
     ax1.set_yscale("log")
     offs = {0.9: (-30, 10), 1.0: (6, -14), 1.2: (6, 8), 2.6: (-40, 10), 3.0: (6, -14)}
     for i, r in enumerate(rows):
@@ -98,6 +100,12 @@ def fig_cliff():
     bars_x = [round(((rows[i][1] + rows[i - 1][1]) / 2), 2) for i in range(1, len(rows))]
     cols = [ROT_COLORS["bigras"] if m > 300 else "#4fc3f7" for m in marg]
     ax2.bar(bars_x, marg, width=0.35, color=cols, alpha=0.85)
+    # label ONLY the single largest (cliff) bar so the interval is identifiable from this panel
+    imax = max(range(len(marg)), key=lambda k: marg[k])
+    ax2.annotate("THE CLIFF\n%.2f->%.2f m\n%.0f EUR/dB" %
+                 (rows[imax][0], rows[imax + 1][0], marg[imax]),
+                 (bars_x[imax], marg[imax]), textcoords="offset points",
+                 xytext=(8, -6), color="#ffcdd2", fontsize=8)
     ax2.set_xlabel("433 MHz gain (dBi)")
     ax2.set_ylabel("marginal EUR per dB (bar)   |   array station EUR/dB (diamond)")
     style(ax2, "Marginal EUR/dB: flat until the rotator steps (red = post-cliff)")
@@ -107,7 +115,7 @@ def fig_cliff():
                Patch(color=ROT_COLORS["bigras"], alpha=.4, label="SPID BIG-RAS (EUR 1775)"),
                plt.Line2D([], [], marker="D", ls="", color="#ffb300", label="Yagi array station")]
     ax2.legend(handles=handles, fontsize=7, facecolor="#1a2026", edgecolor=GRID,
-               labelcolor=FG, loc="upper left")
+               labelcolor=FG, loc="upper right")
     fig.suptitle("Balloon ground station: the cost cliff in gain-per-dollar (433 MHz dish) "
                  "— model output", color=FG, fontsize=12)
     fig.tight_layout(rect=[0, 0, 1, 0.94])
@@ -164,11 +172,16 @@ def fig_yagi_vs_dish():
             ax.scatter([gain], [drag], s=45, c="#ffb300", marker="o",
                        label="Yagi / Yagi array" if (name == "Sirio WY 400-6N" and nb == 1) else None,
                        zorder=5)
-            if nb == 4 and name in ("Diamond A-430S15R", "FlexaYagi FX 7073"):
+            if nb == 4 and name == "Diamond A-430S15R":
                 cost = 530.0 + nb * price + 130.0 + 70.0
-                off = (6, 6) if name == "Diamond A-430S15R" else (-64, -13)
-                ax.annotate("4x %s\nEUR %.0f" % (name.split()[-1], cost), (gain, drag),
-                            textcoords="offset points", xytext=off, color="#ffe082", fontsize=7)
+                ax.annotate("4x A-430S15R  20.0 dBi\nCdA 0.454 m2 (pess. 1.104)\nEUR %.0f" % cost,
+                            (gain, drag), textcoords="offset points", xytext=(6, 8),
+                            color="#ffe082", fontsize=7)
+            if nb == 4 and name == "FlexaYagi FX 7073":
+                cost = 530.0 + nb * price + 130.0 + 70.0
+                ax.annotate("4x 7073 (23.2 dBi)\nEUR %.0f" % cost, (gain, drag),
+                            textcoords="offset points", xytext=(-30, -20),
+                            color="#ffe082", fontsize=7)
             if nb == 2 and name == "FlexaYagi FX 7044":
                 cost = 530.0 + nb * price + 55.0 + 70.0
                 ax.annotate("2x 7044\nEUR %.0f" % cost, (gain, drag),
@@ -176,7 +189,7 @@ def fig_yagi_vs_dish():
 
     h, l = ax.get_legend_handles_labels()
     ax.legend(h, l, fontsize=6.5, facecolor="#1a2026", edgecolor=GRID, labelcolor=FG,
-              loc="lower right", ncol=1, framealpha=0.95)
+              loc="upper left", ncol=1, framealpha=0.95)
     fig.tight_layout()
     p = os.path.join(OUT, "fig2-yagi-vs-dish.png")
     fig.savefig(p, dpi=140, facecolor=BG)

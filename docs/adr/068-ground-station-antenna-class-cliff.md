@@ -68,9 +68,15 @@ and naming the concrete capability the crossing buys.**
 preferred antenna class is a stacked 433 MHz Yagi ARRAY, not a dish.** A 4-bay stack of
 commercially available 433 Yagis reaches **~20 dBi** — at or above the required **+18.9 dBi**
 for FLRC 2.6 Mbps at 650 km — with an effective wind drag area of **0.454 m²**, i.e.
-**~7 % of a 2.6 m solid dish's 6.37 m²**, and it fits the **EUR 359** rotator class. On 433
-gain-per-euro the 2.4–3.0 m dish rungs are **Pareto-dominated by the array** (the dish has
-*no more* 433 gain and costs 4–5×).
+**~7 % of a 2.6 m solid dish's 6.37 m²**, and it needs only the **EUR 359** rotator class.
+On 433 gain-per-euro the 2.4–3.0 m dish rungs are **Pareto-dominated by the array** (the dish
+has *no more* 433 gain and costs 4–5×), as computed from the cost-carrying model table.
+**Two binding qualifications, both accepted from an independent consultant round:** the array
+must be sized against the rotator's **TOWER** rating (1.00 m², array at 45 %) — the **MAST**
+rating (0.50 m²) leaves only 9 % margin and is **too thin** once frame, ice and cable are
+counted — and the **pessimistic drag case (1.104 m²) EXCEEDS the tower rating by ~10 % and is
+rejected** unless a higher-rated rotator/support is chosen or the array is redesigned. A stated
+design margin is required; operating near a wind-area rating is not accepted.
 
 **D3. Mesh, stow + a MECHANICAL LATCH + anemometer, and balanced-axis geometry are accepted
 levers; the counterweight is accepted for a *different* purpose than often assumed.**
@@ -130,16 +136,24 @@ mesh-dish vendor's line and is the highest-uncertainty line item.
 ## 3. Consequences
 
 * **Positive:** the antenna decision is made on a measured link at a known range instead of on
-  a worst-case model; the high-gain station is reachable at a fraction of the Tier-B cost and a
-  fraction of the wind load; the cliff becomes an explicit, stated constraint.
+  a worst-case model; the high-gain station is reachable at a fraction of the Tier-B cost
+  (**~7 % of the wind drag area, ~7.6 % of the modelled wind moment**) and needs no rotator
+  above the **EUR 359** class; the cliff becomes an explicit, stated constraint.
 * **Negative / risk:** the array's advantage is **regime-dependent** — it evaporates at
   +13 dBm / 2.6 Mbps, where the dish is required (§D5). A **linearly polarised** array is
   **not** robust to a tumbling balloon the way a CP dish feed is (the strongest genuine
   argument for the dish). The array's drag estimate is **dominated by its mounting frame**
   (0.252 of 0.454 m²), so a heavy frame, ice or cable load raises it — the 2.5× pessimistic
   case (1.104 m²) still fits the Yaesu tower class, but the margin is not unlimited.
-* **Open:** the whole array case rests on **array harness loss** (modelled 0.5 / 0.8 dB) and on
-  the **unmeasured 433 MHz FLRC sensitivity**. Both are measured, not assumed, under D6.
+* **Open (the array is a SCREENING result until these close):**
+  1. **the full gust/moment/structural load case** through the array frame → mast/tower →
+     rotator → foundation — an independent consultant's round-3 precondition;
+  2. the **array harness loss** (modelled 0.5 / 0.8 dB) and the **component-level frame Cd·A**
+     (the frame is 0.252 of the 0.454 m² and is an ESTIMATE geometry);
+  3. the **unmeasured 433 MHz FLRC sensitivity**. Both (2) and (3) are measured, not assumed,
+     under D6.
+  4. the **Yaesu G-450CDC allowable moment** is not published (a wind-load *area* is), so the
+     array's 154 N·m (SF 2) cannot be checked against a vendor limit.
 
 ## 4. Reproduce
 

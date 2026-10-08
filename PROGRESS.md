@@ -55,9 +55,22 @@ Yaesu G-450CDC EUR 359.00; metal-market.eu 25x25 welded mesh "ab EUR 7,00"; Wiki
 (single-axis satellite motor class). **Found: no 433 MHz dish feed in the RF Hamdesign
 catalogue; the 2.4 m / 3.0 m mesh dish kits are "Out of production".**
 
-### M5 — consultant
-Engaged `visual_consult.py` on fig1+fig2 with retries on HTTP 503; verdict boxed verbatim in
-the doc §14 with the served model named.
+### M5 — consultant (3 rounds, all served by `gpt-6-astra`, verdict QUALIFY each time)
+R1: fig2 only → REFUTED that fig2 can carry the cost claim; flagged 0.454 m² = 91 % of the
+    mast rating; flagged label crowding (matched my own bbox audit).
+R2: fig1 (cost axis) + fixed fig2 → C1 "supported after correcting terminology"; required
+    explicit design margin + rejection of the pessimistic 1.104 m² case.
+R3: revised figs → points A/B/D/E RESOLVED; C "adequately disclosed but not technically
+    closed" → added the §7.8 moment table + precondition list and DOWNGRADED §7.9 to a
+    SCREENING result.
+All three verdicts recorded VERBATIM in doc §14 with `served: gpt-6-astra` named; every
+refutation accepted and acted on (§14.2).
+
+### M5b — deterministic figure audit (no-vision fallback)
+`vision_analyze` = HTTP 503, so figure legibility was audited mechanically (matplotlib window
+extents: pairwise Text overlaps + edge clips). First render FAILED (4 overlaps in fig2, 1 in
+fig3 — same crowding the consultant reported); after fixes all three figures are
+overlaps NONE / clips NONE. Recorded in doc §13.1.
 
 ### M6 — REPORT.md + final push (github, then ngit): SHAs pasted.
 

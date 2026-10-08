@@ -115,10 +115,33 @@ facts found this session: the **2.4 m / 3.0 m mesh dish kits are "Out of product
 
 ## 5. Consultant verdict
 
-Recorded **verbatim** in `docs/analysis/gain-per-dollar-cliff.md` §14, with the **served
-model** named (read from `--json`'s `served` key, per the `visual-consultant` skill pitfalls
-11 and the strict `visual_reviewer_model:` key). Refutations, if any, are recorded as results
-in that section.
+**Three rounds, every one served by `gpt-6-astra`** (`--json` → `served: "gpt-6-astra"`,
+`status: 200`), **verdict QUALIFY each time** — never CONFIRM. All three answers are recorded
+**verbatim** in `docs/analysis/gain-per-dollar-cliff.md` §14, with the served model named (the
+verdict is read from the **end of the answer body**, not from the CLI's default
+`visual_review:` token — per `visual-consultant` pitfalls 11).
+
+**Refutations, recorded as results:**
+
+| Round | Refutation | Accepted action |
+|---|---|---|
+| 1 | fig2 carries no cost axis → cannot support the *cost* cliff | supplied fig1; attributed the cost claim to §3/Table 3b/Table 8b |
+| 1 | 0.454 m² is **91 %** of the 0.50 m² mast rating → "fits the EUR 359 rotator" **not established** | recommendation changed to TOWER rating (45 %) / 2-bay array |
+| 1 | label crowding on the vertical FLRC labels | **independently confirmed by my bbox audit**; fixed; re-audit clean |
+| 2 | "marginal" vs "baseline-relative" conflated on fig1 | y-axis relabelled; Table 3 re-captioned; cliff bar annotated |
+| 2 | the pessimistic **1.104 m² EXCEEDS** the 1.00 m² tower rating by ~10 % | pessimistic case now **rejected** unless a higher-rated rotator/support is chosen or the array redesigned; a stated design margin is required |
+| 2 | Cd·A ≠ rotator load (moment, CP, lever arm, gust) | §7.8 added with the moment table + a named precondition list |
+| 3 | moment must be quantified or the substitution is only a *screening* result | §7.8 publishes 4-bay **77 N·m = 7.6 %** of the dish's 1 015 N·m; §7.9 **downgraded to SCREENING, conditional on the load case** |
+
+**The Yagi-array conclusion was never refuted** — every objection was about axis attribution,
+margin discipline, terminology, or verification depth — but the verdict is **QUALIFY, not
+CONFIRM**, and the residual un-closed item (the full gust/moment/structural load case) is named
+as the precondition in §7.8/§7.9 and in ADR-068's Consequences.
+
+**No-vision fallback:** `vision_analyze` returned **HTTP 503** (flat router, `glm-4.6v`, all
+providers exhausted), so figure legibility was also checked **deterministically** — matplotlib
+window extents with pairwise-overlap and edge-clip detection — which caught the same
+collisions the consultant reported. Recorded in doc §13.1.
 
 ## 6. Push state
 
