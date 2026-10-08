@@ -40,9 +40,15 @@ real parts, deliver a cited doc + ADR + consultant verdict.
       7.38 m -> 0.74 m tenfold) and reported "no substantive contradiction". One cosmetic
       note (gray rating-line label under the legend) accepted and fixed (label moved to the
       lower right; no plotted value changed).
-- [~] M5d consultant round 4 (final artifact, post-fix) — retry loop
-      `/tmp/consult_retry4.sh`, log `/tmp/consult_retry4.log`; TODO(unverified) if not served.
-      Net cycle so far: REFUTE -> REFUTE -> CONFIRM, all gpt-6-astra.
+- [x] M5d consultant round 4 (post-CONFIRM artifact): **REFUTE, layout only** (crowded
+      3.49 m label; call-out past the right boundary; panel (a) tallest label above the top
+      boundary) — AND in the same answer it independently confirmed every value and the claim
+      ("The plotted values support the stated engineering claims ... the tenfold diameter
+      change for a 20 dB TX-power change"). All four layout points fixed (panel (a) ylim 34.5;
+      panel (b) legend -> top-right; call-out shortened + moved; rating label -> far right).
+- [~] M5e consultant round 5 (post-round-4 artifact) — retry loop
+      `/tmp/consult_retry5.sh`, log `/tmp/consult_retry5.log`; TODO(unverified) if not served.
+      Net cycle: REFUTE -> REFUTE -> CONFIRM -> REFUTE(layout only), all gpt-6-astra.
 - Review-cycle note: NO served round disputed the physics, the trade arithmetic or the
   recommendation; both rejecting rounds disputed that the figure/prose said precisely what the
   numbers say, and both findings were fixed and are verifiable.

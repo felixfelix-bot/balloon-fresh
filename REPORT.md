@@ -90,11 +90,18 @@ ADR update + a consultant verdict.
   confirmed panel (a) (27.9 dBi > 20 dBi; 7.9 dBi < 12 dBi; 7.38 m → 0.74 m ≈ tenfold for 20 dB),
   and reported **"no substantive contradiction between the figure and the precise claim"** —
   with one cosmetic note (the gray rating-line label sat under the legend).
-* **Post-CONFIRM change:** only that one label was moved to the lower right (the change the
-  reviewer itself asked for; no plotted value changed). **Round 4 re-reviews that artifact** ⇒
-  see below.
-* **Net:** the review cycle is **REFUTE → REFUTE → CONFIRM** (three rounds served, all
-  `gpt-6-astra`). **Neither rejecting round disputed the physics, the trade arithmetic or the
+* **Round 4 (post-CONFIRM artifact) — REFUTE, but layout only:** it reported a crowded
+  3.49 m label, the call-out reaching past the right boundary and panel (a)'s tallest label
+  above the top boundary — **and in the same answer independently confirmed every value and
+  the claim: *"The plotted values support the stated engineering claims: SOLID exceeds 1.00×
+  from 2.40 m onward; mesh is 0.65× at 2.62 m, 0.97× at 3.00 m, and exceeds the line at
+  3.49 m. The 13-to-33 dBm comparison also shows the tenfold diameter change for a 20 dB
+  TX-power change."*** All four layout points were fixed (panel (a) headroom; legend →
+  top-right; call-out shortened and moved; rating label → far right).
+* **Round 5 (post-round-4 artifact):** run against the flaky lane ⇒ if not served it is
+  `TODO(unverified)`; **no verdict is claimed and none is invented.**
+* **Net:** the review cycle is **REFUTE → REFUTE → CONFIRM → REFUTE (layout only, values
+  confirmed)** — four rounds served, all `gpt-6-astra`. **Neither rejecting round disputed the physics, the trade arithmetic or the
   recommendation** — both affirmed panel (a) and the solid-vs-mesh conclusion. What they
   disputed, correctly, was that the figure and the prose said precisely what the numbers say.
   Recorded as-is, **not** rounded up to a clean approval.

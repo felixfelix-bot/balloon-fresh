@@ -788,20 +788,42 @@ right** of panel (b), clear of the legend. That is the only change made after th
 it is the change the reviewer itself asked for and it touches no plotted value. Round 4 below
 re-reviews the resulting artifact.
 
-### 7.4 Round 4 — re-consult on the final artifact (post-fix)
+### 7.4 Round 4 — re-consult on the post-CONFIRM artifact (label move only)
 
-**Engagement status:** _`TODO(unverified)` — see below._
+**Engaged on attempt 1.** **Served model (read back from the response body): `gpt-6-astra`**,
+status 200.
 
-**Served model:** `TODO(unverified)` · **Verdict:** `TODO(unverified)` · **Answer:**
-`TODO(unverified)`
+**Consultant answer, verbatim:**
 
-> **If round 4 was not served, the honest record is:** **three** rounds were served by
-> **`gpt-6-astra`** — two **REFUTE** (specific, correct, all fixed) and then a **CONFIRM**
-> (§7.3). The only change made after that CONFIRM is the rating-line label move the CONFIRM
-> itself requested; no plotted value, axis, annotation of a value, or claim changed. **No
-> verdict is claimed for the unfixed-round-4 artifact** — but the reviewer's own CONFIRM
-> covers the figure modulo that one label position, and the "Any remaining contradiction: no"
-> answer is unaffected by it.
+> 1. No. Most labels are readable, but the 3.49 m solid-value label is crowded with/partly
+>    under the legend; the orange call-out is readable, while the gray rating-line label is
+>    clear.
+>
+> 2. No text appears visibly cut off, but the orange call-out extends beyond the right plot
+>    boundary, and the +27.9 dBi label sits above the panel’s top boundary.
+>
+> 3. The plotted values support the stated engineering claims: SOLID exceeds 1.00× from 2.40 m
+>    onward; mesh is 0.65× at 2.62 m, 0.97× at 3.00 m, and exceeds the line at 3.49 m. The
+>    13-to-33 dBm comparison also shows the tenfold diameter change for a 20 dB TX-power
+>    change.
+>
+> independent VERDICT: REFUTE
+
+**How round 4 changed this document — ACCEPTED, and it is a layout-only finding.** Item 3 is
+the substantive one, and it is an **independent confirmation of every number and of the whole
+claim**, read off the figure: *"the plotted values support the stated engineering claims."*
+Items 1–2 are presentation: a crowded 3.49 m label, the call-out reaching past the right
+boundary, and panel (a)'s tallest label sitting above the top boundary. All four were fixed:
+
+* panel (a) given vertical headroom (`ylim` top → 34.5) so the **+27.9 dBi** label sits inside
+  the panel;
+* panel (b) **legend moved to the empty top-right**, away from the 3.49 m solid-value label;
+* the **3.00 m mesh call-out shortened to three short lines** and moved right, fully inside the
+  plot;
+* the **rating-line label moved to the far right**, and the panel's x-limits widened to open
+  that space.
+
+Round 5 re-reviews the resulting artifact (§7.6).
 
 ### 7.5 Summary of the review cycle
 
@@ -810,7 +832,8 @@ re-reviews the resulting artifact.
 | 1 | original figure | **REFUTE** | `gpt-6-astra` | claim framing tightened; ≥3 m mesh bars recoloured + call-out; lever-arm/Cd assumptions added to the figure |
 | 2 | 1st revision | **REFUTE** | `gpt-6-astra` | "AT the rating" → "**just under the line, no usable margin**" (0.97× is below 1.00×) in doc, ADR and figure; 2 label collisions fixed |
 | 3 | 2nd revision | **CONFIRM** | `gpt-6-astra` | the single remaining note (rating-line label under the legend) accepted and fixed |
-| 4 | final artifact | see §7.4 | — | — |
+| 4 | post-CONFIRM artifact | **REFUTE** (layout only; **item 3 confirms all values and the claim**) | `gpt-6-astra` | headroom for panel (a)'s tallest label; panel (b) legend → top-right; call-out shortened/moved inside the plot; rating label → far right |
+| 5 | final artifact | see §7.6 | — | — |
 
 **Neither served round disputed the physics, the trade arithmetic, or the recommendation** —
 both rounds affirmed panel (a) and the solid-vs-mesh conclusion (§7.1 item 1, §7.3 item 2).
@@ -818,6 +841,17 @@ What the consultant disputed, twice, and correctly, was that **the figure and th
 precisely what the numbers say** — and in both cases the fix was applied and is verifiable in
 the doc, the ADR and the figure source. **This is reported as a review cycle with two
 rejections and one approval, not rounded up to a clean approval.**
+
+### 7.6 Round 5 — re-consult on the final artifact
+
+**Engagement status:** _`TODO(unverified)` — round 5 was run against the flaky lane; if it was
+not served, no verdict is claimed for it and none is invented. Rounds 1–4 are recorded above in
+full._
+
+**Net review cycle (served rounds): REFUTE (r1) → REFUTE (r2) → CONFIRM (r3) → REFUTE (r4,
+layout only; item 3 independently confirms the values and the claim).** Every finding in every
+round was accepted as correct and fixed. **No served round ever disputed the physics, the trade
+arithmetic, or the recommendation.**
 
 > The CLI's own `visual_review: APPROVED` token is quoted in §7.1 **only** with the warning
 > that it is `visual_consult.py`'s `--verdict` **default** (`scripts/fleet/visual_consult.py:247`),
