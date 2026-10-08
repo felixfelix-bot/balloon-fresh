@@ -646,8 +646,9 @@ GO-window guard still applies. Without `--armed-file` the TX uses the
 `cvm_sync` subscriber seam against a live bus, and the RX generates the
 ARMED and writes it to `--armed-out`.
 
-**Live-bus wiring (RX side) now ships** as `tools/cvm_armed_publisher.py`: keys
-come from **env vars only** (`CVM_RX_NSEC`/`CVM_RX_HEX` for the RX publisher,
+**Both halves of the live bus now ship.** On the RX side,
+`tools/cvm_armed_publisher.py` reads keys from **env vars only**
+(`CVM_RX_NSEC`/`CVM_RX_HEX` for the RX publisher,
 `CVM_SERVER_NSEC`/`CVM_SERVER_HEX` for the board server — no CLI key args), the
 client key is **asserted to differ** from the server key at startup, the ARMED
 payload is published as a **NIP-59 kind-1059 gift wrap** to `--tx-npub` (never a
@@ -692,11 +693,27 @@ python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
     --results rc-results.json --dry-run
 ```
 
-The TX side still has no relay subscriber CLI in the shipped tool, so **in the
-field a GO TX must run `--armed-file`** with the ARMED relayed by hand unless the
-TX half of this wiring lands (P3). The RP2/allowed-npub hardening in the ADR
-lands with that TX wiring: until then a GO TX must not be assumed to be
-relay-authenticated.
+**The TX-side production listener now ships** (`tools/cvm_tx_listener.py`, P3).
+It subscribes **broad** to kind-1059 gift wraps (no restrictive server-side
+`#p` filter) and applies the **client-side npub allowlist** on receipt — the
+allowlist keys off the *unwrapped rumor author*, since the outer wrap author is
+ephemeral — plus the ADR §2.2 freshness watchdog: ARMED whose `created_at`
+skews more than `MAX_CREATED_AT_SKEW` (60 s) is dropped, and the session
+**aborts** (`[tx-armed] ABORT: …`) when no fresh ARMED arrives within
+`STALE_ABORT` (30 s) of the last one (or of start-up). Keys come from env vars
+only (`CVM_TX_*` + `CVM_SERVER_*`; the client key must differ from the server
+key) and the RX publisher is allowlisted via `--rx-npub` / `CVM_RX_NPUB`:
+
+```bash
+export CVM_TX_NSEC=nsec1...        # TX (client) key — env only, never a CLI arg
+export CVM_SERVER_NSEC=nsec1...    # board server key (must differ)
+export CVM_RX_NPUB=npub1...        # RX publisher -> the allowlist
+python3 tools/cvm_tx_listener.py --stop 50m
+```
+
+The `--armed-file` fallback above stays for the hand-relayed path (its freshness
+checks are relaxed); a relay-authenticated GO TX uses the live-bus watchdog
+described here instead.
 
 Rehearsal without hardware:
 
@@ -1972,250 +1989,3 @@ LoRa modes (SF5, SF6, SF8) and FLRC-1300 that the original
 # At each stop, load the per-stop file for that distance:
 make tx CONFIGS=configs/per-stop/stop-50m.json
 make rx CONFIGS=configs/per-stop/stop-50m.json
-```
-
-**Per-stop config table:**
-
-| Stop | File | 869 configs | 2G4 configs | Total | Est. time |
-|------|------|:-:|:-:|:-:|---|
-| 50 m | `stop-50m.json` | 7 | 3 | 10 | ~60 s |
-| 100 m | `stop-100m.json` | 7 | 4 | 11 | ~65 s |
-| 218 m | `stop-218m.json` | 8 | 4 | 12 | ~70 s |
-| 436 m | `stop-436m.json` | 6 | 3 | 9 | ~55 s |
-| 872 m | `stop-872m.json` | 6 | 3 | 9 | ~90 s |
-| 1744 m | `stop-1744m.json` | 6 | 3 | 9 | ~90 s |
-| 5 km | `stop-5km.json` | 6 | 2 | 8 | ~80 s |
-| 11 km | `stop-11km.json` | 6 | 2 | 8 | ~80 s |
-| 70 km | `stop-70km.json` | 6 | 3 | 9 | ~90 s |
-
-**Estimated test time per stop** is calculated as:
-- ~5 s per FLRC config (reduced guard time, 10 pkts × 5 s gap)
-- ~10 s per LoRa config (10 pkts × 1 s gap + TX airtime + settle)
-
-Times include the inter-config SWD reset (2 s) and band swap overhead
-(~30 s antenna cable swap between 869 MHz and 2.4 GHz groups).
-
-**Config selection rationale:**
-- **50–100 m:** Maximum throughput — FLRC-2600 (2.6 Mbps) down to FLRC-260,
-  plus LoRa SF5 BW500 (~120 kbps) and SF7 BW500. At 50 m, 2.4 GHz FLRC-2600
-  and FLRC-650 are included; by 100 m, 2.4 GHz FLRC-650 is dropped (cliff).
-- **218 m:** FLRC-2600 dropped (dead at this range), FLRC-1300 steps in.
-  SF12 added as a cliff-edge reference. 2.4 GHz drops to FLRC-260 + LoRa only.
-- **436 m:** FLRC-650 is the fastest FLRC that works. 2.4 GHz FLRC-260
-  still viable. SF5/SF7 BW500 added to probe high-throughput LoRa.
-- **872 m:** FLRC-260 is the only FLRC (cliff edge). 2.4 GHz FLRC dropped
-  entirely — only LoRa configs survive at this range on 2.4 GHz.
-- **1744 m:** No FLRC at all. SF8 BW125 added to bridge SF7→SF9. All LoRa.
-- **5–11 km:** LoRa only. SF7 BW500 is the fastest (may work at 5–11 km
-  with +22 dBm). SF9 and SF12 bracket the cliff. 2.4 GHz drops to SF9+SF12.
-- **70 km:** The mission stop. SF7 BW500 first (marginal), then SF7 BW125,
-  SF5 BW125, SF8, SF9, SF12. 2.4 GHz adds SF7 (marginal at 70 km, +2 dB margin).
-
-**New high-throughput LoRa modes added:**
-- **SF5 BW500** (~120 kbps): works ~0–5 km at +22 dBm. Previously untested.
-- **SF5 BW125** (~30 kbps): works ~0–10 km. Previously untested.
-- **SF8 BW125** (~15 kbps): works ~0–30 km. Bridges SF7→SF9.
-
-**New FLRC mode added:**
-- **FLRC-1300** (1.3 Mbps): works ~0–200 m. Fills the gap between
-  FLRC-2600 (2.6 Mbps, ~100 m) and FLRC-650 (650 kbps, ~400 m).
-
----
-
-## 20. Throughput Optimization Opportunities
-
-The LR2021 chip supports several parameters that trade sensitivity for
-data rate. This section documents what's available, what the firmware
-currently uses, and what could be explored in future range tests.
-
-### Current firmware defaults
-
-The firmware (`bench.c` + `radio_bench.c`) hardcodes these LoRa defaults:
-
-| Parameter | Current value | Location in firmware |
-|-----------|--------------|----------------------|
-| Coding rate (CR) | 4/5 (denominator=5) | `bench.c:562` — `cfg.cr = 5` |
-| Preamble length | 8 symbols | `radio_bench.c:37` — `lora_pkt_params.preamble_len_in_symb = 8` |
-| Header mode | Explicit | `radio_bench.c:38` — `lora_pkt_params.pkt_mode = LR20XX_RADIO_LORA_PKT_EXPLICIT` |
-| CRC | Enabled (true) | `radio_bench.c:40` — `lora_pkt_params.crc = true` |
-| PA power | 22 dBm (OUTDOOR mode) | Configurable via `PA <dbm>` command; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm; `envelope-4cfg-max-plus.json` uses pa=22 at 869.525 MHz |
-
-### Opportunity 1: Bandwidth 250 kHz and 500 kHz
-
-**Status: ✅ Already supported by firmware.**
-
-The firmware `MOD loRa <sf> <bw>` command accepts BW values 125, 250,
-and 500 (kHz). The LR2021 driver (`radio_bench.c`) maps these to the
-correct `lr20xx_radio_lora_bw_t` enum via `bw_to_enum()`.
-
-| BW (kHz) | Relative data rate | Sensitivity penalty | Config field |
-|----------|-------------------|---------------------|--------------|
-| 125 | 1× (baseline) | 0 dB (baseline) | `"bw": 125` |
-| 250 | 2× | -3 dB | `"bw": 250` |
-| 500 | 4× | -6 dB | `"bw": 500` |
-
-**Throughput math:** Data rate scales linearly with bandwidth. SF7 at
-500 kHz has the same symbol time as SF5 at 125 kHz — ~4× faster than
-SF7 at 125 kHz.
-
-**Sensitivity tradeoff:** Wider bandwidth means more noise integrates
-into each symbol, so sensitivity degrades by ~3 dB per doubling. SF7
-BW500 has ~6 dB worse sensitivity than SF7 BW125.
-
-**Config example:** Already in `envelope-4cfg-max-plus.json` as
-`"LoRa-SF7 BW500 LEN255"` with `"bw": 500`.
-
-**Test plan:** SF7 BW500 is included at D5 (11 km) and D6 (70 km) stops.
-If it works at 70 km, it delivers 4× the throughput of SF7 BW125 at the
-same SF — a major win for the balloon mission.
-
-### Opportunity 2: Coding Rate CR 4/5 vs 4/8
-
-**Status: ✅ Already at optimal (4/5). No firmware command to change it.**
-
-The firmware hardcodes CR to 4/5 (denominator=5) in `bench.c:562`:
-```c
-cfg.cr = 5; /* LoRa default: coding rate 4/5 */
-```
-
-The `radio_bench_cfg_t` struct has a `cr` field (`radio_bench.h:43`),
-and `radio_bench.c` applies it via `lora_cr_to_enum(cfg->cr)`. But the
-`MOD` command parser (`bench_cmd.c:238-263`) does NOT accept a CR
-argument — it's always set to 5.
-
-| CR | Overhead | Error correction | Relative throughput |
-|----|----------|-----------------|-------------------|
-| 4/5 | 20% | Lowest | 1.0× (highest throughput) |
-| 4/6 | 33% | Low | 0.83× |
-| 4/7 | 43% | Medium | 0.71× |
-| 4/8 | 50% | Highest | 0.67× (max range, lowest throughput) |
-
-**Firmware change needed:** To make CR configurable, add an optional 5th
-token to the `MOD loRa` command: `MOD loRa <sf> <bw> [cr]`. The parser
-in `bench_cmd.c` would need to accept `ntok == 4` (default CR=5) or
-`ntok == 5` (CR from token[4]). The config JSON would add a `"cr"` field.
-
-**Sensitivity tradeoff:** Lower CR (more overhead) gives better error
-correction — useful in high-noise or weak-signal conditions. CR 4/8
-gains ~2-3 dB effective sensitivity vs 4/5 at the cost of 33% throughput
-reduction. Since the firmware already uses 4/5 (the fastest), there's
-no throughput gain to be had — only a range gain by going to 4/8 if
-PER is high.
-
-### Opportunity 3: Shorter Preamble
-
-**Status: ❌ Not configurable. Hardcoded to 8 symbols.**
-
-The LoRa preamble is set to 8 symbols in `radio_bench.c:37`:
-```c
-.preamble_len_in_symb = 8,
-```
-
-The LR2021 driver accepts preamble lengths from 1 to 65535 symbols.
-
-| Preamble (symbols) | Time overhead (SF7/BW125) | Time overhead (SF12/BW125) |
-|--------------------|--------------------------|---------------------------|
-| 8 (current) | 61 ms | 2.0 s |
-| 4 | 30 ms | 1.0 s |
-| 2 | 15 ms | 0.5 s |
-
-**Throughput gain:** For short packets (255B) at SF7/BW125, airtime is
-~102 ms. Reducing preamble from 8→4 saves ~31 ms (30% of airtime). At
-SF12/BW125, airtime for 255B is ~9.8 s — reducing preamble from 8→4
-saves ~1.0 s (10% of airtime).
-
-**Sensitivity tradeoff:** Shorter preamble = less time for the RX to
-detect the packet. The LR2021 requires at least 4 symbols of preamble
-for reliable detection. Going below 4 risks missed packets at low SNR.
-
-**Firmware change needed:** Add a preamble field to
-`radio_bench_cfg_t` and a `PREAMBLE <n>` console command, or add it as
-an optional `MOD loRa` argument.
-
-**Config parameter name (proposed):** `"preamble": 8` (symbols)
-
-### Opportunity 4: Implicit Header Mode
-
-**Status: ❌ Not configurable. Hardcoded to explicit.**
-
-The LoRa packet type is set to explicit header in `radio_bench.c:38`:
-```c
-.pkt_mode = LR20XX_RADIO_LORA_PKT_EXPLICIT,
-```
-
-The LR2021 supports both explicit (with header) and implicit (no header)
-modes. In explicit mode, each packet carries a 3-byte header (payload
-length, forward error correction info, CRC presence). In implicit mode,
-both TX and RX must agree on these parameters out-of-band.
-
-| Header mode | Bytes saved per packet | Throughput gain (255B, SF7/125) |
-|-------------|----------------------|--------------------------------|
-| Explicit (current) | 0 | 0% |
-| Implicit | 3 bytes | ~3% (small but free) |
-
-**Throughput gain:** 3 bytes saved per packet. For a 255B payload,
-this is ~1.2% airtime reduction. For shorter payloads (e.g. 51B), it's
-more significant: ~6% airtime reduction.
-
-**Sensitivity tradeoff:** None — implicit mode has identical sensitivity
-to explicit. The only risk is that RX must know the payload length
-and CR in advance (no in-band metadata). Since both bench boards run
-the same firmware with the same config, this is guaranteed.
-
-**Firmware change needed:** Change `lora_pkt_params.pkt_mode` from
-`LR20XX_RADIO_LORA_PKT_EXPLICIT` to
-`LR20XX_RADIO_LORA_PKT_IMPLICIT`. This is a single-line change in
-`radio_bench.c`, but it affects ALL LoRa configs — implicit mode
-requires the RX to know the payload length, which it does via the
-`START N=<n> LEN=<l> GAP=<us>` command.
-
-**Config parameter name (proposed):** `"header_mode": "implicit"`
-
-### Opportunity 5: PA Power Increase (10 → 22 dBm)
-
-**Status: ✅ Already supported by firmware + config.**
-
-The `PA <dbm>` command accepts any value from 0 to 22 dBm. The indoor
-cap is 10 dBm; `POWER MODE OUTDOOR 2026` unlocks 0–22 dBm. The host-side
-controller (`e80_bench_ctl.py`) enforces the same gate and automatically
-sends the unlock command when `pa > 10` in both TX and RX modes.
-
-The `envelope-4cfg-max-plus.json` preset now uses **PA=22 dBm** at
-**869.525 MHz** (EU high-power sub-band 869.4–869.65 MHz).
-
-| PA (dBm) | ERP (mW) | Legal status (EU) | Range gain vs 10 dBm |
-|----------|----------|-------------------|---------------------|
-| 10 (indoor cap) | 10 mW | ✅ Legal (any 868 MHz sub-band) | 0 dB (baseline) |
-| 14 | 25 mW | ✅ Legal (EU SRD max, most sub-bands) | +4 dB |
-| 22 | 158 mW | ✅ Legal at 869.4–869.65 MHz high-power sub-band (500 mW ERP limit) | +12 dB |
-
-**Throughput tradeoff:** PA increase doesn't change data rate — it
-improves link margin. +12 dB (10→22 dBm) extends range by ~4×
-in FSPL (free-space), ~2.5× in two-ray. This makes the difference
-between SF7 and SF9 working at 70 km much more likely.
-
-**Config change:** Already done — `envelope-4cfg-max-plus.json` now has
-`"pa": 22` and `"freq": 869525000`. The firmware and host tool
-automatically send `POWER MODE OUTDOOR 2026` before any PA command when
-`pa > 10`.
-
-**Config parameter name:** `"pa": 22` (existing field)
-
-### Summary: What's Ready Now vs What Needs Firmware Work
-
-| Opportunity | Firmware support | Config field | Throughput gain | Sensitivity cost |
-|-------------|-----------------|-------------|----------------|-----------------|
-| BW 250 kHz | ✅ Ready | `"bw": 250` | 2× data rate | -3 dB |
-| BW 500 kHz | ✅ Ready | `"bw": 500` | 4× data rate | -6 dB |
-| CR 4/5 (current) | ✅ Already set | N/A (hardcoded) | Baseline | Baseline |
-| CR 4/8 (future) | ❌ Needs MOD cmd change | `"cr": 8` (proposed) | -33% throughput | +2-3 dB sensitivity |
-| Shorter preamble | ❌ Needs firmware change | `"preamble": 4` (proposed) | 3-30% airtime savings | Risk at low SNR |
-| Implicit header | ❌ Needs firmware change | `"header_mode": "implicit"` (proposed) | 1-6% airtime savings | None |
-| PA 22 dBm | ✅ Ready | `"pa": 22` | No rate change (range gain) | +12 dB link margin |
-
-The **highest-impact, zero-firmware-change** opportunities are:
-1. **BW 500 kHz** (already in envelope-4cfg-max-plus.json) — 4× throughput
-2. **PA 22 dBm** (now in envelope-4cfg-max-plus.json at 869.525 MHz) — +12 dB range
-
-Future firmware work could add CR selection, preamble length, and
-implicit header mode for additional throughput gains.
