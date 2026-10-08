@@ -198,4 +198,84 @@ be at the high end of this list.
 
 ---
 
-*(Sections 2–6 continue below — dishes, 2.4 GHz feeds, 433 mesh dish, positioners, coax.)*
+## 2. Ku-band satellite dishes (0.8–1.2 m) reusable at 2.4 GHz
+
+**Why a Ku dish works at 2.4 GHz.** A consumer Ku RX dish is built surface-accurate for
+10.7–12.75 GHz (λ/20 ≈ 1.2 mm). At 2.4 GHz (λ/20 ≈ 6.25 mm) it is **~5× over-accurate**, so
+the Ruze surface-error loss is < 0.05 dB and the reflector behaves as a near-perfect 2.4 GHz
+aperture. Confirmed dish-family numbers below.
+
+**TX vs RX (READ THIS).** Every dish in this section is a *consumer satellite-TV reflector*
+shipped with a **receive-only LNB**. The **reflector itself is passive aluminium alloy** — it
+transmits fine at 2.4 GHz and **is suitable for TX at 2.4 GHz**, provided you (a) remove the
+LNB and (b) fit your own 2.4 GHz feed at the focus (section 3). The "receive-only" flag applies
+to the *supplied feed/LNB*, not to the dish. This is the whole basis of the two-band plan in
+`docs/analysis/dualband-single-dish.md`.
+
+### B1 — Gibertini OP100SE (≈1.0 m) — the reference candidate
+- **Vendor:** hm-sat shop (DE) · **Price:** €143.90
+- **URL:** https://www.hm-sat-shop.de/gibertini-sat-antenne-100cm-se-profi-serie-sat-spiegel-schuessel-alu-anthrazit/12615-001
+- **Reflector:** 97 × 104 cm outer, **94 × 101 cm working surface** · aluminium · 1.2 mm sheet
+- **Efficiency:** 70 % · **Gain:** 39.0 dB @ 10.7 GHz / 39.7 @ 11.7 / 40.5 @ 12.75 GHz
+- **Cross-pol:** 28 dB · **Sidelobe suppression:** 24 dB · **Noise temp:** 38 K @ 30° elevation
+- **Feed geometry (KEY):** offset feed · **F/D = 0.66** · −3 dB aperture angle 1.70° ·
+  offset correction angle 21° · **required feed illumination 70°** (±35°) · feed-holder bore 40 mm
+  (23 mm option)
+- **Mount:** mast 30–90 mm, Quick-Fix mast bracket, integral elevation scale
+- **Wind load (KEY):** **91 kg @ 120 km/h (33.3 m/s)** — scaling by v² gives ≈ 33 kg ≈ **320 N
+  at 20 m/s**, which matches the analysis' 330 N solid-dish figure.
+- **Mass:** ~10 kg · **Temp:** −30…+70 °C
+- **2.4 GHz suitability:** TX-capable reflector; at 2.4 GHz ≈ **25–27 dBi** (η 0.6).
+- **Status:** CONFIRMED (vendor page technical-data block)
+
+### B2 — Gibertini 85 SE Profi (0.85 m)
+- **Vendor:** hm-sat shop (DE) · **Price:** €104.90
+- **URL:** https://www.hm-sat-shop.de/gibertini-sat-antenne-85cm-se-profi-serie-sat-spiegel-schuessel-alu-weiss/11700-009
+- Same SE Profi construction (offset, double-frame feed arm). f/D and wind load not printed on
+  this page → `TODO(unverified)`; expect the same OP-series f/D ≈ 0.66 family value.
+- **Status:** CONFIRMED price/Ø; f/D + wind TODO
+
+### B3 — Gibertini 75 SE Profi (0.75 m)
+- **Vendor:** hm-sat shop (DE) · **Price:** €94.90
+- **URL:** https://www.hm-sat-shop.de/gibertini-sat-antenne-75cm-se-profi-serie-sat-spiegel-schuessel-alu-anthrazit/11701-001
+- **Status:** CONFIRMED price/Ø; f/D + wind TODO
+
+### B4 — Kathrein CAS 90 (0.90 m, premium)
+- **Vendor:** hm-sat shop (DE) · **Price:** €249.00
+- **URL:** https://www.hm-sat-shop.de/kathrein-cas-90-gr-sat-antenne-multifeedfaehig-graphit-grau/10210-003
+- **Reflector diameter:** 90 cm · powder-coated aluminium · **offset feeding** (vendor text
+  “Optimale elektrische Daten … durch Offset-Speisung”) · multifeed-capable
+- Supplied: reflector, feed-system holder, mast bracket; stainless fixings; 8 cable clips;
+  patented swivelling multifeed plate; elevation scale; fully pre-assembled.
+- **TX at 2.4 GHz:** reflector is passive Al → TX-capable with your own feed; supplied
+  feed-system holder is for LNB → replace.
+- **Status:** CONFIRMED (vendor page description)
+
+### B5 — Kathrein CAS 80 (nominally 0.8 m; reflector 75 cm)
+- **Vendor:** hm-sat shop (DE) · **Price:** €169.00
+- **URL:** https://www.hm-sat-shop.de/kathrein-cas-80-sat-antenne-graphit-gr-multifeedfaehig/11546-004
+- Page states **“Reflektor Durchmesser 75 cm”**; offset feeding; TÜV-tested; multifeed-capable.
+- **Status:** CONFIRMED price/Ø; note the nominal-vs-actual 80/75 cm discrepancy.
+
+### B6 — Used / second-hand dishes (DE, cheap)
+Used 90 cm offset Ku dishes are abundant and cheap; ideal for a prototype since surface
+accuracy is over-specified anyway.
+- **Kleinanzeigen search (used, DE):**
+  https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=sat+sch%C3%BCssel+90cm
+- **Example confirmed listing** — “Kathrein CAS 90 Sat-Schüssel 90cm SatAn Spiegel”, **€50**
+  (listing price meta `content="50.00"`):
+  https://www.kleinanzeigen.de/s-anzeige/kathrein-cas-90-sat-sch%C3%BCssel-90cm-satan-spiegel/3524169716-175-8410
+- Other confirmed used listings seen: Hirschmann 90 cm, Humax Offset 90, Durline 90 cm,
+  Maximum 90 cm (prices vary; per-listing price `TODO(unverified)` unless opened).
+- **eBay.de:** reachable in a browser but returned HTTP 403 to scripted fetch — search
+  https://www.ebay.de/sch/i.html?_nkw=sat+sch%C3%BCssel+90cm manually.
+- **Status:** CONFIRMED listing + one confirmed price; bulk per-item prices TODO.
+
+> **1.2 m option.** The largest dish hm-sat lists in this family is the ~1.0 m Gibertini.
+> A **confirmed 1.2 m reflector** is the RF Hamdesign mesh dish kit in section 4 (1.2 m,
+> F/D 0.45). If a *solid* 1.2 m offset Ku dish is required, Gibertini OP120 / Fuba DAA 120
+> class exists but a vendor page was not confirmed here → `TODO(unverified)`.
+
+---
+
+*(Sections 3–6 continue below — 2.4 GHz feeds, 433 mesh dish, positioners, coax.)*
