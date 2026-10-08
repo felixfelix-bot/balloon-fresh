@@ -44,7 +44,9 @@ Right-size to **0.6 m** and the whole positioner drops one structural class.
 2. **The 2.4 GHz uplink does not require a dish.** Required ground gain is **−17.4 dBi at
    300 km** and **−10.7 dBi at 650 km** (licence-exempt 20 dBm EIRP, balloon LNA, 10 dBi
    balloon antenna; Table 7). An **omni closes it**. The dish is a *margin / low-PA /
-   beam-discipline* device, not a link-closure device.
+   beam-discipline* device, **not a link-closure device** (consultant, §15: "The 0.6 m dish is
+   justified only by pointing margin, interference rejection, polarization, or operational
+   robustness—not link closure alone").
 3. **Printed plastic gears cannot carry the AZ/EL drive — buy the gearing.** Holding the
    0.6 m dish at 20 m/s with a 2× safety factor needs **24.9 N·m** (balanced) to
    **49.9 N·m** (worst-case axis) at the output (Table 4). That is **8.3:1 to 16.6:1** on a
@@ -625,8 +627,92 @@ Reference parts **≈ €560–640**.
    (the ESTIMATE in §4).
 9. **Must be measured** — feed-mismatch loss of a 2.4 GHz feed on the chosen Ku dish
    (inherited), and the achievable backlash of the chosen worm in situ.
+10. **Must be validated before flight** (consultant point 4, §15) — a **conservative
+   gust/shock load case on the complete assembly** (gust factor + imbalance + transient
+   motion + stow failure), including the load path through the printed yoke, bearings and
+   worm reducer; and a **mechanical stow latch/brake** demonstrated for power/controller
+   failure.
+11. **Stow area caveat** (consultant point 3, §15) — the **11.8 %** stow silhouette excludes
+   feed, struts, feed-arm and back structure; use `C_D·A_projected(v, angle)` including those
+   and a gust factor, not the paraboloid-only figure.
 
 ---
 
 *All numbers in §3, §5, §6, §7 and §8 are the printed output of
 `docs/analysis/positioner_lowcost_model.py` (run: `python3 docs/analysis/positioner_lowcost_model.py`).*
+
+---
+
+## 15. Independent consultant verdict (recorded verbatim, model named)
+
+The companion figure `docs/analysis/figures/positioner-rightsizing.png` was put to the
+independent visual consultant via
+`scripts/fleet/visual_consult.py … --emit-evidence` (route: local router `127.0.0.1:9099`,
+lane `astra-consultant`). It **engaged on the first retry** (the first attempt returned
+**HTTP 503 — "all candidate lanes busy or capped"**, exactly as the task warned; the retry
+succeeded). Evidence lines it emitted:
+
+```
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+visual_artifact: /home/c03rad0r/worktrees/bf-positioner/docs/analysis/figures/positioner-rightsizing.png
+```
+
+**The verdict, verbatim:**
+
+> 1. **Right-sizing:**
+>    **Directionally sound, but overstated.** Panel B supports "no need for a dish larger than 0.6 m" under the stated link budget; it does **not** prove that 0.6 m is required. An omni supposedly already closes the link. The 0.6 m dish is justified only by pointing margin, interference rejection, polarization, or operational robustness—not link closure alone.
+>
+>    Also, the stated "~18 dB spare" does not follow from the chart. A 21 dBi dish versus the plotted requirements gives approximately **32 dB margin at 650 km** and **38 dB at 300 km**, before accounting for losses and implementation margins. Recheck the link budget and EIRP interpretation.
+>
+> 2. **Printed structure / purchased gearing:**
+>    **Reasonable architecture, but the proposed hardware is not automatically adequate.** Buy the reducer, shafts, bearings, and critical fasteners; print only low-stress housings, covers, and possibly the yoke if it is properly reinforced.
+>
+>    The 40 Nm reducer rating must be checked for:
+>    - actual output torque and duty cycle;
+>    - efficiency at the intended speed;
+>    - shock and gust loads;
+>    - backlash;
+>    - bearing radial/overturning load;
+>    - temperature, UV, moisture, and creep.
+>
+>    A 3 Nm motor times 20:1 is not reliably 60 Nm in service. Worm self-locking is also not a safety feature unless demonstrated over the full temperature, lubrication, vibration, and load range. A mechanical stow latch or brake is preferable. Closed-loop steppers correct position error; they do not remove backlash or guarantee wind survival.
+>
+> 3. **Aperture-up stow:**
+>    The arithmetic is correct: \(1/0.118 \approx 8.5\). The aerodynamic claim is **not automatically correct**. Wind force depends on projected area, wind direction, drag coefficient, feed/strut geometry, dish depth, and the exposed back structure. An aperture-up dish is edge-on to horizontal wind, but its side profile can be substantially more than 11.8% of aperture area.
+>
+>    Treat 11.8% as a measured or geometry-specific assumption, not a universal reduction. The design should use \(C_D A_\text{projected}\) versus wind angle and include gusts. "Zenith stow" also needs a positive mechanical latch and a fail-safe response to power or controller failure; an anemometer cutoff alone is not sufficient.
+>
+> 4. **Single biggest risk:**
+>    **Underestimating wind-induced torque and the resulting load path through the printed yoke, bearings, and worm reducer.** The 83 N broadside force for a 0.6 m solid dish at 20 m/s is plausible, but force is not torque, and 20 m/s is not a survival-wind specification. Gust factors, imbalance, transient motion, and stow failure could overload the printed structure or gearing. Validate the complete assembly with a conservative gust/load case and a mechanical stow lock before flight deployment.
+
+### 15.1 Reconciliation — where the consultant and I differ, and who is right
+
+**Point 1 is a real defect in my wording, and I accept it.** The phrase "~18 dB spare" mixes
+two different link regimes, and the figure invites the consultant's (corresponding) 32/38 dB
+reading. Both need to be stated precisely:
+
+| Construction | Which gain is "required" | Result | Is it a *link margin*? |
+|---|---|---|---|
+| **(a) EIRP-capped, compliant** — the dish gain backs the PA off so **EIRP = 20 dBm** | −17.4 dBi @300 km (−10.7 @650 km) | **+17.4 dB @300 km; +10.7 dB @650 km**, *independent of dish size* | **Yes** — the honest compliant margin |
+| **(b) Fixed 0 dBm conducted PA into a 21 dBi dish** → EIRP = **21 dBm** (1 dB over the licence-exempt cap) | +2.6 dBi @300 km (P_tx = 0 dBm) | **+18.4 dB @300 km** | Yes, but ~1 dB non-compliant |
+| **(c) Consultant's 38 dB / 32 dB** = G_dish(21) − required_G(−17.4/−10.7) | −17.4 dBi, which already assumes a **20 dBm** EIRP | 38 dB @300 km / 32 dB @650 km | **No — a *headroom* figure.** It implicitly stacks 21 dBi of antenna gain on top of a 20 dBm EIRP, i.e. EIRP = 41 dBm, which is **21 dB above the licence-exempt cap**. |
+
+So the consultant read the **chart** correctly (the chart plots dish gain against the
+required-gain thresholds), but that pairing is a **headroom-vs-minimum** statement, not a
+margin. The correct compliant margin is **(a): +17.4 dB @300 km**. The useful, defensible
+takeaway is exactly the consultant's own first sentence: **"no need for a dish larger than
+0.6 m"** — 0.6 m is justified by **margin, robustness and pointing**, **not** by closure
+(which the omni already provides, and which this document says in §3.2). I have amended
+the affected sentence above to say "margin, not closure".
+
+**Point 3 is accepted and is now explicit.** Table 3's **11.8 %** is the silhouette of a
+**paraboloid alone**; it excludes the feed, struts, feed-arm, and the exposed back structure,
+all of which add projected area and can raise the stow coefficient well above 11.8 %. It is a
+**geometry-specific lower bound**, not a universal reduction. The design must use
+`C_D·A_projected(v, wind angle)` including feed/struts and a **gust factor**.
+
+**Points 2 and 4 are accepted and already reflected** in §5 (no printed gears), §6 (self-locking
+is not a safety feature → brake), §7/§11 (stow latch, hard endstops, MCU-level cutoff), and
+F4/F5 in the failure-mode table. Point 4 — the **gust/shock load case** and a full-assembly
+validation — is added to the open-items register below.
