@@ -56,7 +56,7 @@ ax1.set_ylabel("required GROUND gain (dBi) at 650 km, G_balloon = 0 dBi")
 ax1.set_title("(a) TX power vs the dish it implies\n"
               "reqG = S + FSPL \u2212 P_tx ;  D = (\u03bb/\u03c0)\u221a(10^(G/10)/\u03b7), \u03b7=0.55",
               fontsize=10)
-ax1.legend(loc="upper right", fontsize=9)
+ax1.legend(loc="upper center", fontsize=9, framealpha=0.95)
 ax1.grid(axis="y", alpha=0.25)
 
 # ---- panel (b) -------------------------------------------------------------
@@ -73,12 +73,22 @@ solid = [moment(d, 1.0) / BRAKE for d in DISHES]
 mesh = [moment(d, SIG_6MM) / BRAKE for d in DISHES]
 pos = range(len(DISHES))
 b1 = ax2.bar([x - 0.2 for x in pos], solid, 0.4, label="SOLID reflector", color="#c0392b", alpha=0.85)
-b2 = ax2.bar([x + 0.2 for x in pos], mesh, 0.4, label=f"6 mm coarse mesh (\u03c3={SIG_6MM:.3f})",
-             color="#27ae60", alpha=0.9)
+mesh_cols = ["#27ae60" if d < 3.0 else "#e67e22" for d in DISHES]
+b2 = ax2.bar([x + 0.2 for x in pos], mesh, 0.4,
+             label=f"6 mm coarse mesh (\u03c3={SIG_6MM:.3f}) \u2014 orange = AT/beyond the rating",
+             color=mesh_cols, alpha=0.92)
 ax2.bar_label(b1, fmt="%.2f\u00d7", fontsize=8.5)
 ax2.bar_label(b2, fmt="%.2f\u00d7", fontsize=8.5)
 ax2.axhline(1.0, ls="--", c="k", lw=1.4)
-ax2.text(5.45, 1.06, "SPID BIG-RAS holding torque 2,712 N\u00b7m", ha="right", fontsize=8.5)
+# rating-line label placed left of the bars so it cannot collide with any bar label
+ax2.text(-0.42, 1.06, "SPID BIG-RAS holding torque 2,712 N\u00b7m  (1.00\u00d7 = the rating)",
+         ha="left", va="bottom", fontsize=8.5,
+         bbox=dict(fc="white", ec="none", alpha=0.85, pad=1.5))
+# explicit flag on the diameter that sits AT the line (7/12 the earlier claim's gap)
+ax2.annotate("3.00 m mesh = 0.97\u00d7: AT the rating, no margin",
+             xy=(4.2, mesh[4]), xytext=(2.35, 2.55), fontsize=8.5,
+             arrowprops=dict(arrowstyle="->", lw=1.1, color="#b9770e"),
+             bbox=dict(fc="#fdf2e9", ec="#b9770e", lw=0.8, pad=2.5))
 ax2.set_xticks(list(pos))
 ax2.set_xticklabels([f"{d:.2f} m" for d in DISHES])
 ax2.set_xlabel("433 MHz dish diameter  (lever arm = 0.5 \u00d7 D ***stated assumption***)")
@@ -92,7 +102,12 @@ ax2.grid(axis="y", alpha=0.25)
 
 fig.suptitle("FLRC at maximum throughput on the 433 MHz downlink \u2014 the trade the operator must see",
              fontsize=12.5, y=0.99)
-fig.tight_layout(rect=(0, 0, 1, 0.965))
+fig.text(0.5, 0.012,
+         "Stated assumptions: lever arm = 0.5 \u00d7 D for the wind moment;  Cd = 1.38 derived from the "
+         "Gibertini OP100SE vendor wind figure (91 kg @ 120 km/h over 0.949 m\u00b2);  "
+         "G_balloon = 0 dBi;  FSPL(433.05 MHz, 650 km) = 141.4 dB.   Repro: docs/analysis/ground_station_flrc_max_model.py",
+         ha="center", fontsize=8.2, color="#333333")
+fig.tight_layout(rect=(0, 0.032, 1, 0.965))
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "flrc-max-trade.png")
 os.makedirs(os.path.dirname(out), exist_ok=True)
 fig.savefig(out, dpi=150)

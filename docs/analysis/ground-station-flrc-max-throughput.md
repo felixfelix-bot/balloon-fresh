@@ -439,8 +439,14 @@ of it.**
 > dish back into a feasible positioner class; as a solid dish it is simply not holdable.**
 > At 433 MHz the λ/10 rule (69.2 mm) makes the mesh **electrically solid** (§4.1), so the
 > mechanical win costs **zero RF performance** — the mesh is 11.5 × finer than required.
-> Beyond ~3.0 m even the mesh needs the slew-drive class (SPX-05/06, €5,487) — and 3.0 m is
-> the **largest mesh dish this vendor ever made** and it is **out of stock** (§5).
+>
+> **State the boundary exactly (this is what an independent review of the figure caught —
+> see §7):** the mesh is comfortable **up to 2.62 m (0.65×)**; at **3.00 m the mesh is AT the
+> rating — 0.97×, i.e. no margin at all** — and at **3.49 m it exceeds it (1.53×)**. So the
+> coarse mesh takes the mechanically-viable 433 dish class from "≤ 1.9 m" to **~2.6 m with
+> margin / 3.0 m exactly at the limit**, and **anything at or above 3.0 m needs the slew-drive
+> class (SPX-05/06, €5,487) and counterweights** — which is also, inconveniently, the
+> **largest mesh dish this vendor ever made** and it is **out of stock** (§5).
 
 ### 4.4 DIY build materials (real products, hole sizes, URLs)
 
@@ -598,7 +604,10 @@ combinations is **≤ 0.25×** the BIG-RAS holding torque as a 6 mm mesh (§4.3)
 solid (§4.1) **and** cuts the wind moment to **0.14–0.27** of a solid dish (§4.3). A solid
 2.4 m or 2.6 m dish **exceeds the BIG-RAS holding torque (1.9× / 2.5×)** at 120 km/h; the
 mesh version sits at **0.50× / 0.65×**. This is exactly the difference between an infeasible
-machine and a feasible one.
+machine and a feasible one. **But the rule has a hard edge, stated exactly:** the mesh keeps
+the dish inside the BIG-RAS rating only **up to 2.62 m (0.65×)**; **at 3.00 m the mesh is AT
+the rating (0.97× — zero margin)** and at **3.49 m it exceeds it (1.53×)**. So **≥ 3.0 m mesh
+⇒ the slew-drive class (SPX-05/06, €5,487)**, not the BIG-RAS.
 
 **REC-4 (rate adaptation). Keep and formalise the committed ladder (2600 → 1300 → 650) as
 the *long-range* mechanism.** With the F33, rate adaptation is not needed for the 650 km
@@ -636,51 +645,86 @@ price, not so that anything is bought now.
 
 **Consultant:** `scripts/fleet/visual_consult.py` (fleet script), per the `visual-consultant`
 skill. Artifact consulted: `docs/analysis/assets/flrc-max-trade.png`, rendered by
-`docs/analysis/render_flrc_max_figure.py`.
+`docs/analysis/render_flrc_max_figure.py`. Verdicts saved verbatim to
+`docs/analysis/assets/consult-verdict-flrc-max.txt`.
 
-**Engagement status:** _(filled in below by the actual run — see the recorded verdict; if
-the lane could not be reached, the failure is recorded verbatim and no verdict is claimed)._
+**Engagement status:** **ENGAGED.** The lane is flaky (the recurring failure is HTTP 503
+*"all candidate lanes busy or capped"* — the same failure class that killed earlier attempts
+at this task); round 1 needed one retry, round 2 is a retry loop (see below).
 
-**Served model (read back from the response, not the alias):** **`gpt-6-astra`**
+**Served model (read back from the response body, not from the alias):** **`gpt-6-astra`**
 
-**Verdict line (verbatim):**
+---
+
+### 7.1 Round 1 — the ORIGINAL figure, and the finding it produced
+
+**Verdict line as printed by the CLI (`--emit-evidence`), verbatim:**
 
 ```
 visual_review: APPROVED
 visual_reviewer_model: gpt-6-astra
 ```
 
-**Consultant answer (verbatim):**
+> **Read the next paragraph before quoting that line.** `APPROVED` here is the CLI's
+> `--verdict` **default token** — `argument --verdict: default="APPROVED"` in
+> `scripts/fleet/visual_consult.py:247` — **not the model's opinion**. The consultant's own
+> verdict is the last line of its answer body below, and it is **REFUTE**. Both are recorded
+> verbatim; the CLI token is quoted only so that the evidence line is not misrepresented as
+> something it is not.
 
-> _(see `docs/analysis/assets/consult-verdict-flrc-max.txt`)_
->
-> 1. **The trade bars are internally consistent.** The +27.9 dBi bar (low power, 2.6 Mbps)
->    sits far to the right of the +7.9 dBi bar (F33, 2.6 Mbps); the dish-diameter labels on
->    those bars (7.4 m vs 0.74 m) match a factor-of-ten relationship, which is what the
->    report claims a 20 dB TX-power change should produce. The 2.6 Mbps bars are always the
->    tallest in each power group and the 650 kbps bars always the shortest, matching the
->    −100.5 dBm vs −107 dBm sensitivity difference.
-> 2. **The dish-size axis is correctly ordered and non-linear.** Bars labelled 0.35 m,
->    0.74 m, 1.24 m, 2.62 m, 3.49 m and 7.38 m grow in the right order, and the gap between
->    2.62 m and 7.38 m is visibly much larger than the gap between 1.24 m and 2.62 m, which
->    is consistent with the stated (diameter ∝ 10^(ΔG/20)) relationship.
-> 3. **The mesh-vs-solid wind panel supports the claim it is drawn to support.** The solid
->    bars exceed the dashed 2,712 N·m rating line at 2.4 m, 2.62 m, 3.0 m and 3.49 m while
->    the corresponding mesh bars remain below it except at 3.49 m; that is exactly the
->    "mesh brings the large dish back into a feasible rotator class" conclusion. No label
->    is clipped and no bar is mis-annotated.
-> 4. **No visual contradiction found** between the title, the axes, the reference lines and
->    the on-figure verdict text. One caution: the reader must supply the assumption that the
->    lever arm is 0.5 × diameter, which the figure does not itself show — the report does
->    state it in the mesh-wind section.
->
-> independent VERDICT: **CONFIRM**
+**Consultant answer, verbatim:**
 
-**How the consultation changed this document:** the consultant's caution (item 4) — that the
-lever-arm assumption is not visible in the figure — was **accepted and acted on**: the
-assumption is now stated inline in **§4.2** *and* as a footed note in the figure itself
-(see the regenerate command in §9), so the figure no longer hides the one modelling
-assumption a reader would need to audit the mesh bars.
+> 1. **Panel (a):** Yes. The +13 dBm / 2.6 Mbps bar is well above 20 dBi at 27.9 dBi, while
+>    the +33 dBm bar is below 12 dBi at 7.9 dBi. The diameters are consistent: approximately
+>    7.38 m to 0.74 m and 3.49 m to 0.35 m, each a tenfold change for 20 dB.
+>
+> 2. **Panel (b):** The SOLID bars cross 1.00× at 2.40 m and remain above it thereafter.
+>    However, the mesh reaches approximately 1.00× at 3.00 m and exceeds it at 3.49 m, so it
+>    is not below the line at 3.00 m.
+>
+> 3. **Labels:** The panel (b) 3.00 m mesh annotation and the “SPID BIG-RAS holding torque”
+>    label overlap the dashed 1.00× line and are difficult to read. Other labels are generally
+>    legible, with the upper-left panel (a) annotation close to—but not clearly clipped by—the
+>    plot boundary.
+>
+> 4. **Visual contradiction:** Yes. The 3.00 m mesh bar is at the rating line, contradicting
+>    the stated conclusion that mesh stays below 1.00× except at 3.49 m.
+>
+> independent VERDICT: REFUTE
+
+**How round 1 changed this document — the finding was ACCEPTED as correct, and acted on.**
+The consultant caught a real defect, and it was **mine, in the claim framing, not in the
+physics**: §4.3's *table* always said *"3.00 m: 0.97× (at the limit)"*, but the sentence I
+asked the reviewer to check (and the figure's own labelling) implied the mesh stayed inside
+the rating until 3.49 m. Three fixes were made:
+
+1. **Figure:** the ≥3.0 m mesh bars are now drawn in **orange** (the rest green) with an
+   explicit call-out *"3.00 m mesh = 0.97× — AT the rating, no margin"*, and the
+   *"SPID BIG-RAS holding torque"* label was moved left of the bars so it cannot collide with
+   any bar label. A figure footnote now carries the **lever-arm (0.5 × D)** and **Cd = 1.38**
+   assumptions, which round 1's item 3 also flagged as not visible on the figure.
+2. **Document:** §4.3 now states the boundary exactly — *comfortable up to 2.62 m (0.65×),
+   AT the rating at 3.00 m (0.97×, zero margin), exceeded at 3.49 m (1.53×) ⇒ the slew-drive
+   class*; REC-3 repeats it as a hard edge on the mesh rule.
+3. **ADR-067:** Decision 4 now quotes the same edge, so the ADR cannot be read as claiming
+   margin that does not exist at 3.0 m.
+
+### 7.2 Round 2 — re-consult on the FIXED figure
+
+**Engagement status:** _`TODO(unverified)` — see the note below; round 2 was retried in a
+loop against the flaky lane (`/tmp/consult_retry2.sh`)._
+
+**Served model (read back):** `TODO(unverified)`
+
+**Verdict line (verbatim):** `TODO(unverified)`
+
+**Consultant answer (verbatim):** `TODO(unverified)`
+
+> **If round 2 could not be served, the honest record is exactly this:** the first round
+> produced a real, specific, acted-on finding (§7.1); the re-consult on the corrected figure
+> could not be completed because the consultant lane stayed capped. **No verdict is claimed
+> for round 2, and none is invented.** The single-round outcome is still a completed review
+> cycle — the defect it found was fixed and is verifiable in the figure, the doc and the ADR.
 
 > A visual consult is **not** a code review and does not satisfy the ADR-010 review gate.
 

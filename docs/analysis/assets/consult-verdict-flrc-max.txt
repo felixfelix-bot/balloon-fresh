@@ -1,0 +1,41 @@
+VISUAL CONSULT — FLRC-max 433 MHz ground-station trade
+=======================================================
+Script : /home/c03rad0r/hermes-orchestration/scripts/fleet/visual_consult.py
+Artifact: docs/analysis/assets/flrc-max-trade.png
+Round 1 run at: 2026-10-08T11:56:24+02:00 (attempt 1 of the retry loop)
+Served model (read back from the response): gpt-6-astra
+Requested/pinned model: (the astra-consultant profile pin; see the script's resolve_model())
+Status: served
+
+--- CLI evidence line, verbatim (NOTE: APPROVED is the CLI's --verdict DEFAULT, see below) ---
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+visual_artifact: /home/c03rad0r/worktrees/bf-flrc/docs/analysis/assets/flrc-max-trade.png
+
+IMPORTANT: `visual_review: APPROVED` is the default value of the CLI's `--verdict` argument
+(`scripts/fleet/visual_consult.py:247`, `default="APPROVED"`). It is NOT derived from the
+model's answer. The consultant's own verdict is the last line of the answer body below.
+The earlier consult run (which asked the model to end with its own verdict line) is the
+source of that line.
+
+--- consultant answer, verbatim (round 1, ORIGINAL figure) ----------------------------------
+1. **Panel (a):** Yes. The +13 dBm / 2.6 Mbps bar is well above 20 dBi at 27.9 dBi, while the +33 dBm bar is below 12 dBi at 7.9 dBi. The diameters are consistent: approximately 7.38 m to 0.74 m and 3.49 m to 0.35 m, each a tenfold change for 20 dB.
+
+2. **Panel (b):** The SOLID bars cross 1.00× at 2.40 m and remain above it thereafter. However, the mesh reaches approximately 1.00× at 3.00 m and exceeds it at 3.49 m, so it is not below the line at 3.00 m.
+
+3. **Labels:** The panel (b) 3.00 m mesh annotation and the “SPID BIG-RAS holding torque” label overlap the dashed 1.00× line and are difficult to read. Other labels are generally legible, with the upper-left panel (a) annotation close to—but not clearly clipped by—the plot boundary.
+
+4. **Visual contradiction:** Yes. The 3.00 m mesh bar is at the rating line, contradicting the stated conclusion that mesh stays below 1.00× except at 3.49 m.
+
+independent VERDICT: REFUTE
+---------------------------------------------------------------------------------------------
+
+ACTION TAKEN (accepted as correct):
+  * figure: mesh bars >= 3.0 m drawn orange + explicit call-out "3.00 m mesh = 0.97x - AT the
+    rating, no margin"; rating-line label moved clear of the bars; figure footnote added for
+    the lever-arm (0.5 x D) and Cd = 1.38 assumptions;
+  * doc section 4.3 + REC-3: boundary stated exactly (inside up to 2.62 m; AT the rating at
+    3.00 m; exceeds at 3.49 m => slew-drive class);
+  * ADR-067 Decision 4: same boundary quoted.
+
+ROUND 2 (re-consult on the FIXED figure): see the block appended below.
