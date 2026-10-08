@@ -130,6 +130,11 @@ sub-GHz + 2.4 GHz LR2021 module used on the flight board):
 This corroborates the Semtech numbers (module adds a PCB/LNA path, hence −143 for the
 module vs −143 for the bare chip at the same SF/BW).
 
+> **Sourcing note:** the NiceRF product/vendor site (`https://www.nicerf.com/`, home 200 OK)
+> returns **HTTP 403** to scripted requests on its product sub-pages, so a direct product URL
+> could not be verified this session — the numbers are therefore cited to the **in-repo
+> datasheet copy** above (the artifact of record) rather than to an unverified link.
+
 ---
 
 ## 2. The deciding calculation
@@ -256,7 +261,9 @@ regulatory design point, and it is worth stating plainly:
 * The **committed design point** (ADR-039 "Licence-Exempt 433 MHz Design Point", ADR-041)
   caps the balloon's 433 transmitter at **10 mW ERP with an integral antenna** =
   **+10 dBm ERP = +12.15 dBm EIRP** (`docs/LINK-BUDGET-LICENCE-EXEMPT.md` §0, sourced to
-  `docs/SOLAR-PIN-REGULATORY.md` §3.2 → ERC Rec 70-03 Annex 1 / LPD433).
+  `docs/SOLAR-PIN-REGULATORY.md` §3.2 → **ERC Recommendation 70-03, Annex 1**, primary
+  source <https://docdb.cept.org> / the LPD433 band definition
+  <https://en.wikipedia.org/wiki/LPD433>).
 * **+12.15 dBm EIRP lies below the operator's own +13 dBm low end.** Under the
   licence-exempt design point the balloon **cannot** transmit the +13…+22 dBm class at
   433 MHz; the whole range is **at or above the cap** (ADR-041: "even the bare module's own
