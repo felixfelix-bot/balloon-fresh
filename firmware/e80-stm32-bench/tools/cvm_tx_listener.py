@@ -62,6 +62,7 @@ if _TOOLS_DIR not in sys.path:
 
 import cvm_sync as cvm  # noqa: E402
 from cvm_sync import ARMED_REQUIRED, KIND_GIFT_WRAP  # noqa: E402
+import keymaterial  # noqa: E402  (card t_4c98fbe7: THE env-only key source)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -105,12 +106,10 @@ DEAD_RELAYS = ("wss://relay.contextvm.org",)
 ARMED_FIELDS = ("type",) + tuple(ARMED_REQUIRED) + ("author",)
 
 
-class EnvKeyError(RuntimeError):
-    """A required key env var is absent (ADR §2.3: env only, never CLI)."""
-
-
-class KeyCollisionError(RuntimeError):
-    """Client and server keys are identical — refuses to start."""
+# Card t_4c98fbe7: the ONE key-error taxonomy lives in ``keymaterial.py``.
+# Aliases, not new classes — see the note in cvm_armed_publisher.py.
+EnvKeyError = keymaterial.MissingKeyError
+KeyCollisionError = keymaterial.KeyCollisionError
 
 
 # ---------------------------------------------------------------------------
@@ -221,20 +220,20 @@ def assert_keys_differ(client_pub_hex: str, server_pub_hex: str) -> None:
             .format(client_pub_hex[:16]))
 
 
-def load_keys(secret: str):
-    """Parse an nsec/hex secret into nostr_sdk.Keys (lazy SDK import)."""
-    import nostr_sdk
-    return nostr_sdk.Keys.parse(secret)
+#: The single env-only accessor (card t_4c98fbe7): this is an alias of
+#: ``keymaterial.load_keys``, not a second implementation.
+load_keys = keymaterial.load_keys
 
 
 def load_and_check_keys(env: Optional[Mapping[str, str]] = None) -> tuple:
-    """Load both keys from env and enforce the separation invariant."""
-    secrets = load_env_secrets(env)
-    client_keys = load_keys(secrets["client"])
-    server_keys = load_keys(secrets["server"])
-    assert_keys_differ(client_keys.public_key().to_hex(),
-                       server_keys.public_key().to_hex())
-    return client_keys, server_keys
+    """Load both keys from the environment and enforce the separation invariant.
+
+    Thin wrapper over :func:`keymaterial.load_keys` (the sole env-only source).
+    """
+    km = keymaterial.load_keys()
+    import nostr_sdk
+    return (nostr_sdk.Keys.parse(km.client_secret),
+            nostr_sdk.Keys.parse(km.server_secret))
 
 
 # ---------------------------------------------------------------------------
