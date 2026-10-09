@@ -124,11 +124,18 @@ The wrap is built and emitted by exactly one module,
 - `assert_recipient_tag()` asserts the outer `p` tag equals the TX npub, and
   `assert_no_plaintext_leak()` asserts no payload fragment is visible in any
   tag value or the content field.
+- `event_view()` normalizes an event from either a real `nostr_sdk.Event` or a
+  plain mapping. Real `Tag`s are **not iterable**: elements are read via
+  `Tag.as_vec()`, the same accessor `cvm_board_server._extract_p_tag` uses.
 - `publish_armed(...)` is the failover-layer entry point (build + publish).
 
-`tools/test_nostr_giftwrap.py` pins all of the above (23 tests, runnable
+`tools/test_nostr_giftwrap.py` pins all of the above (28 tests, runnable
 without `nostr_sdk`); `tools/test_giftwrap_single_path.py` pins this module's
-single `gift_wrap` call site alongside the existing construction paths.
+single `gift_wrap` call site alongside the existing construction paths. Because
+a fake SDK once hid a real event-shape bug, `tools/test_nostr_giftwrap_realsdk.py`
+runs the actual NIP-59 wrap/unwrap round trip when the bindings are installed
+(skipped in the bare CI image), plus `test_nostr_giftwrap.py::TestRealSdkTagShape`
+pins the non-iterable `Tag` shape without needing the bindings.
 
 ### 2.4 TX-side subscribe
 

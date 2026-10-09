@@ -214,6 +214,30 @@ def _as_int(value) -> int:
     return int(value)
 
 
+def _tag_view(tag) -> list:
+    """Normalize a single tag to a flat list of its elements.
+
+    ``nostr_sdk``'s Rust ``Tag`` is **not iterable**: ``TagList.to_vec()``
+    returns ``Tag`` objects whose elements are only reachable through
+    ``.as_vec()`` — the same accessor ``cvm_board_server._extract_p_tag``
+    uses. Reading a real SDK event with a bare ``list(tag)`` raises
+    ``TypeError``, so every tag must come through here. Plain lists/tuples
+    (the shape the unit-test fakes and dict events use) are passed through
+    unchanged.
+    """
+    as_vec = getattr(tag, "as_vec", None)
+    if callable(as_vec):
+        return [str(element) for element in as_vec()]
+    if isinstance(tag, (list, tuple)):
+        return list(tag)
+    try:
+        return list(tag)
+    except TypeError as exc:
+        raise GiftWrapError(
+            "unsupported tag shape %r: a tag must be a list/tuple or expose "
+            "as_vec() (nostr_sdk.Tag)" % (tag,)) from exc
+
+
 def event_view(event) -> dict:
     """Normalize an event into ``{"kind": int, "tags": [[str, …]], "content": str}``.
 
@@ -225,7 +249,7 @@ def event_view(event) -> dict:
         view = dict(event)
         if "kind" in view:
             view["kind"] = _as_int(view["kind"])
-        view["tags"] = [list(t) for t in view.get("tags", [])]
+        view["tags"] = [_tag_view(t) for t in view.get("tags", [])]
         view["content"] = view.get("content", "") or ""
         return view
 
@@ -238,7 +262,7 @@ def event_view(event) -> dict:
         raw = tags_fn()
         if hasattr(raw, "to_vec"):
             raw = raw.to_vec()
-        view["tags"] = [list(t) for t in raw]
+        view["tags"] = [_tag_view(t) for t in raw]
     content_fn = getattr(event, "content", None)
     if callable(content_fn):
         view["content"] = str(content_fn())
