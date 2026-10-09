@@ -104,6 +104,17 @@
     (fp_text user "-" (at 26 23.6) (layer "F.SilkS") (uuid "2e40b0a2-0692-56c8-97bb-228c720c1cb3") (effects (font (size 1 1) (thickness 0.12))))
     (pad "1" smd rect (at -28 0) (size 1.6 4) (layers "F.Cu" "F.Paste" "F.Mask") (net 1 "SOLAR_P") (uuid "7d5d4a53-bd7c-5ead-8136-9af8fa7b98b3"))
     (pad "2" smd rect (at 28 0) (size 1.6 4) (layers "F.Cu" "F.Paste" "F.Mask") (net 3 "SOLAR_MID1") (uuid "16a39d0a-577f-5e8a-9f49-3c6eb7e11ceb"))
+    (model "${KIPRJMOD}/../3dmodels/cells/solar_cell_small_52.07x19.65x0.21.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:SolarCell_52x19mm"
     (layer "F.Cu")
@@ -139,6 +150,17 @@
     (fp_text user "-" (at 26 23.6) (layer "F.SilkS") (uuid "fa8da662-93aa-5273-9c3b-35a8055e9462") (effects (font (size 1 1) (thickness 0.12))))
     (pad "1" smd rect (at -28 0) (size 1.6 4) (layers "F.Cu" "F.Paste" "F.Mask") (net 3 "SOLAR_MID1") (uuid "3c88701b-29a6-54c5-bdc9-ae1ab6a36de5"))
     (pad "2" smd rect (at 28 0) (size 1.6 4) (layers "F.Cu" "F.Paste" "F.Mask") (net 4 "SOLAR_MID2") (uuid "baef1eac-6f69-5c97-ac6f-508c8b643297"))
+    (model "${KIPRJMOD}/../3dmodels/cells/solar_cell_small_52.07x19.65x0.21.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:SolarCell_52x19mm"
     (layer "F.Cu")
@@ -174,6 +196,17 @@
     (fp_text user "-" (at 26 23.6) (layer "F.SilkS") (uuid "66522f3e-38e0-5df6-99f5-ec450bba0895") (effects (font (size 1 1) (thickness 0.12))))
     (pad "1" smd rect (at -28 0) (size 1.6 4) (layers "F.Cu" "F.Paste" "F.Mask") (net 4 "SOLAR_MID2") (uuid "35a82ca2-0716-50c0-88e8-f4cc0b292a75"))
     (pad "2" smd rect (at 28 0) (size 1.6 4) (layers "F.Cu" "F.Paste" "F.Mask") (net 2 "SOLAR_N") (uuid "88e678df-82bd-5f4e-bdf1-7235235bdc20"))
+    (model "${KIPRJMOD}/../3dmodels/cells/solar_cell_small_52.07x19.65x0.21.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:WingTab_v9_4pin"
     (layer "F.Cu")
@@ -211,6 +244,17 @@
     (fp_text user "P" (at -5 8.1) (layer "F.SilkS") (uuid "56dd4185-2ce2-5714-a83a-d1fa7931e788") (effects (font (size 0.6 0.6) (thickness 0.1))))
     (fp_text user "N" (at -5 16.9) (layer "F.SilkS") (uuid "514ddb5a-5a8e-53e9-ae3f-7e309c1765f7") (effects (font (size 0.6 0.6) (thickness 0.1))))
     (fp_rect (start -7 8.4) (end -3 16.6) (stroke (width 0.1) (type solid)) (fill none) (layer "F.SilkS") (uuid "90d6029c-d97f-57fa-91ed-9ad5384c95cc"))
+    (model "${KIPRJMOD}/../3dmodels/wing/wing_v9_tab_4pin_lands.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:MountingHole_2.2mm_NPTH"
     (layer "F.Cu")
@@ -332,6 +376,17 @@
     )
     (attr smd)
     (pad "1" smd circle (at 0 0) (size 1 1) (layers "F.Cu" "F.Mask") (uuid "6ad73be4-14c6-59d1-9ed2-83e15ab5431e"))
+    (model "${KIPRJMOD}/../3dmodels/wing/wing_v9_fiducial_1mm_dot.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:Fiducial_1mm_Mask2mm"
     (layer "F.Cu")
@@ -363,6 +418,17 @@
     )
     (attr smd)
     (pad "1" smd circle (at 0 0) (size 1 1) (layers "F.Cu" "F.Mask") (uuid "87dfecb6-be93-56b1-9617-3dcc44344fc4"))
+    (model "${KIPRJMOD}/../3dmodels/wing/wing_v9_fiducial_1mm_dot.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:Fiducial_1mm_Mask2mm"
     (layer "F.Cu")
@@ -394,6 +460,17 @@
     )
     (attr smd)
     (pad "1" smd circle (at 0 0) (size 1 1) (layers "F.Cu" "F.Mask") (uuid "293b4ff5-f2d7-5576-a891-b38868233360"))
+    (model "${KIPRJMOD}/../3dmodels/wing/wing_v9_fiducial_1mm_dot.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:FerriteBead_0402_V2provision"
     (layer "F.Cu")
@@ -426,6 +503,17 @@
     (attr smd)
     (pad "1" smd rect (at -0.45 0) (size 0.5 0.6) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "615a68b1-fca2-5a8a-99d4-44e66b674903"))
     (pad "2" smd rect (at 0.45 0) (size 0.5 0.6) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "7ef76356-8d87-58d1-9e1a-351ce269b20c"))
+    (model "${KIPRJMOD}/../3dmodels/wing/ferrite_bead_0402_dnp.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (footprint "WingV9:RF_ProvisionPad_v2only"
     (layer "F.Cu")
@@ -457,6 +545,17 @@
     )
     (attr smd)
     (pad "1" smd rect (at 0 0) (size 2 2) (layers "F.Cu" "F.Mask") (uuid "cbd195cf-b922-5060-baf0-121175b83099"))
+    (model "${KIPRJMOD}/../3dmodels/wing/wing_v9_rf_provision_pad_2x2.wrl"
+      (offset
+        (xyz 0 0 0)
+      )
+      (scale
+        (xyz 1 1 1)
+      )
+      (rotate
+        (xyz 0 0 0)
+      )
+    )
   )
   (segment (start 2 12.5) (end 2 9.8)
     (width 0.4) (layer "F.Cu") (net 1) (uuid "aa34c0e4-2806-5c40-9f98-7f30009c096f"))

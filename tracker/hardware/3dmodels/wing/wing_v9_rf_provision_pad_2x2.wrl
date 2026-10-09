@@ -1,0 +1,61 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_wing.py  (regenerate: python3 scripts/gen_3d_models_wing.py)
+# part       : RF1 -- V2 RF-feed provision land (copper only; no component fitted on v9)
+# dims_mm    : 2.0 x 2.0 x 0.035 mm copper land centred on the footprint origin
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/wing_board/wing_board_v9.kicad_pcb (pad "1" smd rect, size 2 x 2) and F.Cu 0.035 mm from the stackup; docs/adr/046-wing-board-interface.md §2.4 makes the wing RF a V2 provision.
+# note       : the v9 wing carries only this land: no antenna, no matching network and no connector exists to model (docs/adr/046-wing-board-interface.md §2.4 and §3.4b)
+DEF rf_provision_pad Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF rf_provision_pad_mat Material {
+          diffuseColor 0.85 0.68 0.3
+          emissiveColor 0 0 0
+          specularColor 0.6 0.6 0.6
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.8
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -0.393701 -0.393701 0.013780,
+          0.393701 -0.393701 0.013780,
+          0.393701 0.393701 0.013780,
+          -0.393701 0.393701 0.013780,
+          -0.393701 0.393701 0.000000,
+          0.393701 0.393701 0.000000,
+          0.393701 -0.393701 0.000000,
+          -0.393701 -0.393701 0.000000,
+          -0.393701 0.393701 0.000000,
+          -0.393701 0.393701 0.013780,
+          0.393701 0.393701 0.013780,
+          0.393701 0.393701 0.000000,
+          0.393701 -0.393701 0.000000,
+          0.393701 -0.393701 0.013780,
+          -0.393701 -0.393701 0.013780,
+          -0.393701 -0.393701 0.000000,
+          0.393701 0.393701 0.000000,
+          0.393701 0.393701 0.013780,
+          0.393701 -0.393701 0.013780,
+          0.393701 -0.393701 0.000000,
+          -0.393701 -0.393701 0.000000,
+          -0.393701 -0.393701 0.013780,
+          -0.393701 0.393701 0.013780,
+          -0.393701 0.393701 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
