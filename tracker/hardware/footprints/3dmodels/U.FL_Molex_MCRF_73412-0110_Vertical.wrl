@@ -1,18 +1,18 @@
 #VRML V2.0 utf8
-# --------------------------------------------------------------------------
-# MODEL     : U.FL_Molex_MCRF_73412-0110_Vertical
-# GENERATED : scripts/gen_3d_models.py  (parametric, deterministic)
-# SOURCE    : X/Y: F.Fab drawing of Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical as committed (3.869 x 5.698 mm, includes the drawn feed spur)
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models.py  (regenerate: python3 scripts/gen_3d_models.py)
+# part       : U.FL_Molex_MCRF_73412-0110_Vertical
+# source     : X/Y: F.Fab drawing of Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical as committed (3.869 x 5.698 mm, includes the drawn feed spur).  NOT in the installed kicad-packages3d library.
 # TODO(unverified):
 #   - Z 1.20 mm - U.FL mated height is not stated in any in-repo record
 # --------------------------------------------------------------------------
 
 Transform {
-  translation 0.0000 0.0000 0.6000
+  translation 0.000000 0.000000 0.236220
   children [
     Shape {
-      appearance Appearance { material Material { diffuseColor 0.100 0.110 0.120 } }
-      geometry Box { size 3.8690 5.6980 1.2000 }
+      appearance Appearance { material Material { diffuseColor 0.620 0.640 0.680 } }
+      geometry Box { size 1.523228 2.243307 0.472441 }
     }
   ]
 }
