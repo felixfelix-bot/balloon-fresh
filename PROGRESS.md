@@ -74,3 +74,13 @@ Worktree: `/home/c03rad0r/worktrees/bf-433lna` (branch `design/433-lna-and-licen
   **Kuhne Electronic domains parked / TLS-broken** (2007 archived catalogue only, price
   `TODO(unverified)`); **RF Bay Cloudflare challenge** (no figure taken); **ssb-electronic.de** empty
   to curl (all SSB figures read from the WiMo listings instead).
+
+
+---
+
+# PROGRESS t_588b1d1b (relay scaffolding)
+
+- Sibling failover suite GREEN (19), not RED -> documented honestly in REPORT.md.
+- Added relay_testkit.py + test_relay_testkit.py -> RED (ModuleNotFoundError, exit 2) then GREEN (13).
+- Regression: sibling suite 19 passed; ADR-033 gift-wrap guard 4 passed.
+- Commit f6e7681a on pr/relay-scaffold-testkit; pushed; PR base=pr/relay-failover-publisher.
