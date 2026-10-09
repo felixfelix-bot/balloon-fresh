@@ -6,7 +6,7 @@
 
 This compares an end-supported bare silicon cell in a horizontal panel with the same cell in a vertical panel. The cell is **78.55 x 38.90 x 0.21 mm**, the geometry recorded in ADR-063 §D4 and ADR-049. ADR-063 §D4 gives the measured/derived calibration **0.504 MPa at 1 g over 78.55 mm** and **1.007 MPa at 2 g**, for the simply-supported, end-only case. It explicitly says the allowable/flexural strength is not known and `S_crack` must be measured.
 
-For calculations below, the existing in-repo model is used: `sigma = 3 rho g S^2/(4 t)`, with `rho = 2330 kg/m^3`, `t = 0.21 mm`, and `g = 9.80665 m/s^2` (`docs/analysis/hub_array_overhang_model.py`, lines 18–27 and 103–107). The model's 170 GPa Si modulus is only an in-repo standard value (`docs/analysis/hub-thickness-deflection.md` §3); external reference ranges are **130–170 GPa** (MatWeb, [single-crystal silicon](https://www.matweb.com/search/datasheet.aspx?matguid=1e7c2e7e6e5d4d6a9e2f3c8e4e7a8c1f), source access should be rechecked before design freeze). The CTE used here is **2.6e-6/K**, cited by Ioffe NSM's [silicon thermal expansion data](https://www.ioffe.ru/SVA/NSM/Semicond/Si/thermal_expansion.html). If those links are unavailable, the material properties remain TODO(unverified), not design allowables.
+For calculations below, the existing in-repo model is used: `sigma = 3 rho g S^2/(4 t)`, with `rho = 2330 kg/m^3`, `t = 0.21 mm`, and `g = 9.80665 m/s^2` (`docs/analysis/hub_array_overhang_model.py`, lines 18–27 and 103–107). The model's 170 GPa Si modulus is only an in-repo standard value (`docs/analysis/hub-thickness-deflection.md` §3). The wider **130–170 GPa** range quoted in the task brief corresponds to standard single-crystal silicon values found in public engineering references (e.g. MatWeb's "Silicon" datasheet, Ioffe Institute NSM archive); **no URL is asserted here because none was fetched in this session — treat the range as `TODO(unverified)` until a datasheet is actually retrieved.** The CTE used here is **2.6e-6/K**, the standard room-temperature value for silicon (Ioffe NSM "Silicon - thermal expansion", `TODO(unverified)` — not fetched this session). If those references cannot be produced at design freeze, the material properties remain TODO(unverified), not design allowables.
 
 The stress figures are **demand**, not strength. No sourceable silicon flexural strength or modulus of rupture exists in this repository; therefore no numeric span can honestly be called safe without the coupon.
 
@@ -25,7 +25,7 @@ This is a geometry result, not a claim about a measured flight swing amplitude.
 
 At any unsupported span `S`, the transverse bending stress is:
 
-`σ_b = 3 rho g_perp S²/(4t) = 6.414 MPa * (S/100 mm)² * (g_perp/g)`.
+`σ_b = 3 rho g_perp S²/(4t) = 0.816 MPa * (S/100 mm)² * (g_perp/g)` (0.504 MPa at 78.55 mm, reproducing ADR-063).
 
 At the 78.55 mm cell length, the ADR-063 calibration is 0.504 MPa per g transverse:
 
@@ -104,6 +104,6 @@ No citable panel vibration spectrum, acceleration PSD, gust spectrum, or qualifi
 - `docs/analysis/hub_array_overhang_model.py` (rho, g, thickness, beam equation).
 - `docs/analysis/wing-ladder.md` §4.3/§5 (pendulum period and drivers; no measured angle).
 - `docs/analysis/wing-jettison.md` §2.1/§2.2 (5 m/s ascent, 0.45 m/s descent, assumed 10 g shock; no measured acceleration).
-- External material references: [MatWeb silicon](https://www.matweb.com/search/datasheet.aspx?matguid=1e7c2e7e6e5d4d6a9e2f3c8e4e7a8c1f) and [Ioffe silicon thermal expansion](https://www.ioffe.ru/SVA/NSM/Semicond/Si/thermal_expansion.html). Verify these links and temperature/property applicability before design use.
+- External material references: silicon E ≈ 130–170 GPa and CTE ≈ 2.6e-6/K are standard literature values (MatWeb silicon datasheet; Ioffe Institute NSM silicon pages). **No external URL was fetched in this session; these are named sources only and remain `TODO(unverified)` until retrieved.**
 
 **Unsourced/TODO(unverified):** flexural strength/modulus of rupture; maximum swing angle; acceleration g-load and vector history; vibration/buffet spectrum; exact assembly reference temperature; degree of thermal restraint; and whether the illustrative MatWeb modulus range applies to this cell texture/orientation.
