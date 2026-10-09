@@ -104,6 +104,32 @@ Absolute-T0 semantics are kept for log correlation + GPS stitching.
     Tests: `tools/test_cvm_armed_publisher.py` (includes the `E80_*` alias
     cases; no `nostr_sdk` required).
 
+#### 2.3.1 Emission chokepoint and the kind guard
+
+The wrap is built and emitted by exactly one module,
+`firmware/e80-stm32-bench/tools/nostr_giftwrap.py`:
+
+- `build_gift_wrap(payload, tx_npub, signer)` builds the inner kind-25910 rumor
+  and calls the upstream `nostr_sdk.gift_wrap` — the same primitive
+  `cvm_board_server.py` uses. It re-implements neither signing nor the relay
+  client, and it does not mint or validate the session (that is the ARMED
+  payload interface it transports).
+- `publish_gift_wrap()` is the **single emission choke-point**. The kind guard
+  `assert_gift_wrap_kind()` runs **before** `client.send_event()`, so a
+  non-kind-1059 event can never be queued on a relay pool.
+- `assert_gift_wrap_kind()` **raises** `PlaintextKindError` (an `AssertionError`
+  subclass) on any kind other than 1059 — it never downgrades and never
+  re-tags. **kind 30315 (plaintext ARMED/tally) is FORBIDDEN** and is named in
+  the assertion message (§1, RF recon leak).
+- `assert_recipient_tag()` asserts the outer `p` tag equals the TX npub, and
+  `assert_no_plaintext_leak()` asserts no payload fragment is visible in any
+  tag value or the content field.
+- `publish_armed(...)` is the failover-layer entry point (build + publish).
+
+`tools/test_nostr_giftwrap.py` pins all of the above (23 tests, runnable
+without `nostr_sdk`); `tools/test_giftwrap_single_path.py` pins this module's
+single `gift_wrap` call site alongside the existing construction paths.
+
 ### 2.4 TX-side subscribe
 
 - Subscribe **broad** to kind 1059 + **client-side npub allowlist** (server-side
