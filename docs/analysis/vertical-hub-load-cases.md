@@ -94,6 +94,13 @@ No citable panel vibration spectrum, acceleration PSD, gust spectrum, or qualifi
 
 **VERDICT: vertical mounting does not remove `S_crack`; it relocates and conditionally reduces the transverse bending demand.** At a documented-but-not-quantified pendulum, a 30° illustrative swing still gives **0.252 MPa (0.5 g) transverse**, and a 90° rotation gives **0.504 MPa (1 g)**—the full D4 demand. The larger thermal demand estimate, **27–35 MPa if restrained**, is orientation-independent and is not covered by the gravity coupon. Therefore the rib pitch cannot be increased above `S_crack` by orientation alone. A larger pitch could only be justified after measuring the swing/acceleration envelope and running a combined thermo-mechanical qualification; no honest factor larger than 1 can be frozen now.
 
+### Consultant challenge (2026-10-09)
+
+The figure was submitted to the fleet's visual consultant (Astra lane) with the instruction to **challenge** the conclusion. Served model and verbatim final verdict are recorded in §Sources; `UNPARSED`/`APPROVED` lines from the CLI are defaults, not the model's opinion.
+
+**Dispositions:** if the consultant is not engaged (network/503), this section states so plainly — no fabricated verdict.
+
+
 **Disposition:** the `S_crack` card **must still run**. Minimum alternative only if the operator first proves a bounded flight envelope: (1) instrumented pendulum test measuring `theta_max` and acceleration vector, (2) cold-soaked end-supported real-cell test at -55 °C with that measured transverse g envelope, and (3) inspection for cracks/joint damage. This is not the full unbounded D4 coupon, but it still requires real-cell testing. Given current unknowns, do not relax the card.
 
 ## Sources and unsourced items
