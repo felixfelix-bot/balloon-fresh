@@ -96,10 +96,7 @@ No citable panel vibration spectrum, acceleration PSD, gust spectrum, or qualifi
 
 ### Consultant challenge (2026-10-09)
 
-The figure was submitted to the fleet's visual consultant (Astra lane) with the instruction to **challenge** the conclusion. Served model and verbatim final verdict are recorded in §Sources; `UNPARSED`/`APPROVED` lines from the CLI are defaults, not the model's opinion.
-
-**Dispositions:** if the consultant is not engaged (network/503), this section states so plainly — no fabricated verdict.
-
+The figure was submitted to the fleet's visual consultant (Astra lane) with the instruction to **challenge** the conclusion. The attempt on 2026-10-09 returned HTTP 503 (`all candidate lanes busy or capped`), so no served model or consultant verdict exists. No `APPROVED`, `PARTIAL`, or `CHANGES_REQUESTED` result is claimed.
 
 **Disposition:** the `S_crack` card **must still run**. Minimum alternative only if the operator first proves a bounded flight envelope: (1) instrumented pendulum test measuring `theta_max` and acceleration vector, (2) cold-soaked end-supported real-cell test at -55 °C with that measured transverse g envelope, and (3) inspection for cracks/joint damage. This is not the full unbounded D4 coupon, but it still requires real-cell testing. Given current unknowns, do not relax the card.
 
