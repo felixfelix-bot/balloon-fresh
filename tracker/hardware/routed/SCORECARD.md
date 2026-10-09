@@ -20,6 +20,23 @@ which was at load 40+ with 0 GB free RAM and 5 GB swapped.
 Baseline row committed to `drc_snapshots/history.jsonl` (referee's own store).
 Routed: `viol=129 shorts=10 clearance=3 unconnected=0 fp=30 vias=18 -> NOT fab-ready`.
 
+### CORRECTION (2026-10-09, after gap analysis) — see `GAP-ANALYSIS.md`
+
+The `clearance 66 -> 3` row above was presented as routing quality. Per-class DRC shows
+it is mostly **zone refill**, not router skill — the dominant class is
+`zone clearance 0.5000 mm; actual 0.0000 mm`, i.e. the baseline board had unfilled zones.
+A further `hole_clearance 54 -> 0` swing was not reported at all. **The only unambiguous
+contribution of the router is `unconnected 53 -> 0` (+18 vias).**
+
+Also not stated above: **30 of the 129 residual violations (`lib_footprint_issues`) are
+missing footprint library tables on x280, not board defects** — the same board on
+cobrador scores ~99, so cross-host before/after is not comparable without filtering.
+
+Finally, the 10 `shorting_items` are **adjacent pins inside a single module footprint**
+(`3V3/GND`, `SPI0_SCK/SPI0_MOSI`, …) — a **footprint pad-pitch defect**, not overlapping
+parts. With the 24 mask bridges it puts 34 violations upstream of routing, so **no amount
+of routing can make this board fab-ready.**
+
 ## What is proven
 
 - **Routing requires no spatial reasoning from a model.** The pipeline is arithmetic
