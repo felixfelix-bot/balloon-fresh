@@ -22,6 +22,7 @@ Run:  python3 -m pytest test_nostr_giftwrap.py -v
 from __future__ import annotations
 
 import ast
+import asyncio
 import base64
 import json
 import os
@@ -77,14 +78,39 @@ class FakeKind:
         return self._value
 
 
+class FakeTag:
+    """Faithful ``nostr_sdk.Tag``: elements come out via ``.as_vec()``.
+
+    The real Rust binding's ``Tag`` is NOT iterable — ``to_vec()`` yields
+    ``Tag`` objects, and every element access goes through ``as_vec()`` (see
+    ``cvm_board_server._extract_p_tag``). An earlier version of this fake had
+    ``to_vec()`` return plain Python lists, which made the guard look green
+    while ``event_view()`` raised ``TypeError`` on every real SDK event.
+    """
+
+    def __init__(self, values):
+        self._values = [str(v) for v in values]
+
+    def as_vec(self):
+        return list(self._values)
+
+    def __eq__(self, other):
+        if isinstance(other, FakeTag):
+            return self._values == other._values
+        return NotImplemented
+
+    def __repr__(self):
+        return "FakeTag(%r)" % (self._values,)
+
+
 class _Tags:
-    """nostr_sdk TagList-like: only .to_vec() is used by the guard."""
+    """nostr_sdk TagList-like: ``.to_vec()`` → list of ``Tag`` objects."""
 
     def __init__(self, tags):
         self._tags = [list(t) for t in tags]
 
     def to_vec(self):
-        return [list(t) for t in self._tags]
+        return [FakeTag(t) for t in self._tags]
 
 
 class FakeEvent:
@@ -256,7 +282,8 @@ class TestBuildGiftWrap(GiftWrapTestBase):
         ue = call["unsigned_event"]
         self.assertEqual(int(ue.kind()), gw.INNER_KIND)
         self.assertEqual(json.loads(ue.content()), ARMED_PAYLOAD)
-        self.assertEqual(ue.tags().to_vec(), [["p", TX_HEX]])
+        self.assertEqual([t.as_vec() for t in ue.tags().to_vec()],
+                         [["p", TX_HEX]])
 
     async def test_signer_is_passed_through_untouched(self):
         await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, self.sdk)
@@ -344,6 +371,58 @@ class TestPublishArmed(GiftWrapTestBase):
         with self.assertRaises(TypeError):
             await gw.publish_armed("not-a-mapping", TX_NPUB, "signer", client)
         self.assertEqual(client.sent, [])
+
+
+# ---------------------------------------------------------------------------
+# Real-SDK event shape (the fake above must stay faithful to it)
+# ---------------------------------------------------------------------------
+
+class TestRealSdkTagShape(unittest.TestCase):
+    """``event_view`` must read REAL nostr_sdk events, whose ``tags()``
+    returns a TagList of NON-iterable ``Tag`` objects (``.as_vec()`` only).
+
+    Regression test for the real-SDK TypeError found by running the builder
+    against nostr-sdk 0.44 in a venv: the guard layer could not normalize a
+    genuine event, so ``build_gift_wrap`` raised TypeError instead of
+    returning the checked 1059 wrap.
+    """
+
+    def test_faketag_is_not_iterable_like_the_real_binding(self):
+        with self.assertRaises(TypeError):
+            list(FakeTag(["p", TX_HEX]))
+        with self.assertRaises(TypeError):
+            iter(FakeTag(["p", TX_HEX]))
+
+    def test_event_view_normalizes_tag_objects(self):
+        event = FakeEvent(kind=1059, tags=[["p", TX_HEX], ["t", "cvm"]],
+                          content=CIPHERTEXT)
+        view = gw.event_view(event)
+        self.assertEqual(view["kind"], 1059)
+        self.assertEqual(view["tags"], [["p", TX_HEX], ["t", "cvm"]])
+        self.assertEqual(view["content"], CIPHERTEXT)
+
+    def test_guards_work_on_real_shaped_event(self):
+        event = FakeEvent(kind=1059, tags=[["p", TX_HEX]],
+                          content=CIPHERTEXT)
+        gw.assert_gift_wrap_kind(event)
+        self.assertEqual(gw.assert_recipient_tag(event, TX_NPUB), TX_HEX)
+        self.assertTrue(gw.assert_no_plaintext_leak(event, ARMED_PAYLOAD))
+
+    def test_publish_accepts_real_shaped_event(self):
+        client = FakeClient()
+        event = FakeEvent(kind=1059, tags=[["p", TX_HEX]],
+                          content=CIPHERTEXT)
+        asyncio.run(gw.publish_gift_wrap(client, event, payload=ARMED_PAYLOAD,
+                                         tx_npub=TX_NPUB))
+        self.assertEqual(client.sent, [event])
+
+    def test_mapping_events_with_tag_objects_are_normalized(self):
+        # A dict-shaped event whose tags were already materialized as Tag
+        # objects (e.g. from ``event.as_json()`` round-trips through a
+        # TagList) must not crash the guard either.
+        event = {"kind": 1059, "tags": [FakeTag(["p", TX_HEX])],
+                 "content": CIPHERTEXT}
+        self.assertEqual(gw.event_view(event)["tags"], [["p", TX_HEX]])
 
 
 # ---------------------------------------------------------------------------
