@@ -17,6 +17,7 @@ EXPECTED_CALLS = {
     "cvm_board_server.py": {"gift_wrap": 1, "from_gift_wrap": 1},
     "cvm_campaign.py": {"gift_wrap": 2, "from_gift_wrap": 1},
     "cvm_relay_test.py": {"gift_wrap": 1},
+    "nostr_giftwrap.py": {"gift_wrap": 1},
     "test_cvm_board_server.py": {"gift_wrap": 1, "from_gift_wrap": 1},
 }
 
