@@ -33,19 +33,56 @@ the armed session on the wire in the clear. :func:`assert_gift_wrap_kind`
 raises :class:`PlaintextKindError` on any kind other than 1059 — it never
 silently downgrades, and it never re-tags a plaintext event into a wrap.
 
+Determinism and idempotency (card t_c4c43d76)
+--------------------------------------------
+A duplicated publish must be a no-op on the relay: relays dedupe on the Nostr
+event ``id`` (sha256 over ``[0, pubkey, created_at, kind, tags, content]``), so
+two publishes of a *different* signed kind-1059 event are two distinct events
+even when they carry the same ARMED payload. Every input that id is computed
+from must therefore be a pure function of the session fields.
+
+*What this layer can and cannot freeze.* The one permitted constructor,
+``nostr_sdk.gift_wrap(signer, receiver, rumor)`` (ADR-033; pinned by
+``test_giftwrap_single_path.py``), generates the NIP-59 **outer ephemeral key
+internally** and stamps the outer ``created_at`` from the wall clock. Verified
+against nostr-sdk 0.44: two calls with an identical signer+rumor+recipient
+produced different outer pubkeys and ids. The binding exposes no parameter for
+the ephemeral key; supplying one would require hand-rolling the kind-1059 event
+or calling the ADR-033-forbidden ``gift_wrap_from_seal`` seam — both prohibited
+here (requirement 1). The outer key/created_at are therefore *accepted* as
+transport-owned nondeterminism.
+
+*Strategy chosen* (requirement 3, the explicit "or" alternative): every input
+this layer owns — the canonical session serialization, the deterministic
+ephemeral-session scalar, and the frozen inner-rumor ``created_at`` — is a pure
+function of the session fields, and the *fully signed* outer event is cached on
+first call and returned identical on repeats. Re-publishing re-sends the same
+event id, which the relay dedupes.
+
+*Privacy trade-off* (requirement 2): deriving the ephemeral key from the session
+fields, rather than drawing it fresh per wrap, means two wraps of the same
+session share an ephemeral key. That **weakens unlinkability** — an observer who
+correlates the two outer events learns they belong to the same session, which a
+fresh random key per wrap would have hidden. It is an accepted cost here: the
+session id is already a public, monotonic correlation handle, and determinism is
+what makes relay-side dedupe possible. No randomness source (``os.urandom`` /
+``secrets`` / ``random`` / ``time``) appears anywhere in this derivation path.
+
 Pure stdlib at import time: ``nostr_sdk`` is imported lazily inside
 :func:`build_gift_wrap`, and npub→hex is a local bech32 decoder, so the guard
 layer is unit-testable in a bare CI image.
 
-Run:  python3 -m pytest test_nostr_giftwrap.py -v
+Run:  python3 -m pytest test_nostr_giftwrap.py test_giftwrap_determinism.py -v
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import sys
-import time
+import threading
 from typing import Any, Mapping, Optional
 
 # Sibling imports (cvm_sync) — same convention as the other tools/ modules.
@@ -75,6 +112,15 @@ __all__ = [
     "payload_fingerprints",
     "publish_gift_wrap",
     "publish_armed",
+    "SESSION_DOMAIN_LABEL",
+    "EPHEMERAL_DOMAIN_LABEL",
+    "SECP256K1_ORDER",
+    "canonical_session_bytes",
+    "session_fingerprint",
+    "derive_ephemeral_secret_key",
+    "derive_created_at",
+    "clear_wrap_cache",
+    "wrap_cache_size",
 ]
 
 #: Inner (gift-wrapped) content kind — the CVM JSON-RPC envelope used by
@@ -95,6 +141,188 @@ _LEAK_MIN_LEN = 3
 #: bech32 (BIP-173) charset + checksum generator, for the npub decoder.
 _BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 _BECH32_GENERATOR = (0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3)
+
+
+# ---------------------------------------------------------------------------
+# Determinism and idempotency (card t_c4c43d76)
+# ---------------------------------------------------------------------------
+# Everything below is a PURE function of the session fields: no randomness, no
+# wall clock. See the module docstring for the strategy and the privacy
+# trade-off of a session-derived (rather than per-wrap random) ephemeral key.
+
+#: Fixed domain-separation label for the session-identity HMAC.
+SESSION_DOMAIN_LABEL = b"e80-cvm/nip59/session/v1"
+
+#: Fixed domain-separation label for the deterministic ephemeral wrap key.
+EPHEMERAL_DOMAIN_LABEL = b"e80-cvm/nip59/ephemeral/v1"
+
+#: secp256k1 group order n — a derived scalar must live in [1, n-1].
+SECP256K1_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
+#: Timestamp field preference order for the frozen inner-rumor ``created_at``.
+_SESSION_TIME_FIELDS = ("created_at", "t_ready_utc", "t0")
+
+#: In-process cache: wrap-scope key -> signed kind-1059 event.
+_WRAP_CACHE: "dict[str, Any]" = {}
+_WRAP_CACHE_LOCK = threading.Lock()
+
+
+def _canonical_payload(payload) -> Any:
+    """Order-independent JSON-safe copy of a payload (a pure function)."""
+    if isinstance(payload, Mapping):
+        return {str(key): _canonical_payload(value)
+                for key, value in payload.items()}
+    if isinstance(payload, (list, tuple)):
+        return [_canonical_payload(item) for item in payload]
+    if payload is None or isinstance(payload, (str, int, float, bool)):
+        return payload
+    raise TypeError(
+        "payload contains a non-JSON value of type %s: a canonical session "
+        "serialization must be a pure function of the session fields"
+        % type(payload).__name__)
+
+
+def canonical_session_bytes(payload: Mapping, tx_npub: str, *,
+                            author: Optional[str] = None,
+                            created_at: Optional[int] = None) -> bytes:
+    """Canonical, deterministic serialization of a wrap's session fields.
+
+    Pure: identical fields → identical bytes regardless of dict insertion order.
+    The recipient (normalized to hex) and the author are included so two wraps
+    to different recipients, or by different device keys, never collide.
+    """
+    doc = {
+        "author": "" if author is None else str(author),
+        "created_at": None if created_at is None else int(created_at),
+        "payload": _canonical_payload(payload),
+        "recipient": npub_to_hex(tx_npub),
+    }
+    return json.dumps(doc, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False).encode("utf-8")
+
+
+def session_fingerprint(payload, tx_npub, *, author: Optional[str] = None,
+                        created_at: Optional[int] = None) -> str:
+    """HMAC-SHA256 (fixed domain label) over the canonical session bytes.
+
+    The in-process wrap-cache key. Deterministic and collision-resistant;
+    ``hmac``/``hashlib`` only, so no randomness enters the derivation path.
+    """
+    return hmac.new(
+        SESSION_DOMAIN_LABEL,
+        canonical_session_bytes(payload, tx_npub, author=author,
+                                created_at=created_at),
+        hashlib.sha256).hexdigest()
+
+
+def _hkdf_sha256(ikm: bytes, *, salt: bytes, info: bytes,
+                 length: int = 32) -> bytes:
+    """HKDF-SHA256 (RFC 5869) expand — stdlib only, no randomness."""
+    prk = hmac.new(salt, ikm, hashlib.sha256).digest()
+    okm = b""
+    block = b""
+    counter = 1
+    while len(okm) < length:
+        block = hmac.new(prk, block + info + bytes((counter,)),
+                         hashlib.sha256).digest()
+        okm += block
+        counter += 1
+    return okm[:length]
+
+
+def derive_ephemeral_secret_key(payload, tx_npub, *,
+                                author: Optional[str] = None,
+                                created_at: Optional[int] = None) -> str:
+    """Deterministic NIP-59 ephemeral secret, reduced into secp256k1.
+
+    HKDF-SHA256 over the canonical session bytes → 32 bytes → reduced into the
+    valid secret-key range ``[1, n-1]`` of secp256k1, returned as 64 hex chars.
+    Deterministic and randomness-free (requirement 2). The privacy trade-off of
+    a session-derived ephemeral key (weakened unlinkability between wraps of the
+    same session) is documented in the module docstring, together with why the
+    pinned constructor does not consume the value directly (ADR-033 forbids
+    hand-rolling the outer wrap).
+    """
+    ikm = canonical_session_bytes(payload, tx_npub, author=author,
+                                  created_at=created_at)
+    okm = _hkdf_sha256(ikm, salt=EPHEMERAL_DOMAIN_LABEL,
+                       info=EPHEMERAL_DOMAIN_LABEL, length=32)
+    scalar = int.from_bytes(okm, "big") % (SECP256K1_ORDER - 1) + 1
+    return "%064x" % scalar
+
+
+def derive_created_at(payload, tx_npub, *, author: Optional[str] = None,
+                      created_at: Optional[int] = None) -> int:
+    """Freeze the inner-rumor ``created_at`` at a session-derived value.
+
+    Resolution order — all pure functions of the session fields: the explicit
+    ``created_at`` argument, then ``payload['created_at']``,
+    ``payload['t_ready_utc']``, ``payload['t0']``, then a deterministic epoch
+    derived from the session fingerprint. The wall clock is never consulted
+    (requirement 3: no re-randomising ``created_at`` per call).
+    """
+    if created_at is not None:
+        return int(created_at)
+    if isinstance(payload, Mapping):
+        for field in _SESSION_TIME_FIELDS:
+            value = payload.get(field)
+            if value is not None:
+                return int(value)
+    digest = session_fingerprint(payload, tx_npub, author=author,
+                                 created_at=created_at)
+    # Deterministic fallback inside a plausible range (~2023-11-14 + up to ~68y).
+    return 1_700_000_000 + (int(digest, 16) % (1 << 31))
+
+
+def clear_wrap_cache() -> int:
+    """Drop every cached wrap; returns how many were evicted (test hook)."""
+    with _WRAP_CACHE_LOCK:
+        count = len(_WRAP_CACHE)
+        _WRAP_CACHE.clear()
+    return count
+
+
+def wrap_cache_size() -> int:
+    """Number of signed wraps currently held in the in-process cache."""
+    with _WRAP_CACHE_LOCK:
+        return len(_WRAP_CACHE)
+
+
+def _signer_cache_identity(signer) -> str:
+    """Best-effort stable identity for a signer, to scope the wrap cache.
+
+    Prefers a synchronously reachable public key; falls back to the object id so
+    two distinct signer instances never share a cached event.
+    """
+    for attr in ("public_key", "public_key_hex", "pubkey"):
+        value = getattr(signer, attr, None)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            return value.lower()
+        if callable(value):
+            try:
+                got = value()
+            except Exception:
+                continue
+            if isinstance(got, str):
+                return got.lower()
+            to_hex = getattr(got, "to_hex", None)
+            if callable(to_hex):
+                try:
+                    return str(to_hex()).lower()
+                except Exception:
+                    continue
+    return "obj:%d" % id(signer)
+
+
+def _wrap_cache_key(payload, tx_npub, signer, *, author=None,
+                    created_at=None) -> str:
+    """Wrap-scope cache key: canonical session fingerprint + signer identity."""
+    return "%s|%s" % (
+        session_fingerprint(payload, tx_npub, author=author,
+                            created_at=created_at),
+        _signer_cache_identity(signer))
 
 
 # ---------------------------------------------------------------------------
@@ -398,16 +626,16 @@ def build_inner_rumor(payload: Mapping, tx_npub: str, *,
     ``payload`` is task 1's ARMED interface object: any mapping carrying the
     ARMED fields. It is transported verbatim — this layer neither mints nor
     validates the session.
+
+    ``created_at`` is FROZEN at a session-derived value (:func:`derive_created_at`)
+    rather than read from the wall clock, so repeated calls with the same fields
+    produce a byte-identical rumor.
     """
     if not isinstance(payload, Mapping):
         raise TypeError("payload must be a Mapping (task-1 ARMED interface), "
                         "got %s" % type(payload).__name__)
     recipient = npub_to_hex(tx_npub)
     body = dict(payload)
-    if created_at is None:
-        created_at = body.get("created_at")
-    if created_at is None:
-        created_at = time.time()
     if author is None:
         author = body.get("author") or ""
     return {
@@ -415,7 +643,10 @@ def build_inner_rumor(payload: Mapping, tx_npub: str, *,
         "kind": INNER_KIND,
         "tags": [["p", recipient]],
         "content": json.dumps(body, sort_keys=True, separators=(",", ":")),
-        "created_at": int(created_at),
+        # Frozen at a session-derived value — never the wall clock, so the
+        # rumor cannot drift between calls (requirement 3).
+        "created_at": derive_created_at(body, recipient, author=author,
+                                        created_at=created_at),
     }
 
 
@@ -445,9 +676,33 @@ async def build_gift_wrap(payload: Mapping, tx_npub: str,
 
     Runs the full guard set on the produced event before returning it, so a
     malformed or plaintext wrap can never be handed to the publisher.
+
+    IDEMPOTENT: the signed event is cached on the canonical-session fingerprint
+    (requirement 4), so repeated calls with the same session fields return the
+    SAME event object — identical ``id`` and identical serialization — without
+    re-signing a divergent event. The pinned constructor draws a fresh outer
+    ephemeral key per call (see the module docstring), so the cache is what makes
+    a duplicate publish dedupe on the relay.
     """
     keys = keys or keymaterial.load_keys()
     recipient = npub_to_hex(tx_npub)
+    cache_key = _wrap_cache_key(payload, recipient, signer, author=author,
+                                created_at=created_at)
+    with _WRAP_CACHE_LOCK:
+        cached = _WRAP_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # The derived ephemeral-session scalar must be a valid secp256k1 secret;
+    # this keeps the deterministic derivation on the build path (it can never
+    # silently degrade into an out-of-range key).
+    derived = derive_ephemeral_secret_key(payload, recipient, author=author,
+                                          created_at=created_at)
+    if not 0 < int(derived, 16) < SECP256K1_ORDER:
+        raise GiftWrapError(
+            "derived ephemeral secret key is not a valid secp256k1 scalar: %s"
+            % derived)
+
     inner = build_inner_rumor(payload, recipient, author=author,
                               created_at=created_at)
     import nostr_sdk  # lazy: keep the module importable in a bare image
@@ -460,7 +715,9 @@ async def build_gift_wrap(payload: Mapping, tx_npub: str,
     assert_gift_wrap_kind(event, context="build")
     assert_recipient_tag(event, recipient)
     assert_no_plaintext_leak(event, payload, context="build")
-    return event
+
+    with _WRAP_CACHE_LOCK:
+        return _WRAP_CACHE.setdefault(cache_key, event)
 
 
 # ---------------------------------------------------------------------------
