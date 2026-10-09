@@ -4,11 +4,7 @@
 
 ## Scope and inputs
 
-<<<<<<< HEAD
 This compares an end-supported bare silicon cell in a horizontal panel with the same cell in a vertical panel. The cell is **78.55 x 38.90 x 0.21 mm**, the geometry recorded in ADR-063 §D4 and ADR-049. ADR-063 §D4 gives the **model-derived** calibration **0.504 MPa at 1 g over 78.55 mm** and **1.007 MPa at 2 g**: these are the results of a **simply supported, uniformly loaded, end-only beam model** (`sigma = 3 rho g L^2/(4 t)` with `rho = 2330 kg/m^3` silicon density, `g = 9.80665 m/s^2`, `t = 0.21 mm` thickness, simply supported boundary conditions, uniform self-weight loading) — they are **not measured material constants**. ADR-063 §D4 explicitly says the allowable/flexural strength is not known and `S_crack` must be measured.
-=======
-This compares an end-supported bare silicon cell in a horizontal panel with the same cell in a vertical panel. The cell is **78.55 x 38.90 x 0.21 mm**, the geometry recorded in ADR-063 §D4 and ADR-049. ADR-063 §D4 gives the measured/derived calibration **0.504 MPa at 1 g over 78.55 mm** and **1.007 MPa at 2 g**, for the simply-supported, end-only case. It explicitly says the allowable/flexural strength is not known and `S_crack` must be measured.
->>>>>>> pr/vertical-hub-loads
 
 For calculations below, the existing in-repo model is used: `sigma = 3 rho g S^2/(4 t)`, with `rho = 2330 kg/m^3`, `t = 0.21 mm`, and `g = 9.80665 m/s^2` (`docs/analysis/hub_array_overhang_model.py`, lines 18–27 and 103–107). The model's 170 GPa Si modulus is only an in-repo standard value (`docs/analysis/hub-thickness-deflection.md` §3). The wider **130–170 GPa** range quoted in the task brief corresponds to standard single-crystal silicon values found in public engineering references (e.g. MatWeb's "Silicon" datasheet, Ioffe Institute NSM archive); **no URL is asserted here because none was fetched in this session — treat the range as `TODO(unverified)` until a datasheet is actually retrieved.** The CTE used here is **2.6e-6/K**, the standard room-temperature value for silicon (Ioffe NSM "Silicon - thermal expansion", `TODO(unverified)` — not fetched this session). If those references cannot be produced at design freeze, the material properties remain TODO(unverified), not design allowables.
 
@@ -80,11 +76,7 @@ If contraction is fully restrained in one in-plane direction, the uniaxial elast
 
 `|sigma_th| = E alpha |ΔT| = 27.0 MPa (E=130 GPa) to 35.4 MPa (E=170 GPa)`.
 
-<<<<<<< HEAD
 That stress is **orientation-independent**. It is a **uniaxial, uniform, fully restrained estimate**, not a universal thermal upper bound: it is zero for an ideal freely contracting cell and the actual value depends on solder lands, frame/carrier CTE, adhesive compliance, temperature gradient, and restraint. For equal biaxial in-plane restraint under plane stress, the corresponding estimate is `E alpha |ΔT|/(1−ν)`; with `ν = 0.28` and `E = 130 GPa`, this is approximately **37.6 MPa**. These constraints are not characterized. **Failure mode:** thermal tensile/shear stress at silicon ends, solder joints, or defects; it can govern even when vertical static bending is zero.
-=======
-That stress is **orientation-independent**. It is not a bending stress from the cell's self-weight and is zero for an ideal freely contracting cell; the actual value depends on solder lands, frame compliance, temperature gradient, and restraint. Those constraints are not characterized. **Failure mode:** thermal tensile/shear stress at silicon ends, solder joints, or defects; it can govern even when vertical static bending is zero.
->>>>>>> pr/vertical-hub-loads
 
 ## 5. Vibration / buffet
 
@@ -104,7 +96,6 @@ No citable panel vibration spectrum, acceleration PSD, gust spectrum, or qualifi
 
 ### Consultant challenge (2026-10-09)
 
-<<<<<<< HEAD
 The figure was submitted to the fleet's visual consultant (Astra lane) with the instruction to **challenge** the conclusion. The first five attempts on 2026-10-09 returned HTTP 503/timeouts; attempt 6 served `gpt-6-astra`. Its verdict was `CHANGES_REQUESTED`; the verbatim answer is recorded at `docs/analysis/assets/adr066-consult-answer.md` with machine output at `docs/analysis/assets/adr066-consult.json`.
 
 The challenge found the arithmetic internally consistent, but identified the following qualification changes: the 0.504 MPa point is a simply-supported uniform-beam model result, not a measured material constant; `sin(60°)=0.866` is rounded to 0.87 only for display; the 27.0 MPa line is a uniaxial fully-restrained estimate, not a universal thermal upper bound (the equal-biaxial plane-stress estimate is approximately 37.6 MPa for ν=0.28); and the 2 g curve is illustrative, not a flight qualification envelope. Most importantly, no-global-span-credit is conservative only for idealized global bending: local support/contact, adhesive, flatness, thermal mismatch, residual stress, shock and vibration remain separate unbounded risks.
@@ -118,12 +109,6 @@ The figure generator now labels both uniaxial thermal lines explicitly, adds the
 **Separate test requirement adopted (item 7).** The consultant requested — and this analysis now records as an open requirement — a separate analysis or test for: local support stresses (ribs, posts, adhesive edges, hard points), carrier flatness, adhesive stiffness, cell/carrier thermal mismatch, modal response, and vibration/shock. These belong with the qualification riders in `docs/analysis/conservative-hub-unfreeze-risk.md`, not with this gravity-bending plot.
 
 **No margin implied (item 8).** Nothing in the plotted curves or this document establishes margin against cracking. Until the `S_crack` coupon, cold-soak, and vibration evidence exists, the conservative baseline is a **screening assumption, not a demonstrated design allowability**. The 0.504 MPa figure is a calculated model result, not a measured strength.
-=======
-The figure was submitted to the fleet's visual consultant (Astra lane) with the instruction to **challenge** the conclusion. Served model and verbatim final verdict are recorded in §Sources; `UNPARSED`/`APPROVED` lines from the CLI are defaults, not the model's opinion.
-
-**Dispositions:** if the consultant is not engaged (network/503), this section states so plainly — no fabricated verdict.
-
->>>>>>> pr/vertical-hub-loads
 
 **Disposition:** the `S_crack` card **must still run**. Minimum alternative only if the operator first proves a bounded flight envelope: (1) instrumented pendulum test measuring `theta_max` and acceleration vector, (2) cold-soaked end-supported real-cell test at -55 °C with that measured transverse g envelope, and (3) inspection for cracks/joint damage. This is not the full unbounded D4 coupon, but it still requires real-cell testing. Given current unknowns, do not relax the card.
 
