@@ -163,6 +163,17 @@ SECP256K1_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD036
 _SESSION_TIME_FIELDS = ("created_at", "t_ready_utc", "t0")
 
 #: In-process cache: wrap-scope key -> signed kind-1059 event.
+#:
+#: Lifetime / eviction policy (requirement 3): the cache lives for the whole
+#: process and there is NO automatic eviction — an entry is written once on the
+#: first build of a given ``(canonical session fingerprint, signer identity)``
+#: and thereafter only read. Growth is therefore bounded by the number of
+#: *distinct sessions* a process publishes, not by the number of publish calls:
+#: a repeated call with the same session fields is a cache hit and adds nothing
+#: (that is precisely what makes re-publishing idempotent and relay-dedupable).
+#: A long-lived broker that mints unbounded distinct sessions would grow without
+#: bound; the operator/test hook :func:`clear_wrap_cache` drops every entry when
+#: that matters. All access is serialized by ``_WRAP_CACHE_LOCK`` below.
 _WRAP_CACHE: "dict[str, Any]" = {}
 _WRAP_CACHE_LOCK = threading.Lock()
 
