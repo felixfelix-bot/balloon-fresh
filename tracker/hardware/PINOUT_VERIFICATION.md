@@ -114,7 +114,7 @@ Additionally, GPIO8 is a strapping pin (controls boot mode + ROM message printin
 | SPI SCK | GPIO6 | 20 | OK | SPI clock |
 | SPI MOSI | GPIO7 | 21 | OK | C3 → LR2021 |
 | (unused) | GPIO8 | 22 | — | Strapping pin. Leave unconnected. |
-| LED | GPIO9 | 23 | OK | Strapping (weak pull-up). LED is fine. |
+| LED (obsolete) | GPIO9 | 23 | **DO NOT POPULATE** | GPIO9 is a boot-mode strapping pin; an LED load can pull the strap and force download boot. The firmware LED is correctly moved to GPIO18 (module pin 26). |
 | SPI NSS | GPIO10 | 16 | OK | Chip select |
 | LED (current fw) | GPIO18 | 26 | OK | USB_D- — works as GPIO when USB disabled |
 | FEM_TX | GPIO19 | 27 | OK | USB_D+ — works as GPIO when USB disabled |
