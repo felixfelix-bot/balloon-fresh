@@ -36,6 +36,7 @@ G = 9.80665            # m/s^2  (physical constant; hub_array_overhang_model.py 
 RHO_SI = 2330.0        # kg/m^3 crystalline Si (physical constant; same, L20)
 E_SI_LOW, E_SI_HIGH = 130e9, 170e9   # Pa, literature range, TODO(unverified)
 CTE_SI = 2.6e-6        # 1/K, literature value, TODO(unverified)
+NU_SI = 0.28           # Poisson ratio, literature value, TODO(unverified)
 T_CELL = 0.21e-3       # m      operator caliper (same, L22)
 L_CELL = 78.55e-3      # m      LARGE cell long side (ADR-049 measured inputs)
 DT_COLD = -80.0        # K      +25 C assembly -> -55 C cold soak (assumed ref, TODO)
@@ -136,18 +137,27 @@ def render_figure() -> None:
     ax.plot(spans_mm, series(math.sin(math.radians(30))), "b--", lw=1.5,
             label="VERTICAL pendulum 30° (k=sin30=0.50) — illustrative")
     ax.plot(spans_mm, series(math.sin(math.radians(60))), "c--", lw=1.5,
-            label="VERTICAL pendulum 60° (k=sin60=0.87) — illustrative")
+            label="VERTICAL pendulum 60° (k=sin60=0.866, shown rounded 0.87) — illustrative")
     ax.plot(spans_mm, series(1.0), "k:", lw=1.2,
             label="VERTICAL pendulum 90° / horizontal 1 g (k=1.00) — the killer")
     ax.plot(spans_mm, series(2.0), "m-.", lw=1.2,
-            label="either mounting, 2 g transverse (coupon 2 g point)")
+            label="either mounting, 2 g transverse — ILLUSTRATIVE, not a validated envelope")
 
     # thermal band (orientation-independent), shown as horizontal lines
     for E, lbl in ((E_SI_LOW, "130"), (E_SI_HIGH, "170")):
         sig = abs(E * CTE_SI * DT_COLD) / 1e6
-        ax.axhline(sig, color="0.4", lw=0.8, ls=(0, (1, 4)))
+        ax.axhline(sig, color="0.4", lw=0.8, ls=(0, (1, 4)),
+                   label=f"uniaxial fully restrained thermal, E={lbl} GPa: {sig:.1f} MPa")
         ax.text(2, sig + 0.5, f"fully-restrained thermal -55 C, E={lbl} GPa: {sig:.1f} MPa",
                 fontsize=7, color="0.3")
+    # equal-biaxial plane-stress thermal estimate E*alpha*|dT|/(1-nu)
+    # (consultant challenge 2026-10-09 item 3): ~37.6 MPa for E=130 GPa, nu=0.28
+    sig_bi = abs(E_SI_LOW * CTE_SI * DT_COLD) / (1.0 - NU_SI) / 1e6
+    ax.axhline(sig_bi, color="0.55", lw=0.8, ls=(0, (4, 2)),
+               label=f"equal-biaxial plane-stress thermal, E=130 GPa, nu={NU_SI}: {sig_bi:.1f} MPa")
+    ax.text(2, sig_bi + 0.5,
+            f"equal-biaxial E*a*|dT|/(1-nu), nu={NU_SI}, E=130 GPa: {sig_bi:.1f} MPa",
+            fontsize=7, color="0.3")
 
     ax.axvline(L_CELL * 1e3, color="0.5", lw=0.8)
     ax.text(L_CELL * 1e3 + 1, 0.5, "cell length\n78.55 mm", fontsize=7, color="0.4")

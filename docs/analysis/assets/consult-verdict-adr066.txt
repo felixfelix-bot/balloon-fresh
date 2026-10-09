@@ -1,0 +1,53 @@
+visual_review: CHANGES_REQUESTED
+visual_reviewer_model: gpt-6-astra
+visual_artifact: /home/c03rad0r/worktrees/bf-main/docs/analysis/vertical-hub-load-cases.png
+tool: scripts/fleet/visual_consult.py (astra-consultant profile pin gpt-6-astra, z.ai router)
+rounds: 6 connect attempts (5 x HTTP 503 "all candidate lanes busy or capped" / timeout, 2026-10-09 11:11-11:21 UTC); 1 substantive round served by gpt-6-astra.
+ask-mode: challenge (adversarial; explicitly instructed NOT to summarise or rubber-stamp)
+verbatim answer: docs/analysis/assets/adr066-consult-answer.md
+machine output: docs/analysis/assets/adr066-consult.json
+
+=====================================================================
+SUMMARY of the CHANGES_REQUESTED verdict (full verbatim text in the answer file)
+=====================================================================
+
+Arithmetic: internally consistent. 0.504 MPa @ 1 g / 78.55 mm confirmed as
+3*rho*g*L^2/(4t) simply-supported uniform-beam result; curve endpoint values
+(0.409 / 0.709 / 0.818 / 1.636 MPa @ S=100mm) reconcile; 27.0 MPa = E*alpha*|dT|
+with E=130 GPa confirmed; sin-based k factors correct (sin60 = 0.866, display
+0.87 is negligible rounding).
+
+Engineering challenges (why CHANGES_REQUESTED, not APPROVED):
+1. Simple-span gravity formula vs continuous carrier are NOT equivalent support
+   conditions: continuous support can introduce reaction moments, peel, contact-
+   edge stress, local curvature absent from the calibration.
+2. "Continuous support is conservative" overstates — defensible wording is
+   "no span credit is conservative for the idealized global transverse bending
+   calculation, but not a demonstrated conservative bound for the supported
+   assembly" (local stress concentrations, imposed curvature from carrier
+   flatness, DTE, adhesive peel/shear, residual stress, point/line contact).
+3. 27 MPa is a UNIAXIAL fully-restrained estimate, not a universal thermal
+   upper bound: equal-biaxial plane-stress gives ~E*alpha*|dT|/(1-nu) ≈ 37.6 MPa
+   for nu=0.28, before anisotropy/carrier CTE/adhesive/residual effects.
+4. The second dotted line (~35 MPa = E=170 GPa) was unlabelled in the original
+   figure — needs explicit label + derivation or removal.
+5. 2 g transverse is illustrative only, NOT a validated dynamic envelope
+   (no shock, vibration, resonance, fatigue, combined thermal+mechanical).
+6. k=0 vertical static must not be read as zero stress in a real assembly
+   (multi-axis acceleration, rotating hub, flexible line).
+7. Nothing measured: fracture strength, post-bond strength, cold-soak,
+   thermal-cycle, vibration, support-edge concentration, residual, 2 g/10 g.
+
+Values changed as a result (all adopted, none rejected):
+- Figure: both thermal lines now carry explicit legend labels (uniaxial fully
+  restrained, E=130/170 GPa); 60° factor labelled "k=sin60=0.866, shown rounded
+  0.87".
+- Analysis doc: consultant section rewritten from "no verdict (503)" to the
+  recorded CHANGES_REQUESTED verdict + the qualification list above, incl. the
+  biaxial ~37.6 MPa caveat and the 2 g illustrative-only caveat.
+- No numeric demand value, k factor, or the 0.504 MPa calibration changed — the
+  challenge confirmed them; the changes are labelling/claim-scope corrections.
+
+Disposition unchanged and NOT claimed as approval: S_crack coupon, cold-soak,
+acceleration/vibration evidence still required (ADR-066 riders). This verdict
+is a challenge record, not a design approval.

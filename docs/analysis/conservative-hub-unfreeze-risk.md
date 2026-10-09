@@ -10,7 +10,8 @@ The operator chose a conservative baseline rather than further optimization: pro
 
 | Risk | Evidence / uncertainty | Conservative control | Residual status |
 |---|---|---|---|
-| Silicon cracks across an unsupported span | No flexural strength or modulus of rupture is in-repo; ADR-063 calibrates 0.504 MPa at 1 g over 78.55 mm | Continuous/near-continuous carrier; no pitch credit; inspect before/after handling | **Open until coupon** |
+| Silicon cracks across an unsupported span | No flexural strength or modulus of rupture is in-repo; ADR-063 calibrates 0.504 MPa at 1 g over 78.55 mm (model result, simply-supported beam) | Continuous/near-continuous carrier; no pitch credit; inspect before/after handling | **Open until coupon** |
+| Local support/contact stress, carrier flatness, adhesive peel/shear at ribs/posts/hard points | Not modeled by the gravity-bending plot; consultant challenge 2026-10-09 item 7 | Separate local-support analysis or test before design freeze; no span-credit claim covers these modes | **Open — new requirement** |
 | Pendulum or acceleration rotates gravity transverse to a vertical panel | No measured swing angle or acceleration vector; 90° returns the full 0.504 MPa 1 g transverse demand | Do not claim an orientation factor; obtain an instrumented envelope and qualify | **Open** |
 | Thermal restraint at cold soak | −55 °C repeat is specified; 27–35 MPa is only a fully restrained estimate | Characterize restraint and cold-soak real cells; do not treat estimate as allowable | **Open** |
 | Vibration/buffet fatigue | No spectrum or PSD was found | Define a spectrum and inspect joints/cells after test | **Open** |
@@ -27,7 +28,7 @@ We accept extra carrier mass and deferred energy-per-gram optimization in exchan
 1. Real-cell end-only `S_crack` coupon at ambient and approximately −55 °C.
 2. Instrumented pendulum/acceleration vector or an approved conservative qualification envelope.
 3. Thermal restraint measurement or a compliant flexible load path.
-4. Vibration/buffet qualification input and post-test inspection.
+4. Local support/contact stress analysis or test covering ribs/posts/hard points, carrier flatness, adhesive stiffness/peel/shear, and cell/carrier thermal mismatch; modal response plus vibration/shock qualification input and post-test inspection.
 5. Replaced hub placement passing the deterministic placement and DRC gates.
 6. Schematic proof of per-group bypass paths and BOM rating/thermal checks.
 
@@ -39,4 +40,4 @@ The vertical load analysis is reproducible with:
 python3 docs/analysis/vertical_hub_load_cases.py
 ```
 
-Its conclusion is a demand statement, not a strength claim: vertical mounting conditionally reduces transverse gravity demand, but orientation alone cannot justify a larger unsupported pitch. The visual consultant lane was attempted on 2026-10-09 but returned HTTP 503 (`all candidate lanes busy or capped`); no consultant approval is claimed for the figure.
+Its conclusion is a demand statement, not a strength claim: vertical mounting conditionally reduces transverse gravity demand, but orientation alone cannot justify a larger unsupported pitch. The visual consultant challenge completed on 2026-10-09 at attempt 6 via `gpt-6-astra` (HTTP 200) and returned `CHANGES_REQUESTED`; the verbatim answer is in `docs/analysis/assets/adr066-consult-answer.md` and machine output in `docs/analysis/assets/adr066-consult.json`. The requested qualification changes are incorporated in the analysis and this risk register; no consultant approval is claimed.

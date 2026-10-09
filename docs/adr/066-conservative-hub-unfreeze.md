@@ -23,7 +23,7 @@ Retain ADR-063's component-driven hub concept. The retired 103 × 103 mm array-s
 
 For the interim build, each bare 0.21 mm cell is supported over its relevant span by a **continuous or near-continuous carrier**. No unsupported-span value, rib pitch, maximum overhang, or mass-optimized skeleton is frozen from an assumed silicon strength. The carrier's thickness and material are selected for practical handling and stiffness, with the default interim bias toward the more robust existing carrier construction rather than the minimum-mass construction.
 
-This is intentionally conservative: it avoids making `S_crack` an unmeasured acceptance limit for the first board/carrier build. It does not prove immunity to drops, vibration, thermal cycling, or bad handling.
+This is intentionally conservative **only for the idealized global transverse beam-bending calculation**: it avoids unsupported-span credit without claiming a demonstrated conservative bound for the supported assembly. Local support/contact stress, carrier flatness error, adhesive peel/shear, thermal mismatch, residual stress, shock and vibration remain separate risks and are not bounded by this ADR's beam model. It does not prove immunity to drops, vibration, thermal cycling, or bad handling.
 
 ### D3 — Panel redundancy remains mandatory
 
@@ -34,9 +34,9 @@ Keep the independent panel/interface topology and the hub-side per-group bypass 
 The following remain explicit gates under the conservative baseline:
 
 1. **Cell integrity:** inspect every cell and end-only joint before and after assembly, cold soak and handling.
-2. **Thermal:** characterize whether the mounting path restrains contraction. The analysis estimates 27–35 MPa only for the fully restrained idealization; it is not a material allowable and must not be used as one.
+2. **Thermal:** characterize whether the mounting path restrains contraction. The analysis estimates 27–35 MPa only for the fully restrained uniaxial idealization; equal-biaxial plane-stress restraint can be approximately 37.6 MPa for E=130 GPa and ν=0.28. These are estimates, not material allowables, and must not be used as one.
 3. **Acceleration/drop:** obtain a bounded acceleration/vector history or apply a separately approved qualification envelope. The repository's unmeasured 10 g assumption is not silently promoted to a requirement.
-4. **Vibration/buffet:** define and test a spectrum before claiming flight qualification.
+4. **Vibration/buffet and supported-assembly response:** define and test a spectrum before claiming flight qualification; separately analyze or test local support/contact stress at ribs/posts/hard points, carrier flatness, adhesive stiffness/peel/shear, cell/carrier thermal mismatch, and modal response. The 2 g transverse curve is illustrative only, not a validated environmental envelope or qualification requirement.
 5. **`S_crack` coupon:** still required before any later skeletonisation, larger unsupported pitch, or mass optimization. The coupon is no longer a blocker to beginning the conservative board implementation.
 6. **Placement and fabrication:** the re-placed board must pass ADR-030's deterministic placement gate, then schematic/ERC, DRC, routing, BOM and order gates independently.
 
