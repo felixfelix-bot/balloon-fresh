@@ -12,8 +12,8 @@ production bus:
   * ARMED is published as a **NIP-59 kind-1059 gift-wrapped** event addressed
     to the TX npub; a plaintext kind-30315 tally is NEVER emitted (RF recon
     leak, ADR §Context)
-  * relay failover set: nostr.mom, relay.primal.net, nos.lol,
-    relay2.contextvm.org, relay.nostr.band — ``relay.contextvm.org`` is DEAD
+  * relay failover set: the exact five-host set defined ONCE below as
+    :data:`FAILOVER_RELAYS` — ``relay.contextvm.org`` is DEAD
     (verified 2026-08-23) and is filtered out even if supplied
   * re-broadcast every 10-15 s until a GO event from TX is observed on the
     subscription, then stop
@@ -85,14 +85,26 @@ ENV_SERVER_NSEC = "CVM_SERVER_NSEC"
 ENV_SERVER_HEX = "CVM_SERVER_HEX"
 ENV_TX_NPUB = "CVM_TX_NPUB"
 
-#: Relay failover set (ADR §2.2). relay.contextvm.org is DEAD — never add it.
+#: THE single authoritative relay set for the Nostr NIP-59 **kind-1059
+#: gift-wrap publishing path** (this module's transport, ``relay_failover``'s
+#: fan-out, and every failover test): five BARE hostnames.
+#:
+#: The ordering is SIGNIFICANT and intentional — it is the failover preference
+#: order — so do NOT add, remove, reorder, lowercase, strip or otherwise
+#: normalise any entry (card t_7c9268b7). ``relay.contextvm.org`` is DEAD
+#: (verified 2026-08-23) — never add it.
 FAILOVER_RELAYS = [
-    "wss://nostr.mom",
-    "wss://relay.primal.net",
-    "wss://nos.lol",
-    "wss://relay2.contextvm.org",
-    "wss://relay.nostr.band",
+    "nostr.mom",
+    "relay.primal.net",
+    "nos.lol",
+    "relay2.contextvm.org",
+    "relay.nostr.band",
 ]
+
+#: The same set as ``wss://`` relay URLs, DERIVED (never hand-maintained) from
+#: :data:`FAILOVER_RELAYS` so the host and URL views can never drift apart.
+FAILOVER_RELAY_URLS = ["wss://" + host for host in FAILOVER_RELAYS]
+
 DEAD_RELAYS = ("wss://relay.contextvm.org",)
 
 #: Exactly the fields build_armed() carries (schema pinned by the ADR).
@@ -240,9 +252,13 @@ def load_and_check_keys(env: Optional[Mapping[str, str]] = None) -> tuple:
 # ---------------------------------------------------------------------------
 
 def failover_relays(extra: Optional[list] = None) -> list:
-    """Ordered relay set + optional extras, dead relays filtered, deduped."""
+    """Ordered relay set + optional extras, dead relays filtered, deduped.
+
+    Iterates the DERIVED URL view (:data:`FAILOVER_RELAY_URLS`), never the
+    bare-host constant, so the return value stays a ``wss://`` URL list.
+    """
     out = []
-    for url in list(FAILOVER_RELAYS) + list(extra or []):
+    for url in list(FAILOVER_RELAY_URLS) + list(extra or []):
         if not url:
             continue
         url = url.strip()

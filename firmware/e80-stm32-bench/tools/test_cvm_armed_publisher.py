@@ -12,8 +12,8 @@ already merged) deliberately left as an injection seam:
     the server key (asserted at startup)
   - kind-1059 (NIP-59) gift-wrap publish path to the TX npub — NEVER a
     plaintext kind-30315 event
-  - relay failover set: nostr.mom, relay.primal.net, nos.lol,
-    relay2.contextvm.org, relay.nostr.band — and only those
+  - relay failover set: exactly the five-host set defined ONCE as
+    cvm_armed_publisher.FAILOVER_RELAYS — and only those
     (relay.contextvm.org is DEAD and must never be included)
   - re-broadcast every 10-15 s until a GO event from TX is observed on the
     subscription, then stop
@@ -45,17 +45,13 @@ if _TOOLS_DIR not in sys.path:
 MODULE_PATH = Path(_TOOLS_DIR) / "cvm_armed_publisher.py"
 
 from cvm_sync import KIND_GIFT_WRAP  # noqa: E402  (single canonical def)
+from cvm_armed_publisher import FAILOVER_RELAY_URLS  # noqa: E402
 
 KIND_CVM_RPC = 25910
 KIND_PLAINTEXT_30315 = 30315
 
-REQUIRED_RELAYS = [
-    "wss://nostr.mom",
-    "wss://relay.primal.net",
-    "wss://nos.lol",
-    "wss://relay2.contextvm.org",
-    "wss://relay.nostr.band",
-]
+#: Canonical relay set (single source of truth) — never restated as literals.
+REQUIRED_RELAYS = list(FAILOVER_RELAY_URLS)
 DEAD_RELAY = "wss://relay.contextvm.org"
 
 

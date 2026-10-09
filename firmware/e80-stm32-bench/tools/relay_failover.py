@@ -10,8 +10,9 @@ choke-point (``cvm_armed_publisher``):
   * anything that is not a kind-1059 event is refused with
     ``PlaintextKindError`` before a single byte reaches a relay.
 
-Relay set (EXACT — do not add or remove):
-    nostr.mom, relay.primal.net, nos.lol, relay2.contextvm.org, relay.nostr.band
+Relay set (EXACT — do not add or remove): the five bare hostnames defined ONCE
+in ``cvm_armed_publisher.FAILOVER_RELAYS`` (single source of truth) and
+re-exported here as :data:`FAILOVER_RELAYS`.
 ``relay.contextvm.org`` is DEAD (verified 2026-08-23) and is filtered out even
 if supplied by env / ``extra``.
 
@@ -74,8 +75,12 @@ KIND_GIFT_WRAP = choke.KIND_GIFT_WRAP
 #: The single dead relay. Must never reach the active set.  DEAD (verified).
 DEAD_RELAY_URL = "wss://relay.contextvm.org"  # DEAD — filtered, never published
 
-#: Exact five-host failover set, re-exported from the choke-point (single source).
+#: Exact five-host failover set (BARE hostnames), re-exported from the
+#: choke-point — the single source of truth (cvm_armed_publisher.FAILOVER_RELAYS).
 FAILOVER_RELAYS = list(choke.FAILOVER_RELAYS)
+
+#: The same set as ``wss://`` relay URLs, re-exported from the choke-point.
+FAILOVER_RELAY_URLS = list(choke.FAILOVER_RELAY_URLS)
 
 _HKDF_IKM = b"cvm-nip59-ephemeral-v1"
 _HKDF_SALT = b"cvm-nip59-salt-v1"
@@ -319,6 +324,7 @@ class RelayFailoverPublisher:
 
 __all__ = [
     "FAILOVER_RELAYS",
+    "FAILOVER_RELAY_URLS",
     "DEAD_RELAY_URL",
     "KIND_GIFT_WRAP",
     "RelayOutcome",
