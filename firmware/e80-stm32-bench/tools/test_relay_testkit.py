@@ -17,6 +17,8 @@ Run:  python3 -m pytest firmware/e80-stm32-bench/tools/test_relay_testkit.py -v
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import os
 import sys
 import unittest
@@ -28,17 +30,26 @@ if _TOOLS_DIR not in sys.path:
 import relay_testkit as kit  # noqa: E402
 import relay_failover as rf  # noqa: E402
 
-#: The contractual relay set, restated here in bare-host form so the test fails
-#: if the constant is ever silently edited.
-EXPECTED_HOSTS = [
-    "nostr.mom",
-    "relay.primal.net",
-    "nos.lol",
-    "relay2.contextvm.org",
-    "relay.nostr.band",
-]
+#: The contractual relay set is pinned by the SHA-256 of its ordered JSON
+#: serialisation: value AND order are pinned WITHOUT restating a single
+#: hostname, so the tools tree keeps exactly ONE literal definition of the
+#: relay list (``cvm_armed_publisher.FAILOVER_RELAYS``, card t_7c9268b7).
+EXPECTED_HOSTS_SHA256 = (
+    "109e156e41fb5d2b440e563faad9b7a98f4204ac93d965a16c41eb8559d48a48"
+)
+EXPECTED_URLS_SHA256 = (
+    "56542e03b8c9d0becd390f311b446f2bbeafcb5073a2d5519ce077deae6c26f5"
+)
+#: Derived, literal-free views of the canonical constant.
+EXPECTED_HOSTS = list(kit.FAILOVER_RELAYS)
 EXPECTED_URLS = ["wss://" + host for host in EXPECTED_HOSTS]
 DEAD_HOST = "relay.contextvm.org"
+
+
+def _digest(seq) -> str:
+    return hashlib.sha256(
+        json.dumps(list(seq), separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 #: Modules that define/consume the failover set (the publish path). Standalone
 #: live-probe scripts (cvm_relay_test.py) are deliberately out of scope.
@@ -73,10 +84,12 @@ class TestRelaySetConstant(unittest.TestCase):
     """(a) ONE exported constant, exact order, no normalisation."""
 
     def test_exact_bare_host_set_matches_the_contract(self):
-        self.assertEqual(kit.FAILOVER_RELAYS, EXPECTED_HOSTS)
+        self.assertEqual(_digest(kit.FAILOVER_RELAYS), EXPECTED_HOSTS_SHA256,
+                         "FAILOVER_RELAYS was silently changed")
 
     def test_url_set_is_derived_from_the_host_set(self):
         self.assertEqual(kit.FAILOVER_RELAY_URLS, EXPECTED_URLS)
+        self.assertEqual(_digest(kit.FAILOVER_RELAY_URLS), EXPECTED_URLS_SHA256)
 
     def test_publisher_relay_set_matches_the_constant(self):
         self.assertEqual(rf.failover_relays(), EXPECTED_URLS)

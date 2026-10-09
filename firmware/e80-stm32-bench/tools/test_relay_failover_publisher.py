@@ -30,14 +30,11 @@ import cvm_armed_publisher as choke  # noqa: E402
 import relay_failover as rf  # noqa: E402
 
 DEAD_RELAY = "wss://relay.contextvm.org"
-REQUIRED_RELAYS = [
-    "wss://nostr.mom",
-    "wss://relay.primal.net",
-    "wss://nos.lol",
-    "wss://relay2.contextvm.org",
-    "wss://relay.nostr.band",
-]
-REQUIRED_HOSTS = [u.split("://", 1)[1] for u in REQUIRED_RELAYS]
+#: The contractual relay set is the CANONICAL constant (single source of
+#: truth: ``cvm_armed_publisher.FAILOVER_RELAYS``) — never restated here, so
+#: the tools tree keeps exactly one literal definition of the relay list.
+REQUIRED_RELAYS = list(choke.FAILOVER_RELAY_URLS)
+REQUIRED_HOSTS = list(choke.FAILOVER_RELAYS)
 
 _TX = "a" * 64
 _AUTHOR = "b" * 64

@@ -2,13 +2,16 @@
 """relay_testkit.py — shared scaffolding for the kind-1059 relay fan-out.
 
 Cards t_588b1d1b (relay-set + first cut of the double) and t_69c76243 (hard-
-error split + call-log reset + no-network guarantee).  This module is the
-single declared source of truth for the failover relay set, and ships the
-importable fake relay transport double that the failover publisher tests drive.
+error split + call-log reset + no-network guarantee).  This module ships the
+importable fake relay transport double that the failover publisher tests drive,
+and re-exports the single declared source of truth for the failover relay set.
 
-Relay set (EXACT — do not add, remove, reorder, or normalize):
+Relay set (EXACT — do not add, remove, reorder, or normalize): the five bare
+hostnames of the canonical constant re-exported below.
 
-    nostr.mom, relay.primal.net, nos.lol, relay2.contextvm.org, relay.nostr.band
+The canonical value (five BARE hostnames) is DEFINED ONCE in the kind-1059
+gift-wrap publishing module (:mod:`cvm_armed_publisher`) and re-exported here
+as :data:`FAILOVER_RELAYS` / :data:`FAILOVER_RELAY_URLS` — see card t_7c9268b7.
 
 ``relay.contextvm.org`` is DEAD (verified 2026-08-23); it must never appear as
 an active host and is named here only as :data:`DEAD_RELAY_HOST`.
@@ -110,7 +113,23 @@ Run its pins with:
 from __future__ import annotations
 
 import asyncio
+import os
 import re
+import sys
+
+_TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _TOOLS_DIR not in sys.path:
+    sys.path.insert(0, _TOOLS_DIR)
+
+# --- single source of truth for the failover relay set ---------------------
+# The canonical set (five bare hostnames) is DEFINED ONCE in the kind-1059
+# gift-wrap publishing module; it is re-exported here, NEVER re-defined, so
+# the fake-transport scaffolding and the production publisher can never
+# disagree about which relays carry the fan-out (card t_7c9268b7).
+import cvm_armed_publisher as _core  # noqa: E402
+
+FAILOVER_RELAYS = list(_core.FAILOVER_RELAYS)
+FAILOVER_RELAY_URLS = list(_core.FAILOVER_RELAY_URLS)
 
 # --- per-relay behaviour mode names ---------------------------------------
 ACCEPT = "accept"
@@ -129,22 +148,8 @@ _BEHAVIOUR_ALIASES = {
     "blocked": HARD_ERROR_REJECT,
 }
 
-#: Canonical failover relay set as bare hostnames, in the exact contractual
-#: order. THE single source of truth for *which* relays carry the fan-out.
-FAILOVER_RELAYS = [
-    "nostr.mom",
-    "relay.primal.net",
-    "nos.lol",
-    "relay2.contextvm.org",
-    "relay.nostr.band",
-]
-
 #: The one dead relay (bare host). DEAD (verified 2026-08-23) — never active.
 DEAD_RELAY_HOST = "relay.contextvm.org"
-
-#: The same set as ``wss://`` relay URLs, DERIVED (never hand-maintained) from
-#: :data:`FAILOVER_RELAYS` so the host and URL views can never drift apart.
-FAILOVER_RELAY_URLS = ["wss://{}".format(host) for host in FAILOVER_RELAYS]
 
 #: Hostname-boundary matcher for the dead host. The lookarounds stop the
 #: legitimate ``relay2.contextvm.org`` (and neighbours such as
