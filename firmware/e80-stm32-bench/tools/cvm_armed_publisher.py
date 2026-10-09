@@ -62,6 +62,7 @@ if _TOOLS_DIR not in sys.path:
 
 import cvm_sync as cvm  # noqa: E402
 from cvm_sync import KIND_GIFT_WRAP, ARMED_REQUIRED  # noqa: E402
+import keymaterial  # noqa: E402  (card t_4c98fbe7: THE env-only key source)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -106,12 +107,14 @@ DEAD_RELAYS = ("wss://relay.contextvm.org",)
 ARMED_FIELDS = ("type",) + tuple(ARMED_REQUIRED) + ("author",)
 
 
-class EnvKeyError(RuntimeError):
-    """A required key env var is absent (ADR §2.3: env only, never CLI)."""
-
-
-class KeyCollisionError(RuntimeError):
-    """Client and server keys are identical — refuses to start."""
+# Card t_4c98fbe7: the ONE key-error taxonomy lives in ``keymaterial.py``.
+# These are ALIASES, not new classes, so a caller that catches either name
+# (``main()`` below, cvm_verdict_publisher, rx_armed_publisher) always catches
+# the error the single env-only accessor raises.  Without this, a missing
+# variable or a client==server collision would escape the clean ``ERROR:``
+# exit path and surface as a traceback.
+EnvKeyError = keymaterial.MissingKeyError
+KeyCollisionError = keymaterial.KeyCollisionError
 
 
 class PlaintextKindError(RuntimeError):
@@ -238,23 +241,22 @@ def assert_keys_differ(client_pub_hex: str, server_pub_hex: str) -> None:
             .format(client_pub_hex[:16]))
 
 
-def load_keys(secret: str):
-    """Parse an nsec/hex secret into nostr_sdk.Keys (lazy SDK import)."""
-    import nostr_sdk
-    return nostr_sdk.Keys.parse(secret)
+#: The single env-only accessor (card t_4c98fbe7).  ``load_keys`` is an
+#: alias of ``keymaterial.load_keys`` — the only key-accessor definition in
+#: ``tools/`` lives in ``keymaterial.py``.  Secrets are never read here.
+load_keys = keymaterial.load_keys
 
 
 def load_and_check_keys(env: Optional[Mapping[str, str]] = None) -> tuple:
-    """Load both keys from env and enforce the separation invariant.
+    """Load both keys from the environment and enforce the separation invariant.
 
-    Returns ``(client_keys, server_keys)``.
+    Thin wrapper over :func:`keymaterial.load_keys` (the sole env-only source):
+    returns ``(client_keys, server_keys)`` as ``nostr_sdk.Keys`` objects.
     """
-    secrets = load_env_secrets(env)
-    client_keys = load_keys(secrets["client"])
-    server_keys = load_keys(secrets["server"])
-    assert_keys_differ(client_keys.public_key().to_hex(),
-                       server_keys.public_key().to_hex())
-    return client_keys, server_keys
+    km = keymaterial.load_keys()
+    import nostr_sdk
+    return (nostr_sdk.Keys.parse(km.client_secret),
+            nostr_sdk.Keys.parse(km.server_secret))
 
 
 # ---------------------------------------------------------------------------
@@ -490,8 +492,9 @@ def build_parser() -> argparse.ArgumentParser:
 async def run(args, env: Optional[Mapping[str, str]] = None,
               bus=None, sleep: Optional[Callable] = None) -> int:
     """Wire the publisher: env keys → gift-wrap bus → repeat until GO."""
-    # Keys: env only + client != server (asserted before anything is sent).
-    client_keys, _server_keys = load_and_check_keys(env)
+    # Keys: env only (keymaterial.load_keys is THE source); the client !=
+    # server assertion runs inside it, before anything is sent.
+    km = keymaterial.load_keys()
 
     if not args.tx_npub:
         raise EnvKeyError("missing TX npub: pass --tx-npub or set {}"
@@ -509,7 +512,7 @@ async def run(args, env: Optional[Mapping[str, str]] = None,
 
     if bus is None:
         import nostr_sdk
-        signer = nostr_sdk.NostrSigner.keys(client_keys)
+        signer = nostr_sdk.NostrSigner.keys(nostr_sdk.Keys.parse(km.client_secret))
         client = nostr_sdk.ClientBuilder().signer(signer).build()
         for url in failover_relays(args.relays.split(",") if args.relays
                                    else None):
@@ -522,7 +525,7 @@ async def run(args, env: Optional[Mapping[str, str]] = None,
         bus = NostrTxTransport(
             nostr_sdk, signer=signer, client=client,
             tx_pubkey_hex=_npub_to_hex(nostr_sdk, args.tx_npub),
-            author_pubkey_hex=client_keys.public_key().to_hex())
+            author_pubkey_hex=km.client_pubkey)
 
     publisher = build_publisher(bus, session_id=session_id, stop=args.stop,
                                 t_ready_utc=t_ready, preset_hash=preset_hash,

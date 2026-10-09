@@ -41,6 +41,17 @@ import nostr_giftwrap as gw  # noqa: E402
 TX_HEX = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 TX_NPUB = "npub10xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqpkge6d"
 
+# Stand-in for keymaterial.KeyMaterial: the builder derives the signer from
+# the client secret, so tests inject a KeyMaterial-shaped object, never a raw
+# signer (card t_4c98fbe7).
+FAKE_KM = types.SimpleNamespace(
+    client_secret="fake-client-secret",
+    client_pubkey="ef" * 32,
+    server_pubkey="cd" * 32,
+    server_secret=None,
+    relay_auth=None,
+)
+
 # Outer ciphertext stand-in: base64 of bytes(range(64)). Contains none of the
 # payload fragments below, exactly like a NIP-44 sealed payload.
 CIPHERTEXT = base64.b64encode(bytes(range(64))).decode()
@@ -220,9 +231,21 @@ class _FakeSdk:
             events.append(event)
             return event
 
+        class _FakeKeys:
+            @staticmethod
+            def parse(secret):
+                return {"keys_secret": secret}
+
+        class _FakeNostrSigner:
+            @staticmethod
+            def keys(keys):
+                return {"signer_from": keys}
+
         mod = types.ModuleType("nostr_sdk")
         mod.UnsignedEvent = FakeUnsignedEvent
         mod.PublicKey = FakePublicKey
+        mod.Keys = _FakeKeys
+        mod.NostrSigner = _FakeNostrSigner
         mod.gift_wrap = fake_gift_wrap
         self._previous = sys.modules.get("nostr_sdk")
         sys.modules["nostr_sdk"] = mod
@@ -248,20 +271,20 @@ class GiftWrapTestBase(unittest.IsolatedAsyncioTestCase):
 class TestBuildGiftWrap(GiftWrapTestBase):
 
     async def test_outer_kind_is_1059(self):
-        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, "signer")
+        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, keys=FAKE_KM)
         self.assertEqual(gw.event_view(event)["kind"], 1059)
         self.assertEqual(gw.event_view(event)["kind"], gw.KIND_GIFT_WRAP)
 
     async def test_ptag_equals_tx_npub(self):
-        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, "signer")
+        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, keys=FAKE_KM)
         self.assertEqual(gw.assert_recipient_tag(event, TX_NPUB), TX_HEX)
 
     async def test_ptag_equals_tx_npub_when_input_already_hex(self):
-        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_HEX, "signer")
+        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_HEX, keys=FAKE_KM)
         self.assertEqual(gw.assert_recipient_tag(event, TX_NPUB), TX_HEX)
 
     async def test_payload_not_visible_in_plaintext_anywhere(self):
-        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, "signer")
+        event = await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, keys=FAKE_KM)
         self.assertTrue(gw.assert_no_plaintext_leak(event, ARMED_PAYLOAD))
         haystack = json.dumps(gw.event_view(event))
         for fragment in PAYLOAD_FRAGMENTS:
@@ -277,7 +300,7 @@ class TestBuildGiftWrap(GiftWrapTestBase):
         self.assertEqual(json.loads(inner["content"]), ARMED_PAYLOAD)
 
     async def test_wrap_receives_the_inner_rumor(self):
-        await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, "signer")
+        await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, keys=FAKE_KM)
         (call,) = self.sdk.calls
         ue = call["unsigned_event"]
         self.assertEqual(int(ue.kind()), gw.INNER_KIND)
@@ -285,10 +308,11 @@ class TestBuildGiftWrap(GiftWrapTestBase):
         self.assertEqual([t.as_vec() for t in ue.tags().to_vec()],
                          [["p", TX_HEX]])
 
-    async def test_signer_is_passed_through_untouched(self):
-        await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, self.sdk)
+    async def test_signer_is_derived_from_keymaterial(self):
+        await gw.build_gift_wrap(ARMED_PAYLOAD, TX_NPUB, keys=FAKE_KM)
         (call,) = self.sdk.calls
-        self.assertIs(call["signer"], self.sdk)
+        self.assertEqual(call["signer"],
+                         {"signer_from": {"keys_secret": FAKE_KM.client_secret}})
 
 
 # ---------------------------------------------------------------------------
@@ -361,7 +385,7 @@ class TestPublishArmed(GiftWrapTestBase):
 
     async def test_publish_armed_builds_and_sends_exactly_one_event(self):
         client = FakeClient()
-        event = await gw.publish_armed(ARMED_PAYLOAD, TX_NPUB, "signer", client)
+        event = await gw.publish_armed(ARMED_PAYLOAD, TX_NPUB, client, keys=FAKE_KM)
         self.assertEqual(len(client.sent), 1)
         self.assertIs(client.sent[0], event)
         self.assertEqual(gw.event_view(event)["kind"], 1059)
@@ -369,7 +393,7 @@ class TestPublishArmed(GiftWrapTestBase):
     async def test_publish_armed_refuses_non_mapping_payload(self):
         client = FakeClient()
         with self.assertRaises(TypeError):
-            await gw.publish_armed("not-a-mapping", TX_NPUB, "signer", client)
+            await gw.publish_armed("not-a-mapping", TX_NPUB, client, keys=FAKE_KM)
         self.assertEqual(client.sent, [])
 
 

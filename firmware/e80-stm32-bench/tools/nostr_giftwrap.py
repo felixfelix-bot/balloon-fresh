@@ -54,6 +54,7 @@ if _TOOLS_DIR not in sys.path:
     sys.path.insert(0, _TOOLS_DIR)
 
 from cvm_sync import KIND_GIFT_WRAP  # noqa: E402  (1059; canonical constant)
+import keymaterial  # noqa: E402  (card t_4c98fbe7: THE env-only key source)
 
 __all__ = [
     "KIND_GIFT_WRAP",
@@ -66,6 +67,7 @@ __all__ = [
     "npub_to_hex",
     "event_view",
     "build_inner_rumor",
+    "signer_from_keys",
     "build_gift_wrap",
     "assert_gift_wrap_kind",
     "assert_recipient_tag",
@@ -417,24 +419,40 @@ def build_inner_rumor(payload: Mapping, tx_npub: str, *,
     }
 
 
-async def build_gift_wrap(payload: Mapping, tx_npub: str, signer, *,
+def signer_from_keys(keys):
+    """Build the ``nostr_sdk`` signer for a KeyMaterial (lazy SDK import).
+
+    The secret comes ONLY from ``keys``, which itself comes only from
+    :func:`keymaterial.load_keys` — no caller ever hands this layer a raw key
+    or a pre-built signer.
+    """
+    import nostr_sdk  # lazy: keep the module importable in a bare image
+    return nostr_sdk.NostrSigner.keys(nostr_sdk.Keys.parse(keys.client_secret))
+
+
+async def build_gift_wrap(payload: Mapping, tx_npub: str,
+                          keys: Optional["keymaterial.KeyMaterial"] = None, *,
                           author: Optional[str] = None,
                           created_at: Optional[int] = None):
     """Wrap an ARMED payload as a signed NIP-59 kind-1059 event for ``tx_npub``.
 
     Reuses the transport primitive from ``cvm_board_server.py``:
     ``nostr_sdk.UnsignedEvent.from_json`` + ``await nostr_sdk.gift_wrap(...)``.
-    ``signer`` is whatever ``nostr_sdk.NostrSigner.keys(...)`` produced; this
-    layer never re-implements signing.
+    ``keys`` is the :class:`keymaterial.KeyMaterial` to sign with; when omitted
+    it is obtained from :func:`keymaterial.load_keys`, the single env-only key
+    source (card t_4c98fbe7).  This layer never accepts a raw key or a
+    pre-built signer from a caller.
 
     Runs the full guard set on the produced event before returning it, so a
     malformed or plaintext wrap can never be handed to the publisher.
     """
+    keys = keys or keymaterial.load_keys()
     recipient = npub_to_hex(tx_npub)
     inner = build_inner_rumor(payload, recipient, author=author,
                               created_at=created_at)
     import nostr_sdk  # lazy: keep the module importable in a bare image
 
+    signer = signer_from_keys(keys)
     unsigned = nostr_sdk.UnsignedEvent.from_json(json.dumps(inner))
     event = await nostr_sdk.gift_wrap(
         signer, nostr_sdk.PublicKey.parse(recipient), unsigned)
@@ -468,14 +486,18 @@ async def publish_gift_wrap(client, event, *, payload: Optional[Mapping] = None,
     return event
 
 
-async def publish_armed(payload: Mapping, tx_npub: str, signer, client, *,
+async def publish_armed(payload: Mapping, tx_npub: str, client, *,
+                        keys: Optional["keymaterial.KeyMaterial"] = None,
                         author: Optional[str] = None,
                         created_at: Optional[int] = None):
     """Failover-layer entry point: build a kind-1059 wrap and publish it.
 
-    The relay-failover layer calls this and nothing else.
+    The relay-failover layer calls this and nothing else.  ``keys`` (a
+    :class:`keymaterial.KeyMaterial`) is the ONLY key input; when omitted it is
+    read from the environment via :func:`keymaterial.load_keys`.
     """
-    event = await build_gift_wrap(payload, tx_npub, signer,
+    keys = keys or keymaterial.load_keys()
+    event = await build_gift_wrap(payload, tx_npub, keys=keys,
                                   author=author, created_at=created_at)
     return await publish_gift_wrap(client, event, payload=payload,
                                    tx_npub=tx_npub)
