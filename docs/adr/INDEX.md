@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **90** distinct
-numbers, **90** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **91** distinct
+numbers, **91** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -99,6 +99,7 @@ None.
 | 063 | `063-decouple-board-area-from-array-overhang.md` | Hub board area and array area are DECOUPLED: panels may overhang, the outline follows the components, and the array rides a separate carrier | Proposed |
 | 064 | `064-hub-outline-trim.md` | Hub outline trim: 103 × 103 mm → 102 × 102 mm, to cross the JLCPCB size-tier boundary | Proposed |
 | 065 | `065-wing-skeletonised-double-sided.md` | Wing board: skeletonised frame carrier + double-sided cells | Accepted |
+| 066 | `066-conservative-hub-unfreeze.md` | Conservative hub baseline: unfreeze board work without claiming an unmeasured cell allowable | Proposed — operator direction recorded 2026-10-09; this record is the interim design basis and is not an order authorization |
 | 071 | `071-ground-station-gateway-design-basis.md` | Ground-station design basis: a full-duplex INTERNET GATEWAY through the balloon as a bent pipe | Accepted by operator |
 | 072 | `072-band-split-duplex-two-antennas-no-circulator.md` | Band-split duplex at the gateway: two band antennas, and NO circulator | Accepted by operator |
 | 073 | `073-433-downlink-flrc-max-lora-rejected.md` | 433 MHz downlink: FLRC at maximum throughput, and LoRa REJECTED | Accepted by operator |
@@ -124,7 +125,7 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 066 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 067 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
