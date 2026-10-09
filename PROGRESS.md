@@ -84,3 +84,22 @@ Worktree: `/home/c03rad0r/worktrees/bf-433lna` (branch `design/433-lna-and-licen
 - Added relay_testkit.py + test_relay_testkit.py -> RED (ModuleNotFoundError, exit 2) then GREEN (13).
 - Regression: sibling suite 19 passed; ADR-033 gift-wrap guard 4 passed.
 - Commit f6e7681a on pr/relay-scaffold-testkit; pushed; PR base=pr/relay-failover-publisher.
+
+---
+
+# PROGRESS t_69c76243 (fake relay transport double)
+
+- Deliverable: EXTENDED `firmware/e80-stm32-bench/tools/relay_testkit.py` (found the double already
+  existed from t_588b1d1b; duplicated it would have created a 2nd source of truth) + new pins
+  `tools/test_fake_relay_transport.py`.
+- Matched signature: `async def send(url, event) -> list`; publisher awaits it under `wait_for`.
+- Added split `HARD_ERROR_RAISE` (ConnectionRefusedError) / `HARD_ERROR_REJECT` (OK-false
+  "blocked: ..."), keeping `HARD_ERROR`/`BLOCKED` aliases; TIMEOUT now awaits a never-set
+  asyncio.Event (was sleep(3600)); `.attempts` + `.reset()`/`.clear()`; docstring guarantee+example;
+  AST-scan no-network pin.
+- Finding: `RelayFailoverPublisher._send_one` ignores the returned frame (refusal = raise
+  `RelayRejected`), so the REJECT envelope is not honoured end-to-end. Did NOT edit
+  relay_failover.py (other card's deliverable) — flagged in REPORT-t_69c76243.md.
+- RED (8 failed/3 passed) -> GREEN 13; sibling relay_testkit 13; relay-failover suite 19; whole
+  tools/ 885 passed / 1 skipped. No live network.
+
