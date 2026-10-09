@@ -236,6 +236,11 @@ class _FakeSdk:
 
 class GiftWrapTestBase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        # build_gift_wrap now caches the signed wrap per canonical session
+        # fingerprint (idempotency, card t_c4c43d76); drop it so every test
+        # observes its own fake-SDK call.
+        gw.clear_wrap_cache()
+        self.addCleanup(gw.clear_wrap_cache)
         self.sdk = _FakeSdk()
         self.sdk.install()
         self.addCleanup(self.sdk.remove)
