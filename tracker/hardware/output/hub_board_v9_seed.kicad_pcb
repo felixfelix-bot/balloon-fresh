@@ -130,7 +130,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "012c16c6-a949-413c-af95-b79327a1cf1f")
-		(at 54.975 4.515)
+		(at 1.975 23.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_BAL2"
@@ -265,7 +265,7 @@
 	(footprint "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm"
 		(layer "F.Cu")
 		(uuid "029a8869-1fbc-4fb3-884f-5841e97a31a5")
-		(at 40.345 25.295)
+		(at 55.345 37.295)
 		(descr "SMD Solder 3-pad Jumper, 1x1.5mm rounded Pads, 0.3mm gap, open")
 		(tags "solder jumper open")
 		(property "Reference" "J_VCC"
@@ -563,7 +563,7 @@
 	(footprint "balloon_flight_v9:SX1280_QFN24"
 		(layer "F.Cu")
 		(uuid "0467901e-cd72-4d8e-881a-b90a64b8d712")
-		(at 50.25 5.25)
+		(at 4.25 39.25)
 		(descr "Semtech SX1280/SX1281 2.4 GHz transceiver, QFN-24 4x4mm 0.5mm pitch + exposed pad. *** GEOMETRY NOT VERIFIED *** - the Semtech SX1280 datasheet could not be retrieved on this host, so every dimension below is a TODO(unverified) placeholder. DO NOT FABRICATE until the land pattern is checked against the datasheet mechanical drawing (SX1280 datasheet, 'Package Outline' / recommended land pattern).")
 		(tags "SX1280 SX1281 LoRa 2.4GHz QFN-24 UNVERIFIED-LANDPATTERN")
 		(property "Reference" "U4"
@@ -884,7 +884,7 @@
 	(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 		(layer "F.Cu")
 		(uuid "0adc3e33-46c3-486c-8cbf-7186c406caca")
-		(at 20.792502 29.292502)
+		(at 32.792502 47.292502)
 		(descr "CP, Radial series, Radial, pin pitch=5.00mm, diameter=10mm, height=16mm, Electrolytic Capacitor")
 		(tags "CP Radial series Radial pin pitch 5.00mm diameter 10mm height 16mm Electrolytic Capacitor")
 		(property "Reference" "C_CAP2"
@@ -2953,7 +2953,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "0f8c0bfc-7a8a-4a73-bdcf-ff32647e65e4")
-		(at 95.545 24.795)
+		(at 20.545 49.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_HUB1"
@@ -3218,7 +3218,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "12f0677d-3fb5-4d14-b905-437bb8ae2b03")
-		(at 50.545 10.795)
+		(at 45.545 43.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP1"
@@ -3483,7 +3483,7 @@
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "134b4d83-e80a-40a7-9051-26546eb77e0a")
-		(at 65.955 24.505)
+		(at 42.955 52.505)
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C_MON"
@@ -3925,7 +3925,7 @@
 	(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 		(layer "F.Cu")
 		(uuid "17baef24-722a-4461-8d3d-e2decd3f2175")
-		(at 8.792502 29.292502)
+		(at 49.792502 18.292502)
 		(descr "CP, Radial series, Radial, pin pitch=5.00mm, diameter=10mm, height=16mm, Electrolytic Capacitor")
 		(tags "CP Radial series Radial pin pitch 5.00mm diameter 10mm height 16mm Electrolytic Capacitor")
 		(property "Reference" "C_CAP1"
@@ -5994,7 +5994,7 @@
 	(footprint "balloon_flight_v9:LoRa2021_Castellated"
 		(layer "F.Cu")
 		(uuid "1a435cad-ac6a-4fba-a5ec-867d156841eb")
-		(at 89.905 8.835)
+		(at 40.905 32.835)
 		(descr "NiceRF LoRa2021 Gen4, 18-pin castellated module, 19.81x14.98mm, 1.29mm pitch")
 		(tags "LoRa LR2021 NiceRF castellated")
 		(property "Reference" "U3"
@@ -6304,7 +6304,7 @@
 	(footprint "Diode_SMD:D_SOD-323"
 		(layer "F.Cu")
 		(uuid "1ebdae14-dbd4-4263-a172-2bc58805cb40")
-		(at 2.645 12.995)
+		(at 2.645 8.995)
 		(descr "SOD-323")
 		(tags "SOD-323")
 		(property "Reference" "D_CLAMP"
@@ -6569,7 +6569,7 @@
 	(footprint "Tracker_Mechanical:Wing_Tab_4P"
 		(layer "F.Cu")
 		(uuid "2b699ef8-1c7c-4383-8d02-67d447bf9704")
-		(at 103 51.5 180)
+		(at 60 30 180)
 		(descr "Hub-side WING SOCKET land set for the v9 3D hub/wing assembly: FOUR wing interfaces, one per hub edge, at 90 deg spacing. Per interface: 4 copper lands on EACH outer face (F.Cu + B.Cu) = 8 lands per interface, land 4.0 x 1.2 mm, pitch 1.8 mm, pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO NET) / SOLAR_N. Cited: docs/adr/046-wing-board-interface.md s2.1/s2.2/s4.1 (4-pin tab, land 4.0x1.2 mm, 1.8 mm pitch, insert depth 6.0 mm, hub slot 0.9 mm +/-0.10 mm, 90 deg attach) and docs/WING-TO-HUB-SOCKET-SPEC.md s2/s4/s6 (4 lands per face, 8 per interface, edge clearance, keep-outs, silkscreen). docs/adr/048-v9-hub-wing-interfaces.md records which numbers are cited vs newly decided. NOT human-accepted: ADR-046 and ADR-048 are Status Proposed.")
 		(tags "balloon v9 hub wing socket 4P edge-socket Tracker_Mechanical")
 		(property "Reference" "J_W3"
@@ -6854,7 +6854,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "311c05c2-a688-4c3c-8db0-49bc4763e814")
-		(at 100.975 20.515)
+		(at 50.975 46.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_MON2"
@@ -6989,7 +6989,7 @@
 	(footprint "balloon_flight_v9:LoRa2021F33_2G4"
 		(layer "F.Cu")
 		(uuid "3dcc46e3-82bf-44dd-badd-a1b557519fa3")
-		(at 25.845 12.15)
+		(at 25.845 13.15)
 		(descr "NiceRF LoRa2021F33-2G4, 18-pin castellated module (LR2021 + 2W PA + TCXO), 39x21mm. Pad CENTRES decoded from the vendor land file LORA2021F33-2G4 footprint_pads.pcb (pitch 3.9289mm, 9 pads on each 39mm edge). Land size 1.3 x 1.3 mm DERIVED from the operator-supplied castellation hole diameter D = 0.8 +/- 0.1 mm grown by a uniform 0.25 mm solder-fillet margin on every side (datasheet s9 p8, read by the operator 2026-10-07).")
 		(tags "LoRa LR2021 NiceRF F33 castellated PA 2W vendor-land-pattern")
 		(property "Reference" "U2"
@@ -7300,7 +7300,7 @@
 	(footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical"
 		(layer "F.Cu")
 		(uuid "42261027-319e-49b8-9fd1-47c1bfd11b4c")
-		(at 100.455 80.34)
+		(at 57.455 46.8)
 		(descr "Molex Microcoaxial RF Connectors (MCRF), mates Hirose U.FL, (http://www.molex.com/pdm_docs/sd/734120110_sd.pdf)")
 		(tags "mcrf hirose ufl u.fl microcoaxial")
 		(property "Reference" "ANT3"
@@ -7665,7 +7665,7 @@
 	(footprint "Package_TO_SOT_SMD:SOT-23-5"
 		(layer "F.Cu")
 		(uuid "4259026f-66a0-4f6f-9e5e-ea922ae686b3")
-		(at 3.095 9.745)
+		(at 3.095 18.745)
 		(descr "SOT, 5 Pin (JEDEC MO-178 Var AA https://www.jedec.org/document_search?search_api_views_fulltext=MO-178), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOT TO_SOT_SMD")
 		(property "Reference" "U7"
@@ -8035,7 +8035,7 @@
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "4eae3898-7caf-4ed0-b445-1a89c49c5ddd")
-		(at 59.955 24.505)
+		(at 25.955 50.505)
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C4"
@@ -8170,7 +8170,7 @@
 	(footprint "Tracker_Mechanical:Wing_Tab_4P"
 		(layer "F.Cu")
 		(uuid "74d6364e-e55f-4f51-8c59-c39cbf9a0ff4")
-		(at 0 51.5)
+		(at 0 30)
 		(descr "Hub-side WING SOCKET land set for the v9 3D hub/wing assembly: FOUR wing interfaces, one per hub edge, at 90 deg spacing. Per interface: 4 copper lands on EACH outer face (F.Cu + B.Cu) = 8 lands per interface, land 4.0 x 1.2 mm, pitch 1.8 mm, pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO NET) / SOLAR_N. Cited: docs/adr/046-wing-board-interface.md s2.1/s2.2/s4.1 (4-pin tab, land 4.0x1.2 mm, 1.8 mm pitch, insert depth 6.0 mm, hub slot 0.9 mm +/-0.10 mm, 90 deg attach) and docs/WING-TO-HUB-SOCKET-SPEC.md s2/s4/s6 (4 lands per face, 8 per interface, edge clearance, keep-outs, silkscreen). docs/adr/048-v9-hub-wing-interfaces.md records which numbers are cited vs newly decided. NOT human-accepted: ADR-046 and ADR-048 are Status Proposed.")
 		(tags "balloon v9 hub wing socket 4P edge-socket Tracker_Mechanical")
 		(property "Reference" "J_W1"
@@ -8455,7 +8455,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "7a9cd31c-1b30-489b-991b-b92f82410c2f")
-		(at 50.545 15.795)
+		(at 45.545 48.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP2"
@@ -8720,7 +8720,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "826982e7-317b-4885-b5a7-5a52b65d7b51")
-		(at 100.975 18.515)
+		(at 4.975 46.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_MON1"
@@ -8855,7 +8855,7 @@
 	(footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical"
 		(layer "F.Cu")
 		(uuid "8980dfe1-ce31-4f9b-8f07-caee2a9fd836")
-		(at 24.72 100.455)
+		(at 14.4 57.455)
 		(descr "Molex Microcoaxial RF Connectors (MCRF), mates Hirose U.FL, (http://www.molex.com/pdm_docs/sd/734120110_sd.pdf)")
 		(tags "mcrf hirose ufl u.fl microcoaxial")
 		(property "Reference" "ANT2"
@@ -9220,7 +9220,7 @@
 	(footprint "Diode_SMD:D_SOD-123"
 		(layer "F.Cu")
 		(uuid "8a0f5a5b-1141-4829-a878-6443535ab5f8")
-		(at 46.395 25.195)
+		(at 55.395 41.195)
 		(descr "SOD-123")
 		(tags "SOD-123")
 		(property "Reference" "D1"
@@ -9495,7 +9495,7 @@
 	(footprint "RF_Module:ESP32-S3-WROOM-1U"
 		(layer "F.Cu")
 		(uuid "8ef9e963-125e-4761-bb46-49676da5fa1a")
-		(at 67.7 11.36)
+		(at 18.7 35.36)
 		(descr "2.4 GHz Wi-Fi and Bluetooth module  https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf")
 		(tags "2.4 GHz Wi-Fi and Bluetooth module")
 		(property "Reference" "U1"
@@ -10256,7 +10256,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "900da495-9dc8-4425-8a5a-cba3d4bea591")
-		(at 100.975 22.515)
+		(at 25.975 48.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_NTC1"
@@ -10391,7 +10391,7 @@
 	(footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical"
 		(layer "F.Cu")
 		(uuid "9e3e48a4-cddd-4f0c-ae68-72465fd455a6")
-		(at 2.545 22.66)
+		(at 2.545 13.2)
 		(descr "Molex Microcoaxial RF Connectors (MCRF), mates Hirose U.FL, (http://www.molex.com/pdm_docs/sd/734120110_sd.pdf)")
 		(tags "mcrf hirose ufl u.fl microcoaxial")
 		(property "Reference" "ANT1"
@@ -10756,7 +10756,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "a1b9528a-75d4-455f-ad8c-39c8d8f7aa05")
-		(at 50.545 20.795)
+		(at 12.545 49.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP4"
@@ -11021,7 +11021,7 @@
 	(footprint "RF_GPS:ublox_MAX"
 		(layer "F.Cu")
 		(uuid "a220da54-8509-4e5f-89b9-15e694658b99")
-		(at 84.945 23.345)
+		(at 52.945 6.345)
 		(descr "ublox MAX 6/7/8, (https://www.u-blox.com/sites/default/files/MAX-8-M8-FW3_HardwareIntegrationManual_%28UBX-15030059%29.pdf)")
 		(tags "GPS ublox MAX 6/7/8")
 		(property "Reference" "U5"
@@ -11399,7 +11399,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "a8a8478a-db8a-4fbb-94ed-e8c7134020ee")
-		(at 1.975 15.515)
+		(at 50.975 44.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_DIV2"
@@ -11534,7 +11534,7 @@
 	(footprint "Tracker_Mechanical:Wing_Tab_4P"
 		(layer "F.Cu")
 		(uuid "aa44355b-b697-43ed-babe-f90db645f4bc")
-		(at 51.5 0 90)
+		(at 30 0 90)
 		(descr "Hub-side WING SOCKET land set for the v9 3D hub/wing assembly: FOUR wing interfaces, one per hub edge, at 90 deg spacing. Per interface: 4 copper lands on EACH outer face (F.Cu + B.Cu) = 8 lands per interface, land 4.0 x 1.2 mm, pitch 1.8 mm, pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO NET) / SOLAR_N. Cited: docs/adr/046-wing-board-interface.md s2.1/s2.2/s4.1 (4-pin tab, land 4.0x1.2 mm, 1.8 mm pitch, insert depth 6.0 mm, hub slot 0.9 mm +/-0.10 mm, 90 deg attach) and docs/WING-TO-HUB-SOCKET-SPEC.md s2/s4/s6 (4 lands per face, 8 per interface, edge clearance, keep-outs, silkscreen). docs/adr/048-v9-hub-wing-interfaces.md records which numbers are cited vs newly decided. NOT human-accepted: ADR-046 and ADR-048 are Status Proposed.")
 		(tags "balloon v9 hub wing socket 4P edge-socket Tracker_Mechanical")
 		(property "Reference" "J_W4"
@@ -11819,7 +11819,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "ad7f43fc-3731-45d8-8358-4612468802ef")
-		(at 33.545 25.795)
+		(at 53.545 51.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_HUB2"
@@ -12084,7 +12084,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "bb5e2a86-6eb6-4901-ac69-9c55144ba454")
-		(at 54.975 6.515)
+		(at 50.975 42.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_DIV1"
@@ -12219,7 +12219,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "bffbf692-41eb-40a8-840e-07b5f2e4c76c")
-		(at 1.975 17.515)
+		(at 1.975 46.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_F1"
@@ -12354,7 +12354,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "c089734c-b7d6-45ea-acf4-a2927f24e29f")
-		(at 54.975 2.515)
+		(at 1.975 21.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_BAL1"
@@ -12489,7 +12489,7 @@
 	(footprint "Capacitor_SMD:C_1206_3216Metric"
 		(layer "F.Cu")
 		(uuid "ca2e3342-4aa3-42af-94bc-b88f7a45d091")
-		(at 52.345 25.195)
+		(at 3.345 44.195)
 		(descr "Capacitor SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C_BULK"
@@ -12624,7 +12624,7 @@
 	(footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical"
 		(layer "F.Cu")
 		(uuid "d85a91f1-a2bb-4b7a-a2da-9433467a38c0")
-		(at 78.28 100.455)
+		(at 45.6 57.455)
 		(descr "Molex Microcoaxial RF Connectors (MCRF), mates Hirose U.FL, (http://www.molex.com/pdm_docs/sd/734120110_sd.pdf)")
 		(tags "mcrf hirose ufl u.fl microcoaxial")
 		(property "Reference" "ANT4"
@@ -12989,7 +12989,7 @@
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
 		(uuid "ea056386-f1ff-42e5-9696-027c7da728d3")
-		(at 95.545 19.795)
+		(at 4.545 49.795)
 		(descr "Diode SMA (DO-214AC)")
 		(tags "Diode SMA (DO-214AC)")
 		(property "Reference" "D_BP3"
@@ -13254,7 +13254,7 @@
 	(footprint "Tracker_Mechanical:Wing_Tab_4P"
 		(layer "F.Cu")
 		(uuid "ea9cc278-9bb7-4d49-98fe-b427d172069b")
-		(at 51.5 103 -90)
+		(at 30 60 -90)
 		(descr "Hub-side WING SOCKET land set for the v9 3D hub/wing assembly: FOUR wing interfaces, one per hub edge, at 90 deg spacing. Per interface: 4 copper lands on EACH outer face (F.Cu + B.Cu) = 8 lands per interface, land 4.0 x 1.2 mm, pitch 1.8 mm, pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO NET) / SOLAR_N. Cited: docs/adr/046-wing-board-interface.md s2.1/s2.2/s4.1 (4-pin tab, land 4.0x1.2 mm, 1.8 mm pitch, insert depth 6.0 mm, hub slot 0.9 mm +/-0.10 mm, 90 deg attach) and docs/WING-TO-HUB-SOCKET-SPEC.md s2/s4/s6 (4 lands per face, 8 per interface, edge clearance, keep-outs, silkscreen). docs/adr/048-v9-hub-wing-interfaces.md records which numbers are cited vs newly decided. NOT human-accepted: ADR-046 and ADR-048 are Status Proposed.")
 		(tags "balloon v9 hub wing socket 4P edge-socket Tracker_Mechanical")
 		(property "Reference" "J_W2"
@@ -13539,7 +13539,7 @@
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "f60604ec-485f-4325-9079-fe789bcc9ec6")
-		(at 56.975 24.515)
+		(at 50.975 48.515)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "TH_NTC1"
@@ -13674,7 +13674,7 @@
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "F.Cu")
 		(uuid "fa39c644-136a-41a8-95f9-18063c750657")
-		(at 62.955 24.505)
+		(at 25.955 52.505)
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C_HF"
@@ -13808,7 +13808,7 @@
 	)
 	(gr_rect
 		(start 0 0)
-		(end 103 103)
+		(end 60 60)
 		(stroke
 			(width 0.15)
 			(type default)

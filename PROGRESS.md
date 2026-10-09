@@ -1,0 +1,4 @@
+ADR-063 implementation: changed v9 generator default to 60x60 mm and computed overhanging PVA carrier datum → regenerated board successfully with KRT EXIT=0 → tracker/hardware/build_hub_board_v9.py, tracker/hardware/hub_board_v9.kicad_pcb, tracker/hardware/output/hub_board_v9_seed.kicad_pcb
+3D/render gate: 8 fixed views + contact sheet rendered with /usr/share/kicad/3dmodels; all 41 models mapped → tracker/hardware/renders/adr063/
+Verification: KiCad DRC report generated (134 violations, 157 unconnected; no electrical shorting/clearance/tracks-crossing rows observed) → tracker/hardware/hub_board_v9_drc.json
+Consultation: requested spatial verdict from contact sheet; verdict says cells do not visibly overhang (limitation: render crop/scale inference); report records this conflict and authoritative coordinate evidence.

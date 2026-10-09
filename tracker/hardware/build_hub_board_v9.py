@@ -17,7 +17,7 @@ position is (a) a netlist fact, (b) a library footprint's own measured geometry,
 (`py_placer/place_optimize.py`, the registry's canonical_placement_source) refines
 it and `placement_guard.py --gate25` + `gate25_check.py` grade it.
 
-OUTLINE  (docs/analysis/hub-outline-authority.md, ADR-051 s2.3, ADR-055 s3/D5)
+OUTLINE  (ADR-063 D1/D2: component-only hub; array is a separate overhanging carrier)
 ----------------------------------------------------------------------------
 Recorded candidates, and why the outline is the one below:
 
@@ -33,7 +33,7 @@ Recorded candidates, and why the outline is the one below:
                    frozen number here.
 
 The outline WIDTH/HEIGHT are CLI parameters (`--outline WxH`); the default is
-103.0 x 103.0.  The 55 x 45 mm default this builder first tried is MEASURABLY too
+60.0 x 60.0.  The 55 x 45 mm default this builder first tried is MEASURABLY too
 small for the v9 hub: the 39 footprinted components demand 2582 mm^2 of courtyard
 against the board's 2475 mm^2, and a best-effort pack left 28 of 39 parts unseated.
 See REPORT.md for the resolution, the numbers and the caveats (ADR-051 and ADR-055
@@ -71,8 +71,8 @@ KICAD_PRETTY = "/usr/share/kicad/footprints"
 OUT_SEED = os.path.join(HERE, "output", "hub_board_v9_seed.kicad_pcb")
 OUT_BOARD = os.path.join(HERE, "hub_board_v9.kicad_pcb")
 
-DEFAULT_W, DEFAULT_H = 103.0, 103.0   # ADR-051 s2.3 / ADR-055 D5, the grown hub panel;
-                                      # see the OUTLINE note above and REPORT.md.
+DEFAULT_W, DEFAULT_H = 60.0, 60.0     # ADR-063 D1/D2: component-only floorplan;
+                                      # the array is carried separately and overhangs.
 EDGE_STROKE = 0.15
 BOARD_THICKNESS = 0.6   # inherited generated value (v8i .gbrjob); ADR-055 D4's 0.4 mm
                         # target is Proposed and its stack-up check is an open item.
@@ -184,9 +184,9 @@ MODEL_MAP = {
 #     F.Cu; the cell footprints carry NO PADS and NO COURTYARD overlap because
 #     their courtyard (39.525 x 19.7 mm) sits inside the empty array region.
 #   * size: 78.55 x 38.90 mm, the LARGE class (ADR-049 s'Measured inputs').
-#   * count: 2 = the schematic's own PVA1/PVA2 (ADR-051 s2.2 option H2).  FOUR
-#     LARGE cells are NOT placeable: 4 x 30.56 = 122.2 cm2 exceeds the
-#     103 x 103 mm plate's 106.09 cm2.
+#   * count: 2 = the schematic's own PVA1/PVA2.  They are deliberately outside
+#     the 60 x 60 component board; this PCB file is the board-side datum for a
+#     separate rib/strip carrier, not the carrier itself (ADR-063 D3).
 #   * mount: END-ONLY, no bond (ADR-052 s2.6) - no lands across the cell face.
 #   * DNP: the array AREA is the operator's OPEN duty choice (ADR-055 D3).
 ARRAY_CELLS = [
@@ -553,13 +553,17 @@ def assign_repo_models(board):
 
 # ------------------------------------------------------------ hub array cells
 def array_seat_xy(w: float, h: float, i: int, n: int):
-    """COMPUTED (not typed) seat for hub-array cell i of n, long axis on Y.
+    """COMPUTED seat for cells on a separate carrier, with deliberate overhang.
 
-    Cells are laid out on the sun-facing face, centred, with ARRAY_GAP between
-    neighbours.  ADR-052: mounted END-ONLY, no bond.
+    The 90-degree footprint rotation puts the 38.90 mm cell width across X and
+    the 78.55 mm length along Y.  The two cells are pitched across X, centred on
+    the 60 x 60 component board.  Consequently each cell extends beyond the board on
+    both Y edges (9.275 mm at this provisional pitch); the two cells are separated
+    across X by the provisional carrier pitch.  This is intentionally a carrier datum, not a claim
+    that bare silicon can survive unsupported: S_crack is not measured yet.
     """
-    span = n * ARRAY_CELL_S + (n - 1) * ARRAY_GAP
-    x = (w - span) / 2.0 + ARRAY_CELL_S / 2.0 + i * (ARRAY_CELL_S + ARRAY_GAP)
+    pitch = ARRAY_CELL_S + ARRAY_GAP
+    x = (w - (n - 1) * pitch) / 2.0 + i * pitch
     return x, h / 2.0
 
 
@@ -708,8 +712,10 @@ def publish(a, w: float, h: float, nets) -> int:
           f"on F.Cu the UPPER/sun-facing face (ADR-055 D6, operator-approved), "
           f"DNP (ADR-055 D3 area = the operator's OPEN choice)")
     print(f"full-duty check : 4 x LARGE = {4 * ARRAY_CELL_L * ARRAY_CELL_S / 100.0:.1f} cm2 "
-          f"> plate {w * h / 100.0:.2f} cm2 -> the 4-cell 106.1 cm2 configuration of "
-          f"ADR-055 D3 is NOT placeable on a 103 x 103 mm plate")
+          f"> component board {w * h / 100.0:.2f} cm2; array is deliberately "
+          f"decoupled and overhangs on a separate carrier (ADR-063 D3).")
+    print("carrier pitch   : 40.90 mm provisional (cell width + 2.00 mm gap); "
+          "S_crack coupon not run, so pitch is NOT frozen (ADR-063 D4)")
     # NOTE: ${KICAD9_3DMODEL_DIR} is a KiCad VARIABLE, not a Python name. Inside
     # an f-string, `${KICAD9_3DMODEL_DIR}` is parsed as the Python expression
     # `KICAD9_3DMODEL_DIR` (with a stray `$`), which raises NameError and killed
