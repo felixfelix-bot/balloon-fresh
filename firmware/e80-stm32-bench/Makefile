@@ -659,7 +659,8 @@ range-test-host: ## Run pytest for distributed range test split logic
 	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py test_range_check.py \
 		test_cvm_armed_publisher.py test_cvm_verdict_publisher.py test_cvm_tx_listener.py \
 		test_nostr_giftwrap.py test_giftwrap_determinism.py \
-		test_giftwrap_determinism_spec.py test_giftwrap_single_path.py -v
+		test_giftwrap_determinism_spec.py test_giftwrap_single_path.py \
+		test_keymaterial.py -v
 
 # ============================================================
 # CONTEXTVM (NOSTR MCP) RANGE TEST TARGETS
