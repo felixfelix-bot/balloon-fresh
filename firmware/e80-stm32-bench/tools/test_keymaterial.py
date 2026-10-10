@@ -77,10 +77,13 @@ def _hexpub(secret32: bytes) -> str:
 
 
 class _Env(unittest.TestCase):
-    """Base: snapshot/restore the five env vars around every test."""
+    """Base: snapshot/restore every accepted env name around every test.
 
-    KEYS = (km.ENV_CLIENT_NSEC, km.ENV_CLIENT_HEXKEY, km.ENV_SERVER_NSEC,
-            km.ENV_SERVER_PUBKEY, km.ENV_RELAY_AUTH)
+    ``km.ALL_ENV_NAMES`` (not just the canonical five) so a developer's exported
+    ``E80_RX_NSEC``/``CVM_CLIENT_HEX`` alias can never leak into a test.
+    """
+
+    KEYS = km.ALL_ENV_NAMES
 
     def setUp(self):
         self._saved = {k: os.environ.get(k) for k in self.KEYS}
@@ -309,6 +312,107 @@ class TestPublishPathWiring(_Env):
         self.assertEqual(rc, 2)
         self.assertIn(km.ENV_CLIENT_NSEC, err.getvalue())
         self.assertNotIn("Traceback", err.getvalue())
+
+
+class TestEnvNamePrecedence(_Env):
+    """ADR §2.3 / RANGE-TEST-GUIDE.md: the canonical names must resolve here.
+
+    The publish path (`cvm_armed_publisher.run`) resolves keys through
+    `keymaterial.load_keys`, so a module that only accepted its own legacy
+    ``E80_CLIENT_*`` names would refuse to start on the environment the guide
+    tells the operator to export.
+    """
+
+    def _distinct(self):
+        c, s = secrets.token_bytes(32), secrets.token_bytes(32)
+        return c, s
+
+    def test_canonical_cvm_names_resolve(self):
+        c, s = self._distinct()
+        os.environ["CVM_RX_NSEC"] = _nsec(c)
+        os.environ["CVM_SERVER_HEX"] = _hexpub(s)
+        kmk = km.load_keys()
+        self.assertEqual(kmk.client_pubkey, km._xonly_pubkey(c))
+        self.assertEqual(kmk.server_pubkey, km._xonly_pubkey(s))
+
+    def test_canonical_hex_and_server_nsec_resolve(self):
+        c, s = self._distinct()
+        os.environ["CVM_RX_HEX"] = c.hex()
+        os.environ["CVM_SERVER_NSEC"] = _nsec(s)
+        kmk = km.load_keys()
+        self.assertEqual(kmk.client_pubkey, km._xonly_pubkey(c))
+        self.assertEqual(kmk.server_pubkey, km._xonly_pubkey(s))
+
+    def test_client_alias_names_resolve(self):
+        for name in ("CVM_CLIENT_NSEC", "E80_RX_NSEC", "E80_CLIENT_NSEC"):
+            with self.subTest(client_nsec=name):
+                self.setUp()
+                c, s = self._distinct()
+                os.environ[name] = _nsec(c)
+                os.environ["CVM_SERVER_HEX"] = _hexpub(s)
+                self.assertEqual(km.load_keys().client_pubkey,
+                                 km._xonly_pubkey(c))
+        for name in ("CVM_CLIENT_HEX", "E80_RX_HEX", "E80_CLIENT_HEXKEY"):
+            with self.subTest(client_hex=name):
+                self.setUp()
+                c, s = self._distinct()
+                os.environ[name] = c.hex()
+                os.environ["CVM_SERVER_HEX"] = _hexpub(s)
+                self.assertEqual(km.load_keys().client_pubkey,
+                                 km._xonly_pubkey(c))
+
+    def test_server_alias_names_resolve(self):
+        for name in ("E80_SERVER_NSEC", "E80_SERVER_PUBKEY"):
+            with self.subTest(server=name):
+                self.setUp()
+                c, s = self._distinct()
+                os.environ["CVM_RX_NSEC"] = _nsec(c)
+                os.environ[name] = (_nsec(s) if name.endswith("_NSEC")
+                                    else _hexpub(s))
+                self.assertEqual(km.load_keys().server_pubkey,
+                                 km._xonly_pubkey(s))
+
+    def test_relay_auth_alias_resolves(self):
+        c, s = self._distinct()
+        os.environ["CVM_RX_NSEC"] = _nsec(c)
+        os.environ["CVM_SERVER_HEX"] = _hexpub(s)
+        os.environ["E80_RELAY_AUTH"] = secrets.token_bytes(32).hex()
+        self.assertTrue(km.load_keys().relay_auth)
+
+    def test_canonical_name_wins_over_alias(self):
+        c, s, other = (secrets.token_bytes(32) for _ in range(3))
+        os.environ["CVM_RX_NSEC"] = _nsec(c)          # canonical
+        os.environ["E80_CLIENT_NSEC"] = _nsec(other)  # stale/conflicting alias
+        os.environ["CVM_SERVER_HEX"] = _hexpub(s)
+        self.assertEqual(km.load_keys().client_pubkey, km._xonly_pubkey(c))
+
+    def test_blank_canonical_does_not_shadow_a_real_alias(self):
+        c, s = self._distinct()
+        os.environ["CVM_RX_NSEC"] = "   "
+        os.environ["E80_RX_NSEC"] = _nsec(c)
+        os.environ["CVM_SERVER_HEX"] = _hexpub(s)
+        self.assertEqual(km.load_keys().client_pubkey, km._xonly_pubkey(c))
+
+    def test_missing_key_message_names_every_accepted_name(self):
+        os.environ["CVM_SERVER_HEX"] = _hexpub(secrets.token_bytes(32))
+        with self.assertRaises(km.MissingKeyError) as ctx:
+            km.load_keys()
+        msg = str(ctx.exception)
+        for name in km.CLIENT_NSEC_NAMES + km.CLIENT_HEX_NAMES:
+            self.assertIn(name, msg, "{} missing from the error message"
+                          .format(name))
+
+    def test_accessor_names_agree_with_the_message_layer(self):
+        """One logical key, one name set — no drift between the two accessors."""
+        pub = _optional_import("cvm_armed_publisher")
+        if pub is None:
+            self.skipTest("cvm_armed_publisher not on this branch")
+        self.assertEqual(pub.ENV_CLIENT_NSEC, km.ENV_CLIENT_NSEC)
+        self.assertEqual(pub.ENV_CLIENT_HEX, km.ENV_CLIENT_HEXKEY)
+        self.assertEqual(pub.ENV_SERVER_NSEC, km.ENV_SERVER_NSEC)
+        self.assertEqual(pub.ENV_SERVER_HEX, km.ENV_SERVER_PUBKEY)
+        self.assertIn(pub.ENV_CLIENT_E80_NSEC, km.CLIENT_NSEC_NAMES)
+        self.assertIn(pub.ENV_CLIENT_ALIAS_NSEC, km.CLIENT_NSEC_NAMES)
 
 
 if __name__ == "__main__":

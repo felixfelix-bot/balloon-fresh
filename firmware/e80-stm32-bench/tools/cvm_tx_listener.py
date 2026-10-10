@@ -230,7 +230,9 @@ def load_and_check_keys(env: Optional[Mapping[str, str]] = None) -> tuple:
 
     Thin wrapper over :func:`keymaterial.load_keys` (the sole env-only source).
     """
-    km = keymaterial.load_keys()
+    km = keymaterial.load_keys(
+        client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+        client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
     import nostr_sdk
     return (nostr_sdk.Keys.parse(km.client_secret),
             nostr_sdk.Keys.parse(km.server_secret))

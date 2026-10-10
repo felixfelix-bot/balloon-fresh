@@ -25,20 +25,30 @@ Guarantees
 
 Environment variables (exact names)
 -----------------------------------
+Accepted names, canonical first — the canonical name always wins when several
+are set, and every alias is read from the environment only (ADR-range-sync-cvm
+§2.3 lists the same precedence):
+
 Client key (required, exactly one *combination*):
-    ``E80_CLIENT_NSEC``   — bech32 ``nsec1...`` secp256k1 secret
-    ``E80_CLIENT_HEXKEY`` — 64-char lowercase/uppercase hex secret
-  Either may be set; if BOTH are set they must resolve to the same pubkey,
-  otherwise :func:`load_keys` refuses (an ambiguous key is a configuration bug).
+    ``CVM_RX_NSEC`` / ``CVM_RX_HEX``          — canonical (see RANGE-TEST-GUIDE.md)
+    ``CVM_CLIENT_NSEC`` / ``CVM_CLIENT_HEX``  — aliases
+    ``E80_RX_NSEC`` / ``E80_RX_HEX``          — E80_* aliases
+    ``E80_CLIENT_NSEC`` / ``E80_CLIENT_HEXKEY`` — legacy names of this module
+  Either an nsec or a hex secret may be set; if BOTH are set they must resolve
+  to the same pubkey, otherwise :func:`load_keys` refuses (an ambiguous key is a
+  configuration bug).  Two names of the *same* kind are not an error: the
+  canonical one wins.
 
 Server key material (required):
-    ``E80_SERVER_NSEC``   — bech32 ``nsec1...`` (its pubkey is derived)
-    ``E80_SERVER_PUBKEY`` — x-only 64-char hex pubkey or ``npub1...``
-  At least one must be set; when both are set they must agree.  The server
-  pubkey backs the ``client != server`` assertion.
+    ``CVM_SERVER_NSEC``   — bech32 ``nsec1...`` (its pubkey is derived)
+    ``CVM_SERVER_HEX``    — x-only 64-char hex pubkey or ``npub1...``
+  ``E80_SERVER_NSEC`` / ``E80_SERVER_PUBKEY`` are accepted aliases.  At least one
+  must be set; when both are set they must agree.  The server pubkey backs the
+  ``client != server`` assertion.
 
 Relay auth (optional):
-    ``E80_RELAY_AUTH``    — bech32 ``nsec1...`` or 64-char hex relay-auth key.
+    ``CVM_RELAY_AUTH``    — bech32 ``nsec1...`` or 64-char hex relay-auth key
+                            (``E80_RELAY_AUTH`` is accepted as an alias).
   Read here (not at the call site) when the publish path needs relay auth.
 
 Pure standard library: bech32 + secp256k1 are implemented locally, so the
@@ -51,7 +61,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Sequence
 
 __all__ = [
     "load_keys",
@@ -64,16 +74,69 @@ __all__ = [
     "ENV_SERVER_NSEC",
     "ENV_SERVER_PUBKEY",
     "ENV_RELAY_AUTH",
+    "CLIENT_NSEC_NAMES",
+    "CLIENT_HEX_NAMES",
+    "TX_CLIENT_NSEC_NAMES",
+    "TX_CLIENT_HEX_NAMES",
+    "ENV_TX_CLIENT_NSEC",
+    "ENV_TX_CLIENT_HEX",
+    "SERVER_NSEC_NAMES",
+    "SERVER_PUBKEY_NAMES",
+    "RELAY_AUTH_NAMES",
+    "ALL_ENV_NAMES",
 ]
 
 # ---------------------------------------------------------------------------
 # Env var names — the ONLY place key material may come from.
+#
+# Precedence is ADR-range-sync-cvm §2.3's: the canonical ``CVM_*`` name first,
+# then the alias chain.  ``load_env_secrets()`` in cvm_armed_publisher.py uses
+# exactly the same order, and RANGE-TEST-GUIDE.md documents the canonical names
+# as the operator interface, so the publish path (which resolves keys through
+# this module) must accept them.
 # ---------------------------------------------------------------------------
-ENV_CLIENT_NSEC = "E80_CLIENT_NSEC"
-ENV_CLIENT_HEXKEY = "E80_CLIENT_HEXKEY"
-ENV_SERVER_NSEC = "E80_SERVER_NSEC"
-ENV_SERVER_PUBKEY = "E80_SERVER_PUBKEY"
-ENV_RELAY_AUTH = "E80_RELAY_AUTH"
+ENV_CLIENT_NSEC = "CVM_RX_NSEC"
+ENV_CLIENT_HEXKEY = "CVM_RX_HEX"
+ENV_SERVER_NSEC = "CVM_SERVER_NSEC"
+ENV_SERVER_PUBKEY = "CVM_SERVER_HEX"
+ENV_RELAY_AUTH = "CVM_RELAY_AUTH"
+
+#: Accepted aliases (canonical names above always win when several are set).
+ENV_CLIENT_ALIAS_NSEC = "CVM_CLIENT_NSEC"
+ENV_CLIENT_ALIAS_HEX = "CVM_CLIENT_HEX"
+ENV_CLIENT_E80_NSEC = "E80_RX_NSEC"
+ENV_CLIENT_E80_HEX = "E80_RX_HEX"
+ENV_CLIENT_LEGACY_NSEC = "E80_CLIENT_NSEC"
+ENV_CLIENT_LEGACY_HEX = "E80_CLIENT_HEXKEY"
+ENV_SERVER_E80_NSEC = "E80_SERVER_NSEC"
+ENV_SERVER_E80_PUBKEY = "E80_SERVER_PUBKEY"
+ENV_RELAY_AUTH_E80 = "E80_RELAY_AUTH"
+
+#: The TX role's own client key (RANGE-TEST-GUIDE.md TX step: ``CVM_TX_*``).
+ENV_TX_CLIENT_NSEC = "CVM_TX_NSEC"
+ENV_TX_CLIENT_HEX = "CVM_TX_HEX"
+
+#: Accepted env names per logical value, in precedence order (RX role).
+CLIENT_NSEC_NAMES = (ENV_CLIENT_NSEC, ENV_CLIENT_ALIAS_NSEC,
+                     ENV_CLIENT_E80_NSEC, ENV_CLIENT_LEGACY_NSEC)
+CLIENT_HEX_NAMES = (ENV_CLIENT_HEXKEY, ENV_CLIENT_ALIAS_HEX,
+                    ENV_CLIENT_E80_HEX, ENV_CLIENT_LEGACY_HEX)
+#: Same chain for the TX role — its own canonical name first, the shared
+#: ``CVM_CLIENT_*`` aliases after.  Deliberately excludes ``CVM_RX_*`` so a host
+#: that exports both roles can never sign TX traffic with the RX key.
+TX_CLIENT_NSEC_NAMES = (ENV_TX_CLIENT_NSEC,) + CLIENT_NSEC_NAMES[1:]
+TX_CLIENT_HEX_NAMES = (ENV_TX_CLIENT_HEX,) + CLIENT_HEX_NAMES[1:]
+SERVER_NSEC_NAMES = (ENV_SERVER_NSEC, ENV_SERVER_E80_NSEC)
+SERVER_PUBKEY_NAMES = (ENV_SERVER_PUBKEY, ENV_SERVER_E80_PUBKEY)
+RELAY_AUTH_NAMES = (ENV_RELAY_AUTH, ENV_RELAY_AUTH_E80)
+
+#: Every name this module reads — handy for tests that must scrub the
+#: environment completely before asserting on a missing key.
+ALL_ENV_NAMES = tuple(dict.fromkeys(
+    tuple(CLIENT_NSEC_NAMES) + tuple(CLIENT_HEX_NAMES)
+    + tuple(TX_CLIENT_NSEC_NAMES) + tuple(TX_CLIENT_HEX_NAMES)
+    + tuple(SERVER_NSEC_NAMES) + tuple(SERVER_PUBKEY_NAMES)
+    + tuple(RELAY_AUTH_NAMES)))
 
 
 # ---------------------------------------------------------------------------
@@ -275,12 +338,24 @@ class KeyMaterial:
 # The single accessor.
 # ---------------------------------------------------------------------------
 
-# Required environment variables, read AT CALL TIME inside load_keys():
-#   E80_CLIENT_NSEC   (nsec1...) OR E80_CLIENT_HEXKEY (64-hex)  -> client key
-#   E80_SERVER_NSEC   (nsec1...) and/or E80_SERVER_PUBKEY (hex/npub)
-#   E80_RELAY_AUTH    (nsec1.../64-hex)  optional relay auth
-def load_keys() -> KeyMaterial:
+# Required environment variables, read AT CALL TIME inside load_keys()
+# (canonical name first, then the accepted aliases — see the name tuples above):
+#   CVM_RX_NSEC      (nsec1...) OR CVM_RX_HEX     (64-hex)  -> client key
+#                     aliases: CVM_CLIENT_NSEC/HEX, E80_RX_NSEC/HEX,
+#                              E80_CLIENT_NSEC/E80_CLIENT_HEXKEY
+#   CVM_SERVER_NSEC  (nsec1...) and/or CVM_SERVER_HEX (hex/npub)
+#                     aliases: E80_SERVER_NSEC / E80_SERVER_PUBKEY
+#   CVM_RELAY_AUTH   (nsec1.../64-hex)  optional relay auth  (alias E80_RELAY_AUTH)
+# The TX listener passes the TX_CLIENT_*_NAMES tuple, which reads CVM_TX_NSEC /
+# CVM_TX_HEX in place of CVM_RX_*.
+def load_keys(*, client_names: Optional[Sequence[str]] = None,
+              client_hex_names: Optional[Sequence[str]] = None) -> KeyMaterial:
     """Resolve all publish-path key material from the environment.
+
+    ``client_names``/``client_hex_names`` select which env names hold *this
+    role's* client key: the publisher keeps the defaults (``CVM_RX_*`` first),
+    the TX listener passes :data:`TX_CLIENT_NSEC_NAMES` /
+    :data:`TX_CLIENT_HEX_NAMES` so a ``CVM_TX_*``-only environment resolves.
 
     Reads ``os.environ`` at call time (no cache, no import-time read) and
     returns a :class:`KeyMaterial` with derived x-only pubkeys.  Raises
@@ -289,14 +364,17 @@ def load_keys() -> KeyMaterial:
     keys resolve to the same pubkey.
     """
     env = os.environ
+    nsec_names = tuple(client_names or CLIENT_NSEC_NAMES)
+    hex_names = tuple(client_hex_names or CLIENT_HEX_NAMES)
 
     # --- client key: nsec and/or hexkey --------------------------------
-    client_nsec = _clean(env.get(ENV_CLIENT_NSEC))
-    client_hex = _clean(env.get(ENV_CLIENT_HEXKEY))
+    client_nsec = _first_env(env, *nsec_names)
+    client_hex = _first_env(env, *hex_names)
     if not client_nsec and not client_hex:
         raise MissingKeyError(
-            "{} or {} is not set; export one before publishing".format(
-                ENV_CLIENT_NSEC, ENV_CLIENT_HEXKEY))
+            "no client key is set; export {} or {} (accepted aliases: {})"
+            .format(nsec_names[0], hex_names[0],
+                    ", ".join(nsec_names[1:] + hex_names[1:])))
     client_secret = client_nsec or client_hex
     client_pubkey = _xonly_pubkey(_decode_secret(client_secret))
     if client_nsec and client_hex:
@@ -308,12 +386,13 @@ def load_keys() -> KeyMaterial:
                     ENV_CLIENT_NSEC, ENV_CLIENT_HEXKEY, client_pubkey, other))
 
     # --- server key material -------------------------------------------
-    server_nsec = _clean(env.get(ENV_SERVER_NSEC))
-    server_pub_env = _clean(env.get(ENV_SERVER_PUBKEY))
+    server_nsec = _first_env(env, *SERVER_NSEC_NAMES)
+    server_pub_env = _first_env(env, *SERVER_PUBKEY_NAMES)
     if not server_nsec and not server_pub_env:
         raise MissingKeyError(
-            "{} or {} is not set; export one before publishing".format(
-                ENV_SERVER_NSEC, ENV_SERVER_PUBKEY))
+            "no server key is set; export {} or {} (aliases: {} / {})"
+            .format(ENV_SERVER_NSEC, ENV_SERVER_PUBKEY, ENV_SERVER_E80_NSEC,
+                    ENV_SERVER_E80_PUBKEY))
     if server_nsec:
         server_pubkey = _xonly_pubkey(_decode_secret(server_nsec))
         if server_pub_env and _decode_pubkey(server_pub_env) != server_pubkey:
@@ -325,7 +404,7 @@ def load_keys() -> KeyMaterial:
         server_pubkey = _decode_pubkey(server_pub_env)
 
     # --- relay auth (optional) -----------------------------------------
-    relay_auth = _clean(env.get(ENV_RELAY_AUTH)) or None
+    relay_auth = _first_env(env, *RELAY_AUTH_NAMES) or None
 
     # --- the hard invariant: compare DERIVED PUBKEYS only ---------------
     if client_pubkey == server_pubkey:
@@ -344,3 +423,16 @@ def load_keys() -> KeyMaterial:
 
 def _clean(value: Optional[str]) -> str:
     return value.strip() if isinstance(value, str) else ""
+
+
+def _first_env(env, *names: str) -> str:
+    """First set, non-blank value among ``names`` (precedence order).
+
+    A blank/whitespace-only value counts as unset, so ``export CVM_RX_NSEC=``
+    cannot silently shadow a real alias.
+    """
+    for name in names:
+        value = _clean(env.get(name))
+        if value:
+            return value
+    return ""

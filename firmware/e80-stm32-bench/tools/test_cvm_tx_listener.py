@@ -405,6 +405,49 @@ class TestEnvOnlyKeys(unittest.TestCase):
                if any(tok in o.lower() for tok in ("nsec", "hex", "secret"))]
         self.assertEqual(bad, [], "key-bearing CLI options: {}".format(bad))
 
+    def test_load_and_check_keys_asks_the_accessor_for_the_tx_names(self):
+        """The listener's client key is ``CVM_TX_*`` (RANGE-TEST-GUIDE TX step).
+
+        ``run()`` resolves through the single accessor, so it must name the TX
+        role's env vars — otherwise a ``CVM_TX_*``-only environment (the one the
+        guide tells the operator to export) cannot start.
+        """
+        import keymaterial
+        from cvm_tx_listener import load_and_check_keys
+        captured = {}
+
+        def fake_load_keys(**kwargs):
+            captured.update(kwargs)
+            raise keymaterial.MissingKeyError("stop before signing")
+
+        with unittest.mock.patch.object(keymaterial, "load_keys", fake_load_keys):
+            with self.assertRaises(keymaterial.MissingKeyError):
+                load_and_check_keys()
+        self.assertEqual(captured.get("client_names"),
+                         keymaterial.TX_CLIENT_NSEC_NAMES)
+        self.assertEqual(captured.get("client_hex_names"),
+                         keymaterial.TX_CLIENT_HEX_NAMES)
+        self.assertNotIn("CVM_RX_NSEC", keymaterial.TX_CLIENT_NSEC_NAMES)
+        self.assertIn("CVM_TX_NSEC", keymaterial.TX_CLIENT_NSEC_NAMES)
+
+    def test_tx_hex_names_resolve_through_the_accessor(self):
+        """CVM_TX_HEX + CVM_SERVER_HEX resolve to the TX client key material.
+
+        Also pins the role separation: CVM_TX_* is invisible to the RX/publish
+        name set, so a host exporting both roles cannot cross-sign.
+        """
+        import keymaterial
+        client_hex, server_hex = "11" * 32, "22" * 32
+        env = {"CVM_TX_HEX": client_hex, "CVM_SERVER_HEX": server_hex}
+        with unittest.mock.patch.dict(os.environ, env, clear=True):
+            kmk = keymaterial.load_keys(
+                client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+            with self.assertRaises(keymaterial.MissingKeyError):
+                keymaterial.load_keys()  # the RX role must not see CVM_TX_*
+        self.assertEqual(kmk.client_pubkey,
+                         keymaterial._xonly_pubkey(bytes.fromhex(client_hex)))
+
 
 def _argparse_option_strings(src: str):
     opts = []
