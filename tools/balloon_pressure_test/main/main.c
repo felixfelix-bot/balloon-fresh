@@ -24,8 +24,25 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "driver/i2c_master.h"
+#include "interlock.h"
 
 static const char *TAG = "PRES_TEST";
+
+/* ---- Over-pressure / over-inflation interlock (DESIGN + STUB) -------------
+ * Design: docs/PRESTRETCH-OVERPRESSURE-INTERLOCK.md ; contract: main/interlock.h
+ * The state machine and its fail-safe direction are unit-tested on the host
+ * (tools/balloon_pressure_test/test).  STUB: this rig has NO differential-
+ * pressure input and NO valve hardware wired yet, so the code below runs the
+ * interlock's boot self-test and then leaves the (notional) fill valve
+ * de-energized == CLOSED.  No balloon is actuated.  Thresholds are
+ * PLACEHOLDERS until bench session B1 derives them.
+ */
+static il_t g_interlock;
+static const il_cfg_t g_interlock_cfg = {
+    .dp_cutoff_mbar = CONFIG_BALLOON_IL_DP_CUTOFF_MBAR,
+    .dp_reset_mbar  = CONFIG_BALLOON_IL_DP_RESET_MBAR,
+    .max_fill_s     = CONFIG_BALLOON_IL_MAX_FILL_S,
+};
 
 /* ---- Sensor types ---- */
 typedef enum {
@@ -401,6 +418,19 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Balloon Pressure Test Rig starting...");
     ESP_LOGI(TAG, "Measurement interval: %d seconds", MEASUREMENT_INTERVAL);
+
+    /* Over-pressure interlock: boot self-test + stub integration point.
+     * Fail-safe: with no fault the valve is still CLOSED until il_arm() is
+     * called with a live, trusted DP reading.  Nothing here opens a valve. */
+    {
+        int il_fails = il_selftest();
+        ESP_LOGI(TAG, "INTERLOCK selftest: %s (%d failures)",
+                 il_fails == 0 ? "PASS" : "FAIL", il_fails);
+        il_init(&g_interlock, &g_interlock_cfg);
+        ESP_LOGW(TAG, "INTERLOCK STUB: no DP input / no valve hardware wired; "
+                      "fill stays CLOSED (fail-safe). ceiling=%.1f mbar [PLACEHOLDER]",
+                 g_interlock_cfg.dp_cutoff_mbar);
+    }
 
     esp_err_t ret = sensor_init();
     if (ret != ESP_OK) {
