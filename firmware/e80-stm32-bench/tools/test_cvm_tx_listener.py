@@ -33,11 +33,13 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import contextlib
 import json
 import os
 import sys
 import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 _TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -60,6 +62,75 @@ RX_PUB = "aa" * 32          # allowlisted RX publisher
 OTHER_PUB = "bb" * 32       # non-allowlisted third party
 SELF_PUB = "cc" * 32        # our own TX key
 SERVER_PUB = "dd" * 32      # board-server key (must differ from SELF)
+
+# Deterministic test secrets for the RX/TX role-separation cases (never real
+# keys): 32 bytes each and pairwise distinct, so a leaked RX key is detectable
+# through its derived pubkey.
+_RX_SECRET = bytes(range(1, 33))
+_TX_SECRET = bytes(range(33, 65))
+_SERVER_SECRET = bytes(range(65, 97))
+
+# --- test-only bech32 nsec encoder (no third-party dependency) -------------
+_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+_GEN = (0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3)
+
+
+def _polymod(values):
+    chk = 1
+    for value in values:
+        top = chk >> 25
+        chk = (chk & 0x1FFFFFF) << 5 ^ value
+        for i in range(5):
+            chk ^= _GEN[i] if ((top >> i) & 1) else 0
+    return chk
+
+
+def _hrp_expand(hrp):
+    return [ord(c) >> 5 for c in hrp] + [0] + [ord(c) & 31 for c in hrp]
+
+
+def _convertbits(data, frombits, tobits):
+    acc = bits = 0
+    ret = []
+    for value in data:
+        acc = (acc << frombits) | value
+        bits += frombits
+        while bits >= tobits:
+            bits -= tobits
+            ret.append((acc >> bits) & ((1 << tobits) - 1))
+    if bits:
+        ret.append((acc << (tobits - bits)) & ((1 << tobits) - 1))
+    return ret
+
+
+def _nsec(secret32: bytes) -> str:
+    """Encode a 32-byte secret as ``nsec1...`` (test-only helper)."""
+    data = _convertbits(list(secret32), 8, 5)
+    pm = _polymod(_hrp_expand("nsec") + data + [0, 0, 0, 0, 0, 0]) ^ 1
+    chk = [(pm >> 5 * (5 - i)) & 31 for i in range(6)]
+    return "nsec1" + "".join(_CHARSET[x] for x in data + chk)
+
+
+def _hexpub(secret32: bytes) -> str:
+    """x-only pubkey hex for a 32-byte secret (keymaterial's own derivation)."""
+    import keymaterial
+    return keymaterial._xonly_pubkey(secret32)
+
+
+@contextlib.contextmanager
+def _scrubbed_env():
+    """Hermetic key environment: every name keymaterial reads is unset.
+
+    Uses the module's own ``ALL_ENV_NAMES`` tuple, so an alias a developer
+    exported (``E80_RX_NSEC``, ``CVM_CLIENT_HEX``, ...) can never leak into a
+    role-separation test.
+    """
+    import keymaterial
+    with unittest.mock.patch.dict(os.environ, {}, clear=False):
+        for name in keymaterial.ALL_ENV_NAMES:
+            os.environ.pop(name, None)
+        yield
+
 
 SID = "2608301440a3f"       # %y%m%d%H%M + 3-hex nonce
 
@@ -447,6 +518,82 @@ class TestEnvOnlyKeys(unittest.TestCase):
                 keymaterial.load_keys()  # the RX role must not see CVM_TX_*
         self.assertEqual(kmk.client_pubkey,
                          keymaterial._xonly_pubkey(bytes.fromhex(client_hex)))
+
+    # -- RX/TX role separation (finding #1: the RX-alias leak) --------------
+    def test_tx_role_ignores_the_e80_rx_alias_nsec(self):
+        """CASE A (the leak): ``E80_RX_NSEC`` is RX-role-only.
+
+        A host that exports both roles sets ``E80_RX_NSEC`` for the publisher;
+        the TX listener must raise — never sign TX traffic with the RX key.
+        """
+        import keymaterial
+        with _scrubbed_env():
+            os.environ["E80_RX_NSEC"] = _nsec(_RX_SECRET)
+            os.environ["CVM_SERVER_HEX"] = _hexpub(_SERVER_SECRET)
+            try:
+                kmk = keymaterial.load_keys(
+                    client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                    client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+            except keymaterial.MissingKeyError:
+                return
+            self.fail(
+                "TX role accepted the RX-role-only alias E80_RX_NSEC: "
+                "client_pubkey={} is the RX key's pubkey {}"
+                .format(kmk.client_pubkey, _hexpub(_RX_SECRET)))
+
+    def test_tx_role_ignores_the_e80_rx_alias_hex(self):
+        """CASE A (hex half): ``E80_RX_HEX`` must not reach the TX chain."""
+        import keymaterial
+        with _scrubbed_env():
+            os.environ["E80_RX_HEX"] = _RX_SECRET.hex()
+            os.environ["CVM_SERVER_HEX"] = _hexpub(_SERVER_SECRET)
+            with self.assertRaises(keymaterial.MissingKeyError):
+                keymaterial.load_keys(
+                    client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                    client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+
+    def test_tx_role_ignores_the_canonical_rx_nsec(self):
+        """CASE B: ``CVM_RX_NSEC`` is RX-role-only (guard)."""
+        import keymaterial
+        with _scrubbed_env():
+            os.environ["CVM_RX_NSEC"] = _nsec(_RX_SECRET)
+            os.environ["CVM_SERVER_HEX"] = _hexpub(_SERVER_SECRET)
+            with self.assertRaises(keymaterial.MissingKeyError):
+                keymaterial.load_keys(
+                    client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                    client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+
+    def test_tx_role_resolves_its_own_canonical_nsec(self):
+        """CASE C: ``CVM_TX_NSEC`` alone must resolve for the TX role."""
+        import keymaterial
+        with _scrubbed_env():
+            os.environ["CVM_TX_NSEC"] = _nsec(_TX_SECRET)
+            os.environ["CVM_SERVER_HEX"] = _hexpub(_SERVER_SECRET)
+            kmk = keymaterial.load_keys(
+                client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+        self.assertEqual(kmk.client_pubkey, _hexpub(_TX_SECRET))
+
+    def test_tx_role_still_resolves_the_shared_client_alias(self):
+        """CASE D: the shared alias ``CVM_CLIENT_NSEC`` serves both roles."""
+        import keymaterial
+        with _scrubbed_env():
+            os.environ["CVM_CLIENT_NSEC"] = _nsec(_TX_SECRET)
+            os.environ["CVM_SERVER_HEX"] = _hexpub(_SERVER_SECRET)
+            kmk = keymaterial.load_keys(
+                client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+        self.assertEqual(kmk.client_pubkey, _hexpub(_TX_SECRET))
+
+    def test_tx_chain_shares_no_name_with_the_rx_role_only_names(self):
+        """The module-level invariant that makes the leak impossible."""
+        import keymaterial
+        self.assertEqual(
+            set(keymaterial.TX_CLIENT_NSEC_NAMES)
+            & set(keymaterial.RX_ROLE_NSEC_NAMES), set())
+        self.assertEqual(
+            set(keymaterial.TX_CLIENT_HEX_NAMES)
+            & set(keymaterial.RX_ROLE_HEX_NAMES), set())
 
 
 def _argparse_option_strings(src: str):

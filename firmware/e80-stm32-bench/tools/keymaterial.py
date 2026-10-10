@@ -29,15 +29,25 @@ Accepted names, canonical first — the canonical name always wins when several
 are set, and every alias is read from the environment only (ADR-range-sync-cvm
 §2.3 lists the same precedence):
 
-Client key (required, exactly one *combination*):
+Client key (required, exactly one *combination*) — the RX/publisher role:
     ``CVM_RX_NSEC`` / ``CVM_RX_HEX``          — canonical (see RANGE-TEST-GUIDE.md)
-    ``CVM_CLIENT_NSEC`` / ``CVM_CLIENT_HEX``  — aliases
-    ``E80_RX_NSEC`` / ``E80_RX_HEX``          — E80_* aliases
-    ``E80_CLIENT_NSEC`` / ``E80_CLIENT_HEXKEY`` — legacy names of this module
-  Either an nsec or a hex secret may be set; if BOTH are set they must resolve
-  to the same pubkey, otherwise :func:`load_keys` refuses (an ambiguous key is a
-  configuration bug).  Two names of the *same* kind are not an error: the
-  canonical one wins.
+    ``CVM_CLIENT_NSEC`` / ``CVM_CLIENT_HEX``  — aliases (shared)
+    ``E80_RX_NSEC`` / ``E80_RX_HEX``          — E80_* aliases (RX-only)
+    ``E80_CLIENT_NSEC`` / ``E80_CLIENT_HEXKEY`` — legacy names of this module (shared)
+Either an nsec or a hex secret may be set; if BOTH are set they must resolve
+to the same pubkey, otherwise :func:`load_keys` refuses (an ambiguous key is a
+configuration bug).  Two names of the *same* kind are not an error: the
+canonical one wins.
+
+Client key for the TX/listener role (``TX_CLIENT_NSEC_NAMES`` /
+``TX_CLIENT_HEX_NAMES``, passed by ``cvm_tx_listener.load_and_check_keys``):
+    ``CVM_TX_NSEC`` / ``CVM_TX_HEX``          — canonical TX name
+    plus every SHARED alias above (``CVM_CLIENT_*``, ``E80_CLIENT_*``).
+The RX-role-only names — ``CVM_RX_NSEC``/``CVM_RX_HEX`` (canonical) and the
+``E80_RX_NSEC``/``E80_RX_HEX`` aliases — are NEVER read for the TX role, so a
+host that exports both roles cannot sign TX traffic with the RX key.  The
+exclusion is by name (``RX_ROLE_NSEC_NAMES``/``RX_ROLE_HEX_NAMES``), not by
+position, and is asserted at import time by ``_assert_role_separation``.
 
 Server key material (required):
     ``CVM_SERVER_NSEC``   — bech32 ``nsec1...`` (its pubkey is derived)
@@ -76,6 +86,8 @@ __all__ = [
     "ENV_RELAY_AUTH",
     "CLIENT_NSEC_NAMES",
     "CLIENT_HEX_NAMES",
+    "RX_ROLE_NSEC_NAMES",
+    "RX_ROLE_HEX_NAMES",
     "TX_CLIENT_NSEC_NAMES",
     "TX_CLIENT_HEX_NAMES",
     "ENV_TX_CLIENT_NSEC",
@@ -121,11 +133,28 @@ CLIENT_NSEC_NAMES = (ENV_CLIENT_NSEC, ENV_CLIENT_ALIAS_NSEC,
                      ENV_CLIENT_E80_NSEC, ENV_CLIENT_LEGACY_NSEC)
 CLIENT_HEX_NAMES = (ENV_CLIENT_HEXKEY, ENV_CLIENT_ALIAS_HEX,
                     ENV_CLIENT_E80_HEX, ENV_CLIENT_LEGACY_HEX)
-#: Same chain for the TX role — its own canonical name first, the shared
-#: ``CVM_CLIENT_*`` aliases after.  Deliberately excludes ``CVM_RX_*`` so a host
-#: that exports both roles can never sign TX traffic with the RX key.
-TX_CLIENT_NSEC_NAMES = (ENV_TX_CLIENT_NSEC,) + CLIENT_NSEC_NAMES[1:]
-TX_CLIENT_HEX_NAMES = (ENV_TX_CLIENT_HEX,) + CLIENT_HEX_NAMES[1:]
+
+#: RX-ROLE-ONLY names: the canonical ``CVM_RX_*`` names and the ``E80_RX_*``
+#: aliases.  They identify the publisher side, so a TX-role host must never read
+#: them — that is what role separation means here.  Spelled out explicitly
+#: (never derived by index slicing) so re-ordering or inserting into
+#: ``CLIENT_*_NAMES`` cannot silently smuggle one into the TX chain.
+RX_ROLE_NSEC_NAMES = (ENV_CLIENT_NSEC, ENV_CLIENT_E80_NSEC)
+RX_ROLE_HEX_NAMES = (ENV_CLIENT_HEXKEY, ENV_CLIENT_E80_HEX)
+
+#: TX-role chain: its own canonical ``CVM_TX_*`` name first, then every SHARED
+#: client name, built by EXCLUDING :data:`RX_ROLE_NSEC_NAMES` /
+#: :data:`RX_ROLE_HEX_NAMES` from the RX chain.  What this actually guarantees:
+#: (1) NO RX-role-only spelling (``CVM_RX_NSEC``/``CVM_RX_HEX``/``E80_RX_NSEC``/
+#: ``E80_RX_HEX``) is ever read for the TX role, whatever the order of
+#: ``CLIENT_*_NAMES``; (2) the SHARED names (``CVM_CLIENT_NSEC``/
+#: ``CVM_CLIENT_HEX``/``E80_CLIENT_NSEC``/``E80_CLIENT_HEXKEY``) stay accepted
+#: for BOTH roles, in their original relative precedence order.
+TX_CLIENT_NSEC_NAMES = (ENV_TX_CLIENT_NSEC,) + tuple(
+    name for name in CLIENT_NSEC_NAMES if name not in RX_ROLE_NSEC_NAMES)
+TX_CLIENT_HEX_NAMES = (ENV_TX_CLIENT_HEX,) + tuple(
+    name for name in CLIENT_HEX_NAMES if name not in RX_ROLE_HEX_NAMES)
+
 SERVER_NSEC_NAMES = (ENV_SERVER_NSEC, ENV_SERVER_E80_NSEC)
 SERVER_PUBKEY_NAMES = (ENV_SERVER_PUBKEY, ENV_SERVER_E80_PUBKEY)
 RELAY_AUTH_NAMES = (ENV_RELAY_AUTH, ENV_RELAY_AUTH_E80)
@@ -137,6 +166,24 @@ ALL_ENV_NAMES = tuple(dict.fromkeys(
     + tuple(TX_CLIENT_NSEC_NAMES) + tuple(TX_CLIENT_HEX_NAMES)
     + tuple(SERVER_NSEC_NAMES) + tuple(SERVER_PUBKEY_NAMES)
     + tuple(RELAY_AUTH_NAMES)))
+
+
+def _assert_role_separation() -> None:
+    """Import-time invariant: a TX chain never carries an RX-role-only name.
+
+    Guards the guarantee above against a future edit (for instance a return to
+    positional slicing): the module fails to import — loudly — rather than
+    silently letting the TX role read and sign with an RX key.
+    """
+    overlap = sorted((set(TX_CLIENT_NSEC_NAMES) & set(RX_ROLE_NSEC_NAMES))
+                     | (set(TX_CLIENT_HEX_NAMES) & set(RX_ROLE_HEX_NAMES)))
+    if overlap:
+        raise AssertionError(
+            "role separation violated: RX-role-only env name(s) {} appear in a "
+            "TX key chain".format(", ".join(overlap)))
+
+
+_assert_role_separation()
 
 
 # ---------------------------------------------------------------------------
@@ -346,8 +393,11 @@ class KeyMaterial:
 #   CVM_SERVER_NSEC  (nsec1...) and/or CVM_SERVER_HEX (hex/npub)
 #                     aliases: E80_SERVER_NSEC / E80_SERVER_PUBKEY
 #   CVM_RELAY_AUTH   (nsec1.../64-hex)  optional relay auth  (alias E80_RELAY_AUTH)
-# The TX listener passes the TX_CLIENT_*_NAMES tuple, which reads CVM_TX_NSEC /
-# CVM_TX_HEX in place of CVM_RX_*.
+# The TX listener passes the TX_CLIENT_*_NAMES tuple: CVM_TX_NSEC / CVM_TX_HEX
+# first, then the SHARED aliases (CVM_CLIENT_*, E80_CLIENT_*).  The RX-role-only
+# names (CVM_RX_*, E80_RX_*) are excluded by construction — see
+# RX_ROLE_NSEC_NAMES / RX_ROLE_HEX_NAMES — so a host exporting both roles can
+# never sign TX traffic with the RX key.
 def load_keys(*, client_names: Optional[Sequence[str]] = None,
               client_hex_names: Optional[Sequence[str]] = None) -> KeyMaterial:
     """Resolve all publish-path key material from the environment.

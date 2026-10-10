@@ -700,8 +700,10 @@ ephemeral — plus the ADR §2.2 freshness watchdog: ARMED whose `created_at`
 skews more than `MAX_CREATED_AT_SKEW` (60 s) is dropped, and the session
 **aborts** (`[tx-armed] ABORT: …`) when no fresh ARMED arrives within
 `STALE_ABORT` (30 s) of the last one (or of start-up). Keys come from env vars
-only (`CVM_TX_*` + `CVM_SERVER_*`; the client key must differ from the server
-key) and the RX publisher is allowlisted via `--rx-npub` / `CVM_RX_NPUB`:
+only (`CVM_TX_NSEC`/`CVM_TX_HEX` first, then the shared `CVM_CLIENT_*` /
+`E80_CLIENT_*` aliases; the RX-role names `CVM_RX_*`/`E80_RX_*` are never read
+for the TX role) plus `CVM_SERVER_*`; the client key must differ from the
+server key. The RX publisher is allowlisted via `--rx-npub` / `CVM_RX_NPUB`:
 
 ```bash
 export CVM_TX_NSEC=nsec1...        # TX (client) key — env only, never a CLI arg
