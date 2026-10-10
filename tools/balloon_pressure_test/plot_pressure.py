@@ -72,11 +72,15 @@ def calc_leak_rate(hours, pressures, temps):
     # Raw leak rate (no temp compensation)
     raw_rate = (p_start - p_end) / duration_h
 
-    # Temperature compensation: ΔP_temp = P_start × (T_end - T_start) / T_start
-    delta_p_temp = p_start * (t_end - t_start) / t_start
-
-    # Compensated leak rate
-    compensated_rate = (p_start - p_end - delta_p_temp) / duration_h
+    # Temperature compensation. Sealed balloon, constant volume, ideal gas:
+    # P/T = const, so the pressure the sensor would show with NO leak is
+    # p_end * (t_start / t_end). The correction is therefore MULTIPLICATIVE on
+    # the end pressure: a warm-up raises pressure and MASKS the leak (true rate
+    # is HIGHER than the raw rate), a cool-down exaggerates it. The previous
+    # version subtracted an absolute delta derived from p_start, which both
+    # inverted the sign and produced negative (impossible) leak rates.
+    p_end_temp_corrected = p_end * (t_start / t_end)
+    compensated_rate = (p_start - p_end_temp_corrected) / duration_h
 
     return raw_rate, compensated_rate, duration_h
 
