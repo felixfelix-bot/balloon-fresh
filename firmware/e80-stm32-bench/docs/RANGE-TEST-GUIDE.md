@@ -646,12 +646,76 @@ GO-window guard still applies. Without `--armed-file` the TX uses the
 `cvm_sync` subscriber seam against a live bus, and the RX generates the
 ARMED and writes it to `--armed-out`.
 
-**The live bus has no production wiring yet.** `cvm_sync.ArmedSubscriber` is
-reachable only through the `main(bus=…)` injection point — there is no CLI
-flag and no relay subscriber in the shipped tool — so **in the field a GO TX
-always runs `--armed-file`** with the ARMED relayed by hand (Signal). The
-RP2/allowed-npub hardening in the ADR lands with that wiring: until then a
-GO TX must not be assumed to be relay-authenticated.
+**Live-bus wiring (RX side) ships** as `tools/cvm_armed_publisher.py`: keys
+come from **env vars only** (`CVM_RX_NSEC`/`CVM_RX_HEX` for the RX publisher,
+`CVM_SERVER_NSEC`/`CVM_SERVER_HEX` for the board server — no CLI key args), the
+client key is **asserted to differ** from the server key at startup, the ARMED
+payload is published as a **NIP-59 kind-1059 gift wrap** to `--tx-npub` (never a
+plaintext kind-30315 tally), and the ARMED is re-broadcast every 10-15 s until a
+GO from TX is observed on the subscription. Relay failover set: nostr.mom,
+relay.primal.net, nos.lol, relay2.contextvm.org, relay.nostr.band
+(`relay.contextvm.org` is dead and filtered out even if supplied).
+
+```bash
+# RX machine: arm + publish until TX says GO
+export CVM_RX_NSEC=nsec1...      # RX publishing key (must differ from server)
+export CVM_SERVER_NSEC=nsec1...  # board server key
+export CVM_TX_NPUB=npub1...
+python3 tools/cvm_armed_publisher.py --stop 50m \
+    --configs configs/per-stop/stop-50m.json
+```
+
+**The verdict side of that wiring ships** as `tools/cvm_verdict_publisher.py`:
+after `range_check` scores a stop, one command wraps its per-config
+`OK`/`THIN`/`MISS` rows + counts + the `resend-<stop>.json` content into a
+single NIP-59 kind-1059 verdict addressed to the TX npub — **exactly one
+message per completed config scan**, never one per packet. The message repeats
+the phase-1 `session_id` and `stop` (linkage) and, with `--armed`, refuses to
+publish unless they match the pinned `armed.json`. Keys/env rules are the same
+as the ARMED publisher (`CVM_RX_NSEC`/`CVM_RX_HEX`, `CVM_SERVER_*`, no CLI key
+args, client≠server).
+
+```bash
+# RX machine, after the stop: write the per-config rows `range_check` printed
+# into a small JSON file, then publish ONE verdict for the whole scan.
+# Accepted input: a bare list of rows, or
+#   {"per_config": [{"idx":0,"label":"cfg-0","n_pkts":10,"counted":10,
+#                    "status":"OK"}, ...],
+#    "stat_count": 9, "resend_json": { ... }}   # resend_json optional
+python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
+    --results rc-results.json \
+    --resend configs/resend/resend-50m-2609130435a3f.json \
+    --armed logs/s2609130435a3f-go<epoch>/armed.json
+
+# check the payload without touching a relay (still validates env keys):
+python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
+    --results rc-results.json --dry-run
+```
+
+**The TX-side production listener ships too** (`tools/cvm_tx_listener.py`, P3).
+It subscribes **broad** to kind-1059 gift wraps (no restrictive server-side
+`#p` filter) and applies the **client-side npub allowlist** on receipt — the
+allowlist keys off the *unwrapped rumor author*, since the outer wrap author is
+ephemeral — plus the ADR §2.2 freshness watchdog: ARMED whose `created_at`
+skews more than `MAX_CREATED_AT_SKEW` (60 s) is dropped, and the session
+**aborts** (`[tx-armed] ABORT: …`) when no fresh ARMED arrives within
+`STALE_ABORT` (30 s) of the last one (or of start-up). Keys come from env vars
+only (`CVM_TX_NSEC`/`CVM_TX_HEX` first, then the shared `CVM_CLIENT_*` /
+`E80_CLIENT_*` aliases; the RX-role names `CVM_RX_*`/`E80_RX_*` are never read
+for the TX role) plus `CVM_SERVER_*`; the client key must differ from the
+server key. The RX publisher is allowlisted via `--rx-npub` / `CVM_RX_NPUB`:
+
+```bash
+export CVM_TX_NSEC=nsec1...        # TX (client) key — env only, never a CLI arg
+export CVM_SERVER_NSEC=nsec1...    # board server key (must differ)
+export CVM_RX_NPUB=npub1...        # RX publisher -> the allowlist
+python3 tools/cvm_tx_listener.py --stop 50m
+```
+
+With both halves shipped, a GO TX runs the relay-authenticated path
+(`cvm_tx_listener.py` plus the RX publisher's ARMED re-broadcast). Where no
+relay subscriber is available the `--armed-file` path (hand-relayed ARMED,
+relaxed freshness checks) remains the fallback.
 
 Rehearsal without hardware:
 
