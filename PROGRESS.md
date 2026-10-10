@@ -96,3 +96,9 @@ Notes / open follow-ups:
   largest part on the hub board.
 - Render cost @1600x1200 high: hub top 121 s, hub bottom 60 s, wing top 59 s, wing bottom 34 s.
 - `--quality high` is needed for shadows; output PNGs come back ~2 % smaller than requested.
+
+## 2026-10-10 fix wave
+- diagnosed the 33 gift-wrap failures: one UnboundLocalError — #32 (t_4c98fbe7) moved keys behind keymaterial.KeyMaterial while folded 9455b07a (t_c4c43d76) still called build_gift_wrap(payload,npub,signer); reconciled both call conventions in nostr_giftwrap.py -> 1103 passed / 9 skipped (was 1070/33) -> commit d339bd5
+- added tools/conftest.py: the spec suite's 14 @pytest.mark.asyncio tests never ran (no async plugin declared) -> all 14 now execute -> same commit
+- next: run make range-test-host + repo pytest, push pr/e80-cvm-consolidated, open ONE PR, close #26-#31/#33/#34
+- 2026-10-10: reconciled the #28/#32 key-interface conflict — `keymaterial.load_keys()` now resolves the ADR §2.3 canonical CVM_* names first, keeps the E80_* aliases, and takes role name-tuples so the TX listener reads CVM_TX_*. Proven: CVM_RX_NSEC+CVM_SERVER_HEX (the RANGE-TEST-GUIDE invocation) previously raised MissingKeyError, now resolves. → commit 5ba7b79 → make range-test-host 413 passed. files: tools/keymaterial.py, tools/cvm_tx_listener.py, tools/test_keymaterial.py, tools/test_cvm_tx_listener.py
