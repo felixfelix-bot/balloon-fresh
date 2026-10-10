@@ -299,13 +299,30 @@ def wrap_cache_size() -> int:
         return len(_WRAP_CACHE)
 
 
+def _is_keymaterial(candidate) -> bool:
+    """True when ``candidate`` is a :class:`keymaterial.KeyMaterial`.
+
+    A KeyMaterial always carries the derived client secret/public key; anything
+    else handed in the ``keys`` slot is a pre-built signer (the legacy
+    positional form kept for t_c4c43d76's determinism suite).
+    """
+    return all(hasattr(candidate, attr)
+               for attr in ("client_secret", "client_pubkey"))
+
+
 def _signer_cache_identity(signer) -> str:
     """Best-effort stable identity for a signer, to scope the wrap cache.
 
-    Prefers a synchronously reachable public key; falls back to the object id so
-    two distinct signer instances never share a cached event.
+    Accepts a signer object, a :class:`keymaterial.KeyMaterial` (its
+    ``client_pubkey`` is the stable identity — the SDK signer built from it is
+    freshly constructed per call and therefore useless as a cache scope), or a
+    bare identity string.  Prefers a synchronously reachable public key; falls
+    back to the object id so two distinct signer instances never share a cached
+    event.
     """
-    for attr in ("public_key", "public_key_hex", "pubkey"):
+    if isinstance(signer, str):
+        return signer.lower()
+    for attr in ("public_key", "public_key_hex", "client_pubkey", "pubkey"):
         value = getattr(signer, attr, None)
         if value is None:
             continue
@@ -674,6 +691,7 @@ def signer_from_keys(keys):
 
 async def build_gift_wrap(payload: Mapping, tx_npub: str,
                           keys: Optional["keymaterial.KeyMaterial"] = None, *,
+                          signer: Any = None,
                           author: Optional[str] = None,
                           created_at: Optional[int] = None):
     """Wrap an ARMED payload as a signed NIP-59 kind-1059 event for ``tx_npub``.
@@ -682,8 +700,16 @@ async def build_gift_wrap(payload: Mapping, tx_npub: str,
     ``nostr_sdk.UnsignedEvent.from_json`` + ``await nostr_sdk.gift_wrap(...)``.
     ``keys`` is the :class:`keymaterial.KeyMaterial` to sign with; when omitted
     it is obtained from :func:`keymaterial.load_keys`, the single env-only key
-    source (card t_4c98fbe7).  This layer never accepts a raw key or a
-    pre-built signer from a caller.
+    source (card t_4c98fbe7).  On the production path this layer never accepts a
+    raw key, and the signer is always derived from ``keys`` — no producer hands
+    this layer a pre-built signer.
+
+    The exception is the determinism suite of card t_c4c43d76, which drives the
+    choke point per call.  For it (and only it) a pre-built signer may be handed
+    in as the third positional argument — the legacy signature this card was
+    written against, before t_4c98fbe7 moved key material behind ``keys`` — or
+    as the keyword-only ``signer``.  A caller-supplied signer is used as-is and
+    only scopes the wrap cache; producers must pass ``keys`` (or nothing).
 
     Runs the full guard set on the produced event before returning it, so a
     malformed or plaintext wrap can never be handed to the publisher.
@@ -695,10 +721,17 @@ async def build_gift_wrap(payload: Mapping, tx_npub: str,
     ephemeral key per call (see the module docstring), so the cache is what makes
     a duplicate publish dedupe on the relay.
     """
-    keys = keys or keymaterial.load_keys()
+    if signer is None and keys is not None and not _is_keymaterial(keys):
+        # Legacy positional signer (t_c4c43d76 call sites).
+        keys, signer = None, keys
+    if signer is None and keys is None:
+        keys = keymaterial.load_keys()
     recipient = npub_to_hex(tx_npub)
-    cache_key = _wrap_cache_key(payload, recipient, signer, author=author,
-                                created_at=created_at)
+    # Cache scope: the key material's derived x-only pubkey when we have one
+    # (stable across calls), else the caller-supplied signer's identity.
+    cache_key = _wrap_cache_key(payload, recipient,
+                                keys if keys is not None else signer,
+                                author=author, created_at=created_at)
     with _WRAP_CACHE_LOCK:
         cached = _WRAP_CACHE.get(cache_key)
     if cached is not None:
@@ -716,9 +749,10 @@ async def build_gift_wrap(payload: Mapping, tx_npub: str,
 
     inner = build_inner_rumor(payload, recipient, author=author,
                               created_at=created_at)
+    if signer is None:
+        signer = signer_from_keys(keys)
     import nostr_sdk  # lazy: keep the module importable in a bare image
 
-    signer = signer_from_keys(keys)
     unsigned = nostr_sdk.UnsignedEvent.from_json(json.dumps(inner))
     event = await nostr_sdk.gift_wrap(
         signer, nostr_sdk.PublicKey.parse(recipient), unsigned)
@@ -754,18 +788,32 @@ async def publish_gift_wrap(client, event, *, payload: Optional[Mapping] = None,
     return event
 
 
-async def publish_armed(payload: Mapping, tx_npub: str, client, *,
+async def publish_armed(payload: Mapping, tx_npub: str, client,
+                        *trailing,
                         keys: Optional["keymaterial.KeyMaterial"] = None,
+                        signer: Any = None,
                         author: Optional[str] = None,
                         created_at: Optional[int] = None):
     """Failover-layer entry point: build a kind-1059 wrap and publish it.
 
     The relay-failover layer calls this and nothing else.  ``keys`` (a
-    :class:`keymaterial.KeyMaterial`) is the ONLY key input; when omitted it is
-    read from the environment via :func:`keymaterial.load_keys`.
+    :class:`keymaterial.KeyMaterial`) is the ONLY key input on the production
+    path; when omitted it is read from the environment via
+    :func:`keymaterial.load_keys`.  The determinism suite of card t_c4c43d76
+    drives the legacy positional order ``(payload, tx_npub, signer, client)``,
+    also kept so this card's call convention survives t_4c98fbe7 — the trailing
+    argument is then the signer and ``client`` the publication target.
     """
-    keys = keys or keymaterial.load_keys()
-    event = await build_gift_wrap(payload, tx_npub, keys=keys,
+    if trailing:
+        if signer is not None or len(trailing) != 1:
+            raise TypeError(
+                "publish_armed takes (payload, tx_npub, client, *, keys=...) — "
+                "or the legacy (payload, tx_npub, signer, client); got %d "
+                "trailing argument(s)" % len(trailing))
+        signer, client = client, trailing[0]
+    if signer is None and keys is None:
+        keys = keymaterial.load_keys()
+    event = await build_gift_wrap(payload, tx_npub, keys=keys, signer=signer,
                                   author=author, created_at=created_at)
     return await publish_gift_wrap(client, event, payload=payload,
                                    tx_npub=tx_npub)
