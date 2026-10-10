@@ -200,11 +200,16 @@ c38f0fd docs(e80-cvm): document gift-wrap wrap-cache lifetime/eviction policy
 
 ## 7. Ship state
 
-* PR: **one** consolidated PR → `main` (see the PR body for the fold table,
-  the #28/#32 decision and the test counts).
-* Superseded PRs closed with a cross-reference: **#26, #27, #28, #29, #30, #31,
-  #33, #34** — and **#32 as well**, because the new branch carries every #32
-  commit. Evidence: `git cherry HEAD origin/pr/keymaterial-env-sole-source`
+* PR: **one** consolidated PR → `main`: **#44**
+  `feat(e80-cvm): consolidated ARMED/gift-wrap/relay/keymaterial stack`
+  (https://github.com/felixfelix-bot/balloon-fresh/pull/44), head
+  `pr/e80-cvm-consolidated` @ `de8fc08`. Its body carries the fold table, the
+  #28/#32 decision and the test counts.
+* Superseded PRs closed (each with the #44 cross-reference comment):
+  **#26, #27, #28, #29, #30, #31, #32, #33, #34** — the close list is empty
+  apart from #44. **#32 was closed as superseded too** (it is the vehicle's
+  origin) with the same cross-reference, because the new branch carries every
+  #32 commit. Evidence: `git cherry HEAD origin/pr/keymaterial-env-sole-source`
   reports exactly one '+' row, `2aa55cbb` (#27's gift-wrap builder), whose
   content *is* in HEAD but whose patch differs because the base's own
   `91952be` rewrote those lines in place (the kind-1059/plaintext guard and its
