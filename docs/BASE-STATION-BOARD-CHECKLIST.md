@@ -35,18 +35,18 @@
 | 4 | RX 433 | input protection (optional insurance) | PIN-diode RF limiter, SMA, 10 MHz–6 GHz, 10–20 dBm class | **TO-BUY** | 1 | **4.39** · `aliexpress.com` item `1005012328874838` | **INSURANCE ONLY** (ADR-072 D3): residual TX leakage is −56 dBm nominal, 56–78 dB below the LNA's ratings. Choose the threshold **just above** the expected in-band signal. |
 | 5 | RX 433 | **level control (AGC element)** | **Analog Devices ADL5240** digital VGA: 100 MHz–4 GHz, +20.3/−12 dB, 6-bit DSA 0.5 dB step, NF 2.8 dB @450 MHz, SPI+parallel | **TO-BUY** | 1 | **≈ 2.09** (chip, "from") · `aliexpress.com` item `1005006722641749`; datasheet `analog.com/media/en/technical-documentation/data-sheets/ADL5240.pdf` | **AFTER the LNA** (ADR-084). Alternative: **ADL5330** (10 MHz–3 GHz, −35…+22 dB, analog 20 mV/dB, NF 8 dB) `…/ADL5330.pdf` ≈ €15.59; or the **PE43711-class SMA DSA module** below (row 6). |
 | 6 | LEVEL CTRL | **digital step attenuator (RX path alt / TX path)** | **pSemi PE43711**-class SMA DSA: 9 kHz–6 GHz, **0–31.75 dB, 0.25 dB step** | **TO-BUY** | 1 | **18.89** · `aliexpress.com` item `1005012321787574`; silicon `psemi.com/products/digital-step-attenuators/pe43711` | Same part family on **TX** (range→attenuation LUT, ADR-084 §3). **HOW TO VERIFY:** ≥ 6 GHz and 0.25 dB LSB on the listing; glitch-less. |
-| 7 | LEVEL CTRL | **log detector** (AGC feedback) | **Analog Devices AD8318**: 1 MHz–8 GHz, 70 dB, ±1.0 dB /55 dB, 10/12 ns | **TODO(unverified)** | 1 | price not confirmed · datasheet `analog.com/media/en/technical-documentation/data-sheets/AD8318.pdf` | Tap **after the BPF/LNA** (band-selective) **and put a 433 MHz BPF at the detector input** — the AD8318 is broadband and would otherwise let 2.45 GHz TX leakage drive the loop's gain down (consult F5). Cheaper alt: **ADL5513** (1 MHz–4 GHz, 80 dB, −70 dBm) `…/ADL5513.pdf`. **HOW TO VERIFY:** the chip vs eval board; needs a power-detector **coupler/tap**. |
-| 8 | LEVEL CTRL | **ADC + MCU** (digital AGC + TX LUT) | RP2040 board **or** ESP32-S3 module (ADC + SPI) | **TODO(unverified)** | 1 | ~4 (AliExpress RP2040-class board; exact listing/price not verified) | Runs the AGC state machine, the range→attenuation LUT, the mode switch and the bypass. **May be the same host that already does GNSS/housekeeping.** Keep the TX code path independent of the RX-loop state (ADR-084 §6). |
+| 7 | LEVEL CTRL | **log detector** (AGC feedback) | **Analog Devices AD8318ACPZ-R7**: 1 MHz–8 GHz, 70 dB, ±1.0 dB /55 dB, 10/12 ns | **TO-BUY** | 1 | price TODO(unverified) · datasheet `https://www.analog.com/media/en/technical-documentation/data-sheets/AD8318.pdf` | Frozen chip (not eval board). Tap **after the BPF/LNA** and put a second 433 MHz BPF at the detector input; the AD8318 is broadband and must not see 2.45 GHz leakage. Detector output → RP2040 ADC. |
+| 8 | LEVEL CTRL | **ADC + MCU** (digital AGC + TX LUT) | **Raspberry Pi RP2040** (QFN-56) | **TO-BUY** | 1 | price TODO(unverified) · datasheet `https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf` | Board-owned MCU; internal 12-bit ADC reads AD8318 detector voltage, SPI controls ADL5240, watchdog and telemetry. No separate ADC. TX LUT state is independent of RX AGC (ADR-084 §6). |
 | 9 | TX 2.4 | antenna | **Sirio SLP-17** log-periodic, 1700–2500 MHz, 11.1 dBi | **TO-BUY** | 1 | **59.00** · `funktechnik-bielefeld.de/sirio-slp-17-1800-2500-mhz-richtantenne` CONFIRMED | Above ~8 dBi the 2.4 GHz ground gain is EIRP-inert (ADR-081 D1); bought for pattern/polarisation. Boresighted with row 1 on one positioner (ADR-071 D3). |
 | 10 | TX 2.4 | band-pass filter | 2.4 GHz BPF | **TO-BUY** | 1 | **17.79** (alt 23.99) · `aliexpress.com` item `1005012653486194` (alt `32820151286`) | Cleans the uplink spectrum (ADR-072). |
-| 11 | TX 2.4 | **uplink PA / FEM — MISSING** | 2.4 GHz FEM with gain-control pin (e.g. Skyworks **SKY66112-11**) **or** a discrete PA | **TODO(unverified)** | 1 | price/topology not decided · `web.archive.org/web/20240404044111id_/https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/2201-2300/SKY66112-11_203225O.pdf` (CONFIRMED) | **NOT required on the ISM footing** (ADR-072 D4: the uplink needs attenuation, not amplification). Required iff a **higher legal footing** (amateur / fixed link) or an omni antenna is chosen. The RF2126 module (~€7.69, `aliexpress.com` item `1005011559280074`) is the cheap option on that footing. |
+| 11 | TX 2.4 | **uplink PA / FEM** | **DNP — no PA/FEM in v1** | **CLOSED (D9)** | 0 | — (deliberately not populated) | ADR-072 D4: ISM uplink is attenuation-only. A higher-legal-footing PA is a future respin, not a v1 BOM row. |
 | 12 | interconnect | coax + connectors | Airborne 10 (LMR-400 class) + N-male crimps + **PL→SMA adapter** | **TO-BUY** | 15 m / 4 / 1 | **64.50** (15 m @4.30/m) `kabel-kusch.de/produkt/airborne-10/2`; **5.74** (4 N-male) `aliexpress.com` item `32875381213`; **3.49** (PL→SMA) `aliexpress.com` item `1005006143199910` | Attenuation @433/2.4 GHz per 10 m = **0.76 dB / 1.92 dB** (Kabel-Kusch tables). Keep the run short; N where possible. |
 | 13 | bench | **VNA to verify every passive at 433 AND 2.4 GHz** | **LiteVNA 62** (50 kHz–6.3 GHz) | **TO-BUY** | 1 | **166.99** · `aliexpress.com` item `1005003536382606` CONFIRMED | **This is what the owned Red Pitaya cannot do** (row 15). Verifies the BPFs, the DSA, the XR-613 (ADR-080) and the TQP3M9037 band edge (spec dispute below). |
-| 14 | power/bias | bias tee + rails | LNA/DSA/detector bias (5 V), bias tee, decoupling | **TODO(unverified)** | 1 set | not priced | The ADL5240 runs on 4.75–5.25 V @ 93 mA; the ADL5330 is differential. Bias-tee and rail parts not selected. Ground DC energy is **not** a constraint (operator). |
+| 14 | power/bias | bias tee + rails | **Mini-Circuits ZFBT-4R2GW+** bias tee; **TI TPS62162** 5 V buck; switched +5V_LNA_SW / +5V_VGA / +5V_DET; local 100 nF + 1 µF / 10 µF decoupling | **TO-BUY** | 1 set | price TODO(unverified) · `https://www.minicircuits.com/WebStore/dashboard.html?model=ZFBT-4R2GW%2B`; `https://www.ti.com/lit/ds/symlink/tps62162.pdf` | Frozen network: 5.00 V rail, ≥0.5 A continuous / 1 A peak budget. ADL5240 93 mA @ 4.75–5.25 V; ZX60-P103LN+ 95 mA @ 5 V; detector + MCU allowance 65 mA; 25% margin. LNA branch separately switched; bias tee is at mast/feed boundary. |
 | 15 | bench (owned) | IF instruments | **Red Pitaya** STEMlab 125-14 | **OWNED** | 1 | — (owned) · `redpitaya.com/product/stemlab-125-14/` | **DC–60 MHz analog — an IF tool, NOT an RF front end.** Cannot see 433 or 2.4 GHz (ADR-080). Usable *behind a downconverter* (IF receiver / waveform gen / spectrum monitor ≤ 62.5 MHz / logic analyser). |
 | 16 | bench (owned) | divider | **XR-613** resistive power divider (DC–5 GHz) | **OWNED** | 1 | — (owned) | **RESISTIVE ⇒ ~6 dB, NO array gain — bench tool only (ADR-080).** Never a gain stage in a link budget. |
 | 17 | bench (owned) | mixer (for an IF/downconverter path) | **unmarked RF/LO/IF mixer module** | **OWNED** | 1 | — (owned) | Specs and model number **unknown — `TODO(unverified)`** (inherited open item, ADR-080). Assumed LO/RF/IF → usable behind the Red Pitaya. |
-| 18 | mechanical | mast-head mounting / enclosure | mast clamps, weatherproof enclosure, cable glands | **TODO(unverified)** | 1 set | not priced | Mast-head hardware and wind load belong to ADR-076/077/078 (positioner/stow); this row is the **electronics enclosure + mast-head feedpoint** only. |
+| 18 | mechanical | mast-head mounting / enclosure | **DNP on PCBA; external weatherproof enclosure + mast clamp** | **CLOSED (mechanical)** | 0 | — (not an electronics-board part) | Mechanical selection remains under ADR-076/077/078. This row is explicitly outside the PCBA freeze. |
 
 > **Qty note (consult F11).** Rows 5–6 are the **level-control elements**, and they are **separate
 > physical instances** if both directions are automated: one in the **433 RX** path (the AGC element,
@@ -79,18 +79,17 @@ verifying the XR-613 and every passive at both bands.
 
 ## MISSING from the board (state plainly)
 
-These are required for a working gateway and are **not yet specified** (each is a real gap, not a
-rounding):
+These are required for a working gateway and are specified or explicitly deferred:
 
-1. **2.4 GHz uplink PA or FEM** (row 11) — needed only on a higher legal footing / omni antenna.
-2. **433 MHz BPF** — *specified* (row 2) but not owned and not measured.
-3. **LNA input limiter** — *specified* (row 4), inexpensive insurance.
-4. **Antennas** — *specified* (rows 1, 9), not owned.
-5. **AGC detector / ADC / MCU** (rows 7, 8) — the level-control brain is **`TODO(unverified)`**.
-6. **DSA** (row 6) — *specified*, the TX level-control element.
-7. **Bias / PSU** (row 14) — bias tee and rails **not selected**.
-8. **Enclosure** (row 18) — not selected.
-9. **Mast-head hardware** (row 18) — not selected (positioner itself: ADR-076/077/078).
+1. **2.4 GHz uplink PA/FEM** — closed as DNP under D9/ADR-072; only a higher legal footing would reopen it.
+2. **433 MHz BPF** — specified (row 2) but not owned and not measured.
+3. **LNA input limiter** — specified (row 4), inexpensive insurance.
+4. **Antennas** — specified (rows 1, 9), not owned.
+5. **AGC detector / ADC / MCU** — selected (rows 7, 8); detector and MCU prices remain TODO(unverified), not part-selection gaps.
+6. **DSA** — specified (row 6), the TX level-control element.
+7. **Bias / PSU** — selected (row 14); prices and delivered-unit measurements remain TODO(unverified).
+8. **Enclosure** — closed as an external mechanical item (row 18), not a PCBA component.
+9. **Mast-head hardware** — not selected here; positioner itself remains under ADR-076/077/078.
 
 ## Spec disputes and "how to verify this part is the right one"
 
