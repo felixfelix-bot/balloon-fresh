@@ -1452,6 +1452,12 @@ make range-test-host
 make range-coord
 ```
 
+> **Host-suite status:** both host suites are green on `main`
+> (`make range-test-host` → 138 passed, `make -n range-dry-run DIST=50m` → exit 0). The
+> per-test disposition of the range-split acceptance suite, the falsified "23-test RED
+> @ `92cf11f`" premise, and the unrecoverability of that port source are recorded in
+> [RANGE-SPLIT-SUITE-TRIAGE.md](RANGE-SPLIT-SUITE-TRIAGE.md).
+
 ---
 
 ## 16. Troubleshooting
