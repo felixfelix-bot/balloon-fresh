@@ -74,3 +74,25 @@ Worktree: `/home/c03rad0r/worktrees/bf-433lna` (branch `design/433-lna-and-licen
   **Kuhne Electronic domains parked / TLS-broken** (2007 archived catalogue only, price
   `TODO(unverified)`); **RF Bay Cloudflare challenge** (no figure taken); **ssb-electronic.de** empty
   to curl (all SSB figures read from the WiMo listings instead).
+
+---
+
+# PROGRESS — fix/pcb-3d-render-pipeline (appended 2026-10-10)
+
+- [x] Worktree `~/worktrees/bf-render` on `fix/pcb-3d-render-pipeline` off `origin/main`.
+- [x] Diagnose: `kicad-packages3d` IS installed (4.6 GB, 14,043 models). Premise wrong.
+- [x] Static coverage: wing 0/12 modelled, hub 32/39 modelled.
+- [x] Render hub top with env var unset -> bodies present (kills the "unset = flat" causal claim).
+- [x] Render all 4 (hub/wing x top/bottom) at `--quality high`.
+- [x] Controlled experiment: hub + `KICAD9_3DMODEL_DIR=/nonexistent-bad` -> 1.9 s, 22 KB, exit 0,
+      zero warnings, visually flat. Proves the silent-failure mode.
+- [x] Found dangling ref: `NiceRF_LoRa2021.wrl` absent from the whole 3D package.
+- [x] Verify renders by top-down inspection: hub has bodies+shadows, wing does not.
+- [x] Write `docs/analysis/pcb-render-pipeline.md`; append reports; commit + push + PR.
+
+Notes / open follow-ups:
+- Wing board needs `(model ...)` added in `build_wing_v9.py` + gate-record regeneration (doc §5).
+- LoRa2021 module model must be sourced (project-local) or the ref removed; it silently drops the
+  largest part on the hub board.
+- Render cost @1600x1200 high: hub top 121 s, hub bottom 60 s, wing top 59 s, wing bottom 34 s.
+- `--quality high` is needed for shadows; output PNGs come back ~2 % smaller than requested.
