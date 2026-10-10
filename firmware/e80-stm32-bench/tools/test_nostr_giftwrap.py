@@ -35,16 +35,18 @@ if _TOOLS_DIR not in sys.path:
     sys.path.insert(0, _TOOLS_DIR)
 
 import nostr_giftwrap as gw  # noqa: E402
+import keymaterial  # noqa: E402
 
 # A real bech32 vector, generated with `nak encode npub <hex>` and verified
 # with an independent bech32 decoder. secp256k1 generator x-coordinate.
 TX_HEX = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 TX_NPUB = "npub10xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqpkge6d"
 
-# Stand-in for keymaterial.KeyMaterial: the builder derives the signer from
-# the client secret, so tests inject a KeyMaterial-shaped object, never a raw
-# signer (card t_4c98fbe7).
-FAKE_KM = types.SimpleNamespace(
+# A REAL keymaterial.KeyMaterial: the builder discriminates the ``keys`` slot by
+# TYPE (review nit r4), so a duck-typed ObjectNamespace stand-in would now be
+# misrouted into the signer slot.  The secret is a placeholder — these tests pin
+# the wrap *call shape*, not signature validity (card t_4c98fbe7).
+FAKE_KM = keymaterial.KeyMaterial(
     client_secret="fake-client-secret",
     client_pubkey="ef" * 32,
     server_pubkey="cd" * 32,
@@ -508,6 +510,34 @@ class TestSinglePathPins(unittest.TestCase):
         for node in ast.walk(self._tree()):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self.assertNotIn(node.name, ("gift_wrap", "from_gift_wrap"))
+
+
+class TestKeySlotDiscrimination(unittest.TestCase):
+    """Review nit r4: the ``keys`` slot is discriminated by TYPE.
+
+    A pre-built signer that happens to expose ``client_secret`` and
+    ``client_pubkey`` must NOT be swallowed into the ``keys`` slot and silently
+    re-derived — it must be routed to the signer slot and used as-is.
+    """
+
+    def test_signer_exposing_key_material_attributes_is_not_key_material(self):
+        signer_like = types.SimpleNamespace(
+            client_secret="f" * 8,
+            client_pubkey="ef" * 32,
+            sign=lambda *a, **k: None,
+        )
+        self.assertFalse(gw._is_keymaterial(signer_like),
+                         "a duck-typed signer must never be treated as keys")
+
+    def test_real_key_material_is_recognised(self):
+        self.assertTrue(gw._is_keymaterial(FAKE_KM))
+
+    def test_key_material_subclass_is_recognised(self):
+        class _SubKeyMaterial(keymaterial.KeyMaterial):
+            pass
+
+        self.assertTrue(gw._is_keymaterial(_SubKeyMaterial(**vars(FAKE_KM)))
+                        )
 
 
 if __name__ == "__main__":

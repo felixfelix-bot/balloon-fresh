@@ -302,12 +302,13 @@ def wrap_cache_size() -> int:
 def _is_keymaterial(candidate) -> bool:
     """True when ``candidate`` is a :class:`keymaterial.KeyMaterial`.
 
-    A KeyMaterial always carries the derived client secret/public key; anything
-    else handed in the ``keys`` slot is a pre-built signer (the legacy
-    positional form kept for t_c4c43d76's determinism suite).
+    Discriminated by TYPE, never by duck-typing: a pre-built signer that
+    happens to expose ``client_secret``/``client_pubkey`` must not be swallowed
+    into the ``keys`` slot and silently re-derived.  Anything that is not a
+    KeyMaterial (or a subclass) is treated as a pre-built signer — the legacy
+    positional form kept for t_c4c43d76's determinism suite.
     """
-    return all(hasattr(candidate, attr)
-               for attr in ("client_secret", "client_pubkey"))
+    return isinstance(candidate, keymaterial.KeyMaterial)
 
 
 def _signer_cache_identity(signer) -> str:
