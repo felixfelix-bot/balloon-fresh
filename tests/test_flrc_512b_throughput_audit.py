@@ -162,6 +162,36 @@ def test_report_flags_511_as_legal_and_512_as_illegal():
         "trusting any doc that quotes the CR-3/4 model"
 
 
+# ── the 511 B bound must resolve inside the checkout (CI portability) ───────
+
+def test_flrc_max_resolves_without_a_radiolib_checkout_next_to_the_repo():
+    """Regression pin for the red `Tests` workflow on main (2026-10-09/10).
+
+    The old probe looked only at `../RadioLib` and `~/repos/RadioLib` — paths
+    that do not exist on a GitHub Actions runner — so `value` was None in CI and
+    `test_report_flags_511_as_legal_and_512_as_illegal` failed on every push
+    (runs 37992095474, 37988348046, 37946525396, 37946322065). The bound must be
+    readable from the repository itself, with the external checkout advisory.
+    """
+    got = M.build_report(str(REPO))["radio_lib_flrc_max"]
+    assert got["value"] == 511
+    assert not Path(got["path"]).is_absolute(), got["path"]
+    # same checkout, external RadioLib probing disabled -> still 511
+    assert M.flrc_max_payload(str(REPO), external_radiolib=False)["value"] == 511
+
+
+def test_flrc_max_records_every_in_repo_source_it_agrees_with():
+    got = M.flrc_max_payload(str(REPO), external_radiolib=False)
+    found = {k: v for k, v in got["sources"].items() if v}
+    assert found, "no in-repo FLRC max source resolved"
+    assert all(v["value"] == 511 for v in found.values()), found
+    # the firmware's own named constant and the vendor driver's documented
+    # range are two independent in-repo layers and must both answer 511
+    assert {"fw_bench_start_len_max_flrc", "lr20xx_driver_pld_len_range"} <= set(found)
+    # nothing in the external probe may override an in-repo value
+    assert got["external_radiolib"]["present"] in (True, False)
+
+
 def test_verdict_names_the_air_rate_not_goodput():
     rep = M.build_report(str(REPO))
     assert rep["verdict"]["512b_measured"] is False
