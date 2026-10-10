@@ -301,6 +301,49 @@ Ordered by my judgement of severity. Items marked **[NEW]** were not in the base
 - Consultant round-2 (`round1-astra.md`, `round1-kimi.md`) was still running when this was written;
   its findings are to be appended as §11 rather than paraphrased into the sections above.
 
+## §11 Consultant audit round 1 — PARTIAL (both killed by the wall-clock ceiling)
+
+**Honest status: the consultant audit did NOT complete.** Two independent consultants were given the
+mission brief and read access to the repo:
+
+| Consultant | Family | Model served | Outcome |
+|---|---|---|---|
+| astra-consultant | **OpenAI** (spatial/visual lane) | `gpt-6-astra` (probe HTTP 200) | **killed at 1500 s**, no final report |
+| kimi-consultant | **Moonshot** (cross-family) | kimi | **killed at 1500 s**, no final report |
+
+Raw transcripts: `state/consult/round1-astra.md` (11.7 kB), `round1-kimi.md` (187 kB, tool trace only).
+**Neither produced a verdict, a structured gap list, or its top-5 failure list.** What exists is
+astra's *interim* narration, which contained three concrete, independently checkable findings.
+
+### 11.1 Claims raised by the OpenAI consultant (TO VERIFY — not accepted)
+
+1. **The flight schedule separates transmit and receive windows, contradicting the full-duplex
+   requirement.** If true, the timing plan cannot deliver a bent pipe as specified — a bent pipe is
+   simultaneous by definition. **Severity: high.** Verify: read the flight-schedule document and the
+   duplexer/band-plan section together and check whether TX and RX are time-shared.
+2. **Long-range uplink link budgets use LoRa sensitivity while the mission calls for high-rate
+   relay service.** This is the most dangerous class of error: LoRa sensitivity at SF12 / 125 kHz is
+   on the order of **−137 dBm**, whereas a **2 MHz high-rate** receiver needs **−99.5 dBm** (§3).
+   Mixing the two inflates a budget by **tens of dB** and makes an impossible link look comfortable.
+   **Severity: high.** Verify: grep every link budget for the sensitivity figure used and confirm it
+   matches the *mode actually flown*.
+3. **A sign error in the leak-test temperature compensation.** Actionable and specific; lands in the
+   pre-stretch tooling. **Severity: medium.** Verify: read the compensation term in
+   `tools/balloon_pressure_test/` and check the sign against the ideal-gas relation.
+
+**None of these is accepted into §1–§8 as a finding.** They are recorded because each is specific
+enough to be settled by reading one file, and each would change a design decision if true. Per the
+standing rule, the consultant *grades*; the manager must *measure*. Verification of all three is
+listed as immediate follow-up work.
+
+### 11.2 Lesson recorded
+
+A **1500 s ceiling is too short for a whole-program audit** — both consultants died mid-investigation
+after spending their budget reading. The audit must be **scoped into narrower per-area consults**
+(base station / prestretch / RF / mechanical / legal), each small enough to finish. Re-running as
+five focused consults is the correct next step; one monolithic consult wastes the whole window.
+The six delegate sweeps that fed this document had the same failure mode (they did not return).
+
 ## Appendix — reproduce
 
 ```bash
