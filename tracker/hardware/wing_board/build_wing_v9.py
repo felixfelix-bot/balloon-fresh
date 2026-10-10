@@ -109,6 +109,9 @@ TAB_LEN, TAB_W = 8.0, 9.0
 TAB_Y0, TAB_Y1 = 8.0, 17.0
 CELL_CX = (30.0, 88.0, 146.0)          # cell centres: 4+26, 62+26, 120+26
 LAND_W, LAND_H = 1.6, 4.0              # ADR-046 s3.4
+CELL_PAD_DX = 28.0                     # land centre offset from the cell centre
+                                       # (ADR-046 s3.4: lands x = 2/58/60/116/118/174)
+CELL_BODY_W, CELL_BODY_D = 52.0, 19.0  # ADR-046 s3.3: cell x span 4..56, y span 3..22
 TAB_LAND_W, TAB_LAND_H = 4.0, 1.2
 TAB_PAD_X = -5.0
 TAB_PADS = (('1', 'SOLAR_P', 9.8), ('2', 'GND', 11.6),
@@ -178,6 +181,50 @@ def fmt(v: float) -> str:
     return s if s else '0'
 
 
+# ------------------------------------------------------------------ courtyards
+# WHY THIS BOARD NOW EMITS COURTYARDS, AND WHERE THE NUMBERS COME FROM
+# ---------------------------------------------------------------------------
+# Until this change the wing board carried ZERO `F.CrtYd` geometry on ALL 12 of its
+# footprints, while the repo's DRC project file sets `missing_courtyard: "ignore"`.  A
+# `kicad-cli pcb drc` run on such a board reports "0 courtyard overlaps" because there
+# are no courtyards to overlap -- the clean result was VACUOUS, not evidence of
+# clearance.  The hub board was already covered (39/39); the wing was not.
+#
+# SIZE POLICY (one rule, applied everywhere):
+#   courtyard = the footprint's occupied extent (ALL pads UNION the part body)
+#               + CRTYD_CLR, the standard courtyard clearance.
+#   * CRTYD_CLR = 0.25 mm.  Basis: KiCad Library Convention F5.3 (courtyard 0.25 mm
+#     beyond the part), which is also the modal value measured across the installed
+#     `/usr/share/kicad/footprints` library (0.25 mm in 536/1212 footprints sampled on
+#     x, 284/1212 on y -- the largest single bucket on both axes).
+#   * Where the installed library ships a footprint for the SAME part, the library's
+#     own courtyard geometry is used VERBATIM instead of a derived box (fiducial:
+#     `Fiducial:Fiducial_1mm_Mask2mm` supplies `fp_circle (center 0 0) (end 1.25 0)`).
+#   * Where no library footprint exists for the part, the box/circle is DERIVED from
+#     that footprint's own pad extents (and, for the cells, the ADR-046 body outline)
+#     plus CRTYD_CLR.  Nothing here is an arbitrary size.
+#
+# The resulting courtyard polygons for this board are small neighbourhoods of each
+# part -- they do NOT get shrunk or tuned to make the overlap check pass.  See
+# docs/analysis/wing-board-courtyards.md for the measured consequence.
+CRTYD_CLR = 0.25       # mm, KLC F5.3 / measured modal library clearance
+CRTYD_W = 0.05         # mm, standard courtyard stroke width
+
+
+def crtyd_rect(x0, y0, x1, y1):
+    """Courtyard rectangle on F.CrtYd (footprint-local mm)."""
+    return (f'    (fp_rect (start {fmt(x0)} {fmt(y0)}) (end {fmt(x1)} {fmt(y1)})\n'
+            f'     (stroke (width {CRTYD_W}) (type solid)) (fill no)'
+            f' (layer "F.CrtYd") (uuid "{u()}"))')
+
+
+def crtyd_circle(r):
+    """Courtyard circle on F.CrtYd, centred on the footprint origin."""
+    return (f'    (fp_circle (center 0 0) (end {fmt(r)} 0)\n'
+            f'     (stroke (width {CRTYD_W}) (type solid)) (fill no)'
+            f' (layer "F.CrtYd") (uuid "{u()}"))')
+
+
 # ------------------------------------------------------------------ s-expr emitters
 def gr_line(x1, y1, x2, y2, layer='Edge.Cuts', width=0.1):
     return (f'  (gr_line (start {fmt(x1)} {fmt(y1)}) (end {fmt(x2)} {fmt(y2)})\n'
@@ -244,10 +291,19 @@ def cell_footprint(ref, cx, net_left, net_right):
     b.append(f'    (fp_text user "-" (at {fmt(26)} 23.6) (layer "F.SilkS") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
     # real solder lands, one per cell terminal (ADR-046 s3.4)
-    b.append(pad('1', 'smd', 'rect', -28.0, 0.0, LAND_W, LAND_H,
+    b.append(pad('1', 'smd', 'rect', -CELL_PAD_DX, 0.0, LAND_W, LAND_H,
                  ('F.Cu', 'F.Paste', 'F.Mask'), net_left))
-    b.append(pad('2', 'smd', 'rect', 28.0, 0.0, LAND_W, LAND_H,
+    b.append(pad('2', 'smd', 'rect', CELL_PAD_DX, 0.0, LAND_W, LAND_H,
                  ('F.Cu', 'F.Paste', 'F.Mask'), net_right))
+    # COURTYARD -- derived, no library footprint exists for a 52x19 solar cell.
+    # Occupied extent = the two lands UNION the cell body (ADR-046 s3.3: body x span
+    # 4..56 = 52 mm, y span 3..22 = 19 mm, which is local x +-26 / y +-9.5 about this
+    # footprint's origin at (cx, 12.5)).  The lands (local x +-(28 + 0.8), y +-2.0)
+    # stick out past the body on x, so they set the x extent.  Add CRTYD_CLR.
+    crt_hx = CELL_PAD_DX + LAND_W / 2.0 + CRTYD_CLR      # land outer edge + clearance
+    crt_hy = CELL_BODY_D / 2.0 + CRTYD_CLR               # cell body half-depth + clearance
+    assert crt_hy >= LAND_H / 2.0 + CRTYD_CLR, 'courtyard must enclose the lands'
+    b.append(crtyd_rect(-crt_hx, -crt_hy, crt_hx, crt_hy))
     return footprint('WingV9:SolarCell_52x19mm', ref, 'SolarCell_52x19mm_0.5V',
                      cx, 12.5, '\n'.join(b))
 
@@ -264,35 +320,65 @@ def tab_footprint():
     b.append(f'    (fp_rect (start {fmt(TAB_PAD_X-2.0)} {fmt(TAB_Y0+0.4)})'
              f' (end {fmt(TAB_PAD_X+2.0)} {fmt(TAB_Y1-0.4)})'
              f' (stroke (width 0.1) (type solid)) (fill none) (layer "F.SilkS") (uuid "{u()}"))')
+    # COURTYARD -- derived from the 4 tab lands (no library footprint exists for the
+    # wing-side tab; the hub-side counterpart lives in tracker_mechanical.pretty).
+    # The lands are the only thing this footprint places on the board -- the 8 x 9 mm
+    # tab itself is BOARD (it is part of this board's Edge.Cuts outline), so the
+    # courtyard is the land extent + CRTYD_CLR, not the tab outline.
+    ty0 = min(y for _, _, y in TAB_PADS) - TAB_LAND_H / 2.0
+    ty1 = max(y for _, _, y in TAB_PADS) + TAB_LAND_H / 2.0
+    b.append(crtyd_rect(TAB_PAD_X - TAB_LAND_W / 2.0 - CRTYD_CLR, ty0 - CRTYD_CLR,
+                        TAB_PAD_X + TAB_LAND_W / 2.0 + CRTYD_CLR, ty1 + CRTYD_CLR))
     # footprint origin at (0,0): pads carry the absolute tab x as their local offset
     return footprint('WingV9:WingTab_v9_4pin', 'J1', 'WingTab_v9_4pin',
                      0.0, 0.0, '\n'.join(b))
 
 
 def hole_footprint(ref, x, y):
-    b = pad('', 'np_thru_hole', 'circle', 0.0, 0.0, 2.2, 2.2,
-            ('*.Cu', '*.Mask'), None, drill=2.2)
+    b = [pad('', 'np_thru_hole', 'circle', 0.0, 0.0, 2.2, 2.2,
+             ('*.Cu', '*.Mask'), None, drill=2.2)]
+    # COURTYARD -- derived: no exact library footprint exists (the installed library
+    # ships MountingHole_2.1/2.5/2.7mm as bare holes and MountingHole_2.2mm_M2 as a
+    # screw mount, but nothing for a bare 2.2 mm NPTH pin hole).  Derived as the hole
+    # radius + CRTYD_CLR.  NOTE: the library's BARE-hole footprints reserve a fastener
+    # annulus instead (MountingHole_2.5mm courtyard = hole radius + 1.5 mm).  That is
+    # deliberately NOT used here: ADR-046 s3.7 makes these jig/handling holes for
+    # holding the wing during the solder step, so no screw head is ever fitted at them.
+    b.append(crtyd_circle(2.2 / 2.0 + CRTYD_CLR))
     return footprint('WingV9:MountingHole_2.2mm_NPTH', ref, 'MountingHole_NPTH_2.2mm',
-                     x, y, b, attr=None)
+                     x, y, '\n'.join(b), attr=None)
 
 
 def fiducial_footprint(ref, x, y):
-    b = pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask'))
+    b = [pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask'))]
+    # COURTYARD -- taken VERBATIM from the installed library footprint
+    # `Fiducial:Fiducial_1mm_Mask2mm`, which carries
+    # `(fp_circle (center 0 0) (end 1.25 0) ... (layer "F.CrtYd"))`.
+    b.append(crtyd_circle(1.25))
     return footprint('WingV9:Fiducial_1mm_Mask2mm', ref, 'Fiducial_1mm_Mask2mm',
-                     x, y, b)
+                     x, y, '\n'.join(b))
 
 
 def ferrite_footprint(x, y):
     b = [pad('1', 'smd', 'rect', -0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask')),
          pad('2', 'smd', 'rect', 0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask'))]
+    # COURTYARD -- derived from the two lands (no SMD 0402 ferrite-bead footprint is
+    # installed; only Ferrite_THT.pretty exists).  Cross-check: the installed 0402 chip
+    # courtyards are R_0402 +-0.93 x +-0.47 and C_0402 +-0.91 x +-0.46, i.e. the same
+    # order as the +-0.95 x +-0.55 derived below.
+    b.append(crtyd_rect(-(0.45 + 0.5 / 2.0) - CRTYD_CLR, -(0.6 / 2.0) - CRTYD_CLR,
+                        (0.45 + 0.5 / 2.0) + CRTYD_CLR, (0.6 / 2.0) + CRTYD_CLR))
     return footprint('WingV9:FerriteBead_0402_V2provision', 'FB1',
                      'FerriteBead_0402_DNP_V2only', x, y, '\n'.join(b))
 
 
 def rf_provision_footprint(x, y):
-    b = pad('1', 'smd', 'rect', 0.0, 0.0, 2.0, 2.0, ('F.Cu', 'F.Mask'))
+    b = [pad('1', 'smd', 'rect', 0.0, 0.0, 2.0, 2.0, ('F.Cu', 'F.Mask'))]
+    # COURTYARD -- derived from the single 2.0 x 2.0 mm provision land.
+    b.append(crtyd_rect(-1.0 - CRTYD_CLR, -1.0 - CRTYD_CLR,
+                        1.0 + CRTYD_CLR, 1.0 + CRTYD_CLR))
     return footprint('WingV9:RF_ProvisionPad_v2only', 'RF1', 'RF_ProvisionPad_v2only',
-                     x, y, b)
+                     x, y, '\n'.join(b))
 
 
 # ------------------------------------------------------------------ main
@@ -357,6 +443,16 @@ def main() -> int:
     print('  pads       :', len(re.findall(r'\(pad\b', txt)))
     print('  segments   :', len(re.findall(r'\(segment\b', txt)))
     print('  gr_lines   :', len(re.findall(r'\(gr_line\b', txt)))
+
+    # Courtyard coverage self-check: EVERY footprint must carry at least one F.CrtYd
+    # graphic.  This is the guard that would have caught the vacuous
+    # "0 overlap violations" claim -- see the COURTYARD block above.
+    n_fp = len(re.findall(r'\(footprint\b', txt))
+    n_crtyd = len(re.findall(r'\(layer "F\.CrtYd"\)', txt))
+    print(f'  courtyards : {n_crtyd} F.CrtYd graphics on {n_fp} footprints')
+    if n_crtyd < n_fp:
+        raise SystemExit(f'REFUSING: courtyard coverage {n_crtyd}/{n_fp} -- every '
+                         f'footprint must carry F.CrtYd geometry')
     return 0
 
 
