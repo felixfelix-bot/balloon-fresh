@@ -585,6 +585,26 @@ class TestEnvOnlyKeys(unittest.TestCase):
                 client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
         self.assertEqual(kmk.client_pubkey, _hexpub(_TX_SECRET))
 
+    def test_disagreement_message_names_the_tx_variables(self):
+        """Finding #3: the nsec/hex clash must name the vars this call read."""
+        import keymaterial
+        with _scrubbed_env():
+            os.environ["CVM_TX_NSEC"] = _nsec(_TX_SECRET)
+            os.environ["CVM_TX_HEX"] = _RX_SECRET.hex()   # disagrees
+            os.environ["CVM_SERVER_HEX"] = _hexpub(_SERVER_SECRET)
+            with self.assertRaises(keymaterial.KeyMaterialError) as ctx:
+                keymaterial.load_keys(
+                    client_names=keymaterial.TX_CLIENT_NSEC_NAMES,
+                    client_hex_names=keymaterial.TX_CLIENT_HEX_NAMES)
+        msg = str(ctx.exception)
+        self.assertIn("CVM_TX_NSEC", msg)
+        self.assertIn("CVM_TX_HEX", msg)
+        self.assertNotIn("CVM_RX_NSEC", msg)
+        self.assertNotIn("CVM_RX_HEX", msg)
+        # still secret-free: variables are named, values never are
+        self.assertNotIn(_nsec(_TX_SECRET), msg)
+        self.assertNotIn(_RX_SECRET.hex(), msg)
+
     def test_tx_chain_shares_no_name_with_the_rx_role_only_names(self):
         """The module-level invariant that makes the leak impossible."""
         import keymaterial

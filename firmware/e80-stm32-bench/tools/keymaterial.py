@@ -433,7 +433,7 @@ def load_keys(*, client_names: Optional[Sequence[str]] = None,
             raise KeyMaterialError(
                 "{} and {} are both set but resolve to different pubkeys "
                 "({} vs {}); export exactly one".format(
-                    ENV_CLIENT_NSEC, ENV_CLIENT_HEXKEY, client_pubkey, other))
+                    nsec_names[0], hex_names[0], client_pubkey, other))
 
     # --- server key material -------------------------------------------
     server_nsec = _first_env(env, *SERVER_NSEC_NAMES)
