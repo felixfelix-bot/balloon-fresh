@@ -58,6 +58,46 @@ KICAD_3DMODEL_DIR = "/usr/share/kicad/3dmodels"
 _MODEL_RE = re.compile(r'\(model\s+"([^"]+)"')
 
 
+def _iter_statements(text: str, token: str):
+    """Yield each balanced `(token ...)` statement in `text`."""
+    i = 0
+    while True:
+        start = text.find(token, i)
+        if start < 0:
+            return
+        depth, p = 0, start
+        while p < len(text):
+            if text[p] == "(":
+                depth += 1
+            elif text[p] == ")":
+                depth -= 1
+                if depth == 0:
+                    p += 1
+                    break
+            p += 1
+        yield text[start:p]
+        i = p
+
+
+def _hidden_models(block: str) -> list[str]:
+    """Model references inside `block` that carry `(hide yes)`.
+
+    A hidden model is a THIRD way to be invisible, distinct from both a missing
+    `(model ...)` block and an unresolvable path: the file may exist and resolve
+    perfectly and the renderer will still draw nothing. Measured on the v9 hub:
+    U3's reference to `NiceRF_LoRa2021.wrl` carried `(hide yes)` (it came in with
+    the library footprint), so even with the file installed that radio would
+    have stayed out of the render -- and a resolution-only check would have
+    called it resolved and waved it through.
+    """
+    out = []
+    for stmt in _iter_statements(block, "(model "):
+        m = _MODEL_RE.search(stmt)
+        if m and re.search(r"\(\s*hide\s+yes\s*\)", stmt):
+            out.append(m.group(1))
+    return out
+
+
 def _expand(ref: str, project_dir: str) -> str:
     """Substitute the ${VAR} forms a KiCad board file may use."""
     out = ref
@@ -105,10 +145,14 @@ def census(board_path: str) -> dict:
         text = fh.read()
 
     refs_by_fp: dict[str, list[str]] = {}
+    hidden_by_fp: dict[str, list[str]] = {}
     for block in _iter_footprint_blocks(text):
         m = _REF_RE.search(block)
         ref = m.group(1) if m else "?"
         refs_by_fp.setdefault(ref, []).extend(_MODEL_RE.findall(block))
+        hid = _hidden_models(block)
+        if hid:
+            hidden_by_fp.setdefault(ref, []).extend(hid)
 
     all_refs = [r for rs in refs_by_fp.values() for r in rs]
     resolved, unresolved = [], []
@@ -134,6 +178,8 @@ def census(board_path: str) -> dict:
         "footprints_without_model": without_model,
         "without_model_set": without_model,
         "unresolved_refs": sorted(set(unresolved)),
+        "hidden_refs": sorted({r for rs in hidden_by_fp.values() for r in rs}),
+        "hidden_by_footprint": {k: v for k, v in sorted(hidden_by_fp.items())},
         "refs_by_footprint": {k: v for k, v in sorted(refs_by_fp.items())},
     }
 
@@ -153,7 +199,7 @@ def main(argv=None) -> int:
     failures = 0
 
     for r in reports:
-        ok = not r["unresolved_refs"]
+        ok = not r["unresolved_refs"] and not r["hidden_refs"]
         missing_required = [x for x in required if x in r["without_model_set"]]
         if missing_required:
             ok = False
@@ -164,6 +210,8 @@ def main(argv=None) -> int:
             print(f"    no model block: {', '.join(r['footprints_without_model'])}")
         for ref in r["unresolved_refs"]:
             print(f"    MISSING {ref}")
+        for ref in r["hidden_refs"]:
+            print(f"    HIDDEN  {ref}   (resolves, but (hide yes) keeps it out of the render)")
         if missing_required:
             print(f"    REQUIRED but has no model: {', '.join(missing_required)}")
         if not ok:

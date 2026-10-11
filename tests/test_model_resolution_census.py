@@ -68,8 +68,17 @@ def mod():
 # --------------------------------------------------------------------------
 
 def _fp(ref: str, models: list[str], *, inner: str = "") -> str:
-    """One footprint block.  `inner` injects extra nesting (pads/graphics)."""
-    body = "".join(f'\n    (model "{m}"\n      (offset (xyz 0 0 0))\n    )' for m in models)
+    """One footprint block.  `inner` injects extra nesting (pads/graphics).
+
+    A model path given as ``"path|hide"`` carries ``(hide yes)``, the third way a
+    part can be absent from a render while its file resolves perfectly.
+    """
+    parts = []
+    for spec in models:
+        path, _, flags = spec.partition("|")
+        hide = "\n      (hide yes)" if flags == "hide" else ""
+        parts.append(f'\n    (model "{path}"{hide}\n      (offset (xyz 0 0 0))\n    )')
+    body = "".join(parts)
     return (
         f'  (footprint "Lib:Part_{ref}"\n'
         f'    (layer "F.Cu")\n'
@@ -222,6 +231,107 @@ def test_multiple_model_references_on_one_footprint_are_all_counted(mod, tmp_pat
     assert r["model_refs"] == 2
     assert r["resolved"] == 1
     assert r["unresolved_refs"] == ["${KIPRJMOD}/b.wrl"]
+
+
+# --------------------------------------------------------------------------
+# hidden models -- the third way to be invisible
+# --------------------------------------------------------------------------
+
+def test_a_resolvable_but_hidden_model_is_reported(mod, tmp_path):
+    """The defect measured on the real hub: U3's reference resolved and was hidden.
+
+    A resolution-only check calls this board ready; the renderer draws nothing.
+    """
+    touch_model(tmp_path, "u3.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U3", ["${KIPRJMOD}/u3.wrl|hide"]))
+
+    r = mod.census(str(b))
+
+    assert r["resolved"] == 1, r
+    assert r["unresolved_refs"] == []
+    assert r["hidden_refs"] == ["${KIPRJMOD}/u3.wrl"], r
+    assert r["hidden_by_footprint"] == {"U3": ["${KIPRJMOD}/u3.wrl"]}
+
+
+def test_a_model_without_the_hide_flag_is_not_reported(mod, tmp_path):
+    touch_model(tmp_path, "u1.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"]))
+
+    r = mod.census(str(b))
+
+    assert r["hidden_refs"] == []
+
+
+def test_only_the_hidden_model_on_a_footprint_is_reported(mod, tmp_path):
+    """A footprint may carry several models; hiding one must not tar the others."""
+    touch_model(tmp_path, "a.wrl")
+    touch_model(tmp_path, "b.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb",
+                    _fp("U1", ["${KIPRJMOD}/a.wrl", "${KIPRJMOD}/b.wrl|hide"]))
+
+    r = mod.census(str(b))
+
+    assert r["resolved"] == 2
+    assert r["hidden_refs"] == ["${KIPRJMOD}/b.wrl"]
+
+
+def test_hide_must_be_inside_the_model_statement_not_merely_nearby(mod, tmp_path):
+    """A footprint-level or pad-level `(hide yes)` is not a hidden model.
+
+    Guarding the block-walking: scanning a whole footprint for `hide yes` would
+    report every footprint that hides a property (measured: 79 property-level
+    `(hide yes)` in the real hub board) and drown the real signal.
+    """
+    touch_model(tmp_path, "u1.wrl")
+    inner = '(property "Datasheet" ""\n      (at 0 0 0)\n      (layer "F.Fab")\n      (hide yes)\n    )'
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"], inner=inner))
+
+    r = mod.census(str(b))
+
+    assert r["hidden_refs"] == [], "a hidden PROPERTY is not a hidden MODEL"
+
+
+def test_check_exits_one_when_a_model_is_hidden_even_though_it_resolves(mod, tmp_path, capsys):
+    touch_model(tmp_path, "u3.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U3", ["${KIPRJMOD}/u3.wrl|hide"]))
+
+    rc = mod.main(["--check", str(b)])
+
+    out = capsys.readouterr()
+    assert rc == 1
+    assert "FAIL" in out.out
+    assert "HIDDEN" in out.out, out.out
+    assert "unresolved 0" in out.out
+
+
+def test_hidden_refs_absent_from_the_boards_we_ship(mod):
+    """Both current-gen boards must carry no hidden model -- else the render lies."""
+    for board in (WING, HUB):
+        if not board.is_file():
+            pytest.skip(f"{board} not present")
+        assert mod.census(str(board))["hidden_refs"] == [], board
+
+
+# The parts the spatial-review gate must be able to SEE.  U2 is the 39 x 21 mm
+# `LoRa2021F33-2G4` (the 433 MHz bent-pipe downlink radio, largest body on the board) and
+# U4 the SX1280 range radio; J_W1..J_W4 are where the wing tabs meet the hub in space.
+HUB_MUST_BE_VISIBLE = ["U1", "U2", "U3", "U4", "U5", "ANT1", "ANT2", "ANT3", "ANT4",
+                       "J_W1", "J_W2", "J_W3", "J_W4", "J_VCC"]
+
+
+def test_every_hub_part_the_review_must_see_resolves(mod):
+    """The gate on the real board. Measured BEFORE the fix: 25 of 32 refs resolved and
+    seven footprints -- including both radios -- carried no model block at all."""
+    if not HUB.is_file():
+        pytest.skip("hub board not present")
+
+    r = mod.census(str(HUB))
+
+    assert r["unresolved_refs"] == [], r["unresolved_refs"]
+    assert r["hidden_refs"] == [], r["hidden_refs"]
+    missing = [ref for ref in HUB_MUST_BE_VISIBLE if ref in r["without_model_set"]]
+    assert missing == [], f"no model block: {missing}"
+    assert r["model_refs"] == len(r["refs_by_footprint"]) or r["model_refs"] >= 32
 
 
 # --------------------------------------------------------------------------
@@ -417,3 +527,24 @@ class TestHarnessCanFail:
 
         good.write_text(good.read_text().replace("${KIPRJMOD}/u2.wrl", "${KIPRJMOD}/u1.wrl"))
         assert m.main(["--check", str(good)]) == 0
+
+    def test_suite_rejects_a_tool_that_ignores_the_hide_flag(self, tmp_path, monkeypatch):
+        """Mutant: report resolution only, never check `(hide yes)`.
+
+        This is the mutant that shipped the original defect past a resolution
+        check on the real board: U3's reference resolved and was hidden.
+        """
+        touch_model(tmp_path, "u3.wrl")
+        b = write_board(tmp_path, "b.kicad_pcb", _fp("U3", ["${KIPRJMOD}/u3.wrl|hide"]))
+
+        good = _load("census_hide_good", SCRIPT)
+        assert good.census(str(b))["hidden_refs"] == ["${KIPRJMOD}/u3.wrl"]
+        assert good.main(["--check", str(b)]) == 1
+
+        mut = _load("census_hide_mutant", SCRIPT)
+        monkeypatch.setattr(mut, "_hidden_models", lambda block: [])
+        assert mut.census(str(b))["hidden_refs"] == []
+        # The mutant passes the gate on a board the renderer draws nothing for.
+        assert mut.main(["--check", str(b)]) == 0, (
+            "the mutant was rejected, so this mutation test proves nothing"
+        )
