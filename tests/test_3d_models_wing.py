@@ -177,7 +177,16 @@ def test_coverage_report_exists_and_lists_every_reference():
 def test_board_still_carries_the_wings_12_references_and_the_cells():
     text = _board()
     assert text.count('(footprint ') == 15
-    assert text.count('(segment ') == 8
+    # 20 segments = 10 F.Cu + 10 B.Cu: the back series string is wired (ADR-065
+    # addendum).  Assert the PER-LAYER split, not just a total -- the total-only
+    # form of this check passed for a year while the back string was
+    # electrically isolated on a board whose cells sat on B.Cu.
+    segs = [re.search(r'\(layer "([^"]+)"\)', c).group(1)
+            for c in text.split('(segment ')[1:]]
+    assert len(segs) == 20, f'{len(segs)} segments'
+    assert segs.count('F.Cu') == 10, f'{segs.count("F.Cu")} F.Cu segments'
+    assert segs.count('B.Cu') == 10, f'{segs.count("B.Cu")} B.Cu segments'
+    assert text.count('(via ') == 8, 'vias tying each back node to the front'
     # the three cells are the SMALL class of ADR-049 (52.07 x 19.65), not the LARGE one
     assert text.count('"WingV9:SolarCell_52x19mm"') == 6
     assert 'SolarCell_52x19mm_0.5V' in text
