@@ -152,7 +152,7 @@ def test_board_assigns_a_resolvable_model_to_every_reference():
         if model:
             assigned[ref] = model.group(1)
     assert sorted(refs) == ['FB1', 'FID1', 'FID2', 'FID3', 'H1', 'H2', 'H3',
-                            'J1', 'RF1', 'SC1', 'SC2', 'SC3'], sorted(refs)
+                            'J1', 'RF1', 'SC1', 'SC2', 'SC3', 'SC4', 'SC5', 'SC6'], sorted(refs)
     for ref, path in assigned.items():
         resolved = path.replace('${KIPRJMOD}', str(BOARD.parent))
         assert pathlib.Path(resolved).is_file(), f'{ref}: {path} does not resolve'
@@ -160,7 +160,7 @@ def test_board_assigns_a_resolvable_model_to_every_reference():
         assert not assigned.get(ref, '').startswith('/'), f'{ref}: absolute path is not portable'
     missing = sorted(set(refs) - set(assigned))
     assert missing == sorted(NO_MODEL_OK), f'unexplained references without a model: {missing}'
-    assert len(assigned) == 9, f'expected 9 modelled references, got {len(assigned)}'
+    assert len(assigned) == 12, f'expected 12 modelled references, got {len(assigned)}'
 
 
 def test_coverage_report_exists_and_lists_every_reference():
@@ -176,8 +176,8 @@ def test_coverage_report_exists_and_lists_every_reference():
 
 def test_board_still_carries_the_wings_12_references_and_the_cells():
     text = _board()
-    assert text.count('(footprint ') == 12
+    assert text.count('(footprint ') == 15
     assert text.count('(segment ') == 8
     # the three cells are the SMALL class of ADR-049 (52.07 x 19.65), not the LARGE one
-    assert text.count('"WingV9:SolarCell_52x19mm"') == 3
+    assert text.count('"WingV9:SolarCell_52x19mm"') == 6
     assert 'SolarCell_52x19mm_0.5V' in text

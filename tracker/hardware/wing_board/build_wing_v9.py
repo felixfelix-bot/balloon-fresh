@@ -105,15 +105,26 @@ def check_reuse(nets: dict) -> None:
 
 # ------------------------------------------------------------------ geometry (ADR-046)
 BODY_W, BODY_H = 176.0, 25.0
+CELL_BODY_D = 19.0
 TAB_LEN, TAB_W = 8.0, 9.0
 TAB_Y0, TAB_Y1 = 8.0, 17.0
 CELL_CX = (30.0, 88.0, 146.0)          # cell centres: 4+26, 62+26, 120+26
+CELL_PAD_DX = 27.0                     # terminal offset; leaves courtyard gap between cells
 LAND_W, LAND_H = 1.6, 4.0              # ADR-046 s3.4
 TAB_LAND_W, TAB_LAND_H = 4.0, 1.2
 TAB_PAD_X = -5.0
 TAB_PADS = (('1', 'SOLAR_P', 9.8), ('2', 'GND', 11.6),
             ('3', 'RF_FEED', 13.4), ('4', 'SOLAR_N', 15.2))
 TRACK_W = 0.4
+CRTYD_CLR, CRTYD_W = 0.25, 0.05
+
+def crtyd_rect(x0, y0, x1, y1, layer='F.CrtYd'):
+    return (f'    (fp_rect (start {fmt(x0)} {fmt(y0)}) (end {fmt(x1)} {fmt(y1)})'
+            f' (stroke (width {CRTYD_W}) (type solid)) (fill no) (layer "{layer}") (uuid "{u()}"))')
+
+def crtyd_circle(r, layer='F.CrtYd'):
+    return (f'    (fp_circle (center 0 0) (end {fmt(r)} 0)'
+            f' (stroke (width {CRTYD_W}) (type solid)) (fill no) (layer "{layer}") (uuid "{u()}"))')
 
 # ------------------------------------------------------------------ 3D models (committed VRML)
 # Every placed reference is given a model so that a 3D render shows the parts.  The models are
@@ -248,9 +259,9 @@ def model_block(path: str) -> str:
             '      (rotate\n        (xyz 0 0 0)\n      )\n    )')
 
 
-def footprint(libname, ref, value, x, y, body, attr='smd', model=None):
+def footprint(libname, ref, value, x, y, body, attr='smd', model=None, side='F.Cu'):
     head = [f'  (footprint "{libname}"',
-            '    (layer "F.Cu")',
+            f'    (layer "{side}")',
             f'    (uuid "{u()}")',
             f'    (at {fmt(x)} {fmt(y)})',
             prop('Reference', ref, 'F.SilkS'),
@@ -264,21 +275,30 @@ def footprint(libname, ref, value, x, y, body, attr='smd', model=None):
     return '\n'.join(lines)
 
 
-def cell_footprint(ref, cx, net_left, net_right):
+def cell_footprint(ref, cx, net_left, net_right, side='F.Cu'):
+    """Emit a cell on either face; bottom-face geometry is mirrored in X/Y layers."""
+    silk = 'F.SilkS' if side == 'F.Cu' else 'B.SilkS'
+    copper = ('F.Cu', 'F.Paste', 'F.Mask') if side == 'F.Cu' else ('B.Cu', 'B.Paste', 'B.Mask')
+    # Looking at the back face reverses the terminal order.  Keep pad numbers and
+    # electrical nets physically paired by mirroring their local X coordinates.
+    sign = 1 if side == 'F.Cu' else -1
     b = []
     b.append(f'    (fp_rect (start {fmt(-26)} 3) (end {fmt(26)} 22)'
-             f' (stroke (width 0.12) (type solid)) (fill no) (layer "F.SilkS") (uuid "{u()}"))')
-    b.append(f'    (fp_text user "+" (at {fmt(-26)} 23.6) (layer "F.SilkS") (uuid "{u()}")'
+             f' (stroke (width 0.12) (type solid)) (fill no) (layer "{silk}") (uuid "{u()}"))')
+    b.append(f'    (fp_text user "+" (at {fmt(-26 * sign)} 23.6) (layer "{silk}") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
-    b.append(f'    (fp_text user "-" (at {fmt(26)} 23.6) (layer "F.SilkS") (uuid "{u()}")'
+    b.append(f'    (fp_text user "-" (at {fmt(26 * sign)} 23.6) (layer "{silk}") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
     # real solder lands, one per cell terminal (ADR-046 s3.4)
-    b.append(pad('1', 'smd', 'rect', -28.0, 0.0, LAND_W, LAND_H,
-                 ('F.Cu', 'F.Paste', 'F.Mask'), net_left))
-    b.append(pad('2', 'smd', 'rect', 28.0, 0.0, LAND_W, LAND_H,
-                 ('F.Cu', 'F.Paste', 'F.Mask'), net_right))
+    b.append(pad('1', 'smd', 'rect', -CELL_PAD_DX * sign, 0.0, LAND_W, LAND_H,
+                 copper, net_left))
+    b.append(pad('2', 'smd', 'rect', CELL_PAD_DX * sign, 0.0, LAND_W, LAND_H,
+                 copper, net_right))
+    crt_layer = 'F.CrtYd' if side == 'F.Cu' else 'B.CrtYd'
+    b.append(crtyd_rect(-CELL_PAD_DX - LAND_W / 2 - CRTYD_CLR, -2.25,
+                        CELL_PAD_DX + LAND_W / 2 + CRTYD_CLR, 2.25, crt_layer))
     return footprint('WingV9:SolarCell_52x19mm', ref, 'SolarCell_52x19mm_0.5V',
-                     cx, 12.5, '\n'.join(b), model=MODEL_CELL_SMALL)
+                     cx, 12.5, '\n'.join(b), model=MODEL_CELL_SMALL, side=side)
 
 
 def tab_footprint():
@@ -293,6 +313,8 @@ def tab_footprint():
     b.append(f'    (fp_rect (start {fmt(TAB_PAD_X-2.0)} {fmt(TAB_Y0+0.4)})'
              f' (end {fmt(TAB_PAD_X+2.0)} {fmt(TAB_Y1-0.4)})'
              f' (stroke (width 0.1) (type solid)) (fill none) (layer "F.SilkS") (uuid "{u()}"))')
+    b.append(crtyd_rect(TAB_PAD_X - TAB_LAND_W / 2 - CRTYD_CLR, 9.2 - CRTYD_CLR,
+                        TAB_PAD_X + TAB_LAND_W / 2 + CRTYD_CLR, 15.8 + CRTYD_CLR))
     # footprint origin at (0,0): pads carry the absolute tab x as their local offset
     return footprint('WingV9:WingTab_v9_4pin', 'J1', 'WingTab_v9_4pin',
                      0.0, 0.0, '\n'.join(b), model=MODEL_TAB)
@@ -300,13 +322,13 @@ def tab_footprint():
 
 def hole_footprint(ref, x, y):
     b = pad('', 'np_thru_hole', 'circle', 0.0, 0.0, 2.2, 2.2,
-            ('*.Cu', '*.Mask'), None, drill=2.2)
+            ('*.Cu', '*.Mask'), None, drill=2.2) + '\n' + crtyd_circle(1.35)
     return footprint('WingV9:MountingHole_2.2mm_NPTH', ref, 'MountingHole_NPTH_2.2mm',
                      x, y, b, attr=None)
 
 
 def fiducial_footprint(ref, x, y):
-    b = pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask'))
+    b = pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask')) + '\n' + crtyd_circle(1.25)
     return footprint('WingV9:Fiducial_1mm_Mask2mm', ref, 'Fiducial_1mm_Mask2mm',
                      x, y, b, model=MODEL_FIDUCIAL)
 
@@ -314,12 +336,14 @@ def fiducial_footprint(ref, x, y):
 def ferrite_footprint(x, y):
     b = [pad('1', 'smd', 'rect', -0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask')),
          pad('2', 'smd', 'rect', 0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask'))]
+    b.append(crtyd_rect(-0.95, -0.55, 0.95, 0.55))
     return footprint('WingV9:FerriteBead_0402_V2provision', 'FB1',
                      'FerriteBead_0402_DNP_V2only', x, y, '\n'.join(b), model=MODEL_FERRITE)
 
 
 def rf_provision_footprint(x, y):
     b = pad('1', 'smd', 'rect', 0.0, 0.0, 2.0, 2.0, ('F.Cu', 'F.Mask'))
+    b = b + '\n' + crtyd_rect(-1.25, -1.25, 1.25, 1.25)
     return footprint('WingV9:RF_ProvisionPad_v2only', 'RF1', 'RF_ProvisionPad_v2only',
                      x, y, b, model=MODEL_RF)
 
@@ -353,6 +377,12 @@ def main() -> int:
     rights = ('SOLAR_MID1', 'SOLAR_MID2', 'SOLAR_N')
     for ref, cx, lf, rt in zip(('SC1', 'SC2', 'SC3'), CELL_CX, lefts, rights):
         parts.append(cell_footprint(ref, cx, lf, rt))
+    # ADR-065: a second, parallel 3-cell string on the opposite face.  Parallel
+    # strings preserve the 3-cell series voltage (6.0 V vehicle interface, 1.5 V
+    # per wing tab); only available energy/current doubles.  No per-cell bypass
+    # diodes are introduced (ADR-051/053/054 reject them).
+    for ref, cx, lf, rt in zip(('SC4', 'SC5', 'SC6'), CELL_CX, lefts, rights):
+        parts.append(cell_footprint(ref, cx, lf, rt, side='B.Cu'))
 
     parts.append(tab_footprint())
 
