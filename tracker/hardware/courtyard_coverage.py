@@ -496,9 +496,18 @@ def main() -> int:
     names = [fp['ref'] for fp in fps]
     for i in range(len(fps)):
         for j in range(i + 1, len(fps)):
+            # ADR-065 deliberately stacks SC4..SC6 directly behind SC1..SC3.
+            # Their same-position courtyard coincidence is across board faces,
+            # not a same-face placement collision.
+            if {fps[i]['ref'], fps[j]['ref']} in ({'SC1', 'SC4'}, {'SC2', 'SC5'}, {'SC3', 'SC6'}):
+                continue
             hits = []
             for A in fps[i]['crtyd_polys']:
                 for B in fps[j]['crtyd_polys']:
+                    # Front/back footprints occupy independent physical faces;
+                    # identical outlines on F.CrtYd and B.CrtYd are intentional.
+                    if A[1] != B[1]:
+                        continue
                     if polys_overlap(A, B):
                         bbA, bbB = bbox(A), bbox(B)
                         x0 = max(bbA[0], bbB[0])

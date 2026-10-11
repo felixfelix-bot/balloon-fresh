@@ -1,0 +1,219 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_wing.py  (regenerate: python3 scripts/gen_3d_models_wing.py)
+# part       : J1 -- wing tab, 4-pin interface (4 solder lands; the finger substrate is board outline)
+# dims_mm    : 4 lands 4.0 x 1.2 x 0.035 thick at 1.8 mm pitch, land row centred at x = -5 mm, y = 9.8 / 11.6 / 13.4 / 15.2 mm; pinout 1=SOLAR_P 2=GND 3=RF_FEED 4=SOLAR_N
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/wing_board/wing_board_v9.kicad_pcb pads of footprint "WingV9:WingTab_v9_4pin" (4.0 x 1.2 rect at x=-5, y = 9.8 .. 15.2); pinout tracker/hardware/wing_board/build_wing_v9.py TAB_PADS and docs/adr/046-wing-board-interface.md §2.1; F.Cu copper thickness 0.035 mm from the board stackup.
+# note       : the 8 x 9 x 0.6 mm tab FINGER is board substrate (part of the Edge.Cuts outline) and is rendered by KiCad itself -- this model draws only the interface lands, so the tab is not double-drawn.
+# note       : lands are at the 0.035 mm F.Cu copper thickness; the solder fillet that will actually join the wing to the hub socket is NOT modelled.
+# note       : TODO(unverified): the hub-side socket: the 0.9 x 6.0 mm slot, its tolerance, and the 0.9 mm slot vs 0.6 mm tab 0.00 mm worst-case clearance are ADR-048 items 3/6 -- hub side, not on the wing
+DEF tab_land_p1 Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF tab_land_p1_mat Material {
+          diffuseColor 0.85 0.68 0.3
+          emissiveColor 0 0 0
+          specularColor 0.6 0.6 0.6
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.8
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -2.755906 -4.094488 0.013780,
+          -1.181102 -4.094488 0.013780,
+          -1.181102 -3.622047 0.013780,
+          -2.755906 -3.622047 0.013780,
+          -2.755906 -3.622047 0.000000,
+          -1.181102 -3.622047 0.000000,
+          -1.181102 -4.094488 0.000000,
+          -2.755906 -4.094488 0.000000,
+          -2.755906 -3.622047 0.000000,
+          -2.755906 -3.622047 0.013780,
+          -1.181102 -3.622047 0.013780,
+          -1.181102 -3.622047 0.000000,
+          -1.181102 -4.094488 0.000000,
+          -1.181102 -4.094488 0.013780,
+          -2.755906 -4.094488 0.013780,
+          -2.755906 -4.094488 0.000000,
+          -1.181102 -3.622047 0.000000,
+          -1.181102 -3.622047 0.013780,
+          -1.181102 -4.094488 0.013780,
+          -1.181102 -4.094488 0.000000,
+          -2.755906 -4.094488 0.000000,
+          -2.755906 -4.094488 0.013780,
+          -2.755906 -3.622047 0.013780,
+          -2.755906 -3.622047 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
+DEF tab_land_p2 Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF tab_land_p2_mat Material {
+          diffuseColor 0.85 0.68 0.3
+          emissiveColor 0 0 0
+          specularColor 0.6 0.6 0.6
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.8
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -2.755906 -4.803150 0.013780,
+          -1.181102 -4.803150 0.013780,
+          -1.181102 -4.330709 0.013780,
+          -2.755906 -4.330709 0.013780,
+          -2.755906 -4.330709 0.000000,
+          -1.181102 -4.330709 0.000000,
+          -1.181102 -4.803150 0.000000,
+          -2.755906 -4.803150 0.000000,
+          -2.755906 -4.330709 0.000000,
+          -2.755906 -4.330709 0.013780,
+          -1.181102 -4.330709 0.013780,
+          -1.181102 -4.330709 0.000000,
+          -1.181102 -4.803150 0.000000,
+          -1.181102 -4.803150 0.013780,
+          -2.755906 -4.803150 0.013780,
+          -2.755906 -4.803150 0.000000,
+          -1.181102 -4.330709 0.000000,
+          -1.181102 -4.330709 0.013780,
+          -1.181102 -4.803150 0.013780,
+          -1.181102 -4.803150 0.000000,
+          -2.755906 -4.803150 0.000000,
+          -2.755906 -4.803150 0.013780,
+          -2.755906 -4.330709 0.013780,
+          -2.755906 -4.330709 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
+DEF tab_land_p3 Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF tab_land_p3_mat Material {
+          diffuseColor 0.85 0.68 0.3
+          emissiveColor 0 0 0
+          specularColor 0.6 0.6 0.6
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.8
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -2.755906 -5.511811 0.013780,
+          -1.181102 -5.511811 0.013780,
+          -1.181102 -5.039370 0.013780,
+          -2.755906 -5.039370 0.013780,
+          -2.755906 -5.039370 0.000000,
+          -1.181102 -5.039370 0.000000,
+          -1.181102 -5.511811 0.000000,
+          -2.755906 -5.511811 0.000000,
+          -2.755906 -5.039370 0.000000,
+          -2.755906 -5.039370 0.013780,
+          -1.181102 -5.039370 0.013780,
+          -1.181102 -5.039370 0.000000,
+          -1.181102 -5.511811 0.000000,
+          -1.181102 -5.511811 0.013780,
+          -2.755906 -5.511811 0.013780,
+          -2.755906 -5.511811 0.000000,
+          -1.181102 -5.039370 0.000000,
+          -1.181102 -5.039370 0.013780,
+          -1.181102 -5.511811 0.013780,
+          -1.181102 -5.511811 0.000000,
+          -2.755906 -5.511811 0.000000,
+          -2.755906 -5.511811 0.013780,
+          -2.755906 -5.039370 0.013780,
+          -2.755906 -5.039370 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
+DEF tab_land_p4 Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF tab_land_p4_mat Material {
+          diffuseColor 0.85 0.68 0.3
+          emissiveColor 0 0 0
+          specularColor 0.6 0.6 0.6
+          ambientIntensity 0.4
+          transparency 0.0
+          shininess 0.8
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -2.755906 -6.220472 0.013780,
+          -1.181102 -6.220472 0.013780,
+          -1.181102 -5.748031 0.013780,
+          -2.755906 -5.748031 0.013780,
+          -2.755906 -5.748031 0.000000,
+          -1.181102 -5.748031 0.000000,
+          -1.181102 -6.220472 0.000000,
+          -2.755906 -6.220472 0.000000,
+          -2.755906 -5.748031 0.000000,
+          -2.755906 -5.748031 0.013780,
+          -1.181102 -5.748031 0.013780,
+          -1.181102 -5.748031 0.000000,
+          -1.181102 -6.220472 0.000000,
+          -1.181102 -6.220472 0.013780,
+          -2.755906 -6.220472 0.013780,
+          -2.755906 -6.220472 0.000000,
+          -1.181102 -5.748031 0.000000,
+          -1.181102 -5.748031 0.013780,
+          -1.181102 -6.220472 0.013780,
+          -1.181102 -6.220472 0.000000,
+          -2.755906 -6.220472 0.000000,
+          -2.755906 -6.220472 0.013780,
+          -2.755906 -5.748031 0.013780,
+          -2.755906 -5.748031 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
