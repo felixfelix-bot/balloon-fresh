@@ -224,6 +224,14 @@ def segment(net, x1, y1, x2, y2, layer='F.Cu', width=TRACK_W):
             f'    (width {width}) (layer "{layer}") (net {n}) (uuid "{u()}"))')
 
 
+def via(net, x, y, size=0.6, drill=0.3):
+    """Through via tying F.Cu to B.Cu.  Required to connect the back-face cell
+    string to the front-face string / tab lands (ADR-065)."""
+    n = NET_IDX[net]
+    return (f'  (via (at {fmt(x)} {fmt(y)}) (size {size}) (drill {drill})\n'
+            f'    (layers "F.Cu" "B.Cu") (net {n}) (uuid "{u()}"))')
+
+
 def prop(name, val, layer='F.Fab', hidden=True):
     # KiCad 9 canonical order: (at)(layer)(hide)(uuid)(effects).  `hide` is a direct
     # child of the property, NOT inside (effects) -- getting that wrong makes
@@ -276,23 +284,33 @@ def footprint(libname, ref, value, x, y, body, attr='smd', model=None, side='F.C
 
 
 def cell_footprint(ref, cx, net_left, net_right, side='F.Cu'):
-    """Emit a cell on either face; bottom-face geometry is mirrored in X/Y layers."""
+    """Emit a cell on either face.
+
+    A back-face cell is the SAME cell tipped over its LONG axis (180 deg about
+    X), not about its short axis.  That keeps every terminal at the same X: the
+    contact face turns to meet B.Cu and the terminal order is unchanged, so the
+    two faces' strings run the same way and the back routing mirrors the front.
+
+    The original code mirrored X instead (`sign = -1`).  A short-axis flip is
+    equally manufacturable, but it makes the back string counter-running: with
+    the front net order on X-mirrored cells the series chain is a bowtie
+    (SOLAR_MID1 would have to jump x=3 -> x=115 straight across two cells), and
+    the front/back MID tracks land in OPPOSITE inter-cell gaps, so no via can
+    tie them without shorting MID1 to MID2.  See the routing block in main().
+    """
     silk = 'F.SilkS' if side == 'F.Cu' else 'B.SilkS'
     copper = ('F.Cu', 'F.Paste', 'F.Mask') if side == 'F.Cu' else ('B.Cu', 'B.Paste', 'B.Mask')
-    # Looking at the back face reverses the terminal order.  Keep pad numbers and
-    # electrical nets physically paired by mirroring their local X coordinates.
-    sign = 1 if side == 'F.Cu' else -1
     b = []
     b.append(f'    (fp_rect (start {fmt(-26)} 3) (end {fmt(26)} 22)'
              f' (stroke (width 0.12) (type solid)) (fill no) (layer "{silk}") (uuid "{u()}"))')
-    b.append(f'    (fp_text user "+" (at {fmt(-26 * sign)} 23.6) (layer "{silk}") (uuid "{u()}")'
+    b.append(f'    (fp_text user "+" (at {fmt(-26)} 23.6) (layer "{silk}") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
-    b.append(f'    (fp_text user "-" (at {fmt(26 * sign)} 23.6) (layer "{silk}") (uuid "{u()}")'
+    b.append(f'    (fp_text user "-" (at {fmt(26)} 23.6) (layer "{silk}") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
     # real solder lands, one per cell terminal (ADR-046 s3.4)
-    b.append(pad('1', 'smd', 'rect', -CELL_PAD_DX * sign, 0.0, LAND_W, LAND_H,
+    b.append(pad('1', 'smd', 'rect', -CELL_PAD_DX, 0.0, LAND_W, LAND_H,
                  copper, net_left))
-    b.append(pad('2', 'smd', 'rect', CELL_PAD_DX * sign, 0.0, LAND_W, LAND_H,
+    b.append(pad('2', 'smd', 'rect', CELL_PAD_DX, 0.0, LAND_W, LAND_H,
                  copper, net_right))
     crt_layer = 'F.CrtYd' if side == 'F.Cu' else 'B.CrtYd'
     b.append(crtyd_rect(-CELL_PAD_DX - LAND_W / 2 - CRTYD_CLR, -2.25,
@@ -381,6 +399,10 @@ def main() -> int:
     # strings preserve the 3-cell series voltage (6.0 V vehicle interface, 1.5 V
     # per wing tab); only available energy/current doubles.  No per-cell bypass
     # diodes are introduced (ADR-051/053/054 reject them).
+    # Same centres and same net order as the front string: each back cell is the
+    # front cell tipped over its LONG axis, so every one of its nodes lands
+    # directly on top of its front counterpart and the back routing is a clean
+    # mirror.  See cell_footprint() for why the flip axis is load-bearing.
     for ref, cx, lf, rt in zip(('SC4', 'SC5', 'SC6'), CELL_CX, lefts, rights):
         parts.append(cell_footprint(ref, cx, lf, rt, side='B.Cu'))
 
@@ -394,14 +416,45 @@ def main() -> int:
     parts.append(ferrite_footprint(58.0, 1.7))
     parts.append(rf_provision_footprint(118.0, 1.7))
 
-    # --- routing (ADR-046 s2.3)
+    # --- routing (ADR-046 s2.3).  Every landing is drawn from PAD CENTRE to PAD
+    # CENTRE: a track that merely grazes a land edge (tangential contact) is not a
+    # connection in KiCad's connectivity engine, so edge-touching geometry is a
+    # latent open even though it looks wired on screen.
+    parts.append(segment('SOLAR_P', 3.0, 12.5, 2.0, 12.5))
     parts.append(segment('SOLAR_P', 2.0, 12.5, 2.0, 9.8))
     parts.append(segment('SOLAR_P', 2.0, 9.8, -5.0, 9.8))
-    parts.append(segment('SOLAR_MID1', 58.0, 12.5, 60.0, 12.5))
-    parts.append(segment('SOLAR_MID2', 116.0, 12.5, 118.0, 12.5))
-    for a, b in (((174.0, 12.5), (174.0, 23.5)), ((174.0, 23.5), (3.4, 23.5)),
-                 ((3.4, 23.5), (3.4, 15.2)), ((3.4, 15.2), (-5.0, 15.2))):
+    parts.append(segment('SOLAR_MID1', 57.0, 12.5, 61.0, 12.5))
+    parts.append(segment('SOLAR_MID2', 115.0, 12.5, 119.0, 12.5))
+    for a, b in (((173.0, 12.5), (174.0, 12.5)), ((174.0, 12.5), (174.0, 23.5)),
+                 ((174.0, 23.5), (3.4, 23.5)), ((3.4, 23.5), (3.4, 15.2)),
+                 ((3.4, 15.2), (-5.0, 15.2))):
         parts.append(segment('SOLAR_N', a[0], a[1], b[0], b[1]))
+
+    # --- back-face string interconnect (ADR-065).  The back cells are the same
+    # cells tipped over their LONG axis (see cell_footprint), so every back pad
+    # sits directly beneath the front pad carrying the SAME net.  The string is
+    # therefore wired by repeating the front landings one layer down and tying the
+    # two faces together with through vias -- one per string node.  The vias are
+    # dropped MID-TRACK rather than on a land, so no hole sits in a solder joint.
+    parts.append(segment('SOLAR_P', 3.0, 12.5, 2.0, 12.5, layer='B.Cu'))
+    parts.append(segment('SOLAR_P', 2.0, 12.5, 2.0, 9.8, layer='B.Cu'))
+    parts.append(segment('SOLAR_P', 2.0, 9.8, -5.0, 9.8, layer='B.Cu'))
+    parts.append(segment('SOLAR_MID1', 57.0, 12.5, 61.0, 12.5, layer='B.Cu'))
+    parts.append(segment('SOLAR_MID2', 115.0, 12.5, 119.0, 12.5, layer='B.Cu'))
+    for a, b in (((173.0, 12.5), (174.0, 12.5)), ((174.0, 12.5), (174.0, 23.5)),
+                 ((174.0, 23.5), (3.4, 23.5)), ((3.4, 23.5), (3.4, 15.2)),
+                 ((3.4, 15.2), (-5.0, 15.2))):
+        parts.append(segment('SOLAR_N', a[0], a[1], b[0], b[1], layer='B.Cu'))
+    # Two through vias per string node (redundant): either one alone completes
+    # the node, so a single barrel defect cannot open the back string.
+    parts.append(via('SOLAR_P', 2.0, 9.8))
+    parts.append(via('SOLAR_P', 2.0, 11.4))
+    parts.append(via('SOLAR_MID1', 58.4, 12.5))
+    parts.append(via('SOLAR_MID1', 59.6, 12.5))
+    parts.append(via('SOLAR_MID2', 116.4, 12.5))
+    parts.append(via('SOLAR_MID2', 117.6, 12.5))
+    parts.append(via('SOLAR_N', 3.4, 20.0))
+    parts.append(via('SOLAR_N', 3.4, 21.8))
 
     # --- board silkscreen
     parts.append(gr_text('WING v9  SOLAR 176x25x0.6  4-pin tab  ADR-046', 88.0, 24.2))
