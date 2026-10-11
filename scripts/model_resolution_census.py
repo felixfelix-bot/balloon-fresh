@@ -52,7 +52,10 @@ import re
 import sys
 
 # KiCad's built-in default for KICAD<n>_3DMODEL_DIR.  See the module docstring:
-# the renderer uses the built-in table, not the shell environment.
+# the renderer uses the built-in table, NOT the shell environment -- measured: setting
+# KICAD9_3DMODEL_DIR changes the hub render by zero bytes. So this stays hardcoded and
+# env-independent to stay faithful to the renderer; the test module simulates a
+# package-less host instead (see its `mod` fixture).
 KICAD_3DMODEL_DIR = "/usr/share/kicad/3dmodels"
 
 _MODEL_RE = re.compile(r'\(model\s+"([^"]+)"')

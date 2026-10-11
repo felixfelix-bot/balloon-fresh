@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -48,6 +49,21 @@ import pytest
 ROOT = Path(__file__).parents[1]
 SCRIPT = ROOT / "scripts/model_resolution_census.py"
 
+# Reproduce the GitHub runner locally.
+#
+# `.github/workflows/test.yml` runs on ubuntu-latest with only `pytest pyserial`, so
+# `kicad-packages3d` is absent there and every `${KICAD<n>_3DMODEL_DIR}` reference is
+# unresolved, while on a dev box with the package installed the same board resolves
+# fully. Two red CI runs (38177201784, 38178168542) came from assertions that only
+# held on the dev box.
+#
+# `SIMULATE_NO_KICAD_PACKAGES3D=1` makes that runner reproducible here, so a
+# host-dependent assertion is caught before the push rather than after:
+#
+#   SIMULATE_NO_KICAD_PACKAGES3D=1 python3 -m pytest tests/test_model_resolution_census.py
+SIMULATE_NO_PACKAGE = os.environ.get("SIMULATE_NO_KICAD_PACKAGES3D") == "1"
+NO_PACKAGE_DIR = "/nonexistent/kicad/3dmodels"
+
 
 def _load(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -55,6 +71,8 @@ def _load(name: str, path: Path):
     assert spec.loader is not None
     sys.modules[name] = module
     spec.loader.exec_module(module)
+    if SIMULATE_NO_PACKAGE:
+        module.KICAD_3DMODEL_DIR = NO_PACKAGE_DIR
     return module
 
 
@@ -151,14 +169,19 @@ def test_kicadN_3dmodel_dir_expands_to_the_compiled_in_default(mod, tmp_path):
 
 @pytest.mark.parametrize("var", ["KICAD8_3DMODEL_DIR", "KICAD7_3DMODEL_DIR"])
 def test_previous_major_variables_also_expand(mod, tmp_path, var):
-    """A board generated under an older KiCad still names that release's var."""
+    """A board generated under an older KiCad still names that release's var.
+
+    The expected path is built from `mod.KICAD_3DMODEL_DIR`, not hardcoded: with
+    `SIMULATE_NO_KICAD_PACKAGES3D=1` that is a nonexistent path on purpose, and a
+    hardcoded `/usr/share/...` made this test fail on the simulated CI runner.
+    """
     board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", [f"${{{var}}}/does/not/exist.wrl"]))
 
     r = mod.census(str(board))
 
     assert r["unresolved_refs"] == [f"${{{var}}}/does/not/exist.wrl"]
-    assert "/usr/share/kicad/3dmodels/does/not/exist.wrl" in mod._expand(
-        f"${{{var}}}/does/not/exist.wrl", str(tmp_path)
+    assert mod._expand(f"${{{var}}}/does/not/exist.wrl", str(tmp_path)) == str(
+        Path(mod.KICAD_3DMODEL_DIR) / "does/not/exist.wrl"
     )
 
 
@@ -373,38 +396,59 @@ def test_the_gate_is_identical_on_a_host_without_kicad_packages3d(mod, monkeypat
     Actions run 38177201784, `1 failed, 686 passed`, with nine
     `${KICAD9_3DMODEL_DIR}` references named as the cause.
 
-    The SECOND half is the part that makes this a real gate rather than a
-    rubber stamp: a genuine repo defect must STILL fail on that same host.
+    Only HOST-INDEPENDENT facts are asserted. An earlier version of this test also
+    asserted `resolved == model_refs` on the local host, which is true here and false
+    on the runner (`assert 14 == 39`, run 38178168542) -- i.e. the test reproducing
+    the bug had the bug. The relations below hold on both hosts by construction.
+
+    The second half is what makes this a real gate rather than a rubber stamp: a
+    genuine in-repo defect must STILL fail on that same package-less host.
     """
     if not HUB.is_file():
         pytest.skip("hub board not present")
 
     good = mod.census(str(HUB))
-    assert good["unresolved_local"] == [] and good["unresolved_other"] == []
-    assert good["resolved"] == good["model_refs"], "on this host everything resolves"
 
-    monkeypatch.setattr(mod, "KICAD_3DMODEL_DIR", "/nonexistent/kicad/3dmodels")
+    # Repo-controlled properties: clean on ANY host. This is the gate's contract.
+    assert good["unresolved_local"] == [], good["unresolved_local"]
+    assert good["unresolved_other"] == [], good["unresolved_other"]
+    assert good["hidden_refs"] == [], good["hidden_refs"]
+    assert good["without_model_set"] == [], good["without_model_set"]
+    assert mod.main(["--check", str(HUB)]) == 0
+
+    monkeypatch.setattr(mod, "KICAD_3DMODEL_DIR", NO_PACKAGE_DIR)
     ci = mod.census(str(HUB))
 
-    assert ci["unresolved_package"], "simulated host should not resolve the package refs"
-    assert ci["resolved"] < good["resolved"]
-    # ...and the repo's own models are untouched by the host's missing package.
-    assert ci["unresolved_local"] == [], ci["unresolved_local"]
-    assert ci["unresolved_other"] == [], ci["unresolved_other"]
-    assert ci["hidden_refs"] == [], ci["hidden_refs"]
-    assert ci["without_model_set"] == good["without_model_set"]
-    assert mod.main(["--check", str(HUB)]) == 0, "CI host must not fail a healthy repo"
+    # The package class must be REPORTED here, and the reported set can only grow
+    # when the package goes away -- never shrink. True whether or not this host has
+    # `kicad-packages3d` installed (locally 0 -> 9; on CI 9 -> 9).
+    assert ci["unresolved_package"], "a package-less host must report its package misses"
+    assert set(ci["unresolved_package"]) >= set(good["unresolved_package"])
+    assert ci["resolved"] <= good["resolved"]
 
-    # A real defect still fails there: a footprint whose in-repo model is absent.
-    ref = next(ref for ref, ms in good["refs_by_footprint"].items()
-               if any("KIPRJMOD" in m for m in ms))
-    monkeypatch.setattr(mod, "_expand",
-                        lambda r, p, _orig=mod._expand: (
-                            "/nonexistent/missing.wrl" if (f := _orig(r, p)).endswith(".wrl")
-                            and "/3dmodels/" in f else f))
+    # The repo-controlled verdict is IDENTICAL on the package-less host.
+    for key in ("unresolved_local", "unresolved_other", "hidden_refs",
+                "without_model_set", "footprints", "refs_by_footprint"):
+        assert ci[key] == good[key], key
+    assert mod.main(["--check", str(HUB)]) == 0, (
+        "a package-less host must not fail a healthy repo"
+    )
+
+    # ...and a real defect still fails there, on the same host.
+    real_expand = mod._expand
+
+    def _hide_in_repo_models(ref, project_dir):
+        path = real_expand(ref, project_dir)
+        if "KIPRJMOD" in ref and path.endswith(".wrl"):
+            return NO_PACKAGE_DIR + "/gone.wrl"
+        return path
+
+    monkeypatch.setattr(mod, "_expand", _hide_in_repo_models)
     bad = mod.census(str(HUB))
-    assert bad["unresolved_local"], f"{ref}: an in-repo miss must still be reported"
-    assert mod.main(["--check", str(HUB)]) == 1
+    assert bad["unresolved_local"], "an in-repo miss must still be reported"
+    assert mod.main(["--check", str(HUB)]) == 1, (
+        "if this passes on a package-less host the gate is switched off, not host-agnostic"
+    )
 
 
 # --------------------------------------------------------------------------
@@ -529,11 +573,21 @@ class TestHarnessCanFail:
     Without these, a green run only proves the assertions are self-consistent.
     """
 
-    def test_suite_rejects_a_tool_that_ignores_the_kicad_directory_variable(self, tmp_path, monkeypatch):
-        """Mutant: stop expanding ${KICAD<n>_3DMODEL_DIR}."""
-        target = Path("/usr/share/kicad/3dmodels")
+    def test_suite_rejects_a_tool_that_ignores_the_kicad_directory_variable(self, tmp_path, monkeypatch, mod):
+        """Mutant: stop expanding ${KICAD<n>_3DMODEL_DIR}.
+
+        Needs a REAL package model to exist, so it skips under
+        `SIMULATE_NO_KICAD_PACKAGES3D=1` and on the CI runner. The mutant itself is
+        still proven load-bearing by the sister mutant below, which needs no package:
+        if it could only be shown on a fully-provisioned host, the check would be
+        untested exactly where CI runs it.
+
+        The directory comes from `mod`, not the hardcoded KiCad default, so that the
+        simulated-runner mode skips honest rather than failing on its own setup.
+        """
+        target = Path(mod.KICAD_3DMODEL_DIR)
         if not target.is_dir():
-            pytest.skip("3D model package not installed")
+            pytest.skip(f"{target} not installed on this host")
 
         real = next(target.rglob("*.wrl"), None)
         if real is None:
@@ -547,6 +601,32 @@ class TestHarnessCanFail:
         mut = _load("census_mutant_kicadvar", SCRIPT)
         monkeypatch.setattr(mut, "_expand", lambda ref, d: ref.replace("${KIPRJMOD}", d))
         assert mut.census(str(board))["unresolved_refs"] == [ref]
+
+    def test_suite_rejects_a_tool_that_loses_the_package_local_split(self, tmp_path, monkeypatch):
+        """Mutant: classify every unresolved reference as a repo defect.
+
+        This is the pre-regression behaviour, and it is the mutant that fails CI:
+        it renames a missing HOST package into a repo defect, so the gate exits 1 on
+        a healthy board (measured: run 38177201784, nine `${KICAD9_3DMODEL_DIR}`
+        references named as the cause). It needs no installed package to demonstrate,
+        which is the point -- it runs identically on the dev box and the runner.
+        """
+        board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KICAD9_3DMODEL_DIR}/gone.wrl"]))
+        monkeypatch.setattr(_load("census_split_ref", SCRIPT), "KICAD_3DMODEL_DIR",
+                            NO_PACKAGE_DIR)
+
+        good = _load("census_split_good", SCRIPT)
+        monkeypatch.setattr(good, "KICAD_3DMODEL_DIR", NO_PACKAGE_DIR)
+        assert good.census(str(board))["unresolved_package"] == ["${KICAD9_3DMODEL_DIR}/gone.wrl"]
+        assert good.main(["--check", str(board)]) == 0
+
+        mut = _load("census_split_mutant", SCRIPT)
+        monkeypatch.setattr(mut, "KICAD_3DMODEL_DIR", NO_PACKAGE_DIR)
+        monkeypatch.setattr(mut, "_classify", lambda ref: "local")
+        assert mut.census(str(board))["unresolved_local"] == ["${KICAD9_3DMODEL_DIR}/gone.wrl"]
+        assert mut.main(["--check", str(board)]) == 1, (
+            "the mutant was rejected, so this mutation test proves nothing"
+        )
 
     def test_suite_rejects_a_regex_based_footprint_splitter(self, tmp_path, monkeypatch):
         """Mutant: split footprint blocks with a regex instead of a depth counter.
