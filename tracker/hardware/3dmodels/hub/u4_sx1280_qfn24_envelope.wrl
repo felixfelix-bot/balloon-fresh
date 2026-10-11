@@ -1,0 +1,65 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : U4 -- SX1280 (QFN24, 2.4 GHz FLRC range radio) -- ENVELOPE, height unverified
+# dims_mm    : 4.4 x 4.4 x 0.9(nominal) mm -- X/Y from the F.CrtYd courtyard, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "balloon_flight_v9:SX1280_QFN24" (Reference U4, Value "SX1280"): this library footprint ships NO F.Fab outline, so the envelope is its F.CrtYd courtyard 4.4 x 4.4 mm.  Reproduce with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# note       : U4 carried NO `(model ...)` block at all -- the renderer drew nothing there, and the census classifies that separately from an unresolvable reference.
+# note       : the 4.4 x 4.4 courtyard is the PLACEMENT envelope, i.e. the body plus the assembly clearance ring; the QFN body itself is smaller, and the 24 perimeter lands are board copper that KiCad draws itself.
+# note       : 0.9 mm is a nominal QFN body height, NOT a sourced figure -- this specific part number is not fixed in the repo.
+# note       : TODO(unverified): the 0.9 mm height is TODO(unverified) -- a nominal QFN placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+# note       : TODO(unverified): the SX1280 body size within the 4.4 mm courtyard (no F.Fab to read)
+DEF u4_sx1280_qfn24_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF u4_sx1280_qfn24_envelope_mat Material {
+          diffuseColor 0.14 0.15 0.17
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -0.866142 -0.866142 0.354331,
+          0.866142 -0.866142 0.354331,
+          0.866142 0.866142 0.354331,
+          -0.866142 0.866142 0.354331,
+          -0.866142 0.866142 0.000000,
+          0.866142 0.866142 0.000000,
+          0.866142 -0.866142 0.000000,
+          -0.866142 -0.866142 0.000000,
+          -0.866142 0.866142 0.000000,
+          -0.866142 0.866142 0.354331,
+          0.866142 0.866142 0.354331,
+          0.866142 0.866142 0.000000,
+          0.866142 -0.866142 0.000000,
+          0.866142 -0.866142 0.354331,
+          -0.866142 -0.866142 0.354331,
+          -0.866142 -0.866142 0.000000,
+          0.866142 0.866142 0.000000,
+          0.866142 0.866142 0.354331,
+          0.866142 -0.866142 0.354331,
+          0.866142 -0.866142 0.000000,
+          -0.866142 -0.866142 0.000000,
+          -0.866142 -0.866142 0.354331,
+          -0.866142 0.866142 0.354331,
+          -0.866142 0.866142 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
