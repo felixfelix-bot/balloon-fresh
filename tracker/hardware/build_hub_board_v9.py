@@ -200,6 +200,7 @@ def load_everything(w: float, h: float):
     import pcbnew
 
     comps, nets = read_netlist(NETLIST)
+    HUB_PART_MODELS.update(_load_hub_part_models())
     scaf = os.path.join(HERE, "output", ".hub_v9_scaffold.kicad_pcb")
     os.makedirs(os.path.dirname(scaf), exist_ok=True)
     with open(scaf, "w") as f:
@@ -232,6 +233,9 @@ def load_everything(w: float, h: float):
         fp.SetReference(c["ref"])
         fp.SetValue(c["value"])
         fp.SetFPID(pcbnew.LIB_ID(lib, name))
+        rel = HUB_PART_MODELS.get(c["ref"])
+        if rel:
+            attach_model(fp, rel)
         for pad in fp.Pads():
             nm = pin_net.get((c["ref"], pad.GetNumber()))
             if nm:
@@ -239,6 +243,61 @@ def load_everything(w: float, h: float):
         board.Add(fp)
         placed.append((c["ref"], fp))
     return board, placed, skipped, comps, nets
+
+
+# ------------------------------------------------------------------- 3D models
+# Designator -> in-repo VRML model.  This mapping is deliberately NOT restated here: it is
+# read from scripts/gen_3d_models_hub.py, which EMITS the models, so the board and the model
+# tree cannot drift apart.
+#
+# Measured 2026-10-11 (scripts/model_resolution_census.py), before this hook existed: the board
+# made 32 model references, 7 of which did not resolve, and 7 footprints carried no `(model ...)`
+# block at all -- J_VCC, J_W1..J_W4, U2, U4.  U2 is the 39.0 x 21.0 mm `LoRa2021F33-2G4`, the
+# largest body on the board and the 433 MHz bent-pipe downlink radio, and U4 is the SX1280 range
+# radio.  `kicad-cli pcb render` reports that condition only as silence (exit 0, no warning), so
+# the render looked populated while the radios were invisible to the spatial-review gate.
+# The board file lives at tracker/hardware/, and KiCad expands ${KIPRJMOD} to the directory
+# holding it -- so the reference is relative to the BOARD, not to the model tree.
+MODEL_REF_PREFIX = "${KIPRJMOD}/3dmodels/"
+HUB_PART_MODELS: dict[str, str] = {}
+
+
+def _load_hub_part_models() -> dict:
+    """Read PART_MODELS from the model generator (one source of truth for both)."""
+    import importlib.util
+
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    path = os.path.join(root, "scripts", "gen_3d_models_hub.py")
+    spec = importlib.util.spec_from_file_location("gen_3d_models_hub", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return dict(mod.PART_MODELS)
+
+
+def attach_model(fp, rel: str) -> None:
+    """Replace fp's 3D models with the committed in-repo model `rel` (relative to the board).
+
+    `${KIPRJMOD}` expands to the directory holding the board file -- here `tracker/hardware` --
+    and the model tree sits beside it at `tracker/hardware/3dmodels`.
+
+    Scale/offset/rotation are set explicitly to identity.  The VRML is authored in KiCad's
+    convention of 2.54 mm per model unit (see the module docstring of
+    `scripts/gen_3d_models_wing.py`, probe 1), so any non-identity transform would silently
+    move or resize a body that a placement review is judging.  Changing an EXISTING model
+    reference is the point here: U1/U3/U5/ANT1-ANT4 already pointed at files the installed
+    `kicad-packages3d` does not ship, which resolves to no body drawn and no warning printed.
+    """
+    import pcbnew
+
+    m = pcbnew.FP_3DMODEL()
+    m.m_Filename = MODEL_REF_PREFIX + rel
+    m.m_Scale = pcbnew.VECTOR3D(1.0, 1.0, 1.0)
+    m.m_Offset = pcbnew.VECTOR3D(0.0, 0.0, 0.0)
+    m.m_Rotation = pcbnew.VECTOR3D(0.0, 0.0, 0.0)
+    m.m_Opacity = 1.0
+    models = fp.Models()
+    models.clear()
+    models.push_back(m)
 
 
 # --------------------------------------------------------------- measurement
@@ -526,6 +585,74 @@ def add_planes_to_frozen(path: str) -> int:
     return 0
 
 
+def _placement_key(fp):
+    """Everything about a footprint's PLACEMENT (not its model assignment)."""
+    import pcbnew
+
+    pos = fp.GetPosition()
+    key = [int(pos.x), int(pos.y), int(fp.GetLayer())]
+    for attr in ("GetOrientationDegrees", "GetOrientation"):
+        fn = getattr(fp, attr, None)
+        if fn is None:
+            continue
+        try:
+            v = fn()
+            key.append(round(float(v.AsDegrees() if hasattr(v, "AsDegrees") else v), 6))
+            break
+        except Exception:  # noqa: BLE001 - an introspection probe, not control flow
+            continue
+    return tuple(key)
+
+
+def attach_models_to_frozen(path: str) -> int:
+    """Attach the in-repo 3D models to an EXISTING board, in place.
+
+    Never re-places anything: every footprint's placement key is compared before and after and
+    any difference is a hard failure before the save.  The frozen board's placement is a
+    reviewed artefact (`tracker/hardware/PLACEMENT-S0-FREEZE-v9-hub.md`) and a model assignment
+    has no business moving a part -- this is the same no-silent-re-place rule that
+    `--add-planes` exists to honour.
+    """
+    import pcbnew
+
+    HUB_PART_MODELS.update(_load_hub_part_models())
+    board = pcbnew.LoadBoard(path)
+    if board is None:
+        raise SystemExit(f"failed to load {path}")
+
+    before = {fp.GetReference(): _placement_key(fp) for fp in board.GetFootprints()}
+    refs_before = sorted(fp.GetReference() for fp in board.GetFootprints())
+
+    attached, absent, already = [], [], []
+    for ref, rel in sorted(HUB_PART_MODELS.items()):
+        fp = board.FindFootprintByReference(ref)
+        if fp is None:
+            absent.append(ref)
+            continue
+        had = [m.m_Filename for m in fp.Models()]
+        attach_model(fp, rel)
+        (already if had == [MODEL_REF_PREFIX + rel] else attached).append(ref)
+
+    after = {fp.GetReference(): _placement_key(fp) for fp in board.GetFootprints()}
+    refs_after = sorted(fp.GetReference() for fp in board.GetFootprints())
+    if refs_before != refs_after:
+        raise SystemExit("REFUSING TO SAVE: the footprint set changed")
+    moved = sorted(r for r in before if before[r] != after[r])
+    if moved:
+        raise SystemExit(f"REFUSING TO SAVE: attaching models moved {moved}")
+
+    pcbnew.SaveBoard(path, board)
+    print(f"board           : {os.path.relpath(path, REPO)}")
+    print(f"footprints      : {len(refs_after)} (none moved, none added, none removed)")
+    print(f"models attached : {len(attached)}  {', '.join(attached) if attached else '-'}")
+    if already:
+        print(f"models already  : {len(already)}  {', '.join(already)}")
+    if absent:
+        print(f"NOT ON BOARD    : {', '.join(absent)}")
+    print(f"sha256          : {sha256(path)}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--outline", default=f"{DEFAULT_W:g}x{DEFAULT_H:g}",
@@ -536,9 +663,14 @@ def main() -> int:
     ap.add_argument("--add-planes", metavar="BOARD",
                     help="add the GND planes to an existing frozen board in place, "
                          "without re-placing any component")
+    ap.add_argument("--attach-models", metavar="BOARD",
+                    help="attach the committed in-repo 3D models to an existing board in place, "
+                         "without re-placing any component")
     a = ap.parse_args()
     if a.add_planes:
         return add_planes_to_frozen(a.add_planes)
+    if a.attach_models:
+        return attach_models_to_frozen(a.attach_models)
     w, h = (float(v) for v in a.outline.lower().split("x"))
 
     import pcbnew

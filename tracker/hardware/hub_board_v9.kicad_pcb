@@ -560,6 +560,17 @@
 			(uuid "458fa36a-07cb-4444-83f7-9cba7eb8f4f1")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/jvcc_solder_jumper_3p_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "balloon_flight_v9:SX1280_QFN24"
 		(layer "F.Cu")
@@ -892,6 +903,17 @@
 			(uuid "1a90c66f-6c61-4306-b3b8-af6866aba918")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/u4_sx1280_qfn24_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
 		(layer "F.Cu")
@@ -6304,8 +6326,7 @@
 			(uuid "96881f89-603c-49de-a609-2c748efc7d7b")
 		)
 		(embedded_fonts no)
-		(model "${KICAD8_3DMODEL_DIR}/RF_Module.3dshapes/NiceRF_LoRa2021.wrl"
-			(hide yes)
+		(model "${KIPRJMOD}/3dmodels/hub/u3_lora2021_castellated_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -6867,6 +6888,17 @@
 			(uuid "bac28ce7-ee88-4527-a500-f6f5fc50695b")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/jw_wing_tab_socket_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
@@ -7314,6 +7346,17 @@
 			(uuid "9894e4a5-0382-4498-9f9d-44aa9a3487ad")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/u2_lora2021f33_2g4_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical"
 		(layer "F.Cu")
@@ -7668,7 +7711,7 @@
 			(uuid "537a9b27-399c-4de6-9391-c41cd3aeda79")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/3dmodels/hub/ant_ufl_mcrf_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -8470,6 +8513,17 @@
 			(uuid "6a580fe3-feba-456b-ae7b-c9d4ed1b4e10")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/jw_wing_tab_socket_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
@@ -9224,7 +9278,7 @@
 			(uuid "72d502f0-1958-44fa-b4e0-8da141cbc676")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/3dmodels/hub/ant_ufl_mcrf_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -10260,7 +10314,7 @@
 			(uuid "5871c7de-49b0-42ad-a130-92492815333c")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/RF_Module.3dshapes/ESP32-S3-WROOM-1U.step"
+		(model "${KIPRJMOD}/3dmodels/hub/u1_esp32s3_wroom1u_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -10760,7 +10814,7 @@
 			(uuid "0f59a398-bd10-4b6f-aa3b-88cb73ce0380")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/3dmodels/hub/ant_ufl_mcrf_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -11403,7 +11457,7 @@
 			(uuid "31c423b1-8b5b-4266-8969-6291ee711fe5")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/RF_GPS.3dshapes/ublox_MAX.step"
+		(model "${KIPRJMOD}/3dmodels/hub/u5_ublox_max_m10s_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -11835,6 +11889,17 @@
 			(uuid "574bf006-f98f-40b5-ad91-168bb179006f")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/jw_wing_tab_socket_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Diode_SMD:D_SMA"
 		(layer "F.Cu")
@@ -12994,7 +13059,7 @@
 			(uuid "433381a4-d855-4c49-8657-ba499ccb6f3e")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step"
+		(model "${KIPRJMOD}/3dmodels/hub/ant_ufl_mcrf_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -13555,6 +13620,17 @@
 			(uuid "c61db335-c611-44d8-9c45-019f5316aa89")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/jw_wing_tab_socket_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "F.Cu")
