@@ -320,18 +320,91 @@ HUB_MUST_BE_VISIBLE = ["U1", "U2", "U3", "U4", "U5", "ANT1", "ANT2", "ANT3", "AN
 
 
 def test_every_hub_part_the_review_must_see_resolves(mod):
-    """The gate on the real board. Measured BEFORE the fix: 25 of 32 refs resolved and
-    seven footprints -- including both radios -- carried no model block at all."""
+    """The gate on the real board. Measured BEFORE the fix: 25 of 32 refs resolved,
+    seven footprints -- including both radios -- carried no model block at all, and one
+    reference resolved but was hidden.
+
+    Asserted here are only the HOST-INDEPENDENT properties. The board's other
+    references point into `kicad-packages3d` via `${KICAD9_3DMODEL_DIR}`, and those
+    resolve on a machine with the package and not on one without it (measured: 39/39
+    locally vs 30/39 on the CI runner, no repo change between the two) -- so a blanket
+    `unresolved_refs == []` here would red CI for a reason no committer can fix.
+    """
     if not HUB.is_file():
         pytest.skip("hub board not present")
 
     r = mod.census(str(HUB))
 
-    assert r["unresolved_refs"] == [], r["unresolved_refs"]
+    assert r["unresolved_local"] == [], r["unresolved_local"]
+    assert r["unresolved_other"] == [], r["unresolved_other"]
     assert r["hidden_refs"] == [], r["hidden_refs"]
     missing = [ref for ref in HUB_MUST_BE_VISIBLE if ref in r["without_model_set"]]
     assert missing == [], f"no model block: {missing}"
-    assert r["model_refs"] == len(r["refs_by_footprint"]) or r["model_refs"] >= 32
+    # Every one of those designators must be carried by a model we authored in-repo,
+    # so that the spatial reviewer can see it with nothing installed at all.
+    for ref in HUB_MUST_BE_VISIBLE:
+        assert any("/${KIPRJMOD}/" in f"/{m}" for m in r["refs_by_footprint"].get(ref, [])), \
+            f"{ref} has no in-repo model: {r['refs_by_footprint'].get(ref)}"
+
+
+def test_hub_package_references_are_counted_not_ignored(mod):
+    """The host-dependent class must still be REPORTED -- silence would be the other
+    failure mode: a gate that quietly stops looking."""
+    if not HUB.is_file():
+        pytest.skip("hub board not present")
+
+    r = mod.census(str(HUB))
+
+    package_refs = [m for ms in r["refs_by_footprint"].values() for m in ms
+                    if "3DMODEL_DIR" in m]
+    assert package_refs, "the hub should still reference the KiCad package for generic parts"
+    assert len(r["unresolved_package"]) <= len(set(package_refs))
+    if Path(mod.KICAD_3DMODEL_DIR).is_dir():
+        assert r["unresolved_package"] == [], r["unresolved_package"]
+
+
+def test_the_gate_is_identical_on_a_host_without_kicad_packages3d(mod, monkeypatch):
+    """Regression guard for the failure that actually happened in CI.
+
+    Point the package directory at a nonexistent path -- exactly what a CI runner
+    without `kicad-packages3d` looks like -- and the verdict on the repo-controlled
+    properties must not move. Before `_classify` existed this same board reported
+    `unresolved 9` there and the gate went red on a healthy repo: measured on GitHub
+    Actions run 38177201784, `1 failed, 686 passed`, with nine
+    `${KICAD9_3DMODEL_DIR}` references named as the cause.
+
+    The SECOND half is the part that makes this a real gate rather than a
+    rubber stamp: a genuine repo defect must STILL fail on that same host.
+    """
+    if not HUB.is_file():
+        pytest.skip("hub board not present")
+
+    good = mod.census(str(HUB))
+    assert good["unresolved_local"] == [] and good["unresolved_other"] == []
+    assert good["resolved"] == good["model_refs"], "on this host everything resolves"
+
+    monkeypatch.setattr(mod, "KICAD_3DMODEL_DIR", "/nonexistent/kicad/3dmodels")
+    ci = mod.census(str(HUB))
+
+    assert ci["unresolved_package"], "simulated host should not resolve the package refs"
+    assert ci["resolved"] < good["resolved"]
+    # ...and the repo's own models are untouched by the host's missing package.
+    assert ci["unresolved_local"] == [], ci["unresolved_local"]
+    assert ci["unresolved_other"] == [], ci["unresolved_other"]
+    assert ci["hidden_refs"] == [], ci["hidden_refs"]
+    assert ci["without_model_set"] == good["without_model_set"]
+    assert mod.main(["--check", str(HUB)]) == 0, "CI host must not fail a healthy repo"
+
+    # A real defect still fails there: a footprint whose in-repo model is absent.
+    ref = next(ref for ref, ms in good["refs_by_footprint"].items()
+               if any("KIPRJMOD" in m for m in ms))
+    monkeypatch.setattr(mod, "_expand",
+                        lambda r, p, _orig=mod._expand: (
+                            "/nonexistent/missing.wrl" if (f := _orig(r, p)).endswith(".wrl")
+                            and "/3dmodels/" in f else f))
+    bad = mod.census(str(HUB))
+    assert bad["unresolved_local"], f"{ref}: an in-repo miss must still be reported"
+    assert mod.main(["--check", str(HUB)]) == 1
 
 
 # --------------------------------------------------------------------------

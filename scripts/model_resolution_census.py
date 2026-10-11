@@ -57,6 +57,38 @@ KICAD_3DMODEL_DIR = "/usr/share/kicad/3dmodels"
 
 _MODEL_RE = re.compile(r'\(model\s+"([^"]+)"')
 
+_KIPRJMOD_RE = re.compile(r"\$\{KIPRJMOD\}")
+_PACKAGE_RE = re.compile(r"\$\{KICAD\d+_3DMODEL_DIR\}")
+
+
+def _classify(ref: str) -> str:
+    """Where a model reference points: inside the repo, or into the KiCad package.
+
+    This distinction is load-bearing for a CI gate, and it was measured the hard
+    way: the same hub board reports 39/39 resolved on a machine with
+    `kicad-packages3d` installed and 30/39 on a CI runner without it, with no
+    change to the repository between the two.  So "does not resolve" means two
+    different things:
+
+      local    the reference is `${KIPRJMOD}`-relative, i.e. it points INSIDE the
+               repository.  If it does not resolve, the repo is broken, on every
+               machine, forever -- a defect.
+      package  the reference is `${KICAD<n>_3DMODEL_DIR}`-relative, i.e. into
+               `kicad-packages3d`.  If it does not resolve, THIS HOST lacks the
+               package -- an environment fact, not a property of the repo.
+      other    an absolute path or some other form: treated as a defect, because
+               the repo controls everything else it emits.
+
+    A gate that cannot tell these apart either fails CI for a reason the committer
+    cannot fix from the repo, or goes green on a genuinely broken board.  Both
+    happened here before this function existed.
+    """
+    if _KIPRJMOD_RE.search(ref):
+        return "local"
+    if _PACKAGE_RE.search(ref):
+        return "package"
+    return "other"
+
 
 def _iter_statements(text: str, token: str):
     """Yield each balanced `(token ...)` statement in `text`."""
@@ -156,9 +188,14 @@ def census(board_path: str) -> dict:
 
     all_refs = [r for rs in refs_by_fp.values() for r in rs]
     resolved, unresolved = [], []
+    unresolved_by_class: dict[str, list[str]] = {"local": [], "package": [], "other": []}
     for ref in all_refs:
         path = _expand(ref, project_dir)
-        (resolved if os.path.isfile(path) else unresolved).append(ref)
+        if os.path.isfile(path):
+            resolved.append(ref)
+        else:
+            unresolved.append(ref)
+            unresolved_by_class[_classify(ref)].append(ref)
 
     # A footprint with no model block is a DIFFERENT defect from one whose model
     # points at a file that is not there: the first is an omission in the
@@ -178,6 +215,12 @@ def census(board_path: str) -> dict:
         "footprints_without_model": without_model,
         "without_model_set": without_model,
         "unresolved_refs": sorted(set(unresolved)),
+        # Split by what a failure MEANS: a `local` miss is the repo's fault and must
+        # fail everywhere; a `package` miss says only that this host lacks
+        # `kicad-packages3d`.  See `_classify`.
+        "unresolved_local": sorted(set(unresolved_by_class["local"])),
+        "unresolved_package": sorted(set(unresolved_by_class["package"])),
+        "unresolved_other": sorted(set(unresolved_by_class["other"])),
         "hidden_refs": sorted({r for rs in hidden_by_fp.values() for r in rs}),
         "hidden_by_footprint": {k: v for k, v in sorted(hidden_by_fp.items())},
         "refs_by_footprint": {k: v for k, v in sorted(refs_by_fp.items())},
@@ -191,6 +234,11 @@ def main(argv=None) -> int:
                     help="exit 1 if any model reference is unresolved, or any --require-refs part has no model")
     ap.add_argument("--require-refs", default="",
                     help="comma-separated designators that MUST carry a model, e.g. U1,U2,U3")
+    ap.add_argument("--strict-package", action="store_true",
+                    help="also fail on `${KICAD<n>_3DMODEL_DIR}` references that do not resolve. "
+                         "OFF by default: that is a property of the host (whether kicad-packages3d "
+                         "is installed), not of the repo, so failing on it reds CI for something "
+                         "the committer cannot fix from the repo")
     ap.add_argument("--json", metavar="OUT", help="also write the report as JSON")
     args = ap.parse_args(argv)
 
@@ -199,7 +247,10 @@ def main(argv=None) -> int:
     failures = 0
 
     for r in reports:
-        ok = not r["unresolved_refs"] and not r["hidden_refs"]
+        ok = (not r["unresolved_local"] and not r["unresolved_other"]
+              and not r["hidden_refs"])
+        if args.strict_package and r["unresolved_package"]:
+            ok = False
         missing_required = [x for x in required if x in r["without_model_set"]]
         if missing_required:
             ok = False
@@ -208,8 +259,11 @@ def main(argv=None) -> int:
               f"resolved {r['resolved']}  unresolved {r['unresolved']}")
         if r["footprints_without_model"]:
             print(f"    no model block: {', '.join(r['footprints_without_model'])}")
-        for ref in r["unresolved_refs"]:
+        for ref in r["unresolved_local"] + r["unresolved_other"]:
             print(f"    MISSING {ref}")
+        for ref in r["unresolved_package"]:
+            print(f"    NO PACKAGE {ref}   (host lacks kicad-packages3d; not a repo defect "
+                  f"-- pass --strict-package to fail on it)")
         for ref in r["hidden_refs"]:
             print(f"    HIDDEN  {ref}   (resolves, but (hide yes) keeps it out of the render)")
         if missing_required:
