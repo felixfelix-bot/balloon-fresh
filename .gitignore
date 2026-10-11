@@ -72,3 +72,7 @@ cluster_before.txt
 cluster_after.txt
 # ADR renumbering scratch (evidence archived to ~/reports/balloon-v9/scratch/renumber/)
 scratch-adr/
+
+# v9 hub generator scratch (regenerated each run; never merged)
+tracker/hardware/output/.hub_v9_libcache/
+tracker/hardware/output/.hub_v9_scaffold.kicad_pcb

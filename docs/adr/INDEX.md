@@ -125,7 +125,8 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 067 | — |
+| 067 | `067-hub-board-ground-plane.md` | Hub board: continuous GND return on the 4-layer stack | Accepted |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 068 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 

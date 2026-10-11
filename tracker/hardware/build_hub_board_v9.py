@@ -433,6 +433,99 @@ def run_krt(seed_path: str, lap_path: str) -> int:
     return r.returncode
 
 
+def add_gnd_plane(board, w: float, h: float, margin: float = 0.5,
+                  ox: float = 0.0, oy: float = 0.0) -> list:
+    """Pour a solid GND plane onto the 4-layer stack (ADR-029/030).
+
+    The generated hub carried NO zone on any layer, so the 0.6 mm 4-layer stack
+    provided no continuous return path -- every GND return had to share the
+    signal layers, and In1.Cu/In2.Cu were declared but empty copper.  In1.Cu is
+    the dedicated ground layer of this stackup; B.Cu takes a pour as well so the
+    return is redundant and the outer faces are shielded.  F.Cu and In2.Cu are
+    deliberately left clear for signal and power.
+
+    ``margin`` is the copper-to-board-edge clearance; it must be at least the
+    board setup edge-clearance rule (0.5 mm here) or DRC flags the pour.
+    """
+    import pcbnew
+    net = board.FindNet("GND")
+    if net is None:
+        print("gnd plane       : GND net absent - no plane added")
+        return []
+    added = []
+    # A 0.80x0.25 mm QFN land (U4's perimeter GND pads) cannot host two 0.3 mm
+    # spokes across its short axis, so a THERMAL connection DRC-fails as
+    # starved_thermal.  Connect any pad too small to take two spokes SOLID: the
+    # QFN is reflow-only, and a solid tie is the lower-impedance answer there.
+    # Must land before the fill so the override is honoured.
+    SPOKE_MM = 0.3
+    for fp in board.GetFootprints():
+        for pad in fp.Pads():
+            if pad.GetNetname() != "GND":
+                continue
+            sz = pad.GetSize()
+            if min(sz.x, sz.y) / 1e6 < 2 * SPOKE_MM:
+                pad.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
+    for layer, name in ((pcbnew.In1_Cu, "In1.Cu"), (pcbnew.F_Cu, "F.Cu"),
+                        (pcbnew.B_Cu, "B.Cu")):
+        z = pcbnew.ZONE(board)
+        z.SetLayer(layer)
+        z.SetNet(net)
+        z.SetZoneName(f"GND_PLANE_{name}")
+        z.SetLocalClearance(pcbnew.FromMM(0.2))
+        z.SetMinThickness(pcbnew.FromMM(0.25))
+        z.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
+        z.SetThermalReliefSpokeWidth(pcbnew.FromMM(SPOKE_MM))
+        poly = z.Outline()
+        poly.NewOutline()
+        for x, y in ((ox + margin, oy + margin), (ox + w - margin, oy + margin),
+                     (ox + w - margin, oy + h - margin), (ox + margin, oy + h - margin)):
+            poly.Append(pcbnew.FromMM(x), pcbnew.FromMM(y))
+        board.Add(z)
+        added.append(name)
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+    return added
+
+
+def add_planes_to_frozen(path: str) -> int:
+    """Add the GND planes to an already-frozen board, IN PLACE, without
+    re-placing anything.
+
+    Needed because the frozen boards on disk were generated from an earlier
+    EDGE_SEATS offset than the current generator (5 edge-seated refs drift by
+    1.000 mm), so a full regeneration would silently move them.  This path only
+    appends zones and refills.
+    """
+    import pcbnew
+    board = pcbnew.LoadBoard(path)
+    if board is None:
+        print(f"cannot load {path}")
+        return 2
+    # Board outline = BOARD-LEVEL Edge.Cuts graphics only.  Footprint-level
+    # Edge.Cuts (the wing-tab slots carried by J_W1..J_W4) stick 6 mm past the
+    # panel and would otherwise inflate the plane outline to 103.15 x 115.05.
+    edges = [d for d in board.GetDrawings() if d.GetLayer() == pcbnew.Edge_Cuts]
+    if not edges:
+        print("no board-level Edge.Cuts - cannot size the plane")
+        return 2
+    xs, ys = [], []
+    for d in edges:
+        bb = d.GetBoundingBox()
+        xs += [pcbnew.ToMM(bb.GetX()), pcbnew.ToMM(bb.GetX() + bb.GetWidth())]
+        ys += [pcbnew.ToMM(bb.GetY()), pcbnew.ToMM(bb.GetY() + bb.GetHeight())]
+    ox, oy = min(xs), min(ys)
+    w, h = max(xs) - ox, max(ys) - oy
+    before = board.GetAreaCount()
+    planes = add_gnd_plane(board, w, h, ox=ox, oy=oy)
+    pcbnew.SaveBoard(path, board)
+    print(f"board           : {os.path.relpath(path, REPO)}")
+    print(f"outline         : {w:g} x {h:g} mm at ({ox:g},{oy:g})")
+    print(f"zones           : {before} -> {board.GetAreaCount()}  ({planes})")
+    print(f"gnd plane       : {planes or 'none'}")
+    print(f"sha256          : {sha256(path)}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--outline", default=f"{DEFAULT_W:g}x{DEFAULT_H:g}",
@@ -440,13 +533,19 @@ def main() -> int:
     ap.add_argument("--out", default=OUT_SEED)
     ap.add_argument("--publish", action="store_true",
                     help="write the seed, run the KRT lap and write the FROZEN board")
+    ap.add_argument("--add-planes", metavar="BOARD",
+                    help="add the GND planes to an existing frozen board in place, "
+                         "without re-placing any component")
     a = ap.parse_args()
+    if a.add_planes:
+        return add_planes_to_frozen(a.add_planes)
     w, h = (float(v) for v in a.outline.lower().split("x"))
 
     import pcbnew
     board, placed, skipped, comps, nets = load_everything(w, h)
     locked = apply_floorplan(board, placed, w, h)
     overflow = pack_rest(board, placed, locked, w, h)
+    planes = add_gnd_plane(board, w, h)
     pcbnew.SaveBoard(a.out, board)
 
     print(f"netlist         : {os.path.relpath(NETLIST, REPO)}  sha256 {sha256(NETLIST)}")
@@ -457,6 +556,7 @@ def main() -> int:
     print(f"nets            : {len(nets)}")
     print(f"outline         : {w} x {h} mm ({LAYER_COUNT}-layer, {BOARD_THICKNESS} mm)")
     print(f"edge-seated     : {locked}")
+    print(f"gnd plane       : {planes or 'none'}")
     if overflow:
         print(f"UNSEATED (pack ran out of room): {overflow}")
     print(f"seed            : {os.path.relpath(a.out, REPO)}  sha256 {sha256(a.out)}")
