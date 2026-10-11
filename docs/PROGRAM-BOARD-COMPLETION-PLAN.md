@@ -30,6 +30,19 @@ the order.
 | `auto-bootsel-interposer` | 2 | 14 | 9 | 0 | 1 (1) | 0 | `routed` |
 | `v8g_krt_routed` (old gen) | 4 | 20 | 398 | 55 | 2 (2) | 0 | `routed` |
 
+**DRC split — errors vs warnings (re-measured with `--severity-all`).** Quoting a
+single "violations" number is how a board gets green-washed, so both are stated:
+
+| board | errors | unconnected | warnings |
+|---|---|---|---|
+| `wing_board_v9` | **0** | **0** | 37 (`lib_footprint_issues` 15, `silk_edge_clearance` 9, `nonmirrored_text_on_back_layer` 6, `silk_overlap` 2, `track_dangling` 2, `text_height` 2, `silk_over_copper` 1) |
+| `hub_board_v9` | **28** (`copper_edge_clearance` 16 + `drill_out_of_range` 12) | **101** | 41 (`silk_over_copper` 16, `silk_overlap` 12, `lib_footprint_issues` 7, `silk_edge_clearance` 6) |
+
+The hub's 28 errors and all of the warnings above are **pre-existing** — measured
+at baseline before the GND pour; the pour added zero new ones. `lib_footprint_issues`
+on all 15 wing footprints means the footprints do not match their library
+definitions: not a fab blocker, but not "clean" either.
+
 ---
 
 ## 1. Board manifest — required vs. real
@@ -82,7 +95,7 @@ G8 ORDER                operator approves and places the JLCPCB order
 
 | id | defect | evidence | gates |
 |---|---|---|---|
-| **D1** | **Wing board: 0 of 12 footprints carry a courtyard.** | measured this session | makes G2 unverifiable — "0 overlap" is not evidence without courtyards (`PCB-01`) |
+| **D1** | **`PCB-01` does NOT reproduce.** The checklist says the wing is "12 footprints / 0 with `CrtYd`"; measured now on **both `origin/main` and this branch: 15 footprints, 15 with `CrtYd`**. | re-measured this session, both refs | row must be re-measured at source before it gates anything — not claimed as fixed |
 | **D2** | **Hub board is not routed at all** (0 tracks, 0 vias; 101 unconnected after the GND plane). | census above | G3/G4 |
 | **D3** | **3D-model pipeline broken:** `KICAD9_3DMODEL_DIR` unset, no model library → every render is substrate+copper+silk only. Fix UNMERGED (`PCB-02`). | AGENTS.md lines 136–137 | blocks G5 *and* makes G6 blind — a spatial reviewer cannot judge part bodies it cannot see |
 | **D4** | **RF-03: 2 MHz FLRC does not fit the 433 band.** ADR-073 fixes the 433 downlink at FLRC-max 2.6 Mbps = **2.666 MHz DSB** against a **1.74 MHz** allocation (1.53×). | `docs/adr/073`, ROUND2 §3.1 | **G0** — the band plan must be settled *before* the duplexer/filter is frozen, or the hardware is wrong at fab |
@@ -138,13 +151,20 @@ decisions make sense" gate, and it is a *pre-condition*, not a later review.
 
 ## 5. Live blockers (honest)
 
-1. **DISPATCH IS QUOTA-BLOCKED.** `zai-quota-gate.sh` → `cheap-gate: BLOCK
-   capacity (no lane has remaining headroom)`, exit 1. Consequences:
-   - No subagents, no kanban workers, no LLM crons may be spawned.
-   - **G6 (Astra spatial review) cannot run until quota frees.** The operator's
-     mandatory review gate is therefore currently unsatisfiable — stated, not hidden.
-   - Work that can proceed now is **deterministic and inline**: schematic/PCB
-     generation, `kicad-cli` DRC, gerber/drill export, census, courtyard fixes.
+1. ~~DISPATCH IS QUOTA-BLOCKED~~ **CORRECTED: dispatch is ALLOW.**
+   `zai-quota-gate.sh` first reported `BLOCK capacity`, then on re-check reported
+   `ALLOW via fallback-probe` (exit 0). The two rails are separate and both were
+   misread by me at first:
+   - **z.ai cheap-gate** — balance-metered, now ALLOW.
+   - **`openai_codex` (Astra)** — ChatGPT-subscription, not balance-metered.
+     `enabled: true`, `price_skew: 1.5`, `codex_quota.json` = **used 3.0% /
+     remaining 97.0%**, not exhausted, both kill switches absent. `gpt-6-astra`
+     answered a live probe through the router. It is deliberately reserved for
+     **SPATIAL/VISION + CROSS-FAMILY REVIEW** and can only be selected by an
+     explicit pin — which is exactly the G6 gate.
+   Therefore **G6 IS available**, and the correct statement is the opposite of my
+   first report: the review rail is funded, the general-work rail is the one
+   that fluctuates.
 2. **PR #47 is open** (`fix/pcb-defects-v9`, MERGEABLE, 4 commits, 19 files):
    wing B.Cu interconnect fix + hub GND planes + machine-checked status figure.
    Not merged — awaiting review.
@@ -154,7 +174,57 @@ decisions make sense" gate, and it is a *pre-condition*, not a later review.
 
 ---
 
-## 6. What "done" means
+## 6. Token-cost triage — what to do cheaply vs. what to surface
+
+Written at the operator's request ("do what you can do cheaply now, surface
+tasks that could burn a lot of tokens"). Cost classes are relative to a
+deterministic `kicad-cli`/`pcbnew` run, which costs **zero inference tokens**.
+
+**Class A — deterministic, zero inference tokens. Run immediately, inline.**
+`kicad-cli` DRC, `pcbnew` census, gerber/drill export, netlist/ERC, courtyard
+geometry, BOM extraction, the status figure pipeline, generator re-runs. None of
+this needs an LLM and none of it can be green-washed, because the numbers come
+out of the tool.
+
+**Class B — cheap LLM, bounded prompt. Fine to run.**
+Reading one document and answering a specific question ("does ADR-073's bandwidth
+fit the 433 allocation?"), summarising a diff, drafting a card body. Single-digit
+thousands of tokens.
+
+**Class C — expensive LLM, must be surfaced to the operator first.**
+Routing a 128-pad, 4-layer board; a full spatial review of every board; a
+multi-hundred-request autoroute retry loop; a whole-program re-derivation
+(`deleg_0b9d4ef2` died exactly this way at 8 API calls). These are the ones to
+mark **SOON**, not NOW.
+
+### The decision matrix
+
+| task | class | cost driver | recommendation |
+|---|---|---|---|
+| D1 re-measure `PCB-01`/`PCB-02` at source | **A** | none | **NOW — done, D1 does not reproduce** |
+| D3 fix the 3D-model pipeline | **A** | none (env + lib path) | **NOW** — highest leverage: unblocks G5 *and* unblocks the G6 reviewer |
+| G4 re-run DRC on every board, errors vs warnings | **A** | none | **NOW — done above** |
+| Gerber/drill export for a board | **A** | none | **NOW, per board, once that board's G4 is clean** |
+| D2 route `hub_board_v9` (39 fp, 4-layer) | **C** | autoroute loop | **SOON.** Deterministic floorplan + critical nets first; escalate to an LLM router only with a cost estimate on the table |
+| D4 RF-03 band plan (2 MHz FLRC vs 1.74 MHz) | **B** | one focused analysis + ADR | **NOW — cheap, and it gates G0, so every other board waits on it** |
+| D5 bent-pipe vs half-duplex (ADR-035) | **B** | one focused analysis + ADR | **NOW — same reason, gates the whole service model** |
+| D6 uplink budget re-derivation | **B** | one link-budget calc | **NOW — arithmetic, I can do it deterministically and check it with an LLM** |
+| D7 433 LNA band mismatch | **B** | part-substitution analysis | **NOW — cheap, and it changes the BOM** |
+| Base station design from ~16 `design/*` branches | **C** | reconciliation + schematic + route | **SOON, and staged**: merge branches (A) → schematic (A/B) → placement (A) → route (C, surfaced) |
+| Pre-stretch bench rig | **C** | new board, simpler | **SOON** |
+| G6 spatial review, per board | **B/C** | pinned `gpt-6-astra`; **97% of the window unused** | **NOW for each board as it reaches G5** — cheap at current usage, and it is the gate the operator mandated |
+
+**The one thing I want you to decide:** `hub_board_v9` routing (D2) is the single
+largest token risk in the program. A 39-footprint, 4-layer board routed by an LLM
+router can burn a large multiple of everything else combined. My recommendation:
+**do the deterministic parts first** (floorplan, net classes, critical RF nets
+placed by geometry), then bring a concrete estimate before any LLM autoroute loop
+runs. If you would rather I attempt it now and report the spend, say so and I will
+mark it NOW instead of SOON.
+
+---
+
+## 7. What "done" means
 
 The program is done when, for **each** board in §1: G0–G7 have observed output in
 the repo, an Astra-class review is attached, and the board is in a JLCPCB-orderable
