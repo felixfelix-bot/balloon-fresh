@@ -133,9 +133,22 @@ parameter, grep the repo for a competing value and cite the record that owns it.
 - KiCad's Python bindings (`pcbnew`) load **only under `/usr/bin/python3.14`**, NOT the 3.11 the test
   suite uses. Importing `pcbnew` under 3.11 **segfaults the interpreter** and kills the whole pytest
   run — probe it in a subprocess, never in-process.
-- `KICAD9_3DMODEL_DIR` is **unset** and no 3D model library is installed, so `kicad-cli pcb render`
-  draws **substrate + copper + silkscreen only**. Never infer component bodies from a render, and
-  never trust a vision description of one.
+- **3D models — corrected 2026-10-11.** The earlier note here ("`KICAD9_3DMODEL_DIR` is **unset** and
+  no 3D model library is installed, so renders are substrate+copper+silkscreen only") was **wrong on
+  its first two clauses** and is superseded: `kicad-packages3d 9.0.7-1` **is** installed (14,043
+  `.step`/`.wrl` files, 4.6 GB at `/usr/share/kicad/3dmodels`), and KiCad 9 substitutes its own
+  compiled-in default for `KICAD9_3DMODEL_DIR`, so the env var being empty in the shell does **not**
+  matter — the hub render *does* contain component bodies (measured; setting the env var changes the
+  render by zero bytes). The real and still-true hazard is in the third clause: **`kicad-cli pcb
+  render` exits 0 and prints no warning when a footprint's model does not resolve** — the part is
+  silently absent. So never infer component bodies from a render, and never trust a vision
+  description of one; ask the machine instead:
+  `/usr/bin/python3.14 scripts/model_resolution_census.py --check --require-refs U1,U2,U3,U4,U5,ANT3 <board>.kicad_pcb`
+  (text parse, no `pcbnew`, exit 1 on any unresolved reference or missing required model). Measured
+  2026-10-11: wing **12/12 resolved, 0 unresolved** (15 fp; H1–H3 mounting holes carry no model, which
+  is legitimate); hub **25/32 resolved, 7 unresolved** (model-less U2/U4 + missing LoRa2021, ESP32-S3,
+  U.FL, ublox_MAX files) — the hub is **not** ready for a spatial review. Details:
+  `docs/analysis/pcb-render-pipeline.md` and `docs/3d-model-coverage-wing.md`.
 - The suite is green (`python3 -m pytest tests/ -q --continue-on-collection-errors`). Under load,
   `tests/test_board_lock.py::test_lock_status` can flake on a 10 s lock timeout — that is
   **contention, not a regression**; re-run the single file to check.

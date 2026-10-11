@@ -89,3 +89,46 @@ are deferred.
   done together — both change the interface geometry.
 - Do NOT re-place the hub board until the new outline is frozen (ADR-063).
 - The coupon test gates every "make the ribs lighter" follow-up.
+
+## Addendum — the back string was never wired (2026-10-11)
+
+ADR-065 shipped the **placement** of the back-side cells, not their
+**interconnect**. The board was not routed: `build_wing_v9.py` emitted only
+`segment(..., layer='F.Cu')` — **zero B.Cu tracks, zero vias** — so on a
+2-layer board whose cells now sat on B.Cu, the back series string was
+**electrically isolated**. The committed board carried **8 F.Cu segments**
+(three cells) and DRC reported **12 unconnected items**.
+
+Wiring it exposed the real defect, which was worse than "no segments":
+
+- `cell_footprint` placed the back-face cells with **X-mirrored pad geometry
+  but front-face net order**, making the back series chain a **bowtie**. The
+  `SOLAR_MID1` node would have to jump from x = 3 mm to x = 115 mm across two
+  cells — nothing could be routed, and every via attempt **shorted**
+  `SOLAR_MID1` into `SOLAR_MID2` because the F.Cu and B.Cu tracks sat at
+  different gaps.
+
+**Fix:** the back cell is the *same* cell tipped over its **long axis**
+(180° about X — terminals keep their X coordinate), not an X-mirror. Back pads
+then sit **directly beneath** the front pads carrying the same net, so the back
+landing coordinates are **identical** to the front. The back string is drawn
+pad-centre to pad-centre with through vias (`via(net, x, y, size=0.6,
+drill=0.3)`) tying each node's F.Cu and B.Cu halves together. *Tangential land
+contact is not a KiCad connection — tracks must land on pad centres.*
+
+**Evidence** (`kicad-cli pcb drc`, KiCad 9.0.8, same board before vs after):
+
+| | before | after |
+|---|---|---|
+| `unconnected_items` | **12** | **0** |
+| `track_dangling` | 4 | 2 |
+
+Result: **20 segments (F.Cu + B.Cu) and 2 vias**; the back chain is monotonic.
+pcbnew confirms `SC4`/`SC5`/`SC6` are SMD lands on **B.Cu**, at
+(3.00, 12.50) / (57.00, 12.50) / (61.00, 12.50) / (115.00, 12.50) /
+(119.00, 12.50) / (173.00, 12.50) — **exactly co-axial with `SC1`/`SC2`/`SC3`
+above them**, on the same nets. Every node (`SOLAR_P`, `SOLAR_MID1`,
+`SOLAR_MID2`, `SOLAR_N`) now has an F.Cu *and* a B.Cu track plus **2 redundant
+vias**.
+
+The 2 residual `track_dangling` segments are pre-existing stubs, down from 4.

@@ -1,0 +1,65 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : ANT1/ANT2/ANT3/ANT4 -- U.FL (Molex MCRF 73412-0110) vertical jack -- ENVELOPE, height unverified
+# dims_mm    : 2.6 x 2.6 x 2.0(nominal) mm -- X/Y measured from F.Fab, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical" (Reference ANT1..ANT4, Value "U.FL_433_TX / U.FL_2G4_RANGE / U.FL_2G4_RX / U.FL_GNSS_L1"): its own F.Fab outline measures 2.6 x 2.6 mm.  Reproduce every envelope with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# source     : the committed references pointed at `${KICAD9_3DMODEL_DIR}/Connector_Coaxial.3dshapes/U.FL_Molex_MCRF_73412-0110_Vertical.step`, which the installed package does not ship, so all four were unresolved.
+# note       : the 2.6 x 2.6 F.Fab figure is the jack's PAD-LAND envelope on the board; the physical connector body is taller and narrower than its land pattern, so this model over-states the body footprint in X/Y -- deliberately, because a spatial review should see the land it must keep clear, and under-stating it would hide a collision.
+# note       : four separate RF ports, one per antenna path; the census resolves all four through this one model.
+# note       : TODO(unverified): the 2.0 mm height is TODO(unverified) -- a nominal U.FL jack placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+# note       : TODO(unverified): the MCRF 73412-0110 body height and the mating pigtail's swept volume
+DEF ant_ufl_mcrf_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF ant_ufl_mcrf_envelope_mat Material {
+          diffuseColor 0.72 0.74 0.78
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -0.511811 -0.511811 0.787402,
+          0.511811 -0.511811 0.787402,
+          0.511811 0.511811 0.787402,
+          -0.511811 0.511811 0.787402,
+          -0.511811 0.511811 0.000000,
+          0.511811 0.511811 0.000000,
+          0.511811 -0.511811 0.000000,
+          -0.511811 -0.511811 0.000000,
+          -0.511811 0.511811 0.000000,
+          -0.511811 0.511811 0.787402,
+          0.511811 0.511811 0.787402,
+          0.511811 0.511811 0.000000,
+          0.511811 -0.511811 0.000000,
+          0.511811 -0.511811 0.787402,
+          -0.511811 -0.511811 0.787402,
+          -0.511811 -0.511811 0.000000,
+          0.511811 0.511811 0.000000,
+          0.511811 0.511811 0.787402,
+          0.511811 -0.511811 0.787402,
+          0.511811 -0.511811 0.000000,
+          -0.511811 -0.511811 0.000000,
+          -0.511811 -0.511811 0.787402,
+          -0.511811 0.511811 0.787402,
+          -0.511811 0.511811 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

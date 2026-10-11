@@ -1,0 +1,202 @@
+[
+ {
+  "file": "tracker/hardware/hub_board_v9.kicad_pcb",
+  "name": "hub_board_v9",
+  "copper_layers": 4,
+  "footprints": 39,
+  "pads": {
+   "front": 210,
+   "back": 16,
+   "through": 16,
+   "npth": 0
+  },
+  "layers": {
+   "F.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 1,
+    "zones_filled": 1
+   },
+   "In1.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 1,
+    "zones_filled": 1
+   },
+   "In2.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "B.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 1,
+    "zones_filled": 1
+   }
+  },
+  "totals": {
+   "segments": 0,
+   "vias": 0,
+   "zones": 3,
+   "zones_filled": 3
+  },
+  "drc_unconnected": 101,
+  "verdict": "plane_only"
+ },
+ {
+  "file": "tracker/hardware/wing_board/wing_board_v9.kicad_pcb",
+  "name": "wing_board_v9",
+  "copper_layers": 2,
+  "footprints": 15,
+  "pads": {
+   "front": 16,
+   "back": 6,
+   "through": 0,
+   "npth": 3
+  },
+  "layers": {
+   "F.Cu": {
+    "segments": 10,
+    "length_mm": 218.0,
+    "vias": 8,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "In1.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "In2.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "B.Cu": {
+    "segments": 10,
+    "length_mm": 218.0,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   }
+  },
+  "totals": {
+   "segments": 20,
+   "vias": 8,
+   "zones": 0,
+   "zones_filled": 0
+  },
+  "drc_unconnected": 0,
+  "verdict": "routed"
+ },
+ {
+  "file": "tracker/hardware/auto_bootsel/auto-bootsel-interposer.kicad_pcb",
+  "name": "auto-bootsel-interposer",
+  "copper_layers": 2,
+  "footprints": 14,
+  "pads": {
+   "front": 8,
+   "back": 0,
+   "through": 6,
+   "npth": 4
+  },
+  "layers": {
+   "F.Cu": {
+    "segments": 9,
+    "length_mm": 36.92000000000001,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "In1.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "In2.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "B.Cu": {
+    "segments": 0,
+    "length_mm": 0.0,
+    "vias": 0,
+    "zones": 1,
+    "zones_filled": 1
+   }
+  },
+  "totals": {
+   "segments": 9,
+   "vias": 0,
+   "zones": 1,
+   "zones_filled": 1
+  },
+  "drc_unconnected": 0,
+  "verdict": "routed"
+ },
+ {
+  "file": "tracker/hardware/output/v8g_krt_routed.kicad_pcb",
+  "name": "v8g_krt_routed",
+  "copper_layers": 4,
+  "footprints": 20,
+  "pads": {
+   "front": 92,
+   "back": 0,
+   "through": 26,
+   "npth": 0
+  },
+  "layers": {
+   "F.Cu": {
+    "segments": 302,
+    "length_mm": 600.994767987619,
+    "vias": 55,
+    "zones": 0,
+    "zones_filled": 0
+   },
+   "In1.Cu": {
+    "segments": 54,
+    "length_mm": 91.52913953104587,
+    "vias": 0,
+    "zones": 1,
+    "zones_filled": 1
+   },
+   "In2.Cu": {
+    "segments": 15,
+    "length_mm": 9.888165509249774,
+    "vias": 0,
+    "zones": 1,
+    "zones_filled": 1
+   },
+   "B.Cu": {
+    "segments": 27,
+    "length_mm": 118.68132752230962,
+    "vias": 0,
+    "zones": 0,
+    "zones_filled": 0
+   }
+  },
+  "totals": {
+   "segments": 398,
+   "vias": 55,
+   "zones": 2,
+   "zones_filled": 2
+  },
+  "drc_unconnected": 0,
+  "verdict": "routed"
+ }
+]

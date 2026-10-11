@@ -200,6 +200,7 @@ def load_everything(w: float, h: float):
     import pcbnew
 
     comps, nets = read_netlist(NETLIST)
+    HUB_PART_MODELS.update(_load_hub_part_models())
     scaf = os.path.join(HERE, "output", ".hub_v9_scaffold.kicad_pcb")
     os.makedirs(os.path.dirname(scaf), exist_ok=True)
     with open(scaf, "w") as f:
@@ -232,6 +233,9 @@ def load_everything(w: float, h: float):
         fp.SetReference(c["ref"])
         fp.SetValue(c["value"])
         fp.SetFPID(pcbnew.LIB_ID(lib, name))
+        rel = HUB_PART_MODELS.get(c["ref"])
+        if rel:
+            attach_model(fp, rel)
         for pad in fp.Pads():
             nm = pin_net.get((c["ref"], pad.GetNumber()))
             if nm:
@@ -239,6 +243,61 @@ def load_everything(w: float, h: float):
         board.Add(fp)
         placed.append((c["ref"], fp))
     return board, placed, skipped, comps, nets
+
+
+# ------------------------------------------------------------------- 3D models
+# Designator -> in-repo VRML model.  This mapping is deliberately NOT restated here: it is
+# read from scripts/gen_3d_models_hub.py, which EMITS the models, so the board and the model
+# tree cannot drift apart.
+#
+# Measured 2026-10-11 (scripts/model_resolution_census.py), before this hook existed: the board
+# made 32 model references, 7 of which did not resolve, and 7 footprints carried no `(model ...)`
+# block at all -- J_VCC, J_W1..J_W4, U2, U4.  U2 is the 39.0 x 21.0 mm `LoRa2021F33-2G4`, the
+# largest body on the board and the 433 MHz bent-pipe downlink radio, and U4 is the SX1280 range
+# radio.  `kicad-cli pcb render` reports that condition only as silence (exit 0, no warning), so
+# the render looked populated while the radios were invisible to the spatial-review gate.
+# The board file lives at tracker/hardware/, and KiCad expands ${KIPRJMOD} to the directory
+# holding it -- so the reference is relative to the BOARD, not to the model tree.
+MODEL_REF_PREFIX = "${KIPRJMOD}/3dmodels/"
+HUB_PART_MODELS: dict[str, str] = {}
+
+
+def _load_hub_part_models() -> dict:
+    """Read PART_MODELS from the model generator (one source of truth for both)."""
+    import importlib.util
+
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    path = os.path.join(root, "scripts", "gen_3d_models_hub.py")
+    spec = importlib.util.spec_from_file_location("gen_3d_models_hub", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return dict(mod.PART_MODELS)
+
+
+def attach_model(fp, rel: str) -> None:
+    """Replace fp's 3D models with the committed in-repo model `rel` (relative to the board).
+
+    `${KIPRJMOD}` expands to the directory holding the board file -- here `tracker/hardware` --
+    and the model tree sits beside it at `tracker/hardware/3dmodels`.
+
+    Scale/offset/rotation are set explicitly to identity.  The VRML is authored in KiCad's
+    convention of 2.54 mm per model unit (see the module docstring of
+    `scripts/gen_3d_models_wing.py`, probe 1), so any non-identity transform would silently
+    move or resize a body that a placement review is judging.  Changing an EXISTING model
+    reference is the point here: U1/U3/U5/ANT1-ANT4 already pointed at files the installed
+    `kicad-packages3d` does not ship, which resolves to no body drawn and no warning printed.
+    """
+    import pcbnew
+
+    m = pcbnew.FP_3DMODEL()
+    m.m_Filename = MODEL_REF_PREFIX + rel
+    m.m_Scale = pcbnew.VECTOR3D(1.0, 1.0, 1.0)
+    m.m_Offset = pcbnew.VECTOR3D(0.0, 0.0, 0.0)
+    m.m_Rotation = pcbnew.VECTOR3D(0.0, 0.0, 0.0)
+    m.m_Opacity = 1.0
+    models = fp.Models()
+    models.clear()
+    models.push_back(m)
 
 
 # --------------------------------------------------------------- measurement
@@ -433,6 +492,167 @@ def run_krt(seed_path: str, lap_path: str) -> int:
     return r.returncode
 
 
+def add_gnd_plane(board, w: float, h: float, margin: float = 0.5,
+                  ox: float = 0.0, oy: float = 0.0) -> list:
+    """Pour a solid GND plane onto the 4-layer stack (ADR-029/030).
+
+    The generated hub carried NO zone on any layer, so the 0.6 mm 4-layer stack
+    provided no continuous return path -- every GND return had to share the
+    signal layers, and In1.Cu/In2.Cu were declared but empty copper.  In1.Cu is
+    the dedicated ground layer of this stackup; B.Cu takes a pour as well so the
+    return is redundant and the outer faces are shielded.  F.Cu and In2.Cu are
+    deliberately left clear for signal and power.
+
+    ``margin`` is the copper-to-board-edge clearance; it must be at least the
+    board setup edge-clearance rule (0.5 mm here) or DRC flags the pour.
+    """
+    import pcbnew
+    net = board.FindNet("GND")
+    if net is None:
+        print("gnd plane       : GND net absent - no plane added")
+        return []
+    added = []
+    # A 0.80x0.25 mm QFN land (U4's perimeter GND pads) cannot host two 0.3 mm
+    # spokes across its short axis, so a THERMAL connection DRC-fails as
+    # starved_thermal.  Connect any pad too small to take two spokes SOLID: the
+    # QFN is reflow-only, and a solid tie is the lower-impedance answer there.
+    # Must land before the fill so the override is honoured.
+    SPOKE_MM = 0.3
+    for fp in board.GetFootprints():
+        for pad in fp.Pads():
+            if pad.GetNetname() != "GND":
+                continue
+            sz = pad.GetSize()
+            if min(sz.x, sz.y) / 1e6 < 2 * SPOKE_MM:
+                pad.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
+    for layer, name in ((pcbnew.In1_Cu, "In1.Cu"), (pcbnew.F_Cu, "F.Cu"),
+                        (pcbnew.B_Cu, "B.Cu")):
+        z = pcbnew.ZONE(board)
+        z.SetLayer(layer)
+        z.SetNet(net)
+        z.SetZoneName(f"GND_PLANE_{name}")
+        z.SetLocalClearance(pcbnew.FromMM(0.2))
+        z.SetMinThickness(pcbnew.FromMM(0.25))
+        z.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
+        z.SetThermalReliefSpokeWidth(pcbnew.FromMM(SPOKE_MM))
+        poly = z.Outline()
+        poly.NewOutline()
+        for x, y in ((ox + margin, oy + margin), (ox + w - margin, oy + margin),
+                     (ox + w - margin, oy + h - margin), (ox + margin, oy + h - margin)):
+            poly.Append(pcbnew.FromMM(x), pcbnew.FromMM(y))
+        board.Add(z)
+        added.append(name)
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+    return added
+
+
+def add_planes_to_frozen(path: str) -> int:
+    """Add the GND planes to an already-frozen board, IN PLACE, without
+    re-placing anything.
+
+    Needed because the frozen boards on disk were generated from an earlier
+    EDGE_SEATS offset than the current generator (5 edge-seated refs drift by
+    1.000 mm), so a full regeneration would silently move them.  This path only
+    appends zones and refills.
+    """
+    import pcbnew
+    board = pcbnew.LoadBoard(path)
+    if board is None:
+        print(f"cannot load {path}")
+        return 2
+    # Board outline = BOARD-LEVEL Edge.Cuts graphics only.  Footprint-level
+    # Edge.Cuts (the wing-tab slots carried by J_W1..J_W4) stick 6 mm past the
+    # panel and would otherwise inflate the plane outline to 103.15 x 115.05.
+    edges = [d for d in board.GetDrawings() if d.GetLayer() == pcbnew.Edge_Cuts]
+    if not edges:
+        print("no board-level Edge.Cuts - cannot size the plane")
+        return 2
+    xs, ys = [], []
+    for d in edges:
+        bb = d.GetBoundingBox()
+        xs += [pcbnew.ToMM(bb.GetX()), pcbnew.ToMM(bb.GetX() + bb.GetWidth())]
+        ys += [pcbnew.ToMM(bb.GetY()), pcbnew.ToMM(bb.GetY() + bb.GetHeight())]
+    ox, oy = min(xs), min(ys)
+    w, h = max(xs) - ox, max(ys) - oy
+    before = board.GetAreaCount()
+    planes = add_gnd_plane(board, w, h, ox=ox, oy=oy)
+    pcbnew.SaveBoard(path, board)
+    print(f"board           : {os.path.relpath(path, REPO)}")
+    print(f"outline         : {w:g} x {h:g} mm at ({ox:g},{oy:g})")
+    print(f"zones           : {before} -> {board.GetAreaCount()}  ({planes})")
+    print(f"gnd plane       : {planes or 'none'}")
+    print(f"sha256          : {sha256(path)}")
+    return 0
+
+
+def _placement_key(fp):
+    """Everything about a footprint's PLACEMENT (not its model assignment)."""
+    import pcbnew
+
+    pos = fp.GetPosition()
+    key = [int(pos.x), int(pos.y), int(fp.GetLayer())]
+    for attr in ("GetOrientationDegrees", "GetOrientation"):
+        fn = getattr(fp, attr, None)
+        if fn is None:
+            continue
+        try:
+            v = fn()
+            key.append(round(float(v.AsDegrees() if hasattr(v, "AsDegrees") else v), 6))
+            break
+        except Exception:  # noqa: BLE001 - an introspection probe, not control flow
+            continue
+    return tuple(key)
+
+
+def attach_models_to_frozen(path: str) -> int:
+    """Attach the in-repo 3D models to an EXISTING board, in place.
+
+    Never re-places anything: every footprint's placement key is compared before and after and
+    any difference is a hard failure before the save.  The frozen board's placement is a
+    reviewed artefact (`tracker/hardware/PLACEMENT-S0-FREEZE-v9-hub.md`) and a model assignment
+    has no business moving a part -- this is the same no-silent-re-place rule that
+    `--add-planes` exists to honour.
+    """
+    import pcbnew
+
+    HUB_PART_MODELS.update(_load_hub_part_models())
+    board = pcbnew.LoadBoard(path)
+    if board is None:
+        raise SystemExit(f"failed to load {path}")
+
+    before = {fp.GetReference(): _placement_key(fp) for fp in board.GetFootprints()}
+    refs_before = sorted(fp.GetReference() for fp in board.GetFootprints())
+
+    attached, absent, already = [], [], []
+    for ref, rel in sorted(HUB_PART_MODELS.items()):
+        fp = board.FindFootprintByReference(ref)
+        if fp is None:
+            absent.append(ref)
+            continue
+        had = [m.m_Filename for m in fp.Models()]
+        attach_model(fp, rel)
+        (already if had == [MODEL_REF_PREFIX + rel] else attached).append(ref)
+
+    after = {fp.GetReference(): _placement_key(fp) for fp in board.GetFootprints()}
+    refs_after = sorted(fp.GetReference() for fp in board.GetFootprints())
+    if refs_before != refs_after:
+        raise SystemExit("REFUSING TO SAVE: the footprint set changed")
+    moved = sorted(r for r in before if before[r] != after[r])
+    if moved:
+        raise SystemExit(f"REFUSING TO SAVE: attaching models moved {moved}")
+
+    pcbnew.SaveBoard(path, board)
+    print(f"board           : {os.path.relpath(path, REPO)}")
+    print(f"footprints      : {len(refs_after)} (none moved, none added, none removed)")
+    print(f"models attached : {len(attached)}  {', '.join(attached) if attached else '-'}")
+    if already:
+        print(f"models already  : {len(already)}  {', '.join(already)}")
+    if absent:
+        print(f"NOT ON BOARD    : {', '.join(absent)}")
+    print(f"sha256          : {sha256(path)}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--outline", default=f"{DEFAULT_W:g}x{DEFAULT_H:g}",
@@ -440,13 +660,24 @@ def main() -> int:
     ap.add_argument("--out", default=OUT_SEED)
     ap.add_argument("--publish", action="store_true",
                     help="write the seed, run the KRT lap and write the FROZEN board")
+    ap.add_argument("--add-planes", metavar="BOARD",
+                    help="add the GND planes to an existing frozen board in place, "
+                         "without re-placing any component")
+    ap.add_argument("--attach-models", metavar="BOARD",
+                    help="attach the committed in-repo 3D models to an existing board in place, "
+                         "without re-placing any component")
     a = ap.parse_args()
+    if a.add_planes:
+        return add_planes_to_frozen(a.add_planes)
+    if a.attach_models:
+        return attach_models_to_frozen(a.attach_models)
     w, h = (float(v) for v in a.outline.lower().split("x"))
 
     import pcbnew
     board, placed, skipped, comps, nets = load_everything(w, h)
     locked = apply_floorplan(board, placed, w, h)
     overflow = pack_rest(board, placed, locked, w, h)
+    planes = add_gnd_plane(board, w, h)
     pcbnew.SaveBoard(a.out, board)
 
     print(f"netlist         : {os.path.relpath(NETLIST, REPO)}  sha256 {sha256(NETLIST)}")
@@ -457,6 +688,7 @@ def main() -> int:
     print(f"nets            : {len(nets)}")
     print(f"outline         : {w} x {h} mm ({LAYER_COUNT}-layer, {BOARD_THICKNESS} mm)")
     print(f"edge-seated     : {locked}")
+    print(f"gnd plane       : {planes or 'none'}")
     if overflow:
         print(f"UNSEATED (pack ran out of room): {overflow}")
     print(f"seed            : {os.path.relpath(a.out, REPO)}  sha256 {sha256(a.out)}")
