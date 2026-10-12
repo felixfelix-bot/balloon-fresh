@@ -1,0 +1,32 @@
+{
+  "measured": "2026-10-12",
+  "engine": "agentee route (grid router) -- INDEPENDENT of FreeRouting",
+  "board": "tracker/hardware/hub_board_v9_orderable.kicad_pcb",
+  "command": "agentee route board --nets '/SX1280_DIO2,/SX1280_MISO' --layers F.Cu,B.Cu",
+  "result": {"routed": 0, "tracks": 0, "vias": 0, "written": true},
+  "refusals": [
+    {"net": "/SX1280_DIO2", "from": [50.0, 7.2], "to": [58.95, 15.65],
+     "reason": "no path within the rules"},
+    {"net": "/SX1280_MISO", "from": [49.0, 7.2], "to": [58.95, 13.11],
+     "reason": "no path within the rules"}
+  ],
+  "conclusion": "TWO independent routers (FreeRouting 53s 'cannot make further progress' + agentee 'no path within the rules') refuse the same 2 nets. This is a capacity wall, not a tuning problem.",
+  "stackup_measured": {
+    "F.Cu":   {"tracks": 385, "zones": 1, "role": "signal (saturated)"},
+    "In1.Cu": {"tracks": 0,   "zones": 1, "role": "GND plane"},
+    "In2.Cu": {"tracks": 0,   "zones": 1, "role": "+3V3 plane, 10111 mm2"},
+    "B.Cu":   {"tracks": 153, "zones": 1, "role": "signal (saturated)"}
+  },
+  "endpoints": {
+    "/SX1280_DIO2": "U4.11 (50.00,7.20) 0.25x0.80  <-> U1.11 (58.95,15.65) 1.50x0.90",
+    "/SX1280_MISO": "U4.9  (49.00,7.20) 0.25x0.80  <-> U1.9  (58.95,13.11) 1.50x0.90"
+  },
+  "fix_analysis": {
+    "D1_as_stated_UNSOUND": "In1.Cu=signal + move GND above +3V3 puts the +3V3 plane between F.Cu and GND. F.Cu RF (SX1280 antenna feed, /ANT1_433_TX, /GNSS_L1) then references a NOISY POWER PLANE instead of solid GND -> RF return path broken at 2.4 GHz. A +3V3 plane is also segmented, so the return is interrupted under every split.",
+    "D1_corrected_SOUND": "F.Cu signal / In1.Cu GND (STAYS GND -- F.Cu's solid reference) / In2.Cu signal (the escape layer) / B.Cu GND + +3V3 pour. Still a plain 4-layer board, no HDI, no cost increase.",
+    "D1_corrected_RISK": "+3V3 must still reach all 14 via-in-pad F.Cu pads on a routed rail/pour after leaving the plane -- 14 of 14 currently depend on the plane.",
+    "D2_ILLEGAL": "U4 antenna keep-out + ADR-046 socket + ADR-049 wing-fixed connector are LOCKED.",
+    "D3_UNACCEPTABLE_SILENT": "2 unrouted nets = an open circuit; board fabricated electrically incomplete. Only OK if hand-routed AND DRC-verified."
+  },
+  "blocked_on": "operator decision: (a) implement the corrected stackup (In1.Cu=GND / In2.Cu=signal) and re-route, or (b) repair the OpenAI/Astra lane first so a real spatial review exists BEFORE the stackup change."
+}
