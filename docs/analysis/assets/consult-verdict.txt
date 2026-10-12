@@ -1,0 +1,8 @@
+1. **Yes, broadly.** The LoRa bars are all left of the 0 dBi line, so even an approximately isotropic 433 MHz antenna closes the link with margin. The FLRC bars require positive gain: they are at or above the 12 dBi Yagi reference and extend beyond the 20 dBi dish line, especially at 13 dBm TX power and higher data rates. Thus the figure supports the LoRa/FLRC split.  
+   *Qualification:* a nominal 20 dBi dish is not sufficient for every listed FLRC case—the required gain reaches about 27.9 dBi.
+
+2. **Yes.** The 433 MHz Yagi is sketched beside/below the dish aperture, not across the Ku/2.4 GHz dish beam. The drawing explicitly labels it “beside the aperture.”
+
+3. **No obvious visual contradiction.** The bars, reference lines, antenna sketch, and bottom verdict all consistently show LoRa as workable with a Yagi or lower-gain antenna, while demanding FLRC cases require substantially more than a Yagi and may require a dish-class antenna. The only qualification visible in the figure is that a 20 dBi dish is not enough for all low-power/high-rate FLRC combinations.
+
+independent VERDICT: CONFIRM

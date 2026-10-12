@@ -26,6 +26,7 @@ import re
 import sys
 import time
 import unittest
+from unittest import mock
 
 # Add tools dir for imports
 _TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -438,6 +439,190 @@ class TestVerdictPublisher(unittest.IsolatedAsyncioTestCase):
             dist="50m", session_id="2608301440a3f",
             results=self._range_check_results(), resend_json=None)
         json.dumps(bus.published[0])
+
+
+# ===========================================================================
+# R1 (Gate-2.5 blocking) — validate_armed: created_at REQUIRED, strictly
+# typed, and the author allowlist evaluated FIRST (no crash-before-authz).
+# ===========================================================================
+
+class TestValidateArmedStrictCreatedAt(unittest.TestCase):
+    """R1: created_at is REQUIRED, strictly typed, and allowlist runs FIRST."""
+
+    BASE = {"type": "ARMED", "session_id": "2608301440a3f", "stop": "50m",
+            "t_ready_utc": 1788096000, "preset_hash": "abc", "seq": 1}
+
+    def _msg(self, **over):
+        msg = dict(self.BASE)
+        msg.update(over)
+        return msg
+
+    def test_created_at_is_a_required_field(self):
+        from cvm_sync import ARMED_REQUIRED
+        self.assertIn("created_at", ARMED_REQUIRED)
+
+    def test_absent_created_at_is_rejected(self):
+        from cvm_sync import validate_armed
+        ok, reason = validate_armed(self._msg(), now=1788096000)
+        self.assertFalse(ok)
+        self.assertIn("created_at", reason)
+
+    def test_absent_created_at_rejected_even_with_ancient_t_ready(self):
+        """An ARMED with no created_at must NOT validate, however old
+        t_ready_utc is: absent created_at cannot bypass the skew window."""
+        from cvm_sync import validate_armed
+        msg = self._msg(t_ready_utc=1788096000 - 99999, author="cafebabe")
+        ok, reason = validate_armed(msg, now=1788096000,
+                                    allowed_npubs={"cafebabe"})
+        self.assertFalse(ok)
+        self.assertIn("created_at", reason)
+
+    def test_malformed_created_at_rejected_without_raising(self):
+        """Strict int typing: no created_at off the wire is ever cast."""
+        from cvm_sync import validate_armed
+        for bad in ("not-a-number", "", "12x", "1788096000", 1788096000.0,
+                    None, True, False, [1], {"a": 1}, object()):
+            with self.subTest(created_at=bad):
+                ok, reason = validate_armed(self._msg(created_at=bad),
+                                            now=1788096000)
+                self.assertFalse(ok)
+                self.assertIn("created_at", reason)
+
+    def test_hostile_created_at_never_raises(self):
+        """An object that blows up on int()/index() must not propagate."""
+        from cvm_sync import validate_armed
+
+        class Boom:
+            def __int__(self):
+                raise RuntimeError("hostile")
+
+            def __index__(self):
+                raise RuntimeError("hostile")
+
+            def __repr__(self):
+                return "<boom>"
+
+        ok, reason = validate_armed(self._msg(created_at=Boom()),
+                                    now=1788096000)
+        self.assertFalse(ok)
+        self.assertIn("created_at", reason)
+
+    def test_int_created_at_in_window_passes(self):
+        from cvm_sync import validate_armed
+        ok, reason = validate_armed(self._msg(created_at=1788096000),
+                                    now=1788096000)
+        self.assertTrue(ok)
+        self.assertEqual(reason, "")
+
+    def test_int_created_at_with_skew_still_rejected(self):
+        from cvm_sync import validate_armed
+        ok, reason = validate_armed(self._msg(created_at=1788095000),
+                                    now=1788096000)
+        self.assertFalse(ok)
+        self.assertIn("skew", reason.lower())
+
+    # --- allowlist-FIRST ordering (crash-before-authz must not exist) ----
+
+    def test_allowlist_runs_before_created_at_parsing(self):
+        """Non-allowlisted author + hostile created_at -> the rejection names
+        the AUTHOR, proving freshness parsing never ran on the payload."""
+        from cvm_sync import validate_armed
+        ok, reason = validate_armed(
+            self._msg(created_at="not-a-number", author="deadbeef"),
+            now=1788096000, allowed_npubs={"cafebabe"})
+        self.assertFalse(ok)
+        self.assertIn("author", reason.lower())
+        self.assertNotIn("created_at", reason)
+
+    def test_allowlist_runs_before_freshness_compare(self):
+        from cvm_sync import validate_armed
+        ok, reason = validate_armed(
+            self._msg(created_at=1788095000, author="deadbeef"),
+            now=1788096000, allowed_npubs={"cafebabe"})
+        self.assertFalse(ok)
+        self.assertIn("allowlist", reason.lower())
+
+    def test_allowlisted_author_falls_through_to_freshness(self):
+        from cvm_sync import validate_armed
+        ok, reason = validate_armed(
+            self._msg(created_at="not-a-number", author="cafebabe"),
+            now=1788096000, allowed_npubs={"cafebabe"})
+        self.assertFalse(ok)
+        self.assertIn("created_at", reason)
+
+    def test_missing_required_field_still_reported(self):
+        from cvm_sync import validate_armed
+        msg = self._msg(created_at=1788096000)
+        del msg["preset_hash"]
+        ok, reason = validate_armed(msg, now=1788096000)
+        self.assertFalse(ok)
+        self.assertIn("preset_hash", reason)
+
+    def test_non_dict_never_raises(self):
+        from cvm_sync import validate_armed
+        for bad in (None, [], "ARMED", 7):
+            with self.subTest(msg=bad):
+                ok, _ = validate_armed(bad, now=1788096000)
+                self.assertFalse(ok)
+
+
+# ===========================================================================
+# A1 (Gate-2.5 advisory) — the cvm_sync session-id twin must match the
+# authoritative publisher: CSPRNG nonce + percent-encoded timestamp.
+# ===========================================================================
+
+class TestSessionIdHardening(unittest.TestCase):
+    """A1: CSPRNG nonce, percent-encoded timestamp, parity with publisher."""
+
+    FIXED_NOW = 1788096000  # 2026-08-30 13:20:00 UTC
+
+    def test_nonce_does_not_use_the_random_module(self):
+        import cvm_sync
+        with mock.patch.object(cvm_sync.random, "randrange",
+                               side_effect=AssertionError(
+                                   "random.randrange used")):
+            sid = cvm_sync.generate_session_id(now=self.FIXED_NOW)
+        self.assertRegex(sid, r"^\d{10}[0-9a-f]{3}$")
+
+    def test_nonce_is_3_hex_from_secrets_randbelow(self):
+        import cvm_sync
+        with mock.patch.object(cvm_sync.secrets, "randbelow",
+                               return_value=0xABC) as rb:
+            sid = cvm_sync.generate_session_id(now=self.FIXED_NOW)
+        self.assertTrue(sid.endswith("abc"))
+        rb.assert_called_once_with(0x1000)
+
+    def test_timestamp_is_percent_encoded(self):
+        import cvm_sync
+        with mock.patch.object(cvm_sync.urllib.parse, "quote",
+                               return_value="ENC") as q:
+            sid = cvm_sync.generate_session_id(now=self.FIXED_NOW)
+        self.assertTrue(sid.startswith("ENC"))
+        q.assert_called_once()
+
+    def test_no_percent_or_url_unsafe_residue_survives(self):
+        """The id is used in log dir names: strftime directives must arrive
+        fully expanded (digits/hex only)."""
+        import cvm_sync
+        for epoch in (0, 946684800, self.FIXED_NOW, 4102444800):
+            with self.subTest(epoch=epoch):
+                sid = cvm_sync.generate_session_id(now=epoch)
+                self.assertRegex(sid, r"^\d{10}[0-9a-f]{3}$")
+                self.assertNotIn("%", sid)
+
+    def test_parity_with_armed_publisher(self):
+        """cvm_sync.generate_session_id and the authoritative
+        cvm_armed_publisher.generate_session_id must agree byte-for-byte."""
+        import cvm_sync
+        import cvm_armed_publisher as cap
+        with mock.patch.object(cvm_sync.secrets, "randbelow",
+                               return_value=0x1A2):
+            a = cvm_sync.generate_session_id(now=self.FIXED_NOW)
+            b = cap.generate_session_id(now=self.FIXED_NOW)
+        self.assertEqual(a, b)
+        self.assertTrue(a.startswith("2608301320"))
+        self.assertRegex(b, r"^\d{10}[0-9a-f]{3}$")
+        self.assertTrue(cap.validate_session_id(a))
 
 
 if __name__ == "__main__":

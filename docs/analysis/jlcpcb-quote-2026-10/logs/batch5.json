@@ -1,0 +1,5 @@
+[
+{"name":"h_89_2L_16","x":89,"y":89,"opts":[["Layers","2"],["PCB Thickness","1.6mm"]],"note":"2-layer matched pair"},
+{"name":"h_103_2L_16","x":103,"y":103,"opts":[["Layers","2"],["PCB Thickness","1.6mm"]],"note":"2-layer matched pair"},
+{"name":"h_100_2L_16","x":100,"y":100,"opts":[["Layers","2"],["PCB Thickness","1.6mm"]],"note":"2-layer at the cap"}
+]
