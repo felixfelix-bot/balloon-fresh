@@ -52,7 +52,7 @@
       "at": "vias 0.3mm",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "3 holes closer than 0.25mm to another net's copper: via at [1.465, 17.515] (+3V3) is -0.2152mm from track 107 (/SCAP_ADC); via at [41.645, 26.295] (+3V3) is -0.1794mm from track 116 (/SCAP_MID); via at [58.950, 4.220] (+3V3) is 0.2438mm from track 157 (/SX1280_RESET_N)",
+      "message": "3 holes closer than 0.25mm to another net's copper: via at [41.645, 26.295] (+3V3) is 0.1643mm from track 122 (/SCAP_MID); via at [38.583, 30.308] (/ANT1_433_TX) is 0.195mm from track 118 (/SCAP_MID); via at [58.950, 4.220] (+3V3) is 0.2438mm from track 164 (/SX1280_RESET_N)",
       "rule": "hole-to-copper",
       "severity": "error"
     },
@@ -65,26 +65,10 @@
       "severity": "error"
     },
     {
-      "at": "short",
-      "file": "./board.pcb.toml",
-      "item": "board",
-      "message": "track 107 (/SCAP_ADC) touches via at [1.465, 17.515] (+3V3)",
-      "rule": "short",
-      "severity": "error"
-    },
-    {
-      "at": "short",
-      "file": "./board.pcb.toml",
-      "item": "board",
-      "message": "track 116 (/SCAP_MID) touches via at [41.645, 26.295] (+3V3)",
-      "rule": "short",
-      "severity": "error"
-    },
-    {
       "at": "clearance",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "track 116 (/SCAP_MID) is 0.0143mm from via at [41.645, 26.295] (+3V3), needs 0.15mm",
+      "message": "track 118 (/SCAP_MID) is 0.045mm from via at [38.583, 30.308] (/ANT1_433_TX), needs 0.15mm",
       "rule": "clearance",
       "severity": "error"
     },
@@ -92,7 +76,7 @@
       "at": "clearance",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "track 157 (/SX1280_RESET_N) is 0.0938mm from via at [58.950, 4.220] (+3V3), needs 0.15mm",
+      "message": "track 122 (/SCAP_MID) is 0.0143mm from via at [41.645, 26.295] (+3V3), needs 0.15mm",
       "rule": "clearance",
       "severity": "error"
     },
@@ -100,8 +84,32 @@
       "at": "clearance",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "track 164 (/SX1280_SCK) is 0.1416mm from via at [41.645, 26.295] (+3V3), needs 0.15mm",
+      "message": "track 164 (/SX1280_RESET_N) is 0.0938mm from via at [58.950, 4.220] (+3V3), needs 0.15mm",
       "rule": "clearance",
+      "severity": "error"
+    },
+    {
+      "at": "clearance",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 171 (/SX1280_SCK) is 0.1416mm from via at [41.645, 26.295] (+3V3), needs 0.15mm",
+      "rule": "clearance",
+      "severity": "error"
+    },
+    {
+      "at": "net /SCAP_ADC",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: R_DIV1.2 | R_DIV2.1 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /SCAP_MID",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: R_BAL2.1+R_BAL1.2 | C_CAP2.1+C_CAP1.2 are not joined",
+      "rule": "unrouted",
       "severity": "error"
     },
     {
@@ -151,6 +159,22 @@
       "message": "10 unrouted: U4.3 | U4.15 | U4.18 | U4.20 | U4.22 | U4.24 | J_W1.2+J_W1.2 | J_W4.2+J_W4.2 | J_W4.4+J_W4.4 | J_W2.2+J_W2.2 | R_BAL2.2+U4.16+U4.17+U4.19+U4.21+U4.23+U4.25+C_CAP2.2+C_MON.2+U6.2+U6.3+U6.6+U3.2+U3.8+U3.11+U3.12+U3.18+D_CLAMP.2+J_W3.2+J_W3.2+R_MON2.2+U2.2+U2.3+U2.4+U2.6+U2.7+U2.8+U2.11+ANT3.2+ANT3.2+ANT3.2+U7.2+C4.2+ANT2.2+ANT2.2+ANT2.2+U1.1+U1.40+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+ANT1.2+ANT1.2+ANT1.2+D_BP4.2+U5.1+U5.10+U5.12+R_DIV2.2+C_BULK.2+ANT4.2+ANT4.2+ANT4.2+TH_NTC1.2+C_HF.2 are not joined",
       "rule": "unrouted",
       "severity": "error"
+    },
+    {
+      "at": "tracks[122] /SCAP_MID",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "end at [41.984, 26.056] connects to nothing",
+      "rule": "dangling-track",
+      "severity": "warning"
+    },
+    {
+      "at": "tracks[124] /SCAP_MID",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "end at [43.208, 26.056] connects to nothing",
+      "rule": "dangling-track",
+      "severity": "warning"
     },
     {
       "at": "edge",
@@ -252,7 +276,7 @@
       "at": "zones[1] GND",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "18 copper islands on B.Cu reach nothing of GND and were removed",
+      "message": "24 copper islands on B.Cu reach nothing of GND and were removed",
       "rule": "zone-islands",
       "severity": "info"
     },
