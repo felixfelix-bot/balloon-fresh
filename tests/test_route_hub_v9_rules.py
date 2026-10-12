@@ -53,9 +53,9 @@ def patched_dsn(mod, tmp_path_factory):
 
 
 def test_patch_clearance_is_fab_value_not_exporter_default(patched_dsn):
-    """The 0.02 mm exporter default must be GONE; 0.25 mm present."""
+    """The 0.02 mm exporter default must be GONE; the BOARD's own 0.2 mm present."""
     txt = patched_dsn.read_text()
-    assert "(clearance 2500)" in txt, "patched clearance 0.25 mm missing"
+    assert "(clearance 2000)" in txt, "patched clearance 0.2 mm missing"
     assert "(width 2000)" in txt, "patched width 0.20 mm missing"
     # The old 0.02 mm rule pair must not survive anywhere.
     assert not re.search(r"\(width 200\)\s*\n\s*\(clearance 200\)", txt), \
@@ -93,10 +93,10 @@ def test_router_command_uses_java25(monkeypatch):
 
 
 def test_no_0_02mm_clearance_leaks_into_the_class_block(patched_dsn):
-    """The per-class rule inside (class ...) must also be 0.2/0.25."""
+    """The per-class rule inside (class ...) must also be 0.2/0.2."""
     txt = patched_dsn.read_text()
     # class block uses 8-space indented rule
-    assert "(rule\n        (width 2000)\n        (clearance 2500)\n      )" in txt, \
+    assert "(rule\n        (width 2000)\n        (clearance 2000)\n      )" in txt, \
         "per-class rule not patched"
 
 

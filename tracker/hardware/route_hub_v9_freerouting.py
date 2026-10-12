@@ -102,6 +102,28 @@ def patch_dsn_rules(dsn_path: str, width_mm: float = 0.20, clearance_mm: float =
     function instead states the real rules UP FRONT so the router is asked the
     question we actually want answered.
 
+    WHY THIS IS NOT OPTIONAL -- the 2026-10-12 routing history, all measured:
+    ---------------------------------------------------------------
+    run 1: exporter default 0.02 mm clearance -> routed 97->16 unrouted but
+           produced 753 DRC violations (501 clearance + 202 hole_clearance
+           "actual 0.0000 mm" -- tracks threaded straight through pads).
+    run 2: 0.25 mm, smd_smd exemption DROPPED -> stalled at pass 2
+           (96 unrouted, 134 violations). The castellated wing pads
+           (J_W1..J_W4) touch by design; KiCad's exporter writes
+           `(clearance 50 (type smd_smd))` to exempt them. Dropping it
+           made 134 unfixable violations and the router gave up.
+    run 3: 0.25 mm WITH the exemption kept -> SAME stall (score 251.43,
+           96 unrouted, 134 violations). Conclusion: at 0.25 mm the
+           board's EXISTING geometry -- GND stitching vias, plane pullbacks,
+           RF stubs, all laid out to the board's own 0.2 mm netclass
+           clearance (KiCad DRC reports "clearance 0.2000 mm") -- becomes
+           134 permanent violations the router is told to preserve but
+           can never satisfy. The router is boxed in by the board itself.
+
+    The fix: demand EXACTLY the board's own clearance, 0.2 mm. The
+    existing geometry satisfies it by construction, so the router starts
+    from a legal board and only has to solve connectivity.
+
     `(resolution um 10)`: 1 DSN unit = 0.1 um, so 1 mm = 10000 units.
     """
     with open(dsn_path) as fh:
@@ -136,7 +158,7 @@ def patch_dsn_rules(dsn_path: str, width_mm: float = 0.20, clearance_mm: float =
 
 
 def export_dsn(board_path: str, dsn_path: str, *,
-               width_mm: float = 0.20, clearance_mm: float = 0.25) -> None:
+               width_mm: float = 0.20, clearance_mm: float = 0.20) -> None:
     pcbnew = _pcbnew()
     board = pcbnew.LoadBoard(board_path)
     drc = board.GetDesignSettings()
