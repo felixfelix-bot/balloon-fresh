@@ -22565,7 +22565,7 @@
 		(net 1)
 		(net_name "+3V3")
 		(layer "In2.Cu")
-		(uuid "513db289-52cb-4a3e-aebe-cdc20406dc1f")
+		(uuid "162bf56c-0fdd-430c-8f5d-4ae94dc16b1c")
 		(hatch edge 0.5)
 		(connect_pads
 			(clearance 0.5)
@@ -22578,7 +22578,7 @@
 		)
 		(polygon
 			(pts
-				(xy 102.575 108.525) (xy 0.425 108.525) (xy 0.425 -5.525) (xy 102.575 -5.525)
+				(xy 102.575 102.575) (xy 0.425 102.575) (xy 0.425 0.425) (xy 102.575 0.425)
 			)
 		)
 		(filled_polygon

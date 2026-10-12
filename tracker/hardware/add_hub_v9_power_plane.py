@@ -38,13 +38,19 @@ def add_plane(board_path: str, out_path: str, net: str = "+3V3",
         raise SystemExit(f"net {net} not found; available: {sorted(nets.keys())[:12]}")
     netcode = nets[net].GetNetCode()
 
-    # Outline: the board's Edge.Cuts bounding box, inset so the pour clears the
-    # milled edge by the DRC's copper-to-edge margin.
-    bb = board.GetBoardEdgesBoundingBox()
-    x0 = bb.GetX() + int(inset_mm * mm)
-    y0 = bb.GetY() + int(inset_mm * mm)
-    x1 = bb.GetX() + bb.GetWidth() - int(inset_mm * mm)
-    y1 = bb.GetY() + bb.GetHeight() - int(inset_mm * mm)
+    # Outline: copy the In1.Cu GND zone's outline. NEVER GetBoardEdgesBounding
+    # Box() -- it includes the off-board J_W* slot graphics, so the zone
+    # polygon spans kICAD y -5.5..108.5 on a 0..103.15 board. KiCad clips the
+    # FILL to the outline (DRC stays clean) but the DSN exporter emits the raw
+    # ZONE OUTLINE, and FreeRouting wedges on a plane outside the boundary
+    # (measured: 1800 s, no SES; the same board routes in 77 s without it).
+    src = None
+    for z in board.Zones():
+        if board.GetLayerName(z.GetLayer()) == "In1.Cu" and z.GetNetname() == "GND":
+            src = z
+            break
+    if src is None:
+        raise SystemExit("no In1.Cu GND zone to copy the proven outline from")
 
     zone = pcbnew.ZONE(board)
     zone.SetLayer(lay)
@@ -53,15 +59,15 @@ def add_plane(board_path: str, out_path: str, net: str = "+3V3",
     zone.SetIsFilled(False)
 
     outline = zone.Outline()
-    # KiCad 9 pitfall: Outline().Append(x,y) SEGFAULTS when no outline has been
-    # allocated yet -- the SHAPE_POLY_SET is empty. NewOutline() must be called
-    # first, and the points appended to THAT outline via Outline(idx).
-    # (Measured 2026-10-12: append-without-NewOutline = SIGSEGV core dump.)
+    # KiCad 9 pitfall: Outline().Append(x,y) SEGFAULTS while the poly set is
+    # empty. NewOutline() first, then append via Outline(idx).
     outline.NewOutline()
     idx = outline.OutlineCount() - 1
     o = outline.Outline(idx)
-    for (x, y) in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]:
-        o.Append(x, y)
+    src_outline = src.Outline().Outline(0)
+    for i in range(src_outline.PointCount()):
+        pt = src_outline.CPoint(i)
+        o.Append(pt.x, pt.y)
     outline.NormalizeAreaOutlines()
     zone.HatchBorder()
 
