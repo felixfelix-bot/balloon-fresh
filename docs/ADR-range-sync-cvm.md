@@ -76,6 +76,14 @@ Absolute-T0 semantics are kept for log correlation + GPS stitching.
   set (`nostr.mom`, `relay.primal.net`, `nos.lol`, `relay2.contextvm.org`,
   `relay.nostr.band`; `relay.contextvm.org` is DEAD).
 - Keys via **env var, never CLI arg**. Client/server keys **must differ**.
+  - Enforced (RX side) by `firmware/e80-stm32-bench/tools/cvm_armed_publisher.py`:
+    `load_env_secrets()` reads `CVM_RX_NSEC`/`CVM_RX_HEX` (+ `CVM_CLIENT_*`
+    alias) and `CVM_SERVER_NSEC`/`CVM_SERVER_HEX`, the CLI parser exposes **no**
+    key-bearing option, and `assert_keys_differ()` aborts startup when the two
+    pubkeys match. The ARMED re-broadcast loop lives here too (10-15 s,
+    idempotent seq, stops on TX's GO) and emits **only** kind 1059.
+    Tests: `tools/test_cvm_armed_publisher.py` (29 cases, no `nostr_sdk`
+    required).
 
 ### 2.4 TX-side subscribe
 
