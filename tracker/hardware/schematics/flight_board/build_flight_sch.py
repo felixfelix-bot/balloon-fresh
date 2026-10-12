@@ -24,6 +24,15 @@ import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
+
+# The F33 land pattern is DERIVED from the vendor's own land file at generation
+# time (scripts/gen_f33_landpattern.py), never copied from a hand-maintained
+# custom.pretty file.  That script exits 2 if the vendor file will not decode or
+# fails its own self-checks, so a stale/hand-edited F33 pattern cannot re-enter
+# the v9 design of record unnoticed.
+sys.path.insert(0, os.path.join(REPO, "scripts"))
+import gen_f33_landpattern as F33GEN  # noqa: E402
+
 PCB = os.path.join(REPO, "tracker", "hardware", "output",
                    "v8i_krt_gnss.kicad_pcb")
 OUT_SCH = os.path.join(HERE, "v_c3_flight.kicad_sch")
@@ -706,6 +715,14 @@ V9_F33_PINS = [
 
 # --- bare LoRa2021 castellated 18-pad module.  Pad names from
 # docs/DUAL-VARIANT-DESIGN.md (V1 table: GP2..GP8 wiring + "GND pins 2,8,11,12,18").
+# Pad 13 is `VTCXO` (was the placeholder `PAD13_??`): the value vendor pin table
+# docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf 7 "Pin definition"
+# enumerates all 18 pads and names pad 13 `VTCXO`, `O`, "Can provide power for an
+# external TCXO."  This is a NAMING correction with a source (ADR-058 s1.3), not a
+# connectivity change: pad 13 carries the chip's VTCXO/VNTC rail (chip pin 6) and
+# is the bias rail of the ADR-058 NTC temperature-compensation provision.
+# NOTE: the module breaks out VTCXO but NOT the chip's `NTC` sense input (chip
+# pin 3) - see OPEN-29 and ADR-058 D6.  Pads 16/17 are now NAMED `DIO8`/`DIO7` - a naming correction with a source (the vendor pin table docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7 and docs/inventory.md line 28), no connectivity added. Their MCU ASSIGNMENT is still OPEN (OPEN-5).
 V9_BARE_PINS = [
     ("1", "VCC", "power_in"), ("2", "GND", "power_in"),
     ("3", "MISO", "tri_state"), ("4", "MOSI", "input"),
@@ -713,9 +730,9 @@ V9_BARE_PINS = [
     ("7", "BUSY", "output"), ("8", "GND", "power_in"),
     ("9", "ANT", "passive"),
     ("10", "2G4_ANT", "passive"), ("11", "GND", "power_in"),
-    ("12", "GND", "power_in"), ("13", "PAD13_??", "passive"),
+    ("12", "GND", "power_in"), ("13", "VTCXO", "passive"),
     ("14", "RESET", "input"), ("15", "IRQ_DIO9", "output"),
-    ("16", "PAD16_??", "passive"), ("17", "PAD17_??", "passive"),
+    ("16", "DIO8", "passive"), ("17", "DIO7", "passive"),
     ("18", "GND", "power_in"),
 ]
 
@@ -816,7 +833,9 @@ def v9_custom_symbols():
             "balloon_flight_v9:LoRa2021F33_2G4",
             "NiceRF LoRa2021F33-2G4 (SEMTECH LR2021, 18-pad castellated, "
             "built-in +30 dBm PA / 0.5 ppm TCXO). Pad names from "
-            "docs/DUAL-VARIANT-DESIGN.md; land pattern from commit d5a2e47.",
+            "docs/DUAL-VARIANT-DESIGN.md; pad centres from the vendor land "
+            "file (d5a2e47), pad SIZE derived from the operator-supplied "
+            "castellation hole diameter 0.80 +- 0.1 mm (datasheet s9 p8).",
             "https://www.nicerf.com/pdf/lora2021f33-2g4-2w-high-power-high-speed-"
             "multi-band-lr2021-wireless-communication-module-v1.1.pdf",
             V9_F33_PINS),
@@ -880,6 +899,58 @@ def v9_custom_symbols():
             "ADR-048 are Status Proposed).",
             "", [("1", "SOLAR_P", "passive"), ("2", "GND", "passive"),
                  ("3", "RF_FEED", "passive"), ("4", "SOLAR_N", "passive")]),
+        # --- ADR-051 s2.1: the HUB-MOUNTED array as its OWN series string.
+        # Symbol name mandated by ADR-051 s2.1.1.  The pin FUNCTIONS `P` / `N`
+        # are load-bearing: scripts/bypass_diode_check.py resolves an on-board
+        # cell's polarity from exactly these two function strings, and
+        # scripts/hub_array_topology_check.py identifies the cell by its `PVA<n>`
+        # reference.  Footprint is deliberately EMPTY: the hub outline is a
+        # form-factor decision owned by another task (ADR-051 s2.3).
+        "balloon_flight_v9:PVA_CELL": _v9_symbol(
+            V9_LIBNAME, "PVA_CELL", "SolarCell_78x39mm",
+            "balloon_flight_v9:PVA_CELL",
+            "Hub-mounted solar cell of the INDEPENDENT hub array string "
+            "(ADR-051 s2.1, LARGE class per ADR-049: 78.55 x 38.90 mm, 30.6 cm2, "
+            "~0.5 V / ~1.2 A). Pin 1 = P (+), pin 2 = N (-). The CELL COUNT and "
+            "the MOUNTING PLANE are OPEN (ADR-051 s2.2 + s4 items 3/4/5, ADR-054 "
+            "s4.5) - the count on this sheet is a documented PLACEHOLDER, not a "
+            "sizing decision. Footprint NOT fixed: the hub outline does not exist yet.",
+            "", [("1", "P", "passive"), ("2", "N", "passive")]),
+        # --- ADR-051 s2.1 decision 1: the hub string's OWN converter input.
+        # A PROVISION - which part (sub-uA harvester H2/H3 vs the main converter
+        # M5/M6) is unresolved (ADR-051 s4 items 3 and 5; ADR-054 s1.3).
+        "balloon_flight_v9:HUB_CONVERTER": _v9_symbol(
+            V9_LIBNAME, "HUB_CONVERTER", "HUB_PV input (part TODO(unverified))",
+            "balloon_flight_v9:HUB_CONVERTER",
+            "The hub array's OWN converter / harvester input (ADR-051 s2.1 "
+            "decision 1 - the hub string is never in series with, and never a tap "
+            "on, the wing chain). Pin 1 = PV_P (HUB_PV_P), pin 2 = GND (the ONE "
+            "node this string may share with the wing system), pin 3 = PV_N "
+            "(HUB_PV_N). The chosen part is OPEN: ADR-051 s2.2 recommends a "
+            "2-cell H2 string on a sub-uA harvester (bq25570 class) but the "
+            "H2/H3 vs M5/M6 fork and the harvester's peak-input rating are "
+            "unresolved (ADR-051 s4 items 3/5/6, OPEN-26).",
+            "", [("1", "PV_P", "passive"), ("2", "GND", "passive"),
+                 ("3", "PV_N", "passive")]),
+        # --- ADR-051 s2.5 decision item 5 + s2.6: one latched cut driver and
+        # cut-sense channel per wing.  Both halves share the wing's RF_FEED
+        # land: ONE conductor plus the shared ground return does the nichrome
+        # drive AND the continuity sense.
+        "balloon_flight_v9:CUT_CHANNEL": _v9_symbol(
+            V9_LIBNAME, "CUT_CHANNEL",
+            "latched cut driver + cut-sense (part TODO(unverified))",
+            "balloon_flight_v9:CUT_CHANNEL",
+            "Per-wing cutter channel provision (ADR-051 s2.5 decision item 5 + "
+            "s2.6). Pin 1 = VSCAP (raw supercap node, post-BAT54, PRE-LDO, so the "
+            "channel works with the converter dead - ADR-047 s2.1), pin 2 = GND, "
+            "pin 3 = the wing's RF_FEED land (cut DRIVE and continuity SENSE on "
+            "one conductor plus the shared ground). THE DRIVE MUST BE A LATCHED "
+            "ONE-SHOT: cutting is irreversible and a level-sensitive driver can "
+            "re-fire on a reset, a brown-out, a firmware retry or a floating "
+            "gate (ADR-051 s2.5.1). Exact part, the sense divider and the GPIO "
+            "assignment are all TODO(unverified) - see OPEN-25 and OPEN-28.",
+            "", [("1", "VSCAP", "passive"), ("2", "GND", "passive"),
+                 ("3", "CUT_W", "passive")]),
     }
 
 
@@ -900,7 +971,7 @@ V9_COMPONENTS = [
      "ADR-029 D2b + ADR-035: dedicated 2.4 GHz ranging radio."),
     ("U5", "RF_GPS:MAX-M10S", "MAX-M10S", "RF_GPS:ublox_MAX", False,
      "ADR-029 D2b: GNSS L1 position/time; receive-only, continuous (ADR-035 D3)."),
-    ("U6", "Sensor_Pressure:MS5611-01BA", "MS5611-01BA",
+    ("U6", "balloon_flight_v9:MS5611_BARO", "MS5611-01BA",
      "Package_LGA:LGA-8_3x5mm_P1.25mm", False,
      "Barometer, 10-1200 hPa flight profile (ADR-029 pin plan: I2C on GPIO1/2)."),
     ("U7", "balloon_flight_v9:TPS7A0233", "TPS7A02",
@@ -927,13 +998,21 @@ V9_COMPONENTS = [
     ("ANT1", "Connector:Conn_Coaxial", "U.FL_433_TX",
      "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical", False,
      "ADR-029 D3 (sub-GHz U.FL) + ADR-034 D1: 433 MHz TX feed = F33 pin 9."),
-    ("ANT2", "Connector:Conn_Coaxial", "U.FL_2G4_TXRX",
+    ("ANT2", "Connector:Conn_Coaxial", "U.FL_2G4_RANGE",
      "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical", False,
-     "ADR-029 D3 (F33 ANT-2G4 U.FL) : the F33's own 2.4 GHz port."),
+     "ADR-108 Revision R1 (2026-10-07): the SX1280 2.4 GHz RANGING feed. "
+     "Re-pointed from the F33 ANT-2G4 port because ADR-034 D1/D5 state the "
+     "F33 carries TX ONLY (its pin 9 sub-GHz port is the 433 MHz TX) while "
+     "the SX1280 - operator-ratified (ADR-029 D2b) and given its own TDM "
+     "slot (ADR-035) - needs a feed; there are four U.FL sites and four RF "
+     "parts (ADR-034 D5). Hub-side wire dipole per ADR-009. See OPEN-2."),
     ("ANT3", "Connector:Conn_Coaxial", "U.FL_2G4_RX",
      "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical", False,
-     "ADR-034 D1: 2.4 GHz RX feed of the bare LoRa2021 (pin 10). "
-     "*** SEE the four-feed conflict TODO on the sheet. ***"),
+     "ADR-034 D1: 2.4 GHz RX feed of the bare LoRa2021 (pin 10, the Site-B "
+     "2.4 GHz RX). ADR-108 Revision R1: the four-feed / five-feed conflict "
+     "is SETTLED - ANT3 keeps its role and ANT2 moves to the SX1280, so the "
+     "two 2.4 GHz-capable feeds (ANT2 ranging, ANT3 link RX) stay separate "
+     "as ADR-029 D3 requires. Hub-side wire dipole per ADR-009."),
     ("ANT4", "Connector:Conn_Coaxial", "U.FL_GNSS_L1",
      "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical", False,
      "ADR-029 D3: GNSS L1 feed, +Y sky-facing edge."),
@@ -1008,31 +1087,155 @@ V9_COMPONENTS = [
      "plane (ADR-046 s2.3: 'stack_bot = W4.SOLAR_N -> system GND'); DO NOT tie "
      "any other W<n>_SOLAR_N to GND (socket spec s3). pad 1 lands on the "
      "W3_SOLAR_N / W4_SOLAR_P hub-link node (socket spec s3.1)."),
-    ("D_BP1", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky ACROSS wing 1 - cathode to "
-     "W1_SOLAR_P, anode to W1_SOLAR_N. Without it a shaded wing collapses and "
-     "reverse-stresses the 6.0 V series string. DNP for the first prototype "
-     "build, pads routed so it can be fitted later. Package: SOD-323 (socket "
-     "spec s5 'SOD-323 or SMA'; BAT54 family as ADR-006)."),
-    ("D_BP2", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 2 - cathode to "
-     "W2_SOLAR_P (= the W1_SOLAR_N hub link), anode to W2_SOLAR_N. DNP."),
-    ("D_BP3", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 3 - cathode to "
-     "W3_SOLAR_P (= the W2_SOLAR_N hub link), anode to W3_SOLAR_N. DNP."),
-    ("D_BP4", "Device:D_Schottky", "BAT54 (DNP)", "Diode_SMD:D_SOD-323", True,
-     "ADR-046 s2.3 + socket spec s5: bypass Schottky across wing 4 - cathode to "
-     "W4_SOLAR_P (= the W3_SOLAR_N hub link), anode to W4_SOLAR_N = GND. DNP. "
-     "This is the only one whose anode sits on GND, because wing 4's SOLAR_N IS "
-     "the stack bottom (ADR-046 s2.3)."),
+    # --- ADR-051 s2.7 / ADR-053 s2.2 (as amended by ADR-054 s3.2): the four
+    # HUB-SIDE per-interface bypass diodes.  POPULATED (not DNP) and re-rated:
+    # a cutter-carrying flight needs them, and the DNP BAT54 the socket spec
+    # named is disqualified twice over.
+    #   1. WHY HUB-SIDE.  A cut jettisons the wing AND every part soldered to
+    #      it, so a wing-board diode leaves with the wing and cannot bridge the
+    #      gap it was fitted to bridge (ADR-054 s2.2, adversarial F3).  Only a
+    #      hub-side, per-interface diode can restore the broken PATH.  Without
+    #      it a cutter flight is WORSE than baseline: the first cut opens the
+    #      string and the array delivers 0.00 W.
+    #   2. WHY >= 2 A / 40 V AND NOT THE 200 mA BAT54.  Post-cut the other wings
+    #      drive the array's FULL 1.2 A continuously through this diode for the
+    #      rest of the flight - a PERMANENT CONTINUOUS bypass duty, not the
+    #      shading transient a 200 mA part is sold as (ADR-051 s2.4 decisions
+    #      4.2/4.3, s2.7); and the reverse rating must clear the ~9.58 V cold
+    #      open-circuit stack against a 30 V part (ADR-050 s3.2).  SS24 = 2 A /
+    #      40 V, in the class ADR-051 s2.7 names ("SS24 or PMEG4020ER class").
+    #   3. WHY THE PACKAGE MOVES.  SOD-323 cannot carry 2 A (ADR-051 s2.7), so
+    #      the land pattern moves to SMA.  See OPEN-11 for the delta = 1 derate
+    #      still owed and OPEN-28 for the hub re-layout this forces.
+    ("D_BP1", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2/s3.2 (HUB-SIDE placement): bypass Schottky "
+     "ACROSS wing interface 1 - cathode to W1_SOLAR_P, anode to W1_SOLAR_N. "
+     "POPULATED (ADR-051 s2.4 decision 4.2 supersedes the DNP instruction of "
+     "ADR-046 s6 / socket spec s5 for any cutter-carrying flight). SS24 = 2 A / "
+     "40 V: the post-cut bypass path is a PERMANENT CONTINUOUS 1.2 A path, and "
+     "the 200 mA / 30 V BAT54 is disqualified against it. SMA land, not SOD-323: "
+     "SOD-323 cannot carry 2 A."),
+    ("D_BP2", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2: bypass Schottky across wing interface 2 - "
+     "cathode to W2_SOLAR_P (= the W1_SOLAR_N hub link), anode to W2_SOLAR_N. "
+     "POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1."),
+    ("D_BP3", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2: bypass Schottky across wing interface 3 - "
+     "cathode to W3_SOLAR_P (= the W2_SOLAR_N hub link), anode to W3_SOLAR_N. "
+     "POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1."),
+    ("D_BP4", "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+     "ADR-051 s2.7 + ADR-054 s2.2: bypass Schottky across wing interface 4 - "
+     "cathode to W4_SOLAR_P (= the W3_SOLAR_N hub link), anode to W4_SOLAR_N = "
+     "GND. POPULATED, SS24 (2 A / 40 V). Same hub-side rationale as D_BP1. This "
+     "is the only one whose anode sits on GND, because wing 4's SOLAR_N IS the "
+     "stack bottom (ADR-046 s2.3)."),
+    # --- ADR-058: THE LR2021 ON-CHIP NTC TEMPERATURE-COMPENSATION PROVISION.
+    # The LR2021 silicon contains the XTAL compensation engine; it needs only an
+    # external NTC thermistor + bias resistor at the crystal (Semtech DS 2.2
+    # s1.9.2 "Figure 1-15: NTC Connection"; SetTempCompCfg opcode 0x0132 and
+    # SetNtcParams opcode 0x0133 per Tables 6-69/6-70; chip pin 3 = NTC, chip
+    # pin 6 = VTCXO/VNTC per Table 2-1).  Both parts are DNP, with the reason
+    # recorded in the net note and OPEN-29: on the OWNED bare NiceRF module the
+    # chip's NTC sense pin has NO castellation (the vendor pin table
+    # docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7 enumerates all 18
+    # pads and the only oscillator pad is 13 = VTCXO), so the sense node has no
+    # path back to the chip and the loop cannot be closed.  The land is provided
+    # now because there is no v9 hub PCB yet, so it costs no respin: a module (or
+    # revision) that breaks the pin out closes the loop at zero cost.  Values are
+    # TODO(unverified) because they must be characterised from the populated part
+    # (ADR-058 D4), not guessed.
+    ("R_NTC1", "Device:R", "TODO(unverified) (sets ntc_r_ratio)",
+     "Resistor_SMD:R_0402_1005Metric", True,
+     "ADR-058 D1/D4: series/bias resistor of the on-chip NTC temperature-"
+     "compensation divider, from the VTCXO/VNTC bias rail to the NTC sense node. "
+     "Its value must be characterised against the populated NTC (it sets "
+     "SetNtcParams ntc_r_ratio = RBiasRatio, 'the ratio between the resistor bias "
+     "value and the NTC resistor value at 25 degC, 10 bits with 9 fractional bits "
+     "(10,9)' - DS 2.2 Table 6-70) -> TODO(unverified). DNP, not populated: the "
+     "sense node has no path back to the chip on the owned bare module (OPEN-29, "
+     "ADR-058 D6)."),
+    ("TH_NTC1", "Device:Thermistor_NTC", "TODO(unverified) (NTC, R25/beta TODO)",
+     "Resistor_SMD:R_0402_1005Metric", True,
+     "ADR-058 D1/D3/D4: the NTC thermistor of the on-chip temperature-"
+     "compensation provision - sense node to GND. SITING RULE (ADR-058 D3): it "
+     "must be thermally coupled to the radio's XTAL, NOT parked on the far side "
+     "of the board, and NOT sited where a self-heating neighbour dominates its "
+     "reading (the F33 2 W PA, the hub converter). Part, R25 and beta are "
+     "TODO(unverified): they must be read from the chosen part's datasheet and "
+     "matched to ntc_beta (DS 2.2 Table 6-70: 'NTC temperature in 2 Kelvin/lsb') "
+     "and to the -60 degC design case - see OPEN-30.  0402 land because an 0402 "
+     "NTC uses the same land as an 0402 resistor. DNP (OPEN-29, ADR-058 D6)."),
 ]
+
+# --- ADR-051 §2.1: the hub array.  Its cell count is a PARAMETER, not a
+# decision.  *** THE COUNT BELOW IS A DOCUMENTED PLACEHOLDER *** ADR-051 §2.2
+# recommends H2 = 2 LARGE cells (H3 = 3 is the fallback); the count, the
+# MOUNTING PLANE and the harvester part are all OPEN (ADR-051 §4 items 3/4/5/6;
+# ADR-054 §4.5), and the hub OUTLINE is a form-factor decision owned by another
+# task (ADR-051 §2.3) - which is why the cells' footprint field is left EMPTY.
+# Changing this one number regenerates the cells, the HUB_PV_MID<n> interiors,
+# the per-cell hub bypass diodes and the whole hub string.  Nothing else in this
+# file hard-codes the hub cell count.
+V9_HUB_ARRAY_CELLS = 2
+
+for _i in range(1, V9_HUB_ARRAY_CELLS + 1):
+    V9_COMPONENTS.append(
+        ("PVA%d" % _i, "balloon_flight_v9:PVA_CELL", "SolarCell_78x39mm",
+         "", False,
+         "Cell %d of the INDEPENDENT hub-array string (ADR-051 §2.1, LARGE "
+         "class per ADR-049: 78.55 x 38.90 mm, 30.6 cm2, ~0.5 V / ~1.2 A). The "
+         "string is its OWN series string with its OWN converter input; it is "
+         "NEVER in series with, and never a tap on, the wing chain - the only "
+         "node it may share with the wing system is GND. Enforced by "
+         "scripts/hub_array_topology_check.py. CELL COUNT / MOUNTING PLANE / "
+         "OUTLINE ARE OPEN (OPEN-26); this ref is a PLACEHOLDER." % _i))
+    V9_COMPONENTS.append(
+        ("D_HUB%d" % _i, "Device:D_Schottky", "SS24", "Diode_SMD:D_SMA", False,
+         "Bypass Schottky across hub-array cell PVA%d: cathode to the cell's + "
+         "node, anode to its - node. ADR-051 §2.2 places the hub cells on the "
+         "hub and says they 'need their own diodes'; ADR-053 §1.6/§2.4 keeps "
+         "per-GROUP over per-CELL as the general rule, and ADR-054 §4.5 leaves "
+         "the hub's OWN granularity explicitly OPEN (OPEN-27). Populated at the "
+         "same >=2 A / 40 V class as the per-interface diodes (SS24) so a hub "
+         "cell failure is contained BY A PATH that survives any wing cut." % _i))
+
+V9_COMPONENTS.append(
+    ("U_HUB_CVT", "balloon_flight_v9:HUB_CONVERTER",
+     "HUB_PV input (part TODO(unverified))", "", False,
+     "The hub array's OWN converter / harvester input provision (ADR-051 §2.1 "
+     "decision 1: 'its positive terminal feeds its own converter/harvester "
+     "input, on its own net'). Pin 1 = HUB_PV_P, pin 2 = GND (the ONE shared "
+     "node), pin 3 = HUB_PV_N. The PART is unresolved: ADR-051 §2.2 recommends "
+     "the 2-cell H2 string on a sub-uA harvester of the bq25570 class, but the "
+     "H2/H3 vs M5/M6 fork and the harvester's peak-input-power rating against "
+     "the array's face-on peak are OPEN (OPEN-26; ADR-051 §4 items 3/5/6)."))
+
+for _i in range(1, 5):
+    V9_COMPONENTS.append(
+        ("U_CUT%d" % _i, "balloon_flight_v9:CUT_CHANNEL",
+         "latched cut driver + cut-sense (part TODO(unverified))", "", False,
+         "Wing %d cut channel (ADR-051 §2.5 decision item 5 + §2.6): the "
+         "nichrome cutter drive AND the cut-sense continuity line on the wing's "
+         "ONE reserved RF_FEED conductor plus the shared ground. Pin 1 = VSCAP "
+         "(raw supercap node, post-BAT54, PRE-LDO, so the cut works with the "
+         "converter dead - ADR-047 §2.1); pin 2 = GND; pin 3 drives/senses "
+         "CUT_SENSE_W%d = J_W%d pad 3 (RF_FEED). THE DRIVE IS MANDATED TO BE A "
+         "LATCHED ONE-SHOT (ADR-051 §2.5.1): cutting is irreversible, and a "
+         "level-sensitive driver can re-fire on a reset, brown-out, retry or "
+         "floating gate - each fire costing ~2.59 J of the bank\'s 16.63 J at "
+         "the moment the bank matters. Firmware must also serialise cuts "
+         "(4 simultaneous fires = 9.9 A = 2.4x the IRLML2502 class rating) and "
+         "log a silently-failed cut below the ~3.3 V arming threshold. Part, "
+         "sense divider, GPIO and the latch's exact topology: TODO(unverified) "
+         "- OPEN-25 and OPEN-28." % (_i, _i, _i)))
+
 
 # --- nets ------------------------------------------------------------------
 # net -> [(ref, pin), ...].  Each entry carries its citation.
 V9_NETS = [
     ("+3V3", [("U1", "2"), ("U2", "5"), ("U3", "1"), ("U5", "6"), ("U5", "7"),
-              ("U5", "9"), ("U6", "1"), ("U7", "5"), ("R_F1", "1"),
-              ("J_VCC", "3")],
+              ("U5", "9"), ("U6", "1"), ("U6", "4"), ("U7", "5"), ("R_F1", "1"),
+              ("U4", "1"), ("U4", "2"), ("J_VCC", "3")],
      "ADR-006 3.3 V rail (TPS7A02 OUT); U2 pin 5 CE strapped to 3V3 per the "
      "ADR-029 pin plan (blocker 3: confirm CE vs the purchased revision). "
      "U5 pins 6/7/9 (V_BCKP / VCC_IO / ~RESET) are tied to +3V3 on the precedent "
@@ -1040,7 +1243,22 @@ V9_NETS = [
      "RF_GPS:MAX-M10S symbol (v8i_krt_gnss.kicad_pcb U3 pads 6,7,8,9 = +3V3; "
      "the v8i board is sha256-pinned in this generator). J_VCC pin 3 is the "
      "3.3 V position of the ADR-029 D8 pin-1 selector (nested bare LoRa2021). "
-     "R_F1 pin 1 feeds the GNSS RC filter per ADR-029 2(d)."),
+     "R_F1 pin 1 feeds the GNSS RC filter per ADR-029 2(d). "
+     "ADR-108 Revision R1 (2026-10-07) CLOSES OPEN-1: U4 pins 1/2 (SX1280 "
+     "VDD_IN / VDD_IO) are on +3V3. The 3.3 V rail IS the SX1280 supply of "
+     "record - ADR-047 2.3 states verbatim that the 3.3 V rail also carries "
+     "the ESP32-S3, the SX1280 and the GNSS, and docs/POWER-BUDGET-V9-D2BE.md "
+     "2 puts BOTH SX1280 states (ranging TX 70 mA, ranging RX 15 mA) on the "
+     "3.3 V rail. ADR-060 s4 confirms the SX1280 default is no TCXO and NO "
+     "new or gated rail, so no rail is created for this part. The ADR-029 "
+     "2(f) provision (its own ferrite + bulk cap) is NOT yet fitted and is "
+     "registered as OPEN-33. "
+     "OPEN-7 CLOSURE (2026-10-07): U6 pin 4 (CSB) is tied to +3V3 on the "
+     "precedent of the frozen v8j MS5611 board "
+     "(tracker/hardware/output/v8j_krt_ms5611.kicad_pcb), which carries the "
+     "SAME Package_LGA:LGA-8_3x5mm_P1.25mm barometer footprint in the SAME "
+     "I2C mode (its pads 7/8 are I2C_SDA / I2C_SCL, exactly this sheet U6 "
+     "pins 7/8) and ties pad 4 = +3V3, pad 2 = GND, pad 6 = GND."),
     ("GND", [("U1", "1"),
              ("U2", "2"), ("U2", "3"), ("U2", "4"), ("U2", "6"), ("U2", "7"),
              ("U2", "8"), ("U2", "11"),
@@ -1048,13 +1266,13 @@ V9_NETS = [
              ("U4", "3"), ("U4", "15"), ("U4", "16"), ("U4", "17"), ("U4", "18"),
              ("U4", "19"), ("U4", "20"), ("U4", "21"), ("U4", "22"), ("U4", "23"),
              ("U4", "24"), ("U4", "25"),
-             ("U5", "1"), ("U6", "3"), ("U7", "2"), ("C_CAP2", "2"),
+             ("U5", "1"), ("U6", "2"), ("U6", "3"), ("U6", "6"), ("U7", "2"), ("C_CAP2", "2"),
              ("R_DIV2", "2"), ("C4", "2"), ("R_BAL2", "2"),
              ("C_BULK", "2"), ("C_HF", "2"), ("D_CLAMP", "2"), ("R_MON2", "2"),
              ("C_MON", "2"),
              ("ANT1", "2"), ("ANT2", "2"), ("ANT3", "2"), ("ANT4", "2"),
              ("J_W1", "2"), ("J_W2", "2"), ("J_W3", "2"), ("J_W4", "2"),
-             ("J_W4", "4"), ("D_BP4", "2")],
+             ("J_W4", "4"), ("D_BP4", "2"), ("TH_NTC1", "2")],
      "Ground. F33 GND pads 2,3,4,6,7,8,11; bare GND pads 2,8,11,12,18 "
      "(docs/DUAL-VARIANT-DESIGN.md). J_W1..J_W4 pin 2 are the four wing "
      "interfaces' GND lands: socket spec s3 makes each interface's GND land tie "
@@ -1062,7 +1280,12 @@ V9_NETS = [
      "GND except W4_SOLAR_N'. J_W4 pin 4 and D_BP4 pin 2 are that single "
      "exception: wing 4's SOLAR_N IS the 6.0 V stack bottom (ADR-046 s2.3 "
      "'stack_bot = W4.SOLAR_N -> system GND'). Wings 1-3 SOLAR_N are on the "
-     "W1_SOLAR_N / W2_SOLAR_N / W3_SOLAR_N hub links, NOT here."),
+     "W1_SOLAR_N / W2_SOLAR_N / W3_SOLAR_N hub links, NOT here. "
+     "OPEN-7 CLOSURE (2026-10-07): U6 pin 2 (PS) and U6 pin 6 (SDO) are "
+     "tied to GND on the precedent of the frozen v8j MS5611 board "
+     "(tracker/hardware/output/v8j_krt_ms5611.kicad_pcb) - the SAME "
+     "Package_LGA:LGA-8_3x5mm_P1.25mm footprint, same I2C mode - which ties "
+     "its pad 2 and pad 6 to GND."),
     ("VSCAP", [("D1", "1"), ("C_CAP1", "1"), ("U7", "1"), ("U7", "3"),
                ("R_DIV1", "1"), ("R_BAL1", "1"), ("J_VCC", "1")],
      "ADR-006 chain: BAT54 cathode -> supercap bank (top) -> TPS7A02 IN ->, for "
@@ -1120,7 +1343,7 @@ V9_NETS = [
      "ADR-047 6: F33 rail monitor. Divider ratio 0.5 (4.7 M / 4.7 M) -> "
      "5.4 V reads 2.70 V at ESP32-S3 IO13 (U1 pin 21). Firmware must inhibit TX "
      "below the LOADED-rail threshold for the wanted output power: >=5.0 V for "
-     "the full 33.0 dBm, and >=3.54 V (interpolated) + the bank's ESR step for "
+     "the full 33.0 dBm, and >=3.54 V (interpolated) + the bank\'s ESR step for "
      "+30 dBm. See OPEN-17 for the ADC-channel TODO."),
     ("GNSS_VCC", [("R_F1", "2"), ("C4", "1"), ("U5", "8")],
      "ADR-029 2(d): the FILTERED GNSS rail - 'a dedicated RC/ferrite feed (e.g. "
@@ -1187,13 +1410,155 @@ V9_NETS = [
      "says GPIO0, the ADR-029 pin plan reserves IO0 as a boot strap."),
     ("ANT1_433_TX", [("U2", "9"), ("ANT1", "1")],
      "ADR-034 D1/D2 + ADR-029 D3: 433 MHz TX, F33 sub-GHz ANT."),
-    ("ANT2_2G4_TXRX", [("U2", "10"), ("ANT2", "1")],
-     "ADR-029 D2/D3: F33 ANT-2G4 port."),
+    ("ANT2_2G4_RANGE", [("U4", "14"), ("ANT2", "1")],
+     "ADR-108 Revision R1 (2026-10-07) CLOSES OPEN-2. ANT2 is re-pointed "
+     "from the F33 2.4 GHz port to the SX1280 RFIO. ADR-029 D2b/D3 "
+     "enumerated FOUR connectors (GNSS L1, F33 sub-GHz, F33 ANT-2G4, "
+     "SX1280); ADR-034 D1/D5 then re-pointed the 2.4 GHz link RX at a "
+     "SEPARATE bare LoRa2021 and states plainly that the F33 carries TX "
+     "ONLY. So of the five candidate feeds exactly one has no role - the "
+     "F33 ANT-2G4 port - and the SX1280, an operator-RATIFIED radio "
+     "(ADR-029 D2b, 2026-10-05) that the TDM schedule gives its own slot "
+     "(ADR-035), needs a feed. One U.FL site is the only currency "
+     "available, so ANT2 serves the SX1280 and U2 pin 10 becomes an "
+     "explicit no-connect. The count is settled at FOUR feeds for the FOUR "
+     "RF parts of ADR-034 D5 (433 TX, 2.4 ranging, 2.4 RX, GNSS L1) "
+     "against the four U.FL sites ANT1..ANT4 actually drawn, and the two "
+     "2.4 GHz-capable feeds stay SEPARATE as ADR-029 D3 requires (ANT2 "
+     "ranging, ANT3 link RX; never co-polarised within lambda/2). Antennas "
+     "are hub-side wire dipoles per ADR-009, so a wing cut costs no comms. "
+     "The SX1280 RFIO pad number (14) is still ADR-045 D1 OPEN-13-"
+     "TODO(unverified) - the net is named, the pad number is not proven."),
     ("ANT3_2G4_RX", [("U3", "10"), ("ANT3", "1")],
      "ADR-034 D1: bare LoRa2021 2.4 GHz feed."),
     ("ANT4_GNSS_L1", [("U5", "11"), ("ANT4", "1")],
      "ADR-029 D3: MAX-M10S RF_IN -> GNSS L1 U.FL."),
+    # --- ADR-108 Revision R1: the bare-module control lines (OPEN-3/OPEN-14) ---
+    # The +4 GPIO budget of docs/V9-RADIO-SITE-MATRIX.md 3.1 (CS + BUSY +
+    # RESET + IRQ/DIO, shared SPI data/clock) is spent on the only four
+    # ESP32-S3 GPIOs that are free after the straps (IO0/IO3/IO45/IO46, ADR-108
+    # strapping audit), the octal-PSRAM pins (IO35/36/37, -N8R8) and the USB
+    # console (IO19/IO20): IO11, IO12, IO47, IO48. IO11 is free because the
+    # F33 has NO DIO5 pad (OPEN-6), and its ENABLE routing is the one the
+    # reference supplies; IO12/IO47/IO48 are the three pins OPEN-14 recorded
+    # as unassigned. Spending all four here is the documented consequence:
+    # no free GPIO remains, so OPEN-25 cut-sense must multiplex (ADR-051 2.6).
+    ("U3_CS_N", [("U1", "20"), ("U3", "6")],
+     "ADR-108 Revision R1 CLOSES OPEN-3: bare LoRa2021 NSS (pad 6) on "
+     "IO12 (U1 pin 20), the first of the +4 GPIO budget in "
+     "docs/V9-RADIO-SITE-MATRIX.md 3.1 and ADR-040 D2. U3 shares the SPI2 SCK/MOSI/MISO "
+     "data and clock with the F33 (F33_SCK/F33_MOSI/F33_MISO) and needs its own chip select "
+     "because SPI2 has two slaves. CLOSES the U1.20 half of OPEN-14."),
+    ("U3_BUSY", [("U1", "24"), ("U3", "7")],
+     "ADR-108 Revision R1 CLOSES OPEN-3: bare LoRa2021 BUSY (pad 7) on "
+     "IO47 (U1 pin 24) - the arbiter reads BUSY by GPIO without driver "
+     "cooperation (ADR-029 D4 R3). CLOSES the U1.24 half of OPEN-14."),
+    ("U3_RESET_N", [("U1", "25"), ("U3", "14")],
+     "ADR-108 Revision R1 CLOSES OPEN-3: bare LoRa2021 RESET (pad 14) on "
+     "IO48 (U1 pin 25). CLOSES the U1.25 half of OPEN-14."),
+    ("U3_IRQ", [("U1", "19"), ("U3", "15")],
+     "ADR-108 Revision R1 CLOSES OPEN-3: bare LoRa2021 IRQ/DIO9 (pad 15, "
+     "the vendor pin table name in docs/assets/lr2021/"
+     "LoRa2021-Module-Datasheet-V1.3.pdf s7) on IO11 (U1 pin 19). IO11 was "
+     "assigned to F33_DIO5 in the original pin plan; OPEN-6 established the "
+     "F33 has NO DIO5 pad (all 18 pads enumerated, the front-end DIOs are "
+     "internal) and freed IO11 for exactly this kind of re-assignment. That "
+     "makes four control lines for the second radio - the +4 of "
+     "docs/V9-RADIO-SITE-MATRIX.md 3.1 - and it removes the F33_DIO5 "
+     "no-connect from V9_NC."),
+    # --- ADR-058: the LR2021 on-chip NTC temperature-compensation provision. ---
+    ("VTCXO_VNTC", [("U3", "13"), ("R_NTC1", "1")],
+     "ADR-058 D1: the VTCXO/VNTC bias rail of the on-chip temperature-"
+     "compensation divider, taken from the bare module's pad 13 = VTCXO (vendor "
+     "pin table docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7: "
+     "'Can provide power for an external TCXO'). DS 2.2 Table 2-1 names the chip "
+     "pin it carries, pin 6 = VTCXO/VNTC, 'External TCXO supply voltage "
+     "(REG_TCXO) / NTC supply'; DS 2.2 s1.9.2 says this pin 'can be used to power "
+     "an external temperature sensor (R and NTC)'. R_NTC1 pin 1 sits on it - the "
+     "divider is the only load here, a microwatt fraction of the regulator's "
+     "ILTCXO 1.5 mA typ / 4 mA max (DS 2.2 Table 3-25). NO PWR_FLAG is implied: "
+     "the net carries passive pins only."),
+    ("NTC_SENSE", [("R_NTC1", "2"), ("TH_NTC1", "1")],
+     "ADR-058 D1/D6: the divider's midpoint - THE NORMAL SENSE NODE that the "
+     "chip's NTC input (chip pin 3, DS 2.2 Table 2-1 'Negative Temperature "
+     "Coefficient (NTC) resistor connection') is meant to read. It is a "
+     "DELIBERATELY OPEN LOOP on the owned bare module: the chip's NTC pin is NOT "
+     "broken out on the NiceRF module's 18 castellations (the vendor pin table "
+     "enumerates all 18 pads and the only oscillator pad is 13 = VTCXO; module "
+     "pad 3 is MISO), so this node has no path back to the chip. The parts are "
+     "DNP for exactly that reason and the node is left as the two-part divider "
+     "node rather than given an invented chip-side net. A module that DOES break "
+     "the pin out closes the loop here - see OPEN-29."),
 ]
+
+# --- ADR-051 §2.1: the hub array's OWN nets, and the cut-sense lines. --------
+# These nets carry the hub string and NOTHING ELSE: no W<n>_SOLAR_P and no
+# W<n>_SOLAR_N land appears on any HUB_PV_* net, and the only node the hub
+# string shares with the wing system is GND (through U_HUB_CVT pin 2).  That is
+# the whole invariant ADR-051 §2.1 exists to protect - a hub array in series
+# with, or tapped onto, the wing chain dies on the first cut, which turns the
+# cut into suicide.  scripts/hub_array_topology_check.py is the mechanical
+# enforcement (R3/R3b/R4/R5/R7).
+V9_NETS.append(
+    ("HUB_PV_P",
+     [("PVA1", "1"), ("D_HUB1", "1"), ("U_HUB_CVT", "1")],
+     "ADR-051 §2.1.1: the hub string's POSITIVE terminal and its own converter "
+     "input node. Feeds U_HUB_CVT pin 1 - the hub array's OWN harvester/converter "
+     "input, never the wing chain's BAT54/supercap node. D_HUB1 pin 1 is the "
+     "first hub cell's bypass cathode."))
+for _k in range(1, V9_HUB_ARRAY_CELLS):
+    V9_NETS.append(
+        ("HUB_PV_MID%d" % _k,
+         [("PVA%d" % _k, "2"), ("PVA%d" % (_k + 1), "1"),
+          ("D_HUB%d" % _k, "2"), ("D_HUB%d" % (_k + 1), "1")],
+         "ADR-051 §2.1.1: interior node %d of the hub series string (between "
+         "hub cells %d and %d). It is INTERNAL to the hub array: it carries no "
+         "wing land, and sharing it with the wing chain is exactly the tap the "
+         "topology checker fails on (R4)." % (_k, _k, _k + 1)))
+V9_NETS.append(
+    ("HUB_PV_N",
+     [("PVA%d" % V9_HUB_ARRAY_CELLS, "2"),
+      ("D_HUB%d" % V9_HUB_ARRAY_CELLS, "2"), ("U_HUB_CVT", "3")],
+     "ADR-051 §2.1.1: the hub string's NEGATIVE terminal, wired to the hub "
+     "converter\'s own PV_N input (U_HUB_CVT pin 3) and to the last hub cell's "
+     "bypass anode. It carries NO wing land: the only node the hub string "
+     "shares with the wing system is GND, and that is through the converter\'s "
+     "ground pin, not through a W<n>_SOLAR_N land. (ADR-051 §2.1.2.)"))
+
+for _i in range(1, 5):
+    V9_NETS.append(
+        ("CUT_SENSE_W%d" % _i,
+         [("J_W%d" % _i, "3"), ("U_CUT%d" % _i, "3")],
+         "ADR-051 §2.6: the per-wing cut-sense / cutter line on the wing "
+         "tab's RESERVED pin 3 (RF_FEED). Netting it CLOSES the four "
+         "pin_not_connected ERC errors the unnetted provision produced, at "
+         "zero connector cost - the land and the position were already paid "
+         "for. Honest caveat: on the v9 WING, RF_FEED is a copper land with no "
+         "net, so the continuity measurement only becomes meaningful once the "
+         "wing is re-spun to tie RF_FEED into the cut loop\'s return (OPEN-25, "
+         "ADR-051 §2.6 caveat + §4 item 9)."))
+
+# --- ADR-051: the new hub-array / cut-channel components' power and ground pins.
+# Their OWN nets are appended above; the two SHARED rails are extended here so
+# every added pin lands on the same node the rest of the sheet already uses.
+# This is deliberate: a new component with an unnetted pin would ADD a
+# pin_not_connected ERC error, and the point of netting the RF_FEED lands is to
+# CLOSE errors, not trade them.
+_GND_EXTRA = [("U_HUB_CVT", "2")] + [("U_CUT%d" % _i, "2") for _i in range(1, 5)]
+_VSCAP_EXTRA = [("U_CUT%d" % _i, "1") for _i in range(1, 5)]
+for _idx, (_n, _nodes, _src) in enumerate(V9_NETS):
+    if _n == "GND":
+        V9_NETS[_idx] = (_n, list(_nodes) + _GND_EXTRA,
+                         _src + " ADR-051: this net also carries the hub "
+                         "converter's ground pin (U_HUB_CVT.2) and the four "
+                         "latched cut channels' ground pins (U_CUT1..4.2) - it is "
+                         "the ONE node the hub string shares with the wing system.")
+    elif _n == "VSCAP":
+        V9_NETS[_idx] = (_n, list(_nodes) + _VSCAP_EXTRA,
+                         _src + " ADR-051 s2.5: this net is also the cut "
+                         "channels' drive rail (U_CUT1..4.1) - VSCAP is the raw "
+                         "supercap node, post-BAT54 and PRE-LDO, so a cut still "
+                         "works with the converter dead (ADR-047 s2.1).")
 
 # --- deliberately unconnected pins, each with the record that says so ------
 V9_NC = [
@@ -1211,6 +1576,64 @@ V9_NC = [
     ("U5", "14", "MAX-M10S VCC_RF unused (v8i board audit)."),
     ("U5", "16", "MAX-M10S SDA unused - v9 GNSS is UART, not I2C (v8i audit)."),
     ("U5", "17", "MAX-M10S SCL unused - v9 GNSS is UART, not I2C (v8i audit)."),
+    ("U2", "10", "F33 ANT-2G4 port RETIRED. ADR-034 D5: 'the F33 carries "
+                 "TX only' - its pin-9 sub-GHz port is the 433 MHz TX, and "
+                 "the 2.4 GHz link RX was re-pointed at the bare LoRa2021 "
+                 "(ADR-034 D1). With only four U.FL sites, ANT2 goes to the "
+                 "SX1280 ranging radio (ADR-108 Revision R1, OPEN-2) and this "
+                 "port has no destination. Not equipped, not a stub: no "
+                 "matching network is fitted either (ADR-029 D8 item 2 - DNP "
+                 "pads, never open stubs)."),
+    ("U3", "9", "Bare LoRa2021 sub-GHz ANT (pad 9) is unused in EVERY "
+                 "documented population configuration. ADR-034 D1 puts the "
+                 "433 MHz TX on the Site-A module (whose pad 9 shares the "
+                 "F33 land - ADR-040 D1 nested pad field - and therefore "
+                 "reaches ANT1), and Site B is the LP-only 2.4 GHz RX site "
+                 "(ADR-040 D1/D2, docs/V9-RADIO-SITE-MATRIX.md 3.3/3.4). "
+                 "In {HP} Site B is DNP. So this port is not 'unconditionally "
+                 "unused by reflex' - it is unused because in all four "
+                 "configurations the TX role sits on the Site-A module. "
+                 "CLOSES OPEN-4; a future re-point would need a fifth feed."),
+    ("U3", "16", "Bare LoRa2021 DIO8 (vendor pin table, "
+                 "docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7). "
+                 "The LR2021 DIO5-8 are the RF FRONT-END control lines "
+                 "(docs/LR2021-LESSONS-2026-09.md), and this module has NO "
+                 "front end: the bare NiceRF LoRa2021 is chip-only (needs an "
+                 "external FEM for a 2.4 GHz PA, docs/F33-MODULE-PLAN.md) and "
+                 "ADR-034 D1 item 2 deliberately leaves the airborne 2.4 GHz "
+                 "RX unamplified. Nothing to control, and no GPIO left. "
+                 "CLOSES OPEN-5."),
+    ("U3", "17", "Bare LoRa2021 DIO7 (vendor pin table s7) - same reasoning "
+                 "as pad 16: a front-end control line on a module with no "
+                 "front end. CLOSES OPEN-5."),
+    ("U5", "15", "MAX-M10S VIO_SEL is LEFT OPEN by its own datasheet. u-blox "
+                 "MAX-M10S datasheet UBX-20035208-R08 Table 10, pin 15: "
+                 "'Voltage selector for V_IO supply. Connect to GND for 1.8 V "
+                 "supply, or leave open for 3.3 V supply.' The v9 GNSS IO "
+                 "supply U5 pin 7 (V_IO) is +3V3, so 3.3 V is the correct "
+                 "range and the pin must stay open. Tying it to GND would "
+                 "select the 1.8 V range and put 3.3 V on a pin whose "
+                 "absolute maximum in that state is 1.98 V (Table 12). The "
+                 "frozen v8i board's netless pad 15 is therefore CORRECT, not "
+                 "a recorded gap. CLOSES OPEN-8."),
+    ("U5", "18", "MAX-M10S SAFEBOOT_N is LEFT OPEN by its own datasheet. "
+                 "UBX-20035208-R08 Table 10, pin 18: 'Safeboot mode (active "
+                 "low). Leave open if not used.' (footnote 15: the pin is "
+                 "internally tied to TIMEPULSE through a 1 kOhm series "
+                 "resistor and has its own pull-up, Table 12 Rpu). Safeboot "
+                 "is a recovery mode; the v9 receiver runs in continuous "
+                 "mode. CLOSES OPEN-8."),
+    ("U7", "4", "TPS7A02 pin 4 is NC ON THE PART. TI datasheet SBVS277C "
+                 "(Rev C) Table 5-1 / Figure 5-2, DBV (SOT-23, 5): pin 1 IN, "
+                 "pin 2 GND, pin 3 EN, pin 4 NC ('No connect pin. This pin is "
+                 "not internally connected. Connect to ground or leave "
+                 "floating.'), pin 5 OUT. The sheet symbol's own 'NC' label "
+                 "is RIGHT; the frozen boards are wrong to tie pad 4 to +3V3 "
+                 "(v8i/v8j/v8b/v8c/v8f) - harmless because the pad is not "
+                 "internally connected, but it is not what the datasheet asks "
+                 "for, so it is NOT adopted; hub_board_v1_clean (pad 5 = OUT) "
+                 "has the correct pin map and confirms this reading. CLOSES "
+                 "OPEN-9."),
 ]
 
 # --- explicit TODO(unverified) open questions, never guessed ---------------
@@ -1221,51 +1644,170 @@ V9_NC = [
 # node through the ADR-029 D8 pin-1 selector, with a local bulk cap, a clamp and
 # a rail monitor. The remaining entries below are still OPEN.
 V9_TODO = [
-    ("OPEN-1 SX1280 SUPPLY (U4 pins 1,2)",
+    ("OPEN-1 SX1280 SUPPLY (U4 pins 1,2) - CLOSED 2026-10-07 R1",
      "SX1280 VDD_IN/VDD_IO rail not fixed by any record and the Semtech "
-     "datasheet is unreachable here. Left open deliberately."),
-    ("OPEN-2 SX1280 RF PORT (U4 pin 14 RFIO)",
+     "datasheet is unreachable here. Left open deliberately. ADR-060 s5 "
+     "(2026-10-07) RE-FILES this as unfixed, which is why it stays open. The "
+     "conflict to resolve: ADR-047 states the 3.3 V rail also carries the "
+     "SX1280, and docs/POWER-BUDGET-V9-D2BE.md s2 lists both SX1280 states on "
+     "the 3.3 V rail - so a one-line amendment moving U4 pins 1,2 onto +3V3 is "
+     "what closes it. >>> CLOSED 2026-10-07 by ADR-108 Revision R1: U4 pins "
+     "1 and 2 are on +3V3. ADR-047 2.3 (the 3.3 V rail also carries the "
+     "SX1280) + POWER-BUDGET-V9-D2BE.md 2 (both SX1280 states on 3.3 V). No "
+     "new or gated rail (ADR-060 s4). The ADR-029 2(f) ferrite + bulk cap is "
+     "still owed - see OPEN-33.<<<"),
+    ("OPEN-2 SX1280 RF PORT (U4 pin 14 RFIO) - CLOSED 2026-10-07 R1",
      "No antenna feed is assigned to the SX1280 RFIO. ADR-029 D3 enumerates the "
      "FOUR connectors as {GNSS, F33 sub-GHz, F33 ANT-2G4, SX1280}, but ADR-034 "
      "D1 re-points the 2.4 GHz RX at a SEPARATE bare LoRa2021 that also needs a "
      "feed. Exactly one of the two is left without a listed feed - resolve "
      "before fabricating. No tie-off guessed. ADR-045 D1 records the SX1280's "
      "antenna pin number itself as TODO(unverified) (no datasheet committed), "
-     "so not even the pad is certain."),
-    ("OPEN-3 BARE-MODULE CONTROL LINES (U3 pins 6,7,14,15)",
+     "so not even the pad is certain. ADR-060 s5 re-files this too (U4 pin 14). "
+     "OWNER: the ADR-108 pin-plan revision, which must also settle the "
+     "four-connector / five-feed count (ADR-029 D3 vs ADR-034 D1). >>> "
+     "CLOSED 2026-10-07 by ADR-108 Revision R1: the count is FOUR feeds for "
+     "the four RF parts of ADR-034 D5, one per U.FL site. ANT2 is re-pointed "
+     "from the F33 2.4 GHz port (retired - ADR-034 D5 'the F33 carries TX "
+     "only') to the SX1280 RFIO; ANT1 433 TX, ANT3 bare 2.4 RX, ANT4 GNSS. "
+     "The SX1280 pad number stays ADR-045 D1 TODO(unverified). <<<"),
+    ("OPEN-3 BARE-MODULE CONTROL LINES (U3 pins 6,7,14,15) - CLOSED 2026-10-07 R1",
      "ADR-034 adds the bare LoRa2021 but NO record assigns its NSS/BUSY/RESET/"
      "IRQ GPIOs (the ADR-029 pin plan predates ADR-034). Left floating - "
-     "the +4 GPIO budget in V9-RADIO-SITE-MATRIX 3.1 must be spent first."),
-    ("OPEN-4 BARE-MODULE SUB-GHz PORT (U3 pin 9 ANT)",
+     "the +4 GPIO budget in V9-RADIO-SITE-MATRIX 3.1 must be spent first. No "
+     "record assigns NSS/BUSY/RESET/IRQ for the bare module (ADR-108 covers "
+     "F33 + SX1280 only). OWNER: the ADR-108 pin-plan revision together with "
+     "the ADR-040 / V9-RADIO-SITE-MATRIX 3.1 GPIO-budget decision. >>> "
+     "CLOSED 2026-10-07 by ADR-108 Revision R1: the +4 budget of "
+     "docs/V9-RADIO-SITE-MATRIX.md 3.1 is spent on the only four free "
+     "ESP32-S3 GPIOs - U3.6 NSS -> IO12, U3.7 BUSY -> IO47, U3.14 RESET -> "
+     "IO48, U3.15 IRQ/DIO9 -> IO11 (freed by OPEN-6). U3 shares the SPI2 "
+     "data/clock. This also disposes of U1 pins 20/24/25 (OPEN-14). <<<"),
+    ("OPEN-4 BARE-MODULE SUB-GHz PORT (U3 pin 9 ANT) - CLOSED 2026-10-07 R1",
      "Unused under ADR-034 (U3 is the 2.4 GHz RX). An RF port is not tied off "
-     "without a decision - left open."),
-    ("OPEN-5 BARE-MODULE PAD FUNCTIONS (U3 pins 13,16,17)",
-     "PAD13/PAD16/PAD17 functions are unverified (v8i audit: DECLARED_GAP)."),
-    ("OPEN-6 F33 DIO5 (U1 pin 19)",
-     "The pin plan assigns F33_DIO5 to GPIO11, but the F33's 18-pad map has no "
-     "DIO5 pad. Which F33 pad carries DIO5 is unresolved - left open."),
-    ("OPEN-7 MS5611 TIE-OFFS (U6 pins 2,4,6)",
-     "MS5611 PS / CSB / SDO tie-off levels (I2C mode) are not in any record. "
-     "The v8i board's barometer pads are NOT transferable: v8i fits a Bosch "
-     "LGA-8 2.5x2.5 mm footprint, this design fits LGA-8 3x5 mm."),
+     "without a decision - left open. OWNER: the ADR-034 / ADR-040 population "
+     "decision - in the {LP} configuration a bare module can be the 433 MHz "
+     "TX (V9-RADIO-SITE-MATRIX 3.3), so this port is not unconditionally "
+     "unused and no no-connect is asserted. >>> CLOSED 2026-10-07 by "
+     "ADR-108 Revision R1: the population "
+     "case IS decided - ADR-034 D1 puts the 433 MHz TX on the Site-A module "
+     "(shared pad 9 -> ANT1) and Site B is the LP-only 2.4 GHz RX site "
+     "(ADR-040 D1/D2, matrix 3.3/3.4); in {HP} Site B is DNP. So the Site-B "
+     "sub-GHz port has no role in ANY of the four configurations and is a "
+     "justified no-connect, not a reflex. <<<"),
+    ("OPEN-5 BARE-MODULE PAD FUNCTIONS (U3 pins 13,16,17) - CLOSED 2026-10-07 R1",
+     "PAD13/PAD16/PAD17 functions were unverified (v8i audit: DECLARED_GAP). "
+     "PARTLY CLOSED by ADR-058 s1.3: pad 13 = VTCXO - the vendor pin table "
+     "docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7 enumerates all 18 "
+     "pads and names pad 13 'VTCXO', O, 'Can provide power for an external TCXO', "
+     "so the generator's placeholder 'PAD13_??' is renamed 'VTCXO' (a naming "
+     "correction with a source; no connectivity added). STILL OPEN: pads 16 and 17 "
+     "(PAD16_??/PAD17_??) - the vendor table calls them DIO8 and DIO7 but the "
+     "generator's bare-module pin map has not been reconciled with it. See also "
+     "OPEN-29 (the chip's NTC pin has no castellation). Pads 16/17 are now NAMED "
+     "DIO8/DIO7 (vendor pin table s7 + docs/inventory.md line 28 - a naming "
+     "correction, no connectivity); what REMAINS OPEN is the MCU ASSIGNMENT, "
+     "which no record fixes. >>> CLOSED 2026-10-07 by ADR-108 Revision R1: "
+     "pads 16 and 17 are a justified no-connect. The LR2021 DIO5-8 are the "
+     "RF front-end control lines (docs/LR2021-LESSONS-2026-09.md) and this "
+     "module has NO front end - the bare NiceRF LoRa2021 is chip-only "
+     "(docs/F33-MODULE-PLAN.md) and ADR-034 D1 item 2 deliberately leaves the "
+     "airborne 2.4 GHz RX unamplified. There is nothing for DIO7/DIO8 to "
+     "drive, and no GPIO remains. <<<"),
+    ("OPEN-6 F33 DIO5 (U1 pin 19) - CLOSED 2026-10-07",
+     "ADDRESSED: F33_DIO5 has NO destination on the fitted F33 module, so U1 "
+     "pin 19 (IO11) is a no-connect. The F33's own 18-pad table (G-NiceRF "
+     "LoRa2021F33-2G4 datasheet Rev 1.1 s7, quoted in-repo at ADR-059 s1.3) "
+     "enumerates EVERY pad - 1 VCC / 2,3,4,6,7,8,11 GND / 5 CE / 9 ANT / 10 "
+     "ANT-2G4 / 12 SCK / 13 NSS / 14 BUSY / 15 MOSI / 16 MISO / 17 RESET / 18 "
+     "IRQ - and lists NO DIO5 pad, and the v9 F33 symbol defines no DIO5 pin. "
+     "docs/F33-MODULE-PLAN.md (No DIO7/DIO8/DIO9 pins - only IRQ (Pin 18) as "
+     "digital interface) and docs/LR2021-LESSONS-2026-09.md (DIO5-8 are "
+     "LR2021 DIOs wired to the on-module front-end; setRfSwitchTable writes "
+     "the mode mask into the CHIP, not MCU GPIOs) both confirm the F33 "
+     "front-end DIOs are internal. No net was invented and nothing was "
+     "silenced: IO11 is NC. OWNER: a future ADR-108 pin-plan revision must "
+     "re-assign IO11 if a DIO5-class interrupt is ever needed. >>> "
+     "RE-ASSIGNED 2026-10-07 by ADR-108 Revision R1: the free IO11 (U1 pin "
+     "19) is spent as the bare module's IRQ line (U3_IRQ, OPEN-3). U1 pin 19 "
+     "is therefore no longer a no-connect. <<<"),
+    ("OPEN-7 MS5611 TIE-OFFS (U6 pins 2,4,6) - CLOSED 2026-10-07",
+     "ADDRESSED by the frozen v8j MS5611 board: "
+     "tracker/hardware/output/v8j_krt_ms5611.kicad_pcb carries the barometer "
+     "on the SAME footprint this sheet uses - Package_LGA:LGA-8_3x5mm_P1.25mm "
+     "- in the SAME I2C mode (its pads 7/8 are I2C_SDA / I2C_SCL, exactly "
+     "this sheet U6 pins 7/8), and it ties pad 2 = GND, pad 4 = +3V3 and pad "
+     "6 = GND. A frozen board carrying the same footprint is citable "
+     "authority for a pin tie-off, so this sheet follows it: U6.2 (PS) -> "
+     "GND, U6.4 (CSB) -> +3V3, U6.6 (SDO) -> GND. The v8i board is NOT the "
+     "precedent (its barometer is a Bosch LGA-8 2.5x2.5 mm pad field, a "
+     "different part footprint); v8j is. TODO(unverified): no MS5611 "
+     "datasheet is committed, so the tie-off LEVELS come from the board "
+     "precedent rather than a vendor table. OWNER: none - closed from the "
+     "landed v8j artefact."),
     ("OPEN-8 MAX-M10S TIE-OFFS (U5 pins 15,18)",
      "VIO_SEL (15) and ~SAFEBOOT (18) were netless DECLARED_GAP pins on the "
      "frozen v8i board and no record fixes them. V_BCKP / VCC_IO / ~RESET "
      "(pins 6/7/9) are NO LONGER open: the v8i board - same ublox_MAX footprint "
      "and same RF_GPS:MAX-M10S symbol - ties 6/7/8/9 to +3V3, and this sheet "
-     "follows that precedent."),
-    ("OPEN-9 TPS7A02 NC (U7 pin 4)",
+     "follows that precedent. VERIFIED against the frozen board: "
+     "tracker/hardware/output/v8i_krt_gnss.kicad_pcb (same ublox_MAX "
+     "footprint + RF_GPS:MAX-M10S symbol) leaves pads 15 and 18 UNNETTED - "
+     "the precedent records the gap rather than deciding it, so no tie-off is "
+     "adopted and no no-connect is asserted. OWNER: the ADR-108 pin-plan "
+     "revision (no MAX-M10S datasheet is committed here). >>> CLOSED "
+     "2026-10-07 by ADR-108 Revision R1: the datasheet was obtained. u-blox "
+     "MAX-M10S UBX-20035208-R08 Table 10: pin 15 VIO_SEL 'Connect to GND for "
+     "1.8 V supply, or leave open for 3.3 V supply' and pin 18 SAFEBOOT_N "
+     "'Leave open if not used'. V_IO (U5 pin 7) is +3V3, so BOTH are left "
+     "open - which is what the v8i precedent recorded, now confirmed as a "
+     "decision rather than a gap. Tying VIO_SEL low would exceed its 1.98 V "
+     "absolute maximum at V_IO = 3.3 V (Table 12). <<<"),
+    ("OPEN-9 TPS7A02 NC (U7 pin 4) - CLOSED 2026-10-07 R1",
      "TPS7A02 pin 4 is a real pad with an unverified function: the v8i board "
      "leaves it netless (DECLARED_GAP 'TPS7A02 pin 4 function / tie-off'), and "
      "no datasheet for the part is committed here. Deliberately NOT given an "
      "invented tie-off or a no_connect flag, because the flag would assert a "
-     "decision no record makes."),
-    ("OPEN-10 ESP32-S3 EN and USB (U1 pins 3,13,14)",
+     "decision no record makes. NOTE the sheet's own repo-local symbol "
+     "(v9_lib/balloon_flight_v9.kicad_sym) names U7 pin 4 'NC', which "
+     "CONTRADICTS this entry, and the frozen boards are inconsistent too "
+     "(v8i/v8j/v8b/v8c/v8f tie the SOT-23-5 pad 4 to +3V3; output/v8_krt_routed "
+     "and hub_board_v1 leave it netless). No tie-off is adopted from a "
+     "contradiction. OWNER: the ADR-108 pin-plan revision, once a TPS7A02 "
+     "datasheet is obtained. >>> CLOSED "
+     "2026-10-07 by ADR-108 Revision R1: the datasheet was obtained. TI "
+     "TPS7A02 SBVS277C Table 5-1 / Figure 5-2 (DBV, SOT-23-5): pin 4 IS NC "
+     "('not internally connected. Connect to ground or leave floating'). "
+     "The no-connect is therefore what the part asks for, and the frozen "
+     "boards that tie pad 4 to +3V3 are NOT adopted; hub_board_v1_clean (its "
+     "pad 5 = OUT) confirms the correct pin map. <<<"),
+    ("OPEN-10 ESP32-S3 EN and USB (U1 pins 3,13,14) - STILL OPEN, now SPECIFIED",
      "Module EN strap and the USB_D-/USB_D+ pads have no v9 connector or "
      "recorded tie-off. The ADR-029 pin plan calls USB-Serial-JTAG the assumed "
      "debug path, so these are not unused - they lack a termination. The reset "
      "RC is also absent from the v9 BOM "
-     "(docs/coordination/SCHEMATIC-PLAN-3VARIANTS.md 5 item 2)."),
+     "(docs/coordination/SCHEMATIC-PLAN-3VARIANTS.md 5 item 2). ADR-108 assigns "
+     "the FUNCTION of GPIO19/20 (USB_D-/D+ = USB-Serial-JTAG console, no "
+     "external radio use) but names no connector and no EN reset RC, and the "
+     "v9 BOM has neither. OWNER: the ADR-108 pin-plan revision - a connector "
+     "part and the reset-RC values must be named before either can be netted. "
+     ">>> PARTLY SETTLED 2026-10-07 by ADR-108 Revision R1 - the DECISION is "
+     "now recorded, the three pins stay OPEN because the connector is not "
+     "fitted and this revision adds no part. RECOMMENDED CONSOLE / RESET "
+     "CONNECTOR: the same 6-pin 2.54 mm programming header the frozen v8i "
+     "board already uses as J1 'Prog_Header' - footprint/part id "
+     "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical (already in "
+     "the generator's PART_MAP as Connector_Generic:Conn_01x06), wired 1 GND "
+     "/ 2 +3V3 / 3 EN / 4 USB_D- / 5 USB_D+ / 6 IO0 (the v8i precedent carries "
+     "GND/3V3/EN/UART0-RX/UART0-TX/IO0 - the ESP32-S3 console is "
+     "USB-Serial-JTAG, so UART0 TX/RX are replaced by USB_D-/D+, exactly as "
+     "ADR-108's table assigns GPIO19/20). RESET RC: R = 10 kOhm and C = 1 uF, "
+     "ESP32-S3-WROOM-1 & WROOM-1U datasheet v1.8 s9 (Peripheral Schematics, "
+     "p.41): 'it is advised to add an RC delay circuit at the EN pin. The "
+     "recommended setting for the RC delay circuit is usually R = 10 kOhm and "
+     "C = 1 uF.' U1.3 EN -> the RC + header pad 3; U1.13/U1.14 -> header pads "
+     "4/5. OWNER: the pass that adds the console connector to the BOM - the "
+     "part, the pinout and the RC values are no longer undecided, only unfitted. <<<"),
     ("OPEN-11 SUPERCAP ADC GPIO",
      "ADR-006 puts the supercap ADC on GPIO0; the ADR-029 pin plan reserves "
      "IO0 as a boot strap and forbids loading it. The divider tap net exists "
@@ -1283,11 +1825,20 @@ V9_TODO = [
      "symbol's QFN pad numbering and SX1280_QFN24.kicad_mod geometry are "
      "PLACEHOLDERS - every SX1280 pin is TODO(unverified). ADR-045 D1 files the "
      "same gap as a blocker for its antenna-access gate."),
-    ("OPEN-14 UNASSIGNED ESP32-S3 GPIO (U1 pins 20,24,25 = IO12, IO47, IO48)",
+    ("OPEN-14 UNASSIGNED ESP32-S3 GPIO (U1 pins 20,24,25 = IO12, IO47, IO48) - CLOSED 2026-10-07 R1",
      "The ADR-029 pin plan does not assign these, and the strapping audit only "
      "clears IO0/IO3/IO45/IO46 as straps and IO35-IO37 as PSRAM. Left floating "
      "rather than guessed: assign them deliberately in a pin-plan revision, or "
-     "mark them no_connect on the record."),
+     "mark them no_connect on the record. ADR-108 (the pin plan) assigns IO0, "
+     "IO3, IO45 and IO46 'none' - they are NC on this sheet - and reserves "
+     "IO35-37 for octal PSRAM, but it states NO disposition for IO12, IO47 and "
+     "IO48, and this register's own instruction is that a RECORD must decide "
+     "them. Undecided -> not silenced. OWNER: the ADR-108 pin-plan "
+     "revision. >>> CLOSED 2026-10-07 by ADR-108 Revision R1: U1 pins 20, "
+     "24 and 25 (IO12 / IO47 / IO48) are ASSIGNED, not no-connects - they are "
+     "the bare module's NSS / BUSY / RESET lines (U3_CS_N / U3_BUSY / "
+     "U3_RESET_N) per the +4 GPIO budget of docs/V9-RADIO-SITE-MATRIX.md 3.1 "
+     "and ADR-040 D2. No free GPIO remains on the module afterwards. <<<"),
     ("OPEN-15 SUPERCAP CELL ESR + COLD BANK BEHAVIOUR",
      "ADR-047 3/4: the AVX SCC 3.3 F 2.7 V cell's ESR is NOT in this "
      "repository, at 25 C or at -60 C. Every rail-step number in ADR-047 is "
@@ -1333,15 +1884,16 @@ V9_TODO = [
      "insertion depth. TODO(unverified): which datum the records intend (land "
      "inboard edge at 1.0 mm, as implemented, or land centre at 1.0 mm, as the "
      "spec's table line reads). No in-repo source resolves it."),
-    ("OPEN-21 W<n>_RF PROVISION LANDS ARE UNNETTED (4 NEW ERC ERRORS, BY DESIGN)",
-     "ADR-046 s2.4 and socket spec s3.2 mandate that each interface's pad 3 "
-     "(RF_FEED) keeps its copper land but carries NO NET on v9, and explicitly "
-     "say 'Do not tie it to GND'. The sheet therefore leaves J_W1..J_W4 pin 3 "
-     "floating and does NOT add a no_connect flag: a no_connect would assert a "
-     "termination decision (and an RF tie-off) that no record makes. KiCad ERC "
-     "reports each unnetted pin as pin_not_connected, so these 4 are EXPECTED, "
-     "RECORDED additions to the v9 ERC error count, not a regression and not "
-     "something that has been silenced."),
+    ("OPEN-21 W<n>_RF PROVISION LANDS (CLOSED by ADR-051 s2.6)",
+     "ADDRESSED: ADR-046 s2.4 / socket spec s3.2 left each interface's pad 3 "
+     "(RF_FEED) with its copper land but NO net, and explicitly said 'Do not tie "
+     "it to GND'; that produced 4 pin_not_connected ERC errors by design. "
+     "ADR-051 s2.6 now NETS that land as CUT_SENSE_W<n>, so those 4 errors are "
+     "CLOSED at zero connector cost. The 'do not tie it to GND' prohibition "
+     "STANDS and is honoured - the land sits on a named sense net, not on GND. "
+     "What is NOT closed: the GPIO/divider assignment (OPEN-25) and the wing "
+     "re-spin without which the continuity sense reads a floating pad "
+     "(ADR-051 s2.6 caveat + s4 item 9)."),
     ("OPEN-22 HUB v9 STACK-UP / SLOT KEEP-OUT / FAB TOLERANCE",
      "Socket spec s8 items 1-4 are all still open: the hub's actual component "
      "keep-out at the slot (which owns whether the 6.0 mm slot depth is legally "
@@ -1369,6 +1921,115 @@ V9_TODO = [
      "is worse than no slot. The 0.30 mm nominal solder gap (0.9 mm slot - 0.6 mm "
      "tab, ADR-046 s4.1) is therefore the only gap number and it is unproven. "
      "Do not order a hub on these numbers alone."),
+    ("OPEN-25 CUT-SENSE GPIO / DIVIDER AND THE WING RE-SPIN",
+     "ADR-051 s2.6 fixes the MECHANISM (per-wing CUT_SENSE_W<n> on the reserved "
+     "RF_FEED land) but NOT the GPIO count: four dedicated GPIOs, or one GPIO "
+     "plus a 4:1 analogue mux / resistor-ladder encoding, are both compatible "
+     "and the sense divider values are not chosen. GPIO budget is the "
+     "constraint (ADR-029 free-GPIO audit; OPEN-14 records IO12/IO47/IO48 "
+     "unassigned). Separately, the sense is only meaningful after the WING is "
+     "re-spun to tie its RF_FEED land into the cut loop\'s return (ADR-051 s2.6 "
+     "caveat + s4 item 9). >>> CONSEQUENCE RECORDED 2026-10-07 (ADR-108 "
+     "Revision R1): the +4 GPIO budget is now fully spent (IO11/IO12/IO47/IO48 "
+     "-> U3_IRQ/U3_CS_N/U3_BUSY/U3_RESET_N) and every other ESP32-S3 GPIO is "
+     "an assignment, a strap (IO0/IO3/IO45/IO46), an octal-PSRAM pin "
+     "(IO35/36/37) or the USB console (IO19/IO20). NO free GPIO remains, so "
+     "the four CUT_SENSE_W<n> lines CANNOT take four dedicated GPIOs - the "
+     "one-GPIO-plus-mux / resistor-ladder encoding ADR-051 2.6 allows is the "
+     "only remaining shape. That choice, the divider values and the wing "
+     "re-spin stay OPEN here. <<<"),
+    ("OPEN-26 HUB ARRAY: CELL COUNT, MOUNTING PLANE, HARVESTER, OUTLINE",
+     "ADR-051 s2.1's independence invariant is IMPLEMENTED on this sheet, but "
+     "the array's PARAMETERS are not: the cell count (H2 = 2 recommended / H3 = "
+     "3 fallback), the mounting plane (vertical 0.3051 vs horizontal 0.1865 "
+     "day-mean - load-bearing for the area), the converter/harvester part and "
+     "its peak-input-power rating, and the hub OUTLINE.  The count on this sheet "
+     "is a DOCUMENTED PLACEHOLDER (V9_HUB_ARRAY_CELLS in "
+     "build_flight_sch.py) because the hub outline is a form-factor decision "
+     "owned by another task (ADR-051 s2.3). See ADR-051 s2.2 for H2's own 6 % "
+     "shortfall and s4 items 3/4/5/6."),
+    ("OPEN-27 HUB-ARRAY BYPASS GRANULARITY (PER-CELL vs PER-GROUP)",
+     "ADR-051 s2.2 places the hub cells on the hub and says they 'need their own "
+     "diodes'; ADR-054 s4.5 explicitly leaves the hub array's per-cell-over-"
+     "per-group trade OPEN.  This sheet carries the MINIMAL per-cell provision "
+     "(D_HUB<n>, one SS24 across each hub cell) because "
+     "scripts/bypass_diode_check.py requires every solar series group - "
+     "including an on-board cell - to be covered, and a determinate answer is "
+     "worth more than a silent gap.  If the trade lands on per-group, the "
+     "hub diodes regroup and this note is superseded."),
+    ("OPEN-28 CUT-DRIVER LATCH TOPOLOGY AND ITS PART",
+     "ADR-051 s2.5.1 mandates a LATCHED one-shot with a persistent NVS fired "
+     "flag per channel plus a hardware series arming gate, but names no part: "
+     "the IRLML2502 in the repo's own precedent is the switch, not the latch.  "
+     "U_CUT1..U_CUT4 are PROVISION symbols whose pin set (VSCAP / GND / the "
+     "wing RF_FEED line) is fixed and whose internals are TODO(unverified), as "
+     "are the sense divider (OPEN-25), the on-time cap and the inter-cut "
+     "interval.  Also open: the trigger mode - ground-commanded vs automatic "
+     "(ADR-051 s2.5.7)."),
+    ("OPEN-29 NTC PROVISION: THE MODULE PIN BREAK-OUT (ADR-058 D6, THE BLOCKER)",
+     "Whether the LR2021 chip's NTC sense input (chip pin 3, 'Negative "
+     "Temperature Coefficient (NTC) resistor connection', DS 2.2 Table 2-1) is "
+     "broken out on the OWNED bare NiceRF module. EVIDENCE IN HAND SAYS NO: the "
+     "vendor pin table (docs/assets/lr2021/LoRa2021-Module-Datasheet-V1.3.pdf s7) "
+     "enumerates ALL 18 pads - 1 VCC / 2,8,11,12,18 GND / 3 MISO / 4 MOSI / 5 SCK "
+     "/ 6 NSS / 7 BUSY / 9 ANT / 10 2.4/S_ANTA / 13 VTCXO / 14 RST / 15 DIO9 / 16 "
+     "DIO8 / 17 DIO7 - and the only oscillator pad is 13 = VTCXO, described only "
+     "as 'Can provide power for an external TCXO'. So the module brings out the "
+     "VTCXO/VNTC BIAS rail but NOT the NTC SENSE input, and the divider midpoint "
+     "(net NTC_SENSE) has no path back to the chip: SetTempCompCfg would configure "
+     "a sensor that cannot be read. THAT is why R_NTC1/TH_NTC1 are DNP. WHAT WOULD "
+     "SETTLE IT: the module MECHANICAL DRAWING (the vendor's pin-out drawing, not "
+     "just the pin-definition table) or a DESHIELD PHOTO of a bare module's "
+     "castellations. Until then the finding is strong but NOT promoted to 'proven "
+     "absent' - a pin table can be an abbreviation and a module revision can "
+     "differ (TODO(unverified); ADR-042 Addendum A2 files the same request). "
+     "FALLBACK if unavailable (ADR-058 D6): do not fit the NTC on a bare module; "
+     "fly the F33 (internal 0.5 ppm TCXO) or a TCXO-bearing LR2021 module; else "
+     "firmware f(T) pre-distortion + GPS 1PPS discipline (ADR-056 D3)."),
+    ("OPEN-30 NTC PART SELECTION AND ITS COLD RATING (ADR-058 D4/OPEN-2)",
+     "TH_NTC1's part is NOT chosen. Required in this order: (1) read R25 and beta "
+     "from the chosen part's own datasheet - they set SetNtcParams ntc_beta ('NTC "
+     "temperature in 2 Kelvin/lsb', DS 2.2 Table 6-70) and, with R_NTC1, "
+     "ntc_r_ratio; (2) CHECK THE COLD RATING against the -60 degC design case, with "
+     "the same rigour the array work applied: ADR-054 s4 records that EVERY "
+     "verified semiconductor there is rated -55 degC (diodes) or -40 degC "
+     "(converters) against the -60 degC case, and the LR2021 silicon itself is Top "
+     "-40...85 degC / Tmr -55...125 degC (DS 2.2 Tables 3-1/3-2, p.38). A "
+     "commercial-grade '-40 degC' thermistor is NOT a -60 degC part - do not "
+     "assume the thermistor is exempt from the cold-rating gate. All "
+     "TODO(unverified)."),
+    ("OPEN-31 SetNtcParams VALUES NOT CHARACTERISED (ADR-058 D4)",
+     "The three SetNtcParams inputs are TODO(unverified) and must NOT be invented: "
+     "ntc_r_ratio (10 bits with 9 fractional bits, the ratio of the bias resistor "
+     "to the NTC at 25 degC), ntc_beta (2 K/lsb) and delay (first-order time delay "
+     "coefficient) - DS 2.2 Table 6-70. They must be derived from the POPULATED "
+     "part + bias resistor via the datasheet's own identity (RRatio = RNTC/RNTC_25 "
+     "= RBiasRatio*(Raw/8192)/(1-Raw/8192); T = Beta/(ln(RRatio)+Beta/298.15) - "
+     "273.15). AN1200.106, the datasheet's reference for this maths, is NOT "
+     "committed in this repo - obtain it first. A forum figure ('assume 4250 K') is "
+     "a bench placeholder, never a characterisation."),
+    ("OPEN-32 F33 PA SELF-HEATING vs A NEARBY NTC (ADR-058 D3)",
+     "Whether the F33's 2 W PA self-heating perturbs a nearby NTC has NOT been "
+     "measured (TODO(unverified)). ADR-058 D3 is the siting RULE that this "
+     "open item exists to protect: the NTC must be thermally coupled to the radio's "
+     "XTAL / XOSC node and must NOT be sited where a self-heating neighbour "
+     "dominates its reading (the F33 PA, the hub converter). The provision on THIS "
+     "sheet sits on the bare-module (U3) side, which is why the rule is stated "
+     "explicitly rather than left to layout."),
+    ("OPEN-33 SX1280 RAIL DECOUPLING PROVISION (ADR-029 2(f), NEW 2026-10-07 R1)",
+     "ADR-029 2(f) requires that 'each radio rail gets its own ferrite + bulk "
+     "cap from 3V3'. ADR-108 Revision R1 puts the SX1280 supply (U4 pins 1/2) "
+     "on the shared +3V3 rail, which settles the NET but not the PROVISION: "
+     "no dedicated ferrite bead or bulk capacitor exists for the SX1280 rail "
+     "on this sheet, and this revision adds no part. The pin assignment is "
+     "closed (OPEN-1); this decoupling provision is registered OPEN rather "
+     "than silently omitted, because the SX1280 shares the rail that also "
+     "feeds the ESP32-S3 and the F33's logic side, and ADR-029 2(f) exists "
+     "precisely so a 2.4 GHz TX burst does not modulate the GNSS LNA or the "
+     "ranging front end. WHAT WOULD CLOSE IT: fit the ferrite + bulk cap at "
+     "U4 VDD_IN, or record a measurement showing the shared rail is quiet "
+     "enough. OWNER: the v9 BOM/placement pass that adds the console "
+     "connector (OPEN-10) - the same edit that adds parts at all."),
 ]
 
 
@@ -1382,14 +2043,58 @@ def v9_emit():
     custom = v9_custom_symbols()
     comps = list(V9_COMPONENTS)
 
+    # ---- ADR-058 / OPEN-7 (2026-10-07): re-home the barometer symbol --------
+    # The MS5611 runs in I2C mode on this sheet, so its SDO pad is NOT a data
+    # output: the frozen v8j board (SAME Package_LGA:LGA-8_3x5mm_P1.25mm
+    # footprint, same I2C mode - its pads 7/8 are I2C_SDA/I2C_SCL exactly as
+    # this sheet's U6 pins 7/8) ties pad 6 to GND.  The stock KiCad symbol types
+    # that pin `output`, and tying an `output` pin to the GND net - which
+    # necessarily carries a PWR_FLAG, i.e. a synthetic `power output` - makes
+    # kicad-cli ERC report "Pins of type Output and Power output are connected":
+    # an artefact of the synthetic flag, not a wiring defect.  Correcting the
+    # TYPE to `passive` is the same class of fix this sheet already applies to
+    # the F33 MISO pins (see the F33_MISO net note).  The corrected symbol is
+    # RE-HOMED into the project's OWN library (balloon_flight_v9:MS5611_BARO,
+    # written to v9_lib/balloon_flight_v9.kicad_sym) so the sheet's cached
+    # symbol still matches a library entry - overriding the stock entry in
+    # place would raise a lib_symbol_mismatch warning.  Geometry is copied
+    # VERBATIM: no pin moves.  NO CONNECTIVITY CHANGES - U6 pin 6 stays on GND.
+    _BARO_DST = V9_LIBNAME + ":MS5611_BARO"
+    _b = load_lib_symbol("Sensor_Pressure", "MS5611-01BA")
+    _m = [m for m in PIN_RE.finditer(_b)
+          if m.group(6) == "6" and m.group(1) == "output"]
+    if not _m:
+        sys.exit("MS5611 SDO pin-type correction: no `output` pin 6 in the "
+                 "stock symbol - re-check OPEN-7")
+    _mm = _m[0]
+    _b = _b[:_mm.start(1)] + "passive" + _b[_mm.end(1):]
+    _b = _b.replace('(symbol "Sensor_Pressure:MS5611-01BA"',
+                    '(symbol "%s"' % _BARO_DST, 1)
+    _b = _b.replace('"MS5611-01BA_0_1"', '"MS5611_BARO_0_1"')
+    _b = _b.replace('"MS5611-01BA_1_1"', '"MS5611_BARO_1_1"')
+    assert '(symbol "%s"' % _BARO_DST in _b, "baro symbol rename failed"
+
     # ---- resolve a lib_symbol block for every component -------------------
     lib_blocks = dict(custom)
+    lib_blocks[_BARO_DST] = _b
     for (ref, lib_id, value, footprint, dnp, note) in comps:
         if lib_id in lib_blocks:
             continue
         lib, name = lib_id.split(":")
         lib_blocks[lib_id] = load_lib_symbol(lib, name)
 
+    # ---- ADR-058 / OPEN-7 (2026-10-07): the barometer item is a TIE-OFF -------
+    # The MS5611 runs in I2C mode on this sheet, so its SDO pad is NOT a data
+    # output: the frozen v8j board (SAME LGA-8 3x5 mm footprint, same I2C mode,
+    # its pads 7/8 = I2C_SDA/I2C_SCL exactly as here) ties pad 6 to GND.  The
+    # stock KiCad symbol types that pin `output`, and tying an `output` pin to
+    # the GND net - which necessarily carries a PWR_FLAG, i.e. a synthetic
+    # `power output` - makes kicad-cli ERC report "Pins of type Output and Power
+    # output are connected".  That is an artefact of the synthetic flag, not a
+    # wiring defect, so the pin TYPE is corrected to `passive`: exactly the
+    # correction this sheet already applies to the F33 MISO pins for the same
+    # class of false pin_to_pin finding (see the F33_MISO net note).  The pin
+    # drives nothing here.  NO CONNECTIVITY CHANGES - U6 pin 6 stays on GND.
     # ---- validate: every net endpoint must exist as a symbol pin ----------
     problems = []
     by_ref = {c[0]: c for c in comps}
@@ -1423,18 +2128,44 @@ def v9_emit():
         sys.exit(3)
 
     # ---- footprints: hand the .pretty the fixed F33 + bare + the new SX1280
+    # The F33 land pattern is DERIVED AT GENERATION TIME from the vendor's own
+    # land file (docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb,
+    # via scripts/gen_f33_landpattern.py) instead of being copied out of a
+    # custom.pretty file, so a stale or hand-edited copy cannot re-enter the v9
+    # design of record.  F33GEN.decode_vendor() raises if the vendor file stops
+    # decoding to 18 pads / pitch 3.9289mm / rows on the two 39mm edges, and the
+    # coincidence test below fails the build if the emitted pads are not on the
+    # vendor land pattern (a pad COUNT match alone is not a geometry match).
+    f33_body = F33GEN.footprint_text(V9_LIBNAME, "LoRa2021F33_2G4")
+    f33_vendor = F33GEN.decode_vendor()
+    f33_hit, f33_near, f33_worst = F33GEN.coincidence(f33_body, f33_vendor["pads"])
+    if f33_hit != len(f33_vendor["pads"]):
+        sys.exit("v9: F33 footprint is NOT on the vendor land pattern "
+                 "(%d/%d pads coincident, nearest %.3f mm, worst %.3f mm)"
+                 % (f33_hit, len(f33_vendor["pads"]), f33_near, f33_worst))
+    print("F33 land pattern: %s" % F33GEN.describe(F33GEN.signature(f33_body)))
+    print("                  %d/%d pads coincident with the vendor land file "
+          "(nearest %.3f mm); land size %g x %g mm DERIVED from the "
+          "operator-supplied"
+          % (f33_hit, len(f33_vendor["pads"]), f33_near,
+             F33GEN.LAND_LENGTH_MM, F33GEN.LAND_WIDTH_MM))
+    print("                  castellation hole diameter D = %g +/- %g mm "
+          "(datasheet s9 p8, read by the operator); land = D + 2*%g mm "
+          "solder-fillet margin."
+          % (F33GEN.CASTELLATION_D_MM, F33GEN.CASTELLATION_D_TOL_MM,
+             F33GEN.LAND_FILLET_MARGIN_MM))
     fp_sources = [
-        (os.path.join(V9_SRC_PRETTY, "LoRa2021F33_2G4.kicad_mod"),
-         "LoRa2021F33_2G4"),
+        (None, "LoRa2021F33_2G4", f33_body),
         (os.path.join(V9_SRC_PRETTY, "LoRa2021_Castellated.kicad_mod"),
-         "LoRa2021_Castellated"),
-        (V9_SX_FP, "SX1280_QFN24"),
+         "LoRa2021_Castellated", None),
+        (V9_SX_FP, "SX1280_QFN24", None),
     ]
     written = []
-    for src, leaf in fp_sources:
-        if not os.path.exists(src):
-            sys.exit("v9: missing footprint source %s" % src)
-        body = open(src).read()
+    for src, leaf, body in fp_sources:
+        if body is None:
+            if not os.path.exists(src):
+                sys.exit("v9: missing footprint source %s" % src)
+            body = open(src).read()
         body = re.sub(r'\(footprint\s+"[^"]*"',
                       '(footprint "%s:%s"\n\t\t(version 20250114)\n'
                       '\t\t(generator "pcbnew")\n\t\t(generator_version "9.0")'
@@ -1472,6 +2203,18 @@ def v9_emit():
         # adjacent interfaces are the hub-link nets of ADR-046 s2.3.
         ["J_W1", "J_W2", "J_W3", "J_W4",
          "D_BP1", "D_BP2", "D_BP3", "D_BP4"],
+        # ADR-051: the INDEPENDENT hub-array string (its own cells, its own
+        # converter input) and the four per-wing latched cut channels.  Appended
+        # LAST on purpose: col_x accumulates left-to-right, so appending a column
+        # moves no already-placed component.
+        ["PVA%d" % _hci for _hci in range(1, V9_HUB_ARRAY_CELLS + 1)]
+        + ["D_HUB%d" % _hci for _hci in range(1, V9_HUB_ARRAY_CELLS + 1)]
+        + ["U_HUB_CVT"] + ["U_CUT%d" % _hci for _hci in range(1, 5)],
+        # ADR-058: the on-chip NTC temperature-compensation provision (both parts
+        # DNP).  Appended LAST for the same reason as the hub column above:
+        # col_x accumulates left-to-right, so a new trailing column moves no
+        # already-placed component.
+        ["R_NTC1", "TH_NTC1"],
     ]
     V9_COL_TITLES = [
         "GNSS / BARO / POWER",
@@ -1481,10 +2224,16 @@ def v9_emit():
         "U4 SX1280  (2.4 GHz ranging)  *** PINOUT UNVERIFIED ***",
         "F33 RAIL PROVISION (ADR-047): pin-1 selector / bulk / clamp / monitor",
         "SUPERCAP BANK (SERIES + BALANCING) / BAT54 / DIVIDER / GNSS RC",
-        "U.FL ANTENNAS (see the four-feed conflict)",
+        "U.FL ANTENNAS (4 feeds: ANT1 433 TX / ANT2 2.4 ranging / ANT3 2.4 RX "
+        "/ ANT4 GNSS L1) - ADR-108 Revision R1",
         "FOUR WING INTERFACES at 90 deg (ADR-046 / ADR-048): 4 lands per face x "
         "2 faces = 8 lands each, 4.0 x 1.2 mm, pitch 1.8 mm; 1 SOLAR_P / 2 GND / "
-        "3 RF (NO NET on v9) / 4 SOLAR_N + 4 DNP bypass Schottky",
+        "3 RF = CUT_SENSE_W<n> (ADR-051 s2.6) / 4 SOLAR_N + 4 POPULATED bypass "
+        "Schottky (SS24, 2 A / 40 V)",
+        "INDEPENDENT HUB ARRAY (ADR-051 s2.1) + 4 LATCHED CUT CHANNELS (s2.5/s2.6)",
+        "LR2021 ON-CHIP NTC TEMP-COMP PROVISION (ADR-058) - R_NTC1 + TH_NTC1, "
+        "BOTH DNP: the chip's NTC sense pin (chip pin 3) is NOT broken out on the "
+        "owned bare NiceRF module (OPEN-29 / ADR-058 D6)",
     ]
     placed_refs = [r for col in V9_COLUMNS for r in col]
     missing = [c[0] for c in comps if c[0] not in placed_refs]
@@ -1511,7 +2260,7 @@ def v9_emit():
     # ---- body ------------------------------------------------------------
     body = ['\t(text "BALLOON v9 TRI-BAND FLIGHT BOARD - DESIGN-INTENT '
             'schematic from the v9 decision records (ADR-029/034/035/036-043, '
-            'ADR-044/044a/045/046/047/048). NOT derived from a PCB."\n\t\t(exclude_from_sim no)\n'
+            'ADR-044/044a/045/046/047/048/049/050/051/052/053/054). NOT derived from a PCB."\n\t\t(exclude_from_sim no)\n'
             '\t\t(at 30.48 20.32 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
             '(size 2.54 2.54)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n'
             '\t\t(uuid "%s")\n\t)' % uid(),
@@ -1535,15 +2284,19 @@ def v9_emit():
             'Series stack wired on the hub: W1_P -> BAT54 (D1) -> supercap; '
             'W1_N == W2_P, W2_N == W3_P, W3_N == W4_P (hub links); W4_N = stack '
             'bottom = GND. Each interface GND land ties to the hub ground plane. '
-            'One DNP bypass Schottky per interface (D_BP1..D_BP4) across '
+            'One POPULATED bypass Schottky per interface (D_BP1..D_BP4, SS24 = 2 A / 40 V on an SMA land) across '
             'W<n>_SOLAR_P (K) - W<n>_SOLAR_N (A). Geometry lives in the real '
             'footprint Tracker_Mechanical:Wing_Tab_4P. ADR-048 D-1: the socket '
             'spec s2/s4 say >= 0.5 mm copper-to-edge clearance, ADR-046 s2.2 '
             'says >= 1.0 mm and the ADR number is implemented. OPEN-20/21/22/23/24 '
-            'hold the open questions; see REPORT.md."\n'
+            'hold the open questions; see REPORT.md. ADR-051 s2.1 adds the INDEPENDENT hub array: its OWN nets (HUB_PV_P / HUB_PV_MID<n> / HUB_PV_N) and its OWN converter input, never in series with and never a tap on the wing chain (the only shared node is GND). ADR-051 s2.6 nets interface pin 3 (RF_FEED) as CUT_SENSE_W<n>; ADR-051 s2.5 gives one LATCHED one-shot cut driver per wing. See the ADR-051/053/054 notes below."\n'
             '\t\t(exclude_from_sim no)\n\t\t(at 30.48 26.67 0)\n\t\t(effects\n'
             '\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n'
-            '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid()]
+            '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.7 / ADR-054 s2.2+s3.2 - THE PER-INTERFACE BYPASS DIODES ARE POPULATED AND RE-RATED, AND THEY SIT HUB-SIDE. D_BP1..D_BP4 bridge each wing interface (W<n>_SOLAR_P cathode -> W<n>_SOLAR_N anode) and are now SS24 = 2 A / 40 V on an SMA land, not DNP BAT54 = 200 mA / 30 V on SOD-323. WHY HUB-SIDE: a cut jettisons the wing AND every part soldered to it, so only a HUB-side diode can bridge the gap the cut leaves; a wing-board diode leaves with the wing and the array delivers 0.00 W on the first cut. WHY 2 A / 40 V: after a cut the remaining wings drive the array FULL 1.2 A through that diode CONTINUOUSLY for the rest of the flight - a permanent-continuous bypass duty, not a shading transient - so 200 mA is disqualified, and 30 V cannot clear the ~9.58 V cold open-circuit stack. SOD-323 cannot carry 2 A, hence SMA."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 29.21 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.1 - THE HUB ARRAY IS AN INDEPENDENT SERIES STRING. It has its OWN nets (HUB_PV_P positive, HUB_PV_MID<n> interior, HUB_PV_N negative) and its OWN converter/harvester input (U_HUB_CVT), and it is NEVER in series with, and never a tap on, the wing chain - the ONLY node it may share with the wing system is GND, and only through the converter\'s ground pin. If it were wired into the wing chain the FIRST wing cut would remove the hub array\'s path together with the wing\'s cells and the cut would become suicide. scripts/hub_array_topology_check.py enforces this mechanically. *** CELL COUNT IS A DOCUMENTED PLACEHOLDER *** (currently 2 cells; ADR-051 s2.2 recommends H2 = 2, H3 = 3 is the fallback) - the count, the mounting plane, the harvester part and the hub OUTLINE are all OPEN (OPEN-26)."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 30.48 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.5 decision item 5 - THE CUT DRIVE MUST BE A LATCHED ONE-SHOT, one per wing (U_CUT1..U_CUT4). Cutting is IRREVERSIBLE, and a level-sensitive driver can RE-FIRE an already-fired channel on a reset, a brown-out, a firmware retry or a floating gate - each fire costing ~2.59 J of the bank\'s 16.63 J usable energy at the exact moment the bank matters (ADR-051 s2.5.1). The mandate: a firmware one-shot with a persistent NVS fired flag per channel PLUS a hardware series gate that requires an explicit arming sequence, so no single event can fire a channel twice. Firmware must also serialise cuts - 4 simultaneous fires draw 9.9 A = 2.4x the IRLML2502 class rating - require the bank above ~3.3 V, cap the on-time (<=193 ms / <=3.33 J) and LOG a cut that silently fails. The exact part and the latch topology are TODO(unverified) (OPEN-28)."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 31.75 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),
+            '\t(text "ADR-051 s2.6 - THE RESERVED RF_FEED LAND IS NOW THE PER-WING CUT-SENSE / CUTTER LINE. J_W<n> pad 3 carries CUT_SENSE_W<n>, which does the nichrome cutter drive AND the continuity sense on ONE conductor plus the shared ground - four independently controllable cutters at ZERO connector cost, because the land and the position were already paid for. Netting it closes the four pin_not_connected ERC errors an unnetted provision produced. HONEST CAVEAT (ADR-051 s2.6 + s4 item 9): on the v9 WING, RF_FEED is a copper land with NO net, so the continuity measurement only becomes meaningful after a wing re-spin ties RF_FEED into the cut loop\'s return. The GPIO/divider assignment is OPEN (OPEN-25). The \'do not tie it to GND\' prohibition of ADR-046 s2.4 STANDS."\n\t\t(exclude_from_sim no)\n\t\t(at 30.48 33.02 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t(size 1.27 1.27)\n\t\t\t)\n\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)' % uid(),]
     for ci, title in enumerate(V9_COL_TITLES):
         body.append('\t(text "%s"\n\t\t(exclude_from_sim no)\n'
                     '\t\t(at %s 43.18 0)\n\t\t(effects\n\t\t\t(font\n\t\t\t\t'
