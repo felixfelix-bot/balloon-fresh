@@ -51,6 +51,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -141,14 +142,60 @@ def patch_dsn_rules(dsn_path: str, width_um: int = 200, clearance_um: int = 200)
 
     if n_global == 0 and n_class == 0:
         raise SystemExit(
-            f"patch_dsn_rules found no 0.02 mm rule block in {dsn_path} -- the exporter "
+            f"patch_dsn_rules found no 0.2 mm rule block in {dsn_path} -- the exporter "
             "format changed, so the clearance is NOT patched. Refusing to route at an "
             "unknown clearance; re-derive the rule text from the DSN."
         )
+
+    # WING-SOCKET PAD-HALF MERGE -- the poison pins, measured 2026-10-12:
+    # FreeRouting run 5 on the stitched board made ZERO progress (started 18
+    # unrouted, ended 18, board hash unchanged) because the DSN lists every
+    # wing-socket pad TWICE: J_W1-4 and J_W1-4@1 -- F.Cu half and B.Cu half,
+    # same net, same XY, different faces. No legal copper route can ever join
+    # them: the inserted wing TAB bridges F and B mechanically (ADR-046
+    # edge-card socket). The router burns its passes on 16 such pairs.
+    # Fix: drop each pad's @N back-half when its front-half is on the same
+    # pins line, restricted to the edge-card socket / castellated families
+    # (J_W*, ANT*, CUT_SENSE*) whose @1 twin is the SAME land on the other
+    # copper face -- same XY, joined mechanically by the inserted tab (not
+    # joinable by copper). U1-41@1..12 etc are 12 REAL pads at different XY
+    # and must keep their @N suffixes.
+    EDGE_FAMILIES = ("J_W", "ANT", "CUT_SENSE")
+    merged = 0
+
+    def _merge_pins_span(m):
+        nonlocal merged
+        inner = m.group(1)
+        tokens = inner.split()
+        if not tokens or not any("@1" in t for t in tokens):
+            return m.group(0)
+        bases = {re.sub(r"@\d+$", "", t) for t in tokens}
+        keep, dropped = [], 0
+        for tok in tokens:
+            tm = re.match(r"^(.*)@\d+$", tok)
+            if tm:
+                base = tm.group(1)
+                if any(base.startswith(f) for f in EDGE_FAMILIES) and base in bases:
+                    dropped += 1
+                    continue
+            keep.append(tok)
+        if not dropped:
+            return m.group(0)
+        merged += dropped
+        # tokens contain no parens, so no escaping concerns; whitespace shape
+        # is irrelevant to DSN parsers -- keep it single-line if it came single
+        sep = "\n " if "\n" in inner else " "
+        return "(pins " + sep.join(keep) + ")"
+
+    # block-aware: spans the WHOLE (pins ...) s-expr, incl. multi-line GND net
+    # blocks where @N halves sit on continuation lines with no '(pins' marker
+    content = re.sub(r"\(pins([^()]*?)\)", _merge_pins_span, content, flags=re.S)
+
     with open(dsn_path, "w") as fh:
         fh.write(content)
     print(f"  DSN rules asserted: width {w} um, clearance {c} um "
-          f"({n_global} global, {n_class} class block(s))")
+          f"({n_global} global, {n_class} class block(s)); "
+          f"wing pad-halves merged: {merged}")
 
 
 def export_dsn(board_path: str, dsn_path: str, *,
