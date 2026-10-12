@@ -1,0 +1,1418 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-12T16:58:46+0200",
+    "included_severities": [
+        "error"
+    ],
+    "kicad_version": "9.0.8",
+    "schematic_parity": [],
+    "source": "hub_board_v9_plane_rail_filled.kicad_pcb",
+    "unconnected_items": [
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W2] of J_W2 on F.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": 106.0
+                    },
+                    "uuid": "094e90f8-8871-4d13-80cb-cafe1d64e7d3"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W2] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": 106.0
+                    },
+                    "uuid": "28886a90-0574-449a-9751-51284e3a6d4a"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W4] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": -3.0
+                    },
+                    "uuid": "bcad05ca-f47e-4600-a6b4-8e55d23171e1"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W4] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": -3.0
+                    },
+                    "uuid": "844faecb-2929-46ac-abc3-aa89e9b485f6"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 11 [/SX1280_DIO2] of U4 on F.Cu",
+                    "pos": {
+                        "x": 50.0,
+                        "y": 7.2
+                    },
+                    "uuid": "bf65e826-a2a6-4173-8d65-efe8de9ef1d5"
+                },
+                {
+                    "description": "Pad 11 [/SX1280_DIO2] of U1 on F.Cu",
+                    "pos": {
+                        "x": 58.95,
+                        "y": 15.65
+                    },
+                    "uuid": "2183b2b9-c513-4580-a8b6-fcb1714bc034"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 9 [/SX1280_MISO] of U4 on F.Cu",
+                    "pos": {
+                        "x": 49.0,
+                        "y": 7.2
+                    },
+                    "uuid": "1561f8ea-8689-44c9-94fa-8bec6f62344c"
+                },
+                {
+                    "description": "Pad 9 [/SX1280_MISO] of U1 on F.Cu",
+                    "pos": {
+                        "x": 58.95,
+                        "y": 13.11
+                    },
+                    "uuid": "7a9700f2-28d3-4d64-ba45-3417118c2711"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Track [/W1_SOLAR_N] on B.Cu, length 18.2822 mm",
+                    "pos": {
+                        "x": 18.2292,
+                        "y": 41.2725
+                    },
+                    "uuid": "47d9824b-db1d-4663-ba17-4c8bb7679005"
+                },
+                {
+                    "description": "Pad 1 [/W1_SOLAR_N] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 54.2,
+                        "y": 106.0
+                    },
+                    "uuid": "3b2f3638-63e2-4bd8-a327-26a4e22131c0"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 1 [/W1_SOLAR_N] of J_W2 on F.Cu",
+                    "pos": {
+                        "x": 54.2,
+                        "y": 106.0
+                    },
+                    "uuid": "3af025ed-6467-4af9-9683-7547bfb66608"
+                },
+                {
+                    "description": "Pad 1 [/W1_SOLAR_N] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 54.2,
+                        "y": 106.0
+                    },
+                    "uuid": "3b2f3638-63e2-4bd8-a327-26a4e22131c0"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on F.Cu",
+                    "pos": {
+                        "x": 48.8,
+                        "y": 106.0
+                    },
+                    "uuid": "244d2674-667b-44a7-ad90-10f92da25390"
+                },
+                {
+                    "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 48.8,
+                        "y": 106.0
+                    },
+                    "uuid": "c61db335-c611-44d8-9c45-019f5316aa89"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Track [/W2_SOLAR_N] on B.Cu, length 0.5262 mm",
+                    "pos": {
+                        "x": 98.0704,
+                        "y": 55.3611
+                    },
+                    "uuid": "67929089-c86c-4397-9f68-d7c386447584"
+                },
+                {
+                    "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 48.8,
+                        "y": 106.0
+                    },
+                    "uuid": "c61db335-c611-44d8-9c45-019f5316aa89"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 48.8,
+                        "y": -3.0
+                    },
+                    "uuid": "befdb11c-838d-48bd-80fd-f9d43798d92c"
+                },
+                {
+                    "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 48.8,
+                        "y": -3.0
+                    },
+                    "uuid": "135b15b4-b1c9-4747-8410-4ce3c1db85fa"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 48.8,
+                        "y": -3.0
+                    },
+                    "uuid": "135b15b4-b1c9-4747-8410-4ce3c1db85fa"
+                },
+                {
+                    "description": "Track [/W3_SOLAR_N] on F.Cu, length 2.4735 mm",
+                    "pos": {
+                        "x": 51.294,
+                        "y": 22.544
+                    },
+                    "uuid": "fd6049ff-df4a-4203-88d3-c38e81802489"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 2 [GND] of J_W1 on F.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 50.6
+                    },
+                    "uuid": "5a37cace-da2f-4112-8244-7d103599e608"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W1 on B.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 50.6
+                    },
+                    "uuid": "21b04093-843c-48e6-9f2e-9b0b623850bd"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_B.Cu' [GND] on B.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8da0899-e55c-470c-95b2-1c22208b0211"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W1 on B.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 50.6
+                    },
+                    "uuid": "21b04093-843c-48e6-9f2e-9b0b623850bd"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_F.Cu' [GND] on F.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8c9b044-4afd-4b66-9517-5fdf6413d130"
+                },
+                {
+                    "description": "Pad 3 [GND] of U4 on F.Cu",
+                    "pos": {
+                        "x": 47.3,
+                        "y": 5.0
+                    },
+                    "uuid": "5e09e9c1-92c5-4db5-b46d-d67e6b898aa4"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_F.Cu' [GND] on F.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8c9b044-4afd-4b66-9517-5fdf6413d130"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": -3.0
+                    },
+                    "uuid": "3f4627e2-bbfe-40d2-b6ff-cbb9b07231d9"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 2 [GND] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": -3.0
+                    },
+                    "uuid": "3f4627e2-bbfe-40d2-b6ff-cbb9b07231d9"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": -3.0
+                    },
+                    "uuid": "ef2c992d-085c-4ae4-bbe3-b395eb8f3b20"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 2 [GND] of J_W2 on F.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": 106.0
+                    },
+                    "uuid": "b50c366e-24a3-403f-8ce2-691f732acb1a"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": 106.0
+                    },
+                    "uuid": "4ce2980e-78cc-4630-81fc-f7d127991a9d"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 2 [GND] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": 106.0
+                    },
+                    "uuid": "4ce2980e-78cc-4630-81fc-f7d127991a9d"
+                },
+                {
+                    "description": "Pad 2 [GND] of ANT4 on F.Cu",
+                    "pos": {
+                        "x": 76.805,
+                        "y": 100.455
+                    },
+                    "uuid": "18a0b79e-43f2-45c7-82c1-ffb5372a05de"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 4 [GND] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 54.2,
+                        "y": -3.0
+                    },
+                    "uuid": "bdd56efc-0cc3-42ab-ab49-82c143c53629"
+                },
+                {
+                    "description": "Pad 4 [GND] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 54.2,
+                        "y": -3.0
+                    },
+                    "uuid": "574bf006-f98f-40b5-ad91-168bb179006f"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 4 [GND] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 54.2,
+                        "y": -3.0
+                    },
+                    "uuid": "bdd56efc-0cc3-42ab-ab49-82c143c53629"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": -3.0
+                    },
+                    "uuid": "3f4627e2-bbfe-40d2-b6ff-cbb9b07231d9"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 10 [GND] of U5 on F.Cu",
+                    "pos": {
+                        "x": 89.695,
+                        "y": 28.745
+                    },
+                    "uuid": "1844a525-6217-4314-b716-015ba1adf974"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W3 on B.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 52.4
+                    },
+                    "uuid": "33747d3c-5e67-4be0-9a54-917eafcd6089"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        },
+        {
+            "description": "Missing connection between items",
+            "items": [
+                {
+                    "description": "Pad 2 [GND] of J_W3 on B.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 52.4
+                    },
+                    "uuid": "33747d3c-5e67-4be0-9a54-917eafcd6089"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W3 on F.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 52.4
+                    },
+                    "uuid": "af5349d4-b581-4a01-a23a-a64adff8c954"
+                }
+            ],
+            "severity": "error",
+            "type": "unconnected_items"
+        }
+    ],
+    "violations": [
+        {
+            "description": "Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_F.Cu' [GND] on F.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8c9b044-4afd-4b66-9517-5fdf6413d130"
+                },
+                {
+                    "description": "Pad 2 [GND] of U3 on F.Cu",
+                    "pos": {
+                        "x": 81.0,
+                        "y": 12.705
+                    },
+                    "uuid": "7c69c841-2767-4e47-9ab2-49d9b6def7f2"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_F.Cu' [GND] on F.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8c9b044-4afd-4b66-9517-5fdf6413d130"
+                },
+                {
+                    "description": "Pad 8 [GND] of U3 on F.Cu",
+                    "pos": {
+                        "x": 81.0,
+                        "y": 4.965
+                    },
+                    "uuid": "9604b327-722b-4bf6-b18d-d875207e729c"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_F.Cu' [GND] on F.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8c9b044-4afd-4b66-9517-5fdf6413d130"
+                },
+                {
+                    "description": "Pad 2 [GND] of U7 on F.Cu",
+                    "pos": {
+                        "x": 1.9575,
+                        "y": 9.745
+                    },
+                    "uuid": "d4a1062e-b3d3-462e-9353-cb2b02a5cd5c"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)",
+            "items": [
+                {
+                    "description": "Zone 'GND_PLANE_F.Cu' [GND] on F.Cu, priority 0",
+                    "pos": {
+                        "x": 0.425,
+                        "y": 0.425
+                    },
+                    "uuid": "d8c9b044-4afd-4b66-9517-5fdf6413d130"
+                },
+                {
+                    "description": "Pad 1 [GND] of U5 on F.Cu",
+                    "pos": {
+                        "x": 80.195,
+                        "y": 19.945
+                    },
+                    "uuid": "e3bdc463-128a-4aaa-8161-d85414e7f8a5"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.2722 mm)",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "00000000-0000-0000-0000-00000000000f"
+                },
+                {
+                    "description": "Via [+3V3] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 46.2989,
+                        "y": 0.5722
+                    },
+                    "uuid": "3e32d673-570f-4196-87d3-afc3cd4684d8"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3500 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.95
+                    },
+                    "uuid": "a39094ff-5eea-4cfc-a6fe-2bff304977e1"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W1] on F.Cu, length 0.0946 mm",
+                    "pos": {
+                        "x": 5.3686,
+                        "y": 52.4669
+                    },
+                    "uuid": "596e1f30-70c7-44d6-8a4c-fd805d62d05c"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3500 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.95
+                    },
+                    "uuid": "a39094ff-5eea-4cfc-a6fe-2bff304977e1"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W1] on F.Cu, length 2.3017 mm",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 52.4
+                    },
+                    "uuid": "7314f291-53da-4b60-8a97-66102452ecad"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.4258 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.05
+                    },
+                    "uuid": "8cf2b51a-ce6a-4aaf-8117-7844da847fb3"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W1] on F.Cu, length 0.5350 mm",
+                    "pos": {
+                        "x": 5.9036,
+                        "y": 52.4669
+                    },
+                    "uuid": "7cff22a7-d60f-4d5a-b8af-6124aacb565f"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.2258 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.05
+                    },
+                    "uuid": "8cf2b51a-ce6a-4aaf-8117-7844da847fb3"
+                },
+                {
+                    "description": "Via [/CUT_SENSE_W1] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 5.9036,
+                        "y": 52.4669
+                    },
+                    "uuid": "652cc580-7f9b-4111-86d2-9b2c80d7a870"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3787 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.05
+                    },
+                    "uuid": "8cf2b51a-ce6a-4aaf-8117-7844da847fb3"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W1] on B.Cu, length 0.0946 mm",
+                    "pos": {
+                        "x": 5.8367,
+                        "y": 52.4
+                    },
+                    "uuid": "4ff954a9-58d0-45bf-b242-296ea80aed5e"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3787 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.05
+                    },
+                    "uuid": "8cf2b51a-ce6a-4aaf-8117-7844da847fb3"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W1] on B.Cu, length 2.8367 mm",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 52.4
+                    },
+                    "uuid": "ba4e73a3-b589-478e-8b48-d0a9329ec0e2"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.4174 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W3] on F.Cu, length 0.5269 mm",
+                    "pos": {
+                        "x": 97.104,
+                        "y": 50.5326
+                    },
+                    "uuid": "afe49239-13f8-4d72-90a5-9353488ce693"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3500 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W3] on F.Cu, length 0.0953 mm",
+                    "pos": {
+                        "x": 97.6309,
+                        "y": 50.5326
+                    },
+                    "uuid": "c0c9ac37-c2ae-45e8-bdae-468691640a2e"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3500 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W3] on F.Cu, length 2.3017 mm",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 50.6
+                    },
+                    "uuid": "e59f6129-7951-48f1-8cb6-38678a9bf5be"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.2174 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Via [/CUT_SENSE_W3] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 97.104,
+                        "y": 50.5326
+                    },
+                    "uuid": "9ff90e3e-d739-4fd1-ae56-4faffc196d55"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3500 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W3] on B.Cu, length 2.8286 mm",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 50.6
+                    },
+                    "uuid": "55cbf35b-738d-4586-b8db-407cc6a81f03"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.3500 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Track [/CUT_SENSE_W3] on B.Cu, length 0.0953 mm",
+                    "pos": {
+                        "x": 97.1714,
+                        "y": 50.6
+                    },
+                    "uuid": "ce8bb2c6-ca7b-4e26-8d7a-00e1898f2c7a"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.4910 mm)",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "00000000-0000-0000-0000-00000000000f"
+                },
+                {
+                    "description": "Track [/F33_VCC] on F.Cu, length 1.4199 mm",
+                    "pos": {
+                        "x": 0.591,
+                        "y": 11.991
+                    },
+                    "uuid": "1dfbd96b-106c-4fc2-93ff-0767cc5bf6a2"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.4910 mm)",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "00000000-0000-0000-0000-00000000000f"
+                },
+                {
+                    "description": "Track [/F33_VCC] on F.Cu, length 1.7101 mm",
+                    "pos": {
+                        "x": 1.8002,
+                        "y": 0.686
+                    },
+                    "uuid": "9e2e6a9c-2d17-497e-87a8-bb0bdb0df9df"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.4910 mm)",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "00000000-0000-0000-0000-00000000000f"
+                },
+                {
+                    "description": "Track [/F33_VCC] on F.Cu, length 10.0958 mm",
+                    "pos": {
+                        "x": 0.591,
+                        "y": 1.8952
+                    },
+                    "uuid": "b794f694-5d93-4bfd-b096-04b5bca4d29b"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 103.0,
+                        "y": 51.95
+                    },
+                    "uuid": "36fdea23-f47a-4986-94bb-6099cf01a927"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W3 on F.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 52.4
+                    },
+                    "uuid": "af5349d4-b581-4a01-a23a-a64adff8c954"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 103.0,
+                        "y": 51.95
+                    },
+                    "uuid": "36fdea23-f47a-4986-94bb-6099cf01a927"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W3 on B.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 52.4
+                    },
+                    "uuid": "33747d3c-5e67-4be0-9a54-917eafcd6089"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W3] of J_W3 on F.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 50.6
+                    },
+                    "uuid": "7f51d2d8-38a6-4f5f-abac-909a3da02908"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W3 on Edge.Cuts",
+                    "pos": {
+                        "x": 97.0,
+                        "y": 51.05
+                    },
+                    "uuid": "d20799ad-275b-43e1-899e-1b29338cc25b"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W3] of J_W3 on B.Cu",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 50.6
+                    },
+                    "uuid": "6d80e82c-1b29-4dc4-8726-7802e82af797"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 51.05
+                    },
+                    "uuid": "a673e0fe-5ff4-4da2-9c13-e96b2da1a949"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W1 on F.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 50.6
+                    },
+                    "uuid": "5a37cace-da2f-4112-8244-7d103599e608"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 51.05
+                    },
+                    "uuid": "a673e0fe-5ff4-4da2-9c13-e96b2da1a949"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W1 on B.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 50.6
+                    },
+                    "uuid": "21b04093-843c-48e6-9f2e-9b0b623850bd"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.95
+                    },
+                    "uuid": "a39094ff-5eea-4cfc-a6fe-2bff304977e1"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W1] of J_W1 on F.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 52.4
+                    },
+                    "uuid": "d051ab6c-589c-4295-9318-3984b4f089e4"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W1 on Edge.Cuts",
+                    "pos": {
+                        "x": 6.0,
+                        "y": 51.95
+                    },
+                    "uuid": "a39094ff-5eea-4cfc-a6fe-2bff304977e1"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W1] of J_W1 on B.Cu",
+                    "pos": {
+                        "x": 3.0,
+                        "y": 52.4
+                    },
+                    "uuid": "04110f76-4330-4b16-b525-71960764803c"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W4 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.05,
+                        "y": 0.0
+                    },
+                    "uuid": "c5950c47-428a-4dbd-a11d-fca78532f35c"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": -3.0
+                    },
+                    "uuid": "3f4627e2-bbfe-40d2-b6ff-cbb9b07231d9"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W4 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.05,
+                        "y": 0.0
+                    },
+                    "uuid": "c5950c47-428a-4dbd-a11d-fca78532f35c"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": -3.0
+                    },
+                    "uuid": "ef2c992d-085c-4ae4-bbe3-b395eb8f3b20"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W4 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.95,
+                        "y": -6.0
+                    },
+                    "uuid": "99ab6e54-fcb1-41ab-8d8b-6637848140b1"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W4] of J_W4 on F.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": -3.0
+                    },
+                    "uuid": "bcad05ca-f47e-4600-a6b4-8e55d23171e1"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W4 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.95,
+                        "y": -6.0
+                    },
+                    "uuid": "99ab6e54-fcb1-41ab-8d8b-6637848140b1"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W4] of J_W4 on B.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": -3.0
+                    },
+                    "uuid": "844faecb-2929-46ac-abc3-aa89e9b485f6"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W2 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.95,
+                        "y": 103.0
+                    },
+                    "uuid": "01243a53-73cc-4670-b0c3-a13d8a900a88"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W2 on F.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": 106.0
+                    },
+                    "uuid": "b50c366e-24a3-403f-8ce2-691f732acb1a"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W2 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.95,
+                        "y": 103.0
+                    },
+                    "uuid": "01243a53-73cc-4670-b0c3-a13d8a900a88"
+                },
+                {
+                    "description": "Pad 2 [GND] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 52.4,
+                        "y": 106.0
+                    },
+                    "uuid": "4ce2980e-78cc-4630-81fc-f7d127991a9d"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W2 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.05,
+                        "y": 109.0
+                    },
+                    "uuid": "16f30314-e774-4314-801f-145c4d287ce9"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W2] of J_W2 on F.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": 106.0
+                    },
+                    "uuid": "094e90f8-8871-4d13-80cb-cafe1d64e7d3"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Board edge clearance violation (board setup constraints edge clearance 0.5000 mm; actual 0.0000 mm)",
+            "items": [
+                {
+                    "description": "Segment of J_W2 on Edge.Cuts",
+                    "pos": {
+                        "x": 51.05,
+                        "y": 109.0
+                    },
+                    "uuid": "16f30314-e774-4314-801f-145c4d287ce9"
+                },
+                {
+                    "description": "Pad 3 [/CUT_SENSE_W2] of J_W2 on B.Cu",
+                    "pos": {
+                        "x": 50.6,
+                        "y": 106.0
+                    },
+                    "uuid": "28886a90-0574-449a-9751-51284e3a6d4a"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "Clearance violation ( clearance 0.2000 mm; actual 0.0750 mm)",
+            "items": [
+                {
+                    "description": "Pad 3 [GND] of U4 on F.Cu",
+                    "pos": {
+                        "x": 47.3,
+                        "y": 5.0
+                    },
+                    "uuid": "5e09e9c1-92c5-4db5-b46d-d67e6b898aa4"
+                },
+                {
+                    "description": "Blind/Buried Via [+3V3] on F.Cu - In2.Cu",
+                    "pos": {
+                        "x": 47.3,
+                        "y": 4.5
+                    },
+                    "uuid": "f13fd7e6-542e-41b7-b725-72fdb6ef707d"
+                }
+            ],
+            "severity": "error",
+            "type": "clearance"
+        },
+        {
+            "description": "Clearance violation ( clearance 0.2000 mm; actual 0.1992 mm)",
+            "items": [
+                {
+                    "description": "Pad 1 [/VSCAP] of J_VCC on F.Cu",
+                    "pos": {
+                        "x": 39.045,
+                        "y": 26.295
+                    },
+                    "uuid": "ad8b12c2-fcb1-480e-a0ed-44879186c5aa"
+                },
+                {
+                    "description": "Track [/W1_SOLAR_P] on F.Cu, length 2.4046 mm",
+                    "pos": {
+                        "x": 39.2142,
+                        "y": 27.8445
+                    },
+                    "uuid": "ea862285-b4a7-4ad6-964d-b40144449cc9"
+                }
+            ],
+            "severity": "error",
+            "type": "clearance"
+        },
+        {
+            "description": "Clearance violation ( clearance 0.2000 mm; actual 0.1520 mm)",
+            "items": [
+                {
+                    "description": "Pad 1 [/F33_VCC] of U2 on F.Cu",
+                    "pos": {
+                        "x": 14.0583,
+                        "y": 1.65
+                    },
+                    "uuid": "6f2422bf-8fc9-406b-a078-544a11af7714"
+                },
+                {
+                    "description": "Via [GND] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 15.160267,
+                        "y": 1.100499
+                    },
+                    "uuid": "b2fd6bfe-1e6b-492e-ae30-afe4ab8987b9"
+                }
+            ],
+            "severity": "error",
+            "type": "clearance"
+        },
+        {
+            "description": "Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.2250 mm)",
+            "items": [
+                {
+                    "description": "Pad 3 [GND] of U4 on F.Cu",
+                    "pos": {
+                        "x": 47.3,
+                        "y": 5.0
+                    },
+                    "uuid": "5e09e9c1-92c5-4db5-b46d-d67e6b898aa4"
+                },
+                {
+                    "description": "Blind/Buried Via [+3V3] on F.Cu - In2.Cu",
+                    "pos": {
+                        "x": 47.3,
+                        "y": 4.5
+                    },
+                    "uuid": "f13fd7e6-542e-41b7-b725-72fdb6ef707d"
+                }
+            ],
+            "severity": "error",
+            "type": "hole_clearance"
+        }
+    ]
+}
