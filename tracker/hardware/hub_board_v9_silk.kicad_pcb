@@ -136,11 +136,10 @@
 		(property "Reference" "R_BAL2"
 			(at 0 -1.17 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "5fca61ca-5b10-4187-afc7-eb520c12ff8b")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -580,7 +579,7 @@
 		(descr "Semtech SX1280/SX1281 2.4 GHz transceiver, QFN-24 4x4mm 0.5mm pitch + exposed pad. *** GEOMETRY NOT VERIFIED *** - the Semtech SX1280 datasheet could not be retrieved on this host, so every dimension below is a TODO(unverified) placeholder. DO NOT FABRICATE until the land pattern is checked against the datasheet mechanical drawing (SX1280 datasheet, 'Package Outline' / recommended land pattern).")
 		(tags "SX1280 SX1281 LoRa 2.4GHz QFN-24 UNVERIFIED-LANDPATTERN")
 		(property "Reference" "U4"
-			(at 0 -3.4 0)
+			(at 3.5 -2 0)
 			(layer "F.SilkS")
 			(uuid "acc57de6-b464-4011-9bef-4eb974b7c3aa")
 			(effects
@@ -3259,11 +3258,10 @@
 		(property "Reference" "D_BP1"
 			(at 0 -2.5 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "bb925ae2-015b-4c1f-9560-2bfbfef9c212")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -8539,11 +8537,10 @@
 		(property "Reference" "D_BP2"
 			(at 0 -2.5 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "a6a2a385-b362-4677-b826-09af5385c451")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -10341,11 +10338,10 @@
 		(property "Reference" "R_NTC1"
 			(at 0 -1.17 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "f3768b37-3ef0-4f1c-b977-899a24ddd7ca")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -11107,11 +11103,10 @@
 		(property "Reference" "U5"
 			(at 0 -6 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "7b0c2141-bf18-4eb8-bd77-bdbf647ebf62")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -11487,11 +11482,10 @@
 		(property "Reference" "R_DIV2"
 			(at 0 -1.17 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "9f01dea8-ccbf-4191-a1ca-945da7d2959a")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -12185,11 +12179,10 @@
 		(property "Reference" "R_DIV1"
 			(at 0 -1.17 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "577e4f7a-82ae-47f1-b54f-7833fc8c5d91")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
@@ -12321,11 +12314,10 @@
 		(property "Reference" "R_F1"
 			(at 0 -1.17 0)
 			(layer "F.SilkS")
-			(hide yes)
 			(uuid "39ad9c33-27ab-4459-83c7-7a39e5021c17")
 			(effects
 				(font
-					(size 0.4 0.4)
+					(size 0.6 0.6)
 					(thickness 0.15)
 				)
 			)
