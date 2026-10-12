@@ -11,3 +11,5 @@
 - finding: app_main.cpp:627 is a THIRD encoder consumer (CLI tollgate_send_pay) not in the task brief — STATUS: enumerated
 - finding: existing authoritative contract docs already in tree: TOLLGATE_PROTO_CONTRACT.md (repo root, local lineage) + docs/recon/*.md — STATUS: cross-referenced
 - next: symbol definition sweep (any referenced-but-undefined), write REPORT.md, commit+push
+- finding: REPORT.md written (21KB, full symbol table + 9 disagreements + dead-symbol list) — STATUS: on disk
+- done: commit + push
