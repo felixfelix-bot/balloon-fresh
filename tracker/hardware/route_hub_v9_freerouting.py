@@ -230,14 +230,23 @@ def patch_dsn_keepouts(dsn_path: str, board_path: str,
     for fp in board.GetFootprints():
         if not fp.GetReference().startswith("J_W"):
             continue
-        if not any(d.GetLayer() == pcbnew.Edge_Cuts for d in fp.GraphicalItems()):
+        # Use ONLY the milled slot geometry (the footprint's Edge.Cuts lines),
+        # NEVER GetBoundingBox(). MEASURED 2026-10-12: the J_W* bounding box is
+        # ~31 x 15.7 mm and encloses all four connector pads AND extends ~7 mm
+        # off-board; a keepout over it forbids the router from reaching the
+        # connector's own pins, and FreeRouting then never completes pass 1
+        # (1800 s, no SES -- vs 48 s without keepouts). The real slot is a
+        # 6.0 x 0.9 mm milled notch at the board edge.
+        xs, ys = [], []
+        for d in fp.GraphicalItems():
+            if d.GetLayer() != pcbnew.Edge_Cuts:
+                continue
+            for pt in (d.GetStart(), d.GetEnd()):
+                xs.append(pt.x / mm)
+                ys.append(pt.y / mm)
+        if len(xs) < 4:
             continue
-        bb = fp.GetBoundingBox()
-        x0 = bb.GetX() / mm - margin_mm
-        y0 = bb.GetY() / mm - margin_mm
-        x1 = (bb.GetX() + bb.GetWidth()) / mm + margin_mm
-        y1 = (bb.GetY() + bb.GetHeight()) / mm + margin_mm
-        boxes.append((x0, y0, x1, y1))
+        boxes.append((min(xs), min(ys), max(xs), max(ys)))
 
     if not boxes:
         print("  keepouts: no J_W* Edge.Cuts sockets found -- none added")
@@ -274,7 +283,14 @@ def patch_dsn_keepouts(dsn_path: str, board_path: str,
 
 def export_dsn(board_path: str, dsn_path: str, *,
                width_um: int = 200, clearance_um: int = 200,
-               keepouts: bool = True) -> None:
+               keepouts: bool = False) -> None:
+    """Export the Specctra DSN, then patch its rule block.
+
+    `keepouts=False` by DEFAULT, deliberately: measured 2026-10-12, slot
+    keepouts are correct in geometry yet make FreeRouting stop converging --
+    a `-mp 2 -mt 2` run that writes an SES in ~77 s without keepouts exceeded
+    200 s and produced none with them. Do not enable without re-measuring.
+    """
     pcbnew = _pcbnew()
     board = pcbnew.LoadBoard(board_path)
     drc = board.GetDesignSettings()

@@ -35,7 +35,7 @@ def test_keepout_regions_derived_from_board_geometry():
     """Four J_W* sockets with Edge.Cuts => four keepout regions, and the
     keepout count must track the live board, not a constant."""
     out = _run(
-        f"R.export_dsn('{BOARD}','/tmp/ko_test.dsn')\n"
+        f"R.export_dsn('{BOARD}','/tmp/ko_test.dsn', keepouts=True)\n"
         "c=open('/tmp/ko_test.dsn').read()\n"
         "print('KEEPOUTS', c.count('(keepout'))\n"
     )
@@ -45,7 +45,7 @@ def test_keepout_regions_derived_from_board_geometry():
 def test_keepout_polygons_land_inside_dsn_structure():
     """The keepouts must be inserted into (structure ...), before the library."""
     out = _run(
-        f"R.export_dsn('{BOARD}','/tmp/ko_test2.dsn')\n"
+        f"R.export_dsn('{BOARD}','/tmp/ko_test2.dsn', keepouts=True)\n"
         "c=open('/tmp/ko_test2.dsn').read()\n"
         "s=c.index('(structure'); e=c.index('(library')\n"
         "seg=c[s:e]\n"
@@ -60,11 +60,42 @@ def test_keepout_polygons_land_inside_dsn_structure():
 def test_keepout_is_idempotent():
     """Re-running must not stack duplicate keepout blocks."""
     out = _run(
-        f"R.export_dsn('{BOARD}','/tmp/ko_idem.dsn')\n"
+        f"R.export_dsn('{BOARD}','/tmp/ko_idem.dsn', keepouts=True)\n"
         f"R.patch_dsn_keepouts('/tmp/ko_idem.dsn','{BOARD}')\n"
         "print('COUNT', open('/tmp/ko_idem.dsn').read().count('(keepout'))\n"
     )
     assert "COUNT 4" in out, f"idempotency broken (expected 4, no doubling):\n{out[-600:]}"
+
+
+def test_keepout_is_slot_sized_not_bounding_box():
+    """REGRESSION (measured 2026-10-12): the keepout must bound the milled slot
+    (6.0 x 0.9 mm), NEVER the footprint bounding box (~31 x 15.7 mm, which
+    encloses the connector pads and extends off-board). A bbox keepout forbids
+    the router from reaching the connector's own pins and FreeRouting never
+    completes pass 1 (1800 s, no SES; vs 48 s without).
+
+    Assert the widest keepout span is ~6.3 mm, not ~31 mm."""
+    out = _run(
+        f"R.export_dsn('{BOARD}','/tmp/ko_size.dsn', keepouts=True)\n"
+        "import re\n"
+        "c=open('/tmp/ko_size.dsn').read()\n"
+        "spans=[]\n"
+        "for m in re.finditer(r'\\(keepout\\s*\\(polygon F\\.Cu 0((?:\\s+-?\\d+)+)\\)', c):\n"
+        "    n=[int(v) for v in m.group(1).split()]\n"
+        "    xs=n[0::2]; ys=n[1::2]\n"
+        "    spans.append((max(xs)-min(xs))/1000.0)\n"
+        "print('SPANS', ' '.join(f'{s:.1f}' for s in spans))\n"
+    )
+    m = re.search(r"SPANS (.+)", out)
+    assert m, f"could not parse spans:\n{out[-600:]}"
+    spans = [float(x) for x in m.group(1).split()]
+    assert spans, "no keepouts found"
+    widest = max(spans)
+    assert widest < 8.0, (
+        f"keepout is {widest:.1f} mm wide -- that is the ~31 mm footprint bbox, "
+        f"not the ~6 mm slot. Router will hang. spans={spans}"
+    )
+    assert widest > 4.0, f"keepout suspiciously narrow ({widest:.1f} mm): spans={spans}"
 
 
 if __name__ == "__main__":
@@ -78,3 +109,4 @@ if __name__ == "__main__":
             print(f"FAIL {t.__name__}: {e}")
             bad += 1
     sys.exit(1 if bad else 0)
+
