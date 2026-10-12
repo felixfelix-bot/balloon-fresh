@@ -14,16 +14,27 @@ re-litigating design intent on every run.
 |---|-----------|-------|------------|-----------|---------------|
 | W1 | `unconnected_items` F-B pad pairs | 10 | J_W1–J_W4 (`Wing_Tab_4P`) | Edge-card socket: the inserted wing tab bridges the F.Cu and B.Cu halves of each land mechanically (ADR-046 §socket). Board copper MUST NOT bridge them — a copper bridge would short the tab insertion. | Spec-mandated. |
 | W2 | `pad-off-board` / lands outside outline | 3+ | J_W1–J_W3 | Milled 0.9 mm slots at the board edge: lands flank the slot and half of each land lies outside the final routed outline — that half is the castellated tab contact area. | Spec-mandated (WING-TO-HUB-SOCKET-SPEC §5). |
-| W3 | `copper_edge_clearance` on slot Edge.Cuts geometry | 38 | J_W1–J_W4 | Same slots as W2 — the Edge.Cuts rectangles/segments of the socket are, by definition, at the copper edge. | Spec-mandated. |
+| W3 | `copper_edge_clearance` on slot Edge.Cuts geometry **and the socket pads** | 32 | J_W1–J_W4 | Same slots as W2. The Edge.Cuts rectangles/segments of the socket are, by definition, at the copper edge — **and so are the connector's own lands**: `Pad 2 [GND]` and `Pad 3 [/CUT_SENSE_W*]` of each J_W* sit inside the milled slot. They are the edge-card interface; they cannot be moved inward without moving the socket (ADR-046). Their unavoidable stub tracks and the F→B via are part of the same family. | Spec-mandated. |
 | W4 | `drill` on J_W* lands | 0 (fixed) | J_W1–J_W4 | Was 12 × 0.2 mm; fixed to SMD no-drill lands per spec §5. Fix landed in commit 5706536. | Resolved. |
 
 ## What is NOT waived
 
-- Copper-to-board-edge on real tracks/vias (13 items, 0.38–1.65 mm): must be
-  pulled inward to ≥ 0.5 mm.
-- The 6 genuinely unrouted nets (DIO2, MISO, W1–W3_SOLAR_N, GND island):
+- **THE REAL OUTLINE DEFECT (measured 2026-10-12, replaces the old "13 items"
+  entry).** The board outline is 103 x 103 mm with **1 outline, 0 holes**. Each
+  J_W* footprint draws its own 0.95 x 6.0 mm Edge.Cuts slot. Two of the four are
+  **edge notches** (legitimate): J_W1 x 0..6, J_W3 x 97..103 — mouth on the board
+  edge, slot cut inward. The other two **poke 6 mm OUTSIDE the outline**: J_W2
+  spans y 103..109 and J_W4 spans y -6..0. A fab house reads that as a 6 mm edge
+  stab outside the board. Root cause = connector placement, not copper: **J_W2
+  and J_W4 are 6 mm too far out**. Fix by repositioning them inward 6 mm (then
+  all four slots become edge notches and the whole W3 family collapses). Landed
+  evidence + diagnosis: `tracker/hardware/cut_hub_v9_socket_slots.py`.
+- Copper-to-board-edge on real tracks/vias: **RESOLVED** for the +3V3 family by
+  the In2.Cu plane (38 -> 4; see commit f02f36b). The remaining 4 are the J_W*
+  socket pads + their unavoidable stubs.
+- The 6 genuinely unrouted nets (DIO2, MISO, W1-W3_SOLAR_N, GND island):
   routing work, not waivers.
-- Starved thermals (4) and clearance (2): manual fixes.
+- Starved thermals (4) and clearance (3): manual fixes.
 - U1-41@1..12 castellation pads: real thermal pads, distinct XY, all in GND —
   they are NOT pad-halves and their drills are now 0.3 mm (JLCPCB floor).
 
