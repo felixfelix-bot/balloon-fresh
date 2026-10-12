@@ -182,8 +182,10 @@ CANNOT-VERIFY.
 
 Derived from the **measured** pad geometry (pcbnew 9.0.8, this repo, 2026-10-07):
 
-**Part 1 — `LoRa2021F33-2G4` (433 MHz TX).** Corrected land pattern (`d5a2e47`): 18 pads,
-2.0 × 1.0 mm, pitch 3.9289 mm, rows at y = ±10.5 mm on the 39 mm edges. Antenna pins 9 and
+**Part 1 — `LoRa2021F33-2G4` (433 MHz TX).** Corrected land pattern (`d5a2e47`; land SIZE
+re-derived 2026-10-07 from the operator-supplied castellation hole diameter D = 0.80 ± 0.10 mm,
+so **1.30 × 1.30 mm**, was 2.0 × 1.0 — see `F33-LANDPATTERN-VERIFICATION.md` §11): 18 pads,
+pitch 3.9289 mm, rows at y = ±10.5 mm on the 39 mm edges. Antenna pins 9 and
 10 are **adjacent on the same `+y` long edge**, at the `+x` end:
 `pin 9 @ (+15.7156, +10.5)`, `pin 10 @ (+11.7867, +10.5)`, body 39 × 21 mm.
 **Satisfying placement/rotation:** the module's `+y` long edge must face **outward** (to the

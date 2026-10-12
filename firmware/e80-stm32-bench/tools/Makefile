@@ -21,6 +21,10 @@ E80_DETECT    := $(PYTHON) $(TOOLDIR)e80_detect.py
 E80_SERVER    := $(PYTHON) $(TOOLDIR)e80_board_server.py
 E80_RANGE     := $(PYTHON) $(TOOLDIR)e80_range_test.py
 TCP_PORT      ?= 7780
+# Bind address for the board server. The channel is UNAUTHENTICATED
+# (docs/SECURITY-FINDINGS.md E80-2026-01 / issue #21); the bench is cross-host,
+# so it defaults to 0.0.0.0. Use HOST=127.0.0.1 for local-only sessions.
+HOST          ?= 0.0.0.0
 
 # Default test parameters (override on command line: make range-test FREQ=915000000)
 FREQ          ?= 868000000
@@ -131,23 +135,23 @@ detect: ## Auto-detect local board role + port (standalone)
 auto-server: ## Start board server, auto-detect role (TX or RX)
 	@echo "$(BOLD)Starting auto-detecting board server on port $(TCP_PORT)...$(NC)"
 	@echo "  (Press Ctrl+C to stop)"
-	@exec $(E80_SERVER) --tcp-port $(TCP_PORT)
+	@exec $(E80_SERVER) --tcp-port $(TCP_PORT) --host $(HOST)
 
 # Explicit role servers (assert role with --role flag)
 tx-server: ## Start TX board server (auto-detects port, asserts TX role)
 	@echo "$(BOLD)Starting TX board server on port $(TCP_PORT)...$(NC)"
 	@echo "  (Press Ctrl+C to stop)"
-	@exec $(E80_SERVER) --tcp-port $(TCP_PORT) --role TX
+	@exec $(E80_SERVER) --tcp-port $(TCP_PORT) --role TX --host $(HOST)
 
 rx-server: ## Start RX board server (auto-detects port, asserts RX role)
 	@echo "$(BOLD)Starting RX board server on port $(TCP_PORT)...$(NC)"
 	@echo "  (Press Ctrl+C to stop)"
-	@exec $(E80_SERVER) --tcp-port $(TCP_PORT) --role RX
+	@exec $(E80_SERVER) --tcp-port $(TCP_PORT) --role RX --host $(HOST)
 
 # Start server in background (daemon mode)
 auto-server-bg: ## Start board server in background
 	@echo "$(BOLD)Starting board server (background) on port $(TCP_PORT)...$(NC)"
-	@nohup $(E80_SERVER) --tcp-port $(TCP_PORT) --daemon > /tmp/e80-server.log 2>&1
+	@nohup $(E80_SERVER) --tcp-port $(TCP_PORT) --host $(HOST) --daemon > /tmp/e80-server.log 2>&1
 	@sleep 1
 	@cat /tmp/e80-server.log
 
@@ -156,13 +160,13 @@ auto-server-bg: ## Start board server in background
 rx-server-remote: ## Start RX server on DQ05 via SSH
 	@echo "$(BOLD)Starting RX server on $(DQ05_HOST) via SSH...$(NC)"
 	@$(DQ05_SSH) $(DQ05_HOST) \
-		"cd $(DQ05_REPO)/firmware/e80-stm32-bench/tools && $(PYTHON) e80_board_server.py --tcp-port $(TCP_PORT) --role RX" &
+		"cd $(DQ05_REPO)/firmware/e80-stm32-bench/tools && $(PYTHON) e80_board_server.py --tcp-port $(TCP_PORT) --host $(HOST) --role RX" &
 
 .PHONY: rx-server-remote-bg
 rx-server-remote-bg: ## Start RX server on DQ05 via SSH (background)
 	@echo "$(BOLD)Starting RX server on $(DQ05_HOST) (background)...$(NC)"
 	@$(DQ05_SSH) $(DQ05_HOST) \
-		"cd $(DQ05_REPO)/firmware/e80-stm32-bench/tools && nohup $(PYTHON) e80_board_server.py --tcp-port $(TCP_PORT) --role RX --daemon > /tmp/e80-server.log 2>&1"
+		"cd $(DQ05_REPO)/firmware/e80-stm32-bench/tools && nohup $(PYTHON) e80_board_server.py --tcp-port $(TCP_PORT) --host $(HOST) --role RX --daemon > /tmp/e80-server.log 2>&1"
 	@sleep 2
 	@$(DQ05_SSH) $(DQ05_HOST) "cat /tmp/e80-server.log"
 

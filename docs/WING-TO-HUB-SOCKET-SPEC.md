@@ -28,6 +28,33 @@ extending outward from the hub edge. Wings 1–2 horizontal, 3–4 inclined ≈3
 plane. **The socket land geometry is identical for all four; only the assembly tilt differs,
 and the tilt is set at soldering time, not by copper.**
 
+> **CORRECTION (2026-10-08, `fix/record-contradictions`) — the two orientation sentences
+> above are STALE. The wing plane is VERTICAL (a blade); the governing record is
+> `docs/adr/049-wing-architecture.md` §5 item 6.** Read this section as: long axis **radial**
+> in the hub plane and pointing outward, **25 mm width vertical** — the socket land row, the
+> slot and the keep-out are unaffected. The sentences above are inherited v1-era prose
+> (`docs/hardware-design.md` §3D-Assembly, committed 2026-05-20) and are self-contradictory
+> with each other ("long axis is perpendicular to the hub plane" vs "Wings 1–2 horizontal").
+> They are excluded by the tab/slot arithmetic the two records agree on: a 0.9 mm slot admits
+> a 0.6 mm tab plus a 0.30 mm gap (ADR-046 §4.1), and a 9.0 mm tab cannot fit a 6.0 mm
+> in-plane slot — so the wing plane cannot be coplanar with the hub. This agrees with
+> `ADR-046 §4.1` ("90° to the hub plane, wing plane normal to the hub plane"), ADR-051 §1.4
+> and ADR-055 §1. The "horizontal" in the source document was an **antenna**-coverage
+> statement for a wing that carried a Yagi — and the wing antenna is V2-only and **absent on
+> v9** (ADR-046 §2.4). **The ±30° droop of wings 3–4 is NOT resolved here** — it had no v9
+> rationale and no v9 record fixes it; it stays `TODO(unverified)`. This section is otherwise
+> unchanged: the land geometry is identical for all four and the ADR-048 datum asserts no
+> rotation. Registered as `wing_plane_orientation` in `docs/ssot/parameters.json`; enforced by
+> `scripts/param_ssot_check.py`.
+
+> **CORRECTION (2026-10-08, same branch) — the hub-outline figures in this file are STALE.**
+> Every "22 × 22 mm" in §4 and §7 is the inherited v1-era figure (`docs/hardware-design.md`
+> line 13). The current v9 hub is **103.0 × 103.0 mm** (the first v9 hub PCB,
+> `tracker/hardware/hub_board_v9.kicad_pcb`, S0 placement), owned by
+> `tracker/hardware/placement-source-of-truth.json`. The arithmetic in §4 ("(22 − 9)/2 = 6.5 mm
+> per side") and §7 must be re-read against the real outline before use. Registered as
+> `hub_outline` in `docs/ssot/parameters.json`.
+
 ---
 
 ## 2. Land geometry per interface
