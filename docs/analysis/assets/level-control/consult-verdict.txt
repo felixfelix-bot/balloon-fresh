@@ -1,0 +1,97 @@
+# Independent consultant review — level-control design (round 1)
+
+**Lane:** `/home/c03rad0r/hermes-orchestration/scripts/fleet/visual_consult.py`
+**Invocation:** `visual_consult.py docs/analysis/assets/level-control/receive-agc-chain.png
+docs/analysis/assets/level-control/dynamic-range-budget.png --ask <level-control plan challenge>
+--timeout 540 --max-tokens 20000 --json` — `--json`. Date **2026-10-08**.
+**Artifacts reviewed:** `docs/analysis/assets/level-control/receive-agc-chain.png`,
+`…/dynamic-range-budget.png` (the round-1 renders, commit `382a557`).
+
+## Served model and CLI fields
+
+```
+served:            gpt-6-astra
+model:             gpt-6-astra
+verdict (parser):  UNPARSED
+verdict_reason:    no recognised verdict token in the answer
+```
+
+> **Provenance note (per the lane's measured traps).** The CLI's structured `verdict` field is
+> **`UNPARSED`** because the model answered with the **CONFIRM/REFUTE** vocabulary, which is *not*
+> `parse_verdict`'s vocabulary (APPROVED / CHANGES_REQUESTED / PARTIAL). `UNPARSED` is **not** the
+> model disagreeing and **not** an approval — it is the parser declining. The **opinion of record is
+> the model's own final line**, quoted verbatim below. The served model is **`gpt-6-astra`**, read
+> back from the response (`served`/`model`), not from the request.
+
+## Verbatim final line (the model's own verdict)
+
+> **VERDICT: REFUTE — The conditional Friis arithmetic is sound, but contradictory gain windows,
+> unproven loop dynamics, insufficient TX control range and missing full-duplex self-interference
+> analysis invalidate the plan's claimed coverage and safety.**
+
+## Findings accepted and acted on (round-1 → fixes)
+
+| # | Consultant finding | Disposition |
+|---|---|---|
+| F1 | **Figure says "+15…−15 dB" (30 dB) while the text uses 57 dB** — contradictory gain windows. | **FIXED** — figure relabelled to the two real parts (ADL5240 ≈ +19…−12 dB; ADL5330 −35…+22 dB). |
+| F2 | **Plot's fixed band is ~42 dB (−57…−99 dBm), not the 35 dB claimed.** | **FIXED** — real bug: the band's top was keyed off the 650 km level instead of the window height. Re-rendered with the band **exactly W = 35 dB** (top −64 dBm, bottom −99 dBm). Model §3 already used 35 dB; the figure now matches. |
+| F3 | **DSA 31.5 vs 31.75 dB inconsistency.** | **FIXED** — the two are **different parts**: ADL5240 DSA range **31.5 dB** (datasheet); PE43711 **0–31.75 dB** (datasheet). Stated explicitly; 31.75 gives 66.75 dB, indistinguishable from 66.5. |
+| F4 | **"Slow AGC" alone is not a sufficient criterion; separate attack and decay.** | **ADOPTED** — design amended to **fast attack / slow decay** (overload protection on the attack, level tracking on the decay), which is the standard resolution. |
+| F5 | **The broadband AD8318 will reduce gain on leaked 2.45 GHz TX energy → blocker-driven desense of the wanted 433 downlink.** | **ACCEPTED — material.** Added: the detector input **must be band-limited to 433 MHz** (own BPF/resonator at the tap); physical band separation is not a detector-isolation budget. New checklist row. |
+| F6 | **Additional failure modes missed:** max-gain latch, wrong control polarity, detector/ADC failure, common-mode MCU/SPI/supply coupling, loss-of-signal wind-up, internal-vs-external AGC interaction, lost remote-recovery path, watchdog misdiagnosis. | **ACCEPTED** — failure table extended; recovery is made **autonomous** (not dependent on the downlink). |
+| F7 | **"Fraction of a dB interval" ≠ fraction of distance/time/availability.** | **ADOPTED** — reworded to "% of the mission's dB span" and availability claims softened; the 100% figure is labelled a span statistic, not a delivered-service figure. |
+| F8 | **Pre-LNA losses (BPF, limiter, connectors) add directly to system NF; the 0.436 dB is a two-stage NF, not a system NF.** | **ACCEPTED** — full-system-NF note added: ~1 dB of pre-LNA loss dominates the 0.4 dB LNA NF, which *strengthens* the VGA-second argument. |
+| F9 | **The 35 dB receiver window is unsupported.** | Already `TODO(unverified)`; wording hardened (the exact percentage is not claimed as exact). |
+| F10 | **A 31.75 dB TX DSA cannot flatten 56.26 dB of range loss by itself (24.5 dB residual).** | **ACCEPTED** — stated explicitly: the TX LUT holds constant only within its authority; the residual is handled by the rate ladder (ADR-082). |
+| F11 | **Two separate DSAs must be counted separately if RX and TX each need one.** | **ACCEPTED** — checklist now states the RX level element and the TX DSA are **separate instances** (qty note). |
+| F12 | **VGA-first numbers assume unity VGA gain; a real VGA's NF varies with gain.** | **ACCEPTED** — assumption stated in the design doc §2.2. |
+
+## Findings noted but not acted on (with reason)
+
+| Finding | Reason |
+|---|---|
+| "the blue curve's absolute intercept needs an unstated balloon antenna/loss budget" | It **is** stated: `G_balloon = +2 dBi`, `TODO(unverified)` — the model prints it. The plot legend names the F33 and 14.8 dBi ground antenna; the balloon term is in the doc §7 item 3. |
+| "rate ratio 4× → 6.02 dB only under equal Eb/N0" | Not used as a dB claim: the design quotes the **actual sensitivity table** (−99 … −104 dBm), not 6.02 dB. |
+| "+8.8 dB down-pad cannot be verified" | Derived in `level_control_model.py` §6 from the EN 300 328 PSD ceiling (14.26 dBm EIRP − 11.1 dBi = +3.2 dBm; 12 − 3.2 = 8.8 dB). Now stated with reference planes. |
+| "the checklist is unavailable" | It was not attached to this consult (the ask was figure+plan). The checklist is on the branch and is the deliverable of the sibling doc; a plan-only consult is the intended scope. |
+
+
+---
+
+# Round 2 — corrected figures, re-consult (2026-10-08)
+
+**Invocation:** same lane, `--timeout 560 --max-tokens 20000 --json`, on the **corrected** renders
+(commit after the round-1 fixes). The ask used the parser's vocabulary
+(`APPROVED` / `CHANGES_REQUESTED` / `PARTIAL`) so a structured verdict is available.
+
+## Served model and CLI fields (round 2)
+
+```
+served:            gpt-6-astra
+model:             gpt-6-astra
+verdict (parser):  CHANGES_REQUESTED
+verdict_reason:    tagged verdict 'CHANGES_REQUESTED'
+```
+
+## Verbatim final line (round 2)
+
+> **VERDICT: CHANGES_REQUESTED**
+
+## Round-2 findings and disposition
+
+| # | Finding | Disposition |
+|---|---|---|
+| R2-1 | F1/F2 **resolved** — the plotted fixed-gain band is bounded −64/−99 dBm = exactly **35 dB**. | Confirmed. No action. |
+| R2-2 | F3 — the **plot legend** still read "ADL5240/PE43711 … 0–31.75 dB" (ambiguous). | **FIXED** — legend now "DSA 31.5 dB (ADL5240) / 31.75 dB (PE43711)". |
+| R2-3 | F4 — asymmetric loop is defensible, **but "attack within one frame" must be demonstrated at the 2 ms frame incl. detector/ADC/MCU/SPI/VGA settling**; prefer a hardware overload path. | **ADOPTED** — latency budget added; hardware attack path named where the software loop cannot meet 2.1 ms. |
+| R2-4 | F5 — detector filtering is correct, **but the pre-LNA 433 preselection is still required** (detector filtering does not protect the LNA/VGA). | **ADOPTED** — stated; ADR-072 INV-3 re-affirmed. |
+| R2-5 | F6 — remaining omission: explicit **TX-to-RX RF-isolation failure / front-end blocking** (blocker saturates the RX even though excluded from the detector). | **ADOPTED** — new failure-table row + detection/limiting/default-attenuation/recovery. |
+| R2-6 | F7/F9/F10/F11 — conceptually appropriate (not independently verifiable from the two images). | Noted; kept explicit in the text. |
+| R2-7 | F8/F12 — "unity-gain worst-point" phrase not visible on the figure; ~1 dB pre-LNA loss should be shown. | **FIXED** — both now appear in the block-diagram annotation. |
+| R2-8 | **Label collision** on figure 1: "TQP3M9037" ran into "ADL5240". | **FIXED** — figure re-laid out (wider gaps, smaller VGA font); a vision pass and the consultant's own round-2 answer both confirm the collision is gone. |
+
+## Outcome
+
+Round 2 is **CHANGES_REQUESTED** (one parser-recognised verdict), and every round-2 finding has been
+acted on in the same commit series. The residual disagreements are *scope*, not error (the two figures
+cannot show the whole text plan — F7/F9/F10/F11 live in the document, not the picture).

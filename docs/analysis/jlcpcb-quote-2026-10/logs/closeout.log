@@ -1,0 +1,21 @@
+===== res_103_4L_06
+ dims_readback: ['103', '103']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "0.6mm", "err": "DISABLED", "option": "0.6mm", "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ", "took": false}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.60", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== res_103_4L_16
+ dims_readback: ['103', '103']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.60", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== res_102_4L_16
+ dims_readback: ['102', '102']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$8.00", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== res_102_4L_04_ENIG
+ dims_readback: ['102', '102']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "Surface Finish", "want": "ENIG", "got": "ENIG", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "0.4mm", "err": "DISABLED", "option": "0.4mm", "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ", "took": false}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "ENIG", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": "$0.00", "surface_finish": "$17.80", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$25.80", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+CLOSEOUT DONE
