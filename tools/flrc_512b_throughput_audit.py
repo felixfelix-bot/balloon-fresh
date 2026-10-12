@@ -15,6 +15,10 @@ exists on disk. This tool does three things that need no radio:
   3. Firmware-capability check: confirms that 511 B is a *legal* FLRC length for
      this hardware (E80 firmware + LR20xx driver + RadioLib), i.e. that the
      255-byte ceiling that the RP2040 docs assume is an SX1280/legacy artefact.
+     The bound is resolved from files INSIDE the checkout (the firmware's
+     BENCH_START_LEN_MAX_FLRC clamp, then the vendor driver's documented range)
+     so the report is identical on a CI runner; a RadioLib checkout outside the
+     repo is only an advisory cross-check — see flrc_max_payload().
 
 Everything is arithmetic over files already in the repo. No serial port is
 opened, no board is touched. Run from the repo root.
@@ -32,6 +36,7 @@ import csv
 import glob
 import json
 import os
+import re
 import sys
 
 # ── FLRC on-air models ───────────────────────────────────────────────────────
@@ -211,20 +216,115 @@ def firmware_capability(root: str) -> dict:
     }
 
 
-def radio_lib_flrc_max(repo_root: str) -> dict:
-    """Read RADIOLIB_LR2021_MAX_PACKET_LENGTH_FLRC from a RadioLib checkout."""
-    cand = os.path.join(os.path.dirname(os.path.abspath(repo_root)), "RadioLib",
-                        "src/modules/LR2021/LR2021.h")
-    if not os.path.exists(cand):
-        cand = os.path.expanduser("~/repos/RadioLib/src/modules/LR2021/LR2021.h")
+# ── FLRC max payload length (report field `radio_lib_flrc_max`) ──────────────
+#
+# PORTABILITY CONTRACT (regression: repo-root `Tests` workflow went red on main
+# for four consecutive pushes, 2026-10-09/10). The report field MUST resolve from
+# files inside the checkout. The earlier version probed only `../RadioLib` and
+# `~/repos/RadioLib` — host-local paths that do not exist on a GitHub Actions
+# runner — so `value` was None in CI and
+# tests/test_flrc_512b_throughput_audit.py::test_report_flags_511_as_legal_and_512_as_illegal
+# failed board-wide. A RadioLib checkout outside the repo is now an advisory
+# cross-check only; it can never be the sole source of the number.
+
+# (label, repo-relative path, regex whose group 1 is the max payload in bytes)
+FLRC_MAX_SOURCES = (
+    # the bench firmware's own named clamp — the strongest repo-local truth
+    ("fw_bench_start_len_max_flrc",
+     "firmware/e80-stm32-bench/src/bench_cmd.h",
+     r"#define\s+BENCH_START_LEN_MAX_FLRC\s+(\d+)"),
+    # the vendor driver's documented legal range for pld_len_in_bytes
+    ("lr20xx_driver_pld_len_range",
+     "firmware/e80-stm32-bench/third_party/Radio/lr20xx_driver/inc/"
+     "lr20xx_radio_flrc_types.h",
+     r"FLRC payload length in byte\s*-\s*in \[6:(\d+)\]"),
+    # the RadioLib snapshot archived under docs/ — only newer snapshots carry
+    # the FLRC-specific define, so this is legitimately optional (None today)
+    ("repo_radiolib_snapshot",
+     "docs/lr2021-research/radiolib-master/LR2021-module/LR2021.h",
+     r"#define\s+RADIOLIB_LR2021_MAX_PACKET_LENGTH_FLRC\s+(\d+)"),
+)
+
+FLRC_MAX_FALLBACK_PATH = FLRC_MAX_SOURCES[0][1]
+
+
+def _flrc_max_from_text(root: str, rel: str, pattern: str) -> dict | None:
+    """First regex match in repo-relative file `rel`, or None if absent/no match."""
+    path = os.path.join(root, rel)
     try:
-        with open(cand, encoding="utf-8", errors="replace") as fh:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            blob = fh.read()
+    except OSError:
+        return None
+    match = re.search(pattern, blob)
+    if not match:
+        return None
+    return {"path": rel, "value": int(match.group(1))}
+
+
+def _external_radiolib_candidates(root: str) -> list[str]:
+    """RadioLib checkouts that may sit next to the repo or in a home dir."""
+    return [
+        os.path.join(os.path.dirname(os.path.abspath(root)), "RadioLib",
+                     "src/modules/LR2021/LR2021.h"),
+        os.path.expanduser("~/repos/RadioLib/src/modules/LR2021/LR2021.h"),
+    ]
+
+
+def _radiolib_header_flrc_max(path: str) -> int | None:
+    """RADIOLIB_LR2021_MAX_PACKET_LENGTH_FLRC from a RadioLib LR2021.h header."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
             for line in fh:
                 if "MAX_PACKET_LENGTH_FLRC" in line and "define" in line:
-                    return {"path": cand, "value": int(line.split()[-1])}
+                    return int(line.split()[-1].rstrip("uU"))
     except (OSError, ValueError, IndexError):
         pass
-    return {"path": cand, "value": None}
+    return None
+
+
+def flrc_max_payload(root: str, external_radiolib: bool = True) -> dict:
+    """Max legal FLRC payload length in bytes, resolved from IN-REPO sources.
+
+    Returns the bound plus the provenance needed to audit it:
+
+      * ``value``             first in-repo source that resolved (511), else None
+      * ``path``              repo-relative file that won — portable evidence
+      * ``source``            label of the winning source
+      * ``sources``           every in-repo layer probed (None where absent)
+      * ``external_radiolib`` advisory cross-check of a RadioLib checkout
+                              outside the repo (present/value), never decisive
+
+    Kept under the legacy report key ``radio_lib_flrc_max`` because
+    docs/FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md and the host test pin that name.
+    """
+    sources: dict[str, dict | None] = {}
+    winner: tuple[str, dict] | None = None
+    for label, rel, pattern in FLRC_MAX_SOURCES:
+        hit = _flrc_max_from_text(root, rel, pattern)
+        sources[label] = hit
+        if winner is None and hit is not None:
+            winner = (label, hit)
+
+    external: dict = {"path": None, "present": False, "value": None}
+    if external_radiolib:
+        for cand in _external_radiolib_candidates(root):
+            if os.path.exists(cand):
+                external = {"path": cand, "present": True,
+                            "value": _radiolib_header_flrc_max(cand)}
+                break
+
+    return {
+        "value": winner[1]["value"] if winner else None,
+        "path": winner[1]["path"] if winner else FLRC_MAX_FALLBACK_PATH,
+        "source": winner[0] if winner else None,
+        "sources": sources,
+        "external_radiolib": external,
+    }
+
+
+# Back-compat alias: the old name, with the old report shape folded in.
+radio_lib_flrc_max = flrc_max_payload
 
 
 # ── 2. Verdict ───────────────────────────────────────────────────────────────
@@ -232,7 +332,7 @@ def radio_lib_flrc_max(repo_root: str) -> dict:
 def build_report(root: str) -> dict:
     meas = measured_payloads(root)
     rows = flrc_rows(root)
-    radio_lib = radio_lib_flrc_max(root)
+    radio_lib = flrc_max_payload(root)
 
     ceilings = {}
     for payload in (127, 255, 511):
@@ -403,8 +503,15 @@ def main(argv: list[str] | None = None) -> int:
           "the repo's")
     print("                    independently computed 1921.8 kbps on-air rate at 511 B")
 
-    print(f"\nRadioLib FLRC max payload: {rep['radio_lib_flrc_max']['value']} B "
-          f"({rep['radio_lib_flrc_max']['path']})")
+    rl = rep["radio_lib_flrc_max"]
+    print(f"\nFLRC max payload: {rl['value']} B  (source: {rl['source']} @ {rl['path']})")
+    for label, hit in rl["sources"].items():
+        print(f"    in-repo {label}: "
+              + (f"{hit['value']} B ({hit['path']})" if hit else "not available"))
+    ext = rl["external_radiolib"]
+    print("    external RadioLib checkout: "
+          + (f"{ext['value']} B ({ext['path']})" if ext["present"]
+             else "absent — advisory only, never the sole source"))
     print("Firmware capability probes:")
     for k, v in rep["firmware_capability"].items():
         state = "found" if v.get("token_found") else ("present" if v.get("present") else "MISSING")

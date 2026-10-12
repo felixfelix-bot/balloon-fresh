@@ -5,7 +5,7 @@
 card; deliverable 4 (a *fresh* 512 B sweep) is **not** met — see §7.
 
 **Tool:** `tools/flrc_512b_throughput_audit.py` (`--selftest` 16/16) and
-`tests/test_flrc_512b_throughput_audit.py` (19 host tests, no radio).
+`tests/test_flrc_512b_throughput_audit.py` (21 host tests, no radio).
 Every number below is either an arithmetic result from that tool or a file:line on
 disk. Nothing was measured on a radio for this document.
 
@@ -30,8 +30,23 @@ unmeasured, it is **impossible under every model below**.
 448, 511}` were measured; **512 was never measured anywhere on disk, and cannot
 be — 511 B is the driver's documented maximum** (`lr20xx_radio_flrc_types.h:210`:
 `pld_len_in_bytes` *"FLRC payload length in byte - in [6:511]"*; the bench
-firmware enforces it at runtime, `bench.c:786-789`; RadioLib agrees,
-`RADIOLIB_LR2021_MAX_PACKET_LENGTH_FLRC = 511`, `LR2021.h:19`).
+firmware enforces it at runtime through its own named clamp,
+`#define BENCH_START_LEN_MAX_FLRC 511u` (`bench_cmd.h:157`), applied by
+`bench_start_len_ok()` (`bench_cmd.c:593-604`) at both the TX and RX start
+branches (`bench.c:768`, `:795`); the START parser also re-checks the same
+literal range (`bench_cmd.c:365`, `v < 6 || v > 511` — duplicated constant,
+a harmless belt-and-braces check).
+
+Those two in-repo layers are what the audit tool reads (report key
+`radio_lib_flrc_max` → `flrc_max_payload()`), and they are what makes the number
+reproducible on a CI runner. A RadioLib checkout **outside** the repo is now only
+an advisory cross-check: the snapshot archived at
+`docs/lr2021-research/radiolib-master/` does not carry
+`RADIOLIB_LR2021_MAX_PACKET_LENGTH_FLRC` (upstream issue #1882, "Fix some LR2021
+constants", was still open at the 2026-09-30 retrieval), so requiring that
+host-local checkout is what turned the repo-root `Tests` workflow red on main for
+four consecutive pushes (2026-10-09/10, runs 37992095474, 37988348046,
+37946525396, 37946322065).
 
 So the physical claim behind the report — *"doubling the payload raises
 throughput"* — is **correct in direction and already demonstrated**: 511 B FLRC is

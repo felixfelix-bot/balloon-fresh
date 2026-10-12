@@ -1,0 +1,3 @@
+2026-10-13: reconciled origin/main enclosure docs and auto-BOOTSEL geometry/tests; status → requirements source identified, 28 targeted tests pass → tracker/hardware/auto_bootsel, docs/analysis/ENCLOSURE-FORGE-APPLICABILITY.md
+2026-10-13: drafted 13-item request with provenance and explicit MEASUREMENTS_NEEDED gaps; status → committed/pushed 9a4d3e7 to github + ngit → docs/analysis/enclosure-requests/auto-bootsel-interposer.md, README.md
+2026-10-13: posted upstream issue and independently read back OPEN issue #1 (11,341 chars); status → complete → https://github.com/Amperstrand/enclosure-forge/issues/1

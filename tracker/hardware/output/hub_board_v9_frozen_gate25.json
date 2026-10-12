@@ -1,0 +1,469 @@
+{
+  "board": "hub_board_v9.kicad_pcb",
+  "footprints": 39,
+  "pads": 251,
+  "segments": 0,
+  "vias": 0,
+  "zones": 0,
+  "margin_mm": 0.2,
+  "pads_with_no_net": 31,
+  "no_net_pads": [
+    {
+      "ref": "U3",
+      "pad": "9",
+      "pos": [
+        -9.905,
+        -5.16
+      ],
+      "size": [
+        2.0,
+        0.7
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U3",
+      "pad": "16",
+      "pos": [
+        9.905,
+        2.58
+      ],
+      "size": [
+        2.0,
+        0.7
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U3",
+      "pad": "17",
+      "pos": [
+        9.905,
+        3.87
+      ],
+      "size": [
+        2.0,
+        0.7
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U2",
+      "pad": "10",
+      "pos": [
+        11.7867,
+        10.5
+      ],
+      "size": [
+        2.0,
+        1.0
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U7",
+      "pad": "4",
+      "pos": [
+        1.1375,
+        0.95
+      ],
+      "size": [
+        1.325,
+        0.6
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -2.904394,
+        0.71
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -2.9,
+        -2.09
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -2.9,
+        -0.69
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -1.504394,
+        0.71
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -1.5,
+        -2.09
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -1.5,
+        -0.69
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -0.104394,
+        0.71
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -0.1,
+        -2.09
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "",
+      "pos": [
+        -0.1,
+        -0.69
+      ],
+      "size": [
+        0.9,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "3",
+      "pos": [
+        -8.75,
+        -5.87
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "13",
+      "pos": [
+        -8.75,
+        6.83
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "14",
+      "pos": [
+        -8.75,
+        8.1
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "15",
+      "pos": [
+        -6.985,
+        9.35
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "16",
+      "pos": [
+        -5.715,
+        9.35
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "26",
+      "pos": [
+        6.985,
+        9.35
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "27",
+      "pos": [
+        8.75,
+        8.1
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "28",
+      "pos": [
+        8.75,
+        6.83
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "29",
+      "pos": [
+        8.75,
+        5.56
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U1",
+      "pad": "30",
+      "pos": [
+        8.75,
+        4.29
+      ],
+      "size": [
+        1.5,
+        0.9
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "5",
+      "pos": [
+        -4.75,
+        0.0
+      ],
+      "size": [
+        1.8,
+        0.8
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "13",
+      "pos": [
+        4.75,
+        1.1
+      ],
+      "size": [
+        1.8,
+        0.8
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "14",
+      "pos": [
+        4.75,
+        0.0
+      ],
+      "size": [
+        1.8,
+        0.8
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "15",
+      "pos": [
+        4.75,
+        -1.1
+      ],
+      "size": [
+        1.8,
+        0.8
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "16",
+      "pos": [
+        4.75,
+        -2.2
+      ],
+      "size": [
+        1.8,
+        0.8
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "17",
+      "pos": [
+        4.75,
+        -3.3
+      ],
+      "size": [
+        1.8,
+        0.8
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    },
+    {
+      "ref": "U5",
+      "pad": "18",
+      "pos": [
+        4.75,
+        -4.4
+      ],
+      "size": [
+        1.8,
+        0.7
+      ],
+      "drill": 0.0,
+      "type": "smd"
+    }
+  ],
+  "pad_overlap_pairs_0.2mm": 0,
+  "pad_overlap_examples": [],
+  "exact_pad_overlap_pairs_0.2mm": 0,
+  "exact_pad_overlap_examples": [],
+  "courtyards_overlap": 0,
+  "drc": {
+    "path": "hub_board_v9_drc.json",
+    "rc": 0,
+    "violations_total": 69,
+    "by_type": {
+      "drill_out_of_range": 12,
+      "copper_edge_clearance": 16,
+      "silk_overlap": 12,
+      "silk_over_copper": 16,
+      "lib_footprint_issues": 7,
+      "silk_edge_clearance": 6
+    },
+    "courtyards_overlap": 0,
+    "shorting_items": 0,
+    "clearance": 0,
+    "unconnected": 157
+  },
+  "placement_gate": "PASS"
+}

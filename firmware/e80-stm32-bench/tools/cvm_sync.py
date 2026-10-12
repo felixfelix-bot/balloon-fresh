@@ -52,7 +52,9 @@ import asyncio
 import json
 import os
 import random
+import secrets
 import time
+import urllib.parse
 from typing import Any, Awaitable, Callable, Optional
 
 # Default working relays (verified 2026-08-23; relay.contextvm.org is DEAD).
@@ -78,24 +80,40 @@ STALE_ABORT = 30.0           # abort if last good ARMED stale > 30s
 ARMED_MIN_INTERVAL = 10.0
 ARMED_MAX_INTERVAL = 15.0
 
-# Required ARMED fields (validate_armed).
-ARMED_REQUIRED = ("session_id", "stop", "t_ready_utc", "preset_hash", "seq")
+# Required ARMED fields (validate_armed). ``created_at`` is REQUIRED: an ARMED
+# that omits it must never skip the freshness window (Gate-2.5 R1).
+ARMED_REQUIRED = ("session_id", "stop", "t_ready_utc", "preset_hash", "seq",
+                  "created_at")
 
 
 # ---------------------------------------------------------------------------
 # Session id + ARMED message (pure functions)
 # ---------------------------------------------------------------------------
 
+def _session_nonce() -> str:
+    """3 lowercase-hex nonce from the CSPRNG (4096 space).
+
+    ``secrets.randbelow`` — never ``random``: the session id disambiguates two
+    arms in the same minute and must be unpredictable to a third party.
+    """
+    return "{:03x}".format(secrets.randbelow(0x1000))
+
+
 def generate_session_id(now: Optional[int] = None) -> str:
     """RX sole authority: %y%m%d%H%M + 3-hex nonce.
 
     e.g. 2608301440a3f. The 3-hex nonce (4096 space) disambiguates two arms
-    in the same minute.
+    in the same minute and comes from ``secrets`` (CSPRNG), matching the
+    authoritative ``cvm_armed_publisher.generate_session_id`` contract.
+
+    The timestamp is percent-encoded with an empty safe set: strftime
+    directives arrive fully expanded (plain digits), so the id carries no '%'
+    or URL-unsafe residue — it is used verbatim in log dir names.
     """
     now = int(now if now is not None else time.time())
-    ts = time.strftime("%y%m%d%H%M", time.gmtime(now))
-    nonce = "{:03x}".format(random.randrange(0x1000))
-    return ts + nonce
+    ts = urllib.parse.quote(time.strftime("%y%m%d%H%M", time.gmtime(now)),
+                            safe="")
+    return ts + _session_nonce()
 
 
 def build_armed(session_id: str, stop: str, t_ready_utc: int,
@@ -152,8 +170,25 @@ def validate_armed(msg: dict, now: Optional[int] = None,
                    allowed_npubs: Optional[set] = None) -> tuple:
     """Validate an ARMED message. Returns (ok, reason).
 
-    Rejects: missing required fields, created_at skew > 60s, non-allowlisted
-    author npub (when an allowlist is given).
+    Self-contained strict policy (deliberately does NOT import
+    ``cvm_tx_listener`` — that module is a sibling deliverable and importing it
+    would create a merge-order dependency):
+
+    1. **structure** — a dict whose ``type`` is ``ARMED`` and which carries
+       every ``ARMED_REQUIRED`` field. ``created_at`` is one of them, so an
+       ARMED that omits it is rejected instead of silently bypassing the
+       freshness window.
+    2. **authorization FIRST** — when ``allowed_npubs`` is given the author is
+       checked *before* any ``created_at`` parsing, so a hostile payload is
+       rejected on identity and can never reach the arithmetic
+       (crash-before-authz).
+    3. **freshness** — ``created_at`` must be a strict ``int`` (bool / str /
+       float / anything else is rejected with a reason, never cast via
+       ``int()``) and its skew from ``now`` must be
+       ``<= MAX_CREATED_AT_SKEW``.
+
+    Never raises on hostile input: every rejection path returns ``(False,
+    reason)``.
     """
     now = int(now if now is not None else time.time())
     if not isinstance(msg, dict) or msg.get("type") != "ARMED":
@@ -161,16 +196,19 @@ def validate_armed(msg: dict, now: Optional[int] = None,
     for f in ARMED_REQUIRED:
         if f not in msg:
             return False, "missing required field: {}".format(f)
-    created = msg.get("created_at")
-    if created is not None:
-        skew = abs(now - int(created))
-        if skew > MAX_CREATED_AT_SKEW:
-            return False, "created_at skew {}s > {}s".format(
-                skew, MAX_CREATED_AT_SKEW)
+    # (2) authz before any parsing of the attacker-controlled payload
     if allowed_npubs is not None:
         author = msg.get("author", "")
         if author not in allowed_npubs:
-            return False, "author not in allowlist: {}".format(author[:16])
+            return False, "author not in allowlist: {}".format(str(author)[:16])
+    # (3) freshness — strict int typing, no coercion of hostile input
+    created = msg.get("created_at")
+    if isinstance(created, bool) or not isinstance(created, int):
+        return False, "bad created_at: {!r}".format(created)
+    skew = abs(now - created)
+    if skew > MAX_CREATED_AT_SKEW:
+        return False, "created_at skew {}s > {}s".format(
+            skew, MAX_CREATED_AT_SKEW)
     return True, ""
 
 

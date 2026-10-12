@@ -1,0 +1,62 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : U5 -- u-blox MAX-M10S (GNSS receiver) -- ENVELOPE, height unverified
+# dims_mm    : 9.7 x 10.1 x 2.4(nominal) mm -- X/Y measured from F.Fab, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "RF_GPS:ublox_MAX" (Reference U5, Value "MAX-M10S"): its own F.Fab outline measures 9.7 x 10.1 mm.  Reproduce every envelope with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# note       : the committed reference pointed at `${KICAD9_3DMODEL_DIR}/RF_GPS.3dshapes/ublox_MAX.step`; the installed `RF_GPS.3dshapes` directory exists but is EMPTY, so it was unresolved.
+# note       : TODO(unverified): the 2.4 mm height is TODO(unverified) -- a nominal MAX-format GNSS module placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+DEF u5_ublox_max_m10s_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF u5_ublox_max_m10s_envelope_mat Material {
+          diffuseColor 0.16 0.18 0.22
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -1.909449 -1.988189 0.944882,
+          1.909449 -1.988189 0.944882,
+          1.909449 1.988189 0.944882,
+          -1.909449 1.988189 0.944882,
+          -1.909449 1.988189 0.000000,
+          1.909449 1.988189 0.000000,
+          1.909449 -1.988189 0.000000,
+          -1.909449 -1.988189 0.000000,
+          -1.909449 1.988189 0.000000,
+          -1.909449 1.988189 0.944882,
+          1.909449 1.988189 0.944882,
+          1.909449 1.988189 0.000000,
+          1.909449 -1.988189 0.000000,
+          1.909449 -1.988189 0.944882,
+          -1.909449 -1.988189 0.944882,
+          -1.909449 -1.988189 0.000000,
+          1.909449 1.988189 0.000000,
+          1.909449 1.988189 0.944882,
+          1.909449 -1.988189 0.944882,
+          1.909449 -1.988189 0.000000,
+          -1.909449 -1.988189 0.000000,
+          -1.909449 -1.988189 0.944882,
+          -1.909449 1.988189 0.944882,
+          -1.909449 1.988189 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

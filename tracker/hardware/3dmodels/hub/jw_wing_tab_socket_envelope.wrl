@@ -1,0 +1,66 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : J_W1..J_W4 -- hub-side WING_SOCKET_4P (receptacle for the wing tab) -- ENVELOPE, height unverified
+# dims_mm    : 7.0 x 9.6 x 3.0(nominal) mm -- X/Y from the F.CrtYd courtyard, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "Tracker_Mechanical:Wing_Tab_4P" (Reference J_W1..J_W4, Value "WING_SOCKET_4P (hub wing interface)"): this library footprint ships NO F.Fab outline, so the envelope is its F.CrtYd courtyard 7.0 x 9.6 mm.  Reproduce with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# source     : docs/adr/048-v9-hub-wing-interfaces.md items 3/6 fix the hub-side socket as a 0.9 x 6.0 mm slot for the 0.6 mm tab, i.e. a 0.00 mm worst-case clearance, and ADR-048 files that clearance as OPEN.
+# note       : these four footprints carried NO `(model ...)` block at all -- four of the seven census omissions.
+# note       : CRITICAL FOR THE REVIEW: the wing tab enters here, so this is the one place where the wing and the hub meet in space. A review that cannot see these cannot judge the interface at all.
+# note       : the 7.0 x 9.6 courtyard is the socket's keep-out, not its body; the 0.9 x 6.0 slot is NOT drawn as a slot because the model is a solid envelope and a hole would imply a measured bore the repo does not have.
+# note       : TODO(unverified): the 3.0 mm height is TODO(unverified) -- a nominal edge receptacle placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+# note       : TODO(unverified): the socket body height, and whether the 0.9 x 6.0 mm slot is a real fabricated feature or a board-edge cut (ADR-048 opens this)
+DEF jw_wing_tab_socket_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF jw_wing_tab_socket_envelope_mat Material {
+          diffuseColor 0.3 0.3 0.32
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -1.377953 -1.889764 1.181102,
+          1.377953 -1.889764 1.181102,
+          1.377953 1.889764 1.181102,
+          -1.377953 1.889764 1.181102,
+          -1.377953 1.889764 0.000000,
+          1.377953 1.889764 0.000000,
+          1.377953 -1.889764 0.000000,
+          -1.377953 -1.889764 0.000000,
+          -1.377953 1.889764 0.000000,
+          -1.377953 1.889764 1.181102,
+          1.377953 1.889764 1.181102,
+          1.377953 1.889764 0.000000,
+          1.377953 -1.889764 0.000000,
+          1.377953 -1.889764 1.181102,
+          -1.377953 -1.889764 1.181102,
+          -1.377953 -1.889764 0.000000,
+          1.377953 1.889764 0.000000,
+          1.377953 1.889764 1.181102,
+          1.377953 -1.889764 1.181102,
+          1.377953 -1.889764 0.000000,
+          -1.377953 -1.889764 0.000000,
+          -1.377953 -1.889764 1.181102,
+          -1.377953 1.889764 1.181102,
+          -1.377953 1.889764 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

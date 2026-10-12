@@ -1,0 +1,78 @@
+EVIDENCE — PCB 3D render probe, kicad-cli 9.0.8, 2026-10-10
+======================================================================
+
+CLAIM UNDER TEST
+  "KICAD9_3DMODEL_DIR is unset and no KiCad 3D model library is installed, so renders
+   show only substrate + copper + silkscreen with NO component bodies."
+
+RESULT: FALSE in its first two clauses. Measured below.
+
+1) IS A 3D MODEL LIBRARY INSTALLED?
+ii  kicad-packages3d                                 9.0.7-1                                    all          3D models for 3D viewer in KiCad's Pcbnew and Footprint Editor
+4.6G	/usr/share/kicad/3dmodels
+105
+14043
+
+2) IS KICAD9_3DMODEL_DIR SET IN THE SHELL?
+KICAD9_3DMODEL_DIR=[]
+
+3) RENDER WITH THE ENV VAR *UNSET* — did bodies appear?
+   command: env -u KICAD9_3DMODEL_DIR kicad-cli pcb render --output a.png --side top --zoom 1 --quality high hub_board_v9.kicad_pcb
+Build Tech layer 125
+Build Tech layer 127
+Simplifying copper layer polygons
+Calculating plated copper
+Simplify holes contours
+Build BVH for holes and vias
+Load Raytracing: board
+Load Raytracing: layers
+Loading 3D models...
+Reload time 0.909 s
+Rendering time 120.619 s
+Successfully created 3D render image
+   -> 3D component bodies WERE visible (see hub_board_v9_top.png). Causal claim disproven.
+
+4) CONTROLLED EXPERIMENT — env var forced to a bad path
+   command: KICAD9_3DMODEL_DIR=/nonexistent-bad KICAD8_3DMODEL_DIR=/nonexistent-bad \
+            kicad-cli pcb render --output control_badpath.png --side top --zoom 1 --quality basic --width 800 --height 600 hub_board_v9.kicad_pcb
+Build Tech layer 125
+Build Tech layer 127
+Simplifying copper layer polygons
+Calculating plated copper
+Simplify holes contours
+Build BVH for holes and vias
+Load Raytracing: board
+Load Raytracing: layers
+Loading 3D models...
+Reload time 1.633 s
+Rendering time 1.868 s
+Successfully created 3D render image
+22383  /tmp/probe/control_badpath.png
+157254  /tmp/probe/hub_top.png
+   -> 1.87 s vs 121 s; 22 KB vs 157 KB; visually FLAT (no bodies, no shadows);
+      EXIT 0 and NO WARNING. kicad-cli does NOT report a missing 3D model.
+
+5) STATIC 3D MODEL COVERAGE (deterministic, no render needed)
+tracker/hardware/wing_board/wing_board_v9.kicad_pcb: 0/12 footprints have a (model ...) block
+  tracker/hardware/hub_board_v9.kicad_pcb: 32/39 footprints have a (model ...) block
+
+6) DANGLING MODEL REFERENCE IN THE HUB BOARD
+${KICAD8_3DMODEL_DIR}/RF_Module.3dshapes/NiceRF_LoRa2021.wrl
+-- does that file exist? --
+ls: cannot access '/usr/share/kicad/3dmodels/RF_Module.3dshapes/NiceRF_LoRa2021.wrl': No such file or directory
+-- search all 14043 models --
+0
+
+7) RENDER TIMES / SIZES (--quality high, 1600x1200)
+hub_top      Rendering time 120.619 s
+hub_bottom   Rendering time 59.887 s
+wing_top     Rendering time 59.402 s
+wing_bottom  Rendering time 34.241 s
+
+8) HOW TO TELL A REAL 3D RENDER FROM A COPPER-ONLY ONE
+  exit code        : identical (0) in both cases       <-- useless
+  stderr/log       : identical (silent) in both cases   <-- useless
+  rendering time   : ~60-121 s real  vs  ~1.9 s copper-only   <-- USE THIS
+  PNG size         : ~157 KB real    vs  ~22 KB copper-only   <-- USE THIS
+  shadows/bodies   : present         vs  absent                <-- visual, last resort
+  static (model ..): count blocks vs footprint count           <-- deterministic
