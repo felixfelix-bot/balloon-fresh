@@ -206,8 +206,75 @@ def patch_dsn_rules(dsn_path: str, width_um: int = 200, clearance_um: int = 200)
           f"wing pad-halves merged: {merged}")
 
 
+def patch_dsn_keepouts(dsn_path: str, board_path: str,
+                       margin_mm: float = 0.3) -> int:
+    """Add Specctra `(keepout ...)` regions over the wing-socket slots.
+
+    WHY (measured 2026-10-12, run 7): the wing-socket slots are milled
+    Edge.Cuts notches that protrude past the board outline. FreeRouting has no
+    notion of "do not route here", so it laid 12 tracks along the slot edges
+    and the DRC anonymous `Rectangle on Edge.Cuts` count rose 10 -> 17. A
+    keepout is the DSN-level way to forbid copper there, so the router avoids
+    the slots instead of being blamed for violating them.
+
+    Geometry comes from the BOARD (J_W* Edge.Cuts items), never hard-coded, so
+    a moved socket moves its keepout. margin_mm grows each slot box outward to
+    keep the router a legal distance off the milled edge.
+
+    Returns the number of keepout regions written.
+    """
+    pcbnew = _pcbnew()
+    board = pcbnew.LoadBoard(board_path)
+    mm = 1e6
+    boxes = []
+    for fp in board.GetFootprints():
+        if not fp.GetReference().startswith("J_W"):
+            continue
+        if not any(d.GetLayer() == pcbnew.Edge_Cuts for d in fp.GraphicalItems()):
+            continue
+        bb = fp.GetBoundingBox()
+        x0 = bb.GetX() / mm - margin_mm
+        y0 = bb.GetY() / mm - margin_mm
+        x1 = (bb.GetX() + bb.GetWidth()) / mm + margin_mm
+        y1 = (bb.GetY() + bb.GetHeight()) / mm + margin_mm
+        boxes.append((x0, y0, x1, y1))
+
+    if not boxes:
+        print("  keepouts: no J_W* Edge.Cuts sockets found -- none added")
+        return 0
+
+    content = open(dsn_path).read()
+    if "(keepout" in content:
+        print("  keepouts: DSN already carries keepouts -- leaving as-is")
+        return 0
+
+    # Specctra coordinates are micrometres relative to the board origin, which
+    # KiCad's exporter emits as the same frame used in the (boundary ...) path.
+    # We convert mm -> um directly, matching the boundary's integer scale.
+    regions = []
+    for (x0, y0, x1, y1) in boxes:
+        poly = (f"(polygon F.Cu 0  {int(x0*1000)} {int(-y1*1000)}  "
+                f"{int(x1*1000)} {int(-y1*1000)}  {int(x1*1000)} {int(-y0*1000)}  "
+                f"{int(x0*1000)} {int(-y0*1000)}  {int(x0*1000)} {int(-y1*1000)})")
+        regions.append(f"    (keepout\n      {poly}\n    )")
+
+    marker = "    (via \""
+    idx = content.find(marker)
+    if idx == -1:
+        raise SystemExit(
+            f"patch_dsn_keepouts: could not find the (via ...) anchor in "
+            f"{dsn_path} -- DSN structure changed; re-derive the insertion point."
+        )
+    content = content[:idx] + "\n".join(regions) + "\n" + content[idx:]
+    open(dsn_path, "w").write(content)
+    print(f"  keepouts: {len(regions)} wing-socket regions written "
+          f"(margin {margin_mm} mm)")
+    return len(regions)
+
+
 def export_dsn(board_path: str, dsn_path: str, *,
-               width_um: int = 200, clearance_um: int = 200) -> None:
+               width_um: int = 200, clearance_um: int = 200,
+               keepouts: bool = True) -> None:
     pcbnew = _pcbnew()
     board = pcbnew.LoadBoard(board_path)
     drc = board.GetDesignSettings()
@@ -219,6 +286,8 @@ def export_dsn(board_path: str, dsn_path: str, *,
     # The design settings above do NOT survive into the DSN's rule block -- see
     # patch_dsn_rules() for the measurement that proves it. Patch the file.
     patch_dsn_rules(dsn_path, width_um=width_um, clearance_um=clearance_um)
+    if keepouts:
+        patch_dsn_keepouts(dsn_path, board_path)
     print(f"  DSN written: {dsn_path} ({os.path.getsize(dsn_path)} bytes)")
 
 
