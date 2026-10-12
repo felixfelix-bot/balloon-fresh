@@ -62,6 +62,7 @@ firmware/rp2040/host-tests/test_cmd
 firmware/rp2040/host-tests/test_bw_codes
 firmware/rp2040/host-tests/test_radio
 firmware/rp2040/host-tests/test_dispatch
+firmware/rp2040/host-tests/test_temp_comp
 # worker scratch logs — per-task, never merged (v9 consolidation, 2026-10-07)
 PROGRESS.md
 REPORT.md
