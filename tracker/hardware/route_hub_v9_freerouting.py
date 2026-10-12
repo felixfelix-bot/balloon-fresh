@@ -323,7 +323,16 @@ def run_freerouting(dsn_path: str, ses_path: str, passes: int, threads: int,
     print(f"  routing: -mp {passes} -mt {threads} -oit (timeout {timeout_s}s; bounded, no LLM)")
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s)
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
+        # subprocess.run kills ONLY the xvfb-run wrapper -- the JVM child leaks
+        # and keeps burning CPU (measured twice: PIDs 297126, 486996 found at
+        # 55 m and 34 m stealing cycles from the NEXT cycle's router). Reap the
+        # whole process group before giving up.
+        import signal
+        try:
+            os.killpg(os.getpgid(e.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, AttributeError):
+            pass
         raise SystemExit(
             f"FreeRouting exceeded {timeout_s}s without exiting -- it may have "
             f"wedged. No SES is expected; raise -mp or lower the board scope."
