@@ -1,0 +1,1 @@
+3D branch merges landed → status: merged hub/wing/renderer, self-contained hub refs and render committed → files: tracker/hardware/hub_board_v9.kicad_pcb, tracker/hardware/hub_board/renders/hub_v9_iso.png

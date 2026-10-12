@@ -775,3 +775,38 @@ to change.
    accepted native-JTAG trade-off on IO39–42.
 8. The multi-SX1280 throughput question is analysed in
    `docs/SX1280-ARRAY-FEASIBILITY.md` — **analysis only, no board authorised.**
+
+---
+
+## Correction (2026-10-07, appended by ADR-061) — two on-board-storage claims are wrong
+
+ADR-061 (`docs/adr/061-onboard-storage.md`) audited this record's storage premises and found two
+errors. They are corrected here in an **appended** section rather than in the body, so the history
+stays legible. **D1 item 3 and D1 item 5 are amended as follows.**
+
+**1. "16 MB flash" is wrong — the fitted part has 8 MB.** D1 item 5 states *"16 MB flash / 8 MB
+octal PSRAM per its own header comment"*, and the header comment it cites
+(`tracker/firmware/sdkconfig.defaults.esp32s3`) said the same. But the part named by D1 itself is
+**`ESP32-S3-WROOM-1U-N8R8`**, and in Espressif's part numbering the `N8` is the **flash** size —
+**8 MB** — with `R8` the 8 MB PSRAM. **The flash figure was doubled.**
+
+**This was not cosmetic; it was a live build defect.** Both the defaults file and the **tracked,
+generated** `tracker/firmware/sdkconfig` (target `esp32s3` — the file the build actually reads)
+set `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y` and `CONFIG_ESPTOOLPY_FLASHSIZE="16MB"`. A 16 MB
+flash-size setting on an 8 MB part misplaces the bootloader and application offsets. Both now read
+`8MB`. **Consequence for this record: the flight-log partition budget (~1–4 MB, ADR-061) sits
+inside an 8 MB device, not a 16 MB one — the margin is half what D1 implied.** The decision is
+unaffected, because 8 MB is still sufficient (ADR-061 fits no external storage part).
+
+**2. D1 item 3's "8 MB PSRAM for on-board logging" cannot hold the log across the night.** PSRAM
+is **volatile**. ADR-036 makes **night deep-sleep mandatory** and accepts a **cold start at dawn**,
+so PSRAM contents do not survive the night, let alone a flight. The supporting sentence *"512 KB
+SRAM cannot hold a burst log of raw radio events"* is correct and unaffected; what changes is the
+medium — **the persistent log must live in flash, not PSRAM.** PSRAM may still **stage** the log;
+it may not be relied on to **persist** it. ADR-061 sizes the flight log as a separate **≥1 MB flash
+partition** on exactly that basis, and §D5 there puts the write-once per-unit calibration blob
+(129 B) in **internal NVS** in flash as well.
+
+**Unchanged by this correction:** the module choice (`ESP32-S3-WROOM-1U-N8R8` remains selected), D1
+item 2's pin-budget reasoning, D1 item 4 (Wi-Fi/BLE, independent), and D1 item 6 (`-1U` = U.FL).
+Only the flash figure, the persistence medium and the resulting partition margin move.

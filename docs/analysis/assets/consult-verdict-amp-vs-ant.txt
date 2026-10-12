@@ -1,0 +1,79 @@
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+visual_artifact: /home/c03rad0r/worktrees/bf-amps/docs/analysis/assets/ground-station-amp-vs-ant-figure.png
+tool: scripts/fleet/visual_consult.py (astra-consultant profile, z.ai router, model read from the profile pin — not a literal)
+figure: docs/analysis/assets/ground-station-amp-vs-ant-figure.svg (+ .png, 2880x1600)
+rounds: 4 (1 substantive+layout, 2-4 layout iteration). Final round 4 verdict: CONFIRM.
+
+=====================================================================
+ROUND 1 — substance + layout. Verdict: CONFIRMED, with qualifications.
+=====================================================================
+
+## 1. LAYOUT — issues found
+
+The main plot content is readable, but there are several collisions and clipping problems:
+
+- **Subtitle is clipped at the right edge.** It ends visibly around `.../ground_station_`, so the source/reproduction note is incomplete.
+- **The bottom-right explanatory text is also clipped.** The first line ends around `8× a...`; the sentence continues beyond the image boundary.
+- **The 27 dBi marker callout is crowded at the bottom of panel A.**
+  `27 dBi`, `7.3°`, and `commercial €1,260+` sit on or below the plot’s lower boundary and collide visually with the x-axis region, especially the **20 dBi tick** and the x-axis title.
+- The **27 dBi callout is partly too close to the lower frame**, making it look almost clipped even though the characters remain mostly visible.
+- The **15 dBi callout** is somewhat close to the curve and marker, but is still legible.
+- The bar labels and values in panel B are generally well separated: the **€3.2, €5.8, €8.3, €15.6, €19.9, €40.4, and €43.9** labels do not materially overlap the bars or one another.
+- The panel headings and band annotations are not colliding, although the long title/subtitle treatment contributes to the horizontal clipping.
+
+## 2. SUBSTANCE — **CONFIRM, with qualifications**
+
+The visible logic is broadly self-consistent with the proposed balanced station:
+
+- A roughly **15 dBi 2.4 GHz antenna** is shown at about **29° HPBW**, which plausibly supports a light or open-loop positioner rather than a precision closed-loop tracker.
+- The **27 dBi case**, at roughly **7.3°**, is correctly presented as requiring substantially better pointing and as being associated with an expensive commercial tracker.
+- The cost comparison supports using a **1 W PA plus a moderate-gain 2.4 GHz Yagi** rather than buying much more antenna gain. The chart’s PA and antenna figures are directionally consistent with that trade.
+- On receive, the figure correctly emphasizes that an LNA is not equivalent to adding antenna gain: the LNA is after the antenna, and its useful system improvement is limited by noise figure, cable loss, receiver noise, and cascade behavior. The stated **~6.4 dB effective improvement** is therefore much more credible than treating a nominal 20 dB LNA as 20 dB of link improvement.
+- The proposed **14.8 dBi 433 MHz receive Yagi** is also consistent with the note that antenna gain is preferable below roughly 15 dBi, assuming the stated prices and system-noise assumptions.
+- The approximate **EUR1032** balanced-station recommendation is therefore supported in principle: spend on useful receive antenna gain, use moderate 2.4 GHz transmit gain with PA power, and avoid the cost and pointing burden of a high-gain dish or precision tracker.
+
+However, a few claims are stronger than the figure alone establishes:
+
+- The **2.4 GHz beamwidth curve cannot directly determine the pointing requirement of the 433 MHz Yagi**. Beamwidth depends on physical aperture and antenna design, not gain alone; the two bands should not be conflated.
+- “**Open-loop**” is plausible for 15 dBi/29°, but not guaranteed solely from HPBW. Balloon angular rate, wind-induced motion, positioner accuracy, link margin, and required availability also matter.
+- “**A PA can replace antenna gain**” is valid in an EIRP/link-budget sense, but only within regulatory EIRP limits, PA linearity and thermal limits, feed-loss assumptions, and the actual transmitter operating mode.
+- The LNA conclusion is properly qualified by the cascade cap, but the exact **6.4 dB** is system-specific rather than universal.
+
+Thus the recommendation is **CONFIRMED as a reasonable balanced design**, while the tracker-class and cost-per-dB conclusions should be presented as approximate, assumption-dependent comparisons rather than universal rules.
+
+=====================================================================
+ROUND 2 — layout after log-axis + repositions. Verdict: REFUTE (layout only).
+=====================================================================
+1. **Text clipping/overlap:** No text is clipped at the canvas edges. However, the upper-left **“no tracker (omni)”** annotation still crowds/overlaps the **“6 dBi / 81.7°”** callout.
+2. **Log HPBW axis:** Yes, it is readable; the logarithmic tick spacing and labels are clear.
+3. **27 dBi callout:** Yes, it now sits clearly above the marker, away from both the axis/frame and the curve.
+**REFUTE**
+
+=====================================================================
+ROUND 3 — layout after moving the 6 dBi callout. Verdict: REFUTE (layout only).
+=====================================================================
+REFUTE
+The cyan curve still runs behind/through the “no tracker (omni)” annotation, creating a remaining text–element overlap.
+
+=====================================================================
+ROUND 4 — final layout check. Verdict: CONFIRM.
+=====================================================================
+visual_review: APPROVED
+visual_reviewer_model: gpt-6-astra
+visual_artifact: /home/c03rad0r/worktrees/bf-amps/docs/analysis/assets/ground-station-amp-vs-ant-figure.png
+CONFIRM
+
+=====================================================================
+NET
+=====================================================================
+Substance: CONFIRMED (round 1), with the qualification that the beamwidth/
+tracker-class and €/dB conclusions are approximate, assumption-dependent
+comparisons — which the analysis already states (η = 0.55, T_ant and the
+receiver NF named as explicit ASSUMED inputs, and the €/dB figures shown as
+"effective" rather than universal).
+Layout: four rounds; the three defects from round 1 (clipped subtitle, clipped
+panel-B footnote, crowded 27 dBi callout) and the two found in rounds 2-3 (band
+label vs 6 dBi callout, and the curve crossing the top band label) were fixed;
+round 4 returned CONFIRM.
+A visual consult is not a code review and does not satisfy the ADR-010 review gate.

@@ -115,6 +115,24 @@ TAB_PADS = (('1', 'SOLAR_P', 9.8), ('2', 'GND', 11.6),
             ('3', 'RF_FEED', 13.4), ('4', 'SOLAR_N', 15.2))
 TRACK_W = 0.4
 
+# ------------------------------------------------------------------ 3D models (committed VRML)
+# Every placed reference is given a model so that a 3D render shows the parts.  The models are
+# plain-text VRML committed in this repo (generator: scripts/gen_3d_models_wing.py) because
+# `kicad-packages3d` -- which the hub board's ${KICAD9_3DMODEL_DIR}/...step references need -- is
+# NOT installed on this host (4.77 GB; the disk has ~3 GB free), so those references resolve to
+# nothing.  Paths are relative to ${KIPRJMOD} (this project directory, i.e. the dir holding
+# wing_board_v9.kicad_pro, which is .../tracker/hardware/wing_board/).  Adding a model changes no
+# net, no pad and no placement: it is render metadata only.
+_MODELS = '${KIPRJMOD}/../3dmodels'
+MODEL_CELL_SMALL = f'{_MODELS}/cells/solar_cell_small_52.07x19.65x0.21.wrl'
+MODEL_TAB = f'{_MODELS}/wing/wing_v9_tab_4pin_lands.wrl'
+MODEL_FIDUCIAL = f'{_MODELS}/wing/wing_v9_fiducial_1mm_dot.wrl'
+MODEL_FERRITE = f'{_MODELS}/wing/ferrite_bead_0402_dnp.wrl'
+MODEL_RF = f'{_MODELS}/wing/wing_v9_rf_provision_pad_2x2.wrl'
+# H1/H2/H3 (2.2 mm NPTH) carry NO model, deliberately: kicad-cli renders the NC drill bore itself,
+# and a model occupying that volume plugs it (measured 2026-10-08 -- the hole sites go from 20/25
+# to 0/25 transparent pixels in a 5x5 window).  See docs/3d-model-coverage-wing.md.
+
 NETS = ['SOLAR_P', 'SOLAR_N', 'SOLAR_MID1', 'SOLAR_MID2', 'GND', 'RF_FEED']
 NET_IDX = {n: i + 1 for i, n in enumerate(NETS)}
 
@@ -221,7 +239,16 @@ def pad(num, kind, shape, x, y, w, h, layers, net=None, drill=None, rot=None):
     return ''.join(s)
 
 
-def footprint(libname, ref, value, x, y, body, attr='smd'):
+def model_block(path: str) -> str:
+    """A KiCad 9 footprint (model ...) child, identity transform (the model is authored in the
+    footprint frame -- see scripts/gen_3d_models_wing.py for the measured frame/unit convention)."""
+    return (f'    (model "{path}"\n'
+            '      (offset\n        (xyz 0 0 0)\n      )\n'
+            '      (scale\n        (xyz 1 1 1)\n      )\n'
+            '      (rotate\n        (xyz 0 0 0)\n      )\n    )')
+
+
+def footprint(libname, ref, value, x, y, body, attr='smd', model=None):
     head = [f'  (footprint "{libname}"',
             '    (layer "F.Cu")',
             f'    (uuid "{u()}")',
@@ -231,6 +258,8 @@ def footprint(libname, ref, value, x, y, body, attr='smd'):
             f'    (attr {attr})' if attr else None]
     lines = [h for h in head if h]
     lines.append(body)
+    if model:
+        lines.append(model_block(model))
     lines.append('  )')
     return '\n'.join(lines)
 
@@ -249,7 +278,7 @@ def cell_footprint(ref, cx, net_left, net_right):
     b.append(pad('2', 'smd', 'rect', 28.0, 0.0, LAND_W, LAND_H,
                  ('F.Cu', 'F.Paste', 'F.Mask'), net_right))
     return footprint('WingV9:SolarCell_52x19mm', ref, 'SolarCell_52x19mm_0.5V',
-                     cx, 12.5, '\n'.join(b))
+                     cx, 12.5, '\n'.join(b), model=MODEL_CELL_SMALL)
 
 
 def tab_footprint():
@@ -266,7 +295,7 @@ def tab_footprint():
              f' (stroke (width 0.1) (type solid)) (fill none) (layer "F.SilkS") (uuid "{u()}"))')
     # footprint origin at (0,0): pads carry the absolute tab x as their local offset
     return footprint('WingV9:WingTab_v9_4pin', 'J1', 'WingTab_v9_4pin',
-                     0.0, 0.0, '\n'.join(b))
+                     0.0, 0.0, '\n'.join(b), model=MODEL_TAB)
 
 
 def hole_footprint(ref, x, y):
@@ -279,20 +308,20 @@ def hole_footprint(ref, x, y):
 def fiducial_footprint(ref, x, y):
     b = pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask'))
     return footprint('WingV9:Fiducial_1mm_Mask2mm', ref, 'Fiducial_1mm_Mask2mm',
-                     x, y, b)
+                     x, y, b, model=MODEL_FIDUCIAL)
 
 
 def ferrite_footprint(x, y):
     b = [pad('1', 'smd', 'rect', -0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask')),
          pad('2', 'smd', 'rect', 0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask'))]
     return footprint('WingV9:FerriteBead_0402_V2provision', 'FB1',
-                     'FerriteBead_0402_DNP_V2only', x, y, '\n'.join(b))
+                     'FerriteBead_0402_DNP_V2only', x, y, '\n'.join(b), model=MODEL_FERRITE)
 
 
 def rf_provision_footprint(x, y):
     b = pad('1', 'smd', 'rect', 0.0, 0.0, 2.0, 2.0, ('F.Cu', 'F.Mask'))
     return footprint('WingV9:RF_ProvisionPad_v2only', 'RF1', 'RF_ProvisionPad_v2only',
-                     x, y, b)
+                     x, y, b, model=MODEL_RF)
 
 
 # ------------------------------------------------------------------ main
