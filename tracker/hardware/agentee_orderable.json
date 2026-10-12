@@ -52,7 +52,7 @@
       "at": "vias 0.3mm",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "3 holes closer than 0.25mm to another net's copper: via at [41.645, 26.295] (+3V3) is 0.1643mm from track 122 (/SCAP_MID); via at [38.583, 30.308] (/ANT1_433_TX) is 0.195mm from track 118 (/SCAP_MID); via at [58.950, 4.220] (+3V3) is 0.2438mm from track 164 (/SX1280_RESET_N)",
+      "message": "3 holes closer than 0.25mm to another net's copper: via at [41.645, 26.295] (+3V3) is 0.1643mm from track 122 (/SCAP_MID); via at [38.583, 30.308] (/ANT1_433_TX) is 0.195mm from track 119 (/SCAP_MID); via at [58.950, 4.220] (+3V3) is 0.2438mm from track 164 (/SX1280_RESET_N)",
       "rule": "hole-to-copper",
       "severity": "error"
     },
@@ -68,7 +68,7 @@
       "at": "clearance",
       "file": "./board.pcb.toml",
       "item": "board",
-      "message": "track 118 (/SCAP_MID) is 0.045mm from via at [38.583, 30.308] (/ANT1_433_TX), needs 0.15mm",
+      "message": "track 119 (/SCAP_MID) is 0.045mm from via at [38.583, 30.308] (/ANT1_433_TX), needs 0.15mm",
       "rule": "clearance",
       "severity": "error"
     },
@@ -297,6 +297,14 @@
       "severity": "info"
     },
     {
+      "at": "part U2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "courtyard on F.CrtYd covers the mounting hole TH1",
+      "rule": "courtyard-hole",
+      "severity": "error"
+    },
+    {
       "at": "silk R_BAL2",
       "file": "./board.pcb.toml",
       "item": "board",
@@ -353,10 +361,26 @@
       "severity": "error"
     },
     {
+      "at": "silk FID1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`FID1` sits on pads U6.5, U6.6, FID1.1, it will be clipped, prints over 2 vias, crosses the silk outline of U6, U2, hides under the body of U6, U2",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
       "at": "silk C4",
       "file": "./board.pcb.toml",
       "item": "board",
       "message": "`C4` crowds `C_HF` of C_HF",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk TH1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`TH1` sits on pads TH1., it will be clipped, hides under the body of U2",
       "rule": "silk-text",
       "severity": "error"
     },
@@ -550,22 +574,6 @@
       "item": "board",
       "message": "its courtyard reaches past the board edge; keep bodies 1mm in, or set `overhang = true` on a connector footprint meant to hang over the edge",
       "rule": "part-body-to-edge",
-      "severity": "info"
-    },
-    {
-      "at": "parts",
-      "file": "./board.pcb.toml",
-      "item": "board",
-      "message": "no fiducials: JLCPCB puts them on the rails of an assembly panel, place three on the board for a line that assembles it bare",
-      "rule": "fiducials",
-      "severity": "info"
-    },
-    {
-      "at": "parts",
-      "file": "./board.pcb.toml",
-      "item": "board",
-      "message": "no non-plated tooling holes of 1.5 mm or more: JLCPCB wants three for high precision routing, otherwise the panel rails carry them",
-      "rule": "tooling-holes",
       "severity": "info"
     },
     {
@@ -769,10 +777,10 @@
     "layout": true,
     "match_groups": false,
     "mlcc": true,
-    "npth": false,
+    "npth": true,
     "outer_oz": 1.0,
     "pairs": false,
-    "parts": 39,
+    "parts": 44,
     "slots": false,
     "small_chips": true,
     "spark_gaps": false,
