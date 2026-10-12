@@ -436,3 +436,38 @@ is the node that matters once A2 is fitted.
 Other workers are editing `docs/adr/006-*.md`, `036-*.md` and `037-*.md` concurrently to add
 supersede/relationship pointers. This ADR does **not** edit those files. The manager will
 need to resolve any duplicate or contradictory relationship lines at merge time.
+
+## Correction (2026-10-07, appended by ADR-057) — the tolerance analysis here is LoRa-based; FLRC governs
+
+**Appended, not a rewrite.** Nothing above is changed or deleted; the history stays legible.
+This section records only that one half of this ADR rests on the wrong modulation.
+
+This ADR analyses frequency drift against a **LoRa** carrier-offset budget: §D4 (Third-choice
+mitigation: wider bandwidth / channel plan) and §D5 (THE DECIDING NUMBER) both make "LoRa
+carrier-offset tolerance for the chosen BW/SF" the gate, and §D3/§D5's pass criteria are
+stated against a LoRa BW/SF budget.
+
+**The vehicle flies FLRC, not LoRa, and FLRC's frequency-offset tolerance is materially
+different.** FLRC's tolerance is **band-independent in absolute Hz** — about **±64–76 kHz at
+650 kbps** (Semtech AN1200.101 §5.2 Tables 3/4/5, pp. 8–9, verified against the in-tree PDF)
+— which is **≈±148–175 ppm at 433 MHz but only ≈±26–32 ppm at 2.4 GHz**. LoRa's tolerance,
+by contrast, is proportional to bandwidth (±25 %BW legacy / ±33 %BW Gen4 extended; ±100 ppm
+at SF12; LR2021 datasheet Rev. 2.2 Table 3-17).
+
+**Consequences for this ADR:**
+
+- **§D5's deciding number is unchanged in form but changes in value.** The tolerance half of
+  `Δf_max` must be the **FLRC** budget for the chosen FLRC rate, not a LoRa BW/SF figure —
+  i.e. **±26–32 ppm at 2.4 GHz at 650 kbps**. A LoRa budget is the wrong denominator.
+- **§D4's "wider bandwidth buys tolerance" fallback does not transfer to FLRC.** FLRC
+  tolerance scales with the **data rate**, not the bandwidth, and the ppm budget *shrinks* as
+  the carrier rises. The drift-robust FLRC setting is the **fast** one.
+- **The heater rejection (§D1), TCXO-first (§D2), the Addendum-A `GetTemp`/NTC fix (§A2), the
+  temperature-triggered recalibration (§A4) and the MS5611 conflict (§D6) are unaffected and
+  are retained in full.** Only the tolerance half is corrected.
+
+**See ADR-057** (`docs/adr/057-flrc-drift-strategy.md`, Status Proposed) for the FLRC
+strategy: the band-independence fact, the per-band verdict (the 433 MHz downlink needs no
+mitigation; the 2.4 GHz uplink with a bare crystal is outside budget), the corrected
+degradation ladder (never reduce the FLRC rate), the corrected Tx/Rx budget understanding,
+and the ranked mitigations.

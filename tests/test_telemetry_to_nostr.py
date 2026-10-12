@@ -1,8 +1,28 @@
 import json
 
+import pytest
+
 from conftest import load_telemetry_to_nostr
 
 tn = load_telemetry_to_nostr()
+
+# sign_event()/derive_pubkey() delegate to coincurve (libsecp256k1) for
+# Schnorr signing and pubkey derivation.  coincurve is an optional runtime
+# dependency of the shipped bridge (imported lazily inside those functions),
+# and is not installed in CI (see .github/workflows/test.yml, which installs
+# only pytest + pyserial).  Tests that need it skip with a stated reason
+# rather than erroring; everything else in this module is pure hashlib/json.
+try:
+    import coincurve  # noqa: F401
+    _HAS_COINCURVE = True
+except ImportError:
+    _HAS_COINCURVE = False
+
+needs_coincurve = pytest.mark.skipif(
+    not _HAS_COINCURVE,
+    reason="coincurve (libsecp256k1) not installed — Schnorr signing / pubkey "
+           "derivation unavailable (pip install coincurve)",
+)
 
 
 class TestEventSerialization:
@@ -152,6 +172,7 @@ class TestCreateTelemetryEvent:
 
 
 class TestSignEvent:
+    @needs_coincurve
     def test_sign_adds_sig_field(self):
         evt = {
             "pubkey": "ab" * 32,
@@ -165,12 +186,14 @@ class TestSignEvent:
         assert len(signed["sig"]) == 128
         assert signed["sig"] != "placeholder_signature_needs_schnorr_impl"
 
+    @needs_coincurve
     def test_derive_pubkey_deterministic(self):
         pk1 = tn.derive_pubkey("01" * 32)
         pk2 = tn.derive_pubkey("01" * 32)
         assert pk1 == pk2
         assert len(pk1) == 64
 
+    @needs_coincurve
     def test_different_keys_different_pubkeys(self):
         pk1 = tn.derive_pubkey("01" * 32)
         pk2 = tn.derive_pubkey("02" * 32)

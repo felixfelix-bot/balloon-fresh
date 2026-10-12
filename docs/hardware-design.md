@@ -200,3 +200,26 @@ Ergebnis:
 | Gewicht | Kein Limit | <15g |
 | PCB | 0.8mm FR4 | 0.6mm FR4 |
 | Boost Converter | Ja (78x39mm Zellen) | Nein (direkt 6V Series) |
+
+---
+
+## Correction (2026-10-08, `fix/record-contradictions`) — this document is v1-era and its hub/wing figures are STALE
+
+This is a v1/v2-era concept document (committed 2026-05-20). Its figures are
+superseded for v9 and are kept only for provenance. The two that are load-bearing
+enough to correct explicitly:
+
+- **Hub outline.** The `22 x 22 mm` figures (lines 13 and 21) are the ONLY source
+  of that number in the repository, and no generated artifact has ever encoded it
+  (see `docs/analysis/hub-outline-authority.md`). The current v9 hub is
+  **103.0 × 103.0 mm** (`tracker/hardware/hub_board_v9.kicad_pcb`, S0 placement;
+  `tracker/hardware/placement-source-of-truth.json`).
+- **Wing plane orientation.** The §3D-Assembly "horizontal" (lines 141, 148) was
+  an **antenna**-coverage statement for a wing that carried a Yagi, in a
+  3-pin-tab / on-wing-radio architecture that v9 does not use. The wing plane is
+  **VERTICAL** (a blade): long axis radial in the hub plane, 25 mm width vertical
+  — `docs/adr/049-wing-architecture.md` §5 item 6.
+
+Both are registered in `docs/ssot/parameters.json` (`hub_outline`,
+`wing_plane_orientation`) and enforced by `scripts/param_ssot_check.py`. Nothing
+else in this document is changed.
