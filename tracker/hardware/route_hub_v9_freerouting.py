@@ -79,58 +79,52 @@ def _pcbnew():
     return pcbnew
 
 
-def patch_dsn_rules(dsn_path: str, width_mm: float = 0.20, clearance_mm: float = 0.25) -> None:
-    """Rewrite the DSN's global and per-class routing rules to REAL fab values.
+def patch_dsn_rules(dsn_path: str, width_um: int = 200, clearance_um: int = 200) -> None:
+    """Rewrite the DSN's global and per-class routing rules to the BOARD's values.
 
-    WHY THIS IS NOT OPTIONAL -- measured 2026-10-12.
-    -------------------------------------------------
-    KiCad's Specctra exporter writes `(width 200)(clearance 200)` at
-    `(resolution um 10)`, i.e. a **0.02 mm** clearance, and it does so regardless of
-    the `BOARD_DESIGN_SETTINGS` values set in `export_dsn()` -- the DSN carries the
-    netclass rule, and this board defines no netclasses, so the exporter falls back
-    to that 0.02 mm pair. Routing at 0.02 mm produced a board that is electrically
-    connected (101 -> 20 unconnected) but physically illegal:
+    DSN UNIT SCALE -- the 2026-10-12 calibration, measured against the .kicad_pcb:
+    --------------------------------------------------------------------------------------------
+    `(resolution um 10)` scales ONLY coordinates (1 unit = 0.1 um). The RULE
+    scalars -- (width N) and (clearance N) -- are RAW MICRONS and do NOT follow
+    the resolution line. Proven by footprint calibration: C_CAP1 sits at x=8.7925
+    mm in the .kicad_pcb and 8792.502 DSN units (0.1 um/unit) in placement, while
+    the rule block carries `(clearance 200)` alongside a 0.2 mm KiCad netclass
+    (kicad-cli DRC: "clearance 0.2000 mm"). So the exporter's 200 = 0.2 mm =
+    exactly the board's own rule. KiCad's DSN was RIGHT all along.
 
-        clearance         501 new violations   ("actual 0.0000 mm")
-        hole_clearance    202 new violations   ("actual 0.0000 mm")
-
-    Tracks pass straight through neighbouring pads. The repo's own
-    `tracker/hardware/freerouting_pipeline.py` hits exactly this and answers it with
-    a comment -- "use TIGHT clearance for FreeRouting routing (it needs this to find
-    paths). We'll fix DRC violations in post-processing" -- which is the expensive
-    anti-pattern: it converts a routing problem into a hand-repair problem. This
-    function instead states the real rules UP FRONT so the router is asked the
-    question we actually want answered.
-
-    WHY THIS IS NOT OPTIONAL -- the 2026-10-12 routing history, all measured:
+    The 2026-10-12 routing history, all measured:
     ---------------------------------------------------------------
-    run 1: exporter default 0.02 mm clearance -> routed 97->16 unrouted but
-           produced 753 DRC violations (501 clearance + 202 hole_clearance
-           "actual 0.0000 mm" -- tracks threaded straight through pads).
-    run 2: 0.25 mm, smd_smd exemption DROPPED -> stalled at pass 2
-           (96 unrouted, 134 violations). The castellated wing pads
-           (J_W1..J_W4) touch by design; KiCad's exporter writes
-           `(clearance 50 (type smd_smd))` to exempt them. Dropping it
-           made 134 unfixable violations and the router gave up.
-    run 3: 0.25 mm WITH the exemption kept -> SAME stall (score 251.43,
-           96 unrouted, 134 violations). Conclusion: at 0.25 mm the
-           board's EXISTING geometry -- GND stitching vias, plane pullbacks,
-           RF stubs, all laid out to the board's own 0.2 mm netclass
-           clearance (KiCad DRC reports "clearance 0.2000 mm") -- becomes
-           134 permanent violations the router is told to preserve but
-           can never satisfy. The router is boxed in by the board itself.
+    run 1: exporter default (width 200 / clearance 200 = 0.2 mm)
+           -> routed 97 -> 16 unrouted in 12 passes, 20 minutes.
+           The 753 DRC violations afterwards were NOT track-through-pad: they
+           were 501 "Track/Via vs Zone GND_PLANE" + 202 hole_clearance against
+           the board's STORED PRE-ROUTE ZONE FILL. After ZONE_FILLER refill the
+           same board shows 55 violations total (1 real clearance at 0.1992 mm,
+           38 copper_edge, 12 pre-existing castellated drill, 4 starved thermal).
+    runs 2-4: patch_dsn_rules scaled rules by 10000 (x500 of reality) because it
+           read `(resolution um 10)` as applying to rules -> demanded 2.0/2.5 mm
+           clearance. All three stalled identically at pass 2 (96/95 unrouted,
+           134/121 violations): at 10x the board's clearance, the board's own
+           geometry (castellated wing tabs, stitching vias, plane pullbacks)
+           becomes a wall of permanent violations the router is told to preserve
+           but can never satisfy.
 
-    The fix: demand EXACTLY the board's own clearance, 0.2 mm. The
-    existing geometry satisfies it by construction, so the router starts
-    from a legal board and only has to solve connectivity.
-
-    `(resolution um 10)`: 1 DSN unit = 0.1 um, so 1 mm = 10000 units.
+    WHY THIS FUNCTION STILL EXISTS
+    -------------------------------
+    KiCad v9's exporter writes the rule block from the netclass, and this board
+    defines no netclasses -- so the fallback pair is the ONLY thing standing
+    between us and a repeat of the run-1 "route at 0.02 mm" myth (which was
+    itself the unit misread above; 200 raw um = 0.2 mm, NOT 0.02). This function
+    now takes raw um directly, asserts the exporter's block is exactly the
+    expected (width 200)(clearance 200) pair, and rewrites it to the same values
+    in EXPLICIT form -- a no-op rewrite that fails loudly if the exporter ever
+    changes format, keeping the pipeline honest. The smd_smd exemption must
+    survive (castellated wing pads touch by design; dropping it stalled run 2).
     """
     with open(dsn_path) as fh:
         content = fh.read()
 
-    w = int(round(width_mm * 10000))
-    c = int(round(clearance_mm * 10000))
+    w, c = int(width_um), int(clearance_um)
 
     n_global = 0
     for old in (
@@ -153,12 +147,12 @@ def patch_dsn_rules(dsn_path: str, width_mm: float = 0.20, clearance_mm: float =
         )
     with open(dsn_path, "w") as fh:
         fh.write(content)
-    print(f"  DSN rules patched: width {width_mm} mm, clearance {clearance_mm} mm "
+    print(f"  DSN rules asserted: width {w} um, clearance {c} um "
           f"({n_global} global, {n_class} class block(s))")
 
 
 def export_dsn(board_path: str, dsn_path: str, *,
-               width_mm: float = 0.20, clearance_mm: float = 0.20) -> None:
+               width_um: int = 200, clearance_um: int = 200) -> None:
     pcbnew = _pcbnew()
     board = pcbnew.LoadBoard(board_path)
     drc = board.GetDesignSettings()
@@ -169,7 +163,7 @@ def export_dsn(board_path: str, dsn_path: str, *,
         raise SystemExit(f"ExportSpecctraDSN refused to write {dsn_path}")
     # The design settings above do NOT survive into the DSN's rule block -- see
     # patch_dsn_rules() for the measurement that proves it. Patch the file.
-    patch_dsn_rules(dsn_path, width_mm=width_mm, clearance_mm=clearance_mm)
+    patch_dsn_rules(dsn_path, width_um=width_um, clearance_um=clearance_um)
     print(f"  DSN written: {dsn_path} ({os.path.getsize(dsn_path)} bytes)")
 
 
