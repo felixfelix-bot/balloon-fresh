@@ -17,6 +17,9 @@ re-litigating design intent on every run.
 | W3 | `copper_edge_clearance` on slot Edge.Cuts geometry **and the socket pads** | 32 | J_W1–J_W4 | Same slots as W2. The Edge.Cuts rectangles/segments of the socket are, by definition, at the copper edge — **and so are the connector's own lands**: `Pad 2 [GND]` and `Pad 3 [/CUT_SENSE_W*]` of each J_W* sit inside the milled slot. They are the edge-card interface; they cannot be moved inward without moving the socket (ADR-046). Their unavoidable stub tracks and the F→B via are part of the same family. | Spec-mandated. |
 | W4 | `drill` on J_W* lands | 0 (fixed) | J_W1–J_W4 | Was 12 × 0.2 mm; fixed to SMD no-drill lands per spec §5. Fix landed in commit 5706536. | Resolved. |
 
+| W6 | `silk-text` on J_W1–J_W4 labels | 10 | J_W2, J_W4 | The socket part-number labels (`1`,`4`,`W`,`90`) sit on the socket body at the board edge — same W3 family. Labels are correct and readable; they persist into the fab drawing but the silk over the edge is clipped by the fab. Cosmetic. |
+| W7 | `silk-text` over-via / crowd (12 real, accepted) | 12 | U4, U6, D_BP1-3, D_CLAMP, R_NTC1, R_DIV1, R_F1 | Measured tradeoff 2026-10-12: these parts sit directly on via fields, so silk ink lands on via holes. Shrink to 0.80 mm cleared 10 of 28; the remaining 8 need the *parts* moved (a layout decision, not a label fix). We accept the cosmetic flag rather than HIDE the refdes — an unlabeled board cannot be debugged or reworked. Documented, attributed, never anonymous. |
+
 ## What is NOT waived
 
 - **The socket slot pokes 6 mm off-board — and that is INTENTIONAL.** Measured
