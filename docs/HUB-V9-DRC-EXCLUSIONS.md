@@ -19,18 +19,19 @@ re-litigating design intent on every run.
 
 ## What is NOT waived
 
-- **THE REAL OUTLINE DEFECT (measured 2026-10-12, replaces the old "13 items"
-  entry).** The board outline is 103 x 103 mm with **1 outline, 0 holes**. Each
-  J_W* footprint draws its own 0.95 x 6.0 mm Edge.Cuts slot. Two of the four are
-  **edge notches** (legitimate): J_W1 x 0..6, J_W3 x 97..103 — mouth on the board
-  edge, slot cut inward. The other two **poke 6 mm OUTSIDE the outline**: J_W2
-  spans y 103..109 and J_W4 spans y -6..0. A fab house reads that as a 6 mm edge
-  stab outside the board. Root cause = connector placement, not copper: **J_W2
-  and J_W4 are 6 mm too far out**. Fix by repositioning them inward 6 mm (then
-  all four slots become edge notches and the whole W3 family collapses). Landed
-  evidence + diagnosis: `tracker/hardware/cut_hub_v9_socket_slots.py`.
+- **The socket slot pokes 6 mm off-board — and that is INTENTIONAL.** Measured
+  2026-10-12: the board outline is 103 x 103 mm with 1 outline / 0 holes; each
+  J_W* footprint draws its own 0.95 x 6.0 mm Edge.Cuts slot. J_W1 (x 0..6) and
+  J_W3 (x 97..103) are edge notches; J_W2 (y 103..109) and J_W4 (y -6..0) span
+  the edge. **Attempting to pull J_W2/J_W4 inward was REFUTED by measurement:**
+  DRC went 40 -> 110 violations (11 shorts, 27 mask bridges, 3 courtyard
+  overlaps) because dragging the connector moved its pads onto foreign nets. The
+  socket position is fixed by the WING geometry (ADR-049) — the connector must sit
+  on the board edge to meet the inserted wing tab. So this family stays waived.
+  Reproducible: `tracker/hardware/fix_hub_v9_socket_slots.py` (dry-run by
+  default) + `cut_hub_v9_socket_slots.py` (exact slot bboxes).
 - Copper-to-board-edge on real tracks/vias: **RESOLVED** for the +3V3 family by
-  the In2.Cu plane (38 -> 4; see commit f02f36b). The remaining 4 are the J_W*
+  the In2.Cu plane (38 -> 4; commit f02f36b). The remaining 4 are the J_W*
   socket pads + their unavoidable stubs.
 - The 6 genuinely unrouted nets (DIO2, MISO, W1-W3_SOLAR_N, GND island):
   routing work, not waivers.
