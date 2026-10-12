@@ -1,0 +1,311 @@
+
+<!DOCTYPE html>
+<!-- SSO changes starts here -->
+
+
+<!-- SSO changes ends here -->
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+
+
+  
+  
+  
+
+
+<script nonce="k/BpRUbsO6s2bparkJV8iw==">
+
+    var $login = {
+        aliasUrl: 'https:\/\/support.semtech.com',
+        acsUrl: 'https:\/\/support.semtech.com\/SamlResponseServlet',
+        mspSamlRequestURL: 'https:\/\/support.semtech.com',
+        oauthAutoRedirect: false
+    }
+</script>
+
+
+    <script src='/scripts/jquery.min.js?15290'></script>
+        <!--jquery-readyfix.js file is for ready extension for 3.5.1 jquery next version update it should be removed-->
+    <script src='/scripts/jquery-readyfix.js?15290'></script>
+    <script src='/scripts/jquery.browser.min.js?15290'></script>
+    <script src='/scripts/jquery-migrate.min.js?15290'></script>
+    <script src='/scripts/sdp-design.js?15290'></script>
+    <script src='/scripts/select2.min.js?15290'></script>
+    <script src='/scripts/esapi.js?15290'></script>
+    <script src='/scripts/ESAPI_Standard_en_US.properties.js?15290'></script>
+    <script src='/scripts/Base.esapi.properties.js?15290'></script>
+    <script src='/scripts/security-encoder.min.js?15290'></script>
+    <script src='/scripts/client-encoder.js?15290'></script>
+    <script src='/zohocomponents/js/zohocomponents.min.js?15290'></script>
+    <link href="/style/select2_v4_0_13.css?15290" type="text/css" rel="stylesheet"/>
+    <link href="/style/select2.css?15290" type="text/css" rel="stylesheet"/>
+    <link href="/style/select2-bootstrap.css?15290" type="text/css" rel="stylesheet"/>
+    <link href="/style/select2-overwrite.css?15290" type="text/css" rel="stylesheet"/>
+    <link href="/style/loginstyle.css?15290" type="text/css" rel="stylesheet"/>
+    <link href="/zohocomponents/css/zohocomponents.min.css?15290" type="text/css" rel="stylesheet"/>
+    <script src='/scripts/Popup.js?15290'></script>
+    <script src="/scripts/MicrosoftTeams.min.js?15290"></script>
+
+    <script src="/scripts/common-helpers.js?15290"></script>
+    <script src="/scripts/i18n/i18n.js?15290"></script>
+
+    
+    <!-- <script src='/scripts/deeplink.js?15290'></script> -->
+    <script src='/scripts/deeplink.min.js?15290'></script> 
+
+    
+
+    <script src='/scripts/login-common.js?15290'></script>
+    <script src='/scripts/Login.js?15290'></script>
+
+  
+  <script src='/scripts/forge_1.3.1.min.js?15290'></script>
+  <script src='/scripts/sdp_security.js?15290'></script>
+  
+    <link rel="SHORTCUT ICON" href="/favicon.ico?15290"/>
+    <title>ManageEngine ServiceDesk Plus</title><!-- NO OUTPUTENCODING -->
+    <script nonce="k/BpRUbsO6s2bparkJV8iw==">
+      var loginError = "null";
+      var isMSP = false;
+      
+      var isSCP = false;
+      
+
+
+
+    </script>
+
+  </head>
+  <body>
+
+     <!-- content for customization starts-->
+
+     <div id='loginFormDiv'></div>
+
+   <div id="tempLoginFormDiv" class="hide">
+     
+
+
+<div id="login-section1" class="login-section loginform">
+    
+            <div id="message" class="tl ">
+                <div style="clear:both"></div>
+
+      <div class="errorMsg" id="errorMsg" hidden>
+        <div class="alert alert-dismissible alert-danger mb5" role="alert">
+          <span class="alert-close-icon cursor-hand" aria-hidden="true" title="Close"></span>
+          <span class="sr-only"></span>
+          <span aria-hidden="true" class="alert-failure sdp-glyph-status"></span>
+          <span class="msg"></span>
+        </div>
+      </div>
+
+<div class="successMsg" id="successMsg" hidden>
+        <div class="alert alert-dismissible alert-success icon" role="alert">
+          <span class="cspr icon-xs close2" aria-hidden="true" title="Close"></span>
+          <span class="sr-only"></span>
+		  <span aria-hidden="true"></span>
+          <span class="msg"></span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      
+          <div class="saml-link" id="saml-div">
+            <a href="/" id="load_saml" class="sign-saml">Log in with SAML Single Sign On</a>
+          </div>
+      
+
+      
+
+      
+
+
+
+</div>
+
+<script nonce="k/BpRUbsO6s2bparkJV8iw==">
+    function closeAlertMsg() {
+      var ele = document.getElementById("errorMsg");
+      if (ele != null) {
+        jQuery('#errorMsg').slideUp('slow');//NO I18N
+        usernameEle = document.getElementById("username");
+        usernameEle.focus();
+      }
+    }
+
+    function closeSuccessAlertMsg() {
+      var ele = document.getElementById("successMsg");
+      if (ele != null) {
+        jQuery('#successMsg').slideUp('slow');//NO I18N
+        var passwordEle = document.getElementById("password");
+
+        passwordEle.focus();
+      }
+    }
+
+    jQuery(document).ready(function() {
+        if(jQuery(".lockscreen").length > 0) {
+            jQuery('#loginFormTable').hide();
+            if (jQuery('#login-info').length > 0) {
+                jQuery('#login-info').hide();
+            }
+            setCopyrightYear();
+        }
+        jQuery('#loginSDPage').on("click", function(event) {
+            var returnValue = checkForNullInLogin(this, this.form, 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAquq8ryM2rRQdEZURd0jZ2Q1mV85DzGW67aeo58/0dGsGQcE2eLZHOEQ+Hs8R5ykMvMLAQQUJR3UGYT380okZ2eDUR3/8B2LuwkJjOPT4RF2pSfFM+QBUqjYak6urkSwDGJQ66aSUsBNGW60hc47OLY8+5SpxWbhw/51T4L2HW3bF5yG9rVtcZj2PrXse77VCcSEMv313+N6B9EsrARkG2fnKXVK9JILg04RErzq9+gs/dGUm5WUX+qDvobSjclhDuDvUBB58jA0/L/Y7kxE0+oX2G/6Fm7CFpSSStWQwfoVkD18IHgfighA3QFeNlW9ahLaeadBpkFyDwo+A9qOSUQIDAQAB');
+            if(!returnValue) {
+                event.preventDefault();
+            }
+        });
+        jQuery('.alert-close-icon').on("click", function(event) { closeAlertMsg(); });
+        jQuery('#successMsg').on("click", function(event) { closeSuccessAlertMsg(); });
+        jQuery('#login_using_creds').on("click", function(event) { focusUsername() });
+        jQuery('#username').on("keyup", function(event) { userNameKeyUp() });
+        jQuery('#username').on("change", function(event) { loadDomainListForADLogin(this) });
+        jQuery('#domain_select').on("change", function(event) { checkLocalAuth(this) });
+        jQuery('#domain_select_2').on("change", function(event) { checkLocalAuth(this) });
+        jQuery('#generate_otp').on("click", function(event) { generateOTP(); });
+        jQuery('#forgot_password').on("click", function(event) { event.preventDefault(); onForgotPasswordClick() });
+        jQuery('#load_saml').on("click", function(event) { event.preventDefault(); loadSaml() });
+        jQuery('#LoginAsClose').on("click", function(event) { hideLoginInfo(); });
+        jQuery('#Administrator').on("click", function(event) { LoginAs('admin') });
+        jQuery('#Guest').on("click", function(event) { LoginAs('guest') });
+    });
+</script>
+
+   </div>
+     <script nonce="k/BpRUbsO6s2bparkJV8iw==">
+
+     getCustomHtml('/custom/customimages/Custom_LoginLogo.gif','ManageEngine ServiceDesk Plus','https://www.manageengine.com/products/service-desk/index.html','15.2',''); //NO OUTPUTENCODING
+     </script>
+     <!-- content for customization ends-->
+
+     
+     
+       <script nonce="k/BpRUbsO6s2bparkJV8iw==">loadLogin('', '', '', 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAquq8ryM2rRQdEZURd0jZ2Q1mV85DzGW67aeo58/0dGsGQcE2eLZHOEQ+Hs8R5ykMvMLAQQUJR3UGYT380okZ2eDUR3/8B2LuwkJjOPT4RF2pSfFM+QBUqjYak6urkSwDGJQ66aSUsBNGW60hc47OLY8+5SpxWbhw/51T4L2HW3bF5yG9rVtcZj2PrXse77VCcSEMv313+N6B9EsrARkG2fnKXVK9JILg04RErzq9+gs/dGUm5WUX+qDvobSjclhDuDvUBB58jA0/L/Y7kxE0+oX2G/6Fm7CFpSSStWQwfoVkD18IHgfighA3QFeNlW9ahLaeadBpkFyDwo+A9qOSUQIDAQAB');</script>
+     
+  
+
+  
+    
+    
+    <script nonce="k/BpRUbsO6s2bparkJV8iw==">loadSaml();</script>
+  
+
+
+    
+    <script nonce="k/BpRUbsO6s2bparkJV8iw==">
+    jQuery(window).on('load', function() {
+        setSelect2();
+        setCopyrightYear();
+        setFocus();
+        changeLoginHtml();
+    });
+    function setSelect2()
+    {
+      if(jQuery('select[name="domain"]').length > 0)
+      {
+        jQuery('select[name="domain"]').select2();
+      }
+      if(jQuery('select[name="dname"]').length > 0)
+      {
+        jQuery('select[name="dname  "]').select2();
+      }
+      if(jQuery('select[name="authtype"]').length > 0)
+      {
+        jQuery('select[name="authtype"]').select2();
+      }
+    }
+
+    function setFocus() {
+       if(document.login !== null && !$('#loading-form').length > 0) {
+        document.login.j_username.focus();
+      }
+    }
+    //SD 44904 Method to set Copyright Year in Login page
+    function setCopyrightYear(){
+      var copyrightContent = document.getElementById("copyrightinfo"); //No I18N
+      if(copyrightContent!=null){
+        document.getElementById("copyrightinfo").textContent = copyrightContent.textContent.replace("{{copyright_year}}",(new Date).getFullYear()); //NO OUTPUTENCODING
+      }
+    }
+
+    var is_origin_included = 'false';
+    var origin = "";
+    if(is_origin_included == "true"){
+      origin = 'null';
+      window.top.postMessage( (typeof sdpToJSON != 'undefined') ? sdpToJSON({"type" : "is_sdp_logged_in", "message" : "false","showSamlLocalChoice":true}) : JSON.stringify({"type" : "is_sdp_logged_in", "message" : "false","showSamlLocalChoice":true}) , origin); //No I18N
+    } else if(window.location.href.includes("is_from_external_chat")) {     // No I18N
+      window.top.postMessage(JSON.stringify({"type": "disable_ext_chat", "message": "Check if the external website is added in security settings."}) ,'null');// No I18N
+    }
+
+    function changeLoginHtml(){
+      var is_from_external_chat = 'false';
+      if(is_from_external_chat == "true"){
+        jQuery("body").html('<div style="position: fixed;bottom: 0;right: 0;border: 1px solid #ccc;"><div style="position:absolute;top:0px;width: 100%;height: 40px;background-color: #F4F4F9;z-index: 99;box-shadow: 0px 2px 1px #ccc;text-align:right;"><a id="extChatMinimize" title="Minimize" style="margin-right:15px;display:inline-block;font-size: 30px;color: #777;text-decoration:none;cursor:pointer">-</a></div><div style="background-color: #ffffff; position: relative !important;text-align: center;padding: 40px 20px;"><a id="extChatLogin" style="font-weight:normal;text-decoration:none;color:#1a6ebd;margin-top:20px;margin-bottom:10px;font-size: 13px;font-family: Verdana;display: inline-block;cursor:pointer">Please log in to the application </a></div></div>');// No I18N
+        jQuery("body").find("#extChatLogin").off("click.extChat").on("click.extChat",function(){// No I18N
+            openLoginWindow();
+        });
+        jQuery("body").find("#extChatMinimize").off("click.extChat").on("click.extChat",function(){// No I18N
+            minimizeChatbar();
+        });
+        window.top.postMessage((typeof sdpToJSON != 'undefined') ? sdpToJSON({"type" : "setExternalIframe","height":"150px", "width":"250px"}) : JSON.stringify({"type" : "setExternalIframe","height":"150px", "width":"250px"}),origin);// No I18N
+      }
+    }
+
+  function openLoginWindow(){
+    var sdpLoginUrl = "/externalCommFrame.do?origin="+origin+"&is_from_external_chat_login=true"; //No I18N
+    window.open(sdpLoginUrl,'','width=800,height=800,toolbar=0,menubar=0,location=0,status=0,scrollbars=1,resizable=0,left=0,top=0');
+    return false;
+  }
+  function minimizeChatbar(){
+    window.top.postMessage((typeof sdpToJSON != 'undefined') ? sdpToJSON({"type" : "minimizeContent"}) : JSON.stringify({"type" : "minimizeContent"}),origin);// No I18N
+  }
+
+  /*SD-103525 issue fix. Here we utilized the BroadcastChannel to automatically refresh the page when the user switches to this tab, after logged in from another tab.*/
+    var sd_broadcast_channel = new BroadcastChannel('sd_broadcast_channel'); //No I18N
+
+    sd_broadcast_channel.onmessage = function( event )
+    {
+        if ( event.data === 'login' )
+        {
+            window.addEventListener('focus', function( event )
+            {
+            	window.location.reload();
+            });
+        }
+    };
+
+	/*SD-103525 issue fix. Here we utilized the BroadcastChannel to notify other tabs while logout.*/
+	sd_broadcast_channel.postMessage('logout'); //No I18N
+    </script>
+
+
+     <script nonce="k/BpRUbsO6s2bparkJV8iw==">
+         function checkServerStarted() {
+             var isServerStarted = isServiceStarted();
+             setTimeout(function() {
+                 if(isServerStarted) {
+                     if($('#loading-form').length > 0) {
+                         window.location.reload();
+                     }
+                     return;
+                 }
+                 else {
+                     checkServerStarted();
+                 }
+             }, 1000);
+         }
+         $(document).ready(function() {
+             checkServerStarted();
+         });
+     </script>
+  </body>
+</html>
+
+

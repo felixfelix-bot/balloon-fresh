@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="836" viewBox="0 0 1360 836" font-family="DejaVu Sans, Helvetica, sans-serif">
+<rect width="1360" height="836" fill="#0d1117"/>
+<text x="28" y="34" fill="#e6edf3" font-size="21" font-weight="bold">PCB routing status — balloon-fresh v9 (machine-censused, pcbnew + kicad-cli DRC)</text>
+<text x="28" y="58" fill="#8b949e" font-size="12">Layer bar height: segments ÷ 398 × 78px  ·  track length scale: 601mm full width  ·  hatched = filled copper zone  ·  verdict from DRC unconnected count</text>
+<text x="28" y="80" fill="#8b949e" font-size="12">routed = copper present &amp; DRC unconnected 0  ·  partial = copper present, DRC unconnected &gt; 0  ·  plane_only = zone(s), no tracks/vias  ·  placed_only = no copper at all</text>
+<line x1="28" y1="96" x2="1332" y2="96" stroke="#21262d" stroke-width="1"/>
+<g data-board="hub_board_v9" data-verdict="plane_only" data-unconnected="101" data-copper-layers="4">
+<text x="28" y="126" fill="#e6edf3" font-size="14" font-weight="bold">hub_board_v9</text>
+<rect x="28" y="145" width="92.0" height="20" rx="10" fill="#ffb224" fill-opacity="0.18" stroke="#ffb224" stroke-width="1"/>
+<text x="37" y="159" fill="#ffb224" font-size="12" font-weight="bold">plane_only</text>
+<text x="28" y="179" fill="#8b949e" font-size="10.5">4-layer · 39 footprints · 0 segments ·</text>
+<text x="28" y="193" fill="#8b949e" font-size="10.5">0 vias · 3 zones (3 filled) · DRC</text>
+<text x="28" y="207" fill="#8b949e" font-size="10.5">unconnected 101</text>
+<text x="300" y="126" fill="#8b949e" font-size="11" font-weight="bold">COPPER PER LAYER (segments)</text>
+<g data-layer="F.Cu" data-segments="0" data-zones="1" data-length-mm="0.00" data-enabled="true" data-on-stack="true">
+<rect x="300.0" y="168" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="300.0" y="168" width="66.5" height="78" fill="url(#hatch)" fill-opacity="0.9" data-role="zone-overlay"/>
+<text x="333.2" y="262" fill="#e6edf3" font-size="11" text-anchor="middle">F.Cu</text>
+<text x="333.2" y="162" fill="#e5484d" font-size="11" text-anchor="middle" font-weight="bold">0⬚</text>
+</g>
+<g data-layer="In1.Cu" data-segments="0" data-zones="1" data-length-mm="0.00" data-enabled="true" data-on-stack="true">
+<rect x="382.5" y="168" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="382.5" y="168" width="66.5" height="78" fill="url(#hatch)" fill-opacity="0.9" data-role="zone-overlay"/>
+<text x="415.8" y="262" fill="#e6edf3" font-size="11" text-anchor="middle">In1.Cu</text>
+<text x="415.8" y="162" fill="#12a594" font-size="11" text-anchor="middle" font-weight="bold">0⬚</text>
+</g>
+<g data-layer="In2.Cu" data-segments="0" data-zones="0" data-length-mm="0.00" data-enabled="false" data-on-stack="true">
+<rect x="465.0" y="168" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<text x="498.2" y="262" fill="#e6edf3" font-size="11" text-anchor="middle">In2.Cu</text>
+<text x="498.2" y="162" fill="#ffb224" font-size="11" text-anchor="middle" font-weight="bold">0</text>
+</g>
+<g data-layer="B.Cu" data-segments="0" data-zones="1" data-length-mm="0.00" data-enabled="true" data-on-stack="true">
+<rect x="547.5" y="168" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="547.5" y="168" width="66.5" height="78" fill="url(#hatch)" fill-opacity="0.9" data-role="zone-overlay"/>
+<text x="580.8" y="262" fill="#e6edf3" font-size="11" text-anchor="middle">B.Cu</text>
+<text x="580.8" y="162" fill="#3e63dd" font-size="11" text-anchor="middle" font-weight="bold">0⬚</text>
+</g>
+<text x="690" y="126" fill="#8b949e" font-size="11" font-weight="bold">PADS PER SIDE</text>
+<g data-pad-side="front" data-value="210">
+<rect x="690.00" y="148" width="182.23" height="26" fill="#e5484d" data-role="pad-bar"/>
+</g>
+<g data-pad-side="back" data-value="16">
+<rect x="872.23" y="148" width="13.88" height="26" fill="#3e63dd" data-role="pad-bar"/>
+</g>
+<g data-pad-side="through" data-value="16">
+<rect x="886.12" y="148" width="13.88" height="26" fill="#8b8d98" data-role="pad-bar"/>
+</g>
+<text x="781.1" y="166" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">210</text>
+<text x="879.2" y="166" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">16</text>
+<text x="893.1" y="166" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">16</text>
+<rect x="690" y="192" width="10" height="10" fill="#e5484d"/>
+<text x="704" y="201" fill="#8b949e" font-size="11">front 210</text>
+<rect x="764" y="192" width="10" height="10" fill="#3e63dd"/>
+<text x="778" y="201" fill="#8b949e" font-size="11">back 16</text>
+<rect x="838" y="192" width="10" height="10" fill="#8b8d98"/>
+<text x="852" y="201" fill="#8b949e" font-size="11">through 16</text>
+</g>
+<g data-board="wing_board_v9" data-verdict="routed" data-unconnected="0" data-copper-layers="2">
+<text x="28" y="302" fill="#e6edf3" font-size="14" font-weight="bold">wing_board_v9</text>
+<rect x="28" y="321" width="62.400000000000006" height="20" rx="10" fill="#3fb950" fill-opacity="0.18" stroke="#3fb950" stroke-width="1"/>
+<text x="37" y="335" fill="#3fb950" font-size="12" font-weight="bold">routed</text>
+<text x="28" y="355" fill="#8b949e" font-size="10.5">2-layer · 15 footprints · 20 segments</text>
+<text x="28" y="369" fill="#8b949e" font-size="10.5">· 8 vias · 0 zones (0 filled) · DRC</text>
+<text x="28" y="383" fill="#8b949e" font-size="10.5">unconnected 0</text>
+<text x="300" y="302" fill="#8b949e" font-size="11" font-weight="bold">COPPER PER LAYER (segments)</text>
+<g data-layer="F.Cu" data-segments="10" data-zones="0" data-length-mm="218.00" data-enabled="true" data-on-stack="true">
+<rect x="300.0" y="344" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="300.0" y="420.04020100502515" width="66.5" height="1.96" fill="#e5484d" fill-opacity="1.0" data-role="segments-bar"/>
+<text x="333.2" y="438" fill="#e6edf3" font-size="11" text-anchor="middle">F.Cu</text>
+<text x="333.2" y="338" fill="#e5484d" font-size="11" text-anchor="middle" font-weight="bold">10</text>
+</g>
+<g data-layer="In1.Cu" data-segments="0" data-zones="0" data-length-mm="0.00" data-enabled="false" data-on-stack="false">
+<rect x="382.5" y="344" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<text x="415.8" y="438" fill="#e6edf3" font-size="11" text-anchor="middle">In1.Cu</text>
+<text x="415.8" y="338" fill="#30363d" font-size="11" text-anchor="middle" font-weight="bold">0</text>
+</g>
+<g data-layer="In2.Cu" data-segments="0" data-zones="0" data-length-mm="0.00" data-enabled="false" data-on-stack="false">
+<rect x="465.0" y="344" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<text x="498.2" y="438" fill="#e6edf3" font-size="11" text-anchor="middle">In2.Cu</text>
+<text x="498.2" y="338" fill="#30363d" font-size="11" text-anchor="middle" font-weight="bold">0</text>
+</g>
+<g data-layer="B.Cu" data-segments="10" data-zones="0" data-length-mm="218.00" data-enabled="true" data-on-stack="true">
+<rect x="547.5" y="344" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="547.5" y="420.04020100502515" width="66.5" height="1.96" fill="#3e63dd" fill-opacity="1.0" data-role="segments-bar"/>
+<text x="580.8" y="438" fill="#e6edf3" font-size="11" text-anchor="middle">B.Cu</text>
+<text x="580.8" y="338" fill="#3e63dd" font-size="11" text-anchor="middle" font-weight="bold">10</text>
+</g>
+<text x="690" y="302" fill="#8b949e" font-size="11" font-weight="bold">PADS PER SIDE</text>
+<g data-pad-side="front" data-value="16">
+<rect x="690.00" y="324" width="152.73" height="26" fill="#e5484d" data-role="pad-bar"/>
+</g>
+<g data-pad-side="back" data-value="6">
+<rect x="842.73" y="324" width="57.27" height="26" fill="#3e63dd" data-role="pad-bar"/>
+</g>
+<g data-pad-side="through" data-value="0">
+</g>
+<text x="766.4" y="342" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">16</text>
+<text x="871.4" y="342" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">6</text>
+<rect x="690" y="368" width="10" height="10" fill="#e5484d"/>
+<text x="704" y="377" fill="#8b949e" font-size="11">front 16</text>
+<rect x="764" y="368" width="10" height="10" fill="#3e63dd"/>
+<text x="778" y="377" fill="#8b949e" font-size="11">back 6</text>
+<rect x="838" y="368" width="10" height="10" fill="#8b8d98"/>
+<text x="852" y="377" fill="#8b949e" font-size="11">through 0</text>
+</g>
+<g data-board="auto-bootsel-interposer" data-verdict="routed" data-unconnected="0" data-copper-layers="2">
+<text x="28" y="478" fill="#e6edf3" font-size="14" font-weight="bold">auto-bootsel-interposer</text>
+<rect x="28" y="497" width="62.400000000000006" height="20" rx="10" fill="#3fb950" fill-opacity="0.18" stroke="#3fb950" stroke-width="1"/>
+<text x="37" y="511" fill="#3fb950" font-size="12" font-weight="bold">routed</text>
+<text x="28" y="531" fill="#8b949e" font-size="10.5">2-layer · 14 footprints · 9 segments ·</text>
+<text x="28" y="545" fill="#8b949e" font-size="10.5">0 vias · 1 zones (1 filled) · DRC</text>
+<text x="28" y="559" fill="#8b949e" font-size="10.5">unconnected 0</text>
+<text x="300" y="478" fill="#8b949e" font-size="11" font-weight="bold">COPPER PER LAYER (segments)</text>
+<g data-layer="F.Cu" data-segments="9" data-zones="0" data-length-mm="36.92" data-enabled="true" data-on-stack="true">
+<rect x="300.0" y="520" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="300.0" y="596.2361809045226" width="66.5" height="1.76" fill="#e5484d" fill-opacity="1.0" data-role="segments-bar"/>
+<text x="333.2" y="614" fill="#e6edf3" font-size="11" text-anchor="middle">F.Cu</text>
+<text x="333.2" y="514" fill="#e5484d" font-size="11" text-anchor="middle" font-weight="bold">9</text>
+</g>
+<g data-layer="In1.Cu" data-segments="0" data-zones="0" data-length-mm="0.00" data-enabled="false" data-on-stack="false">
+<rect x="382.5" y="520" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<text x="415.8" y="614" fill="#e6edf3" font-size="11" text-anchor="middle">In1.Cu</text>
+<text x="415.8" y="514" fill="#30363d" font-size="11" text-anchor="middle" font-weight="bold">0</text>
+</g>
+<g data-layer="In2.Cu" data-segments="0" data-zones="0" data-length-mm="0.00" data-enabled="false" data-on-stack="false">
+<rect x="465.0" y="520" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<text x="498.2" y="614" fill="#e6edf3" font-size="11" text-anchor="middle">In2.Cu</text>
+<text x="498.2" y="514" fill="#30363d" font-size="11" text-anchor="middle" font-weight="bold">0</text>
+</g>
+<g data-layer="B.Cu" data-segments="0" data-zones="1" data-length-mm="0.00" data-enabled="true" data-on-stack="true">
+<rect x="547.5" y="520" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="547.5" y="520" width="66.5" height="78" fill="url(#hatch)" fill-opacity="0.9" data-role="zone-overlay"/>
+<text x="580.8" y="614" fill="#e6edf3" font-size="11" text-anchor="middle">B.Cu</text>
+<text x="580.8" y="514" fill="#3e63dd" font-size="11" text-anchor="middle" font-weight="bold">0⬚</text>
+</g>
+<text x="690" y="478" fill="#8b949e" font-size="11" font-weight="bold">PADS PER SIDE</text>
+<g data-pad-side="front" data-value="8">
+<rect x="690.00" y="500" width="120.00" height="26" fill="#e5484d" data-role="pad-bar"/>
+</g>
+<g data-pad-side="back" data-value="0">
+</g>
+<g data-pad-side="through" data-value="6">
+<rect x="810.00" y="500" width="90.00" height="26" fill="#8b8d98" data-role="pad-bar"/>
+</g>
+<text x="750.0" y="518" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">8</text>
+<text x="855.0" y="518" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">6</text>
+<rect x="690" y="544" width="10" height="10" fill="#e5484d"/>
+<text x="704" y="553" fill="#8b949e" font-size="11">front 8</text>
+<rect x="764" y="544" width="10" height="10" fill="#3e63dd"/>
+<text x="778" y="553" fill="#8b949e" font-size="11">back 0</text>
+<rect x="838" y="544" width="10" height="10" fill="#8b8d98"/>
+<text x="852" y="553" fill="#8b949e" font-size="11">through 6</text>
+</g>
+<g data-board="v8g_krt_routed" data-verdict="routed" data-unconnected="0" data-copper-layers="4">
+<text x="28" y="654" fill="#e6edf3" font-size="14" font-weight="bold">v8g_krt_routed</text>
+<rect x="28" y="673" width="62.400000000000006" height="20" rx="10" fill="#3fb950" fill-opacity="0.18" stroke="#3fb950" stroke-width="1"/>
+<text x="37" y="687" fill="#3fb950" font-size="12" font-weight="bold">routed</text>
+<text x="28" y="707" fill="#8b949e" font-size="10.5">4-layer · 20 footprints · 398 segments</text>
+<text x="28" y="721" fill="#8b949e" font-size="10.5">· 55 vias · 2 zones (2 filled) · DRC</text>
+<text x="28" y="735" fill="#8b949e" font-size="10.5">unconnected 0</text>
+<text x="300" y="654" fill="#8b949e" font-size="11" font-weight="bold">COPPER PER LAYER (segments)</text>
+<g data-layer="F.Cu" data-segments="302" data-zones="0" data-length-mm="600.99" data-enabled="true" data-on-stack="true">
+<rect x="300.0" y="696" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="300.0" y="714.8140703517588" width="66.5" height="59.19" fill="#e5484d" fill-opacity="1.0" data-role="segments-bar"/>
+<text x="333.2" y="790" fill="#e6edf3" font-size="11" text-anchor="middle">F.Cu</text>
+<text x="333.2" y="690" fill="#e5484d" font-size="11" text-anchor="middle" font-weight="bold">302</text>
+</g>
+<g data-layer="In1.Cu" data-segments="54" data-zones="1" data-length-mm="91.53" data-enabled="true" data-on-stack="true">
+<rect x="382.5" y="696" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="382.5" y="763.4170854271357" width="66.5" height="10.58" fill="#12a594" fill-opacity="1.0" data-role="segments-bar"/>
+<rect x="382.5" y="696" width="66.5" height="78" fill="url(#hatch)" fill-opacity="0.9" data-role="zone-overlay"/>
+<text x="415.8" y="790" fill="#e6edf3" font-size="11" text-anchor="middle">In1.Cu</text>
+<text x="415.8" y="690" fill="#12a594" font-size="11" text-anchor="middle" font-weight="bold">54⬚</text>
+</g>
+<g data-layer="In2.Cu" data-segments="15" data-zones="1" data-length-mm="9.89" data-enabled="true" data-on-stack="true">
+<rect x="465.0" y="696" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="465.0" y="771.0603015075377" width="66.5" height="2.94" fill="#ffb224" fill-opacity="1.0" data-role="segments-bar"/>
+<rect x="465.0" y="696" width="66.5" height="78" fill="url(#hatch)" fill-opacity="0.9" data-role="zone-overlay"/>
+<text x="498.2" y="790" fill="#e6edf3" font-size="11" text-anchor="middle">In2.Cu</text>
+<text x="498.2" y="690" fill="#ffb224" font-size="11" text-anchor="middle" font-weight="bold">15⬚</text>
+</g>
+<g data-layer="B.Cu" data-segments="27" data-zones="0" data-length-mm="118.68" data-enabled="true" data-on-stack="true">
+<rect x="547.5" y="696" width="66.5" height="78" fill="#21262d" fill-opacity="0.45"/>
+<rect x="547.5" y="768.7085427135678" width="66.5" height="5.29" fill="#3e63dd" fill-opacity="1.0" data-role="segments-bar"/>
+<text x="580.8" y="790" fill="#e6edf3" font-size="11" text-anchor="middle">B.Cu</text>
+<text x="580.8" y="690" fill="#3e63dd" font-size="11" text-anchor="middle" font-weight="bold">27</text>
+</g>
+<text x="690" y="654" fill="#8b949e" font-size="11" font-weight="bold">PADS PER SIDE</text>
+<g data-pad-side="front" data-value="92">
+<rect x="690.00" y="676" width="163.73" height="26" fill="#e5484d" data-role="pad-bar"/>
+</g>
+<g data-pad-side="back" data-value="0">
+</g>
+<g data-pad-side="through" data-value="26">
+<rect x="853.73" y="676" width="46.27" height="26" fill="#8b8d98" data-role="pad-bar"/>
+</g>
+<text x="771.9" y="694" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">92</text>
+<text x="876.9" y="694" fill="#0d1117" font-size="12" text-anchor="middle" font-weight="bold">26</text>
+<rect x="690" y="720" width="10" height="10" fill="#e5484d"/>
+<text x="704" y="729" fill="#8b949e" font-size="11">front 92</text>
+<rect x="764" y="720" width="10" height="10" fill="#3e63dd"/>
+<text x="778" y="729" fill="#8b949e" font-size="11">back 0</text>
+<rect x="838" y="720" width="10" height="10" fill="#8b8d98"/>
+<text x="852" y="729" fill="#8b949e" font-size="11">through 26</text>
+</g>
+<defs><pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="#e6edf3" stroke-opacity="0.55" stroke-width="2"/></pattern></defs>
+</svg>

@@ -35,6 +35,7 @@ void console_putln(const char* s);
 /* Tiny formatters (append to internal line buffer, then console_flush()). */
 void console_put_u32(uint32_t v);
 void console_put_i32(int32_t v);
+void console_put_u64(uint64_t v); /* for GS-synced epoch ms (> u32 range) */
 void console_put_u32_hex8(uint32_t v);
 void console_put_u16_hex4(uint16_t v); /* 4 uppercase hex digits (BUF STATUS crc=) */
 

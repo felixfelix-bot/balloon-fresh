@@ -59,6 +59,25 @@ static void test_basic_commands(void)
     CHECK(c.id == BENCH_CMD_STOP);
 }
 
+/* e80-temp-per-run: TEMP? — host-driven fresh die-temp + supply read in the
+ * between-runs window (per-run temperature anchor). Parser surface only here;
+ * the mid-burst/STDBY gating lives in bench.c's handler (compile-only). */
+static void test_temp_query(void)
+{
+    bench_cmd_t c;
+
+    c = parse("TEMP?");
+    CHECK(c.id == BENCH_CMD_TEMP && c.err == BENCH_CMD_OK);
+
+    /* case-insensitive */
+    c = parse("temp?");
+    CHECK(c.id == BENCH_CMD_TEMP && c.err == BENCH_CMD_OK);
+
+    /* no arguments allowed (like STAT?/ID?) */
+    c = parse("TEMP? NOW");
+    CHECK(c.err == BENCH_CMD_E_SYNTAX);
+}
+
 static void test_role(void)
 {
     bench_cmd_t c;
@@ -201,6 +220,36 @@ static void test_start(void)
     CHECK(c.err == BENCH_CMD_E_ARG);
 }
 
+static void test_start_len_truth_table(void)
+{
+    /* FIX-T2: per-modulation START LEN cap — RX branch must gate exactly like
+     * TX (docs/rca-fix-plan-20260821.md BUG 1, "cosmetic parity" fix).
+     * Truth table LEN {6,255,256,511,512} x {LORA, FLRC}. */
+    struct
+    {
+        bench_mod_t mod;
+        uint32_t    len;
+        bool        want;
+    } rows[] = {
+        { BENCH_MOD_LORA,   6, true  }, /* parser min */
+        { BENCH_MOD_LORA, 255, true  }, /* LoRa silicon limit (uint8_t pkt param) */
+        { BENCH_MOD_LORA, 256, false },
+        { BENCH_MOD_LORA, 511, false }, /* parses fine (<=511) but illegal for LoRa */
+        { BENCH_MOD_LORA, 512, false }, /* parser already rejects; belt+braces */
+        { BENCH_MOD_FLRC,   6, true  },
+        { BENCH_MOD_FLRC, 255, true  },
+        { BENCH_MOD_FLRC, 256, true  },
+        { BENCH_MOD_FLRC, 511, true  }, /* FLRC max */
+        { BENCH_MOD_FLRC, 512, false },
+    };
+    for (unsigned i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+        CHECK(bench_start_len_ok(rows[i].mod, rows[i].len) == rows[i].want);
+
+    /* Exact on-wire ERR reason — both the RX and TX START branches emit this
+     * string verbatim via reply_err(); pin it so the two can never drift. */
+    CHECK(strcmp(bench_start_len_err_str(), "LEN (MAX 255 LORA / 511 FLRC)") == 0);
+}
+
 static void test_pa(void)
 {
     bench_cmd_t c;
@@ -215,6 +264,69 @@ static void test_pa(void)
     CHECK(c.txpow_dbm == -3);
 
     c = parse("PA");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+}
+
+static void test_interp_logging_cmds(void)
+{
+    bench_cmd_t c;
+
+    /* OFFSET accepts a negative applied offset (cold side of T0). */
+    c = parse("OFFSET 1200");
+    CHECK(c.id == BENCH_CMD_OFFSET && c.err == BENCH_CMD_OK);
+    CHECK(c.offset_hz == 1200);
+
+    c = parse("OFFSET -130");
+    CHECK(c.id == BENCH_CMD_OFFSET && c.err == BENCH_CMD_OK);
+    CHECK(c.offset_hz == -130);
+
+    c = parse("OFFSET");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+    c = parse("OFFSET abc");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+
+    /* CURVE: k (mHz/°C) and T0 (m°C) are signed fixed-point. A negative k
+     * slope or a sub-zero T0 intercept is legitimate for cryo flights. */
+    c = parse("CURVE 3 2000 25000");
+    CHECK(c.id == BENCH_CMD_CURVE && c.err == BENCH_CMD_OK);
+    CHECK(c.curve_ver == 3 && c.curve_k == 2000 && c.curve_t0 == 25000);
+
+    c = parse("CURVE 4 -1500 25000");
+    CHECK(c.id == BENCH_CMD_CURVE && c.err == BENCH_CMD_OK);
+    CHECK(c.curve_ver == 4 && c.curve_k == -1500 && c.curve_t0 == 25000);
+
+    c = parse("CURVE 5 2000 -5000");
+    CHECK(c.id == BENCH_CMD_CURVE && c.err == BENCH_CMD_OK);
+    CHECK(c.curve_ver == 5 && c.curve_k == 2000 && c.curve_t0 == -5000);
+
+    c = parse("CURVE 3 2000");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+    c = parse("CURVE x 2000 25000");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+}
+
+static void test_loadgps_alt_ceiling(void)
+{
+    bench_cmd_t c;
+
+    /* High-altitude balloon ascents pass 11 km toward 25-35 km burst
+     * altitude; the LOADGPS ceiling must not truncate real telemetry. */
+    c = parse("LOADGPS 30000 -50");
+    CHECK(c.id == BENCH_CMD_LOADGPS && c.err == BENCH_CMD_OK);
+    CHECK(c.gps_alt_m == 30000 && c.gps_temp_c == -50);
+
+    c = parse("LOADGPS 50000 -60");
+    CHECK(c.id == BENCH_CMD_LOADGPS && c.err == BENCH_CMD_OK);
+    CHECK(c.gps_alt_m == 50000 && c.gps_temp_c == -60);
+
+    /* Beyond the sanity ceiling still rejected. */
+    c = parse("LOADGPS 60000 -60");
+    CHECK(c.err == BENCH_CMD_E_RANGE);
+
+    /* Garbage still rejected. */
+    c = parse("LOADGPS abc -50");
+    CHECK(c.err == BENCH_CMD_E_ARG);
+    c = parse("LOADGPS 30000");
     CHECK(c.err == BENCH_CMD_E_ARG);
 }
 
@@ -296,11 +408,15 @@ static void test_quiet(void)
 int main(void)
 {
     test_basic_commands();
+    test_temp_query();
     test_role();
     test_freq_band();
     test_mod();
     test_start();
+    test_start_len_truth_table();
     test_pa();
+    test_interp_logging_cmds();
+    test_loadgps_alt_ceiling();
     test_token_overflow();
     test_parse_helpers();
     test_radio_config_has_cr_field();

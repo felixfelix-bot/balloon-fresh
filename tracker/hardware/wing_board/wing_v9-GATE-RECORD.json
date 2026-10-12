@@ -1,0 +1,21 @@
+{
+  "tool": "pcb_order_gate",
+  "status": "PASS",
+  "errors": 0,
+  "warnings": 23,
+  "unconnected": 0,
+  "excluded": 0,
+  "reason": "",
+  "rules": {
+    "violations:silk_overlap": 2,
+    "violations:silk_over_copper": 1,
+    "violations:text_height": 2,
+    "violations:lib_footprint_issues": 12,
+    "violations:silk_edge_clearance": 6
+  },
+  "board": "wing_board_v9.kicad_pcb",
+  "board_sha256": "62e00d43e0c7d3be8a293f431e6d1110587791d7be6127a4763017702953f715",
+  "fab": "tracker/hardware/output/gerbers_wing_v9",
+  "fab_sha256": "d0bcd707caea321b022624b3589b0d5f5941b5d18f13c77b665871257ae69df9",
+  "kicad_version": "9.0.8"
+}

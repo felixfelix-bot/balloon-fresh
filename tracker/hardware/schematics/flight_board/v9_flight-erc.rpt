@@ -1,0 +1,15 @@
+ERC report (2026-10-07T23:38:38+0200, Encoding UTF8)
+Report includes: Errors, Warnings
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(91.44 mm, 27.94 mm): Symbol U1 Pin 3 [EN, Input, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(121.92 mm, 38.10 mm): Symbol U1 Pin 13 [USB_D-, Bidirectional, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(121.92 mm, 40.64 mm): Symbol U1 Pin 14 [USB_D+, Bidirectional, Line]
+
+ ** ERC messages: 3  Errors 3  Warnings 0

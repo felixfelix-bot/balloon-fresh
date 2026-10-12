@@ -1,6 +1,6 @@
 /*
  * test_payment_proto.c — host unit tests for tollgate payment protocol
- * encode/decode functions (ADR-002).
+ * encode/decode functions (ADR-100).
  *
  * Tests the wire-level message format:
  *   [hdr(8 bytes, packed)] [payload(N bytes, JSON)]

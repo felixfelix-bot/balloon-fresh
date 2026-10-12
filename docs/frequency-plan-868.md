@@ -121,6 +121,16 @@ sub-band, per transmitter (floor(3600 × DC / airtime)); format 51 B / 255 B:
 | FLRC 650 kbps | 0.8 ms | 3.3 ms | 4357 / 1078 | 43575 / 10788 | 435754 / 107883 |
 | FLRC 2600 kbps | 0.3 ms | 0.9 ms | 12786 / 3959 | 127868 / 39593 | 1278688 / 395939 |
 
+> **The 2600 kbps column heading is a PHY air rate, not a delivery rate.** These rows
+> are correct as *airtime* accounting (that is what duty cycle counts), but do not read
+> 2600 kbps as throughput. The payload goodput ceiling at BR2600 with **zero** host
+> overhead is **1871 kbps at 255 B / 1910 kbps at 511 B** under the shipped
+> configuration (FLRC CR 3/4 — `radio_bench.c:55`, per the LR20xx driver's own
+> time-on-air numerator), or 2540 / 2570 kbps if the link were uncoded (CR NONE, the
+> datasheet-audit model). The best measured sustained figure on disk is
+> **1484.9 kbps** (LEN 127, 0.00 % PER, TX-side-limited). Settled 2026-10-06 in
+> `FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md` (+ `tools/flrc_512b_throughput_audit.py`).
+
 (SF12/255 B airtime is 9.0 s; the 18.1 s figure in the firmware README is the
 chip TX-timeout = 2 × airtime + 50 ms, not airtime. FLRC airtimes follow
 `flrc_airtime_s`: (payload·8 + 64)/bitrate + 0.1 ms.)

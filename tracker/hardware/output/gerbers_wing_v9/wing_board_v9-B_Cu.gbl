@@ -1,0 +1,40 @@
+%TF.GenerationSoftware,KiCad,Pcbnew,9.0.8+dfsg-1*%
+%TF.CreationDate,2026-10-11T15:19:55+02:00*%
+%TF.ProjectId,wing_board_v9,77696e67-5f62-46f6-9172-645f76392e6b,rev?*%
+%TF.SameCoordinates,Original*%
+%TF.FileFunction,Copper,L2,Bot*%
+%TF.FilePolarity,Positive*%
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW 9.0.8+dfsg-1) date 2026-10-11 15:19:55*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+%TA.AperFunction,SMDPad,CuDef*%
+%ADD10R,1.600000X4.000000*%
+%TD*%
+G04 APERTURE END LIST*
+D10*
+%TO.P,SC4,1*%
+%TO.N,SOLAR_P*%
+X57000000Y-12500000D03*
+%TO.P,SC4,2*%
+%TO.N,SOLAR_MID1*%
+X3000000Y-12500000D03*
+%TD*%
+%TO.P,SC5,1*%
+%TO.N,SOLAR_MID1*%
+X115000000Y-12500000D03*
+%TO.P,SC5,2*%
+%TO.N,SOLAR_MID2*%
+X61000000Y-12500000D03*
+%TD*%
+%TO.P,SC6,1*%
+%TO.N,SOLAR_MID2*%
+X173000000Y-12500000D03*
+%TO.P,SC6,2*%
+%TO.N,SOLAR_N*%
+X119000000Y-12500000D03*
+%TD*%
+M02*

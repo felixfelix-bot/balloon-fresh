@@ -1,0 +1,131 @@
+{
+ "feat/c3-harmonization": {
+  "applied": 0,
+  "total": 23,
+  "files": []
+ },
+ "speed-sustained-sweep": {
+  "applied": 0,
+  "total": 10,
+  "files": []
+ },
+ "balloon-nostr/dev": {
+  "applied": 0,
+  "total": 9,
+  "files": []
+ },
+ "feat/e80-7-crc-logging": {
+  "applied": 0,
+  "total": 8,
+  "files": []
+ },
+ "feat/e80-spi-bypass": {
+  "applied": 0,
+  "total": 8,
+  "files": []
+ },
+ "feat/tracker-tx-tempcomp": {
+  "applied": 0,
+  "total": 8,
+  "files": []
+ },
+ "fix/tollgate-payack-harness-seq": {
+  "applied": 0,
+  "total": 8,
+  "files": []
+ },
+ "fix/tollgate-payack-sid-price-exp": {
+  "applied": 0,
+  "total": 8,
+  "files": []
+ },
+ "docs/harm-t9-adoption": {
+  "applied": 0,
+  "total": 7,
+  "files": []
+ },
+ "fix/tollgate-payack-seq-whitespace": {
+  "applied": 0,
+  "total": 7,
+  "files": []
+ },
+ "phase1-interop-test": {
+  "applied": 0,
+  "total": 6,
+  "files": []
+ },
+ "feat/host-driven-bench": {
+  "applied": 0,
+  "total": 5,
+  "files": []
+ },
+ "range-tests": {
+  "applied": 0,
+  "total": 5,
+  "files": []
+ },
+ "balloon-mesh-wiring/radio-glue": {
+  "applied": 0,
+  "total": 3,
+  "files": []
+ },
+ "feat/e80-cvm-go-mode": {
+  "applied": 0,
+  "total": 3,
+  "files": []
+ },
+ "fix/t1-sweep-start-validation": {
+  "applied": 0,
+  "total": 3,
+  "files": []
+ },
+ "fix/t4-fifo-clear": {
+  "applied": 0,
+  "total": 3,
+  "files": []
+ },
+ "worker-balloon/pcb-phase1-t877-main": {
+  "applied": 0,
+  "total": 3,
+  "files": []
+ },
+ "balloon-tollgate-extract": {
+  "applied": 0,
+  "total": 2,
+  "files": []
+ },
+ "fix/t3-flrc-match123": {
+  "applied": 0,
+  "total": 2,
+  "files": []
+ },
+ "worker-balloon/pcb-phase1-t877": {
+  "applied": 0,
+  "total": 2,
+  "files": []
+ },
+ "balloon-circuit-design": {
+  "applied": 0,
+  "total": 1,
+  "files": []
+ },
+ "balloon-tollgate/dev": {
+  "applied": 1,
+  "total": 1,
+  "files": [
+   "docs/STATUS-balloon-tollgate.md"
+  ]
+ },
+ "fix/t2-rx-start-len-gate": {
+  "applied": 1,
+  "total": 1,
+  "files": [
+   "firmware/e80-stm32-bench/src/bench_cmd.h"
+  ]
+ },
+ "fix/t6-sweep-preflight": {
+  "applied": 0,
+  "total": 1,
+  "files": []
+ }
+}

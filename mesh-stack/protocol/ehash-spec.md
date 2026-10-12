@@ -1,13 +1,13 @@
 # E-Hash Relay Binary Encoding Specification
 
-**Status:** Phase A (ADR-025) — Proposed
+**Status:** Phase A (ADR-106) — Proposed
 **Date:** 2026-07-29
-**Related:** [ADR-025](../../docs/adr/025-e-hash-relay-transport-layer.md), [SPEC.md §4](SPEC.md) (Fragmentation Layer)
+**Related:** [ADR-106](../../docs/adr/106-e-hash-relay-transport-layer.md), [SPEC.md §4](SPEC.md) (Fragmentation Layer)
 
 ## 1. Overview
 
 This specification defines the binary wire encoding for the four e-hash relay
-L7 message types introduced in ADR-025 §1:
+L7 message types introduced in ADR-106 §1:
 
 | Message Type      | Opcode | Direction          | Delivery    | Typical Size |
 |-------------------|--------|--------------------|-------------|--------------|
@@ -85,7 +85,7 @@ length fields and `merkle_branch_count`/`clean_jobs`).
 | Large pool (K=12)                | 40 | 40 | 12 | 511 B   | 512 B  | 3         |
 | Maximum (N=M=128, K=16)          | 128| 128| 16 | 823 B   | 824 B  | 4         |
 
-> **ADR-025 §Payload Size Fit** states templates are "~120–200 bytes, fits in
+> **ADR-106 §Payload Size Fit** states templates are "~120–200 bytes, fits in
 > 1–2 fragments." This holds for pools with ≤4 merkle branches and typical
 > coinbase sizes. Larger pools require 2–4 fragments — still well within the
 > L3 ceiling (~15 KB).
@@ -321,7 +321,7 @@ L7 envelope (17 bytes): `13 42 00 00 00 00 C2 EB 07 00 00 00 00 F4 01 00 00`
 | Ground station   | NONCE → binary                       | TEMPLATE → stratum `mining.notify` JSON; RESULT → `mining.submit` response |
 
 The balloon is a **pure transport node**. It fragments and forwards the binary
-payload without parsing message fields (ADR-025 invariant #1: balloon never hashes).
+payload without parsing message fields (ADR-106 invariant #1: balloon never hashes).
 
 ---
 
@@ -332,6 +332,6 @@ payload without parsing message fields (ADR-025 invariant #1: balloon never hash
   `ehash_nonce_encode`.
 - **Phase C**: Balloon relay module validates `job_id` consistency and gates
   template delivery on positive e-hash balance (no payload field parsing).
-- **Template encryption** (ADR-025 O3): If adopted, a per-session key layer
+- **Template encryption** (ADR-106 O3): If adopted, a per-session key layer
   will be added between the L7 envelope and L3 fragmentation. The binary
   encoding defined here remains the inner plaintext format.

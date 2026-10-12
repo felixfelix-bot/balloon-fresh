@@ -348,10 +348,10 @@ downstream C author would place in a header.
 
 ```
 $ rg -n 'tollgate_payment_proto' .
-./test/integration/test_tollgate_payack.py:10:The test uses the tollgate_payment_proto wire format (ADR-002):
+./test/integration/test_tollgate_payack.py:10:The test uses the tollgate_payment_proto wire format (ADR-100):
 ./test/integration/test_tollgate_payack.py:100:# TollGate message types (from tollgate_payment_proto.h)
 ./main/app_main.cpp:79:#include "tollgate_payment_proto.h"
-./main/app_main.cpp:589: * tollgate_payment_proto.c (ADR-002 wire format).
+./main/app_main.cpp:589: * tollgate_payment_proto.c (ADR-100 wire format).
 ./main/app_task.cpp:33:#include "tollgate_payment_proto.h"
 ./main/CMakeLists.txt:30:    list(APPEND APP_SRCS "tollgate_payment_proto.c")
 ...

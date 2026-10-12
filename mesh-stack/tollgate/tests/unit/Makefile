@@ -56,7 +56,8 @@ TG_CORE_FULL_SRCS := $(TG_CORE_SRC)/tollgate_core_cashu.c \
 TESTS := test_geohash test_identity test_nostr_event test_cashu test_session \
          test_firewall_sandbox test_beacon test_mint_health test_mint_health_core \
          test_portal test_payment_proto \
-         test_mesh_service_mux test_tollgate_mesh_integration
+         test_mesh_service_mux test_tollgate_mesh_integration \
+         test_tollgate_client
 
 .PHONY: all test clean $(TESTS)
 
@@ -133,6 +134,13 @@ test_portal: test_portal.c $(TG_CORE_SRC)/tollgate_core_portal.c $(TG_CORE_SRC)/
 
 test_payment_proto: test_payment_proto.c $(TG_BALLOON_SRC)/tollgate_payment_proto.c
 	$(CC) $(CFLAGS) -I $(TG_BALLOON_INC) $^ -o $@ $(LDFLAGS)
+
+# --- tollgate_client state machine (client + payment proto) ---
+
+test_tollgate_client: test_tollgate_client.c \
+	$(TG_CLIENT_SRC)/tollgate_client.c \
+	$(TG_BALLOON_SRC)/tollgate_payment_proto.c
+	$(CC) $(CFLAGS) -I $(TG_CLIENT_INC) -I $(TG_BALLOON_INC) $^ -o $@ $(LDFLAGS)
 
 # --- mesh_service_mux unit tests ---
 

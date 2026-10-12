@@ -105,12 +105,13 @@
 **Status:** Implemented (kanban task t_999528b6).
 
 **Implementation:**
-- Created `main/tollgate_payment_proto.h` — standalone header with `tollgate_msg_hdr_t`, `tollgate_ack_payload_t`, `TG_MSG_PAY`/`TG_MSG_ACK`/etc., `tollgate_proto_encode()`/`tollgate_proto_decode()`. Wire-compatible with `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h` (ADR-002). No ESP-IDF deps — host-testable with gcc.
+- Created `main/tollgate_payment_proto.h` — standalone header with `tollgate_msg_hdr_t`, `tollgate_ack_payload_t`, `TG_MSG_PAY`/`TG_MSG_ACK`/etc., `tollgate_proto_encode()`/`tollgate_proto_decode()`. Wire-compatible with `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h` (ADR-100). No ESP-IDF deps — host-testable with gcc.
 - Created `main/tollgate_payment_proto.c` — encode/decode implementation.
 - Added `cli_cmd_tollgate_send_pay()` handler in `app_main.cpp` — builds PAY message with `tollgate_proto_encode(TG_MSG_PAY, seq, payload, len)`, sets `pkt.data[0] = RELAY_TYPE_TOLLGATE_PAY`, queues to `g_tx_queue`.
 - Registered in `setup_cli()` with `cli_register_command("tollgate_send_pay", ...)`.
 - Guarded with `#ifdef CONFIG_ENABLE_TOLLGATE`.
 - Enabled `CONFIG_ENABLE_TOLLGATE=y` in `sdkconfig.defaults.esp32s3`.
+- Fixed stale tracked `sdkconfig` (follow-up): line 576 still had `# CONFIG_ENABLE_TOLLGATE is not set`, which silently compiled the feature out on incremental `idf.py build` (ESP-IDF ignores defaults when a `sdkconfig` file exists). Now `CONFIG_ENABLE_TOLLGATE=y` in both files.
 - Updated `main/CMakeLists.txt` — conditionally compiles `tollgate_payment_proto.c` when `CONFIG_ENABLE_TOLLGATE` is set.
 - Updated `main/test/test_relay_pipeline.c` — replaced mock tollgate protocol with the real `tollgate_payment_proto.h` + real encode/decode functions.
 - Created `main/test/test_tollgate_payment_proto.c` — 83 host unit tests (struct packing, encode basic/empty/overflow, decode valid/short/bad-version/truncated, round-trip all message types, ACK payload struct).

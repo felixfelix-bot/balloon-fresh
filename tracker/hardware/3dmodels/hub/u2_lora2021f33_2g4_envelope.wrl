@@ -1,0 +1,68 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : U2 -- LoRa2021F33-2G4 (433 MHz bent-pipe downlink radio) -- ENVELOPE, height unverified
+# dims_mm    : 39.0 x 21.0 x 3.2(nominal) mm -- X/Y measured from F.Fab, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "balloon_flight_v9:LoRa2021F33_2G4" (Reference U2, Value "LoRa2021F33-2G4"): its own F.Fab outline measures 39.0 x 21.0 mm.  Reproduce every envelope with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# source     : docs/F33-MODULE-PLAN.md line 27: "| Module dimensions | 39 x 21 mm |" (from the NiceRF datasheet V1.1, confirmed against LCSC).
+# source     : docs/adr/029-dual-band-flight-board.md line 199: "- **39 x 21 mm on a 55 x 45 mm board** -- the module dominates the layout and constrains".
+# note       : THIS IS THE PART THE SPATIAL REVIEW MOST NEEDS TO SEE: it is the largest body on the board, it carries the 433 MHz PA, and before this model existed the render showed an empty courtyard exactly where it sits.
+# note       : an 18-pin castellated module -- the castellated pad row, the pin-1 corner and the shield can are NOT modelled; only the body envelope is, because only the envelope is what the placement review consumes.
+# note       : F.CrtYd measured 39.6 x 21.6 mm, i.e. 0.3 mm clearance ring per side.
+# note       : the F33 and the bare LoRa2021 (U3) are selectable variants of one rail (kanban t_1b12a7ab, nested dual footprint) -- both envelopes are modelled so either selection is reviewable.
+# note       : TODO(unverified): the 3.2 mm height is TODO(unverified) -- a nominal castellated-module placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+# note       : TODO(unverified): the exact PA/shield stack height and any keep-out above the module
+DEF u2_lora2021f33_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF u2_lora2021f33_envelope_mat Material {
+          diffuseColor 0.16 0.18 0.22
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -7.677165 -4.133858 1.259843,
+          7.677165 -4.133858 1.259843,
+          7.677165 4.133858 1.259843,
+          -7.677165 4.133858 1.259843,
+          -7.677165 4.133858 0.000000,
+          7.677165 4.133858 0.000000,
+          7.677165 -4.133858 0.000000,
+          -7.677165 -4.133858 0.000000,
+          -7.677165 4.133858 0.000000,
+          -7.677165 4.133858 1.259843,
+          7.677165 4.133858 1.259843,
+          7.677165 4.133858 0.000000,
+          7.677165 -4.133858 0.000000,
+          7.677165 -4.133858 1.259843,
+          -7.677165 -4.133858 1.259843,
+          -7.677165 -4.133858 0.000000,
+          7.677165 4.133858 0.000000,
+          7.677165 4.133858 1.259843,
+          7.677165 -4.133858 1.259843,
+          7.677165 -4.133858 0.000000,
+          -7.677165 -4.133858 0.000000,
+          -7.677165 -4.133858 1.259843,
+          -7.677165 4.133858 1.259843,
+          -7.677165 4.133858 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

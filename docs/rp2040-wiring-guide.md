@@ -38,6 +38,7 @@ The **RX side** changes: LR2021 moves from the ESP32-C3's SPI to the RP2040's SP
 | Pin 15 | DIO9 (IRQ) | **GP7** | GPIO interrupt | Brown |
 | Pin 16 | DIO8 | NC | Leave floating | — |
 | Pin 17 | DIO7 | NC | Leave floating | — |
+| Pin 13 | VTCXO | **NC** | **Leave floating** — chip-controlled TCXO power output | — |
 | Pin 18 | GND | GND | — | Black |
 
 ## Wiring Table 2: ESP32-C3 → RP2040-Zero (UART data link)

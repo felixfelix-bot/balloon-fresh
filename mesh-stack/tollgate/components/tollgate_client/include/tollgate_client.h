@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 /*
- * TollGate Client — ground station payment state machine (ADR-002)
+ * TollGate Client — ground station payment state machine (ADR-100)
  *
  * Manages the client side of the TollGate payment protocol over FIPS mesh UDP.
  * The client:

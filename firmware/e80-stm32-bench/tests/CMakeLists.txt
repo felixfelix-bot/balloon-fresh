@@ -39,9 +39,36 @@ add_bench_test(test_bench_pkt ${SRC_DIR}/bench_pkt.c)
 # CONFIG_START transition marker test (E80-8/O4): portable, no STM32 deps.
 add_bench_test(test_bench_config_start ${SRC_DIR}/bench_pkt.c)
 
-# Radio bench cfg test: needs radio_bench.h (lr20xx type headers are header-only).
-add_bench_test(test_radio_bench_cfg)
+# Radio bench cfg test (FIX-T3): host-compiles the REAL src/radio_bench.c
+# against the REAL vendored lr20xx_driver sources; the test file provides a
+# fake capturing lr20xx HAL. Pins the exact FLRC SetPacketParams bytes.
+set(LR20XX_DRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/src)
+add_bench_test(test_radio_bench_cfg
+    ${SRC_DIR}/radio_bench.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_fifo.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_system.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_regmem.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_workarounds.c)
 target_include_directories(test_radio_bench_cfg PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
+
+# FIFO hygiene test (FIX-T4): same real-source + fake-capturing-HAL harness,
+# pinning an RX FIFO clear on every re-arm (rx_arm is the IRQ re-arm path)
+# and a TX FIFO clear before every FIFO write.
+add_bench_test(test_radio_bench_fifo
+    ${SRC_DIR}/radio_bench.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_radio_fifo.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_system.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_regmem.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_workarounds.c)
+target_include_directories(test_radio_bench_fifo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
 
@@ -86,4 +113,12 @@ if(HOST_PYTHON3)
     # (no hardware; tests/golden/*.txt per docs/BENCH-CONSOLE-SPEC.md).
     add_test(NAME test_balloon_sweep_python
              COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/test_balloon_sweep.py)
+    # Sweep tool: START-reply fail-fast validation + LEN caps (task FIX-T1).
+    add_test(NAME test_e80_sweep_full_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_e80_sweep_full.py)
+    # FIX-T6 sweep pre-flight gate: config-matrix coverage + console-baud
+    # contract + the board/firmware preflight decision. Self-contained
+    # (unittest, no pyserial needed): run with the same HOST_PYTHON3.
+    add_test(NAME test_e80_sweep_preflight_python
+             COMMAND ${HOST_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/../tools/test_e80_sweep_preflight.py)
 endif()

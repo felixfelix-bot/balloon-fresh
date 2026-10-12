@@ -1,9 +1,9 @@
 config ENABLE_BMP280
     bool "Enable BMP280 pressure/temperature sensor"
-    default y
+    default n
     help
-        Enable BMP280 sensor for pressure, temperature, and altitude readings.
-        Disable for Minimal variant to save weight and power.
+        BMP280 dropped for V1 flight. GPIO9 repurposed from I2C SDA to LED.
+        Re-enable in V2 with a larger MCU (ESP32-S3) that has more GPIOs.
 
 config ENABLE_GPS
     bool "Enable GPS module (u-blox MAX-M10S or compatible)"
@@ -37,13 +37,19 @@ config ENABLE_FEM
 
 config FEM_TX_PIN
     int "FEM TX_EN GPIO pin"
-    default 19
+    default -1
     depends on ENABLE_FEM
+    help
+        GPIO19 does not exist on ESP32-C3 Mini V1 (it is USB D+).
+        Set to -1 to disable. FEM removed for V1 flight (wire dipole only).
 
 config FEM_RX_PIN
     int "FEM RX_EN GPIO pin"
-    default 0
+    default -1
     depends on ENABLE_FEM
+    help
+        GPIO0 is GPS TX — must NOT be used for FEM. Set to -1 to disable.
+        FEM removed for V1 flight.
 
 config ENABLE_ANTENNA_SWITCH
     bool "Enable SP4T antenna switch"
@@ -154,6 +160,16 @@ config ENABLE_NOSTR_STORE
     help
         Enable Nostr event storage for store-and-forward mesh relay.
         Stores up to 512 events with bloom filter deduplication.
+
+config ENABLE_MESH_RADIO
+    bool "Build mesh_radio_main.c (LR2021 + mesh_adapter test app)"
+    default n
+    depends on ENABLE_MESH
+    help
+        Replaces the default app_main.cpp with mesh_radio_main.c, a standalone
+        test app that wires lr2021_radio (raw SPI) to mesh_adapter for
+        fragmented mesh transport over FLRC 2.4 GHz.
+        When disabled, the normal tracker app (app_main.cpp) is built.
 
 config ENABLE_MESHCORE
     bool "Enable MeshCore community mesh (ESP-IDF integration)"

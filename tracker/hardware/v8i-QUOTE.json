@@ -1,0 +1,17 @@
+{
+  "tool": "jlcpcb_instant_quote",
+  "method": "playwright+xvfb, headed chrome, gerber zip upload, NO login, NO order submitted",
+  "uploaded": "v8i-jlc-4layer.zip (13 files, 63517 bytes)",
+  "detected": "4 layer board of 45x55mm",
+  "options": {"layers": 4, "qty": 5, "thickness_mm": 1.6, "surface_finish": "ENIG",
+              "build_time": "3-4 days (default)"},
+  "charges": {"special_offer_pcb": 8.00, "via_covering": 0.00, "surface_finish_enig": 16.90,
+              "build_time": 0.00, "calculated_price_usd": 24.90},
+  "shipping": {"carrier": "DHL Express (DDP)", "transit": "2-4 business days",
+               "weight_kg": 0.17, "usd": 31.23},
+  "total_usd_before_coupons": 56.13,
+  "coupons_offered_unverified": [30.00, 20.00],
+  "expedite_option_2_3_days": 66.20,
+  "board_revision": "v8i_krt_gnss (BMP280 revision) - MS5611 supersedes",
+  "captured": "2026-10-07"
+}

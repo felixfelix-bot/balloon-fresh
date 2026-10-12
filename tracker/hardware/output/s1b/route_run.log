@@ -1,0 +1,581 @@
+CMD: python3.14 py_router/route.py /home/c03rad0r/worktrees/t_21ab3b23/tracker/hardware/output/v_c3_flight_4layer_placed_netfix.kicad_pcb /home/c03rad0r/worktrees/t_21ab3b23/tracker/hardware/output/v8b_krt_routed.kicad_pcb "*" --track-width 0.2 --clearance 0.2 --via-size 0.6 --via-drill 0.3 --power-nets GND +3V3 --power-nets-widths 0.3 0.3 --fab-tier standard --no-fix-drc-settings --write-fill --stats
+ENV KNOBS: none
+--clearance 0.2: the Default net class routes at it this run; other classes are honoured (pass --clearance-ceiling to cap every class).
+--hole-to-hole-clearance not given; using 0.25mm [board constraint].
+--board-edge-clearance not given; using 0.5mm [board constraint].
+Loading /home/c03rad0r/worktrees/t_21ab3b23/tracker/hardware/output/v_c3_flight_4layer_placed_netfix.kicad_pcb to expand net patterns...
+Using all 4 copper layers: F.Cu In1.Cu In2.Cu B.Cu (override with --layers)
+Pattern '*' matched 22 nets
+Routing 22 nets: ['+3V3', 'EN', 'GND', 'GPS_RX', 'GPS_TX']...
+Loading /home/c03rad0r/worktrees/t_21ab3b23/tracker/hardware/output/v_c3_flight_4layer_placed_netfix.kicad_pcb...
+Using 4 routing layers: ['F.Cu', 'In1.Cu', 'In2.Cu', 'B.Cu']
+  Layer costs: F.Cu=1.0x, In1.Cu=1.0x, In2.Cu=1.0x, B.Cu=1.0x
+Auto-detected 1 BGA exclusion zone(s):
+  U5: (21.8, 34.7) to (24.2, 37.3), edge_tol=0.71mm
+
+Power net width assignments (2 nets):
+  0.3mm: +3V3, GND
+
+Using MPS ordering strategy...
+MPS: 22 nets with 21 crossing conflicts detected
+MPS Round 1: 13 units: I2C_SDA, I2C_SCL, LED_A, RF_OUT, SPI_MISO, VDIV_MID, VCAP, GPS_RX, SPI_SCK, UART0_RX, SPI_MOSI, +3V3, EN
+MPS Round 2: 6 units: SPI_NSS, LED_DRIVE, GPS_TX, LR_DIO0, UART0_TX, SOLAR_IN
+MPS Round 3: 2 units: LR_RST, GND
+MPS Round 4: 1 units: LR_BUSY
+Direct-first ordering (#472): 4 bare-ball net(s) moved to the front: I2C_SDA, I2C_SCL, +3V3, GND
+
+Routing 22 single-ended net(s)...
+============================================================
+Building base obstacle map...
+Per-layer clearance rules from the board's .kicad_dru (#498, replace net/class values on their layers): B.Cu:0.2, F.Cu:0.2, In1.Cu:0.2, In2.Cu:0.2
+Copper-to-hole clearance 0.25mm (from the board's own min_hole_clearance, above the 0.2mm fab floor)
+Base obstacle map built in 0.02s
+Found 22 unrouted nets in PCB for stub proximity
+Pre-computing net obstacle cache...
+Net obstacle cache built in 0.07s (22 nets)
+Plane fragility: exact-fill geometry (2 filled island(s) from KiCad refill)
+Plane fragility field: 101436 cells near the edges of 2 pour(s) (KICAD_PLANE_FRAGILITY_COST=2.0mm-equiv, DYNAMIC #466 (=0 via KICAD_PLANE_FRAGILITY_DYNAMIC reverts))
+History congestion (#590) armed: +0.1mm-equiv per contest, cap 0.5, escalate 0.0, rip weight 1.0 (radius +0.25mm), frontier weight 0.25
+
+[1/22] Routing I2C_SDA (id=16)
+  Detected multi-point net with 4 pads (Phase 1: main route only)
+  Multi-point net Phase 1: routing longest MST edge (pads 0 and 1, length=30.24mm)
+  Phase 1 routed in 209 iterations, 6 segments
+  SUCCESS: 6 segments, 0 vias, 209 iterations, length=24.80mm (stubs=0.00mm) (0.05s)
+
+[2/22] Routing I2C_SCL (id=17)
+  Detected multi-point net with 3 pads (Phase 1: main route only)
+  Multi-point net Phase 1: routing longest MST edge (pads 0 and 1, length=38.20mm)
+  Via-in-pad unblock: dropped 2 fab-floor via(s) to reach a boxed endpoint
+  Phase 1 routed in 5348 iterations, 4 segments
+  SUCCESS: 4 segments, 2 vias, 5348 iterations, length=27.55mm (stubs=0.00mm) (0.13s)
+
+[3/22] Routing +3V3 (id=1)
+  Detected multi-point net with 17 pads (Phase 1: main route only)
+  POUR-LAUNCH v3: +129 region-laddered target(s) across 1 component(s) (phase 1)
+  Existing copper joins 17 terminals into 16 group(s)
+  Multi-point net Phase 1: routing longest MST edge (pads 0 and 9, length=22.98mm)
+  Phase 1 routed in 30898 iterations, 7 segments
+  SUCCESS: 7 segments, 2 vias, 30898 iterations, length=21.32mm (stubs=0.00mm) (0.18s)
+
+[4/22] Routing GND (id=2)
+  Detected multi-point net with 37 pads (Phase 1: main route only)
+  POUR-LAUNCH v3: +175 region-laddered target(s) across 1 component(s) (phase 1)
+  Existing copper joins 37 terminals into 21 group(s)
+  Multi-point net Phase 1: routing longest MST edge (pads 12 and 24, length=13.36mm)
+  Phase 1 routed in 2 iterations, 2 segments
+  SUCCESS: 2 segments, 1 vias, 2 iterations, length=0.05mm (stubs=0.00mm) (0.05s)
+
+[5/22] Routing LED_A (id=19)
+  A* Search Statistics:
+    Cells expanded:  73 (popped from open set)
+    Cells pushed:    508 (added to open set)
+    Cells revisited: 0 (path improvements)
+    Duplicate skips: 0 (already in closed)
+    Path length:     73 grid steps
+    Path cost:       96,967
+    Via count:       0
+    Initial h:       245,295
+    Final g:         96,967
+    Open set size:   435 (at termination)
+    Closed set size: 72 (unique visited)
+    Heuristic ratio: 2.530 (h/g, weighted A* (h_weight ~2.5))
+    Expansion ratio: 1.0x path length (excellent)
+    Revisit ratio:   0.000 (path improvements / expanded)
+    Skip ratio:      0.000 (duplicates / total pops)
+  SUCCESS: 4 segments, 0 vias, 73 iterations, length=8.67mm (stubs=0.00mm) (0.01s)
+
+[6/22] Routing RF_OUT (id=22)
+  A* Search Statistics:
+    Cells expanded:  370 (popped from open set)
+    Cells pushed:    1,716 (added to open set)
+    Cells revisited: 389 (path improvements)
+    Duplicate skips: 303 (already in closed)
+    Path length:     97 grid steps
+    Path cost:       129,826
+    Via count:       0
+    Initial h:       224,871
+    Final g:         129,826
+    Open set size:   1,043 (at termination)
+    Closed set size: 369 (unique visited)
+    Heuristic ratio: 1.732 (h/g, weighted A* (h_weight ~1.7))
+    Expansion ratio: 3.8x path length (good)
+    Revisit ratio:   1.051 (path improvements / expanded)
+    Skip ratio:      0.450 (duplicates / total pops)
+  SUCCESS: 4 segments, 0 vias, 673 iterations, length=11.03mm (stubs=0.00mm) (0.01s)
+
+[7/22] Routing SPI_MISO (id=9)
+  A* Search Statistics:
+    Cells expanded:  89 (popped from open set)
+    Cells pushed:    499 (added to open set)
+    Cells revisited: 0 (path improvements)
+    Duplicate skips: 0 (already in closed)
+    Path length:     88 grid steps
+    Path cost:       125,028
+    Via count:       0
+    Initial h:       247,710
+    Final g:         125,028
+    Open set size:   410 (at termination)
+    Closed set size: 88 (unique visited)
+    Heuristic ratio: 1.981 (h/g, weighted A* (h_weight ~2.0))
+    Expansion ratio: 1.0x path length (excellent)
+    Revisit ratio:   0.000 (path improvements / expanded)
+    Skip ratio:      0.000 (duplicates / total pops)
+  SUCCESS: 10 segments, 0 vias, 89 iterations, length=10.93mm (stubs=0.00mm) (0.01s)
+
+[8/22] Routing VDIV_MID (id=5)
+  Detected multi-point net with 3 pads (Phase 1: main route only)
+  Multi-point net Phase 1: routing longest MST edge (pads 0 and 1, length=26.26mm)
+  Phase 1 routed in 488 iterations, 8 segments
+  SUCCESS: 8 segments, 0 vias, 488 iterations, length=26.88mm (stubs=0.00mm) (0.01s)
+
+[9/22] Routing VCAP (id=3)
+  Detected multi-point net with 5 pads (Phase 1: main route only)
+  Multi-point net Phase 1: routing longest MST edge (pads 1 and 2, length=12.81mm)
+  Phase 1 routed in 32798 iterations, 23 segments
+  SUCCESS: 23 segments, 0 vias, 32798 iterations, length=22.53mm (stubs=0.00mm) (0.02s)
+
+[10/22] Routing GPS_RX (id=8)
+  A* Search Statistics:
+    Cells expanded:  1,111 (popped from open set)
+    Cells pushed:    3,987 (added to open set)
+    Cells revisited: 427 (path improvements)
+    Duplicate skips: 364 (already in closed)
+    Path length:     259 grid steps
+    Path cost:       328,012
+    Via count:       0
+    Initial h:       490,672
+    Final g:         328,012
+    Open set size:   2,512 (at termination)
+    Closed set size: 1,110 (unique visited)
+    Heuristic ratio: 1.496 (h/g, weighted A* (h_weight ~1.5))
+    Expansion ratio: 4.3x path length (good)
+    Revisit ratio:   0.384 (path improvements / expanded)
+    Skip ratio:      0.247 (duplicates / total pops)
+  SUCCESS: 11 segments, 0 vias, 1475 iterations, length=28.30mm (stubs=0.00mm) (0.01s)
+
+[11/22] Routing SPI_SCK (id=10)
+  A* Search Statistics:
+    Cells expanded:  11,782 (popped from open set)
+    Cells pushed:    59,796 (added to open set)
+    Cells revisited: 16,829 (path improvements)
+    Duplicate skips: 16,489 (already in closed)
+    Path length:     273 grid steps
+    Path cost:       480,488
+    Via count:       2
+    Initial h:       642,988
+    Final g:         480,488
+    Open set size:   31,525 (at termination)
+    Closed set size: 11,781 (unique visited)
+    Heuristic ratio: 1.338 (h/g, weighted A* (h_weight ~1.3))
+    Expansion ratio: 43.2x path length (very poor)
+    Revisit ratio:   1.428 (path improvements / expanded)
+    Skip ratio:      0.583 (duplicates / total pops)
+  SUCCESS: 18 segments, 2 vias, 38271 iterations, length=29.85mm (stubs=0.00mm) (0.04s)
+
+[12/22] Routing UART0_RX (id=21)
+  A* Search Statistics:
+    Cells expanded:  5,453 (popped from open set)
+    Cells pushed:    28,295 (added to open set)
+    Cells revisited: 6,656 (path improvements)
+    Duplicate skips: 6,171 (already in closed)
+    Path length:     260 grid steps
+    Path cost:       495,760
+    Via count:       2
+    Initial h:       830,704
+    Final g:         495,760
+    Open set size:   16,671 (at termination)
+    Closed set size: 5,452 (unique visited)
+    Heuristic ratio: 1.676 (h/g, weighted A* (h_weight ~1.7))
+    Expansion ratio: 21.0x path length (very poor)
+    Revisit ratio:   1.221 (path improvements / expanded)
+    Skip ratio:      0.531 (duplicates / total pops)
+  SUCCESS: 8 segments, 2 vias, 21624 iterations, length=29.19mm (stubs=0.00mm) (0.03s)
+
+[13/22] Routing SPI_MOSI (id=11)
+  A* Search Statistics:
+    Cells expanded:  20,380 (popped from open set)
+    Cells pushed:    95,245 (added to open set)
+    Cells revisited: 24,047 (path improvements)
+    Duplicate skips: 23,542 (already in closed)
+    Path length:     269 grid steps
+    Path cost:       474,698
+    Via count:       2
+    Initial h:       676,315
+    Final g:         474,698
+    Open set size:   51,323 (at termination)
+    Closed set size: 20,379 (unique visited)
+    Heuristic ratio: 1.425 (h/g, weighted A* (h_weight ~1.4))
+    Expansion ratio: 75.8x path length (very poor)
+    Revisit ratio:   1.180 (path improvements / expanded)
+    Skip ratio:      0.536 (duplicates / total pops)
+  SUCCESS: 12 segments, 2 vias, 53922 iterations, length=30.07mm (stubs=0.00mm) (0.08s)
+
+[14/22] Routing EN (id=6)
+  A* Search Statistics:
+    Cells expanded:  9,351 (popped from open set)
+    Cells pushed:    45,197 (added to open set)
+    Cells revisited: 9,264 (path improvements)
+    Duplicate skips: 8,731 (already in closed)
+    Path length:     442 grid steps
+    Path cost:       854,140
+    Via count:       2
+    Initial h:       1,214,689
+    Final g:         854,140
+    Open set size:   27,115 (at termination)
+    Closed set size: 9,350 (unique visited)
+    Heuristic ratio: 1.422 (h/g, weighted A* (h_weight ~1.4))
+    Expansion ratio: 21.2x path length (very poor)
+    Revisit ratio:   0.991 (path improvements / expanded)
+    Skip ratio:      0.483 (duplicates / total pops)
+  SUCCESS: 16 segments, 2 vias, 28082 iterations, length=49.73mm (stubs=0.00mm) (0.07s)
+
+[15/22] Routing SPI_NSS (id=12)
+  A* Search Statistics:
+    Cells expanded:  1,400 (popped from open set)
+    Cells pushed:    5,407 (added to open set)
+    Cells revisited: 907 (path improvements)
+    Duplicate skips: 906 (already in closed)
+    Path length:     92 grid steps
+    Path cost:       296,120
+    Via count:       2
+    Initial h:       276,276
+    Final g:         296,120
+    Open set size:   3,101 (at termination)
+    Closed set size: 1,399 (unique visited)
+    Heuristic ratio: 0.933 (h/g, admissible (underestimate))
+    Expansion ratio: 15.2x path length (poor)
+    Revisit ratio:   0.648 (path improvements / expanded)
+    Skip ratio:      0.393 (duplicates / total pops)
+  SUCCESS: 12 segments, 2 vias, 7306 iterations, length=12.29mm (stubs=0.00mm) (0.01s)
+
+[16/22] Routing LED_DRIVE (id=18)
+  A* Search Statistics:
+    Cells expanded:  14,589 (popped from open set)
+    Cells pushed:    66,657 (added to open set)
+    Cells revisited: 17,643 (path improvements)
+    Duplicate skips: 17,078 (already in closed)
+    Path length:     225 grid steps
+    Path cost:       487,863
+    Via count:       2
+    Initial h:       652,160
+    Final g:         487,863
+    Open set size:   34,990 (at termination)
+    Closed set size: 14,588 (unique visited)
+    Heuristic ratio: 1.337 (h/g, weighted A* (h_weight ~1.3))
+    Expansion ratio: 64.8x path length (very poor)
+    Revisit ratio:   1.209 (path improvements / expanded)
+    Skip ratio:      0.539 (duplicates / total pops)
+  SUCCESS: 19 segments, 2 vias, 41667 iterations, length=27.35mm (stubs=0.00mm) (0.06s)
+
+[17/22] Routing GPS_TX (id=7)
+  A* Search Statistics:
+    Cells expanded:  5,070 (popped from open set)
+    Cells pushed:    19,469 (added to open set)
+    Cells revisited: 5,340 (path improvements)
+    Duplicate skips: 4,816 (already in closed)
+    Path length:     226 grid steps
+    Path cost:       476,360
+    Via count:       2
+    Initial h:       550,472
+    Final g:         476,360
+    Open set size:   9,583 (at termination)
+    Closed set size: 5,069 (unique visited)
+    Heuristic ratio: 1.156 (h/g, weighted A* (h_weight ~1.2))
+    Expansion ratio: 22.4x path length (very poor)
+    Revisit ratio:   1.053 (path improvements / expanded)
+    Skip ratio:      0.487 (duplicates / total pops)
+  SUCCESS: 16 segments, 2 vias, 19886 iterations, length=27.16mm (stubs=0.00mm) (0.04s)
+
+[18/22] Routing LR_DIO0 (id=15)
+  A* Search Statistics:
+    Cells expanded:  2,037 (popped from open set)
+    Cells pushed:    8,360 (added to open set)
+    Cells revisited: 1,797 (path improvements)
+    Duplicate skips: 1,797 (already in closed)
+    Path length:     245 grid steps
+    Path cost:       454,698
+    Via count:       2
+    Initial h:       616,515
+    Final g:         454,698
+    Open set size:   4,526 (at termination)
+    Closed set size: 2,036 (unique visited)
+    Heuristic ratio: 1.356 (h/g, weighted A* (h_weight ~1.4))
+    Expansion ratio: 8.3x path length (poor)
+    Revisit ratio:   0.882 (path improvements / expanded)
+    Skip ratio:      0.469 (duplicates / total pops)
+  SUCCESS: 19 segments, 2 vias, 8834 iterations, length=27.67mm (stubs=0.00mm) (0.03s)
+
+[19/22] Routing UART0_TX (id=20)
+  A* Search Statistics:
+    Cells expanded:  837 (popped from open set)
+    Cells pushed:    3,224 (added to open set)
+    Cells revisited: 309 (path improvements)
+    Duplicate skips: 309 (already in closed)
+    Path length:     279 grid steps
+    Path cost:       492,275
+    Via count:       1
+    Initial h:       850,107
+    Final g:         492,275
+    Open set size:   2,078 (at termination)
+    Closed set size: 836 (unique visited)
+    Heuristic ratio: 1.727 (h/g, weighted A* (h_weight ~1.7))
+    Expansion ratio: 3.0x path length (good)
+    Revisit ratio:   0.369 (path improvements / expanded)
+    Skip ratio:      0.270 (duplicates / total pops)
+  SUCCESS: 10 segments, 1 vias, 1146 iterations, length=29.88mm (stubs=0.00mm) (0.02s)
+
+[20/22] Routing SOLAR_IN (id=4)
+  A* Search Statistics:
+    Cells expanded:  11,923 (popped from open set)
+    Cells pushed:    52,087 (added to open set)
+    Cells revisited: 12,226 (path improvements)
+    Duplicate skips: 11,298 (already in closed)
+    Path length:     219 grid steps
+    Path cost:       514,982
+    Via count:       2
+    Initial h:       677,718
+    Final g:         514,982
+    Open set size:   28,866 (at termination)
+    Closed set size: 11,922 (unique visited)
+    Heuristic ratio: 1.316 (h/g, weighted A* (h_weight ~1.3))
+    Expansion ratio: 54.4x path length (very poor)
+    Revisit ratio:   1.025 (path improvements / expanded)
+    Skip ratio:      0.487 (duplicates / total pops)
+  SUCCESS: 11 segments, 2 vias, 33221 iterations, length=29.69mm (stubs=0.00mm) (0.08s)
+
+[21/22] Routing LR_RST (id=13)
+  A* Search Statistics:
+    Cells expanded:  1,614 (popped from open set)
+    Cells pushed:    6,157 (added to open set)
+    Cells revisited: 1,944 (path improvements)
+    Duplicate skips: 1,860 (already in closed)
+    Path length:     90 grid steps
+    Path cost:       258,710
+    Via count:       2
+    Initial h:       214,383
+    Final g:         258,710
+    Open set size:   2,683 (at termination)
+    Closed set size: 1,613 (unique visited)
+    Heuristic ratio: 0.829 (h/g, admissible (underestimate))
+    Expansion ratio: 17.9x path length (poor)
+    Revisit ratio:   1.204 (path improvements / expanded)
+    Skip ratio:      0.535 (duplicates / total pops)
+  SUCCESS: 7 segments, 2 vias, 8474 iterations, length=9.40mm (stubs=0.00mm) (0.03s)
+
+[22/22] Routing LR_BUSY (id=14)
+  A* Search Statistics:
+    Cells expanded:  21,413 (popped from open set)
+    Cells pushed:    102,755 (added to open set)
+    Cells revisited: 30,619 (path improvements)
+    Duplicate skips: 29,503 (already in closed)
+    Path length:     465 grid steps
+    Path cost:       677,176
+    Via count:       2
+    Initial h:       959,422
+    Final g:         677,176
+    Open set size:   51,839 (at termination)
+    Closed set size: 21,412 (unique visited)
+    Heuristic ratio: 1.417 (h/g, weighted A* (h_weight ~1.4))
+    Expansion ratio: 46.0x path length (very poor)
+    Revisit ratio:   1.430 (path improvements / expanded)
+    Skip ratio:      0.579 (duplicates / total pops)
+  SUCCESS: 19 segments, 2 vias, 60916 iterations, length=48.72mm (stubs=0.00mm) (0.10s)
+
+Sync pcb_data: 243 -> 0 (kept stubs) -> 243 (after adding 243)
+
+============================================================
+Multi-point Phase 3: Routing 40 tap connections
+============================================================
+Phase 3 order (boxed-in risk first): I2C_SDA, +3V3, GND, VCAP, I2C_SCL, VDIV_MID
+
+I2C_SDA (net 16):
+  Multi-point net Phase 3: routing 2 remaining MST edges (longest first)
+    [1/40] Routing MST edge: pad 1 -> pad 2 (length=9.84mm) target=(23.32, 34.98)
+      Routed in 4873 iterations (0.00s)
+    [2/40] Routing MST edge: pad 2 -> pad 3 (length=28.78mm) target=(45.08, 42.00)
+      Routed in 305 iterations (0.00s)
+  Phase 3 routing complete: 2 edges, 26 total segments, 0 total vias
+  Added 21 tap segments, 0 tap vias
+  Net total time: 0.05s, 5387 iterations
+
++3V3 (net 1):
+  POUR-LAUNCH v3: +111 region-laddered target(s) across 1 component(s) (phase 3)
+  Multi-point net Phase 3: routing 14 remaining MST edges (longest first)
+    [3/40] Routing MST edge: pad 9 -> pad 15 (length=22.30mm) target=(45.52, 8.00)
+      Routed in 2 iterations (0.00s)
+    [4/40] Routing MST edge: pad 9 -> pad 3 (length=21.71mm) target=(19.00, 25.48)
+      Routed in 2 iterations (0.00s)
+    [5/40] Routing MST edge: pad 15 -> pad 16 (length=8.00mm) target=(51.00, 10.52)
+      Routed in 2 iterations (0.00s)
+    [6/40] Routing MST edge: pad 3 -> pad 2 (length=7.26mm) target=(14.22, 23.00)
+      Routed in 49 iterations (0.00s)
+    [7/40] Routing MST edge: pad 3 -> pad 4 (length=4.71mm) target=(20.14, 29.05)
+      Routed in 36 iterations (0.00s)
+    [8/40] Routing MST edge: pad 4 -> pad 11 (length=14.26mm) target=(34.25, 29.20)
+      Routed in 2 iterations (0.00s)
+    [9/40] Routing MST edge: pad 4 -> pad 7 (length=8.46mm) target=(22.68, 34.98)
+      Routed in 2608 iterations (0.01s)
+    [10/40] Routing MST edge: pad 7 -> pad 8 (length=2.70mm) target=(23.32, 37.02)
+      Routed in 1542 iterations (0.01s)
+    [11/40] Routing MST edge: pad 8 -> pad 5 (length=1.30mm) target=(22.02, 37.02)
+      Routed in 5 iterations (0.00s)
+    [12/40] Routing MST edge: pad 5 -> pad 1 (length=8.54mm) target=(14.00, 36.51)
+      Routed in 2 iterations (0.00s)
+    [13/40] Routing MST edge: pad 5 -> pad 6 (length=5.49mm) target=(22.54, 42.00)
+      Routed in 1 iterations (0.00s)
+    [14/40] Routing MST edge: pad 11 -> pad 12 (length=1.10mm) target=(34.25, 30.30)
+      Routed in 12 iterations (0.00s)
+    [15/40] Routing MST edge: pad 11 -> pad 10 (length=1.10mm) target=(34.25, 28.10)
+      Routed in 12 iterations (0.00s)
+    [16/40] Routing MST edge: pad 12 -> pad 13 (length=1.10mm) target=(34.25, 31.40)
+      Routed in 12 iterations (0.00s)
+  Phase 3 routing complete: 14 edges, 52 total segments, 8 total vias
+  Added 45 tap segments, 6 tap vias
+  Net total time: 0.21s, 35185 iterations
+
+GND (net 2):
+  POUR-LAUNCH v3: +165 region-laddered target(s) across 1 component(s) (phase 3)
+  Multi-point net Phase 3: routing 19 remaining MST edges (longest first)
+    [17/40] Routing MST edge: pad 24 -> pad 25 (length=11.70mm) target=(30.48, 2.00)
+      Routed in 2 iterations (0.00s)
+    [18/40] Routing MST edge: pad 24 -> pad 26 (length=11.70mm) target=(30.48, 16.00)
+      Routed in 2 iterations (0.00s)
+    [19/40] Routing MST edge: pad 26 -> pad 27 (length=10.38mm) target=(34.25, 22.60)
+      Routed in 2 iterations (0.00s)
+    [20/40] Routing MST edge: pad 1 -> pad 0 (length=8.75mm) target=(4.25, 18.00)
+      Routed in 2 iterations (0.00s)
+    [21/40] Routing MST edge: pad 20 -> pad 22 (length=7.65mm) target=(22.68, 37.02)
+      Wide power route blocked - routed short edge at 0.2000mm (down from 0.3000)
+      Boxed endpoint unblocked by rung-0.45/0.2 via search (no pre-placed via)
+      Routed in 5111 iterations (0.04s)
+    [22/40] Routing MST edge: pad 29 -> pad 28 (length=7.21mm) target=(38.79, 36.00)
+      Routed in 2 iterations (0.00s)
+    [23/40] Routing MST edge: pad 28 -> pad 31 (length=9.56mm) target=(43.75, 31.40)
+      Routed in 2 iterations (0.00s)
+    [24/40] Routing MST edge: pad 2 -> pad 3 (length=6.97mm) target=(9.51, 38.00)
+      Routed in 55 iterations (0.00s)
+    [25/40] Routing MST edge: pad 22 -> pad 21 (length=2.70mm) target=(22.02, 34.98)
+      Boxed endpoint unblocked by rung-0.45/0.2 via search (no pre-placed via)
+      Routed in 16 iterations (0.03s)
+    [26/40] Routing MST edge: pad 21 -> pad 18 (length=9.14mm) target=(17.86, 30.00)
+      Routed in 16 iterations (0.00s)
+    [27/40] Routing MST edge: pad 18 -> pad 19 (length=6.62mm) target=(19.00, 24.52)
+      Routed in 24 iterations (0.00s)
+    [28/40] Routing MST edge: pad 19 -> pad 17 (length=4.74mm) target=(15.78, 23.00)
+      Routed in 33 iterations (0.00s)
+    [29/40] Routing MST edge: pad 31 -> pad 30 (length=2.20mm) target=(43.75, 29.20)
+      Routed in 145 iterations (0.00s)
+    [30/40] Routing MST edge: pad 30 -> pad 33 (length=12.97mm) target=(49.52, 22.00)
+      Routed in 2 iterations (0.00s)
+    [31/40] Routing MST edge: pad 33 -> pad 35 (length=2.98mm) target=(51.00, 20.50)
+      Routed in 16 iterations (0.00s)
+    [32/40] Routing MST edge: pad 35 -> pad 34 (length=9.02mm) target=(51.00, 11.48)
+      Routed in 2 iterations (0.00s)
+    [33/40] Routing MST edge: pad 34 -> pad 32 (length=8.00mm) target=(45.52, 14.00)
+      Routed in 2 iterations (0.00s)
+    [34/40] Routing MST edge: pad 33 -> pad 36 (length=2.95mm) target=(52.48, 22.00)
+      Routed in 16 iterations (0.00s)
+    [35/40] Routing MST edge: pad 22 -> pad 23 (length=1.30mm) target=(23.98, 37.02)
+      Routed in 27 iterations (0.00s)
+  Phase 3 routing complete: 19 edges, 58 total segments, 15 total vias
+  Added 56 tap segments, 14 tap vias
+  Net total time: 0.25s, 5479 iterations
+
+VCAP (net 3):
+  Multi-point net Phase 3: routing 3 remaining MST edges (longest first)
+    [36/40] Routing MST edge: pad 2 -> pad 4 (length=10.54mm) target=(22.35, 23.00)
+      Routed in 29687 iterations (0.02s)
+    [37/40] Routing MST edge: pad 1 -> pad 0 (length=7.49mm) target=(4.51, 36.00)
+      Routed in 38 iterations (0.00s)
+    [38/40] Routing MST edge: pad 2 -> pad 3 (length=1.90mm) target=(17.86, 30.95)
+      Routed in 4 iterations (0.00s)
+  Phase 3 routing complete: 3 edges, 37 total segments, 2 total vias
+  Added 14 tap segments, 2 tap vias
+  #444 seam re-ask: VCAP tree is 1.33x its MST bound -- re-asking whole
+
+  Re-routing VCAP (net 3)...
+  Multi-point net Phase 1: routing longest MST edge (pads 1 and 2, length=12.81mm)
+  Probe: forward=5000, backward=5000 iters, trying forward with full iterations...
+  Phase 1 routed in 33145 iterations, 23 segments
+    Re-routed main path: 23 segments, 0 vias
+  Multi-point net Phase 3: routing 3 remaining MST edges (longest first)
+    [1/0] Routing MST edge: pad 2 -> pad 4 (length=10.54mm) target=(22.35, 23.00)
+      Routed in 29687 iterations (0.02s)
+    [2/0] Routing MST edge: pad 1 -> pad 0 (length=7.49mm) target=(4.51, 36.00)
+      Routed in 38 iterations (0.00s)
+    [3/0] Routing MST edge: pad 2 -> pad 3 (length=1.90mm) target=(17.86, 30.95)
+      Routed in 4 iterations (0.00s)
+  Phase 3 routing complete: 3 edges, 37 total segments, 2 total vias
+    Re-routed 14 tap segments, 2 tap vias
+      restore skipped (net 3): saved copper would short other-net copper; left ripped (#134)
+  Net total time: 0.36s, 62527 iterations
+
+I2C_SCL (net 17):
+  Multi-point net Phase 3: routing 1 remaining MST edges (longest first)
+    [39/40] Routing MST edge: pad 1 -> pad 2 (length=30.67mm) target=(47.62, 42.00)
+      Routed in 727 iterations (0.00s)
+  Phase 3 routing complete: 1 edges, 17 total segments, 2 total vias
+  Added 13 tap segments, 0 tap vias
+  Net total time: 0.03s, 6075 iterations
+
+VDIV_MID (net 5):
+  Multi-point net Phase 3: routing 1 remaining MST edges (longest first)
+    [40/40] Routing MST edge: pad 0 -> pad 2 (length=7.00mm) target=(8.49, 38.00)
+      Routed in 44 iterations (0.00s)
+  Phase 3 routing complete: 1 edges, 10 total segments, 0 total vias
+  Added 3 tap segments, 0 tap vias
+  Net total time: 0.02s, 532 iterations
+Issue #134 recovery: re-routing 1 net(s) left ripped to avoid a short: VCAP
+
+[REROUTE 23/23] Re-routing ripped net VCAP
+  Multi-point net with 5 pads - routing main + taps
+  Multi-point net Phase 1: routing longest MST edge (pads 1 and 2, length=12.81mm)
+  Probe: forward=5000, backward=5000 iters, trying forward with full iterations...
+  Phase 1 routed in 36674 iterations, 21 segments
+  Multi-point net Phase 3: routing 3 remaining MST edges (longest first)
+    [1/0] Routing MST edge: pad 2 -> pad 4 (length=10.54mm) target=(22.35, 23.00)
+      Routed in 32594 iterations (0.02s)
+    [2/0] Routing MST edge: pad 1 -> pad 0 (length=7.49mm) target=(4.51, 36.00)
+      Routed in 32178 iterations (0.02s)
+    [3/0] Routing MST edge: pad 2 -> pad 3 (length=1.90mm) target=(17.86, 30.95)
+      Routed in 4 iterations (0.00s)
+  Phase 3 routing complete: 3 edges, 36 total segments, 3 total vias
+    Tap routing: 15 segments, 3 vias
+  REROUTE SUCCESS: 36 segments, 3 vias, length=39.61mm (stubs=0.00mm) (0.08s)
+Closed 2 stub gap(s) to same-net copper
+Cycle prune: removed 13 redundant loop segment(s) across 9 net(s)
+Strict collapse: removed 4 redundant segment(s) (superseded parallel/buried copper)
+Width neck: narrowed 2 wide segment(s) grazing a foreign pad
+Octolinear smoothing: collapsed 23 staircase span(s) on 16 net(s), -3.79 mm of copper (#536)
+Merged 9 collinear joint(s) on 7 net(s): -9 redundant segment(s) (#811)
+
+============================================================
+Routing complete
+============================================================
+  Single-ended:  22/22 routed
+  Multi-point:   69/69 pads connected (6 nets)
+  Total vias:    51
+  Total time:    1.06s
+  Iterations:    395,402
+  Fragility refresh (#466): 18 windows, 0.78s total
+
+Power trace ampacity (bottleneck segment, IPC-2152):
+  +3V3: 0.74A max (0.200mm on F.Cu (1 oz copper, 10°C rise), IPC-2221: 0.74A)
+  GND: 0.74A max (0.200mm on F.Cu (1 oz copper, 10°C rise), IPC-2221: 0.74A)
+JSON_SUMMARY: {"routed_single": ["I2C_SDA", "I2C_SCL", "+3V3", "GND", "LED_A", "RF_OUT", "SPI_MISO", "VDIV_MID", "VCAP", "GPS_RX", "SPI_SCK", "UART0_RX", "SPI_MOSI", "EN", "SPI_NSS", "LED_DRIVE", "GPS_TX", "LR_DIO0", "UART0_TX", "SOLAR_IN", "LR_RST", "LR_BUSY"], "failed_single": [], "open_single": [], "failed_multipoint": [], "multipoint_nets": 6, "multipoint_pads_connected": 69, "multipoint_pads_total": 69, "multipoint_edges_routed": 46, "multipoint_edges_failed": 0, "ripup_success_pairs": [], "rerouted_pairs": [], "single_ended_target_swaps": [], "layer_swaps": 0, "successful": 22, "failed": 0, "total_time": 1.06, "total_iterations": 395402, "total_vias": 51, "cleanup_disconnected": [], "min_clearance_used": 0.175, "design_rules": {"escalation_policy": "fab", "fab_tier": "standard", "board_floors": {"via_diameter": 0.5, "via_drill": 0.2, "hole_to_hole": 0.25, "annular": 0.1, "board_edge": 0.5}, "count": 1, "nets": [17], "narrowed": [{"net": 17, "net_name": null, "kind": "via_diameter", "requested": 0.6, "delivered": 0.45, "site": "via-in-pad clamp (floor)", "count": 1}], "min_delivered": {"via_diameter": 0.45}, "fab_tier_escalations": 0, "fab_tier_contexts": [], "unsupported_rules": []}, "plane_fragility": {"source": "kicad_refill", "islands": 2, "refill_status": "ok", "why": "the KiCad refill succeeded", "machine_dependent": false}, "oracle_check": "disabled", "pad_pairs_connected": 79, "pad_pairs_total": 79, "power_trace_ampacity": [{"net": "+3V3", "bottleneck_width_mm": 0.2, "bottleneck_layer": "F.Cu", "copper_oz": 1.0, "max_current_a": 0.74, "max_current_ipc2152_a": 0.74, "temp_rise_c": 10.0, "trace_length_mm": 44.0}, {"net": "GND", "bottleneck_width_mm": 0.2, "bottleneck_layer": "F.Cu", "copper_oz": 1.0, "max_current_a": 0.74, "max_current_ipc2152_a": 0.74, "temp_rise_c": 10.0, "trace_length_mm": 20.6}], "scope": "run", "env_knobs": {}}
+
+Writing output to /home/c03rad0r/worktrees/t_21ab3b23/tracker/hardware/output/v8b_krt_routed.kicad_pcb...
+Successfully wrote /home/c03rad0r/worktrees/t_21ab3b23/tracker/hardware/output/v8b_krt_routed.kicad_pcb
+  In-run DRC floors (#650): lowered 1 value(s) in v8b_krt_routed.kicad_pro to the routed floors so the in-run audit grades what ships
+      rules.min_hole_clearance: 0.25 -> 0.2 mm
+
+Plane finalize (#562): all zone nets complete (fill-aware) -- skipping engine/cleanup legs, oracle verifies
+  KiCad-oracle recheck: deterministic exact-fill link source (pcbnew refill)
+  KiCad-oracle recheck: KiCad reports all processed nets complete
+  [finalize timing] oracle leg: 1.0s
+JSON_ORACLE: {"available": true, "reason": "ok", "why": "the oracle ran", "rounds": 0, "links_routed": 0, "links_failed": 0, "remaining": 0, "collapsed_duplicate_links": 0, "remaining_links": [], "cross_board": 0, "removed_segments": [], "removed_vias": []}
+  Design rules [--escalation fab, --fab-tier standard]: 1 feature(s) on 1 net(s) delivered below the requested size (smallest via diameter 0.45 mm). Details: JSON_SUMMARY design_rules.
+JSON_SUMMARY_MIN: {"escalations": 1, "failed": 0, "failed_single": [], "main_loop_time_s": 1.06, "min_clearance_used": 0.175, "multipoint_deficit": 0, "open_single": [], "pad_pairs_open": {"count": 0, "nets": []}, "routed": 22, "scope": "merged", "terminal_restores_broken": [], "vias": 51}
+  --write-fill: wrote 2 filled_polygon block(s); the deliverable no longer reads phantom plane opens until refilled
+EXIT=0

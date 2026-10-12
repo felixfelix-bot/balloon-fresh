@@ -10,6 +10,11 @@ empirical spot-tests (flrc-retest-20260821.md).
 - Fix: host START-reply validation (fail fast, error= column) + LoRa LEN rows
   capped at 255 + NEW FLRC LEN sweep section (16..511 @BR650) where 511 is legal.
 - Secondary: RX-board START lacks the cap (cosmetic parity, fix it).
+  - FIXED (FIX-T2, branch fix/t2-rx-start-len-gate): gate extracted into
+    `bench_start_len_ok(mod,len)` + `bench_start_len_err_str()` in bench_cmd.c;
+    BOTH the RX and TX START branches now reject with the identical
+    `ERR LEN (MAX 255 LORA / 511 FLRC)` reply. Truth table
+    LEN {6,255,256,511,512} x {LORA,FLRC} pinned in tests/test_bench_cmd.c.
 
 ## BUG 2 — FLRC CRC: root cause high confidence
 - Primary (H1): FLRC RX sync-match `MATCH_SYNCWORD_1` broken for 32-bit sync
@@ -19,6 +24,11 @@ empirical spot-tests (flrc-retest-20260821.md).
   range-tests' old Match1 (0x4C) produced the same failure family (9b740aa).
 - Co-required (H2): bench NEVER calls lr20xx_radio_fifo_clear_rx() (0 grep
   matches). RadioLib clears after every read; 9b740aa fix #3 was exactly this.
+  FIXED (FIX-T4, branch fix/t4-fifo-clear): radio_bench_rx_arm() clears the
+  RX FIFO on every re-arm (IRQ-handler re-arm path => every packet) and
+  radio_bench_tx_packet() clears the TX FIFO before each FIFO write; pinned
+  byte-exact by host tests (tests/test_radio_bench_fifo.c, opcodes 0x011E/
+  0x011F, ordering after SetPacketParams / before SetRx+write).
 - Fallback if hw verify fails: CRC_OFF + app-layer pcrc16/PRBS (range-tests'
   final architecture; pcrc16 field already in flashed fw).
 - SNR=0.0 in FLRC is BY DESIGN (radio_bench.c:432/459 sets snr_qdb=0) — document.
@@ -48,3 +58,131 @@ empirical spot-tests (flrc-retest-20260821.md).
 Acceptance: FLRC 8 BR rows crc_err=0 50/50, PRBS bit_err=0, seq monotonic,
 drops=0; FLRC L511 50/50 clean; LoRa LEN rows all tx_done 50/50; negative test
 ERR within 1 s recorded in error= col.
+
+---
+
+## Resolution status (2026-09-16) — what is fixed, what is VERIFIED, what is not
+
+Written by FIX-T8 (t_b923f5a3). Read this before quoting a verdict from the
+BUG sections above: **no FLRC/LoRa sweep data was produced for this plan**, so
+the BUG 2 / BUG 3 hardware-verification columns are still PENDING.
+
+### Data status: the FIX-T6 / FIX-T7 measurements DO NOT EXIST
+
+| Card | Deliverable | Reality |
+|------|-------------|---------|
+| FIX-T5 (t_4e225809) | build + SWD flash both boards | `done` only because the fleet offload marked it so; the thread records a blocked pre-flight and **no flash happened** |
+| FIX-T6 (t_c5d28b3f) | FLRC BR sweep + LEN boundary bisect CSVs | **no data.** Its single run is a blocked pre-flight (no TX probe on the fleet; the reconciled head did not exist) — verdict + runbook on branch `fix/t6-sweep-preflight` (9b8966d), `docs/FIX-T6-preflight-verdict-20260916.md` (not merged to `main`) |
+| FIX-T7 (t_f04ee0b6) | LoRa LEN sweep + negative test CSVs | **zero runs recorded**; `fleet-writeback` set it `done` with no summary, no artifacts, no CSVs |
+| FIX-R2 (t_52ede356) | build + flash the RECONCILED head, verify `ID?` SHA | still `todo` — no reconciled head exists on any remote yet |
+
+Consequence: **there are no new sweep CSVs to commit with this document.**
+The acceptance criteria at the end of this plan are unmet, not waived.
+
+### Verdicts that ARE grounded in code + host tests
+
+| Bug | Verdict | Evidence |
+|-----|---------|----------|
+| BUG 1 — LoRa LEN=511 | **RESOLVED (code), host-verified** | the cap is real and per-modulation: LoRa `pld_len_in_bytes` is a `uint8_t` (`third_party/Radio/lr20xx_driver/inc/lr20xx_radio_lora_types.h:247`), FLRC is `uint16_t` with documented range `[6:511]` (`.../lr20xx_radio_flrc_types.h:210`). Firmware TX gate is on `main` (`src/bench.c:786-790`); the RX parity gate + shared predicate is `fix/t2-rx-start-len-gate` (69dfd17); host-side START-reply fail-fast + LoRa cap + FLRC LEN section is `fix/t1-sweep-start-validation` (2e4a2c6). Hardware confirmation still pending (FIX-T7). |
+| BUG 2 — FLRC CRC (Match123 + FIFO hygiene) | **IMPLEMENTED, hardware-UNVERIFIED** | Match123 + golden-byte host tests: `fix/t3-flrc-match123` (a1fcd27). RX FIFO clear per re-arm + TX FIFO clear: `fix/t4-fifo-clear` (07dbb8d). Both are branch-local — neither is an ancestor of `main`, so `main` still carries `RX_MATCH_SYNCWORD_1`. The "100 % chip CRC failure" claim has NOT been re-measured on hardware. |
+| BUG 3 — LEN=255 exact boundary fail + +35 dB RSSI step | **OPEN / UNMEASURED** | the only evidence is the 2026-08-21 spot-test data (`flrc-retest-20260821.md`). The FIX-T6 bisect (LEN 253-257 @BR1300 PA10) never ran. If the +35 dB step survives the Match123 fix it is a separate firmware finding, not a Match123 artefact. |
+
+### Line-reference corrections for the BUG sections above
+
+- "bench.c:688 correctly refuses LEN>255 LoRa" → the per-modulation cap and
+  its ERR string are at `src/bench.c:786-790` (TX `START`), and the same
+  predicate gates the RX `START` on `fix/t2-rx-start-len-gate`.
+- "radio_bench.c:432/459 sets snr_qdb=0" → the FLRC SNR clamp is in
+  `src/radio_bench.c` on both the IRQ path and the poll path, each commented
+  "FLRC has no SNR estimate". The 255-is-silicon claim now has a citation:
+  `uint8_t pld_len_in_bytes` in the LoRa packet-params struct; FLRC's 511 is
+  legal for the same reason (`uint16_t`, range `[6:511]`).
+- Semantics of the fields analysis leans on (`pcrc16`, `snr_db=0.0` for FLRC,
+  the two `drops=` counters, per-modulation LEN limits) are documented in
+  `firmware/e80-stm32-bench/README.md` ("Bench Protocol Limits & Radio Notes")
+  and `firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md` (§10).
+
+---
+
+## FIX-T3 results (2026-08-21, branch fix/t3-flrc-match123)
+
+**Match1 → Match123 shipped.** `src/radio_bench.c` FLRC pkt params now set
+`match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3`.
+Rationale unchanged (BUG 2 above): Match1 + 32-bit sync word leaks sync
+bytes into the payload → chip CRC fails 100% while packets still demodulate.
+
+**Golden pkt-params bytes pinned by host tests** (`tests/test_radio_bench_cfg.c`,
+runs in ctest): the test harness fake-HALs the lr20xx driver and captures
+every SPI command emitted by the REAL `radio_bench.c` + REAL vendored driver.
+FLRC SetPacketParams (opcode 0x0249, 6 B) on-wire golden values, verified
+across apply_cfg / rx_arm(255) / tx_packet(len=255):
+
+- byte[2] = 0x1E — PREAMBLE_LEN_32_BITS (0x07<<2) | SYNCWORD_LENGTH_4_BYTES (0x02)
+- byte[3] = 0x7D — CRC_2_BYTES (0x01) | PKT_FIX_LEN (0x01<<2) |
+  MATCH_1_OR_2_OR_3 (0x07<<3) | TX_SYNCWORD_1 (0x01<<6)
+  (before the fix: 0x4D = Match1; balloon-range-tests 9b740aa raw cfg was
+  0x7C = same as 0x7D but CRC_OFF)
+- byte[4..5] = pld_len (0x00FF at apply_cfg; patched per op by rx_arm/tx)
+
+Plus a Match1 tripwire test: decoded match field must equal Match123 and must
+NOT equal Match1 — fires if anyone reintroduces the bug. Do not "fix" that test.
+
+**LEN=255 branch hunt: NO firmware branch exists.** Greps over the full fw
+payload path (`src/radio_bench.c`, `src/bench.c`, `src/buffer.c`, vendored
+`lr20xx_radio_fifo.c` + `radio_hal/lr20xx_hal.c`) for 255/0xFF boundary
+conditions found none. All 255s are constants (defaults, demo parity) or the
+correct per-mod cap gate `len > max_len` (bench.c:688; 255 LoRa / 511 FLRC,
+boundary values themselves allowed, as intended). RSSI readout has no
+length-dependent path (FLRC rssi_avg from get_pkt_status, radio_bench.c:430).
+
+Conclusion: the LEN=255-exactly CRC failure and the +35 dB RSSI step at
+LEN>=255 (BUG 3) are NOT explainable by a host-MCU firmware branch — they are
+chip-side (LR2021 silicon RSSI-averaging window / FLRC demod behavior) or
+RF-side. Match123 removes the known config-side CRC killer; the remaining
+boundary anomaly still needs the on-hardware LEN bisect 254/255/256/300
+(FIX-T6) with the new fw.
+
+---
+
+## FIX-T6 pre-flight (2026-09-16) — HOLD, tool gate added
+
+**Read `docs/FIX-T6-preflight-verdict-20260916.md` before running FIX-T6.** It
+records, with hardware evidence, that FIX-T5 never flashed (the card is `done`
+only via the fleet write-back), that only ONE E80 board (RX probe
+`203584200D2D0D42`, fw=`5fa7912`) is attached to the fleet and that the TX board
+probe is absent — so no sweep may be claimed as FIX-T6 evidence until
+`t_52ede356` (FIX-R2) flashes the reconciled head.
+
+Three defects were found and fixed on branch `fix/t6-sweep-preflight`
+(base `origin/main` b862357) so the resumed run cannot silently produce a
+misleading verdict:
+
+1. **Console baud contract (silent failure).** `src/main.h` default is **115200**,
+   but `tools/e80_sweep_full.py` and `tools/e80_bench_ctl.py` hardcoded
+   `BAUD = 2000000` (the unmerged `feat/2g4-sweep` fw). Against a `main`-based
+   board every command is dropped and the CSV reads as RF death. The sweep tool
+   now derives the baud from the firmware header (`fw_default_baud()` /
+   `resolve_baud()`, `E80_BAUD` override) and the pre-flight gate makes a
+   mismatch fatal. Verified on hardware: the DQ05 board answers at 115200.
+2. **The chain tip cannot cover the acceptance set.** `07dbb8d`'s
+   `build_configs()` has no FLRC LEN matrix (only `LEN_SWEEP` applied to LoRa,
+   uncapped), so 256/300/384/448 rows do not exist and an illegal LoRa L511 row
+   is emitted — measured: 33 failed / 1 passed for this card's gate suite against
+   that tree. The GREEN implementation (`2e4a2c6`, T1 tip) is **not an ancestor**
+   of the chain tip; the reconciled head must fold it in.
+3. **Duplicated `(br650, pa5, plen64)` row** (sections D and G) broke knob-tuple
+   section selection (9 rows for an 8-row section); each section is now its own
+   builder reached via `SECTION_BUILDERS`. (Tagging the config dicts with a `flag`
+   key was the first attempt and is WRONG here: it breaks the dict-for-dict parity
+   test with `balloon_sweep.build_configs()` in `tools/test_balloon_sweep.py`.
+   That test hid behind a same-named pre-existing ctest failure — compare failure
+   REASONS, not test names.)
+
+New gate: `tools/test_e80_sweep_preflight.py` (40 tests, no pyserial needed) is
+wired into `make test-host` and pins the matrix coverage, the baud contract and
+the pre-flight decision — including that the gate only ever sends `ID?`. The
+sweep now refuses to key the radio unless `--preflight` passes for both boards
+and (with `--expected-fw <sha7>`) the boards report the firmware under test;
+`fw_measured` is recorded in the run metadata JSON. With the tool's `serial`
+import made tolerant, `make test-host` is **21/21 (100%)** on this branch, versus
+19/20 on base.

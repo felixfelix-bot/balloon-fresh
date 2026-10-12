@@ -1,0 +1,27 @@
+Drill report for v8b_krt_routed.kicad_pcb
+Created on 2026-09-29T12:58:53+0200
+
+Copper Layer Stackup:
+    =============================================================
+    L1 :  F.Cu                      front
+    L2 :  In1.Cu                    in1
+    L3 :  In2.Cu                    in2
+    L4 :  B.Cu                      back
+
+
+Drill file 'v8b_krt_routed.drl' contains
+    plated through holes:
+    =============================================================
+    T1  0.200mm  0.0079"  (3 holes)
+    T2  0.200mm  0.0079"  (12 holes)
+    T3  0.300mm  0.0118"  (48 holes)
+    T4  1.000mm  0.0394"  (14 holes)
+
+    Total plated holes count 77
+
+
+Not plated through holes are merged with plated holes
+    unplated through holes:
+    =============================================================
+
+    Total unplated holes count 0

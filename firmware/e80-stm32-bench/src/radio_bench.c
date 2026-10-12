@@ -57,12 +57,17 @@ static lr20xx_radio_flrc_mod_params_t flrc_mod_params = {
 };
 
 /* FLRC packet params (FIX_LEN; pld_len patched per operation).
- * Both bench ends must run the same LEN= (see README). */
+ * Both bench ends must run the same LEN= (see README).
+ * RX match mode is Match123 (FIX-T3): Match1 with a 32-bit sync word leaks
+ * sync bytes into the payload -> chip CRC fails 100% while packets still
+ * demodulate (RCA BUG 2; RadioLib LR2021 and balloon-range-tests 9b740aa
+ * raw cfg 0x7C both run Match123). Golden bytes pinned by
+ * tests/test_radio_bench_cfg.c. */
 static lr20xx_radio_flrc_pkt_params_t flrc_pkt_params = {
     .preamble_len    = LR20XX_RADIO_FLRC_PREAMBLE_LEN_32_BITS,
     .sync_word_len   = LR20XX_RADIO_FLRC_SYNCWORD_LENGTH_4_BYTES,
     .tx_syncword     = LR20XX_RADIO_FLRC_TX_SYNCWORD_1,
-    .match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1,
+    .match_sync_word = LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3,
     .header_type     = LR20XX_RADIO_FLRC_PKT_FIX_LEN,
     .pld_len_in_bytes = 255,
     .crc_type        = LR20XX_RADIO_FLRC_CRC_2_BYTES,
@@ -398,6 +403,15 @@ int radio_bench_rx_arm(uint16_t rx_pld_len)
      * after each packet — it just drains the FIFO and reports the event.
      * The fallback mode is now only used after TX (main loop re-arms RX).
      */
+
+    /* FIFO hygiene (FIX-T4, RCA BUG 2/H2): clear the RX FIFO on EVERY re-arm.
+     * This function re-runs from the IRQ handler after each received packet,
+     * so stale FIFO contents (e.g. an undrained CRC-error packet) can never
+     * corrupt the next payload. RadioLib LR2021 clears after every read;
+     * balloon-range-tests 9b740aa fix#3 was exactly this. Must land after
+     * SetPacketParams and before SetRx. */
+    lr20xx_radio_fifo_clear_rx(E80_CONTEXT);
+
     lr20xx_radio_common_set_rx_with_timeout_in_rtc_step(E80_CONTEXT, 0xFFFFFF);
 
     return 0;
@@ -424,6 +438,10 @@ int radio_bench_tx_packet(const uint8_t* buf, uint16_t len, uint32_t tx_timeout_
         lr20xx_radio_flrc_set_pkt_params(E80_CONTEXT, &flrc_pkt_params);
     }
 
+    /* FIFO hygiene (FIX-T4): clear the TX FIFO before loading the next
+     * packet so leftovers of an aborted TX can never prefix the payload. */
+    lr20xx_radio_fifo_clear_tx(E80_CONTEXT);
+
     lr20xx_radio_fifo_write_tx(E80_CONTEXT, buf, len);
 
     tx_active = true;
@@ -448,6 +466,35 @@ void radio_bench_wakeup(void)
 void radio_bench_set_tx_test_mode(lr20xx_radio_common_tx_test_mode_t mode)
 {
     lr20xx_radio_common_set_tx_test_mode(E80_CONTEXT, mode);
+}
+
+int radio_bench_get_die_temp(uint16_t* temp)
+{
+    /* VBE (0x00) + 13-bit — SAME source/resolution flight firmware uses to
+     * index the cryo cal table, so the bench reading is directly comparable.
+     * RAW format keeps the raw 13-bit value on the wire; °C conversion is
+     * done host-side (firmware stays float-free). System command: only valid
+     * in STDBY/FS — caller must gate on BSTATE_IDLE, never mid-RX/TX. */
+    return (lr20xx_system_get_temp(E80_CONTEXT,
+                                   LR20XX_SYSTEM_VALUE_FORMAT_RAW,
+                                   LR20XX_SYSTEM_MEAS_RES_13_BITS,
+                                   LR20XX_SYSTEM_TEMP_SRC_VBE,
+                                   temp) == LR20XX_STATUS_OK) ? 0 : -1;
+}
+
+int radio_bench_get_supply_mv(uint16_t* mv)
+{
+    /* LR2021 supply voltage in real millivolts (UNIT format). The unit
+     * format makes the radio return the power supply voltage directly in
+     * [mV] — the value logged on the wire as vcc_mv and consumed host-side
+     * with no scaling. Same system-command constraint as get_die_temp:
+     * only valid in STDBY/FS — caller gates on BSTATE_IDLE, never
+     * mid-RX/TX. (Not RAW: RAW returns an unscaled 13-bit count that would
+     * need host conversion; UNIT matches the mV field contract.) */
+    return (lr20xx_system_get_vbat(E80_CONTEXT,
+                                   LR20XX_SYSTEM_VALUE_FORMAT_UNIT,
+                                   LR20XX_SYSTEM_MEAS_RES_13_BITS,
+                                   mv) == LR20XX_STATUS_OK) ? 0 : -1;
 }
 
 bool radio_bench_is_asleep(void)

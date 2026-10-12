@@ -95,6 +95,32 @@ static bench_pkt_ctx_t pkt_ctx = { .session_id = 0, .config_id = 0, .replicate =
  * (unrecoverable app corrupt). Once set, it stays set until power-cycle. */
 static bool     iwdg_active = false;
 
+/* LR2021 VBE die-temp periodic sampler (e80-die-temp): emits a TEMP line at
+ * ~1 Hz, sampled ONLY while the radio is in STDBY (BSTATE_IDLE, between
+ * runs) and awake. lr20xx_system_get_temp() is a system command that only
+ * works in STDBY/FS — never mid-RX/TX (it would interrupt RX + perturb
+ * timing). The raw 13-bit value goes on the wire; °C conversion is host-side. */
+#define DIE_TEMP_PERIOD_MS 1000U
+static uint32_t last_temp_ms = 0;
+static uint16_t last_die_temp = 0;   /* cached for the STAT? per-run anchor */
+static bool     die_temp_valid = false;
+
+/* e80-interp-logging state (log-don't-tune). These are all LOGGED/REPORTED,
+ * never used to retune the radio in-flight. Applied offset, curve version +
+ * fixed-point {k,T0}, GS-synced epoch, and GPS alt/temp (host-injected)
+ * annotate the TEMP line so the GS can validate measured-vs-predicted offset
+ * and deconvolve thermal lag post-flight. */
+static int32_t  applied_offset_hz = 0; /* OFFSET <hz> — applied RX offset (signed) */
+static uint32_t curve_ver = 0;         /* CURVE <ver> <k> <t0> — curve in use */
+static int32_t  curve_k_mhz_per_c = 0; /* k slope (mHz/°C, signed fixed point) */
+static int32_t  curve_t0_mc = 0;       /* T0 (m°C, signed fixed point)        */
+static uint64_t sync_epoch_ms = 0;     /* SYNC <epoch_ms> — GS-synced epoch  */
+static bool     sync_valid = false;
+static uint32_t gps_alt_m = 0;         /* LOADGPS <alt_m> <temp_c>            */
+static int32_t  gps_temp_c = 0;        /* GPS temp °C (host-injected)         */
+static uint16_t last_vbat_mv = 0;      /* last supply mV reading              */
+static bool     vbat_valid = false;
+
 /* ---- Time ------------------------------------------------------------------- */
 
 static uint32_t bench_micros(void)
@@ -377,6 +403,75 @@ static void radio_sleep_now(void)
     state = BSTATE_IDLE;
 }
 
+/* Shared TEMP line emitter: prints one extended TEMP line from the cached
+ * last_die_temp / last_vbat_mv + interp annotation state. Used by both the
+ * ~1 Hz periodic sampler (die_temp_periodic) and the host-driven TEMP?
+ * per-run read — the on-wire format stays in ONE place so the two paths
+ * cannot drift. Fields after die_temp_raw are emitted positionally — 0
+ * placeholders when unset (GPS not injected, epoch not synced) — so the
+ * line shape is fixed for host parsing. */
+static void temp_line_emit(uint32_t now_ms)
+{
+    console_put("TEMP,");
+    console_put_u32(now_ms);
+    console_put(",");
+    console_put_u32(last_die_temp);
+    console_put(",");
+    console_put_i32(applied_offset_hz);
+    console_put(",");
+    console_put_u32(curve_ver);
+    console_put(",");
+    console_put_i32(curve_k_mhz_per_c);
+    console_put(",");
+    console_put_i32(curve_t0_mc);
+    console_put(",");
+    console_put_u32(last_vbat_mv);
+    console_put(",");
+    console_put_u32(gps_alt_m);
+    console_put(",");
+    console_put_i32(gps_temp_c);
+    console_put(",");
+    if (sync_valid)
+        console_put_u64(sync_epoch_ms);
+    else
+        console_put("0");
+    console_putln("");
+}
+
+/* Periodic LR2021 VBE die-temp sampler (e80-die-temp). Emits a
+ * 'TEMP,<ts_ms>,<die_temp_raw>' line at ~1 Hz, sampled ONLY while the radio
+ * is in STDBY (BSTATE_IDLE, between runs) and awake. lr20xx_system_get_temp()
+ * is a system command that only works in STDBY/FS — never mid-RX/TX (it
+ * would interrupt RX + perturb timing). The raw 13-bit value goes on the
+ * wire; °C conversion is done host-side (firmware stays float-free). */
+static void die_temp_periodic(void)
+{
+    uint32_t now_ms = HAL_GetTick();
+    if ((uint32_t)(now_ms - last_temp_ms) < DIE_TEMP_PERIOD_MS)
+        return;
+    last_temp_ms = now_ms;
+
+    if (state != BSTATE_IDLE)
+        return; /* never sample mid-RX/TX */
+    if (radio_bench_is_asleep())
+        return; /* radio must be awake (STDBY) for the system command */
+
+    uint16_t temp = 0, vbat = 0;
+    radio_critical_begin();
+    int rc = radio_bench_get_die_temp(&temp);
+    int rv = radio_bench_get_supply_mv(&vbat);
+    radio_critical_end();
+    if (rc != 0 || rv != 0)
+        return;
+
+    last_die_temp = temp;
+    die_temp_valid = true;
+    last_vbat_mv = vbat;
+    vbat_valid = true;
+
+    temp_line_emit(now_ms);
+}
+
 /* ---- TX-hang watchdog (see bench_safety.h for the layered design) ---------- */
 
 /* Send tx_buf as the next burst packet with the chip TX timeout armed. */
@@ -486,7 +581,7 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("CMDS: ID? | ROLE TX|RX|NONE | ARM TX | MOD loRa <sf5-12> <bw125|250|500> | ");
         console_put("MOD flrc <br_kbps 260..2600> <dbm0-10> | FREQ <hz> | PA <dbm> | ");
         console_put("POWER MODE OUTDOOR <pin> | ");
-        console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | STOP | ");
+        console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | TEMP? | STOP | ");
         console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> 410-2483MHz (incl 2.4GHz ISM) | ");
         console_put("SESSION <id> | CONFIG <id> <replicate> | ");
         console_put("PRBS9 ON|OFF | PRBS ON|OFF | QUIET ON|OFF | ");
@@ -667,6 +762,14 @@ static void handle_cmd(const bench_cmd_t* c)
             /* On the RX board the same START line just configures the expected
              * packet length (FLRC FIX_LEN window) and re-arms continuous RX.
              * The bench ctl script sends the identical line to both boards. */
+            /* FIX-T2 parity gate: same per-mod LEN cap as the TX branch below,
+             * so both boards answer 'ERR LEN (MAX 255 LORA / 511 FLRC)'
+             * identically instead of the RX board arming a doomed window. */
+            if (!bench_start_len_ok(cfg.mod, c->len_bytes))
+            {
+                reply_err(bench_start_len_err_str());
+                return;
+            }
             tx_len = (uint16_t)c->len_bytes;
             bench_stats_reset(&stats);
             stats.t_start_us = bench_micros();
@@ -687,10 +790,11 @@ static void handle_cmd(const bench_cmd_t* c)
             reply_err("NOT ARMED (SEND 'ARM TX')");
             return;
         }
-        uint16_t max_len = (cfg.mod == BENCH_MOD_LORA) ? 255 : 511;
-        if (c->len_bytes > max_len)
+        /* FIX-T2: TX gate now shares the exact predicate + ERR string with the
+         * RX branch (bench_start_len_ok / bench_start_len_err_str). */
+        if (!bench_start_len_ok(cfg.mod, c->len_bytes))
         {
-            reply_err("LEN (MAX 255 LORA / 511 FLRC)");
+            reply_err(bench_start_len_err_str());
             return;
         }
         tx_total  = c->n_pkts;
@@ -789,6 +893,31 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put_u32(tx_gap_us);
         console_put(" buf=");
         console_put_u32(buf_len());
+        if (die_temp_valid)
+        {
+            console_put(" die_temp=");
+            console_put_u32(last_die_temp);
+        }
+        /* e80-interp-logging STAT anchors: curve + offset + supply + sync
+         * echo what the TEMP line is annotating (log-don't-tune). */
+        console_put(" offset_hz=");
+        console_put_i32(applied_offset_hz);
+        console_put(" curve_ver=");
+        console_put_u32(curve_ver);
+        console_put(" k_mhz_per_c=");
+        console_put_i32(curve_k_mhz_per_c);
+        console_put(" t0_mc=");
+        console_put_i32(curve_t0_mc);
+        if (vbat_valid)
+        {
+            console_put(" vcc_mv=");
+            console_put_u32(last_vbat_mv);
+        }
+        if (sync_valid)
+        {
+            console_put(" sync_epoch_ms=");
+            console_put_u64(sync_epoch_ms);
+        }
         console_putln("");
         break;
     }
@@ -799,6 +928,77 @@ static void handle_cmd(const bench_cmd_t* c)
         session_active = false;
         console_putln("OK STOP (RADIO ASLEEP)");
         break;
+
+    case BENCH_CMD_TEMP:
+    {
+        /* Host-driven per-run die-temp anchor (e80-temp-per-run). Forces a
+         * FRESH die-temp + supply read at a safe moment — the brief window
+         * between runs — so each run carries a real per-run temperature
+         * anchor without perturbing the run's packets.
+
+         * lr20xx_system_get_temp()/get_vbat are SYSTEM commands: only valid
+         * in STDBY/FS. Never issued mid-burst: BSTATE_TX_BURST is refused
+         * outright (ERR), so a host TEMP? cannot interrupt an active TX
+         * burst. If we come from RX_CONT (role RX listening between runs)
+         * the read happens AFTER the previous run's capture and we re-arm
+         * continuous RX before returning, so the next run is unaffected. */
+        if (state == BSTATE_TX_BURST)
+        {
+            reply_err("TX BURST ACTIVE (STOP FIRST)");
+            return;
+        }
+
+        bool restore_rx_cont = (state == BSTATE_RX_CONT);
+        bool was_asleep      = radio_bench_is_asleep();
+        bool restore_sleep   = was_asleep && !restore_rx_cont;
+
+        radio_critical_begin();
+        if (was_asleep)
+            radio_bench_wakeup(); /* NSS glitch -> STDBY_RC (warm sleep wake) */
+        /* Force STDBY for the system read (RX_CONT -> STDBY_RC; a freshly
+         * woken radio is already in STDBY_RC). */
+        lr20xx_system_set_standby_mode(E80_CONTEXT, LR20XX_SYSTEM_STANDBY_MODE_RC);
+        uint16_t temp = 0, vbat = 0;
+        int rc = radio_bench_get_die_temp(&temp);
+        int rv = radio_bench_get_supply_mv(&vbat);
+        radio_critical_end();
+
+        if (rc != 0 || rv != 0)
+        {
+            /* Restore posture first — never leave the radio misconfigured,
+             * even when the read itself failed. */
+            if (restore_rx_cont)
+                radio_rearm_rx();
+            else if (restore_sleep)
+            {
+                radio_critical_begin();
+                radio_bench_sleep();
+                radio_critical_end();
+            }
+            reply_err("TEMP READ FAIL");
+            return;
+        }
+
+        last_die_temp = temp;
+        die_temp_valid = true;
+        last_vbat_mv = vbat;
+        vbat_valid = true;
+
+        /* Restore posture: re-arm RX if we came from RX_CONT so the next
+         * run is unaffected; return to sleep if the radio was asleep. */
+        if (restore_rx_cont)
+            radio_rearm_rx();
+        else if (restore_sleep)
+        {
+            radio_critical_begin();
+            radio_bench_sleep();
+            radio_critical_end();
+        }
+
+        /* ONE TEMP line — same on-wire format as the periodic sampler. */
+        temp_line_emit(HAL_GetTick());
+        break;
+    }
 
     case BENCH_CMD_BUF_CLEAR:
         buf_clear();
@@ -922,6 +1122,49 @@ static void handle_cmd(const bench_cmd_t* c)
         quiet_mode = c->quiet_enable;
         console_put("OK QUIET ");
         console_putln(c->quiet_enable ? "ON" : "OFF");
+        break;
+
+    /* ---- e80-interp-logging (log-don't-tune) ----------------------------- */
+    /* All four only update the REPORTED state annotated on the TEMP/STAT
+     * lines. NONE of them retune the radio or change cfg — the balloon's
+     * curve stays FIXED in-flight; the GS validates, never tunes. */
+
+    case BENCH_CMD_OFFSET:
+        applied_offset_hz = c->offset_hz;
+        console_put("OK OFFSET ");
+        console_put_i32(applied_offset_hz);
+        console_putln(" (LOGGED - RADIO NOT RETUNED)");
+        break;
+
+    case BENCH_CMD_CURVE:
+        curve_ver = c->curve_ver;
+        curve_k_mhz_per_c = c->curve_k;
+        curve_t0_mc = c->curve_t0;
+        console_put("OK CURVE ver=");
+        console_put_u32(curve_ver);
+        console_put(" k_mhz_per_c=");
+        console_put_i32(curve_k_mhz_per_c);
+        console_put(" t0_mc=");
+        console_put_i32(curve_t0_mc);
+        console_putln(" (LOGGED - CURVE FIXED IN-FLIGHT)");
+        break;
+
+    case BENCH_CMD_SYNC:
+        sync_epoch_ms = c->sync_epoch_ms;
+        sync_valid = true;
+        console_put("OK SYNC epoch_ms=");
+        console_put_u64(sync_epoch_ms);
+        console_putln(" (GS CLOCK JOIN)");
+        break;
+
+    case BENCH_CMD_LOADGPS:
+        gps_alt_m = c->gps_alt_m;
+        gps_temp_c = c->gps_temp_c;
+        console_put("OK GPS alt_m=");
+        console_put_u32(gps_alt_m);
+        console_put(" temp_c=");
+        console_put_i32(gps_temp_c);
+        console_putln(" (INJECTED)");
         break;
 
     default:
@@ -1180,6 +1423,7 @@ int main(void)
             }
         }
         radio_task();
+        die_temp_periodic();
     }
 #else
     return 0;

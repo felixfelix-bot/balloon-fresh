@@ -1,0 +1,121 @@
+22. Known Limitations and Workarounds
+At the time of authoring this document, some limitations are known.
+Implementations of workarounds are described inside the readme of the LR2021/LR2022/LR2012 drivers hosted on the Semtech Github
+page available at https://github.com/lora-net.
+Some workarounds are automatically applied by the drivers. Review the guidelines provided individually for each workaround.
+
+
+
+22.1 OOK Detection Threshold Adjustment (LR20xx)
+
+22.1.1 Description
+The LR20xx uses a fixed RSSI threshold, calculated automatically by the IC as a function of the Receiver Bandwidth. However, this fixed
+threshold calculation can be limiting:
+•    Threshold set too high: The receiver becomes overly cautious about noise and may miss weak valid signals, resulting in weak sensitivity
+•    Threshold set too low: In presence of noise and interference in the channel, the threshold may be set overly low, resulting in false
+     detections and missed packets (PER)
+
+
+22.1.2 Workaround
+The OOK Detection Threshold Override workaround allows the developer to manually set a more optimal threshold instead of relying on
+the chip's automatic calculation. The optimal threshold should typically be set to the current noise floor+ small margin. To measure this:
+1.   Configure the radio with your intended OOK modulation parameters.
+2.   Use GetRssiInst to measure the noise level with the same modulation settings.
+3.   Compare this measured noise level with the default computed threshold using
+     lr20xx_workarounds_ook_get_default_detection_threshold_level().
+4.   If the noise level is higher than the default threshold, use the measured level as your new threshold.
+Implementation Steps:
+1.   Configure your OOK modulation using SetOokModulationParams.
+2.   Apply the threshold override using lr20xx_workarounds_ook_set_detection_threshold_level() with your optimized threshold value (in
+     dB).
+
+
+
+22.2 RTTOF Accuracy for SX1280-compatible Bandwidths
+(LR2021/LR2022)
+For LoRa bandwidths 203, 406 and 812 kHz (at either 2.4 GHz or sub-GHz), the RTToF accuracy is optimized when calling specific
+workarounds described in lr20xx_workarounds.c. Refer to the LR20xx driver for reference.
+
+
+
+
+LR2021/LR2022/LR2012                                                                                                             232 of 250
+Final Datasheet  Rev. 2.2                                                                                                          Semtech
+DS.LR20xx        29/07/26                                 www.semtech.com                                         Proprietary & Confidential
+    LR2021/LR2022/LR2012
+
+
+22.3 Firmware Patch RAM (PRAM)
+The LR202x transceiver family is provided with a program (PRAM) that can be loaded into the chip to optimize performance and provide a
+workaround for some limitations.
+While not strictly required, using the chip without the PRAM can create performance issues and unexpected bugs. The use of the PRAM is
+therefore highly recommended.
+Note that:
+•    The PRAM is lost after a reset or a cold start.
+•    The PRAM is preserved during a sleep with retention.
+•    The sleep current with retention will increase by 80 nA when the PRAM is loaded (as reflected in IDDSL1 parameter).
+•    The PRAM also modifies the following:
+      Z-Wave: addition of last received packet channel in GetZwavePacketStatus command.
+      OQPSK: addition of configuration flag to bypass the received packet length check.
+
+
+
+22.3.1 Loading the Patch RAM
+The PRAM must be loaded in two situations:
+• After a reset, as part of the reset sequence.
+• After waking up from a deep sleep ("cold sleep").
+Follow the following procedure after a reset (or a wake-up from cold sleep):
+1.   Obtain the relevant PRAM. There is one dedicated to the LR2021 and another one for the LR2012/LR2022. The GetVersion(…) API
+     indicates which PRAM is needed.
+2.   Load the PRAM into memory: The host must write the entire contents of the pram array to the chip, using the command
+     WriteRegMem32(...), starting from address 0x801000.
+3.   Activate the PRAM: The host must send the command with the opcode 0x012D with a 1 bytes argument set to 0x00. The MOSI output
+     bytes should look like this: [0x01, 0x2D, 0x00].
+At this point, the chip is ready to be used.
+
+
+
+22.3.2 Checking the Patch RAM
+To check that the PRAM is loaded:
+•    Read register value at address 0x800FF8, using the ReadRegMem32(…) command. The returned value should be 0x600DB002.
+
+
+To read the version of the PRAM:
+•    Read register value at address 0x800FFC, using the ReadRegMem32(…) command. The version is then ((returned_value >> 8) &
+     0xFFFF).
+
+
+
+
+LR2021/LR2022/LR2012                                                                                                           233 of 250
+Final Datasheet  Rev. 2.2                                                                                                        Semtech
+DS.LR20xx        29/07/26                                www.semtech.com                                        Proprietary & Confidential
+    LR2021/LR2022/LR2012
+
+
+22.4 Regulatory Compliance
+
+22.4.1 CN470 SRRC Compliance for China
+The following modifications are necessary to ensure LR20xx full compliance to the CN470 SRRC regulations while using FLRC modulation:
+•    Use Gaussian Filter BT=0.3
+•    Modify the PLL bandwidth writing 0x05 at register address 0xF40110: WriteRegMemMask32(addr =0xF40110, Mask = 0x00000007,
+     Value = 0x05)
+•    Modify the modulator sample rate conversion at register address 0xF30904: WriteRegMemMask32(addr =0xF30904, Mask =
+     0x00000100, Value = (1<< 8)).
+
+
+
+22.4.2 IN865 Compliance for India
+The following modifications are necessary to ensure LR20xx full compliance to the IN865 Indian regulations while using FLRC modulation:
+•    Modify the modulator sample rate conversion at register address 0xF30904: WriteRegMemMask32(addr =0xF30904, Mask =
+     0x00000100, Value = (1<< 8)).
+
+
+
+
+LR2021/LR2022/LR2012                                                                                                          234 of 250
+Final Datasheet  Rev. 2.2                                                                                                       Semtech
+DS.LR20xx        29/07/26                               www.semtech.com                                        Proprietary & Confidential
+ LR2021/LR2022/LR2012
+
+

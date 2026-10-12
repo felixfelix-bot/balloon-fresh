@@ -532,6 +532,263 @@ make rx T0=1724515500 SESSION_ID=2408241425
 Both sides must use the same values. This bypasses the auto-computed
 5-minute boundary.
 
+### GO mode (`--sync cvm`): T0 from the ARMED message
+
+The default is `--sync boundary` — the 5-minute epoch boundary above,
+unchanged. `--sync cvm` replaces that wait with a **message-derived T0**
+(ADR-range-sync-cvm.md): the RX is the sole session authority, publishes
+an `ARMED` message, and both sides compute
+
+```
+T0         = armed["t_ready_utc"] + 30 s     # cvm_sync.T0_MARGIN — no boundary wait
+session_id = armed["session_id"]             # %y%m%d%H%M + 3-hex nonce (RX-generated)
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--sync {boundary,cvm}` | `boundary` (default) = legacy 5-min T0; `cvm` = derive T0 from the ARMED — only when `--t0` is **absent** |
+| `--stop <id>` | **Required in GO mode** — the stop id recorded in the `GO_MODE` banner and in the ARMED (`armed.json`). Default `?` means *not recorded* (see below) |
+| `--armed-file PATH` | GO mode without a live Nostr bus: a JSON file holding one ARMED object as relayed to the operator |
+| `--armed-out PATH` | RX writes the ARMED it generated (default `<run log dir>/armed.json`) |
+
+Rules that matter in the field:
+
+- **`--t0` always wins.** `--sync cvm --t0 <epoch>` is exactly the legacy
+  boundary/manual run: legacy T0-past guard, legacy
+  `logs/s<sid>-t0<epoch>/` log dir, `--session-id` still an int flag.
+- **Pass `--stop <id>` in GO mode — it is the only thing that attributes the
+  pass to a stop.** A GO dir has no `stop-<dist>` level, so the stop lives
+  *only* in the `stop=` token of the `GO_MODE` banner and in the ARMED /
+  `armed.json`. `--stop` defaults to `?`, which this toolchain uses everywhere
+  for *not recorded*: a launch that omits it prints
+  `WARNING: GO mode launched without --stop …` at launch time, and the log
+  then carries no stop id, so `range_check` can only keep it with an
+  *"records NO stop id … cannot verify it belongs to stop X"* note (score it
+  with the matching `--dist`). The pass is still scored — it is just no longer
+  attributable, which is exactly the mistake that gets made at the bench.
+- **Do not pass `--session-id` in GO mode** — it is a hard error
+  (`session_id comes from ARMED in GO mode`). The session id comes from the
+  ARMED and is never derived from T0.
+- **Split-brain guard.** A TX start always **echoes a live RX session id**
+  and announces itself with a `STARTED` message: in GO mode that is the
+  ARMED's `session_id` + its derived `t0` (published on the bus); a legacy
+  manual TX start (`--t0`) must echo the RX banner by hand via
+  `--session-id`. Without it the tool **refuses loudly**
+  (`SPLIT-BRAIN GUARD … split brain refused`) instead of inventing a
+  `%y%m%d%H%M` id. An invented id is how a pass ends up with the two sides
+  on *different* sessions — the analysis then reports a false
+  `MISS`/`LOGGING GAP` with no warning. `--dry-run` is exempt (nothing is
+  transmitted).
+- **`STARTED` is best effort.** If publishing it fails (relay pool down)
+  the TX prints a `WARNING` and **continues**: radio capture never depends
+  on the message layer. With no live bus the notice is printed *and*
+  written to `started.json` in the run's log dir (next to `--tx-log` /
+  `--rx-log`) — relay that file to the other operator (Signal fallback).
+- **GO-window guard.** GO is refused (loudly, non-zero exit) when less than
+  5 s (`GO_MODE_RX_LEAD_MIN`) remains to T0 — i.e. the arm window has
+  expired. The refusal says how many seconds ago the RX armed and tells you
+  to re-arm. Boundary/manual-t0 runs keep the legacy T0-past guard
+  (`T0 >= now+60 s`, `T0_MIN_LEAD_S`); GO mode replaces it, because 60 s of
+  wall-clock lead is exactly what the message-derived T0 no longer needs.
+- **Two 30 s margins, both real.** `T0` itself is derived with the arming
+  margin `armed["t_ready_utc"] + 30 s` (`cvm_sync.T0_MARGIN`, the RX publish →
+  relay → arm headroom); the *existing* scheduler then places the first cell
+  at `T0 + --t0-margin` (`t0_margin`, CLI default 30 s) exactly as it does in
+  boundary mode — that gap is the launch/preflight headroom the runners have
+  always used. The two are independent knobs: moving `--t0-margin` shifts the
+  first cell, it does **not** change the T0 derivation, and the derivation
+  margin is not exposed as a flag.
+- **`rx_lead` is clamped to >= 5 s** in GO mode (boundary mode keeps the 3 s
+  default). The clamp is applied to `args.rx_lead` itself, so `compute_cycle_len`
+  and the schedule builder consume the *same* value — the cycle length must be
+  byte-identical on TX and RX or the per-cycle re-anchor walks the two sides
+  apart.
+- **Both sides must agree on the preset *and* the timing knobs.** The ARMED
+  carries a fingerprint (`preset_hash`) over the config preset plus the knobs
+  that feed `compute_cycle_len` / `build_preset_schedule` / the RX arm instant
+  (`--t0-margin`, `--guard`, `--settle`, `--rx-lead`, `--swd-reset-s`,
+  `--band-swap-s`). `acquire_armed_for_go()` compares it against the local
+  fingerprint and **refuses loudly** (`GO mode preset/knob MISMATCH — refusing
+  to GO`) before any log dir is created. Without that check the two operators
+  could run the same preset with different timing and re-anchor to a different
+  `t0_cycle` from cycle 2 on, drifting apart mid-pass with nothing on the wire
+  to reveal it. An ARMED relayed from an older build (preset-only digest) is
+  still accepted.
+- **The board carries the u32 projection of the session id.** The firmware's
+  `SESSION` command takes a u32 (`src/bench_cmd.c`) and every PKT line echoes
+  it with `console_put_u32`, so the 3-hex nonce of a GO session can never
+  reach the wire. Both runners therefore send `SESSION <first 10 digits>`
+  (`e80_bench_ctl.board_session_id()`), and the analyzer accepts a PKT row
+  whose session equals that projection (`range_check._session_matches`).
+  Consequence to respect in the field: **never arm two passes inside the same
+  minute** — on the wire they are the same board session and only the ARMED
+  nonce (ARMED / log-dir / banner) tells them apart. A session id with no
+  numeric projection is refused at launch (`session_command()`), instead of
+  shipping `SESSION None` to the board.
+- **Monotonic anchor.** When the ARMED is accepted the tool captures
+  `time.monotonic()` alongside wall time and derives a *monotonic* T0
+  deadline; all GO-mode waits use it, so an NTP step mid-pass cannot shift
+  one side of the pass. The absolute wall T0 stays visible (`t0=<epoch>` in
+  operator output, ISO in the log header) for log correlation + GPS
+  stitching.
+- **Log dirs** default to `logs/s<sid>-go<t0>/<role>-log.csv` in GO mode;
+  legacy `s<sid>-t0<epoch>` dirs are untouched for boundary/manual runs, and
+  an explicit `--tx-log`/`--rx-log` always wins. Post-stop tools read **both**
+  schemes — see [Log layout & post-stop analysis](#log-layout--post-stop-analysis)
+  below: `range_check` joins the rx/tx logs on `session_id`, with the legacy
+  `t0` rule as the fallback.
+- **Fallback stays.** The 5-minute boundary + Signal relay path below is
+  unchanged and remains the boat / no-internet fallback.
+
+With `--armed-file` the freshness checks (`created_at` skew 60 s / stale
+30 s) are relaxed, because the operator relayed the message by hand; the
+GO-window guard still applies. Without `--armed-file` the TX uses the
+`cvm_sync` subscriber seam against a live bus, and the RX generates the
+ARMED and writes it to `--armed-out`.
+
+**Live-bus wiring (RX side) ships** as `tools/cvm_armed_publisher.py`: keys
+come from **env vars only** (`CVM_RX_NSEC`/`CVM_RX_HEX` for the RX publisher,
+`CVM_SERVER_NSEC`/`CVM_SERVER_HEX` for the board server — no CLI key args), the
+client key is **asserted to differ** from the server key at startup, the ARMED
+payload is published as a **NIP-59 kind-1059 gift wrap** to `--tx-npub` (never a
+plaintext kind-30315 tally), and the ARMED is re-broadcast every 10-15 s until a
+GO from TX is observed on the subscription. Relay failover set: nostr.mom,
+relay.primal.net, nos.lol, relay2.contextvm.org, relay.nostr.band
+(`relay.contextvm.org` is dead and filtered out even if supplied).
+
+```bash
+# RX machine: arm + publish until TX says GO
+export CVM_RX_NSEC=nsec1...      # RX publishing key (must differ from server)
+export CVM_SERVER_NSEC=nsec1...  # board server key
+export CVM_TX_NPUB=npub1...
+python3 tools/cvm_armed_publisher.py --stop 50m \
+    --configs configs/per-stop/stop-50m.json
+```
+
+**The verdict side of that wiring ships** as `tools/cvm_verdict_publisher.py`:
+after `range_check` scores a stop, one command wraps its per-config
+`OK`/`THIN`/`MISS` rows + counts + the `resend-<stop>.json` content into a
+single NIP-59 kind-1059 verdict addressed to the TX npub — **exactly one
+message per completed config scan**, never one per packet. The message repeats
+the phase-1 `session_id` and `stop` (linkage) and, with `--armed`, refuses to
+publish unless they match the pinned `armed.json`. Keys/env rules are the same
+as the ARMED publisher (`CVM_RX_NSEC`/`CVM_RX_HEX`, `CVM_SERVER_*`, no CLI key
+args, client≠server).
+
+```bash
+# RX machine, after the stop: write the per-config rows `range_check` printed
+# into a small JSON file, then publish ONE verdict for the whole scan.
+# Accepted input: a bare list of rows, or
+#   {"per_config": [{"idx":0,"label":"cfg-0","n_pkts":10,"counted":10,
+#                    "status":"OK"}, ...],
+#    "stat_count": 9, "resend_json": { ... }}   # resend_json optional
+python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
+    --results rc-results.json \
+    --resend configs/resend/resend-50m-2609130435a3f.json \
+    --armed logs/s2609130435a3f-go<epoch>/armed.json
+
+# check the payload without touching a relay (still validates env keys):
+python3 tools/cvm_verdict_publisher.py --session-id 2609130435a3f --stop 50m \
+    --results rc-results.json --dry-run
+```
+
+**The TX-side production listener ships too** (`tools/cvm_tx_listener.py`, P3).
+It subscribes **broad** to kind-1059 gift wraps (no restrictive server-side
+`#p` filter) and applies the **client-side npub allowlist** on receipt — the
+allowlist keys off the *unwrapped rumor author*, since the outer wrap author is
+ephemeral — plus the ADR §2.2 freshness watchdog: ARMED whose `created_at`
+skews more than `MAX_CREATED_AT_SKEW` (60 s) is dropped, and the session
+**aborts** (`[tx-armed] ABORT: …`) when no fresh ARMED arrives within
+`STALE_ABORT` (30 s) of the last one (or of start-up). Keys come from env vars
+only (`CVM_TX_NSEC`/`CVM_TX_HEX` first, then the shared `CVM_CLIENT_*` /
+`E80_CLIENT_*` aliases; the RX-role names `CVM_RX_*`/`E80_RX_*` are never read
+for the TX role) plus `CVM_SERVER_*`; the client key must differ from the
+server key. The RX publisher is allowlisted via `--rx-npub` / `CVM_RX_NPUB`:
+
+```bash
+export CVM_TX_NSEC=nsec1...        # TX (client) key — env only, never a CLI arg
+export CVM_SERVER_NSEC=nsec1...    # board server key (must differ)
+export CVM_RX_NPUB=npub1...        # RX publisher -> the allowlist
+python3 tools/cvm_tx_listener.py --stop 50m
+```
+
+With both halves shipped, a GO TX runs the relay-authenticated path
+(`cvm_tx_listener.py` plus the RX publisher's ARMED re-broadcast). Where no
+relay subscriber is available the `--armed-file` path (hand-relayed ARMED,
+relaxed freshness checks) remains the fallback.
+
+Rehearsal without hardware:
+
+```bash
+# RX (generates the ARMED) — --stop is REQUIRED in GO mode
+python3 tools/e80_bench_ctl.py --mode rx --sync cvm \
+    --configs configs/per-stop/stop-50m.json --stop 50m \
+    --armed-file /tmp/armed.json --dry-run
+
+# TX on the other board, with the RX ARMED relayed by hand (Signal)
+python3 tools/e80_bench_ctl.py --mode tx --sync cvm \
+    --configs configs/per-stop/stop-50m.json --stop 50m \
+    --armed-file /tmp/armed.json
+```
+
+**`--stop` is not optional in GO mode:** it defaults to `?` (*not recorded*),
+and in GO mode it is the only thing that attributes the pass to a stop. A
+launch that omits it prints
+`WARNING: GO mode launched without --stop …` and the resulting log can then
+only be kept with a loose *"records NO stop id"* note — it is still scored, it
+is just not attributable (see the flag table above).
+
+**The Makefile cannot enter GO mode.** `make range-rx` / `make range-tx`
+always pass `--t0` and `--session-id`, and `--t0` always wins over
+`--sync cvm`, so a GO pass must be launched with the direct
+`e80_bench_ctl.py` invocations above. A GO-aware make target is P3 work.
+
+### Log layout & post-stop analysis
+
+GO mode adds a second log-dir scheme. **`range_check` and `merge_csvs` read
+both schemes** — the `(session, config)` join is normalised through the board
+u32 projection on each side, so a GO run merges like a boundary run.
+**`gps_stitch.py` does not**: it has no session/GO awareness and no
+`captured_ts` in harmonized GO rows, so pass it `--t0-epoch` explicitly for a
+GO stop.
+
+| Launch | Log dir | Stop distance encoded as |
+|--------|---------|--------------------------|
+| Boundary / manual `--t0` (sweep) | `logs/s<session>-t0<t0epoch>/stop-<dist>/rx-log-*.csv` | the `stop-<dist>/` path level |
+| Boundary / manual `--t0` (single run) | `logs/s<session>-t0<t0epoch>/{rx,tx}-log.csv` | not in the path — pass `RX=`/`TX=` |
+| GO mode (`--sync cvm`) | `logs/s<session>-go<t0epoch>/{rx,tx}-log.csv` | **not in the path** — carried by the `stop=` token of the `GO_MODE` banner, with the sibling `armed.json` as fallback. `range_check` refuses (exit 2) a GO log whose own stop differs from the requested `--dist` instead of printing a confident pass for a stop that was never run. A log with **no** stop id in either source (both `stop=?`/empty — a GO launch without `--stop`) is kept with a note, never refused |
+
+`<session>` is the legacy 10-digit int form (e.g. `2608281250`) for
+boundary/manual runs, and the RX-generated `%y%m%d%H%M` + 3-hex nonce
+(e.g. `2609130435a3f`) in GO mode.
+
+**The join key is `session_id`; `t0` is the fallback.** `range_check.py`
+reads the session of each log from two independent sources:
+
+1. the session dir name in the path — `s<session>-t0<epoch>` (legacy) or
+   `s<session>-go<epoch>` (GO);
+2. the `session=<sid>` token of the first launch-banner comment line
+   (`# DISTRIBUTED_TX_MODE session=… t0=…` or
+   `# GO_MODE sync=cvm source=… session=… stop=… t_ready=… t0=…`).
+
+If **both** logs expose at least one session and the sets disagree, the
+check fails loudly (`SESSION MISMATCH`, exit 2): the rx and tx logs are NOT
+from the same launch — a wrong log was picked up, or the two sides started
+split-brain with a session each. If the sessions agree, or only one side
+exposes one, the legacy rule applies verbatim: every readable `t0` (filename
+tag `-t0<epoch>` / `-go<epoch>`, and the banner `t0=<iso>`) must agree, else
+`T0 MISMATCH` (exit 2).
+
+Log discovery is best-first: session-tagged candidates for the requested
+session (newest first) → any other candidate (newest first) → the cwd-quirk
+`tools/rx-log.csv`. Because the GO dir carries no `stop-<dist>` level, a GO
+log of the requested session is a candidate for **any** `DIST`. The stop guard
+then decides: a log naming a *different* stop is refused (exit 2), a log naming
+*no* stop (`stop=?`/empty in both sources — launched without `--stop`) is
+analysed with an *unverifiable* note, and a matching stop is analysed silently.
+Exit codes
+are unchanged: `0` complete, `1` gaps / logging gap, `2` usage or log errors.
+
 ---
 
 ## 9. Config Presets
@@ -660,7 +917,7 @@ self-documenting — see `configs/outdoor-10.json` as a template.
 | `configs[].br` | int/null | FLRC bitrate in kbps (260, 325, 650, 1300, 2600), null for LoRa |
 | `configs[].pa` | int | TX power in dBm |
 | `configs[].freq` | int | Frequency in Hz |
-| `configs[].plen` | int | Payload length in bytes (max 255) |
+| `configs[].plen` | int | Payload length in bytes — **max 255 for LoRa, max 511 for FLRC** (per-modulation silicon limit; see [Payload length limits](#payload-length-limits)) |
 | `configs[].gap` | int | Inter-packet gap in milliseconds |
 | `configs[].n_pkts` | int | Number of packets to send per config |
 
@@ -686,7 +943,7 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 | `pkt_idx` | int | Packet index within config (starts at 2 when prime_discard=2) |
 | `ts_ms` | int | Firmware uptime in milliseconds (since board boot) |
 | `rssi_dbm` | float | Received signal strength in dBm |
-| `snr_db` | float | Signal-to-noise ratio in dB (LoRa only; 0.0 for FLRC) |
+| `snr_db` | float | Signal-to-noise ratio in dB (LoRa only; **0.0 for FLRC by design** — the LR2021 has no FLRC SNR estimate) |
 | `crc_ok` | int | 1 = CRC valid, 0 = CRC error |
 | `bit_err` | int | Bit errors from PRBS15 verification |
 | `freq_hz` | int | Frequency in Hz |
@@ -695,7 +952,7 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 | `bw` | int | LoRa bandwidth in kHz (0 for FLRC) |
 | `pa_dbm` | int | TX power in dBm |
 | `len` | int | Payload length in bytes |
-| `pcrc16` | int | Payload CRC16 (expected) |
+| `pcrc16` | int | CRC-16/CCITT-FALSE of the received payload bytes; **0 when `crc_ok=0`** (no payload read on a CRC failure) |
 | `captured_ts` | string | ISO-8601 timestamp when host captured the packet (wall-clock) |
 
 **Example rows:**
@@ -707,6 +964,251 @@ session,config,pkt_idx,ts_ms,rssi_dbm,snr_db,crc_ok,bit_err,freq_hz,mod,sf_or_br
 ```
 
 The `captured_ts` column is the join key for GPS stitching.
+
+### Payload length limits
+
+The maximum payload is **per modulation** and comes from the LR20xx driver's
+packet-params types, not from this bench:
+
+| Modulation | Max payload | Source of the limit |
+|---|---|---|
+| LoRa | **255 B** | `pld_len_in_bytes` is a `uint8_t` (`lr20xx_radio_lora_types.h`) |
+| FLRC | **511 B** | `pld_len_in_bytes` is a `uint16_t`, documented range `[6:511]` (`lr20xx_radio_flrc_types.h`) |
+
+A LoRa config with `plen > 255` cannot be represented in the packet params at
+all; it is not a slow-but-legal frame. Firmware answers an over-cap `START`
+with:
+
+```
+ERR LEN (MAX 255 LORA / 511 FLRC)
+```
+
+and refuses before keying the radio, so the reply arrives immediately and no
+burst starts. The host tooling applies the same cap before sending `START`;
+if you see the ERR string in a log, the preset (not the radio) is wrong.
+
+Board parity note: the TX board's gate is on `main`; the RX board gets the
+identical gate (shared predicate + shared ERR string) in
+`fix/t2-rx-start-len-gate` (69dfd17). Until that lands, an RX board fed an
+over-cap `START` still arms a receive window it can never fill — send the
+corrected preset rather than trusting an ERR reply from the RX side.
+
+### Reading the `drops=` counters
+
+Two counters print as `drops=`:
+
+| Command | Meaning |
+|---|---|
+| `STAT` | Radio **event-mailbox** overwrites — the firmware superloop missed a radio event. Any nonzero value invalidates that run's PER / `bit_err`. |
+| `BUF STATUS` | RX **buffer** drops while staging a loaded frame. |
+
+Check `STAT drops=` on every measured run. Console pressure is worst at the
+largest payloads (511 B on a 115200-baud console), so a `LEN=511` row with
+`drops>0` should be re-run with the inter-packet gap doubled — record both
+runs rather than only the clean one.
+
+### FLRC `snr_db` is 0.0 by design
+
+The LR2021 has no FLRC SNR estimate, so every FLRC row carries `snr_db=0.0`.
+That is expected data, not a dead receiver — score FLRC configs on RSSI,
+`crc_ok` and `bit_err`. Only LoRa rows carry a real SNR.
+
+### `pcrc16` semantics
+
+`pcrc16` is the CRC-16/CCITT-FALSE of the received payload bytes. It is **0**
+whenever `crc_ok=0` (no payload is read on a CRC failure), so it adds no
+information on failed rows — filter on `crc_ok` first. Because it is an
+application-layer check on top of the radio CRC, it is also the integrity
+path used when the chip CRC is disabled and integrity is carried by the app
+layer (payload CRC + PRBS15 `bit_err`).
+### Launch banner comment lines
+
+Every log opens with a launch banner (comment lines starting with `#`) — the
+metadata the post-stop tools read:
+
+```
+# boundary / manual --t0
+# DISTRIBUTED_RX_MODE t0=2026-08-28T11:30:00 port=/dev/ttyUSB1 probe=203584200D2D0D42 loop=3
+# DISTRIBUTED_TX_MODE session=2608281250 t0=2026-08-28T11:30:00 port=/dev/ttyUSB0 loop=3
+
+# GO mode (--sync cvm): the DISTRIBUTED_*_MODE banner PLUS a GO_MODE line
+# GO_MODE sync=cvm source=generate session=2609130435a3f t_ready=2026-09-13T04:35:00 t0=2026-09-13T04:35:30 deadline_mono=123456.789 armed_seq=7
+```
+
+| Token | Meaning |
+|-------|---------|
+| `t0=<iso>` | Launch epoch the schedule anchors to; the `GO_MODE` line repeats the same value |
+| `session=<sid>` | Session id — the primary join key (GO: `%y%m%d%H%M` + 3-hex nonce, e.g. `2609130435a3f`; legacy: 10-digit int, e.g. `2608281250`) |
+| `t_ready` / `deadline_mono` / `armed_seq` | GO mode only: the ARMED message's ready time, the monotonic deadline the waits use, and the ARMED sequence number |
+
+The RX `DISTRIBUTED_RX_MODE` banner carries **no** `session=` token: in GO
+mode the RX session comes from the trailing `GO_MODE` line (and the log dir
+name), in legacy mode from the log dir name. `range_check` joins the rx/tx
+logs on this session id, with the `t0` rule as fallback — see
+[Log layout & post-stop analysis](#log-layout--post-stop-analysis).
+### Die-temperature lines (`TEMP,...`) + interp logging
+
+The bench firmware emits a periodic **TEMP** line at ~1 Hz while the radio
+is in STDBY (between runs, `BSTATE_IDLE`) and awake. It is **never** sampled
+mid-RX/TX — `lr20xx_system_get_temp()` is a system command that only works
+in STDBY/FS and would interrupt RX + perturb timing. The supply is read in
+the same gated slot.
+
+**e80-interp-logging extension** (log-don't-tune): the line carries
+interpretability fields so the GS can separate, post-flight, (1) the
+balloon's true crystal drift vs die temp, (2) the GS reference bias, and
+(3) thermal lag. A base 3-field reader still parses the prefix (backward
+compatible).
+
+```
+TEMP,<ts_ms>,<die_temp_raw>,<offset_hz>,<curve_ver>,<k_mhz_per_c>,<t0_mc>,<vcc_mv>,<gps_alt_m>,<gps_temp_c>,<sync_epoch_ms>
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ts_ms` | int | Firmware uptime in milliseconds (since board boot) |
+| `die_temp_raw` | int | Raw 13-bit LR2021 VBE die-temperature reading |
+| `offset_hz` | int | Applied frequency offset in Hz — **signed**: the correction goes negative on the cold side of T0 / the receding leg (the exact offset commanded per RX re-arm; reported, never retunes the radio in-flight) |
+| `curve_ver` | int | `{k,T0}` crystal-drift curve version in use (from `CURVE <ver> ...`) |
+| `k_mhz_per_c` | int | Curve slope k in mHz/°C — **signed** fixed point (`k_Hz/°C = k_mhz_per_c/1000`; a negative slope is legitimate for cryo) |
+| `t0_mc` | int | Curve intercept T0 in m°C — **signed** fixed point (`T0_°C = t0_mc/1000`; a sub-zero intercept is legitimate) |
+| `vcc_mv` | int | Supply voltage in mV (LR2021 UNIT format — real mV, no host scaling) |
+| `gps_alt_m` | int | GPS altitude in m (host-injected via `LOADGPS`; 0 when absent) |
+| `gps_temp_c` | int | GPS temperature in °C (host-injected; can be negative) |
+| `sync_epoch_ms` | int | GS-synced epoch timestamp in ms (absolute) |
+
+The offset / curve / supply / GPS values are captured by the balloon's
+logging commands (see **Logging commands**); the TEMP line is the time-series
+that records them. **Lag-free differential without tuning**: the balloon is
+never tuned in-flight by these commands — the GS only reads the annotations.
+
+The raw 13-bit value is kept on the wire; °C conversion is done host-side
+(firmware stays float-free). The conversion formula (from `lr20xx_system.h`,
+RAW format) is:
+
+```
+T°C = (raw/8192 × Vana − Vbe25) × 1000/VbeSlope + 25
+```
+
+with `Vana` = 1.35 V, `Vbe25` = 0.7295 V, `VbeSlope` = −1.7 mV/°C (typ).
+The bench uses the **same source (VBE) + resolution (13-bit)** that flight
+firmware uses to index the cryo cal table, so the bench reading is directly
+comparable. The `STAT?` line also carries a `die_temp=` field (the most
+recent reading) as a per-run anchor.
+
+### Host-driven per-run die-temp sampling (`TEMP?`) (e80-temp-per-run)
+
+The periodic sampler above is gated to `BSTATE_IDLE` + awake, so an RX
+board parked in continuous RX (`BSTATE_RX_CONT`) never samples **during** a
+run — its `die_temp=` STAT anchor was the last IDLE-window reading and went
+stale on long runs. To get a **TRUE per-run temperature**, the host issues a
+new `TEMP?` console command in the brief between-runs window (after the
+previous run's capture completes, before the next run's `START`):
+
+```
+TEMP?      force a fresh LR2021 VBE die-temp + supply read, emit ONE TEMP line
+```
+
+`TEMP?` handling on the firmware (argument-free, like `STAT?`/`ID?`):
+
+- **Safe-moment rule.** The read is only performed when the radio is NOT
+  mid-burst (`BSTATE_TX_BURST` is refused with `ERR TX BURST ACTIVE (STOP
+  FIRST)` — a TEMP? can never interrupt an active TX burst or perturb a
+  run's timing).
+- **STDBY read.** The radio is briefly placed in STDBY (woken first if it
+  was asleep), then `radio_bench_get_die_temp()` + `radio_bench_get_supply_mv()`
+  are read via the SAME system commands the periodic sampler uses. The
+  caches (`last_die_temp`/`die_temp_valid` + `vbat`) are updated and exactly
+  ONE `TEMP,<ts_ms>,<die_temp_raw>,...` line is emitted (same on-wire format
+  as the periodic line — backward compatible).
+- **Posture restore.** If the board came from continuous RX
+  (`role==RX`, `BSTATE_RX_CONT`), continuous RX is re-armed before the
+  handler returns, so the next run is unaffected; if the radio was asleep it
+  is returned to sleep.
+- **Log-don't-tune.** `TEMP?` only READS (die temp + supply) and updates the
+  reported caches; it never retunes the radio or changes the compensation
+  curve.
+- **Per-run anchor.** Issuing `TEMP?` before `STAT?` makes the `die_temp=`
+  STAT field reflect the fresh between-runs reading.
+
+Host tooling (`e80_bench_ctl.py`, RX mode loop): after a run's capture
+completes and before the `STAT?` summary read, the RX board is sent `TEMP?`
+and the parsed reading is written to the harmonized rx-log as one `TEMP,`
+line per run (older firmware without `TEMP?` replies `ERR UNKNOWN` — the
+sample is skipped, never fatal).
+
+### Ground-station observation lines (`GSOBS,...`)
+
+The GS side logs its measured offset (applied offset received from the
+balloon), RSSI, and its own reference/position telemetry for Doppler
+correction and GS-reference-bias deconvolution:
+
+```
+GSOBS,<ts_ms>,<measured_offset_hz>,<rssi_dbm>,<gs_ref_stable>,<gs_ambient_c>,<gs_lat>,<gs_lon>,<gs_alt_m>,<gs_vx>,<gs_vy>,<gs_vz>
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ts_ms` | int | Firmware uptime (ms) — joinable to the balloon's clock |
+| `measured_offset_hz` | int | Applied frequency offset (Hz) |
+| `rssi_dbm` | float | Received signal strength (dBm) |
+| `gs_ref_stable` | int | 1 = GC/TCXO reference locked, 0 = not |
+| `gs_ambient_c` | float | GS ambient temperature (°C) |
+| `gs_lat`,`gs_lon`,`gs_alt_m` | float | GS position (for Doppler correction) |
+| `gs_vx`,`gs_vy`,`gs_vz` | float | GS velocity (m/s) |
+
+### Logging commands (log-don't-tune)
+
+The balloon-side commands that record the interp telemetry state:
+
+```
+OFFSET <hz>                    set applied RX frequency offset, signed (logged only)
+CURVE <ver> <k_mhz_per_c> <t0_mc>   set stored {k,T0} curve version + signed params (metadata only)
+SYNC <epoch_ms>                set GS-synced balloon clock epoch
+LOADGPS <alt_m> <temp_c>       inject GPS altitude + temperature (alt < 60 km; temp ±150 °C)
+```
+
+**Signed values:** `OFFSET <hz>` and the `CURVE` k/T0 parameters are signed
+fixed point — a negative applied offset (cold side of T0 / receding leg), a
+negative slope k, or a sub-zero T0 intercept are all legitimate and must not
+be rejected. `LOADGPS <alt_m>` accepts altitudes up to the 60 km hard sanity
+ceiling (real balloon ascents reach 25-35 km burst altitude, past the 11 km
+tropopause — the ceiling must not truncate telemetry; ≥ 60 km is rejected as
+garbage).
+
+**Constraint (log-don't-tune):** none of these retunes the radio or changes
+`cfg`. The balloon's crystal-drift curve stays **FIXED** in flight; the GS
+validates measured-vs-predicted offset in real time (see **GS validation**)
+but never writes a tuned curve back. The whole point is to log everything
+in-flight and refine the curve post-flight.
+
+### GS validation (`tools/gs_validation.py`)
+
+The GS compares the measured offset against the **cryo-predicted offset**
+(from the reported die temp + stored `{k,T0}` curve) in real time and flags
+anomalies. It is **validation-only — it never writes a tuned curve back to
+the balloon** in-flight.
+
+```
+offset_predicted = k × (T − T0)
+```
+
+A **constant GS reference bias** shifts the intercept of
+measured-offset-vs-die-temp but does **not** change the slope k — so the true
+slope is recoverable post-flight if the balloon is never tuned in-flight.
+**Thermal lag** smears the curve; GPS altitude/temp + ascent rate deconvolve
+it. Anomalies flagged:
+
+- `die_temp_out_of_range` — die temp outside the sensor's valid range
+- `die_temp_frozen` — die temp stuck while the measured offset moves (dead
+  / stale sensor)
+- `gross_curve_error` — `|measured − predicted|` exceeds the offset tolerance
+- `gs_reference_loss` — the GS reference was not stable (guard the measured
+  offset on the biased reference)
+
+Driver note: `GsValidator` state (die-temp + offset history over a window)
+flags a frozen sensor only when the temp plateaus **while offset moves** — a
+thermal-equilibrium plateau alone is not an anomaly.
 
 ### TX log CSV (`tx-log.csv`)
 
@@ -1014,6 +1516,12 @@ make range-test-host
 make range-coord
 ```
 
+> **Host-suite status:** both host suites are green on `main`
+> (`make range-test-host` → 138 passed, `make -n range-dry-run DIST=50m` → exit 0). The
+> per-test disposition of the range-split acceptance suite, the falsified "23-test RED
+> @ `92cf11f`" premise, and the unrecoverability of that port source are recorded in
+> [RANGE-SPLIT-SUITE-TRIAGE.md](RANGE-SPLIT-SUITE-TRIAGE.md).
+
 ---
 
 ## 16. Troubleshooting
@@ -1059,6 +1567,18 @@ sets TX, `make rx` sets RX).
 
 **Fix:** Update firmware with `make flash`. If the error persists,
 power-cycle the board.
+
+### `START` replies `ERR LEN (MAX 255 LORA / 511 FLRC)`
+
+**Cause:** The preset asks for a payload longer than the modulation allows.
+LoRa is capped at **255 B** (the LR20xx LoRa packet-length field is a
+`uint8_t`); FLRC allows up to **511 B**. The firmware refuses the `START`
+before keying the radio, so the board is fine and nothing was transmitted.
+
+**Fix:** Correct the preset's `plen` for that config. Full limits, and what
+each `drops=` counter means, are in
+[Payload length limits](#payload-length-limits) and
+[Reading the `drops=` counters](#reading-the-drops-counters).
 
 ### `make flash` fails: "arm-none-eabi-gcc not found"
 
