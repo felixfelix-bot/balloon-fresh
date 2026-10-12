@@ -8,6 +8,6 @@ Materialized and updated the existing hub overhang analysis/model. The model now
 
 Corrected harvest language: ADR-065's 2x claim applies to a vertical wing; the horizontal hub under-face sees albedo/undercast, not a second full sun. Back-face contribution is explicitly TODO(measurement), not assumed.
 
-Verification: `python3 docs/analysis/hub_array_overhang_model.py` passed and printed the new figures. `python3 -m pytest tests/test_adr_numbering.py -q` could not run because that path is absent in this checkout (pytest exit 4, no tests collected). No PCB files, gerbers, or footprints were changed.
+Fresh verification: `python3 docs/analysis/hub_array_overhang_model.py` passed; `python3 -m py_compile docs/analysis/hub_array_overhang_model.py` passed. Full `python3 -m pytest -q` collected 257 tests but was blocked during collection by five pre-existing checkout/environment errors: three missing conftest loader imports and two missing ESP-IDF openocd binaries. No test failure reached the changed model. Evidence is recorded in PROGRESS.md.
 
-Remaining: commit, dual-push github and ngit, and open exactly one PR with card ID and CI/n/a evidence in the body.
+Commit 714bd10 plus verification-evidence commit 4ac6429 were pushed to GitHub and ngit. PR: https://github.com/felixfelix-bot/balloon-fresh/pull/151
