@@ -594,9 +594,37 @@ def gen_v1():
 
 # ============================================================
 # V2: F33 2W PA Hub Board
+#
+# ############################################################################
+# STALE / SUPERSEDED F33 LAND PATTERN -- THE BOARD THIS EMITS MUST NOT BE
+# FABBED OR ASSEMBLED.  (Marked 2026-10-07, fix/f33-landpattern.)
+#
+# The footprint emitted below (`custom:LoRa2021F33_2G4`, pads on the two 21 mm
+# ENDS at a 2.0 mm pitch) is NOT the vendor's land pattern and CANNOT host the
+# NiceRF LoRa2021F33-2G4 module.  The vendor's own land file puts 9 castellated
+# pads on EACH of the two 39 mm EDGES at a 3.9289 mm pitch, with the outermost
+# pad centre 3.7844 mm from the module end.  Measured against that file:
+#     0 of 18 pads coincide; nearest misalignment 4.071 mm, worst 10.226 mm.
+# On this vehicle every joint is hand-soldered, so a land the module does not
+# sit on is the most expensive error available - do not order it as a prototype.
+#
+#   evidence : docs/f33-module/F33-LANDPATTERN-VERIFICATION.md   (FAIL 0/18)
+#   source   : docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb
+#   cure     : scripts/gen_f33_landpattern.py   (authoritative + reproducible)
+#              consumed by the v9 path: build_flight_sch.py v9
+#   artifacts : docs/f33-module/F33-SUPERSEDED-ARTIFACTS.md
+#
+# This function is kept ONLY so `hub_board_f33.kicad_pcb` stays reproducible from
+# the generator that produced it.  Generator and board are both historical.
+# ############################################################################
 # ============================================================
 
 def gen_v2():
+    print("WARNING: gen_v2() emits the SUPERSEDED F33 land pattern (2.0 mm pitch "
+          "on the 21 mm ends; 0/18 pads on the vendor land pattern).  The board it "
+          "writes is a HISTORICAL ARTIFACT and must not be ordered or assembled. "
+          "The authoritative, reproducible land pattern is "
+          "scripts/gen_f33_landpattern.py -> docs/f33-module/F33-SUPERSEDED-ARTIFACTS.md")
     W, H = 75, 55
     nets = [
         "3V3", "GND", "SPI0_SCK", "SPI0_MOSI", "SPI0_MISO", "SPI0_NSS",
@@ -630,6 +658,9 @@ def gen_v2():
     f33_right = ["RF_2G4_2400","GND","SPI0_SCK","SPI0_NSS","LR2021_BUSY","SPI0_MOSI","SPI0_MISO","LR2021_RST","LR2021_IRQ"]
 
     f33_pads = ""
+    # >>> SUPERSEDED GEOMETRY (see the banner above gen_v2): pads on the 21 mm
+    # >>> ENDS at a 2.0 mm pitch.  The vendor land pattern is 9 pads on each
+    # >>> 39 mm EDGE at 3.9289 mm pitch (scripts/gen_f33_landpattern.py).
     # Left side: pins 1-9, pitch 2.0mm, offset 1.5mm from top
     for i, netname in enumerate(f33_left):
         pin = i+1
