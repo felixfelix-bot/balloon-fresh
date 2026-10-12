@@ -13,3 +13,5 @@
 - next: symbol definition sweep (any referenced-but-undefined), write REPORT.md, commit+push
 - finding: REPORT.md written (21KB, full symbol table + 9 disagreements + dead-symbol list) — STATUS: on disk
 - done: commit + push
+- DONE: 3 commits pushed to origin worker-heavy/tollgate-proto-inventory (a362f88a) — verified via git ls-remote
+- DONE: worktree tree clean (git status empty); shared repo untouched (all its changes dated 10-09 or earlier)
