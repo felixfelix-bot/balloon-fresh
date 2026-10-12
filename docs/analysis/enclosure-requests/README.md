@@ -12,7 +12,7 @@ one thing this method exists to prevent ("no dimension is typed from memory").
 | `t_9c79b66e` | Base station (masthead + shack) | `t_179e36f9` PCBPROG-BASE-2 fab-ready review | **chain blocked** — `t_6bdc4d64` (`triage`), `t_d7c330d8` (`blocked`) | — |
 | `t_69234607` | Tracker controller | `t_a36b8060` PCBPROG-TRK-2 fab-ready review | waiting on `t_3754cf63` TRK-1 | — |
 | `t_8e0f5010` | Pre-stretch bench rig | `t_f22504c6` PCBPROG-PRE-3 fab pack + review | waiting on `t_7a755a29` PRE-2 | — |
-| `t_8494294f` | Auto-bootsel interposer | — (already routed) | **blocked `needs_input`** — marginal by design | — |
+| `t_8494294f` | Auto-bootsel interposer | — (already routed) | **ready to request** — issue drafted and board tests pass | [#1](https://github.com/Amperstrand/enclosure-forge/issues/1) |
 
 ## Explicit NON-requests
 
