@@ -39,7 +39,15 @@ PITFALLS (each measured the hard way)
 * FreeRouting is a Swing app: without an X server it dies with "Couldn't get
   screen resolution". `xvfb-run -a` is required.
 * `java -jar freerouting.jar --help` reports "Unknown command line argument",
-  not usage. The CLI flags are `-de`, `-do`, `-mp`, `-mt`, `-us`, `-is`.
+  not usage. Use `-de` (design in), `-do` (design out), `-mp` (MAX PASSES),
+  `-mt` (threads), `-oit` (exit-after-routing), `-us`/`-is` (units).
+* `-mp` bounds PASSES, not wall-clock. Without `-oit` FreeRouting finishes its
+  passes and then SITS ON THE GUI waiting for a human to export -- the SES is
+  only written on a clean exit, so a run that exhausts its pass budget without
+  `-oit` produces NO SES (measured 2026-10-12: 21+ min hung, no output) and a
+  hard kill (SIGTERM, exit -15) is likewise session-fatal. We always pass
+  `-oit` and still enforce a generous subprocess timeout so a wedged JVM can
+  never hang the pipeline.
 * The router exits 0 even when it finishes with unrouted nets. The ONLY verdict
   that counts is the DRC unconnected count afterwards; never read the JVM exit
   code as success.
@@ -214,16 +222,27 @@ def export_dsn(board_path: str, dsn_path: str, *,
     print(f"  DSN written: {dsn_path} ({os.path.getsize(dsn_path)} bytes)")
 
 
-def run_freerouting(dsn_path: str, ses_path: str, passes: int, threads: int) -> None:
+def run_freerouting(dsn_path: str, ses_path: str, passes: int, threads: int,
+                    timeout_s: int = 1800) -> None:
     java = os.path.join(JAVA_HOME, "bin", "java")
     if not os.path.exists(java):
         raise SystemExit(f"Java 25 not found at {java}; FreeRouting v2.2.4 needs class file 69")
     if not os.path.exists(FREEROUTING_JAR):
         raise SystemExit(f"FreeRouting jar not found at {FREEROUTING_JAR}")
+    # -oit (exit after routing): without it the JVM finishes its passes and then
+    # waits on the Swing GUI for a human to export -- the SES is only written on
+    # a clean exit, so a pass-budget-only run yields NO SES (measured 2026-10-12).
     cmd = ["xvfb-run", "-a", java, "-jar", FREEROUTING_JAR,
-           "-de", dsn_path, "-do", ses_path, "-mp", str(passes), "-mt", str(threads)]
-    print(f"  routing: -mp {passes} -mt {threads} (this takes minutes; bounded, no LLM)")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+           "-de", dsn_path, "-do", ses_path, "-oit",
+           "-mp", str(passes), "-mt", str(threads)]
+    print(f"  routing: -mp {passes} -mt {threads} -oit (timeout {timeout_s}s; bounded, no LLM)")
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        raise SystemExit(
+            f"FreeRouting exceeded {timeout_s}s without exiting -- it may have "
+            f"wedged. No SES is expected; raise -mp or lower the board scope."
+        )
     for line in proc.stdout.splitlines():
         if "Auto-router pass" in line or "ERROR" in line or "unrouted" in line:
             print("   ", line.split("INFO")[-1].strip() or line.strip())
