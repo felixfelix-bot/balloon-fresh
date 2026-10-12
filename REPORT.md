@@ -1,9 +1,16 @@
-# Report — t_8657bd7f
+# REPORT — t_8494294f
 
-Implemented ADR-065 double-sided cells only; carrier remains solid. The generator now emits SC1–SC3 on F.Cu and SC4–SC6 at identical positions on B.Cu, with mirrored bottom-face pad/text geometry. The six cells form two parallel 3-cell strings, preserving the 6.0 V total / 1.5 V per wing tab interface; no per-cell bypass diodes were added.
+Completed ISSUE-EF-4 auto-BOOTSEL interposer bench-case request.
 
-RED evidence: `python3 -m pytest tests/test_wing_double_sided.py -q` initially failed 3/3 because SC4–SC6 and side support were absent. After implementation, the targeted suite passes: 21 tests passed (`tests/test_3d_models_wing.py` plus the new double-sided suite).
+- Reconciled the request source against `origin/main`; the routed interposer is present at `tracker/hardware/auto_bootsel/`.
+- Ran `python3 -m pytest tracker/hardware/auto_bootsel/tests/test_auto_bootsel_pcb.py -q`: 28 passed in 7.22s.
+- Drafted the full 13-item request with provenance, geometry-availability matrix, explicit `MEASUREMENTS_NEEDED` gaps, pogo alignment, registration, cable strain relief, control access, non-boolean gates, and explicit flight-board non-requests.
+- Committed as `9a4d3e7` (`docs: draft auto-BOOTSEL enclosure request`).
+- Pushed to both `github` and `ngit` branch `wt/t_8494294f`; GitHub secret scan passed. ngit reported one relay failure (`nos.lol`) while publishing successfully to the other relay(s).
+- Posted directly under standing operator authority: https://github.com/Amperstrand/enclosure-forge/issues/1
+- Independent readback: issue #1 is OPEN, title matches, body length 11,341 characters, and head/tail content matches the draft. GitHub normalised the trailing newline only.
 
-Fab regeneration: `bash tracker/hardware/wing_board/export_wing_v9_gerbers.sh` completed and generated the ZIP. Courtyard gate output: 15/15 (100%), 0 overlaps, PASS. The checker was made face-aware so intentional SC1/SC4, SC2/SC5, SC3/SC6 opposite-face coincidence is not treated as same-face overlap. Gate record hashes: board `62e00d43e0c7d3be8a293f431e6d1110587791d7be6127a4763017702953f715`; fab ZIP `d0bcd707caea321b022624b3589b0d5f5941b5d18f13c77b665871257ae69df9`.
-
-Not yet done: commit/push, full project quality gates, PR creation, and mandatory cross-family review handoff.
+Files:
+- `docs/analysis/enclosure-requests/auto-bootsel-interposer.md`
+- `docs/analysis/enclosure-requests/README.md`
+- `PROGRESS.md`
