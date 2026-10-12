@@ -1,0 +1,7 @@
+[
+{"name":"b_100_4L_16","x":100,"y":100,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"tier boundary <=100"},
+{"name":"b_101_4L_16","x":101,"y":101,"opts":[["Layers","4"],["PCB Thickness","1.6mm"]],"note":"1mm over the boundary"},
+{"name":"c_103_2L_06","x":103,"y":103,"surf":"LeadFree HASL","opts":[["Layers","2"],["PCB Thickness","0.6mm"]],"note":"0.6mm has a 100x100 cap"},
+{"name":"c_100_2L_06","x":100,"y":100,"surf":"LeadFree HASL","opts":[["Layers","2"],["PCB Thickness","0.6mm"]],"note":"0.6mm at the cap"},
+{"name":"c_89_2L_06","x":89,"y":89,"surf":"LeadFree HASL","opts":[["Layers","2"],["PCB Thickness","0.6mm"]],"note":"0.6mm inside the cap"}
+]

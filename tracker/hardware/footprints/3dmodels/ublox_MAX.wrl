@@ -1,0 +1,19 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models.py  (regenerate: python3 scripts/gen_3d_models.py)
+# part       : ublox_MAX
+# source     : X/Y: F.Fab body drawing of RF_GPS:ublox_MAX as committed (9.800 x 10.200 mm) - the MAX-M10S (U5) land.  NOTE: docs/PAYLOAD-WEIGHT-ESTIMATES.md line 63 states 12.2 x 16 mm, which is a different (patch-antenna) figure; the footprint drawing is used and the disagreement is recorded, not hidden.  NOT in the installed kicad-packages3d library.
+# TODO(unverified):
+#   - the 12.2 x 16 mm figure in docs/PAYLOAD-WEIGHT-ESTIMATES.md vs the 9.800 x 10.200 mm footprint drawing - unreconciled
+#   - Z 2.50 mm - not stated in any in-repo record
+# --------------------------------------------------------------------------
+
+Transform {
+  translation 0.000000 0.000000 0.492126
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.620 0.640 0.680 } }
+      geometry Box { size 3.858268 4.015748 0.984252 }
+    }
+  ]
+}

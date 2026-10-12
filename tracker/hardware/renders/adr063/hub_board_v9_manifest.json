@@ -1,0 +1,64 @@
+{
+  "board": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/hub_board_v9.kicad_pcb",
+  "board_stem": "hub_board_v9",
+  "kicad_3dmodel_dir": "/usr/share/kicad/3dmodels",
+  "width": 1800,
+  "height": 1400,
+  "quality": "high",
+  "files": [
+    {
+      "view": "top",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_top.png",
+      "sha256": "280616dd96fa381a7bd18fb7ae798107228c948c566def30a04664f18f70ca82",
+      "bytes": 473394
+    },
+    {
+      "view": "bottom",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_bottom.png",
+      "sha256": "c906dbc9a9d743a28701ac0f61f801724b71bf0752e8e1cf969acdd545632726",
+      "bytes": 143214
+    },
+    {
+      "view": "iso_ne",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_iso_ne.png",
+      "sha256": "62999a963fc2c61951df7723312693b1cb09cc8505a38459068cb70b04f1c577",
+      "bytes": 682549
+    },
+    {
+      "view": "iso_nw",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_iso_nw.png",
+      "sha256": "0b1b4ebc285cb34a3257a61480e52738fb49096ad96d849cc239174666212efe",
+      "bytes": 684372
+    },
+    {
+      "view": "iso_se",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_iso_se.png",
+      "sha256": "014fd89bed5996baa35481373d634da07b956d3daf73920073f3693a73337af2",
+      "bytes": 672755
+    },
+    {
+      "view": "iso_sw",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_iso_sw.png",
+      "sha256": "7035bb0cfe54d9c1d7bca58a4a9ec94ea3b7e72b6b0b3707c19c138af075a7a5",
+      "bytes": 670638
+    },
+    {
+      "view": "side_e",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_side_e.png",
+      "sha256": "b1e8fd637829d0a3d9162fa251181b2a0878e762278e09e350082bbf4f2ad61b",
+      "bytes": 83944
+    },
+    {
+      "view": "side_n",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_side_n.png",
+      "sha256": "cf7e6af04fe0a09430e06a83e4394fad621d4615b1e3a338a767d6f6712352eb",
+      "bytes": 93858
+    },
+    {
+      "view": "contact_sheet",
+      "file": "/home/c03rad0r/worktrees/t_4f968b76/tracker/hardware/renders/adr063/hub_board_v9_contact_sheet.png",
+      "sha256": "f672c2e4101d0950f1f9cb899b5a75ee204ed2234d0e1deb086c34259a342acf",
+      "bytes": 5735408
+    }
+  ]
+}

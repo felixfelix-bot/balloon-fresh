@@ -1,0 +1,120 @@
+{
+  "name": "l_89_2L_04_ENIG",
+  "dims_entered": [
+    89,
+    89
+  ],
+  "qty": 5,
+  "note": "control: is 0.4mm available at 2 layers?",
+  "at": "2026-10-08T00:12:02",
+  "page_load": "FRESH navigation (new tab) -> isolated",
+  "pristine_selected": {
+    "Base Material": "FR-4",
+    "Layers": "2",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Thickness": "1.6mm",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Material Type": "FR4 TG135",
+    "Surface Finish": "HASL(with lead)",
+    "Outer Copper Weight": "1 oz",
+    "Coverlay Thickness": "PI:12.5um/AD:15um",
+    "Gold Fingers": "No",
+    "EDA Software": "Other",
+    "Stiffener": "Without",
+    "EMI Shielding Film": "Without",
+    "Cutting Method": "Laser Cutting",
+    "Via Covering": "Tented",
+    "Via Plating Method": "Not Specified",
+    "Min via hole size/diameter": "0.3mm/(0.4/0.45mm)",
+    "Board Outline Tolerance": "\u00b10.2mm(Regular)",
+    "Confirm Production file": "No",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Castellated Holes": "No",
+    "Edge Plating": "No",
+    "Blind Slots": "No",
+    "UL Marking": "No",
+    "Humidity Indicator Card": "No"
+  },
+  "qty_readback": "PCB Qty 5",
+  "dim_x_set": "89",
+  "dim_y_set": "89",
+  "steps": [
+    {
+      "heading": "Layers",
+      "want": "2",
+      "got": "2",
+      "took": true,
+      "attempts": 1
+    },
+    {
+      "heading": "Surface Finish",
+      "want": "ENIG",
+      "got": "ENIG",
+      "took": true,
+      "attempts": 1
+    },
+    {
+      "heading": "PCB Thickness",
+      "want": "0.4mm",
+      "got": "0.4mm",
+      "took": true,
+      "attempts": 1
+    }
+  ],
+  "final_selected": {
+    "Base Material": "FR-4",
+    "Layers": "2",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Thickness": "0.4mm",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Material Type": "FR4 TG135",
+    "Surface Finish": "ENIG",
+    "Gold Thickness": "1 U\"",
+    "Outer Copper Weight": "1 oz",
+    "Coverlay Thickness": "PI:12.5um/AD:15um",
+    "Gold Fingers": "No",
+    "EDA Software": "Other",
+    "Stiffener": "Without",
+    "EMI Shielding Film": "Without",
+    "Cutting Method": "Laser Cutting",
+    "Via Covering": "Tented",
+    "Via Plating Method": "Not Specified",
+    "Min via hole size/diameter": "0.3mm/(0.4/0.45mm)",
+    "Board Outline Tolerance": "\u00b10.2mm(Regular)",
+    "Confirm Production file": "No",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Castellated Holes": "No",
+    "Edge Plating": "No",
+    "UL Marking": "No",
+    "Humidity Indicator Card": "No"
+  },
+  "quote": {
+    "engineering_fee": "$33.00",
+    "board": "$3.90",
+    "via_covering": "$0.00",
+    "surface_finish": "$17.50",
+    "deburring_edge_rounding": null,
+    "panel": null,
+    "pcb_build_time_2days": null,
+    "calculated_price": "$54.40",
+    "shipping": "$23.21",
+    "weight": "0.17kg",
+    "build_time_lines": {
+      "24 hours PCBA Only": "$0.00"
+    }
+  },
+  "dims_input_readback": [
+    "89",
+    "89"
+  ]
+}
