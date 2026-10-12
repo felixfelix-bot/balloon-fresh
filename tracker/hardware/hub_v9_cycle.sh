@@ -61,13 +61,17 @@ for pid in $(pgrep -f "freerouting.jar" || true); do
 done
 sleep 2
 
-# 1. export DSN (also merges the unjoinable wing-socket pad-halves)
+# 1. export DSN (also merges the unjoinable wing-socket pad-halves) + route
 if [[ $SKIP_ROUTE -eq 0 ]]; then
   "$PY" "$HWDIR/route_hub_v9_freerouting.py" "$BOARD" \
       --out "$ROUTED" --workdir "$WORK" --passes "$PASSES" --threads "$THREADS" \
       2>&1 | grep -vE "Debug|^$" | tail -8
 else
-  echo "--- skip-route: reusing existing SES/ROUTED if present"
+  # reuse an existing SES (import into the frozen board) -- no JVM, no router
+  cp -f "$SES" "$WORK/$(basename "$BOARD" .kicad_pcb).ses" 2>/dev/null || true
+  "$PY" "$HWDIR/route_hub_v9_freerouting.py" "$BOARD" \
+      --out "$ROUTED" --workdir "$WORK" --skip-route \
+      2>&1 | grep -vE "Debug|^$" | tail -8
 fi
 
 # 2. refill zones (stitching/route invalidate fill -- the 753->55 trap)
