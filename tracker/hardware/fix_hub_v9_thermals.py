@@ -69,22 +69,31 @@ def main() -> int:
         print("REFUSED: not all pads found", file=sys.stderr)
         return 2
 
-    # --- 2. move ONLY the one offending via ---------------------------------
-    vx, vy, shift = VIA_MOVE
-    tx, ty = int(round(vx * MM)), int(round(vy * MM))
+    # --- 2. move ONLY the offending vias near U4's GND pad 3 -----------------
+    # MEASURED: two +3V3 pads share almost the same XY (47.300,4.000) and
+    # (47.300,4.500), so the blind-via pass dropped TWO vias there.  U4.3 [GND]
+    # is at (47.300,5.000) and is only 0.80 x 0.25 mm, so both vias are too
+    # close (0.5 mm and 1.3 mm).  Clearance rule = 0.2 mm + hole 0.25 mm.
+    # Push each offending via DOWN in -y, in order, until clear.
+    VX, VY = 47.300, 0.0
+    target_y = 3.700          # first via (already moved once)
+    # second via sits at 4.500 -> move it well clear of U4.3
+    fixes = [(47.300, 4.500, 3.700), (47.300, 3.700, 3.400)]
     moved = 0
-    for t in b.GetTracks():
-        from math import hypot
-        if t.GetClass() != "PCB_VIA" or t.GetNetname() != "+3V3":
-            continue
-        pos = t.GetPosition()
-        if hypot(pos.x - tx, pos.y - ty) < 1000:      # 1 um tolerance
-            nv = pcbnew.VECTOR2I(pos.x, pos.y - int(round(shift * MM)))
-            print(f"  via ({pos.x/MM:.3f},{pos.y/MM:.3f}) -> "
-                  f"({nv.x/MM:.3f},{nv.y/MM:.3f})")
-            t.SetPosition(nv)
-            moved += 1
-            break
+    for (fx, fy, newy) in fixes:
+        tx, ty = int(round(fx * MM)), int(round(fy * MM))
+        for t in b.GetTracks():
+            from math import hypot
+            if t.GetClass() != "PCB_VIA" or t.GetNetname() != "+3V3":
+                continue
+            pos = t.GetPosition()
+            if hypot(pos.x - tx, pos.y - ty) < 1000:
+                nv = pcbnew.VECTOR2I(pos.x, int(round(newy * MM)))
+                print(f"  via ({pos.x/MM:.3f},{pos.y/MM:.3f}) -> "
+                      f"({nv.x/MM:.3f},{nv.y/MM:.3f})")
+                t.SetPosition(nv)
+                moved += 1
+                break
     print(f"vias moved: {moved}")
 
     b.Save(args.out)
