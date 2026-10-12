@@ -1773,6 +1773,24 @@ coordinator **inline as JSON** (`--configs-json`, derived from the `CONFIGS_JSON
 Makefile variable). This lets the coordinator run on a third machine without
 having the config file present locally.
 
+#### Key material: one env-only accessor
+
+Every CVM signer secret enters the process through exactly one module,
+`tools/keymaterial.py`. The gift-wrap builder and each relay publisher obtain
+their keys via `load_env_secrets()` / `load_and_check_keys()` — the production
+path exposes **no** key-bearing command-line option.
+
+- Client (publisher) key: `CVM_CLIENT_NSEC` or `CVM_CLIENT_HEX`
+  (role aliases: `CVM_RX_*`, `CVM_TX_*`).
+- Server (board) key: `CVM_SERVER_NSEC` or `CVM_SERVER_HEX`.
+- The client pubkey **must differ** from the server pubkey.
+  `load_and_check_keys()` raises `KeyCollisionError` otherwise: a shared key
+  makes the client unwrap its own gift wraps and self-deliver on its own
+  subscription.
+- A missing env var raises `EnvKeyError` at startup (there is deliberately no
+  CLI fallback). Secrets are never logged — only `<redacted:nsec:len=…>`
+  markers.
+
 The Makefile derives `CONFIGS_JSON` from `CONFIGS` by shelling out to python —
 no separate file to keep in sync. If `CONFIGS` is a bare preset name (e.g.
 `envelope-4cfg-max`), it is resolved against `configs/` first.
