@@ -24,6 +24,15 @@ static uint32_t load_calls = 0;
 #define PRAM_ST_ENABLE_BASE  2000
 #define PRAM_ST_VERIFY_BASE  3000
 
+/* Weak default so a host test can link the radio path (radio_bench.c calls
+ * pram_patch_apply) without dragging in the STM32 platform file: the strong
+ * definition in src/pram_patch_platform.c (HAL_Delay) wins in the firmware,
+ * and the tests that care about the settle time define their own. */
+__attribute__((weak)) void pram_patch_platform_delay_ms(uint32_t ms)
+{
+    (void)ms;
+}
+
 uint32_t pram_patch_chunk_count(uint32_t total, uint32_t chunk)
 {
     if (chunk == 0u)

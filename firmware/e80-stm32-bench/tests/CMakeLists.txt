@@ -45,6 +45,8 @@ add_bench_test(test_bench_config_start ${SRC_DIR}/bench_pkt.c)
 set(LR20XX_DRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/src)
 add_bench_test(test_radio_bench_cfg
     ${SRC_DIR}/radio_bench.c
+    ${SRC_DIR}/pram_patch.c
+    ${SRC_DIR}/pram_patch_table.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
@@ -61,6 +63,8 @@ target_include_directories(test_radio_bench_cfg PRIVATE
 # and a TX FIFO clear before every FIFO write.
 add_bench_test(test_radio_bench_fifo
     ${SRC_DIR}/radio_bench.c
+    ${SRC_DIR}/pram_patch.c
+    ${SRC_DIR}/pram_patch_table.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
