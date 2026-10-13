@@ -7,6 +7,7 @@
  */
 
 #include "radio_bench.h"
+#include "pram_patch.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -188,6 +189,21 @@ static lr20xx_radio_flrc_cr_t flrc_cr_to_enum(uint8_t cr)
 
 /* ---- Public API ------------------------------------------------------------ */
 
+/**
+ * @brief Upload the ExpressLRS PRAM patch when the runtime flag is on.
+ *
+ * RFA-1 Q5: ExpressLRS loads this patch unconditionally right after the chip
+ * reset in LR2021Driver::Begin(); our firmware never did. The flag lets ONE
+ * binary run both experiment arms. Called after every chip reset this file
+ * performs (init and the modulation-switch re-init), so the invariant is:
+ * after any reset, the patch is present iff the flag is set.
+ */
+static void pram_patch_bringup_if_enabled(void)
+{
+    if (pram_patch_enabled())
+        (void)pram_patch_apply((void*)E80_CONTEXT);
+}
+
 int radio_bench_init(void)
 {
     uint16_t errors = 0;
@@ -199,6 +215,10 @@ int radio_bench_init(void)
     /* Get + clear error status */
     lr20xx_system_get_errors(E80_CONTEXT, &errors);
     lr20xx_system_clear_errors(E80_CONTEXT);
+
+    /* PRAM patch (RFA-1b): uploaded here — after reset/clear-errors, before
+     * calibration — mirroring ExpressLRS's Begin() ordering. */
+    pram_patch_bringup_if_enabled();
 
     /* TCXO variant (demo): DC-DC + TCXO 2.2V, 64000 startup steps */
     lr20xx_system_set_reg_mode(E80_CONTEXT, LR20XX_SYSTEM_REG_MODE_DCDC);
@@ -262,6 +282,10 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
 
         lr20xx_system_get_errors(E80_CONTEXT, &errs);
         lr20xx_system_clear_errors(E80_CONTEXT);
+
+        /* PRAM patch (RFA-1b): the reset above wiped PRAM, so re-upload it
+         * here when the flag is on (same rule as radio_bench_init). */
+        pram_patch_bringup_if_enabled();
 
         /* TCXO variant (same as init): DC-DC reg + TCXO 2.2V / 64000 steps. */
         lr20xx_system_set_reg_mode(E80_CONTEXT, LR20XX_SYSTEM_REG_MODE_DCDC);
