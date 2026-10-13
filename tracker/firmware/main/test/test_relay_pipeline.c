@@ -76,7 +76,7 @@ static int mock_queue_receive(mock_queue_t *q, relay_packet_t *out)
 /* TollGate payment protocol — uses the REAL tollgate_payment_proto.h  */
 /*                                                                    */
 /* The header now exists at main/tollgate_payment_proto.h with        */
-/* encode/decode functions matching ADR-002. The mock has been removed */
+/* encode/decode functions matching ADR-100. The mock has been removed */
 /* and all tests now exercise the real protocol implementation.       */
 /* ------------------------------------------------------------------ */
 

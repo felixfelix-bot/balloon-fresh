@@ -1,6 +1,6 @@
 # RECON lane B — plaintext / kind-1 fallback paths that bypass gift wrapping
 
-- **Repo:** `/home/c03rad0r/repos/balloon-e80bench`
+- **Repo:** `<repo>`
 - **Scope:** `firmware/e80-stm32-bench/tools/` and everything reachable from it
 - **Claim tested:** *any fallback path emits or leaks an unwrapped/plaintext event where a gift-wrapped one is expected.*
 - **Mode:** READ-ONLY adversarial recon. No code, test, config or build file modified. One artifact added (this document).
@@ -78,7 +78,7 @@ were re-run without the pipe where the distinction mattered (recorded as `b` suf
 | C-B36 | `rg -ni "nostr\|kind\|gift\|wrap\|25910\|1059" e80_board_server.py` | **rc=0, 1 hit** = `:219` "TCP server **wrapping** a BoardController" (control-flow verb, not crypto) |
 | C-B37 | `rg -n "kind.{0,6}13\b\|…\|seal" firmware/e80-stm32-bench/tools/*.py` | **rc=1, zero hits** — no kind-13/seal in scope (agrees with lane A) |
 | C-B38 | `git status --short firmware/e80-stm32-bench/tools/ docs/` | Only pre-existing `??` docs from other sessions; no modification by this recon |
-| C-B39 | `rg -n "nostr_sdk\.py" docs/RECON-duplicate-giftwrap-paths.md` | Lane A resolved the SDK at `/home/c03rad0r/.local/lib/python3.13/site-packages/nostr_sdk/nostr_sdk.py` |
+| C-B39 | `rg -n "nostr_sdk\.py" docs/RECON-duplicate-giftwrap-paths.md` | Lane A resolved the SDK at `<site-packages>/nostr_sdk/nostr_sdk.py` |
 | C-B40 | `rg -l "gift_wrap_from_seal" balloon-fresh balloon-e80bench mesh-stack` | Only this repo's lane-A report — no in-repo caller |
 | C-B41 | `rg -ni "plaintext\|unencrypted\|cleartext\|\bfallback\b\|\bbypass\b\|insecure" <SDK>` | **All `bypass` hits are uniffi boilerplate** ("Lightly yucky way to bypass the usual `__init__` logic"); `plaintext` = doc wording of `human-readable summary`. No crypto bypass |
 | C-B42 | `rg -n "KIND_TEXT_NOTE\|Kind::TextNote\|TextNote\|text_note\|Kind\(1\)\|kind=1\b" <SDK>` | Only **`EventBuilder.text_note`** FFI plumbing (`:37038`) — an API that *exists* but has **zero in-scope callers** (C-B5) |
@@ -94,7 +94,7 @@ were re-run without the pipe where the distinction mattered (recorded as `b` suf
 | C-B53 | `rg -n "pynostr\|import nostr\b\|from nostr\b" firmware/e80-stm32-bench/tools/` | **rc=1** — a second Nostr lib (`pynostr 0.7.0`) is installed but never imported in scope |
 
 Audited SDK identity (for reproducibility): `nostr-sdk==0.44.2`,
-`/home/c03rad0r/.local/lib/python3.13/site-packages/nostr_sdk/nostr_sdk.py`,
+`<site-packages>/nostr_sdk/nostr_sdk.py`,
 sha256 `d6bb2552ceb73c107f45827ee91e7ab19fcf9ae9570eb08473989ccae0aac595`, 49686 lines.
 
 ---
@@ -105,12 +105,12 @@ sha256 `d6bb2552ceb73c107f45827ee91e7ab19fcf9ae9570eb08473989ccae0aac595`, 49686
 
 | # | Absolute path | Line | Enclosing symbol | Judgement |
 |---|---------------|------|------------------|-----------|
-| 1 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_board_server.py` | 573–581 | `CVMBoardServer._send_reply()` | **(a-adjacent) wrapped.** Inner rumor `kind=KIND_CVM_RPC(25910)` (:575) → `gift_wrap` (:580) → `send_event(gw)` (:581). Reachable; emits only kind 1059. |
-| 2 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 166–180 | `CVMClient._call_via_nostr()` | **wrapped.** Inner `kind=KIND_CVM_RPC` (:168) → `gift_wrap` (:179) → `send_event(gw)` (:180). |
-| 3 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 198–209 | `CVMClient._call_via_nostr()` retry branch | **wrapped.** Same shape, `gift_wrap` (:208) → `send_event(gw2)` (:209). |
-| 4 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_relay_test.py` | 74–83 | `test_relay_*` diagnostic self-wrap | **(b) diagnostic.** `kind=KIND_CVM_RPC` (:76) → `gift_wrap` (:82) → `send_event` (:83). |
-| 5 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/test_cvm_board_server.py` | 471–481 | `TestGiftWrapRoundTrip.test_wrap_and_unwrap_preserves_payload()` | **(b) test only.** Asserts inner kind == 25910 at :485. |
-| 6 | `/home/c03rad0r/.local/lib/python3.13/site-packages/nostr_sdk/nostr_sdk.py` | 49245 / 49280 | `gift_wrap()` / `gift_wrap_from_seal()` | **(c) latent.** Both are wrap-only; `gift_wrap_from_seal` has zero in-scope callers (C-B40). Neither can emit plaintext. |
+| 1 | `<repo>/firmware/e80-stm32-bench/tools/cvm_board_server.py` | 573–581 | `CVMBoardServer._send_reply()` | **(a-adjacent) wrapped.** Inner rumor `kind=KIND_CVM_RPC(25910)` (:575) → `gift_wrap` (:580) → `send_event(gw)` (:581). Reachable; emits only kind 1059. |
+| 2 | `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 166–180 | `CVMClient._call_via_nostr()` | **wrapped.** Inner `kind=KIND_CVM_RPC` (:168) → `gift_wrap` (:179) → `send_event(gw)` (:180). |
+| 3 | `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 198–209 | `CVMClient._call_via_nostr()` retry branch | **wrapped.** Same shape, `gift_wrap` (:208) → `send_event(gw2)` (:209). |
+| 4 | `<repo>/firmware/e80-stm32-bench/tools/cvm_relay_test.py` | 74–83 | `test_relay_*` diagnostic self-wrap | **(b) diagnostic.** `kind=KIND_CVM_RPC` (:76) → `gift_wrap` (:82) → `send_event` (:83). |
+| 5 | `<repo>/firmware/e80-stm32-bench/tools/test_cvm_board_server.py` | 471–481 | `TestGiftWrapRoundTrip.test_wrap_and_unwrap_preserves_payload()` | **(b) test only.** Asserts inner kind == 25910 at :485. |
+| 6 | `<site-packages>/nostr_sdk/nostr_sdk.py` | 49245 / 49280 | `gift_wrap()` / `gift_wrap_from_seal()` | **(c) latent.** Both are wrap-only; `gift_wrap_from_seal` has zero in-scope callers (C-B40). Neither can emit plaintext. |
 
 ### 2.2 Flagged candidates (not bypasses, but reported for a human decision)
 
@@ -126,9 +126,9 @@ sha256 `d6bb2552ceb73c107f45827ee91e7ab19fcf9ae9570eb08473989ccae0aac595`, 49686
 
 | Absolute path | Line | Enclosing symbol | Judgement |
 |---|---|---|---|
-| `/home/c03rad0r/repos/balloon-e80bench/tools/gh_ngit_watchdog.py` | 273 | `def post_to_nostr(content: str, config: dict, kind: int = 1)` | **(b)/out-of-scope.** Posts a **kind-1 text note** via `nak` with `content` in cleartext. |
-| `/home/c03rad0r/repos/balloon-e80bench/tools/gh_ngit_watchdog.py` | 281 | `post_to_nostr()` | **(b)/out-of-scope.** `cmd = ["nak","event", … "‑k", str(kind), "‑c", content]` — the plaintext emission itself. |
-| `/home/c03rad0r/repos/balloon-e80bench/tools/gh_ngit_watchdog.py` | 444, 469, 501 | `main()` / `mirror` paths | **(b)/out-of-scope.** Three callers: attention summary, per-item cross-post, full-report mirror (`report[:5000]`). |
+| `<repo>/tools/gh_ngit_watchdog.py` | 273 | `def post_to_nostr(content: str, config: dict, kind: int = 1)` | **(b)/out-of-scope.** Posts a **kind-1 text note** via `nak` with `content` in cleartext. |
+| `<repo>/tools/gh_ngit_watchdog.py` | 281 | `post_to_nostr()` | **(b)/out-of-scope.** `cmd = ["nak","event", … "‑k", str(kind), "‑c", content]` — the plaintext emission itself. |
+| `<repo>/tools/gh_ngit_watchdog.py` | 444, 469, 501 | `main()` / `mirror` paths | **(b)/out-of-scope.** Three callers: attention summary, per-item cross-post, full-report mirror (`report[:5000]`). |
 
 Reachability reasoning for F2: this file sits in the **repo-root** `tools/`, not the scope `tools/`.
 `e80_bench_ctl.py:44-50` inserts repo-root `tools/` on `sys.path` and takes exactly **one** import

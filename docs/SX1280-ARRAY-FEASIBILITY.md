@@ -26,14 +26,19 @@ The project has measured the LR2021 FLRC link at **1484.9 kbps sustained, 0.00 %
 limited). The older **1391 kbps** figure in `docs/PLAN-speed-optimization.md` is
 superseded RP2040 Arduino-SPI history.
 
-> **Settled 2026-10-06 (card `t_6b68897c`).** The **2600 kbps** figure is the FLRC
-> **PHY air rate, not goodput**, and goodput cannot reach it at any payload size: the
-> ceiling is **2540 kbps at 255 B** and **2570 kbps at 511 B** with *zero* host
-> overhead (2550 kbps at 511 B under the headers the firmware actually configures).
+> **Settled 2026-10-06 (card `t_6b68897c`; numbers corrected 2026-10-06 rev 2).** The
+> **2600 kbps** figure is the FLRC **PHY air rate, not goodput**, and goodput cannot
+> reach it at any payload size. With *zero* host overhead the ceiling is **1871 kbps
+> at 255 B** and **1910 kbps at 511 B** under the configuration the firmware actually
+> ships (FLRC **CR 3/4** — `radio_bench.c:55`; LR20xx driver time-on-air numerator),
+> or 2540 / 2570 kbps *if the link were uncoded* (CR NONE). The CR-3/4 figure agrees
+> to 0.6 % with the repo's independently computed 1921.8 kbps on-air rate
+> (`full-sweep-report-20260821-175612.md:99`).
 > An operator report of ~2.6 Mbps attributed to doubling the payload 255 B → 512 B
-> was investigated and does not hold: **512 B is not a legal FLRC length** (9-bit
-> payload field, max 511), and no 512 B run exists on disk. What *is* demonstrated is
-> 511 B working — 50/50 delivered, PRBS-15 `bit_err = 0`, at BR650/1300/2600
+> was investigated and does not hold: **512 B is not a legal FLRC length** (the
+> driver's documented range is `[6:511]`, `lr20xx_radio_flrc_types.h:210`), and no
+> 512 B run exists on disk. What *is* demonstrated is 511 B working — 50/50
+> delivered, PRBS-15 `bit_err = 0`, at BR650/1300/2600
 > (`full-sweep-report-20260821-175612.md`). Full audit:
 > `docs/FLRC-512B-THROUGHPUT-AUDIT-2026-10-06.md`,
 > `tools/flrc_512b_throughput_audit.py`.
@@ -44,8 +49,9 @@ superseded RP2040 Arduino-SPI history.
 Four
 SX1280s in LoRa mode would land *below* the single FLRC link already in hand.
 **For raw throughput the lever is modulation mode *plus payload size* (and host-side
-pipelining), not radio count** — payload size 255 B → 511 B is worth only ~1.2 % of
-ceiling, so do not expect packet size alone to be the lever either.
+pipelining), not radio count** — payload size 255 B → 511 B is worth only ~2 % of
+ceiling (1871 → 1910 kbps at CR 3/4), so do not expect packet size alone to be the
+lever either.
 
 ## 3. Why co-located radios cannot run in parallel
 

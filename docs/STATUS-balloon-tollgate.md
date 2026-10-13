@@ -16,7 +16,7 @@ EXTRACTION + ADAPTER DESIGN COMPLETE — awaiting FIPS mesh transport API
 2. d0a01ee — ADR-001 (LR2021 transport) imported
 3. 2c7a3b9 — status file (rebased to master)
 4. bd40a1f — Cashu payment core extracted (156 files)
-5. 76acae6 — ADR-002 (FIPS mesh UDP transport)
+5. 76acae6 — ADR-100 (FIPS mesh UDP transport)
 6. ffbb4f5 — fix: remove dangling dns/mining/stratum references
 7. 478ad43 — tollgate_balloon adapter + UDP payment protocol
 8. (pending) — host unit tests (background worker)
@@ -24,7 +24,7 @@ EXTRACTION + ADAPTER DESIGN COMPLETE — awaiting FIPS mesh transport API
 ## What's Done
 1. ADR-024 (extract-only) understood and followed
 2. ADR-001: LR2021 radio as data link, NOT WiFi
-3. ADR-002: TollGate = L7 app over FIPS mesh UDP (port 2121)
+3. ADR-100: TollGate = L7 app over FIPS mesh UDP (port 2121)
 4. Cashu payment core extracted: 156 files, 7 modules compile clean
 5. Dangling references to stripped modules fixed
 6. tollgate_balloon adapter designed:

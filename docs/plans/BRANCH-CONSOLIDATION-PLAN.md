@@ -36,7 +36,7 @@ range-tests ALREADY CONTAINS:
 - ✅ pytest framework (14 tests)
 - ✅ Make targets + flash scripts
 - ✅ Walk capture data (93% decode)
-- ✅ GPS fix-gate (ADR-018)
+- ✅ GPS fix-gate (ADR-103)
 - ✅ TX autonomy (GPS time hold, WAIT_GPS state)
 
 ### What master has that range-tests DOESN'T (the gap)
@@ -51,10 +51,10 @@ These are commits made to master AFTER range-tests diverged:
 
 **ARCHITECTURE (ADR conflict — needs resolution):**
 5. `9737c5c` — ADR-021: absolute UTC phase sync, no boot-time GPS gate
-   CONFLICTS with ADR-018 (range-tests): unconditional GPS fix-gate
-   - ADR-018: TX never transmits without GPS fix
+   CONFLICTS with ADR-103 (range-tests): unconditional GPS fix-gate
+   - ADR-103: TX never transmits without GPS fix
    - ADR-021: TX starts immediately, GPS optional
-   - RESOLUTION: Make GPS gate configurable. Default ON for range tests (ADR-018),
+   - RESOLUTION: Make GPS gate configurable. Default ON for range tests (ADR-103),
      configurable OFF for bench testing (ADR-021). Both ADRs coexist.
 
 **TOOLS (useful, cherry-pick):**
@@ -190,7 +190,7 @@ Task:
 1. **totalCycleSec fix**: range-tests version (recompute from phase table) is MORE robust than master's (just reset before accumulate). KEEP range-tests version, verify it handles SET_TIME without accumulation.
 
 2. **GPS gate philosophy**: Keep BOTH as configurable options.
-   - Default: ADR-018 (GPS fix-gate ON for outdoor range tests)
+   - Default: ADR-103 (GPS fix-gate ON for outdoor range tests)
    - Configurable: ADR-021 (GPS optional for bench testing)
    - SET_INTERLEAVE already controls mode — add SET_GPS_GATE command
 

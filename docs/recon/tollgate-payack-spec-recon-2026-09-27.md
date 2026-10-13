@@ -92,7 +92,7 @@ Two wire-compatible copies of an 8-byte packed binary header, both authored in t
 Authored by our own commit `65a46fd1` (also present at `balloon-e80bench`).
 
 ```
-Wire format (ADR-002):  [hdr(8, packed)] [payload(N)]
+Wire format (ADR-100):  [hdr(8, packed)] [payload(N)]
 offset 0  version u8 | 1 type u8 | 2 seq u16 | 4 payload_len u16 | 6 reserved u16
 TG_MSG_PAY=0x01, TG_MSG_ACK=0x02, TG_MSG_NACK=0x03, TG_MSG_STATUS=0x04,
 TG_MSG_INFO=0x05, TG_MSG_REVOKE=0x06
@@ -121,7 +121,7 @@ mocks, not stubs.** Caveats that matter for "is this normative?":
   `TOLLGATE_PROTO_CONTRACT.md` (rev 2) — which itself records two open deviations
   (DEF-1: `encode(NULL, len>0)` succeeds where the contract says −1; DEF-2: `decode(hdr==NULL)`
   dereferences NULL).
-- Its ADR citation is misleading: `docs/adr/002-tollgate-over-fips-mesh-udp.md` decides
+- Its ADR citation is misleading: `docs/adr/100-tollgate-over-fips-mesh-udp.md` decides
   *transport* (TollGate payment messages ride UDP over the FIPS mesh, not direct LR2021).
   It defines **no** header, message type, or encoding — the format lives only in code
   comments + `TOLLGATE_PROTO_CONTRACT.md`.

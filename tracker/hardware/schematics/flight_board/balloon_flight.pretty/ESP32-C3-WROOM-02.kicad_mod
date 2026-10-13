@@ -625,7 +625,7 @@
 			(at 8.75 1.5)
 			(size 1.5 0.9)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 15 "LR_DIO0")
+			(net 15 "LR_IRQ")
 			(uuid "7dfd2df3-1f8b-4ba6-8183-ad001a9793ba")
 		)
 		(pad "14" smd rect

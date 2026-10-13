@@ -26,7 +26,7 @@
 **TX:** `rp2040-sweep-tx-v4` (`multi_radio_sweep_gps_v4.cpp`, 1408 lines)
 - Sweeps all 14 LR2021 modes (HF/LF × FLRC/LoRa × 4 bitrates)
 - GPS position (lat/lon/sats/fix/UTC) embedded in every packet
-- GPS FIX GATE (ADR-018) — won't transmit without satellite lock
+- GPS FIX GATE (ADR-103) — won't transmit without satellite lock
 - Autonomous — runs on battery, no laptop needed
 - Firmware git hash embedded in packets for compatibility tracking
 

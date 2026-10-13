@@ -27,7 +27,7 @@
 
 > Numbering note: 029 and 030 are reserved for the cards that own them (ADR-031 and ADR-032
 > already say so in their own Related lists). This record takes 030. `feat/e80-spi-bypass`
-> carries an unmerged `docs/adr/029-firmware-output-harmonization.md`; that collision is
+> carries an unmerged `docs/adr/109-firmware-output-harmonization.md`; that collision is
 > ADR-029's to flag, not this record's.
 
 ---

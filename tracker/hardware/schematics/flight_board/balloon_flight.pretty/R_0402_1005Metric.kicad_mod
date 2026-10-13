@@ -4,7 +4,7 @@
 		(generator_version "9.0")
 		(layer "F.Cu")
 		(uuid "354f66b4-1b96-4717-abf1-298fb279c427")
-		(at 30 32 270)
+		(at 30 32 -90)
 		(descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R_LED"
@@ -55,16 +55,6 @@
 		)
 		(attr smd)
 		(fp_line
-			(start -0.1536 -0.38)
-			(end 0.1536 -0.38)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "517ee509-3672-4d93-be5f-04272f1c46f5")
-		)
-		(fp_line
 			(start -0.1536 0.38)
 			(end 0.1536 0.38)
 			(stroke
@@ -73,6 +63,16 @@
 			)
 			(layer "F.SilkS")
 			(uuid "fd9d2e11-efce-4ca5-ba74-a0dbc9c14dec")
+		)
+		(fp_line
+			(start -0.1536 -0.38)
+			(end 0.1536 -0.38)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "517ee509-3672-4d93-be5f-04272f1c46f5")
 		)
 		(fp_rect
 			(start -0.93 -0.47)

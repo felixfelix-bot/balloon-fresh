@@ -27,7 +27,7 @@ measurement of the code change and has been withdrawn. Use the `Same-conditions 
 column — it is blank wherever the revision's delta has not been isolated by a controlled
 A/B, rather than being filled with an incomparable number.
 
-See `docs/adr/ADR-017-version-tagging-policy.md` for the full policy.
+See `docs/adr/102-version-tagging-policy.md` for the full policy.
 
 ## Version History
 

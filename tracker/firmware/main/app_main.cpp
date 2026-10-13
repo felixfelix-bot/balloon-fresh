@@ -595,7 +595,7 @@ static void cli_cmd_nostr_dump(const char *args) {
  *   - If omitted, a minimal test payload "{\"token\":\"test\"}" is used.
  *
  * The PAY message is encoded with the real tollgate_proto_encode_relay() from
- * tollgate_payment_proto.c (ADR-002 wire format), which enforces the tracker
+ * tollgate_payment_proto.c (ADR-100 wire format), which enforces the tracker
  * relay's payload budget (TOLLGATE_MAX_PAYLOAD_RELAY = 503 B) in the encode
  * path.
  *

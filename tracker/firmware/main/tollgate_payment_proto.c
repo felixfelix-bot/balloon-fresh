@@ -1,7 +1,7 @@
 /*
  * tollgate_payment_proto.c — encode/decode for TollGate payment protocol
  *
- * Wire format (ADR-002):
+ * Wire format (ADR-100):
  *   [hdr(8 bytes, packed)] [payload(N bytes)]
  *
  * Self-contained — no ESP-IDF dependencies. Host-testable with gcc.

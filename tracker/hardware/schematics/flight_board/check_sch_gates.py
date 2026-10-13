@@ -202,3 +202,102 @@ if fails:
         print("  -", f)
     sys.exit(1)
 print("ALL GATES PASS")
+
+
+# =====================================================================
+# v9 gate: the DESIGN-INTENT tri-band schematic (ADR-029/034/035/036-043).
+# It is NOT derived from a PCB, so there is no net-parity gate; what is
+# proved instead is: (1) the generator is deterministic, (2) the sheet
+# loads, (3) the exact ERC error/warning counts are REPORTED, never
+# suppressed, (4) the netlist exports and carries every declared component.
+# =====================================================================
+V9_SCH = os.path.join(HERE, "v9_flight.kicad_sch")
+V9_NET = os.path.join(HERE, "v9_flight.net")
+V9_ERC = os.path.join(HERE, "v9_flight-erc.rpt")
+V9_GATE_TODO_MIN = 14          # every open question must stay on the sheet
+
+
+def gates_v9():
+    import importlib
+    Bv = importlib.import_module("build_flight_sch")
+    vfails = []
+
+    def gen():
+        r = subprocess.run([sys.executable, os.path.join(HERE, "build_flight_sch.py"),
+                            "v9"], cwd=HERE, capture_output=True, text=True)
+        if r.returncode != 0:
+            return None, r.returncode, r.stdout[-800:] + r.stderr[-800:]
+        return hashlib.sha256(open(V9_SCH, "rb").read()).hexdigest(), 0, ""
+
+    print("== V9 GATE 0: generator determinism ==")
+    a, rca, err = gen()
+    b, rcb, _ = gen()
+    print("   exit=%d/%d  sha256 run1=%s run2=%s (%d bytes)"
+          % (rca, rcb, (a or "n/a")[:16], (b or "n/a")[:16],
+             os.path.getsize(V9_SCH) if os.path.exists(V9_SCH) else 0))
+    if rca or rcb:
+        vfails.append("V9 GATE 0: generator exit %d/%d %s" % (rca, rcb, err))
+    elif a != b:
+        vfails.append("V9 GATE 0: NOT deterministic")
+    else:
+        print("   deterministic: byte-identical across two runs")
+    print("   v9 schematic sha256 = %s" % a)
+
+    print("== V9 GATE 1: sheet loads + ERC severity (REPORTED, never silenced) ==")
+    r0 = subprocess.run(["kicad-cli", "sch", "erc", V9_SCH], cwd=HERE,
+                        capture_output=True, text=True)
+    print("   load exit=%d" % r0.returncode)
+    if r0.returncode != 0:
+        vfails.append("V9 GATE 1: schematic did not load (exit %d)" % r0.returncode)
+    r1 = subprocess.run(["kicad-cli", "sch", "erc", "--exit-code-violations",
+                         "--output", V9_ERC, V9_SCH], cwd=HERE,
+                        capture_output=True, text=True)
+    rep = open(V9_ERC, errors="replace").read() if os.path.exists(V9_ERC) else ""
+    kinds = re.findall(r"^\[([a-z_]+)\]:", rep, re.M)
+    sev = re.findall(r"^\s*; (error|warning)$", rep, re.M)
+    errs, warns = sev.count("error"), sev.count("warning")
+    print("   strict exit=%d  errors=%d warnings=%d  kinds=%s"
+          % (r1.returncode, errs, warns, sorted(set(kinds))))
+    print("   (v9 ERC errors are EXPECTED and OPEN: every one is a pin the "
+          "records leave undecided - see the TODO(unverified) notes on the sheet)")
+
+    print("== V9 GATE 2: netlist export + component count ==")
+    rl = subprocess.run(["kicad-cli", "sch", "export", "netlist", "-o", V9_NET,
+                         V9_SCH], cwd=HERE, capture_output=True, text=True)
+    if rl.returncode != 0:
+        vfails.append("V9 GATE 2: netlist export failed: %s" % rl.stderr[-300:])
+        print("   export FAILED exit=%d" % rl.returncode)
+    else:
+        nt = open(V9_NET, errors="replace").read()
+        comps = re.findall(r'\(comp \(ref "([^"]+)"\)', nt)
+        nets = re.findall(r'\(net \(code "[0-9]+"\) \(name "([^"]+)"\)', nt)
+        declared = sorted({c[0] for c in Bv.V9_COMPONENTS})
+        missing = [c for c in declared if c not in comps]
+        print("   components exported=%d  declared=%d  nets=%d"
+              % (len(comps), len(declared), len(nets)))
+        print("   refs: %s" % sorted(comps))
+        if missing:
+            vfails.append("V9 GATE 2: components missing from netlist: %s" % missing)
+
+    print("== V9 GATE 3: TODO(unverified) register stays on the sheet ==")
+    sch_txt = open(V9_SCH, errors="replace").read() if os.path.exists(V9_SCH) else ""
+    n_todo = sch_txt.count("TODO(unverified)")
+    need = sum(1 for t in Bv.V9_TODO if t[0])
+    print("   TODO(unverified) markers on sheet=%d  registered open questions=%d"
+          "  (min gate=%d)" % (n_todo, need, V9_GATE_TODO_MIN))
+    if n_todo < V9_GATE_TODO_MIN or need != len(Bv.V9_TODO):
+        vfails.append("V9 GATE 3: TODO register shrank (%d markers, %d questions)"
+                      % (n_todo, need))
+
+    print()
+    if vfails:
+        print("V9 GATES FAILED:")
+        for f in vfails:
+            print("  -", f)
+        return 1
+    print("V9 GATES PASS (ERC error counts above are real and open, not suppressed)")
+    return 0
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v9":
+    sys.exit(gates_v9())

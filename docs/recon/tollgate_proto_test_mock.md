@@ -57,7 +57,7 @@ at current HEAD now reads (test file lines 75-83, quoted verbatim):
 76|/* TollGate payment protocol — uses the REAL tollgate_payment_proto.h  */
 77|/*                                                                    */
 78|/* The header now exists at main/tollgate_payment_proto.h with        */
-79|/* encode/decode functions matching ADR-002. The mock has been removed */
+79|/* encode/decode functions matching ADR-100. The mock has been removed */
 80|/* and all tests now exercise the real protocol implementation.       */
 81|/* ------------------------------------------------------------------ */
 82|

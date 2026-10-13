@@ -272,6 +272,7 @@
 			(size 1.8 0.8)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 1 "+3V3")
 			(uuid "a8837ea4-d2b3-42fc-969e-9ef8eba859d8")
 		)
 		(pad "7" smd roundrect
@@ -295,6 +296,7 @@
 			(size 1.8 0.7)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 1 "+3V3")
 			(uuid "91db4c7c-f944-47a2-9099-f158c248e130")
 		)
 		(pad "10" smd roundrect
@@ -310,6 +312,7 @@
 			(size 1.8 0.8)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
+			(net 23 "GNSS_RF")
 			(uuid "31d5ddae-1b2b-42af-8630-de9f279e965d")
 		)
 		(pad "12" smd roundrect

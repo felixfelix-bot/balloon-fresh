@@ -12,7 +12,7 @@ Last commit: 41369a5
 E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio integration
 
 ## What's Done
-1. ADR-025 E-Hash mining relay design (balloon = L7 transport, never hashes)
+1. ADR-106 E-Hash mining relay design (balloon = L7 transport, never hashes)
 2. Binary wire format: 4 message types (TEMPLATE, NONCE, RESULT, CREDIT)
 3. `mesh-stack/ehash-bridge/` — Python stratum proxy codec + mock template
 4. `mesh-stack/ehash-relay/` — C relay component (ESP-IDF + host testable)
@@ -87,7 +87,7 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - nostr_event_t now carries `sig[64]` (BIP-340 Schnorr). Serialize header: 72→136 bytes.
 - Tests verify byte-exact sig roundtrip with recognizable fill pattern.
 - **Impact on e-hash relay:**
-  - Per ADR-025 D1: balloon never hashes, never verifies signatures. So sig field doesn't change e-hash relay logic.
+  - Per ADR-106 D1: balloon never hashes, never verifies signatures. So sig field doesn't change e-hash relay logic.
   - BUT: if e-hash CREDIT messages are later wrapped as Nostr events for store-and-forward, the sig field is now available in the serialization format.
   - Test pattern (fill sig with `id_byte ^ (i & 0xFF)`, assert byte-exact roundtrip) is directly reusable for e-hash message tests.
   - Serialization approach (fixed-size field in header, update min header size) is a pattern to follow if adding optional sig to e-hash CREDIT messages.
@@ -110,7 +110,7 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - Relevance: HIGH
 - Standalone tollgate payment protocol header created: 8-byte packed header (version, type, seq, payload_len, reserved), 6 message types (PAY/ACK/NACK/STATUS/INFO/REVOKE)
 - Self-contained, no ESP-IDF deps, host-testable with gcc
-- Wire-compatible with mesh-stack/tollgate/components/tollgate_balloon/ (ADR-002)
+- Wire-compatible with mesh-stack/tollgate/components/tollgate_balloon/ (ADR-100)
 - Test migrated from mock encode/decode to REAL protocol functions
 - **Direct impact on e-hash relay:**
   - TollGate PAY/ACK/NACK pattern is structurally parallel to e-hash CREDIT system

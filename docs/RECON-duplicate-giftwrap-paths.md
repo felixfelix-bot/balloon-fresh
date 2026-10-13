@@ -41,7 +41,7 @@ Per-lane conclusions are in §6.
 
 ## 2. Method — exact commands and output summary
 
-All commands run from `/home/c03rad0r/repos/balloon-e80bench` unless noted.
+All commands run from `<repo>` unless noted.
 `tools/` shorthand = `firmware/e80-stm32-bench/tools/`.
 
 | # | Command (verbatim) | Output summary |
@@ -55,7 +55,7 @@ All commands run from `/home/c03rad0r/repos/balloon-e80bench` unless noted.
 | C6 | `grep -rInwE --exclude-dir=__pycache__ '13' .` (in `tools/`) | 20 hits, all unrelated: `13-bit` ADC/temp, CSV column index `[13]`, JSON-RPC `id:"13"`. No kind-13. |
 | C7 | `grep -rInE --exclude-dir=__pycache__ 'EventBuilder\|UnsignedEvent\|Event\.new\|build_event\|create_event\|seal' .` | Only `UnsignedEvent.from_json` at 5 sites. **No** `EventBuilder`, no `build_event`, no `create_event`, no `Event::new`. No hand-rolled outer-event constructor. |
 | C8 | `grep -rInE --exclude-dir=__pycache__ 'gift_wrap\|from_gift_wrap\|UnwrappedGift' .` | 5 `nostr_sdk.gift_wrap(...)` call sites; 3 `UnwrappedGift.from_gift_wrap(...)` unwrap sites. |
-| C9 | `find . -type d -name 'nostr_sdk*'` + `python3 -c "importlib.util.find_spec('nostr_sdk')"` + `pip show nostr-sdk` | No vendored copy in-repo. `nostr_sdk` is **not importable** by the default interpreter (PEP-668/`python3` 3.14.4); installed at `/home/c03rad0r/.local/lib/python3.13/site-packages/nostr_sdk`, version **0.44.2**. |
+| C9 | `find . -type d -name 'nostr_sdk*'` + `python3 -c "importlib.util.find_spec('nostr_sdk')"` + `pip show nostr-sdk` | No vendored copy in-repo. `nostr_sdk` is **not importable** by the default interpreter (PEP-668/`python3` 3.14.4); installed at `<site-packages>/nostr_sdk`, version **0.44.2**. |
 | C10 | `unzip -l e80-range-test-e7a78e9.zip` + streamed per-file `grep -q 1059` | 5 `.py` files; **0** contain `1059`. Only hit was a C file (`ral_lr20xx_bsp.c`) where 1059 is a hex/data value. No second implementation. |
 | C11 | `grep -nE 'cvm\|gift' firmware/e80-stm32-bench/Makefile` | 3 reachable targets: `range-cvm-server`→`tools/cvm_board_server.py`, `range-adaptive`→`tools/cvm_campaign.py`, `range-cvm-test`→`tools/cvm_relay_test.py`. |
 | C12 | `find . -name '*.rs'` → 3 files (all under `tracker/ground-station/antenna-tracker/`), then `grep -rIn -E '1059\|GiftWrap\|gift_wrap\|Kind::\|Seal'` on them | Rust files are **out of scope** and have **zero** gift-wrap/seal/1059 hits. |
@@ -97,8 +97,8 @@ All commands run from `/home/c03rad0r/repos/balloon-e80bench` unless noted.
 
 | # | Absolute path | Line | Enclosing symbol | Judgement |
 |---|---------------|------|------------------|-----------|
-| 1 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_board_server.py` | 74 | module level, `KIND_GIFT_WRAP = 1059` | **(a) reachable** — server's canonical constant; consumed at `:507`. Not itself a construction. |
-| 2 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 64 | module level, `KIND_GIFT_WRAP = 1059` | **FLAG — duplicate definition.** Second independent literal; `cvm_campaign.py` does **not** import it from `cvm_board_server.py`. Consumed at `:126` (subscribe only). Drift risk, not itself an emit path. |
+| 1 | `<repo>/firmware/e80-stm32-bench/tools/cvm_board_server.py` | 74 | module level, `KIND_GIFT_WRAP = 1059` | **(a) reachable** — server's canonical constant; consumed at `:507`. Not itself a construction. |
+| 2 | `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 64 | module level, `KIND_GIFT_WRAP = 1059` | **FLAG — duplicate definition.** Second independent literal; `cvm_campaign.py` does **not** import it from `cvm_board_server.py`. Consumed at `:126` (subscribe only). Drift risk, not itself an emit path. |
 
 Both constants are used **only** in `Filter().kinds(...)` subscriptions (C14). Neither is
 used to set a `kind` field on an outgoing event — the outgoing kind is produced inside
@@ -108,11 +108,11 @@ upstream `gift_wrap`.
 
 | # | Absolute path | Line | Enclosing symbol | Judgement |
 |---|---------------|------|------------------|-----------|
-| 3 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_board_server.py` | 580 | `CVMBoardServer._send_reply(self, recipient_pk, response)` | **(a) reachable duplicate wrapping path.** Server→client reply wrap. Invoked from `_handle_request` `:567`. Reachable via `make range-cvm-server`. |
-| 4 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 179 | `CVMClient._call_via_nostr(self, tool_name, arguments, timeout)` | **(a) reachable duplicate wrapping path.** Client→server request wrap (`gw`). Reachable via `make range-adaptive`. |
-| 5 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 208 | `CVMClient._call_via_nostr(self, tool_name, arguments, timeout)` | **(a) reachable duplicate wrapping path.** Retry copy (`gw2`) after timeout; same function, second literal construction+send. |
-| 6 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/cvm_relay_test.py` | 82 | `test_one_relay()` → nested `SelfHandler.handle_msg()` | **(a) reachable** — diagnostic self-wrap. Reachable via `make range-cvm-test`. Bench/diagnostic path, distinct from the production client/server paths. |
-| 7 | `/home/c03rad0r/repos/balloon-e80bench/firmware/e80-stm32-bench/tools/test_cvm_board_server.py` | 477 | `TestGiftWrapRoundTrip.test_wrap_and_unwrap_preserves_payload()` | **(b) test only.** Constructs a wrap to verify round-trip; asserts `Kind::Custom(25910)` on the inner rumor. |
+| 3 | `<repo>/firmware/e80-stm32-bench/tools/cvm_board_server.py` | 580 | `CVMBoardServer._send_reply(self, recipient_pk, response)` | **(a) reachable duplicate wrapping path.** Server→client reply wrap. Invoked from `_handle_request` `:567`. Reachable via `make range-cvm-server`. |
+| 4 | `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 179 | `CVMClient._call_via_nostr(self, tool_name, arguments, timeout)` | **(a) reachable duplicate wrapping path.** Client→server request wrap (`gw`). Reachable via `make range-adaptive`. |
+| 5 | `<repo>/firmware/e80-stm32-bench/tools/cvm_campaign.py` | 208 | `CVMClient._call_via_nostr(self, tool_name, arguments, timeout)` | **(a) reachable duplicate wrapping path.** Retry copy (`gw2`) after timeout; same function, second literal construction+send. |
+| 6 | `<repo>/firmware/e80-stm32-bench/tools/cvm_relay_test.py` | 82 | `test_one_relay()` → nested `SelfHandler.handle_msg()` | **(a) reachable** — diagnostic self-wrap. Reachable via `make range-cvm-test`. Bench/diagnostic path, distinct from the production client/server paths. |
+| 7 | `<repo>/firmware/e80-stm32-bench/tools/test_cvm_board_server.py` | 477 | `TestGiftWrapRoundTrip.test_wrap_and_unwrap_preserves_payload()` | **(b) test only.** Constructs a wrap to verify round-trip; asserts `Kind::Custom(25910)` on the inner rumor. |
 
 **Shared primitive:** all five call `nostr_sdk.gift_wrap(signer, receiver, UnsignedEvent)`
 — upstream signature confirmed at `nostr_sdk.py:49245`. The outer kind-1059 event (and the
@@ -123,7 +123,7 @@ hand-rolls an outer event** (C7: no `EventBuilder`/`build_event`/`create_event`/
 
 | # | Absolute path | Line | Enclosing symbol | Judgement |
 |---|---------------|------|------------------|-----------|
-| 8 | `/home/c03rad0r/.local/lib/python3.13/site-packages/nostr_sdk/nostr_sdk.py` | 49280 | `def gift_wrap_from_seal(receiver: PublicKey, seal: Event, extra_tags) -> Event` | **(c) dead *for this codebase*** — zero in-scope references (C19, exit 1). Latent second wrap-capable entry point, importable via the blanket `from ... import *`. It takes a pre-built seal (kind 13), i.e. it is the API a hand-rolled seal+wrap path would use. |
+| 8 | `<site-packages>/nostr_sdk/nostr_sdk.py` | 49280 | `def gift_wrap_from_seal(receiver: PublicKey, seal: Event, extra_tags) -> Event` | **(c) dead *for this codebase*** — zero in-scope references (C19, exit 1). Latent second wrap-capable entry point, importable via the blanket `from ... import *`. It takes a pre-built seal (kind 13), i.e. it is the API a hand-rolled seal+wrap path would use. |
 
 ### A1.4 Kind by deserialization / arithmetic / config
 
@@ -165,7 +165,7 @@ hand-rolls an outer event** (C7: no `EventBuilder`/`build_event`/`create_event`/
    resolve from the code.
 3. **`graphify-out/` is tracked despite being gitignored** (C21: 307 tracked files;
    `.gitignore:46,49` ignore it). Its cached index refers to a *different repo*
-   (`balloon-fresh`, `/home/c03rad0r/repos/balloon-fresh/...`) and its `1059` matches are
+   (`balloon-fresh`, `<home>/repos/balloon-fresh/...`) and its `1059` matches are
    `"size":1059` and `"source_location":"L1059"` — i.e. not kind values. I found no code
    that reads this cache to derive a kind, so I judge it non-constructing; but the
    tracked-ignored-file anomaly itself is unresolved and could surprise a future grep-based
