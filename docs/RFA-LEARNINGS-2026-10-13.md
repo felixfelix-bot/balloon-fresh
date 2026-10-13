@@ -103,6 +103,11 @@ modules don't fit the 15–30 g budget, don't offer a distance knob, and their r
 
 ## 6. Open items
 
+**Cost-effective performance actions are ranked separately** in
+`docs/LINK-ECONOMICS-CUSTOM-SILICON-2026-10-13.md` (dB-per-Euro order: 868 MHz, FLRC-260,
+RFA-1a/1b, ELRS-style frame FEC, ground Yagi+LNA, 869.525 high-power sub-band,
+licensing footing). Custom silicon is explicitly parked there until those are exhausted.
+
 1. PRAM experiment (bench, gated on board slots + flash approval via FLASH-QUEUE.md).
 2. Firmware deltas card: calib `0x7F` + settle delays 10/30 ms (+ consider faster PA ramp).
 3. Not extracted (bounded follow-up if ever needed): ELRS's FLRC modulation-param field
