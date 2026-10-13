@@ -22,11 +22,14 @@ written to explain does not exist on the baseline the card names.**
    v5/v6 (2026-08-19/20) ran on fw `c31fb30`
    (`references/e80-throughput-matrix-final-2026-08-19.md`,
    `…-v6-2026-08-20.md`, manager skill `lr2021-throughput-optimization`). fw
-   `5fa7912` is the **Aug-29 demo firmware**, built after the 2026-08-21 FLRC
-   fix: RX sync-match `MATCH_SYNCWORD_1` → `Match123` (sync bytes leaked into
-   the payload → *packets demodulate but every frame CRC fails*, exactly the
-   "200/200 CRC" family) plus the missing RX/TX FIFO clear
+   `5fa7912` is the **Aug-29 demo firmware**, built after the FLRC fix landed on
+   **2026-08-21** (commit `a1fcd271`, "FIX-T3: FLRC RX Match123 + pkt-params
+   golden host tests"): RX sync-match `MATCH_SYNCWORD_1` → `Match123` (sync
+   bytes leaked into the payload → *packets demodulate but every frame CRC
+   fails*, exactly the "200/200 CRC" family), plus the missing RX/TX FIFO clear
    (`docs/rca-fix-plan-20260821.md` BUG 2, FIX-T3/FIX-T4; range-tests `9b740aa`).
+   The current source pins this with a `match != MATCH_SYNCWORD_1` tripwire in
+   `tests/test_radio_bench_cfg.c`.
    The card's premise "missing patch = root cause of our OPEN anomaly" rests on
    a measurement taken **before** that fix landed.
 3. Consequence for RFA-1 Q5: **the missing PRAM patch is not the root cause of
