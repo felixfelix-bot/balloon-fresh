@@ -82,8 +82,8 @@ All variants share the same peripheral set: LR2021F33 radio (SPI), MAX-M10S GPS 
                     │  GPIO10 ──► SPI_NSS ──► U2 Pin6        │   │
                     │  GPIO18 ──► (unused, USB_D-)           │   │
                     │  GPIO19 ──► FEM_TX ──► FEM (optional)  │   │
-                    │  GPIO20 ──► I2C_SDA ──► BMP280 (opt)   │   │
-                    │  GPIO21 ──► I2C_SCL ──► BMP280 (opt)   │   │
+                    │  GPIO20 ──► I2C_SDA ──► MS5607-02BA03 (opt)   │   │
+                    │  GPIO21 ──► I2C_SCL ──► MS5607-02BA03 (opt)   │   │
                     │  VCC ◄──────────────────────────────────┼───┘
                     │  GND ◄──────────────────────────────────┼───┐
                     └─────────────────────────────────────────┘   │
@@ -130,7 +130,7 @@ All variants share the same peripheral set: LR2021F33 radio (SPI), MAX-M10S GPS 
                     └─────────────────────────────────────────┘
 
                     ┌─────────────────────────────────────────┐
-                    │      OPTIONAL: BMP280 (I2C)             │
+                    │      OPTIONAL: MS5607-02BA03 (I2C)             │
                     │                                         │
                     │  SDA ◄── GPIO20 (I2C_SDA)               │
                     │  SCL ◄── GPIO21 (I2C_SCL)               │
@@ -141,7 +141,7 @@ All variants share the same peripheral set: LR2021F33 radio (SPI), MAX-M10S GPS 
 
 **Signal Flow:**
 - GPS: MAX-M10S TX → UART RX (GPIO1) → ESP32-C3 processes NMEA
-- Sensors: BMP280 (I2C) → optional pressure/temp/altitude
+- Sensors: MS5607-02BA03 (I2C) → optional pressure/temp/altitude
 - Power Monitor: VCAP → R_DIV1/R_DIV2 → GPIO0 (ADC1_CH0) → supercap voltage
 - Radio TX: ESP32-C3 SPI → LR2021 → RF_2G4 or RF_SUB → antenna
 - Radio RX: Antenna → LR2021 → SPI → ESP32-C3 → DIO9 IRQ (GPIO5)
@@ -169,7 +169,7 @@ All variants share the same peripheral set: LR2021F33 radio (SPI), MAX-M10S GPS 
 | ANT1 | Connector | U.FL-R-SMT | U.FL SMD | - | Sub-GHz antenna |
 | ANT2 | Connector | U.FL-R-SMT | U.FL SMD | - | 2.4GHz antenna |
 | FEM | FEM (optional) | SKY66112-11 | QFN-16 | - | PA + LNA (populate if needed) |
-| U5 | I2C Sensor (optional) | BMP280 | LGA-8 | - | Pressure/temp (populate if needed) |
+| U5 | I2C Sensor (optional) | MS5607-02BA03 | LGA-8 | - | Pressure/temp (populate if needed) |
 | J1 | Programming | 6-pin header | 2.54mm THT | - | UART + power for flashing |
 | J2 | Debug | 4-pin header | 2.54mm THT | - | JTAG or extra UART |
 
@@ -225,8 +225,8 @@ All variants share the same peripheral set: LR2021F33 radio (SPI), MAX-M10S GPS 
 | SPI NSS | GPIO10 | Output, chip select (manual control). |
 | (unused) | GPIO18 | USB_D-. Available if USB disabled. |
 | FEM_TX | GPIO19 | USB_D+. Available if USB disabled. |
-| I2C_SDA | GPIO20 | Optional BMP280. |
-| I2C_SCL | GPIO21 | Optional BMP280. |
+| I2C_SDA | GPIO20 | Optional MS5607-02BA03. |
+| I2C_SCL | GPIO21 | Optional MS5607-02BA03. |
 | UART0 TX | U0TXD | Programming/console. |
 | UART0 RX | U0RXD | Programming/console. |
 
@@ -271,7 +271,7 @@ All variants share the same peripheral set: LR2021F33 radio (SPI), MAX-M10S GPS 
 - Optional: FEM (if populated)
 
 **Sheet 6: Optional Sensors**
-- BMP280 (I2C) — only if populated
+- MS5607-02BA03 (I2C) — only if populated
 - Connections to MCU sheet
 
 **Hierarchical Structure:**
@@ -302,7 +302,7 @@ Top
 | 0402 Capacitor | `Device:C` | `Capacitor_SMD:C_0402_1005Metric` | Standard |
 | U.FL | `Connector:U.FL` | `Connector_Coaxial:U.FL_Molex_MCRF_73412-0110` | Standard |
 | SKY66112 | `RF_Amplifier:SKY66112-11` (or custom) | `Package_DFN_QFN:QFN-16-1EP_3x3mm_P0.5mm` | Check datasheet |
-| BMP280 | `Sensor_Pressure:BMP280` | `Package_LGA:Bosch_LGA-8_2.5x2.0mm_P0.65mm` | Standard |
+| MS5607-02BA03 | `Sensor_Pressure:MS5607-02BA03` | `balloon:MS56xx_LGA-8_5.0x3.0mm_P0.8mm` | Custom, authored in `custom.pretty` |
 | 6-pin Header | `Connector_Generic:Conn_01x06` | `Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical` | Programming |
 | 4-pin Header | `Connector_Generic:Conn_01x04` | `Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical` | Debug |
 
@@ -346,7 +346,7 @@ Top
 Identical to Variant 1, except:
 - MCU is ESP32-S3 (more GPIO, native USB, more RAM/PSRAM)
 - Pin assignments differ (see §4 below)
-- BMP280 and other optional peripherals are more likely to be included (more GPIO available)
+- MS5607-02BA03 and other optional peripherals are more likely to be included (more GPIO available)
 
 ### 2. Component List
 
@@ -559,8 +559,8 @@ CONFIG_GPS_UART_TX_PIN=-1 # unchanged
 | STATUS_LED | U1.GPIO9 | R_LED.1 | SIGNAL |
 | LED_ANODE | R_LED.2 | LED1.A | SIGNAL |
 | FEM_TX | U1.GPIO19 (shared w/ UART_C3_RX) | FEM.TX_EN | SIGNAL |
-| I2C_SDA | U1.GPIO20 | BMP280.SDA (opt) | SIGNAL |
-| I2C_SCL | U1.GPIO21 | BMP280.SCL (opt) | SIGNAL |
+| I2C_SDA | U1.GPIO20 | MS5607-02BA03.SDA (opt) | SIGNAL |
+| I2C_SCL | U1.GPIO21 | MS5607-02BA03.SCL (opt) | SIGNAL |
 | RF_SUB_868 | U3.9 | ANT1.1 | RF |
 | RF_2G4_2400 | U3.18 | ANT2.1 | RF |
 | C3_UART0_TX | U1.U0TXD | J1.TX | SIGNAL |
@@ -594,8 +594,8 @@ CONFIG_GPS_UART_TX_PIN=-1 # unchanged
 | (unused) | GPIO10 | Was SPI NSS, now free |
 | UART_C3_TX | GPIO18 | To RP2040 UART_RX |
 | UART_C3_RX / FEM_TX | GPIO19 | Shared: app UART RX + FEM TX. If FEM used, need分时 or different pin. |
-| I2C_SDA | GPIO20 | BMP280 |
-| I2C_SCL | GPIO21 | BMP280 |
+| I2C_SDA | GPIO20 | MS5607-02BA03 |
+| I2C_SCL | GPIO21 | MS5607-02BA03 |
 | UART0 TX | U0TXD | Programming |
 | UART0 RX | U0RXD | Programming |
 
@@ -650,7 +650,7 @@ CONFIG_GPS_UART_TX_PIN=-1 # unchanged
 - Same as Variant 1
 
 **Sheet 7: Optional**
-- FEM, BMP280, extra LEDs
+- FEM, MS5607-02BA03, extra LEDs
 
 ### 6. KiCad Symbol/Footprint Assignments
 
