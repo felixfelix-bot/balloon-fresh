@@ -168,3 +168,35 @@ def parse_gps_unix(line: str) -> int | None:
         return None
     m = re.search(r'unix=(\d+)', line)
     return int(m.group(1)) if m else None
+
+
+# ---------------------------------------------------------------------------
+# Collection policy: manual hardware runners are NOT pytest modules.
+#
+# These files match pytest's collection patterns but execute hardware-dependent
+# code at IMPORT time (e.g. `sys.exit(1)` when <2 ESP32 ports exist, or a
+# module-level argparse). On a machine with no boards attached — including every
+# GitHub Actions runner — importing one aborts the whole run at collection:
+#
+#     collecting ... ERROR: Need 2 ESP32 serial ports. Found: []
+#     collected 65 items / 1 error
+#     mainloop: caught unexpected SystemExit!
+#
+# A fatal collection error fails the ENTIRE suite, so one mechanical defect made
+# the `test` job red on master and blocked every PR from reaching GREEN.
+#
+# Each file is invoked BY HAND (e.g. `python3 -u tests/p1b_ab_test.py`), so
+# excluding it from automatic collection loses no coverage.
+#
+# DELIBERATELY NARROW — anything runnable without hardware stays collected.
+# Find candidates with:
+#     python3 -m pytest tests/ --collect-only -q 2>&1 | grep '^ERROR'
+# and add a path only if it fails for this same import-time-hardware reason.
+# ---------------------------------------------------------------------------
+collect_ignore = [
+    "p1b_ab_test.py",                        # needs 2 ESP32 ports; sys.exit at import
+    "p1b0_delay_sweep.py",                   # needs 2 ESP32 ports
+    "lora_rpi_test.py",                      # needs the Pi + LoRa HAT
+    "throughput-matrix/uart_id_test.py",     # needs a UART device
+    "throughput-matrix/uart_rx_test.py",     # needs a UART device
+]
