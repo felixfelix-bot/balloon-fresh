@@ -14,7 +14,7 @@ The flash command:
   4. Waits for board to reboot
 
 The capture command:
-  1. Opens serial port at 115200
+  1. Opens serial port at 2000000
   2. Captures output for N seconds
   3. Parses heartbeat lines for statistics
 
@@ -99,7 +99,7 @@ def capture_serial(port, duration, label=""):
     throughput ~33x for firmware that emits every ~62 ms.)
     """
     try:
-        s = serial.Serial(port, 115200, timeout=0.5)
+        s = serial.Serial(port, 2000000, timeout=0.5)
         s.reset_input_buffer()
     except Exception as e:
         return {"error": str(e), "lines": []}

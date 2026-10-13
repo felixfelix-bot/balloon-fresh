@@ -1,0 +1,79 @@
+CMD: python py_router/route.py /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer.kicad_pcb /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer_routed_final.kicad_pcb -n LR2021_BUSY LR2021_DIO9 --keep-input-copper --track-width 0.2 --clearance 0.2 --via-size 0.6 --via-drill 0.3 --same-net-pad-clearance 0.2 --power-nets GND +3V3 --fab-tier standard --write-fill
+ENV KNOBS: none
+--clearance 0.2: the Default net class routes at it this run; other classes are honoured (pass --clearance-ceiling to cap every class).
+--hole-to-hole-clearance not given; using 0.25mm [board constraint].
+--board-edge-clearance not given; using 0.5mm [board constraint].
+Loading /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer.kicad_pcb to expand net patterns...
+Using all 4 copper layers: F.Cu In1.Cu In2.Cu B.Cu (override with --layers)
+Routing 2 nets: ['LR2021_BUSY', 'LR2021_DIO9']
+Loading /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer.kicad_pcb...
+Using 4 routing layers: ['F.Cu', 'In1.Cu', 'In2.Cu', 'B.Cu']
+  Layer costs: F.Cu=1.0x, In1.Cu=1.0x, In2.Cu=1.0x, B.Cu=1.0x
+No BGA components detected - no exclusion zones needed
+Same-net pad via clearance 0.2mm (from flag, #581): vias stay off same-net pads
+
+Using MPS ordering strategy...
+MPS: Using segment intersection method (no nets on BGA chips)
+MPS: 2 nets with 1 crossing conflicts detected
+MPS Round 1: 1 units: LR2021_BUSY
+MPS Round 2: 1 units: LR2021_DIO9
+
+Routing 2 single-ended net(s)...
+============================================================
+Building base obstacle map...
+14 unprotected pre-existing net(s) registered as main-pass rip candidates (<=30 seg/<=6 via, custody-backed; KICAD_RIP_PREEXISTING=0 disables)
+Copper-to-hole clearance 0.25mm (from the board's own min_hole_clearance, above the 0.2mm fab floor)
+Base obstacle map built in 0.10s
+Found 18 unrouted nets in PCB for stub proximity
+Pre-computing net obstacle cache...
+Net obstacle cache built in 0.51s (18 nets)
+Plane fragility: exact-fill geometry (2 filled island(s) from KiCad refill)
+Plane fragility field: 125959 cells near the edges of 2 pour(s) (KICAD_PLANE_FRAGILITY_COST=2.0mm-equiv, DYNAMIC #466 (=0 via KICAD_PLANE_FRAGILITY_DYNAMIC reverts))
+History congestion (#590) armed: +0.1mm-equiv per contest, cap 0.5, escalate 0.0, rip weight 1.0 (radius +0.25mm), frontier weight 0.25
+
+[1/2] Routing LR2021_BUSY (id=7)
+  SUCCESS: 60 segments, 0 vias, 4518 iterations, length=34.77mm (stubs=0.00mm) (0.70s)
+
+[2/2] Routing LR2021_DIO9 (id=9)
+  SUCCESS: 14 segments, 2 vias, 2649 iterations, length=31.92mm (stubs=0.00mm) (0.03s)
+
+Sync pcb_data: 158 -> 84 (kept stubs) -> 158 (after adding 74)
+Octolinear smoothing: collapsed 7 staircase span(s) on 2 net(s), -3.07 mm of copper (#536)
+
+============================================================
+Routing complete
+============================================================
+  Single-ended:  2/2 routed
+  Total vias:    2
+  Total time:    0.73s
+  Iterations:    7,167
+  Fragility refresh (#466): 1 windows, 0.06s total
+JSON_SUMMARY: {"routed_single": ["LR2021_BUSY", "LR2021_DIO9"], "failed_single": [], "open_single": [], "failed_multipoint": [], "multipoint_nets": 0, "multipoint_pads_connected": 0, "multipoint_pads_total": 0, "multipoint_edges_routed": 0, "multipoint_edges_failed": 0, "ripup_success_pairs": [], "rerouted_pairs": [], "single_ended_target_swaps": [], "layer_swaps": 0, "successful": 2, "failed": 0, "total_time": 0.73, "total_iterations": 7167, "total_vias": 2, "cleanup_disconnected": [], "min_clearance_used": 0.2, "design_rules": {"escalation_policy": "fab", "fab_tier": "standard", "board_floors": {"clearance": 0.2, "track_width": 0.15, "via_diameter": 0.5, "via_drill": 0.3, "hole_to_hole": 0.25, "annular": 0.1, "board_edge": 0.5}, "count": 0, "nets": [], "narrowed": [], "min_delivered": {}, "fab_tier_escalations": 0, "fab_tier_contexts": [], "fab_tier_target": "advanced", "unsupported_rules": []}, "plane_fragility": {"source": "kicad_refill", "islands": 2, "refill_status": "ok", "why": "the KiCad refill succeeded", "machine_dependent": false}, "oracle_check": "disabled", "pad_pairs_connected": 2, "pad_pairs_total": 2, "scope": "run", "env_knobs": {}}
+
+Writing output to /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer_routed_final.kicad_pcb...
+Successfully wrote /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer_routed_final.kicad_pcb
+  In-run DRC floors (#650): lowered 2 value(s) in v2_adc_4layer_routed_final.kicad_pro to the routed floors so the in-run audit grades what ships
+      rules.min_hole_clearance: 0.25 -> 0.2 mm
+      kicad_routing_tools.fab_floor_origin: recorded
+  Plane finalize: zone net(s) 3V3, GND are OUTSIDE this route's --nets scope -- excluded from the finalize BY PLAN. Since #562 a pour alone connects nothing: unless a later route step covers these nets, their pads ship disconnected.
+  Strict collapse (#1063, end of run): removed 4 redundant segment(s) on 2 net(s)
+
+  FAB NOTE (route): 1 via(s) in a pad or paste opening [D1.K] -- 0 stamped (capping yes) (filling yes), 0 already filled+capped, 1 shipped WITHOUT Type VII. via-in-pad requires IPC-4761 Type VII (filled + capped + plated); state it on the fab drawing or solder wicks into the barrel.
+VIA_IN_PAD_JSON: {"count": 1, "sites": ["D1.K"], "stamped": 0, "restored": 0, "protected": 0, "unstampable": 0, "site_created": 0, "unprotected": [{"site": "D1.K", "x": 7.05, "y": 18.25, "why": "at the spot of an input via, kept as the input had it"}], "note": "via-in-pad requires IPC-4761 Type VII (filled + capped + plated); state it on the fab drawing or solder wicks into the barrel"}
+JSON_REGRADE: {"board": "file", "graded_nets": 2, "seconds": 0.05, "routed_single": ["LR2021_BUSY", "LR2021_DIO9"], "failed_single": [], "open_single": [], "failed_multipoint": [], "multipoint_pads_total": 0, "multipoint_pads_connected": 0, "successful": 2, "failed": 0, "unowned_broken": [], "recovered": []}
+
+============================================================
+Run complete -- whole run, re-graded on the written board (2 net(s), 0.1s)
+============================================================
+  Single-ended:  2/2 routed
+JSON_IMPROVEMENT_GATE: {"lost": [], "gained": ["LR2021_BUSY", "LR2021_DIO9"], "worsened": [], "disconnected_pads_before": 2, "disconnected_pads_after": 0, "nets_compared": 18, "verdict": "accept"}
+JSON_SUMMARY_MIN: {"escalations": 0, "failed": 0, "failed_single": [], "finalize_excluded_nets": ["3V3", "GND"], "main_loop_time_s": 0.73, "min_clearance_used": 0.2, "multipoint_deficit": 0, "open_single": [], "pad_pairs_open": {"count": 0, "nets": []}, "regraded_nets": 2, "routed": 2, "scope": "merged", "terminal_restores_broken": [], "vias": 2}
+  DRC settings: wrote 1 value(s) to /home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer_routed_final.kicad_pro to match the routed floors (close+reopen in KiCad if it is open). WRITES, not changes: a key the project never declared counts here, and one logical value is written once per net class:
+      rules.min_via_drill: None -> 0.3 mm
+PROJECT_WRITES_JSON: {"project": "/home/c03rad0r/worktrees/pcb-adc-finish/tracker/hardware/output/v2_adc_4layer_routed_final.kicad_pro", "writes": ["rules.min_via_drill: None -> 0.3 mm"]}
+  FAB FLOOR RELAXED -- the output project declares a smaller minimum than the board originally did:
+    copper-to-hole clearance: 0.2 mm, unchanged by this step but still below the board's ORIGINAL 0.25mm
+    Every checker (check_drc, board_score, KiCad's own DRC) grades against the NEW value, so this copper will read clean. Confirm your fab supports it; if the original number was a real process limit, re-route at that floor rather than shipping this project.
+  Same-net pad via clearance 0.2mm recorded in v2_adc_4layer_routed_final.kicad_pro (later steps keep vias off same-net pads)
+  --write-fill: wrote 2 filled_polygon block(s); the deliverable no longer reads phantom plane opens until refilled
+EXIT=0

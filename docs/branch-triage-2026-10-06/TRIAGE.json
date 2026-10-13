@@ -1,0 +1,1636 @@
+{
+  "branches": [
+    {
+      "branch": "feat/c3-harmonization",
+      "ahead": 2,
+      "conflicts_total": 23,
+      "files": [
+        {
+          "path": "docs/coordination/DISCOVERIES.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/Makefile",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_cmd.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_cmd.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_pkt.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_pkt.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/console.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/console.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/main.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/radio_bench.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/radio_bench.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/test_bench_cmd.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/test_bench_config.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/test_bench_pkt.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/e80_bench_ctl.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/e80_detect.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/merge_csvs.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/test_e80_bench_ctl.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/test_e80_detect.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/coordination/DISCOVERIES.md",
+        "firmware/e80-stm32-bench/Makefile",
+        "firmware/e80-stm32-bench/README.md",
+        "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md",
+        "firmware/e80-stm32-bench/src/bench.c",
+        "firmware/e80-stm32-bench/src/bench_cmd.c",
+        "firmware/e80-stm32-bench/src/bench_cmd.h",
+        "firmware/e80-stm32-bench/src/bench_pkt.c",
+        "firmware/e80-stm32-bench/src/bench_pkt.h",
+        "firmware/e80-stm32-bench/src/console.c",
+        "firmware/e80-stm32-bench/src/console.h",
+        "firmware/e80-stm32-bench/src/main.h",
+        "firmware/e80-stm32-bench/src/radio_bench.c",
+        "firmware/e80-stm32-bench/src/radio_bench.h",
+        "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+        "firmware/e80-stm32-bench/tests/test_bench_cmd.c",
+        "firmware/e80-stm32-bench/tests/test_bench_config.c",
+        "firmware/e80-stm32-bench/tests/test_bench_pkt.c",
+        "firmware/e80-stm32-bench/tools/e80_bench_ctl.py",
+        "firmware/e80-stm32-bench/tools/e80_detect.py",
+        "firmware/e80-stm32-bench/tools/merge_csvs.py",
+        "firmware/e80-stm32-bench/tools/test_e80_bench_ctl.py",
+        "firmware/e80-stm32-bench/tools/test_e80_detect.py"
+      ]
+    },
+    {
+      "branch": "speed-sustained-sweep",
+      "ahead": 22,
+      "conflicts_total": 10,
+      "files": [
+        {
+          "path": "docs/INTEGRATION-ASSESSMENT.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/esp32-c3-flrc/main/main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "#ifndef TX_PKT_SIZE"
+        },
+        {
+          "path": "firmware/rp2040/platformio.ini",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/rp2040/src/flrc_cont_tx_fast.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/rp2040/src/flrc_range_rx_auto.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "yes",
+          "evidence": " * DEPRECATED \u2014 DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip)."
+        },
+        {
+          "path": "firmware/rp2040/src/flrc_range_rx_gps.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "yes",
+          "evidence": " * DEPRECATED \u2014 DO NOT USE. This file uses SX1280 raw SPI commands (wrong chip)."
+        },
+        {
+          "path": "firmware/rp2040/src/flrc_range_tx_auto.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "yes",
+          "evidence": " * flrc_range_tx_auto.cpp \u2014 AUTONOMOUS FLRC TX for outdoor range testing"
+        },
+        {
+          "path": "firmware/rp2040/src/flrc_range_tx_gps.cpp",
+          "kind": "code",
+          "class": "BRANCH-ONLY",
+          "already_present": "n/a",
+          "evidence": "trunk == base, take branch"
+        },
+        {
+          "path": "firmware/rp2040/src/gps_test.cpp",
+          "kind": "code",
+          "class": "BRANCH-ONLY",
+          "already_present": "n/a",
+          "evidence": "trunk == base, take branch"
+        },
+        {
+          "path": "tools/balloon-board-lock.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "    import subprocess"
+        }
+      ],
+      "verdict": "MIXED",
+      "decisive_files": [
+        "docs/INTEGRATION-ASSESSMENT.md",
+        "firmware/esp32-c3-flrc/main/main.cpp",
+        "firmware/rp2040/platformio.ini",
+        "firmware/rp2040/src/flrc_cont_tx_fast.cpp",
+        "firmware/rp2040/src/flrc_range_rx_auto.cpp",
+        "firmware/rp2040/src/flrc_range_rx_gps.cpp",
+        "firmware/rp2040/src/flrc_range_tx_auto.cpp",
+        "tools/balloon-board-lock.py"
+      ]
+    },
+    {
+      "branch": "balloon-nostr/dev",
+      "ahead": 5,
+      "conflicts_total": 9,
+      "files": [
+        {
+          "path": "docs/INTEGRATION-ASSESSMENT.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/components/nostr_store/include/nostr_store.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "#ifdef __cplusplus"
+        },
+        {
+          "path": "tracker/firmware/components/nostr_store/nostr_store.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "    /* fixed header: 32 + 32 + 64 + 4 + 2 + 2 = 136 bytes */"
+        },
+        {
+          "path": "tracker/firmware/components/nostr_store/test/test_nostr_store.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "    assert(got.sig[0] == (uint8_t)(0x42 ^ 0));"
+        },
+        {
+          "path": "tracker/firmware/main/Kconfig.projbuild",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/app_main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/INTEGRATION-ASSESSMENT.md",
+        "tracker/firmware/components/nostr_store/include/nostr_store.h",
+        "tracker/firmware/components/nostr_store/nostr_store.c",
+        "tracker/firmware/components/nostr_store/test/test_nostr_store.c",
+        "tracker/firmware/main/Kconfig.projbuild",
+        "tracker/firmware/main/app_main.cpp",
+        "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.h"
+      ]
+    },
+    {
+      "branch": "feat/e80-7-crc-logging",
+      "ahead": 1,
+      "conflicts_total": 8,
+      "files": [
+        {
+          "path": "firmware/e80-stm32-bench/CMakeLists.txt",
+          "kind": "code",
+          "class": "BOTH-ADD",
+          "already_present": "n/a",
+          "evidence": "disjoint insertions ours=2 theirs=1"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "#include \"bench_pkt.h\""
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_cmd.c",
+          "kind": "code",
+          "class": "BOTH-ADD",
+          "already_present": "n/a",
+          "evidence": "disjoint insertions ours=5 theirs=1"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_cmd.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "yes",
+          "evidence": "    BENCH_CMD_SESSION,       /* SESSION <id> \u2014 set session_id for PKT lines */"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_pkt.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_pkt.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "yes",
+          "evidence": "add_bench_test(test_bench_pkt ${SRC_DIR}/bench_pkt.c)"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/test_bench_pkt.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "MIXED",
+      "decisive_files": [
+        "firmware/e80-stm32-bench/src/bench.c",
+        "firmware/e80-stm32-bench/src/bench_cmd.h",
+        "firmware/e80-stm32-bench/src/bench_pkt.c",
+        "firmware/e80-stm32-bench/src/bench_pkt.h",
+        "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+        "firmware/e80-stm32-bench/tests/test_bench_pkt.c"
+      ]
+    },
+    {
+      "branch": "feat/e80-spi-bypass",
+      "ahead": 10,
+      "conflicts_total": 8,
+      "files": [
+        {
+          "path": "docs/data-handover/DATA-INVENTORY-2026-08-19.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "docs/data-handover/FIRMWARE-HARMONIZATION-2026-08-19.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "mesh-stack/flrc-bench-espidf/main/range_test.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "#ifndef FW_GIT_SHA"
+        },
+        {
+          "path": "tests/test_firmware_hash_gate.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tests/test_session_manager.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tools/firmware_hash_gate.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tools/rx_range_logger.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "try:"
+        },
+        {
+          "path": "tools/session_manager.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/data-handover/DATA-INVENTORY-2026-08-19.md",
+        "docs/data-handover/FIRMWARE-HARMONIZATION-2026-08-19.md",
+        "mesh-stack/flrc-bench-espidf/main/range_test.cpp",
+        "tests/test_firmware_hash_gate.py",
+        "tests/test_session_manager.py",
+        "tools/firmware_hash_gate.py",
+        "tools/rx_range_logger.py",
+        "tools/session_manager.py"
+      ]
+    },
+    {
+      "branch": "feat/tracker-tx-tempcomp",
+      "ahead": 14,
+      "conflicts_total": 8,
+      "files": [
+        {
+          "path": ".github/workflows/ci-host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": ".ngit/README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": ".ngit/act/workflows/host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "{"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": " *"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "/*"
+        },
+        {
+          "path": "tracker/firmware/test/integration/test_tollgate_payack.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "EXIT CODES (computed by compute_verdict() \u2014 single source of truth):"
+        },
+        {
+          "path": "tracker/firmware/test/test_tollgate_payack_parse.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".github/workflows/ci-host-tests.yml",
+        ".ngit/README.md",
+        ".ngit/act/workflows/host-tests.yml",
+        "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.h",
+        "tracker/firmware/test/integration/test_tollgate_payack.py",
+        "tracker/firmware/test/test_tollgate_payack_parse.py"
+      ]
+    },
+    {
+      "branch": "fix/tollgate-payack-harness-seq",
+      "ahead": 5,
+      "conflicts_total": 8,
+      "files": [
+        {
+          "path": ".github/workflows/ci-host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": ".ngit/README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": ".ngit/act/workflows/host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "{"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": " *"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "/*"
+        },
+        {
+          "path": "tracker/firmware/test/integration/test_tollgate_payack.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "EXIT CODES (computed by compute_verdict() \u2014 single source of truth):"
+        },
+        {
+          "path": "tracker/firmware/test/test_tollgate_payack_parse.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".github/workflows/ci-host-tests.yml",
+        ".ngit/README.md",
+        ".ngit/act/workflows/host-tests.yml",
+        "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.h",
+        "tracker/firmware/test/integration/test_tollgate_payack.py",
+        "tracker/firmware/test/test_tollgate_payack_parse.py"
+      ]
+    },
+    {
+      "branch": "fix/tollgate-payack-sid-price-exp",
+      "ahead": 11,
+      "conflicts_total": 8,
+      "files": [
+        {
+          "path": ".github/workflows/ci-host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": ".ngit/README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": ".ngit/act/workflows/host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "{"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": " *"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "/*"
+        },
+        {
+          "path": "tracker/firmware/test/integration/test_tollgate_payack.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "EXIT CODES (computed by compute_verdict() \u2014 single source of truth):"
+        },
+        {
+          "path": "tracker/firmware/test/test_tollgate_payack_parse.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".github/workflows/ci-host-tests.yml",
+        ".ngit/README.md",
+        ".ngit/act/workflows/host-tests.yml",
+        "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.h",
+        "tracker/firmware/test/integration/test_tollgate_payack.py",
+        "tracker/firmware/test/test_tollgate_payack_parse.py"
+      ]
+    },
+    {
+      "branch": "docs/harm-t9-adoption",
+      "ahead": 16,
+      "conflicts_total": 7,
+      "files": [
+        {
+          "path": ".gitignore",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "docs/INTEGRATION-ASSESSMENT.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/rp2040/platformio.ini",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/Kconfig.projbuild",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/app_main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".gitignore",
+        "AGENTS.md",
+        "README.md",
+        "docs/INTEGRATION-ASSESSMENT.md",
+        "firmware/rp2040/platformio.ini",
+        "tracker/firmware/main/Kconfig.projbuild",
+        "tracker/firmware/main/app_main.cpp"
+      ]
+    },
+    {
+      "branch": "fix/tollgate-payack-seq-whitespace",
+      "ahead": 7,
+      "conflicts_total": 7,
+      "files": [
+        {
+          "path": ".github/workflows/ci-host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": ".ngit/README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": ".ngit/act/workflows/host-tests.yml",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "{"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": " *"
+        },
+        {
+          "path": "tracker/firmware/main/tollgate_payment_proto.h",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "/*"
+        },
+        {
+          "path": "tracker/firmware/test/integration/test_tollgate_payack.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "EXIT CODES (computed by compute_verdict() \u2014 single source of truth):"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".github/workflows/ci-host-tests.yml",
+        ".ngit/README.md",
+        ".ngit/act/workflows/host-tests.yml",
+        "tracker/firmware/main/test/test_tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.c",
+        "tracker/firmware/main/tollgate_payment_proto.h",
+        "tracker/firmware/test/integration/test_tollgate_payack.py"
+      ]
+    },
+    {
+      "branch": "phase1-interop-test",
+      "ahead": 8,
+      "conflicts_total": 6,
+      "files": [
+        {
+          "path": "firmware/rp2040/src/main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": " *"
+        },
+        {
+          "path": "firmware/rp2040/src/radio.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "    }"
+        },
+        {
+          "path": "mesh-stack/flrc-bench-espidf/main/bench_main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "}"
+        },
+        {
+          "path": "mesh-stack/flrc-bench-espidf/main/fast_rx.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "mesh-stack/flrc-bench-espidf/main/fifo_tx.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "mesh-stack/flrc-bench-espidf/sdkconfig.defaults",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "firmware/rp2040/src/main.cpp",
+        "firmware/rp2040/src/radio.cpp",
+        "mesh-stack/flrc-bench-espidf/main/bench_main.cpp",
+        "mesh-stack/flrc-bench-espidf/main/fast_rx.cpp",
+        "mesh-stack/flrc-bench-espidf/main/fifo_tx.cpp",
+        "mesh-stack/flrc-bench-espidf/sdkconfig.defaults"
+      ]
+    },
+    {
+      "branch": "feat/host-driven-bench",
+      "ahead": 29,
+      "conflicts_total": 5,
+      "files": [
+        {
+          "path": ".gitignore",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "docs/INTEGRATION-ASSESSMENT.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/rp2040/platformio.ini",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/Kconfig.projbuild",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/app_main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".gitignore",
+        "docs/INTEGRATION-ASSESSMENT.md",
+        "firmware/rp2040/platformio.ini",
+        "tracker/firmware/main/Kconfig.projbuild",
+        "tracker/firmware/main/app_main.cpp"
+      ]
+    },
+    {
+      "branch": "range-tests",
+      "ahead": 15,
+      "conflicts_total": 5,
+      "files": [
+        {
+          "path": ".gitignore",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "docs/INTEGRATION-ASSESSMENT.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/rp2040/platformio.ini",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/Kconfig.projbuild",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/main/app_main.cpp",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        ".gitignore",
+        "docs/INTEGRATION-ASSESSMENT.md",
+        "firmware/rp2040/platformio.ini",
+        "tracker/firmware/main/Kconfig.projbuild",
+        "tracker/firmware/main/app_main.cpp"
+      ]
+    },
+    {
+      "branch": "balloon-mesh-wiring/radio-glue",
+      "ahead": 7,
+      "conflicts_total": 3,
+      "files": [
+        {
+          "path": "tracker/firmware/main/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "    idf_component_register("
+        },
+        {
+          "path": "tracker/firmware/sdkconfig",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/firmware/sdkconfig.defaults",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "tracker/firmware/main/CMakeLists.txt",
+        "tracker/firmware/sdkconfig",
+        "tracker/firmware/sdkconfig.defaults"
+      ]
+    },
+    {
+      "branch": "feat/e80-cvm-go-mode",
+      "ahead": 20,
+      "conflicts_total": 3,
+      "files": [
+        {
+          "path": "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/cvm_sync.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/test_cvm_sync.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md",
+        "firmware/e80-stm32-bench/tools/cvm_sync.py",
+        "firmware/e80-stm32-bench/tools/test_cvm_sync.py"
+      ]
+    },
+    {
+      "branch": "fix/t1-sweep-start-validation",
+      "ahead": 2,
+      "conflicts_total": 3,
+      "files": [
+        {
+          "path": "firmware/e80-stm32-bench/README.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tools/e80_sweep_full.py",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "        return {"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "firmware/e80-stm32-bench/README.md",
+        "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+        "firmware/e80-stm32-bench/tools/e80_sweep_full.py"
+      ]
+    },
+    {
+      "branch": "fix/t4-fifo-clear",
+      "ahead": 4,
+      "conflicts_total": 3,
+      "files": [
+        {
+          "path": "docs/rca-fix-plan-20260821.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/src/radio_bench.c",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/rca-fix-plan-20260821.md",
+        "firmware/e80-stm32-bench/src/radio_bench.c",
+        "firmware/e80-stm32-bench/tests/CMakeLists.txt"
+      ]
+    },
+    {
+      "branch": "worker-balloon/pcb-phase1-t877-main",
+      "ahead": 6,
+      "conflicts_total": 3,
+      "files": [
+        {
+          "path": ".ngit/act/workflows/host-tests.yml",
+          "kind": "build-config",
+          "class": "BOTH-ADD",
+          "already_present": "n/a",
+          "evidence": "disjoint insertions ours=2 theirs=1"
+        },
+        {
+          "path": "Makefile",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "tracker/hardware/drc_snapshots/history.jsonl",
+          "kind": "build-config",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        }
+      ],
+      "verdict": "MIXED",
+      "decisive_files": [
+        "Makefile",
+        "tracker/hardware/drc_snapshots/history.jsonl"
+      ]
+    },
+    {
+      "branch": "balloon-tollgate-extract",
+      "ahead": 2,
+      "conflicts_total": 2,
+      "files": [
+        {
+          "path": "mesh-stack/tollgate/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "partial",
+          "evidence": "set(EXTRA_COMPONENT_DIRS"
+        },
+        {
+          "path": "mesh-stack/tollgate/components/radio_adapter/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "mesh-stack/tollgate/CMakeLists.txt",
+        "mesh-stack/tollgate/components/radio_adapter/CMakeLists.txt"
+      ]
+    },
+    {
+      "branch": "fix/t3-flrc-match123",
+      "ahead": 2,
+      "conflicts_total": 2,
+      "files": [
+        {
+          "path": "docs/rca-fix-plan-20260821.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        },
+        {
+          "path": "firmware/e80-stm32-bench/tests/CMakeLists.txt",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/rca-fix-plan-20260821.md",
+        "firmware/e80-stm32-bench/tests/CMakeLists.txt"
+      ]
+    },
+    {
+      "branch": "worker-balloon/pcb-phase1-t877",
+      "ahead": 3,
+      "conflicts_total": 2,
+      "files": [
+        {
+          "path": "Makefile",
+          "kind": "code",
+          "class": "COMPETING",
+          "already_present": "no",
+          "evidence": "modifications present"
+        },
+        {
+          "path": "TOLLGATE_PROTO_CONTRACT.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "added on both sides, differ"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "Makefile",
+        "TOLLGATE_PROTO_CONTRACT.md"
+      ]
+    },
+    {
+      "branch": "balloon-circuit-design",
+      "ahead": 3,
+      "conflicts_total": 1,
+      "files": [
+        {
+          "path": "tracker/hardware/hub_board_v1.kicad_pcb",
+          "kind": "binary",
+          "class": "BINARY",
+          "already_present": "n/a",
+          "evidence": ""
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": []
+    },
+    {
+      "branch": "balloon-tollgate/dev",
+      "ahead": 11,
+      "conflicts_total": 1,
+      "files": [
+        {
+          "path": "docs/STATUS-balloon-tollgate.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "modifications present"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/STATUS-balloon-tollgate.md"
+      ]
+    },
+    {
+      "branch": "fix/t2-rx-start-len-gate",
+      "ahead": 2,
+      "conflicts_total": 1,
+      "files": [
+        {
+          "path": "firmware/e80-stm32-bench/src/bench_cmd.h",
+          "kind": "code",
+          "class": "BOTH-ADD",
+          "already_present": "n/a",
+          "evidence": "disjoint insertions ours=6 theirs=1"
+        }
+      ],
+      "verdict": "MECHANICAL",
+      "decisive_files": []
+    },
+    {
+      "branch": "fix/t6-sweep-preflight",
+      "ahead": 4,
+      "conflicts_total": 1,
+      "files": [
+        {
+          "path": "docs/rca-fix-plan-20260821.md",
+          "kind": "docs",
+          "class": "COMPETING",
+          "already_present": "n/a",
+          "evidence": "insertions overlap"
+        }
+      ],
+      "verdict": "DECISION",
+      "decisive_files": [
+        "docs/rca-fix-plan-20260821.md"
+      ]
+    }
+  ],
+  "clusters": {
+    "firmware/e80-stm32-bench/tests/CMakeLists.txt": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging",
+      "fix/t1-sweep-start-validation",
+      "fix/t4-fifo-clear",
+      "fix/t3-flrc-match123"
+    ],
+    "docs/INTEGRATION-ASSESSMENT.md": [
+      "speed-sustained-sweep",
+      "balloon-nostr/dev",
+      "docs/harm-t9-adoption",
+      "feat/host-driven-bench",
+      "range-tests"
+    ],
+    "tracker/firmware/main/test/test_tollgate_payment_proto.c": [
+      "balloon-nostr/dev",
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace"
+    ],
+    "tracker/firmware/main/tollgate_payment_proto.c": [
+      "balloon-nostr/dev",
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace"
+    ],
+    "tracker/firmware/main/tollgate_payment_proto.h": [
+      "balloon-nostr/dev",
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace"
+    ],
+    ".ngit/act/workflows/host-tests.yml": [
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace",
+      "worker-balloon/pcb-phase1-t877-main"
+    ],
+    "firmware/rp2040/platformio.ini": [
+      "speed-sustained-sweep",
+      "docs/harm-t9-adoption",
+      "feat/host-driven-bench",
+      "range-tests"
+    ],
+    "tracker/firmware/main/Kconfig.projbuild": [
+      "balloon-nostr/dev",
+      "docs/harm-t9-adoption",
+      "feat/host-driven-bench",
+      "range-tests"
+    ],
+    "tracker/firmware/main/app_main.cpp": [
+      "balloon-nostr/dev",
+      "docs/harm-t9-adoption",
+      "feat/host-driven-bench",
+      "range-tests"
+    ],
+    ".github/workflows/ci-host-tests.yml": [
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace"
+    ],
+    ".ngit/README.md": [
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace"
+    ],
+    "tracker/firmware/test/integration/test_tollgate_payack.py": [
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp",
+      "fix/tollgate-payack-seq-whitespace"
+    ],
+    "firmware/e80-stm32-bench/src/bench_cmd.h": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging",
+      "fix/t2-rx-start-len-gate"
+    ],
+    "tracker/firmware/test/test_tollgate_payack_parse.py": [
+      "feat/tracker-tx-tempcomp",
+      "fix/tollgate-payack-harness-seq",
+      "fix/tollgate-payack-sid-price-exp"
+    ],
+    ".gitignore": [
+      "docs/harm-t9-adoption",
+      "feat/host-driven-bench",
+      "range-tests"
+    ],
+    "docs/rca-fix-plan-20260821.md": [
+      "fix/t4-fifo-clear",
+      "fix/t3-flrc-match123",
+      "fix/t6-sweep-preflight"
+    ],
+    "firmware/e80-stm32-bench/README.md": [
+      "feat/c3-harmonization",
+      "fix/t1-sweep-start-validation"
+    ],
+    "firmware/e80-stm32-bench/docs/RANGE-TEST-GUIDE.md": [
+      "feat/c3-harmonization",
+      "feat/e80-cvm-go-mode"
+    ],
+    "firmware/e80-stm32-bench/src/bench.c": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging"
+    ],
+    "firmware/e80-stm32-bench/src/bench_cmd.c": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging"
+    ],
+    "firmware/e80-stm32-bench/src/bench_pkt.c": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging"
+    ],
+    "firmware/e80-stm32-bench/src/bench_pkt.h": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging"
+    ],
+    "firmware/e80-stm32-bench/src/radio_bench.c": [
+      "feat/c3-harmonization",
+      "fix/t4-fifo-clear"
+    ],
+    "firmware/e80-stm32-bench/tests/test_bench_pkt.c": [
+      "feat/c3-harmonization",
+      "feat/e80-7-crc-logging"
+    ],
+    "Makefile": [
+      "worker-balloon/pcb-phase1-t877-main",
+      "worker-balloon/pcb-phase1-t877"
+    ],
+    "docs/coordination/DISCOVERIES.md": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/Makefile": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/src/console.c": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/src/console.h": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/src/main.h": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/src/radio_bench.h": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tests/test_bench_cmd.c": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tests/test_bench_config.c": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tools/e80_bench_ctl.py": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tools/e80_detect.py": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tools/merge_csvs.py": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tools/test_e80_bench_ctl.py": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/e80-stm32-bench/tools/test_e80_detect.py": [
+      "feat/c3-harmonization"
+    ],
+    "firmware/esp32-c3-flrc/main/main.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "firmware/rp2040/src/flrc_cont_tx_fast.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "firmware/rp2040/src/flrc_range_rx_auto.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "firmware/rp2040/src/flrc_range_rx_gps.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "firmware/rp2040/src/flrc_range_tx_auto.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "firmware/rp2040/src/flrc_range_tx_gps.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "firmware/rp2040/src/gps_test.cpp": [
+      "speed-sustained-sweep"
+    ],
+    "tools/balloon-board-lock.py": [
+      "speed-sustained-sweep"
+    ],
+    "tracker/firmware/components/nostr_store/include/nostr_store.h": [
+      "balloon-nostr/dev"
+    ],
+    "tracker/firmware/components/nostr_store/nostr_store.c": [
+      "balloon-nostr/dev"
+    ],
+    "tracker/firmware/components/nostr_store/test/test_nostr_store.c": [
+      "balloon-nostr/dev"
+    ],
+    "firmware/e80-stm32-bench/CMakeLists.txt": [
+      "feat/e80-7-crc-logging"
+    ],
+    "docs/data-handover/DATA-INVENTORY-2026-08-19.md": [
+      "feat/e80-spi-bypass"
+    ],
+    "docs/data-handover/FIRMWARE-HARMONIZATION-2026-08-19.md": [
+      "feat/e80-spi-bypass"
+    ],
+    "mesh-stack/flrc-bench-espidf/main/range_test.cpp": [
+      "feat/e80-spi-bypass"
+    ],
+    "tests/test_firmware_hash_gate.py": [
+      "feat/e80-spi-bypass"
+    ],
+    "tests/test_session_manager.py": [
+      "feat/e80-spi-bypass"
+    ],
+    "tools/firmware_hash_gate.py": [
+      "feat/e80-spi-bypass"
+    ],
+    "tools/rx_range_logger.py": [
+      "feat/e80-spi-bypass"
+    ],
+    "tools/session_manager.py": [
+      "feat/e80-spi-bypass"
+    ],
+    "AGENTS.md": [
+      "docs/harm-t9-adoption"
+    ],
+    "README.md": [
+      "docs/harm-t9-adoption"
+    ],
+    "firmware/rp2040/src/main.cpp": [
+      "phase1-interop-test"
+    ],
+    "firmware/rp2040/src/radio.cpp": [
+      "phase1-interop-test"
+    ],
+    "mesh-stack/flrc-bench-espidf/main/bench_main.cpp": [
+      "phase1-interop-test"
+    ],
+    "mesh-stack/flrc-bench-espidf/main/fast_rx.cpp": [
+      "phase1-interop-test"
+    ],
+    "mesh-stack/flrc-bench-espidf/main/fifo_tx.cpp": [
+      "phase1-interop-test"
+    ],
+    "mesh-stack/flrc-bench-espidf/sdkconfig.defaults": [
+      "phase1-interop-test"
+    ],
+    "tracker/firmware/main/CMakeLists.txt": [
+      "balloon-mesh-wiring/radio-glue"
+    ],
+    "tracker/firmware/sdkconfig": [
+      "balloon-mesh-wiring/radio-glue"
+    ],
+    "tracker/firmware/sdkconfig.defaults": [
+      "balloon-mesh-wiring/radio-glue"
+    ],
+    "firmware/e80-stm32-bench/tools/cvm_sync.py": [
+      "feat/e80-cvm-go-mode"
+    ],
+    "firmware/e80-stm32-bench/tools/test_cvm_sync.py": [
+      "feat/e80-cvm-go-mode"
+    ],
+    "firmware/e80-stm32-bench/tools/e80_sweep_full.py": [
+      "fix/t1-sweep-start-validation"
+    ],
+    "tracker/hardware/drc_snapshots/history.jsonl": [
+      "worker-balloon/pcb-phase1-t877-main"
+    ],
+    "mesh-stack/tollgate/CMakeLists.txt": [
+      "balloon-tollgate-extract"
+    ],
+    "mesh-stack/tollgate/components/radio_adapter/CMakeLists.txt": [
+      "balloon-tollgate-extract"
+    ],
+    "TOLLGATE_PROTO_CONTRACT.md": [
+      "worker-balloon/pcb-phase1-t877"
+    ],
+    "tracker/hardware/hub_board_v1.kicad_pcb": [
+      "balloon-circuit-design"
+    ],
+    "docs/STATUS-balloon-tollgate.md": [
+      "balloon-tollgate/dev"
+    ]
+  }
+}

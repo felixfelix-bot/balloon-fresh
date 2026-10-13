@@ -1,0 +1,593 @@
+{
+ "routed_single": [
+  "I2C_SDA",
+  "I2C_SCL",
+  "+3V3",
+  "GND",
+  "LR_RST",
+  "RF_OUT",
+  "VDIV_MID",
+  "VCAP",
+  "GPS_RX",
+  "LED_DRIVE",
+  "SPI_MISO",
+  "UART0_RX",
+  "SPI_NSS",
+  "EN",
+  "SPI_SCK",
+  "LED_A",
+  "LR_IRQ",
+  "GPS_TX",
+  "UART0_TX",
+  "SOLAR_IN",
+  "LR_BUSY",
+  "SPI_MOSI"
+ ],
+ "failed_single": [],
+ "open_single": [],
+ "failed_multipoint": [],
+ "multipoint_nets": 1,
+ "multipoint_pads_connected": 71,
+ "multipoint_pads_total": 71,
+ "multipoint_edges_routed": 4,
+ "multipoint_edges_failed": 0,
+ "ripup_success_pairs": [],
+ "rerouted_pairs": [],
+ "single_ended_target_swaps": [],
+ "layer_swaps": 0,
+ "successful": 22,
+ "failed": 0,
+ "total_time": 1.18,
+ "total_iterations": 487510,
+ "total_vias": 55,
+ "cleanup_disconnected": [],
+ "min_clearance_used": 0.175,
+ "design_rules": {
+  "escalation_policy": "fab",
+  "fab_tier": "standard",
+  "board_floors": {
+   "via_diameter": 0.5,
+   "via_drill": 0.2,
+   "hole_to_hole": 0.25,
+   "annular": 0.1,
+   "board_edge": 0.5
+  },
+  "count": 15,
+  "nets": [
+   1,
+   2,
+   3,
+   17
+  ],
+  "narrowed": [
+   {
+    "net": 17,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.56,
+    "site": "via-in-pad clamp",
+    "count": 1
+   },
+   {
+    "net": 2,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 2,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "last-resort via-in-pad",
+    "count": 1
+   },
+   {
+    "net": 2,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 3,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "last-resort via-in-pad",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": null,
+    "kind": "via_diameter",
+    "requested": 0.6,
+    "delivered": 0.45,
+    "site": "via-in-pad clamp (floor)",
+    "count": 1
+   },
+   {
+    "net": 1,
+    "net_name": "+3V3",
+    "kind": "track_width",
+    "requested": 0.3,
+    "delivered": 0.2,
+    "site": "power copper shipped under width",
+    "count": 1,
+    "length_mm": 5.63
+   },
+   {
+    "net": 2,
+    "net_name": "GND",
+    "kind": "track_width",
+    "requested": 0.3,
+    "delivered": 0.2,
+    "site": "power copper shipped under width",
+    "count": 1,
+    "length_mm": 22.81
+   }
+  ],
+  "min_delivered": {
+   "via_diameter": 0.45,
+   "track_width": 0.2
+  },
+  "fab_tier_escalations": 0,
+  "fab_tier_contexts": [],
+  "fab_tier_target": "advanced",
+  "unsupported_rules": []
+ },
+ "plane_fragility": {
+  "source": "kicad_refill",
+  "islands": 2,
+  "refill_status": "ok",
+  "why": "the KiCad refill succeeded (memo hit)",
+  "machine_dependent": false
+ },
+ "stacked_copper": [
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.0,
+   "y": 35.0,
+   "detail": "2 duplicate segments stacked on (22.000, 35.000)-(22.025, 34.975)",
+   "size": 0.035355339059325364
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.675,
+   "y": 37.025,
+   "detail": "2 duplicate segments stacked on (22.675, 37.025)-(22.700, 37.000)",
+   "size": 0.035355339059325364
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.7,
+   "y": 37.0,
+   "detail": "2 duplicate segments stacked on (22.700, 37.000)-(22.700, 37.100)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.7,
+   "y": 37.1,
+   "detail": "2 duplicate segments stacked on (22.700, 37.100)-(22.700, 37.200)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.7,
+   "y": 37.2,
+   "detail": "2 duplicate segments stacked on (22.700, 37.200)-(22.700, 37.300)",
+   "size": 0.09999999999999432
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.7,
+   "y": 37.3,
+   "detail": "2 duplicate segments stacked on (22.700, 37.300)-(22.700, 37.400)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.7,
+   "y": 37.4,
+   "detail": "2 duplicate segments stacked on (22.700, 37.400)-(22.800, 37.500)",
+   "size": 0.1414213562373115
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.8,
+   "y": 37.5,
+   "detail": "2 duplicate segments stacked on (22.800, 37.500)-(22.900, 37.600)",
+   "size": 0.141421356237309
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 22.9,
+   "y": 37.6,
+   "detail": "2 duplicate segments stacked on (22.900, 37.600)-(23.000, 37.700)",
+   "size": 0.1414213562373115
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.0,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.000, 37.700)-(23.100, 37.700)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.1,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.100, 37.700)-(23.200, 37.700)",
+   "size": 0.09999999999999787
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.2,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.200, 37.700)-(23.300, 37.700)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.3,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.300, 37.700)-(23.400, 37.700)",
+   "size": 0.09999999999999787
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.4,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.400, 37.700)-(23.500, 37.700)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.5,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.500, 37.700)-(23.600, 37.700)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.6,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.600, 37.700)-(23.700, 37.700)",
+   "size": 0.09999999999999787
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.7,
+   "y": 37.7,
+   "detail": "2 duplicate segments stacked on (23.700, 37.700)-(23.800, 37.600)",
+   "size": 0.1414213562373115
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.8,
+   "y": 37.6,
+   "detail": "2 duplicate segments stacked on (23.800, 37.600)-(23.900, 37.500)",
+   "size": 0.141421356237309
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 23.975,
+   "y": 37.025,
+   "detail": "3 duplicate segments stacked on (23.975, 37.025)-(24.000, 37.000)",
+   "size": 0.035355339059325364
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.095,
+   "y": 11.58,
+   "detail": "2 duplicate segments stacked on (28.095, 11.580)-(28.100, 11.600)",
+   "size": 0.02061552812808851
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.095,
+   "y": 12.87,
+   "detail": "3 duplicate segments stacked on (28.095, 12.870)-(28.100, 12.900)",
+   "size": 0.03041381265149264
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.1,
+   "y": 12.3,
+   "detail": "2 duplicate segments stacked on (28.100, 12.300)-(28.100, 12.400)",
+   "size": 0.09999999999999964
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.1,
+   "y": 12.4,
+   "detail": "2 duplicate segments stacked on (28.100, 12.400)-(28.100, 12.500)",
+   "size": 0.09999999999999964
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.1,
+   "y": 12.5,
+   "detail": "2 duplicate segments stacked on (28.100, 12.500)-(28.100, 12.600)",
+   "size": 0.09999999999999964
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.1,
+   "y": 12.6,
+   "detail": "2 duplicate segments stacked on (28.100, 12.600)-(28.100, 12.700)",
+   "size": 0.09999999999999964
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.1,
+   "y": 12.7,
+   "detail": "2 duplicate segments stacked on (28.100, 12.700)-(28.100, 12.800)",
+   "size": 0.10000000000000142
+  },
+  {
+   "category": "stacked-copper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "x": 28.1,
+   "y": 12.8,
+   "detail": "2 duplicate segments stacked on (28.100, 12.800)-(28.100, 12.900)",
+   "size": 0.09999999999999964
+  }
+ ],
+ "oracle_check": "disabled",
+ "pad_pairs_connected": 81,
+ "pad_pairs_total": 81,
+ "power_trace_ampacity": [
+  {
+   "net": "+3V3",
+   "bottleneck_width_mm": 0.2,
+   "bottleneck_layer": "F.Cu",
+   "copper_oz": 1.0,
+   "max_current_a": 0.74,
+   "max_current_ipc2152_a": 0.74,
+   "temp_rise_c": 10.0,
+   "trace_length_mm": 57.1
+  },
+  {
+   "net": "GND",
+   "bottleneck_width_mm": 0.2,
+   "bottleneck_layer": "F.Cu",
+   "copper_oz": 1.0,
+   "max_current_a": 0.74,
+   "max_current_ipc2152_a": 0.74,
+   "temp_rise_c": 10.0,
+   "trace_length_mm": 114.5
+  },
+  {
+   "net": "RF_OUT",
+   "bottleneck_width_mm": 0.39,
+   "bottleneck_layer": "F.Cu",
+   "copper_oz": 1.0,
+   "max_current_a": 1.21,
+   "max_current_ipc2152_a": 1.21,
+   "temp_rise_c": 10.0,
+   "trace_length_mm": 23.9
+  }
+ ],
+ "scope": "merged",
+ "board_scoped_keys": [
+  "stacked_copper",
+  "power_trace_ampacity",
+  "min_clearance_used"
+ ],
+ "env_knobs": {},
+ "blockers": [],
+ "power_widths": {
+  "+3V3": {
+   "requested_mm": 0.3,
+   "length_mm": 60.41,
+   "under_mm": 5.63,
+   "under_share": 0.0932,
+   "min_mm": 0.2,
+   "by_width_mm": {
+    "0.2": 5.63,
+    "0.3": 54.77
+   },
+   "in_run_scope": true
+  },
+  "GND": {
+   "requested_mm": 0.3,
+   "length_mm": 114.54,
+   "under_mm": 22.81,
+   "under_share": 0.1991,
+   "min_mm": 0.2,
+   "by_width_mm": {
+    "0.2": 22.81,
+    "0.3": 91.73
+   },
+   "in_run_scope": true
+  },
+  "RF_OUT": {
+   "requested_mm": 0.39,
+   "length_mm": 23.08,
+   "under_mm": 0,
+   "under_share": 0.0,
+   "min_mm": 0.39,
+   "by_width_mm": {
+    "0.39": 23.08
+   },
+   "in_run_scope": true
+  }
+ },
+ "power_widths_measured_on": "written board",
+ "power_widths_run_scope": [
+  "+3V3",
+  "GND",
+  "RF_OUT"
+ ],
+ "pad_pairs_open": [],
+ "regrade": {
+  "board": "file",
+  "graded_nets": 22,
+  "seconds": 0.16,
+  "unowned_broken": [],
+  "recovered": [
+   "+3V3",
+   "GND"
+  ]
+ },
+ "via_in_pad": {
+  "count": 3,
+  "sites": [
+   "R_DIV1.1 F.Paste (pad)",
+   "U4.1 F.Paste (pad)",
+   "U4.3 F.Paste (pad)"
+  ],
+  "stamped": 0,
+  "restored": 0,
+  "protected": 0,
+  "unstampable": 3,
+  "site_created": 0,
+  "unprotected": [
+   {
+    "site": "U4.1 F.Paste (pad)",
+    "x": 18.3,
+    "y": 29.2,
+    "why": "file format 20241229 predates per-via capping/filling (KiCad 10)"
+   },
+   {
+    "site": "R_DIV1.1 F.Paste (pad)",
+    "x": 4.5,
+    "y": 35.9,
+    "why": "file format 20241229 predates per-via capping/filling (KiCad 10)"
+   },
+   {
+    "site": "U4.3 F.Paste (pad)",
+    "x": 17.9,
+    "y": 30.9,
+    "why": "file format 20241229 predates per-via capping/filling (KiCad 10)"
+   }
+  ],
+  "note": "via-in-pad requires IPC-4761 Type VII (filled + capped + plated); state it on the fab drawing or solder wicks into the barrel"
+ }
+}

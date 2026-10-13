@@ -3764,7 +3764,7 @@
 		(uuid "05939aa2-d3e9-4f62-b74e-9b604a73aedb")
 	)
 	(symbol
-		(lib_id "Sensor_Pressure:BMP280")
+		(lib_id "Sensor_Pressure:MS5611-01BA")
 		(at 320 60 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -3781,14 +3781,14 @@
 				)
 			)
 		)
-		(property "Value" "BMP280 (opt)"
+		(property "Value" "MS5611-01BA"
 			(at 0 2.54 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
-		)			(property "Footprint" "Package_LGA:Bosch_LGA-8_2.5x2.0mm_P0.65mm"
+		)			(property "Footprint" "Package_LGA:LGA-8_3x5mm_P1.25mm"
 			(at 0 0 0)
 			(effects
 				(font
@@ -4439,7 +4439,7 @@
 			(path "/0dd8a0c6-89a8-48b9-8853-cc011236f6b1"
 				(reference "U5")
 				(unit 1)
-				(value "BMP280 (opt)")
+				(value "MS5611-01BA")
 				(footprint "")
 			)
 			(path "/cf19301d-626b-4c29-91f3-7e835bc54579"

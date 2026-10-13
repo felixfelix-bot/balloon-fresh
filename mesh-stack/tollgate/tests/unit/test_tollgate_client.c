@@ -1,7 +1,7 @@
 /*
  * test_tollgate_client.c — host unit tests for TollGate client state machine
  *
- * Tests the client-side payment protocol state machine (ADR-002):
+ * Tests the client-side payment protocol state machine (ADR-100):
  *   - IDLE → QUERYING → IDLE (query/INFO flow)
  *   - IDLE → PAYING → ACTIVE (pay/ACK flow)
  *   - IDLE → PAYING → ERROR (pay/NACK flow)

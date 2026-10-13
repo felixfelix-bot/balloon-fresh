@@ -1,0 +1,46 @@
+name: BOOTSEL Controller Firmware (ngit)
+
+# ngit-CI lane for the ESP32-C3 auto-BOOTSEL test firmware
+# (firmware/esp32-bootsel-controller) and its host test suite.
+#
+# Scope is deliberately narrow: this is the only workflow the firmware card
+# needs, it needs no boards and no apt packages beyond a C++ compiler, so it
+# runs in seconds in the stock act image. The repository-wide host suites live
+# in .ngit/act/workflows/host-tests.yml on the ci/* branches; this file does not
+# duplicate them.
+#
+# Steps:
+#   1. compile + run the controller's own host harness (pin trace, timings, acks,
+#      watchdog) — the shipped bootsel_controller.cpp is the unit under test
+#   2. run the pytest module that drives that harness and checks the board-facing
+#      sources/README against the same contract
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  bootsel-firmware:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile and run the controller host harness
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -O1 \
+            -I firmware/esp32-bootsel-controller/src \
+            tests/src/ser_io_host.cpp \
+            firmware/esp32-bootsel-controller/src/bootsel_controller.cpp \
+            -o /tmp/ser_io_host_bootsel
+          /tmp/ser_io_host_bootsel
+
+      - name: Run the BOOTSEL controller test suite
+        run: |
+          # PEP 668: the act container's python3 is externally managed, so a
+          # plain `pip install` exits 1 there and would take the whole lane down.
+          # Prefer a normal install, fall back to the documented override, and
+          # fail loudly if pytest still is not there.
+          python3 -m pip install --quiet pytest \
+            || python3 -m pip install --quiet --break-system-packages pytest
+          python3 -m pytest tests/test_bootsel_controller.py -v --tb=short

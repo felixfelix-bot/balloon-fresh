@@ -50,7 +50,7 @@ BOOTSEL_BUILD = WORKTREE / "firmware" / "esp32-c3-bootsel-controller" / ".pio" /
 
 PORT_RX = "/dev/ttyACM1"   # ESP32 bridge → RP2040 #8332
 PORT_TX = "/dev/ttyACM3"   # ESP32 bridge → RP2040 #F242D
-BAUD = 115200
+BAUD = 2000000
 
 # ─── Result line parser ────────────────────────────────────────────────
 RESULT_PATTERN = re.compile(

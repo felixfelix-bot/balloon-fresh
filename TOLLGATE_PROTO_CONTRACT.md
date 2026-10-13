@@ -1,292 +1,322 @@
-# TOLLGATE_PROTO_CONTRACT.md — Authoritative wire contract for `tollgate_payment_proto.h`
+# TOLLGATE_PROTO_CONTRACT.md — Authoritative API Contract for `tollgate_payment_proto.h`
 
-**Status:** AUTHORITATIVE for branch `autonomous/mesh-baseline`
-**Scope:** `tracker/firmware/main/tollgate_payment_proto.h` / `.c` — the TollGate
-PAY/ACK message format as it crosses the tracker relay pipeline.
-**Date:** 2026-09-27
-**Supersedes:** the inline "Wire format (ADR-002)" comments in
-`tracker/firmware/main/tollgate_payment_proto.h:8-19` and
-`tracker/firmware/main/tollgate_payment_proto.c:4-8`, and the `RELAY_TYPE_*` /
-`TG_MSG_*` prose scattered across `relay_types.h`, `app_task.cpp`, `app_main.cpp`.
-**Nature of this document:** specification only. It changes no code. Nothing here
-implements the header; where the current implementation disagrees with this
-contract the disagreement is listed in §9 as a numbered DEVIATION, not silently
-patched.
-
----
-
-## 0. Inputs, and one gap
-
-The task specified four recon notes as inputs. **All four are missing.** I verified
-this directly rather than assuming:
-
-| Expected input | Status |
-|---|---|
-| `docs/recon/tollgate_proto_spec_search.md` | **ABSENT** |
-| `docs/recon/tollgate_proto_app_task_callsites.md` | **ABSENT** |
-| `docs/recon/tollgate_proto_test_mock.md` | **ABSENT** |
-| `docs/recon/tollgate_proto_framing_config.md` | **ABSENT** |
-
-Evidence of absence:
-* `docs/recon/` does not exist in this worktree (`ls -d docs/recon` → *No such file
-  or directory*), and `tracker/firmware/docs/` does not exist either.
-* A scan of **every** branch that exists in this repository
-  (`git ls-tree -r --name-only <branch> | grep -c 'docs/recon/tollgate_proto'`)
-  returns zero hits on all of them.
-
-**Consequence:** no synthesis of recon prose was possible, and none was invented.
-Instead this contract is derived from the primary sources the recon notes were meant
-to summarise — the upstream spec itself, the real call sites, and the real tests,
-read in full and executed. Every claim below carries a `file:line` citation, and
-§10 records the exact commands and their output. This substitution is strictly
-stronger evidence than a summary of those sources would have been, but it means the
-"recon notes agree on X" cross-check that the task assumed is not available; if the
-four notes are later recovered they should be diffed against §1–§7.
-
-Primary sources actually used:
-
-| Role | Path |
-|---|---|
-| Upstream spec (message types, header) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h` |
-| Upstream spec (payload structs, prototypes) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h` |
-| Upstream reference implementation | `mesh-stack/tollgate/components/tollgate_balloon/src/tollgate_payment_proto.c` |
-| Upstream 1-byte framing analogue | `mesh-stack/tollgate/components/mesh_service_mux/include/mesh_service_mux.h` |
-| Decision record | `docs/adr/002-tollgate-over-fips-mesh-udp.md` |
-| Tracker header / impl | `tracker/firmware/main/tollgate_payment_proto.h` / `.c` |
-| Relay framing | `tracker/firmware/main/relay_types.h` |
-| Call sites | `tracker/firmware/main/app_task.cpp`, `tracker/firmware/main/app_main.cpp` |
-| Host tests | `tracker/firmware/main/test/test_relay_pipeline.c`, `.../test_tollgate_payment_proto.c` |
-| Hardware harness | `tracker/firmware/test/integration/test_tollgate_payack.py` |
-| Build/config | `tracker/firmware/main/Kconfig.projbuild`, `tracker/firmware/main/CMakeLists.txt`, `.github/workflows/ci-host-tests.yml` |
+**Scope:** `tracker/firmware/main/tollgate_payment_proto.{h,c}` on branch `autonomous/mesh-baseline`.
+**Revision:** 3 (2026-09-27, card `balloon:t_c360db44`) — see §0 for what changed and §0.5
+for the review that prompted it.
+**Status:** Normative **for the API shape** (field layouts, wire format, prototypes,
+return-value semantics, error codes). The code and the pinned tests are normative **for the
+values they assert**: where this document and the code disagree on a number the tests pin,
+the tests win and this document is a bug — but where this document names a clause the code
+violates, the code is the defect and gets a card (§7.1 D1/D2). Do not silently re-derive the
+contract from the implementation.
+**Related:** ADR-100 (`docs/adr/100-tollgate-over-fips-mesh-udp.md`), upstream component
+`mesh-stack/tollgate/components/tollgate_balloon/`, sibling spec
+`tracker/firmware/TOLLGATE_PROTO_API.md` (§0.2).
 
 ---
 
-## 1. Wire format of a TollGate message in the relay pipeline
+## 0. Provenance, revision status, and reconciliation (read this first)
+
+**Revision 3**, 2026-09-27, card `balloon:t_c360db44`: revision 1 (commit `01f09534`) was
+authored when the four recon inputs this card was meant to synthesize did not exist;
+revision 2 reconciled the document with the shipped code and pinned tests; revision 3 applies
+the six lineage-accuracy corrections raised by the cold cross-family review of revision 2
+(§0.5). The normative content is unchanged from revision 2.
+
+### 0.1 Inputs — what exists, and which of the four inputs actually ship on this branch
+
+Revision 1 worked around four recon inputs that did not exist yet. All four now exist **on
+the local lineage** (`autonomous/mesh-baseline`), but only **one** of them is tracked on
+`origin/main` — the branch that carries this file (measured 2026-09-27 with
+`git ls-tree -r origin/main --name-only | grep -iE "recon|PROTO_API|payack"`). The lineage
+column below is therefore load-bearing: a reader on the published branch can open exactly
+one row of this table.
+
+| Recon input | Ships on `origin/main`? | Location / commit |
+|---|---|---|
+| spec search (upstream) | **NO — local lineage only** | `tracker/firmware/TOLLGATE_PROTO_API.md` (commit `2ab5058e`) + `docs/tollgate-payack-upstream-audit-2026-09-14.md` (commit `a9b9126f`) |
+| app_task call sites | **NO — local lineage only** | `docs/recon/tollgate_proto_app_task_callsites.md` (commit `c45dec77`, 452 lines) |
+| test/mock usage | **YES — tracked** | `docs/recon/tollgate_proto_test_mock.md` (514 lines, tracked by `b8aa95bf`) |
+| framing + config | **NO — local lineage only** | `docs/recon/tollgate_proto_framing_config.md` (commit `b7db8b31`) + `docs/recon/.tollgate_framing_notes.md` (untracked on both lineages) |
+
+Cross-check: the sibling index `tracker/firmware/.tollgate-recon-index.md` (card
+`balloon:t_7676d001`, local lineage only) independently records the same three producer
+reports and their commits.
+
+Because three of the four inputs are absent from the published branch, **this file is
+written to stand alone**: every value, layout, prototype and citation it needs is restated
+in §2–§5, and the one input that does ship is the mock-usage recon
+(`docs/recon/tollgate_proto_test_mock.md`). Nothing here requires the local-only files to
+be readable.
+
+The card body referenced repo path `~/repos/balloon-fresh/tracker/firmware/`; that path
+does **not** exist on this machine. The actual worktree is `~/repos/balloon` (repo root,
+remote `origin = https://github.com/felixfelix-bot/balloon-fresh.git`), already on branch
+`autonomous/mesh-baseline` and containing `tracker/firmware/`. Same path correction as the
+recon index.
+
+### 0.2 Relationship to `tracker/firmware/TOLLGATE_PROTO_API.md` (no contradiction)
+
+Two contract documents exist on this branch. They are **not** in conflict after this
+revision; the division of labour is:
+
+| Document | Scope |
+|---|---|
+| `tracker/firmware/TOLLGATE_PROTO_API.md` | Wire-format + API contract for the tracker-firmware copy, including it, with worked byte-layout examples and the full symbol coverage table |
+| **this file** (`TOLLGATE_PROTO_CONTRACT.md`, repo root) | Same contract expressed as a **call-site conformance checklist**: field layouts, prototypes, return-value semantics, and a line-by-line mapping from every consumer back to the clause it depends on |
+
+**Lineage caveat:** `tracker/firmware/TOLLGATE_PROTO_API.md` is **local-lineage-only** — it is
+absent from `origin/main` (measured 2026-09-27). A reader on the published branch cannot open
+it, so its §7 content is summarised in the table below and nothing in this file depends on
+the sibling document being present.
+
+`TOLLGATE_PROTO_API.md` §7 recorded three points where revision 1 of this file contradicted
+the shipped code and pinned tests. Revision 2 resolves all three in favour of the code and
+tests, and records the two remaining **implementation** deviations as filed defects (§7).
+The three resolutions:
+
+| # | Revision-1 text | Resolution (rev 2) |
+|---|---|---|
+| 7.1 | `tollgate_nack_payload_t` described as `packed (16 bytes)` | **Arithmetic error.** `int16_t(2) + char[128](128) = 130` bytes packed. Corrected in §3. |
+| 7.2 | `encode(payload == NULL, payload_len > 0)` left as an either/or ("callers must not depend on it") | **Now normative: MUST return −1 and write nothing.** §5 clause E4. The shipped `.c` still succeeds in this case — filed as defect **DEF-1** (§7.1). |
+| 7.3 | `decode(hdr == NULL)` silent | **Now normative: MUST return −1 with no writes.** §5 clause D1. The shipped `.c` dereferences NULL — filed as defect **DEF-2** (§7.1). |
+
+No other clause of revision 1 changed its meaning; every number, offset, prototype, and
+error value below is byte-for-byte what the pinned tests assert.
+
+### 0.3 Primary sources actually used (revision 2)
+
+| Topic | Source |
+|---|---|
+| Spec search (upstream) | `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h`, `.../include/tollgate_payment_proto.h`, `.../src/tollgate_payment_proto.c`; `docs/adr/100-tollgate-over-fips-mesh-udp.md` |
+| app_task call sites | `tracker/firmware/main/app_task.cpp` lines 32–33, 114–145 |
+| Test/mock usage | `tracker/firmware/main/test/test_relay_pipeline.c` (lines 76–83, 101–164, 200–215, TEST 4/5/8/12); `tracker/firmware/main/test/test_tollgate_payment_proto.c` (14 test functions locally / 10 on `origin/main`) |
+| Framing + config | `tracker/firmware/main/relay_types.h`; `main/Kconfig.projbuild` lines 141–147; `main/CMakeLists.txt` lines 29–31; `sdkconfig` line 576 |
+| Shipped header + impl | `tracker/firmware/main/tollgate_payment_proto.h`, `tracker/firmware/main/tollgate_payment_proto.c` |
+
+### 0.4 Lineage / applicability — read before treating a mismatch as a doc error
+
+This contract was authored on the **local** lineage `autonomous/mesh-baseline`
+(`~/repos/balloon`), which carries the protocol-hardening commit `38360fb1`
+("test+fix(tollgate): msg_type validation, canary overflow checks, boundary tests"). The
+published lineage `origin/main` (the base of the branch that carries this file) does **not**
+carry `38360fb1` yet. Measured difference, 2026-09-27:
+
+| Artifact | Local `autonomous/mesh-baseline` | `origin/main` |
+|---|---|---|
+| `tollgate_payment_proto.c` | 66 lines, `tg_type_is_valid()` bounds check in encode **and** decode | 53 lines, **no** bounds check |
+| `tollgate_payment_proto.h` | return-value docs name the invalid-msg_type case | docs omit it |
+| `test_tollgate_payment_proto.c` | 550 lines / 14 test functions / **133 assertions** → 133 passed, 0 failed | 334 lines / 10 test functions / **83 assertions** → 83 passed, 0 failed |
+| `test_relay_pipeline.c` | 12/12 passed | 12/12 passed (byte-identical) |
+| `app_task.cpp`, `relay_types.h` | byte-identical | byte-identical |
+| `sdkconfig` line 576 | `CONFIG_ENABLE_TOLLGATE=y` (set by `55d79702`, local-only) | `# CONFIG_ENABLE_TOLLGATE is not set` — **feature compiled out at this head** (§6 item 5) |
+
+All four test counts above were re-measured on the published head
+`68c27cdda74f0f87b57029be42dd118b633f9c24` on 2026-09-27 (see §9 re-verification record).
+
+Consequences for a reader on a branch whose base is `origin/main`:
+
+- **Clauses violated on both lineages:** §5 E4 (`payload == NULL` with `payload_len > 0`)
+  and §5 D1 (`hdr == NULL`) — defects **DEF-1**/**DEF-2** (§7.1). These are the defects a fix
+  card must close.
+- **Clauses satisfied only where `38360fb1` is present:** §5 E2 (encode rejects a `type`
+  outside 0x01..0x06 without touching the buffer), §5 D5 (decode rejects such a type), and
+  the canary/no-write guarantees proven by unit tests 11–14. On `origin/main` these are
+  **unimplemented**, and unit tests 11–14 do not exist there (the published test file has 10
+  test functions, hence 83 vs 133 assertions — the 50-assertion gap is exactly tests 11–14).
+  A fix card that ports `38360fb1` closes this gap.
+- **Compiled out unless enabled:** at the published head the whole payment feature is
+  disabled (§6 item 5) — `tollgate_payment_proto.c` is not in the build and the PAY dispatch
+  arm is compiled out. Any reader acting on this contract on `origin/main` must enable
+  `CONFIG_ENABLE_TOLLGATE` first (or port `55d79702`); otherwise nothing here is executable.
+- **Nothing in this document is contradicted by either lineage.** Every clause is either
+  already implemented on both, or named here as a defect on one/both.
+
+This document is therefore the **target** contract: it is normative for what the code must
+do, not a description of what every branch does today. Before filing a "the contract is
+wrong" bug, check which lineage you are on and re-read §7.1.
+
+### 0.5 Revision 3 — cold-review corrections (F1–F6)
+
+Revision 2 was reviewed cold and cross-family (card `balloon:t_9a5c6230`, reviewer
+`glm-5.3`, tier `tier/review-glm`; author family deepseek) against published head
+`68c27cdd`. Verdict: **CHANGES-REQUESTED** — the normative core (§5 clauses, DEF-1/DEF-2,
+their blast radius) was independently re-derived and confirmed, but six statements were
+false *on the lineage this file ships on*. Revision 3 applies all six; every number below
+was re-measured first-hand on `origin/main`@`68c27cdd` before the edit.
+
+| # | Finding (rev 2) | Fix in rev 3 |
+|---|---|---|
+| F1 | §6.5 claimed `CONFIG_ENABLE_TOLLGATE=y` in the tracked sdkconfig; on `origin/main` it reads `# CONFIG_ENABLE_TOLLGATE is not set`, so the feature is compiled out at the published head | §6 item 5 rewritten for the published value; §0.4 table row added |
+| F2 | §0.1/§0.2/§0.3 treated all four recon inputs and the sibling spec as readable; only `docs/recon/tollgate_proto_test_mock.md` exists on `origin/main` | §0.1 relabelled by lineage + stand-alone statement; §0.2 lineage caveat; new gap §7.2 G2 |
+| F3 | §0.1/§7.2 G1 called the mock recon "untracked, 504 lines"; it is tracked by `b8aa95bf` and is 514 lines | §0.1 row corrected; G1 closed for that file, remaining untracked files listed |
+| F4 | §9 printed only 133/133 under a heading that applies to both lineages; the published branch yields 83/83 | §9 records split by lineage, both re-run first-hand; tests 11–14 marked local-only |
+| F5 | §0.4 said "unit tests 11–13 do not exist there"; tests 11–**14** are absent (10 vs 14 test functions) | §0.4 corrected to 11–14 with measured file sizes |
+| F6 | §5 E4 and §7.1 cited `.c:39`/`.c:53` — local-lineage numbers that point at unrelated code on `origin/main` | both lineages' line numbers now given, with the `origin/main` mapping stated |
+
+No normative value, offset, prototype or error code changed in rev 3, and the two filed
+defects (DEF-1/DEF-2) are unchanged and still open.
+
+---
+
+## 1. Relay frame layout (outer framing, tracker-local)
+
+TollGate messages never travel alone on the tracker relay pipeline. They are carried in a
+`relay_packet_t` (512-byte `data[]`, fields `len`/`timestamp`/`rssi`) between `radio_task`
+and `app_task` via FreeRTOS queues. The first byte of `data[]` is a **relay type tag**:
 
 ```
- relay_packet_t.data:
- ┌─────────┬──────────────────────────────┬────────────────────────────┐
- │ byte 0  │ bytes 1..8                   │ bytes 9 .. 8+N             │
- │ RELAY   │ tollgate_msg_hdr_t (8 bytes, │ payload (N = payload_len   │
- │ TYPE    │ packed, little-endian)       │ bytes; N may be 0)         │
- │ tag     │                              │                            │
- └─────────┴──────────────────────────────┴────────────────────────────┘
-   pkt.len = 1 + 8 + N                  N ≤ 503 on this transport
+Byte:      0                1                2 ... 8                9 ...
+        ┌──────────┬──────────────────────────────┬──────────────────────────┐
+Field:  │ relay tag │   tollgate_msg_hdr_t (8 B)   │   payload (N bytes)      │
+        └──────────┴──────────────────────────────┴──────────────────────────┘
 ```
 
-Rules:
+- Tag values (`relay_types.h`): `RELAY_TYPE_NOSTR_EVENT=0x01`, `RELAY_TYPE_TOLLGATE_PAY=0x02`,
+  `RELAY_TYPE_TOLLGATE_ACK=0x03`, `RELAY_TYPE_TELEMETRY=0x04`, `RELAY_TYPE_RAW=0xFF`.
+- `RELAY_TYPE_TOLLGATE_PAY` (0x02) frames a client→balloon message (normally `TG_MSG_PAY`).
+- `RELAY_TYPE_TOLLGATE_ACK` (0x03) frames a balloon→client message (normally `TG_MSG_ACK`).
+- The tag byte is **outside** the TollGate message: every API below operates on
+  `data + 1` with `len - 1`. `app_task.cpp:120` and the mock both pass `pkt.data + 1, pkt.len - 1`.
+- Direction is carried by the **relay tag**, not by the inner TollGate type. The tag byte and
+  the inner `type` byte are two independent namespaces (see §4 collision table).
+- **Size budget:** `RELAY_PACKET_MAX_SIZE = 512`, so a framed TollGate message is at most
+  511 bytes, i.e. header + payload ≤ 503 payload bytes. The current ACK frame is
+  1 + 8 + 14 = 23 bytes. A full-size Cashu token (`TOLLGATE_MAX_TOKEN_LEN = 2048`) does
+  **not** fit in one relay packet — see §7 (open constraint).
 
-1. **The 1-byte relay type tag is byte 0 of the relay frame, and it is not part of
-   the TollGate message.** The TollGate message begins at `data + 1` and is exactly
-   `8 + payload_len` bytes long. This is the "first-byte relay framing rule"
-   (`main/relay_types.h:10`; `main/app_task.cpp:90` reads `pkt.data[0]`;
-   `main/app_task.cpp:120` and `main/test/test_relay_pipeline.c:133` both call the
-   decoder on `data + 1` with `len - 1`).
-2. **The tag is chosen by direction, not by the inner message type** (see §4).
-3. `pkt.len` MUST include the tag byte: producers set `pkt.len = enc_len + 1`
-   (`app_main.cpp:634`, `app_task.cpp:138`, `test_relay_pipeline.c:149`).
-4. Capacity: `RELAY_PACKET_MAX_SIZE` is 512 (`relay_types.h:6`). The encode target
-   inside a frame is therefore `frame + 1` with capacity `512 - 1 = 511`, so the
-   largest TollGate payload on this transport is `512 - 1 - 8 = 503` bytes. The
-   `app_main.cpp:612` guard and this constant must stay equal; see §9 DEVIATION-3.
+## 2. `tollgate_msg_hdr_t` — field layout
 
----
-
-## 2. `tollgate_msg_hdr_t` — chosen layout
-
-8 bytes, `__attribute__((packed))`, **little-endian**, byte order fixed by this
-contract regardless of host (see DEVIATION-5).
-
-| Off | Field | Type | Bytes | Endian | Value / range |
-|---|---|---|---|---|---|
-| 0 | `version` | `uint8_t` | 1 | n/a | `TOLLGATE_PROTO_VERSION` = 1 |
-| 1 | `type` | `uint8_t` | 1 | n/a | `tollgate_msg_type_t` (0x01–0x06) |
-| 2 | `seq` | `uint16_t` | 2 | LE | opaque u16 echo token, wraps mod 2^16 |
-| 4 | `payload_len` | `uint16_t` | 2 | LE | bytes following the header, 0–503 |
-| 6 | `reserved` | `uint16_t` | 2 | LE | MUST be written 0, MUST be ignored on read |
-
-Per-field justification, by the call site or mock that forces it:
-
-* **`version` @0, 1 byte** — load-bearing in `decode`: `hdr->version !=
-  TOLLGATE_PROTO_VERSION → -1` (`tollgate_payment_proto.c:45-46`). The unit test
-  pins the gate from both sides: version 0, 2 and 255 must all be rejected
-  (`test_tollgate_payment_proto.c:194-212`), and the valid path asserts
-  `hdr.version == TOLLGATE_PROTO_VERSION` (`:91`, `:109`, `:276-277`). It must be
-  byte 0 of the *message* (i.e. byte 1 of the frame) because a receiver needs to
-  reject a foreign protocol before trusting `type`/`payload_len`; a hand-crafted
-  byte sequence in the unit test fixes it there (`:142-149`, first byte `0x01`).
-* **`type` @1, 1 byte** — pinned by `ack_hdr.type == TG_MSG_ACK` in three separate
-  pipeline tests (`test_relay_pipeline.c:374`, `:405`, `:513`) and by the
-  `check_hdr_fields` calls in the unit test. Must be exactly 1 byte and sit after
-  `version`, because the hand-crafted vector places the INFO type `0x05` at byte 1
-  (`test_tollgate_payment_proto.c:143`). All six enum values fit in 1 byte.
-* **`seq` @2, `uint16_t` LE** — the only header field the tracker firmware logic
-  consumes: `app_task.cpp:121,134,140` reads `hdr.seq` and echoes it into the ACK
-  (`tollgate_proto_encode(..., TG_MSG_ACK, hdr.seq, ...)`). Tests assert the echo
-  survives encode→decode: `ack_hdr.seq == 42` (`test_relay_pipeline.c:375`),
-  `h.seq == seq` for seq 100..104 (`:406`), `h.seq >= 200 && < 204` (`:514`), and
-  `hdr.seq == 1234/5678/9012/3456` in the round-trip table
-  (`test_tollgate_payment_proto.c:256-259`). 16 bits is sufficient (and is what the
-  upstream spec uses); the LE byte order is pinned by the hand-crafted vector
-  encoding seq=100 as `0x64, 0x00` (`:145`). The hardware harness compares the
-  echoed `seq` for equality (`test_tollgate_payack.py:305-313`), which is the
-  observable end-to-end consumer of this field.
-* **`payload_len` @4, `uint16_t` LE** — the framed-length contract. `decode`
-  rejects `payload_len > len - 8` (`tollgate_payment_proto.c:47-48`), so it is what
-  makes a truncated frame detectable: `payload_len = 100` with 50 bytes available
-  must fail, `payload_len = 50` with exactly 50 available must succeed, and one byte
-  short must fail (`test_tollgate_payment_proto.c:219-244`). Encode writes it
-  verbatim and the unit test reads it back (`:91`, `:109`). 16 bits is required
-  because the protocol's own token cap is 2048 (`TOLLGATE_MAX_TOKEN_LEN`) — a
-  `uint8_t` could not express it. LE pinned at `:146` (`0x05, 0x00` for 5).
-* **`reserved` @6, `uint16_t`** — the field that makes the header exactly 8 bytes.
-  That size is load-bearing arithmetic at three sites: `app_main.cpp:612` computes
-  the max payload as `RELAY_PACKET_MAX_SIZE - 1 - sizeof(tollgate_msg_hdr_t)`;
-  `app_task.cpp:132` and `test_relay_pipeline.c:143` pass
-  `RELAY_PACKET_MAX_SIZE - 1` as the buffer capacity for a message placed at
-  `data + 1`. The unit test asserts the size and the offset directly
-  (`test_tollgate_payment_proto.c:65`, `:73` — offset 6). Encode zeroes it
-  (`tollgate_payment_proto.c:26`) and the tests require 0 (`:91`, `:109`, `:277`).
-  **Decode does not validate it** — see DEVIATION-4.
-
-Header size = **8 bytes**, verified by execution on this branch (§10).
-
----
-
-## 3. `tollgate_ack_payload_t` — chosen layout
-
-14 bytes, `__attribute__((packed))`, little-endian, no padding. It is transmitted
-**as a raw struct image**, i.e. the C struct layout *is* the wire format.
-
-| Off | Field | Type | Bytes | Endian | Meaning |
-|---|---|---|---|---|---|
-| 0 | `session_id` | `uint32_t` | 4 | LE | 0 = no session established (v1: always 0) |
-| 4 | `expires_unix` | `uint32_t` | 4 | LE | session expiry, unix seconds (v1: always 0) |
-| 8 | `quota_bytes` | `uint32_t` | 4 | LE | data quota, 0 = unlimited / time-based (v1: 0) |
-| 12 | `price_sats` | `uint16_t` | 2 | LE | price charged, sats (v1: 0, `TODO: real price`) |
-
-Field-by-field justification:
-
-* **Total 14 bytes / no padding** — pinned by execution:
-  `sizeof(tollgate_ack_payload_t) == 14` is asserted in
-  `test_tollgate_payment_proto.c:289`. Because `app_task.cpp:136` and
-  `test_relay_pipeline.c:147` pass `sizeof(ack_payload)` as `payload_len`, any
-  padding byte would be transmitted as payload — hence `packed` is mandatory, not
-  stylistic.
-* **`session_id`, `expires_unix`, `quota_bytes`, `price_sats`** — these four exist
-  because the ACK is the *only* carrier of session information in the protocol, and
-  the whole payment flow terminates in them:
-  * `app_task.cpp:128-130` constructs the struct, zeroes it, and sets
-    `price_sats = 0` with `TODO: real price from config` — so `price_sats` is the
-    only field any tracker call site touches today, and it is a **zero sentinel**,
-    not a computed price.
-  * `test_tollgate_payment_proto.c:292-313` round-trips the struct through
-    encode/decode and reinterprets the payload pointer as
-    `const tollgate_ack_payload_t *` to assert `session_id` and `price_sats`
-    survive — this is the mock that forbids changing the layout.
-  * The hardware harness reads exactly these three concepts out of the ACK log
-    (`test_tollgate_payack.py:106-109`, `:180-192`: `SESSION_ID_PATTERN`,
-    `PRICE_PATTERN`, `EXPIRES_PATTERN`), and fails the round if it cannot
-    (`:458`). So `session_id` / `expires` / `price` are required to be *observable*
-    even though v1 transmits them as 0.
-  * `quota_bytes` is the only field with **no call-site justification at all** —
-    see the honest note in §8 (PROVENANCE-INVENTED-6).
-* **Field types are pinned by upstream, not by usage** — `uint32/uint32/uint32/
-  uint16` is byte-for-byte identical to the upstream struct
-  (`mesh-stack/.../tollgate_payment_proto.h:28-34`). No tracker call site requires
-  32-bit widths; the widths are kept for wire parity. Changing them changes the wire.
-
-`tollgate_pay_payload_t` (2048-byte `char token[]`, `tollgate_payment_proto.h:58-60`)
-and `tollgate_nack_payload_t` (130 bytes, `:71-74`) are declared for parity but have
-**no producer in this firmware**; see §8 and the checklist in §7.
-
----
-
-## 4. `TG_MSG_PAY` / `TG_MSG_ACK` values and the two tag namespaces
-
-### 4.1 Values (fixed, do not change)
+Normative declaration (already in the header; reproduced here as the contract):
 
 ```c
-TG_MSG_PAY  = 0x01   /* client → balloon: payment */
-TG_MSG_ACK  = 0x02   /* balloon → client: accepted + session info */
-TG_MSG_NACK = 0x03
-TG_MSG_STATUS = 0x04
-TG_MSG_INFO   = 0x05
-TG_MSG_REVOKE = 0x06
+typedef struct {
+    uint8_t  version;       /* offset 0 */
+    uint8_t  type;          /* offset 1 */
+    uint16_t seq;           /* offset 2 */
+    uint16_t payload_len;   /* offset 4 */
+    uint16_t reserved;      /* offset 6 */
+} __attribute__((packed)) tollgate_msg_hdr_t;   /* sizeof == 8, no padding */
 ```
 
-These are **not invented here** — they are copied verbatim from the upstream enum
-(`mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_balloon.h:31-38`),
-and independently mirrored by the Python hardware harness
-(`test_tollgate_payack.py:101-103`). They are also compiled into the tracker header
-(`tollgate_payment_proto.h:39-46`).
+| Offset | Field       | Type     | Bytes | Endianness | Meaning / rule |
+|-------:|-------------|----------|------:|------------|----------------|
+| 0 | `version`     | `uint8_t`  | 1 | — | Must be `TOLLGATE_PROTO_VERSION` (1). Encode always writes 1; decode rejects any other value. |
+| 1 | `type`        | `uint8_t`  | 1 | — | `tollgate_msg_type_t` value, 0x01–0x06 (§4). Both encode and decode reject values outside 1..6. |
+| 2 | `seq`         | `uint16_t` | 2 | little-endian | Sequence number for dedup; echoed verbatim by the balloon in the ACK. |
+| 4 | `payload_len` | `uint16_t` | 2 | little-endian | Bytes of payload following the header. Must equal `frame_len − 8` exactly on decode (truncation check). |
+| 6 | `reserved`    | `uint16_t` | 2 | little-endian | Encode writes 0. Decode does not require 0 (forward-compat) — unit tests pin round-trip of 0. |
+| | **Total** | | **8** | | Packed, no padding. |
 
-### 4.2 Relationship to the relay tags
+**Endianness:** all multi-byte fields serialize **little-endian**. Justification: (a) encode
+casts the caller buffer to the packed struct and writes native-endian fields, and both ends
+in this deployment are LE (ESP32-S3 Xtensa LX7, Linux/x86 host tests); (b) the unit test
+vector pins it: seq=100 is the byte pair `64 00` (`test_tollgate_payment_proto.c` test 5);
+(c) same packed-struct-cast technique as upstream. Caveat for implementers: a big-endian
+host would emit non-conforming frames; the contract norm is the LE byte order, not
+"whatever the host does".
+
+**Per-field justification (call site / mock that demands it):**
+
+- `version` — `app_task.cpp` and the mock must reject stale/garbage frames; unit test 7 pins
+  rejection of 0, 2, 0xFF. Inherited from upstream (`tollgate_balloon.h:41`).
+- `type` — dispatch (`TG_MSG_ACK` check at `test_relay_pipeline.c:374,405,513`); value-range
+  validation 1..6 is tracker-added hardening (tests 11, 12).
+- `seq` — the entire PAY→ACK path depends on it: `app_task.cpp:134` echoes `hdr.seq` into the
+  ACK; mock asserts `h.seq == 42` (TEST 4), `seq` 100–104 round-trip (TEST 5), `200..203`
+  preserved through mixed traffic (TEST 8); unit test 14 pins boundaries 0, 1, 0xFFFF.
+  Inherited from upstream.
+- `payload_len` — needed to make decode total-length safe without an outer length (tests 5,
+  8, 13). The ACK path relies on `payload_len` matching `sizeof(tollgate_ack_payload_t)=14`
+  so the mock can `decode(... ) > 0` then reinterpret the payload.
+- `reserved` — alignment/future-use; keeps the header 8 bytes. Upstream field; encode pins 0.
+
+`sizeof(tollgate_msg_hdr_t) == 8` and offsets 0/1/2/4/6 are asserted in unit test 1 and are
+**contract** (a padded 10- or 12-byte struct would be a violation, not a style choice).
+
+## 3. `tollgate_ack_payload_t` — field layout
+
+Normative declaration:
 
 ```c
-RELAY_TYPE_NOSTR_EVENT  = 0x01   /* relay_types.h:11 */
-RELAY_TYPE_TOLLGATE_PAY = 0x02   /* relay_types.h:12 */
-RELAY_TYPE_TOLLGATE_ACK = 0x03   /* relay_types.h:13 */
-RELAY_TYPE_TELEMETRY    = 0x04   /* relay_types.h:14 */
-RELAY_TYPE_RAW          = 0xFF   /* relay_types.h:15 */
+typedef struct {
+    uint32_t session_id;      /* offset 0  */
+    uint32_t expires_unix;    /* offset 4  */
+    uint32_t quota_bytes;     /* offset 8  */
+    uint16_t price_sats;      /* offset 12 */
+} __attribute__((packed)) tollgate_ack_payload_t;   /* sizeof == 14 */
 ```
 
-**The two namespaces live at different byte offsets and are never interchangeable.**
+| Offset | Field         | Type     | Bytes | Endianness | Meaning |
+|-------:|---------------|----------|------:|------------|---------|
+| 0 | `session_id`   | `uint32_t` | 4 | LE | Session identifier (balloon-assigned). |
+| 4 | `expires_unix` | `uint32_t` | 4 | LE | Session expiry, Unix seconds. |
+| 8 | `quota_bytes`  | `uint32_t` | 4 | LE | Data quota; 0 = unlimited/time-based. |
+| 12 | `price_sats`   | `uint16_t` | 2 | LE | Price actually charged, sats. |
+| | **Total** | | **14** | | Packed. |
 
-| Namespace | Byte offset | Meaning |
-|---|---|---|
-| `RELAY_TYPE_*` | frame offset **0** (`data[0]`) | which service the frame belongs to, and its direction |
-| `TG_MSG_*` | message offset **1** (`data[2]` in the frame) | the inner TollGate message type |
+**Per-field justification:**
 
-The canonical two packets of the payment flow:
+- Whole struct: `app_task.cpp:128-136` builds it on the stack, memsets it to 0, and passes
+  `(const char *)&ack_payload, sizeof(ack_payload)` to encode; the mock mirrors this
+  (`test_relay_pipeline.c:139-147`). Unit test 10 pins `sizeof == 14`; test 14 round-trips
+  all-`0xFFFFFFFF`/`0xFFFF` fields. Layout is byte-identical to upstream
+  (`mesh-stack/.../tollgate_payment_proto.h:29-34`).
+- `session_id` / `expires_unix` / `quota_bytes` — carried for the future real session logic;
+  current call sites zero them (session not yet implemented).
+- `price_sats` — `app_task.cpp:130` and mock line 141 set it to 0 with a
+  `TODO: real price from config`; unit tests 10 and 14 exercise values 0, 1, 21, `0xFFFF`,
+  so the field must round-trip the full uint16 range now, before config wiring lands.
 
-| Direction | `data[0]` | `data[2]` (`hdr.type`) | Shape |
-|---|---|---|---|
-| client → balloon (PAY) | `0x02` `RELAY_TYPE_TOLLGATE_PAY` | `0x01` `TG_MSG_PAY` | tag ≠ type |
-| balloon → client (ACK) | `0x03` `RELAY_TYPE_TOLLGATE_ACK` | `0x02` `TG_MSG_ACK` | tag ≠ type |
+Other payload structs in the same header (for completeness; not sent by current tracker call
+sites but part of the wire contract): `tollgate_pay_payload_t` = `char token[2048]`;
+`tollgate_nack_payload_t` = `int16_t error_code` + `char message[128]` packed — **130 bytes**
+(`2 + 128`; revision 1 of this file said "16 bytes", which was an arithmetic error;
+confirmed against `tollgate_payment_proto.h:71-74`), with
+`TG_ERR_INVALID_TOKEN −1`, `TG_ERR_SWAP_FAILED −2`, `TG_ERR_MINT_UNREACHABLE −3`,
+`TG_ERR_ALREADY_PAID −4`, `TG_ERR_RATE_LIMITED −5`. All inherited from upstream.
 
-### 4.3 The overlap is coincidental and is the number-one confusion hazard
+## 4. Message type values and relay-tag relationship
 
-`0x01`, `0x02`, `0x03`, `0x04` each mean two unrelated things in this protocol:
+```c
+typedef enum {
+    TG_MSG_PAY    = 0x01,  /* Client → Balloon: Cashu token payment */
+    TG_MSG_ACK    = 0x02,  /* Balloon → Client: payment accepted + session info */
+    TG_MSG_NACK   = 0x03,  /* Balloon → Client: payment rejected + reason */
+    TG_MSG_STATUS = 0x04,  /* Client → Balloon: request status/pricing */
+    TG_MSG_INFO   = 0x05,  /* Balloon → Client: status response */
+    TG_MSG_REVOKE = 0x06,  /* Balloon → Client: session revoked */
+} tollgate_msg_type_t;
+```
 
-| Value | As a relay tag | As a message type |
-|---|---|---|
-| `0x01` | `RELAY_TYPE_NOSTR_EVENT` | `TG_MSG_PAY` |
-| `0x02` | `RELAY_TYPE_TOLLGATE_PAY` | `TG_MSG_ACK` |
-| `0x03` | `RELAY_TYPE_TOLLGATE_ACK` | `TG_MSG_NACK` |
-| `0x04` | `RELAY_TYPE_TELEMETRY` | `TG_MSG_STATUS` |
+- Valid range: **0x01..0x06** (`TG_MSG_TYPE_MIN..MAX` in the .c). Encode and decode both
+  reject anything else. Boundaries are tested: 0x00, 0x07, 0xFF rejected; 0x01 and 0x06
+  accepted (unit tests 11, 12).
+- `TG_MSG_PAY = 0x01` and `TG_MSG_ACK = 0x02` are the two values exercised end-to-end:
+  PAY built by `build_tollgate_pay_packet()` (mock, line 207-210), ACK built by
+  `app_task.cpp:132-136` and mock lines 143-147.
+- **Relationship to relay tags:** the relay tag selects the pipeline dispatch case
+  (`case RELAY_TYPE_TOLLGATE_PAY:` at `app_task.cpp:115`); the inner `type` identifies the
+  TollGate message kind inside the framed message. They occupy different bytes and are
+  **independent namespaces** that happen to overlap numerically:
 
-Binding rules (normative):
+| Value | Relay tag (frame byte 0) | TollGate msg type (frame byte 1) |
+|------:|--------------------------|----------------------------------|
+| 0x01 | `RELAY_TYPE_NOSTR_EVENT` | `TG_MSG_PAY` |
+| 0x02 | `RELAY_TYPE_TOLLGATE_PAY` | `TG_MSG_ACK` |
+| 0x03 | `RELAY_TYPE_TOLLGATE_ACK` | `TG_MSG_NACK` |
+| 0x04 | `RELAY_TYPE_TELEMETRY` | `TG_MSG_STATUS` |
 
-1. Never compare `pkt.data[0]` against a `TG_MSG_*` constant.
-2. Never compare `hdr.type` against a `RELAY_TYPE_*` constant.
-3. Never derive one namespace's value from the other. In particular
-   `RELAY_TYPE_TOLLGATE_PAY == 0x02 == TG_MSG_ACK` is a collision, **not** an
-   identity: the PAY frame carries inner type `0x01`.
-4. A receiver MAY sanity-check the frame: for a TollGate frame,
-   `data[1] == TOLLGATE_PROTO_VERSION (0x01)`. This is what makes the two
-   namespaces independently detectable despite the numeric overlap.
-5. The tags are direction-bound: `RELAY_TYPE_TOLLGATE_PAY` marks client→balloon,
-   `RELAY_TYPE_TOLLGATE_ACK` marks balloon→client, regardless of which inner
-   message type is inside.
-6. Current firmware **dispatches only on `RELAY_TYPE_TOLLGATE_PAY`**
-   (`app_task.cpp:115`). A received `RELAY_TYPE_TOLLGATE_ACK` frame falls through to
-   the `default:` branch and is logged as an unknown packet type
-   (`app_task.cpp:151-154`) — the payer side does not parse returning ACKs.
+  Consequences that implementers MUST respect:
+  - `RELAY_TYPE_TOLLGATE_ACK == 0x03` does **not** mean the frame contains a NACK. The inner
+    `type` byte is authoritative for the message kind.
+  - The pipeline currently maps one tag to one inner type in practice
+    (tag 0x02 ⇒ `TG_MSG_PAY`, tag 0x03 ⇒ `TG_MSG_ACK`), but the protocol does not
+    require it; decode must be called and its `hdr.type` checked, exactly as the mock does
+    (`assert(h.type == TG_MSG_ACK)`, line 374).
+  - Tag constants are pinned by `test_relay_pipeline.c` TEST 12 (0x01/0x02/0x03/0x04/0xFF).
 
-### 4.4 Provenance note on the framing rule
-
-Upstream uses a 1-byte prefix too, but a different one: a *service mux* tag
-(`MESH_SVC_TOLLGATE = 0x01`, `MESH_SVC_NOSTR = 0x02`, `MESH_SVC_BLOSSOM = 0x03`;
-`mesh_service_mux.h:38-40`). The tracker's `RELAY_TYPE_*` table is a local
-re-invention of that shape with local values — so the tag values are **not**
-interoperable with upstream mesh frames. See §8 (PROVENANCE-INVENTED-2).
-
----
-
-## 5. `tollgate_proto_encode()` / `tollgate_proto_decode()`
-
-### 5.1 Exact prototypes
+## 5. Function prototypes and return-value semantics
 
 ```c
 int tollgate_proto_encode(uint8_t *buf, uint16_t buf_len,
@@ -298,459 +328,285 @@ int tollgate_proto_decode(const uint8_t *data, uint16_t len,
                           const uint8_t **payload);
 ```
 
-`tollgate_payment_proto.h:94-96` and `:107-109`. Note `buf`/`buf_len` are
-`uint16_t`/`uint8_t *` (host-portable, no `size_t`), and both functions are
-declared inside `extern "C"` (`:28-30`) because `app_task.cpp` / `app_main.cpp` are
-C++ translation units (`app_task.cpp:33`, `app_main.cpp:79`).
+### `tollgate_proto_encode`
 
-### 5.2 `tollgate_proto_encode()` — return-value semantics
+Writes `[hdr(8)][payload(payload_len)]` into `buf`. Returns:
 
-| Condition | Return |
-|---|---|
-| success | **total bytes written = `8 + payload_len`** (header then payload) |
-| `buf == NULL` | `-1` |
-| `buf_len < 8 + payload_len` | `-1` |
-| `payload_len == 0` | `8` (header only, payload pointer unused) |
+- **Success:** total bytes written = `sizeof(tollgate_msg_hdr_t) + payload_len`
+  (8 + N; header-only ⇒ 8). Always positive — required by the `if (ack_len > 0)` guards at
+  `app_task.cpp:137` and mock line 148.
+- **−1 on error**, zero bytes written in every error case (canary-proven, unit tests 12, 13):
+  - **E1 — `buf == NULL`;**
+  - **E2 — `type` outside 0x01..0x06** (checked before anything is written);
+  - **E3 — buffer too small: `buf_len < 8 + payload_len`.** Precise boundary: `buf_len ==
+    8 + payload_len` succeeds (exact fit, test 4/13 case 2); `buf_len == 7 + payload_len`
+    fails (test 13 case 1) and **leaves the buffer 100% untouched** — no partial header,
+    no partial payload.
+- **Clause E4 — `payload == NULL` with `payload_len > 0` MUST return −1 and write nothing.**
+  (`payload_status` was an unresolved either/or in revision 1; it is now normative.) The
+  header's own parameter doc reads "may be `NULL` **if** `payload_len == 0`", and no pinned
+  test exercises the lenient path. `payload` is therefore `NULL` **only when**
+  `payload_len == 0` — both real call sites rely on exactly that:
+  `build_tollgate_pay_packet` passes `NULL, 0`; `app_task.cpp`/`app_main.cpp` always pass a
+  real pointer with a non-zero length. Reason the lenient behaviour is forbidden: the
+  shipped `.c` (`.c:39-41` on the local lineage = `:28-30` on `origin/main`) skips the
+  `memcpy` yet still writes `hdr->payload_len = N` and returns `8 + N` (local `.c:43` /
+  `origin/main` `.c:32`), i.e. it emits a frame that claims N payload bytes which were never
+  written — a corrupt frame that the receiver cannot detect. **The shipped `.c` violates
+  clause E4 today — filed as defect DEF-1 in §7.1.**
+- Note: `buf_len` is `uint16_t`; the ACK call site passes `RELAY_PACKET_MAX_SIZE - 1` (511).
 
-Normative details:
+### `tollgate_proto_decode`
 
-1. **Return is a total length, not an offset.** Callers turn it into the frame
-   length with `+ 1` for the tag: `pkt.len = enc_len + 1`
-   (`app_main.cpp:634`, `app_task.cpp:138`, `test_relay_pipeline.c:149`, `:212`).
-2. **Buffer-too-small is all-or-nothing.** The capacity check happens *before* any
-   byte is written (`tollgate_payment_proto.c:18-19`), so a rejected call writes
-   nothing and leaves `buf` untouched — there is no partial message to mis-frame.
-   This must stay true: a caller that sees `-1` is entitled to retry with a larger
-   buffer or drop the packet, and must never have to truncate.
-3. **Exact fit must succeed.** `buf_len == 8 + payload_len` returns success, not
-   `-1` — asserted at `test_tollgate_payment_proto.c:124-126` (29 bytes into a
-   29-byte buffer). One byte less must fail (`:129-130`).
-4. **Strict inequality is `buf_len < 8 + payload_len`.** Written with integer
-   promotion of both `uint16_t` operands, so a pathological `payload_len` near
-   65535 cannot wrap the comparison into a false success.
-5. `payload == NULL && payload_len > 0` is **invalid and MUST return `-1`** — the
-   current implementation returns a success length while silently skipping the
-   copy, which is DEVIATION-1.
-6. `version` is always written from `TOLLGATE_PROTO_VERSION` and `reserved` always
-   as 0; callers cannot override either.
+Parses `[hdr(8)][payload]` from `data` (already tag-stripped). Returns:
 
-### 5.3 `tollgate_proto_decode()` — return-value semantics
+- **Success:** `sizeof(tollgate_msg_hdr_t)` (= 8), i.e. the payload offset. Satisfies both
+  the real caller (`>= 0`, `app_task.cpp:120`) and the mock (`> 0`, lines 133, 373, 404, 512)
+  — a decoder returning 0-on-success would break the mock; a decoder returning anything
+  but 8 would break both.
+- **−1 on error**, and `*payload` is never written on failure:
+  - **D1 — `hdr == NULL` MUST return −1 with no writes.** (Revision 1 was silent;
+    `TOLLGATE_PROTO_API.md` §7.3 flagged it.) Passing `hdr == NULL` today is undefined
+    behaviour, not a defined failure: the shipped `.c` (`:53` on the local lineage,
+    `:42` on `origin/main`) calls
+    `memcpy(hdr, ...)` unconditionally and segfaults. No pinned test and no consumer passes
+    `hdr == NULL`. **Defect DEF-2 (§7.1).**
+  - **D2 — `data == NULL`;**
+  - **D3 — too short:** `len < 8` (this is the buffer-too-small case for decode;
+    `len == 8 + payload_len` succeeds, `len == 7 + payload_len` fails — unit tests 6, 8);
+  - **D4 — `hdr->version != 1`;**
+  - **D5 — `hdr->type` outside 0x01..0x06;**
+  - **D6 — truncated payload:** `hdr->payload_len > len − 8`.
+- Post-failure state of `*hdr` (precise, callers must respect): for `data == NULL` or
+  `len < 8`, `*hdr` is untouched (unit test 13 case 4 pins this with a canary). For the
+  later checks (version/type/payload_len), the raw 8 header bytes have already been copied
+  into `*hdr` before rejection — do **not** inspect `*hdr` after a −1 return.
+- `payload` parameter may be `NULL` (caller not interested); on success it is set to
+  `data + 8` — a pointer **into the input buffer**, never a copy (unit test 5 pins
+  `payload == data + sizeof(hdr)`). Payload length is not returned separately; the caller
+  reads `hdr->payload_len`.
 
-| Condition | Return |
-|---|---|
-| success | **`sizeof(tollgate_msg_hdr_t)` = 8** — the payload *offset* |
-| `data == NULL` | `-1` |
-| `len < 8` | `-1` |
-| `hdr->version != TOLLGATE_PROTO_VERSION` | `-1` |
-| `hdr->payload_len > len - 8` | `-1` |
-| extra bytes beyond `8 + payload_len` | **tolerated** (still succeeds) |
+## 6. `CONFIG_ENABLE_TOLLGATE` guard pattern
 
-Normative details:
+The header itself contains **no** ifdef guards and must stay includable unconditionally
+(host tests include it bare, `test_relay_pipeline.c:83`). All guarding lives at the
+consumers and build system:
 
-1. **The return value is an offset, not a length.** It is always `8` on success. It
-   must never be used as the payload length or the consumed length — the payload
-   length is `hdr->payload_len`, read from the header. Every call site is
-   consistent with this (`app_task.cpp:120`, `test_relay_pipeline.c:133`, `:373`,
-   `:404`, `:512`). Because success is always `8`, both `ret >= 0`
-   (`app_task.cpp:120`) and `ret > 0` (`test_relay_pipeline.c:133`) are
-   behaviourally identical; `ret > 0` is the recommended form.
-2. **Validity = `len >= 8` AND `version == 1` AND `payload_len <= len - 8`.** The
-   `len >= 8` test precedes the subtraction, so no unsigned underflow is possible
-   (`tollgate_payment_proto.c:39-48`).
-3. **Trailing slack is tolerated.** Only an *over-claimed* `payload_len` is
-   rejected; a frame longer than `8 + payload_len` decodes fine and the surplus is
-   ignored. This is required so that padded/oversized radio frames are not dropped
-   mid-flight, and it is the reason the check is `>` rather than `!=`.
-4. **`hdr` is a required, non-NULL out-parameter**; `decode` copies 8 bytes into it
-   unconditionally. The current implementation does not guard `hdr == NULL`
-   (DEVIATION-2).
-5. **`payload` is an optional out-parameter.** When non-NULL it is always set to
-   `data + 8` on success, *including* when `payload_len == 0`. When NULL, decode
-   still succeeds — asserted at `test_tollgate_payment_proto.c:164-167`.
-6. The pointed-to payload aliases the caller's buffer (zero-copy, no allocation);
-   it is valid only for the lifetime of `data`.
-7. Decode does not validate `type` against the enum (an unknown type byte still
-   decodes) or `reserved`. Both are deliberate: `type` is checked by the caller,
-   `reserved` is reserved.
+1. **Kconfig** (`main/Kconfig.projbuild:141-147`): `config ENABLE_TOLLGATE`, bool,
+   `default n`, `depends on ENABLE_RELAY_MODE`.
+2. **CMake** (`main/CMakeLists.txt:29-31`): the source is compiled only when enabled:
+   `if(CONFIG_ENABLE_TOLLGATE) list(APPEND APP_SRCS "tollgate_payment_proto.c") endif()`.
+3. **app_task.cpp:32-33** — include guarded:
+   `#ifdef CONFIG_ENABLE_TOLLGATE` / `#include "tollgate_payment_proto.h"`.
+4. **app_task.cpp:114-145** — the entire `case RELAY_TYPE_TOLLGATE_PAY:` dispatch arm is
+   wrapped in `#ifdef CONFIG_ENABLE_TOLLGATE ... #endif`. When disabled, PAY-tagged packets
+   fall through to the `default:` "unknown packet type" arm (no ACK, no crash).
+5. **sdkconfig:576** — on the **published lineage** (`origin/main`, the branch that carries
+   this file) the tracked sdkconfig reads **`# CONFIG_ENABLE_TOLLGATE is not set`**
+   (measured 2026-09-27: `git show origin/main:tracker/firmware/sdkconfig | sed -n '576p'`;
+   it is the only `ENABLE_TOLLGATE` occurrence in the file). With Kconfig `default n`
+   (item 1) and the CMake guard (item 2), **the feature is compiled out at that head**:
+   `tollgate_payment_proto.c` is not in the build and the whole `case RELAY_TYPE_TOLLGATE_PAY:`
+   arm (item 4) is preprocessed away, so PAY-tagged packets fall through to `default:`.
+   Enabling the feature therefore requires a sdkconfig change (or porting commit `55d79702`,
+   which exists only on the local lineage `autonomous/mesh-baseline`, where the same line
+   reads `CONFIG_ENABLE_TOLLGATE=y`). A stale flag silently compiling the feature out is the
+   exact failure mode this guard pattern can hide; verify the flag after any sdkconfig
+   regeneration, and check **which lineage you are on** before trusting this line.
 
-### 5.4 Buffer-too-small, restated for the encode side
+Any new consumer of the header must follow the same pattern: `#ifdef CONFIG_ENABLE_TOLLGATE`
+around include and use, plus the CMake guard if a new .c file is added. The header must
+remain self-contained (`<stdint.h>`, `<stddef.h>` only — no `relay_types.h`, no ESP-IDF,
+no `tollgate_balloon.h`), because host unit tests compile it with plain gcc.
 
-The precise requirement, because three call sites depend on it:
+## 7. Constraints, known gaps, and filed defects
 
-* `buf_len == 8 + payload_len` → **success**, returns `8 + payload_len`.
-* `buf_len == 7 + payload_len` → `-1`, nothing written.
-* `buf == NULL` → `-1`, even if `buf_len` is large.
-* The capacity constant actually used by the firmware is `RELAY_PACKET_MAX_SIZE - 1`
-  = 511 (`app_task.cpp:133`, `test_relay_pipeline.c:144`, `app_main.cpp:626`), giving
-  the 503-byte payload ceiling of §1.
+### 7.1 Filed defects — shipped implementation deviates from this contract
 
----
+Both are **code** defects in `tracker/firmware/main/tollgate_payment_proto.c`. Neither is
+fixed by this card (recon/documentation only); each must be fixed with a test that first
+fails, and no existing consumer breaks when it is.
 
-## 6. The `CONFIG_ENABLE_TOLLGATE` guard pattern
+| ID | Clause | `.c` today | Required behaviour | Blast radius |
+|---|---|---|---|---|
+| **DEF-1** | §5 clause E4 | `payload_len > 0 && payload == NULL` → skips `memcpy`, still writes `hdr->payload_len = N`, returns `8 + N` (local `.c:39-43` = `origin/main` `.c:28-32`) | return −1, write nothing | none — no call site passes `NULL` with `payload_len > 0` |
+| **DEF-2** | §5 clause D1 | `memcpy(hdr, data, 8)` with no NULL check (local `.c:53` = `origin/main` `.c:42`) → segfault | return −1, write nothing | none — no call site passes `NULL` |
 
-### 6.1 The Kconfig symbol
+Line numbers are given for **both** lineages: the local `autonomous/mesh-baseline` copy is 66
+lines (hardening `38360fb1`), the published `origin/main` copy is 53 lines. A `.c` citation
+without a lineage label is meaningless here — e.g. `origin/main` `.c:39` is the *decode*
+guard `if (!data || len < 8) return -1;`, not the DEF-1 encode skip.
 
-```
-config ENABLE_TOLLGATE
-    bool "Enable TollGate payment processing (Cashu e-cash over mesh)"
-    default n
-    depends on ENABLE_RELAY_MODE
-```
-(`main/Kconfig.projbuild:141-148`)
+Both defects are detectable only by reading the implementation, which is why revision 1
+listed the first one as a "wart" and missed the second entirely.
 
-### 6.2 Required pattern
+### 7.2 Documentation gaps
 
-**The header itself must NOT be wrapped in the Kconfig guard.** It must remain a
-dependency-free, host-compilable declaration file containing only:
+- **G1 — CLOSED for the mock-protocol recon; still open for the rest of the recon set.**
+  `docs/recon/tollgate_proto_test_mock.md` is **tracked** on this branch by commit
+  `b8aa95bf` ("docs(recon): track tollgate_proto_test_mock.md — the mock-protocol recon
+  input was untracked"), 514 lines; §0.1's earlier claim that it was untracked was true only
+  before that commit, which is the immediately preceding commit of the branch that carries
+  this file. Still untracked (on both lineages): `tracker/firmware/docs/recon/raw_doc_scan.md`,
+  `tracker/firmware/.tollgate-recon-index.md` and `docs/recon/.tollgate_framing_notes.md`.
+  The recon index deliberately declares itself untracked; the others were blocked by a
+  permission gate.
+- **G2 — three of the four recon inputs exist only on the local lineage.** On `origin/main`
+  only `docs/recon/tollgate_proto_test_mock.md` is present; the app-task call-site recon
+  (`c45dec77`), the framing/config recon (`b7db8b31`), the sibling spec
+  `tracker/firmware/TOLLGATE_PROTO_API.md` (`2ab5058e`) and the upstream audit
+  (`a9b9126f`) are absent (measured 2026-09-27 with `git ls-tree -r origin/main --name-only
+  | grep -iE "recon|PROTO_API|payack"`; none of those commits is an ancestor of
+  `origin/main`). This file is therefore written to stand alone (§0.1) — porting those docs
+  onto the published branch would let a fresh clone read the primary evidence instead of
+  taking this document's word for it.
 
-1. the `#ifndef TOLLGATE_PAYMENT_PROTO_H` include guard,
-2. `<stdint.h>` / `<stddef.h>` only,
-3. `extern "C"` linkage guards.
+### 7.3 Constraints that are not defects
 
-Only three places may reference `CONFIG_ENABLE_TOLLGATE`, and they must agree:
-
-| Site | Pattern | Reference |
-|---|---|---|
-| **Include** in a consumer | `#ifdef CONFIG_ENABLE_TOLLGATE` … `#include "tollgate_payment_proto.h"` … `#endif` | `app_task.cpp:32-34`, `app_main.cpp:79` |
-| **Call sites** in a consumer | the *same* `#ifdef` must enclose the decode/encode logic, not just the include | `app_task.cpp:114-145`, `app_main.cpp:575-649`, `:670-673` |
-| **Source registration** | `if(CONFIG_ENABLE_TOLLGATE) list(APPEND APP_SRCS "tollgate_payment_proto.c") endif()` | `main/CMakeLists.txt` |
-
-Use `#ifdef`, never `#if`: ESP-IDF only defines `CONFIG_ENABLE_TOLLGATE` when the
-symbol is `y`; when it is `n` the macro is absent entirely.
-
-**Why the header must stay unguarded (this is the non-obvious part):** the host
-tests include the header and link the implementation *without any sdkconfig at all*
-(`.github/workflows/ci-host-tests.yml:41-46` compiles
-`main/test/test_relay_pipeline.c` + `main/tollgate_payment_proto.c` with plain
-`gcc -Wall -O2`, no `-DCONFIG_ENABLE_TOLLGATE`). Wrapping the header's contents in
-`#ifdef CONFIG_ENABLE_TOLLGATE` would make `relay_types`/`TG_MSG_*`/the payload
-structs vanish for those two suites and break both CI jobs. The guard belongs to
-*consumers of the header on-target*, not to the header.
-
-### 6.3 The failure mode this pattern exists to prevent (observed, not theoretical)
-
-When the symbol is off, every guarded block disappears and the feature compiles
-out **silently** — no warning, no link error. That actually happened on this
-branch: `sdkconfig.defaults.esp32s3` had `CONFIG_ENABLE_TOLLGATE=y` while the
-tracked `sdkconfig` still said `# CONFIG_ENABLE_TOLLGATE is not set`, and because
-ESP-IDF ignores `sdkconfig.defaults*` once a `sdkconfig` file exists, the tollgate
-code was compiled out (the `tollgate_send_pay` CLI command simply did not exist).
-Fixed by `97ac756` (the current tip of this branch). Consequence for this contract:
-
-> Enabling the feature requires `CONFIG_ENABLE_TOLLGATE=y` in the **tracked**
-> `sdkconfig`, not only in `sdkconfig.defaults.esp32s3`. A green build proves
-> nothing about the feature being present — verify by grepping the built image for
-> the symbol or by checking that `tollgate_send_pay` registers (`app_main.cpp:670-673`).
-
----
-
-## 7. Conformance checklist
-
-Every call site and mock usage was cross-checked against §1–§6 by reading the file
-and, where a claim is testable, by executing the suite (see §10).
-
-### 7.1 `tracker/firmware/main/app_task.cpp` (RX path, balloon side)
-
-| # | Site | Expectation from this contract | Status |
-|---|---|---|---|
-| A1 | `:32-34` `#ifdef CONFIG_ENABLE_TOLLGATE` around the `#include` | §6.2 guard on the include, not in the header | CONFORMS |
-| A2 | `:114-145` the whole `case RELAY_TYPE_TOLLGATE_PAY` inside the same guard | call sites guarded identically | CONFORMS |
-| A3 | `:90` `pkt_type = pkt.data[0]`, `:115` dispatched against `RELAY_TYPE_TOLLGATE_PAY` | §4.2 tag is byte 0 and is the RELAY namespace | CONFORMS |
-| A4 | `:120` `tollgate_proto_decode(pkt.data + 1, pkt.len - 1, &hdr, &payload) >= 0` | §1 frame offset +1, length −1; §5.3 success is `8 > 0` | CONFORMS (`> 0` preferred) |
-| A5 | `:121` `hdr.seq` used in the log line | §2 `seq` lives at hdr offset 2 | CONFORMS |
-| A6 | `:126` `ack_pkt.data[0] = RELAY_TYPE_TOLLGATE_ACK` | §4.2 tag = `0x03` for balloon→client | CONFORMS |
-| A7 | `:128-130` builds a zeroed `tollgate_ack_payload_t`, sets only `price_sats = 0` | §3 layout; v1 sends zeros | CONFORMS (values provisional) |
-| A8 | `:132-136` `encode(ack_pkt.data + 1, RELAY_PACKET_MAX_SIZE - 1, TG_MSG_ACK, hdr.seq, (const char *)&ack_payload, sizeof(ack_payload))` | §1 capacity 511; §4.2 inner type `TG_MSG_ACK`=0x02 ≠ tag 0x03; §3 raw 14-byte struct image; §2 seq echoed verbatim | CONFORMS |
-| A9 | `:137-139` `ack_pkt.len = ack_len + 1` then `xQueueSend` | §5.2 return is total length; §1 `pkt.len` includes the tag | CONFORMS |
-| A10 | the `payload` pointer is never dereferenced | see CHECKLIST NOTE N1 — payload content is opaque in v1 | CONFIRMED-BY-DESIGN |
-| A11 | no NACK / INFO / STATUS / REVOKE path, no token validation, no dedup | §8: declared-but-unimplemented; Kconfig help text slightly overstates behaviour | GAP (documented) |
-
-### 7.2 `tracker/firmware/main/test/test_relay_pipeline.c` (the mock)
-
-| # | Site | Expectation from this contract | Status |
-|---|---|---|---|
-| M1 | `:83` unguarded `#include "tollgate_payment_proto.h"` on host gcc | §6.2 header must stay Kconfig-free | CONFORMS |
-| M2 | `:129-154` mock `app_task` dispatch mirrors `app_task.cpp` | same frame offsets as A4/A8 | CONFORMS |
-| M3 | `:133` `decode(pkt->data + 1, pkt->len - 1, &hdr, &payload) > 0` | §5.3 | CONFORMS |
-| M4 | `:137` `ack_pkt.data[0] = RELAY_TYPE_TOLLGATE_ACK` | §4.2 tag 0x03 | CONFORMS |
-| M5 | `:139-141` zeroed `tollgate_ack_payload_t`, `price_sats = 0` | §3 | CONFORMS |
-| M6 | `:143-147` `encode(ack_pkt.data + 1, RELAY_PACKET_MAX_SIZE - 1, TG_MSG_ACK, hdr.seq, (const char *)&ack, sizeof(ack))` | §1, §3, §4.2 | CONFORMS |
-| M7 | `:148-150` `ack_len > 0` → `ack_pkt.len = ack_len + 1`, push to mock TX queue | §5.2 | CONFORMS |
-| M8 | `:201-215` `build_tollgate_pay_packet`: `data[0] = RELAY_TYPE_TOLLGATE_PAY`, `encode(…, TG_MSG_PAY, seq, NULL, 0)`, `pkt.len = enc_len + 1` | §1; §5.2 zero-length payload legal (`NULL` + `0` → `8`) | CONFORMS |
-| M9 | `:368` `ack_pkt.data[0] == RELAY_TYPE_TOLLGATE_ACK` (TEST 4) | §4.2 | CONFORMS |
-| M10 | `:374-375` `ack_hdr.type == TG_MSG_ACK`, `ack_hdr.seq == 42` (TEST 4) | §2 `type`, §2 `seq` echo | CONFORMS |
-| M11 | `:400`, `:405-406` (TEST 5, seq 100..104) | §2 seq echo | CONFORMS |
-| M12 | `:509`, `:513-514` (TEST 8, seq 200..203) | §2 seq echo | CONFORMS |
-| M13 | `:622-626` `RELAY_TYPE_*` constant asserts (`0x01/0x02/0x03/0x04/0xFF`) | §4.2 tag values frozen | CONFORMS |
-| M14 | `:619` `sizeof(relay_packet_t) >= 512 + …` | §1 capacity basis | CONFORMS |
-| M15 | TEST 10 `len == 0` → no crash, no TX | §1 `app_task.cpp:90` reads `data[0]` only when `len > 0`; contract implies no frame ⇒ no message | CONFORMS |
-
-### 7.3 Peripheral consumers (not in the acceptance list, checked for completeness)
-
-| # | Site | Expectation | Status |
-|---|---|---|---|
-| P1 | `main/app_main.cpp:575, 612-646` `tollgate_send_pay` CLI | §1 `data[0]=0x02`, `encode(data+1, MAX-1, TG_MSG_PAY, seq, payload, len)`, `pkt.len = enc_len+1`; §1.4 503-byte ceiling computed at `:612` | CONFORMS |
-| P2 | `main/app_main.cpp:591` `static uint32_t s_tollgate_seq` cast to `uint16_t` at `:627` | §2 `seq` is 16-bit; the counter wraps at 65535 as the cast implies | CONFORMS (see DEVIATION-6 for the type) |
-| P3 | `main/app_main.cpp:670-673` CLI registration inside `#ifdef CONFIG_ENABLE_TOLLGATE` | §6.2 | CONFORMS |
-| P4 | `main/test/test_tollgate_payment_proto.c` (83 assertions) | §2 offsets/size, §3 size=14, §5.2 exact-fit/NULL, §5.3 short/bad-version/truncated — **executed: 83/83 pass** | CONFORMS |
-| P5 | `test/integration/test_tollgate_payack.py:97-103` Python mirror of the constants | §4.1/§4.2 values match the C header exactly | CONFORMS (constants only) |
-| P6 | `main/CMakeLists.txt` conditional `APP_SRCS` append | §6.2 | CONFORMS |
-| P7 | `.github/workflows/ci-host-tests.yml:41-46` builds both host suites with no Kconfig | §6.2 (header must be Kconfig-free) | CONFORMS |
-
-### 7.4 Checklist notes
-
-* **N1** — `app_task.cpp:118/120` takes `&payload` from `decode()` but never reads
-  the payload bytes; the ACK carries no token data. So **the internal format of the
-  PAY payload is not pinned by any tracker call site** in v1: `app_main.cpp:603-608`
-  sends either a raw token string or the literal `{"token":"test"}`, and both are
-  accepted by the balloon. This contract therefore declares the PAY payload
-  *opaque application data* of length `payload_len` — chosen deliberately, because
-  inventing a format here would contradict the observation that no code consumes it.
-* **N2** — `tollgate_pay_payload_t` is a declared-but-unused 2048-byte struct. No
-  call site instantiates it, so it imposes no wire requirement, but note that
-  instantiating it on a FreeRTOS task stack is a real hazard (2 KB).
-* **N3** — all three producer log lines that the hardware harness parses are part of
-  the *de-facto* interface even though they are not wire format:
-  `app_task.cpp:121` (`TollGate PAY received (seq=%u)`), `:140`
-  (`TollGate ACK queued (seq=%u)`), `app_main.cpp:645`
-  (`tollgate_send_pay: queued %u bytes (seq=%u, …)`). Changing these strings breaks
-  `test_tollgate_payack.py` silently. Frozen by this contract as an observability
-  interface.
-* **N4** — the harness compares PAY and ACK `seq` for exact equality
-  (`test_tollgate_payack.py:305-313`), which is the end-to-end reason the echo
-  semantics of §2 are normative.
-
----
+- **Token/PAY size mismatch:** `TOLLGATE_MAX_TOKEN_LEN` (2048) is inherited from the upstream
+  UDP framing where a datagram can carry it. On the relay pipeline a framed message is
+  capped at 511 bytes (payload ≤ 503), so a full-size Cashu token cannot cross the mesh in
+  one relay packet. Current call sites never send a real token (PAY is built header-only in
+  tests; app_task only ever *receives* PAY and *sends* ACK). Real token transport needs a
+  future decision (chunking, compression, or cap) — out of scope here, but the contract
+  must not pretend it fits.
+- **Upstream divergence on payload kind:** the upstream header documents JSON payloads
+  (ADR-100 open question 2 chose "JSON initially") and names the parameter `json_payload`.
+  The tracker copy renamed it to `payload` and sends the **packed binary**
+  `tollgate_ack_payload_t` — wire-incompatible with an upstream JSON ACK. The two copies are
+  header/struct-compatible but payload-interpretation is per-deployment.
+- **Decode success check differs by caller** (`>= 0` in app_task.cpp vs `> 0` in the mock).
+  The return contract in §5 (8 on success, −1 on error) satisfies both; never return 0.
+- **`seq` narrowing:** call sites hold `uint32_t` seq values and cast to `uint16_t` at the
+  encode boundary (mock lines 209, 387). Values ≥ 65536 alias; callers must keep seq
+  counters under 65536 or accept wrap semantics (dedup is the seq's purpose).
 
 ## 8. Provenance
 
-### 8.1 From the upstream spec (values/types copied, not invented)
+### Inherited from upstream (mesh-stack `tollgate_balloon` component / ADR-100)
 
-| Item | Upstream source | Tracker location | Fidelity |
-|---|---|---|---|
-| `TG_MSG_*` enum values 0x01–0x06 | `tollgate_balloon.h:31-38` | `tollgate_payment_proto.h:39-46` | identical |
-| `tollgate_msg_hdr_t` fields, order, types | `tollgate_balloon.h:40-46` | `:49-55` | identical (incl. `packed`) |
-| `TOLLGATE_PROTO_VERSION = 1` | `tollgate_balloon.h:48` | `:33` | identical value |
-| `TOLLGATE_MAX_TOKEN_LEN = 2048` | `tollgate_balloon.h:28` | `:36` | identical value |
-| `tollgate_ack_payload_t` layout | `tollgate_payment_proto.h:28-34` | `:63-68` | byte-identical |
-| `tollgate_nack_payload_t` layout | `tollgate_payment_proto.h:37-40` | `:71-74` | byte-identical |
-| `TG_ERR_*` codes −1…−5 | `tollgate_payment_proto.h:43-47` | `:77-81` | identical |
-| `tollgate_proto_encode()` signature | `tollgate_payment_proto.h:64-66` | `:94-96` | identical |
-| `tollgate_proto_decode()` signature | `tollgate_payment_proto.h:73-75` | `:107-109` | identical |
-| encode/decode behaviour | `…/src/tollgate_payment_proto.c:14-54` | `tollgate_payment_proto.c:14-54` | logic identical; the tracker adds a `(uint16_t)` cast on the `sizeof` comparison, which is semantically inert |
+| Item | Upstream source |
+|---|---|
+| 8-byte packed header, fields and offsets (version/type/seq/payload_len/reserved) | `tollgate_balloon.h:40-46` |
+| `tollgate_msg_type_t` values 0x01–0x06 with directions | `tollgate_balloon.h:31-38` |
+| `TOLLGATE_PROTO_VERSION = 1` | `tollgate_balloon.h:48` |
+| `TOLLGATE_MAX_TOKEN_LEN = 2048` | `tollgate_balloon.h:28` |
+| `tollgate_ack_payload_t` (14-byte packed layout) | upstream `tollgate_payment_proto.h:29-34` |
+| `tollgate_nack_payload_t`, `TG_ERR_*` codes −1..−5 | upstream `tollgate_payment_proto.h:37-47` |
+| `tollgate_pay_payload_t` (`char token[2048]`) | upstream `tollgate_payment_proto.h:24-26` |
+| encode/decode function shapes, "total bytes written" / "payload offset" returns | upstream `tollgate_payment_proto.h:60-75` |
+| `[hdr(8)][payload]` wire format, UDP port 2121 framing | ADR-100 |
 
-Note: the upstream declarations live in **two** headers
-(`tollgate_msg_type_t`/`tollgate_msg_hdr_t`/`TOLLGATE_PROTO_VERSION`/
-`TOLLGATE_MAX_TOKEN_LEN` in `tollgate_balloon.h`, the payload structs and prototypes
-in `tollgate_payment_proto.h`); the header's cross-reference to
-`mesh-stack/tollgate/components/tollgate_balloon/` is therefore accurate.
+### Tracker-local inventions / deltas (with reasons)
 
-### 8.2 Invented / local decisions, with reasons
+| Invention | Reason |
+|---|---|
+| Self-contained header: enum + hdr + version + token-len inlined; `#include "tollgate_balloon.h"` removed | Upstream include drags in `tollgate_core`/`esp_err_t`; the tracker copy must compile with host gcc for unit tests and must not depend on the tollgate component |
+| Parameter renamed `json_payload` → `payload` | `app_task.cpp:135` passes a packed binary struct (`(const char *)&ack_payload`), not JSON — the tracker use is payload-kind-agnostic (see §7 divergence note) |
+| `tg_type_is_valid()` bounds check (1..6) in **encode** and **decode** | Upstream validated neither; hardening demanded by unit tests 11/12 (commit 38360fb1) — a bogus type byte must not enter or leave the device |
+| No-write-on-failure guarantee pinned for encode; hdr-untouched pinned for truncated decode | Canary tests 12/13 (commit 38360fb1) — encode rejections must not partially scribble a radio buffer |
+| `RELAY_TYPE_*` 1-byte tag prefix framing | Tracker relay pipeline (relay_types.h / radio↔app queues) — upstream framing was a bare UDP datagram on port 2121 with no tag byte. This is the transport delta of ADR-100 → tracker pipeline |
+| Guard pattern: include + dispatch arm + CMake all behind `CONFIG_ENABLE_TOLLGATE`, header itself unguarded | Kconfig feature-gating (default n) while keeping host tests compilable |
+| **Not ported:** `tollgate_proto_build_info_json()` | No tracker call site builds INFO JSON; keeping it out avoids a malloc'd-string API on device |
 
-**PROVENANCE-INVENTED-1 — the four shared declarations were relocated into the
-proto header.** Upstream's proto header does `#include "tollgate_balloon.h"`, which
-pulls `tollgate_platform.h` and `esp_err.h` — not host-compilable. The tracker header
-therefore *redeclares* the enum, the header struct, the version and the token cap
-locally so that it compiles with plain `gcc` (values unchanged). Reason: CI suites 2
-and P4 build it with no ESP-IDF. Cost: the values now exist in two places and can
-drift; this document is the tie-breaker.
+## 9. Conformance checklist — every call site and mock usage
 
-**PROVENANCE-INVENTED-2 — the 1-byte relay tag and its `0x02`/`0x03` values.**
-Upstream's framing prefix is a *service mux* id (`MESH_SVC_TOLLGATE = 0x01`) applied
-to FIPS mesh datagrams. The tracker has a different transport (`relay_packet_t` over
-the LR2021/FLRC relay pipeline) and invented `RELAY_TYPE_TOLLGATE_PAY = 0x02` /
-`RELAY_TYPE_TOLLGATE_ACK = 0x03` in `relay_types.h:12-13`, validated only by
-`test_relay_pipeline.c:622-626`. Reason: the tracker must demultiplex TollGate from
-Nostr events and telemetry inside one radio frame, and `0x01`/`0x04` were already
-taken by `RELAY_TYPE_NOSTR_EVENT`/`RELAY_TYPE_TELEMETRY`. Consequence: the 1-byte
-prefix is **not** interoperable with upstream mesh frames — a mesh-side integrator
-must translate the tag. This invention is the direct cause of the numeric collisions
-in §4.3.
+**app_task.cpp** (all under `#ifdef CONFIG_ENABLE_TOLLGATE`):
 
-**PROVENANCE-INVENTED-3 — the ACK payload is a raw packed binary struct, not
-JSON.** ADR-002 explicitly leaves the message format open and *proposes* JSON
-(`docs/adr/002-tollgate-over-fips-mesh-udp.md:83-84`), and upstream's proto header
-comment says "Payloads are JSON for v1" while simultaneously declaring the packed
-binary structs (an internal contradiction upstream). The tracker resolved it to
-binary-packed, justified by its only call site: `app_task.cpp:135` passes
-`(const char *)&ack_payload` with `sizeof(ack_payload)`, and
-`test_tollgate_payment_proto.c:311-313` reinterprets the decoded payload pointer as
-`const tollgate_ack_payload_t *`. Reason: no JSON codec is linked into the tracker's
-ACK path and the fixed 14-byte struct is cheaper than formatting JSON on a balloon.
-This is a documented deviation from the ADR's proposal, not an oversight.
+- [x] L32-33 include inside the ifdef — header self-contained (§6)
+- [x] L90 outer dispatch reads tag from byte 0 only when `pkt.len > 0` — empty packets fall to RAW/default, never reach decode
+- [x] L117 `tollgate_msg_hdr_t hdr;` on stack — struct is 8 packed bytes (§2)
+- [x] L120 `tollgate_proto_decode(pkt.data + 1, pkt.len - 1, &hdr, &payload) >= 0` — tag stripped; success = 8 ≥ 0 (§5)
+- [x] L121/140 `hdr.seq` used for log + echo — seq round-trips (§2)
+- [x] L126 ACK tag byte written at `data[0]` — outside the message (§1)
+- [x] L128-129 `tollgate_ack_payload_t` memset to 0 — 14 packed bytes (§3)
+- [x] L130 `ack_payload.price_sats = 0` — uint16_t field (§3)
+- [x] L132-136 `encode(ack_pkt.data + 1, RELAY_PACKET_MAX_SIZE - 1, TG_MSG_ACK, hdr.seq, (const char *)&ack_payload, sizeof(ack_payload))` — arg types match prototype; 8+14=22 ≤ 511 (§5)
+- [x] L137 `ack_len > 0` — success return 22 > 0 (§5)
+- [x] L138 `ack_pkt.len = ack_len + 1` = 23 ≤ 512 (§1)
 
-**PROVENANCE-INVENTED-4 — decode tolerates trailing bytes; `payload_len` over-claim
-is the only truncation signal.** Upstream's `if (hdr->payload_len > len -
-sizeof(hdr))` happens to behave this way, but neither the upstream comment nor
-ADR-002 states the tolerance as a rule. It is stated here because the tracker's
-frame is radio-delivered and may be padded.
+**test_relay_pipeline.c** (mock + helpers):
 
-**PROVENANCE-INVENTED-5 — `reserved` must be ignored by receivers.** Upstream labels
-it "Alignment / future use" but never says what a receiver does with a non-zero
-value; the tracker implementation writes 0 and does not check it. Resolved here as
-"write 0, ignore on read" so that a future use is not a breaking change, and so that
-`decode` never rejects a frame for a field it cannot interpret.
+- [x] L83 bare `#include "tollgate_payment_proto.h"` — must compile with host gcc, no Kconfig (§6)
+- [x] L104 mock drops `pkt->len == 0` before dispatch — decode never sees len 0 as PAY path
+- [x] L129-154 PAY→ACK arm mirrors app_task, decode checked `> 0` — success = 8 > 0 (§5)
+- [x] L137/141 tag byte + `ack.price_sats = 0` (§3)
+- [x] L143-147 encode with `(const char *)&ack, (uint16_t)sizeof(ack)` — binary ACK payload, cast chain matches prototype (§5)
+- [x] L148/149 `ack_len > 0`, `ack_pkt.len = ack_len + 1` (§5)
+- [x] L201-215 `build_tollgate_pay_packet`: encode with `NULL, 0` payload — NULL allowed when len == 0 (§5); `assert(enc_len > 0)` ⇒ header-only encode returns 8 (§5); `(uint16_t)seq` narrowing (§7); `pkt->len = enc_len + 1`
+- [x] L371-375 ACK frame decode: tag byte checked, `h.type == TG_MSG_ACK`, `h.seq == 42` round-trip (§2, §4)
+- [x] L402-406 seq 100–104 round-trip through encode/decode
+- [x] L503-515 mixed traffic: exactly 4 ACKs, tag byte on each, decode `> 0`, `TG_MSG_ACK`, seq window 200–203 preserved
+- [x] L622-626 TEST 12 pins relay tag constants 0x01/0x02/0x03/0x04/0xFF (§4)
 
-**PROVENANCE-INVENTED-6 — `quota_bytes` has no tracker justification.** It is copied
-from upstream for wire parity. No tracker call site sets it, no test asserts its
-value, and the Kconfig help text does not mention quotas. It is retained only because
-dropping it would change the 14-byte wire layout and break upstream parity. Flagged
-as the one ACK field with no call-site consumer.
+**test_tollgate_payment_proto.c** (wire-level pins — tests 1–10 exist and pass on **both**
+lineages; tests 11–14 exist **only on the local lineage** `autonomous/mesh-baseline`):
 
-**PROVENANCE-INVENTED-7 — the error model (`-1` + no partial write; NULL payload with
-non-zero length invalid; `hdr` required non-NULL).** Upstream returns `-1` without
-specifying write behaviour on failure and without guarding these inputs. The stricter
-semantics are fixed here because three call sites treat `-1` as "nothing was queued"
-(`app_task.cpp:137`, `app_main.cpp:629`, `test_relay_pipeline.c:148`).
+- [x] Test 1: `sizeof(hdr) == 8`, field offsets 0/1/2/4/6 (§2)
+- [x] Test 2/3: encode returns `8 + payload_len`; header-only returns 8; `reserved` written 0 (§2, §5)
+- [x] Test 4: overflow → −1; exact fit (29) succeeds; one-byte-short → −1; NULL buf → −1 (§5)
+- [x] Test 5: hand vector `01 05 64 00 05 00 00 00 "hello"` decodes; payload pointer == data+8; NULL payload-out param allowed; LE seq bytes `64 00` (§2, §5)
+- [x] Test 6: len < 8, len == 0, NULL data → −1 (§5)
+- [x] Test 7: version 0/2/0xFF → −1 (§2)
+- [x] Test 8: `payload_len` > available → −1; exact fit succeeds; total one-byte-short → −1 (§5)
+- [x] Test 9: round-trip PAY/ACK/NACK/INFO with payload equality
+- [x] Test 10: `sizeof(tollgate_ack_payload_t) == 14`; ACK struct round-trips through encode/decode (§3)
+- [x] Test 11 *(local lineage only)*: decode rejects type 0x00/0x07/0xFF, accepts boundary 0x01/0x06 (§4)
+- [x] Test 12 *(local lineage only)*: encode rejects type 0/99/0xFF **without touching the buffer** (§5)
+- [x] Test 13 *(local lineage only)*: canary — short encode writes nothing; exact fit leaves trailing bytes untouched; hdr-only fit; truncated decode leaves hdr + canary intact (§5)
+- [x] Test 14 *(local lineage only)*: seq ∈ {0,1,0xFFFF} and price_sats ∈ {0,1,0xFFFF} round-trip; all-max ACK fields round-trip (§2, §3)
 
-**PROVENANCE-INVENTED-8 — the `CONFIG_ENABLE_TOLLGATE` guard pattern.** Upstream
-components are not Kconfig-gated per feature; the tracker's guard convention (and the
-"header stays unguarded" rule) is local, derived from the two host test suites that
-compile the header with no sdkconfig. The silent-compile-out failure mode is
-evidenced by commit `97ac756`.
-
-**PROVENANCE-INVENTED-9 — ADR-002 is cited but does not specify this layout.**
-`tollgate_payment_proto.h:8` says "Wire format (ADR-002)". A full read of ADR-002
-shows it specifies the *transport* (TollGate as L7 over FIPS mesh UDP, port 2121,
-nucula wallet unchanged) and leaves "Payment message format: JSON over UDP? CBOR?
-Protocol buffers?" as an **Open Question** (lines 83-84). The byte-level 8-byte header
-comes from the `tollgate_balloon` component code, not from ADR-002. The citation is
-therefore loose; this document is the correct byte-level authority.
-
-### 8.3 Upstream capabilities the tracker does NOT implement (honest scope)
-
-The header comment claims "Wire-compatible with the tollgate component's version" —
-true for the header, the ACK/NACK payloads and the enum values, but **not** API- or
-behaviour-complete:
-
-1. `tollgate_proto_build_info_json()` exists upstream
-   (`tollgate_payment_proto.h:81-84`) and is **absent** from the tracker header.
-2. `TG_MSG_NACK`, `TG_MSG_STATUS`, `TG_MSG_INFO`, `TG_MSG_REVOKE` are declared but
-   have **no producer or consumer** in the tracker.
-3. `TG_MSG_PAY` payload semantics (token encoding) are unimplemented on the receiver:
-   no token parsing, no Cashu validation, no mint contact — despite
-   `Kconfig.projbuild:146-148` saying the feature "validates Cashu tokens". The
-   current ACK is unconditional on PAY receipt (`app_task.cpp:115-144`).
-4. `session_id` / `expires_unix` / `quota_bytes` are transmitted as zeros; the ACK
-   conveys no session.
-
-A conforming implementation of this contract is therefore *interoperable on the
-wire* with upstream for PAY and ACK, and *not* a complete TollGate implementation.
-
----
-
-## 9. Deviations between this contract and the current implementation
-
-These are stated, not fixed — fixing them is implementation work outside this task.
-Each is a place where the code does not satisfy §5. The shipped tests pass either way
-(they do not exercise these paths), so none is currently caught by CI.
-
-**DEVIATION-1 (correctness) — `encode` reports a length it did not write.**
-`tollgate_payment_proto.c:28-30` copies the payload only when
-`payload_len > 0 && payload != NULL`, but `:18` admits the call and `:32` returns
-`8 + payload_len` regardless. So `encode(buf, 256, TG_MSG_PAY, 1, NULL, 20)` returns
-`28` while leaving 20 uninitialised bytes in the frame, which are then transmitted as
-"payload". Contract requires `-1` (§5.2 item 5). No call site triggers it today
-(`app_main.cpp:603` always has a non-NULL string; `test_relay_pipeline.c:207-210`
-passes `NULL` with length `0`), but the CLI would hit it the moment a caller passes
-`payload_len > 0` with a NULL pointer.
-
-**DEVIATION-2 (robustness) — `decode` dereferences `hdr` without a NULL check.**
-`tollgate_payment_proto.c:42` `memcpy(hdr, …)`. Contract §5.3 item 4 makes `hdr`
-required non-NULL; a conforming implementation should return `-1` instead of invoking
-undefined behaviour. All current call sites pass a valid `&hdr` (A4, M3, M10).
-
-**DEVIATION-3 (latent) — the 503-byte budget is a call-site constant, not an
-enforced protocol limit.** `app_main.cpp:612` computes
-`RELAY_PACKET_MAX_SIZE - 1 - sizeof(tollgate_msg_hdr_t)` inline; `app_task.cpp` does
-not check the ceiling at all (its ACK is always 22 bytes, so it cannot exceed it
-today). `TOLLGATE_MAX_TOKEN_LEN` is 2048, four times what the relay frame can carry,
-so a 2048-byte token is rejected only by `encode`'s capacity check at the call site
-that remembers to pass 511. Contract §1 requires the ceiling to be a single named
-constant equal to 503 and enforced in the encode path (see §11 item 3).
-
-**DEVIATION-4 (unstated, currently harmless) — `reserved` is not validated.** By
-design per PROVENANCE-INVENTED-5; recorded here only so that "decode accepts a
-non-zero `reserved`" is not mistaken for a bug later.
-
-**DEVIATION-5 (portability) — the wire layout is host-endianness dependent.**
-The header/struct fields are written by direct C struct assignment
-(`tollgate_payment_proto.c:21-26`), so the byte order is the host's. All hosts in play
-(Xtensa LX7 on the ESP32-S3, x86-64 for the host tests) are little-endian, and
-`test_tollgate_payment_proto.c:145-146` hard-codes LE (`0x64,0x00` = 100,
-`0x05,0x00` = 5), which passes on both. The contract fixes **little-endian** as the
-wire format, so a conforming implementation must serialise explicitly
-(byte-by-byte or LE accessors) rather than relying on host order — otherwise the
-protocol silently changes on a big-endian target.
-
-**DEVIATION-6 (cosmetic, but a wrap hazard) — the producer's counter is wider than
-the field.** `app_main.cpp:591` `static uint32_t s_tollgate_seq` is narrowed by
-`(uint16_t)` at `:627`. The wire contract is 16-bit; the counter should be `uint16_t`
-so that wrap behaviour is explicit rather than implied by a cast.
-
-**DEVIATION-7 (contract documentation, not code) — "u16 echo token" semantics are
-not stated on this branch.** The mesh-baseline header says only "Sequence number for
-dedup" (`tollgate_payment_proto.h:52`), which is wrong on two counts: there is **no
-deduplication anywhere** in the firmware, and the actual semantics are *echo*:
-`app_task.cpp:134` copies the requester's `seq` into the ACK and
-`test_tollgate_payack.py:305-313` requires exact equality. §2 of this document fixes
-the wording; a future header revision should carry it (see §11 item 2).
-
----
-
-## 10. Verification performed
-
-All commands run in the task worktree checked out at branch
-`autonomous/mesh-baseline` (`97ac756`), `tracker/firmware/`:
+**Verification record — local lineage** (`autonomous/mesh-baseline`, `~/repos/balloon`,
+2026-09-14, re-run 2026-09-27):
 
 ```
-$ gcc -Wall -Wextra -O2 -I main -o /tmp/test_tg_proto \
-      main/test/test_tollgate_payment_proto.c main/tollgate_payment_proto.c \
-  && /tmp/test_tg_proto
-=== Results: 83 passed, 0 failed ===        # exit 0
-# pins: sizeof(hdr)==8, field offsets 0/1/2/4/6, LE byte order, exact-fit encode,
-#       NULL-buffer -1, decode offset==8, version gate, truncation gate,
-#       sizeof(ack_payload)==14, ACK round-trip
+gcc -Wall -O2 -I main -o /tmp/test_tgproto main/test/test_tollgate_payment_proto.c \
+    main/tollgate_payment_proto.c          && /tmp/test_tgproto
+  → === Results: 133 passed, 0 failed ===   (exit 0)   # 14 test functions
 
-$ gcc -Wall -O2 -I main -I components/nostr_store/include -o /tmp/test_relay_pipeline \
-      main/test/test_relay_pipeline.c main/tollgate_payment_proto.c \
-      components/nostr_store/nostr_store.c \
-  && /tmp/test_relay_pipeline
-=== Results: 12/12 passed ===               # exit 0
-# pins: the mock dispatch (M2-M12), RELAY_TYPE_* values (M13), frame len = enc+1 (M7/M8)
+gcc -Wall -O2 -I main -I components/nostr_store/include -o /tmp/test_relay \
+    main/test/test_relay_pipeline.c main/tollgate_payment_proto.c \
+    components/nostr_store/nostr_store.c   && /tmp/test_relay
+  → === Results: 12/12 passed ===           (exit 0)
 ```
 
-These are the same two invocations CI uses
-(`.github/workflows/ci-host-tests.yml:41-46`); both suites are green on this branch,
-which is why §7 can assert CONFORMS for the sites those tests cover, and why §9's
-deviations are marked as not currently caught by CI.
+**Re-verification record — published branch** (`origin/main`, head
+`68c27cdda74f0f87b57029be42dd118b633f9c24`, in the `~/worktrees/tollgate-contract-recon`
+worktree, 2026-09-27, card `balloon:t_c360db44`): the *same* commands run against the tree
+that actually carries this file yield **different, smaller** totals, because hardening
+`38360fb1` and tests 11–14 are not on this lineage:
+
+```
+cd tracker/firmware
+gcc -Wall -O2 -I main -o /tmp/test_tgproto_om main/test/test_tollgate_payment_proto.c \
+    main/tollgate_payment_proto.c          && /tmp/test_tgproto_om
+  → === Results: 83 passed, 0 failed ===    (exit 0)   # 10 test functions, 334-line file
+gcc -Wall -O2 -I main -I components/nostr_store/include -o /tmp/test_relay_om \
+    main/test/test_relay_pipeline.c main/tollgate_payment_proto.c \
+    components/nostr_store/nostr_store.c   && /tmp/test_relay_om
+  → === Results: 12/12 passed ===           (exit 0)
+```
+
+So: **133/133 is the local-lineage figure and 83/83 is the published-branch figure** — the
+earlier revision of this section printed only the local number under a §9 heading that
+applies to both, which is not reproducible on the branch the file ships on. Tests 1–10 and
+`test_relay_pipeline`'s 12 tests run green on both lineages.
+
+No warning on either build leg (`-Wall`). The two tests exercised the **real**
+`tollgate_payment_proto.c`; the mock protocol that revision 1 of the card body referenced at
+`test_relay_pipeline.c:75` was already removed by the time the header landed (mock lines
+75–83 now state that the header exists and all tests exercise the real implementation).
+
+Every clause above was additionally re-confirmed line-by-line against `app_task.cpp:85-145`
+and `test_relay_pipeline.c:200-215` on 2026-09-27; all cited line numbers hold — those two
+files are byte-identical on both lineages (`git diff --stat origin/main --
+tracker/firmware/main/app_task.cpp tracker/firmware/main/relay_types.h` is empty), so their
+citations need no lineage qualifier. The `.c` citations in §5/§7.1 do, and now carry one.
 
 ---
 
-## 11. Forward work this contract implies (not done here)
-
-1. **DEVIATION-1** — return `-1` for `payload == NULL && payload_len > 0`.
-2. **DEVIATION-7 / §2** — put the u16 echo-token wording in the header comment, and
-   delete the false "for dedup" claim, or implement dedup and change this contract.
-3. **DEVIATION-3** — name the ceiling (`TOLLGATE_MAX_PAYLOAD_RELAY = 503`) and enforce
-   it inside the encode path so callers cannot pass `RELAY_PACKET_MAX_SIZE` by mistake.
-4. **DEVIATION-5 / DEVIATION-2** — explicit little-endian serialisation and a NULL
-   `hdr` guard.
-5. **§4.3** — add a compile-time-visible warning (comment block or static assert pair)
-   next to the two enum tables so the tag/type namespaces are not cross-compared.
-
-**Reconciliation note (in-flight work, outside this branch's contract surface).** A
-newer lineage than `autonomous/mesh-baseline` already carries some of items 1–5 in
-`tracker/firmware/main/tollgate_payment_proto.h` — an additive
-`tollgate_proto_encode_relay(frame, frame_len, …)` that writes at `frame+1` and owns
-the 503-byte budget, `TG_ENC_ERR_TOO_LONG`, `TOLLGATE_MAX_PAYLOAD_RELAY`,
-`tollgate_seq_next()`/`tollgate_seq_equal()`, and an explicit seq echo-token comment
-(sibling branches `fix/tollgate-payack-harness-seq`,
-`fix/tollgate-payack-sid-price-exp`, `fix/tollgate-payack-seq-whitespace`; defect ids
-D1/D5/D6). Those branches are 273–280 commits ahead of and 2 behind
-`autonomous/mesh-baseline`, i.e. they are a different lineage, **not** the branch this
-contract is authoritative for. This document deliberately specifies the
-`encode(data + 1, MAX - 1, …)` form that `app_task.cpp` and `test_relay_pipeline.c`
-actually call on `autonomous/mesh-baseline` (§7 A8/M6), and records the additive
-`encode_relay()` form here so the eventual merge has one place that states which call
-shape the callers must use after the merge.
+*End of contract. Revisions 2 and 3 are documentation-only: no implementation file was changed
+in producing them. Revision 3 corrects lineage accuracy only (F1–F6, §0.5) — no normative
+value, offset, prototype or error code moved between revisions 2 and 3. The two code defects
+it records (§7.1 DEF-1/DEF-2) are filed, not fixed, and must be fixed in their own card with
+a failing test first.*

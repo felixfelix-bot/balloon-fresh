@@ -1,0 +1,1 @@
+PRBS15 verified: C3 and E80 algorithms match

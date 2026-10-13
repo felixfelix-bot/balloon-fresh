@@ -53,8 +53,21 @@ and parameter combinations. TX fixed at high point, RX mobile in car with GPS + 
 - Firmware already supports GPS, compiles with GPS code
 - Without GPS wired: fix=0, all GPS fields=0 in CSV
 
+## Boot Banner
+
+On startup, the firmware prints a boot banner to serial log:
+```
+I (xxx) range_test: === LR2021 Range Test v1.0 FW_HASH=<sha7> ===
+```
+The `FW_HASH` is the 7-character git short SHA of the firmware build, injected
+at compile time via CMake (`execute_process(git rev-parse --short HEAD)` →
+`add_compile_definitions(FW_GIT_SHA=...)`). This allows correlating serial
+output with the exact firmware commit for field testing.
+
+If git is unavailable during build, the banner shows `FW_HASH=unknown`.
+
 ## Implementation Checklist
-- [ ] Create RANGE-TEST-PLAN.md
+- [x] Create RANGE-TEST-PLAN.md
 - [ ] Fix gpio_install_isr_service double-init in EspHalC3.h
 - [ ] Copy GPS component from tracker firmware
 - [ ] Create range_test.h (16 window definitions)
@@ -66,6 +79,22 @@ and parameter combinations. TX fixed at high point, RX mobile in car with GPS + 
 - [ ] Install pyserial
 - [ ] Flash both boards and bench verify all 16 windows
 - [ ] Commit and push
+
+## Sequence Counter (uint32, no inter-window reset)
+
+The TX sequence counter was widened from `uint16_t` to `uint32_t` in C3-2 (M6).
+Key changes:
+- The counter is declared **outside** the window for-loop and the outer `while(true)` loop,
+  so it never resets between windows or across loop iterations.
+- Previously `uint16_t p` reset to 0 at the start of each window and wrapped at 65535.
+- Now `seqCounter` (uint32_t) increments monotonically across all windows and loops,
+  encoded as 4-byte big-endian in `buf[0..3]` and used as PRBS15 seed.
+- The RX side already decoded the 4-byte big-endian sequence (line ~454 in range_test.cpp),
+  so no RX-side changes were needed.
+- TX log now includes `(seq starts at N)` showing the starting sequence number per window.
+
+This enables unambiguous packet identification across long-range test sessions where
+total packet count exceeds 65535 (~190 pkts/loop × 350+ loops).
 
 ## Deferred
 - [ ] Wire GPS to RX board (GPIO1)

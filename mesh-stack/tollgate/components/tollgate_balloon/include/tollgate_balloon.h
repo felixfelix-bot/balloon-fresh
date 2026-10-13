@@ -13,7 +13,7 @@ extern "C" {
 /*
  * Balloon TollGate — mesh transport adapter
  *
- * Wraps tollgate_core for FIPS mesh UDP transport (ADR-002).
+ * Wraps tollgate_core for FIPS mesh UDP transport (ADR-100).
  * Replaces WiFi captive portal with UDP payment message handler.
  *
  * Layer: L7 over FIPS mesh (UDP port 2121)

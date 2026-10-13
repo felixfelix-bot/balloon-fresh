@@ -1,0 +1,110 @@
+{
+ "balloon-circuit-design": {
+  "new": 3,
+  "equiv": 0
+ },
+ "balloon-mesh-wiring/radio-glue": {
+  "new": 7,
+  "equiv": 0
+ },
+ "balloon-nostr/dev": {
+  "new": 4,
+  "equiv": 1
+ },
+ "balloon-tollgate-extract": {
+  "new": 2,
+  "equiv": 0
+ },
+ "balloon-tollgate/dev": {
+  "new": 11,
+  "equiv": 0
+ },
+ "docs/harm-t9-adoption": {
+  "new": 13,
+  "equiv": 3
+ },
+ "feat/c3-harmonization": {
+  "new": 2,
+  "equiv": 0
+ },
+ "feat/e80-7-crc-logging": {
+  "new": 1,
+  "equiv": 0
+ },
+ "feat/e80-cvm-go-mode": {
+  "new": 17,
+  "equiv": 1
+ },
+ "feat/e80-spi-bypass": {
+  "new": 10,
+  "equiv": 0
+ },
+ "feat/host-driven-bench": {
+  "new": 26,
+  "equiv": 3
+ },
+ "feat/tracker-tx-tempcomp": {
+  "new": 13,
+  "equiv": 1
+ },
+ "fix/t1-sweep-start-validation": {
+  "new": 2,
+  "equiv": 0
+ },
+ "fix/t2-rx-start-len-gate": {
+  "new": 2,
+  "equiv": 0
+ },
+ "fix/t3-flrc-match123": {
+  "new": 2,
+  "equiv": 0
+ },
+ "fix/t4-fifo-clear": {
+  "new": 4,
+  "equiv": 0
+ },
+ "fix/t6-sweep-preflight": {
+  "new": 4,
+  "equiv": 0
+ },
+ "fix/tollgate-payack-harness-seq": {
+  "new": 4,
+  "equiv": 1
+ },
+ "fix/tollgate-payack-seq-whitespace": {
+  "new": 6,
+  "equiv": 1
+ },
+ "fix/tollgate-payack-sid-price-exp": {
+  "new": 10,
+  "equiv": 1
+ },
+ "phase1-interop-test": {
+  "new": 8,
+  "equiv": 0
+ },
+ "pr/029-dual-band-flight-board": {
+  "new": 1,
+  "equiv": 0
+ },
+ "range-tests": {
+  "new": 12,
+  "equiv": 3
+ },
+ "speed-sustained-sweep": {
+  "new": 21,
+  "equiv": 0
+ },
+ "worker-balloon/flrc-512b-audit": {
+  "new": 3,
+  "equiv": 1
+ },
+ "worker-balloon/pcb-phase1-t877": {
+  "new": 3,
+  "equiv": 0
+ },
+ "worker-balloon/pcb-phase1-t877-main": {
+  "new": 6,
+  "equiv": 0
+ }
+}

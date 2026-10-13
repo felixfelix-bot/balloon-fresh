@@ -82,7 +82,7 @@ extern QueueHandle_t g_tx_queue;
 
 static const char *TAG = "TRACKER";
 
-#define LED_GPIO 18  /* moved from GPIO10 (was colliding with LR2021 NSS) */
+#define LED_GPIO 9   /* GPIO9 — was I2C SDA, repurposed to LED (BMP280 dropped for V1) */
 
 /* LR2021 pin reference (matching lr2021_spi.h defaults / EspHalLr2021Radio) */
 #define LR2021_SCK   6
@@ -475,6 +475,7 @@ static void cli_cmd_relay_send_nostr(const char *args) {
 }
 #endif /* CONFIG_ENABLE_RELAY_MODE && CONFIG_ENABLE_NOSTR_STORE */
 
+#ifdef CONFIG_ENABLE_BMP280
 static void cli_cmd_i2c_scan(const char *args) {
     (void)args;
     printf("Scanning I2C bus (SDA=8, SCL=9)...\n");
@@ -493,6 +494,14 @@ static void cli_cmd_i2c_scan(const char *args) {
     }
     printf("Scan complete: %d device(s) found\n", found);
 }
+#else
+/* I2C dropped for V1 flight: GPIO9 repurposed from I2C SDA to LED.
+ * No I2C bus is installed unless BMP280 is enabled, so i2c_scan is compiled out. */
+static void cli_cmd_i2c_scan(const char *args) {
+    (void)args;
+    printf("I2C scan disabled (BMP280 dropped for V1 flight)\n");
+}
+#endif /* CONFIG_ENABLE_BMP280 */
 
 #ifdef CONFIG_ENABLE_NOSTR_STORE
 /*
@@ -585,10 +594,16 @@ static void cli_cmd_nostr_dump(const char *args) {
  *   - If provided, the token string is used as the PAY payload (raw bytes).
  *   - If omitted, a minimal test payload "{\"token\":\"test\"}" is used.
  *
- * The PAY message is encoded with the real tollgate_proto_encode() from
- * tollgate_payment_proto.c (ADR-002 wire format).
+ * The PAY message is encoded with the real tollgate_proto_encode_relay() from
+ * tollgate_payment_proto.c (ADR-100 wire format), which enforces the tracker
+ * relay's payload budget (TOLLGATE_MAX_PAYLOAD_RELAY = 503 B) in the encode
+ * path.
+ *
+ * Sequence numbers follow the contract documented in tollgate_payment_proto.h:
+ * a uint16_t echo token that wraps modulo 2^16 (65535 -> 0), with no
+ * deduplication in v1.
  */
-static uint32_t s_tollgate_seq = 0;
+static uint16_t s_tollgate_seq = 0;
 
 static void cli_cmd_tollgate_send_pay(const char *args) {
     if (!g_tx_queue) {
@@ -608,26 +623,23 @@ static void cli_cmd_tollgate_send_pay(const char *args) {
         payload_len = (uint16_t)strlen(payload);
     }
 
-    /* Check it fits in the relay packet (minus 1 type tag + 8 header) */
-    if (payload_len > RELAY_PACKET_MAX_SIZE - 1 - sizeof(tollgate_msg_hdr_t)) {
-        printf("tollgate_send_pay: payload too long (%u > %d max)\n",
-               payload_len,
-               RELAY_PACKET_MAX_SIZE - 1 - (int)sizeof(tollgate_msg_hdr_t));
-        return;
-    }
-
-    /* Build the relay packet */
+    /* Build the relay packet. The payload bound is checked inside
+     * tollgate_proto_encode_relay() — not duplicated here. */
     relay_packet_t pkt;
     memset(&pkt, 0, sizeof(pkt));
     pkt.data[0] = RELAY_TYPE_TOLLGATE_PAY;
 
-    s_tollgate_seq++;
-    int enc_len = tollgate_proto_encode(pkt.data + 1,
-                                         RELAY_PACKET_MAX_SIZE - 1,
-                                         TG_MSG_PAY, (uint16_t)s_tollgate_seq,
-                                         payload, payload_len);
+    s_tollgate_seq = tollgate_seq_next(s_tollgate_seq);
+    int enc_len = tollgate_proto_encode_relay(pkt.data, RELAY_PACKET_MAX_SIZE,
+                                               TG_MSG_PAY, s_tollgate_seq,
+                                               payload, payload_len);
+    if (enc_len == TG_ENC_ERR_TOO_LONG) {
+        printf("tollgate_send_pay: payload too long (%u > %u bytes max in a relay frame)\n",
+               payload_len, (unsigned)TOLLGATE_MAX_PAYLOAD_RELAY);
+        return;
+    }
     if (enc_len < 0) {
-        printf("tollgate_send_pay: proto_encode failed (payload too big?)\n");
+        printf("tollgate_send_pay: proto_encode failed (%d)\n", enc_len);
         return;
     }
 
@@ -717,7 +729,14 @@ extern "C" void app_main(void)
 
     power_manager_init();
     uint16_t cap_mv = power_manager_read_supercap_mv();
+#ifdef SUPERCAP_MONITORING
     ESP_LOGI(TAG, "Supercap: %d mV", cap_mv);
+#else
+    /* cap_mv is POWER_MANAGER_MV_INVALID (0xFFFF) here: V1 has no supercap ADC,
+     * and telemetry reuses that out-of-range value as the "not measured" marker
+     * so a ground station never reads it as a real (flat) 0 mV. */
+    ESP_LOGI(TAG, "Supercap: monitoring disabled for V1 (no free ADC pin, telemetry voltage=0xFFFF)");
+#endif
 
     setup_cli();
     printf("> ");
@@ -742,6 +761,8 @@ extern "C" void app_main(void)
 
 #ifdef CONFIG_ENABLE_BMP280
     memset(&bmp, 0, sizeof(bmp));
+    /* BMP280 uses I2C_NUM_0, SDA=GPIO8, SCL=GPIO9 — but GPIO9 is now the LED.
+     * If BMP280 is ever re-enabled (V2, ESP32-S3), SCL must move to a free pin. */
     esp_err_t bmp_ret = bmp280_init(&bmp, I2C_NUM_0, 8, 9, 400000);
     if (bmp_ret != ESP_OK) {
         ESP_LOGW(TAG, "BMP280 not found, continuing without sensor");
@@ -830,7 +851,9 @@ extern "C" void app_main(void)
             tpkt.flags |= TELEMETRY_FLAG_GPS_VALID;
         }
 #endif
+#ifdef SUPERCAP_MONITORING
         tpkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+#endif
         telemetry_fill(&tpkt, temp, pressure, (float)tpkt.altitude_m, cap_mv, relay_seq);
 
         /* Queue telemetry for radio_task to TX */
@@ -892,7 +915,9 @@ extern "C" void app_main(void)
     }
 #endif
 
+#ifdef SUPERCAP_MONITORING
     pkt.flags |= (cap_mv < CONFIG_LOW_VOLTAGE_MV + 200) ? TELEMETRY_FLAG_LOW_POWER : 0;
+#endif
 
     telemetry_fill(&pkt, temp, pressure, (float)pkt.altitude_m, cap_mv, rtc_seq);
 

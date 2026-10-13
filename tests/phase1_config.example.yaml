@@ -1,0 +1,29 @@
+# Phase 1 test runner config — maps logical node names to serial ports.
+#
+# Copy to tests/phase1_config.yaml and edit for your bench setup, then run:
+#   python3 tests/phase1_test_runner.py --config tests/phase1_config.yaml --all
+#
+# Node names must match the TEST_MODES table in tests/phase1_test_runner.py:
+#   ESP32-B   second ESP32-C3 board (e.g. /dev/ttyACM3)
+#   ESP32-C   third  ESP32-C3 board (e.g. /dev/ttyACM4)
+#   RP2040-A  RP2040-Zero coprocessor (e.g. /dev/ttyACM0)
+
+baud: 115200
+
+# Per-node ports. Either inline string or {port: ...} sub-map is accepted.
+nodes:
+  ESP32-B:
+    port: /dev/ttyACM3
+  ESP32-C:
+    port: /dev/ttyACM4
+  RP2040-A:
+    port: /dev/ttyACM0
+
+# TX start command + RX ready marker. Defaults match the RP2040 coprocessor
+# firmware (firmware/rp2040/src/main.cpp). For the ESP32 bench firmware
+# (run_benchmark.py style) set start_cmd to "RUN\n".
+start_cmd: "S\n"
+ready_marker: READY
+
+# Per-mode RX collection timeout (seconds).
+timeout_s: 60

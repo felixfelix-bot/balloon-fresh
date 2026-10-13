@@ -1,6 +1,6 @@
 /**
  * @file ehash_relay.h
- * @brief Phase C — Balloon-side e-hash relay module (ADR-025)
+ * @brief Phase C — Balloon-side e-hash relay module (ADR-106)
  *
  * This component runs ON the balloon ESP32-C3. It is a pure L7 transport
  * node: template relay (downlink), nonce relay (uplink), per-nonce e-hash
@@ -25,7 +25,7 @@
  *                                        └──────────────────────────┘
  *
  * Related:
- *   - ADR-025 §Phase C
+ *   - ADR-106 §Phase C
  *   - mesh-stack/protocol/ehash_messages.h  (binary structs — reused)
  *   - mesh-stack/protocol/ehash-spec.md     (wire format)
  *   - docs/adr/adr-e-hash-relay-DECISIONS.md (D1-D10)

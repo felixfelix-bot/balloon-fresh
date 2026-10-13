@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-29
 **Author:** balloon-tollgate sub-manager
-**Related:** ADR-001, ADR-002, ADR-024
+**Related:** ADR-001, ADR-100, ADR-024
 
 ## Blockers
 

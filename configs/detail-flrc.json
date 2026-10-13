@@ -1,0 +1,43 @@
+{
+  "name": "detail-flrc",
+  "description": "Detail re-run — FLRC configs only, 10 pkts, 868 MHz EU SRD",
+  "band": "868",
+  "configs": [
+    {
+      "label": "FLRC-650 LEN64",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "FLRC-2600 LEN64",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 2600,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 5000,
+      "n_pkts": 10
+    },
+    {
+      "label": "FLRC-650 LEN255",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 255,
+      "gap": 5000,
+      "n_pkts": 10
+    }
+  ]
+}

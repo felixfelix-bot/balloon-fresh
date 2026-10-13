@@ -102,6 +102,24 @@ class TestFIPSTransport:
             pytest.skip("No Makefile for fips_transport")
 
 
+class TestUartTelemetryProtocol:
+    """ESP32-C3 <-> RP2040 UART telemetry protocol (card t_79ae3ee7).
+
+    Runs the component's own host Makefile so the portable core is compiled
+    with -Wall -Wextra -Werror and exercised by the full assertion set.  No
+    ESP-IDF / Pico-SDK headers are involved: the target drivers are guarded by
+    UART_TLM_C3_TARGET / UART_TLM_RP2040_TARGET, which this build does not set.
+    """
+
+    def test_uart_telemetry_host(self):
+        makefile_dir = os.path.join(COMPONENTS, "uart_telemetry", "test")
+        assert os.path.exists(os.path.join(makefile_dir, "Makefile")), \
+            "uart_telemetry test Makefile is missing"
+        out = _compile_with_makefile(makefile_dir)
+        assert "0 failed" in out, out
+        assert "RESULT: ALL PASS" in out, out
+
+
 class TestWirehair:
     def test_wirehair_host(self):
         wirehair_dir = os.path.join(COMPONENTS, "wirehair")
@@ -225,6 +243,43 @@ class TestPowerManager:
         )
         assert "5/5 passed" in out
 
+    # ── supercap-monitoring compile-time guard (t_807f52d4, review finding 2/3) ──
+    # This suite carries its own esp_adc stubs (test/stubs) so it can script the
+    # failure paths; that directory must come BEFORE tests/host_stubs on the
+    # include path, and every other ESP-IDF header still resolves to the shared
+    # stubs. BOTH sides of the #ifdef are run: V1 asserts the out-of-range
+    # sentinel (a literal 0 would assert LOW_POWER), V2 asserts failed-init
+    # retry / failed-read sentinel.
+    def _run_power_manager_guard(self, defines):
+        pm_dir = os.path.join(COMPONENTS, "power_manager")
+        test_src = os.path.join(pm_dir, "test", "test_power_manager_guard.c")
+        binary = os.path.join(tempfile.gettempdir(),
+                              "test_power_manager_guard_" + "_".join(defines or ["v1"]))
+        cmd = ["gcc", "-std=c11", "-Wall", "-Wextra", "-g", "-O0"]
+        cmd.extend(df for d in (defines or []) for df in ("-D", d))
+        cmd.extend(["-I", os.path.join(pm_dir, "test", "stubs")])
+        cmd.extend(["-I", HOST_STUBS])
+        cmd.extend(["-I", pm_dir, test_src, "-o", binary])
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            pytest.fail(f"Compile failed:\n{' '.join(cmd)}\n{result.stderr}")
+        result = subprocess.run([binary], capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            pytest.fail(f"Test failed (rc={result.returncode}):\n{result.stdout}\n{result.stderr}")
+        return result.stdout
+
+    def test_power_manager_guard_v1(self):
+        """V1: ADC compiled out — read must be POWER_MANAGER_MV_INVALID."""
+        out = self._run_power_manager_guard([])
+        assert "Results: all passed" in out
+        assert "FAIL" not in out
+
+    def test_power_manager_guard_v2(self):
+        """V2: ADC compiled in — failed init/read/calibration must not fake 0 mV."""
+        out = self._run_power_manager_guard(["SUPERCAP_MONITORING"])
+        assert "Results: all passed" in out
+        assert "FAIL" not in out
+
 
 class TestMeshAdapter:
     def test_mesh_adapter_host(self):
@@ -282,3 +337,55 @@ class TestBlossomDatagram:
             ],
         )
         assert "11/11 passed" in out
+
+
+class TestStratoRelayMesh:
+    def test_stratorelay_mesh_host(self):
+        stratorelay_dir = os.path.join(COMPONENTS, "stratorelay")
+        out = _compile_and_run_c(
+            os.path.join(stratorelay_dir, "test", "test_stratorelay_mesh.cpp"),
+            [],
+            [stratorelay_dir],
+            cxx=True,
+            extra_cflags=["-Werror"],
+        )
+        assert "9/9 passed" in out
+        assert "(section 11: 8/8)" in out
+
+
+class TestRp2040PRBS:
+    def test_rp2040_prbs(self):
+        rp2040_src = os.path.join(REPO_ROOT, "firmware", "rp2040", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "test_rp2040_prbs.cpp"),
+            [os.path.join(rp2040_src, "prbs.cpp")],
+            [rp2040_src],
+            cxx=True,
+        )
+        assert "8/8 passed" in out
+
+
+class TestRp2040PRBS6Wiring:
+    def test_rp2040_prbs6_wiring(self):
+        rp2040_src = os.path.join(REPO_ROOT, "firmware", "rp2040", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "test_rp2040_prbs6_wiring.cpp"),
+            [os.path.join(rp2040_src, "prbs.cpp")],
+            [rp2040_src],
+            cxx=True,
+        )
+        assert "8/8 passed" in out
+
+
+class TestE28RangeConsole:
+    """E28-2G4M27S (SX1282) ranging console core — host tests (no hardware)."""
+
+    def test_e28_range_console_host(self):
+        e28_src = os.path.join(REPO_ROOT, "firmware", "esp32-e28-range", "src")
+        out = _compile_and_run_c(
+            os.path.join(REPO_ROOT, "tests", "src", "e28_range", "test_e28_range_console.cpp"),
+            [os.path.join(e28_src, "e28_range_console.c")],
+            [e28_src],
+            cxx=True,
+        )
+        assert "ALL CHECKS PASSED" in out

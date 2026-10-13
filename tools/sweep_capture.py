@@ -67,7 +67,7 @@ rx_port = find_rx_port()
 print(f"RX port: {rx_port} (8332)")
 
 # Open RX with BoardSerial (enforces lock)
-rx = BoardSerial(rx_port, 115200, timeout=0.1)
+rx = BoardSerial(rx_port, 2000000, timeout=0.1)
 rx.read(65536)  # flush
 
 rx_data = bytearray()

@@ -1,0 +1,183 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-09-17T08:43:10+0200",
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "9.0.8",
+    "schematic_parity": [],
+    "source": "v8_krt_v2_routed.kicad_pcb",
+    "unconnected_items": [],
+    "violations": [
+        {
+            "description": "Via diameter (board setup constraints min diameter 0.6000 mm; actual 0.4500 mm)",
+            "items": [
+                {
+                    "description": "Via [+3V3] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 23.3,
+                        "y": 36.3
+                    },
+                    "uuid": "137bd4e6-1692-46f0-a067-0216009914ab"
+                }
+            ],
+            "severity": "error",
+            "type": "via_diameter"
+        },
+        {
+            "description": "Via diameter (board setup constraints min diameter 0.6000 mm; actual 0.4500 mm)",
+            "items": [
+                {
+                    "description": "Via [+3V3] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 22.25,
+                        "y": 36.3
+                    },
+                    "uuid": "79c17c69-3d56-434d-aa1f-71b5829bca2a"
+                }
+            ],
+            "severity": "error",
+            "type": "via_diameter"
+        },
+        {
+            "description": "Track width (board setup constraints min width 0.2000 mm; actual 0.1998 mm)",
+            "items": [
+                {
+                    "description": "Track [VDIV_MID] on F.Cu, length 3.0000 mm",
+                    "pos": {
+                        "x": 5.5,
+                        "y": 38.0
+                    },
+                    "uuid": "c69cb8ee-a314-47f9-9f08-002357ceb4ec"
+                }
+            ],
+            "severity": "error",
+            "type": "track_width"
+        },
+        {
+            "description": "Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.2000 mm)",
+            "items": [
+                {
+                    "description": "Via [+3V3] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 23.3,
+                        "y": 36.3
+                    },
+                    "uuid": "137bd4e6-1692-46f0-a067-0216009914ab"
+                }
+            ],
+            "severity": "error",
+            "type": "drill_out_of_range"
+        },
+        {
+            "description": "Hole size out of range (board setup constraints min hole 0.3000 mm; actual 0.2000 mm)",
+            "items": [
+                {
+                    "description": "Via [+3V3] on F.Cu - B.Cu",
+                    "pos": {
+                        "x": 22.25,
+                        "y": 36.3
+                    },
+                    "uuid": "79c17c69-3d56-434d-aa1f-71b5829bca2a"
+                }
+            ],
+            "severity": "error",
+            "type": "drill_out_of_range"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Reference field of U2",
+                    "pos": {
+                        "x": 38.0,
+                        "y": -0.2
+                    },
+                    "uuid": "d13e67ae-ad25-4890-91eb-2693d44a8049"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Reference field of C_CAP",
+                    "pos": {
+                        "x": -0.25,
+                        "y": 27.5
+                    },
+                    "uuid": "00004f66-c7a9-477d-b278-5481f11cdf71"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Segment of U1 on F.Silkscreen",
+                    "pos": {
+                        "x": 3.89,
+                        "y": -1.21
+                    },
+                    "uuid": "380d8099-7c5b-4de2-a3af-88522045d7fc"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Rectangle on Edge.Cuts",
+                    "pos": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "uuid": "1f5159ea-fe56-4ff0-aa40-e06a27a05351"
+                },
+                {
+                    "description": "Segment of U1 on F.Silkscreen",
+                    "pos": {
+                        "x": 22.11,
+                        "y": -1.21
+                    },
+                    "uuid": "34320074-08ac-4bb9-bce1-8d7923a96676"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        }
+    ]
+}

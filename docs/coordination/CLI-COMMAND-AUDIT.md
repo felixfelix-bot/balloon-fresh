@@ -105,7 +105,7 @@
 **Status:** Implemented (kanban task t_999528b6).
 
 **Implementation:**
-- Created `main/tollgate_payment_proto.h` — standalone header with `tollgate_msg_hdr_t`, `tollgate_ack_payload_t`, `TG_MSG_PAY`/`TG_MSG_ACK`/etc., `tollgate_proto_encode()`/`tollgate_proto_decode()`. Wire-compatible with `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h` (ADR-002). No ESP-IDF deps — host-testable with gcc.
+- Created `main/tollgate_payment_proto.h` — standalone header with `tollgate_msg_hdr_t`, `tollgate_ack_payload_t`, `TG_MSG_PAY`/`TG_MSG_ACK`/etc., `tollgate_proto_encode()`/`tollgate_proto_decode()`. Wire-compatible with `mesh-stack/tollgate/components/tollgate_balloon/include/tollgate_payment_proto.h` (ADR-100). No ESP-IDF deps — host-testable with gcc.
 - Created `main/tollgate_payment_proto.c` — encode/decode implementation.
 - Added `cli_cmd_tollgate_send_pay()` handler in `app_main.cpp` — builds PAY message with `tollgate_proto_encode(TG_MSG_PAY, seq, payload, len)`, sets `pkt.data[0] = RELAY_TYPE_TOLLGATE_PAY`, queues to `g_tx_queue`.
 - Registered in `setup_cli()` with `cli_register_command("tollgate_send_pay", ...)`.

@@ -1,0 +1,61 @@
+{
+  "source": "/home/c03rad0r/worktrees/t_a1f8e389/tracker/hardware/output/v_c3_flight_4layer_placed.kicad_pcb",
+  "source_sha256": "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6",
+  "expected_source_sha256": "f3cf0143e7deff991e9650643f1322945388fd135efbf5191f51520dcd6edaa6",
+  "source_is_the_frozen_placement": true,
+  "fixes": {
+    "U4.3": {
+      "net": "VCAP",
+      "why": "TPS7A02 EN: smart enable pulldown holds a floating EN low -> rail never enabled; tie to the input rail IN=VCAP (TI SBVS277C Table 5-1 p.3, \u00a77.3.4, EC table spec'd at VEN=VIN)"
+    },
+    "U3.9": {
+      "net": "+3V3",
+      "why": "MAX-M10S RESET_N (active low): tie high so the module is never held in reset; internal 7-13k pull-up is the fallback (UBX-20035208 Table 10 p.9 / Table 11)"
+    },
+    "U3.6": {
+      "net": "+3V3",
+      "why": "MAX-M10S V_BCKP backup supply 1.65-3.6 V; +3V3 = 3.3 V in range, enables hot-start backup (UBX-20035208 Table 10 p.9)"
+    }
+  },
+  "failures": [],
+  "placement_identical": "20 footprints, position+rotation+footprint identical",
+  "copper_unchanged": {
+    "segments": 0,
+    "vias": 0,
+    "zones": 2,
+    "zone_blocks_in_file": 3,
+    "filled_polygons": 0
+  },
+  "pads_whose_net_changed": {
+    "U4.3": [
+      "",
+      "VCAP"
+    ],
+    "U3.6": [
+      "",
+      "+3V3"
+    ],
+    "U3.9": [
+      "",
+      "+3V3"
+    ]
+  },
+  "net_table_unchanged": 22,
+  "pads_with_no_net": {
+    "before": 27,
+    "after": 24
+  },
+  "siblings": {
+    "v_c3_flight_4layer_placed_netfix.kicad_dru": {
+      "sha256": "5acd7dced4a0d8b3edb8b3b977cc2a110a0a97fba0c6d867ce698b243835ca59",
+      "identical_to_source_sibling": true
+    },
+    "v_c3_flight_4layer_placed_netfix.kicad_pro": {
+      "sha256": "a29acec391bae6b1d53f69be95e0fcce6af5bae7c6d06a4ba0706f7a54920238",
+      "identical_to_source_sibling": true
+    }
+  },
+  "output": "/home/c03rad0r/worktrees/t_a1f8e389/tracker/hardware/output/v_c3_flight_4layer_placed_netfix.kicad_pcb",
+  "output_sha256": "aa76fbbb85ce89ffd6b5e346ca7b5f53575035ba611ec137f3c086ac4dc0809a",
+  "verdict": "PASS"
+}

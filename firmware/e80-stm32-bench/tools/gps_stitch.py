@@ -1,0 +1,960 @@
+#!/usr/bin/env python3
+"""gps_stitch.py — stitch GPS track points onto RX packet log by nearest timestamp.
+
+Distributed range tests produce an rx-log.csv with one row per received packet
+(see e80_bench_ctl.RxLogWriter). Each row has either:
+
+  - ``captured_ts``  — ISO-8601 wall-clock timestamp written by the host when
+    the packet row was emitted (e.g. ``2026-08-23T20:06:09``). This is the
+    preferred join key because it is already in the same time frame as a GPS
+    track recorded on a phone.
+  - ``ts_ms``        — firmware uptime in milliseconds (since board boot).
+    Not wall-clock aligned; only usable if ``--t0-epoch`` is supplied to map
+    uptime onto absolute time.
+
+GPS data may arrive as:
+
+  - GPX (XML)  — produced by phone tracker apps (e.g. OsmAnd, GPX Tracker,
+    Strava, Komoot). Parsed with stdlib xml.etree.
+  - CSV        — columns auto-detected by header name. Recognised column
+    names: ``timestamp``/``time``/``ts``/``datetime``, ``lat``/``latitude``,
+    ``lon``/``lng``/``longitude``, ``ele``/``elevation``/``alt``.
+
+Output: a combined CSV that preserves all RX columns and appends
+``gps_lat``, ``gps_lon``, ``gps_ele``, ``gps_time``, ``gps_offset_s``
+(seconds between packet timestamp and matched GPS fix), and if
+``--tx-gps lat,lon`` is given, ``dist_m`` — haversine distance from the TX
+reference to the matched GPS point.
+
+Usage:
+    python3 gps_stitch.py --rx rx-log.csv --gps track.gpx
+    python3 gps_stitch.py --rx rx-log.csv --gps track.gpx --tx-gps 52.0123,4.0456
+    python3 gps_stitch.py --rx rx-log.csv --gps gps.csv --out combined.csv
+    python3 gps_stitch.py --rx rx-log.csv --gps track.gpx --t0-epoch 1724438400
+"""
+from __future__ import annotations
+
+import argparse
+import bisect
+import csv
+import math
+import os
+import re
+import sys
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+EARTH_RADIUS_M = 6_371_000.0  # mean Earth radius (WGS84 approximate)
+
+# RX CSV timestamp columns, in preference order. ``captured_ts`` is wall-clock
+# (preferred). ``ts_ms`` is firmware-uptime ms (needs --t0-epoch).
+RX_TS_COLS = ("captured_ts", "ts_ms")
+
+# GPS CSV column-name aliases. First match in each group wins.
+GPS_TIME_ALIASES = ("timestamp", "time", "ts", "datetime", "date_time", "utc")
+GPS_LAT_ALIASES = ("lat", "latitude", "gps_lat")
+GPS_LON_ALIASES = ("lon", "lng", "longitude", "gps_lon", "lng_deg", "long")
+GPS_ELE_ALIASES = ("ele", "elevation", "alt", "altitude", "gps_ele")
+
+# ---------------------------------------------------------------------------
+# Haversine
+# ---------------------------------------------------------------------------
+
+def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two lat/lon points, in metres."""
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dphi / 2.0) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2.0) ** 2
+    )
+    return 2.0 * EARTH_RADIUS_M * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+
+
+# ---------------------------------------------------------------------------
+# Timestamp parsing — robust to ISO-8601 variants with/without Z/offset
+# ---------------------------------------------------------------------------
+
+def parse_iso_to_epoch(text: str) -> float | None:
+    """Parse an ISO-8601 timestamp string to epoch seconds (UTC).
+
+    Handles:
+      - 2026-08-23T20:06:09Z
+      - 2026-08-23T20:06:09.123Z
+      - 2026-08-23T20:06:09+00:00
+      - 2026-08-23T20:06:09
+      - 2026-08-23 20:06:09  (space separator)
+      - 1724438769  (integer epoch, pass-through)
+      - 1724438769.5 (float epoch, pass-through)
+
+    Returns None if the string cannot be parsed.
+    """
+    if text is None:
+        return None
+    s = text.strip()
+    if not s:
+        return None
+
+    # Pure numeric → epoch seconds
+    try:
+        return float(s)
+    except ValueError:
+        pass
+
+    # Normalise: replace space separator with 'T'
+    if "T" not in s and " " in s:
+        s = s.replace(" ", "T", 1)
+
+    # Strip trailing 'Z' — fromisoformat() in 3.11+ handles 'Z' but older
+    # Pythons (3.7-3.10) do not. Be safe.
+    has_z = s.endswith("Z")
+    if has_z:
+        s = s[:-1]
+
+    # Try with tz offset
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+    if has_z or dt.tzinfo is None:
+        # Treat as UTC if there was a Z, or if naive (RX host writes local
+        # time without tz — but the GPS phone clock and the host clock must
+        # be in the same frame for the join to work). For naive timestamps
+        # we assume both RX and GPS use the same frame so the offset cancels
+        # out; tying both to UTC is the safest default.
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
+
+
+# ---------------------------------------------------------------------------
+# GPS parsers
+# ---------------------------------------------------------------------------
+
+class GpsPoint:
+    """One GPS track fix."""
+    __slots__ = ("epoch", "lat", "lon", "ele", "time_str")
+
+    def __init__(self, epoch: float, lat: float, lon: float,
+                 ele: float | None, time_str: str | None = None):
+        self.epoch = epoch
+        self.lat = lat
+        self.lon = lon
+        self.ele = ele
+        self.time_str = time_str
+
+
+def parse_gpx(path: str) -> list[GpsPoint]:
+    """Parse a GPX 1.1 file and return track points sorted by time.
+
+    Reads <trkpt> and <wpt> elements. Namespace-agnostic.
+    """
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        raise ValueError("GPX parse error: {}".format(e))
+    root = tree.getroot()
+
+    # GPX namespaces are usually xmlns="http://www.topografix.com/GPX/1/1"
+    # but we don't depend on the exact URI — strip any namespace.
+    def _localname(tag: str) -> str:
+        return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+    pts: list[GpsPoint] = []
+    for node in root.iter():
+        if _localname(node.tag) not in ("trkpt", "wpt"):
+            continue
+        lat = node.get("lat")
+        lon = node.get("lon")
+        if lat is None or lon is None:
+            continue
+        try:
+            lat_f = float(lat)
+            lon_f = float(lon)
+        except ValueError:
+            continue
+        ele = None
+        time_str = None
+        for child in node:
+            ln = _localname(child.tag)
+            if ln == "ele":
+                try:
+                    ele = float(child.text)  # type: ignore[arg-type]
+                except (TypeError, ValueError):
+                    pass
+            elif ln == "time":
+                time_str = (child.text or "").strip()
+        if time_str is None:
+            # Some GPX files omit <time> inside trkpt but carry it at
+            # metadata level — skip those points for time-based join.
+            continue
+        epoch = parse_iso_to_epoch(time_str)
+        if epoch is None:
+            continue
+        pts.append(GpsPoint(epoch, lat_f, lon_f, ele, time_str))
+
+    pts.sort(key=lambda p: p.epoch)
+    return pts
+
+
+# ---------------------------------------------------------------------------
+# KML parsing (BasicAirData GPS Logger for Android)
+# ---------------------------------------------------------------------------
+#
+# KML tracks carry coordinates but NO per-point timestamps. For phones that
+# export KML (e.g. BasicAirData GPS Logger), we resurrect timestamps by:
+#   1. Extracting start time from the <name> element matching
+#      "GPS Logger YYYYMMDD-HHMMSS" — written by the logger as the track
+#      start time.
+#   2. Extracting total duration from the Placemark <description> via the
+#      pattern "Duration = MM:SS | MM:SS" (total | moving). We use the
+#      total (first) value as the synthesised window.
+#   3. Distributing N gathered <coordinates> evenly across the duration:
+#      epoch_i = start_epoch + i * (duration_s / (n - 1)).
+#
+# Coordinates in KML are "lon,lat,alt" triples, separated by whitespace
+# (newlines/spaces) inside the <coordinates> element. Note this is
+# LON-FIRST — opposite to GPX which exposes lat as an attribute first.
+# The returned GpsPoint tuple keeps our standard (lat, lon, ele) order.
+
+# "GPS Logger" before "YYYYMMDD-HHMMSS" — Placemark also has a <name> like
+# "Track 20260823-184605" that must NOT be picked up as a start-time anchor.
+_KML_NAME_TS_RE = re.compile(
+    r"GPS\s*Logger\s*"                    # "GPS Logger" + optional whitespace
+    r"(\d{4})(\d{2})(\d{2})-"            # YYYYMMDD-
+    r"(\d{2})(\d{2})(\d{2})"            # HHMMSS
+)
+# "Duration = MM:SS | MM:SS" — total | moving. Optional moving-time half
+# so we also accept bare "Duration = MM:SS" if a logger ever drops the tail.
+_KML_DURATION_RE = re.compile(
+    r"Duration\s*=\s*"
+    r"(\d+):(\d+)"                       # total MM:SS
+    r"(?:\s*\|\s*(\d+):(\d+))?"          # optional | moving MM:SS
+)
+
+
+def parse_kml(path: str) -> list[GpsPoint]:
+    """Parse a KML 2.2 file (BasicAirData GPS Logger for Android export).
+
+    KML tracks have NO per-point timestamps. We synthesise them by:
+      1. Extracting the start time from <name>
+         ("GPS Logger YYYYMMDD-HHMMSS").
+      2. Extracting the total duration from the Placemark <description>
+         ("Duration = MM:SS | MM:SS" — first value is total time).
+      3. Distributing N coordinates evenly across ``duration_s`` starting
+         at ``start_epoch`` so the synthesised epochs are strictly
+         increasing and span exactly ``duration_s``.
+
+    Coordinates in KML are ``lon,lat,alt`` triples (note lon-first, which
+    is opposite to the GPX lat-first convention). Returned ``GpsPoint``
+    instances use the standard (lat, lon, ele) split.
+
+    The naive start time (no timezone in KML) is treated as UTC, matching
+    the convention used by :func:`parse_iso_to_epoch` so RX and GPS
+    timestamps share the same time frame.
+    """
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        raise ValueError("KML parse error: {}".format(e))
+    root = tree.getroot()
+
+    def _localname(tag: str) -> str:
+        return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+    # --- Extract start time from <name> "GPS Logger YYYYMMDD-HHMMSS" ---
+    # Iterate in document order so the Document-level <name> wins over
+    # any Placemark <name> ("Track 20260823-184605") — only "GPS Logger ..."
+    # is a valid start-time anchor.
+    start_epoch: float | None = None
+    for node in root.iter():
+        if _localname(node.tag) != "name":
+            continue
+        m = _KML_NAME_TS_RE.search(node.text or "")
+        if not m:
+            continue
+        y, mo, d, h, mi, s = (int(g) for g in m.groups())
+        try:
+            dt = datetime(y, mo, d, h, mi, s, tzinfo=timezone.utc)
+        except ValueError:
+            # Invalid calendar date — keep scanning remaining <name> nodes
+            continue
+        start_epoch = dt.timestamp()
+        break
+
+    # --- Extract total duration from <description> ---
+    # "Duration = MM:SS | MM:SS" (total | moving). The Document-level
+    # <description> never has this string, so we naturally fall through
+    # to the Placemark-level one. First match wins.
+    total_duration_s: float | None = None
+    for node in root.iter():
+        if _localname(node.tag) != "description":
+            continue
+        m = _KML_DURATION_RE.search(node.text or "")
+        if not m:
+            continue
+        mins, secs = int(m.group(1)), int(m.group(2))
+        total_duration_s = float(mins * 60 + secs)
+        break
+
+    # --- Collect coordinates from all <coordinates> elements ---
+    # Each element holds "lon,lat,alt\nlon,lat,alt\n..." — whitespace-
+    # separated tuples, comma-separated components. Altitude is optional
+    # in KML but BasicAirData always emits it.
+    raw: list[tuple[float, float, float]] = []
+    for node in root.iter():
+        if _localname(node.tag) != "coordinates":
+            continue
+        text = (node.text or "").strip()
+        if not text:
+            continue
+        for tok in text.split():
+            parts = tok.split(",")
+            if len(parts) < 2:
+                continue
+            try:
+                lon = float(parts[0])
+                lat = float(parts[1])
+                alt = float(parts[2]) if len(parts) >= 3 else 0.0
+            except (TypeError, ValueError):
+                continue
+            raw.append((lon, lat, alt))
+
+    if not raw:
+        return []
+
+    n = len(raw)
+
+    # --- Synthesise timestamps ---
+    # Start-time fallback: if no "GPS Logger ..." <name> is present
+    # (e.g. KML from another tool), degrade gracefully to file mtime
+    # so the synthesised epochs are at least anchored to something real.
+    if start_epoch is None:
+        try:
+            start_epoch = os.path.getmtime(path)
+        except OSError:
+            start_epoch = 0.0
+        sys.stderr.write(
+            "WARNING: KML {} has no \"GPS Logger YYYYMMDD-HHMMSS\" in "
+            "<name>; using file mtime ({}) as start time.\n".format(
+                path,
+                datetime.fromtimestamp(
+                    start_epoch, tz=timezone.utc).isoformat(),
+            )
+        )
+
+    # Duration fallback: assume ~1 s between consecutive points. This is
+    # the most common phone-logger cadence and keeps the synthesised
+    # timestamps plausible even when the duration metadata is missing.
+    if total_duration_s is None or total_duration_s <= 0:
+        total_duration_s = max(1.0, float(n - 1))
+        sys.stderr.write(
+            "WARNING: KML {} has no \"Duration = MM:SS | MM:SS\" in "
+            "<description>; assuming 1 s/point ({} s total).\n".format(
+                path, total_duration_s)
+        )
+
+    # Even distribution: epoch_i = start + i * (duration_s / (n - 1)).
+    # Edge case n == 1 → duration collapses to a single point at start.
+    step = total_duration_s / (n - 1) if n > 1 else 0.0
+
+    pts: list[GpsPoint] = []
+    for i, (lon, lat, alt) in enumerate(raw):
+        ep = start_epoch + i * step
+        # ISO-8601 UTC string for downstream CSV output, mirroring the
+        # "2026-08-23T20:06:00Z" shape produced by parse_iso_to_epoch.
+        time_str = (
+            datetime.fromtimestamp(ep, tz=timezone.utc)
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
+        )
+        pts.append(GpsPoint(ep, lat, lon, alt, time_str))
+
+    pts.sort(key=lambda p: p.epoch)
+    return pts
+
+
+def parse_gps_csv(path: str) -> list[GpsPoint]:
+    """Parse a GPS CSV file. Column names auto-detected from header row."""
+    with open(path, newline="", errors="replace") as f:
+        reader = csv.DictReader(f)
+        if reader.fieldnames is None:
+            raise ValueError("GPS CSV has no header row")
+        names_lower = {n.lower(): n for n in reader.fieldnames}
+
+        def find_col(aliases):
+            for a in aliases:
+                if a in names_lower:
+                    return names_lower[a]
+            return None
+
+        tcol = find_col(GPS_TIME_ALIASES)
+        latcol = find_col(GPS_LAT_ALIASES)
+        loncol = find_col(GPS_LON_ALIASES)
+        elecol = find_col(GPS_ELE_ALIASES)
+
+        if not tcol:
+            raise ValueError(
+                "GPS CSV missing timestamp column. Looked for one of: "
+                "{}".format(", ".join(GPS_TIME_ALIASES))
+            )
+        if not latcol or not loncol:
+            raise ValueError(
+                "GPS CSV missing lat/lon columns. Looked for lat aliases: "
+                "{}, lon aliases: {}".format(
+                    ", ".join(GPS_LAT_ALIASES), ", ".join(GPS_LON_ALIASES),
+                )
+            )
+
+        pts: list[GpsPoint] = []
+        for row in reader:
+            epoch = parse_iso_to_epoch(row[tcol] or "")
+            if epoch is None:
+                continue
+            try:
+                lat = float(row[latcol])
+                lon = float(row[loncol])
+            except (TypeError, ValueError):
+                continue
+            ele = None
+            if elecol:
+                try:
+                    ele = float(row[elecol])
+                except (TypeError, ValueError):
+                    pass
+            pts.append(GpsPoint(epoch, lat, lon, ele, row[tcol]))
+
+    pts.sort(key=lambda p: p.epoch)
+    return pts
+
+
+def _detect_xml_format(path: str) -> str | None:
+    """Sniff the root element tag of an XML file. Returns 'gpx', 'kml' or None."""
+    try:
+        tree = ET.parse(path)
+    except (ET.ParseError, OSError):
+        return None
+    root = tree.getroot()
+    tag = root.tag.rsplit("}", 1)[-1] if "}" in root.tag else root.tag
+    tag = tag.lower()
+    if tag == "kml":
+        return "kml"
+    if tag == "gpx":
+        return "gpx"
+    return None
+
+
+def load_gps(path: str, fmt: str = "auto") -> list[GpsPoint]:
+    """Load a GPS file in the specified format.
+
+    ``fmt`` values (default ``auto``):
+      - 'auto' — detect by extension (.gpx / .kml / .csv), then fall
+                 back to XML root-tag sniffing, else CSV.
+      - 'gpx'  — force GPX parser.
+      - 'kml'  — force KML parser (BasicAirData GPS Logger, with
+                 synthesised timestamps).
+      - 'csv'  — force GPS CSV parser.
+    """
+    fmt = (fmt or "auto").lower()
+
+    # --- Explicit format override bypasses detection ---
+    if fmt == "gpx":
+        return parse_gpx(path)
+    if fmt == "kml":
+        return parse_kml(path)
+    if fmt == "csv":
+        return parse_gps_csv(path)
+
+    # --- Auto-detect: extension first ---
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".gpx":
+        return parse_gpx(path)
+    if ext == ".kml":
+        return parse_kml(path)
+    if ext in (".csv", ".tsv"):
+        return parse_gps_csv(path)
+
+    # --- Unknown extension: sniff XML root tag (handles .bin / .txt) ---
+    detected = _detect_xml_format(path)
+    if detected == "kml":
+        return parse_kml(path)
+    if detected == "gpx":
+        return parse_gpx(path)
+
+    # Last resort: treat as CSV (will raise if no header columns).
+    return parse_gps_csv(path)
+
+
+# ---------------------------------------------------------------------------
+# RX log loading
+# ---------------------------------------------------------------------------
+
+def load_rx_log(path: str) -> tuple[list[dict], str]:
+    """Load RX log. Auto-detects harmonized (PKT-prefixed) vs legacy CSV.
+
+    Returns (rows, format) where format is 'harmonized' or 'legacy'.
+    For harmonized, rows are parsed PKT dicts (harmonized field names).
+    For legacy, rows are csv.DictReader dicts (old column names).
+    """
+    with open(path, newline="", errors="replace") as f:
+        first_line = f.readline()
+    # Detect harmonized format: first non-empty line starts with PKT, or
+    # the file starts with a comment (#) followed by PKT lines.
+    if first_line.startswith("PKT,"):
+        return load_harmonized_rx(path)
+    # Check if first line is a comment — peek ahead for PKT
+    if first_line.lstrip().startswith("#"):
+        with open(path, errors="replace") as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    if stripped.startswith("PKT,"):
+                        return load_harmonized_rx(path)
+                    break  # non-comment, non-PKT → legacy
+        # All comments / empty → treat as legacy
+    # Legacy CSV
+    with open(path, newline="", errors="replace") as f:
+        reader = csv.DictReader(ln for ln in f if not ln.lstrip().startswith("#"))
+        rows = list(reader)
+    return rows, "legacy"
+
+
+def load_harmonized_rx(path: str) -> tuple[list[dict], str]:
+    """Load a harmonized PKT/STAT file. Returns (pkt_dicts, 'harmonized').
+
+    Parses PKT lines using parse_pkt_line from e80_bench_ctl. STAT and
+    comment lines are skipped (STAT data is not needed for stitching).
+    """
+    # Import parse_pkt_line from e80_bench_ctl (same directory)
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from e80_bench_ctl import parse_pkt_line
+
+    pkts: list[dict] = []
+    with open(path, errors="replace") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("PKT,"):
+                p = parse_pkt_line(line)
+                if p is not None:
+                    pkts.append(p)
+    return pkts, "harmonized"
+
+
+def rx_timestamp_epoch(row: dict, ts_col: str,
+                       t0_epoch: float | None) -> float | None:
+    """Convert an RX row's timestamp column to epoch seconds.
+
+    For ``captured_ts`` (ISO wall-clock) → parsed directly.
+    For ``ts_ms`` (firmware uptime) → t0_epoch + ts_ms/1000.
+    """
+    raw = row.get(ts_col)
+    if raw is None or raw == "":
+        return None
+
+    if ts_col == "ts_ms":
+        # Firmware uptime in ms. Needs t0_epoch to anchor.
+        if t0_epoch is None:
+            return None
+        try:
+            return float(t0_epoch) + float(raw) / 1000.0
+        except (TypeError, ValueError):
+            return None
+
+    # ISO timestamp path
+    return parse_iso_to_epoch(raw)
+
+
+def pick_rx_ts_col(rows: list[dict], t0_epoch: float | None,
+                   explicit_col: str | None) -> str:
+    """Decide which RX timestamp column to use.
+
+    Preference: explicit override > captured_ts (wall-clock) > ts_ms
+    (needs --t0-epoch).
+    """
+    if explicit_col:
+        return explicit_col
+    if not rows:
+        # No data — assume captured_ts by default
+        return "captured_ts"
+    header = set(rows[0].keys())
+    if "captured_ts" in header:
+        return "captured_ts"
+    if "ts_ms" in header and t0_epoch is not None:
+        return "ts_ms"
+    if "captured_ts" in RX_TS_COLS and "captured_ts" in header:
+        return "captured_ts"
+    if "ts_ms" in header:
+        # Best effort: caller will see a warning later
+        return "ts_ms"
+    raise ValueError(
+        "RX log has no recognised timestamp column. Expected one of: "
+        "{}".format(", ".join(RX_TS_COLS))
+    )
+
+
+# ---------------------------------------------------------------------------
+# Nearest-timestamp join (bisect)
+# ---------------------------------------------------------------------------
+
+def nearest_gps(epoch: float, gps_epochs: list[float],
+               gps_pts: list[GpsPoint]) -> tuple[GpsPoint | None, float]:
+    """Find the GPS point whose timestamp is nearest ``epoch``.
+
+    Returns (point, offset_seconds) where offset = epoch - point.epoch.
+    Returns (None, inf) if the GPS list is empty.
+    """
+    if not gps_pts:
+        return None, float("inf")
+    idx = bisect.bisect_left(gps_epochs, epoch)
+    best = None
+    best_off = float("inf")
+    # Check idx-1 and idx (the two candidates that bracket epoch)
+    for i in (idx - 1, idx):
+        if 0 <= i < len(gps_pts):
+            off = abs(epoch - gps_epochs[i])
+            if off < best_off:
+                best_off = off
+                best = gps_pts[i]
+    return best, (epoch - best.epoch if best is not None else float("inf"))
+
+
+# ---------------------------------------------------------------------------
+# Main stitch routine
+# ---------------------------------------------------------------------------
+
+OUTPUT_EXTRA_COLS = (
+    "gps_lat", "gps_lon", "gps_ele", "gps_time", "gps_offset_s", "dist_m",
+)
+
+
+def stitch(rx_rows: list[dict], gps_pts: list[GpsPoint],
+           ts_col: str, t0_epoch: float | None,
+           tx_lat: float | None = None, tx_lon: float | None = None,
+           max_gap_s: float = 30.0,
+           ) -> list[dict]:
+    """Join RX rows with nearest GPS points by timestamp.
+
+    Returns a new list of dicts: original RX columns + OUTPUT_EXTRA_COLS.
+    GPS columns are empty strings when no GPS data is available or the
+    nearest point is farther than ``max_gap_s`` seconds away (a warning is
+    emitted once per row in that case).
+    """
+    gps_epochs = [p.epoch for p in gps_pts]
+    warned_gap = False
+    out: list[dict] = []
+
+    for row in rx_rows:
+        epoch = rx_timestamp_epoch(row, ts_col, t0_epoch)
+        new = dict(row)
+        if epoch is None:
+            for c in OUTPUT_EXTRA_COLS:
+                new[c] = ""
+            out.append(new)
+            continue
+        pt, off = nearest_gps(epoch, gps_epochs, gps_pts)
+        if pt is None:
+            for c in OUTPUT_EXTRA_COLS:
+                new[c] = ""
+            out.append(new)
+            continue
+        if abs(off) > max_gap_s and not warned_gap:
+            sys.stderr.write(
+                "WARNING: nearest GPS point is {:.0f}s away from packet "
+                "(col={}, value={}). Consider --max-gap-s or check clock "
+                "sync.\n".format(off, ts_col, row.get(ts_col))
+            )
+            warned_gap = True
+        new["gps_lat"] = "{:.6f}".format(pt.lat)
+        new["gps_lon"] = "{:.6f}".format(pt.lon)
+        new["gps_ele"] = "" if pt.ele is None else "{:.2f}".format(pt.ele)
+        new["gps_time"] = pt.time_str or ""
+        new["gps_offset_s"] = "{:.3f}".format(off)
+        if tx_lat is not None and tx_lon is not None and pt is not None:
+            d = haversine(tx_lat, tx_lon, pt.lat, pt.lon)
+            new["dist_m"] = "{:.1f}".format(d)
+        else:
+            new["dist_m"] = ""
+        out.append(new)
+    return out
+
+
+def write_combined_csv(rows: list[dict], out_path: str) -> None:
+    """Write rows to CSV. Columns = original RX columns + OUTPUT_EXTRA_COLS."""
+    if not rows:
+        # Empty — still write a header
+        with open(out_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(OUTPUT_EXTRA_COLS)
+        return
+    # Preserve RX column order; append extras (de-dup if RX already had them)
+    base_cols = list(rows[0].keys())
+    extra = [c for c in OUTPUT_EXTRA_COLS if c not in base_cols]
+    fieldnames = base_cols + extra
+    with open(out_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames,
+                                extrasaction="ignore")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow(r)
+
+
+def stitch_harmonized(rx_pkts: list[dict], gps_pts: list[GpsPoint],
+                      t0_epoch: float,
+                      tx_lat: float | None = None,
+                      tx_lon: float | None = None,
+                      max_gap_s: float = 30.0,
+                      ) -> list[dict]:
+    """Stitch GPS data into harmonized PKT dicts by nearest timestamp.
+
+    Populates the inline GPS fields (gps_fix, gps_lat, gps_lon, gps_alt,
+    gps_sats, gps_hdop) directly in each PKT dict. Returns the same list
+    of dicts with GPS fields filled in.
+
+    Requires t0_epoch — harmonized PKT format has no captured_ts.
+    """
+    if t0_epoch is None:
+        raise ValueError(
+            "Harmonized PKT format requires --t0-epoch for GPS stitching "
+            "(no captured_ts in PKT lines)")
+
+    gps_epochs = [p.epoch for p in gps_pts]
+    warned_gap = False
+
+    for pkt in rx_pkts:
+        ts_ms = pkt.get("ts_ms", 0)
+        try:
+            epoch = float(t0_epoch) + float(ts_ms) / 1000.0
+        except (TypeError, ValueError):
+            epoch = None
+
+        if epoch is None:
+            pkt["gps_fix"] = 0
+            pkt["gps_lat"] = 0.0
+            pkt["gps_lon"] = 0.0
+            pkt["gps_alt"] = 0.0
+            pkt["gps_sats"] = 0
+            pkt["gps_hdop"] = 0.0
+            continue
+
+        pt, off = nearest_gps(epoch, gps_epochs, gps_pts)
+        if pt is None:
+            pkt["gps_fix"] = 0
+            pkt["gps_lat"] = 0.0
+            pkt["gps_lon"] = 0.0
+            pkt["gps_alt"] = 0.0
+            pkt["gps_sats"] = 0
+            pkt["gps_hdop"] = 0.0
+            continue
+
+        if abs(off) > max_gap_s and not warned_gap:
+            sys.stderr.write(
+                "WARNING: nearest GPS point is {:.0f}s away from packet "
+                "(ts_ms={}). Consider --max-gap-s or check clock sync.\n"
+                .format(off, ts_ms)
+            )
+            warned_gap = True
+
+        pkt["gps_fix"] = 1
+        pkt["gps_lat"] = pt.lat
+        pkt["gps_lon"] = pt.lon
+        pkt["gps_alt"] = pt.ele if pt.ele is not None else 0.0
+        pkt["gps_sats"] = 0  # not available from GPX/CSV tracks
+        pkt["gps_hdop"] = 0.0  # not available from GPX/CSV tracks
+        if tx_lat is not None and tx_lon is not None:
+            pkt["_dist_m"] = haversine(tx_lat, tx_lon, pt.lat, pt.lon)
+
+    return rx_pkts
+
+
+def write_harmonized_output(pkts: list[dict], out_path: str,
+                            tx_lat: float | None = None,
+                            tx_lon: float | None = None) -> None:
+    """Write harmonized PKT lines with GPS fields populated.
+
+    Uses format_pkt_line() from e80_bench_ctl to render each PKT dict
+    back to a PKT, CSV line. Optionally appends a dist_m summary comment.
+    """
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from e80_bench_ctl import format_pkt_line
+
+    with open(out_path, "w") as f:
+        for p in pkts:
+            f.write(format_pkt_line(p) + "\n")
+        # Optionally append a dist_m summary comment
+        if tx_lat is not None:
+            dists = [p.get("_dist_m") for p in pkts if p.get("gps_fix")]
+            dists = [d for d in dists if d is not None]
+            if dists:
+                f.write("# dist_m: min={:.0f} max={:.0f} mean={:.0f}\n".format(
+                    min(dists), max(dists), sum(dists) / len(dists)))
+
+
+def parse_latlon(s: str) -> tuple[float, float]:
+    """Parse 'lat,lon' string."""
+    parts = s.split(",")
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError(
+            "expected 'lat,lon' (two numbers separated by comma)"
+        )
+    try:
+        return float(parts[0].strip()), float(parts[1].strip())
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "expected 'lat,lon' (two numbers separated by comma)"
+        )
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="gps_stitch.py",
+        description="Stitch GPS track points onto RX packet log by nearest "
+                    "timestamp.",
+    )
+    parser.add_argument("--rx", required=True,
+                        help="RX packet CSV log (rx-log.csv format)")
+    parser.add_argument("--gps", required=True,
+                        help="GPS file: GPX (XML) or CSV with lat/lon/time "
+                             "columns")
+    parser.add_argument("--out", default=None,
+                        help="Output combined CSV path (default: "
+                             "<rx-stem>_gps.csv)")
+    parser.add_argument("--tx-gps", type=parse_latlon, default=None,
+                        metavar="LAT,LON",
+                        help="TX reference location for distance calculation "
+                             "(e.g. 52.0123,4.0456). Adds dist_m column.")
+    parser.add_argument("--t0-epoch", type=float, default=None,
+                        metavar="EPOCH",
+                        help="If RX log only has ts_ms (firmware uptime), "
+                             "supply T0 as unix epoch seconds to map uptime "
+                             "to wall-clock.")
+    parser.add_argument("--ts-col", default=None,
+                        help="Explicit RX timestamp column to use "
+                             "(default: captured_ts if present, else ts_ms "
+                             "with --t0-epoch)")
+    parser.add_argument("--max-gap-s", type=float, default=30.0,
+                        metavar="SECONDS",
+                        help="Warn if nearest GPS point is farther than this "
+                             "many seconds from a packet's timestamp "
+                             "(default: 30)")
+    parser.add_argument("--gps-format", choices=["auto", "gpx", "kml", "csv"],
+                        default="auto",
+                        help="Force GPS file format instead of "
+                             "auto-detecting from extension/content "
+                             "(default: auto)")
+    args = parser.parse_args(argv)
+
+    if not os.path.exists(args.rx):
+        print("ERROR: RX log not found: {}".format(args.rx), file=sys.stderr)
+        return 1
+    if not os.path.exists(args.gps):
+        print("ERROR: GPS file not found: {}".format(args.gps),
+              file=sys.stderr)
+        return 1
+
+    # --- Load RX --- (auto-detect harmonized vs legacy)
+    rx_rows, rx_fmt = load_rx_log(args.rx)
+    if not rx_rows:
+        print("ERROR: RX log {} has no data rows".format(args.rx),
+              file=sys.stderr)
+        return 1
+    print("[gps_stitch] Loaded {} RX packet rows from {} (format: {})".format(
+        len(rx_rows), args.rx, rx_fmt))
+
+    # --- Load GPS ---
+    gps_pts = load_gps(args.gps, fmt=args.gps_format)
+    if not gps_pts:
+        print("ERROR: No GPS track points found in {}".format(args.gps),
+              file=sys.stderr)
+        return 1
+    print("[gps_stitch] Loaded {} GPS track points from {}".format(
+        len(gps_pts), args.gps))
+
+    tx_lat = args.tx_gps[0] if args.tx_gps else None
+    tx_lon = args.tx_gps[1] if args.tx_gps else None
+
+    # --- Branch on format ---
+    if rx_fmt == "harmonized":
+        # Harmonized PKT format — populate inline GPS fields
+        if args.t0_epoch is None:
+            print("ERROR: Harmonized PKT format requires --t0-epoch for "
+                  "GPS stitching (no captured_ts in PKT lines)",
+                  file=sys.stderr)
+            return 1
+        print("[gps_stitch] Using ts_ms + t0_epoch={}".format(args.t0_epoch))
+        combined = stitch_harmonized(
+            rx_rows, gps_pts, args.t0_epoch,
+            tx_lat=tx_lat, tx_lon=tx_lon,
+            max_gap_s=args.max_gap_s)
+
+        if args.out is None:
+            stem = os.path.splitext(args.rx)[0]
+            args.out = "{}_gps.csv".format(stem)
+        write_harmonized_output(combined, args.out,
+                                tx_lat=tx_lat, tx_lon=tx_lon)
+        print("[gps_stitch] Wrote {} PKT rows to {}".format(
+            len(combined), args.out))
+
+        n_with_gps = sum(1 for p in combined if p.get("gps_fix"))
+        if tx_lat is not None:
+            dists = [p.get("_dist_m") for p in combined if p.get("gps_fix")]
+            dists = [d for d in dists if d is not None]
+            if dists:
+                print("[gps_stitch] Distance from TX: min={:.0f}m "
+                      "max={:.0f}m mean={:.0f}m".format(
+                          min(dists), max(dists),
+                          sum(dists) / len(dists)))
+        print("[gps_stitch] {} / {} rows matched to GPS".format(
+            n_with_gps, len(combined)))
+        return 0
+
+    # --- Legacy CSV format (unchanged behavior) ---
+    # Decide timestamp column
+    try:
+        ts_col = pick_rx_ts_col(rx_rows, args.t0_epoch, args.ts_col)
+    except ValueError as e:
+        print("ERROR: {}".format(e), file=sys.stderr)
+        return 1
+    if ts_col == "ts_ms" and args.t0_epoch is None:
+        print("ERROR: RX log only has ts_ms (firmware uptime); pass "
+              "--t0-epoch EPOCH to map to wall-clock time.", file=sys.stderr)
+        return 1
+    print("[gps_stitch] Using RX timestamp column: {}".format(ts_col))
+
+    # --- Stitch (legacy: append GPS columns) ---
+    combined = stitch(rx_rows, gps_pts, ts_col, args.t0_epoch,
+                      tx_lat=tx_lat, tx_lon=tx_lon,
+                      max_gap_s=args.max_gap_s)
+
+    # --- Write ---
+    if args.out is None:
+        stem = os.path.splitext(args.rx)[0]
+        args.out = "{}_gps.csv".format(stem)
+    write_combined_csv(combined, args.out)
+    print("[gps_stitch] Wrote {} rows to {}".format(len(combined), args.out))
+
+    # --- Summary ---
+    n_with_gps = sum(1 for r in combined if r.get("gps_lat"))
+    if tx_lat is not None:
+        dists = [float(r["dist_m"]) for r in combined
+                 if r.get("dist_m") not in (None, "")]
+        if dists:
+            print("[gps_stitch] Distance from TX: min={:.0f}m "
+                  "max={:.0f}m mean={:.0f}m".format(
+                      min(dists), max(dists),
+                      sum(dists) / len(dists)))
+    print("[gps_stitch] {} / {} rows matched to GPS".format(
+        n_with_gps, len(combined)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
