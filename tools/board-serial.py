@@ -10,9 +10,9 @@ prints a clear error with instructions.
 Usage:
     from board_serial import BoardSerial
 
-    # Instead of: ser = serial.Serial('/dev/ttyACM0', 115200)
+    # Instead of: ser = serial.Serial('/dev/ttyACM0', 2000000)
     # Use:
-    ser = BoardSerial('/dev/ttyACM0', 115200)
+    ser = BoardSerial('/dev/ttyACM0', 2000000)
     ser.write(b'data')
     data = ser.read(1024)
 

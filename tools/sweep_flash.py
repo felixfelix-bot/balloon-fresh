@@ -107,7 +107,7 @@ from board_serial import BoardSerial
 
 for port, label in [(rx_port, "RX"), (tx_port, "TX")]:
     try:
-        s = BoardSerial(port, 115200, timeout=3)
+        s = BoardSerial(port, 2000000, timeout=3)
         time.sleep(0.5)
         data = s.read(8192)
         s.close()

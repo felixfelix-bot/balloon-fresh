@@ -380,8 +380,15 @@ Before Phase 2b implementation, we need real-world data from Phase 2a (basic rep
 - [ ] ClusterHeadElector: basic election (highest score wins)
 - [ ] ClusterHeadElector: stale fallback (head ages out, next-best elected)
 - [ ] ClusterHeadElector: score ordering (recency > signal > stability)
-- [ ] StratoRelayMesh: filter from cluster head (allowed)
-- [ ] StratoRelayMesh: filter from non-head (dropped)
-- [ ] StratoRelayMesh: bridge between clusters (forwarded)
-- [ ] StratoRelayMesh: no self-bridge (packet from Cluster A not sent back to A)
-- [ ] StratoRelayMesh: unknown node allowed (conservative default)
+- [x] StratoRelayMesh: filter from cluster head (allowed)
+- [x] StratoRelayMesh: filter from non-head (dropped)
+- [x] StratoRelayMesh: bridge between clusters (forwarded)
+- [x] StratoRelayMesh: no self-bridge (packet from Cluster A not sent back to A)
+- [x] StratoRelayMesh: unknown node allowed (conservative default)
+
+Implemented by `tracker/firmware/components/stratorelay/StratoRelayMesh.h` (radio-free
+decision core) with 8 host tests in
+`tracker/firmware/components/stratorelay/test/test_stratorelay_mesh.cpp`, run by
+`tests/test_c_host.py::TestStratoRelayMesh` (plus one regression case for
+NodeTable slot recycling). The firmware `mesh::Mesh` subclass only supplies the
+radio/identity/packet glue and delegates every decision here.

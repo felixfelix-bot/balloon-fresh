@@ -285,7 +285,7 @@ How long from power-on to "all 9 components initialized and ready"? Current firm
 
 The plan puts e-hash radio wiring as Phase 2.1, BEFORE the Nostr-over-LoRa transport (Phase 2.2). This is backwards. E-hash adds a complex PoW transport protocol on top of raw radio. You should prove raw radio works board-to-board FIRST (which requires zero new code — the CLI commands already exist), then add Nostr serialization, then add e-hash on top only if you need it.
 
-**The balloon never hashes (per ADR-025).** E-hash is a pure L7 transport wrapper. For the first integration, skip it entirely. Send raw Nostr event bytes over raw LoRa. Add e-hash later if the use case demands it.
+**The balloon never hashes (per ADR-106).** E-hash is a pure L7 transport wrapper. For the first integration, skip it entirely. Send raw Nostr event bytes over raw LoRa. Add e-hash later if the use case demands it.
 
 ### OVERCOMP-2: Index persistence as an integration gate
 

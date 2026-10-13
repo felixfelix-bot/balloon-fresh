@@ -1,0 +1,3 @@
+# P1.1 — LR2021 TX test firmware.
+# RadioLib is vendored locally under components/RadioLib/ (git submodule),
+# so no remote component dependency is required here — mirrors ../idf_component.yml.

@@ -9,9 +9,10 @@
   "pin_type": "castellated",
   "pins_per_side": 9,
   "total_pins": 18,
-  "pin_pitch_mm": 2.0,
-  "pin_offset_from_edge_mm": 1.5,
+  "pin_pitch_mm": 3.9289,
+  "pin_offset_from_edge_mm": 3.7844,
   "pin1_marker": "none visible — orientation by pad position",
+  "pad_geometry_source": "vendor pad file docs/f33-module/materials/LORA2021F33-2G4 footprint_pads.pcb (Altium binary, 1.5e6 units/mm): pad rows on the two 39mm edges (y=+/-10.5), pitch 3.9289mm, outermost pad centre 3.7844mm from the 39mm ends. See docs/f33-module/F33-LANDPATTERN-VERIFICATION.md (branch docs/f33-landpattern-verification). Earlier 2.0mm pitch / 1.5mm offset values were an assumption and were wrong.",
   "note": "F33 module has built-in 2W PA (+33 dBm at 433 MHz) and industrial-grade TCXO 0.5ppm. Completely different pinout from bare LoRa2021. 9 pins per side, left side pins 1-9 top-to-bottom, right side pins 10-18 top-to-bottom. Module package 39x21mm per LCSC. Power: 3.0-5.5V, use 5V for full 2W output.",
   "top_view_left_side_top_to_bottom": [
     {"pin": 1, "function": "VCC", "type": "power", "note": "3.0-5.5V, use 5V for full 2W output"},

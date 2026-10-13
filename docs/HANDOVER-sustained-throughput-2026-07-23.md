@@ -376,7 +376,12 @@ Br650  = 0x04  Br520  = 0x05  Br325  = 0x06  Br260  = 0x07
 - byte3 = (coding_rate << 4) | pulse_shape
 - CR: Cr12=0, Cr34=1, None=2, Cr23=3
 - PulseShape: None=0, Bt0p3=4, Bt0p5=5, Bt0p7=6, Bt1p0=7
-- Proven working: Br2600 + None + Bt1.0 → `{0x02, 0x48, 0x00, 0x27}`
+- We use Br2600 + None + Bt0.5 → `{0x02, 0x48, 0x00, 0x25}` on BOTH the
+  RP2040 and the ESP32-C3 (P0.5, kanban t_dc858d9b). Keep the two platforms on
+  the same pulse shape — a BT mismatch is silent: no CRC errors on either side,
+  just no packets at all.
+  (Historical: the vendor TheClams demo used Bt1.0 = `{0x02, 0x48, 0x00, 0x27}`,
+  which the ESP32 side copied before P0.5.)
 
 ### LoRa Parameters (SET_LORA_MODULATION_PARAMS)
 - SpreadingFactor: SF5-SF12

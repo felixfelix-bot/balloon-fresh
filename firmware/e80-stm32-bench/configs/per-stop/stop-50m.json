@@ -1,0 +1,20 @@
+{
+  "configs": [
+    {
+      "mod": "lora", "sf": 7, "bw": 125, "pa": 10, "freq": 868000000,
+      "plen": 64, "gap": 100, "n_pkts": 10, "label": "SF7-125k-64B"
+    },
+    {
+      "mod": "lora", "sf": 8, "bw": 125, "pa": 10, "freq": 868000000,
+      "plen": 64, "gap": 100, "n_pkts": 10, "label": "SF8-125k-64B"
+    },
+    {
+      "mod": "lora", "sf": 12, "bw": 125, "pa": 10, "freq": 868000000,
+      "plen": 64, "gap": 100, "n_pkts": 10, "label": "SF12-125k-64B"
+    },
+    {
+      "mod": "flrc", "br": 1526000, "pa": 10, "freq": 868000000,
+      "plen": 64, "gap": 10, "n_pkts": 10, "label": "FLRC-1.5M-64B"
+    }
+  ]
+}

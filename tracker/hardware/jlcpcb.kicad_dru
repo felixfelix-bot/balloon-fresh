@@ -1,0 +1,7 @@
+(version 1)
+# JLCPCB standard capability — 4-layer, 1oz copper (checked 2026-09-16)
+(rule "JLCPCB min clearance" (constraint clearance (min 0.15mm)))
+(rule "JLCPCB min track width" (constraint track_width (min 0.15mm)))
+(rule "JLCPCB min via diameter" (constraint via_diameter (min 0.45mm)))
+(rule "JLCPCB min hole" (constraint hole_size (min 0.2mm)))
+(rule "JLCPCB hole-to-hole" (constraint hole_to_hole (min 0.25mm)))

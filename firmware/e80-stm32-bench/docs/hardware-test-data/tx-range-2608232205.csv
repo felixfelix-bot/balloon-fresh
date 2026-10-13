@@ -1,0 +1,6 @@
+# DISTRIBUTED_TX_MODE session=2608232205 t0=2026-08-24T00:05:00 port=/dev/ttyUSB0 probe=203584200D2D0D42
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.060,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608232205,config=0,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.050,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608232205,config=1,replicate=1,drops=0,gap_us=5000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=1.280,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608232205,config=2,replicate=1,drops=0,gap_us=10000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=28.030,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608232205,config=3,replicate=1,drops=0,gap_us=10000
+STAT,role=TX,sent=12,sent_ok=12,rx=0,crc_err=0,per_x1e6=0,per_ci_x1e6=[0,0],elapsed_s=0.080,kbps=,rssi_avg_dbm=,snr_avg_db=,session=2608232205,config=4,replicate=1,drops=0,gap_us=5000

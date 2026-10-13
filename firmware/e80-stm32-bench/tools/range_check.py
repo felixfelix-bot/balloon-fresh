@@ -1,0 +1,984 @@
+#!/usr/bin/env python3
+"""range_check.py — post-stop rx-log gap check + selective re-send preset.
+
+Union of the two range-check implementations (superset — both feature sets):
+
+v1 (main / worker-balloon/range-check):
+  - STAT-row parsing with the bracket-safe ``per_ci_x1e6=[lo,hi]`` split
+    (a comma inside brackets must not corrupt later fields).
+  - LOGGING GAP verdict: zero STAT rows for the session means the rx
+    LOGGER failed (STAT rows are emitted per config even when rx=0, so
+    rx=0 STATs are DATA — RF death — never a logging gap; no resend file).
+  - WARMUP_REPLICATES exclusion, per-config conditional: when a config's
+    capture has more than WARMUP_REPLICATES distinct replicates, the
+    first WARMUP_REPLICATES never count (multi-cycle warmup); a
+    single-cycle (loop=1) or short capture (<= WARMUP_REPLICATES
+    distinct replicates) counts ALL of its replicates.
+  - Default per-stop preset lookup + VALID_DISTS error (exit 2).
+  - v1-style renumbered resend ``configs/resend-<DIST>-s<SESSION>.json``
+    + verbatim TX one-liner (``T0=+90`` relative form).
+
+v2 (worker-balloon/range-check2):
+  - Best-pass analysis across replicates (max, never pooled — matches the
+    best-pass merge policy in merge_csvs.py) with a thin_frac threshold.
+  - T0-tagged per-stop log discovery (logs/*/stop-<dist>/rx-log-*.csv,
+    newest first) + legacy cwd-quirk fallback.
+  - Session auto-detect (highest session id found in the log).
+  - idx-preserved resend ``configs/resend/resend-<dist>-<session>.json``
+    + paste-ready TX/RX re-send commands (T0 = next 5-minute boundary).
+
+v3 (GO mode, --sync cvm):
+  - Session-FIRST launch cross-check: the rx/tx logs of one stop must
+    expose the same session_id (session dir name s<session>-{t0,go}<epoch>
+    and/or the banner's session=<sid> token); a disagreement is a loud
+    SESSION MISMATCH exit-2. When the sessions agree (or only one side
+    exposes one) the legacy t0 rule (filename tag + header) applies.
+  - Both log-dir schemes are read: legacy boundary/manual
+    logs/s<sid>-t0<epoch>/stop-<dist>/rx-log-*.csv AND the GO layout
+    logs/s<sid>-go<epoch>/rx-log.csv (no stop-<dist> level — the stop lives
+    in the ARMED/log header), session-tagged candidates first.
+
+Usage (from firmware/e80-stm32-bench/, or via the root make proxy):
+
+    make range-check DIST=50m                      # latest session found
+    make range-check DIST=872m SESSION=2608281225  # explicit session
+
+Exit codes: 0 = complete, 1 = gaps / logging gap, 2 = usage/log errors.
+The analysis layer never modifies raw logs. No hardware, no serial.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import glob
+import json
+import os
+import re
+import sys
+import time
+
+_TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _TOOLS_DIR not in sys.path:
+    sys.path.insert(0, _TOOLS_DIR)
+
+import e80_bench_ctl as ctl  # noqa: E402  (parse_pkt_line + preset loader)
+
+# Multi-cycle warmup: when a config's capture has MORE than this many
+# distinct replicates, the first this-many never count. Captures with
+# this many or fewer (e.g. single-cycle loop=1 stops) count everything.
+WARMUP_REPLICATES = 2
+
+# Field TX board probe serial (TX laptop, walks with the operator).
+TX_PROBE_SERIAL = "148757200D2D1425"
+
+VALID_DISTS = ["50m", "100m", "218m", "436m", "872m", "1744m", "5km", "11km", "70km"]
+
+DEFAULT_THIN_FRAC = 0.5
+
+
+def default_repo_root():
+    """Repo root three levels up from this file (.../firmware/e80-stm32-bench/tools/)."""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def normalize_dist(dist):
+    """Bare numbers are meters: '100' -> '100m'; anything else passes through."""
+    return dist + "m" if dist.isdigit() else dist
+
+
+# ---------------------------------------------------------------------------
+# rx-log parsing (harmonized PKT + STAT lines, no header; legacy CSV too)
+# ---------------------------------------------------------------------------
+
+_STAT_SPLIT_RE = re.compile(r",(?![^\[]*])")  # commas outside [...] brackets
+
+
+def parse_stat_row(line):
+    """Parse a ``STAT,role=RX,...,session=N,config=N,replicate=N,...`` line.
+
+    The ``per_ci_x1e6=[lo,hi]`` field contains a comma inside brackets, so a
+    naive split(',') would corrupt the fields after it — split on commas that
+    are not inside a bracketed value instead.
+
+    Returns a dict of key->string, or None if the line is not a STAT line.
+    """
+    if not line or not line.strip().startswith("STAT,"):
+        return None
+    parts = _STAT_SPLIT_RE.split(line.strip())
+    fields = {}
+    for tok in parts[1:]:
+        if "=" in tok:
+            k, v = tok.split("=", 1)
+            fields[k.strip()] = v.strip()
+    return fields
+
+
+def _parse_rx_log_full(path):
+    """Parse an rx-log into (pkts, stats, sessions).
+
+    PKT rows are parsed with e80_bench_ctl.parse_pkt_line (the same parser
+    the merge/stitch tools use), STAT rows with parse_stat_row above.
+    Harmonized format first; a header-only legacy file (16-col CSV) is
+    parsed via csv.DictReader. Comment lines and noise are ignored. A
+    missing file parses as empty (=> LOGGING GAP verdict upstream).
+    """
+    pkts, stats, sessions = [], [], set()
+    if not path or not os.path.isfile(path):
+        return pkts, stats, sessions
+    with open(path, errors="replace") as f:
+        lines = [ln.rstrip("\n") for ln in f]
+    data = [ln for ln in lines if not ln.startswith("#")]
+    for ln in data:
+        s = ln.strip()
+        if s.startswith("PKT,"):
+            p = ctl.parse_pkt_line(s)
+            if p is not None:
+                pkts.append(p)
+                try:
+                    sessions.add(int(p["session_id"]))
+                except (TypeError, ValueError):
+                    pass
+        elif s.startswith("STAT,"):
+            st = parse_stat_row(s)
+            if st is not None:
+                stats.append(st)
+    if not pkts and not stats and data and data[0].startswith("session,"):
+        import csv
+        import io
+        for row in csv.DictReader(io.StringIO("\n".join(data))):
+            try:
+                pkts.append({
+                    "session_id": int(row["session"]),
+                    "config_id": int(row["config"]),
+                    "replicate": int(row.get("replicate", 1)),
+                })
+                sessions.add(int(row["session"]))
+            except (ValueError, KeyError, TypeError):
+                continue
+    return pkts, stats, sessions
+
+
+def parse_rx_log(path):
+    """Parse an rx-log file -> (pkts, sessions).
+
+    Harmonized format: PKT,<23 fields> lines (STAT,/comment lines ignored).
+    Legacy format (16-col CSV with header) parsed via csv.DictReader.
+    """
+    pkts, _stats, sessions = _parse_rx_log_full(path)
+    return pkts, sessions
+
+
+# ---------------------------------------------------------------------------
+# launch cross-check (2026-08-28 incident hardening, session-FIRST since GO
+# mode): the rx-log and tx-log of one stop must belong to the SAME launch.
+# The primary key is session_id, read from the session dir name
+# (s<session>-t0<epoch> legacy / s<session>-go<epoch> GO) and from the
+# `session=<sid>` token of the launch banner (DISTRIBUTED_*_MODE / GO_MODE);
+# a disagreement is a loud exit-2. When the sessions agree (or only one side
+# exposes one) the legacy t0 rule applies: t0 is read from BOTH the filename
+# tag (-t0<epoch> / -go<epoch>, TZ-safe) and the log header (t0=<iso>), any
+# disagreement a loud exit-2. Never a silent wrong-session analysis.
+# ---------------------------------------------------------------------------
+
+# Launch tags: `-t0<epoch>` (boundary / manual --t0) and `-go<epoch>` (GO
+# mode, --sync cvm). Digits only, so both spellings stay TZ-safe.
+_T0_FN_RE = re.compile(r"(?:^|[-_/])(t0|go)(\d{8,})")
+_T0_ISO_FMTS = ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%d %H:%M:%S")
+
+# Session dir names: s<session>-{t0,go}<epoch>, where <session> is the
+# legacy 10-digit int form or the GO form (%y%m%d%H%M + 3 lowercase hex).
+_SESSION_DIR_RE = re.compile(r"^s(\d{10}[0-9a-f]{3}|\d{10})-(t0|go)\d{8,}$")
+
+# Banner markers: the launch-banner comment lines of a log. The RX
+# DISTRIBUTED_RX_MODE banner carries no session= token; GO mode appends a
+# GO_MODE line that does (and repeats the same t0=), so both are accepted.
+_HEADER_MARKERS = ("DISTRIBUTED", "GO_MODE")
+
+
+def _t0_tag(path):
+    """(tag, epoch) from the nearest '-t0<epoch>' / '-go<epoch>' tag.
+
+    The tag is looked for in the log's basename first (legacy
+    rx-log-t0<epoch>-<session>.csv), then in its parent dir: the GO layout
+    is logs/s<session>-go<epoch>/rx-log.csv, the legacy parent-dir form is
+    s<session>-t0<epoch>/. None when untagged.
+    """
+    parent = os.path.basename(os.path.dirname(os.path.abspath(path or "")))
+    for part in (os.path.basename(path or ""), parent):
+        m = _T0_FN_RE.search(part)
+        if m:
+            return m.group(1), int(m.group(2))
+    return None
+
+
+def t0_from_filename(path):
+    """Epoch int from a '-t0<epoch>' / '-go<epoch>' tag in the log's
+    basename, else from its parent session dir (s<session>-{t0,go}<epoch>).
+    None when untagged."""
+    got = _t0_tag(path)
+    return got[1] if got else None
+
+
+def _session_dir_in_path(path):
+    """(session, dirname, tag) for the nearest session dir in `path`.
+
+    A session dir is s<session>-t0<epoch> (legacy boundary/manual) or
+    s<session>-go<epoch> (GO mode, --sync cvm). The log's own dir is checked
+    first (GO: logs/s<sid>-go<t0>/rx-log.csv), then every ancestor: the
+    legacy per-stop layout nests the log one level below the session dir
+    (logs/s<sid>-t0<t0>/stop-<dist>/rx-log-*.csv). None when the path
+    carries no session dir.
+    """
+    d = os.path.dirname(os.path.abspath(path or ""))
+    while d and d != os.path.dirname(d):
+        m = _SESSION_DIR_RE.match(os.path.basename(d))
+        if m:
+            return m.group(1), os.path.basename(d), m.group(2)
+        d = os.path.dirname(d)
+    return None
+
+
+def is_go_layout(path):
+    """True when the path sits in a GO session dir (s<session>-go<epoch>/).
+
+    The GO layout has NO `stop-<dist>` level, so callers cannot filter it by
+    path and must verify the stop from the banner / ARMED instead.
+    """
+    got = _session_dir_in_path(path)
+    return bool(got and got[2] == "go")
+
+
+def session_from_filename(path):
+    """Session id from the s<session>-{t0,go}<epoch> dir name in the path.
+
+    Both session spellings are accepted (legacy 10-digit int, GO
+    %y%m%d%H%M + 3-hex nonce). None when the path carries no session dir.
+    """
+    got = _session_dir_in_path(path)
+    return got[0] if got else None
+
+
+def t0_from_header(path):
+    """Epoch int from the launch banner's 't0=<iso-or-epoch>' comment.
+
+    Banner styles: DISTRIBUTED_*_MODE (boundary/manual) and GO_MODE
+    (--sync cvm, which repeats the same T0). Only the first banner line
+    carrying t0= is consulted (the launch-time banner). None when absent,
+    unreadable, or unparseable.
+    """
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, errors="replace") as f:
+            for ln in f:
+                if "t0=" not in ln or not any(
+                        mk in ln for mk in _HEADER_MARKERS):
+                    continue
+                m = re.search(r"t0=(\S+)", ln)
+                if not m:
+                    return None
+                tok = m.group(1)
+                try:
+                    return int(tok)
+                except ValueError:
+                    pass
+                for fmt in _T0_ISO_FMTS:
+                    try:
+                        return int(datetime.datetime.strptime(
+                            tok, fmt).timestamp())
+                    except ValueError:
+                        continue
+                return None
+    except OSError:
+        return None
+    return None
+
+
+def session_from_header(path):
+    """Session id from the launch banner's 'session=<sid>' token.
+
+    Banner styles (both known spellings):
+      # DISTRIBUTED_TX_MODE session=<sid> t0=<iso> port=... probe=... loop=...
+      # GO_MODE sync=cvm source=<s> session=<sid> t_ready=... t0=<iso> ...
+    The first banner line carrying a session= token wins. The RX
+    DISTRIBUTED_RX_MODE banner has none, so a GO RX log reads it from its
+    trailing GO_MODE line; a legacy RX log exposes none at all. None when
+    absent, unreadable, or without the token.
+    """
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, errors="replace") as f:
+            for ln in f:
+                if not any(mk in ln for mk in _HEADER_MARKERS):
+                    continue
+                m = re.search(r"session=(\S+)", ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        return None
+    return None
+
+
+def t0_sources(path):
+    """[(label, epoch)] for every t0 we can read from one log file."""
+    srcs = []
+    base = os.path.basename(path or "") or str(path)
+    tag = _t0_tag(path)
+    if tag is not None:
+        srcs.append(("{}: filename -{}{}".format(base, tag[0], tag[1]),
+                     tag[1]))
+    hdr = t0_from_header(path)
+    if hdr is not None:
+        srcs.append(("{}: header t0= -> {}".format(base, hdr), hdr))
+    return srcs
+
+
+def session_sources(path):
+    """[(label, session)] for every session we can read from one log file.
+
+    Mirrors t0_sources(): the session dir name and the launch banner token
+    are independent sources, so a split-brain log (dir says one session,
+    header another) surfaces as two entries.
+    """
+    srcs = []
+    base = os.path.basename(path or "") or str(path)
+    got = _session_dir_in_path(path)
+    if got is not None:
+        srcs.append(("{}: dir {}".format(base, got[1]), got[0]))
+    hdr = session_from_header(path)
+    if hdr is not None:
+        srcs.append(("{}: header session= -> {}".format(base, hdr), hdr))
+    return srcs
+
+
+# ---------------------------------------------------------------------------
+# GO-mode stop verification: a GO session dir carries no `stop-<dist>` level,
+# so "which stop is this?" is read from the `stop=<dist>` token the GO_MODE
+# banner comment carries (run_rx_mode/run_tx_mode) and, as a fallback for logs
+# written before that token existed, from the ARMED the RX left in the same
+# dir. Without this a log of another stop is a discovery candidate for ANY
+# DIST and the tool prints a verdict for a stop that was never run.
+#
+# A token that names NO stop (absent, empty, or the "?" sentinel `--stop`
+# defaults to — see ctl.is_unknown_stop) is not a claimed stop: the log reads
+# as "no stop source" and is kept with a note. Reading "?" as a stop NAME was a
+# round-2 review blocker: every documented-default GO launch writes stop=? into
+# BOTH stop sources, so the healthy log was refused with exit 2 ("belongs to
+# stop ?") and the pass could never be scored.
+# ---------------------------------------------------------------------------
+
+ARMED_FILENAME = "armed.json"
+_GO_STOP_RE = re.compile(r"\bstop=(\S+)")
+
+
+def go_stop_from_header(path):
+    """`stop=<dist>` of the GO_MODE launch banner, or None.
+
+    Only the GO_MODE line is consulted (the DISTRIBUTED_*_MODE banner has no
+    stop token, so a legacy log reads as unknown rather than as a mismatch).
+    A `stop=?` / empty token reads as unknown too — it names no stop.
+    """
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, errors="replace") as f:
+            for ln in f:
+                if "GO_MODE" not in ln:
+                    continue
+                m = _GO_STOP_RE.search(ln)
+                if m and not ctl.is_unknown_stop(m.group(1)):
+                    return m.group(1).strip()
+    except OSError:
+        return None
+    return None
+
+
+def _armed_file_candidates(path):
+    """armed.json paths for a log: its own dir, then the parent dir.
+
+    GO layout: logs/s<sid>-go<t0>/rx-log.csv sits NEXT TO armed.json.
+    Legacy layout: the log is one level below the session dir.
+    """
+    d = os.path.dirname(os.path.abspath(path or ""))
+    return [os.path.join(d, ARMED_FILENAME),
+            os.path.join(os.path.dirname(d), ARMED_FILENAME)]
+
+
+def go_stop_from_armed(path):
+    """`stop` field of the sibling/ancestor armed.json, or None.
+
+    An armed.json whose stop is the "?"/empty sentinel names no stop (the RX
+    was launched without `--stop`), so it is not a stop source either.
+    """
+    for cand in _armed_file_candidates(path):
+        if not os.path.isfile(cand):
+            continue
+        try:
+            with open(cand) as f:
+                obj = json.load(f)
+        except (OSError, ValueError):
+            continue
+        stop = obj.get("stop") if isinstance(obj, dict) else None
+        if not ctl.is_unknown_stop(stop):
+            return str(stop).strip()
+    return None
+
+
+def go_stop_sources(path):
+    """[(label, stop)] for a GO log: the banner token, then armed.json."""
+    srcs = []
+    base = os.path.basename(path or "") or str(path)
+    hdr = go_stop_from_header(path)
+    if hdr:
+        srcs.append(("{}: GO_MODE banner stop=".format(base), hdr))
+    armed = go_stop_from_armed(path)
+    if armed:
+        srcs.append(("{}: {}/stop".format(base, ARMED_FILENAME), armed))
+    return srcs
+
+
+def check_go_stop_match(path, dist):
+    """Verify a GO log belongs to the requested stop.
+
+    Returns (ok, message): ok=False is a loud refusal naming every stop source
+    (analysing it would print a confident verdict for a stop that was never
+    run); ok=True carries "" or a warning when the log exposes no stop source
+    at all (unverifiable, but not provably wrong — kept, with a note). A
+    sentinel source (`stop=?`, empty) is "no stop source", never a stop named
+    "?" — otherwise a GO launch without `--stop` could not be scored at all.
+    """
+    if not (is_go_layout(path) or go_stop_from_header(path) is not None):
+        return True, ""
+    srcs = go_stop_sources(path)
+    if not srcs:
+        return True, ("note: {} is a GO-mode log that records NO stop id (its "
+                      "GO_MODE banner carries no `stop=<id>` token and there "
+                      "is no sibling {} naming one) — cannot verify it belongs "
+                      "to stop {}".format(
+                          os.path.basename(path or ""), ARMED_FILENAME, dist))
+    stops = sorted({normalize_dist(s) for _lbl, s in srcs})
+    if normalize_dist(dist) in stops:
+        return True, ""
+    lines = ["GO-mode rx-log {} belongs to stop {} — refusing to analyse it "
+             "as stop {}:".format(os.path.basename(path or ""),
+                                  "/".join(stops), dist)]
+    for lbl, s in srcs:
+        lines.append("  {:<44} stop={}".format(lbl, s))
+    lines.append(
+        "A GO session dir has no stop-<dist> level (logs/s<session>-go<t0>/), "
+        "so a log of another stop is a candidate for every DIST. Pass the "
+        "rx-log of stop {} (or re-run the analysis with --dist {}).".format(
+            "/".join(stops), "/".join(stops)))
+    return False, "\n".join(lines)
+
+
+def check_t0_match(rx_path, tx_path):
+    """Session-FIRST launch check, with the legacy t0 rule as the fallback.
+
+    Primary key: session_id. When BOTH logs expose at least one session
+    source and those sets disagree, the logs are from different launches:
+    a loud multi-line SESSION MISMATCH report naming every session source
+    (and the t0 sources for context) — a wrong-log pickup, or a split-brain
+    start where each side armed its own session.
+
+    Otherwise the legacy rule applies verbatim: all readable t0 sources of
+    BOTH logs must agree, else the existing T0 MISMATCH report.
+
+    Returns (ok, message). ok=True message summarizes the agreed session /
+    epoch; ok=False message is the loud multi-line report.
+    """
+    rsess = [("rx " + lbl, s) for lbl, s in session_sources(rx_path)]
+    tsess = [("tx " + lbl, s) for lbl, s in session_sources(tx_path)]
+    if rsess and tsess:
+        rset = {s for _lbl, s in rsess}
+        tset = {s for _lbl, s in tsess}
+        if rset != tset:
+            lines = ["SESSION MISMATCH — rx-log and tx-log disagree on the "
+                     "launch (rx session {} vs tx session {}):".format(
+                         "/".join(sorted(rset)), "/".join(sorted(tset)))]
+            for lbl, s in rsess + tsess:
+                lines.append("  {:<44} session={}".format(lbl, s))
+            tsrcs = [("rx " + lbl, t) for lbl, t in t0_sources(rx_path)]
+            tsrcs += [("tx " + lbl, t) for lbl, t in t0_sources(tx_path)]
+            if tsrcs:
+                lines.append("  t0 sources of the same logs:")
+                for lbl, t in tsrcs:
+                    lines.append("  {:<44} t0={}".format(lbl, t))
+            lines.append(
+                "The rx and tx logs are NOT from the same launch — wrong "
+                "log picked up, or a split-brain start (each side armed its "
+                "own session). Re-check SESSION/--session, or pass --tx-log "
+                "with the matching tx-log.")
+            return False, "\n".join(lines)
+    srcs = [("rx " + lbl, t) for lbl, t in t0_sources(rx_path)]
+    srcs += [("tx " + lbl, t) for lbl, t in t0_sources(tx_path)]
+    epochs = sorted({t for _lbl, t in srcs})
+    if len(epochs) > 1:
+        lines = ["T0 MISMATCH — rx-log and tx-log disagree on the launch:"]
+        for lbl, t in srcs:
+            lines.append("  {:<44} t0={}".format(lbl, t))
+        lines.append(
+            "The rx and tx logs are NOT from the same launch (stale "
+            "T0/SESSION shell var? copied the wrong tx-log?). Re-check "
+            "SESSION/T0, or pass --tx-log with the matching tx-log.")
+        return False, "\n".join(lines)
+    if not epochs:
+        return True, "no t0 tags found (filename/header) — nothing to check"
+    return True, "t0={} agreed by {}".format(
+        epochs[0], ", ".join(lbl for lbl, _t in srcs))
+
+
+def find_sibling_tx_log(rx_path):
+    """Newest tx-log*.csv next to the rx-log, else in its parent session
+    dir. None when no tx-log candidate exists."""
+    if not rx_path:
+        return None
+    d = os.path.dirname(os.path.abspath(rx_path))
+    for base in (d, os.path.dirname(d)):
+        cands = glob.glob(os.path.join(base, "tx-log*.csv"))
+        if cands:
+            return max(cands, key=os.path.getmtime)
+    return None
+
+
+def find_rx_logs(dist, session, search_roots):
+    """Locate candidate rx-log files for a stop, best-first.
+
+    Both log-dir schemes are searched:
+
+      * legacy boundary/manual: logs/s<session>-t0<epoch>/stop-<dist>/
+        rx-log-*.csv, plus the bare logs/<session>/stop-<dist>/ variant and
+        the stop-less logs/<session>/{,s<session>-t0<epoch>/}rx-log*.csv
+        defaults;
+      * GO mode (--sync cvm): logs/s<session>-go<epoch>/rx-log.csv — the GO
+        dir has NO `stop-<dist>` level at all (the stop lives in the
+        ARMED/log header), so a GO dir is a candidate for ANY dist of that
+        session.
+
+    Order: session-tagged candidates (the requested session) newest-first,
+    then any other candidate newest-first, then the legacy cwd-quirk
+    rx-log.csv in the tool dir (last resort). realpath-deduplicated, and a GO
+    candidate whose own stop token (banner / armed.json) names ANOTHER stop is
+    dropped: without that a 50m log is a candidate for 70km and the tool
+    prints a verdict for a stop that was never run.
+    """
+    tagged, untagged = [], []
+    for root in search_roots:
+        if session:
+            tagged.extend(glob.glob(os.path.join(
+                root, "logs", "s{}-t0*".format(session), "stop-" + dist,
+                "rx-log-*.csv")))
+            tagged.extend(glob.glob(os.path.join(
+                root, "logs", str(session), "stop-" + dist, "rx-log-*.csv")))
+            # GO layout: flat session dir, no stop-<dist> level.
+            tagged.extend(glob.glob(os.path.join(
+                root, "logs", "s{}-go*".format(session), "rx-log*.csv")))
+        untagged.extend(glob.glob(os.path.join(
+            root, "logs", "*", "stop-" + dist, "rx-log-*.csv")))
+        # A GO dir (and the stop-less default harmonized dir) cannot be
+        # filtered by dist, so it stays a candidate even for auto-detect.
+        untagged.extend(glob.glob(os.path.join(
+            root, "logs", "*", "rx-log*.csv")))
+    cands = sorted(set(tagged), key=os.path.getmtime, reverse=True)
+    cands += sorted(set(untagged), key=os.path.getmtime, reverse=True)
+    legacy = os.path.join(_TOOLS_DIR, "rx-log.csv")
+    if os.path.isfile(legacy):
+        cands.append(legacy)
+    seen = set()
+    uniq = []
+    for c in cands:
+        r = os.path.realpath(c)
+        if r not in seen:
+            seen.add(r)
+            uniq.append(c)
+    # A GO dir cannot be filtered by path (no stop-<dist> level): drop the
+    # candidates that provably belong to another stop.
+    return [c for c in uniq if check_go_stop_match(c, dist)[0]]
+
+
+# ---------------------------------------------------------------------------
+# Coverage analysis (best pass across replicates, warmup-aware)
+# ---------------------------------------------------------------------------
+
+def analyze_capture(cfgs, pkts, thin_frac=DEFAULT_THIN_FRAC,
+                    warmup_replicates=0):
+    """Diff captured packets against the preset (BEST pass per config).
+
+    pkts: list of parsed PKT dicts (harmonized or legacy — filter to one
+    session first). Counting is per replicate with a CONDITIONAL warmup
+    rule: when a config's capture has more than warmup_replicates distinct
+    replicates (a multi-cycle run), the first warmup_replicates are
+    excluded (warmups never count); when it has warmup_replicates or
+    fewer distinct replicates (single-cycle loop=1 or a short capture)
+    ALL of them count — there is nothing to warm up against. The BEST
+    surviving replicate is the result — matching the best-pass merge
+    policy (never pooled).
+
+    Returns {config_idx: {"n_pkts": expected, "n_recv": best-pass count,
+                          "per_replicate": {rep: count}, "status": ...}}
+    where status is "OK" (n_recv >= thin_frac*n_pkts), "THIN"
+    (0 < n_recv < thin_frac*n_pkts) or "MISS" (n_recv == 0).
+    """
+    counts = {}
+    for p in pkts:
+        key = (int(p["config_id"]), int(p["replicate"]))
+        counts[key] = counts.get(key, 0) + 1
+    out = {}
+    for c in cfgs:
+        idx = int(c["idx"])
+        distinct = {rep for (ci, rep) in counts if ci == idx}
+        if len(distinct) > warmup_replicates:
+            # Multi-cycle run: the first warmup_replicates never count.
+            per_rep = {rep: n for (ci, rep), n in counts.items()
+                       if ci == idx and rep > warmup_replicates}
+        else:
+            # Single-cycle (loop=1) / short capture: nothing to warm up
+            # against — count ALL replicates.
+            per_rep = {rep: n for (ci, rep), n in counts.items()
+                       if ci == idx}
+        n_recv = max(per_rep.values()) if per_rep else 0
+        n_pkts = int(c["n_pkts"])
+        if n_recv == 0:
+            status = "MISS"
+        elif n_recv < thin_frac * n_pkts:
+            status = "THIN"
+        else:
+            status = "OK"
+        out[idx] = {"n_pkts": n_pkts, "n_recv": n_recv,
+                    "per_replicate": per_rep, "status": status}
+    return out
+
+
+def render_summary_line(dist, per_cfg):
+    """One operator line: '<dist>: COMPLETE 9/9' or '<dist>: GAPS c4 MISS, c7 THIN 3/10'."""
+    total = len(per_cfg)
+    gaps = [i for i in sorted(per_cfg) if per_cfg[i]["status"] != "OK"]
+    if not gaps:
+        return "{}: COMPLETE {}/{}".format(dist, total, total)
+    parts = []
+    for i in gaps:
+        s = per_cfg[i]
+        if s["status"] == "MISS":
+            parts.append("c{} MISS".format(i))
+        else:
+            parts.append("c{} THIN {}/{}".format(i, s["n_recv"], s["n_pkts"]))
+    return "{}: GAPS {}".format(dist, ", ".join(parts))
+
+
+def _session_matches(row_value, session):
+    """Compare session ids as strings (int-normalized when numeric).
+
+    GO sessions (`%y%m%d%H%M` + 3-hex nonce) can only reach the wire/log rows as
+    the u32 board projection (the firmware's SESSION command is u32 — see
+    e80_bench_ctl.board_session_id), while the session DIR name and the launch
+    banner keep the full id. EITHER side may therefore be the projection:
+
+      * row=u32, expected=GO id (the explicit --session path), and
+      * row=GO id, expected=u32 (the auto-session path, when the session was
+        derived from the PKT rows),
+
+    so both sides are projected instead of only the expected one. Projecting
+    only one direction made the auto-session path return False for every STAT
+    row and print a fabricated "0 STAT rows" LOGGING GAP verdict.
+    Legacy numeric ids compare as ints, and an id with no numeric projection
+    still only matches itself.
+    """
+    a, b = str(row_value).strip(), str(session).strip()
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    if a.isdigit() and b.isdigit():
+        return int(a) == int(b)
+    pa, pb = ctl.board_session_id(a), ctl.board_session_id(b)
+    return pa is not None and pa == pb
+
+
+def verdict_line(dist, session, results, kind, stat_count=0):
+    """One-line Signal verdict, e.g.
+    ``50m s2608281130: GAPS c0:MISS c3:THIN 3/10 (8/10 clean)``."""
+    if kind == "LOGGING_GAP":
+        return ("{} s{}: LOGGING GAP (0 STAT rows for session — rx logger "
+                "problem, not RF; no resend file)".format(dist, session))
+    clean = sum(1 for r in results if r["status"] == "OK")
+    total = len(results)
+    if kind == "PASS":
+        return "{} s{}: PASS ({}/{} clean)".format(dist, session, clean, total)
+    parts = []
+    for r in results:
+        if r["status"] == "OK":
+            continue
+        if r["status"] == "THIN":
+            parts.append("c{}:THIN {}/{}".format(r["idx"], r["counted"], r["n_pkts"]))
+        else:
+            parts.append("c{}:MISS".format(r["idx"]))
+    return "{} s{}: GAPS {} ({}/{} clean)".format(
+        dist, session, " ".join(parts), clean, total)
+
+
+# ---------------------------------------------------------------------------
+# Re-send presets (both output forms)
+# ---------------------------------------------------------------------------
+
+def build_resend_preset(cfgs, per_cfg, dist, session):
+    """Trimmed preset with ONLY the gap configs (idx preserved). None if complete."""
+    gaps = [i for i in sorted(per_cfg) if per_cfg[i]["status"] != "OK"]
+    if not gaps:
+        return None
+    keep = [c for c in cfgs if int(c["idx"]) in gaps]
+    return {
+        "name": "resend-{}-{}".format(dist, session),
+        "description": ("Selective re-send for stop {} session {} — gap "
+                        "configs only (MISS/THIN per range-check); idx values "
+                        "match the original preset".format(dist, session)),
+        "configs": keep,
+    }
+
+
+def write_resend_preset(raw_cfgs, results, dist, session, repo_root):
+    """Write configs/resend-<DIST>-s<SESSION>.json with ONLY MISS+THIN cfgs.
+
+    raw_cfgs is the ORIGINAL preset's configs list (verbatim dicts, labels
+    preserved); position semantics of load_config_preset renumber them for
+    the new session (presets with explicit idx values keep their idx).
+    Returns the path.
+    """
+    gapped = [raw_cfgs[r["idx"]] for r in results if r["status"] != "OK"]
+    out = {
+        "name": "resend-{}-s{}".format(dist, session),
+        "description": ("Selective re-send for stop {} session {} — only "
+                        "configs that came in MISS/THIN; labels preserved."
+                        .format(dist, session)),
+        "configs": gapped,
+    }
+    out_dir = os.path.join(repo_root, "configs")
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, "resend-{}-s{}.json".format(dist, session))
+    with open(path, "w") as f:
+        json.dump(out, f, indent=2)
+        f.write("\n")
+    return path
+
+
+def tx_one_liner(dist, session):
+    return ("make range-tx CONFIGS=configs/resend-{}-s{}.json T0=+90 "
+            "PROBE={} PORT=<from detect>".format(dist, session, TX_PROBE_SERIAL))
+
+
+def next_t0(boundary_s=300, now=None):
+    """Next 5-minute epoch boundary (same rule as the Makefile)."""
+    now = int(now if now is not None else time.time())
+    return ((now // boundary_s) + 1) * boundary_s
+
+
+def format_resend_commands(resend_path, t0, dist):
+    """Paste-ready TX + RX commands for the selective re-send."""
+    sid = time.strftime("%y%m%d%H%M", time.gmtime(t0))
+    cfgs_arg = "CONFIGS={}".format(resend_path)
+    common = "DIST={} {} T0={} SESSION_ID={}".format(dist, cfgs_arg, t0, sid)
+    return (
+        "TX: make range-tx {}   # run FIRST, banner prints instantly".format(common),
+        "RX: make range-rx {}   # arm BEFORE T0 (or immediately — late join "
+        "skips to the next future config)".format(common),
+    )
+
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="Post-stop gap check: diff rx-log vs preset, write "
+                    "selective re-send presets + paste-ready commands")
+    ap.add_argument("--dist", required=True,
+                    help="stop distance, e.g. 50m / 1744m / 70km (bare = meters)")
+    ap.add_argument("--session", default=None,
+                    help="session id from the stop's SESSION_ID banner "
+                         "(default: highest session found in the log)")
+    ap.add_argument("--rx-log", default=None,
+                    help="explicit rx-log path (skips discovery; a missing "
+                         "file is a LOGGING GAP, not an error)")
+    ap.add_argument("--tx-log", default=None,
+                    help="explicit tx-log path for the t0 cross-check "
+                         "(default: newest tx-log*.csv sibling of the "
+                         "rx-log)")
+    ap.add_argument("--configs", default=None,
+                    help="preset path override (default: "
+                         "<repo-root>/configs/per-stop/stop-<DIST>.json)")
+    ap.add_argument("--thin-frac", type=float, default=DEFAULT_THIN_FRAC,
+                    help="configs with fewer than this fraction of n_pkts "
+                         "received are THIN (default 0.5)")
+    ap.add_argument("--out-dir", default=None,
+                    help="where to write the idx-preserved resend preset "
+                         "(default: <repo-root>/configs/resend)")
+    ap.add_argument("--repo-root", default=None,
+                    help="repo root for preset lookup + resend output (default: derived)")
+    args = ap.parse_args(argv)
+
+    dist = normalize_dist(args.dist)
+    repo_root = args.repo_root or default_repo_root()
+
+    preset_path = args.configs or os.path.join(
+        repo_root, "configs", "per-stop", "stop-{}.json".format(dist))
+    if not os.path.isfile(preset_path):
+        sys.stderr.write(
+            "ERROR: preset not found: {}\nValid DIST values: {}\n".format(
+                preset_path, ", ".join(VALID_DISTS)))
+        return 2
+
+    cfgs = ctl.load_config_preset(preset_path)
+    with open(preset_path) as f:
+        raw_preset = json.load(f)
+    raw_cfgs = raw_preset["configs"]
+
+    # Locate the log: explicit path (missing => empty => LOGGING GAP), else
+    # discovery over the per-stop T0-tagged layout with legacy fallback.
+    if args.rx_log:
+        path = args.rx_log
+    else:
+        roots = [os.getcwd(), repo_root, os.path.abspath(os.path.join(_TOOLS_DIR, ".."))]
+        cands = find_rx_logs(dist, args.session, roots)
+        if not cands:
+            sys.stderr.write(
+                "ERROR: no rx-log found for stop {} — searched both log "
+                "layouts:\n"
+                "  legacy boundary/manual: logs/s<session>-t0<t0>/stop-{}/"
+                "rx-log-*.csv\n"
+                "  GO mode (--sync cvm):   logs/s<session>-go<t0>/rx-log.csv "
+                "(no stop-<dist> level)\n"
+                "  cwd quirk:              {}\n"
+                "Pass --rx-log explicitly.\n".format(
+                    dist, dist, os.path.join(_TOOLS_DIR, "rx-log.csv")))
+            return 2
+        path = cands[0]
+        if len(cands) > 1:
+            print("note: multiple candidate logs, using newest: {}".format(path))
+
+    # Stop verification (fail fast, before any verdict): a GO session dir has
+    # no stop-<dist> level, so the log must prove it belongs to this DIST via
+    # its GO_MODE banner stop= token / the ARMED beside it. Analysing a
+    # mismatched stop prints a confident PASS/verdict for a stop never run.
+    _ok, _msg = check_go_stop_match(path, dist)
+    if not _ok:
+        sys.stderr.write("ERROR: {}\n".format(_msg))
+        return 2
+    if _msg:
+        print(_msg)
+
+    # Launch cross-check (fail fast): the rx-log and its sibling/explicit
+    # tx-log must belong to the SAME launch — the session id (session dir
+    # name s<session>-{t0,go}<epoch> / banner session=<sid>) is the primary
+    # key; when it agrees (or only one side exposes one) the legacy rule
+    # applies: filename -t0<epoch>/-go<epoch> tags and the banner's t0=<iso>
+    # must all agree.
+    tx_path = args.tx_log or find_sibling_tx_log(path)
+    if tx_path:
+        ok, msg = check_t0_match(path, tx_path)
+        if not ok:
+            sys.stderr.write("ERROR: {}\n".format(msg))
+            return 2
+        print("t0 cross-check: OK ({})".format(msg))
+    else:
+        print("note: no tx-log found (sibling of {}) — t0 cross-check "
+              "skipped".format(path))
+
+    pkts, stats, sessions = _parse_rx_log_full(path)
+
+    session = args.session
+    if session is None:
+        # Auto-detect: prefer the LAUNCH-authoritative session — the session
+        # dir name (s<sid>-{t0,go}<epoch>) or the banner's session=<sid> token,
+        # i.e. the full RX GO id. max(PKT session) would hand over the board's
+        # u32 projection instead, which then looked like a different session
+        # from the banner and produced a false LOGGING GAP verdict.
+        auto = session_from_filename(path) or session_from_header(path)
+        if auto:
+            session = auto
+            print("session: {} (auto — launch dir/banner in {})".format(
+                session, path))
+        elif sessions:
+            session = str(max(sessions))
+            print("session: {} (auto — highest in {})".format(session, path))
+        else:
+            session = ""
+    else:
+        print("session: {} (explicit)".format(session))
+
+    stat_count = sum(
+        1 for s in stats
+        if _session_matches(s.get("session", ""), session)) if session else 0
+
+    if stat_count == 0:
+        # Logger problem: the rx side wrote no STAT rows for this session at
+        # all (STAT lines are emitted per config even when rx=0, so zero
+        # means the logger/logger path failed, not the radio).
+        print("log: {}".format(path))
+        print(verdict_line(dist, session, [], "LOGGING_GAP"))
+        return 1
+
+    pkts = [p for p in pkts if _session_matches(p["session_id"], session)]
+    per_cfg = analyze_capture(cfgs, pkts, thin_frac=args.thin_frac,
+                              warmup_replicates=WARMUP_REPLICATES)
+    results = [{"idx": int(c["idx"]), "label": c["label"],
+                "n_pkts": per_cfg[int(c["idx"])]["n_pkts"],
+                "counted": per_cfg[int(c["idx"])]["n_recv"],
+                "status": per_cfg[int(c["idx"])]["status"]}
+               for c in cfgs]
+
+    # v2-style operator output: one line + per-config table.
+    print("")
+    print(render_summary_line(dist, per_cfg))
+    reps = max((len(v["per_replicate"]) for v in per_cfg.values()), default=1)
+    print("")
+    print("per-config (best pass{}):".format(
+        " across {} replicates".format(reps) if reps > 1 else ""))
+    for i in sorted(per_cfg):
+        s = per_cfg[i]
+        label = next((c["label"] for c in cfgs if int(c["idx"]) == i), "?")
+        print("  c{:<2} {:<22} {:>3}/{}  {}".format(
+            i, label, s["n_recv"], s["n_pkts"], s["status"]))
+    print("")
+    print("log: {}".format(path))
+
+    if all(r["status"] == "OK" for r in results):
+        print("result: COMPLETE — no re-send needed.")
+        print(verdict_line(dist, session, results, "PASS"))
+        return 0
+
+    print(verdict_line(dist, session, results, "GAPS"))
+
+    # v1 output: renumbered resend + verbatim TX one-liner.
+    v1_path = write_resend_preset(raw_cfgs, results, dist, session, repo_root)
+    labels = ", ".join(raw_cfgs[r["idx"]]["label"] for r in results
+                       if r["status"] != "OK")
+    print("resend: {} (labels: {})".format(
+        os.path.relpath(v1_path, repo_root), labels))
+    print("TX: " + tx_one_liner(dist, session))
+
+    # v2 output: idx-preserved resend + paste-ready TX/RX pair.
+    preset = build_resend_preset(cfgs, per_cfg, dist, session)
+    out_dir = args.out_dir or os.path.join(repo_root, "configs", "resend")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "resend-{}-{}.json".format(dist, session))
+    with open(out_path, "w") as f:
+        json.dump(preset, f, indent=2)
+        f.write("\n")
+    print("resend (idx preserved): {}".format(
+        os.path.relpath(out_path, repo_root)))
+
+    t0 = next_t0()
+    sid = time.strftime("%y%m%d%H%M", time.gmtime(t0))
+    print("")
+    print("Paste-ready selective re-send (T0={} session={}):".format(t0, sid))
+    for cmd in format_resend_commands(
+            os.path.relpath(out_path, repo_root), t0, dist):
+        print("  " + cmd)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

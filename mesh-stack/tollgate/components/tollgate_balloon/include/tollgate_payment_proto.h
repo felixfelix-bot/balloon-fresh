@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /*
- * TollGate Payment Protocol — UDP message format (ADR-002)
+ * TollGate Payment Protocol — UDP message format (ADR-100)
  *
  * All messages use the tollgate_msg_hdr_t header (8 bytes, packed).
  * Payloads are JSON for v1 (matches existing tollgate_api format).

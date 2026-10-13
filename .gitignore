@@ -48,3 +48,26 @@ graphify-out/
 build_pio*/
 graphify-out/cache/
 __pycache__/
+Testing/
+firmware/rp2040/build/
+firmware/rp2040/build_pio/
+firmware/rp2040/build_pio2/
+
+# host-driven bench build outputs + host-test binaries
+tracker/firmware/bench_test/build/
+tracker/firmware/bench_test/sdkconfig
+firmware/rp2040/host-tests/test_stats
+firmware/rp2040/host-tests/test_safety
+firmware/rp2040/host-tests/test_cmd
+firmware/rp2040/host-tests/test_bw_codes
+firmware/rp2040/host-tests/test_radio
+firmware/rp2040/host-tests/test_dispatch
+# worker scratch logs — per-task, never merged (v9 consolidation, 2026-10-07)
+PROGRESS.md
+REPORT.md
+# v8j DRC triage scratch (worker logs; evidence kept on the pr/v8j branch + backup/ tag)
+clearance_before.txt
+cluster_before.txt
+cluster_after.txt
+# ADR renumbering scratch (evidence archived to ~/reports/balloon-v9/scratch/renumber/)
+scratch-adr/

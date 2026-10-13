@@ -3,6 +3,10 @@
 ## Status
 Akzeptiert
 
+> **Scope note (ADR-037, 2026-10-07):** this ADR selects the ESP32-C3 for the **bench**
+> board only. The v9 flight board MCU is the ESP32-S3 (ADR-029 D1, confirmed by ADR-037);
+> that is a scope split, not a supersede of this decision.
+
 ## Kontext
 Der Pico-Ballon-Tracker braucht einen stromsparenden Mikrocontroller mit genug Leistung fuer SPI-Kommunikation mit dem LoRa-Transceiver, I2C-Sensorabfrage und Deep-Sleep-Power-Management. Gewicht muss unter 1g (Bare Module) bleiben.
 

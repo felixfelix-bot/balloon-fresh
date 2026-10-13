@@ -1,0 +1,67 @@
+{
+  "name": "scout-4",
+  "description": "Scout pass — 4 pkts per config (binary alive/dead), 868 MHz EU SRD",
+  "band": "868",
+  "configs": [
+    {
+      "label": "FLRC-650 LEN64",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 5000,
+      "n_pkts": 4
+    },
+    {
+      "label": "FLRC-2600 LEN64",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 2600,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 5000,
+      "n_pkts": 4
+    },
+    {
+      "label": "LoRa-SF7 BW125 LEN64",
+      "mod": "lora",
+      "sf": 7,
+      "bw": 125,
+      "br": null,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 10000,
+      "n_pkts": 4
+    },
+    {
+      "label": "LoRa-SF12 BW125 LEN64",
+      "mod": "lora",
+      "sf": 12,
+      "bw": 125,
+      "br": null,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 64,
+      "gap": 10000,
+      "n_pkts": 4
+    },
+    {
+      "label": "FLRC-650 LEN255",
+      "mod": "flrc",
+      "sf": null,
+      "bw": null,
+      "br": 650,
+      "pa": 10,
+      "freq": 868000000,
+      "plen": 255,
+      "gap": 5000,
+      "n_pkts": 4
+    }
+  ]
+}

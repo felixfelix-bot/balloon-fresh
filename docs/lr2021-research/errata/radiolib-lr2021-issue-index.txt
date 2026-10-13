@@ -1,0 +1,83 @@
+# RadioLib LR2021 issue/PR index (live GitHub API, retrieved 2026-09-30T23:31:52Z)
+# master head at retrieval: 2325a38a89dd0f0e402c19f67fe910111da1e246 2026-09-28T12:59:24Z
+#
+# query: search/issues q='repo:jgromes/RadioLib LR2021' per_page=100
+# columns: number<TAB>state<TAB>title
+1882	open	Fix some LR2021 constants
+1863	open	missing some functional implementations of getFrequencyError(), getTemperature() and getVoltage() for LR1121
+1879	closed	The DC-DC workaround for LR2021 is flagging as a potential buffer overrun
+1880	closed	[LR2021] Fix word count in the DCDC workaround's register accesses
+1864	closed	Feature: Add DCDC mode for LR2021
+1844	open	Request support for LR11xx "TCXO Optional" modes
+1849	closed	[LR2021] Fix configFifoIrq()
+1859	closed	[PHY] Output power offset
+1848	closed	[LR2021] Incorrect "ConfigFifoIrq" command format
+1861	closed	[LR2021]  Receiving broken LoRa header (-24) when attempting to use CAD Rx exit mode
+1866	closed	[PHY] Output power offset
+1850	closed	[LR2021] fix CR constants from the datasheet, add missing header mode check
+1857	closed	[LR11x0][LR2021] Reply to a get command is sometimes read before the chip has it ready
+1676	closed	[LR2021] Add support for LR2021
+1842	closed	examples: add LR2021 FLRC transmit and receive sketches
+1831	closed	Lr2021 cad scanchannel fix
+1851	closed	[LR11xx] fix actual coding rate return
+1843	closed	New functions to support fewer missed transmissions.
+1816	closed	Add support for FLRC in getRSSI on LR2021
+1820	closed	LR1121 / SX128x LoRa incompatibility at SF11/12
+1813	closed	[LR2021] Fix setRfSwitchTable to allow non-contiguous DIO pins
+1830	closed	Scanchannel / CAD hang
+1024	open	Other pager protocols
+1822	closed	[LR2021] a fix for reply buffer offset in readRegMem32()
+1840	closed	Add gain / PA offset for transmission power
+1821	closed	[LR2021] a fix for endian conversion in readRegMem32()
+1829	closed	FLRC mode: readData()+startReceive() per-packet overhead limits throughput on ESP32-C3
+1800	closed	[LR2021] Expose detector index from getLoRaPacketStatus
+1804	closed	[LR2021] Stops receiving packets larger than the last transmitted packet (explicit header mode)
+1799	closed	LR2021: expose detector index from GET_LORA_PACKET_STATUS
+1768	closed	[LR2021] PA optimization
+1774	closed	[LR11x0][LR2021] Add support for duty cycle Rx
+1740	closed	LR2021 sub-GHz TX power mismatch (configured vs measured)
+1811	closed	[PHY][LoRaWAN] Implement LoRa symbol timeout
+1457	closed	Feature Request: Support for Semtech LR2021
+1745	closed	setRxBoostedGainMode parameter has no used
+1751	closed	[SX126x] Fix packet length in FSK fixed mode always returns 0xFF
+1779	closed	[LR11x0] Add SF6 compatibility with SX127x
+1728	closed	[LR2021] Add getLoRaRxHeaderInfo function
+1671	closed	LR11x0 LoRa BWs per SWSD003 and NiceRF LoRa1121F33-xxx examples
+1727	closed	Updated CAD detection for LR 2021, resolving the freezing issue
+1764	closed	[LR11x] Fixed packet length not propagated correctly
+1722	closed	[LR2021] a fix for reverse order of bytes in OOK sync word
+1700	closed	[ADS-B] ADS-B support (LR2021 only)
+1723	closed	[LR2021] a fix for OOK packet's RSSI return value
+1714	closed	[LR11x0] Expose instantaneous RSSI measurement
+1718	closed	Implement proper AGC reset for SX126x, LR11x0 & SX1276
+1684	closed	[LR2021] add getDataRate() method missing
+1686	closed	[LR2021] a fix for reverse order of bytes in GFSK sync word
+1716	closed	permit build with Arduino Core for Nordic Semi nRF54
+1702	closed	add setEncoding(RADIOLIB_ENCODING_MANCHESTER_INV) into ADS-B receive example
+1687	closed	[LR2021] fix invalid GFSK payload length unit
+1685	closed	[LR2021] DIO5 can only do DIO_SLEEP_PULL_UP
+1678	closed	[LR2021] set implicit or explicit LoRa header type
+1721	closed	RL2021 cannot provide hasCRC and rxCR required by computePacketTime()
+1689	closed	[LR2021] set max limit of GFSK frequency deviation in accordance with datasheet
+1690	closed	[LR2021] set max limit of GFSK/OOK bit rate in accordance with datasheet
+1688	closed	[LR2021] fix for no-CRC GFSK and OOK operations when inverted bit is set (default)
+1662	closed	[SX126x] Add optimized PA configuration table for SX1262 and SX1268
+1632	closed	sx128x invertIQ result reversed?
+
+# query: search/issues q='repo:jgromes/RadioLib errata' per_page=50
+# NOTE: total_count=13; NONE of the returned items is LR2021-specific (all SX12xx / LoRaWAN).
+# columns: number<TAB>state<TAB>title
+1715	closed	There was an error calling calibrateImageRejection() when using lr1110
+521	closed	Receive sensitivity from low power devices is improved by a proximate higher power source
+1404	closed	[CC1101] FIFO Refills to transmit packets up to 255 bytes
+1268	closed	SX126x with address filtering always reports wrong CRC
+505	closed	SX127x Missing packets in FSK mode
+835	closed	[LoRaWAN] Implement full session persistence & more v1.1 specification
+780	closed	modules: SX126x: Remove SPIparseStatus error checking
+516	closed	SX1262 IQ Inversion Fix Command Failing
+372	closed	[SX1278] Can't transmit LoRa signal with bandwidth less than 62.5 kHz
+388	closed	RA-01 (SX1278) on ESP32 - cannot receive when BW < 62.5 kHz 
+251	closed	Potential wrong sequence at initializing SX1276 module.
+276	closed	Problem with 'receiveDirect()' on SX1276
+65	closed	SX126x Datasheet Updates and Errata
+

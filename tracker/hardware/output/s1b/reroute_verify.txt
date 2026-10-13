@@ -1,0 +1,11 @@
+P1 placement: 20 footprints on the routed board, 20 on the frozen placement, moved/extra/missing = 0
+P2 netlist: 103 pads on the routed board, 103 on the netlist of record, pad/net differences = 0
+   P2 ok   U4.3 -> 'VCAP' (S0b tie, want 'VCAP')
+   P2 ok   U3.6 -> '+3V3' (S0b tie, want '+3V3')
+   P2 ok   U3.9 -> '+3V3' (S0b tie, want '+3V3')
+P3 copper: net VCAP   22 segments, 3 vias
+P3 copper: net +3V3   46 segments, 8 vias
+P3 copper: net GND    53 segments, 15 vias
+P3 VCAP pads present on the routed board: ['U4.1', 'U4.3']
+P3 KiCad connectivity: unconnected ratsnest lines = 0 (fp 20)
+VERDICT: PASS

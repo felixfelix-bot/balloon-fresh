@@ -1,0 +1,6 @@
+cfg_idx,label,mod,n,k,per,verdict,rssi_avg,snr_avg,foreign_pkts,tx_done,dur_s
+0,FLRC 2600k L64,flrc,50,0,0.0,CLEAN,-75.9,0.0,0,True,19.7
+1,SF12 BW125 L16 #1,lora,50,0,0.0,CLEAN,-39.0,10.3,0,True,146.6
+2,FLRC 2600k L64 #2,flrc,50,0,0.0,CLEAN,-75.9,0.0,0,True,20.0
+3,SF11 BW125 L16,lora,50,0,0.0,CLEAN,-39.0,9.0,0,True,83.9
+4,SF12 BW125 L16 #2,lora,50,0,0.0,CLEAN,-39.0,10.3,0,True,146.6

@@ -1,0 +1,126 @@
+E80-to-E80 Harmonization Measurement Results
+=============================================
+Date: 2026-08-20
+Firmware: fw=17a6417, boot=jump-ok
+TX board: /dev/ttyUSB3 (E80 #1)
+RX board: /dev/ttyUSB4 (E80 #2)
+Config: CONFIG 0 loRa 8 125 868000000 5 10 64 100 10000
+  (SF8, BW125, 868MHz, CR=4/5, +10dBm, 64B payload, 100 packets, 10ms gap)
+
+=== RAW RX CAPTURE (from initial 30s capture on /dev/ttyUSB4) ===
+PKT,0,0,0,0,96561,-37,17,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,1,97277,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,2,97993,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,3,98709,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,4,99425,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,5,100140,-37,17,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,6,100856,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,7,101572,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,8,102288,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,9,103004,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,10,103720,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,11,104435,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,12,105151,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,13,105867,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,14,106583,-37,15,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+PKT,0,0,0,15,107299,-37,17,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+OK ROLE RX (CONTINUOUS)
+
+=== ADDITIONAL PKT lines captured during STAT? query (pkt_size=64, correct) ===
+PKT,0,0,0,0,130553,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,1,130872,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,2,131191,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,3,131509,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,4,131828,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,5,132147,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,6,132466,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,7,132784,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,8,133103,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,9,133422,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,10,133741,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,11,134059,-37,17,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,12,134378,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+PKT,0,0,0,13,134697,-37,15,1,0,0,868000000,LORA,8,125,5,10,64,0,0,0,0,0,0
+
+=== STAT? OUTPUT ===
+
+--- TX board (/dev/ttyUSB3) ---
+STAT role=TX sent=10 sent_ok=9 rx=0 crc_err=0 per_x1e6=0 elapsed_s=2.9 kbps=1 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=5 session=0 config=0 replicate=0 drops=0 gap_us=100000
+
+--- RX board (/dev/ttyUSB4) ---
+STAT role=RX sent=0 sent_ok=0 rx=14 crc_err=0 per_x1e6=0 per_ci_x1e6=[0,215317] elapsed_s=10.9 kbps=0 rssi_avg_dbm=-37.5 rssi_min_dbm=-37.5 rssi_max_dbm=-37.5 snr_avg_db=16.7 cr=5 session=0 config=0 replicate=0 drops=0 gap_us=5000
+
+=== ANALYSIS ===
+
+PKT line count (initial capture): 16
+PKT line count (STAT? capture): 14
+Total PKT lines: 30
+
+First PKT line (initial capture):
+  PKT,0,0,0,0,96561,-37,17,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+
+Last PKT line (initial capture):
+  PKT,0,0,0,15,107299,-37,17,1,0,0,868000000,LORA,8,125,5,10,255,0,0,0,0,0,0
+
+Field count per PKT line (after "PKT,"): 23  ← MATCHES M4 23-FIELD FORMAT ✓
+Total comma-separated fields including "PKT": 24
+
+bit_err: all 0 (no bit errors) ✓
+bytes_bad: all 0 (no bad bytes) ✓
+crc_ok: all 1 (100% CRC pass, 0 CRC failures) ✓
+RSSI: constant -37 dBm across all packets
+SNR: 15 dB (13 packets) or 17 dB (3 packets) — range 15-17 dB
+
+pkt_size discrepancy:
+  - Initial capture: pkt_size=255 (does NOT match configured 64)
+  - STAT? capture: pkt_size=64 (matches configured value)
+  - Note: The initial capture may have used a default/config from a prior session
+
+TX STAT notes:
+  - sent=10 (not 100 as configured — TX may have stopped early or config wasn't fully applied)
+  - gap_us=100000 (not 10000 as configured — firmware may have interpreted gap differently)
+  - sent_ok=9 (1 packet not confirmed — likely the last one still in flight)
+
+RX STAT notes:
+  - rx=14 (received during STAT? window, not counting initial 16)
+  - gap_us=5000
+  - rssi_avg=-37.5 dBm, snr_avg=16.7 dB
+
+=== FORMAT VERIFICATION ===
+
+Expected M4 23-field format:
+PKT,<session_id>,<config_id>,<replicate>,<seq>,<ts_ms>,<rssi_dbm>,<snr_db>,<crc_ok>,<bit_err>,<bytes_bad>,<freq_hz>,<mod>,<sf>,<bw_khz>,<cr>,<power_dbm>,<pkt_size>,<gps_fix>,<gps_lat>,<gps_lon>,<gps_alt>,<gps_sats>,<gps_hdop>
+
+Actual first PKT line fields:
+  1. session_id=0
+  2. config_id=0
+  3. replicate=0
+  4. seq=0
+  5. ts_ms=96561
+  6. rssi_dbm=-37
+  7. snr_db=17
+  8. crc_ok=1
+  9. bit_err=0
+  10. bytes_bad=0
+  11. freq_hz=868000000
+  12. mod=LORA
+  13. sf=8
+  14. bw_khz=125
+  15. cr=5
+  16. power_dbm=10
+  17. pkt_size=255 (initial) / 64 (STAT? capture)
+  18. gps_fix=0
+  19. gps_lat=0
+  20. gps_lon=0
+  21. gps_alt=0
+  22. gps_sats=0
+  23. gps_hdop=0
+
+VERDICT: 23 fields after "PKT," — FORMAT MATCHES M4 HARMONIZED OUTPUT ✓
+
+=== ISSUES OBSERVED ===
+1. pkt_size=255 in initial capture vs configured 64 — possible stale config or default override
+2. TX sent=10 not 100 — TX may have stopped early (gap_us=100000 suggests firmware used 100ms not 10ms)
+3. Only 16 of 10(100) TX packets received in initial capture window — timing/gap mismatch
+4. No errors or corruption in packet data itself
+5. All CRCs passed, zero bit errors, zero bad bytes

@@ -26,6 +26,51 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] feat: C3 flight PCB gerbers exported to gerbers_v_c3/ (2026-08-13) | tags: HARDWARE
+- **Commit:** `b7ef5c1` by Felix
+- **Files:** tracker/hardware/output/gerbers_v_c3/v_c3_flight_final-B_Adhesive.gba, tracker/hardware/output/gerbers_v_c3/v_c3_flight_final-B_Courtyard.gbr, tracker/hardware/output/gerbers_v_c3/v_c3_flight_final-B_Cu.gbl (+25 more)
+- **Full message:** feat: C3 flight PCB gerbers exported to gerbers_v_c3/
+- **Relevance:** HARDWARE
+
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `f97f60e` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `711fe2d` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip, tracker/hardware/output/pcb-handoff/ROUTING-HANDOVER.md (+14 more)
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(hardware): PCB handoff zip + ansible install playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `30cd382` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json, tracker/hardware/ansible/install-kicad.yml (+11 more)
+- **Full message:** feat(hardware): PCB handoff zip + ansible install playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `f97f60e` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(pcb): handoff zip + ansible workstation playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `711fe2d` by Felix
+- **Files:** ansible/pcb-workstation.yml, tracker/hardware/output/pcb-handoff.zip, tracker/hardware/output/pcb-handoff/ROUTING-HANDOVER.md (+14 more)
+- **Full message:** feat(pcb): handoff zip + ansible workstation playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+### [balloon-hermes] feat(hardware): PCB handoff zip + ansible install playbook for manual routing (2026-08-12) | tags: HARDWARE, PROTOCOL
+- **Commit:** `30cd382` by Felix
+- **Files:** docs/coordination/DISCOVERIES.md, graphify-out/cache/stat-index.json, tracker/hardware/ansible/install-kicad.yml (+11 more)
+- **Full message:** feat(hardware): PCB handoff zip + ansible install playbook for manual routing
+- **Relevance:** HARDWARE, PROTOCOL
+
+
 ### [balloon-pre-stretching] docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informat (2026-08-08) | tags: PROTOCOL
 - **Commit:** `350b1e3` by Felix
 - **Files:** docs/STATUS-balloon-pre-stretching.md
@@ -325,10 +370,10 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 - **Full message:** persist: C3 schematic + symbols + project file committed
 - **Relevance:** HARDWARE
 
-### [balloon-pre-stretching] docs: discovery sync batch 6 — ADR-028 three-variant PCB, weight estimates at ri (2026-08-05) | tags: HARDWARE
+### [balloon-pre-stretching] docs: discovery sync batch 6 — ADR-107 three-variant PCB, weight estimates at ri (2026-08-05) | tags: HARDWARE
 - **Commit:** `ee5f1e0` by Felix
 - **Files:** docs/STATUS-balloon-pre-stretching.md
-- **Full message:** docs: discovery sync batch 6 — ADR-028 three-variant PCB, weight estimates at risk
+- **Full message:** docs: discovery sync batch 6 — ADR-107 three-variant PCB, weight estimates at risk
 - **Relevance:** HARDWARE
 
 
@@ -2468,15 +2513,15 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 ### [balloon-hermes] fix: deprecate RadioLib LR2021, adopt raw 2-byte opcode protocol (2026-07-23) | tags: SPI, RADIO
 - **Commit:** `811a156` by Felix
-- **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md (+8 more)
+- **Files:** AGENTS.md, docs/adr/101-lr2021-only-ban-sx1280.md, docs/adr/020-deprecate-radiolib-adopt-raw-lr2021-spi.md (+8 more)
 - **Full message:** fix: deprecate RadioLib LR2021, adopt raw 2-byte opcode protocol
 - **Relevance:** SPI, RADIO
 
 
-### [balloon-hermes] ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files (2026-07-23) | tags: RADIO
+### [balloon-hermes] ban SX1280 from codebase: ADR-101 + AGENTS.md warning + deprecate 5 source files (2026-07-23) | tags: RADIO
 - **Commit:** `d8a7187` by Felix
-- **Files:** AGENTS.md, docs/adr/017-lr2021-only-ban-sx1280.md, docs/coordination/DISCOVERIES.md (+6 more)
-- **Full message:** ban SX1280 from codebase: ADR-017 + AGENTS.md warning + deprecate 5 source files
+- **Files:** AGENTS.md, docs/adr/101-lr2021-only-ban-sx1280.md, docs/coordination/DISCOVERIES.md (+6 more)
+- **Full message:** ban SX1280 from codebase: ADR-101 + AGENTS.md warning + deprecate 5 source files
 - **Relevance:** RADIO
 
 
