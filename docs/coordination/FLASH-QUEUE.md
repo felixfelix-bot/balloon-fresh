@@ -10,6 +10,8 @@
 | balloon-range-tests | E80 #1+#2 | PRBS-15 harmonization: E80 flashed+verified, C3 not connected | 2026-08-20T09:00Z | felix (orchestrator) | 8m | DONE (PARTIAL) |
 | balloon-range-tests | E80 TX (#1) | BUF-T3 flash smoke: SWD flash e80_bench.bin (buf/t2-impl 91cd0ae + NVIC fix) + 10x 4KB BUF LOAD + src=BUF/src=PRBS gates | 2026-08-21T08:30Z | kanban t_dd4e516b (pre-approved) | 15m | DONE |
 | balloon-range-tests | E80 RX (#2) | BUF-T5a: SWD flash e80_bench.bin (buf/t5a-rx-pcrc16) + verify PKT lines carry pcrc16 field | 2026-08-21T16:00Z | kanban t_a2949a8d (pre-approved) | 15m | DONE |
+| balloon-rfa | E80 x240-pair (TX arm) | RFA-1b PRAM experiment: flash e80_bench fw 5fa7912 + PRAM-patch toggle (patch on/off), then baseline matrix 64/128/255B @ 260/650 kbps | 2026-10-14T00:20Z | felix (operator, Signal) | 20m | APPROVED |
+| balloon-rfa | E80 x280-pair (RX arm) | RFA-1b: flash same fw+toggle on second board (via UART/SWD move of probe), verify ID? reports patch flag | 2026-10-14T00:20Z | felix (operator, Signal) | 20m | APPROVED |
 
 ## Rules
 
