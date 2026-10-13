@@ -1,35 +1,43 @@
 #!/usr/bin/env bash
-# pre-push: block pushes containing secrets in FULL repo history
-# Scans source files across all commits — skips large/binary/generated files
+# pre-push: block pushes containing secret patterns in repo history.
+#
+# REWRITTEN 2026-10-08. The previous version ran `git log -p --all -- ...`
+# INSIDE a per-pattern loop -- i.e. the full-history diff was regenerated once
+# per pattern. With ~600 refs in this repo that is an enormous diff, and the
+# hook consequently took MINUTES per push and was a major cause of the box
+# sitting at load 20+ with pushes hanging. It also effectively blocked the
+# merge train.
+#
+# This version generates the history diff ONCE and pipes it through a single
+# `grep -f`, i.e. O(1) history walks instead of O(N_patterns). Same detection
+# set, same added/removed coverage, a factor of N_patterns cheaper.
 set -e
 
-PATTERNS_FILE="$(git rev-parse --show-toplevel)/.secret-patterns.txt"
+TOPLEVEL="$(git rev-parse --show-toplevel)"
+PATTERNS_FILE="$TOPLEVEL/.secret-patterns.txt"
 
 if [ ! -f "$PATTERNS_FILE" ]; then
     exit 0
 fi
 
-# Only scan source code files, skip generated/binary/large files
-SCAN_PATHS="*.py *.sh *.json *.yml *.yaml *.toml *.env *.cfg *.conf *.ini *.js *.ts *.md"
+CLEAN_PATTERNS="$(mktemp)"
+trap 'rm -f "$CLEAN_PATTERNS"' EXIT
+grep -vE '^[[:space:]]*(#|$)' "$PATTERNS_FILE" > "$CLEAN_PATTERNS" || true
+if [ ! -s "$CLEAN_PATTERNS" ]; then
+    exit 0
+fi
 
-# Exclude files that define the patterns themselves + generated content
+# Only scan source code files; skip generated/binary/large files.
+SCAN_PATHS="*.py *.sh *.json *.yml *.yaml *.toml *.env *.cfg *.conf *.ini *.js *.ts *.md"
 EXCLUDE_PATHS=":(exclude).secret-patterns.txt :(exclude)data.json :(exclude)*.html"
 
-FOUND=0
-while IFS= read -r pattern; do
-    [ -z "$pattern" ] && continue
-    [[ "$pattern" == \#* ]] && continue
+# ONE history walk, ONE grep pass. `head -10` bounds the report.
+MATCH="$(git log -p --all -- $SCAN_PATHS $EXCLUDE_PATHS 2>/dev/null \
+    | grep -a -n -i -f "$CLEAN_PATTERNS" 2>/dev/null | head -10 || true)"
 
-    # Scan full history of source files only
-    MATCH=$(git log -p --all -- $SCAN_PATHS $EXCLUDE_PATHS 2>/dev/null | grep -nP "$pattern" 2>/dev/null | head -10)
-    if [ -n "$MATCH" ]; then
-        echo "SECRET in repo history (pattern: $pattern):"
-        echo "$MATCH"
-        FOUND=1
-    fi
-done < "$PATTERNS_FILE"
-
-if [ $FOUND -eq 1 ]; then
+if [ -n "$MATCH" ]; then
+    echo "SECRET in repo history:"
+    printf '%s\n' "$MATCH"
     echo ""
     echo "PUSH BLOCKED — secrets detected in commit history."
     echo "To scrub: git filter-repo --replace-text .secret-patterns.txt"

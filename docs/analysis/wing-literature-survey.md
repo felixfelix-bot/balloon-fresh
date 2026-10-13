@@ -705,3 +705,42 @@ and read; every URL was copied from the fetched resource, not reconstructed from
 could not be read are listed in §6 as UNVERIFIED and are not used to support any lesson. Where a claim
 is the author's arithmetic on a source's own numbers, it is labelled *derived* and the formula is
 shown. No source was read that this document does not name.
+
+---
+
+## 9. Correction note (appended 2026-10-07 — ADR-052)
+
+> **Appended, not rewritten.** §5 and §7 above are left exactly as written; this note records
+> that two of their entries were **superseded by a survey of the pico/small-balloon community
+> specifically**, and points at both the correction and its source. It does **not** delete,
+> re-argue or silently edit any earlier text.
+
+**§5 item 1 — "Do not leave voids under the cell: in vacuum they crack the silicon.
+*(APPLIES HERE — our most likely field failure.)*" — the "APPLIES HERE" verdict does NOT
+transfer, and the pressure figure in it is WRONG.** This survey's evidence for that claim came
+from **CubeSat** teams (~1.33 kg vehicles) whose void failure is a **multi-year
+< 10⁻⁶ Torr** regime (AlbertaSat, TVAC at < 10⁻⁶ Torr ≈ 1.33 × 10⁻⁴ Pa). The operator's payload
+is ~20–40 g and flies at **10–12 km ≈ 19–26 kPa (0.19–0.26 atm), −50 to −56 °C, for hours up to
+≈ 300 days** — not the *"~0.05–0.1 atm for hours and −60 °C"* written in §5.1 (that figure is
+roughly half to a quarter of the real pressure, closer to 15–18 km). The pressure ratio between
+the CubeSat test and the real flight is **≈ 1.4 × 10⁸**. A dedicated pico-balloon survey found
+**no balloon-world evidence either way** on void-cracking and explicitly did not borrow the
+CubeSat conclusion; its deciding evidence is that **no pico-balloon builder bonds a bare cell to
+a substrate at all**, and the one who explains why cites **thermal contraction**.
+
+**§5 item 2 — "Bond the cell, but bond it sparingly and thin — and vent the bond line.
+*(APPLIES HERE.)*" — SUPERSEDED.** Also CubeSat-derived (AlbertaSat). Superseded by
+**ADR-052** (`docs/adr/052-cell-mounting-end-only.md`), which records that the bare cells are
+mounted **END-ONLY with no adhesive bond**, free to float under thermal cycling.
+
+**What still stands here and is NOT affected by this note:** the soldering technique (§§4.1–4.6),
+the front/back-pad solutions (§5 item 7), the mass-per-watt benchmarks (§5 item 15), the
+"structure dominates mass" lesson (§5 item 14), the bypass-diode placement evidence
+(§5 item 5, §3.5–§3.6), the partial-illumination test (§5 item 6) and the assembly-order
+lesson (§5 item 13) are unaffected, and many of §7's reusable artefacts (A1, A2, A4, A5, A6,
+A10) remain valid.
+
+**Pointers:** the deciding evidence is
+[`docs/analysis/pico-balloon-solar-survey.md`](pico-balloon-solar-survey.md) (33 cited
+pico/small-balloon sources; §3.2, §3.3, §4.1–§4.4, §7); the decision is
+[`docs/adr/052-cell-mounting-end-only.md`](../adr/052-cell-mounting-end-only.md) §2.1–§2.4.

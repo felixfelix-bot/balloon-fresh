@@ -14,10 +14,12 @@ def find_port_by_serial(serial_substr: str, timeout: float = 10.0) -> str | None
     import time
     deadline = time.time() + timeout
     while time.time() < deadline:
+        found_any_node = False
         for i in range(10):
             port = f"/dev/ttyACM{i}"
             if not os.path.exists(port):
                 continue
+            found_any_node = True
             try:
                 result = subprocess.run(
                     ["udevadm", "info", "-q", "property", "-n", port],
@@ -27,6 +29,10 @@ def find_port_by_serial(serial_substr: str, timeout: float = 10.0) -> str | None
                     return port
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 continue
+        if not found_any_node:
+            # No ACM device nodes at all — nothing will appear by waiting, so
+            # return straight away instead of burning the whole timeout.
+            return None
         time.sleep(0.5)
     return None
 
@@ -145,14 +151,17 @@ def board_lock():
 @pytest.fixture
 def locked_tx(board_lock):
     """Acquire lock for TX board, yield port path."""
-    if not board_lock["acquire"]("tx", "pytest TX test"):
-        pytest.skip("TX board lock acquisition failed")
-        
+    # Physical precondition first: with the board detached there is nothing to
+    # lock, and tools/board-lock.py would otherwise sit out the full 60 s
+    # acquisition timeout behind another track's advisory lock.
     port = find_port_by_serial("E663B035977F242D")
     if not port:
-        board_lock["release"]("tx")
-        pytest.skip("TX board not found")
-        
+        pytest.skip("TX board (serial E663B035977F242D) not attached — "
+                    "hardware lock test skipped")
+
+    if not board_lock["acquire"]("tx", "pytest TX test"):
+        pytest.skip("TX board lock acquisition failed")
+
     try:
         yield port
     finally:
@@ -162,14 +171,14 @@ def locked_tx(board_lock):
 @pytest.fixture  
 def locked_rx(board_lock):
     """Acquire lock for RX board, yield port path."""
-    if not board_lock["acquire"]("rx", "pytest RX test"):
-        pytest.skip("RX board lock acquisition failed")
-        
     port = find_port_by_serial("E663B035973B8332")
     if not port:
-        board_lock["release"]("rx")
-        pytest.skip("RX board not found")
-        
+        pytest.skip("RX board (serial E663B035973B8332) not attached — "
+                    "hardware lock test skipped")
+
+    if not board_lock["acquire"]("rx", "pytest RX test"):
+        pytest.skip("RX board lock acquisition failed")
+
     try:
         yield port
     finally:
@@ -179,20 +188,19 @@ def locked_rx(board_lock):
 @pytest.fixture
 def locked_both(board_lock):
     """Acquire locks for both TX and RX boards, yield (tx_port, rx_port)."""
+    tx_port = find_port_by_serial("E663B035977F242D")
+    rx_port = find_port_by_serial("E663B035973B8332")
+    if not tx_port or not rx_port:
+        pytest.skip("TX and/or RX board not attached — hardware lock test "
+                    "skipped")
+
     if not board_lock["acquire"]("tx", "pytest both test"):
         pytest.skip("TX board lock acquisition failed")
-        
+
     if not board_lock["acquire"]("rx", "pytest both test"):  
         board_lock["release"]("tx")
         pytest.skip("RX board lock acquisition failed")
-        
-    tx_port = find_port_by_serial("E663B035977F242D")
-    rx_port = find_port_by_serial("E663B035973B8332")
-    
-    if not tx_port or not rx_port:
-        board_lock["release_all"]()
-        pytest.skip("One or both boards not found")
-        
+
     try:
         yield (tx_port, rx_port)
     finally:
@@ -202,10 +210,7 @@ def locked_both(board_lock):
 @pytest.fixture
 def locked_esp32_tx(board_lock):
     """Acquire lock for ESP32 TX board, yield port path."""
-    if not board_lock["acquire"]("esp32-tx", "pytest ESP32 TX test"):
-        pytest.skip("ESP32 TX board lock acquisition failed")
-        
-    # Find ESP32 by MAC (need to check udev properties)
+    # Find ESP32 by MAC (need to check udev properties) before locking.
     port = None
     for i in range(10):
         test_port = f"/dev/ttyACM{i}"
@@ -219,13 +224,16 @@ def locked_esp32_tx(board_lock):
             if "94:a9:90:2e:37:7c" in result.stdout:
                 port = test_port
                 break
-        except:
+        except Exception:
             continue
-            
+
     if not port:
-        board_lock["release"]("esp32-tx")
-        pytest.skip("ESP32 TX board not found")
-        
+        pytest.skip("ESP32 TX board (MAC 94:a9:90:2e:37:7c) not attached — "
+                    "hardware lock test skipped")
+
+    if not board_lock["acquire"]("esp32-tx", "pytest ESP32 TX test"):
+        pytest.skip("ESP32 TX board lock acquisition failed")
+
     try:
         yield port
     finally:

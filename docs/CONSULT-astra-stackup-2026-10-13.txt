@@ -1,0 +1,53 @@
+1. **Current two-layer corridor**
+
+I do not see a credible legal corridor for both nets in the current F.Cu/B.Cu routing.
+
+The area between approximately U4 at `(49–50, 7)` and U1 at `(59, 13–16)` is locally congested by the component fanouts, pads, existing tracks, and clearance regions. Although there may appear to be small visual gaps in the rendering, they do not form a continuous, DRC-valid path for both nets. The independent failures from two routers are consistent with that conclusion.
+
+A visually open region is not necessarily routable: the limiting geometry may be pad escape direction, track clearance, via access, or the inability to cross existing tracks without another layer.
+
+2. **D1-corrected stackup**
+
+The corrected D1 arrangement is spatially and electromagnetically much more defensible:
+
+- F.Cu signal remains immediately referenced to a solid In1.Cu GND plane.
+- The F.Cu RF traces therefore retain a continuous nearby return plane.
+- In2.Cu can provide the additional signal escape layer.
+- B.Cu can carry the +3V3 distribution as pours or rails, provided it is carefully partitioned from B.Cu signal and ground.
+
+This avoids the major flaw in the original D1 proposal, where F.Cu RF would have referenced a potentially noisy or fragmented +3V3 plane.
+
+The first verification should be **complete +3V3 connectivity after removing the In2.Cu plane**:
+
+- Confirm all 14 F.Cu +3V3 pads connect to the B.Cu +3V3 rail or pours.
+- Check every required via, neck-down, and branch for clearance and manufacturability.
+- Run the full connectivity/DRC check with all zones filled.
+- Verify that B.Cu has enough usable area despite its existing 153 signal tracks.
+- Check that no +3V3 island is accidentally isolated.
+- Check power impedance and current capacity, especially around the ESP32, SX1280, and GNSS module.
+
+After that, inspect RF return paths, via transitions, and the actual stackup dielectric thicknesses for impedance control. In1.Cu must remain a genuinely continuous GND reference under the F.Cu RF routing, including around pad, via, and antenna keep-out regions.
+
+3. **D3**
+
+D3 is not defensible as a finished PCB state. An unrouted net is an open circuit, regardless of its length. The two nets may be electrically benign once correctly routed, but they must actually be routed and DRC-verified before fabrication.
+
+D3 could be a temporary engineering state if the next step is explicitly to hand-route those nets, verify connectivity, inspect return paths, and rerun DRC. It is not an acceptable production recommendation merely because the nets are approximately 12 mm long.
+
+4. **Recommendation**
+
+Use **D1-corrected** as the preferred direction, but treat it as a required re-layout rather than an automatic approval.
+
+Recommended sequence:
+
+1. Convert In2.Cu to signal.
+2. Move all +3V3 distribution to B.Cu using deliberate pours/rails and vias.
+3. Route the two SX1280 nets on In2.Cu, with short, direct connections and suitable ground-via support where needed.
+4. Refill zones and verify all 14 +3V3 pad connections.
+5. Run connectivity, clearance, zone-isolation, and unconnected-item checks.
+6. Reinspect the F.Cu RF traces against the solid In1.Cu GND reference.
+7. Confirm the final stackup and controlled-impedance assumptions with the fabricator.
+
+D2 is unavailable, and D3 is only a temporary routing status. Therefore the corrected D1 option is the only viable candidate, subject to proving that the B.Cu +3V3 implementation is fully connected and does not create unacceptable power or signal-integrity problems.
+
+VERDICT: CHANGES_REQUESTED

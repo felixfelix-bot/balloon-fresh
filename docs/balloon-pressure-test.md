@@ -111,10 +111,19 @@ Beispiel-Output:
 ### Leak-Rate berechnen
 
 ```
-Leak-Rate (mbar/h) = (P_start - P_end) / Zeit_h - Temperatur-Korrektur
+Leak-Rate (mbar/h) = (P_start - P_end) / Zeit_h
 
-Temperatur-Korrektur: Delta_P_temp = P * (T_end - T_start) / T_start
-Bereinigte Leak-Rate = (P_start - P_end - Delta_P_temp) / Zeit_h
+Temperatur-Korrektur (abgedichteter Ballon, konstantes Volumen, ideales Gas
+P/T = const): der Druck, den der Sensor ohne Leck zeigen würde, ist
+P_end * (T_start / T_end). Die Korrektur ist deshalb MULTIPLIKATIV auf den
+Enddruck anzuwenden:
+
+Bereinigte Leak-Rate = (P_start - P_end * T_start / T_end) / Zeit_h
+
+Eine Temperaturzunahme hebt den Druck und VERDECKT damit das Leck — die echte
+Rate ist HÖHER als die rohe Rate; eine Abkühlung überzeichnet sie. Eine
+absolute, aus P_start berechnete Delta-Korrektur ist falsch: sie kehrt das
+Vorzeichen um und liefert negative (physikalisch unmögliche) Leck-Raten.
 ```
 
 ### Bewertung

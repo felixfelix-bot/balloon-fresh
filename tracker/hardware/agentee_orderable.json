@@ -1,0 +1,794 @@
+{
+  "diagnostics": [
+    {
+      "at": "via [47.300, 4.000]",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "+3V3 via sits in U4.1 0.125 mm from its edge, so the 0.150 mm drill crosses it: solder wicks down the barrel and the pad is damaged; centre it in the pad (filled and capped) or move it clear",
+      "rule": "via-cuts-pad",
+      "severity": "error"
+    },
+    {
+      "at": "via [3.920, 5.670]",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "+3V3 via sits in U6.5 0.275 mm from its edge, its 0.300 mm annulus reaches past the pad under the mask; centre it or use a smaller via",
+      "rule": "via-annulus-past-pad",
+      "severity": "warning"
+    },
+    {
+      "at": "via [1.770, 1.920]",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "+3V3 via sits in U6.1 0.275 mm from its edge, its 0.300 mm annulus reaches past the pad under the mask; centre it or use a smaller via",
+      "rule": "via-annulus-past-pad",
+      "severity": "warning"
+    },
+    {
+      "at": "via [1.770, 5.670]",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "+3V3 via sits in U6.4 0.275 mm from its edge, its 0.300 mm annulus reaches past the pad under the mask; centre it or use a smaller via",
+      "rule": "via-annulus-past-pad",
+      "severity": "warning"
+    },
+    {
+      "at": "via [1.465, 17.515]",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "+3V3 via sits in R_F1.1 0.270 mm from its edge, its 0.300 mm annulus reaches past the pad under the mask; centre it or use a smaller via",
+      "rule": "via-annulus-past-pad",
+      "severity": "warning"
+    },
+    {
+      "at": "vias",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "12 vias sit in SMD pads (U7.5, U6.5, J_VCC.3, U6.1, U6.4, U5.6 and 6 more): the fab notes ask to fill and cap them (IPC-4761 type VII); through filled and capped",
+      "rule": "via-in-pad",
+      "severity": "info"
+    },
+    {
+      "at": "vias 0.3mm",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "3 holes closer than 0.25mm to another net's copper: via at [41.645, 26.295] (+3V3) is 0.1643mm from track 122 (/SCAP_MID); via at [38.583, 30.308] (/ANT1_433_TX) is 0.195mm from track 119 (/SCAP_MID); via at [58.950, 4.220] (+3V3) is 0.2438mm from track 164 (/SX1280_RESET_N)",
+      "rule": "hole-to-copper",
+      "severity": "error"
+    },
+    {
+      "at": "drills",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 drill pairs closer than 0.5mm, first: via at [47.300, 4.000] is 0.3mm from via at [47.300, 3.400]",
+      "rule": "hole-to-hole",
+      "severity": "error"
+    },
+    {
+      "at": "clearance",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 119 (/SCAP_MID) is 0.045mm from via at [38.583, 30.308] (/ANT1_433_TX), needs 0.15mm",
+      "rule": "clearance",
+      "severity": "error"
+    },
+    {
+      "at": "clearance",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 122 (/SCAP_MID) is 0.0143mm from via at [41.645, 26.295] (+3V3), needs 0.15mm",
+      "rule": "clearance",
+      "severity": "error"
+    },
+    {
+      "at": "clearance",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 164 (/SX1280_RESET_N) is 0.0938mm from via at [58.950, 4.220] (+3V3), needs 0.15mm",
+      "rule": "clearance",
+      "severity": "error"
+    },
+    {
+      "at": "clearance",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 171 (/SX1280_SCK) is 0.1416mm from via at [41.645, 26.295] (+3V3), needs 0.15mm",
+      "rule": "clearance",
+      "severity": "error"
+    },
+    {
+      "at": "net /SCAP_ADC",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: R_DIV1.2 | R_DIV2.1 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /SCAP_MID",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: R_BAL2.1+R_BAL1.2 | C_CAP2.1+C_CAP1.2 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /SX1280_DIO2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: U4.11 | U1.11 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /SX1280_MISO",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: U4.9 | U1.9 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /W1_SOLAR_N",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: J_W2.1+J_W2.1 | D_BP1.2+J_W1.4+J_W1.4+D_BP2.1 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /W2_SOLAR_N",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: J_W2.4+J_W2.4 | J_W3.1+J_W3.1+D_BP2.2+D_BP3.1 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net /W3_SOLAR_N",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 unrouted: J_W4.1+J_W4.1 | J_W3.4+J_W3.4+D_BP4.1+D_BP3.2 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "net GND",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "10 unrouted: U4.3 | U4.15 | U4.18 | U4.20 | U4.22 | U4.24 | J_W1.2+J_W1.2 | J_W4.2+J_W4.2 | J_W4.4+J_W4.4 | J_W2.2+J_W2.2 | R_BAL2.2+U4.16+U4.17+U4.19+U4.21+U4.23+U4.25+C_CAP2.2+C_MON.2+U6.2+U6.3+U6.6+U3.2+U3.8+U3.11+U3.12+U3.18+D_CLAMP.2+J_W3.2+J_W3.2+R_MON2.2+U2.2+U2.3+U2.4+U2.6+U2.7+U2.8+U2.11+ANT3.2+ANT3.2+ANT3.2+U7.2+C4.2+ANT2.2+ANT2.2+ANT2.2+U1.1+U1.40+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+U1.41+ANT1.2+ANT1.2+ANT1.2+D_BP4.2+U5.1+U5.10+U5.12+R_DIV2.2+C_BULK.2+ANT4.2+ANT4.2+ANT4.2+TH_NTC1.2+C_HF.2 are not joined",
+      "rule": "unrouted",
+      "severity": "error"
+    },
+    {
+      "at": "tracks[122] /SCAP_MID",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "end at [41.984, 26.056] connects to nothing",
+      "rule": "dangling-track",
+      "severity": "warning"
+    },
+    {
+      "at": "tracks[124] /SCAP_MID",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "end at [43.208, 26.056] connects to nothing",
+      "rule": "dangling-track",
+      "severity": "warning"
+    },
+    {
+      "at": "edge",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 63 (/F33_VCC) is 0.491mm from the board edge, needs 0.5mm",
+      "rule": "copper-to-edge",
+      "severity": "error"
+    },
+    {
+      "at": "edge",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 63 (/F33_VCC) is 0.491mm from the board edge, needs 0.5mm",
+      "rule": "copper-to-edge",
+      "severity": "error"
+    },
+    {
+      "at": "edge",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "track 63 (/F33_VCC) is 0.491mm from the board edge, needs 0.5mm",
+      "rule": "copper-to-edge",
+      "severity": "error"
+    },
+    {
+      "at": "edge",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "via at [46.299, 0.572] (+3V3) is 0.2722mm from the board edge, needs 0.5mm",
+      "rule": "copper-to-edge",
+      "severity": "error"
+    },
+    {
+      "at": "part J_W1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "pads 2, 2, 3, 3 hang off the board",
+      "rule": "pad-off-board",
+      "severity": "error"
+    },
+    {
+      "at": "part J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "pads 1, 1, 2, 2, 3, 3, 4, 4 hang off the board",
+      "rule": "pad-off-board",
+      "severity": "error"
+    },
+    {
+      "at": "part J_W2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "pads 1, 1, 2, 2, 3, 3, 4, 4 hang off the board",
+      "rule": "pad-off-board",
+      "severity": "error"
+    },
+    {
+      "at": "pad J_W1.2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "joined to the GND pour on F.Cu by 1 spoke and 0.3mm of copper in all, under the pad's 1.2mm width; widen the neck or run a track to it",
+      "rule": "starved-thermal",
+      "severity": "warning"
+    },
+    {
+      "at": "pad J_W1.2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "joined to the GND pour on B.Cu by 1 spoke and 0.3mm of copper in all, under the pad's 1.2mm width; widen the neck or run a track to it",
+      "rule": "starved-thermal",
+      "severity": "warning"
+    },
+    {
+      "at": "tracks[59] /F33_SCK",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "runs on top of tracks[60] on F.Cu for 1.05 mm, 0.000 mm apart; the copper is doubled, merge or remove one",
+      "rule": "track-overlap",
+      "severity": "error"
+    },
+    {
+      "at": "zone +3V3 on In2.Cu",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "7 sharp copper tips under 30 degrees, first at [65.301, 12.846]; they etch unevenly and can lift, raise the zone's min_width",
+      "rule": "zone-tips",
+      "severity": "warning"
+    },
+    {
+      "at": "zones[0] GND",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "108 copper islands on F.Cu reach nothing of GND and were removed",
+      "rule": "zone-islands",
+      "severity": "info"
+    },
+    {
+      "at": "zones[1] GND",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "24 copper islands on B.Cu reach nothing of GND and were removed",
+      "rule": "zone-islands",
+      "severity": "info"
+    },
+    {
+      "at": "zones[2] GND",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "1 copper islands on In1.Cu reach nothing of GND and were removed",
+      "rule": "zone-islands",
+      "severity": "info"
+    },
+    {
+      "at": "zones[3] +3V3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "6 copper islands on In2.Cu reach nothing of +3V3 and were removed",
+      "rule": "zone-islands",
+      "severity": "info"
+    },
+    {
+      "at": "part U2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "courtyard on F.CrtYd covers the mounting hole TH1",
+      "rule": "courtyard-hole",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_BAL2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_BAL2` sits on pads U4.18, R_BAL1.1, R_BAL1.2, it will be clipped, prints over 2 vias, crosses the silk outline of R_BAL2, U4, R_BAL1, hides under the body of R_BAL1",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_VCC",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`J_VCC` crosses the silk outline of J_VCC",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk U4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`U4` prints over 2 vias",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk D_BP1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`D_BP1` prints over 2 vias",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk U6",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`U6` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk D_CLAMP",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`D_CLAMP` sits on pads U7.3, U7.4, it will be clipped, crosses the silk outline of U7, runs off the board, hides under the body of U7",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_MON2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_MON2` crowds `D_BP3` of D_BP3, sits on pads R_MON1.1, R_MON1.2, D_BP3.2, it will be clipped, crosses the silk outline of R_MON2, R_MON1, runs off the board, hides under the body of R_MON1",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk FID1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`FID1` sits on pads U6.5, U6.6, FID1.1, it will be clipped, prints over 2 vias, crosses the silk outline of U6, U2, hides under the body of U6, U2",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk C4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`C4` crowds `C_HF` of C_HF",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk TH1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`TH1` sits on pads TH1., it will be clipped, hides under the body of U2",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk D_BP2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`D_BP2` prints over 2 vias",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_MON1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_MON1` crowds `D_BP3` of D_BP3, crosses the silk outline of R_MON1, runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_NTC1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_NTC1` prints over 1 via, crosses the silk outline of R_NTC1, runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_DIV2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_DIV2` crowds `R_F1` of R_F1, prints over 1 via",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`J_W4` crowds `W` of J_W4, runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`1` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`4` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`W` crowds `J_W4` of J_W4, runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`90` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_DIV1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_DIV1` prints over 2 vias, crosses the silk outline of R_DIV1",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_F1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_F1` crowds `R_DIV2` of R_DIV2",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk R_BAL1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`R_BAL1` crosses the silk outline of R_BAL1",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk C_BULK",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`C_BULK` crowds `TH_NTC1` of TH_NTC1, prints over 1 via",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk D_BP3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`D_BP3` crowds `R_MON2` of R_MON2, crowds `R_MON1` of R_MON1",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`4` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`W` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`1` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk J_W2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`90` runs off the board",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk TH_NTC1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`TH_NTC1` crowds `C_BULK` of C_BULK, crosses the silk outline of C4, TH_NTC1",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "silk C_HF",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "`C_HF` crowds `C4` of C4",
+      "rule": "silk-text",
+      "severity": "error"
+    },
+    {
+      "at": "part J_W3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "its courtyard reaches past the board edge; keep bodies 1mm in, or set `overhang = true` on a connector footprint meant to hang over the edge",
+      "rule": "part-body-to-edge",
+      "severity": "info"
+    },
+    {
+      "at": "part J_W1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "its courtyard reaches past the board edge; keep bodies 1mm in, or set `overhang = true` on a connector footprint meant to hang over the edge",
+      "rule": "part-body-to-edge",
+      "severity": "info"
+    },
+    {
+      "at": "part J_W4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "its courtyard reaches past the board edge; keep bodies 1mm in, or set `overhang = true` on a connector footprint meant to hang over the edge",
+      "rule": "part-body-to-edge",
+      "severity": "info"
+    },
+    {
+      "at": "part J_W2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "its courtyard reaches past the board edge; keep bodies 1mm in, or set `overhang = true` on a connector footprint meant to hang over the edge",
+      "rule": "part-body-to-edge",
+      "severity": "info"
+    },
+    {
+      "at": "part R_BAL2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "0402 chip may tombstone: pad 2 has 0.79 mm2 of copper within 0.3mm and pad 1 0.13 mm2; the end that heats slower wets last and the other end stands the part up, balance the lands and the copper on them",
+      "rule": "tombstone-risk",
+      "severity": "info"
+    },
+    {
+      "at": "part C_MON",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "0402 chip may tombstone: pad 2 has 0.59 mm2 of copper within 0.3mm and pad 1 0.07 mm2; the end that heats slower wets last and the other end stands the part up, balance the lands and the copper on them",
+      "rule": "tombstone-risk",
+      "severity": "info"
+    },
+    {
+      "at": "part R_MON2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "0402 chip may tombstone: pad 2 has 0.55 mm2 of copper within 0.3mm and pad 1 0.07 mm2; the end that heats slower wets last and the other end stands the part up, balance the lands and the copper on them",
+      "rule": "tombstone-risk",
+      "severity": "info"
+    },
+    {
+      "at": "part R_DIV2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "0402 chip may tombstone: pad 2 has 0.89 mm2 of copper within 0.3mm and pad 1 0.06 mm2; the end that heats slower wets last and the other end stands the part up, balance the lands and the copper on them",
+      "rule": "tombstone-risk",
+      "severity": "info"
+    },
+    {
+      "at": "part R_F1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "0402 chip may tombstone: pad 1 has a via in it and pad 2 not; the end that heats slower wets last and the other end stands the part up, balance the lands and the copper on them",
+      "rule": "tombstone-risk",
+      "severity": "info"
+    },
+    {
+      "at": "part C_HF",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "0402 chip may tombstone: pad 2 has 0.46 mm2 of copper within 0.3mm and pad 1 0.14 mm2; the end that heats slower wets last and the other end stands the part up, balance the lands and the copper on them",
+      "rule": "tombstone-risk",
+      "severity": "info"
+    },
+    {
+      "at": "test",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "12 nets have no probe access from B: +3V3, /ANT1_433_TX, /ANT3_2G4_RX, /F33_RESET_N, /F33_VSENSE, /GNSS_RX, /GNSS_TX, /I2C_SCL, /I2C_SDA, /NTC_SENSE, /SX1280_RESET_N, /U3_RESET_N; `agentee testpoints NAME --nets ...` adds test pads",
+      "rule": "test-access",
+      "severity": "info"
+    },
+    {
+      "at": "part U3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U3 sits 83% of the way from the board centre to the edge; large chips escape their pins, spread heat and stay clear of board flex best near the centre (off_centre 60%)",
+      "rule": "placement-large-part-off-centre",
+      "severity": "info"
+    },
+    {
+      "at": "part U2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U2 sits 76% of the way from the board centre to the edge; large chips escape their pins, spread heat and stay clear of board flex best near the centre (off_centre 60%)",
+      "rule": "placement-large-part-off-centre",
+      "severity": "info"
+    },
+    {
+      "at": "part U1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U1 sits 78% of the way from the board centre to the edge; large chips escape their pins, spread heat and stay clear of board flex best near the centre (off_centre 60%)",
+      "rule": "placement-large-part-off-centre",
+      "severity": "info"
+    },
+    {
+      "at": "part U5",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U5 sits 65% of the way from the board centre to the edge; large chips escape their pins, spread heat and stay clear of board flex best near the centre (off_centre 60%)",
+      "rule": "placement-large-part-off-centre",
+      "severity": "info"
+    },
+    {
+      "at": "part U3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U3 and U1 are 3.25 mm apart, closer than 5.00 mm; spread large, hot packages so their heat does not stack",
+      "rule": "placement-hot-parts-close",
+      "severity": "info"
+    },
+    {
+      "at": "part U3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U3 and U5 are 2.42 mm apart, closer than 5.00 mm; spread large, hot packages so their heat does not stack",
+      "rule": "placement-hot-parts-close",
+      "severity": "info"
+    },
+    {
+      "at": "part U1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "U1 and U5 are 1.59 mm apart, closer than 5.00 mm; spread large, hot packages so their heat does not stack",
+      "rule": "placement-hot-parts-close",
+      "severity": "info"
+    },
+    {
+      "at": "part R_MON2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "R_MON2 connects only to U1 but sits 32.64 mm from U1.21; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part ANT3",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "ANT3 connects only to U3 but sits 76.57 mm from U3.10; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part C4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "C4 connects only to U5 but sits 20.35 mm from U5.8; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part ANT2",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "ANT2 connects only to U4 but sits 98.00 mm from U4.14; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part R_NTC1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "R_NTC1 connects only to U3 but sits 15.97 mm from U3.13; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part ANT1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "ANT1 connects only to U2 but sits 39.02 mm from U2.9; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part R_F1",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "R_F1 connects only to U5 but sits 78.87 mm from U5.8; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part ANT4",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "ANT4 connects only to U5 but sits 73.60 mm from U5.11; keep it within 10.00 mm of the pin it serves",
+      "rule": "placement-cluster-spread",
+      "severity": "info"
+    },
+    {
+      "at": "part J_VCC",
+      "file": "./board.pcb.toml",
+      "item": "board",
+      "message": "connector J_VCC is 25.05 mm in from the board edge; put connectors on the edge, within 3.00 mm, so cables and mating parts clear the board",
+      "rule": "placement-connector-not-at-edge",
+      "severity": "info"
+    }
+  ],
+  "setup": {
+    "barrier_clearance": false,
+    "bga": false,
+    "blind_buried": false,
+    "bottom_parts": false,
+    "copper_layers": 4,
+    "creepage": false,
+    "domains": false,
+    "fab": "generic",
+    "finish": "HASL",
+    "impedance": false,
+    "inner_oz": 0.4342857142857142,
+    "interfaces": false,
+    "layout": true,
+    "match_groups": false,
+    "mlcc": true,
+    "npth": true,
+    "outer_oz": 1.0,
+    "pairs": false,
+    "parts": 44,
+    "slots": false,
+    "small_chips": true,
+    "spark_gaps": false,
+    "tall_parts": false,
+    "test_points": false,
+    "thickness_mm": 1.6166,
+    "title": false,
+    "via_in_pad": true,
+    "zones": true
+  }
+}

@@ -9,6 +9,21 @@ import serial
 import subprocess
 from pathlib import Path
 
+# The lock fixtures live in board_lock_fixtures.py. pytest does not load that
+# module as a plugin (it is not a conftest.py and nothing declares
+# pytest_plugins), so every test requesting locked_tx / locked_rx /
+# locked_both / locked_esp32_tx ERRORed at setup with
+# "fixture 'locked_tx' not found". Importing them makes the fixtures visible
+# to this module (they pytest.skip when the board is not attached).
+from board_lock_fixtures import (  # noqa: F401
+    board_lock,
+    find_port_by_serial,
+    locked_both,
+    locked_esp32_tx,
+    locked_rx,
+    locked_tx,
+)
+
 
 def test_lock_acquisition_release(locked_tx):
     """Test that we can acquire and release TX board lock."""
@@ -154,10 +169,21 @@ class TestBoardLockIntegration:
     """Integration test class demonstrating proper lock usage."""
     
     def test_manual_lock_pattern(self):
-        """Test manual lock acquisition/release pattern."""
+        """Test manual lock acquisition/release pattern.
+
+        Hardware-gated: the board lock is a *device* lock, so with the TX board
+        detached there is nothing to lock. Checking the board first also avoids
+        blocking for the lock script's full acquisition timeout behind another
+        track's advisory lock.
+        """
         import subprocess
         import time
-        
+
+        tx_port = find_port_by_serial("E663B035977F242D")
+        if not tx_port:
+            pytest.skip("TX board (serial E663B035977F242D) not attached — "
+                        "hardware lock test skipped")
+
         # Manual lock acquisition
         result = subprocess.run([
             "python3", str(Path(__file__).parent.parent / "tools" / "board-lock.py"),

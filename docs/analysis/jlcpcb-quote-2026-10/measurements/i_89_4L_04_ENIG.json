@@ -1,0 +1,86 @@
+{
+  "name": "i_89_4L_04_ENIG",
+  "dims_entered": [
+    89,
+    89
+  ],
+  "qty": 5,
+  "note": "4L+0.4mm needs ENIG",
+  "at": "2026-10-07T23:54:23",
+  "page_load": "FRESH navigation (new tab) -> isolated",
+  "pristine_selected": {
+    "Base Material": "FR-4",
+    "Layers": "2",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Surface Finish": "HASL(with lead)",
+    "Outer Copper Weight": "1 oz",
+    "Stiffener": "Without",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Gold Fingers": "No",
+    "Castellated Holes": "No"
+  },
+  "dim_x_set": "89",
+  "dim_y_set": "89",
+  "steps": [
+    {
+      "heading": "Layers",
+      "want": "4",
+      "got": "2",
+      "took": false
+    },
+    {
+      "heading": "Surface Finish",
+      "want": "ENIG",
+      "got": "HASL(with lead)",
+      "took": false
+    },
+    {
+      "heading": "PCB Thickness",
+      "want": "0.4mm",
+      "err": "DISABLED",
+      "option": "0.4mm",
+      "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+      "took": false
+    }
+  ],
+  "final_selected": {
+    "Base Material": "FR-4",
+    "Layers": "2",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Surface Finish": "HASL(with lead)",
+    "Outer Copper Weight": "1 oz",
+    "Stiffener": "Without",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Gold Fingers": "No",
+    "Castellated Holes": "No"
+  },
+  "quote": {
+    "engineering_fee": null,
+    "board": null,
+    "via_covering": null,
+    "surface_finish": null,
+    "deburring_edge_rounding": null,
+    "panel": null,
+    "pcb_build_time_2days": null,
+    "calculated_price": "$0.00",
+    "shipping": "Charge: Choose destination country first",
+    "weight": "kg",
+    "build_time_lines": {}
+  },
+  "dims_input_readback": [
+    "100",
+    "100"
+  ]
+}

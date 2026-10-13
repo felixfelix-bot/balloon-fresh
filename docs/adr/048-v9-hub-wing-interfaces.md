@@ -317,3 +317,42 @@ interface, the unnetted v9 RF provision) is an engineering consequence of the
 cited records (ADR-006 / ADR-029 / ADR-034 / ADR-040 and the **Proposed**
 ADR-046 + socket spec). Nothing here is to be read as an operator decision, and
 none of the open items in §5 may be closed by assertion.
+
+---
+
+## Correction (2026-10-08, `fix/record-contradictions`) — §5 item 6 / sheet `OPEN-23` is RESOLVED
+
+**§5 item 6 (the assembly orientation of the wing at the hub) is no longer open.
+The wing plane is VERTICAL (a blade): long axis radial in the hub plane and
+pointing outward, 25 mm width vertical.** The governing record is
+`docs/adr/049-wing-architecture.md` §5 item 6 (2026-10-07), which resolves it by
+arithmetic and says so explicitly ("*Wing plane orientation is VERTICAL … it is
+resolved by arithmetic*"). The arithmetic is the tab/slot fit that ADR-046 §4.1
+and this ADR's §2.2 both state: a **0.9 mm** slot admits a **0.6 mm** tab plus a
+**0.30 mm** nominal gap, and a **9.0 mm** tab cannot fit a **6.0 mm** in-plane
+slot — so the wing plane cannot be coplanar with the hub. It is independently
+confirmed by **ADR-046 §4.1** ("90° to the hub plane, wing plane normal to the
+hub plane"), by **ADR-051** §1.4 and by **ADR-055** §1 (both derive the four
+vertical blades), and by `docs/analysis/wing-insolation-geometry.md` §0.
+
+**Nothing in §2 of this ADR changes.** The datum (§2.7), the land row, the slot
+and the keep-outs are unaffected, and the footprint still **asserts no rotation**
+— as §5 item 6 required. This correction closes the *contradiction*, not the
+footprint decision.
+
+The stale reading is `docs/WING-TO-HUB-SOCKET-SPEC.md` §1 ("Wings 1–2 horizontal,
+3–4 inclined ≈30° below the hub plane", and its self-contradicting "long axis is
+perpendicular to the hub plane"), which is v1-era prose from
+`docs/hardware-design.md` §3D-Assembly where "horizontal" described **antenna**
+coverage for a wing that carried a Yagi; the wing antenna is V2-only and absent
+on v9 (ADR-046 §2.4). That section now carries an appended correction, as does
+this ADR's own restatement of the inherited **22 × 22 mm** hub outline in §2.1 /
+§2.2 / §2.4 — the current v9 hub outline is **103.0 × 103.0 mm**
+(`tracker/hardware/hub_board_v9.kicad_pcb`, S0 placement;
+`tracker/hardware/placement-source-of-truth.json`).
+
+**What stays open:** the ±30° droop of wings 3–4 (no v9 rationale, no v9 record)
+and the rest of §5 (items 1–5, 7–9) are unchanged. Both resolved values are
+registered in `docs/ssot/parameters.json`
+(`wing_plane_orientation`, `hub_outline`); the gate is
+`scripts/param_ssot_check.py`.
