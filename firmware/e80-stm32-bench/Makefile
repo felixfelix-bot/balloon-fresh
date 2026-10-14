@@ -735,3 +735,24 @@ range-cvm-test: ## Test CVM relay connectivity + latency — RELAYS=wss://relay.
 	@echo "=== CVM Relay Connectivity Test ==="
 	cd $(TOOLDIR) && $(PYTHON) tools/cvm_relay_test.py \
 		$$( [ -n "$(RELAYS)" ] && echo "--relays $(RELAYS)" )
+
+
+# ---------------------------------------------------------------------------
+# LR2021 receive-only bench audit (added 2026-10-14)
+# SAFETY: these targets never transmit. They do not send ARM TX / ROLE TX /
+# START / PRBS9. They only read identity/stats and reconfigure while role==RX.
+# Requires: pyserial.  Usage: make lr2021-audit PORT=/dev/ttyUSB0
+PORT ?= /dev/ttyUSB0
+AUDIT_DIR := tools/lr2021
+
+lr2021-audit: ## LR2021 receive-only console audit (identity, cmd surface, bands)
+	python3 $(AUDIT_DIR)/e80_lr2021_audit.py --port $(PORT) \
+	  --out $(AUDIT_DIR)/out/lr2021-audit.json \
+	  --log $(AUDIT_DIR)/out/lr2021-audit.console.log
+
+lorawan-plan-audit: ## EU868 LoRaWAN channel/DR plan audit, receive-only
+	python3 $(AUDIT_DIR)/e80_lorawan_plan_audit.py --port $(PORT) \
+	  --out $(AUDIT_DIR)/out/lr2021-lorawan-plan.json
+
+lr2021-audit-host: ## host tests for the audit scripts (no hardware)
+	python3 -m pytest $(AUDIT_DIR)/test_lr2021_audit.py -q
