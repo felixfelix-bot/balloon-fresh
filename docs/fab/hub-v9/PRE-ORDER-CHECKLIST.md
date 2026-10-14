@@ -55,6 +55,20 @@ sha256sum ~/jlc-quote-inputs/hub_v9_0.8mm.zip          # recorded hash
 ```
 
 
+## C2. WING v9 PACKET (the second board — added 2026-10-14)
+
+| # | Item | State |
+|---|------|-------|
+| W1 | Wing routes / electrical completeness | ✅ **0 unconnected items**, 28 tracks on 4 solar nets |
+| W2 | Wing DRC | ✅ 37 items, **all artifact or clip-not-reject**; the 2 `track_dangling` **resolved** as legal taps (zero unshared-not-on-pad endpoints) |
+| W3 | Wing thickness | ✅ **0.6 → 0.8 fixed** (`fix_wing_issues.py`); the export script's own comment said "0.6 mm" and was stale too |
+| W4 | `FB1` / `RF1` DNP | ✅ **fixed** — said DNP in the value TEXT only; flags now True, so a CPL generator will not try to place v2-only parts on a v1 board |
+| W5 | Wing gerbers + drill | ✅ `output/gerbers_wing_v9_jlcpcb.zip`, PTH 8 holes / NPTH 3 holes |
+| W6 | Wing zip sha256 | ✅ `5e36d1cd1a88a71a6a32c656faa5e45b46ee2099c6ea546c998822a9503aa1c3` |
+| W7 | Wing BOM/CPL | ✅ **correctly absent** — no purchasable non-DNP part exists on the wing |
+
+See `docs/fab/hub-v9/WING-V9-PACKAGE-AUDIT.md`.
+
 ## D. KNOWN ACCEPTED RISKS (do not re-litigate; log them)
 
 - **Cold:** all ICs are −40 °C rated; 7–9 km float ambient is ≈ −40…−50 °C (a 12 km float would be colder). Accepted, to be **measured** in flight via the NTC sense lines.
