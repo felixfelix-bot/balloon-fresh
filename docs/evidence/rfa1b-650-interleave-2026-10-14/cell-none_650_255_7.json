@@ -1,0 +1,197 @@
+{
+ "arm": "none",
+ "br_kbps": 650,
+ "len": 255,
+ "pa_dbm": 22,
+ "freq_hz": 869850000,
+ "tx_port": "/dev/ttyUSB0",
+ "rx_port": "/dev/ttyUSB0",
+ "rx_lines": [
+  "OK CONFIG 7 0",
+  "CONFIG_START,7,0,3340582",
+  "OK MOD flrc br=650000 pa=10",
+  "OK FREQ 869850000",
+  "OK POWER MODE OUTDOOR PIN 2026 ACCEPTED - TX POWER CAP LIFTED TO +22 DBM, OUTDOOR RANGE SESSIONS ONLY",
+  "OK PA 22 DBM",
+  "OK ROLE RX (CONTINUOUS)",
+  "OK RX ARMED len=255",
+  "STAT role=RX sent=0 sent_ok=0 rx=0 crc_err=0 per_x1e6=0 elapsed_s=28.1 kbps=0 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=0 config=7 replicate=0 drops=0 gap_us=10000 buf=0"
+ ],
+ "tx_lines": [
+  "OK ARMED (TX ENABLED)",
+  "NOTE IWDG STARTED (2-4S WINDOW) - 'FLASH' NOW REQUIRES POWER-CYCLE",
+  "OK START n=200 len=255 gap_us=10000 src=PRBS",
+  "TX DONE (RADIO ASLEEP)",
+  "STAT role=TX sent=200 sent_ok=200 rx=0 crc_err=0 per_x1e6=0 elapsed_s=3.6 kbps=113 rssi_avg_dbm=0.0 rssi_min_dbm=0.0 rssi_max_dbm=0.0 snr_avg_db=0.0 cr=1 session=0 config=7 replicate=0 drops=0 gap_us=10000 buf=0"
+ ],
+ "rx_stat": {
+  "role": "RX",
+  "sent": "0",
+  "sent_ok": "0",
+  "rx": "0",
+  "crc_err": "0",
+  "per_x1e6": "0",
+  "elapsed_s": "28.1",
+  "kbps": "0",
+  "rssi_avg_dbm": "0.0",
+  "rssi_min_dbm": "0.0",
+  "rssi_max_dbm": "0.0",
+  "snr_avg_db": "0.0",
+  "cr": "1",
+  "session": "0",
+  "config": "7",
+  "replicate": "0",
+  "drops": "0",
+  "gap_us": "10000",
+  "buf": "0"
+ },
+ "tx_stat": {
+  "role": "TX",
+  "sent": "200",
+  "sent_ok": "200",
+  "rx": "0",
+  "crc_err": "0",
+  "per_x1e6": "0",
+  "elapsed_s": "3.6",
+  "kbps": "113",
+  "rssi_avg_dbm": "0.0",
+  "rssi_min_dbm": "0.0",
+  "rssi_max_dbm": "0.0",
+  "snr_avg_db": "0.0",
+  "cr": "1",
+  "session": "0",
+  "config": "7",
+  "replicate": "0",
+  "drops": "0",
+  "gap_us": "10000",
+  "buf": "0"
+ },
+ "rx_id": null,
+ "tx_id": null,
+ "config_id": 7,
+ "rx_config_markers": [
+  "CONFIG_START,7,0,3340582"
+ ],
+ "rx_pkts_other_config": 0,
+ "rx_pkts": 0,
+ "rx_crc_ok": 0,
+ "rx_crc_bad": 0,
+ "tx_ops_ok": true,
+ "rx_ops_ok": true,
+ "tx_pre_ok": true,
+ "rx_error": null,
+ "tx_error": null,
+ "tx_pre_ops": [
+  {
+   "op": "send",
+   "cmd": "CONFIG 7 0",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "MOD flrc 650 10",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "FREQ 869850000",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "POWER MODE OUTDOOR 2026",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "PA 22",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "ROLE TX",
+   "ok": true,
+   "attempt": 1
+  }
+ ],
+ "rx_ops": [
+  {
+   "op": "send",
+   "cmd": "CONFIG 7 0",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "MOD flrc 650 10",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "FREQ 869850000",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "POWER MODE OUTDOOR 2026",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "PA 22",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "ROLE RX",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "send",
+   "cmd": "START N=200 LEN=255 GAP=10000",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "listen",
+   "ok": true,
+   "seconds": 28.0,
+   "new_lines": 0
+  },
+  {
+   "op": "send",
+   "cmd": "STAT?",
+   "ok": true,
+   "attempt": 1
+  }
+ ],
+ "tx_ops": [
+  {
+   "op": "send",
+   "cmd": "ARM TX\nSTART N=200 LEN=255 GAP=10000",
+   "ok": true,
+   "attempt": 1
+  },
+  {
+   "op": "wait",
+   "expect": "TX DONE",
+   "ok": true
+  },
+  {
+   "op": "send",
+   "cmd": "STAT?",
+   "ok": true,
+   "attempt": 1
+  }
+ ]
+}
