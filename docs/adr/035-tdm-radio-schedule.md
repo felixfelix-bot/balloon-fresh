@@ -30,18 +30,50 @@ The operator's verbatim intent, 2026-10-07 (Felix / c08r4d0r):
 
 ADR-034 places four RF parts on the v9 board — TX 433 (F33-2G4), RX 2.4 (bare LoRa2021),
 SX1280 (2.4 GHz ranging), MAX-M10S (GNSS L1). This ADR records the **schedule** that lets
-them coexist on one ~55 × 45 mm board, and it upgrades the arbiter from ADR-029 §3
+them coexist on one **70 × 70 mm** board, and it upgrades the arbiter from ADR-029 §3
 (which scheduled two ports of one half-duplex module) to a **multi-chip** arbiter.
+
+> **AMENDED 2026-10-14 — two corrections from the RF review
+> (`docs/analysis/RF-REVIEW-2-LINKS-AND-COEXISTENCE.md`).**
+>
+> **(1) The outline is 70 × 70 mm, not "~55 × 45 mm".** ADR-068 fixed the outline at
+> 70 × 70 (as revised by the seat probe). The isolation figure below was derived for the
+> **superseded** ~45 × 55 mm board (2475 mm²); the current board is **4900 mm², ~2× the
+> area**, so the antennas can sit roughly **√2 × further apart** on the diagonal.
+> **Do NOT assume this helps.** At U.FL-pigtail distances the dominant coupling is often
+> **not** free-space separation but **shared ground/power-plane coupling, chassis return
+> currents and pigtail routing** — none of which improves because the board grew. And the
+> board now carries **five** RF-relevant interfaces (plus the wing-tab 433 lands), i.e.
+> **more aggressors and victims on a plane that is itself a shared antenna.** The figure is
+> therefore **STALE BY DIMENSION** and must be replaced by the bench measurement this ADR
+> already names as its own falsifier (§Open items: isolation ≥ 40 dB would relax the
+> one-transmitter rule).
+>
+> **(2) Two radios now share 2.4 GHz — state the exclusivity EXPLICITLY.** This ADR places
+> **two 2.4 GHz radios** on one board: the bare `LoRa2021` (uplink RX) **and** the `SX1280`
+> (ranging). ADR-034's coexistence win was *simultaneous TX and RX on **separated** bands* —
+> true for **433 vs 2.4**, and **not** addressed for **2.4 RX vs 2.4 ranging**, where both sit
+> in the **same band on the same board**. The slot table below does schedule ranging into
+> dedicated windows, so this is **probably** already covered — but it is a *different*
+> coexistence case from the one ADR-034 resolved and is now stated as a **normative rule**
+> (D2 R7) rather than left implied by the table.
 
 ### Why a schedule is mandatory, not a nicety
 
-Co-located radios cannot run in parallel. On a ~45 × 55 mm board with U.FL pigtails,
-antenna-to-antenna isolation is roughly **15–25 dB**, so a **+30 dBm (1 W)** or
+Co-located radios cannot run in parallel. On a **~45 × 55 mm board** with U.FL pigtails,
+antenna-to-antenna isolation was estimated at roughly **15–25 dB**, so a **+30 dBm (1 W)** or
 **+33 dBm (2 W)** transmitter presents tens of dB above a neighbour receiver's noise
 floor. "Different channels" does not rescue it — the interferer is wideband and the
 victim is a wideband front end. Therefore **exactly one radio transmits at a time**, and
 the design must contain an **arbiter that enforces it**. Ranging is **bidirectional**
 (the SX1280 both TX and RX), so it needs its own slot too.
+
+> **The 15–25 dB figure is STALE BY DIMENSION (see the amendment above): it was derived for
+> the superseded ~45 × 55 mm board. The current board is 70 × 70 mm.** The qualitative
+> conclusion is **unchanged** — one transmitter at a time remains required — because the
+> estimate is about the *order of magnitude* of coupling, and a larger board does not
+> reliably improve it (plane/chassis coupling often dominates). The **quantitative** number
+> and the ≥ 40 dB falsifier must come from the bench measurement in §Open items.
 
 ---
 
@@ -68,6 +100,19 @@ The schedule is a **firmware contract** with four named slot classes, in a fixed
    active.
 
 GNSS is continuous and outside the schedule (D3).
+
+**R7 (normative, added 2026-10-14) — the two 2.4 GHz radios are mutually exclusive with each
+other, not only with 433.** The bare `LoRa2021` (2.4 GHz uplink RX) and the `SX1280` (2.4 GHz
+ranging) occupy the **same band on the same board**. Their slots must therefore **never
+overlap**, exactly as `SUB_GHZ` and `BAND_2G4` do not (ADR-029 §3 R2). This is a *different*
+coexistence case from the one ADR-034 resolved: ADR-034's win was *simultaneous TX and RX on
+separated bands* (433 vs 2.4), and it does **not** cover 2.4 RX against a 2.4 ranging
+transmitter. The arbiter must treat the two 2.4 GHz **slots** (RX window, ranging window) as
+members of one exclusive resource class.
+
+*(Semantics note: what is exclusive here is the **slot**, not the chip. Two separate
+silicon dies can physically both be powered; the arbiter's job is to ensure only one of them
+is **active** in the band at a time.)*
 
 ### D3 — GNSS is continuous and does not need a slot (state it, do not imply it)
 
@@ -182,16 +227,29 @@ silently.
 
 - **Storage element kept or dropped?** — operator question pending (D7). The
   energy-opportunistic TX hook is recorded; whether a supercap is on the board is not.
-- **433 MHz duty-cycle / power legality in DE** — carried from ADR-034, not resolved.
+- **433 MHz duty-cycle / power legality in DE** — **RESOLVED 2026-10-14**, see
+  `docs/analysis/RF-433-LEGALITY-DECISION.md`. The lawful ceiling on 433.05–434.79 MHz is
+  **10 mW ERP** (Vfg. 91/2025, non-specific SRD); the German national row (D44b) waives the
+  duty-cycle and bandwidth conditions. **The design's +33 dBm (2 W) is 20.85 dB over the
+  cap and is NOT licence-free legal**; the amateur route is blocked for a drifting balloon by
+  AFuV §13 Abs. 1 (an automatically operating station is pinned to one assigned location).
+  **Consequence for this ADR's schedule: the 433 TX slot runs at a LOWER power than the
+  F33's headline capability.** The slot structure is unaffected; only the keyed power is.
 
 ## What would falsify this
 
 - A bench measurement showing antenna-to-antenna isolation on the routed board is
   **≥ 40 dB** (not the assumed 15–25 dB), which would relax the one-transmitter
   invariant and allow some slots to overlap — this should reopen D4.
+  **NOTE 2026-10-14: the 15–25 dB figure was derived for the superseded ~45 × 55 mm board;
+  the routed board is 70 × 70 mm. The measurement is now REQUIRED before this invariant can
+  be treated as quantitatively justified — see `docs/analysis/RF-REVIEW-2-LINKS-AND-COEXISTENCE.md`.**
 - A measured SX1280 ranging-window duration so long that the RX window is starved below
   the link's required duty cycle, which would force the D6 (ADR-034) three-part
   SX1280-as-RX option back onto the table.
+- A measurement showing the two 2.4 GHz radios (bare `LoRa2021` RX, `SX1280` ranging) can
+  operate simultaneously without desense, which would falsify R7 and allow the two 2.4 GHz
+  slots to overlap.
 
 ## Next-free-number check (recorded)
 
