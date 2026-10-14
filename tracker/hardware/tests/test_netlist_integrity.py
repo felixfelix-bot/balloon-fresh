@@ -277,6 +277,39 @@ for label, brd, expect_clean in ROUTED:
        f"project's floors grades its own work against the lowered bar.")
 
 # =============================================================================================
+print("\n=== G. EVERY EXEMPTION RULE IN THE FROZEN RULESET MUST ACTUALLY FIRE ===")
+# MEASURED 2026-10-14: the frozen ruleset carried an OPERATOR-APPROVED scoped exemption for the
+# edge-launched wing land sets whose condition was `A.Reference == 'J_W1' || ...`. It was INERT --
+# it had never suppressed a single item, and the 28 copper_edge_clearance errors kept being
+# re-reported as if newly found. Proved with a control: a blanket edge_clearance rule DOES reduce
+# the count (28 -> 16), while every Reference-based form leaves it at 28.
+#
+# An exemption that does nothing is WORSE than no exemption: the ruleset reads as though the class
+# is handled, so nobody looks again. This check makes a non-firing exemption visible.
+DRU = os.path.join(HW, "jlcpcb-s1-frozen.kicad_dru")
+try:
+    dru_text = open(DRU, encoding="utf-8").read()
+except Exception as e:
+    ck("G. frozen ruleset readable", False, str(e))
+    dru_text = ""
+
+import re as _re
+_conds = _re.findall(r'\(condition\s+"([^"]+)"\)', dru_text)
+_ref_conds = [c for c in _conds if "Reference" in c]
+print(f"    exemption conditions in the frozen ruleset: {len(_conds)}")
+for c in _conds:
+    print(f"      {c[:100]}")
+ck("G. no exemption relies on Reference matching (measured INERT for edge_clearance pairs)",
+   not _ref_conds,
+   "" if not _ref_conds else
+   f"Reference-based conditions present: {_ref_conds}\n"
+   f"MEASURED: A.Reference/B.Reference do NOT match for copper-vs-Edge.Cuts pairs -- all eight\n"
+   f"forms left the count at 28 while a blanket rule took it to 16. Such a rule is INERT: it reads\n"
+   f"as though the class is handled, so nobody looks again. Either remove it and record a DOCUMENTED\n"
+   f"DELTA with an explicit count, or find a condition that actually fires. See\n"
+   f"docs/fab/EDGE-RULE-INERT-FINDING.md.")
+
+# =============================================================================================
 print("\n" + "=" * 74)
 print(f"RESULT: {len(PASS)} pass, {len(FAIL)} FAIL")
 for f in FAIL:
