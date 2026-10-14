@@ -79,6 +79,7 @@ static void test_radio_config_other_fields_intact(void)
 static uint8_t  cap_cmd[CAP_MAX_CMDS][CAP_CMD_MAX];
 static uint16_t cap_cmd_len[CAP_MAX_CMDS];
 static int      cap_n = 0;
+static int      hal_reset_count = 0;
 
 static void cap_reset(void)
 {
@@ -139,6 +140,10 @@ lr20xx_hal_status_t lr20xx_hal_direct_read_fifo(const void* context, const uint8
 lr20xx_hal_status_t lr20xx_hal_reset(const void* context)
 {
     (void)context;
+    /* RFA-1c: the chip-reset is the observable marker of the full bring-up
+     * (reset -> patch -> DCDC/TCXO -> calibrate) that apply_cfg() performs on
+     * a modulation change. Counted so a test can assert WHEN it re-runs. */
+    hal_reset_count++;
     return LR20XX_HAL_STATUS_OK;
 }
 
@@ -264,6 +269,183 @@ static void test_flrc_match_mode_tripwire_not_match1(void)
     CHECK(match == LR20XX_RADIO_FLRC_RX_MATCH_SYNCWORD_1_OR_2_OR_3);
 }
 
+/* ---- RFA-1c: stale calibration after a runtime rate change -----------------
+ *
+ * Bench defect (measured 2026-10-14, docs/RFA1b-FOLLOWUP-650KBPS-ZEROS-2026-10-14.md):
+ * every 650 kbps FLRC cell that directly follows a 260 kbps cell is DEAF on the
+ * receiver (rx_pkts=0, RSSI exactly 0.0) while the TX reports sent_ok=200. The
+ * reverse direction (650 -> 260) is clean, so it is not a "stuck in old mode"
+ * story: the modem calibration that the boot chain ran is stale for the NEW
+ * BR/BW pair (260 kbps = BW 0.307 MHz, 650 kbps = BW 0.740 MHz).
+ *
+ * Control/treated A/B on the bench pair (same day, console-driven): TX
+ * 260 -> 650 direct = DEAF; TX 260 -> LoRa -> 650 (which re-enters apply_cfg()
+ * with a changed modulation and therefore re-runs the bring-up) = HEALTHY
+ * (rx=100, RSSI -57 dBm). So the fix is to make the bring-up condition fire on
+ * a modem-parameter change, not only on a FLRC<->LoRa change.
+ */
+
+/* Most recent LR20XX_SYSTEM_CALIBRATE (0x0122) mask byte, or -1 if none was
+ * captured. lr20xx_system.c emits [0x01][0x22][mask]. */
+static int find_system_calibrate(void)
+{
+    int first = cap_n > CAP_MAX_CMDS ? cap_n - CAP_MAX_CMDS : 0;
+    for (int i = cap_n - 1; i >= first; i--)
+    {
+        if (cap_cmd_len[i] == 3 && cap_cmd[i][0] == 0x01 && cap_cmd[i][1] == 0x22)
+        {
+            return cap_cmd[i][2];
+        }
+    }
+    return -1;
+}
+
+/* LR20XX_RADIO_FLRC_SET_MODULATION_PARAMS_OC = 0x0248 (3 + 1 bytes). */
+static int flrc_mod_params_present(void)
+{
+    int first = cap_n > CAP_MAX_CMDS ? cap_n - CAP_MAX_CMDS : 0;
+    for (int i = cap_n - 1; i >= first; i--)
+    {
+        if (cap_cmd_len[i] == 4 && cap_cmd[i][0] == 0x02 && cap_cmd[i][1] == 0x48)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static radio_bench_cfg_t lora_cfg(void)
+{
+    radio_bench_cfg_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.mod       = BENCH_MOD_LORA;
+    cfg.sf        = 8;
+    cfg.cr        = 5;
+    cfg.bw_hz     = 125000;
+    cfg.br_bps    = 650000;
+    cfg.txpow_dbm = 10;
+    cfg.freq_hz   = 868000000UL;
+    return cfg;
+}
+
+/* THE FIX: 260 kbps -> 650 kbps must re-run the bring-up (reset + calibrate)
+ * even though the modulation is FLRC on both sides. */
+static void test_flrc_bitrate_change_recalibrates(void)
+{
+    radio_bench_cfg_t cfg = flrc_cfg();
+    cfg.br_bps = 260000;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0); /* establish FLRC @ 260 */
+
+    cap_reset();
+    int r0 = hal_reset_count;
+
+    cfg.br_bps = 650000;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    CHECK(hal_reset_count > r0);          /* bring-up re-ran */
+    CHECK(find_system_calibrate() == 0x7F); /* all blocks, as at boot */
+    CHECK(flrc_mod_params_present());     /* ...and the new BR/BW still applied */
+}
+
+/* Control: re-applying the SAME rate (every cell of a rate-grouped sweep, the
+ * PA/FREQ paths) must NOT re-run the bring-up — a reset per command would
+ * invalidate the 12/12-clean continuous-650 baseline and slow the sweeps. */
+static void test_flrc_same_bitrate_does_not_recalibrate(void)
+{
+    radio_bench_cfg_t cfg = flrc_cfg();
+    CHECK(radio_bench_apply_cfg(&cfg) == 0); /* establish FLRC @ 650 */
+
+    cap_reset();
+    int r0 = hal_reset_count;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    CHECK(hal_reset_count == r0);
+    CHECK(find_system_calibrate() == -1);
+}
+
+/* Regression guard: the pre-existing FLRC<->LoRa trigger must survive. */
+static void test_mod_change_still_recalibrates(void)
+{
+    radio_bench_cfg_t lcfg = lora_cfg();
+    CHECK(radio_bench_apply_cfg(&lcfg) == 0); /* establish LoRa */
+
+    cap_reset();
+    int r0 = hal_reset_count;
+    radio_bench_cfg_t fcfg = flrc_cfg();
+    CHECK(radio_bench_apply_cfg(&fcfg) == 0);
+
+    CHECK(hal_reset_count > r0);
+    CHECK(find_system_calibrate() == 0x7F);
+}
+
+/* Guard: PA-only changes (BENCH_CMD_PA re-applies cfg) must not recalibrate. */
+static void test_pa_only_change_does_not_recalibrate(void)
+{
+    radio_bench_cfg_t cfg = flrc_cfg();
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    cap_reset();
+    int r0 = hal_reset_count;
+
+    cfg.txpow_dbm = 22;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    CHECK(hal_reset_count == r0);
+    CHECK(find_system_calibrate() == -1);
+}
+
+/* Same defect class, other rate path: a LoRa bandwidth change alters the
+ * occupied bandwidth exactly like an FLRC BR/BW change does. */
+static void test_lora_bandwidth_change_recalibrates(void)
+{
+    radio_bench_cfg_t cfg = lora_cfg();
+    CHECK(radio_bench_apply_cfg(&cfg) == 0); /* establish LoRa BW125 */
+
+    cap_reset();
+    int r0 = hal_reset_count;
+
+    cfg.bw_hz = 250000;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    CHECK(hal_reset_count > r0);
+    CHECK(find_system_calibrate() == 0x7F);
+}
+
+/* Same defect class: a LoRa SF change re-derives the modem params. */
+static void test_lora_sf_change_recalibrates(void)
+{
+    radio_bench_cfg_t cfg = lora_cfg();
+    cfg.sf = 8;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0); /* establish LoRa SF8 */
+
+    cap_reset();
+    int r0 = hal_reset_count;
+
+    cfg.sf = 12;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    CHECK(hal_reset_count > r0);
+    CHECK(find_system_calibrate() == 0x7F);
+}
+
+/* FREQ-only change (BENCH_CMD_FREQ re-applies cfg) must not recalibrate:
+ * the front-end calibration is per-band, not per-channel, and a recal on
+ * every FREQ command would wreck the in-band sweeps. */
+static void test_freq_only_change_does_not_recalibrate(void)
+{
+    radio_bench_cfg_t cfg = flrc_cfg();
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    cap_reset();
+    int r0 = hal_reset_count;
+
+    cfg.freq_hz = 869850000UL;
+    CHECK(radio_bench_apply_cfg(&cfg) == 0);
+
+    CHECK(hal_reset_count == r0);
+    CHECK(find_system_calibrate() == -1);
+}
+
 int main(void)
 {
     test_radio_config_has_cr_field();
@@ -272,6 +454,14 @@ int main(void)
     test_flrc_rx_arm_keeps_match123();
     test_flrc_tx_packet_keeps_match123();
     test_flrc_match_mode_tripwire_not_match1();
+
+    test_flrc_bitrate_change_recalibrates();
+    test_flrc_same_bitrate_does_not_recalibrate();
+    test_mod_change_still_recalibrates();
+    test_pa_only_change_does_not_recalibrate();
+    test_lora_bandwidth_change_recalibrates();
+    test_lora_sf_change_recalibrates();
+    test_freq_only_change_does_not_recalibrate();
 
     if (failures == 0)
     {
