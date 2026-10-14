@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **99** distinct
-numbers, **99** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **100** distinct
+numbers, **100** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -101,8 +101,9 @@ None.
 | 065 | `065-wing-skeletonised-double-sided.md` | Wing board: skeletonised frame carrier + double-sided cells | Accepted |
 | 066 | `066-conservative-hub-unfreeze.md` | Conservative hub baseline: unfreeze board work without claiming an unmeasured cell allowable | Proposed — operator direction recorded 2026-10-09; this record is the interim design basis and is not an order authorization |
 | 067 | `067-hub-board-ground-plane.md` | Hub board: continuous GND return on the 4-layer stack | Accepted |
-| 068 | `068-hub-v9-outline-60x60.md` | The hub v9 outline is 60 × 60 mm, sized by COMPONENTS | Proposed |
+| 068 | `068-hub-v9-outline-60x60.md` | The hub v9 outline is 70 × 70 mm, sized by COMPONENTS | Proposed |
 | 069 | `069-mcu-s3-confirmed-and-strap-contradiction-resolved.md` | MCU: ESP32-S3-WROOM-1U is CONFIRMED, and the C3/S3 strapping contradiction is resolved | Proposed |
+| 070 | `070-keep-both-lora2021-sites.md` | The v9 hub keeps BOTH LoRa2021 sites: F33 for TX, bare for RX | Proposed |
 | 071 | `071-ground-station-gateway-design-basis.md` | Ground-station design basis: a full-duplex INTERNET GATEWAY through the balloon as a bent pipe | Accepted by operator |
 | 072 | `072-band-split-duplex-two-antennas-no-circulator.md` | Band-split duplex at the gateway: two band antennas, and NO circulator | Accepted by operator |
 | 073 | `073-433-downlink-flrc-max-lora-rejected.md` | 433 MHz downlink: FLRC at maximum throughput, and LoRa REJECTED | Accepted by operator |
@@ -133,7 +134,7 @@ None.
 | 113 | `113-drc-blockers-feedback-tool.md` | DRC-to-Blockers Feedback Script as a Standard Board Tool | Accepted |
 | 114 | `114-skidl-netlist-authoring.md` | SKiDL for Netlist Authoring of New Boards | Accepted |
 | 115 | `115-tooling-sourcing-policy.md` | Tooling Sourcing Policy for Board Production | Accepted |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 070 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 085 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 
