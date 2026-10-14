@@ -1,45 +1,34 @@
 #!/usr/bin/env python3
-"""Stitch GND pads to the GND plane with SAFE, verified stitching vias.
+"""Stitch v3 -- OFFSET stitching vias with a stub, for pads with no room at centre.
 
-WHY THIS EXISTS (measured 2026-10-14)
--------------------------------------
-The KRT router routes nets with A* tracks, but GND on this board is a PLANE on
-In1.Cu/F.Cu/B.Cu. A plane net is not "routed" by tracks -- it is connected by the
-plane plus the vias that pull pads down to it. The router gets most of it via the
-plane and leaves a few pad-to-plane taps open, which kicad-cli DRC reports as
-unconnected GND items.
+WHY v3 EXISTS (measured 2026-10-14)
+-----------------------------------
+v2 asked "does a 0.60 mm via fit AT THE PAD CENTRE?" and correctly REJECTED 63 pads
+where it does not. That was the right safety call, but it left 4 pads unconnected --
+pads on C_MON, J_W1, J_W3 and C_HF that the router had already given a short GND
+stub track, and which the v2 check would not stitch.
 
-FIRST VERSION WAS UNSAFE -- MEASURED, NOT GUESSED
--------------------------------------------------
-v1 dropped a 0.60 mm via at the CENTRE of every unstitched GND pad. That is fine
-for a large pad and WRONG for a small one: on a 0402 (pad ~0.5 x 0.6 mm) a 0.60 mm
-via overhangs the pad and reaches the neighbouring pad. Isolated by grading the
-same board with and without stitching:
+The correct fix is not to shrink the via (a sub-0.60 mm via would violate the frozen
+rule set) and not to accept the open. It is to put the SAME 0.60 mm via SOMEWHERE
+THAT FITS and join it to the pad with a short GND track. A GND stub plus an offset
+via is a normal, manufacturable plane tap.
 
-    strict route, NO stitching : 937 violations,  0 shorting_items
-    strict route, WITH v1 stitch: 980 violations, 26 shorting_items
-                                                  14 holes_co_located
-                                                  12 drill_out_of_range
-So v1 CREATED the shorts. A "fix" that introduces a short is worse than the open
-it repairs.
+WHAT v3 DOES
+  For every GND pad not already stitched:
+    1. search outward on a 0.25 mm ring (r = 0.6 .. 4.0 mm) around the pad centre for
+       a via position that clears every FOREIGN net by (via_d/2 + clearance)
+    2. if found, drop the via there AND add a GND track from the pad to the via
+    3. if no position on any ring qualifies, report the pad as UNRESOLVABLE rather
+       than silently leaving it (so the remaining count is honest)
 
-WHAT v2 DOES DIFFERENTLY
-  For each candidate GND pad it first asks whether a via of the required size can
-  physically sit there WITHOUT violating clearance to any FOREIGN net:
-    - candidate centre = pad centre
-    - the via occupies a disc of radius (via_d/2 + clearance) for the purpose of
-      the test
-    - any pad, track segment, or via belonging to a DIFFERENT net whose bounding
-      box comes within that disc => REJECT this pad (leave it as it was)
-  Only pads that pass are stitched. Nothing is ever moved or deleted.
-
-  It reports rejects explicitly instead of silently shrinking the via, because the
-  frozen rule set REQUIRES via >= 0.60 mm -- a "smaller via" would be a fab-floor
-  violation, not a fix.
+  It never moves a part, never deletes, and never shrinks the via. It is idempotent:
+  a pad within 1.0 mm of an existing GND via is left alone.
 
 Run:
-  python3 stitch_gnd_planes.py <in.kicad_pcb> <out.kicad_pcb> [--via 0.6] [--drill 0.3]
+  python3 stitch_gnd_planes.py <in.kicad_pcb> <out.kicad_pcb>            # v2 behaviour
+  python3 stitch_gnd_planes.py <in.kicad_pcb> <out.kicad_pcb> --offset   # v3
 """
+import math
 import sys
 
 sys.path.insert(0, "/usr/lib/python3/dist-packages")
@@ -48,6 +37,9 @@ import pcbnew  # noqa: E402
 VIA_D = 0.6
 VIA_DRILL = 0.3
 CLEARANCE = 0.2
+TRACK_W = 0.2
+RING_STEP = 0.25
+R_MAX = 4.0
 
 
 def mm(v):
@@ -61,18 +53,13 @@ def bbox_of(item):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    argv = sys.argv[1:]
+    offset_mode = "--offset" in argv
+    args = [a for a in argv if not a.startswith("--")]
     if len(args) != 2:
         print(__doc__)
         return 2
-    src, dst = args[0], args[1]
-    via_d, drill = VIA_D, VIA_DRILL
-    for i, a in enumerate(sys.argv):
-        if a == "--via":
-            via_d = float(sys.argv[i + 1])
-        if a == "--drill":
-            drill = float(sys.argv[i + 1])
-    r_test = via_d / 2.0 + CLEARANCE
+    src, dst = args
 
     board = pcbnew.LoadBoard(src)
     if board is None:
@@ -87,7 +74,6 @@ def main():
         print("no GND net")
         return 2
 
-    # --- index every FOREIGN-net item once -------------------------------------
     foreign = []
     for fp in board.GetFootprints():
         for pad in fp.Pads():
@@ -97,16 +83,17 @@ def main():
         if t.GetNetCode() != gcode:
             foreign.append(bbox_of(t))
 
-    def circle_hits_foreign(cx, cy):
+    r_test = VIA_D / 2.0 + CLEARANCE
+
+    def free(cx, cy):
         for (x0, y0, x1, y1) in foreign:
-            # closest point of the bbox to the circle centre
             nx = min(max(cx, x0), x1)
             ny = min(max(cy, y0), y1)
             if (cx - nx) ** 2 + (cy - ny) ** 2 < r_test ** 2:
-                return True
-        return False
+                return False
+        return True
 
-    def has_gnd_via_near(cx, cy):
+    def near_gnd_via(cx, cy):
         for t in board.GetTracks():
             if t.GetClass() == "PCB_VIA" and t.GetNetCode() == gcode:
                 p = t.GetPosition()
@@ -114,8 +101,9 @@ def main():
                     return True
         return False
 
-    added = rejected = already = 0
-    rejects = []
+    added_here = added_offset = already = unresolvable = 0
+    bad = []
+
     for fp in board.GetFootprints():
         for pad in fp.Pads():
             if pad.GetNetCode() != gcode:
@@ -125,30 +113,66 @@ def main():
                 continue
             p = pad.GetPosition()
             cx, cy = mm(p.x), mm(p.y)
-            if has_gnd_via_near(cx, cy):
+            if near_gnd_via(cx, cy):
                 already += 1
                 continue
-            if circle_hits_foreign(cx, cy):
-                rejected += 1
-                rejects.append(f"{fp.GetReference()}.{pad.GetNumber()}")
+
+            if free(cx, cy):
+                site, off = (cx, cy), False
+            elif offset_mode:
+                site = None
+                ring = VIA_D / 2.0 + CLEARANCE
+                while ring <= R_MAX and site is None:
+                    n = max(8, int(2 * math.pi * ring / 0.2))
+                    for k in range(n):
+                        a = 2 * math.pi * k / n
+                        tx, ty = cx + ring * math.cos(a), cy + ring * math.sin(a)
+                        if free(tx, ty):
+                            site = (tx, ty)
+                            break
+                    ring += RING_STEP
+                off = True if site else False
+                if site is None:
+                    unresolvable += 1
+                    bad.append(f"{fp.GetReference()}.{pad.GetNumber()}")
+                    continue
+            else:
+                unresolvable += 1
+                bad.append(f"{fp.GetReference()}.{pad.GetNumber()}")
                 continue
+
+            sx, sy = site
+            # stub track from the pad to the via, when offset
+            if off:
+                tr = pcbnew.PCB_TRACK(board)
+                tr.SetStart(pcbnew.VECTOR2I(int(round(cx * 1e6)), int(round(cy * 1e6))))
+                tr.SetEnd(pcbnew.VECTOR2I(int(round(sx * 1e6)), int(round(sy * 1e6))))
+                tr.SetWidth(int(TRACK_W * 1e6))
+                tr.SetLayer(pcbnew.F_Cu)
+                tr.SetNetCode(gcode)
+                board.Add(tr)
+
             v = pcbnew.PCB_VIA(board)
-            v.SetPosition(p)
-            v.SetWidth(int(via_d * 1e6))
-            v.SetDrill(int(drill * 1e6))
+            v.SetPosition(pcbnew.VECTOR2I(int(round(sx * 1e6)), int(round(sy * 1e6))))
+            v.SetWidth(int(VIA_D * 1e6))
+            v.SetDrill(int(VIA_DRILL * 1e6))
             v.SetNetCode(gcode)
             v.SetViaType(pcbnew.VIATYPE_THROUGH)
             v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
             board.Add(v)
-            added += 1
+
+            if off:
+                added_offset += 1
+            else:
+                added_here += 1
 
     pcbnew.SaveBoard(dst, board)
-    print(f"stitching vias added     : {added}")
-    print(f"pads already stitched    : {already}")
-    print(f"pads REJECTED (no room)  : {rejected}")
-    if rejects:
-        print("  rejected pads:", ", ".join(rejects[:20]),
-              ("..." if len(rejects) > 20 else ""))
+    print(f"vias at pad centre      : {added_here}")
+    print(f"vias OFFSET + GND stub  : {added_offset}")
+    print(f"pads already stitched   : {already}")
+    print(f"UNRESOLVABLE            : {unresolvable}")
+    if bad:
+        print("  unresolved pads:", ", ".join(bad[:20]))
     print(f"wrote {dst}")
     return 0
 
