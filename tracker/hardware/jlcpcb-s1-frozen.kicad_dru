@@ -24,3 +24,21 @@
 	(condition "A.Type == 'Via'")
 	(constraint hole_size (min 0.30mm)))
 (rule "S1 frozen JLCPCB hole to hole" (constraint hole_to_hole (min 0.25mm)))
+
+# =====================================================================
+# SCOPED EDGE-CLEARANCE RULE  (operator-approved 2026-10-14)
+#
+# The wing-socket land sets J_W1..J_W4 are EDGE-LAUNCHED by design: ADR-046/048
+# place the land set ON the board edge so the pads meet the wing tab (insert depth
+# 6.0 mm). Their copper therefore reaches the edge ON PURPOSE -- an "actual
+# 0.000 mm" against the board's default 0.5 mm edge rule is the INTERFACE, not a
+# defect. 68 such items were reported.
+#
+# This rule relaxes the edge clearance ONLY for those land sets. The board-wide
+# 0.5 mm floor STAYS IN FORCE for every other net, so unintended copper still
+# cannot approach the edge. (Lowering the board default instead would have let any
+# trace reach 0.2 mm everywhere -- refused.)
+# =====================================================================
+(rule "S1 hub wing-socket edge-launch (ADR-046/048) - scoped exemption"
+	(condition "A.Reference == 'J_W1' || A.Reference == 'J_W2' || A.Reference == 'J_W3' || A.Reference == 'J_W4'")
+	(constraint edge_clearance (min 0.00mm)))
