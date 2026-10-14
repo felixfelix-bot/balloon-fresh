@@ -70,8 +70,16 @@ KICAD_PRETTY = "/usr/share/kicad/footprints"
 OUT_SEED = os.path.join(HERE, "output", "hub_board_v9_seed.kicad_pcb")
 OUT_BOARD = os.path.join(HERE, "hub_board_v9.kicad_pcb")
 
-DEFAULT_W, DEFAULT_H = 103.0, 103.0   # ADR-051 s2.3 / ADR-055 D5, the grown hub panel;
-                                      # see the OUTLINE note above and REPORT.md.
+DEFAULT_W, DEFAULT_H = 60.0, 60.0   # ADR-068: sized by the measured COMPONENT courtyard
+                                    # (2582 mm2 -> ~60x60 at 72% packing), NOT by the array.
+                                    # Supersedes ADR-051 s2.3 / ADR-055 D5's 103x103 array-sized
+                                    # panel, which was both arithmetically unsatisfiable (2 LARGE
+                                    # cells = 58% of its own 106.1 cm2 target) and over JLCPCB's
+                                    # 102 mm cheap-tier cliff ($31.60 vs $8.00 measured).
+                                    # The array rides the separate overhanging carrier (ADR-063).
+                                    # 103x103 and 60x60 route the SAME net count (43/49), so this
+                                    # shrink is routing-neutral. See
+                                    # docs/fab/hub-v9/COMPONENT-FLOOR-OUTLINE-RESULT.md.
 EDGE_STROKE = 0.15
 BOARD_THICKNESS = 0.6   # inherited generated value (v8i .gbrjob); ADR-055 D4's 0.4 mm
                         # target is Proposed and its stack-up check is an open item.
