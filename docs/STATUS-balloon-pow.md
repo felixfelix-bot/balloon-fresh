@@ -152,8 +152,15 @@ E-HASH RELAY PROTOTYPED — integration assessment done, awaiting mesh radio int
 - Critical corrections to C3 MINI-1 understanding:
   - GPIO8 has NO ADC channel (V2-ADC plan was broken, corrected to GPIO0/ADC1_CH0)
   - GPIO18/GPIO19 ARE broken out on MINI-1 (pins 26/27) — usable when USB disabled
-  - GPIO0 is NOT a strapping pin on C3 (unlike ESP32/S3) — safe for ADC/GPIO
+  - GPIO0 is NOT a strapping pin on **C3** (unlike ESP32/S3) — safe for ADC/GPIO
   - Strapping pins: GPIO2 (float), GPIO8 (float), GPIO9 (weak pull-up)
+
+  > **CHIP SCOPE — READ `docs/CHIP-AND-PIN-PLANE-INDEX.md` BEFORE REUSING THIS.**
+  > Every bullet above is true **for the ESP32-C3 only**.
+  > **v9 flight boards are ESP32-S3**, where **IO0 IS a strapping pin**: a supercap
+  > divider on IO0 holds the chip in the bootloader. So the *"corrected to
+  > GPIO0/ADC1_CH0"* move recorded above is **correct for the C3 and WRONG for the
+  > S3**. ADR-069 resolves the cross-chip contradiction this bullet used to sit in.
 - **Impact on e-hash relay:**
   - e-hash relay is L7 software, no direct GPIO dependency. But if relay needs a status LED or debug pin in future, this pinout is the reference.
   - SPI pins for LR2021 are already allocated by tracker firmware. e-hash relay uses radio via transport abstraction — no pin awareness needed.

@@ -90,6 +90,18 @@ Firmware is the source of truth for what GPIO the hardware must expose.
 **Action:** Verified C3 pin map extracted from app_main.cpp:85-94 and embedded in all task specs.
 FEM_RX moved from GPIO0 (strapping pin) to GPIO8.
 
+> **CHIP SCOPE — READ `docs/CHIP-AND-PIN-PLANE-INDEX.md` BEFORE REUSING THIS.**
+> **This is an ESP32-S3-class finding and it CONFLICTS with the C3 record on
+> purpose.** On the **S3**, IO0 *is* a strapping pin, so moving a signal off it (the
+> action above) is **correct**. On the **C3**, GPIO0 is *not* a strap
+> (`docs/STATUS-balloon-pow.md:155`), where the same move would be unnecessary.
+> **Both records are true for their own chip.** The chip identity was never written
+> down next to either, which is exactly what ADR-069 and the index now fix.
+>
+> Note the file title says "C3 pin map" while the action describes S3 strap
+> behaviour — **that mismatch is the historical ambiguity, preserved here rather
+> than silently edited.** The move itself stands.
+
 ---
 
 ## 6. TIMEOUTS: delegate_task 300s too short for complex work

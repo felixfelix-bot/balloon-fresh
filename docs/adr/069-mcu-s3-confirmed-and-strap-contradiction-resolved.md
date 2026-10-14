@@ -30,6 +30,11 @@ all.
 
 ## 1. Resolving the contradiction (the defect, fixed rather than sided)
 
+> **SEE ALSO `docs/CHIP-AND-PIN-PLANE-INDEX.md`** — the one-page index that makes
+> this unmistakable and maps every record that touches it. **Both of the records
+> below are correct; neither is superseded.** Each now carries a **CHIP SCOPE**
+> banner so it cannot be read out of context again.
+
 The two records appeared to disagree:
 
 | Record | Says | True for |
