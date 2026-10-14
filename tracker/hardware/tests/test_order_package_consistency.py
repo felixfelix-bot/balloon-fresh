@@ -175,6 +175,43 @@ ck("no TODO-valued part is a POPULATED CPL row", not populated_todos,
    f"populated rows carrying a TODO: {populated_todos}\n"
    f"Select the part, or flag the row DNP. A paid order must not contain 'TODO'.")
 
+
+
+# ---------------------------------------------------------------------------------------------
+print("\n=== 5. DRC GRADED AFTER A REFILL (the false-verdict guard) ===")
+# MEASURED FAILURE THIS ENCODES: grading bs_v1_routed_strict.kicad_pcb with STALE zones reported
+# 770 violations, of which 699 were copper-against-unfilled-zone artefacts (311 track+zone,
+# 189 via+zone, 199 via+zone hole, ZERO pad+pad). After a pcbnew ZONE_FILLER refill the SAME board
+# reports 88. So any DRC count taken before a refill is MEANINGLESS.
+def stale_zone_artifact_count(json_path):
+    """Count violations of the shape that a refill erases."""
+    import json as _json
+    try:
+        d = _json.load(open(json_path))
+    except Exception:
+        return None
+    n = 0
+    for x in d.get("violations", []):
+        descs = [i.get("description", "") for i in x.get("items", [])]
+        if any(s.startswith("Zone") for s in descs):
+            n += 1
+    return n, len(d.get("violations", []))
+
+
+STALE = os.path.join(os.path.dirname(CPL), "bs_v1_routed_strict-drc.json")
+FILLED = os.path.join(os.path.dirname(CPL), "bs_v1_routed_strict_filled-drc.json")
+if os.path.exists(STALE) and os.path.exists(FILLED):
+    a = stale_zone_artifact_count(STALE)
+    b = stale_zone_artifact_count(FILLED)
+    print(f"    stale-zone grading : {a[1]} violations, {a[0]} zone-touching")
+    print(f"    post-refill grading: {b[1]} violations, {b[0]} zone-touching")
+    ck("a DRC report exists that was taken AFTER a zone refill", b[0] < a[0],
+       f"the post-refill report carries FEWER zone-touching entries ({b[0]} vs {a[0]}), which is\n"
+       f"the signature of a real refill. If both numbers match, the 'refilled' report was taken\n"
+       f"before the fill and any violation count from it is NOT usable.")
+else:
+    print(f"    (no paired DRC reports present to compare)")
+
 # ---------------------------------------------------------------------------------------------
 print("\n" + "=" * 74)
 print(f"RESULT: {len(PASS)} pass, {len(FAIL)} FAIL")
