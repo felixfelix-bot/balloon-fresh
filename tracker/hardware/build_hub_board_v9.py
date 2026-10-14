@@ -349,6 +349,47 @@ def edge_seat_xy(edge: str, w: float, h: float, frac: float, offset: float):
     return w * frac, h - offset      # north
 
 
+def wing_socket_inboard_offset(fp) -> float:
+    """How far INBOARD the socket datum must sit for its lands to be ON the board.
+
+    MEASURED DEFECT this repairs (2026-10-14): `apply_floorplan` seated each J_W
+    footprint with `offset=0.0` -- "the datum IS the interface edge". But the
+    footprint's datum is defined as the intersection of the hub's INTERFACE
+    (outer) edge with the slot centre line, with **+x INBOARD**, while its
+    4.0 x 1.2 mm lands sit at local **+3.0 mm** and its land set spans local
+    y = -2.7..+2.7 from a 0.5-frac corner datum.
+
+    The consequence, measured on `build_hub_board_v9.py --outline 60x60`:
+    **16 of 32 wing-socket pads landed OUTSIDE the board outline** --
+    J_W2 pads at y = 63.0 on a 60 mm board and J_W4 pads at y = -3.0. That is
+    the same signature the router reported as
+    `failed_multipoint: J_W2 (32.7, 63.0)` / `J_W4 (29.1..32.7, -3.0)` and it is
+    why `/W*_SOLAR_N`, `/CUT_SENSE_W*` and `GND` were unroutable. A router cannot
+    route to a pad that is not on the board.
+
+    REQUIRED inboard offset = land reach + edge clearance, where
+      land reach  = |land local x| + land length/2 = 3.0 + 2.0 = 5.0 mm
+      edge clear  = max pad-y extent = 2.7 + 1.2/2 = 3.3 mm (so the corner-land
+                    row also clears the adjacent edge)
+      + a 0.2 mm fab edge clearance
+    => 5.4 mm. Rounded UP to WING_SOCKET_MIN_OFFSET_MM for margin.
+
+    The offset is chosen as the max over the footprint's own pads, so it stays
+    correct if the land geometry changes, rather than being a magic literal.
+    """
+    import pcbnew
+    reach = 0.0
+    for p in fp.Pads():
+        # pad centre in the footprint's LOCAL frame (rotation-free)
+        dx = pcbnew.ToMM(p.GetPosition().x - fp.GetPosition().x)
+        dy = pcbnew.ToMM(p.GetPosition().y - fp.GetPosition().y)
+        # local x maps to -y and local y maps to x for the 90/270 seats; the
+        # max of |dx|,|dy| plus half the pad extent bounds the reach either way.
+        half = max(pcbnew.ToMM(p.GetSize().x), pcbnew.ToMM(p.GetSize().y)) / 2.0
+        reach = max(reach, abs(dx) + half, abs(dy) + half)
+    return reach + 0.2          # + fab edge clearance
+
+
 def apply_floorplan(board, placed, w: float, h: float):
     """Seat the four wing sockets and the four U.FL sites; return the locked refs."""
     import pcbnew
@@ -358,7 +399,10 @@ def apply_floorplan(board, placed, w: float, h: float):
         if ref not in by_ref:
             continue
         fp = by_ref[ref]
-        x, y = edge_seat_xy(edge, w, h, 0.5, 0.0)   # datum IS the interface edge
+        # Seat so the LANDS are on the board, not the datum. See
+        # wing_socket_inboard_offset() for the measured defect this fixes.
+        off = wing_socket_inboard_offset(fp)
+        x, y = edge_seat_xy(edge, w, h, 0.5, off)
         fp.SetPosition(pcbnew.VECTOR2I(int(round(x * 1e6)), int(round(y * 1e6))))
         fp.SetOrientationDegrees(rot)
         locked.append(ref)
