@@ -150,3 +150,54 @@ def test_remote_listen_marker_carries_host_prefix():
     assert ":" not in local["mark"], local["mark"]
     # and the prefixed handle must be what wait_mark() splits on
     assert m.wait_mark("x240:/tmp/nonexistent.mark", 0.01) is False
+
+
+# ---------------------------------------------------------------- RFA-1c detour
+def test_detour_defaults_on_while_the_fix_is_unflashable():
+    """Regression (2026-10-14): the boards still run pre-fix fw 5fa7912 and no
+    write path to the MCU exists (BOOT0 tied to GND, SWD never linked), so a
+    260->650 cell would measure the BUG instead of the radio. The detour must
+    therefore be ON whenever nothing says otherwise."""
+    from unittest import mock
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert m.detour_enabled("RFA1C_TX_RATE_DETOUR", None) is True
+        assert m.detour_enabled("RFA1C_RX_RATE_DETOUR", None) is True
+
+
+def test_explicit_flag_beats_the_environment():
+    """--no-detour is the post-flash escape hatch: once the RFA-1c firmware runs
+    on the boards it re-calibrates by itself and a detour would be wrong."""
+    from unittest import mock
+    with mock.patch.dict(os.environ, {"RFA1C_TX_RATE_DETOUR": "1"}, clear=True):
+        assert m.detour_enabled("RFA1C_TX_RATE_DETOUR", False) is False
+    with mock.patch.dict(os.environ, {"RFA1C_TX_RATE_DETOUR": "0"}, clear=True):
+        assert m.detour_enabled("RFA1C_TX_RATE_DETOUR", True) is True
+
+
+def test_environment_can_switch_one_arm_off_independently():
+    """The 5 pre-flash matrices showed the deaf end is the RECEIVER (TX-only
+    detour = 2 bad cells, RX-only detour = 0). Both arms must stay switchable
+    apart so that finding can be re-checked on demand."""
+    from unittest import mock
+    with mock.patch.dict(os.environ, {"RFA1C_TX_RATE_DETOUR": "0"}, clear=True):
+        assert m.detour_enabled("RFA1C_TX_RATE_DETOUR", None) is False
+        assert m.detour_enabled("RFA1C_RX_RATE_DETOUR", None) is True
+
+
+def test_detour_prefixes_a_lora_hop_before_the_flrc_rate():
+    """The hop is what forces the bring-up; it must come BEFORE the FLRC MOD so
+    the rate change lands on an already-moved modem."""
+    ops = m.pre_ops(650, "TX", "none", 1, detour=True)
+    cmds = [o["cmd"] for o in ops]
+    lora_i = next(i for i, c in enumerate(cmds) if c.startswith("MOD loRa"))
+    flrc_i = next(i for i, c in enumerate(cmds) if c.startswith("MOD flrc 650"))
+    assert lora_i < flrc_i, cmds
+    assert "OK ROLE TX" in [o.get("expect") for o in ops[:lora_i + 2]], cmds
+
+
+def test_no_detour_keeps_the_original_short_sequence():
+    """Without the detour nothing extra may be injected — the pre-flash control
+    A/B only means something if the untouched path stays untouched."""
+    plain = [o["cmd"] for o in m.pre_ops(650, "TX", "none", 1, detour=False)]
+    assert not any(c.startswith("MOD loRa") for c in plain), plain
+    assert plain.count("MOD flrc 650 10") == 1, plain

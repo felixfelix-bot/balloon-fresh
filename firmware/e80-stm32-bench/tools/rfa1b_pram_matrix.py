@@ -186,6 +186,30 @@ def parse_kv(line: str, _tag: str) -> dict:
     return out
 
 
+def detour_enabled(env_var: str, flag: bool | None) -> bool:
+    """Resolve the RFA-1c rate-detour switch.
+
+    DEFAULT ON since 2026-10-14. Rationale: the boards still run the pre-fix
+    firmware (5fa7912) — there is no reachable write path to the MCU (BOOT0 is
+    tied to GND, the SWD header has never linked up), so the merged RFA-1c fix
+    cannot be flashed. Until it is, EVERY matrix run must detour or a 260->650
+    cell silently measures the bug instead of the radio.
+
+    Precedence: explicit --detour / --no-detour beats the env var.
+      RFA1C_TX_RATE_DETOUR=1 / RFA1C_RX_RATE_DETOUR=1  -> force on for that arm
+      RFA1C_TX_RATE_DETOUR=0 / RFA1C_RX_RATE_DETOUR=0  -> force off for that arm
+      unset                                            -> ON (flag or default)
+    Pass --no-detour once the fixed firmware is verified on the boards: with it
+    the detour is wrong, because the firmware then re-calibrates by itself.
+    """
+    if flag is not None:
+        return flag
+    env = os.environ.get(env_var)
+    if env is not None and env != "":
+        return env not in ("0", "false", "False", "no", "off")
+    return True
+
+
 def pre_ops(br: int, role: str, patch_arm: str, config_id: int,
             pa_dbm: int = PA_DBM, freq_hz: int = FREQ_HZ,
             detour: bool = False) -> list[dict]:
@@ -355,6 +379,11 @@ def main() -> int:
     ap.add_argument("--ids-only", action="store_true")
     ap.add_argument("--pa", type=int, default=PA_DBM, help="TX PA in dBm (10 indoor, 22 outdoor)")
     ap.add_argument("--freq", type=int, default=FREQ_HZ)
+    ap.add_argument("--detour", dest="detour", action="store_true", default=None,
+                    help="force the RFA-1c LoRa rate-detour ON for both arms")
+    ap.add_argument("--no-detour", dest="detour", action="store_false",
+                    help="force it OFF (only correct on firmware that "
+                         "re-calibrates by itself, i.e. after the RFA-1c flash)")
     args = ap.parse_args()
 
     tx_host = os.environ.get("RFA1B_TX_HOST", "x240")
@@ -379,8 +408,8 @@ def main() -> int:
     os.makedirs(args.outdir, exist_ok=True)
 
     results = []
-    detour_tx = os.environ.get("RFA1C_TX_RATE_DETOUR", "") not in ("", "0")
-    detour_rx = os.environ.get("RFA1C_RX_RATE_DETOUR", "") not in ("", "0")
+    detour_tx = detour_enabled("RFA1C_TX_RATE_DETOUR", args.detour)
+    detour_rx = detour_enabled("RFA1C_RX_RATE_DETOUR", args.detour)
     if detour_tx or detour_rx:
         print(f"NOTE RFA-1c rate detour ON (tx={detour_tx} rx={detour_rx}): each cell "
               "whose bitrate differs from its predecessor makes that board re-enter "
