@@ -1,0 +1,2 @@
+Comment,Designator,Footprint,JLCPCB Part #,Qty,Unit $,Line $,Why loose
+"MAX-M10S-00B GNSS module, LOOSE (hand-solder on 4 of 10 boards)",U5-x4 (off-board; sold separately),ublox_MAX LCC-18,C4153167,4,10.8395,43.358,"DNP on the PCBA per the locked split, so JLC does not place it; the operator hand-solders it on the boards that fly with GPS"
