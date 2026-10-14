@@ -43,6 +43,18 @@ N_PKTS = 200
 GAP_US = 10000               # START GAP is MICROSECONDS
 CELLS = [(260, 64), (650, 64), (260, 128), (650, 128), (260, 255), (650, 255)]
 
+# RFA-1c pre-flash control (env RFA1C_TX_RATE_DETOUR=1). On the pre-fix firmware
+# a 650 cell that follows a 260 cell is deaf, because apply_cfg() only re-ran the
+# chip bring-up (reset + calibrate) on a FLRC<->LoRa change. This prelude makes
+# the TX re-enter apply_cfg() with a changed modulation right before each
+# intra-FLRC rate change, i.e. the exact control the RFA-1b follow-up used by
+# hand (TX 260 -> lora -> 650 = HEALTHY rx=100 @ -57 dBm). It does NOT test the
+# fixed firmware — that needs the SWD flash. It confirms, harness-driven, that a
+# bring-up re-run on the TX cures every 650-after-260 cell, so the flashed fix
+# is expected to land clean.
+DETOUR_SF = 8
+DETOUR_BW_KHZ = 125
+
 
 @dataclass
 class Board:
@@ -175,14 +187,28 @@ def parse_kv(line: str, _tag: str) -> dict:
 
 
 def pre_ops(br: int, role: str, patch_arm: str, config_id: int,
-            pa_dbm: int = PA_DBM, freq_hz: int = FREQ_HZ) -> list[dict]:
+            pa_dbm: int = PA_DBM, freq_hz: int = FREQ_HZ,
+            detour: bool = False) -> list[dict]:
     """Configure a board and put it in its role / arm it. No length-dependent
     work, so it can run on the TX board while the RX agent is not yet up.
 
     CONFIG tags every PKT line with this cell's id, so host-side counting can
     never mix bursts: the RX board keeps receiving whenever the TX transmits,
-    and the TX sequence counter persists across cells."""
+    and the TX sequence counter persists across cells.
+
+    detour (RFA-1c, TX only): prefix the cell with a LoRa detour that forces a
+    bring-up re-run before an intra-FLRC rate change. MOD on a TX board only
+    rewrites cfg, so the detour must also re-issue ROLE TX — that is what
+    calls apply_cfg() and performs the reset+calibrate."""
     ops: list[dict] = []
+    if detour:
+        if role != "TX":
+            raise ValueError("rate detour is a TX-side control only")
+        ops += [
+            {"op": "send", "cmd": f"MOD loRa {DETOUR_SF} {DETOUR_BW_KHZ}",
+             "expect": "OK MOD", "retries": 3},
+            {"op": "send", "cmd": "ROLE TX", "expect": "OK ROLE TX", "retries": 3},
+        ]
     if patch_arm in ("on", "off"):
         ops.append({"op": "send", "cmd": f"PATCH {patch_arm.upper()}",
                     "expect": "OK PATCH", "retries": 3, "timeout_s": 8.0})
@@ -236,13 +262,14 @@ def probe_ids(tx: Board, rx: Board) -> dict:
 
 
 def run_cell(tx: Board, rx: Board, arm: str, br: int, len_bytes: int, outdir: str,
-             config_id: int, pa_dbm: int = PA_DBM, freq_hz: int = FREQ_HZ) -> dict:
+             config_id: int, pa_dbm: int = PA_DBM, freq_hz: int = FREQ_HZ,
+             tx_detour: bool = False) -> dict:
     tag = f"{arm}_{br}_{len_bytes}_{config_id}"
     print(f"--- cell {tag}", flush=True)
 
     # 1. TX pre-config (idle radio). Slow over ssh, so it runs BEFORE the RX
     #    listen window opens — otherwise the config eats the RX window.
-    tx_pre = run_ops(tx, pre_ops(br, "TX", arm, config_id, pa_dbm, freq_hz),
+    tx_pre = run_ops(tx, pre_ops(br, "TX", arm, config_id, pa_dbm, freq_hz, tx_detour),
                      f"/tmp/rfa1b_txpre_{tag}.json", f"txpre_{tag}", timeout_s=180.0)
 
     # 2. RX: one agent run (configure -> START -> listen -> STAT?). The marker
@@ -282,6 +309,7 @@ def run_cell(tx: Board, rx: Board, arm: str, br: int, len_bytes: int, outdir: st
     cell = {
         "arm": arm, "br_kbps": br, "len": len_bytes,
         "pa_dbm": pa_dbm, "freq_hz": freq_hz,
+        "tx_detour": tx_detour,
         "tx_port": tx.port, "rx_port": rx.port,
         "rx_lines": rx_out.get("lines", []),
         "tx_lines": tx_out.get("lines", []),
@@ -351,12 +379,21 @@ def main() -> int:
     os.makedirs(args.outdir, exist_ok=True)
 
     results = []
+    detour = os.environ.get("RFA1C_TX_RATE_DETOUR", "") not in ("", "0")
+    if detour:
+        print("NOTE RFA-1c TX rate detour ON (RFA1C_TX_RATE_DETOUR): each cell whose "
+              "bitrate differs from its predecessor makes the TX re-enter the "
+              "bring-up via a LoRa hop. This is the pre-flash CONTROL, not the "
+              "fixed firmware.", flush=True)
+    prev_br: int | None = None
     for idx, (br, ln) in enumerate(cells, start=1):
+        tx_detour = bool(detour and prev_br is not None and prev_br != br)
         results.append(run_cell(tx, rx, args.arm, br, ln, args.outdir, idx,
-                                args.pa, args.freq))
+                                args.pa, args.freq, tx_detour))
+        prev_br = br
     with open(os.path.join(args.outdir, "summary.json"), "w") as fh:
         json.dump({"arm": args.arm, "pa_dbm": args.pa, "freq_hz": args.freq,
-                   "ids": ids, "cells": results}, fh, indent=1)
+                   "tx_rate_detour": detour, "ids": ids, "cells": results}, fh, indent=1)
     print(f"\nsummary -> {os.path.join(args.outdir, 'summary.json')}")
     return 0
 
