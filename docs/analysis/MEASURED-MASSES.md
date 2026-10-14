@@ -11,7 +11,7 @@ envelope. Source: operator statement + 8 balance photographs, read directly.
 | **10 small panels** | **4.462 g** | gram balance → **0.4462 g/panel** |
 | **1 large panel** | **1.382 g** | milligram balance, single panel |
 | **10 large panels** | **14.04 g** | gram balance → **1.4040 g/panel** |
-| **Balloon (Yokohama)** | **46.84 g** | gram balance |
+| **Balloon (Yokohama)** | **46.84 g** | gram balance — envelope ALONE; a marker on the pan was **taréd out** and is not in the reading (operator, 2026-10-14) |
 
 **Two different balances were used**, and that matters: a **gram balance (0.01 g readability)** for
 the 10-piece piles and a **milligram balance (0.01 mg)** for single panels.
@@ -75,13 +75,24 @@ size is a **11 g decision**, which is now a measured number rather than an estim
 
 ## The balloon, and GAP 1
 
-**The envelope is measured at 46.84 g (Yokohama).** The M7 photo was the **balloon itself** — my
-earlier reading of it as *"folded film + a marker"* was wrong on the object's **identity**, though
-correct that the reading was not separable. **Checked: no other photo also reads 46.84**, so this
-is one reading, not a duplicate — but it was taken **with a marker on the pan**, so the balance's
-`Net` display may or may not have excluded it. **A marker is ~10 g**, which is 21 % of the value,
-so **re-weighing the balloon alone is worth doing** even though the object is now correctly
-identified.
+**The envelope is measured at 46.84 g (Yokohama).** The M7 photo was the **balloon itself**; an
+earlier reading of it as a generic folded film was wrong on the object's **identity**.
+
+**OPERATOR CLARIFICATION (2026-10-14, authoritative) — the marker question is CLOSED:**
+
+> *"the marker isn't included in the weight. I zeroed the marker before weighing it. It was just
+> there to hold the balloon in place so that it doesn't unfold while its being weighed. 46.84
+> grams is the correct weight of the balloon. The marker isn't included in these 46.84 grams."*
+
+So the balance was **taréd on the marker before the envelope went on the pan**. The marker was a
+*physical restraint* only — it kept the folded envelope from unfolding — and it contributes
+**zero** to the reading. **No re-weigh is needed and none is outstanding.**
+
+Earlier in this document it was noted that a marker on the pan is ~10 g (21 % of the value) and
+that re-weighing "is worth doing". **That concern is withdrawn**: it was based on not knowing
+whether the display's `NET` had excluded the marker, and the operator has confirmed it did.
+
+**Checked: no other photo also reads 46.84**, so this is one reading, not a duplicate.
 
 With both measured:
 
