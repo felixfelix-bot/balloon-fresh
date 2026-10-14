@@ -447,6 +447,23 @@ bench_cmd_err_t bench_cmd_parse(const char* line, bench_cmd_t* out)
         return BENCH_CMD_OK;
     }
 
+    if (bench_strcaseeq(tokens[0], "PATCH"))
+    {
+        /* PATCH ON|OFF — upload (ON) or skip (OFF) the ExpressLRS PRAM patch.
+         * Runtime toggle so ONE binary runs both RFA-1b experiment arms. The
+         * handler re-runs the chip bring-up, so the flag takes effect at once. */
+        if (ntok != 2)
+            return (out->err = BENCH_CMD_E_SYNTAX);
+        if (bench_strcaseeq(tokens[1], "ON"))
+            out->patch_enable = true;
+        else if (bench_strcaseeq(tokens[1], "OFF"))
+            out->patch_enable = false;
+        else
+            return (out->err = BENCH_CMD_E_ARG);
+        out->id = BENCH_CMD_PATCH;
+        return BENCH_CMD_OK;
+    }
+
     if (bench_strcaseeq(tokens[0], "BUF"))
     {
         /* TX buffer: BUF CLEAR | BUF STATUS | BUF LOAD <n> <crc16_hex>

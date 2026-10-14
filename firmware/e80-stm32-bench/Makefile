@@ -138,6 +138,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-check range-dry-run range-test-host
+.PHONY: rfa1b-test-host
 .PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke sweep-e80
 .PHONY: boat-tx boat-rx
 
@@ -653,6 +654,10 @@ range-zip: ## Zip RX log + optional GPS + metadata.txt for sharing
 	unzip -l "$$ZIP_NAME" 2>/dev/null | grep -E '(\.csv|\.gpx|\.txt)' || true; \
 	echo ""; \
 	echo "Send $$ZIP_NAME to the TX operator via Signal / Slack / email."
+
+rfa1b-test-host: ## Run pytest for the RFA-1b PRAM matrix runner (host logic only)
+	@echo "=== Running RFA-1b matrix runner host tests ==="
+	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_rfa1b_pram_matrix.py -v
 
 range-test-host: ## Run pytest for distributed range test split logic
 	@echo "=== Running distributed range test unit tests ==="
