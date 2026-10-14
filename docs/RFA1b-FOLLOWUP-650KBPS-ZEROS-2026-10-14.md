@@ -144,3 +144,15 @@ Our init chain runs `CALIB_FRONT_END 0x23` + `CALIBRATE 0x22` exactly once at bo
 re-init on rate change). **Bench mitigation until then:** group cells by bitrate —
 never interleave 260/650. **Card action:** close t_0917cbfa; open a FW card for the
 calibration-after-mode-change fix.
+
+**RFA-1c status (2026-10-14, card t_0393892c, branch
+`feat/rfa1c-recal-on-rate-change`):** implemented as a
+`modem_params_changed()` trigger in `radio_bench_apply_cfg()` (mod, FLRC bitrate,
+LoRa BW/SF) with host tests; 24/24 green. The acceptance interleave could not run
+on the patched binary (SWD link dead, no probe on the RX host). Pre-flash matrix
+(`docs/RFA1c-RECAL-ON-RATE-CHANGE-2026-10-14.md`) refines this verdict: the deaf
+end is the **RECEIVER**, not the transmitter — a bring-up re-run on the RX alone
+recovers the 650-after-260 cells (3/3 heard), on the TX alone it does not (1/3),
+and on both ends the full 7-cell interleave is `200/200/0` in two consecutive
+runs. The fix therefore has to reach **both** boards, which changes the flash
+plan for this pair (the probe is only on the TX host today).

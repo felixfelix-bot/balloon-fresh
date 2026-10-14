@@ -108,6 +108,27 @@ def test_cell_matrix_matches_the_card(cell):
     assert ln in (64, 128, 255)
 
 
+def test_tx_rate_detour_prepends_a_lora_hop_and_reapplies_the_role():
+    """RFA-1c pre-flash control: MOD alone only rewrites cfg on a TX board, so
+    the LoRa hop is worthless unless ROLE TX follows it — that is the command
+    that calls apply_cfg() and re-runs the reset+calibrate bring-up."""
+    ops = m.pre_ops(650, "TX", "none", 3, detour=True)
+    cmds = [o["cmd"] for o in ops]
+    assert cmds[0] == f"MOD loRa {m.DETOUR_SF} {m.DETOUR_BW_KHZ}"
+    assert cmds[1] == "ROLE TX"
+    assert cmds.index("MOD flrc 650 10") > 1        # the cell's real rate, after the hop
+    assert "CONFIG 3 0" in cmds and cmds[-1] == "ROLE TX"
+
+
+def test_rate_detour_is_off_by_default_and_role_follows_the_arm():
+    assert all("loRa" not in o["cmd"] for o in m.pre_ops(650, "TX", "none", 1))
+    # the RX arm needs the same hop: MOD re-arms RX through radio_rearm_rx, and
+    # the ROLE re-issue makes the two arms byte-identical.
+    rxc = [o["cmd"] for o in m.pre_ops(650, "RX", "none", 1, detour=True)]
+    assert rxc[0] == f"MOD loRa {m.DETOUR_SF} {m.DETOUR_BW_KHZ}"
+    assert rxc[1] == "ROLE RX"
+
+
 def test_remote_listen_marker_carries_host_prefix():
     """Regression (2026-10-14): run_ops returned the marker path WITHOUT the
     ssh host prefix, so wait_mark() stat()ed a local path for a remote board,
