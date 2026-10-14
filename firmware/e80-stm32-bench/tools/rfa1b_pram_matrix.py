@@ -196,18 +196,18 @@ def pre_ops(br: int, role: str, patch_arm: str, config_id: int,
     never mix bursts: the RX board keeps receiving whenever the TX transmits,
     and the TX sequence counter persists across cells.
 
-    detour (RFA-1c, TX only): prefix the cell with a LoRa detour that forces a
-    bring-up re-run before an intra-FLRC rate change. MOD on a TX board only
-    rewrites cfg, so the detour must also re-issue ROLE TX — that is what
-    calls apply_cfg() and performs the reset+calibrate."""
+    detour (RFA-1c, pre-flash control): prefix the cell with a LoRa hop so the
+    board re-enters the bring-up before an intra-FLRC rate change. MOD alone
+    only rewrites cfg on a TX board, so the hop is paired with a ROLE re-issue,
+    which is what calls apply_cfg() and performs the reset+calibrate. On an RX
+    board the hop is enough by itself (MOD re-arms RX through radio_rearm_rx)
+    but the extra ROLE keeps both arms byte-identical."""
     ops: list[dict] = []
     if detour:
-        if role != "TX":
-            raise ValueError("rate detour is a TX-side control only")
         ops += [
             {"op": "send", "cmd": f"MOD loRa {DETOUR_SF} {DETOUR_BW_KHZ}",
              "expect": "OK MOD", "retries": 3},
-            {"op": "send", "cmd": "ROLE TX", "expect": "OK ROLE TX", "retries": 3},
+            {"op": "send", "cmd": f"ROLE {role}", "expect": f"OK ROLE {role}", "retries": 3},
         ]
     if patch_arm in ("on", "off"):
         ops.append({"op": "send", "cmd": f"PATCH {patch_arm.upper()}",
@@ -263,7 +263,7 @@ def probe_ids(tx: Board, rx: Board) -> dict:
 
 def run_cell(tx: Board, rx: Board, arm: str, br: int, len_bytes: int, outdir: str,
              config_id: int, pa_dbm: int = PA_DBM, freq_hz: int = FREQ_HZ,
-             tx_detour: bool = False) -> dict:
+             tx_detour: bool = False, rx_detour: bool = False) -> dict:
     tag = f"{arm}_{br}_{len_bytes}_{config_id}"
     print(f"--- cell {tag}", flush=True)
 
@@ -281,7 +281,7 @@ def run_cell(tx: Board, rx: Board, arm: str, br: int, len_bytes: int, outdir: st
         stale = rx_bg_mark(tag)
         if os.path.exists(stale):
             os.remove(stale)
-    rx_bg = run_ops(rx, pre_ops(br, "RX", arm, config_id, pa_dbm, freq_hz) +
+    rx_bg = run_ops(rx, pre_ops(br, "RX", arm, config_id, pa_dbm, freq_hz, rx_detour) +
                     rx_ops(br, arm, len_bytes),
                     f"/tmp/rfa1b_rx_{tag}.json", f"rx_{tag}", wait=False,
                     timeout_s=300.0)
@@ -309,7 +309,7 @@ def run_cell(tx: Board, rx: Board, arm: str, br: int, len_bytes: int, outdir: st
     cell = {
         "arm": arm, "br_kbps": br, "len": len_bytes,
         "pa_dbm": pa_dbm, "freq_hz": freq_hz,
-        "tx_detour": tx_detour,
+        "tx_detour": tx_detour, "rx_detour": rx_detour,
         "tx_port": tx.port, "rx_port": rx.port,
         "rx_lines": rx_out.get("lines", []),
         "tx_lines": tx_out.get("lines", []),
@@ -379,21 +379,24 @@ def main() -> int:
     os.makedirs(args.outdir, exist_ok=True)
 
     results = []
-    detour = os.environ.get("RFA1C_TX_RATE_DETOUR", "") not in ("", "0")
-    if detour:
-        print("NOTE RFA-1c TX rate detour ON (RFA1C_TX_RATE_DETOUR): each cell whose "
-              "bitrate differs from its predecessor makes the TX re-enter the "
-              "bring-up via a LoRa hop. This is the pre-flash CONTROL, not the "
+    detour_tx = os.environ.get("RFA1C_TX_RATE_DETOUR", "") not in ("", "0")
+    detour_rx = os.environ.get("RFA1C_RX_RATE_DETOUR", "") not in ("", "0")
+    if detour_tx or detour_rx:
+        print(f"NOTE RFA-1c rate detour ON (tx={detour_tx} rx={detour_rx}): each cell "
+              "whose bitrate differs from its predecessor makes that board re-enter "
+              "the bring-up via a LoRa hop. This is the pre-flash CONTROL, not the "
               "fixed firmware.", flush=True)
     prev_br: int | None = None
     for idx, (br, ln) in enumerate(cells, start=1):
-        tx_detour = bool(detour and prev_br is not None and prev_br != br)
+        moved = bool(prev_br is not None and prev_br != br)
         results.append(run_cell(tx, rx, args.arm, br, ln, args.outdir, idx,
-                                args.pa, args.freq, tx_detour))
+                                args.pa, args.freq,
+                                bool(detour_tx and moved), bool(detour_rx and moved)))
         prev_br = br
     with open(os.path.join(args.outdir, "summary.json"), "w") as fh:
         json.dump({"arm": args.arm, "pa_dbm": args.pa, "freq_hz": args.freq,
-                   "tx_rate_detour": detour, "ids": ids, "cells": results}, fh, indent=1)
+                   "tx_rate_detour": detour_tx, "rx_rate_detour": detour_rx,
+                   "ids": ids, "cells": results}, fh, indent=1)
     print(f"\nsummary -> {os.path.join(args.outdir, 'summary.json')}")
     return 0
 

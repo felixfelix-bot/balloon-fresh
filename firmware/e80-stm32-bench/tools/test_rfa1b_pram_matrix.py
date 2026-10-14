@@ -120,10 +120,13 @@ def test_tx_rate_detour_prepends_a_lora_hop_and_reapplies_the_role():
     assert "CONFIG 3 0" in cmds and cmds[-1] == "ROLE TX"
 
 
-def test_tx_rate_detour_is_off_by_default_and_tx_only():
+def test_rate_detour_is_off_by_default_and_role_follows_the_arm():
     assert all("loRa" not in o["cmd"] for o in m.pre_ops(650, "TX", "none", 1))
-    with pytest.raises(ValueError):
-        m.pre_ops(650, "RX", "none", 1, detour=True)
+    # the RX arm needs the same hop: MOD re-arms RX through radio_rearm_rx, and
+    # the ROLE re-issue makes the two arms byte-identical.
+    rxc = [o["cmd"] for o in m.pre_ops(650, "RX", "none", 1, detour=True)]
+    assert rxc[0] == f"MOD loRa {m.DETOUR_SF} {m.DETOUR_BW_KHZ}"
+    assert rxc[1] == "ROLE RX"
 
 
 def test_remote_listen_marker_carries_host_prefix():
