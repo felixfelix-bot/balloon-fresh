@@ -79,11 +79,10 @@ alternated 260 <-> 650 every cell:
 A pure byte-alignment story (64 B and 255 B are len%4==0, 128 B is not) predicts
 650/128 would also fail when measured right after a 260 cell — it did not.
 The **mode-change hypothesis** (650 cells that directly follow a 260 cell lose
-their window) fits the pattern with one exception in the data — 650/128
-immediately after 260 was CLEAN — so it is **not proven**, only the leading
-candidate. A third possibility is load-dependent marker latency under ssh,
-which is why the decisive test below is a controlled interleave rather than
-more of the same.
+their window) is now **PROVEN DETERMINISTIC** by the interleave run — see the
+Verdict section below for the full table. It is not an alignment effect (128 B
+is clean when 650 kbps follows 650) and not a marker artifact (RX local, all
+markers seen).
 
 ## Reproduction
 
@@ -113,3 +112,35 @@ The controlled interleave — `650:64,260:64,650:64,260:64,...` — decides it i
 ~10 minutes and is the recommended next bench slot if anyone wants the mechanism
 nailed down. Current state: **no 650 kbps defect is demonstrated**, and every
 zero observed so far is explained without invoking the radio.
+
+## Verdict (2026-10-14, interleave run — PROVEN DETERMINISTIC)
+
+7-cell interleave `650:64,260:64,650:64,260:128,650:128,260:255,650:255` (PA22, RX local,
+evidence: `docs/evidence/rfa1b-650-interleave-2026-10-14/`):
+
+| cell | predecessor | rx_pkts | tx_stat.sent_ok |
+|---|---|---|---|
+| 650/64 | 260 (prev run) | 0 | 200 |
+| 260/64 | 650 | 200 | 200 |
+| 650/64 | 260 | 0 | 200 |
+| 260/128 | 650 | 200 | 200 |
+| 650/128 | 260 | 0 | 200 |
+| 260/255 | 650 | 200 | 200 |
+| 650/255 | 260 | 0 | 200 |
+
+- **260→650: 4/4 deaf** — RX RSSI exactly 0.0, hears literally nothing.
+- **650→260: 4/4 clean** — including the first 260 cell after the 650-only sweep.
+- TX reports `sent_ok=200` in deaf cells too — TX-complete IRQ fires; the failure is
+  invisible to TX-side stats.
+
+A "board stuck in old mode" story fits NEITHER direction (it would break 650→260 as
+well). Most probable mechanism: **calibration is not re-run after a bitrate change.**
+Our init chain runs `CALIB_FRONT_END 0x23` + `CALIBRATE 0x22` exactly once at boot
+(RFA-1 audit); ExpressLRS re-derives modulation params on every rate change. At
+650 kbps on stale 260-mode calibration the demod is mistuned → RX deaf while TX
+"completes".
+
+**FW fix candidate:** re-run calibration after every MOD_PARAMS change (or full
+re-init on rate change). **Bench mitigation until then:** group cells by bitrate —
+never interleave 260/650. **Card action:** close t_0917cbfa; open a FW card for the
+calibration-after-mode-change fix.
