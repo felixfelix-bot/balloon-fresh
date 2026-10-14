@@ -1,4 +1,4 @@
-# ADR-052: Placement Gate with Human + Spatial-LLM Review Before Routing
+# ADR-112: Placement Gate with Human + Spatial-LLM Review Before Routing
 
 **Date:** 2026-10-13
 **Status:** Accepted

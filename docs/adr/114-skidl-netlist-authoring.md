@@ -1,4 +1,4 @@
-# ADR-054: SKiDL for Netlist Authoring of New Boards
+# ADR-114: SKiDL for Netlist Authoring of New Boards
 
 **Date:** 2026-10-13
 **Status:** Accepted (evaluate-and-adopt for base-station + bench-rig)

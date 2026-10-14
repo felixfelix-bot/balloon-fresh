@@ -128,7 +128,7 @@ because ADR-055 D5's square preference rests on the four socket interfaces at 90
 which the hub still has. The exact outline is a **placement-stage floorplan**, frozen only after
 the placement is re-run on it (**D5**).
 
-### D2. **The 103 × 103 mm outline of ADR-055 D5 is RETIRED, and the existing placement is PROVISIONAL.**
+### D2. **The 103 × 103 mm outline of ADR-115 D5 is RETIRED, and the existing placement is PROVISIONAL.**
 
 `tracker/hardware/hub_board_v9.kicad_pcb` (the first v9 hub placement, S0 PASS) sits on the retired
 103 mm outline. Its **component-courtyard measurement is the floor this record uses**, but its

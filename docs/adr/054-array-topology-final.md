@@ -21,7 +21,7 @@
   ADR-050 (charge-path converter, its 2.5 V floor, the ≈9.58 V cold open-circuit figure, the
   `I_Q ≤ 5 µA` night bound), **ADR-051 (hub array and cut topology — its cut ladder is CORRECTED by
   this record, §3.1)**, **ADR-052 (bare cells mounted end-only — the thermal-cracking premise)**,
-  **ADR-053 (per-group bypass diodes — its placement is CORRECTED by this record, §3.2; its
+  **ADR-113 (per-group bypass diodes — its placement is CORRECTED by this record, §3.2; its
   per-group-over-per-cell conclusion is CONFIRMED and STRENGTHENED)**.
 - Evidence base (both landed on `github/main` on 2026-10-07; READ IN FULL to write this record):
   - `docs/analysis/array-topology-fault-tolerance.md` — the **systematic** analysis: seven
@@ -148,7 +148,7 @@ broken series **PATH**:
   the first cut kills the array, and the 12 per-cell diodes did nothing."*
 
 **Both analyses rank this mandatory** (systematic §3.1, §4.2, §7; adversarial Rank 2 and F3). It
-**strengthens** ADR-051 §2.4 decisions 4.2 and 4.3, and it is the placement correction this record
+**strengthens** ADR-111 §2.4 decisions 4.2 and 4.3, and it is the placement correction this record
 also applies to ADR-053 (§3.2).
 
 ### 2.3 Decision item 3 — PER-CELL bypass diodes are REJECTED
@@ -290,7 +290,7 @@ TWO cuts, not three** (adversarial F6).
 floor. The two records disagree and **ADR-051's table is the one without the drop**; this correction
 cross-references that document.
 
-### 3.2 ADR-053's diode placement is wrong for the cut case
+### 3.2 ADR-113's diode placement is wrong for the cut case
 
 **What ADR-053 records:** its §1.7 (titled *"Placement consequence — the diodes live on the WING
 boards"*) and §2.5 (titled *"the diodes live on the WING boards (and on the hub array)"*) place the
@@ -354,7 +354,7 @@ condition of Decision item 3 (soft shunts dominating).
 - **The topology fork is closed and the record is legible.** The operator's question is answered
   with the deciding number (1.20 A) and the parts reason, not with preference.
 - **The one load-bearing protection — the hub-side per-interface bypass — is recorded as mandatory
-  and is the placement the cut actually needs** (Decision item 2; ADR-053 §3.2 correction).
+  and is the placement the cut actually needs** (Decision item 2; ADR-113 §3.2 correction).
 - **The mechanism is now correct**, so no future reader will look for converter tolerance in a
   diode (Decision item 4).
 - **Two numerically-wrong / under-placed records are corrected in place**, with their original
@@ -388,7 +388,7 @@ condition of Decision item 3 (soft shunts dominating).
 ## 7. Notes
 
 - **Why one ADR and not three.** The topology decision, the ADR-051 ladder correction and the
-  ADR-053 placement correction are one logical change to one decision — the array topology — and
+  ADR-113 placement correction are one logical change to one decision — the array topology — and
   they were produced together from the same two analyses. The two corrections are **appended** to
   their records (not rewritten), so the history stays legible and no original number is deleted.
 - **What is NOT superseded.** ADR-051 §1.1's core claim (a cut removes string voltage; the hub

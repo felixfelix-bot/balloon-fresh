@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **91** distinct
-numbers, **91** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **96** distinct
+numbers, **96** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -84,11 +84,11 @@ None.
 | 048 | `048-v9-hub-wing-interfaces.md` | v9 hub-side wing interfaces: four socket land sets at 90° | Proposed |
 | 049 | `049-wing-architecture.md` | Wing architecture: cell class, structure, orientation and protection | Proposed |
 | 050 | `050-mppt-charge-path.md` | Charge-path converter between the solar array and the supercap bank | Proposed |
-| 051 | `051-canonical-board-production-order.md` | Canonical Board-Production Order of Operations | Accepted |
-| 052 | `052-placement-gate-human-and-spatial-review.md` | Placement Gate with Human + Spatial-LLM Review Before Routing | Accepted |
-| 053 | `053-drc-blockers-feedback-tool.md` | DRC-to-Blockers Feedback Script as a Standard Board Tool | Accepted |
-| 054 | `054-skidl-netlist-authoring.md` | SKiDL for Netlist Authoring of New Boards | Accepted |
-| 055 | `055-tooling-sourcing-policy.md` | Tooling Sourcing Policy for Board Production | Accepted |
+| 111 | `111-canonical-board-production-order.md` | Canonical Board-Production Order of Operations | Accepted |
+| 112 | `112-placement-gate-human-and-spatial-review.md` | Placement Gate with Human + Spatial-LLM Review Before Routing | Accepted |
+| 113 | `113-drc-blockers-feedback-tool.md` | DRC-to-Blockers Feedback Script as a Standard Board Tool | Accepted |
+| 114 | `114-skidl-netlist-authoring.md` | SKiDL for Netlist Authoring of New Boards | Accepted |
+| 115 | `115-tooling-sourcing-policy.md` | Tooling Sourcing Policy for Board Production | Accepted |
 | 051 | `051-hub-array-and-cut-topology.md` | Hub-mounted solar array as an INDEPENDENT string: the wing cut topology and the cut-sense provision | Proposed |
 | 052 | `052-cell-mounting-end-only.md` | Bare cells are mounted END-ONLY: no adhesive bond, no bonded-and-vented carrier | Proposed |
 | 053 | `053-per-cell-bypass-diodes.md` | Per-cell / per-group bypass Schottky diodes: a cracked or shaded cell costs one cell, not the whole series string | Proposed |
@@ -130,9 +130,8 @@ None.
 | 108 | `108-f33-sx1280-pin-plan.md` | V9 D2b(b) — LoRa2021F33 + SX1280 pin plan | proposed implementation baseline, pending schematic ERC and module-datasheet |
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 056 | — |
 | 067 | `067-hub-board-ground-plane.md` | Hub board: continuous GND return on the 4-layer stack | Accepted |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 068 | — |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 116 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 

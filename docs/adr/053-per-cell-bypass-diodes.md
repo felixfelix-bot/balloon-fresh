@@ -31,7 +31,7 @@
 > only thing to rename and no code references it yet.
 
 > **CORRECTED IN PART (2026-10-07) by [ADR-054](054-array-topology-final.md) (Proposed) — the
-> PLACEMENT only.** ADR-054 §3.2 corrects this record's §1.7/§2.5 wing-board placement: for any
+> PLACEMENT only.** ADR-114 §3.2 corrects this record's §1.7/§2.5 wing-board placement: for any
 > cutter-carrying flight the per-group bypass diodes must be **HUB-SIDE PER-INTERFACE** (across
 > `W<n>_SOLAR_P` ↔ `W<n>_SOLAR_N`), because a cut jettisons the wing and every diode soldered to it.
 > This record's **RETAINED conclusion — per-GROUP over per-CELL — is CONFIRMED and STRENGTHENED**.
@@ -608,7 +608,7 @@ fail is itself tested (§6, and ADR-051 §2.1.3 for the same doctrine).
 hub offered as an *alternative* for the per-group case (§1.7: the per-group diode *"can sit either
 on the hub … or on the wing board itself"*).
 
-**Why the wing-board placement is wrong for the cut case.** The wings are jettisonable (ADR-051 §0,
+**Why the wing-board placement is wrong for the cut case.** The wings are jettisonable (ADR-111 §0,
 §1.1). **A diode soldered to the wing leaves with the wing**, and it cannot bridge the gap because
 it is on the wrong side of the gap (adversarial F3). If the per-group bypass diodes are on the wing
 boards, **a cut jettisons them and the array dies on the first cut** — the socket lands go open, the
@@ -636,6 +636,6 @@ moves from rejected to required (ADR-053 §5 already names this falsifier).
 
 **Retained, not superseded:** §1.3's permanent-continuous-current rule, §1.6's per-group
 recommendation, §2.1–§2.4 (grouping and the 512 mg trade), §2.6 (the single wing respin), §2.7
-(relationship to ADR-051) and §2.8 (the checker) are all **retained**. **Only the placement is
+(relationship to ADR-111) and §2.8 (the checker) are all **retained**. **Only the placement is
 corrected**, and the wing respin (§2.6) is no longer a home for the bypass diodes for a
 cutter-carrying flight.

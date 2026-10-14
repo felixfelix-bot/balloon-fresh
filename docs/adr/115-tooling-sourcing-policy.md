@@ -1,4 +1,4 @@
-# ADR-055: Tooling Sourcing Policy for Board Production
+# ADR-115: Tooling Sourcing Policy for Board Production
 
 **Date:** 2026-10-13
 **Status:** Accepted

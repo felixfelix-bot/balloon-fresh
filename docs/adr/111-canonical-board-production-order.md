@@ -1,4 +1,4 @@
-# ADR-051: Canonical Board-Production Order of Operations
+# ADR-111: Canonical Board-Production Order of Operations
 
 **Date:** 2026-10-13
 **Status:** Accepted

@@ -1,4 +1,4 @@
-# ADR-053: DRC-to-Blockers Feedback Script as a Standard Board Tool
+# ADR-113: DRC-to-Blockers Feedback Script as a Standard Board Tool
 
 **Date:** 2026-10-13
 **Status:** Accepted
