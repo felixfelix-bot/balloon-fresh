@@ -217,7 +217,12 @@ SMD + solder       █                     0.19g (1.6%)
 
 1. **Module weights are estimates** from datasheet dimensions and typical densities. Actual weights vary by manufacturer batch. **Felix must verify with a precision scale (0.01g resolution).**
 2. **LR2021 radio module** is not in the provided BOM excerpt but is in the schematic. Weight estimated from 19.81 × 14.98mm dimensions with shielding can.
-3. **Solar cell weight** is the largest uncertainty. The "~2g per cell" spec is heavy for pico balloon use. Thin-film alternatives at ~0.4g/cell are strongly recommended.
+3. **Solar cell weight — NOW MEASURED, superseded.** This doc's *"~2g per cell"* figure was
+   **4.5× too heavy**. **Measured on the operator's scales (2026-10-14): 0.440 g per small panel
+   and 1.382 g per large panel** (each size weighed two independent ways — 10-piece piles on a
+   gram balance and single panels on a milligram balance — agreeing within 2 %). The *"~0.4g/cell
+   thin-film hope"* below was **essentially correct (1.10×)**; **the cells were never the
+   problem.** See **`docs/analysis/MEASURED-MASSES.md`** — the authoritative record.
 4. **Direct solder** assumed for all flight configurations (no pin headers). Prototyping boards with sockets add ~1.5–2.4g.
 5. **MS5611 and MAX-M10S** assumed bare-die direct-soldered for flight. Breakout boards add ~0.6g and ~0.6g respectively.
 6. **Solder paste** weight (~50mg) included but negligible.
@@ -230,6 +235,13 @@ SMD + solder       █                     0.19g (1.6%)
 ## Recommendations
 
 1. **Use thin-film solar cells** (~0.4g each, not 2g). This is the single biggest weight lever.
+   **⚠ SUPERSEDED 2026-10-14: the cells ARE 0.440 g each when measured — no switching needed.**
+   The "2 g" figure was wrong and the lever it implied did not exist.
+1b. **⚠ This doc's "<9 g" / "<14 g" targets are NOT ACHIEVABLE and are retired.** They were written
+   around hardware-only mass with an envelope that was *assumed*, never weighed. **Measured:
+   46.84 g balloon + ~30.8 g flight hardware = 77.6 g floating mass.** See
+   `docs/analysis/MEASURED-MASSES.md`. **The correct budget is the balloon's own lift, which the
+   float analysis already models.**
 2. **Direct-solder all modules** for flight (saves ~2g vs socketed headers).
 3. **Consider bare ESP32-C3** on a future PCB revision instead of the Mini dev module — saves ~1.5g and eliminates USB-C connector weight.
 4. **Verify actual weights** with Felix's scale as soon as V1 boards arrive from JLCPCB.

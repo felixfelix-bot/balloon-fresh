@@ -1,3 +1,14 @@
+# --- MEASURED OVERRIDE (2026-10-14, operator scales) -------------------------------------
+# These replace the retired Si-density estimates below. Two balances were used: a gram balance
+# (0.01 g) for 10-piece piles and a milligram balance for single panels; each panel size was
+# weighed by BOTH routes and the two agree within 2 %.
+#   MEASURED_SMALL_G = 0.440   (10-piece route says 0.4462)
+#   MEASURED_LARGE_G = 1.382   (10-piece route says 1.4040)
+#   MEASURED_BALLOON_G = 46.84 (Yokohama envelope)
+# RETIRED: 0.5006 / 1.4951 (Si-density, 12 % / 8 % high) and "~2 g per cell" (4.5x too heavy).
+# Source: docs/analysis/MEASURED-MASSES.md ; reproduce: tracker/hardware/measured_masses.py
+# ------------------------------------------------------------------------------------------
+
 #!/usr/bin/env python3
 """two_variant_mass_model.py — reproducible arithmetic for
 docs/analysis/two-variant-mass-budget.md (branch analysis/two-variant-mass-budget).
