@@ -1874,8 +1874,8 @@
 		)
 		(symbol "HUB_CONVERTER_0_1"
 			(rectangle
-				(start -12.7 3.81)
-				(end 12.7 -3.81)
+				(start -12.7 5.08)
+				(end 12.7 -5.08)
 				(stroke
 					(width 0.254)
 					(type default)
@@ -1940,7 +1940,25 @@
 					)
 				)
 			)
-		)
+					(pin passive line
+				(at 15.24 -1.27 180)
+				(length 2.54)
+				(name "VOUT"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "4"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+)
 	)
 	(symbol "CUT_CHANNEL"
 		(pin_names
@@ -1995,8 +2013,8 @@
 		)
 		(symbol "CUT_CHANNEL_0_1"
 			(rectangle
-				(start -12.7 3.81)
-				(end 12.7 -3.81)
+				(start -12.7 5.08)
+				(end 12.7 -5.08)
 				(stroke
 					(width 0.254)
 					(type default)
@@ -2061,7 +2079,61 @@
 					)
 				)
 			)
-		)
+					(pin passive line
+				(at 15.24 -1.27 180)
+				(length 2.54)
+				(name "ARM"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "4"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at -15.24 3.81 0)
+				(length 2.54)
+				(name "CTRL"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "5"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 15.24 3.81 180)
+				(length 2.54)
+				(name "SENSE"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "6"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+)
 	)
 	(symbol "MS5611_BARO"
 		(symbol "MS5611_BARO_0_1"

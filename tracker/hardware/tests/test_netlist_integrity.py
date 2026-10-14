@@ -197,14 +197,16 @@ print("\n=== F. DRC FLOOR: no relaxed project may be the graded authority ===")
 # Measured 2026-10-14: the first base-station route rewrote four floor values in its output
 # project (via diameter 0.5->0.25, annular 0.1->0.05, hole 0.3->0.15, copper-to-hole 0.25->0.1)
 # and said so: "Every checker ... grades against the NEW value, so this copper will read clean."
+# (label, path, expect_clean). A REJECTED artifact must measure DIRTY -- asserting that a
+# known-bad board passes would be a test that can never fail, i.e. a test that proves nothing.
 ROUTED = [
-    ("base station (first route -- REJECTED)",
-     os.path.join(HW, "base_station", "output", "bs_v1_routed.kicad_pcb")),
-    ("base station (strict, --escalation off)",
-     os.path.join(HW, "base_station", "output", "bs_v1_routed_strict.kicad_pcb")),
+    ("base station (first route -- REJECTED, must FAIL)", 
+     os.path.join(HW, "base_station", "output", "bs_v1_routed.kicad_pcb"), False),
+    ("base station (strict, --escalation off, must PASS)",
+     os.path.join(HW, "base_station", "output", "bs_v1_routed_strict.kicad_pcb"), True),
 ]
 JLC = dict(track=0.10, via_dia=0.45, via_drill=0.20)
-for label, brd in ROUTED:
+for label, brd, expect_clean in ROUTED:
     if not os.path.exists(brd):
         ck(f"F. {label}: board present", False, brd)
         continue
@@ -230,9 +232,14 @@ for label, brd in ROUTED:
         ck(f"F. {label}: readable", False, (r.stdout + r.stderr)[-200:])
         continue
     tw, vd, vdr = vals
-    ok = tw >= JLC["track"] and vd >= JLC["via_dia"] and vdr >= JLC["via_drill"]
-    ck(f"F. {label}: copper meets JLCPCB's floors (track .10 / via .45 / drill .20)", ok,
-       f"measured track {tw}  via {vd}  drill {vdr}\n"
+    meets = tw >= JLC["track"] and vd >= JLC["via_dia"] and vdr >= JLC["via_drill"]
+    # The check asserts the EXPECTED state of THIS artifact: a rejected board must measure dirty,
+    # a shipped board must measure clean. Asserting "clean" for a known-bad board would be a test
+    # that can never fail -- which is the whole failure class this file exists to catch.
+    ok = (meets == expect_clean)
+    ck(f"F. {label}", ok,
+       f"measured track {tw}  via {vd}  drill {vdr}  ->  meets JLC floors: {meets} "
+       f"(expected {expect_clean})\n"
        f"Graded from the BOARD, not the router's project: a tool that rewrites the\n"
        f"project's floors grades its own work against the lowered bar.")
 

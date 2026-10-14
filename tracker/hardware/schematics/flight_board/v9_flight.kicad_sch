@@ -1884,8 +1884,8 @@
 		)
 		(symbol "HUB_CONVERTER_0_1"
 			(rectangle
-				(start -12.7 3.81)
-				(end 12.7 -3.81)
+				(start -12.7 5.08)
+				(end 12.7 -5.08)
 				(stroke
 					(width 0.254)
 					(type default)
@@ -1950,7 +1950,25 @@
 					)
 				)
 			)
-		)
+					(pin passive line
+				(at 15.24 -1.27 180)
+				(length 2.54)
+				(name "VOUT"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "4"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+)
 	)
 (symbol "balloon_flight_v9:CUT_CHANNEL"
 		(pin_names
@@ -2005,8 +2023,8 @@
 		)
 		(symbol "CUT_CHANNEL_0_1"
 			(rectangle
-				(start -12.7 3.81)
-				(end 12.7 -3.81)
+				(start -12.7 5.08)
+				(end 12.7 -5.08)
 				(stroke
 					(width 0.254)
 					(type default)
@@ -2071,7 +2089,61 @@
 					)
 				)
 			)
-		)
+					(pin passive line
+				(at 15.24 -1.27 180)
+				(length 2.54)
+				(name "ARM"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "4"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at -15.24 3.81 0)
+				(length 2.54)
+				(name "CTRL"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "5"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 15.24 3.81 180)
+				(length 2.54)
+				(name "SENSE"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "6"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+)
 	)
 (symbol "balloon_flight_v9:MS5611_BARO"
 		(symbol "MS5611_BARO_0_1"
@@ -7815,8 +7887,8 @@
 		(at 668.02 50.8 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
+		(in_bom no)
+		(on_board no)
 		(dnp no)
 		(uuid "0f8f4300-d4f0-5533-ace7-a63413f3820b")
 		(property "Reference" "PVA1"
@@ -7917,8 +7989,8 @@
 		(at 668.02 81.28 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
+		(in_bom no)
+		(on_board no)
 		(dnp no)
 		(uuid "6d77c869-b94b-5d6a-ac68-16ca77c8f3b6")
 		(property "Reference" "PVA2"
@@ -8032,7 +8104,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "HUB_PV input (part TODO(unverified))"
+		(property "Value" "BQ25504RGTR"
 			(at 670.56 165.1 0)
 			(effects
 				(font
@@ -8041,8 +8113,17 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.1x1.1mm"
 			(at 668.02 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C2876746"
+			(at 0 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8058,6 +8139,9 @@
 		)
 		(pin "3"
 			(uuid "0afbfd0b-edbc-59fa-983b-715561b4c98b")
+		)
+		(pin "4"
+			(uuid "29306b42-d7cf-44ba-a233-8984d3d64574")
 		)
 		(instances
 			(project "v9_flight"
@@ -8086,7 +8170,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "latched cut driver + cut-sense (part TODO(unverified))"
+		(property "Value" "SN74LVC1G373DBVR"
 			(at 670.56 198.12 0)
 			(effects
 				(font
@@ -8095,8 +8179,17 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-6"
 			(at 668.02 195.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C128413"
+			(at 0 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8112,6 +8205,15 @@
 		)
 		(pin "3"
 			(uuid "31720e0a-b74d-508e-831f-17b3a2eb38b3")
+		)
+		(pin "4"
+			(uuid "a3c143dc-59ec-4931-84d4-64a5d86715bf")
+		)
+		(pin "5"
+			(uuid "943222fc-7e25-4af3-89d8-24620f59d9b8")
+		)
+		(pin "6"
+			(uuid "01cd0c4c-fefe-42d5-866a-2ffc38fb8067")
 		)
 		(instances
 			(project "v9_flight"
@@ -8140,7 +8242,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "latched cut driver + cut-sense (part TODO(unverified))"
+		(property "Value" "SN74LVC1G373DBVR"
 			(at 670.56 231.14 0)
 			(effects
 				(font
@@ -8149,8 +8251,17 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-6"
 			(at 668.02 228.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C128413"
+			(at 0 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8166,6 +8277,15 @@
 		)
 		(pin "3"
 			(uuid "5ff28e57-016f-5648-9cf4-8d6e93362f93")
+		)
+		(pin "4"
+			(uuid "a45d551d-1fb9-481f-9d61-efe805726315")
+		)
+		(pin "5"
+			(uuid "3b49e005-5257-4322-b9c5-128eee961145")
+		)
+		(pin "6"
+			(uuid "8b6f6ac7-bc78-466e-95cb-a64abb9eec14")
 		)
 		(instances
 			(project "v9_flight"
@@ -8194,7 +8314,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "latched cut driver + cut-sense (part TODO(unverified))"
+		(property "Value" "SN74LVC1G373DBVR"
 			(at 670.56 264.16 0)
 			(effects
 				(font
@@ -8203,8 +8323,17 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-6"
 			(at 668.02 261.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C128413"
+			(at 0 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8220,6 +8349,15 @@
 		)
 		(pin "3"
 			(uuid "a3ed8b4e-5233-540d-973d-a22a0fc3f21a")
+		)
+		(pin "4"
+			(uuid "34d795f0-d16f-46c4-960d-7b8204b0de81")
+		)
+		(pin "5"
+			(uuid "6037e0e8-c357-4333-95ec-b69bc211a903")
+		)
+		(pin "6"
+			(uuid "c11c7d79-ede7-4287-b6d4-a7ae9e3d42f8")
 		)
 		(instances
 			(project "v9_flight"
@@ -8248,7 +8386,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "latched cut driver + cut-sense (part TODO(unverified))"
+		(property "Value" "SN74LVC1G373DBVR"
 			(at 670.56 297.18 0)
 			(effects
 				(font
@@ -8257,8 +8395,17 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-6"
 			(at 668.02 294.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C128413"
+			(at 0 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8274,6 +8421,15 @@
 		)
 		(pin "3"
 			(uuid "be680c42-0f0e-56b3-9df1-3d1d1261c92d")
+		)
+		(pin "4"
+			(uuid "3c870426-beb7-4ea4-bc12-80a71bdadb1c")
+		)
+		(pin "5"
+			(uuid "23e93004-6217-4ba1-b2e8-3f354f21d5c1")
+		)
+		(pin "6"
+			(uuid "f9d8c02e-8345-4b1f-b0ba-af20ac5f4f28")
 		)
 		(instances
 			(project "v9_flight"
