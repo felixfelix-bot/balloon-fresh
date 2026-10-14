@@ -1,5 +1,15 @@
 # RF REVIEW — the 433 MHz TX power is the binding RF issue, and it is ~21 dB over the licence-exempt cap
 
+> **⚠ CORRECTED 2026-10-14 — see `RF-REVIEW-433-TX-POWER-CORRECTION.md`.**
+> **§1's range table below is WRONG.** It claimed *"the 300 km design slant range is not
+> reachable at 10 mW ERP — it becomes ~27 km."* **Measured with the repo's own
+> `tools/link_budget.py`, the 300 km link at the lawful cap still closes with 27.3 dB of
+> margin** (the 2 W design has 48.4 dB). My error was applying a flat dB-to-range factor,
+> which is only valid for a **zero-margin** link, to a link with **48 dB of margin**.
+> **The regulatory gap itself (§1's headline and §2–§6) is UNAFFECTED and still stands** —
+> the design is 20.9 dB over the cap; what changes is that **the cap does not break the
+> mission.**
+
 **Date:** 2026-10-14 · **Status:** analysis. Operator decision required.
 **Trigger:** the standing goal says *"Make sure the RF decisions make sense."* This is the
 one that does not, and it is arithmetic rather than opinion.
