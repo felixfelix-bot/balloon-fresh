@@ -1,0 +1,61 @@
+Sweep result after the tool fix. The tool fix cleared 4 packages that were
+PREVIOUSLY reported INCOHERENT purely because of false positives; the packages
+themselves are unchanged.
+
+--- swept automatically ---
+[COHERENT  ] gerbers_v2_adc_4layer_final                        (+ .zip)
+[COHERENT  ] gerbers_v8b / gerbers_v8b_jlcpcb.zip
+[COHERENT  ] gerbers_v8f / gerbers_v8f_jlcpcb.zip
+[COHERENT  ] gerbers_v8h / gerbers_v8h_jlcpcb.zip
+[COHERENT  ] gerbers_v8i / gerbers_v8i_jlcpcb.zip
+[COHERENT  ] gerbers_v8j / gerbers_v8j_jlcpcb.zip
+[COHERENT  ] gerbers_v_c3            (paired: v_c3_flight_4layer_placed_netfix)
+[COHERENT  ] v2_adc_v3_gerbers.zip
+[COHERENT  ] v_c3_4layer_gerbers.zip
+
+--- swept with explicit pairing ---
+[COHERENT  ] gerbers_wing_v9                     (the FIXED package, re-exported this session)
+[COHERENT  ] gerbers_wing_v9_jlcpcb.zip          (same)
+[COHERENT  ] gerbers_v_c3_final                  (paired with its TRUE source board
+                                                  v_c3_flight_final.kicad_pcb:
+                                                  0 vias + 26 drilled pads = 26 holes. exact match)
+
+--- GENUINELY INCOHERENT: 1 ---
+[INCOHERENT] v2_adc_4layer_gerbers.zip   (2026-08-05)
+             paired board v2_adc_4layer.kicad_pcb (88 F.Cu + 17 B.Cu segments,
+             1 In1.Cu segment, 45 vias + 8 drilled pads)
+             - v2_adc_4layer-F_Cu.gtl  474 B  draws=0    <-- NO COPPER
+             - v2_adc_4layer-B_Cu.gbl  draws=0           <-- NO COPPER
+             - MISSING -In1_Cu.g1 (board has 1 segment on In1.Cu)
+             - drill holes 0 < 53 required
+             This is an August 2026 PLACEHOLDER export taken while the board was
+             still unrouted. It has been SUPERSEDED by gerbers_v2_adc_4layer_final
+             (+ _jlcpcb.zip, 2026-10-02), which is COHERENT and carries In1/In2
+             copper and 45 vias. No action needed for an order; the stale artifact
+             should simply never be used.
+
+--- TOOL DEFECTS FOUND AND FIXED IN MY OWN GATE ---
+1. NESTED-ZIP: most packages wrap the gerbers in a single top-level directory.
+   The first version read the wrong level and reported every layer MISSING.
+   4 correct packages were falsely flagged. Fixed by descending into the sole
+   top-level directory. (v2_adc_4layer_final_jlcpcb, v2_adc_v3, v_c3_4layer,
+   and gerbers_v2_adc_4layer_final were all false positives.)
+2. DRILL FLOOR: the first version compared holes to VIAS only. A board with
+   zero vias but through-hole pads legitimately emits a drill file, so this
+   falsely flagged gerbers_v_c3_final and gerbers_v_c3 (both 26 holes against a
+   board with 26 drilled pads and 0 vias). Fixed: the floor is
+   (vias + drilled pads).
+
+--- REGRESSIONS AFTER THE FIX (both verified) ---
+  stale wing zip (which DID ship a real defect)  -> still INCOHERENT  exit 1
+  correct v_c3_flight_final package              -> coherent          exit 0
+
+LESSON GENERALISED: I nearly reported 4 phantom defects. A gate that has not
+been counter-tested against KNOWN-GOOD inputs will manufacture false alarms, and
+a false alarm is as damaging as a missed one -- it teaches the operator to ignore
+the gate. A gate must be validated BOTH ways: it must fail the artifact you know
+is broken AND pass the artifact you know is correct.
+
+FINAL TALLY: 15 coherent, 1 genuinely incoherent (superseded placeholder),
+8 unpaired (superseded generations with no live board, or a board that no longer
+exists in the tree).

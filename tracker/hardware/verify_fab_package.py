@@ -95,6 +95,15 @@ def main():
         with zipfile.ZipFile(pkg) as z:
             z.extractall(tmp)
         gdir = tmp
+        # NESTED-ZIP FIX: most packages in this repo wrap the gerbers in a
+        # single top-level directory (e.g. "gerbers_v8b/…"). Descend into it,
+        # otherwise every layer looks MISSING and the tool reports a phantom
+        # defect. Measured 2026-10-14: without this, 4 correct packages
+        # (v2_adc_4layer, v2_adc_v3, v_c3_4layer, v2_adc_4layer_final_jlcpcb)
+        # were falsely flagged INCOHERENT.
+        entries = [e for e in os.listdir(tmp) if not e.startswith(".")]
+        if len(entries) == 1 and os.path.isdir(os.path.join(tmp, entries[0])):
+            gdir = os.path.join(tmp, entries[0])
     else:
         gdir = pkg
 
@@ -132,7 +141,13 @@ def main():
             problems.append(f"{cand[0]}: draws {draws} < board segments {nseg}")
         print(f"  {cand[0]:34} {size:>7}B  draws={draws:<4} board_segs={nseg}{flag}")
 
-    # 4. drill holes
+    # 4. drill holes -- must cover BOTH vias AND through-hole pads.
+    # MEASURED 2026-10-14: the first version of this check compared holes to
+    # VIAS only, and therefore falsely flagged two CORRECT packages:
+    #   gerbers_v_c3_final      26 holes vs a board with 0 vias / 26 TH pads
+    #   gerbers_v_c3            26 holes vs the same board
+    # A board with zero vias but through-hole pads legitimately emits a drill
+    # file. The floor is (vias + drilled pads).
     print()
     print("=== drill ===")
     total_holes = 0
@@ -141,9 +156,11 @@ def main():
             n = len(re.findall(r"^X", open(os.path.join(gdir, f), errors="ignore").read(), re.M))
             total_holes += n
             print(f"  {f:34} {n} holes")
-    if total_holes < vias:
-        problems.append(f"drill holes {total_holes} < board vias {vias}")
-        print(f"  <-- SUSPECT: {total_holes} holes < {vias} vias on the board")
+    need = vias + holes
+    print(f"  board needs: {vias} vias + {holes} drilled pads = {need}")
+    if total_holes < need:
+        problems.append(f"drill holes {total_holes} < board vias+pads {need}")
+        print(f"  <-- BAD: {total_holes} holes < {need} required")
 
     # 5. CPL / pos rows
     print()
