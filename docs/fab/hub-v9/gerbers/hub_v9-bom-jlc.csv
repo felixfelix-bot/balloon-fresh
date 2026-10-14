@@ -1,0 +1,24 @@
+Comment,Designator,Footprint,LCSC Part #
+10uF,C4,C_0402_1005Metric,C15525
+100uF,C_BULK,C_1206_3216Metric,C15008
+100nF,C_HF,C_0402_1005Metric,C1525
+10nF,C_MON,C_0402_1005Metric,C15195
+"BAT54W (sub for BAT54, SOD-123)",D1,D_SOD-123,C699107
+SS24,"D_BP1,D_BP2,D_BP3,D_BP4,D_HUB1,D_HUB2",D_SMA,C50645
+10k,"R_BAL1,R_BAL2",R_0402_1005Metric,C25744
+1M,"R_DIV1,R_DIV2",R_0402_1005Metric,C26083
+100R,R_F1,R_0402_1005Metric,C25076
+4.7M,"R_MON1,R_MON2",R_0402_1005Metric,C11906
+ESP32-S3-WROOM-1U-N8R8,U1,ESP32-S3-WROOM-1U,C2980300
+SX1280IMLTRT,U4,SX1280_QFN24,C125969
+MAX-M10S-00B [LOCKED SPLIT: no baro; GPS as DNP rows + 4 loose],U5,ublox_MAX,DNP
+MS561101BA03-50 [LOCKED SPLIT: no baro; GPS as DNP rows + 4 loose],U6,LGA-8_3x5mm_P1.25mm,DNP
+TPS7A0233DBVR,U7,SOT-23-5,C5142805
+U.FL-R-SMT(10) (sub for Molex 73412-0110),"ANT1,ANT2,ANT3,ANT4",U.FL_Molex_MCRF_73412-0110_Vertical,C434808
+DNP 3.3F 2.7V supercap THT (not in LCSC catalog; hand-install),"C_CAP1,C_CAP2",CP_Radial_D10.0mm_P5.00mm,DNP
+DNP TVS clamp (set point TODO unverified),D_CLAMP,D_SOD-323,DNP
+DNP NTC (params TODO unverified),"R_NTC1,TH_NTC1",R_0402_1005Metric,DNP
+DNP LoRa2021F33-2G4 (not stocked at LCSC),U2,LoRa2021F33_2G4,DNP
+DNP LoRa2021 2.4G bare castellated (not stocked; 433/470/868/915 module variants only),U3,LoRa2021_Castellated,DNP
+DNP solder jumper (hand-soldered),J_VCC,SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm,DNP
+DNP wing tab socket (board edge feature),"J_W1,J_W2,J_W3,J_W4",Wing_Tab_4P,DNP

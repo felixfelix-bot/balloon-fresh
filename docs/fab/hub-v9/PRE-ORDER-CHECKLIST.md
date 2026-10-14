@@ -39,20 +39,21 @@ the packet and the price; it never places the order.
 
 | # | Item | State |
 |---|------|-------|
-| C1 | Gerbers **exported at 0.8 mm** | ⬜ **NOT DONE** — no gerber directory exists (`ls docs/fab/hub-v9/gerbers*` → nothing) |
-| C2 | Drill files in the same zip | ⬜ **NOT DONE** — depends on C1 |
-| C3 | BOM: single-variant platform, GPS + baro as **DNP rows** | ⬜ verify (2 DNP rows were *prepared*, not shipped) |
-| C4 | CPL / positions matching the BOM | ⬜ verify |
-| C5 | GPS add-on line: **4× MAX-M10S loose** | ⬜ verify (separate CSV prepared) |
-| C6 | Zip prepared for upload | ⬜ **NOT DONE** — `ls ~/jlc-quote-inputs` → No such file or directory |
+| C1 | Gerbers **exported at 0.8 mm** | ✅ `gerbers/` — 14 gerber/drill/job files (4 Cu, paste, silk, mask, Edge.Cuts, PTH+NPTH drill, .gbrjob), exported from the verified routed board at thickness 0.8 |
+| C2 | Drill files in the same zip | ✅ `hub_v9-PTH.drl` (3 tools, **189 holes**) + `hub_v9-NPTH.drl`, in the zip |
+| C3 | BOM: single-variant platform, GPS + baro as **DNP rows** | ✅ **NOW REAL** — `gerbers/hub_v9-bom-jlc.csv`, 23 lines (14 to assemble), built from live-API LCSC numbers and **verified consistent with the board** (`verify_bom_against_board.py`: 0 missing, 0 extra). DNP rows for the 12 hand-install/not-stocked parts incl. U5/U6 per the locked split. |
+| C4 | CPL / positions matching the BOM | ✅ `gerbers/hub_v9-cpl.csv` — 36 placements, **U1 present**, U5/U6 excluded. **NOTE: export with `--exclude-dnp`, NEVER `--exclude-fp-th` (that flag silently drops U1, the MCU).** |
+| C5 | GPS add-on line: **4× MAX-M10S loose** | ⬜ **NOT DONE** — separate CSV not yet produced |
+| C6 | Zip prepared for upload | ✅ `~/jlc-quote-inputs/hub_v9_0.8mm.zip` — 14 files; BOM + CPL sit beside it (`hub_v9-bom-jlc.csv`, `hub_v9-cpl.csv`) |
 
 **Audit method (recorded so it can be re-derived):**
 ```
 cd tracker/hardware
-ls ../../docs/fab/hub-v9/gerbers*        # expect the gerber dir to exist
-ls ~/jlc-quote-inputs/*.zip              # expect the upload zip to exist
-sha256sum ~/jlc-quote-inputs/*.zip       # record; a hash is the only proof of content
+ls ../../docs/fab/hub-v9/gerbers*                      # gerber dir + bom + cpl
+sha256sum ~/jlc-quote-inputs/hub_v9_0.8mm.zip          # recorded hash
+~/venvs/kicad/bin/python verify_bom_against_board.py   # BOM <-> board consistency, exit 0
 ```
+
 
 ## D. KNOWN ACCEPTED RISKS (do not re-litigate; log them)
 
