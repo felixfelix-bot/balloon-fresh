@@ -1,4 +1,23 @@
-# ADR-068 — The hub v9 outline is 60 × 60 mm, sized by COMPONENTS
+# ADR-068 — The hub v9 outline is 70 × 70 mm, sized by COMPONENTS
+
+> **REVISED 2026-10-14 (same day, by measurement): the figure is 70 × 70 mm, not
+> 60 × 60 mm.** The principle below — *sized by components, not by the array* — is
+> **unchanged and confirmed**. The number moved because the 60 mm figure came from
+> **aggregate courtyard arithmetic**, which cannot see that a single
+> **39.65 × 22.30 mm** body (`U2`, the `LoRa2021F33-2G4`) wastes more area than its
+> own footprint implies. **Measured (`tracker/hardware/seat_probe.py`):** 60 × 60
+> overflows `U2`; **65 × 65 overflows `U5` instead** (a trap — it moves the problem,
+> it does not solve it); **70 × 70 seats all 39 parts with no overflow** and routes
+> **48/48 nets, 148/148 pads, zero open**. See
+> `docs/fab/hub-v9/SEAT-PROBE-RESULT.md`. Cost: +1.66 g (4.60 → 6.26 g), still far
+> inside JLCPCB's 102 mm cheap tier, so this record's cheap-tier and decoupling
+> arguments are unaffected.
+>
+> **Honest correction to the text below:** §1.3's claim that "103 × 103 and 60 × 60
+> route the SAME net count (43/49), so the shrink is routing-neutral" was true *as
+> measured* — but it was measured with `U2` **parked at the board origin** by the
+> unplaceable-part defect fixed later in `de8e05d1`. Once that defect was fixed the
+> comparison inverted: **60 × 60 caps at 43/44; 70 × 70 reaches 48/48.**
 
 > Numbered **068** on 2026-10-14 by `scripts/adr_next_number.py` → `68` (exit 0).
 > The allocator's failure path was checked in the same run: the number is not

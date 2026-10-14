@@ -70,16 +70,21 @@ KICAD_PRETTY = "/usr/share/kicad/footprints"
 OUT_SEED = os.path.join(HERE, "output", "hub_board_v9_seed.kicad_pcb")
 OUT_BOARD = os.path.join(HERE, "hub_board_v9.kicad_pcb")
 
-DEFAULT_W, DEFAULT_H = 60.0, 60.0   # ADR-068: sized by the measured COMPONENT courtyard
-                                    # (2582 mm2 -> ~60x60 at 72% packing), NOT by the array.
-                                    # Supersedes ADR-051 s2.3 / ADR-055 D5's 103x103 array-sized
-                                    # panel, which was both arithmetically unsatisfiable (2 LARGE
-                                    # cells = 58% of its own 106.1 cm2 target) and over JLCPCB's
-                                    # 102 mm cheap-tier cliff ($31.60 vs $8.00 measured).
-                                    # The array rides the separate overhanging carrier (ADR-063).
-                                    # 103x103 and 60x60 route the SAME net count (43/49), so this
-                                    # shrink is routing-neutral. See
-                                    # docs/fab/hub-v9/COMPONENT-FLOOR-OUTLINE-RESULT.md.
+DEFAULT_W, DEFAULT_H = 70.0, 70.0   # ADR-068 as REVISED by docs/fab/hub-v9/SEAT-PROBE-RESULT.md:
+                                    # sized by COMPONENTS, not by the array -- but the correct
+                                    # component floor is 70x70, not 60x60. The 72%-packing
+                                    # arithmetic (2582 mm2 -> 59.9 mm) is right but INCOMPLETE:
+                                    # it does not account for a single 39.65 x 22.30 mm rectilinear
+                                    # body (U2, the LoRa2021F33-2G4), whose aspect ratio wastes more
+                                    # area than the aggregate courtyard implies. MEASURED:
+                                    #   seat_probe.py -> 60x60 overflows U2; 65x65 overflows U5;
+                                    #   70x70 seats all 39 with NO overflow.
+                                    #   60x60 routes 43/44 with GND open; 70x70 routes 48/48,
+                                    #   148/148 pads, ZERO open nets.
+                                    # 70x70 = 49.0 cm2 = 6.26 g at 0.6 mm, still inside JLCPCB's
+                                    # 102 mm cheap tier, so the decoupling/cheap-tier arguments
+                                    # for ADR-068 are unaffected. Array still rides the separate
+                                    # overhanging carrier (ADR-063).
 EDGE_STROKE = 0.15
 BOARD_THICKNESS = 0.6   # inherited generated value (v8i .gbrjob); ADR-055 D4's 0.4 mm
                         # target is Proposed and its stack-up check is an open item.
