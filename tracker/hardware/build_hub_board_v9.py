@@ -506,7 +506,27 @@ def pack_rest(board, placed, locked, w: float, h: float):
                 gx += 1.0
             gy += 1.0
         if spot is None:
+            # MEASURED DEFECT fixed 2026-10-14: an UNPLACEABLE part was left
+            # wherever the netlist loader put it -- at the board ORIGIN (0,0) --
+            # because this branch only `continue`d without moving the footprint.
+            # Measured on --outline 60x60: U2 (the 39.0 x 21.0 mm LoRa2021F33-2G4,
+            # the largest body on the board) sat at pos(0.00, 0.00) with a
+            # 39.65 x 22.30 mm courtyard, overlapping J_W1 and most of the left
+            # edge. That is what left GND and /SX1280_MISO unroutable: the router
+            # was asked to route THROUGH a footprint parked in the corner.
+            #
+            # A part that does not fit must NOT be silently parked on live copper.
+            # Park it WELL OUTSIDE the board so it cannot collide with anything,
+            # to the RIGHT of the outline (x > w) on the SEAT's y-centre, so it is
+            # visible in a render and trivially identifiable as the overflow part
+            # rather than masquerading as placed.
+            park_x = w + 20.0
+            park_y = h / 2.0
+            fp.SetPosition(pcbnew.VECTOR2I(int(round(park_x * 1e6)),
+                                           int(round(park_y * 1e6))))
             overflow.append(ref)
+            # deliberately NOT appended to `rects`: it is off-board by construction
+            # and must not obstruct any later placement.
             continue
         gx, gy, r = spot
         fp.SetPosition(pcbnew.VECTOR2I(int(round((gx - rx0) * 1e6)),
