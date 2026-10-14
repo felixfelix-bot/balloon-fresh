@@ -80,3 +80,8 @@ firmware/e80-stm32-bench/.venv/
 .venv/
 .venv/
 .venv/
+
+# Local per-user KiCad settings and edit backups -- never tracked
+*.kicad_prl
+*.bak
+*.bak2
