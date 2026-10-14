@@ -93,11 +93,46 @@ static radio_bench_cfg_t cur_cfg = {
  * the new MOD command but stays on the old modulation, so FLRC<->LoRa
  * switches produced 0 packets until now. apply_cfg() consults cur_mod at
  * entry and triggers a hard reset + full recalibration (radio_bench_init
- * pattern) whenever cfg->mod differs. Initialized to BENCH_MOD_LORA to
- * match the cur_cfg default above so the first apply_cfg() from
- * radio_bench_init() (which already does its own reset/calibrate) does
- * not redundantly re-reset. */
+ * pattern) whenever the applied modem parameters change. Initialized to
+ * BENCH_MOD_LORA to match the cur_cfg default above so the first apply_cfg()
+ * from radio_bench_init() (which already does its own reset/calibrate) does
+ * not redundantly re-reset.
+ *
+ * RFA-1c (measured 2026-10-14, docs/RFA1b-FOLLOWUP-650KBPS-ZEROS-2026-10-14.md):
+ * the same staleness also hits an INTRA-FLRC rate change. Every 650 kbps FLRC
+ * cell that directly follows a 260 kbps cell was DEAF on the receiver
+ * (rx_pkts=0, RSSI exactly 0.0) while the TX reported sent_ok=200 — the
+ * receiving side never demodulated a signal that was actually transmitted, so
+ * the failure is invisible to TX-side statistics. Measured control/treatment on
+ * the bench pair: TX 260 -> 650 direct = DEAF; TX 260 -> LoRa -> 650 (which
+ * re-enters this bring-up on the changed modulation) = HEALTHY (rx=100,
+ * RSSI -57 dBm). The 260 and 650 kbps ladders are different BR *and* BW pairs
+ * (BR_0_260_BW_0_307 vs BR_0_650_BW_0_740), so the calibration the boot chain
+ * ran is stale for the new pair. Fix: make the bring-up condition fire on any
+ * applied modem-parameter change, not only on a FLRC<->LoRa change.
+ *
+ * Scoped to modem parameters only — mod, FLRC br_bps, LoRa bw_hz, LoRa sf.
+ * PA/FREQ/payload-length changes deliberately do NOT re-run it: the LR2021
+ * front-end calibration is a per-RF-frequency operation
+ * (lr20xx_radio_common_calibrate_front_end, "next frequency multiple of 4 MHz"),
+ * not a per-rate one, and a chip reset on every PA/FREQ command would invalidate
+ * the 12/12-clean continuous-rate baseline and slow every in-band sweep.
+ */
 static bench_mod_t cur_mod = BENCH_MOD_LORA;
+
+/* True when the cfg about to be applied changes the modem (demodulator)
+ * parameters relative to the last applied configuration. cur_cfg is the mirror
+ * of the last applied cfg (assigned at the end of radio_bench_apply_cfg), so it
+ * is the comparison baseline here; cur_mod tracks the modulation separately
+ * because cur_cfg.br_bps/sf/bw_hz are only meaningful per modulation. */
+static bool modem_params_changed(const radio_bench_cfg_t* cfg)
+{
+    if (cfg->mod != cur_mod)
+        return true;
+    if (cfg->mod == BENCH_MOD_FLRC)
+        return cfg->br_bps != cur_cfg.br_bps; /* BR and BW move together */
+    return cfg->sf != cur_cfg.sf || cfg->bw_hz != cur_cfg.bw_hz;
+}
 
 static uint16_t cur_rx_pld_len = 255;
 
@@ -263,18 +298,22 @@ int radio_bench_apply_cfg(const radio_bench_cfg_t* cfg)
     int8_t power_half_dbm;
     uint32_t freq = cfg->freq_hz;
 
-    /* Modulation switch (FLRC<->LoRa): the LR2021 cannot reliably switch
-     * modulation via register writes alone — the chip accepts the new
-     * PKT_TYPE command but its modem does not actually reconfigure, leaving
-     * the radio silent on the new modulation. When the requested modulation
-     * differs from the active one, do a hard reset + full recalibration
-     * first using the same sequence as radio_bench_init() (and in the same
-     * order — calibration must run AFTER DCDC + TCXO are restored so it
-     * uses the right reference clock; DIO8 must be re-armed as IRQ because
-     * reset clears DIO routing to GPIO input). Then proceed with the normal
-     * modulation setup below. This eliminates the need for an external SWD
-     * probe (openocd) between configs during range tests. */
-    if (cfg->mod != cur_mod)
+    /* Modulation / rate switch: the LR2021 cannot reliably switch modulation
+     * or bitrate via register writes alone — the chip accepts the new
+     * PKT_TYPE/MOD_PARAMS commands but its modem does not actually reconfigure
+     * to the new parameters, leaving the radio silent (or deaf) on the new
+     * setting. When the requested modem parameters differ from the active ones,
+     * do a hard reset + full recalibration first using the same sequence as
+     * radio_bench_init() (and in the same order — calibration must run AFTER
+     * DCDC + TCXO are restored so it uses the right reference clock; DIO8 must
+     * be re-armed as IRQ because reset clears DIO routing to GPIO input). Then
+     * proceed with the normal modulation setup below. This eliminates the need
+     * for an external SWD probe (openocd) between configs during range tests.
+     *
+     * RFA-1c: the trigger is modem_params_changed() — it used to be
+     * `cfg->mod != cur_mod` only, which left every intra-FLRC bitrate change on
+     * the previous rate's calibration (deaf 650-after-260 cells). */
+    if (modem_params_changed(cfg))
     {
         uint16_t errs = 0;
 
