@@ -540,8 +540,18 @@ def pack_rest(board, placed, locked, w: float, h: float):
     return overflow
 
 
-KRT_DIR = os.path.expanduser("~/tools/KiCadRoutingTools")
+KRT_DIR = os.path.expanduser(os.environ.get("KRT_DIR", "~/repos/KiCadRoutingTools"))
+# ^ MEASURED DEFECT, FIXED 2026-10-14: this was "~/tools/KiCadRoutingTools", which DOES NOT EXIST on
+#   this host (the real checkout is ~/repos/KiCadRoutingTools -> /data/repos/KiCadRoutingTools).
+#   run_krt then took its "placer absent" branch, printed a note, and returned 1 -- and main() did
+#   NOT check that return code, so `--publish` reported success while leaving the STALE committed
+#   board in place (103.15 x 103.15, the superseded ADR-055 D5 outline) instead of regenerating it
+#   at the ADR-068 70 x 70 outline. Silent-stale-publish, the same class as the CPL that dropped U1.
+#   Overridable via the KRT_DIR env var so the path is not hard-coded to one host.
 PY314 = "/usr/bin/python3.14"
+# KRT's own venv python, used when PY314 is absent on the host.
+PY_FALLBACKS = [PY314, os.path.expanduser("~/repos/KiCadRoutingTools/.venv/bin/python"),
+                sys.executable]
 # The KRT lap that produced the frozen board.  The same tool/lap the registry
 # names as canonical_placement_source; the seed this builder writes is its
 # reproducible INPUT, and the lap is the frozen artifact.
@@ -552,20 +562,28 @@ KRT_ARGS = ["--max-displacement", "1", "--max-passes", "6", "--step", "1.0",
 
 
 def run_krt(seed_path: str, lap_path: str) -> int:
-    """Polish the seed with the repo's canonical placer (KRT place_optimize.py)."""
+    """Polish the seed with the repo's canonical placer (KRT place_optimize.py).
+
+    Returns 0 only when the placer RAN and succeeded. A missing placer is a FAILURE, not a note --
+    see the KRT_DIR comment above for why that distinction cost us a stale published board.
+    """
     import subprocess
     placer = os.path.join(KRT_DIR, "py_placer", "place_optimize.py")
     if not os.path.exists(placer):
-        print(f"KRT placer absent at {placer} - seed left as the frozen board")
-        return 1
-    r = subprocess.run([PY314, placer, seed_path, lap_path, *KRT_ARGS],
+        print(f"KRT PLACER MISSING at {placer}")
+        print(f"  KRT_DIR={KRT_DIR} (override with the KRT_DIR env var)")
+        print("  REFUSING to publish: the frozen board would be left STALE.")
+        return 2
+
+    py = next((p for p in PY_FALLBACKS if os.path.exists(p)), sys.executable)
+    r = subprocess.run([py, placer, seed_path, lap_path, *KRT_ARGS],
                        cwd=KRT_DIR, capture_output=True, text=True)
     tail = (r.stdout or "").splitlines()
     for line in tail:
         if '"pad_overlap_pairs"' in line or "EXIT=" in line:
             print("krt:", line[-400:])
     if r.returncode != 0:
-        print(f"KRT failed rc={r.returncode}: {r.stderr[-500:]}")
+        print(f"KRT failed rc={r.returncode}: {(r.stderr or '')[-500:]}")
     return r.returncode
 
 
@@ -775,6 +793,16 @@ def main() -> int:
         if rc == 0:
             print(f"frozen board    : {os.path.relpath(OUT_BOARD, REPO)}  "
                   f"sha256 {sha256(OUT_BOARD)}")
+        else:
+            # MEASURED DEFECT, FIXED 2026-10-14: this branch did not exist. The return code was
+            # discarded, so a MISSING placer (return 2) or a failed lap (non-zero) printed a note and
+            # the script still exited 0 -- leaving the STALE committed board in place while reporting
+            # success. That is how tracker/hardware/hub_board_v9.kicad_pcb kept the superseded
+            # 103.15 x 103.15 outline while the packaged board was correctly 70 x 70. A publish that
+            # did not happen must NOT look like one that did.
+            print(f"PUBLISH FAILED rc={rc}: {os.path.relpath(OUT_BOARD, REPO)} was NOT regenerated "
+                  f"and may be STALE.")
+            return rc
     return 0
 
 

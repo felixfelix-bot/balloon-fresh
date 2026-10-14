@@ -78,16 +78,33 @@ def board_fps(path):
 
 
 def board_extent(path):
+    """The OUTLINE size, from Edge.Cuts DRAWING ITEMS ONLY.
+
+    HISTORY (this is why the function is written this narrowly): an earlier version used
+    GetBoardEdgesBoundingBox(), which is inflated by TRACK/VIA/COPPER extents, not just the outline.
+    It reported the packaged hub board as 70.15 x 71.65 when its Edge.Cuts are exactly 70.15 x 70.15
+    -- the extra 1.50 mm of height was COPPER reaching past the edge, not the board being taller.
+    That produced a FALSE "outline divergence" FAIL against a board that was actually fine. Measure
+    the outline from the Edge.Cuts items themselves and nothing else.
+
+    Also: both this repo's boards carry a uniform 0.075 mm outset on every side (103.075 - (-0.075)
+    = 103.150), a drawing convention rather than a size. So compare OUTLINE-TO-OUTLINE and allow the
+    outset to cancel; do not compare a nominal figure against a measured one.
+    """
     code = (
         "import sys;sys.path.insert(0,'/usr/lib/python3/dist-packages');import pcbnew;"
         f"b=pcbnew.LoadBoard({path!r});"
-        "bb=b.GetBoardEdgesBoundingBox();"
-        "print('%.2f %.2f' % (pcbnew.ToMM(bb.GetWidth()), pcbnew.ToMM(bb.GetHeight())))"
+        "xs=[];ys=[]\n"
+        "for d in b.GetDrawings():\n"
+        "    if d.GetLayer()==pcbnew.Edge_Cuts:\n"
+        "        bb=d.GetBoundingBox();xs+=[pcbnew.ToMM(bb.GetLeft()),pcbnew.ToMM(bb.GetRight())]\n"
+        "        ys+=[pcbnew.ToMM(bb.GetTop()),pcbnew.ToMM(bb.GetBottom())]\n"
+        "print('%.4f %.4f' % (max(xs)-min(xs), max(ys)-min(ys)) if xs else 'None None')"
     )
     r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=300)
     for line in r.stdout.splitlines():
         p = line.split()
-        if len(p) == 2:
+        if len(p) == 2 and p[0] != "None":
             try:
                 return float(p[0]), float(p[1])
             except ValueError:
@@ -121,8 +138,11 @@ if a and b:
     same = abs(a[0] - b[0]) < 0.5 and abs(a[1] - b[1]) < 0.5
     ck("committed and packaged hub boards agree on the outline", same,
        "" if same else
-       f"DIVERGENT {a[0]:.2f} x {a[1]:.2f} vs {b[0]:.2f} x {b[1]:.2f} mm. A re-export from the\n"
-       f"committed source would silently ship the wrong board size.")
+       f"DIVERGENT {a[0]:.2f} x {a[1]:.2f} vs {b[0]:.2f} x {b[1]:.2f} mm.\n"
+       f"The committed file is the SINGLE WRITER's output (tracker/hardware/build_hub_board_v9.py,\n"
+       f"DEFAULT_W/H 70.0), and ADR-068 (revised 2026-10-14) sets the outline at 70 x 70. A stale\n"
+       f"committed file means a re-export ships the WRONG board size -- regenerate it:\n"
+       f"  python3 tracker/hardware/build_hub_board_v9.py")
 else:
     ck("both hub boards loadable", False, f"committed={a} packaged={b}")
 
