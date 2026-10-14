@@ -14,7 +14,7 @@ Readings from the photos (display, verbatim):
     439.67 mg =  0.43967 g   -- ONE cut section
     14.03 g                 -- 2 pieces ~10 x 5 cm, unit confirmed as g
      4.47 g                 -- ~a dozen overlapping strips
-    46.84 g (NET)           -- folded translucent FILM + a marker  <-- NOT a cell; see below
+    46.84 g (NET)           -- the BALLOON ENVELOPE alone (marker was TARED OUT); see below
 """
 import sys
 
@@ -49,8 +49,8 @@ MEAS = [
      "2-piece stack"),
     ("M6", 4.47, "~a dozen overlapping cut strips",
      "multi-strip"),
-    ("M7", 46.84, "folded TRANSLUCENT FILM + an edding marker; display says NET",
-     "NOT a cell -- envelope film"),
+    ("M7", 46.84, "the Yokohama balloon ENVELOPE alone; a marker held it flat and was TARED OUT",
+     "balloon envelope (marker tared out)"),
 ]
 
 print("=== measurements ===")
@@ -80,11 +80,13 @@ print(f"    model LARGE cell estimate  : {CELL_LARGE_G:.5f} g")
 print(f"    ratio (1.38279 / large est): {1.38279 / CELL_LARGE_G:.2f}x")
 print()
 
-# --- M7 is NOT a cell: report it as such -----------------------------------------------------
-print("=== M7 IS NOT SOLAR CELL MASS -- do not add it to the array ===")
-print("  46.84 g net = folded translucent film + a marker. Vision could not separate them and")
-print("  could not confirm the film is the balloon envelope. THIS IS THE OPERATOR'S SCALE, so the")
-print("  film/marker/net distinction is only resolvable by the operator re-weighing film alone.")
+# --- M7 = the balloon envelope (operator-confirmed 2026-10-14) -------------------------------
+print("=== M7 IS THE BALLOON ENVELOPE -- not solar cell mass, but a real measured input ===")
+print("  46.84 g = the Yokohama envelope ALONE. The marker on the pan only held the folded")
+print("  envelope flat; the operator TARED it out before weighing, so it is NOT in the reading.")
+print("  (An earlier vision read of this photo called it 'unidentified film + marker' and asked")
+print("  for a re-weigh -- WRONG: a tare is invisible in a photograph. Resolved by the operator.)")
+print("  Use as the envelope mass; do NOT add it to the cell array.")
 print()
 
 # --- what the wing needs ---------------------------------------------------------------------
@@ -92,7 +94,7 @@ print("=== WING CELL BUDGET using measured-range masses ===")
 WINGS = 4
 CELLS_PER_WING = 3            # [ADR-049] 3 small cells in series = 1.5 V/wing
 print(f"  {WINGS} wings x {CELLS_PER_WING} cells = {WINGS * CELLS_PER_WING} cells")
-lo, hi = 0.43967, 0.5006
+lo, hi = 0.440, 0.4462   # measured: single 0.440 g, 10-piece mean 0.4462 g (agree within 2 %)
 print(f"  at {lo:.5f}-{hi:.5f} g/cell: {WINGS*CELLS_PER_WING*lo:.2f}-{WINGS*CELLS_PER_WING*hi:.2f} g")
 print(f"  repo's assumed 2.0 g/cell  : {WINGS*CELLS_PER_WING*2.0:.2f} g  <-- the pessimistic spec")
 print(f"  repo's assumed 0.4 g/cell  : {WINGS*CELLS_PER_WING*0.4:.2f} g  <-- the optimistic hope")
@@ -103,11 +105,12 @@ print()
 # --- honesty: what these photos CANNOT tell us -----------------------------------------------
 print("=== WHAT THESE PHOTOS DO NOT ESTABLISH (stated, not hidden) ===")
 for item in (
-    "whether the balance was TARED for each reading (no photo shows a tare history)",
+    "whether the balance was TARED for the CELL readings (M7 IS resolved: marker tared out)",
     "the cell TYPE (small 52.07x19.65 vs large 78.55x38.90) -- no label, no ruler in frame",
     "which reading corresponds to which cell model number",
-    "cell length/width, so area and therefore a measured g/cm2 cannot be derived",
-    "whether the film in M7 is the balloon envelope, and its mass without the marker",
+    "which physical panel maps to which ADR-049 outline by eye (no ruler in frame) -- the",
+    "   g/cm2 IS derivable from the outlines: 43.00 / 45.23 mg/cm2 for small / large",
+    "-- M7 is CLOSED: it IS the envelope and 46.84 g already excludes the marker --",
     "the reading RESOLUTION actually used (the display shows 1/10d; the mg readings are 0.01 mg)",
 ):
     print(f"  - {item}")

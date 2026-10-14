@@ -88,3 +88,38 @@ def test_module_is_executable_script():
     """The shebang must stay line 1 (062cb6da put the comment block above it)."""
     first = MODEL.read_text().splitlines()[0]
     assert first.startswith("#!"), f"shebang is not line 1: {first!r}"
+
+
+# ------------------------------------------------- M7 / envelope tare (2026-10-14 clarification)
+def test_m7_doc_records_the_envelope_and_the_tare():
+    """The vision read called M7 'film + marker' and asked for a re-weigh. The operator
+    resolved it: the marker was TARED, so 46.84 g is the envelope alone. The docs must say so
+    and must NOT still be asking for a re-weigh."""
+    root = Path(__file__).parents[1]
+    doc = (root / "docs/analysis/CELL-MASS-MEASUREMENTS-2026-10-14.md").read_text()
+    log = doc.lower()
+    assert "tared out" in log or "tared" in log, "the tare must be recorded"
+    assert "46.84" in doc
+    # the superseded falsities must not survive as live claims
+    assert "only resolvable by the operator re-weighing" not in log, \
+        "the doc still asks for a re-weigh that the operator already answered"
+    # the live table row must carry the envelope identity, not the old vision guess
+    rows = [l for l in doc.splitlines() if l.startswith("| M7")]
+    assert rows, "the M7 table row is missing"
+    assert "balloon envelope" in rows[0].lower(), f"M7 row still mis-identifies the object: {rows[0]}"
+    assert "not a cell" not in rows[0].lower(), f"M7 row still says 'not a cell': {rows[0]}"
+
+
+def test_measurement_script_labels_m7_as_the_envelope():
+    root = Path(__file__).parents[1]
+    src = (root / "tracker/hardware/analyze_cell_measurements.py").read_text()
+    assert "TARED" in src.upper(), "the script must record that the marker was tared"
+    assert "folded TRANSLUCENT FILM + an edding marker" not in src, \
+        "the superseded vision description survived"
+
+
+def test_m7_is_not_folded_into_the_cell_array():
+    """46.84 g is the ENVELOPE -- it must never be counted as cell mass."""
+    root = Path(__file__).parents[1]
+    src = (root / "tracker/hardware/analyze_cell_measurements.py").read_text()
+    assert "do NOT add it to the cell array" in src or "not solar cell mass" in src.lower()
