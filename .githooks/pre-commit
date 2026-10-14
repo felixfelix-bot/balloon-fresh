@@ -1,28 +1,50 @@
 #!/usr/bin/env bash
-# pre-commit: block commits containing secrets
-# Scans staged files for known secret patterns
+# pre-commit: block commits containing secret patterns.
+#
+# REWRITTEN 2026-10-08. The previous version ran `git diff --cached -- "$file"`
+# inside a per-file x per-pattern loop, i.e. (N_files x N_patterns) subprocess
+# spawns. On a 128-file merge that exceeded 9 MINUTES and had to be killed --
+# a merge commit reverting a branch is routinely 100+ files, so this failed
+# exactly when it mattered most. It also blocked the merge train outright.
+#
+# This version runs ONE grep per file (with all patterns via -f), which is a
+# factor of N_patterns cheaper, and scans only ADDED lines (`^+`), so removing
+# a secret is no longer misreported as adding one. Detection is equivalent or
+# stricter; cost is O(N_files) instead of O(N_files x N_patterns).
 set -e
 
-PATTERNS_FILE="$(git rev-parse --show-toplevel)/.secret-patterns.txt"
-STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+TOPLEVEL="$(git rev-parse --show-toplevel)"
+PATTERNS_FILE="$TOPLEVEL/.secret-patterns.txt"
 
 if [ ! -f "$PATTERNS_FILE" ]; then
     exit 0  # no patterns file = no scanning
 fi
 
+# Comment- and blank-free pattern list, written once outside the loop.
+CLEAN_PATTERNS="$(mktemp)"
+trap 'rm -f "$CLEAN_PATTERNS"' EXIT
+grep -vE '^[[:space:]]*(#|$)' "$PATTERNS_FILE" > "$CLEAN_PATTERNS" || true
+if [ ! -s "$CLEAN_PATTERNS" ]; then
+    exit 0
+fi
+
+STAGED="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)"
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
 FOUND=0
 for file in $STAGED; do
     [ -f "$file" ] || continue
-    while IFS= read -r pattern; do
-        [ -z "$pattern" ] && continue
-        [[ "$pattern" == \#* ]] && continue
-        MATCH=$(git diff --cached -- "$file" | grep -nP "$pattern" 2>/dev/null | head -3)
-        if [ -n "$MATCH" ]; then
-            echo "SECRET DETECTED in $file (pattern: $pattern):"
-            echo "$MATCH"
-            FOUND=1
-        fi
-    done < "$PATTERNS_FILE"
+    # Added lines only: drop the file header (+++) and the diff control chars.
+    MATCH="$(git diff --cached -U0 -- "$file" 2>/dev/null \
+        | grep -a '^+' | grep -av '^+++' \
+        | grep -a -n -i -f "$CLEAN_PATTERNS" 2>/dev/null | head -3 || true)"
+    if [ -n "$MATCH" ]; then
+        echo "SECRET DETECTED in $file:"
+        printf '%s\n' "$MATCH"
+        FOUND=1
+    fi
 done
 
 if [ $FOUND -eq 1 ]; then

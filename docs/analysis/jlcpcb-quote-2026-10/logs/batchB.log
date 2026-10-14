@@ -1,0 +1,50 @@
+===== i_103_2L_06_LF
+ dims_readback: ['103', '103']
+ steps: [{"heading": "Layers", "want": "2", "got": "2", "took": true, "attempts": 1}, {"heading": "Surface Finish", "want": "LeadFree HASL", "got": "LeadFree HASL", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "0.6mm", "got": "0.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "2", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "0.6mm", "Surface Finish": "LeadFree HASL", "Via Covering": "Tented"}
+ quote: {"engineering_fee": "$4.00", "board": "$5.20", "via_covering": "$0.00", "surface_finish": "$1.30", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$10.50", "shipping": "$23.21", "weight": "0.20kg", "build_time_lines": {"24 hours PCBA Only": "$0.00"}}
+===== i_89_2L_06_LF
+ dims_readback: ['89', '89']
+ steps: [{"heading": "Layers", "want": "2", "got": "2", "took": true, "attempts": 1}, {"heading": "Surface Finish", "want": "LeadFree HASL", "got": "LeadFree HASL", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "0.6mm", "got": "0.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "2", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "0.6mm", "Surface Finish": "LeadFree HASL", "Via Covering": "Tented"}
+ quote: {"engineering_fee": "$4.00", "board": "$3.90", "via_covering": "$0.00", "surface_finish": "$1.30", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$9.20", "shipping": "$23.21", "weight": "0.18kg", "build_time_lines": {"24 hours PCBA Only": "$0.00"}}
+===== i_103_4L_04_ENIG
+ dims_readback: ['103', '103']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "Surface Finish", "want": "ENIG", "got": "ENIG", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "0.4mm", "err": "DISABLED", "option": "0.4mm", "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ", "took": false}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "ENIG", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.60", "via_covering": "$0.00", "surface_finish": "$17.80", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$49.40", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== i_89_4L_04_ENIG
+ dims_readback: ['100', '100']
+ steps: [{"heading": "Layers", "want": "4", "got": "2", "took": false}, {"heading": "Surface Finish", "want": "ENIG", "got": "HASL(with lead)", "took": false}, {"heading": "PCB Thickness", "want": "0.4mm", "err": "DISABLED", "option": "0.4mm", "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ", "took": false}]
+ final(sel): {"Layers": "2", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "Surface Finish": "HASL(with lead)"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": null, "surface_finish": null, "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$0.00", "shipping": "Charge: Choose destination country first", "weight": "kg", "build_time_lines": {}}
+===== h_89_2L_16
+ dims_readback: ['89', '89']
+ steps: [{"heading": "Layers", "want": "2", "got": "2", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "2", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Tented"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": "$0.00", "calculated_price": "", "shipping": "$23.21", "weight": "0.26kg", "build_time_lines": {"2 days": "$0.00", "24 hours": "$7.60", "24 hours PCBA Only": "$0.00"}}
+===== h_103_2L_16
+ dims_readback: ['103', '103']
+ steps: [{"heading": "Layers", "want": "2", "got": "2", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "2", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Tented"}
+ quote: {"engineering_fee": "$4.00", "board": "$5.20", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": "$0.00", "calculated_price": "$9.20", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {"2 days": "$0.00", "24 hours": "$7.60", "24 hours PCBA Only": "$0.00"}}
+===== h_100_2L_16
+ dims_readback: ['100', '100']
+ steps: [{"heading": "Layers", "want": "2", "got": "2", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "2", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Tented"}
+ quote: {"engineering_fee": null, "board": null, "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": "$0.00", "calculated_price": "", "shipping": "$23.21", "weight": "0.29kg", "build_time_lines": {"2 days": "$0.00", "24 hours": "$7.60", "24 hours PCBA Only": "$0.00"}}
+===== k_100x104_4L_16
+ dims_readback: ['100', '104']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.50", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.50", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== k_104x100_4L_16
+ dims_readback: ['104', '100']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$6.50", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$31.50", "shipping": "$23.21", "weight": "0.30kg", "build_time_lines": {}}
+===== k_50x103_4L_16
+ dims_readback: ['50', '103']
+ steps: [{"heading": "Layers", "want": "4", "got": "4", "took": true, "attempts": 1}, {"heading": "PCB Thickness", "want": "1.6mm", "got": "1.6mm", "took": true, "attempts": 1}]
+ final(sel): {"Layers": "4", "PCB Qty": "5", "Different Design": "1", "Delivery Format": "Single PCB", "PCB Thickness": "1.6mm", "Surface Finish": "HASL(with lead)", "Via Covering": "Plugged"}
+ quote: {"engineering_fee": "$25.00", "board": "$3.20", "via_covering": "$0.00", "surface_finish": "$0.00", "deburring_edge_rounding": null, "panel": null, "pcb_build_time_2days": null, "calculated_price": "$28.20", "shipping": "$23.21", "weight": "0.21kg", "build_time_lines": {}}

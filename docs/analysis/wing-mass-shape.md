@@ -554,3 +554,36 @@ solder + wire          ▏                       0.090 g ( 1.2 %)
 - It does not budget the hub. `docs/POWER-BUDGET-V9-D2BE.md` §4 already carries the hub's
   own mass table with supercaps (3.00 g) and FR4 (2.76 g for the 55.15 × 45.15 mm v8i);
   the v9 hub outline is unfixed (ADR-048 §5 item 5).
+
+---
+
+## 10. Superseded guidance (appended 2026-10-07 — ADR-052)
+
+> **Appended, not rewritten.** Everything above stands as written; this section records a
+> later decision that changes one option, so a reader who arrives at the mass table in §1.4
+> knows the carrier question has since been decided. It does **not** delete or re-derive any
+> number above.
+
+- **The bonded / vented rigid carrier option is SUPERSEDED by
+  [`docs/adr/052-cell-mounting-end-only.md`](../adr/052-cell-mounting-end-only.md).** No
+  pico-balloon builder bonds a bare cell to a vented rigid substrate; the three bare-cell
+  builders found in `docs/analysis/pico-balloon-solar-survey.md` (Traquito, NIBBB, KC9IKB)
+  mount cells at their **ends only** (or, for NIBBB, glue the **corners** to a foam plate),
+  and the one who explains why cites **thermal contraction**, not vacuum
+  (`pico-balloon-solar-survey.md` §2.1, §4.3, §7 item 2).
+- **Corrected mounting overhead: ≈ 0.15 g per cell** (*derived*, `pico-balloon-solar-survey.md`
+  §3.3 item 3 / §7 item 3: NIBBB's measured 4.5–4.7 g array for 7 cells, of which the cells are
+  ≈ 3.5 g, so the *entire* foam-plate frame + glue + fibre-glass tape + 30 AWG wiring + solder is
+  ≈ 1.0–1.2 g for seven cells). **12 cells ≈ 1.8 g of mounting.** Compare that against the
+  figures this document already prints in §1.4: **(b) spine + ribs 12.846 g** and
+  **(a) full carrier 29.201 g** for the same 12-cell array. The end-only mount carries the
+  cells + ≈ 1.8 g of mounting with **no substrate at all**.
+- **`TODO(unverified) — the 0.15 g/cell basis needs confirmation`:** it is derived from NIBBB's
+  own measured array mass and the operator's 0.50 g/cell figure for a cell of the same class,
+  and NIBBB's array current is self-contradictory (§3.3 item 5, "40 mA vs 400 mA"), so the row
+  cannot be cross-checked from the source. **Weigh the real as-built assembly before using
+  1.8 g in a budget** (ADR-052 §2.7 item 2).
+- **This does not change this document's own recommendation.** §2.6 recommends **(b) spine +
+  ribs**, and that stands: the frame is the **load path**, and ADR-052 keeps the cells
+  **unbonded within it**. ADR-052 reverses only the *bond / venting* element of the carrier
+  recommendation, not the structural spine.

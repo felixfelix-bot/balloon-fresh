@@ -1,4 +1,7 @@
 Ref,Val,Package,PosX,PosY,Rot,Side
+"SC4","SolarCell_52x19mm_0.5V","SolarCell_52x19mm",30.000000,-12.500000,0.000000,bottom
+"SC5","SolarCell_52x19mm_0.5V","SolarCell_52x19mm",88.000000,-12.500000,0.000000,bottom
+"SC6","SolarCell_52x19mm_0.5V","SolarCell_52x19mm",146.000000,-12.500000,0.000000,bottom
 "FB1","FerriteBead_0402_DNP_V2only","FerriteBead_0402_V2provision",58.000000,-1.700000,0.000000,top
 "FID1","Fiducial_1mm_Mask2mm","Fiducial_1mm_Mask2mm",30.000000,-1.700000,0.000000,top
 "FID2","Fiducial_1mm_Mask2mm","Fiducial_1mm_Mask2mm",105.000000,-1.700000,0.000000,top

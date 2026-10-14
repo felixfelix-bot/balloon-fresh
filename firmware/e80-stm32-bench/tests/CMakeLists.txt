@@ -45,6 +45,8 @@ add_bench_test(test_bench_config_start ${SRC_DIR}/bench_pkt.c)
 set(LR20XX_DRIVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/src)
 add_bench_test(test_radio_bench_cfg
     ${SRC_DIR}/radio_bench.c
+    ${SRC_DIR}/pram_patch.c
+    ${SRC_DIR}/pram_patch_table.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
@@ -61,6 +63,8 @@ target_include_directories(test_radio_bench_cfg PRIVATE
 # and a TX FIFO clear before every FIFO write.
 add_bench_test(test_radio_bench_fifo
     ${SRC_DIR}/radio_bench.c
+    ${SRC_DIR}/pram_patch.c
+    ${SRC_DIR}/pram_patch_table.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_flrc.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_common.c
     ${LR20XX_DRIVER_SRC}/lr20xx_radio_lora.c
@@ -74,6 +78,18 @@ target_include_directories(test_radio_bench_fifo PRIVATE
 
 # Banner test: only needs the bench_banner.h header from SRC_DIR.
 add_bench_test(test_bench_banner)
+
+# PRAM-patch port (RFA-1b): real pram_patch.c + generated table + the real
+# regmem driver over a fake HAL that models PRAM as 560 words. Pins the
+# table CRC, the 12-word chunk plan/addresses, the 0x0104/0x012D wire
+# sequence and the advisory read-back verify.
+add_bench_test(test_bench_pram
+    ${SRC_DIR}/pram_patch.c
+    ${SRC_DIR}/pram_patch_table.c
+    ${LR20XX_DRIVER_SRC}/lr20xx_regmem.c)
+target_include_directories(test_bench_pram PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/lr20xx_driver/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Radio/radio_hal)
 
 # PRBS15 fill/verify tests (TDD).
 add_bench_test(test_prbs ${SRC_DIR}/prbs.c)

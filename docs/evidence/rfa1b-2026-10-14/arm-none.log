@@ -1,0 +1,16 @@
+IDs: TX=ID E80BENCH v1.2 fw=5fa7912 role=TX armed=1 mod=flrc br=260000 freq=869850000 band=863-870MHz pa=22 pcap=+22dBm(OUTDOOR) chip=1.24 radio=asleep boot=powercycle-first(wdg-active) quiet=0 buf=0
+     RX=ID E80BENCH v1.2 fw=5fa7912 role=RX armed=0 mod=flrc br=260000 freq=869850000 band=863-870MHz pa=22 pcap=+22dBm(OUTDOOR) chip=1.24 radio=awake boot=jump-ok quiet=0 buf=0
+--- cell none_260_64_1
+    rx_pkts=200 crc_ok=200 crc_bad=0 rx_stat={'role': 'RX', 'sent': '0', 'sent_ok': '0', 'rx': '200', 'crc_err': '0', 'per_x1e6': '999999', 'per_ci_x1e6': '[1000000,1000000]', 'elapsed_s': '29.5', 'kbps': '3', 'rssi_avg_dbm': '-21.5', 'rssi_min_dbm': '-22.0', 'rssi_max_dbm': '-21.5', 'snr_avg_db': '0.0', 'cr': '1', 'session': '0', 'config': '1', 'replicate': '0', 'drops': '0', 'gap_us': '5000', 'buf': '0'}
+--- cell none_650_64_2
+    rx_pkts=0 crc_ok=0 crc_bad=0 rx_stat={'role': 'RX', 'sent': '0', 'sent_ok': '0', 'rx': '0', 'crc_err': '0', 'per_x1e6': '0', 'elapsed_s': '28.1', 'kbps': '0', 'rssi_avg_dbm': '0.0', 'rssi_min_dbm': '0.0', 'rssi_max_dbm': '0.0', 'snr_avg_db': '0.0', 'cr': '1', 'session': '0', 'config': '2', 'replicate': '0', 'drops': '0', 'gap_us': '5000', 'buf': '0'}
+--- cell none_260_128_3
+    rx_pkts=200 crc_ok=200 crc_bad=0 rx_stat={'role': 'RX', 'sent': '0', 'sent_ok': '0', 'rx': '200', 'crc_err': '0', 'per_x1e6': '498746', 'per_ci_x1e6': '[449934,547583]', 'elapsed_s': '29.5', 'kbps': '6', 'rssi_avg_dbm': '-21.5', 'rssi_min_dbm': '-22.0', 'rssi_max_dbm': '-21.5', 'snr_avg_db': '0.0', 'cr': '1', 'session': '0', 'config': '3', 'replicate': '0', 'drops': '0', 'gap_us': '5000', 'buf': '0'}
+--- cell none_650_128_4
+    rx_pkts=200 crc_ok=200 crc_bad=0 rx_stat={'role': 'RX', 'sent': '0', 'sent_ok': '0', 'rx': '200', 'crc_err': '0', 'per_x1e6': '0', 'per_ci_x1e6': '[0,1000000]', 'elapsed_s': '28.1', 'kbps': '7', 'rssi_avg_dbm': '-21.5', 'rssi_min_dbm': '-22.0', 'rssi_max_dbm': '-21.5', 'snr_avg_db': '0.0', 'cr': '1', 'session': '0', 'config': '4', 'replicate': '0', 'drops': '0', 'gap_us': '5000', 'buf': '0'}
+--- cell none_260_255_5
+    rx_pkts=200 crc_ok=200 crc_bad=0 rx_stat={'role': 'RX', 'sent': '0', 'sent_ok': '0', 'rx': '200', 'crc_err': '0', 'per_x1e6': '999999', 'per_ci_x1e6': '[1000000,1000000]', 'elapsed_s': '29.5', 'kbps': '13', 'rssi_avg_dbm': '-21.5', 'rssi_min_dbm': '-22.0', 'rssi_max_dbm': '-21.5', 'snr_avg_db': '0.0', 'cr': '1', 'session': '0', 'config': '5', 'replicate': '0', 'drops': '0', 'gap_us': '5000', 'buf': '0'}
+--- cell none_650_255_6
+    rx_pkts=0 crc_ok=0 crc_bad=0 rx_stat={'role': 'RX', 'sent': '0', 'sent_ok': '0', 'rx': '0', 'crc_err': '0', 'per_x1e6': '0', 'elapsed_s': '28.1', 'kbps': '0', 'rssi_avg_dbm': '0.0', 'rssi_min_dbm': '0.0', 'rssi_max_dbm': '0.0', 'snr_avg_db': '0.0', 'cr': '1', 'session': '0', 'config': '6', 'replicate': '0', 'drops': '0', 'gap_us': '5000', 'buf': '0'}
+
+summary -> /home/c08r4d0r/worktrees/t_0eaed49b/rfa1b/arm-none/summary.json

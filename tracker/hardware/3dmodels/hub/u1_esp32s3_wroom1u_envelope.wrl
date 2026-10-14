@@ -1,0 +1,66 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : U1 -- ESP32-S3-WROOM-1U-N8R8 -- ENVELOPE, height unverified
+# dims_mm    : 18.0 x 19.2 x 3.2(nominal) mm -- X/Y measured from F.Fab, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "RF_Module:ESP32-S3-WROOM-1U" (Reference U1, Value "ESP32-S3-WROOM-1U-N8R8"): its own F.Fab outline measures 18.0 x 19.2 mm.  Reproduce every envelope with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# source     : tracker/hardware/hub_board_v9.kicad_pcb carries 9 unnumbered 0.7 x 0.7 mm mechanical shield/thermal pads on this footprint (recorded in tracker/hardware/PLACEMENT-S0-FREEZE-v9-hub.md line 206); they are board copper and are drawn by KiCad, not here.
+# note       : the committed reference pointed at `${KICAD9_3DMODEL_DIR}/RF_Module.3dshapes/ESP32-S3-WROOM-1U.step`; the installed package ships `ESP-WROOM-02`, not this module, so it was unresolved.
+# note       : WROOM-1**U** is the connectorised variant: the U.FL/I-PEX antenna jack sits off-board via a pigtail, so no on-module antenna is drawn.
+# note       : F.CrtYd measured 19.5 x 20.15 mm.
+# note       : TODO(unverified): the 3.2 mm height is TODO(unverified) -- a nominal module-with-shield placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+# note       : TODO(unverified): the shield-can top height and the 3.2 mm body thickness both rest on the Espressif datasheet, which the repo does not carry
+DEF u1_esp32s3_wroom1u_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF u1_esp32s3_wroom1u_envelope_mat Material {
+          diffuseColor 0.16 0.18 0.22
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -3.543307 -3.779528 1.259843,
+          3.543307 -3.779528 1.259843,
+          3.543307 3.779528 1.259843,
+          -3.543307 3.779528 1.259843,
+          -3.543307 3.779528 0.000000,
+          3.543307 3.779528 0.000000,
+          3.543307 -3.779528 0.000000,
+          -3.543307 -3.779528 0.000000,
+          -3.543307 3.779528 0.000000,
+          -3.543307 3.779528 1.259843,
+          3.543307 3.779528 1.259843,
+          3.543307 3.779528 0.000000,
+          3.543307 -3.779528 0.000000,
+          3.543307 -3.779528 1.259843,
+          -3.543307 -3.779528 1.259843,
+          -3.543307 -3.779528 0.000000,
+          3.543307 3.779528 0.000000,
+          3.543307 3.779528 1.259843,
+          3.543307 -3.779528 1.259843,
+          3.543307 -3.779528 0.000000,
+          -3.543307 -3.779528 0.000000,
+          -3.543307 -3.779528 1.259843,
+          -3.543307 3.779528 1.259843,
+          -3.543307 3.779528 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

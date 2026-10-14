@@ -1,0 +1,64 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_wing.py  (regenerate: python3 scripts/gen_3d_models_wing.py)
+# part       : FB1 -- 0402 ferrite-bead provision (DNP: NOT FITTED on v9)
+# dims_mm    : 1.016 x 0.508 x 0.5 body, modelled translucent to mark a provision rather than a part
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : the body length and width: the 0402 (imperial) size code is definitionally 0.040 x 0.020 in = 1.016 x 0.508 mm, and tracker/hardware/wing_board/wing_board_v9.kicad_pcb carries the matching footprint "WingV9:FerriteBead_0402_V2provision" (pads 0.5 x 0.6 at x = +/-0.45).  The 0.5 mm HEIGHT is TODO(unverified): a typical 0402 body height, not a sourced figure.
+# note       : the board file gives Value "FerriteBead_0402_DNP_V2only" -- DNP, so this body is a PROVISION.  It is rendered at transparency 0.75 so that a render cannot be mistaken for a populated part.
+# note       : the footprint pads (0.5 x 0.6 rect at x = +/-0.45, tracker/hardware/wing_board/wing_board_v9.kicad_pcb) are consistent with a 0402 body; they are board copper and are drawn by KiCad, not by this model.
+# note       : TODO(unverified): the 0.5 mm body height (the 0402 code fixes length and width only)
+# note       : TODO(unverified): the actual ferrite part number and impedance -- the DNP provision fixes neither
+DEF ferrite_body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF ferrite_body_mat Material {
+          diffuseColor 0.3 0.3 0.32
+          emissiveColor 0 0 0
+          specularColor 0.2 0.2 0.2
+          ambientIntensity 0.4
+          transparency 0.75
+          shininess 0.2
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -0.200000 -0.100000 0.196850,
+          0.200000 -0.100000 0.196850,
+          0.200000 0.100000 0.196850,
+          -0.200000 0.100000 0.196850,
+          -0.200000 0.100000 0.000000,
+          0.200000 0.100000 0.000000,
+          0.200000 -0.100000 0.000000,
+          -0.200000 -0.100000 0.000000,
+          -0.200000 0.100000 0.000000,
+          -0.200000 0.100000 0.196850,
+          0.200000 0.100000 0.196850,
+          0.200000 0.100000 0.000000,
+          0.200000 -0.100000 0.000000,
+          0.200000 -0.100000 0.196850,
+          -0.200000 -0.100000 0.196850,
+          -0.200000 -0.100000 0.000000,
+          0.200000 0.100000 0.000000,
+          0.200000 0.100000 0.196850,
+          0.200000 -0.100000 0.196850,
+          0.200000 -0.100000 0.000000,
+          -0.200000 -0.100000 0.000000,
+          -0.200000 -0.100000 0.196850,
+          -0.200000 0.100000 0.196850,
+          -0.200000 0.100000 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}

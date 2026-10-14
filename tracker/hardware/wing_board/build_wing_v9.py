@@ -105,15 +105,44 @@ def check_reuse(nets: dict) -> None:
 
 # ------------------------------------------------------------------ geometry (ADR-046)
 BODY_W, BODY_H = 176.0, 25.0
+CELL_BODY_D = 19.0
 TAB_LEN, TAB_W = 8.0, 9.0
 TAB_Y0, TAB_Y1 = 8.0, 17.0
 CELL_CX = (30.0, 88.0, 146.0)          # cell centres: 4+26, 62+26, 120+26
+CELL_PAD_DX = 27.0                     # terminal offset; leaves courtyard gap between cells
 LAND_W, LAND_H = 1.6, 4.0              # ADR-046 s3.4
 TAB_LAND_W, TAB_LAND_H = 4.0, 1.2
 TAB_PAD_X = -5.0
 TAB_PADS = (('1', 'SOLAR_P', 9.8), ('2', 'GND', 11.6),
             ('3', 'RF_FEED', 13.4), ('4', 'SOLAR_N', 15.2))
 TRACK_W = 0.4
+CRTYD_CLR, CRTYD_W = 0.25, 0.05
+
+def crtyd_rect(x0, y0, x1, y1, layer='F.CrtYd'):
+    return (f'    (fp_rect (start {fmt(x0)} {fmt(y0)}) (end {fmt(x1)} {fmt(y1)})'
+            f' (stroke (width {CRTYD_W}) (type solid)) (fill no) (layer "{layer}") (uuid "{u()}"))')
+
+def crtyd_circle(r, layer='F.CrtYd'):
+    return (f'    (fp_circle (center 0 0) (end {fmt(r)} 0)'
+            f' (stroke (width {CRTYD_W}) (type solid)) (fill no) (layer "{layer}") (uuid "{u()}"))')
+
+# ------------------------------------------------------------------ 3D models (committed VRML)
+# Every placed reference is given a model so that a 3D render shows the parts.  The models are
+# plain-text VRML committed in this repo (generator: scripts/gen_3d_models_wing.py) because
+# `kicad-packages3d` -- which the hub board's ${KICAD9_3DMODEL_DIR}/...step references need -- is
+# NOT installed on this host (4.77 GB; the disk has ~3 GB free), so those references resolve to
+# nothing.  Paths are relative to ${KIPRJMOD} (this project directory, i.e. the dir holding
+# wing_board_v9.kicad_pro, which is .../tracker/hardware/wing_board/).  Adding a model changes no
+# net, no pad and no placement: it is render metadata only.
+_MODELS = '${KIPRJMOD}/../3dmodels'
+MODEL_CELL_SMALL = f'{_MODELS}/cells/solar_cell_small_52.07x19.65x0.21.wrl'
+MODEL_TAB = f'{_MODELS}/wing/wing_v9_tab_4pin_lands.wrl'
+MODEL_FIDUCIAL = f'{_MODELS}/wing/wing_v9_fiducial_1mm_dot.wrl'
+MODEL_FERRITE = f'{_MODELS}/wing/ferrite_bead_0402_dnp.wrl'
+MODEL_RF = f'{_MODELS}/wing/wing_v9_rf_provision_pad_2x2.wrl'
+# H1/H2/H3 (2.2 mm NPTH) carry NO model, deliberately: kicad-cli renders the NC drill bore itself,
+# and a model occupying that volume plugs it (measured 2026-10-08 -- the hole sites go from 20/25
+# to 0/25 transparent pixels in a 5x5 window).  See docs/3d-model-coverage-wing.md.
 
 NETS = ['SOLAR_P', 'SOLAR_N', 'SOLAR_MID1', 'SOLAR_MID2', 'GND', 'RF_FEED']
 NET_IDX = {n: i + 1 for i, n in enumerate(NETS)}
@@ -195,6 +224,14 @@ def segment(net, x1, y1, x2, y2, layer='F.Cu', width=TRACK_W):
             f'    (width {width}) (layer "{layer}") (net {n}) (uuid "{u()}"))')
 
 
+def via(net, x, y, size=0.6, drill=0.3):
+    """Through via tying F.Cu to B.Cu.  Required to connect the back-face cell
+    string to the front-face string / tab lands (ADR-065)."""
+    n = NET_IDX[net]
+    return (f'  (via (at {fmt(x)} {fmt(y)}) (size {size}) (drill {drill})\n'
+            f'    (layers "F.Cu" "B.Cu") (net {n}) (uuid "{u()}"))')
+
+
 def prop(name, val, layer='F.Fab', hidden=True):
     # KiCad 9 canonical order: (at)(layer)(hide)(uuid)(effects).  `hide` is a direct
     # child of the property, NOT inside (effects) -- getting that wrong makes
@@ -221,9 +258,18 @@ def pad(num, kind, shape, x, y, w, h, layers, net=None, drill=None, rot=None):
     return ''.join(s)
 
 
-def footprint(libname, ref, value, x, y, body, attr='smd'):
+def model_block(path: str) -> str:
+    """A KiCad 9 footprint (model ...) child, identity transform (the model is authored in the
+    footprint frame -- see scripts/gen_3d_models_wing.py for the measured frame/unit convention)."""
+    return (f'    (model "{path}"\n'
+            '      (offset\n        (xyz 0 0 0)\n      )\n'
+            '      (scale\n        (xyz 1 1 1)\n      )\n'
+            '      (rotate\n        (xyz 0 0 0)\n      )\n    )')
+
+
+def footprint(libname, ref, value, x, y, body, attr='smd', model=None, side='F.Cu'):
     head = [f'  (footprint "{libname}"',
-            '    (layer "F.Cu")',
+            f'    (layer "{side}")',
             f'    (uuid "{u()}")',
             f'    (at {fmt(x)} {fmt(y)})',
             prop('Reference', ref, 'F.SilkS'),
@@ -231,25 +277,46 @@ def footprint(libname, ref, value, x, y, body, attr='smd'):
             f'    (attr {attr})' if attr else None]
     lines = [h for h in head if h]
     lines.append(body)
+    if model:
+        lines.append(model_block(model))
     lines.append('  )')
     return '\n'.join(lines)
 
 
-def cell_footprint(ref, cx, net_left, net_right):
+def cell_footprint(ref, cx, net_left, net_right, side='F.Cu'):
+    """Emit a cell on either face.
+
+    A back-face cell is the SAME cell tipped over its LONG axis (180 deg about
+    X), not about its short axis.  That keeps every terminal at the same X: the
+    contact face turns to meet B.Cu and the terminal order is unchanged, so the
+    two faces' strings run the same way and the back routing mirrors the front.
+
+    The original code mirrored X instead (`sign = -1`).  A short-axis flip is
+    equally manufacturable, but it makes the back string counter-running: with
+    the front net order on X-mirrored cells the series chain is a bowtie
+    (SOLAR_MID1 would have to jump x=3 -> x=115 straight across two cells), and
+    the front/back MID tracks land in OPPOSITE inter-cell gaps, so no via can
+    tie them without shorting MID1 to MID2.  See the routing block in main().
+    """
+    silk = 'F.SilkS' if side == 'F.Cu' else 'B.SilkS'
+    copper = ('F.Cu', 'F.Paste', 'F.Mask') if side == 'F.Cu' else ('B.Cu', 'B.Paste', 'B.Mask')
     b = []
     b.append(f'    (fp_rect (start {fmt(-26)} 3) (end {fmt(26)} 22)'
-             f' (stroke (width 0.12) (type solid)) (fill no) (layer "F.SilkS") (uuid "{u()}"))')
-    b.append(f'    (fp_text user "+" (at {fmt(-26)} 23.6) (layer "F.SilkS") (uuid "{u()}")'
+             f' (stroke (width 0.12) (type solid)) (fill no) (layer "{silk}") (uuid "{u()}"))')
+    b.append(f'    (fp_text user "+" (at {fmt(-26)} 23.6) (layer "{silk}") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
-    b.append(f'    (fp_text user "-" (at {fmt(26)} 23.6) (layer "F.SilkS") (uuid "{u()}")'
+    b.append(f'    (fp_text user "-" (at {fmt(26)} 23.6) (layer "{silk}") (uuid "{u()}")'
              f' (effects (font (size 1 1) (thickness 0.12))))')
     # real solder lands, one per cell terminal (ADR-046 s3.4)
-    b.append(pad('1', 'smd', 'rect', -28.0, 0.0, LAND_W, LAND_H,
-                 ('F.Cu', 'F.Paste', 'F.Mask'), net_left))
-    b.append(pad('2', 'smd', 'rect', 28.0, 0.0, LAND_W, LAND_H,
-                 ('F.Cu', 'F.Paste', 'F.Mask'), net_right))
+    b.append(pad('1', 'smd', 'rect', -CELL_PAD_DX, 0.0, LAND_W, LAND_H,
+                 copper, net_left))
+    b.append(pad('2', 'smd', 'rect', CELL_PAD_DX, 0.0, LAND_W, LAND_H,
+                 copper, net_right))
+    crt_layer = 'F.CrtYd' if side == 'F.Cu' else 'B.CrtYd'
+    b.append(crtyd_rect(-CELL_PAD_DX - LAND_W / 2 - CRTYD_CLR, -2.25,
+                        CELL_PAD_DX + LAND_W / 2 + CRTYD_CLR, 2.25, crt_layer))
     return footprint('WingV9:SolarCell_52x19mm', ref, 'SolarCell_52x19mm_0.5V',
-                     cx, 12.5, '\n'.join(b))
+                     cx, 12.5, '\n'.join(b), model=MODEL_CELL_SMALL, side=side)
 
 
 def tab_footprint():
@@ -264,35 +331,39 @@ def tab_footprint():
     b.append(f'    (fp_rect (start {fmt(TAB_PAD_X-2.0)} {fmt(TAB_Y0+0.4)})'
              f' (end {fmt(TAB_PAD_X+2.0)} {fmt(TAB_Y1-0.4)})'
              f' (stroke (width 0.1) (type solid)) (fill none) (layer "F.SilkS") (uuid "{u()}"))')
+    b.append(crtyd_rect(TAB_PAD_X - TAB_LAND_W / 2 - CRTYD_CLR, 9.2 - CRTYD_CLR,
+                        TAB_PAD_X + TAB_LAND_W / 2 + CRTYD_CLR, 15.8 + CRTYD_CLR))
     # footprint origin at (0,0): pads carry the absolute tab x as their local offset
     return footprint('WingV9:WingTab_v9_4pin', 'J1', 'WingTab_v9_4pin',
-                     0.0, 0.0, '\n'.join(b))
+                     0.0, 0.0, '\n'.join(b), model=MODEL_TAB)
 
 
 def hole_footprint(ref, x, y):
     b = pad('', 'np_thru_hole', 'circle', 0.0, 0.0, 2.2, 2.2,
-            ('*.Cu', '*.Mask'), None, drill=2.2)
+            ('*.Cu', '*.Mask'), None, drill=2.2) + '\n' + crtyd_circle(1.35)
     return footprint('WingV9:MountingHole_2.2mm_NPTH', ref, 'MountingHole_NPTH_2.2mm',
                      x, y, b, attr=None)
 
 
 def fiducial_footprint(ref, x, y):
-    b = pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask'))
+    b = pad('1', 'smd', 'circle', 0.0, 0.0, 1.0, 1.0, ('F.Cu', 'F.Mask')) + '\n' + crtyd_circle(1.25)
     return footprint('WingV9:Fiducial_1mm_Mask2mm', ref, 'Fiducial_1mm_Mask2mm',
-                     x, y, b)
+                     x, y, b, model=MODEL_FIDUCIAL)
 
 
 def ferrite_footprint(x, y):
     b = [pad('1', 'smd', 'rect', -0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask')),
          pad('2', 'smd', 'rect', 0.45, 0.0, 0.5, 0.6, ('F.Cu', 'F.Paste', 'F.Mask'))]
+    b.append(crtyd_rect(-0.95, -0.55, 0.95, 0.55))
     return footprint('WingV9:FerriteBead_0402_V2provision', 'FB1',
-                     'FerriteBead_0402_DNP_V2only', x, y, '\n'.join(b))
+                     'FerriteBead_0402_DNP_V2only', x, y, '\n'.join(b), model=MODEL_FERRITE)
 
 
 def rf_provision_footprint(x, y):
     b = pad('1', 'smd', 'rect', 0.0, 0.0, 2.0, 2.0, ('F.Cu', 'F.Mask'))
+    b = b + '\n' + crtyd_rect(-1.25, -1.25, 1.25, 1.25)
     return footprint('WingV9:RF_ProvisionPad_v2only', 'RF1', 'RF_ProvisionPad_v2only',
-                     x, y, b)
+                     x, y, b, model=MODEL_RF)
 
 
 # ------------------------------------------------------------------ main
@@ -324,6 +395,16 @@ def main() -> int:
     rights = ('SOLAR_MID1', 'SOLAR_MID2', 'SOLAR_N')
     for ref, cx, lf, rt in zip(('SC1', 'SC2', 'SC3'), CELL_CX, lefts, rights):
         parts.append(cell_footprint(ref, cx, lf, rt))
+    # ADR-065: a second, parallel 3-cell string on the opposite face.  Parallel
+    # strings preserve the 3-cell series voltage (6.0 V vehicle interface, 1.5 V
+    # per wing tab); only available energy/current doubles.  No per-cell bypass
+    # diodes are introduced (ADR-051/053/054 reject them).
+    # Same centres and same net order as the front string: each back cell is the
+    # front cell tipped over its LONG axis, so every one of its nodes lands
+    # directly on top of its front counterpart and the back routing is a clean
+    # mirror.  See cell_footprint() for why the flip axis is load-bearing.
+    for ref, cx, lf, rt in zip(('SC4', 'SC5', 'SC6'), CELL_CX, lefts, rights):
+        parts.append(cell_footprint(ref, cx, lf, rt, side='B.Cu'))
 
     parts.append(tab_footprint())
 
@@ -335,14 +416,45 @@ def main() -> int:
     parts.append(ferrite_footprint(58.0, 1.7))
     parts.append(rf_provision_footprint(118.0, 1.7))
 
-    # --- routing (ADR-046 s2.3)
+    # --- routing (ADR-046 s2.3).  Every landing is drawn from PAD CENTRE to PAD
+    # CENTRE: a track that merely grazes a land edge (tangential contact) is not a
+    # connection in KiCad's connectivity engine, so edge-touching geometry is a
+    # latent open even though it looks wired on screen.
+    parts.append(segment('SOLAR_P', 3.0, 12.5, 2.0, 12.5))
     parts.append(segment('SOLAR_P', 2.0, 12.5, 2.0, 9.8))
     parts.append(segment('SOLAR_P', 2.0, 9.8, -5.0, 9.8))
-    parts.append(segment('SOLAR_MID1', 58.0, 12.5, 60.0, 12.5))
-    parts.append(segment('SOLAR_MID2', 116.0, 12.5, 118.0, 12.5))
-    for a, b in (((174.0, 12.5), (174.0, 23.5)), ((174.0, 23.5), (3.4, 23.5)),
-                 ((3.4, 23.5), (3.4, 15.2)), ((3.4, 15.2), (-5.0, 15.2))):
+    parts.append(segment('SOLAR_MID1', 57.0, 12.5, 61.0, 12.5))
+    parts.append(segment('SOLAR_MID2', 115.0, 12.5, 119.0, 12.5))
+    for a, b in (((173.0, 12.5), (174.0, 12.5)), ((174.0, 12.5), (174.0, 23.5)),
+                 ((174.0, 23.5), (3.4, 23.5)), ((3.4, 23.5), (3.4, 15.2)),
+                 ((3.4, 15.2), (-5.0, 15.2))):
         parts.append(segment('SOLAR_N', a[0], a[1], b[0], b[1]))
+
+    # --- back-face string interconnect (ADR-065).  The back cells are the same
+    # cells tipped over their LONG axis (see cell_footprint), so every back pad
+    # sits directly beneath the front pad carrying the SAME net.  The string is
+    # therefore wired by repeating the front landings one layer down and tying the
+    # two faces together with through vias -- one per string node.  The vias are
+    # dropped MID-TRACK rather than on a land, so no hole sits in a solder joint.
+    parts.append(segment('SOLAR_P', 3.0, 12.5, 2.0, 12.5, layer='B.Cu'))
+    parts.append(segment('SOLAR_P', 2.0, 12.5, 2.0, 9.8, layer='B.Cu'))
+    parts.append(segment('SOLAR_P', 2.0, 9.8, -5.0, 9.8, layer='B.Cu'))
+    parts.append(segment('SOLAR_MID1', 57.0, 12.5, 61.0, 12.5, layer='B.Cu'))
+    parts.append(segment('SOLAR_MID2', 115.0, 12.5, 119.0, 12.5, layer='B.Cu'))
+    for a, b in (((173.0, 12.5), (174.0, 12.5)), ((174.0, 12.5), (174.0, 23.5)),
+                 ((174.0, 23.5), (3.4, 23.5)), ((3.4, 23.5), (3.4, 15.2)),
+                 ((3.4, 15.2), (-5.0, 15.2))):
+        parts.append(segment('SOLAR_N', a[0], a[1], b[0], b[1], layer='B.Cu'))
+    # Two through vias per string node (redundant): either one alone completes
+    # the node, so a single barrel defect cannot open the back string.
+    parts.append(via('SOLAR_P', 2.0, 9.8))
+    parts.append(via('SOLAR_P', 2.0, 11.4))
+    parts.append(via('SOLAR_MID1', 58.4, 12.5))
+    parts.append(via('SOLAR_MID1', 59.6, 12.5))
+    parts.append(via('SOLAR_MID2', 116.4, 12.5))
+    parts.append(via('SOLAR_MID2', 117.6, 12.5))
+    parts.append(via('SOLAR_N', 3.4, 20.0))
+    parts.append(via('SOLAR_N', 3.4, 21.8))
 
     # --- board silkscreen
     parts.append(gr_text('WING v9  SOLAR 176x25x0.6  4-pin tab  ADR-046', 88.0, 24.2))

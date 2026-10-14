@@ -1,10 +1,48 @@
-# Kconfig for measurement interval config
+# Kconfig for the balloon pressure test rig
 
 config MEASUREMENT_INTERVAL
     int "Measurement interval in seconds"
     default 30
     range 5 3600
     help
-        How often to read pressure and temperature from BMP280.
+        How often to read pressure and temperature from the sensor.
         Default: 30 seconds (short test).
         For long-term tests: 300 seconds (5 minutes).
+
+menu "Over-pressure interlock"
+
+config BALLOON_IL_DP_CUTOFF_MBAR
+    int "Differential-pressure cut-off (mbar, P_internal - P_ambient)"
+    default 5
+    range 1 200
+    help
+        PLACEHOLDER — NOT a validated ceiling.  Hard ceiling on the differential
+        pressure across the envelope wall.  When exceeded, the interlock closes
+        the (normally-closed) fill valve and raises the alarm.
+
+        The envelope is NOT a pressure vessel and is NOT rated to a burst
+        pressure: the protocol's control variable is CIRCUMFERENCE, not
+        pressure.  This cut-off is a GROSS over-inflation detector, not a
+        working setpoint.  Its number must be derived from a bench
+        characterisation of differential pressure vs circumference
+        (docs/PRESTRETCH-OVERPRESSURE-INTERLOCK.md, bench session B1) before
+        anyone treats it as real.
+
+config BALLOON_IL_DP_RESET_MBAR
+    int "Differential pressure required before a reset is allowed (mbar)"
+    default 2
+    range 0 200
+    help
+        A latched trip may only be cleared once the differential has fallen
+        back below this value AND the sensor is healthy.  Must be <= the
+        cut-off above.
+
+config BALLOON_IL_MAX_FILL_S
+    int "Hard fill-time ceiling (seconds)"
+    default 10800
+    range 60 86400
+    help
+        Redundant backstop against a stuck-open fill valve: the fill is closed
+        after this many seconds regardless of pressure.  10800 s = 3 h.
+
+endmenu

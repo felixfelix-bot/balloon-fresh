@@ -1,0 +1,86 @@
+Independent visual-consultant review — Part B figure (Ruze surface-error budget, 2.4 GHz)
+=========================================================================================
+
+Tool : /home/c03rad0r/hermes-orchestration/scripts/fleet/visual_consult.py
+        (CLI one-shot; model read back from the response, see below)
+Image: docs/analysis/assets/rf-gaps/ruze-2g4-surface-error.png
+        (rendered from the SVG by docs/analysis/render_rf_gaps_figure.py)
+Date : 2026-10-08
+
+The task's second line of the visual_review gate printed by --emit-evidence is NOT the model's
+opinion: `visual_review.py`'s --verdict DEFAULT prints APPROVED and the structured `verdict`
+field is UNPARSED here because the model answered "CONFIRM", which is outside the CLI's
+APPROVED/CHANGES_REQUESTED/PARTIAL vocabulary. Only the model's own explicit VERDICT: line counts.
+
+------------------------------------------------------------------------------------------
+ROUND 1 — first rendering (thresholds mis-labelled 3.30 / 4.67 mm; corrected afterwards)
+served model: gpt-6-astra   status: 200   CLI verdict field: UNPARSED (answer said CONFIRM)
+------------------------------------------------------------------------------------------
+**(1) Readability:** No significant label collisions or unreadable text are apparent. The budget
+annotations are close to the blue curve but remain legible. The foil band is **truncated by the
+plotted range**: its stated range is 8–25 mm, whereas the x-axis ends at 16 mm. Its legend label is
+fully visible, so this is clipping of the data range, not of a label.
+
+**(2) Claim support:** Yes—**for the estimated RMS ranges shown**. The 1 dB threshold is
+approximately 4.77 mm using the displayed Ruze formula, rather than the annotated 4.67 mm; that
+small numerical discrepancy does not change the comparison.
+
+| Construction | Estimated RMS | Approximate Ruze loss |
+|---|---:|---:|
+| Used production Ku dish | 0.3–1 mm | 0.004–0.044 dB |
+| Fibreglass dish | 0.5–1.5 mm | 0.011–0.099 dB |
+| 3D-printed petal dish | 1–3 mm | 0.044–0.396 dB |
+| Hand-formed aluminium foil | 8–25 mm | 2.81–27.47 dB |
+| Metal tape over foam/ribs | 5–15 mm | 1.10–9.89 dB |
+
+Thus, the first three sit comfortably below 1 dB, while the entire foil and tape ranges exceed it.
+The figure explicitly identifies the construction ranges as **estimates**, so it supports a
+conditional comparison—not empirical proof that these construction methods achieve those RMS
+values.
+
+There are also minor numerical errors in the annotations: the displayed formula gives **3.37 mm for
+0.5 dB**, and **6.858 dB at λ/10**, the latter correctly rounded to 6.86 dB.
+
+VERDICT: CONFIRM
+
+  -> ACTION TAKEN: the 4.67 mm threshold was a real bug (the doc had used the 2.45 GHz run while the
+     figure used the 2.400 GHz edge). The figure and the analysis doc were corrected to 3.37 mm
+     (0.5 dB) and 4.77 mm (1.0 dB); the thresholds are now computed in the render script from the
+     model (single source of truth). The clipped foil band was given an open-right-edge marker.
+
+------------------------------------------------------------------------------------------
+ROUND 2 — corrected rendering (final figure of record)
+served model: gpt-6-astra   status: 200   CLI verdict field: UNPARSED (answer said CONFIRM)
+------------------------------------------------------------------------------------------
+**(1) Readability:** The title, axes, legend, and annotations are readable, with no major label
+collisions or clipped text. The budget annotations are close to the blue curve, but remain legible.
+The foil band extends to **25 mm**, beyond the displayed **16 mm** x-axis limit, so that band is
+truncated—not its legend label.
+
+There is a numerical discrepancy in the question: the figure labels the thresholds as **3.37 mm for
+0.5 dB** and **4.77 mm for 1 dB**, not 3.30 and 4.67 mm. The plotted values are correct for the
+stated Ruze equation and wavelength of 124.91 mm.
+
+**(2) Budget claim:** Yes, **conditional on the estimated construction RMS ranges**:
+
+| Construction | RMS range | Corresponding Ruze loss |
+|---|---:|---:|
+| Used production Ku dish | 0.3–1 mm | 0.004–0.044 dB |
+| Fibreglass dish | 0.5–1.5 mm | 0.011–0.099 dB |
+| 3D-printed petal dish | 1–3 mm | 0.044–0.396 dB |
+| Hand-formed aluminium foil | 8–25 mm | 2.81–27.47 dB |
+| Metal tape over foam/ribs | 5–15 mm | 1.10–9.89 dB |
+
+Thus, the first three bands lie comfortably inside the 1 dB budget, while the entire foil and tape
+bands lie outside it. The λ/10 marker correctly corresponds to approximately **6.86 dB**, not a
+small loss.
+
+The important limitation is stated in the figure: the construction bands are **estimates, not
+measured performance evidence**. The chart supports the comparison using those assumptions; it does
+not independently establish the achievable accuracy of each construction method.
+
+VERDICT: CONFIRM
+
+------------------------------------------------------------------------------------------
+VERDICT OF RECORD: CONFIRM, served model `gpt-6-astra` (round 2, corrected figure).
+------------------------------------------------------------------------------------------
