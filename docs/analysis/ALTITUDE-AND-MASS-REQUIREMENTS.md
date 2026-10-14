@@ -109,10 +109,16 @@ and visual signature, (d) regulatory compliance for light balloons.
 
 ## 6. What still needs measuring (not on the internet)
 
-| # | Measurement | Effect |
-|---|---|---|
-| 1 | **Weigh one Yokohama 32-in sphere** (empty, dry) | Confirms/refutes the 60–100 g envelope bound |
-| 2 | **Weigh one 52×19 mm solar cell** | 0.8 vs 1.6 g = 9.6 g across 12 cells |
-| 3 | **Weigh one latex balloon you intend to fly** | The latex mass figures above (25 g @36 in) are modelled, not measured — this decides the float altitude |
+| # | Measurement | Effect | Status |
+|---|---|---|---|
+| 1 | **Weigh one Yokohama 32-in sphere** (empty, dry) | Confirms/refutes the 60–100 g envelope bound | **✅ 46.84 g** (2026-10-14) |
+| 2 | **Weigh one 52×19 mm solar cell** | 0.8 vs 1.6 g = 9.6 g across 12 cells | **✅ 0.4462 g small / 1.4040 g large** (2026-10-14) |
+| 3 | **Weigh one latex balloon you intend to fly** | The latex mass figures above (25 g @36 in) are modelled, not measured — this decides the float altitude | _pending_ |
+
+Measured readings, the identification of the two cell sizes and the reproduction script:
+`docs/analysis/MEASURED-MASSES-2026-10-14.md`.
+**Note on row 2:** the "0.8 vs 1.6 g" spread is now closed — neither figure was right. The small
+cell measures **0.4462 g** (not 0.8) and the *large* cell is a different part at **1.4040 g**;
+a 12-cell array of large cells is **16.85 g**, not 9.6 or 19.2 g.
 
 Reproduce everything: `docs/analysis/altitude_requirement.py`.

@@ -83,8 +83,8 @@ Not on the internet — these change the flight answer.
 
 | # | What | Why it matters | Method | State |
 |---|---|---|---|---|
-| E1 | **Empty balloon mass** | Decides float altitude (±1.5 km between the 60 g and 100 g bounds) and whether chloroprene can work at all | lab scale, one balloon | ⬜ **NEEDED** |
-| E2 | **One 52×19 mm solar cell mass** | 12 cells; 0.8 vs 1.6 g = 9.6 g swing, comparable to all hub components | lab scale | ⬜ **NEEDED** |
+| E1 | **Empty balloon mass** | Decides float altitude (±1.5 km between the 60 g and 100 g bounds) and whether chloroprene can work at all | lab scale, one balloon | ✅ **46.84 g** (2026-10-14) |
+| E2 | **One 52×19 mm solar cell mass** | 12 cells; 0.8 vs 1.6 g = 9.6 g swing, comparable to all hub components | lab scale | ✅ **0.4462 g** small / **1.4040 g** large (2026-10-14) |
 | E3 | **One latex balloon you intend to fly** (36 in / 40 in) | The 25 g @ 36 in figure is **modelled, not measured**; it sets float altitude directly | lab scale | ⬜ **NEEDED** |
 | E4 | **Hub PCB thickness after receipt** | Confirms 0.8 mm actually shipped | calipers | ⬜ after delivery |
 | E5 | **Wing PCB thickness after receipt** | 0.6 mm 2-layer is legal, but confirm | calipers | ⬜ after delivery |

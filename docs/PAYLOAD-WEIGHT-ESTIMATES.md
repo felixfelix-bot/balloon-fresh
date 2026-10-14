@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-30
 **Source:** Frozen V1 BOM (commit `7302dba`), board dimensions from `DUAL-VARIANT-DESIGN.md`
-**Status:** ESTIMATES — actual weights require Felix's scale measurement once boards arrive
+**Status:** PARTIALLY MEASURED — solar cell masses + envelope mass are now scale-measured (`docs/analysis/MEASURED-MASSES-2026-10-14.md`, 2026-10-14); board/module weights remain estimates
 
 ---
 
@@ -138,10 +138,11 @@ Solar-powered tracker with supercap voltage monitoring via ADC (GPIO0).
 | MAX-M10S GPS, bare (U3) | 0.4 g |
 | 1F 5.5V supercap (SC) | 1.8 g |
 | Antenna wire (868 MHz) | 0.2 g |
-| Solar array (4 thin-film cells) | 1.6 g |
-| **Total (thin-film cells)** | **~10.4 g** |
-| **Total (standard 2g cells)** | **~16.4 g** |
-| **Target: < 14g** | **✅ PASS** with thin-film (3.6g margin) |
+| Solar array (4 large cells, measured 1.404 g/cell) | 5.62 g |
+| **Total (with large cells)** | **~14.4 g** |
+| Solar array (4 small cells, measured 0.4462 g/cell) | 1.78 g |
+| **Total (with small cells)** | **~10.6 g** |
+| **Target: < 14g** | **✅ PASS** with either measured cell size |
 
 > V2-ADC adds 2× 100kΩ 0402 resistors (~5mg) for supercap voltage divider — negligible weight.
 
@@ -158,9 +159,11 @@ Same as B but V1-FAST board (no ADC — no supercap voltage monitoring).
 | MAX-M10S GPS, bare (U3) | 0.4 g |
 | 1F 5.5V supercap (SC) | 1.8 g |
 | Antenna wire (868 MHz) | 0.2 g |
-| Solar array (4 thin-film cells) | 1.6 g |
-| **Total (thin-film cells)** | **~10.4 g** |
-| **Target: < 14g** | **✅ PASS — 3.6g margin** |
+| Solar array (4 large cells, measured 1.404 g/cell) | 5.62 g |
+| **Total (with large cells)** | **~14.4 g** |
+| Solar array (4 small cells, measured 0.4462 g/cell) | 1.78 g |
+| **Total (with small cells)** | **~10.6 g** |
+| **Target: < 14g** | **✅ PASS** with small cells (3.4 g margin); **borderline** with large (0.4 g over) |
 
 > Config C (mesh V1, dual-MCU with RP2040) is OBSOLETE — single-MCU only.
 > Without RP2040, no mesh relay capability. But ~1.2g lighter than old estimate.
@@ -204,7 +207,8 @@ V1 PCB             ██████████████████    2.5
 LR2021 radio       ██████████            1.2g (10.3%)
 RP2040-Zero        ██████████            1.2g (10.3%)
 Supercap 1F        ██████████████        1.8g (15.5%)
-Solar (4 cells)    █████████████         1.6g (13.8%)
+Solar (4 large)    ███████████████████   5.62g (30.5%)  [small: 1.78g]
+Solar (4 small)    ██████                1.78g (11.1%)
 GPS + baro + ant   ████                  0.63g (5.4%)
 SMD + solder       █                     0.19g (1.6%)
 ```
@@ -217,7 +221,13 @@ SMD + solder       █                     0.19g (1.6%)
 
 1. **Module weights are estimates** from datasheet dimensions and typical densities. Actual weights vary by manufacturer batch. **Felix must verify with a precision scale (0.01g resolution).**
 2. **LR2021 radio module** is not in the provided BOM excerpt but is in the schematic. Weight estimated from 19.81 × 14.98mm dimensions with shielding can.
-3. **Solar cell weight** is the largest uncertainty. The "~2g per cell" spec is heavy for pico balloon use. Thin-film alternatives at ~0.4g/cell are strongly recommended.
+3. **Solar cell weight — now MEASURED (2026-10-14), no longer an assumption.** Both sizes were weighed
+   as a 10-pack and as a single part: **large (78.55 × 38.90 mm) = 1.4040 g**, **small
+   (52.07 × 19.65 mm) = 0.4462 g** (means of the 10-pack; the single-part readings agree to ~1.5 %).
+   Areal density is 45.95 and 43.61 mg/cm² respectively. Raw readings and the reproduction script:
+   `docs/analysis/MEASURED-MASSES-2026-10-14.md`. **The "~0.4 g thin-film alternative" cited in
+   earlier revisions of this document does not exist as a separate product** — the 0.4462 g figure
+   *is* the small cell in hand, so there is no lighter cell to switch to.
 4. **Direct solder** assumed for all flight configurations (no pin headers). Prototyping boards with sockets add ~1.5–2.4g.
 5. **MS5611 and MAX-M10S** assumed bare-die direct-soldered for flight. Breakout boards add ~0.6g and ~0.6g respectively.
 6. **Solder paste** weight (~50mg) included but negligible.
@@ -229,7 +239,11 @@ SMD + solder       █                     0.19g (1.6%)
 
 ## Recommendations
 
-1. **Use thin-film solar cells** (~0.4g each, not 2g). This is the single biggest weight lever.
+1. ~~**Use thin-film solar cells** (~0.4g each, not 2g). This is the single biggest weight lever.~~
+   **RESOLVED BY MEASUREMENT 2026-10-14 — this recommendation is now void.** There is no separate
+   0.4 g "thin-film" cell; the small cell in hand measures **0.4462 g** and the large **1.4040 g**.
+   Cell mass is now a *measured* input, not a lever. See
+   `docs/analysis/MEASURED-MASSES-2026-10-14.md`.
 2. **Direct-solder all modules** for flight (saves ~2g vs socketed headers).
 3. **Consider bare ESP32-C3** on a future PCB revision instead of the Mini dev module — saves ~1.5g and eliminates USB-C connector weight.
 4. **Verify actual weights** with Felix's scale as soon as V1 boards arrive from JLCPCB.

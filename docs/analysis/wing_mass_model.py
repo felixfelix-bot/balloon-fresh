@@ -53,6 +53,20 @@ CELLS: dict[str, dict[str, float]] = {
 TAB_AREA_MM2 = 8.0 * 9.0          # CITED ADR-046 s3.2: 8.0 mm protruding x 9.0 mm wide
 BODY_AREA_MM2 = 176.0 * 25.0      # CITED ADR-046 s3.2
 
+# --------------------------------------------------------------------------
+# MEASURED CELL MASS  (operator scale, 2026-10-14 -- tier: user-measured)
+# --------------------------------------------------------------------------
+# Mean of the operator's 10-pack weighing per size. The 10-pack is preferred
+# over the single-part reading because it averages handling/tape residue; the
+# two readings agreed to ~1.5 %.
+#   large 10-pack 14.04 g  (single 1.382 g)  ->  1.4040 g  = 45.95 mg/cm2
+#   small 10-pack  4.462 g (single 0.440 g)  ->  0.4462 g  = 43.61 mg/cm2
+# Source + reproduction: docs/analysis/MEASURED-MASSES-2026-10-14.md
+MEASURED_PACK_MEAN_G: dict[str, float] = {
+    "large": 14.04 / 10,
+    "small": 4.462 / 10,
+}
+
 
 def cell_area_cm2(key: str) -> float:
     c = CELLS[key]
@@ -60,16 +74,26 @@ def cell_area_cm2(key: str) -> float:
 
 
 def cell_mass_g(key: str) -> float:
-    """Silicon-mass estimate: AREA x THICKNESS x Si DENSITY.
+    """MEASURED cell mass (2026-10-14, operator scale), not a silicon estimate.
 
-    MARKED ESTIMATE: bare silicon only. Ignores the cell's own metallisation,
-    busbars and any encapsulant, and ignores the repo's own per-cell figure
-    ('~2g each', docs/PAYLOAD-WEIGHT-ESTIMATES.md line 92 / line 96) which is
-    ~4x this number and is flagged TODO(unverified) in the analysis.
+    Returns the mean of the operator's 10-pack weighing, which supersedes the
+    bare-silicon area x thickness x density estimate this function used to
+    compute. That estimate was purely geometric and therefore could not know
+    the real part:
+
+        large: 1.4951 g modelled  ->  1.4040 g MEASURED  (-6.1 %)  = 45.95 mg/cm2
+        small: 0.5006 g modelled  ->  0.4462 g MEASURED  (-10.9 %) = 43.61 mg/cm2
+
+    The two sizes agree to 5.4 % in areal density, i.e. one cell technology cut
+    to two sizes -- which is also why a single areal figure is stored below and
+    scaled by area, rather than a per-key constant.
+
+    Raw readings + reproduction: docs/analysis/MEASURED-MASSES-2026-10-14.md
+    (10-pack: 14.04 g large / 4.462 g small; singles 1.382 g / 0.440 g).
     """
-    c = CELLS[key]
-    vol_cm3 = cell_area_cm2(key) * (c["t"] * 0.1)   # mm -> cm
-    return vol_cm3 * SI_DENSITY
+    if key not in MEASURED_PACK_MEAN_G:
+        raise KeyError(f"no measured mass for cell size {key!r}")
+    return MEASURED_PACK_MEAN_G[key]
 
 
 def cell_power_w(key: str) -> float:
@@ -229,7 +253,8 @@ def main() -> None:
         print(f"{k:6} {CELLS[k]['l']:.2f} x {CELLS[k]['w']:.2f}   "
               f"{cell_area_cm2(k):9.4f} {CELLS[k]['t']:6.2f} {cell_mass_g(k):8.4f} "
               f"{cell_power_w(k):6.3f} {cell_power_w(k)/cell_mass_g(k):7.3f}")
-    print("  formula: area = L x W;  mass = area x t x rho_Si")
+    print("  formula: area = L x W;  mass = MEASURED (operator scale 2026-10-14,"
+          " 10-pack mean)")
     print()
 
     print("-- SOLDER ALLOWANCE (3 small cells in series, per wing) ------------------")

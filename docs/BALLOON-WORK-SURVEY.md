@@ -64,7 +64,7 @@ actionable, the ralph loop should cover the following (deduped, grouped).
 
 | # | Item | State |
 |---|---|---|
-| E1 | **M1** weigh empty balloon · **M2** weigh one 52×19 mm cell · **M3** weigh one 36" latex | operator, cron nudge active |
+| E1 | ~~**M1** weigh empty balloon · **M2** weigh one 52×19 mm cell~~ · **M3** weigh one 36" latex | **M1 + M2 ✅ done 2026-10-14**; M3 operator, cron nudge active |
 | E2 | Reconcile ~57 g payload vs 9–22 g long-duration band | analysis committed |
 | E3 | Latex-vs-superpressure literature survey | dispatched |
 | E4 | Decide: accept ~7–9 km, or move to 36–40 in mylar/latex | operator decision |

@@ -77,3 +77,5 @@ scratch-adr/
 tracker/hardware/output/.hub_v9_libcache/
 tracker/hardware/output/.hub_v9_scaffold.kicad_pcb
 firmware/e80-stm32-bench/.venv/
+firmware/e80-stm32-bench/.venv/
+.venv/
