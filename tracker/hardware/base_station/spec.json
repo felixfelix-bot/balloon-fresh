@@ -1,0 +1,97 @@
+{
+  "_why": "Base-station PCBA v1 -- schematic capture SPEC, transcribed from the frozen document docs/BASE-STATION-PCBA-D14-FREEZE.md. This is a MACHINE-READABLE transcription of an already-operator-frozen design, NOT a new design decision. Every element carries the row/section it came from so a reviewer can check the transcription rather than re-derive the design.",
+  "_source": "docs/BASE-STATION-PCBA-D14-FREEZE.md (2026-10-09, DESIGN FREEZE NOTE)",
+  "_status": "Not yet placed, routed or DRC'd. No KiCad layout exists as of 2026-10-14.",
+  "_gate_note": "The freeze's own verification gates (4 items at its section 'Verification gates before layout release') are NOT claimed to have passed.",
+
+  "rails": {
+    "VIN_GS": {
+      "range": "9-18 V nominal, protected",
+      "note": "system-level input; reverse-polarity/TVS protection upstream"
+    },
+    "plus5V_PCBA": {
+      "from": "TPS62162 buck, configured 5.00 V",
+      "rated": "3-17 V in, 1 A out",
+      "constraint": "the 18 V system upper bound EXCEEDS the TPS62162's 17 V rating and must be enforced by upstream protection, or the regulator variant changed -- recorded in the freeze",
+      "design_total_mA": 316,
+      "copper_budget": ">= 0.5 A continuous, 1 A peak"
+    },
+    "plus5V_LNA_SW": {
+      "load": "ZX60-P103LN+ masthead bias, 95 mA @ 5 V",
+      "switchable": true,
+      "reason": "an LNA fault must not collapse the MCU rail",
+      "limiter": "resettable current limiter OR load switch",
+      "bypass": "100 nF + 10 uF at the tee DC injection point"
+    },
+    "plus5V_VGA": {
+      "load": "ADL5240 VGA, 93 mA @ 4.75-5.25 V",
+      "feed": "ferrite bead or pi filter from +5V_PCBA",
+      "decoupling": "100 nF + 1 uF at the IC",
+      "must_not_be_fed_from": "+5V_LNA_SW"
+    },
+    "plus5V_DET": { "load": "AD8318 detector, 15 mA design allowance" },
+    "plus3V3_MCU": { "load": "RP2040, digital + ADC + SPI, 50 mA design allowance" }
+  },
+
+  "active_devices": [
+    { "ref_class": "U_DET",  "part": "AD8318ACPZ-R7", "func": "log detector, 1 MHz-8 GHz",
+      "row": 7, "used_only_on": "the filtered 433 MHz coupler tap",
+      "datasheet": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD8318.pdf" },
+    { "ref_class": "U_MCU",  "part": "RP2040 QFN-56", "func": "MCU, SPI control, ADC input, watchdog, telemetry",
+      "row": 8, "note": "no separate ADC fitted",
+      "datasheet": "https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf" },
+    { "ref_class": "U_REG",  "part": "TI TPS62162", "func": "5 V buck",
+      "row": 14, "datasheet": "https://www.ti.com/lit/ds/symlink/tps62162.pdf" },
+    { "ref_class": "U_VGA",  "part": "ADL5240", "func": "VGA, gain controlled by RP2040",
+      "gate": "ADR-084 / checklist row 5" },
+    { "ref_class": "TEE1",   "part": "Mini-Circuits ZFBT-4R2GW+", "func": "bias tee for the masthead feed",
+      "row": 14, "placement": "at the masthead/feed boundary, NOT in series with the 433 receive path",
+      "gate": "confirm insertion loss / current rating from the delivered unit or current datasheet",
+      "forbidden_substitute": "a circulator" }
+  ],
+
+  "dnp_by_design": [
+    { "row": 11, "item": "PA / FEM", "reason": "CLOSED BY D9/ADR-072: ISM uplink is attenuation-only; a higher-legal-footing PA is a FUTURE RESPIN, not an open v1 BOM row" },
+    { "row": 18, "item": "enclosure / mast clamp", "reason": "CLOSED AS MECHANICAL OUT-OF-SCOPE; mechanical selection under ADR-076/077/078" },
+    { "row": 16, "item": "2.4 GHz PA", "reason": "the board does not add a 2.4 GHz PA" },
+    { "row": 17, "item": "masthead LNA on the PCBA", "reason": "the board does not attempt to put the masthead LNA on the PCBA" }
+  ],
+
+  "rf_path": {
+    "chain": "433 antenna -> 433 MHz BPF -> ZFBT-4R2GW+ RF/DC port -> ZX60-P103LN+ -> feed coax -> ZFBT-4R2GW+ RF/DC port -> ADL5240/VGA path",
+    "impedance": "50 ohm",
+    "detector_tap": {
+      "location": "directional/coupled tap AFTER the 433 BPF/LNA",
+      "mandatory_2nd_bpf": "a SECOND 433 MHz BPF before the AD8318 input",
+      "why": "AD8318 is broadband; unfiltered 2.45 GHz leakage could falsely reduce RX gain"
+    },
+    "grounding": "detector ground and the ADC reference return to the quiet analog ground region"
+  },
+
+  "agc_control": {
+    "owned_by": "RP2040 AGC state machine",
+    "bounds": "bounded to the ADL5240's legal gain-control range",
+    "deadband": "at least one 0.5 dB step plus hysteresis",
+    "dynamic": "fast attack, slow decay (ADR-084)",
+    "watchdog": "downlink-failure watchdog independent of the TX attenuation LUT; on loss or a watchdog service failure it returns the ADL5240 to a known fixed manual gain and reports the fault",
+    "bypass": "front-panel or commanded MANUAL/BYPASS selects the fixed gain without relying on the last AGC register state",
+    "independent_of_rx_agc": "TX range->attenuation remains operational even if RX AGC is bypassed or faulted"
+  },
+
+  "erc_requirement": {
+    "must_show_separate_domains": ["+5V_LNA_SW", "+5V_VGA", "+5V_DET", "+3V3_MCU"],
+    "invariant": "no single LNA fault may remove MCU power"
+  },
+
+  "gates_not_yet_passed": [
+    "1. confirm ZFBT-4R2GW+ insertion loss / current rating from the delivered unit or current datasheet",
+    "2. measure the 433 BPF and the detector-tap BPF (433.92 MHz pass, 2.45 GHz rejection for the AGC false-level test)",
+    "3. confirm the ZX60-P103LN+ lower band edge (ADR-079 open contradiction) with a 400-500 MHz S21 sweep",
+    "4. schematic ERC must show separate +5V_LNA_SW / +5V_VGA / +5V_DET / +3V3_MCU domains"
+  ],
+
+  "open_at_capture": [
+    "detector operating-current limit to be checked during schematic review",
+    "VIN_GS 18 V upper bound vs the TPS62162's 17 V rating -- enforce upstream or change the variant"
+  ]
+}
