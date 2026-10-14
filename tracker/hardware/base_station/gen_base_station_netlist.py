@@ -32,7 +32,7 @@ def add(ref, value, fp, pins):
     COMPS.append((ref, value, fp, pins))
 
 # ---------------- power entry + regulator (spec: VIN_GS 9-18V -> TPS62162 -> +5V_PCBA) -------
-add("J_PWR", "VIN_GS 9-18V input", "Connector_TerminalBlock:TerminalBlock_bornier-2_P5.08mm",
+add("J_PWR", "VIN_GS 9-18V input", "TerminalBlock_4Ucon:TerminalBlock_4Ucon_1x02_P3.50mm_Vertical",
     [("1", "VIN_GS"), ("2", "GND")])
 add("D_REV", "reverse-polarity/TVS protection", "Diode_SMD:D_SMB",
     [("1", "VIN_GS_PROT"), ("2", "VIN_GS")])
@@ -43,7 +43,7 @@ add("C_IN", "10uF 25V", "Capacitor_SMD:C_1206_3216Metric",
 add("U_REG", "TPS62162 5V buck (3-17V in, 1A out)", "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm",
     [("1", "VIN_GS_PROT"), ("2", "GND"), ("3", "REG_SW"), ("4", "REG_FB"),
      ("5", "+5V_PCBA"), ("6", "GND"), ("7", "REG_EN"), ("8", "REG_PG"), ("9", "GND")])
-add("L1", "2.2uH buck inductor", "Inductor_SMD:L_4x4mm_H3mm",
+add("L1", "2.2uH buck inductor", "Inductor_SMD:L_Bourns-SRN4018",
     [("1", "REG_SW"), ("2", "+5V_PCBA")])
 add("R_FB1", "100k (feedback divider)", "Resistor_SMD:R_0402_1005Metric",
     [("1", "+5V_PCBA"), ("2", "REG_FB")])
@@ -85,7 +85,7 @@ add("C_DET2", "100nF (VOUT filter)", "Capacitor_SMD:C_0402_1005Metric",
     [("1", "DET_VOUT"), ("2", "GND")])
 
 # ---------------- +3V3_MCU : RP2040 rail ------------------------------------------------------
-add("U_MCU", "RP2040 QFN-56", "MCU_RaspberryPi_and_Boards:RP2040-QFN-56",
+add("U_MCU", "RP2040 QFN-56", "base_station_lib:RP2040-QFN-56",
     [("1", "IOVDD"), ("2", "GND"), ("3", "ADC_AVDD"), ("4", "GND"),
      ("5", "IOVDD"), ("6", "GND"), ("7", "DET_VOUT"), ("8", "GND"),
      ("9", "GND"), ("10", "QSPI_SS"), ("11", "QSPI_SCLK"), ("12", "QSPI_SD0"),
@@ -126,19 +126,19 @@ add("R_EN", "100k LDO/REG enable pull-up", "Resistor_SMD:R_0402_1005Metric",
 add("J_433_RX", "433 MHz RX antenna port (SMA)", "Connector_Coaxial:SMA_Amphenol_132134-10_Vertical",
     [("1", "RF_433_ANT"), ("2", "GND")])
 # the 433 BPF ahead of the LNA -- first of the two the freeze requires
-add("FLT_433_A", "433 MHz BPF (ahead of LNA)", "Filter:Filter_1109W98",
+add("FLT_433_A", "433 MHz BPF (ahead of LNA)", "Filter:Filter_SAW-6_3.8x3.8mm",
     [("1", "RF_433_ANT"), ("2", "RF_433_BPF1")])
 add("TEE1", "Mini-Circuits ZFBT-4R2GW+ bias tee (masthead feed boundary, NOT in series)",
-    "Connector:Conn_01x03_Male",
+    "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
     [("1", "RF_433_BPF1"), ("2", "RF_LNA_OUT"), ("3", "+5V_LNA_SW")])
 add("J_LNA_FEED", "coax feed to the masthead LNA (SMA)", "Connector_Coaxial:SMA_Amphenol_132134-10_Vertical",
     [("1", "RF_TEE_MAST"), ("2", "GND")])
-add("TEE2", "ZFBT-4R2GW+ bias tee (board side)", "Connector:Conn_01x03_Male",
+add("TEE2", "ZFBT-4R2GW+ bias tee (board side)", "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
     [("1", "RF_COAX_RX"), ("2", "VGA_RF_IN"), ("3", "+5V_LNA_SW")])
 # the SECOND 433 BPF before the AD8318 -- MANDATORY in the freeze
 add("C_TAP", "directional/coupled tap after the BPF/LNA (TODO(unverified) coupling)",
     "Capacitor_SMD:C_0402_1005Metric", [("1", "VGA_RF_IN"), ("2", "RF_TAP")])
-add("FLT_433_B", "433 MHz BPF #2 (before the AD8318 -- mandatory)", "Filter:Filter_1109W98",
+add("FLT_433_B", "433 MHz BPF #2 (before the AD8318 -- mandatory)", "Filter:Filter_SAW-6_3.8x3.8mm",
     [("1", "RF_TAP"), ("2", "DET_RF_IN")])
 add("J_2450_TX", "2.45 GHz TX antenna port (SMA; no PA on the PCBA)",
     "Connector_Coaxial:SMA_Amphenol_132134-10_Vertical",
@@ -161,6 +161,11 @@ lines.append("  (components\n")
 for ref, val, fp, pins in COMPS:
     lines.append(f'    (comp (ref {q(ref)})\n')
     lines.append(f'      (value {q(val)})\n')
+    # CRITICAL: emit a DIRECT (footprint ...) token, not only a field. The hub's proven reader
+    # (build_hub_board_v9.read_netlist) extracts `fp = re.search(r'\(footprint "([^"]*)"\)', b)`
+    # and falls back to "" -- so a fields-only netlist silently yields an EMPTY lib_id and every
+    # part becomes "unplaceable" with no error. Measured 2026-10-14: 44/44 skipped, 0 placed.
+    lines.append(f'      (footprint {q(fp)})\n')
     lines.append('      (fields\n')
     lines.append(f'        (field (name "Footprint") {q(fp)})\n')
     lines.append('      )\n')
