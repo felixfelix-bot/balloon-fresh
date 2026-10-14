@@ -42,3 +42,25 @@
 (rule "S1 hub wing-socket edge-launch (ADR-046/048) - scoped exemption"
 	(condition "A.Reference == 'J_W1' || A.Reference == 'J_W2' || A.Reference == 'J_W3' || A.Reference == 'J_W4'")
 	(constraint edge_clearance (min 0.00mm)))
+
+# =====================================================================
+# v9 hub ADDITIONS, 2026-10-14 (operator-approved). ADDITIVE ONLY -- the S1
+# frozen rules above are UNCHANGED so their sha256 and comparability survive.
+#
+# SCOPE 1: the EDGE-LAUNCHED WING INTERFACE (ADR-046/048). J_W1..J_W4 land sets sit ON
+# the board edge by design so the pads meet the wing tab; `actual 0.0000 mm` IS the
+# interface. Exempt those lands from the board edge clearance.
+#
+#   HONESTY NOTE: their Edge.Cuts SEGMENTS cannot be reached by a copper condition, so
+#   this scope only reaches the PADS of those connectors. The leftover Edge.Cuts
+#   graphics items (outline rectangles + connector segments) are a rule-APPLICABILITY
+#   artifact, not a copper defect, and are left visible rather than suppressed.
+#
+# SCOPE 2 is deliberately NOT applied: the 26 TRACK items (+3V3 at 0.218 mm,
+#   F33_VCC at 0.400 mm, GNSS_VCC, W1_SOLAR_N) are REAL edge-clearance shortfalls
+#   against the 0.5 mm board-setup value, NOT interface exemptions. They stay visible
+#   for the operator to rule on. See docs/fab/hub-v9/RULE-SCOPE-APPLICATION.md.
+# =====================================================================
+(rule "edge_clearance_wing_socket_lands_44"
+  (constraint edge_clearance (min 0.0mm))
+  (condition "A.Reference == 'J_W1' || A.Reference == 'J_W2' || A.Reference == 'J_W3' || A.Reference == 'J_W4'"))
