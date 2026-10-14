@@ -3704,7 +3704,7 @@
 				)
 			)
 		)
-		(attr smd)
+		(attr smd dnp)
 		(fp_line
 			(start -1.65 2.6)
 			(end -1.65 2.1)
@@ -11145,7 +11145,7 @@
 				)
 			)
 		)
-		(attr smd)
+		(attr smd dnp)
 		(fp_line
 			(start -4.96 -5.16)
 			(end -4.96 -5.01)
