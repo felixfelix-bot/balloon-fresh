@@ -106,3 +106,26 @@ def test_cell_matrix_matches_the_card(cell):
     br, ln = cell
     assert br in (260, 650)
     assert ln in (64, 128, 255)
+
+
+def test_remote_listen_marker_carries_host_prefix():
+    """Regression (2026-10-14): run_ops returned the marker path WITHOUT the
+    ssh host prefix, so wait_mark() stat()ed a local path for a remote board,
+    never saw the marker, burned the whole timeout, and the TX burst fired into
+    a receiver that had not opened its window -> phantom "0 packets" cells.
+    Any non-waiting run must hand back a host-qualified handle."""
+    from unittest import mock
+
+    board_host = m.Board("RX", "x240", "/dev/ttyUSB0")
+    board_local = m.Board("RX", None, "/dev/ttyUSB0")
+
+    # the real invocation is only touched through a Popen we stub out
+    with mock.patch.object(m.subprocess, "Popen") as popen:
+        popen.return_value = mock.Mock(returncode=0)
+        remote = m.run_ops(board_host, [], "/tmp/out.json", "rx_tag", wait=False)
+        local = m.run_ops(board_local, [], "/tmp/out.json", "rx_tag", wait=False)
+
+    assert remote["mark"] == "x240:/tmp/rfa1b_rx_tag.mark", remote["mark"]
+    assert ":" not in local["mark"], local["mark"]
+    # and the prefixed handle must be what wait_mark() splits on
+    assert m.wait_mark("x240:/tmp/nonexistent.mark", 0.01) is False

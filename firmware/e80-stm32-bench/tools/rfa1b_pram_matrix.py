@@ -81,7 +81,12 @@ def run_ops(board: Board, ops: list[dict], out_local: str, tag: str,
             ["sg", "dialout", "-c", f"'{inner}'"])]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if not wait:
-        return {"proc": proc, "out": remote_out, "mark": mark}
+        # Hand the marker path back with its host prefix so wait_mark() probes
+        # it REMOTELY. Without the prefix wait_mark() stats a local path, never
+        # sees the remote marker, burns the full timeout, and the TX burst fires
+        # into the void -> phantom "0 packets" cells (found 2026-10-14).
+        mark_handle = f"{board.host}:{mark}" if board.host else mark
+        return {"proc": proc, "out": remote_out, "mark": mark_handle}
     try:
         stdout, stderr = proc.communicate(timeout=timeout_s)
     except subprocess.TimeoutExpired:
