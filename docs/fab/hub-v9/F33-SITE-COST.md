@@ -112,8 +112,8 @@ for a future revision** — with no urgency now.
 ## 6. Where the saving actually is, today
 
 - **Parts:** the F33 module **~$8/board** (per `docs/DUAL-VARIANT-DESIGN.md`, LCSC
-  `C5913567` "check"). **Build only what we can fly: 1–2 units, not all 10.**
-- **Do NOT order** the F33 for boards that will not be flown § — and **confirm `C5913567`**
+  ⛔ **`C5913567` DOES NOT EXIST** — verified live 2026-10-14; the real 433 MHz code is **`C53243927` at $21.8467, 2.7× our ~$8 assumption**). **Build only what we can fly: 1–2 units, not all 10.**
+- **Do NOT order** the F33 for boards that will not be flown § — and ⛔ **`C5913567` is NOT a real code**: the 433 MHz part is **`C53243927`, $21.8467** (so buying 1–2 instead of 10 saves **~$175–196**, not the ~$64–72 the wrong price implied)
   before ordering, since that record is marked *"(check)"*.
 - **Do NOT remove the footprint yet** — that is Option C, and it costs a re-route.
 

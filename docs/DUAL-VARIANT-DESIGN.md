@@ -189,7 +189,10 @@ The F33 has 7 GND pins carrying up to 1.2A return current during TX:
 | Component | LCSC Part | Price | Used in |
 |-----------|-----------|-------|---------|
 | NiceRF LoRa2021 (bare) | — (owned: 4×) | — | V1 |
-| NiceRF LoRa2021F33-2G4 | C5913567 (check) | ~$8 | V2 |
+| NiceRF **LoRa1121F33-2G4** | **~~C5913567~~ ⛔ nonexistent → 433 MHz = `C53243927`** | **$21.8467 measured** (was "~$8") | V2 |
+
+> ⛔ **`C5913567` DOES NOT EXIST** — verified live 2026-10-14 with positive controls; `total: 0`. The family is **`LoRa1121F33-2G4`** (1121, not 2021). The 2.4 GHz variant is **not carried** (stock 0); the **433 MHz** variant is `C53243927` at **$21.8467**. See `docs/fab/F33-PART-NUMBER-VERIFICATION.md`.
+
 | ESP32-C3-MINI-1 | C2913482 | ~$2 | Both |
 | RP2040-Zero (Waveshare) | — (owned) | — | Both |
 | MS5611 | C21934 (breakout) | ~$3 | Both |

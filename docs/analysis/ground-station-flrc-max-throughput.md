@@ -1,5 +1,7 @@
 # Ground-station 433 MHz downlink — FLRC at maximum throughput: balloon TX power vs ground dish size
 
+> ⚠ **PART-NUMBER CORRECTION (2026-10-14):** this document cites LCSC `C5913567` for the F33 module. **That code does not exist** (live JLCPCB API, `total: 0`, verified with positive controls). The family is **`LoRa1121F33-2G4`** (1121, not 2021); the 433 MHz variant is **`C53243927`** at **$21.8467**, not the ~$8 assumed here. The 2.4 GHz variant the design specified is **not carried** by LCSC. See `docs/fab/F33-PART-NUMBER-VERIFICATION.md`.
+
 **Status:** Analysis — `docs/analysis/`, not yet an ADR.
 **Date:** 2026-10-08
 **Scope:** RF/link + ground-hardware design only. **Design only — nothing is ordered here.**
