@@ -155,11 +155,19 @@ for label, path in RADIO_FREE_BOARDS.items():
 # C. DECLARED vs PLACED -- the check that catches A downstream
 # =============================================================================================
 print("\n=== C. DECLARED vs PLACED: does the board carry what the schematic declares? ===")
+# TWO DISTINCT LINKS, deliberately separated so a failure says WHICH link is broken:
+#   C1  netlist  ->  the single-writer's COMMITTED board   (is the design placed at all?)
+#   C2  committed ->  the PACKAGED board                   (is the order package current?)
+# Conflating them hid the real state on 2026-10-14: the committed board had been regenerated to
+# 44/44 while the packaged (routed) artifact still carried the old 39, so one check reported a
+# single opaque failure instead of naming the stale package.
+COMMITTED_HUB_BOARD = os.path.join(HW, "hub_board_v9.kicad_pcb")
+PACKAGED_HUB_BOARD = os.path.join(REPO, "docs", "fab", "hub-v9", "gerbers", "hub_v9.kicad_pcb")
 PAIRS = [
-    ("v9 hub",
+    ("v9 hub (netlist -> committed board)",
      os.path.join(HW, "schematics", "flight_board", "v9_flight.net"),
-     os.path.join(REPO, "docs", "fab", "hub-v9", "gerbers", "hub_v9.kicad_pcb")),
-    ("base station",
+     COMMITTED_HUB_BOARD),
+    ("base station (netlist -> placed board)",
      os.path.join(HW, "base_station", "base_station_v1.net"),
      os.path.join(HW, "base_station", "base_station_v1_placed.kicad_pcb")),
 ]
@@ -189,6 +197,31 @@ for label, net, brd in PAIRS:
        f"of firmware.")
     ck(f"C. {label}: no extra footprints the netlist does not declare", not extra,
        f"extra on board: {extra}")
+
+# --- C2: is the PACKAGED board the same artifact as the committed one? ------------------------
+def _refs(path):
+    code = ("import sys;sys.path.insert(0,'/usr/lib/python3/dist-packages');import pcbnew;"
+            f"b=pcbnew.LoadBoard({path!r});"
+            "print(' '.join(sorted(f.GetReference() for f in b.GetFootprints())))")
+    rr = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=300)
+    out = set()
+    for line in rr.stdout.splitlines():
+        if line.strip():
+            out |= set(line.split())
+    return out
+
+
+if os.path.exists(COMMITTED_HUB_BOARD) and os.path.exists(PACKAGED_HUB_BOARD):
+    c_refs, p_refs = _refs(COMMITTED_HUB_BOARD), _refs(PACKAGED_HUB_BOARD)
+    print(f"    committed board {len(c_refs)} footprints   packaged board {len(p_refs)} footprints")
+    missing = sorted(c_refs - p_refs)
+    ck("C2. the PACKAGED board carries everything the committed board does", not missing,
+       "" if not missing else
+       f"the packaged board is STALE: it lacks {missing}\n"
+       f"The committed board is the single writer's output; the packaged board is DERIVED from it.\n"
+       f"A stale package would ship hardware missing those parts -- the exact defect that reached\n"
+       f"the order package once already. REBUILD: route the committed board, re-emit the BOM/CPL/\n"
+       f"gerbers, and copy the routed board into the package.")
 
 # =============================================================================================
 # F. DRC FLOOR RELAXATION -- a tool must not lower the bar it is graded against
