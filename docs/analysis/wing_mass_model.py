@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # --- MEASURED OVERRIDE (2026-10-14, operator scales) -------------------------------------
 # These replace the retired Si-density estimates below. Two balances were used: a gram balance
 # (0.01 g) for 10-piece piles and a milligram balance for single panels; each panel size was
@@ -25,6 +26,33 @@ fill factor and the watt-per-gram figure.
 No claim in the analysis is stronger than what this script prints.
 """
 from __future__ import annotations
+
+# --- MEASURED OVERRIDE (2026-10-14, operator scales) -------------------------------------
+# These replace the retired Si-density estimates below. Two balances were used: a gram balance
+# (0.01 g) for 10-piece piles and a milligram balance for single panels; each panel size was
+# weighed by BOTH routes and the two agree within 2 %.
+#   MEASURED_SMALL_G = 0.440   (10-piece route says 0.4462)
+#   MEASURED_LARGE_G = 1.382   (10-piece route says 1.4040)
+#   MEASURED_BALLOON_G = 46.84 (Yokohama envelope)
+# RETIRED: 0.5006 / 1.4951 (Si-density, 12 % / 8 % high) and "~2 g per cell" (4.5x too heavy).
+# Source: docs/analysis/MEASURED-MASSES.md ; reproduce: tracker/hardware/measured_masses.py
+# ------------------------------------------------------------------------------------------
+#
+# WIRED IN (2026-10-14b): this block was INERT when first committed -- it was only a comment,
+# while cell_mass_g() below still returned area x t x rho_Si (0.5006 / 1.4951 g). The values are
+# now bound to these constants and consumed by cell_mass_g(), so the model and the record agree.
+# The SINGLE-PART readings are the reference: they came off the 0.01 mg balance, ~10,000x finer
+# than the 0.01 g balance used for the 10-piece piles -- so the 10-piece mean is the cross-check.
+MEASURED_CELL_G: dict[str, float] = {
+    "small": 0.440,     # single part, 0.01 mg balance (10-piece cross-check: 0.4462)
+    "large": 1.382,     # single part, 0.01 mg balance (10-piece cross-check: 1.4040)
+}
+MEASURED_CELL_10PACK_G: dict[str, float] = {
+    "small": 4.462 / 10,
+    "large": 14.04 / 10,
+}
+MEASURED_BALLOON_G = 46.84
+
 
 # --------------------------------------------------------------------------
 # MATERIAL CONSTANTS
@@ -71,16 +99,22 @@ def cell_area_cm2(key: str) -> float:
 
 
 def cell_mass_g(key: str) -> float:
-    """Silicon-mass estimate: AREA x THICKNESS x Si DENSITY.
+    """MEASURED cell mass (operator scales, 2026-10-14) -- not a silicon estimate.
 
-    MARKED ESTIMATE: bare silicon only. Ignores the cell's own metallisation,
-    busbars and any encapsulant, and ignores the repo's own per-cell figure
-    ('~2g each', docs/PAYLOAD-WEIGHT-ESTIMATES.md line 92 / line 96) which is
-    ~4x this number and is flagged TODO(unverified) in the analysis.
+    Supersedes the AREA x THICKNESS x Si DENSITY estimate this function used to
+    compute. That estimate was purely geometric (bare silicon, no metallisation,
+    no busbars, no encapsulant) and came out high on both sizes:
+
+        small  0.5006 g estimated  ->  0.440 g MEASURED  (-12.1 %)
+        large  1.4951 g estimated  ->  1.382 g MEASURED  (-7.6 %)
+
+    Single-part readings are used: they came off the 0.01 mg balance, ~10,000x
+    finer than the 0.01 g balance behind the 10-piece piles (which cross-check
+    to 0.4462 / 1.4040 g, agreeing within 2 %).
     """
-    c = CELLS[key]
-    vol_cm3 = cell_area_cm2(key) * (c["t"] * 0.1)   # mm -> cm
-    return vol_cm3 * SI_DENSITY
+    if key not in MEASURED_CELL_G:
+        raise KeyError(f"no measured mass for cell size {key!r}")
+    return MEASURED_CELL_G[key]
 
 
 def cell_power_w(key: str) -> float:
@@ -240,7 +274,7 @@ def main() -> None:
         print(f"{k:6} {CELLS[k]['l']:.2f} x {CELLS[k]['w']:.2f}   "
               f"{cell_area_cm2(k):9.4f} {CELLS[k]['t']:6.2f} {cell_mass_g(k):8.4f} "
               f"{cell_power_w(k):6.3f} {cell_power_w(k)/cell_mass_g(k):7.3f}")
-    print("  formula: area = L x W;  mass = area x t x rho_Si")
+    print("  formula: area = L x W;  mass = MEASURED (operator scales 2026-10-14)")
     print()
 
     print("-- SOLDER ALLOWANCE (3 small cells in series, per wing) ------------------")
