@@ -134,7 +134,8 @@
         "min_via_annular_width": 0.1,
         "min_via_diameter": 0.5,
         "solder_mask_to_copper_clearance": 0.0,
-        "use_height_for_length_calcs": true
+        "use_height_for_length_calcs": true,
+        "_comment_min_through_hole_diameter": "0.2mm (was 0.3mm), reduced 2026-10-14 by operator decision. The 0.3mm floor fired on the ESP32-S3-WROOM-1U module's thermal/heatsink vias, which are 0.2mm in Espressif's own land pattern, and 0.2mm equals JLCPCB's mechanical drill floor. The board rule was therefore STRICTER THAN THE FAB REQUIRES for this pad class. Via/hole floors in the frozen ruleset are UNCHANGED: this is a scoped reduction WITH a rationale, not a blanket relaxation. See docs/fab/hub-v9/RULE-SCOPE-APPLICATION.md."
       },
       "teardrop_options": [
         {
