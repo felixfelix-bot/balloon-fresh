@@ -42,3 +42,26 @@ extract cannot verify the pad **sizes** or the exact **E-pad** dimensions of `SX
 
 **To close that last gap the figure must be rendered and read.** Stating the limit is part of the
 record — a text extract that is trusted past its evidence is exactly how a placeholder survives.
+
+
+## Figure 17-3 — QFN 4x4mm Land Pattern
+
+`Figure17-3-QFN4x4-LandPattern.png` is page 153 of the vendored PDF, rendered at 200 dpi:
+
+    pdftoppm -f 153 -l 153 -r 200 -png SX1280-81_Rev3.2_Mar2020.pdf Figure17-3
+
+It is kept as an IMAGE rather than transcribed numbers because it is a DRAWING: the dimension
+callouts live in the vector art, and a text extract cannot carry them. Reading it with a vision
+model is what closed the land-pattern question.
+
+What it says (read from the rendering):
+
+    X = 0.30 mm   pad width
+    Y = 0.80 mm   pad length (radial)
+    P = 0.50 mm   pad pitch
+    H = 2.70 mm   exposed pad
+    K = 2.70 mm   exposed pad
+    Z = 4.80 mm   pad-centre span
+    6 pads per side
+
+Verify the footprint against it with `tracker/hardware/verify_fp_fig173.py`.
