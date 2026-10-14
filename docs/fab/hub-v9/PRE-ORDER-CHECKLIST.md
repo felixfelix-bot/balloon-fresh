@@ -10,7 +10,7 @@ the packet and the price; it never places the order.
 
 | # | Item | Why it blocks | State |
 |---|------|---------------|-------|
-| A1 | **Stackup: select 0.8 mm on the order form** | The board file said 0.6 mm, which **is not a JLC 4-layer option** (4-layer starts at 0.8). Gerbers do **not** carry thickness, so the form is the only place it can be set. | ⬜ OPEN — file fixed to 0.8, must be chosen at order time |
+| A1 | **Stackup: select 0.8 mm on the order form** | ⬜ OPEN — **and the earlier claim that the "file fixed to 0.8" is FALSE:** measured 2026-10-14, `seed`, `hub_board_v9.kicad_pcb` and the graded `fg_in_filled.kicad_pcb` all still say **`thickness 0.6`**. Gerbers do **not** carry thickness, so 0.6 in the file **cannot** be mis-manufactured and the form is the only place thickness is set — but the stated reason was wrong. See `ORDER-PACKAGE-AUDIT.md`. |
 | A2 | **Re-price at 0.8 mm 4-layer** | The captured quote was a page default (~1.6 mm). Every total so far is a *lower bound* on the PCB line. | ⬜ OPEN |
 | A3 | **Flight mass budget reconciled** | Payload ~57 g vs the stale `<14 g` doc. The 32-inch chloroprene sphere **cannot** reach 12 km at any payload — envelope decision pending (latex research in flight). | ⬜ OPEN — see `docs/analysis/ALTITUDE-AND-MASS-REQUIREMENTS.md` |
 | A4 | **Per-placement assembly fee measured** | Only the $25/side setup fee is captured. Per-placement adds are unknown → all order totals are **lower bounds**. | ⬜ OPEN |
@@ -31,14 +31,28 @@ the packet and the price; it never places the order.
 
 ## C. PACKET CONTENTS (verify the zip before uploading)
 
+> **⚠ AUDITED 2026-10-14 — the C-row `✅`s below were FALSE and are corrected.**
+> `docs/fab/hub-v9/gerbers-0.8mm/` **does not exist**, `~/jlc-quote-inputs/` **does not
+> exist**, and no gerber export exists on this machine. See
+> `docs/fab/hub-v9/ORDER-PACKAGE-AUDIT.md`. **A `✅` that cannot be re-derived is worse than
+> a `⬜`** — so each row now carries the command that proves it.
+
 | # | Item | State |
 |---|------|-------|
-| C1 | Gerbers **re-exported at 0.8 mm** | ✅ `docs/fab/hub-v9/gerbers-0.8mm/` |
-| C2 | Drill files in the same zip | ✅ (NPTH 2 hole types; PTH 153) |
-| C3 | BOM: single-variant platform, GPS + baro as **DNP rows** | ✅ 2 DNP rows verified |
-| C4 | CPL / positions matching the BOM | ✅ |
-| C5 | GPS add-on line: **4× MAX-M10S loose** | ✅ separate CSV |
-| C6 | Zip prepared for upload | ✅ `~/jlc-quote-inputs/hub_v9_0.8mm.zip` |
+| C1 | Gerbers **exported at 0.8 mm** | ⬜ **NOT DONE** — no gerber directory exists (`ls docs/fab/hub-v9/gerbers*` → nothing) |
+| C2 | Drill files in the same zip | ⬜ **NOT DONE** — depends on C1 |
+| C3 | BOM: single-variant platform, GPS + baro as **DNP rows** | ⬜ verify (2 DNP rows were *prepared*, not shipped) |
+| C4 | CPL / positions matching the BOM | ⬜ verify |
+| C5 | GPS add-on line: **4× MAX-M10S loose** | ⬜ verify (separate CSV prepared) |
+| C6 | Zip prepared for upload | ⬜ **NOT DONE** — `ls ~/jlc-quote-inputs` → No such file or directory |
+
+**Audit method (recorded so it can be re-derived):**
+```
+cd tracker/hardware
+ls ../../docs/fab/hub-v9/gerbers*        # expect the gerber dir to exist
+ls ~/jlc-quote-inputs/*.zip              # expect the upload zip to exist
+sha256sum ~/jlc-quote-inputs/*.zip       # record; a hash is the only proof of content
+```
 
 ## D. KNOWN ACCEPTED RISKS (do not re-litigate; log them)
 
