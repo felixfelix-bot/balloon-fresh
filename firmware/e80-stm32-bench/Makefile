@@ -138,6 +138,7 @@ ANSIBLE_INVENTORY := $(REPO_ROOT)/ansible/range-inventory.ini
 
 .PHONY: all test-host clean firmware flash
 .PHONY: range-setup range-tx range-rx range-merge range-check range-dry-run range-test-host
+.PHONY: rfa1b-test-host
 .PHONY: rx tx flash range-coord range-cvm-server range-adaptive range-cvm-test buf-smoke sweep-e80
 .PHONY: boat-tx boat-rx
 
@@ -654,9 +655,18 @@ range-zip: ## Zip RX log + optional GPS + metadata.txt for sharing
 	echo ""; \
 	echo "Send $$ZIP_NAME to the TX operator via Signal / Slack / email."
 
+rfa1b-test-host: ## Run pytest for the RFA-1b PRAM matrix runner (host logic only)
+	@echo "=== Running RFA-1b matrix runner host tests ==="
+	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_rfa1b_pram_matrix.py -v
+
 range-test-host: ## Run pytest for distributed range test split logic
 	@echo "=== Running distributed range test unit tests ==="
-	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py test_range_check.py -v
+	cd $(TOOLDIR)/tools && $(PYTHON) -m pytest test_e80_range_split.py test_range_check.py \
+		test_cvm_armed_publisher.py test_cvm_verdict_publisher.py test_cvm_tx_listener.py \
+		test_nostr_giftwrap.py test_giftwrap_determinism.py \
+		test_giftwrap_determinism_spec.py test_giftwrap_single_path.py \
+		test_keymaterial.py test_relay_testkit.py test_relay_failover_publisher.py \
+		test_fake_relay_transport.py test_failover_relays_constant.py -v
 
 # ============================================================
 # CONTEXTVM (NOSTR MCP) RANGE TEST TARGETS

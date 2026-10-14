@@ -1,0 +1,122 @@
+{
+  "name": "c_89_2L_06",
+  "dims_entered": [
+    89,
+    89
+  ],
+  "qty": 5,
+  "note": "0.6mm inside the cap",
+  "at": "2026-10-07T23:37:20",
+  "page_load": "FRESH navigation (new tab) -> isolated",
+  "pristine_selected": {
+    "Base Material": "FR-4",
+    "Layers": "2",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Thickness": "1.6mm",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Material Type": "FR4 TG135",
+    "Surface Finish": "HASL(with lead)",
+    "Outer Copper Weight": "1 oz",
+    "Coverlay Thickness": "PI:12.5um/AD:15um",
+    "Gold Fingers": "No",
+    "EDA Software": "Other",
+    "Stiffener": "Without",
+    "EMI Shielding Film": "Without",
+    "Cutting Method": "Laser Cutting",
+    "Via Covering": "Tented",
+    "Via Plating Method": "Not Specified",
+    "Min via hole size/diameter": "0.3mm/(0.4/0.45mm)",
+    "Board Outline Tolerance": "\u00b10.2mm(Regular)",
+    "Confirm Production file": "No",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Castellated Holes": "No",
+    "Edge Plating": "No",
+    "Blind Slots": "No",
+    "UL Marking": "No",
+    "Humidity Indicator Card": "No"
+  },
+  "steps": [
+    {
+      "heading": "Surface Finish",
+      "want": "LeadFree HASL",
+      "got": "LeadFree HASL",
+      "took": true,
+      "attempts": 1
+    },
+    {
+      "heading": "Layers",
+      "want": "2",
+      "got": "2",
+      "took": true,
+      "attempts": 1
+    },
+    {
+      "heading": "PCB Thickness",
+      "want": "0.6mm",
+      "err": "DISABLED",
+      "option": "0.6mm",
+      "tip": "The thickness of finished board. Board thickness tolerance is +/-10%. Note: 1. For boards with a 0.40 mm thickness, we only accept an ENIG finish. These cannot be made with a panel and are not available for 1-layer PCBs. 2. For boards with a 0.60 mm thickness, the maximum PCB size is 100 mm x 100 mm. This thickness is not available for 1-layer, 4-layer, or 6-layer PCBs. 3. For boards with a 0.8 mm to 1.0 mm thickness, the maximum PCB size is 300 mm x 300 mm.  ",
+      "took": false
+    }
+  ],
+  "dim_x_set": "89",
+  "dim_y_set": "89",
+  "final_selected": {
+    "Base Material": "FR-4",
+    "Layers": "2",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Thickness": "1.6mm",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Material Type": "FR4 TG135",
+    "Surface Finish": "HASL(with lead)",
+    "Outer Copper Weight": "1 oz",
+    "Coverlay Thickness": "PI:12.5um/AD:15um",
+    "Gold Fingers": "No",
+    "EDA Software": "Other",
+    "Stiffener": "Without",
+    "EMI Shielding Film": "Without",
+    "Cutting Method": "Laser Cutting",
+    "Via Covering": "Tented",
+    "Via Plating Method": "Not Specified",
+    "Min via hole size/diameter": "0.3mm/(0.4/0.45mm)",
+    "Board Outline Tolerance": "\u00b10.2mm(Regular)",
+    "Confirm Production file": "No",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Castellated Holes": "No",
+    "Edge Plating": "No",
+    "Blind Slots": "No",
+    "UL Marking": "No",
+    "Humidity Indicator Card": "No"
+  },
+  "quote": {
+    "engineering_fee": null,
+    "board": null,
+    "via_covering": "$0.00",
+    "surface_finish": "$0.00",
+    "deburring_edge_rounding": null,
+    "panel": null,
+    "pcb_build_time_2days": "$0.00",
+    "calculated_price": "",
+    "shipping": "$23.21",
+    "weight": "0.26kg",
+    "build_time_lines": {
+      "2 days": "$0.00",
+      "24 hours": "$7.60",
+      "24 hours PCBA Only": "$0.00"
+    }
+  },
+  "dims_input_readback": [
+    "89",
+    "89"
+  ]
+}

@@ -31,6 +31,7 @@
 #include "bench_stats.h"
 #include "buffer.h"
 #include "console.h"
+#include "pram_patch.h"
 #include "prbs.h"
 #include "radio_bench.h"
 
@@ -552,6 +553,11 @@ static void print_id(void)
     console_put(" ");
     console_put(bench_safety_boot_field(iwdg_active));
     console_put(quiet_mode ? " quiet=1" : " quiet=0");
+    /* RFA-1b: patch arm + the PRAM table's CRC32 (build attestation: a host
+     * can verify the flashed image carries the ELRS table without any probe). */
+    console_put(pram_patch_enabled() ? " patch=1" : " patch=0");
+    console_put(" pramcrc=0x");
+    console_put_u32_hex8(pram_patch_table_crc32());
     console_put(" buf=");
     console_put_u32(buf_len());
     console_putln("");
@@ -584,7 +590,7 @@ static void handle_cmd(const bench_cmd_t* c)
         console_put("START N=<n> LEN=<6-511> GAP=<us> | STAT? | TEMP? | STOP | ");
         console_put("FLASH (ROM bootloader) | BAND OVERRIDE <pin> 410-2483MHz (incl 2.4GHz ISM) | ");
         console_put("SESSION <id> | CONFIG <id> <replicate> | ");
-        console_put("PRBS9 ON|OFF | PRBS ON|OFF | QUIET ON|OFF | ");
+        console_put("PRBS9 ON|OFF | PRBS ON|OFF | QUIET ON|OFF | PATCH ON|OFF | ");
         console_put("BUF CLEAR | BUF LOAD <n> <crc16_hex> | BUF STATUS");
         console_putln("");
         break;
@@ -1116,6 +1122,31 @@ static void handle_cmd(const bench_cmd_t* c)
         prbs_verify_enabled = c->prbs_enable;
         console_put("OK PRBS ");
         console_putln(c->prbs_enable ? "ON" : "OFF");
+        break;
+
+    case BENCH_CMD_PATCH:
+        /* RFA-1b: PRAM patch arm selector. Setting the flag alone is not
+         * enough — ExpressLRS uploads the patch right after a chip reset, so
+         * re-run the bring-up (reset -> patch -> calibrate -> apply_cfg) here.
+         * Role is preserved but the operator must re-send MOD/FREQ/PA/ROLE,
+         * exactly as after any re-init. */
+        pram_patch_set_enabled(c->patch_enable);
+        radio_critical_begin();
+        radio_ensure_awake();
+        (void)radio_bench_init();
+        radio_critical_end();
+        console_put("OK PATCH ");
+        console_put(c->patch_enable ? "ON" : "OFF");
+        console_put(" pramcrc=0x");
+        console_put_u32_hex8(pram_patch_table_crc32());
+        if (c->patch_enable)
+        {
+            console_put(" load=");
+            console_put_i32(pram_patch_last_status());
+            console_put(" verify=");
+            console_put_i32(pram_patch_last_verify_mismatch());
+        }
+        console_putln(" (RE-SEND MOD/FREQ/PA/ROLE)");
         break;
 
     case BENCH_CMD_QUIET:

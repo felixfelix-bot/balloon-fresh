@@ -1,0 +1,77 @@
+{
+  "name": "t1_103_4L_06",
+  "dims": [
+    103,
+    103
+  ],
+  "layers": "4",
+  "thickness": "0.6mm",
+  "qty": 5,
+  "extra": [],
+  "at": "2026-10-07T23:25:47",
+  "qty_before": "MISSING",
+  "fill": "ok",
+  "click_thickness": {
+    "x": 397.78125,
+    "y": 956.984375,
+    "tag": "BUTTON",
+    "cls": "btn btnlg mt-20"
+  },
+  "click_layers": {
+    "x": 415,
+    "y": 608.984375,
+    "tag": "BUTTON",
+    "cls": "btn btnlg w46 min-w-[46px]"
+  },
+  "selected_rows": {
+    "Base Material": "FR-4",
+    "Layers": "4",
+    "PCB Qty": "5",
+    "Product Type": "Industrial/Consumer electronics",
+    "Different Design": "1",
+    "Delivery Format": "Single PCB",
+    "PCB Thickness": "1.6mm",
+    "PCB Color": "Green",
+    "Silkscreen": "White",
+    "Material Type": "FR4 TG135",
+    "Surface Finish": "HASL(with lead)",
+    "Outer Copper Weight": "1 oz",
+    "Inner Copper Weight": "0.5 oz",
+    "Specify Stackup": "No",
+    "Coverlay Thickness": "PI:12.5um/AD:15um",
+    "Gold Fingers": "No",
+    "EDA Software": "Other",
+    "Stiffener": "Without",
+    "EMI Shielding Film": "Without",
+    "Cutting Method": "Laser Cutting",
+    "Via Covering": "Plugged",
+    "Via Plating Method": "Not Specified",
+    "Min via hole size/diameter": "0.3mm/(0.4/0.45mm)",
+    "Board Outline Tolerance": "\u00b10.2mm(Regular)",
+    "Confirm Production file": "No",
+    "Mark on PCB": "Remove Mark",
+    "Electrical Test": "Flying Probe Fully Test",
+    "Castellated Holes": "No",
+    "Press-Fit Hole": "No",
+    "Edge Plating": "No",
+    "Blind Slots": "No",
+    "UL Marking": "No",
+    "Backdrill": "No",
+    "Humidity Indicator Card": "No"
+  },
+  "quote": {
+    "raw_len": 3473,
+    "engineering": "$25.00",
+    "board": "$6.60",
+    "via_covering": "$0.00",
+    "surface_finish": "$0.00",
+    "deburring": null,
+    "calculated_price": "$31.60",
+    "shipping": "$23.21",
+    "weight": "0.30kg"
+  },
+  "dims_input": [
+    "103",
+    "103"
+  ]
+}

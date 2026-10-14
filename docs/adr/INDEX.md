@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **66** distinct
-numbers, **66** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **91** distinct
+numbers, **91** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -89,6 +89,36 @@ None.
 | 053 | `053-drc-blockers-feedback-tool.md` | DRC-to-Blockers Feedback Script as a Standard Board Tool | Accepted |
 | 054 | `054-skidl-netlist-authoring.md` | SKiDL for Netlist Authoring of New Boards | Accepted |
 | 055 | `055-tooling-sourcing-policy.md` | Tooling Sourcing Policy for Board Production | Accepted |
+| 051 | `051-hub-array-and-cut-topology.md` | Hub-mounted solar array as an INDEPENDENT string: the wing cut topology and the cut-sense provision | Proposed |
+| 052 | `052-cell-mounting-end-only.md` | Bare cells are mounted END-ONLY: no adhesive bond, no bonded-and-vented carrier | Proposed |
+| 053 | `053-per-cell-bypass-diodes.md` | Per-cell / per-group bypass Schottky diodes: a cracked or shaded cell costs one cell, not the whole series string | Proposed |
+| 054 | `054-array-topology-final.md` | Array topology, final: the 12-cell series string is RETAINED, the hub-side per-interface bypass diode is MANDATORY, per-cell bypass is REJECTED, and the bypass-diode mechanism is CORRECTED | Proposed |
+| 055 | `055-hub-geometry-final.md` | Hub geometry, final: the array plane is HORIZONTAL (flat, no tilt, zero ripple), the area is a DUTY CHOICE, the board is 0.4 mm, the hub is ≈103 mm square, and the cells go on the UPPER face under a raised attachment standoff | Proposed |
+| 056 | `056-thermal-and-frequency-drift.md` | Thermal and frequency drift: no oscillator heater, TCXO where a radio needs one, and GPS 1PPS discipline as the zero-mass/zero-watt provision | Proposed |
+| 057 | `057-flrc-drift-strategy.md` | FLRC drift strategy: FLRC's offset tolerance is band-independent in Hz, so the 2.4 GHz uplink is the exposure, the degradation ladder must not slow the FLRC rate, and the ranked mitigations | Proposed |
+| 058 | `058-onboard-temp-compensation.md` | On-board temperature-sensor-based drift compensation: the LR2021's XOSC-adjacent sensor as the primary instrument, a per-unit calibration curve, GPS 1PPS verification, and an MS5611 cross-check | Proposed |
+| 059 | `059-ntc-temp-compensation-provision.md` | LR2021 on-chip NTC temperature compensation: the provision, the TCXO-vs-NTC mutual exclusion, the thermal-coupling siting rule, and the module pin-breakout blocker | Proposed |
+| 060 | `060-sx1280-drift-strategy.md` | SX1280 drift strategy: the retained 2.4 GHz ranging radio, whether its ranging role needs drift control at all, and the ranked provisions | Proposed |
+| 061 | `061-onboard-storage.md` | On-board storage: the module's own 8 MB flash is sufficient; no external storage part is fitted; the TX buffer is sized to the link, not to the flash | Proposed |
+| 062 | `062-variant-b-design-basis.md` | Variant B design basis: a separate, under-20 g vehicle with its own mass, energy, array and outline | Proposed |
+| 063 | `063-decouple-board-area-from-array-overhang.md` | Hub board area and array area are DECOUPLED: panels may overhang, the outline follows the components, and the array rides a separate carrier | Proposed |
+| 064 | `064-hub-outline-trim.md` | Hub outline trim: 103 × 103 mm → 102 × 102 mm, to cross the JLCPCB size-tier boundary | Proposed |
+| 065 | `065-wing-skeletonised-double-sided.md` | Wing board: skeletonised frame carrier + double-sided cells | Accepted |
+| 066 | `066-conservative-hub-unfreeze.md` | Conservative hub baseline: unfreeze board work without claiming an unmeasured cell allowable | Proposed — operator direction recorded 2026-10-09; this record is the interim design basis and is not an order authorization |
+| 071 | `071-ground-station-gateway-design-basis.md` | Ground-station design basis: a full-duplex INTERNET GATEWAY through the balloon as a bent pipe | Accepted by operator |
+| 072 | `072-band-split-duplex-two-antennas-no-circulator.md` | Band-split duplex at the gateway: two band antennas, and NO circulator | Accepted by operator |
+| 073 | `073-433-downlink-flrc-max-lora-rejected.md` | 433 MHz downlink: FLRC at maximum throughput, and LoRa REJECTED | Accepted by operator |
+| 074 | `074-two-flight-board-variants-licence-free-replication.md` | Two flight-board variants: an F33 high-power board and a low-power LR2021 board, so others can fly without a licence | Accepted by operator |
+| 075 | `075-f33-cheapest-db-range-multiplier.md` | The F33 is the cheapest dB in the system (~0.40 USD/dB) and it multiplies every ground candidate's range 3.55× | Accepted by operator |
+| 076 | `076-positioner-stow-on-wind-survival-policy.md` | Positioner survival policy: stow on wind, anemometer cutoff, mechanical latch | Proposed — an agent-derived engineering policy |
+| 077 | `077-print-structure-buy-gearing-self-locking-worm.md` | Print the structure, buy the gearing: a self-locking worm reducer is mandatory | Accepted by operator |
+| 078 | `078-right-size-antenna-cliff-and-mesh-rule.md` | Right-size the antenna: small dish / wide beam over big dish / narrow beam; the positioner-class cliff and the mesh rule | Proposed — an engineering analysis |
+| 079 | `079-amplifier-led-receive-chain-owned-tqp3m9037-lna.md` | Amplifier-led receive chain using the owned TQP3M9037 LNA | Accepted by operator |
+| 080 | `080-xr613-resistive-divider-bench-tool-not-array-combiner.md` | The XR-613 divider is a resistive bench tool, NOT an array combiner (resistive ⇒ 6 dB, no array gain) | Accepted by operator |
+| 081 | `081-ground-station-tier-ladder-and-option-b.md` | The ground-station tier ladder, and the recommended option B (Diamond A-430S15R + DIY tracker P2, ≈ EUR 735) | Proposed — the ladder is a recommendation with measured/estimated rungs; the |
+| 082 | `082-rate-adaptation-size-for-min-rate-at-max-range.md` | Rate adaptation: size the dish/antenna for the minimum useful rate at maximum range | Accepted by operator |
+| 083 | `083-2g4-reflector-production-ku-offset-dish.md` | The 2.4 GHz reflector is a BOUGHT production Ku offset dish (new or used), never a hand-built one | Proposed — an engineering recommendation with sourced prices and a computed |
+| 084 | `084-ground-station-automatic-level-control.md` | Automatic level control at the gateway: AGC on the 433 receive chain, telemetry-driven attenuation on the 2.4 GHz uplink | Accepted by operator |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -101,6 +131,8 @@ None.
 | 109 | `109-firmware-output-harmonization.md` | Firmware Output Harmonization | APPROVED |
 | 110 | `110-tollgate-over-lr2021.md` | TollGate Balloon Uses LR2021 Radio as Data Link | Proposed |
 | ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 056 | — |
+| 067 | `067-hub-board-ground-plane.md` | Hub board: continuous GND return on the 4-layer stack | Accepted |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 068 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 

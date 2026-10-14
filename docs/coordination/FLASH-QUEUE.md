@@ -10,6 +10,7 @@
 | balloon-range-tests | E80 #1+#2 | PRBS-15 harmonization: E80 flashed+verified, C3 not connected | 2026-08-20T09:00Z | felix (orchestrator) | 8m | DONE (PARTIAL) |
 | balloon-range-tests | E80 TX (#1) | BUF-T3 flash smoke: SWD flash e80_bench.bin (buf/t2-impl 91cd0ae + NVIC fix) + 10x 4KB BUF LOAD + src=BUF/src=PRBS gates | 2026-08-21T08:30Z | kanban t_dd4e516b (pre-approved) | 15m | DONE |
 | balloon-range-tests | E80 RX (#2) | BUF-T5a: SWD flash e80_bench.bin (buf/t5a-rx-pcrc16) + verify PKT lines carry pcrc16 field | 2026-08-21T16:00Z | kanban t_a2949a8d (pre-approved) | 15m | DONE |
+| balloon-rfa | E80 #1 (x240) + #2 (x280) | RFA-1b PRAM experiment: flash e80_bench.bin + PATCH ON|OFF arms (kanban t_0eaed49b, approved on main via PR #161 rows) | 2026-10-14T00:20Z | Felix (orchestrator, Signal) | 60m | **NOT FLASHED** — SWD 3-wire link not seated (probe initialises, IDR unreadable) + UART ROM-ISP does NOT work through the CH340: `FLASH` jumped (`OK JUMPING TO BOOTLOADER`) but stm32flash could not sync at 57600/115200/9600 8E1 and a bounded 8E1+8N1 sync-spam probe at 57600/115200/9600/38400 got no 0x79 ACK. Boards needed a USB replug (board B sat in the ROM bootloader, board A was IWDG-active); both replugged 2026-10-14 and back on fw 5fa7912. **Resolver 2026-10-14: flash arms RETIRED as moot** — the PRAM hypothesis is refuted as stated (the 64B/128B anomaly does not reproduce on fw 5fa7912; it came from pre-FIX-T3 fw c31fb30). No flash path needed. Details: docs/RFA1b-PRAM-PATCH-VERDICT-2026-10-14.md §5 |
 
 ## Rules
 

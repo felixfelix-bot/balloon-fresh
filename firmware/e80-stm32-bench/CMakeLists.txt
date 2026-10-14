@@ -44,6 +44,9 @@ add_executable(e80_bench
     src/bench_pkt.c
     src/bench_safety.c
     src/radio_bench.c
+    src/pram_patch.c
+    src/pram_patch_table.c
+    src/pram_patch_platform.c
 )
 
 target_include_directories(e80_bench PRIVATE

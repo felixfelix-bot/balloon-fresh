@@ -1,0 +1,703 @@
+"""Acceptance tests for scripts/model_resolution_census.py.
+
+Why this exists
+===============
+
+The spatial-review gate says "an LLM with good spatial reasoning reviews the
+render before the board is done".  That gate is only real if the parts the
+reviewer is asked to judge are actually *in* the render.  A `kicad-cli pcb
+render` whose footprints reference 3D models that do not resolve prints
+"Successfully created 3D render image" and silently omits those parts -- so the
+reviewer judges the placement of a board with invisible radios.
+
+This module asserts the census tool reports that condition as a number:
+
+  resolution     a reference under ${KIPRJMOD} resolves against the board's own
+                 directory, and ${KICAD<n>_3DMODEL_DIR} against the *compiled-in*
+                 default (/usr/share/kicad/3dmodels).  Not the shell environment:
+                 that variable is unset in the shell and the renderer does not
+                 read it from there, so expanding from os.environ would report a
+                 part missing that the renderer draws, or vice versa.
+  block walking  a footprint block nests arbitrarily deep (pads, models,
+                 graphics).  A regex-based split truncates at the first inner
+                 ')' and mis-attributes the NEXT footprint's models to the
+                 previous one -- so the census would excuse the very part it
+                 should flag.
+  omission       "no (model ...) block at all" is a *different* defect from "the
+                 model file is not there", and is reported separately.
+  exit code      `--check` must exit 1 when a reference does not resolve, and
+                 when a --require-refs designator carries no model at all.
+  CAN FAIL       TestHarnessCanFail mutates the module under test (renames a
+                 KiCad variable it must expand) and asserts the suite REJECTS
+                 the mutant.  A test that passes against a broken tool has not
+                 tested anything.
+
+No `pcbnew` import here: this is a text parse, so it runs under the 3.11 pytest
+interpreter (pcbnew only loads under /usr/bin/python3.14).
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).parents[1]
+SCRIPT = ROOT / "scripts/model_resolution_census.py"
+
+# Reproduce the GitHub runner locally.
+#
+# `.github/workflows/test.yml` runs on ubuntu-latest with only `pytest pyserial`, so
+# `kicad-packages3d` is absent there and every `${KICAD<n>_3DMODEL_DIR}` reference is
+# unresolved, while on a dev box with the package installed the same board resolves
+# fully. Two red CI runs (38177201784, 38178168542) came from assertions that only
+# held on the dev box.
+#
+# `SIMULATE_NO_KICAD_PACKAGES3D=1` makes that runner reproducible here, so a
+# host-dependent assertion is caught before the push rather than after:
+#
+#   SIMULATE_NO_KICAD_PACKAGES3D=1 python3 -m pytest tests/test_model_resolution_census.py
+SIMULATE_NO_PACKAGE = os.environ.get("SIMULATE_NO_KICAD_PACKAGES3D") == "1"
+NO_PACKAGE_DIR = "/nonexistent/kicad/3dmodels"
+
+
+def _load(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    if SIMULATE_NO_PACKAGE:
+        module.KICAD_3DMODEL_DIR = NO_PACKAGE_DIR
+    return module
+
+
+@pytest.fixture()
+def mod():
+    return _load("model_resolution_census_under_test", SCRIPT)
+
+
+# --------------------------------------------------------------------------
+# synthetic board fixtures
+# --------------------------------------------------------------------------
+
+def _fp(ref: str, models: list[str], *, inner: str = "") -> str:
+    """One footprint block.  `inner` injects extra nesting (pads/graphics).
+
+    A model path given as ``"path|hide"`` carries ``(hide yes)``, the third way a
+    part can be absent from a render while its file resolves perfectly.
+    """
+    parts = []
+    for spec in models:
+        path, _, flags = spec.partition("|")
+        hide = "\n      (hide yes)" if flags == "hide" else ""
+        parts.append(f'\n    (model "{path}"{hide}\n      (offset (xyz 0 0 0))\n    )')
+    body = "".join(parts)
+    return (
+        f'  (footprint "Lib:Part_{ref}"\n'
+        f'    (layer "F.Cu")\n'
+        f'    {inner}\n'
+        f'    (property "Reference" "{ref}"\n      (at 0 0 0)\n    ){body}\n'
+        f'  )'
+    )
+
+
+def _board(*footprints: str) -> str:
+    return "(kicad_pcb (version 20241229) (generator pcbnew)\n" + "\n".join(footprints) + "\n)\n"
+
+
+def write_board(tmp_path: Path, name: str, *footprints: str) -> Path:
+    p = tmp_path / name
+    p.write_text(_board(*footprints))
+    return p
+
+
+def touch_model(board_dir: Path, rel: str) -> Path:
+    f = board_dir / rel
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("# a 3D model\n")
+    return f
+
+
+# --------------------------------------------------------------------------
+# resolution
+# --------------------------------------------------------------------------
+
+def test_kiprjmod_expands_to_the_boards_own_directory(mod, tmp_path):
+    touch_model(tmp_path, "models/U1.wrl")
+    board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/models/U1.wrl"]))
+
+    r = mod.census(str(board))
+
+    assert r["resolved"] == 1, r
+    assert r["unresolved_refs"] == []
+
+
+def test_kiprjmod_model_that_is_absent_is_unresolved(mod, tmp_path):
+    board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/models/nope.wrl"]))
+
+    r = mod.census(str(board))
+
+    assert r["resolved"] == 0
+    assert r["unresolved_refs"] == ["${KIPRJMOD}/models/nope.wrl"]
+    assert "U1" not in r["footprints_without_model"], "U1 HAS a block; it just does not resolve"
+
+
+def test_kicadN_3dmodel_dir_expands_to_the_compiled_in_default(mod, tmp_path):
+    """The renderer uses KiCad's built-in default, not the shell environment."""
+    target = Path(mod.KICAD_3DMODEL_DIR)
+    if not target.is_dir():
+        pytest.skip(f"{target} not installed on this machine")
+
+    # Pick any real model in the package so the assertion is about expansion.
+    real = next(target.rglob("*.wrl"), None)
+    if real is None:
+        pytest.skip("no .wrl files in the 3D model package")
+
+    ref = "${KICAD9_3DMODEL_DIR}/" + real.relative_to(target).as_posix()
+    board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", [ref]))
+
+    r = mod.census(str(board))
+
+    assert r["unresolved_refs"] == [], r
+    assert r["resolved"] == 1
+
+
+@pytest.mark.parametrize("var", ["KICAD8_3DMODEL_DIR", "KICAD7_3DMODEL_DIR"])
+def test_previous_major_variables_also_expand(mod, tmp_path, var):
+    """A board generated under an older KiCad still names that release's var.
+
+    The expected path is built from `mod.KICAD_3DMODEL_DIR`, not hardcoded: with
+    `SIMULATE_NO_KICAD_PACKAGES3D=1` that is a nonexistent path on purpose, and a
+    hardcoded `/usr/share/...` made this test fail on the simulated CI runner.
+    """
+    board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", [f"${{{var}}}/does/not/exist.wrl"]))
+
+    r = mod.census(str(board))
+
+    assert r["unresolved_refs"] == [f"${{{var}}}/does/not/exist.wrl"]
+    assert mod._expand(f"${{{var}}}/does/not/exist.wrl", str(tmp_path)) == str(
+        Path(mod.KICAD_3DMODEL_DIR) / "does/not/exist.wrl"
+    )
+
+
+def test_environment_variable_does_not_change_resolution(mod, tmp_path, monkeypatch):
+    """KICAD9_3DMODEL_DIR in the shell must NOT be consulted.
+
+    Guarding this explicitly: an implementation that read os.environ would pass
+    on a machine where the variable happens to be exported and silently diverge
+    from the renderer everywhere else.
+    """
+    monkeypatch.setenv("KICAD9_3DMODEL_DIR", str(tmp_path / "decoy"))
+    decoy = tmp_path / "decoy"
+    decoy.mkdir()
+    (decoy / "m.wrl").write_text("# decoy\n")
+
+    board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KICAD9_3DMODEL_DIR}/m.wrl"]))
+    r = mod.census(str(board))
+
+    assert r["unresolved_refs"] == ["${KICAD9_3DMODEL_DIR}/m.wrl"], "decoy was consulted"
+
+
+# --------------------------------------------------------------------------
+# block walking
+# --------------------------------------------------------------------------
+
+def test_nested_parens_do_not_mis_attribute_the_next_footprint(mod, tmp_path):
+    """The defect a regex split would produce: U2's model counted as U1's."""
+    deep = (
+        '(pad "1"\n      (at 0 0 0)\n      (net 1 "GND")\n'
+        '      (model (offset (xyz 0 0 0)) (scale (xyz 1 1 1)))\n    )'
+    )
+    b = write_board(
+        tmp_path,
+        "b.kicad_pcb",
+        _fp("U1", ["${KIPRJMOD}/u1.wrl"], inner=deep),
+        _fp("U2", ["${KIPRJMOD}/u2.wrl"]),
+    )
+
+    r = mod.census(str(b))
+
+    assert r["footprints"] == 2, r
+    assert r["refs_by_footprint"]["U1"] == ["${KIPRJMOD}/u1.wrl"], r["refs_by_footprint"]
+    assert r["refs_by_footprint"]["U2"] == ["${KIPRJMOD}/u2.wrl"], r["refs_by_footprint"]
+
+
+def test_footprint_without_any_model_block_is_reported_separately(mod, tmp_path):
+    touch_model(tmp_path, "u1.wrl")
+    b = write_board(
+        tmp_path,
+        "b.kicad_pcb",
+        _fp("U1", ["${KIPRJMOD}/u1.wrl"]),
+        _fp("H1", []),
+        _fp("U2", []),
+    )
+
+    r = mod.census(str(b))
+
+    assert r["footprints"] == 3
+    assert r["footprints_without_model"] == ["H1", "U2"]
+    assert r["unresolved_refs"] == [], "an omission is not an unresolvable reference"
+    assert r["resolved"] == 1
+
+
+def test_multiple_model_references_on_one_footprint_are_all_counted(mod, tmp_path):
+    touch_model(tmp_path, "a.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/a.wrl", "${KIPRJMOD}/b.wrl"]))
+
+    r = mod.census(str(b))
+
+    assert r["model_refs"] == 2
+    assert r["resolved"] == 1
+    assert r["unresolved_refs"] == ["${KIPRJMOD}/b.wrl"]
+
+
+# --------------------------------------------------------------------------
+# hidden models -- the third way to be invisible
+# --------------------------------------------------------------------------
+
+def test_a_resolvable_but_hidden_model_is_reported(mod, tmp_path):
+    """The defect measured on the real hub: U3's reference resolved and was hidden.
+
+    A resolution-only check calls this board ready; the renderer draws nothing.
+    """
+    touch_model(tmp_path, "u3.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U3", ["${KIPRJMOD}/u3.wrl|hide"]))
+
+    r = mod.census(str(b))
+
+    assert r["resolved"] == 1, r
+    assert r["unresolved_refs"] == []
+    assert r["hidden_refs"] == ["${KIPRJMOD}/u3.wrl"], r
+    assert r["hidden_by_footprint"] == {"U3": ["${KIPRJMOD}/u3.wrl"]}
+
+
+def test_a_model_without_the_hide_flag_is_not_reported(mod, tmp_path):
+    touch_model(tmp_path, "u1.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"]))
+
+    r = mod.census(str(b))
+
+    assert r["hidden_refs"] == []
+
+
+def test_only_the_hidden_model_on_a_footprint_is_reported(mod, tmp_path):
+    """A footprint may carry several models; hiding one must not tar the others."""
+    touch_model(tmp_path, "a.wrl")
+    touch_model(tmp_path, "b.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb",
+                    _fp("U1", ["${KIPRJMOD}/a.wrl", "${KIPRJMOD}/b.wrl|hide"]))
+
+    r = mod.census(str(b))
+
+    assert r["resolved"] == 2
+    assert r["hidden_refs"] == ["${KIPRJMOD}/b.wrl"]
+
+
+def test_hide_must_be_inside_the_model_statement_not_merely_nearby(mod, tmp_path):
+    """A footprint-level or pad-level `(hide yes)` is not a hidden model.
+
+    Guarding the block-walking: scanning a whole footprint for `hide yes` would
+    report every footprint that hides a property (measured: 79 property-level
+    `(hide yes)` in the real hub board) and drown the real signal.
+    """
+    touch_model(tmp_path, "u1.wrl")
+    inner = '(property "Datasheet" ""\n      (at 0 0 0)\n      (layer "F.Fab")\n      (hide yes)\n    )'
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"], inner=inner))
+
+    r = mod.census(str(b))
+
+    assert r["hidden_refs"] == [], "a hidden PROPERTY is not a hidden MODEL"
+
+
+def test_check_exits_one_when_a_model_is_hidden_even_though_it_resolves(mod, tmp_path, capsys):
+    touch_model(tmp_path, "u3.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U3", ["${KIPRJMOD}/u3.wrl|hide"]))
+
+    rc = mod.main(["--check", str(b)])
+
+    out = capsys.readouterr()
+    assert rc == 1
+    assert "FAIL" in out.out
+    assert "HIDDEN" in out.out, out.out
+    assert "unresolved 0" in out.out
+
+
+def test_hidden_refs_absent_from_the_boards_we_ship(mod):
+    """Both current-gen boards must carry no hidden model -- else the render lies."""
+    for board in (WING, HUB):
+        if not board.is_file():
+            pytest.skip(f"{board} not present")
+        assert mod.census(str(board))["hidden_refs"] == [], board
+
+
+# The parts the spatial-review gate must be able to SEE.  U2 is the 39 x 21 mm
+# `LoRa2021F33-2G4` (the 433 MHz bent-pipe downlink radio, largest body on the board) and
+# U4 the SX1280 range radio; J_W1..J_W4 are where the wing tabs meet the hub in space.
+HUB_MUST_BE_VISIBLE = ["U1", "U2", "U3", "U4", "U5", "ANT1", "ANT2", "ANT3", "ANT4",
+                       "J_W1", "J_W2", "J_W3", "J_W4", "J_VCC"]
+
+
+def test_every_hub_part_the_review_must_see_resolves(mod):
+    """The gate on the real board. Measured BEFORE the fix: 25 of 32 refs resolved,
+    seven footprints -- including both radios -- carried no model block at all, and one
+    reference resolved but was hidden.
+
+    Asserted here are only the HOST-INDEPENDENT properties. The board's other
+    references point into `kicad-packages3d` via `${KICAD9_3DMODEL_DIR}`, and those
+    resolve on a machine with the package and not on one without it (measured: 39/39
+    locally vs 30/39 on the CI runner, no repo change between the two) -- so a blanket
+    `unresolved_refs == []` here would red CI for a reason no committer can fix.
+    """
+    if not HUB.is_file():
+        pytest.skip("hub board not present")
+
+    r = mod.census(str(HUB))
+
+    assert r["unresolved_local"] == [], r["unresolved_local"]
+    assert r["unresolved_other"] == [], r["unresolved_other"]
+    assert r["hidden_refs"] == [], r["hidden_refs"]
+    missing = [ref for ref in HUB_MUST_BE_VISIBLE if ref in r["without_model_set"]]
+    assert missing == [], f"no model block: {missing}"
+    # Every one of those designators must be carried by a model we authored in-repo,
+    # so that the spatial reviewer can see it with nothing installed at all.
+    for ref in HUB_MUST_BE_VISIBLE:
+        assert any("/${KIPRJMOD}/" in f"/{m}" for m in r["refs_by_footprint"].get(ref, [])), \
+            f"{ref} has no in-repo model: {r['refs_by_footprint'].get(ref)}"
+
+
+def test_hub_package_references_are_counted_not_ignored(mod):
+    """The host-dependent class must still be REPORTED -- silence would be the other
+    failure mode: a gate that quietly stops looking."""
+    if not HUB.is_file():
+        pytest.skip("hub board not present")
+
+    r = mod.census(str(HUB))
+
+    package_refs = [m for ms in r["refs_by_footprint"].values() for m in ms
+                    if "3DMODEL_DIR" in m]
+    assert package_refs, "the hub should still reference the KiCad package for generic parts"
+    assert len(r["unresolved_package"]) <= len(set(package_refs))
+    if Path(mod.KICAD_3DMODEL_DIR).is_dir():
+        assert r["unresolved_package"] == [], r["unresolved_package"]
+
+
+def test_the_gate_is_identical_on_a_host_without_kicad_packages3d(mod, monkeypatch):
+    """Regression guard for the failure that actually happened in CI.
+
+    Point the package directory at a nonexistent path -- exactly what a CI runner
+    without `kicad-packages3d` looks like -- and the verdict on the repo-controlled
+    properties must not move. Before `_classify` existed this same board reported
+    `unresolved 9` there and the gate went red on a healthy repo: measured on GitHub
+    Actions run 38177201784, `1 failed, 686 passed`, with nine
+    `${KICAD9_3DMODEL_DIR}` references named as the cause.
+
+    Only HOST-INDEPENDENT facts are asserted. An earlier version of this test also
+    asserted `resolved == model_refs` on the local host, which is true here and false
+    on the runner (`assert 14 == 39`, run 38178168542) -- i.e. the test reproducing
+    the bug had the bug. The relations below hold on both hosts by construction.
+
+    The second half is what makes this a real gate rather than a rubber stamp: a
+    genuine in-repo defect must STILL fail on that same package-less host.
+    """
+    if not HUB.is_file():
+        pytest.skip("hub board not present")
+
+    good = mod.census(str(HUB))
+
+    # Repo-controlled properties: clean on ANY host. This is the gate's contract.
+    assert good["unresolved_local"] == [], good["unresolved_local"]
+    assert good["unresolved_other"] == [], good["unresolved_other"]
+    assert good["hidden_refs"] == [], good["hidden_refs"]
+    assert good["without_model_set"] == [], good["without_model_set"]
+    assert mod.main(["--check", str(HUB)]) == 0
+
+    monkeypatch.setattr(mod, "KICAD_3DMODEL_DIR", NO_PACKAGE_DIR)
+    ci = mod.census(str(HUB))
+
+    # The package class must be REPORTED here, and the reported set can only grow
+    # when the package goes away -- never shrink. True whether or not this host has
+    # `kicad-packages3d` installed (locally 0 -> 9; on CI 9 -> 9).
+    assert ci["unresolved_package"], "a package-less host must report its package misses"
+    assert set(ci["unresolved_package"]) >= set(good["unresolved_package"])
+    assert ci["resolved"] <= good["resolved"]
+
+    # The repo-controlled verdict is IDENTICAL on the package-less host.
+    for key in ("unresolved_local", "unresolved_other", "hidden_refs",
+                "without_model_set", "footprints", "refs_by_footprint"):
+        assert ci[key] == good[key], key
+    assert mod.main(["--check", str(HUB)]) == 0, (
+        "a package-less host must not fail a healthy repo"
+    )
+
+    # ...and a real defect still fails there, on the same host.
+    real_expand = mod._expand
+
+    def _hide_in_repo_models(ref, project_dir):
+        path = real_expand(ref, project_dir)
+        if "KIPRJMOD" in ref and path.endswith(".wrl"):
+            return NO_PACKAGE_DIR + "/gone.wrl"
+        return path
+
+    monkeypatch.setattr(mod, "_expand", _hide_in_repo_models)
+    bad = mod.census(str(HUB))
+    assert bad["unresolved_local"], "an in-repo miss must still be reported"
+    assert mod.main(["--check", str(HUB)]) == 1, (
+        "if this passes on a package-less host the gate is switched off, not host-agnostic"
+    )
+
+
+# --------------------------------------------------------------------------
+# exit codes
+# --------------------------------------------------------------------------
+
+def test_check_exits_zero_when_everything_resolves(mod, tmp_path, capsys):
+    touch_model(tmp_path, "u1.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"]))
+
+    rc = mod.main(["--check", str(b)])
+
+    assert rc == 0
+    assert "OK" in capsys.readouterr().out
+
+
+def test_check_exits_one_when_a_reference_does_not_resolve(mod, tmp_path, capsys):
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U2", ["${KIPRJMOD}/missing.wrl"]))
+
+    rc = mod.main(["--check", str(b)])
+
+    assert rc == 1
+    out = capsys.readouterr()
+    assert "FAIL" in out.out
+    assert "MISSING" in out.out
+    assert "not ready for a spatial review" in out.err.lower()
+
+
+def test_without_check_a_bad_board_still_exits_zero(mod, tmp_path):
+    """--check is the gate; a bare census is a report, so it must not fail a run."""
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U2", ["${KIPRJMOD}/missing.wrl"]))
+
+    assert mod.main([str(b)]) == 0
+
+
+def test_require_refs_fails_on_a_designator_with_no_model(mod, tmp_path, capsys):
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", []), _fp("U2", []))
+
+    rc = mod.main(["--check", "--require-refs", "U1,U2", str(b)])
+
+    assert rc == 1
+    assert "REQUIRED but has no model: U1, U2" in capsys.readouterr().out
+
+
+def test_require_refs_passes_when_the_designator_carries_a_resolvable_model(mod, tmp_path):
+    touch_model(tmp_path, "u1.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"]), _fp("H1", []))
+
+    assert mod.main(["--check", "--require-refs", "U1", str(b)]) == 0
+
+
+def test_require_refs_ignores_designators_absent_from_the_board(mod, tmp_path):
+    """Asking a board to require a part it does not carry is a caller error, not a board defect."""
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", []))
+
+    assert mod.main(["--check", "--require-refs", "U9", str(b)]) == 0
+
+
+def test_several_boards_are_reported_and_any_failure_fails_the_run(mod, tmp_path, capsys):
+    touch_model(tmp_path, "ok.wrl")
+    good = write_board(tmp_path, "good.kicad_pcb", _fp("U1", ["${KIPRJMOD}/ok.wrl"]))
+    bad = write_board(tmp_path, "bad.kicad_pcb", _fp("U2", ["${KIPRJMOD}/gone.wrl"]))
+
+    rc = mod.main(["--check", str(good), str(bad)])
+
+    out = capsys.readouterr()
+    assert rc == 1
+    assert "2 board(s) NOT ready" in out.err
+    assert f"{bad.name}" in out.out
+
+
+def test_json_report_is_written(mod, tmp_path):
+    touch_model(tmp_path, "u1.wrl")
+    b = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"]))
+    out = tmp_path / "report.json"
+
+    assert mod.main(["--json", str(out), str(b)]) == 0
+
+    payload = json.loads(out.read_text())
+    assert isinstance(payload, list) and len(payload) == 1
+    assert payload[0]["resolved"] == 1
+    assert payload[0]["board"].endswith("b.kicad_pcb")
+
+
+# --------------------------------------------------------------------------
+# the real boards
+# --------------------------------------------------------------------------
+
+WING = ROOT / "tracker/hardware/wing_board/wing_board_v9.kicad_pcb"
+HUB = ROOT / "tracker/hardware/hub_board_v9.kicad_pcb"
+
+
+def test_the_repo_boards_are_censused(mod):
+    for board in (WING, HUB):
+        if not board.is_file():
+            pytest.skip(f"{board} not present")
+        r = mod.census(str(board))
+        assert r["footprints"] > 0
+        assert r["resolved"] + r["unresolved"] == r["model_refs"]
+
+
+def test_the_wing_generator_emits_only_resolvable_references(mod):
+    """Property, not a fingerprint: a generator that points at files it never
+    writes leaves the reviewer blind.  (The hub does NOT hold this property yet:
+    it has model-less radios U2/U4 -- a separate, carded defect.)"""
+    if not WING.is_file():
+        pytest.skip("wing board not present")
+
+    r = mod.census(str(WING))
+
+    assert r["unresolved_refs"] == [], r["unresolved_refs"]
+    assert r["resolved"] > 0
+
+
+# --------------------------------------------------------------------------
+# can-fail proof
+# --------------------------------------------------------------------------
+
+class TestHarnessCanFail:
+    """Mutation checks: each test asserts the suite rejects a broken tool.
+
+    Without these, a green run only proves the assertions are self-consistent.
+    """
+
+    def test_suite_rejects_a_tool_that_ignores_the_kicad_directory_variable(self, tmp_path, monkeypatch, mod):
+        """Mutant: stop expanding ${KICAD<n>_3DMODEL_DIR}.
+
+        Needs a REAL package model to exist, so it skips under
+        `SIMULATE_NO_KICAD_PACKAGES3D=1` and on the CI runner. The mutant itself is
+        still proven load-bearing by the sister mutant below, which needs no package:
+        if it could only be shown on a fully-provisioned host, the check would be
+        untested exactly where CI runs it.
+
+        The directory comes from `mod`, not the hardcoded KiCad default, so that the
+        simulated-runner mode skips honest rather than failing on its own setup.
+        """
+        target = Path(mod.KICAD_3DMODEL_DIR)
+        if not target.is_dir():
+            pytest.skip(f"{target} not installed on this host")
+
+        real = next(target.rglob("*.wrl"), None)
+        if real is None:
+            pytest.skip("no .wrl in package")
+        ref = "${KICAD9_3DMODEL_DIR}/" + real.relative_to(target).as_posix()
+        board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", [ref]))
+
+        # The un-mutated tool resolves it; the mutant must not.
+        assert _load("census_reference_impl", SCRIPT).census(str(board))["unresolved_refs"] == []
+
+        mut = _load("census_mutant_kicadvar", SCRIPT)
+        monkeypatch.setattr(mut, "_expand", lambda ref, d: ref.replace("${KIPRJMOD}", d))
+        assert mut.census(str(board))["unresolved_refs"] == [ref]
+
+    def test_suite_rejects_a_tool_that_loses_the_package_local_split(self, tmp_path, monkeypatch):
+        """Mutant: classify every unresolved reference as a repo defect.
+
+        This is the pre-regression behaviour, and it is the mutant that fails CI:
+        it renames a missing HOST package into a repo defect, so the gate exits 1 on
+        a healthy board (measured: run 38177201784, nine `${KICAD9_3DMODEL_DIR}`
+        references named as the cause). It needs no installed package to demonstrate,
+        which is the point -- it runs identically on the dev box and the runner.
+        """
+        board = write_board(tmp_path, "b.kicad_pcb", _fp("U1", ["${KICAD9_3DMODEL_DIR}/gone.wrl"]))
+        monkeypatch.setattr(_load("census_split_ref", SCRIPT), "KICAD_3DMODEL_DIR",
+                            NO_PACKAGE_DIR)
+
+        good = _load("census_split_good", SCRIPT)
+        monkeypatch.setattr(good, "KICAD_3DMODEL_DIR", NO_PACKAGE_DIR)
+        assert good.census(str(board))["unresolved_package"] == ["${KICAD9_3DMODEL_DIR}/gone.wrl"]
+        assert good.main(["--check", str(board)]) == 0
+
+        mut = _load("census_split_mutant", SCRIPT)
+        monkeypatch.setattr(mut, "KICAD_3DMODEL_DIR", NO_PACKAGE_DIR)
+        monkeypatch.setattr(mut, "_classify", lambda ref: "local")
+        assert mut.census(str(board))["unresolved_local"] == ["${KICAD9_3DMODEL_DIR}/gone.wrl"]
+        assert mut.main(["--check", str(board)]) == 1, (
+            "the mutant was rejected, so this mutation test proves nothing"
+        )
+
+    def test_suite_rejects_a_regex_based_footprint_splitter(self, tmp_path, monkeypatch):
+        """Mutant: split footprint blocks with a regex instead of a depth counter.
+
+        This is the defect the block-walking test exists to catch: the split
+        truncates at the first nested ')' and the next footprint's models are
+        attributed to the previous one.
+        """
+        import re as _re
+
+        deep = '(pad "1"\n      (at 0 0 0)\n      (net 1 "GND")\n    )'
+        b = write_board(
+            tmp_path,
+            "b.kicad_pcb",
+            _fp("U1", ["${KIPRJMOD}/u1.wrl"], inner=deep),
+            _fp("U2", ["${KIPRJMOD}/u2.wrl"]),
+        )
+
+        good = _load("census_good_splitter", SCRIPT).census(str(b))
+        assert good["refs_by_footprint"]["U1"] == ["${KIPRJMOD}/u1.wrl"]
+        assert good["refs_by_footprint"]["U2"] == ["${KIPRJMOD}/u2.wrl"]
+
+        mut = _load("census_mutant_splitter", SCRIPT)
+
+        def naive(text):
+            # The classic mistake: non-greedy up to the FIRST ')', which sits
+            # inside the block, long before the Reference property and models.
+            for blk in _re.findall(r"\(footprint.*?\)", text, _re.S):
+                yield blk
+
+        monkeypatch.setattr(mut, "_iter_footprint_blocks", naive)
+        bad = mut.census(str(b))
+
+        assert bad["refs_by_footprint"] != good["refs_by_footprint"], (
+            "the naive splitter produced the same attribution as the depth counter, "
+            "so this mutation test proves nothing"
+        )
+        # The consequence that matters: a model the depth counter sees is lost,
+        # i.e. the census would report a populated board as model-less.
+        lost = {r for rs in good["refs_by_footprint"].values() for r in rs} - {
+            r for rs in bad["refs_by_footprint"].values() for r in rs
+        }
+        assert lost, bad
+
+    def test_a_tampered_board_makes_the_gate_fail(self, tmp_path):
+        """End-to-end negative control: real board, one reference broken."""
+        touch_model(tmp_path, "u1.wrl")
+        good = write_board(tmp_path, "t.kicad_pcb", _fp("U1", ["${KIPRJMOD}/u1.wrl"]), _fp("U2", ["${KIPRJMOD}/u2.wrl"]))
+        m = _load("census_tamper", SCRIPT)
+        assert m.main(["--check", str(good)]) == 1
+
+        good.write_text(good.read_text().replace("${KIPRJMOD}/u2.wrl", "${KIPRJMOD}/u1.wrl"))
+        assert m.main(["--check", str(good)]) == 0
+
+    def test_suite_rejects_a_tool_that_ignores_the_hide_flag(self, tmp_path, monkeypatch):
+        """Mutant: report resolution only, never check `(hide yes)`.
+
+        This is the mutant that shipped the original defect past a resolution
+        check on the real board: U3's reference resolved and was hidden.
+        """
+        touch_model(tmp_path, "u3.wrl")
+        b = write_board(tmp_path, "b.kicad_pcb", _fp("U3", ["${KIPRJMOD}/u3.wrl|hide"]))
+
+        good = _load("census_hide_good", SCRIPT)
+        assert good.census(str(b))["hidden_refs"] == ["${KIPRJMOD}/u3.wrl"]
+        assert good.main(["--check", str(b)]) == 1
+
+        mut = _load("census_hide_mutant", SCRIPT)
+        monkeypatch.setattr(mut, "_hidden_models", lambda block: [])
+        assert mut.census(str(b))["hidden_refs"] == []
+        # The mutant passes the gate on a board the renderer draws nothing for.
+        assert mut.main(["--check", str(b)]) == 0, (
+            "the mutant was rejected, so this mutation test proves nothing"
+        )

@@ -1,0 +1,64 @@
+#VRML V2.0 utf8
+# balloon-fresh -- parametric 3D model (plain-text VRML 2.0)
+# generator  : scripts/gen_3d_models_hub.py  (regenerate: python3 scripts/gen_3d_models_hub.py)
+# part       : U3 -- LoRa2021 (bare, castellated) -- ENVELOPE, height unverified
+# dims_mm    : 19.81 x 14.98 x 3.2(nominal) mm -- X/Y measured from F.Fab, Z a flagged placeholder
+# frame      : X = footprint-local +x, Y = -(footprint-local +y), Z = up, Z=0 at the board TOP face
+# units      : 1 VRML unit = 2.54 mm (0.1 in) -- KiCad VRML convention; assign with (scale (xyz 1 1 1))
+# source     : tracker/hardware/hub_board_v9.kicad_pcb footprint "balloon_flight_v9:LoRa2021_Castellated" (Reference U3, Value "LoRa2021_Castellated"): its own F.Fab outline measures 19.81 x 14.98 mm.  Reproduce every envelope with `/usr/bin/python3.14 scripts/footprint_envelope_probe.py tracker/hardware/hub_board_v9.kicad_pcb`.
+# source     : docs/adr/029-dual-band-flight-board.md line 365: "| Board area | 39 x 21 mm (dominates 55 x 45) | 19.81 x 14.98 + SX1280 module |".
+# note       : the hub's committed model reference pointed at `${KICAD8_3DMODEL_DIR}/RF_Module.3dshapes/NiceRF_LoRa2021.wrl`, which the installed package does not ship -- hence unresolved, hence invisible.
+# note       : U3 is the DNP alternative to U2 on the dual-footprint rail; a render shows which one is populated.
+# note       : TODO(unverified): the 3.2 mm height is TODO(unverified) -- a nominal castellated-module placeholder, NOT a sourced figure; the body is drawn translucent at transparency 0.35 so a render cannot read it as measured
+DEF u3_lora2021_castellated_envelope Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material DEF u3_lora2021_castellated_envelope_mat Material {
+          diffuseColor 0.16 0.18 0.22
+          emissiveColor 0 0 0
+          specularColor 0.15 0.15 0.15
+          ambientIntensity 0.4
+          transparency 0.35
+          shininess 0.1
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate { point [
+          -3.899606 -2.948819 1.259843,
+          3.899606 -2.948819 1.259843,
+          3.899606 2.948819 1.259843,
+          -3.899606 2.948819 1.259843,
+          -3.899606 2.948819 0.000000,
+          3.899606 2.948819 0.000000,
+          3.899606 -2.948819 0.000000,
+          -3.899606 -2.948819 0.000000,
+          -3.899606 2.948819 0.000000,
+          -3.899606 2.948819 1.259843,
+          3.899606 2.948819 1.259843,
+          3.899606 2.948819 0.000000,
+          3.899606 -2.948819 0.000000,
+          3.899606 -2.948819 1.259843,
+          -3.899606 -2.948819 1.259843,
+          -3.899606 -2.948819 0.000000,
+          3.899606 2.948819 0.000000,
+          3.899606 2.948819 1.259843,
+          3.899606 -2.948819 1.259843,
+          3.899606 -2.948819 0.000000,
+          -3.899606 -2.948819 0.000000,
+          -3.899606 -2.948819 1.259843,
+          -3.899606 2.948819 1.259843,
+          -3.899606 2.948819 0.000000
+        ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+        ]
+      }
+    }
+  ]
+}
