@@ -1,0 +1,34 @@
+{
+  "_why": "The CPL is what JLC reads to PLACE parts; the BOM is where DNP is recorded. The CPL had no DNP column, so 12 designators flagged DNP in the BOM were listed as placements. This adds the column, derived FROM the BOM, so the state is machine-readable and single-sourced.",
+  "cpl": "docs/fab/hub-v9/gerbers/hub_v9-cpl-jlcpcb.csv",
+  "dnp_designators": [
+    "C_CAP1",
+    "C_CAP2",
+    "D_CLAMP",
+    "J_VCC",
+    "J_W1",
+    "J_W2",
+    "J_W3",
+    "J_W4",
+    "R_NTC1",
+    "TH_NTC1",
+    "U2",
+    "U3"
+  ],
+  "dnp_notes": {
+    "C_CAP1": "DNP 3.3F 2.7V supercap THT (not in LCSC catalog; hand-install)",
+    "C_CAP2": "DNP 3.3F 2.7V supercap THT (not in LCSC catalog; hand-install)",
+    "D_CLAMP": "DNP TVS clamp (set point TODO unverified)",
+    "J_VCC": "DNP solder jumper (hand-soldered)",
+    "J_W1": "DNP wing tab socket (board edge feature)",
+    "J_W2": "DNP wing tab socket (board edge feature)",
+    "J_W3": "DNP wing tab socket (board edge feature)",
+    "J_W4": "DNP wing tab socket (board edge feature)",
+    "R_NTC1": "DNP NTC (params TODO unverified)",
+    "TH_NTC1": "DNP NTC (params TODO unverified)",
+    "U2": "DNP LoRa2021F33-2G4 (not stocked at LCSC)",
+    "U3": "DNP LoRa2021 2.4G bare castellated (not stocked; 433/470/868/915 module variants only)"
+  },
+  "source_of_truth": "docs/fab/hub-v9/gerbers/hub_v9-bom-jlc.csv",
+  "still_operator_owned": "C_CAP1/C_CAP2: the BOM's DNP flag is now visible in the CPL, but whether the supercaps should be DNP on the FLIGHT board is a FUNCTIONAL ruling -- it changes stored energy, not just the placement list. This change makes the existing BOM state explicit; it does not decide it."
+}

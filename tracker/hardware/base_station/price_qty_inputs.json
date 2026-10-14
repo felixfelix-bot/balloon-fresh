@@ -1,0 +1,53 @@
+{
+  "_why": "INPUTS for the deterministic price-vs-quantity sweep. Committed so the sweep is REPRODUCIBLE and re-priceable without touching code. Every figure is either MEASURED (live JLCPCB API, with the date) or EXPLICITLY MARKED UNMEASURED. Nothing invented.",
+
+  "_provenance": {
+    "measured_by": "live JLCPCB API (selectSmtComponentList/v2) with positive controls C50645 and C2876746",
+    "measured_on": "2026-10-14",
+    "positive_controls": {
+      "C50645": {"part": "SS24", "stock": 774321, "price_usd": 0.0257},
+      "C2876746": {"part": "BQ25504RGTR", "stock": 21, "price_usd": 4.5857}
+    },
+    "_control_note": "Controls passed, so this host's API queries return real data. Without a control a total:0 is indistinguishable from a broken query -- the mistake this campaign already made once."
+  },
+
+  "board": "ground station PCBA v1",
+  "board_mm": [55, 40],
+  "layers": 4,
+  "placements": 44,
+  "_placements_note": "MEASURED: base_station_v1.net declares 44 comps, place_base_station.py places 44/44.",
+  "joints_per_placement": 1,
+  "_joints_note": "PLACEHOLDER ASSUMPTION. The true per-board joint count needs the footprint pad census, which is NOT yet measured. Set to 1 so the model is transparent rather than silently wrong; every joint-derived figure below is therefore a LOWER BOUND until this is replaced with the real count.",
+
+  "sweep_quantities": [2, 3, 4, 5, 10, 20],
+
+  "pcb_tiers": [
+    {"max_qty": 5,   "unit_usd": 12.00, "_src": "UNMEASURED -- 4-layer 0.8mm tier, needs a live quote at this size before any order"},
+    {"max_qty": 10,  "unit_usd": 7.00,  "_src": "UNMEASURED -- tier above"},
+    {"max_qty": 30,  "unit_usd": 4.20,  "_src": "UNMEASURED -- tier above"},
+    {"max_qty": 100, "unit_usd": 2.60,  "_src": "UNMEASURED -- tier above"}
+  ],
+  "pcb_engineering_usd": 8.00,
+  "_pcb_engineering_src": "UNMEASURED -- JLC engineering/setup line. Deliberately kept as a SEPARATE term so a real quote can replace one number instead of re-deriving the model.",
+
+  "pcba_setup_usd": 30.00,
+  "_pcba_setup_src": "UNMEASURED -- stencil + first-article + feeder loading. Kept separate from the per-joint term for the same reason.",
+
+  "per_joint_usd": 0.0017,
+  "_per_joint_src": "UNMEASURED -- THIS IS THE FIGURE THE CAMPAIGN FLAGGED AS NEVER MEASURED. 0.0017 is JLC's commonly-quoted 4-lead-free joint rate, entered as a PLACEHOLDER so the model has the right SHAPE. Replace with a measured value.",
+
+  "per_feeder_usd": 0.0060,
+  "_per_feeder_src": "UNMEASURED -- per-part feeder loading.",
+
+  "bom_unit_usd": 39.02,
+  "_bom_src": "MEASURED: docs/fab/hub-v9/gerbers/hub_v9-bom-jlcpcb.csv extended-price column, summed for the hub. The ground station shares the same catalogue approach but its BOM is NOT identical -- replace with the base-station BOM total once that CSV is built (it is on the owed list).",
+
+  "attrition": 1.15,
+  "_attrition_src": "CHOICE, not measurement. 15 percent spares for handling/solder loss. Stated so a reviewer can challenge the number rather than infer it.",
+
+  "_honest_limits": [
+    "EVERY PCB AND PCBA FIGURE IS A LOWER BOUND: the per-joint fee is unmeasured, the joint count is a placeholder, and the PCB tiers came from a ~1.6mm page default rather than the 0.8mm stackup.",
+    "This model is DETERMINISTIC and VERSION-CONTROLLED on purpose: re-run it after replacing any single input and the diff shows exactly what changed.",
+    "Do NOT treat the printed totals as quotable prices. They are the SHAPE of the curve until the inputs are measured."
+  ]
+}
