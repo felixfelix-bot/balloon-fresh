@@ -133,10 +133,35 @@ stack_bot  = W4_SOLAR_N  -> GND plane
   assignment* is "none".
 - **Bypass provisioning:** one Schottky per interface **across
   `W<n>_SOLAR_P` ↔ `W<n>_SOLAR_N`, cathode to `W<n>_SOLAR_P`, DNP for the first
-  prototype**, implemented as `D_BP1..D_BP4` (BAT54 family, SOD-323). Cited:
+  prototype**, implemented as `D_BP1..D_BP4` (**SS24 / `Diode_SMD:D_SMA`** — NOT the BAT54/SOD-323 this
+  record originally named). Cited:
   ADR-046 §2.3 and §6, socket spec §5 ("Package suggestion: SOD-323 or SMA
   (BAT54 family, matching ADR-006's existing BAT54)"). The series-blocking BAT54
   at the stack output (D1, ADR-006) is **separate** and is not replaced.
+
+### 2.3b Correction (2026-10-14) — the bypass part is SS24, not BAT54
+
+**The part name in §2.3 above was stale and is corrected here.** This record originally named the
+bypass provision *"BAT54 family, SOD-323"*, following `docs/WING-TO-HUB-SOCKET-SPEC.md` §5. That is
+now superseded:
+
+- **The BAT54 family is 200 mA / 30 V** against the v9 array's **1.2 A** string — **6x
+  under-rated**, and already undersized at the pre-large-cell 0.4 A figure.
+- **SOD-323 is explicitly excluded** because the package cannot carry 2 A.
+- Re-rated to **>= 2 A / 40 V (SS24 or PMEG4020ER class)** by
+  `docs/adr/049-wing-architecture.md` clause 1, `docs/adr/051-hub-array-and-cut-topology.md` §2.7
+  and `docs/adr/053-per-cell-bypass-diodes.md` §1.3; see also
+  `docs/analysis/array-power-architecture.md` (*"the one thing that must change (and is already on
+  the record)"*).
+- **The board already carries the corrected part** — measured: `D_BP1..D_BP4`,
+  `Diode_SMD:D_SMA`, value `SS24`, correct polarity, traces present in the routed packet
+  (`docs/fab/hub-v9/gerbers/hub_v9.kicad_pcb`, 537 segments). **This record's §2.3 text was the
+  only thing still wrong.**
+- **The DNP decision is unchanged** (still DNP for the first prototype) — only the *part* changed.
+
+Handover for the work that acts on this: `docs/HANDOVER-WING-RELEASE-AND-BYPASS-DIODE.md`.
+
+---
 
 ### 2.4 Keep-out
 
