@@ -81,10 +81,11 @@ CANNOT yet be simulated are listed below as **NOT COVERED**, not quietly omitted
 | block | deck | criteria | status |
 |---|---|---|---|
 | **NTC temperature divider** (`R_NTC1`/`TH_NTC1`) | `tb_ntc_divider.cir` | 5 | ✅ **COVERED** |
+| **SX1280 RF matching + harmonic filter** | `tb_rf_filter.cir` | 4 | ✅ **COVERED** |
 | **Supercap balance divider** (`R_BAL1`/`R_BAL2`) | `tb_scap_balance.cir` | 3 | ✅ **COVERED** |
 | **VSCAP monitor divider** (`R_DIV1`/`R_DIV2`) | `tb_vscap_monitor.cir` | 4 | ✅ **COVERED** |
 
-**12 criteria total.** Each catches a distinct, plausible error:
+**16 criteria, 59 regression checks.** Each catches a distinct, plausible error:
 
 | id | asserts | catches |
 |---|---|---|
@@ -93,6 +94,10 @@ CANNOT yet be simulated are listed below as **NOT COVERED**, not quietly omitted
 | `NTC-COLD` | tap < 3.25 V at −40 °C | railed high, no resolution at cold end |
 | `NTC-HOT` | tap > 0.05 V at +85 °C | railed low, no resolution at hot end |
 | `RAIL` | the 3.3 V rail measures 3.3 V | a gate that cannot see the rail is measuring nothing |
+| `RF-CURVE` | sweep is REAL: >100 samples, >1 GHz span, >50 distinct values | **an instrument that is not actually sweeping** |
+| `RF-LOSS` | **0.461 dB** insertion loss at 2.4 GHz | a detuned or lossy match |
+| `RF-REJ2` | **29.97 dB** rejection at 4.8 GHz | unfiltered 2nd harmonic |
+| `RF-REJ3` | **30.48 dB** rejection at 7.2 GHz | unfiltered 3rd harmonic |
 | `BAL-HALF` | supercap midpoint at exactly 2.70 V | unbalanced stack — one cap ages out first |
 | `BAL-CURR` | balance current = 270 µA | **night-budget regression from a value change** |
 | `BAL-LINR` | halving the stack halves the midpoint | clipped or non-linear divider |
@@ -101,19 +106,35 @@ CANNOT yet be simulated are listed below as **NOT COVERED**, not quietly omitted
 | `MON-MONO` | tap rises strictly with stack voltage | flat or inverted sense path |
 | `MON-NIGHT` | divider current < 5 µA (measured 2.7 µA) | a divider that flattens the supercap overnight |
 
+### The RF deck — and three measurement errors it took to get it right
+
+The RF block was the hardest, and **every wrong version produced a plausible number**:
+
+| version | reported | the fault |
+|---|---|---|
+| v1 | 2.3 dB harmonic rejection | **transposed topology** — `C4` modelled as a shunt to ground. Zooming into Figure 15-1 showed `C4` is **in parallel with `L2`**. Corrected: rejection rose **2.3 dB → 29 dB**. |
+| v2 | −6.5 dB "insertion loss" | **unit error** — `db(v(ant))` measures *voltage*, and a 1 V source through 50 Ω into a 50 Ω load reads **0.5 V = −6.02 dB** as a BASELINE. A perfect match reads −6.02 dB, not 0 dB. |
+| v3 | `rej = 0.000` | **ngspice control-language failure** — `alterparam` in `foreach`, `$&PARAM` expansion, and scalar `let` across runs silently did nothing, returning three *identical* readings. |
+
+**Design consequence, now enforced:** `RF-CURVE` exists specifically to catch v3-class failures — it
+asserts the sweep is **real** (>100 samples, >1 GHz span, >50 distinct values). And the deck now writes
+a **curve file** with all arithmetic done in Python, keeping ngspice's control language out of the
+critical path. **The three decks that worked first time were all single-`.param` + `alter` + `print`.**
+
+**A sign error the regression suite caught:** `RF-LOSS` was written `g − BASELINE`, which turns a real
+3 dB loss into −3 dB and **silently passes a <1 dB limit.** The perturbation test caught it; the correct
+form is `BASELINE − g`.
+
 ### NOT COVERED (stated, not omitted)
 
 | block | why not |
 |---|---|
-| SX1280 radio, ESP32-S3, regulators | **no SPICE models.** Vendor models required before these can be simulated. |
-| RF matching / filter network | values now **exist** (Table 15-1) but the block is passive-only; **deck not yet written.** |
+| SX1280 radio, ESP32-S3, regulators | **no SPICE models.** Vendor models required. |
 | **TVS clamp (`D_CLAMP`)** | **THE PART IS NOT CHOSEN** — its schematic value is literally `"TVS clamp (set point TODO(unverified))"`. Simulating an unchosen part asserts nothing. See below. |
 
 ### The TVS block — five failed attempts, recorded so they are not repeated
 
-The clamp deck was attempted five times and **every version produced a plausible-looking number while
-measuring the wrong thing.** That is the exact fabricated-green signature this ADR exists to prevent,
-and it is the reason the block is **NOT COVERED** rather than shipped:
+**Every version produced a plausible-looking number while measuring the wrong thing:**
 
 | attempt | reported | the actual fault |
 |---|---|---|
@@ -127,12 +148,9 @@ and it is the reason the block is **NOT COVERED** rather than shipped:
 ignored.** So the clamp never conducted in *any* version, and each fix addressed a symptom while the
 core model stayed inert. **A real TVS needs a vendor subcircuit, not a stock diode.**
 
-**To close this block, two things are required:**
-1. **Choose the TVS part** (`D_CLAMP`'s standoff is currently a TODO in the schematic).
-2. **Obtain its vendor SPICE model** — a stock `D` model cannot represent breakdown.
-
-Only then does a deck assert anything real. **Recorded here so the absence is visible rather than
-assumed safe.**
+**To close this block:** (1) **choose the TVS part** (`D_CLAMP`'s standoff is a TODO), and (2) **obtain
+its vendor SPICE model**. Only then does a deck assert anything real. **Recorded so the absence is
+visible rather than assumed safe.**
 
 **Adding a modelable block is now cheap:** write the deck, register its criteria, and
 `test_sim_gate.py` immediately enforces that the criteria can fail.

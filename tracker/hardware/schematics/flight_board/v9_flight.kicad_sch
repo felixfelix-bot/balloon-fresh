@@ -10691,16 +10691,6 @@
 		)
 		(uuid "ebaba403-e102-5c63-b731-6413b14e94c1")
 	)
-	(label "SX1280_ANT_SW"
-		(at 127 63.5 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "b92920d5-1af9-59e1-8da3-c0e1be2b1465")
-	)
 	(label "GNSS_TX"
 		(at 127 30.48 0)
 		(effects
@@ -11010,16 +11000,6 @@
 			(justify left bottom)
 		)
 		(uuid "790bc180-730d-57f0-bf32-1a3df21fac5a")
-	)
-	(label "SX1280_ANT_SW"
-		(at 314.96 66.04 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "ab2c3c15-bc6e-513a-8fb2-cf20da1099d7")
 	)
 	(label "ANT2_2G4_RANGE"
 		(at 355.6 35.56 0)

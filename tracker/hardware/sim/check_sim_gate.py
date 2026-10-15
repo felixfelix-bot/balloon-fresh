@@ -32,10 +32,37 @@ NGSPICE = shutil.which("ngspice")
 
 
 def run_tb(cir):
-    """Run one testbench, return (ok, stdout, stderr)."""
+    """Run one testbench, return (ok, stdout, stderr).
+
+    A deck that produces a CURVE FILE rather than print statements is handled by post_run below --
+    this stays a plain run so the "no numeric output parsed" rule keeps its teeth for the print-style
+    decks, where an unparseable run must never read as a pass.
+    """
     p = subprocess.run([NGSPICE, "-b", cir], capture_output=True, text=True,
                        timeout=180, cwd=HERE)
     return p.returncode == 0, p.stdout, p.stderr
+
+
+# Decks that emit an ARTIFACT rather than print statements. The artifact path is relative to HERE.
+CURVE_DECKS = {"tb_rf_filter.cir": "rf_filter_curve.txt"}
+
+
+def post_run(tb):
+    """After running a curve-producing deck, refresh its artifact cache.
+
+    Returns an error string if the artifact is absent or suspiciously small -- treated as a HARNESS
+    ERROR, never a pass.
+    """
+    art = CURVE_DECKS.get(tb)
+    if not art:
+        return None
+    path = os.path.join(HERE, art)
+    if not os.path.exists(path):
+        return f"artifact {art} not produced"
+    rows = rf_load_curve(force=True)
+    if len(rows) < 10:
+        return f"artifact {art} has only {len(rows)} usable samples"
+    return None
 
 
 def parse_prints(out):
@@ -124,6 +151,115 @@ def c_supply_sanity(runs):
     return (abs(v - 3.3) <= 1e-6, v, "3.3 V")
 
 
+# ---- RF harmonic filter (tb_rf_filter.cir) ----------------------------------------------------------
+#
+# This deck writes a SWEEP CURVE file instead of print statements, and the arithmetic happens here in
+# Python. Reason: every deck that used ngspice's control language (alterparam in a foreach, scalar
+# `let` across runs, vector indexing) produced IDENTICAL readings -- three times -- which is the tell
+# that the sweep was not being applied. Indexing vectors in Python is reliable.
+
+RF_CURVE = os.path.join(HERE, "rf_filter_curve.txt")
+
+# INJECTABLE CURVE. The criteria read this module-level variable, not the file directly, so a test can
+# substitute a synthetic curve and PROVE the criterion can fail. Without this seam the criteria were
+# untestable, and test_sim_gate.py correctly refused to certify them (RF-LOSS-F, RF-REJ2-F, ... all
+# failed as "unproven"). A criterion that cannot be made to fail is not a gate.
+_RF_CURVE_CACHE = None
+
+
+def rf_load_curve(force=False):
+    """Read the AC sweep curve: list of (freq_Hz, db) samples.
+
+    Returns [] on any problem, and the caller treats empty as a HARNESS ERROR -- never as a pass.
+    """
+    global _RF_CURVE_CACHE
+    if _RF_CURVE_CACHE is not None and not force:
+        return _RF_CURVE_CACHE
+    rows = []
+    if os.path.exists(RF_CURVE):
+        for line in open(RF_CURVE, encoding="utf-8", errors="replace"):
+            parts = line.split()
+            if len(parts) == 2:
+                try:
+                    rows.append((float(parts[0]), float(parts[1])))
+                except ValueError:
+                    pass
+    _RF_CURVE_CACHE = rows
+    return rows
+
+
+def rf_at(rows, f):
+    """Sample nearest a target frequency."""
+    return min(rows, key=lambda r: abs(r[0] - f))
+
+
+# A 1 V source behind a 50 ohm source impedance driving a 50 ohm load gives v_load = 0.5 V for a
+# PERFECT match. In dB that is -6.0206 dB, which is a BASELINE, not a loss. Reporting db(v(load))
+# directly as "insertion loss" is how this deck first appeared to show an impossible 6.5 dB of loss in
+# a lossless reactive network. All insertion-loss criteria below subtract this baseline explicitly.
+SOURCE_DIVIDER_DB = -6.0206
+
+
+def c_rf_ins_loss(runs):
+    """Insertion loss at the 2.4 GHz centre must be small.
+
+    Measured value is the raw dB reading minus the 50 ohm source/load divider baseline.
+    """
+    rows = rf_load_curve()
+    if not rows:
+        raise LookupError("rf curve file missing")
+    _, g = rf_at(rows, 2.4e9)
+    # A PERFECT match reads exactly SOURCE_DIVIDER_DB (-6.02 dB). Any real network reads BELOW it, so
+    # insertion loss is BASELINE - g and is POSITIVE for a loss. (An earlier version wrote `g -
+    # SOURCE_DIVIDER_DB`, which turns a real 3 dB loss into -3 dB and silently PASSES the <1 dB
+    # limit. The perturbation test in test_sim_gate.py caught exactly that.)
+    loss = SOURCE_DIVIDER_DB - g
+    return (loss < 1.0, round(loss, 3), "< 1.0 dB insertion loss at 2.4 GHz")
+
+
+def c_rf_reject_h2(runs):
+    """2nd-harmonic rejection referenced to the passband must exceed 15 dB.
+
+    A REJECTION IS A RATIO, so the +6.02 dB baseline cancels and cannot fabricate this figure.
+    """
+    rows = rf_load_curve()
+    if not rows:
+        raise LookupError("rf curve file missing")
+    _, gp = rf_at(rows, 2.4e9)
+    _, gh = rf_at(rows, 4.8e9)
+    rej = gp - gh
+    return (rej > 15.0, round(rej, 2), "> 15 dB rejection at 4.8 GHz")
+
+
+def c_rf_reject_h3(runs):
+    """3rd-harmonic rejection must also exceed 15 dB."""
+    rows = rf_load_curve()
+    if not rows:
+        raise LookupError("rf curve file missing")
+    _, gp = rf_at(rows, 2.4e9)
+    _, gh = rf_at(rows, 7.2e9)
+    rej = gp - gh
+    return (rej > 15.0, round(rej, 2), "> 15 dB rejection at 7.2 GHz")
+
+
+def c_rf_curve_is_real(runs):
+    """The sweep must contain MANY DISTINCT samples spanning the intended band.
+
+    THIS IS THE ANTI-FABRICATION CRITERION. Three separate decks this session returned identical
+    readings from a sweep that was not actually being applied; a curve that is flat, tiny, or
+    single-valued would sail past a spot check. This asserts the instrument itself is live.
+    """
+    rows = rf_load_curve()
+    if not rows:
+        raise LookupError("rf curve file missing")
+    n = len(rows)
+    span = rows[-1][0] - rows[0][0]
+    distinct = len({round(g, 6) for _, g in rows})
+    ok = n > 100 and span > 1e9 and distinct > 50
+    return (ok, f"n={n} span={span / 1e9:.2f}GHz distinct={distinct}",
+            ">100 samples, >1 GHz span, >50 distinct values")
+
+
 # ---- supercap balance divider (tb_scap_balance.cir) -------------------------------------------------
 
 def c_bal_half(runs):
@@ -186,6 +322,14 @@ def c_mon_night_budget(runs):
 
 
 CRITERIA = {
+    # The RF deck writes a CURVE FILE rather than print statements, so it is run and parsed
+    # separately -- but it is registered here so the no-orphan rule (D1) still covers it.
+    "tb_rf_filter.cir": [
+        ("RF-CURVE", "sweep is real: many distinct samples over a wide band", c_rf_curve_is_real),
+        ("RF-LOSS", "insertion loss < 1 dB at the 2.4 GHz centre", c_rf_ins_loss),
+        ("RF-REJ2", "> 15 dB rejection at the 2nd harmonic", c_rf_reject_h2),
+        ("RF-REJ3", "> 15 dB rejection at the 3rd harmonic", c_rf_reject_h3),
+    ],
     "tb_scap_balance.cir": [
         ("BAL-HALF", "supercap midpoint at exactly half the stack", c_bal_half),
         ("BAL-CURR", "balance divider current = 270 uA", c_bal_current),
@@ -228,7 +372,16 @@ def main(argv):
         ok, out, err = run_tb(cir)
         runs = parse_prints(out)
         print(f"\n{tb}  ({len(runs)} analysis run(s), ngspice rc={0 if ok else 1})")
-        if not runs:
+
+        # Curve-producing decks emit an ARTIFACT instead of parsed prints. Refresh it and report a
+        # HARNESS ERROR if it is missing or too small -- never a pass.
+        perr = post_run(tb)
+        if perr:
+            print(f"  HARNESS ERROR: {perr} -- cannot grade. An absent artifact is not a pass.")
+            fails += 1
+            continue
+
+        if not runs and tb not in CURVE_DECKS:
             print("  HARNESS ERROR: no numeric output parsed -- cannot grade. "
                   "An unparseable run is NOT a pass.")
             fails += 1

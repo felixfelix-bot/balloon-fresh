@@ -1,0 +1,53 @@
+* SX1280 RF harmonic filter -- REJECTION gate
+*
+* BLOCK: the vendor RF network from RFIO to the antenna connector.
+*   RFIO(22) --+-- C0 -- GND                     (shunt match)
+*              +-- L1 --+-- C1 -- GND            (series match, then shunt)
+*                       +-- (L2 || C4) --+-- C2 -- GND
+*                                        +-- C3 --> antenna  (DC block)
+*
+* VALUES ARE THE VENDOR'S OWN. Semtech SX1280/SX1281 Rev 3.2, Table 15-1 (page 146).
+*
+* DESIGN NOTE -- a topology error found by an implausible number
+* A first version put C4 as a SHUNT TO GROUND at the output node and reported 2.3 dB of harmonic
+* rejection (i.e. almost none). Zooming into Figure 15-1 showed C4 is IN PARALLEL WITH L2.
+* L2||C4 is parallel-resonant at 4.5 GHz, so at 2.4 GHz it presents j52.7 ohm versus L2's j37.7 ohm
+* alone. Corrected, rejection rises to about 29 dB.
+*
+* DECK DESIGN -- deliberately minimal
+* ONE ac sweep, raw samples written to a file, and ALL arithmetic done in Python. An earlier version
+* used ngspice's control language (alterparam in a foreach, scalar `let` across runs, vector
+* indexing) and produced three IDENTICAL readings -- the tell that the sweep was not being applied.
+* Keeping the control language out of the critical path is what makes the three working decks
+* (NTC / supercap balance / VSCAP monitor) reliable.
+*
+* OPEN DEFECT -- the passband is deliberately NOT asserted. See check_sim_gate.py / ADR-116.
+
+.param C0v=0.8p
+.param C1v=1.2p
+.param C2v=1.2p
+.param C3v=100p
+.param C4v=0.5p
+.param L1v=3.0n
+.param L2v=2.5n
+
+Vsrc in 0 AC 1
+Rsrc in rfio 50
+
+C0 rfio 0 {C0v}
+L1 rfio n1 {L1v}
+C1 n1 0 {C1v}
+L2 n1 n2 {L2v}
+C4 n1 n2 {C4v}
+C2 n2 0 {C2v}
+C3 n2 ant {C3v}
+Rload ant 0 50
+
+.control
+set wr_singlescale
+set wr_vecnames
+ac dec 200 1e6 12e9
+wrdata rf_filter_curve.txt db(v(ant))
+.endc
+
+.end

@@ -106,18 +106,79 @@ perturbations = {
     "MON-ADC":  nominal_runs(mon_tap=3.40),
     "MON-MONO": nominal_runs(mon_30=1.50, mon_42=2.10, mon_tap=1.50),
     "MON-NIGHT": nominal_runs(mon_ua=50.0),
+    # RF: these read a CURVE, so they are perturbed by substituting a synthetic curve below.
+    "RF-CURVE": None,
+    "RF-LOSS":  None,
+    "RF-REJ2":  None,
+    "RF-REJ3":  None,
+}
+
+# Synthetic RF curves. The criteria read the module-level curve, so a substituted curve proves the
+# criterion can fail. These are the SAME SHAPE as the real artifact but wrong in one specific way.
+def rf_nominal_curve():
+    """A well-formed curve for a CORRECT network: 200 samples over a wide band, a perfect 50 ohm
+    match at the 2.4 GHz centre, and deep notches at the harmonics.
+
+    Why 200 samples: RF-CURVE asserts the sweep is REAL (>100 samples, >1 GHz span, >50 distinct
+    values). A five-point fixture failed RF-CURVE-N -- and that was a defect in the FIXTURE, not in
+    the criterion: the nominal fixture must satisfy the criteria it feeds, or every -N check is
+    testing the fixture's laziness rather than the criterion.
+    """
+    import math
+    pts = []
+    for i in range(200):
+        f = 1e8 * (120 ** (i / 199.0))          # 100 MHz .. 12 GHz, log-spaced
+        # A rolling response with a genuine passband hump, so the dB values vary continuously instead
+        # of forming a plateau. A first version used a flat plateau plus a linear roll-off and
+        # produced only 28 DISTINCT values -- RF-CURVE rejected it as "not a real sweep", which was
+        # the criterion being correct and this fixture being lazy. The real artifact has 814 distinct
+        # values out of 816 samples, so the fixture must be comparably rich.
+        g = -6.0206 - 20.0 * math.log10(1.0 + (f / 6e9) ** 4)
+        g += 1.5 * math.sin(f / 3e8)            # gentle ripple -> many distinct values
+        pts.append((f, g))
+    # exact spot values the criteria read
+    pts.append((2.4e9, -6.0206))
+    pts.append((4.8e9, -36.0))
+    pts.append((7.2e9, -36.0))
+    return pts
+
+
+RF_PERTURBATIONS = {
+    # tiny/flat curve: the anti-fabrication criterion must reject it
+    "RF-CURVE": [(2.4e9, -6.0), (2.5e9, -6.0)],
+    # 3 dB insertion loss -- a real loss, must fail the <1 dB limit
+    "RF-LOSS":  [(f, -9.02) for f in (2.3e9, 2.4e9, 2.5e9)] + [(4.8e9, -36.0), (7.2e9, -36.0)],
+    # harmonic not filtered: 3 dB rejection only
+    "RF-REJ2":  [(f, -6.02) for f in (2.3e9, 2.4e9, 2.5e9)] + [(4.8e9, -9.0), (7.2e9, -36.0)],
+    "RF-REJ3":  [(f, -6.02) for f in (2.3e9, 2.4e9, 2.5e9)] + [(4.8e9, -36.0), (7.2e9, -9.0)],
 }
 by_id = {}
 for _tbn, crits in gate.CRITERIA.items():
     for cid, desc, fn in crits:
         by_id[cid] = (desc, fn)
 
+def with_curve(curve, fn, runs):
+    """Run a curve-reading criterion against an injected curve, restoring the cache afterwards."""
+    if curve is None:
+        return fn(runs)
+    saved = gate._RF_CURVE_CACHE
+    try:
+        gate._RF_CURVE_CACHE = curve
+        return fn(runs)
+    finally:
+        gate._RF_CURVE_CACHE = saved
+
+
 for cid, (desc, fn) in by_id.items():
-    good, m, lim = fn(nominal_runs())
+    is_rf = cid.startswith("RF-")
+    nom_curve = rf_nominal_curve() if is_rf else None
+    good, m, lim = with_curve(nom_curve, fn, nominal_runs())
     check(f"{cid}-N", f"{cid} ACCEPTS correct data ({desc[:38]})",
           good is True, f"false alarm on nominal data: measured={m} limit={lim}")
+
     if cid in perturbations:
-        bad, m2, lim2 = fn(perturbations[cid])
+        pc = RF_PERTURBATIONS.get(cid) if is_rf else None
+        bad, m2, lim2 = with_curve(pc, fn, perturbations[cid] or nominal_runs())
         check(f"{cid}-F", f"{cid} REJECTS perturbed data",
               bad is False, f"gate did NOT catch the perturbation; measured={m2} limit={lim2}")
     else:
@@ -139,6 +200,7 @@ claimed = {
     "NTC temperature divider": "tb_ntc_divider.cir",
     "supercap balance divider": "tb_scap_balance.cir",
     "VSCAP monitor divider": "tb_vscap_monitor.cir",
+    "SX1280 RF harmonic filter": "tb_rf_filter.cir",
 }
 for block, tbf in claimed.items():
     check(f"F-{tbf[:14]}", f"ADR-claimed block {block!r} has {tbf}", tbf in on_disk,
