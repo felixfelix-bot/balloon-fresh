@@ -1,0 +1,129 @@
+{
+  "artifact": "SX1280 (U4) wiring specification",
+  "date": "2026-10-14",
+  "authority": "Semtech SX1280/SX1281 Data Sheet Rev 3.2 (March 2020), vendored at docs/sx1280/",
+  "why": "Step 1 replaced the placeholder symbol with the REAL pinout. KiCad connects by PIN NUMBER, so the install re-landed the existing wires on the real pins and U4's connectivity collapsed from 13 nets to 7, landing on functions that do not match the net names. The wiring must be redrawn. This file states every connection so the work is deterministic.",
+  "real_pinout": {
+    "0": "GND (exposed pad; footprint pad 25)",
+    "1": "VR_PA (OUTPUT - regulated supply for the PA)",
+    "2": "VDD_IN (INPUT - regulated supply input; datasheet says connect to Pin 12)",
+    "3": "NRESET (input, active low, internal 50k pull-up)",
+    "4": "XTA (reference oscillator)",
+    "5": "GND",
+    "6": "XTB (reference oscillator)",
+    "7": "BUSY (output)",
+    "8": "DIO1 (bidirectional)",
+    "9": "DIO2 (bidirectional)",
+    "10": "DIO3 (bidirectional)",
+    "11": "VBAT_IO (power_in, <= VBAT)",
+    "12": "DCC_FB (internal regulator feedback/output)",
+    "13": "GND",
+    "14": "DCC_SW (DC-DC switcher output)",
+    "15": "VBAT (power_in, >= VBAT_IO)",
+    "16": "MISO_TX (SPI slave out / UART TX)",
+    "17": "MOSI_RX (SPI slave in / UART RX)",
+    "18": "SCK_RTSN (SPI clock / UART RTS)",
+    "19": "NSS_CTS (SPI select / UART CTS)",
+    "20": "GND",
+    "21": "GND",
+    "22": "RFIO (RF in/out)",
+    "23": "GND",
+    "24": "GND"
+  },
+
+  "REMOVE_THESE_WRONG_CONNECTIONS": [
+    {"net": "+3V3", "currently_on_pin": "1", "pin_is": "VR_PA", "why_wrong": "VR_PA is an OUTPUT of the internal regulator, not a supply input. Feeding +3V3 into it is a short against the regulator."},
+    {"net": "/SX1280_RESET_N", "currently_on_pin": "2", "pin_is": "VDD_IN", "why_wrong": "VDD_IN is a supply input. RESET belongs on NRESET (pin 3)."},
+    {"net": "/SX1280_CS_N", "currently_on_pin": "3", "pin_is": "NRESET", "why_wrong": "NRESET is the chip reset. Chip-select belongs on NSS_CTS (pin 19)."},
+    {"net": "/SX1280_MOSI", "currently_on_pin": "4", "pin_is": "XTA", "why_wrong": "XTA is a crystal pin. MOSI belongs on MOSI_RX (pin 17)."},
+    {"net": "/SX1280_DIO1", "currently_on_pin": "5", "pin_is": "GND", "why_wrong": "GND. DIO1 belongs on pin 8."},
+    {"net": "/SX1280_DIO3", "currently_on_pin": "6", "pin_is": "XTB", "why_wrong": "XTB is a crystal pin. DIO3 belongs on pin 10."},
+    {"net": "GND", "currently_on_pin": "14", "pin_is": "DCC_SW", "why_wrong": "DCC_SW is the DC-DC switch node. Shorting it to GND disables the radio's regulator."}
+  ],
+
+  "NEW_CONNECTIONS": {
+    "supply_and_decoupling": [
+      {"part": "VBAT rail", "detail": "+3V3 -> U4.15 (VBAT). This is the radio's supply input."},
+      {"part": "C10", "value": "100 nF", "lcsc": "C60133-class 0402 X7R 50V", "library": "expand",
+       "connections": ["p1 -> U4.15 (VBAT)", "p2 -> GND"]},
+      {"part": "R15", "value": "0 R", "lcsc": "C17168", "library": "base",
+       "connections": ["p1 -> U4.15 (VBAT)", "p2 -> U4.11 (VBAT_IO)"],
+       "note": "The datasheet's reference design feeds the IO rail from the radio rail through a 0R link, which allows the IO rail to be separated later without a layout change."},
+      {"part": "C8", "value": "100 nF", "lcsc": "C60133-class 0402 X7R 50V", "library": "expand",
+       "connections": ["p1 -> U4.11 (VBAT_IO)", "p2 -> GND"]},
+      {"part": "C5", "value": "10 nF", "lcsc": "C15195", "library": "base",
+       "connections": ["p1 -> U4.1 (VR_PA)", "p2 -> GND"],
+       "note": "VR_PA is a regulator OUTPUT; the cap is its bypass. NOT a supply feed."},
+      {"part": "C6", "value": "10 nF", "lcsc": "C15195", "library": "base",
+       "connections": ["p1 -> V_DCC node", "p2 -> GND"]}
+    ],
+
+    "internal_buck_regulator": [
+      {"part": "L4", "value": "15 uH", "lcsc": "C2826623", "library": "expand",
+       "connections": ["p1 -> U4.14 (DCC_SW)", "p2 -> V_DCC node"]},
+      {"part": "C9", "value": "470 nF", "lcsc": "C47339", "library": "expand",
+       "connections": ["p1 -> V_DCC node", "p2 -> GND"]},
+      {"net": "V_DCC", "members": ["L4.p2", "C9.p1", "C6.p1", "U4.12 (DCC_FB)", "U4.2 (VDD_IN)"],
+       "note": "This is the regulator's output node. Datasheet Table 2-1 says VDD_IN connects to Pin 12 (DCC_FB), which is the same node."},
+      {"MANDATORY": "L4 and C9 are NOT optional. The datasheet states the internal DC-DC is 'considered switched ON unless otherwise stated', so omitting them leaves an open regulator loop."}
+    ],
+
+    "crystal": [
+      {"part": "Q1", "value": "52 MHz", "lcsc": "C7502106", "library": "expand",
+       "package": "SMD3225-4P",
+       "connections": ["p1 -> U4.4 (XTA)", "p2 -> U4.6 (XTB)", "p3 -> GND", "p4 -> GND"],
+       "note_4pin": "A 4-pad crystal is a 2-electrode crystal in a 4-pad package; the extra two pads are ground/shield, which is why p3 and p4 go to GND.",
+       "NO_LOAD_CAPS": "Figure 15-1 shows NO external load capacitors. The datasheet states the foot capacitances are INTERNALLY INTEGRATED. Do NOT add load caps; do NOT infer that they were omitted by mistake.",
+       "constraint_used": "Table 3-9: F_XOSC 52 MHz, C_LOAD 10 pF typical, C0 max 5 pF, R_S max 50 ohm.",
+       "why_this_part": "Cheapest of 14 of 41 candidates whose load capacitance is 10 pF. The cheapest overall candidate is 8 pF and would sit off-frequency."
+     }
+    ],
+
+    "digital_and_rf": [
+      {"net": "/SX1280_RESET_N", "to": "U4.3 (NRESET)"},
+      {"net": "/SX1280_CS_N",    "to": "U4.19 (NSS_CTS)"},
+      {"net": "/SX1280_SCK",     "to": "U4.18 (SCK_RTSN)"},
+      {"net": "/SX1280_MOSI",    "to": "U4.17 (MOSI_RX)"},
+      {"net": "/SX1280_MISO",    "to": "U4.16 (MISO_TX)"},
+      {"net": "/SX1280_BUSY",    "to": "U4.7 (BUSY)"},
+      {"net": "/SX1280_DIO1",    "to": "U4.8 (DIO1)"},
+      {"net": "/SX1280_DIO2",    "to": "U4.9 (DIO2)"},
+      {"net": "/SX1280_DIO3",    "to": "U4.10 (DIO3)"},
+      {"net": "GND",             "to": "U4.5, U4.13, U4.20, U4.21, U4.23, U4.24, U4.0 (exposed pad)"}
+    ]
+  },
+
+  "OPEN_ITEMS_NEEDING_OPERATOR_INPUT": [
+    {
+      "id": "OPEN-2 (restated)",
+      "topic": "RFIO (pin 22) destination",
+      "detail": "Figure 15-1 prints the matching and filter network C0/L1/C1/L2/C4/C2/C3 with NO VALUES; the text calls them layout-, frequency- and antenna-dependent. So RFIO cannot be wired to an antenna until those values exist. Requires a Semtech matching document or the RFIO S-parameter data.",
+      "status": "UNSPECIFIED - will not be guessed"
+    },
+    {
+      "id": "ANT_SW net",
+      "topic": "/SX1280_ANT_SW has no destination",
+      "detail": "The placeholder symbol had an ANT_SW pin. The REAL SX1280 has NO ANT_SW pin. So this net has no home on U4. Either an external RF switch is intended (in which case it needs a control GPIO from U1, not U4) or the net is vestigial from the placeholder. This is a design question for the operator.",
+      "status": "BLOCKED - needs a ruling"
+    },
+    {
+      "id": "TCXO vs crystal",
+      "topic": "reference source",
+      "detail": "52 MHz crystal selected (Figure 15-1). Figure 15-3 documents a TCXO alternative that removes the C_LOAD dependency at ~6.2x the part cost plus a supply rail. +/-10 ppm at 2.4 GHz is a 24 kHz offset, small against FLRC channel bandwidths, so the crystal is sufficient.",
+      "status": "DECIDED - crystal, recorded so the choice is visible"
+    }
+  ],
+
+  "verification": {
+    "must_check_after_wiring": [
+      "Every U4 pin with a net must match the real pinout table above.",
+      "Nets touching U4 should be 13 (the original count) or more, NOT the collapsed 7.",
+      "The 7 wrong connections must be gone.",
+      "L4 and C9 must both be present (mandatory internal-regulator parts).",
+      "Q1 must be present with p3/p4 to GND.",
+      "NO crystal load capacitors.",
+      "GND must reach every ground pin AND the exposed pad."
+    ],
+    "tool": "tracker/hardware/verify_sx1280_symbol_netlist.py plus a net-by-pin dump from the exported netlist"
+  }
+}
