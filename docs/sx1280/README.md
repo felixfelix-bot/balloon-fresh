@@ -65,3 +65,25 @@ What it says (read from the rendering):
     6 pads per side
 
 Verify the footprint against it with `tracker/hardware/verify_fp_fig173.py`.
+
+
+## Figure 15-1 — Transceiver Application Design Schematic
+
+`Figure15-1-Application-Schematic.png` is page 145, rendered at 200 dpi:
+
+    pdftoppm -f 145 -l 145 -r 200 -png SX1280-81_Rev3.2_Mar2020.pdf Figure15-1
+
+This is the source for the support-part selection in `docs/fab/SX1280-SUPPORT-PARTS-SELECTION.md`:
+the 52 MHz crystal (Q1), the DC-DC filter (L4 15 uH, C9 470 nF), the supply bypassing (C5/C6 10 nF,
+C8/C10 100 nF) and the 0 R rail link (R15).
+
+TWO THINGS TO KNOW BEFORE TRUSTING IT:
+
+1. **No external crystal load capacitors are drawn.** The datasheet states the foot capacitances are
+   internally integrated, which is why the crystal must be specified AT C_LOAD = 10 pF. Reading the
+   absence as "we forgot them" would produce a wrong BOM.
+2. **The RF network C0/L1/C1/L2/C4/C2/C3 have NO VALUES printed.** They are described as layout-,
+   frequency- and antenna-dependent. They are NOT derivable from this document and must not be
+   guessed.
+
+Page 147 holds Figure 15-3 (the optional TCXO variant) if the crystal is ever replaced.
