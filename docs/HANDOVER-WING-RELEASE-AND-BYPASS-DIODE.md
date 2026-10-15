@@ -172,6 +172,23 @@ Both are `TODO(unverified)` and **must be measured before any layout**:
 **Bench plan:** a pull rig with a spring scale for (1); a 4-wire measurement at 400 mA in a freezer
 for (2). Both are cheap and neither needs a flight.
 
+**The request to the operator is now written out:**
+`docs/MEASUREMENT-REQUEST-WING-RELEASE.md` — it adds a **third, cheaper** measurement that
+supersedes an assumption the whole window rests on:
+
+- **A — weigh one real wing.** The window is *proportional* to wing mass, and **3.2 g is an
+  estimate**, not a measurement (`docs/analysis/wing-jettison.md` §7). At 5 g the design lower
+  bound rises from 471 mN to **735 mN** (+56 %). This decides whether a small slip-fit suffices.
+- **B — nylon loop break load.** The keeper holds the slip-fit closed **through the nylon loop**,
+  so the loop carries the joint load (~314–490 mN). Cheap at room temperature; cold/vacuum stays
+  `TODO(unverified)`.
+- **C — contact resistance**, split honestly into **C1 (choose the connector class)** and
+  **C2 (measure the chosen one)** — because "resistance of the chosen slip-fit" is circular until a
+  slip-fit exists. Target **< 100 mΩ** (0.67 % of the 2.4 W harvest, 40 mV of the 6.0 V stack).
+
+Reproduce the window at any mass:
+`python3 docs/analysis/wing_release_force_window.py <measured_grams>`
+
 ### 4.4 What this design must NOT do
 
 - **Do not cut or interrupt the copper** as a deliberate action (§1 of the analysis).
