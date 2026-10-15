@@ -168,7 +168,14 @@ Per interface, one **Schottky bypass diode provision across `W<n>_SOLAR_P` ↔ `
 cathode to `W<n>_SOLAR_P`. Rationale: ADR-046 §2.3 — without it one shaded wing collapses and
 reverse-stresses the whole 6.0 V series string.
 
-- Package suggestion: SOD-323 or SMA (BAT54 family, matching ADR-006's existing BAT54).
+- **Part: a >= 2 A / 40 V Schottky in SMA — SS24 or PMEG4020ER class.** This line previously
+  said *"SOD-323 or SMA (BAT54 family)"* and was **STALE**: the BAT54 family is
+  **200 mA / 30 V**, i.e. **6x under-rated** for the 1.2 A v9 string, and ADR-053 s1.3
+  **excludes SOD-323** because that package cannot carry 2 A. Re-rated by
+  `docs/adr/049-wing-architecture.md` clause 1, `docs/adr/051-hub-array-and-cut-topology.md`
+  s2.7 and `docs/adr/053-per-cell-bypass-diodes.md` s1.3; the board already carries the
+  corrected part (`D_BP1..D_BP4`, `Diode_SMD:D_SMA`, value SS24). Do not change the board
+  back to a BAT54.
 - **DNP on the first prototype build**; the two pads must still be laid out and routed so the
   part can be fitted later.
 - The series-blocking BAT54 at the stack output (ADR-006) is **separate** and is **not**
