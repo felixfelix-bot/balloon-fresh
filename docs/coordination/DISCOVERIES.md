@@ -26,6 +26,85 @@ Each discovery is tagged with relevance categories so tracks know if it applies 
 
 <!-- New discoveries are appended below. Do not edit existing entries. -->
 
+### [balloon-hermes] feat(range): range-check cross-checks TX vs RX T0, --tx-log arg + sibling discov (2026-08-28) | tags: GENERAL
+- **Commit:** `d9abf60` by Felix
+- **Files:** firmware/e80-stm32-bench/Makefile, firmware/e80-stm32-bench/tools/range_check.py, firmware/e80-stm32-bench/tools/test_range_preflight.py
+- **Full message:** feat(range): range-check cross-checks TX vs RX T0, --tx-log arg + sibling discovery
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: LR2021 throughput optimization analysis — RF + firmware consultant finding (2026-08-24) | tags: RADIO
+- **Commit:** `106f6fd` by Felix
+- **Files:** docs/LR2021-THROUGHPUT-OPTIMIZATION-ANALYSIS.md
+- **Full message:** docs: LR2021 throughput optimization analysis — RF + firmware consultant findings
+- **Relevance:** RADIO
+
+### [balloon-hermes] feat(two-computer): first cross-machine range test passed — 50/50 0% PER (2026-08-23) | tags: FIRMWARE, TEST
+- **Commit:** `5332fcc` by Felix
+- **Files:** docs/handover-adaptive-sweep-2026-08-22.md, docs/plans/stop-verify-results.json, docs/plans/stop-verify-results.md (+9 more)
+- **Full message:** feat(two-computer): first cross-machine range test passed — 50/50 0% PER
+- **Relevance:** FIRMWARE, TEST
+
+### [balloon-hermes] fix(bench): off-by-one SWD schedule gap + STAT? resilience + hardware findings (2026-08-23) | tags: TEST
+- **Commit:** `6274fd1` by Felix
+- **Files:** firmware/e80-stm32-bench/docs/hardware-integration-findings.md, firmware/e80-stm32-bench/docs/hardware-test-data/combined-range-report.md, firmware/e80-stm32-bench/docs/hardware-test-data/rx-final.csv (+4 more)
+- **Full message:** fix(bench): off-by-one SWD schedule gap + STAT? resilience + hardware findings
+- **Relevance:** TEST
+
+### [balloon-hermes] data: full-parameter sweep results (48 configs, 46 clean) (2026-08-21) | tags: GENERAL
+- **Commit:** `e4322ce` by Felix
+- **Files:** full-sweep-pkts-20260821-162143.csv, full-sweep-report-20260821-162143.md, full-sweep-summary-20260821-162143.csv
+- **Full message:** data: full-parameter sweep results (48 configs, 46 clean)
+- **Relevance:** GENERAL
+
+### [balloon-hermes] feat: E80-to-E80 LoRa sweep results + reproducible measurement scripts (2026-08-21) | tags: RADIO, TEST
+- **Commit:** `eac73a2` by Felix
+- **Files:** firmware/e80-stm32-bench/tools/buf_smoke_t3.py, firmware/e80-stm32-bench/tools/e80_sweep.py, firmware/e80-stm32-bench/tools/e80_sweep2.py (+5 more)
+- **Full message:** feat: E80-to-E80 LoRa sweep results + reproducible measurement scripts
+- **Relevance:** RADIO, TEST
+
+### [balloon-hermes] BUF-T5a: e80_sweep.py — parse_pkt accepts 23/24 fields + binary BUF loader (2026-08-21) | tags: FIRMWARE
+- **Commit:** `8f3f63b` by Felix
+- **Files:** docs/coordination/FLASH-QUEUE.md, tools/e80_sweep.py
+- **Full message:** BUF-T5a: e80_sweep.py — parse_pkt accepts 23/24 fields + binary BUF loader
+- **Relevance:** FIRMWARE
+
+### [balloon-hermes] docs: E80-to-E80 harmonization measurement results (2026-08-20) | tags: TEST
+- **Commit:** `4af2cf6` by Felix
+- **Files:** tools/e80_harm_measurement_results.txt
+- **Full message:** docs: E80-to-E80 harmonization measurement results
+- **Relevance:** TEST
+
+### [balloon-hermes] docs: add wave4 task cards + e2e playwright plan + update flash queue (2026-08-20) | tags: FIRMWARE
+- **Commit:** `beeb38d` by Felix
+- **Files:** .hermes/plans/2026-08-20_e2e-playwright-coverage-plan.md, .hermes/plans/2026-08-20_wave4-task-cards.md, docs/coordination/FLASH-QUEUE.md
+- **Full message:** docs: add wave4 task cards + e2e playwright plan + update flash queue
+- **Relevance:** FIRMWARE
+
+### [balloon-hermes] docs: E80 next-steps execution schedule with quality gates (2026-08-20) | tags: GENERAL
+- **Commit:** `f4838ed` by Felix
+- **Files:** docs/coordination/E80-NEXT-STEPS-SCHEDULE.md
+- **Full message:** docs: E80 next-steps execution schedule with quality gates
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: E80-SWD-DIAGNOSIS-2026-08-18 — UART breakthrough + SWD theory flip (2026-08-18) | tags: GENERAL
+- **Commit:** `88d5bc9` by Felix
+- **Files:** docs/E80-SWD-DIAGNOSIS-2026-08-18.md, docs/HANDOFF-SWD-NEXT-STEPS.md
+- **Full message:** docs: E80-SWD-DIAGNOSIS-2026-08-18 — UART breakthrough + SWD theory flip
+- **Relevance:** GENERAL
+
+### [balloon-hermes] docs: E80 vendor research — official manual/schematic + finding that NO USB boot (2026-08-17) | tags: FIRMWARE, HARDWARE
+- **Commit:** `5a930af` by Felix
+- **Files:** docs/e80-900mbl-02-eval/RESEARCH-FINDINGS-2026-08-17.md, docs/e80-900mbl-02-eval/cn_manual.pdf, docs/e80-900mbl-02-eval/e80_m2212s_manual.pdf (+3 more)
+- **Full message:** docs: E80 vendor research — official manual/schematic + finding that NO USB bootloader exists (SWD via U4 pads is the official path; SoftRF/Zephyr flash this board the same way)
+- **Relevance:** FIRMWARE, HARDWARE
+
+### [balloon-hermes] docs: README (build/console/bench/EU policy) + FLASHING (stock-dump-first stm32f (2026-08-15) | tags: FIRMWARE
+- **Commit:** `f7920b2` by Felix
+- **Files:** firmware/e80-stm32-bench/.gitignore, firmware/e80-stm32-bench/FLASHING.md, firmware/e80-stm32-bench/README.md
+- **Full message:** docs: README (build/console/bench/EU policy) + FLASHING (stock-dump-first stm32flash procedure, BOOT0 finding)
+- **Relevance:** FIRMWARE
+
+
 ### [balloon-pre-stretching] docs: discovery sync batch 13 — diagonal 45° routing, no weight impact, informat (2026-08-08) | tags: PROTOCOL
 - **Commit:** `350b1e3` by Felix
 - **Files:** docs/STATUS-balloon-pre-stretching.md

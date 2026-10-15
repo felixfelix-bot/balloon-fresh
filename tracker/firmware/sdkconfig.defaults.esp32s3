@@ -68,7 +68,7 @@ CONFIG_BENCH_TEST_MODE=y
 CONFIG_BENCH_TEST_INTERVAL_SEC=10
 
 # ── BMP280 sensor enabled ──
-CONFIG_ENABLE_BMP280=y
+CONFIG_ENABLE_BMP280=n
 
 # ── GPS disabled (not wired on S3 bench boards) ──
 # CONFIG_ENABLE_GPS is not set

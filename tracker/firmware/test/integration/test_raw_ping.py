@@ -60,12 +60,19 @@ from pathlib import Path
 TOOLS_DIR = os.path.expanduser("~/repos/balloon-fresh/tools")
 sys.path.insert(0, TOOLS_DIR)
 
-try:
-    from board_serial import BoardSerial
-except ImportError:
-    print("ERROR: board_serial.py not found in {TOOLS_DIR}".format(TOOLS_DIR=TOOLS_DIR), file=sys.stderr)
-    print("       Ensure balloon-fresh repo is cloned at ~/repos/balloon-fresh", file=sys.stderr)
-    sys.exit(3)
+def load_board_serial():
+    """Import BoardSerial lazily.
+
+    Deferred so that `--help` works on a host without pyserial installed
+    (board_serial.py imports pyserial at module scope and exits on failure).
+    """
+    try:
+        from board_serial import BoardSerial
+    except ImportError:
+        print("ERROR: board_serial.py not found in {TOOLS_DIR}".format(TOOLS_DIR=TOOLS_DIR), file=sys.stderr)
+        print("       Ensure balloon-fresh repo is cloned at ~/repos/balloon-fresh", file=sys.stderr)
+        sys.exit(3)
+    return BoardSerial
 
 LOCK_SCRIPT = os.path.join(TOOLS_DIR, "balloon-board-lock.py")
 BOARD_A_PORT = "/dev/ttyACM0"
@@ -171,6 +178,7 @@ def run_direction(tx_board_name: str, tx_port: str, tx_board_id: str,
     ))
 
     # Open serial connections using BoardSerial wrapper
+    BoardSerial = load_board_serial()
     try:
         tx_ser = BoardSerial(tx_port, BAUD_RATE, timeout=1)
         rx_ser = BoardSerial(rx_port, BAUD_RATE, timeout=1)
