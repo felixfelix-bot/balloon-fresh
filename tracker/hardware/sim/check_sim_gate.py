@@ -124,7 +124,79 @@ def c_supply_sanity(runs):
     return (abs(v - 3.3) <= 1e-6, v, "3.3 V")
 
 
+# ---- supercap balance divider (tb_scap_balance.cir) -------------------------------------------------
+
+def c_bal_half(runs):
+    """Supercap midpoint must sit at exactly half the stack when the resistors are equal."""
+    v = get_metric(runs, "v_top")
+    return (abs(v - 2.70) <= 0.01, v, "2.70 V +/- 0.01 V")
+
+
+def c_bal_current(runs):
+    """Balance divider current at 5.4 V. R_BAL1+R_BAL2 = 20k, so 270 uA.
+
+    This is a NIGHT-BUDGET number: the divider draws continuously from the supercap, so a value
+    change here must be a deliberate decision, not a side effect.
+    """
+    i = get_metric(runs, "i_div")
+    return (abs(i - 2.7e-4) <= 1e-5, i, "2.70e-4 A +/-1e-5 (270 uA)")
+
+
+def c_bal_linear(runs):
+    """Halving the stack must halve the midpoint -- the divider must be linear, not clipped."""
+    v = get_metric(runs, "v_half")
+    return (abs(v - 1.35) <= 0.01, v, "1.35 V +/- 0.01 V")
+
+
+# ---- VSCAP monitor divider (tb_vscap_monitor.cir) ---------------------------------------------------
+
+def c_mon_tap(runs):
+    """VSCAP monitor tap at a 5.4 V stack must be 2.70 V -- the 1:2 divider ratio."""
+    v = get_metric(runs, "v_tap")
+    return (abs(v - 2.70) <= 0.03, v, "2.70 V +/- 0.03 V")
+
+
+def c_mon_adc_limit(runs):
+    """THE SAFETY CRITERION: the tap must stay under the ADC reference at max stack voltage.
+
+    If this fails, the MCU's ADC pin sees an over-voltage. That is a dead part, and it is the one
+    failure in this block that a firmware change cannot recover.
+    """
+    v = get_metric(runs, "v_tap")
+    return (v < 3.30, v, "< 3.30 V (ADC reference)")
+
+
+def c_mon_monotonic(runs):
+    """The tap must rise with the stack. A flat or falling response means the divider is wrong."""
+    a = get_metric(runs, "v_at_3v0")
+    b = get_metric(runs, "v_at_4v2")
+    c = get_metric(runs, "v_tap")
+    ok = a < b < c
+    return (ok, [a, b, c], "strictly increasing with stack voltage")
+
+
+def c_mon_night_budget(runs):
+    """Divider current must stay under 5 uA. 1Meg+1Meg draws 2.7 uA.
+
+    A milliamp-class divider would flatten the supercap overnight, and this payload cannot recharge
+    until sunrise.
+    """
+    i = get_metric(runs, "i_ua")
+    return (i < 5.0, i, "< 5.0 uA")
+
+
 CRITERIA = {
+    "tb_scap_balance.cir": [
+        ("BAL-HALF", "supercap midpoint at exactly half the stack", c_bal_half),
+        ("BAL-CURR", "balance divider current = 270 uA", c_bal_current),
+        ("BAL-LINR", "divider is linear, not clipped", c_bal_linear),
+    ],
+    "tb_vscap_monitor.cir": [
+        ("MON-TAP", "monitor tap = 2.70 V at a 5.4 V stack", c_mon_tap),
+        ("MON-ADC", "SAFETY: tap under the ADC reference at max stack", c_mon_adc_limit),
+        ("MON-MONO", "tap rises monotonically with stack voltage", c_mon_monotonic),
+        ("MON-NIGHT", "divider current under the 5 uA night budget", c_mon_night_budget),
+    ],
     "tb_ntc_divider.cir": [
         ("NTC-25C", "tap at half rail when thermistor matches top leg", c_tap_25C),
         ("NTC-MONO", "tap falls monotonically with temperature", c_monotonic),

@@ -1,0 +1,40 @@
+* Supercap balance divider -- DC operating point gate
+*
+* BLOCK: R_BAL1 (10k) from /VSCAP to /SCAP_MID, R_BAL2 (10k) from /SCAP_MID to GND.
+* Board netlist evidence: `R_BAL1 /VSCAP /SCAP_MID 10k` and `R_BAL2 /SCAP_MID GND 10k` export as real
+* SPICE elements, so this block IS simulatable (unlike the ICs, which export as __U1 stubs).
+*
+* WHY THIS BLOCK MATTERS: two supercaps in series need their midpoint held at half the stack voltage,
+* or one cap sees more than its share and ages out first. A balance divider that is missing, open, or
+* has swapped values silently unbalances the stack.
+*
+* PASS CRITERIA (asserted numerically by check_sim_gate.py):
+*   A. At VSCAP = 5.4 V (the stack's top operating point) the midpoint must sit at half, +/-1%.
+*   B. Equal resistors must give EXACTLY half -- the divider must be symmetric.
+*   C. The midpoint must track VSCAP linearly (2.7 V at 2.7 V in).
+*   D. Divider current at the top voltage must stay under 1 mA (1.08 mA is the 5.4 V/5k value --
+*      the gate states the real budget so a change in resistor value is caught).
+
+.title Supercap balance divider DC gate
+
+Vstack vscap 0 DC 5.4
+R_BAL1 vscap scapmid 10k
+R_BAL2 scapmid 0 10k
+
+.save v(scapmid) v(vscap)
+
+.control
+* A/B: the top operating point and the symmetry check in one run
+op
+let v_top = v(scapmid)
+let i_div = (v(vscap) - v(scapmid))/10000
+print v_top v(vscap) i_div
+
+* C: linearity -- scale the stack down by half and the midpoint must scale too
+alter Vstack dc 2.7
+op
+let v_half = v(scapmid)
+print v_half
+.endc
+
+.end

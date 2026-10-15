@@ -81,8 +81,10 @@ CANNOT yet be simulated are listed below as **NOT COVERED**, not quietly omitted
 | block | deck | criteria | status |
 |---|---|---|---|
 | **NTC temperature divider** (`R_NTC1`/`TH_NTC1`) | `tb_ntc_divider.cir` | 5 | ✅ **COVERED** |
+| **Supercap balance divider** (`R_BAL1`/`R_BAL2`) | `tb_scap_balance.cir` | 3 | ✅ **COVERED** |
+| **VSCAP monitor divider** (`R_DIV1`/`R_DIV2`) | `tb_vscap_monitor.cir` | 4 | ✅ **COVERED** |
 
-The NTC criteria, chosen because each catches a real and likely error:
+**12 criteria total.** Each catches a distinct, plausible error:
 
 | id | asserts | catches |
 |---|---|---|
@@ -91,15 +93,46 @@ The NTC criteria, chosen because each catches a real and likely error:
 | `NTC-COLD` | tap < 3.25 V at −40 °C | railed high, no resolution at cold end |
 | `NTC-HOT` | tap > 0.05 V at +85 °C | railed low, no resolution at hot end |
 | `RAIL` | the 3.3 V rail measures 3.3 V | a gate that cannot see the rail is measuring nothing |
+| `BAL-HALF` | supercap midpoint at exactly 2.70 V | unbalanced stack — one cap ages out first |
+| `BAL-CURR` | balance current = 270 µA | **night-budget regression from a value change** |
+| `BAL-LINR` | halving the stack halves the midpoint | clipped or non-linear divider |
+| `MON-TAP` | monitor tap = 2.70 V at a 5.4 V stack | wrong divider ratio |
+| `MON-ADC` | tap < 3.30 V at max stack | **ADC over-voltage — a dead part, unrecoverable in firmware** |
+| `MON-MONO` | tap rises strictly with stack voltage | flat or inverted sense path |
+| `MON-NIGHT` | divider current < 5 µA (measured 2.7 µA) | a divider that flattens the supercap overnight |
 
 ### NOT COVERED (stated, not omitted)
 
 | block | why not |
 |---|---|
 | SX1280 radio, ESP32-S3, regulators | **no SPICE models.** Vendor models required before these can be simulated. |
-| RF matching / filter network | **component values do not exist yet** (Figure 15-1 prints designators only). Cannot simulate an undetermined network. |
-| Supercap balance divider, `VSCAP` monitor | passives export fine; **decks not yet written.** Next increment. |
-| TVS clamp transient (`D_CLAMP`) | needs the TVS vendor SPICE model. |
+| RF matching / filter network | values now **exist** (Table 15-1) but the block is passive-only; **deck not yet written.** |
+| **TVS clamp (`D_CLAMP`)** | **THE PART IS NOT CHOSEN** — its schematic value is literally `"TVS clamp (set point TODO(unverified))"`. Simulating an unchosen part asserts nothing. See below. |
+
+### The TVS block — five failed attempts, recorded so they are not repeated
+
+The clamp deck was attempted five times and **every version produced a plausible-looking number while
+measuring the wrong thing.** That is the exact fabricated-green signature this ADR exists to prevent,
+and it is the reason the block is **NOT COVERED** rather than shipped:
+
+| attempt | reported | the actual fault |
+|---|---|---|
+| v1 | 8.5 V | **wrong method** — a voltage pulse through a source resistance cannot reach the limit: `V = (Vin·Rd + Vclamp·Rs)/(Rs+Rd)`. TVS specs quote Vclamp **at a defined Ipp**. |
+| v2 | 3.3 V ×6 | a 3.3 V source on the same node **absorbed all the current**, so the clamp never conducted. Six identical values was the tell. |
+| v3 | 3.3 V ×3 | same fault via a 0 V source — **a 0 V source still forces its nodes equal.** |
+| v4 | 0.83 V | **diode oriented backwards** — forward-biased at 0.8 V, never reaching breakdown; acting as a rectifier, not a clamp. |
+| v5 | 9.99e+08 V | rail "disconnected" by a 1e9 resistor left **nothing to sink current**, so the node rose without limit. |
+
+**The deeper lesson: `Vbrk` is not a breakdown parameter of ngspice's stock `D` model — it is silently
+ignored.** So the clamp never conducted in *any* version, and each fix addressed a symptom while the
+core model stayed inert. **A real TVS needs a vendor subcircuit, not a stock diode.**
+
+**To close this block, two things are required:**
+1. **Choose the TVS part** (`D_CLAMP`'s standoff is currently a TODO in the schematic).
+2. **Obtain its vendor SPICE model** — a stock `D` model cannot represent breakdown.
+
+Only then does a deck assert anything real. **Recorded here so the absence is visible rather than
+assumed safe.**
 
 **Adding a modelable block is now cheap:** write the deck, register its criteria, and
 `test_sim_gate.py` immediately enforces that the criteria can fail.

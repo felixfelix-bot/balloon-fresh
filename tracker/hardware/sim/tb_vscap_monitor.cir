@@ -1,0 +1,45 @@
+* VSCAP monitor divider -- ADC range gate
+*
+* BLOCK: R_DIV1 (1Meg) from /VSCAP to /SCAP_ADC, R_DIV2 (1Meg) from /SCAP_ADC to GND.
+* Board netlist evidence: `R_DIV1 /VSCAP /SCAP_ADC 1Meg` and `R_DIV2 /SCAP_ADC GND 1Meg`.
+*
+* WHY THIS BLOCK MATTERS: the ESP32-S3 ADC input must never see more than its reference. The divider
+* is 1:2, so a 5.4 V stack presents 2.7 V -- under 3.3 V, so it is safe. But the value is load-
+* bearing: if the ratio were 1:1 the ADC would see 5.4 V and die. This gate states the divider
+* current as well, because 1Meg+1Meg draws only 2.7 uA, which is deliberately small for a payload
+* that sleeps.
+*
+* PASS CRITERIA (asserted numerically by check_sim_gate.py):
+*   A. At VSCAP = 5.4 V the ADC tap must be 2.70 V +/-0.03 V.
+*   B. The tap must stay below 3.30 V at the maximum stack voltage (ADC survival).
+*   C. The tap must rise monotonically with the stack voltage.
+*   D. Divider current must be under 5 uA -- this is a NIGHT-BUDGET part; a divider that draws
+*      milliamps would flatten the supercap overnight.
+
+.title VSCAP monitor divider DC gate
+
+Vscap vscap 0 DC 5.4
+R_DIV1 vscap scapadc 1Meg
+R_DIV2 scapadc 0 1Meg
+
+.save v(scapadc) v(vscap)
+
+.control
+* A/B/D at the top operating point
+op
+let v_tap = v(scapadc)
+let i_ua = ((v(vscap) - v(scapadc))/1000000)*1e6
+print v_tap v(vscap) i_ua
+
+* C: monotonic response -- three stack voltages
+alter Vscap dc 3.0
+op
+let v_at_3v0 = v(scapadc)
+print v_at_3v0
+alter Vscap dc 4.2
+op
+let v_at_4v2 = v(scapadc)
+print v_at_4v2
+.endc
+
+.end
