@@ -134,6 +134,7 @@ None.
 | 113 | `113-drc-blockers-feedback-tool.md` | DRC-to-Blockers Feedback Script as a Standard Board Tool | Accepted |
 | 114 | `114-skidl-netlist-authoring.md` | SKiDL for Netlist Authoring of New Boards | Accepted |
 | 115 | `115-tooling-sourcing-policy.md` | Tooling Sourcing Policy for Board Production | Accepted |
+| 116 | `116-simulation-gate-ngspice.md` | Simulation Gate — ngspice Testbenches as a Blocking Pre-Order Check | Accepted |
 | ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 085 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)

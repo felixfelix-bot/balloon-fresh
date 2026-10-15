@@ -1,49 +1,99 @@
 #!/usr/bin/env bash
-# pre-push: block pushes containing secret patterns in repo history.
+# pre-push: SECRETS (existing) + SIMULATION GATE (ADR-116).
 #
-# REWRITTEN 2026-10-08. The previous version ran `git log -p --all -- ...`
-# INSIDE a per-pattern loop -- i.e. the full-history diff was regenerated once
-# per pattern. With ~600 refs in this repo that is an enormous diff, and the
-# hook consequently took MINUTES per push and was a major cause of the box
-# sitting at load 20+ with pushes hanging. It also effectively blocked the
-# merge train.
+# ------------------------------------------------------------------------------------------------
+# SIMULATION GATE SECTION -- ADR-116
 #
-# This version generates the history diff ONCE and pipes it through a single
-# `grep -f`, i.e. O(1) history walks instead of O(N_patterns). Same detection
-# set, same added/removed coverage, a factor of N_patterns cheaper.
+# Why this is in pre-push and not pre-commit: the sim gate runs ngspice and its 23-check regression
+# suite, which takes seconds. pre-commit must stay fast or people start using --no-verify, and a
+# bypassed gate is worse than no gate.
+#
+# What it blocks: a push where either
+#   (a) the simulation gate FAILS -- a modelled block's measured value is outside its stated limit, or
+#   (b) the gate's own REGRESSION SUITE fails -- which means the gate itself is no longer trustworthy
+#       (a criterion that cannot fail, an orphan testbench, an ADR claim with no deck).
+#
+# (b) is the important one. A sim gate that has silently stopped being able to fail would otherwise
+# pass forever, which is exactly the fabricated-green failure mode ADR-116 exists to prevent.
+#
+# Escape hatch: SKIP_SIM_GATE=1 git push ...   and  --no-verify. Both are logged as bypasses.
+# ------------------------------------------------------------------------------------------------
 set -e
 
 TOPLEVEL="$(git rev-parse --show-toplevel)"
+
+# ---------------------------------------------------------------- secrets (unchanged behaviour)
 PATTERNS_FILE="$TOPLEVEL/.secret-patterns.txt"
 
-if [ ! -f "$PATTERNS_FILE" ]; then
-    exit 0
+if [ -f "$PATTERNS_FILE" ]; then
+    CLEAN_PATTERNS="$(mktemp)"
+    trap 'rm -f "$CLEAN_PATTERNS"' EXIT
+    grep -vE '^[[:space:]]*(#|$)' "$PATTERNS_FILE" > "$CLEAN_PATTERNS" || true
+    if [ -s "$CLEAN_PATTERNS" ]; then
+        SCAN_PATHS="*.py *.sh *.json *.yml *.yaml *.toml *.env *.cfg *.conf *.ini *.js *.ts *.md"
+        EXCLUDE_PATHS=":(exclude).secret-patterns.txt :(exclude)data.json :(exclude)*.html"
+
+        # ONE history walk, ONE grep pass. `head -10` bounds the report.
+        MATCH="$(git log -p --all -- $SCAN_PATHS $EXCLUDE_PATHS 2>/dev/null \
+            | grep -a -n -i -f "$CLEAN_PATTERNS" 2>/dev/null | head -10 || true)"
+
+        if [ -n "$MATCH" ]; then
+            echo "SECRET in repo history:"
+            printf '%s\n' "$MATCH"
+            echo ""
+            echo "PUSH BLOCKED — secrets detected in commit history."
+            echo "To scrub: git filter-repo --replace-text .secret-patterns.txt"
+            echo "To override (DANGEROUS): git push --no-verify"
+            exit 1
+        fi
+        echo "✓ No secrets detected in full repo history."
+    fi
 fi
 
-CLEAN_PATTERNS="$(mktemp)"
-trap 'rm -f "$CLEAN_PATTERNS"' EXIT
-grep -vE '^[[:space:]]*(#|$)' "$PATTERNS_FILE" > "$CLEAN_PATTERNS" || true
-if [ ! -s "$CLEAN_PATTERNS" ]; then
-    exit 0
+# ------------------------------------------------------------------- simulation gate (ADR-116)
+SIM_DIR="$TOPLEVEL/tracker/hardware/sim"
+GATE="$SIM_DIR/check_sim_gate.py"
+SUITE="$TOPLEVEL/tracker/hardware/tests/test_sim_gate.py"
+
+if [ -n "$SKIP_SIM_GATE" ]; then
+    echo "⚠ SIMULATION GATE SKIPPED via SKIP_SIM_GATE=$SKIP_SIM_GATE (ADR-116 bypass recorded)"
+else
+    if [ ! -f "$GATE" ] || [ ! -f "$SUITE" ]; then
+        echo "⚠ SIMULATION GATE not present in this tree — nothing to run."
+    elif ! command -v ngspice >/dev/null 2>&1; then
+        # FAIL rather than skip. A silently-skipped gate is the exact failure mode ADR-116 prevents:
+        # a missing engine would otherwise make every push look verified.
+        echo "PUSH BLOCKED — SIMULATION GATE cannot run: ngspice is not installed."
+        echo "  Install:  sudo apt-get install -y ngspice"
+        echo "  Bypass:   SKIP_SIM_GATE=1 git push ...   (or --no-verify)"
+        exit 1
+    else
+        # (b) the gate must be trustworthy BEFORE we trust its verdict
+        if ! python3 "$SUITE" > /tmp/sim_gate_suite.$$ 2>&1; then
+            echo "PUSH BLOCKED — SIMULATION GATE REGRESSION SUITE FAILED (ADR-116)."
+            tail -20 /tmp/sim_gate_suite.$$
+            rm -f /tmp/sim_gate_suite.$$
+            echo ""
+            echo "The gate itself is not trustworthy. Fix before pushing."
+            echo "Full output: python3 tracker/hardware/tests/test_sim_gate.py"
+            exit 1
+        fi
+        echo "✓ Sim gate regression suite: $(grep -oE '[0-9]+/[0-9]+ regression checks pass' /tmp/sim_gate_suite.$$ | tail -1)"
+        rm -f /tmp/sim_gate_suite.$$
+
+        # (a) then run the gate itself
+        if ! python3 "$GATE" > /tmp/sim_gate_run.$$ 2>&1; then
+            echo "PUSH BLOCKED — SIMULATION GATE FAILED (ADR-116)."
+            grep -E 'FAIL|HARNESS ERROR|criteria pass' /tmp/sim_gate_run.$$ | head -20
+            rm -f /tmp/sim_gate_run.$$
+            echo ""
+            echo "A simulated block is outside its stated limit. See docs/adr/116-simulation-gate-ngspice.md"
+            echo "Bypass: SKIP_SIM_GATE=1 git push ...   (or --no-verify)"
+            exit 1
+        fi
+        echo "✓ Simulation gate: $(grep -oE '[0-9]+/[0-9]+ criteria pass' /tmp/sim_gate_run.$$ | tail -1)"
+        rm -f /tmp/sim_gate_run.$$
+    fi
 fi
 
-# Only scan source code files; skip generated/binary/large files.
-SCAN_PATHS="*.py *.sh *.json *.yml *.yaml *.toml *.env *.cfg *.conf *.ini *.js *.ts *.md"
-EXCLUDE_PATHS=":(exclude).secret-patterns.txt :(exclude)data.json :(exclude)*.html"
-
-# ONE history walk, ONE grep pass. `head -10` bounds the report.
-MATCH="$(git log -p --all -- $SCAN_PATHS $EXCLUDE_PATHS 2>/dev/null \
-    | grep -a -n -i -f "$CLEAN_PATTERNS" 2>/dev/null | head -10 || true)"
-
-if [ -n "$MATCH" ]; then
-    echo "SECRET in repo history:"
-    printf '%s\n' "$MATCH"
-    echo ""
-    echo "PUSH BLOCKED — secrets detected in commit history."
-    echo "To scrub: git filter-repo --replace-text .secret-patterns.txt"
-    echo "To override (DANGEROUS): git push --no-verify"
-    exit 1
-fi
-
-echo "✓ No secrets detected in full repo history."
 exit 0

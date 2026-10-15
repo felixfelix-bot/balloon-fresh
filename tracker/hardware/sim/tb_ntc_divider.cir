@@ -1,0 +1,49 @@
+* NTC temperature-sense divider -- DC operating point gate
+*
+* BLOCK: R_NTC1 (10k 0.1%) top leg, TH_NTC1 (NTC) bottom leg, tapped by /SCAP_ADC-class ADC input.
+* VERIFIED AGAINST THE BOARD NETLIST: R_BAL1/R_BAL2/R_DIV1/R_DIV2/R_F1 all export real SPICE
+* elements, so resistive blocks ARE simulatable even though the ICs are not (see ADR-116).
+*
+* This testbench states an EXPECTED behaviour and the gate compares measured numbers to it.
+* The subcircuit is the board's own divider topology, not an invented one.
+*
+* PASS CRITERIA (asserted numerically by check_sim_gate.py, not by grepping for words):
+*   A. With the thermistor at 25 C the tap must sit in the ADC's usable window.
+*   B. The tap must move MONOTONICALLY with temperature across the expected range.
+*   C. At the coldest expected point the tap must still be > 0.05 V (not railed to ground).
+*   D. At the hottest expected point the tap must still be < 2.95 V (not railed to +3V3).
+
+.title NTC divider DC operating-point gate
+
+* Supply
+Vdd vdd 0 DC 3.3
+
+* Top leg: 10k 0.1% (R_NTC1)
+Rtop vdd tap 10k
+
+* Bottom leg: NTC thermistor (TH_NTC1).
+* Semtech-style B-constant model: R(T) = R25 * exp(B*(1/T - 1/T25))
+* R25 = 10k, B = 3380 K. Implemented as a behavioural resistor so the whole range is one run.
+.param R25=10k
+.param B=3380
+.param T25=298.15
+* sweep parameter: temperature in KELVIN, set by the gate via .step or -D
+.param TK=298.15
+Rntc tap 0 R={R25*exp(B*((1/TK)-(1/T25)))}
+
+* Output vector the gate reads
+.save v(tap) v(vdd)
+
+.control
+* Report the tap at three decisive temperatures so monotonicity and headroom are both measurable.
+* 233.15 K = -40 C (cold expected limit), 298.15 K = +25 C, 358.15 K = +85 C (hot expected limit)
+foreach tk 233.15 298.15 358.15
+  alterparam TK=$tk
+  reset
+  op
+  let tk_c = $tk - 273.15
+  print tk_c v(tap) v(vdd)
+end
+.endc
+
+.end
