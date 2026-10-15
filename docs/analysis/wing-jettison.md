@@ -396,6 +396,34 @@ The comparison is asymmetric:
 
 ---
 
+## 5b. Magnetic contacts, solenoids, and severing the electrical path
+
+A follow-up question was asked that this study did not cover: *are there magnetic-contact
+components controllable by a solenoid, what are their tradeoffs, and how would the electrical
+path to the wing be severed?* That analysis now lives in
+**`docs/analysis/wing-release-electrical-contacts.md`**. Its verdict does not change this
+study's recommendation, and it sharpens one point worth carrying here:
+
+- The magnetic/solenoid family is **active-hold** (150–500 mW to stay attached) against
+  ADR-036's **100 µW** night budget — **2000–3500×**, i.e. far worse than the nichrome
+  leakage (§3.5) that already contributed to rejecting option A.
+- **NdFeB's temperature coefficient works against a release**: flux *rises* ~8.8 % at −60 °C,
+  so the mechanism gets more certain to hold exactly when the rail is weakest.
+- **Cutting the copper is not a variant of cutting the nylon** — copper melts ~4× hotter and
+  conducts ~1600× better, so a nichrome element sized for nylon conducts into the conductor
+  instead of severing it.
+- **The decisive constraint is §4 of that document:** the four wings are one series string
+  with the bypass Schottky **DNP** (`docs/adr/046-wing-board-interface.md` §2.3), so opening
+  **one** wing's contact kills **all four** — failure mode #1 below. The electrical-severance
+  question is therefore not a sub-problem to solve; it *is* the failure the release must not
+  cause. If a release is ever built, the electrical path must open **as a consequence** of the
+  mechanical release (slip-fit + keeper), never as a second deliberate cut.
+- Highest-leverage single change if a release is ever seriously wanted: **fit the per-wing
+  bypass Schottky** (currently DNP). That converts failure mode #1 from "array dead" to "one
+  wing lost".
+
+---
+
 ## 6. Explicit open items (nothing silently assumed)
 
 Every one of these is a number this study could not source and did **not** invent:
