@@ -13793,7 +13793,7 @@
 			)
 		)
 	)
-	(footprint "SX1280_QFN24"
+	(footprint "balloon_flight_v9:SX1280_QFN24"
 		(layer "F.Cu")
 		(uuid "e20c155c-9dba-459c-bbc7-c9d15eef10cd")
 		(at 52.75 26.75)
@@ -14097,6 +14097,17 @@
 			(uuid "f6385997-7c22-4468-8224-77a7955129f0")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/3dmodels/hub/u4_sx1280_qfn24_envelope.wrl"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.1x1.1mm"
 		(layer "F.Cu")
@@ -14598,7 +14609,7 @@
 			(uuid "e6bab02c-cb35-4ed2-aafc-c483c93d7874")
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/Package_DFN_QFN.3dshapes/VQFN-16-1EP_3x3mm_P0.5mm_EP1.1x1.1mm.step"
+		(model "${KIPRJMOD}/3dmodels/hub/u_hub_cvt_bq25504rgtr_envelope.wrl"
 			(offset
 				(xyz 0 0 0)
 			)
