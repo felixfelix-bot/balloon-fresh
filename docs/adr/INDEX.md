@@ -23,8 +23,8 @@
   header, or a supersede pointer inside a committed record), this index says
   `UNRESOLVED - needs an operator decision`. It never guesses.
 
-Generated from `docs/adr/`: **100** distinct
-numbers, **100** numbered files, **1** non-conforming filenames.
+Generated from `docs/adr/`: **103** distinct
+numbers, **103** numbered files, **1** non-conforming filenames.
 
 ## Collisions
 
@@ -118,6 +118,7 @@ None.
 | 082 | `082-rate-adaptation-size-for-min-rate-at-max-range.md` | Rate adaptation: size the dish/antenna for the minimum useful rate at maximum range | Accepted by operator |
 | 083 | `083-2g4-reflector-production-ku-offset-dish.md` | The 2.4 GHz reflector is a BOUGHT production Ku offset dish (new or used), never a hand-built one | Proposed — an engineering recommendation with sourced prices and a computed |
 | 084 | `084-ground-station-automatic-level-control.md` | Automatic level control at the gateway: AGC on the 433 receive chain, telemetry-driven attenuation on the 2.4 GHz uplink | Accepted by operator |
+| 085 | `085-wing-slot-placement-rule.md` | Wing-socket slot placement on a 70 × 70 mm hub: rotations derive from the footprint datum, and every slot must reach its own edge | Proposed — the *defect and the rule* are measured; the text is not |
 | 100 | `100-tollgate-over-fips-mesh-udp.md` | TollGate Payment Messages Transport Over FIPS Mesh UDP | ACCEPTED |
 | 101 | `101-lr2021-only-ban-sx1280.md` | REVISED — LR2021 SPI Protocol Clarification | SUPERSEDED by ADR-020 |
 | 102 | `102-version-tagging-policy.md` | Version Tagging Policy — Tag on Progress Without Regressions | Accepted |
@@ -135,8 +136,8 @@ None.
 | 114 | `114-skidl-netlist-authoring.md` | SKiDL for Netlist Authoring of New Boards | Accepted |
 | 115 | `115-tooling-sourcing-policy.md` | Tooling Sourcing Policy for Board Production | Accepted |
 | 116 | `116-simulation-gate-ngspice.md` | Simulation Gate — ngspice Testbenches as a Blocking Pre-Order Check | Accepted |
-| 117 | `117-wing-airframe-foam-selection.md` | Wing Airframe Is a Bought XPS/Depron Sheet, End-Mounted, 3 mm First Build | Accepted |
-| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 085 | — |
+| 117 | `117-wing-airframe-foam-selection.md` | The wing airframe is a bought XPS/Depron sheet, end-mounted, 3 mm first build | Accepted by operator |
+| ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 086 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
 

@@ -336,12 +336,54 @@ def extent(fp):
 # These are SEATS THE TOOL DID NOT COMPUTE - the sanctioned "LLM supplies
 # constraints" half of the registry rule; the positions themselves are computed
 # from W/H here, not typed as literals.
+#
+# --- the datum convention, and how each rotation is DERIVED from it -----------
+# The footprint origin IS the datum, and the convention fixes the SIGN of the
+# local frame: **local +x points INBOARD**.  The board frame is KiCad's (x right,
+# y DOWN), so "inboard" -- the direction from a hub edge toward the board
+# interior -- is, per edge:
+#
+#     west  edge (x = 0)   inboard = absolute +x
+#     east  edge (x = w)   inboard = absolute -x
+#     north edge (y = h)   inboard = absolute -y     (KiCad y grows downward)
+#     south edge (y = 0)   inboard = absolute +y
+#
+# KiCad rotates a footprint CCW by theta in this y-down frame, so local +x maps
+# to the absolute direction (cos theta, -sin theta).  seat_rotation_deg() SOLVES
+# that for the edge's inboard direction, so the four rotations are DERIVED from
+# the convention and are no longer a hand-typed column.
+#
+# MEASURED DEFECT this replaces (2026-10-17, board sha256 e55a2946...): the
+# rotations were TYPED as {west 0, north 270, east 180, south 90}.  The
+# {north,south} pair was 180 deg off the {west,east} pair, so local +x pointed
+# OUTBOARD on the north/south edges -- the milled slot ran off the board there
+# while the west/east slots ran 6 mm inboard.  docs/fab/WING-INTERFACE-ROOT-CAUSE.md.
+INBOARD_DIR = {
+    # edge: absolute unit vector pointing INBOARD on that edge
+    "west":  (1.0, 0.0),    # x = 0  -> toward +x
+    "east":  (-1.0, 0.0),   # x = w  -> toward -x
+    "north": (0.0, -1.0),   # y = h  -> toward -y
+    "south": (0.0, 1.0),    # y = 0  -> toward +y
+}
+
+
+def seat_rotation_deg(edge: str) -> float:
+    """Footprint rotation (deg) making local +x point INBOARD on `edge`.
+
+    DERIVED, not typed: solve (cos th, -sin th) == INBOARD_DIR[edge], i.e.
+    th = atan2(-dy, dx) for the edge's absolute inboard direction (dx, dy).
+    """
+    dx, dy = INBOARD_DIR[edge]
+    return math.degrees(math.atan2(-dy, dx)) % 360.0
+
+
 EDGE_SEATS = [
-    # ref,      edge,    rotation such that local +x points INBOARD
-    ("J_W1", "west", 0.0),
-    ("J_W2", "north", 270.0),
-    ("J_W3", "east", 180.0),
-    ("J_W4", "south", 90.0),
+    # ref,      edge     (rotation is DERIVED via seat_rotation_deg(edge) --
+    #                     deliberately NOT a typed column; see the block above)
+    ("J_W1", "west"),
+    ("J_W2", "north"),
+    ("J_W3", "east"),
+    ("J_W4", "south"),
 ]
 UF_SEATS = [
     ("ANT1", "west", 0.22),    # 433 MHz TX (ADR-034 D1/D2)
@@ -362,45 +404,67 @@ def edge_seat_xy(edge: str, w: float, h: float, frac: float, offset: float):
     return w * frac, h - offset      # north
 
 
-def wing_socket_inboard_offset(fp) -> float:
-    """How far INBOARD the socket datum must sit for its lands to be ON the board.
+FAB_EDGE_CLEARANCE_MM = 0.2   # JLCPCB-class copper-to-board-edge clearance
 
-    MEASURED DEFECT this repairs (2026-10-14): `apply_floorplan` seated each J_W
-    footprint with `offset=0.0` -- "the datum IS the interface edge". But the
-    footprint's datum is defined as the intersection of the hub's INTERFACE
-    (outer) edge with the slot centre line, with **+x INBOARD**, while its
-    4.0 x 1.2 mm lands sit at local **+3.0 mm** and its land set spans local
-    y = -2.7..+2.7 from a 0.5-frac corner datum.
 
-    The consequence, measured on `build_hub_board_v9.py --outline 60x60`:
-    **16 of 32 wing-socket pads landed OUTSIDE the board outline** --
-    J_W2 pads at y = 63.0 on a 60 mm board and J_W4 pads at y = -3.0. That is
-    the same signature the router reported as
-    `failed_multipoint: J_W2 (32.7, 63.0)` / `J_W4 (29.1..32.7, -3.0)` and it is
-    why `/W*_SOLAR_N`, `/CUT_SENSE_W*` and `GND` were unroutable. A router cannot
-    route to a pad that is not on the board.
+def local_pad_rects(fp):
+    """Pads in the footprint's own LOCAL frame (rotation-free) as (x0,y0,x1,y1) mm.
 
-    REQUIRED inboard offset = land reach + edge clearance, where
-      land reach  = |land local x| + land length/2 = 3.0 + 2.0 = 5.0 mm
-      edge clear  = max pad-y extent = 2.7 + 1.2/2 = 3.3 mm (so the corner-land
-                    row also clears the adjacent edge)
-      + a 0.2 mm fab edge clearance
-    => 5.4 mm. Rounded UP to WING_SOCKET_MIN_OFFSET_MM for margin.
-
-    The offset is chosen as the max over the footprint's own pads, so it stays
-    correct if the land geometry changes, rather than being a magic literal.
+    The local frame is rotation-invariant, so this is well defined whatever the
+    footprint's current placement: undo the current orientation first.  The
+    forward map is local +x -> absolute (cos th, -sin th) (KiCad, y down, CCW
+    theta), so the inverse is local = R^T . abs with R^T = [[cos, -sin],
+    [sin, cos]].
     """
     import pcbnew
-    reach = 0.0
+    o = fp.GetPosition()
+    th = math.radians(fp.GetOrientationDegrees())
+    c, s = math.cos(th), math.sin(th)
+    out = []
     for p in fp.Pads():
-        # pad centre in the footprint's LOCAL frame (rotation-free)
-        dx = pcbnew.ToMM(p.GetPosition().x - fp.GetPosition().x)
-        dy = pcbnew.ToMM(p.GetPosition().y - fp.GetPosition().y)
-        # local x maps to -y and local y maps to x for the 90/270 seats; the
-        # max of |dx|,|dy| plus half the pad extent bounds the reach either way.
-        half = max(pcbnew.ToMM(p.GetSize().x), pcbnew.ToMM(p.GetSize().y)) / 2.0
-        reach = max(reach, abs(dx) + half, abs(dy) + half)
-    return reach + 0.2          # + fab edge clearance
+        dx = pcbnew.ToMM(p.GetPosition().x - o.x)
+        dy = pcbnew.ToMM(p.GetPosition().y - o.y)
+        lx, ly = c * dx - s * dy, s * dx + c * dy
+        hw = pcbnew.ToMM(p.GetSize().x) / 2.0
+        hh = pcbnew.ToMM(p.GetSize().y) / 2.0
+        out.append((lx - hw, ly - hh, lx + hw, ly + hh))
+    return out
+
+
+def wing_socket_inboard_offset(fp) -> float:
+    """Inboard offset (mm) of the socket DATUM from its hub INTERFACE edge.
+
+    The footprint's datum is "the intersection of the hub's INTERFACE (outer) edge
+    with the SLOT CENTRE LINE, +x INBOARD" (footprint descr).  With every seat
+    rotated so local +x points INBOARD (`seat_rotation_deg`), the datum convention
+    ITSELF places the datum ON the interface edge: the milled slot (local
+    x = -0.03..+6.02) then opens onto the edge and the lands (local x = +3.0) sit
+    inboard.  The offset is therefore only the SMALLEST inboard shift that still
+    keeps every pad on the board by the fab edge clearance:
+
+        offset = max(0, FAB_EDGE_CLEARANCE_MM - min_over_pads(pad_x0_local))
+
+    where pad_x0_local is a pad's own near-edge local x (centre minus half the pad
+    length).  It is DERIVED from the footprint's measured pad geometry, not typed.
+    Measured on Wing_Tab_4P: pad_x0_local = 1.0 mm (land centre 3.0 - 2.0 half
+    length), so the required offset is 0.20 - 1.00 = -0.80 -> clamped to 0.00 mm.
+
+    MEASURED DEFECT this replaces (the 2026-10-14 repair): with the rotations
+    INCONSISTENT, local +x pointed OUTBOARD on the north/south edges, so the lands
+    landed 3 mm OFF the board -- "16 of 32 wing-socket pads landed OUTSIDE the
+    board outline" (J_W2 pads at y = 63.0 on a 60 mm board, J_W4 at y = -3.0).  The
+    repair answered that with a uniform 5.20 mm INBOARD offset computed from the
+    ABSOLUTE pad reach -- a COMPENSATION FOR A ROTATION ERROR.  It pulled the pads
+    on and pushed the west/east slots 5.25 mm inboard, hiding the error on two
+    edges and creating the defect on the other two.  Neither number alone fixes
+    it; with the rotations corrected the pads are inboard by construction and the
+    required offset collapses to ~0.  See docs/fab/WING-INTERFACE-ROOT-CAUSE.md.
+    """
+    rects = local_pad_rects(fp)
+    if not rects:
+        return 0.0
+    near_edge_local_x = min(r[0] for r in rects)
+    return max(0.0, FAB_EDGE_CLEARANCE_MM - near_edge_local_x)
 
 
 def apply_floorplan(board, placed, w: float, h: float):
@@ -408,12 +472,14 @@ def apply_floorplan(board, placed, w: float, h: float):
     import pcbnew
     by_ref = dict(placed)
     locked = []
-    for ref, edge, rot in EDGE_SEATS:
+    for ref, edge in EDGE_SEATS:
         if ref not in by_ref:
             continue
         fp = by_ref[ref]
-        # Seat so the LANDS are on the board, not the datum. See
-        # wing_socket_inboard_offset() for the measured defect this fixes.
+        # Rotation DERIVED from the datum convention (+x INBOARD on this edge);
+        # offset re-derived from the CORRECTED rotations.  See the seat block and
+        # wing_socket_inboard_offset() above.
+        rot = seat_rotation_deg(edge)
         off = wing_socket_inboard_offset(fp)
         x, y = edge_seat_xy(edge, w, h, 0.5, off)
         fp.SetPosition(pcbnew.VECTOR2I(int(round(x * 1e6)), int(round(y * 1e6))))

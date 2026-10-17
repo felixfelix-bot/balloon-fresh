@@ -66,7 +66,7 @@ one dedicated sheet column, and as four placements of the footprint
 |---|---|---|
 | Interfaces on the hub | **4**, at 90° spacing | **CITED**: ADR-046 §1 and §4.1 ("Slots per hub \| 4, at 90° spacing"; `docs/hardware-design.md` line 47), socket spec §1 |
 | Identical geometry, differing only in assembly tilt | yes | **CITED**: socket spec §1 ("The socket land geometry is identical for all four; only the assembly tilt differs, and the tilt is set at soldering time, not by copper") |
-| Hub outline the slots sit on | 22 × 22 mm | **CITED**: `docs/hardware-design.md` line 13 ("Groesse: 22mm x 22mm"); restated in ADR-046 §4.1 and socket spec §4 |
+| Hub outline the slots sit on | ~~22 × 22 mm~~ → **70 × 70 mm** | **SUPERSEDED 2026-10-17 — correction recorded, NOT silently rewritten.** The original value **22 × 22 mm** was **CITED**: `docs/hardware-design.md` line 13 ("Groesse: 22mm x 22mm"); restated in ADR-046 §4.1 and socket spec §4. That is the v9 *design-intent* hub. **The hub that was BUILT is 70 × 70 mm** — `docs/adr/068-hub-v9-outline-60x60.md` (as revised 2026-10-14 by `docs/fab/hub-v9/SEAT-PROBE-RESULT.md`). **WHY THIS MATTERS: this stale value is the contributing cause of the wing-slot placement defect.** The slot-placement rule below was written against a board a third the size and the four tabs were never re-derived for the larger outline, so the seat rotations diverged 180° between the {west,east} and {north,south} pairs. The rule for the 70 × 70 outline is **ADR-085**; the measurement is `docs/fab/WING-INTERFACE-ROOT-CAUSE.md`. |
 
 ### 2.2 Land geometry per interface
 
