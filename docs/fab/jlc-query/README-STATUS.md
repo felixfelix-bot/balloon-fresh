@@ -1,44 +1,55 @@
 # Status of the interface drawing in this directory
 
-**`edge-launch-cross-section.svg` / `.png` were generated but must NOT be sent to a fabricator yet.**
+**`edge-launch-cross-section.svg` / `.png` depict the COMMITTED hub-side interface geometry.** They are a
+review sheet, not yet a fabrication release — but the reason is *not* that the interface is undecided.
 
-## Why it is here and not in the query message
+## Current status (corrected 2026-10-17)
 
-The drawing depicts the **hub-side wing interface**. That geometry is **undecided**:
+| | |
+|---|---|
+| **Geometry depicted** | **Option A** — a routed slot **0.9 × 6.0 mm** in the hub edge, the **0.6 mm tab seated 6.0 mm** into it, the four **4.0 × 1.2 mm** lands on the slot's faces, the fillet loaded in **SHEAR**. This is the **COMMITTED** geometry (`ADR-048 §2.2`; `ADR-046 §4.2.2`: *"Option A is the committed geometry"*). |
+| **Board as built** | **Option B** — **no slot**, `J_W*` lands on `F.Cu` only, fillet in **peel**. Measured with `tracker/hardware/introspect_edge_interface.py`. **The board change is PENDING.** |
+| **Slot-face land construction** | **UNVERIFIED — under query.** Asked of JLCPCB as **Q6** on the sheet and as **section 2A** of `docs/fab/JLC-QUERY-DRAFT-MESSAGE.md` (PR #215). No construction, process or finish is asserted. |
+| **Mating fit** | **UNVERIFIED — under query.** Finished tab thickness, slot width/depth tolerances, finished solder clearances, slot-end radius and tab-tip relief are **design decisions no record fixes** (Q3/Q7). |
+| **May it be sent to a fabricator?** | **Not yet** — see *"What still has to happen"* below. The blocking reasons are the three §4.2.2 items, not an undecided interface. |
 
-- `ADR-046 §4.2` recommends **Option A** — the hub's edge carries a routed **0.9 × 6.0 mm slot**, the wing
-  tab inserts 6.0 mm **into** it, lands on the slot's faces, fillet loaded in **shear**.
-- `hub_board_v9.kicad_pcb` **implements Option B** — no slot, `J_W*` lands on `F.Cu` only, fillet loaded
-  in **peel**. Measured with `tracker/hardware/introspect_edge_interface.py`:
-  **one Edge.Cuts contour (the 70 × 70 outline), no slot, all `J_W*` pads `F.Cu`.**
-- `ADR-046 §4.2.1` (added 2026-10-16) records the disagreement, marks the interface **OPEN**, and notes
-  that §4.2's stated reason — that the slot keys the 90° angle — **does not survive the numbers**: the
-  slot permits 2.86° of play (8.79 mm of wing-tip movement) against 9.21 mm freehand, a 1.0× improvement.
+## What changed in this file, and why (record kept)
 
-**A drawing of an undecided interface is worse than no drawing**: it would be read as a specification.
-The operator's ruling on 2026-10-16 was to **hold the geometry** until the wing-side lands are frozen
-(gap-analysis item **W1**), and to decide only after seeing the trade study.
+**The previous version of this file said:**
 
-## What the drawing gets wrong today, and why that is expected
+> *"`edge-launch-cross-section.svg` / `.png` were generated but must NOT be sent to a fabricator yet."*
 
-A visual review of it found, correctly:
+> *"The drawing depicts the hub-side wing interface. That geometry is **undecided**"* — citing
+> `ADR-046 §4.2.1`'s **OPEN** status.
 
-1. it shows **two boards end-to-end with a solder bridge**, not a tab seated in a slot — **because that is
-   what the board implements** (Option B), while the ADR recommends Option A. The drawing was accurate to
-   the board and in disagreement with the ADR. Neither document surfaced the conflict.
-2. **ENIG on the pad faces does not establish a finish on copper newly exposed by routing** — a real
-   fabrication point that must be answered for the *routed edge face*, not the pad.
-3. layout: inward-pointing dimension arrows, View B's 4.0 mm drawn as a plain underline, the named 0.9 mm
-   slot never drawn, and (in the reviewed render) a misspelled finish abbreviation.
+**That claim was stale.** `ADR-046 §4.2.1` (added 2026-10-16) marked the interface OPEN; **`ADR-046 §4.2.2`
+(added the same day, after merging master) explicitly supersedes it on the direction**, because **ADR-048
+is a LATER record that decides the question** — *"Option A is the committed geometry"*. The drawing was
+also regenerated in the meantime (v3) and now **draws the ADR-048 committed geometry and says on the sheet
+that the board as built is still Option B**. The old text described v1/v2 of the drawing, not this one.
 
-## To unblock it
+**What survives from §4.2.1 — and is NOT undone by the correction:** §4.2's *stated reason* for Option A
+(the slot "keys the 90° angle") remains falsified — 0.30 mm of play over a 6.0 mm insertion is **2.86°**,
+i.e. **8.79 mm** of wing-tip movement at 176 mm, against 9.21 mm freehand. **ADR-048 does not repeat that
+claim**, so it is a correction to ADR-046 that stands. The sheet states this on its *"Alignment caveat"*
+row. The slot **bounds** the attach angle; it does not **key** it.
 
-1. Freeze the wing-side land geometry (**W1**).
-2. Decide A or B — inputs: a **peel figure for this joint geometry** (the trade study's crux: below ~1.2×
-   knockdown, Option B approaches Option A on capacity), and the **JLCPCB routed-cut-out cost delta**.
-3. Rewrite the drawing for the chosen geometry, then **loop: fix → re-render → `ask_astra.py --review` →
-   act → until the verdict is CLEAN.** Never review a stale render.
-4. Only then send it with `JLC-QUERY-DRAFT-MESSAGE.md`.
+## What the drawing is now
+
+Two sections, `View A` (along the insertion axis) and `View B` (across the tab), plus a requirement and
+question table. It was taken through **four visual-review cycles (r1–r4) and a further four (r5–r8)**;
+the r5–r8 record and the disposition of every r4 defect is in `docs/fab/EDGE-DRAWING-STATUS.md`.
+
+The sheet states, on its face, that it depicts the committed geometry and must not be read as the built
+state. It is **deliberately caveated**: `±0.10 mm` slot tolerance is PROPOSED, the slot-face land
+construction is UNVERIFIED, and the mating fit is UNVERIFIED — each with the question it maps to.
+
+## What still has to happen before it is sent
+
+1. **The three `ADR-046 §4.2.2` items**: the wing-side land geometry (**W1**), a **peel figure** for this
+   joint geometry, and the **JLCPCB routed-cut-out cost delta** from a live quote.
+2. **The two open questions on the sheet**: the slot-face land construction (**Q6**) and the mating-fit
+   spec (**Q7**, plus the slot tolerance **Q3**). These are *asked*, not answered — nothing is invented.
 
 **Trade study:** `tracker/hardware/trade_study_wing_joint.py`
 (output committed as `docs/fab/WING-JOINT-TRADE-STUDY.txt`).

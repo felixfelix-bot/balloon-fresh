@@ -1,83 +1,300 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1180" viewBox="0 0 1560 1180" font-family="DejaVu Sans, Helvetica, sans-serif">
-<rect width="1560" height="1180" fill="#ffffff"/>
-<text x="60" y="62" font-size="27" font-weight="bold">Edge-launch wing socket — hub_board_v9, J_W1…J_W4</text>
-<text x="60" y="92" font-size="15" fill="#444">Interface for JLCPCB fabrication review · dimensions in mm · copper deliberately terminates at the routed edge</text>
-<text x="60" y="132" font-size="19" font-weight="bold">VIEW A — cross-section through the contact row</text>
-<rect x="90" y="250" width="380" height="90" fill="#2f6b3a" stroke="#1d4425" stroke-width="1.5"/>
-<line x1="90" y1="272.5" x2="470" y2="272.5" stroke="#1d4425" stroke-width="0.8" opacity="0.55"/>
-<line x1="90" y1="295.0" x2="470" y2="295.0" stroke="#1d4425" stroke-width="0.8" opacity="0.55"/>
-<line x1="90" y1="317.5" x2="470" y2="317.5" stroke="#1d4425" stroke-width="0.8" opacity="0.55"/>
-<text x="102" y="302" font-size="14" fill="#ffffff">0.6 mm FR4, 4 layer</text>
-<rect x="240" y="239" width="230" height="11" fill="#c8751a" stroke="#8a4d0c" stroke-width="1.2"/>
-<line x1="470" y1="210" x2="470" y2="380" stroke="#b00020" stroke-width="3" stroke-dasharray="10,5"/>
-<rect x="496" y="250" width="204" height="90" fill="#dfe6ee" stroke="#5a6b7d" stroke-width="1.5"/>
-<rect x="496" y="250" width="204" height="6" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
-<text x="240" y="146" font-size="14" fill="#8a4d0c">exposed copper pad (F.Cu) — solderable</text>
-<text x="500" y="146" font-size="14" fill="#33475b">mating wing tab — 0.6 mm FR4, copper facing the board</text>
-<path d="M 470 239 L 496 239 L 496 272 Q 476 266 470 241 Z" fill="#e0a53a" stroke="#c8751a" stroke-width="1.6"/>
-<text x="506" y="266" font-size="13" fill="#8a4d0c">solder fillet — wets pad and tab</text>
-<line x1="470" y1="100" x2="496" y2="100" stroke="#33475b" stroke-width="1.3"/>
-<line x1="470" y1="92" x2="470" y2="108" stroke="#33475b" stroke-width="1.3"/>
-<line x1="496" y1="92" x2="496" y2="108" stroke="#33475b" stroke-width="1.3"/>
-<path d="M458,100 L470,95.5 L470,104.5 z" fill="#33475b"/>
-<path d="M508,100 L496,95.5 L496,104.5 z" fill="#33475b"/>
-<text x="483.0" y="90" font-size="13.5" fill="#33475b" text-anchor="middle">0.30 mm</text>
-<line x1="483.0" y1="108" x2="483.0" y2="190" stroke="#33475b" stroke-width="0.9" stroke-dasharray="3,3"/>
-<text x="510" y="82" font-size="12.5" fill="#33475b">slot 0.9 mm minus tab 0.6 mm = 0.30 mm</text>
-<line x1="240" y1="370" x2="470" y2="370" stroke="#111" stroke-width="1.3"/>
-<line x1="240" y1="362" x2="240" y2="378" stroke="#111" stroke-width="1.3"/>
-<line x1="470" y1="362" x2="470" y2="378" stroke="#111" stroke-width="1.3"/>
-<path d="M252,370 L240,365.5 L240,374.5 z" fill="#111"/>
-<path d="M458,370 L470,365.5 L470,374.5 z" fill="#111"/>
-<text x="355.0" y="390" font-size="13.5" fill="#111" text-anchor="middle">pad 4.0 mm</text>
-<line x1="130" y1="426" x2="470" y2="426" stroke="#33475b" stroke-width="1.3"/>
-<line x1="130" y1="418" x2="130" y2="434" stroke="#33475b" stroke-width="1.3"/>
-<line x1="470" y1="418" x2="470" y2="434" stroke="#33475b" stroke-width="1.3"/>
-<path d="M142,426 L130,421.5 L130,430.5 z" fill="#33475b"/>
-<path d="M458,426 L470,421.5 L470,430.5 z" fill="#33475b"/>
-<text x="300.0" y="446" font-size="13.5" fill="#33475b" text-anchor="middle">insertion depth 6.0 mm (tab seated into the slot)</text>
-<path d="M 700 210 L 526 210" stroke="#33475b" stroke-width="2" marker-end="url(#ah)"/>
-<text x="532" y="204" font-size="13" fill="#33475b">tab travels toward the board</text>
-<text x="790" y="132" font-size="19" font-weight="bold">VIEW B — connector row, viewed from the component side</text>
-<rect x="790" y="150" width="250" height="150" fill="#2f6b3a" stroke="#1d4425" stroke-width="1.5"/>
-<line x1="1040" y1="150" x2="1040" y2="300" stroke="#b00020" stroke-width="2.6" stroke-dasharray="10,5"/>
-<text x="1046" y="230" font-size="13.5" fill="#b00020" font-weight="bold">routed edge</text>
-<rect x="940" y="164" width="100" height="26" fill="#c8751a" stroke="#8a4d0c" stroke-width="1.1"/>
-<text x="932" y="182" font-size="12.5" text-anchor="end">1</text>
-<rect x="940" y="197" width="100" height="26" fill="#c8751a" stroke="#8a4d0c" stroke-width="1.1"/>
-<text x="932" y="215" font-size="12.5" text-anchor="end">2</text>
-<rect x="940" y="230" width="100" height="26" fill="#c8751a" stroke="#8a4d0c" stroke-width="1.1"/>
-<text x="932" y="248" font-size="12.5" text-anchor="end">3</text>
-<rect x="940" y="263" width="100" height="26" fill="#c8751a" stroke="#8a4d0c" stroke-width="1.1"/>
-<text x="932" y="281" font-size="12.5" text-anchor="end">4</text>
-<line x1="940" y1="340" x2="1040" y2="340" stroke="#111" stroke-width="1.3"/>
-<text x="990" y="334" font-size="13" text-anchor="middle">4.0 mm (insertion axis)</text>
-<text x="790" y="364" font-size="13">pad 1.2 mm wide · pitch 1.8 mm · 0.6 mm between pad edges</text>
-<text x="790" y="392" font-size="13" fill="#b00020">the edge cut runs along the pad ends — copper is cut flush, this is the contact</text>
-<text x="790" y="412" font-size="13" fill="#b00020">surface. each pad is exposed copper, NOT a castellated hole.</text>
-<text x="60" y="620" font-size="18" font-weight="bold">Requirements</text>
-<line x1="60" y1="630" x2="1500" y2="630" stroke="#ccc" stroke-width="1.2"/>
-<line x1="60" y1="672" x2="1500" y2="672" stroke="#eee" stroke-width="1"/>
-<text x="64" y="664" font-size="14" font-weight="bold">Solder mask</text>
-<text x="360" y="664" font-size="14" fill="#333">opening ends BEFORE the routed edge; the pad itself is unmasked</text>
-<line x1="60" y1="706" x2="1500" y2="706" stroke="#eee" stroke-width="1"/>
-<text x="64" y="698" font-size="14" font-weight="bold">Surface finish</text>
-<text x="360" y="698" font-size="14" fill="#333">ENIG preferred (flat, solderable after assembly); HASL acceptable</text>
-<line x1="60" y1="740" x2="1500" y2="740" stroke="#eee" stroke-width="1"/>
-<text x="64" y="732" font-size="14" font-weight="bold">Copper to edge</text>
-<text x="360" y="732" font-size="14" fill="#333">0.00 mm — INTENTIONAL. This is the electrical contact surface.</text>
-<line x1="60" y1="774" x2="1500" y2="774" stroke="#eee" stroke-width="1"/>
-<text x="64" y="766" font-size="14" font-weight="bold">NOT wanted</text>
-<text x="360" y="766" font-size="14" fill="#333">no castellation, no edge plating. Plain exposed copper at a plain cut.</text>
-<line x1="60" y1="808" x2="1500" y2="808" stroke="#eee" stroke-width="1"/>
-<text x="64" y="800" font-size="14" font-weight="bold">Edge positional tolerance</text>
-<text x="360" y="800" font-size="14" fill="#333">routed edge vs copper — PLEASE ADVISE your capability</text>
-<line x1="60" y1="842" x2="1500" y2="842" stroke="#eee" stroke-width="1"/>
-<text x="64" y="834" font-size="14" font-weight="bold">Panel tabs</text>
-<text x="360" y="834" font-size="14" fill="#333">keep clear of these edges; they are mating surfaces</text>
-<line x1="60" y1="876" x2="1500" y2="876" stroke="#eee" stroke-width="1"/>
-<text x="64" y="868" font-size="14" font-weight="bold">Burrs / peeling</text>
-<text x="360" y="868" font-size="14" fill="#333">please advise mitigation if the process produces them at the cut</text>
-<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#33475b"/></marker></defs>
-<text x="60" y="1164" font-size="12" fill="#777">geometry measured from tracker/hardware/hub_board_v9.kicad_pcb; interface per docs/adr/046-wing-board-interface.md</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="2737" viewBox="0 0 1700 2737" font-family="DejaVu Sans">
+<rect width="1700" height="2737" fill="#ffffff"/>
+<rect x="56" y="26" width="1588" height="128" fill="#fdf7f0" stroke="#e6d6c4"/>
+<text x="72" y="52" font-size="25" font-weight="bold" fill="#111" text-anchor="start">Edge-launch wing socket — hub_board_v9, J_W1…J_W4</text>
+<text x="72" y="76" font-size="14" font-weight="bold" fill="#8a2b12" text-anchor="start">COMMITTED GEOMETRY — ADR-048: a routed slot 0.9 × 6.0 mm in the hub edge (0.9 mm wide, 6.0 mm deep), the 0.6 mm tab seated 6.0 mm into it, the four lands on the slot's faces, the fillet</text>
+<text x="72" y="94" font-size="14" font-weight="bold" fill="#8a2b12" text-anchor="start">loaded in SHEAR. The ±0.10 mm tolerance is PROPOSED (see Q3) and the CONSTRUCTION of the slot-face lands is UNVERIFIED (see Q6).</text>
+<text x="72" y="112" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">ADR-046 §4.2.2: "Option A is the committed geometry". The BOARD AS BUILT implements Option B — no slot, J_W* lands on F.Cu only (ADR-046 §4.2.1, measured). THE BOARD CHANGE IS PENDING: this sheet depicts the</text>
+<text x="72" y="130" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">committed geometry and must not be read as the built state.</text>
+<rect x="56" y="172" width="824" height="528" fill="#f7f9f7" stroke="#cfd8cf"/>
+<rect x="900" y="172" width="744" height="528" fill="#f7f9f7" stroke="#cfd8cf"/>
+<text x="72" y="200" font-size="18" font-weight="bold" fill="#111" text-anchor="start">VIEW A — section ALONG the insertion axis, through the joint</text>
+<text x="72" y="222" font-size="13.5" font-weight="normal" fill="#555" text-anchor="start">the hub edge is on the right; the wing tab enters from the left and is seated 6.0 mm in · lateral extents SCHEMATIC</text>
+<rect x="330" y="373" width="470" height="194" fill="#2f6b3a" stroke="#1d4425" stroke-width="1.5"/>
+<line x1="330" y1="408" x2="800" y2="408" stroke="#1d4425" stroke-width="0.8" opacity="0.5"/>
+<line x1="330" y1="532" x2="800" y2="532" stroke="#1d4425" stroke-width="0.8" opacity="0.5"/>
+<path d="M330,443 L663,443 A27,27 0 0 1 663,497 L330,497 Z" fill="#ffffff" stroke="#8d8d8d" stroke-width="5"/>
+<path d="M210,452 L683.125,452 A27,27 0 0 1 683.125,488 L210,488 Z" fill="#dfe6ee" stroke="#33475b" stroke-width="1.6"/>
+<rect x="210" y="449" width="453" height="3" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.6" opacity="0.5"/>
+<rect x="210" y="488" width="453" height="3" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.6" opacity="0.5"/>
+<rect x="390" y="440" width="240" height="3" fill="#c8751a" stroke="#8a4d0c" stroke-width="1"/>
+<rect x="390" y="497" width="240" height="3" fill="#c8751a" stroke="#8a4d0c" stroke-width="1"/>
+<rect x="390" y="449" width="240" height="3" fill="#c8751a" stroke="#8a4d0c" stroke-width="1"/>
+<rect x="390" y="488" width="240" height="3" fill="#c8751a" stroke="#8a4d0c" stroke-width="1"/>
+<rect x="390" y="443" width="240" height="6" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.7"/>
+<rect x="390" y="491" width="240" height="6" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.7"/>
+<line x1="330" y1="333" x2="330" y2="607" stroke="#b00020" stroke-width="3" stroke-dasharray="10,5"/>
+<text x="286" y="305" font-size="13" font-weight="normal" fill="#b00020" text-anchor="end">interface edge (routed)</text>
+<line x1="320" y1="447.5" x2="237" y2="447.5" stroke="#b00020" stroke-width="3.5"/>
+<path d="M220,447.5 L238,442 L238,453 z" fill="#b00020"/>
+<line x1="320" y1="492.5" x2="237" y2="492.5" stroke="#b00020" stroke-width="3.5"/>
+<path d="M220,492.5 L238,487 L238,498 z" fill="#b00020"/>
+<text x="90" y="250" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">F — pull along the insertion axis, out of the slot:</text>
+<text x="90" y="270" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">BOTH fillets loaded in SHEAR, one per face</text>
+<line x1="196" y1="443" x2="336" y2="443" stroke="#111" stroke-width="1"/>
+<line x1="196" y1="497" x2="336" y2="497" stroke="#111" stroke-width="1"/>
+<line x1="200" y1="443" x2="200" y2="497" stroke="#111" stroke-width="1.3"/>
+<path d="M200,443 L195,456 L205,456 z" fill="#111"/>
+<path d="M200,497 L195,484 L205,484 z" fill="#111"/>
+<text x="191" y="474" font-size="13" font-weight="normal" fill="#111" text-anchor="end">slot 0.9 mm (±0.10)</text>
+<line x1="390" y1="355" x2="390" y2="446" stroke="#111" stroke-width="1"/>
+<line x1="630" y1="355" x2="630" y2="446" stroke="#111" stroke-width="1"/>
+<line x1="390" y1="359" x2="630" y2="359" stroke="#111" stroke-width="1.3"/>
+<path d="M390,359 L403,354 L403,364 z" fill="#111"/>
+<path d="M630,359 L617,354 L617,364 z" fill="#111"/>
+<text x="510" y="350" font-size="13" font-weight="normal" fill="#111" text-anchor="middle">land 4.0 mm along the insertion axis</text>
+<line x1="210" y1="563" x2="210" y2="619" stroke="#111" stroke-width="1"/>
+<line x1="330" y1="563" x2="330" y2="619" stroke="#111" stroke-width="1"/>
+<line x1="210" y1="613" x2="330" y2="613" stroke="#111" stroke-width="1.3"/>
+<path d="M210,613 L223,608 L223,618 z" fill="#111"/>
+<path d="M330,613 L317,608 L317,618 z" fill="#111"/>
+<text x="224" y="633" font-size="13" font-weight="normal" fill="#111" text-anchor="middle">tab outside 2.0 mm</text>
+<line x1="330" y1="563" x2="330" y2="669" stroke="#111" stroke-width="1"/>
+<line x1="690" y1="563" x2="690" y2="669" stroke="#111" stroke-width="1"/>
+<line x1="330" y1="663" x2="690" y2="663" stroke="#111" stroke-width="1.3"/>
+<path d="M330,663 L343,658 L343,668 z" fill="#111"/>
+<path d="M690,663 L677,658 L677,668 z" fill="#111"/>
+<text x="510" y="683" font-size="13" font-weight="normal" fill="#111" text-anchor="middle">seated 6.0 mm = slot depth 6.0 mm</text>
+<circle cx="760" cy="390" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="760" y="394.5" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">1</text>
+<line x1="751" y1="396" x2="704" y2="429" stroke="#111" stroke-width="1.1"/>
+<circle cx="345" cy="401" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="345" y="405.5" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">2</text>
+<line x1="345" y1="412" x2="345" y2="431" stroke="#111" stroke-width="1.1"/>
+<circle cx="425" cy="401" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="425" y="405.5" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">3</text>
+<line x1="425" y1="412" x2="425" y2="433" stroke="#111" stroke-width="1.1"/>
+<circle cx="300" cy="352" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="300" y="356.5" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">6</text>
+<line x1="310" y1="358" x2="324" y2="433" stroke="#111" stroke-width="1.1"/>
+<circle cx="520" cy="470" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="520" y="474.5" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">5</text>
+<circle cx="620" cy="447.5" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="620" y="452" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">4</text>
+<text x="916" y="200" font-size="18" font-weight="bold" fill="#111" text-anchor="start">VIEW B — section ACROSS the tab, normal to the insertion axis</text>
+<text x="916" y="222" font-size="13.5" font-weight="normal" fill="#555" text-anchor="start">through the land row: the four lands at 1.8 mm pitch and the two shear-loaded fillets · SCHEMATIC laterally</text>
+<rect x="1030" y="380.2" width="456" height="70" fill="#2f6b3a" stroke="#1d4425" stroke-width="1.5"/>
+<rect x="1030" y="489.8" width="456" height="70" fill="#2f6b3a" stroke="#1d4425" stroke-width="1.5"/>
+<rect x="1030" y="450.2" width="456" height="6" fill="#8d8d8d" stroke="none"/>
+<rect x="1030" y="483.8" width="456" height="6" fill="#8d8d8d" stroke="none"/>
+<rect x="1060" y="456.8" width="396" height="26.4" fill="#dfe6ee" stroke="#33475b" stroke-width="1.6"/>
+<rect x="1112.8" y="448" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1112.8" y="489.8" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1112.8" y="454.6" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1112.8" y="483.2" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1112.8" y="450.2" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<rect x="1112.8" y="485.4" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<text x="1139.2" y="593.8" font-size="12.5" font-weight="normal" fill="#8a4d0c" text-anchor="middle">W1_SOLAR_P</text>
+<rect x="1192" y="448" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1192" y="489.8" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1192" y="454.6" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1192" y="483.2" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1192" y="450.2" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<rect x="1192" y="485.4" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<text x="1218.4" y="593.8" font-size="12.5" font-weight="normal" fill="#8a4d0c" text-anchor="middle">GND</text>
+<rect x="1271.2" y="448" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1271.2" y="489.8" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1271.2" y="454.6" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1271.2" y="483.2" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1271.2" y="450.2" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<rect x="1271.2" y="485.4" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<text x="1297.6" y="593.8" font-size="12.5" font-weight="normal" fill="#8a4d0c" text-anchor="middle">W1_RF</text>
+<rect x="1350.4" y="448" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1350.4" y="489.8" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1350.4" y="454.6" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1350.4" y="483.2" width="52.8" height="2.2" fill="#c8751a" stroke="#8a4d0c" stroke-width="0.9"/>
+<rect x="1350.4" y="450.2" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<rect x="1350.4" y="485.4" width="52.8" height="4.4" fill="#e0a53a" stroke="#8a4d0c" stroke-width="0.6"/>
+<text x="1376.8" y="593.8" font-size="12.5" font-weight="normal" fill="#8a4d0c" text-anchor="middle">W1_SOLAR_N</text>
+<line x1="1112.8" y1="324.2" x2="1112.8" y2="454" stroke="#111" stroke-width="1"/>
+<line x1="1192" y1="324.2" x2="1192" y2="454" stroke="#111" stroke-width="1"/>
+<line x1="1112.8" y1="328.2" x2="1192" y2="328.2" stroke="#111" stroke-width="1.3"/>
+<path d="M1112.8,328.2 L1125.8,323.2 L1125.8,333.2 z" fill="#111"/>
+<path d="M1192,328.2 L1179,323.2 L1179,333.2 z" fill="#111"/>
+<text x="1069" y="319.2" font-size="13" font-weight="normal" fill="#111" text-anchor="middle">pitch 1.8 mm</text>
+<line x1="1112.8" y1="278.2" x2="1112.8" y2="454" stroke="#111" stroke-width="1"/>
+<line x1="1165.6" y1="278.2" x2="1165.6" y2="454" stroke="#111" stroke-width="1"/>
+<line x1="1112.8" y1="282.2" x2="1165.6" y2="282.2" stroke="#111" stroke-width="1.3"/>
+<path d="M1112.8,282.2 L1125.8,277.2 L1125.8,287.2 z" fill="#111"/>
+<path d="M1165.6,282.2 L1152.6,277.2 L1152.6,287.2 z" fill="#111"/>
+<text x="1231.6" y="273.2" font-size="13" font-weight="normal" fill="#111" text-anchor="middle">land 1.2 mm</text>
+<line x1="1060" y1="555.8" x2="1060" y2="639.8" stroke="#111" stroke-width="1"/>
+<line x1="1456" y1="555.8" x2="1456" y2="639.8" stroke="#111" stroke-width="1"/>
+<line x1="1060" y1="633.8" x2="1456" y2="633.8" stroke="#111" stroke-width="1.3"/>
+<path d="M1060,633.8 L1073,628.8 L1073,638.8 z" fill="#111"/>
+<path d="M1456,633.8 L1443,628.8 L1443,638.8 z" fill="#111"/>
+<text x="1258" y="653.8" font-size="13" font-weight="normal" fill="#111" text-anchor="middle">tab 9.0 mm wide</text>
+<line x1="1482" y1="450.2" x2="1532" y2="450.2" stroke="#111" stroke-width="1"/>
+<line x1="1482" y1="489.8" x2="1532" y2="489.8" stroke="#111" stroke-width="1"/>
+<line x1="1526" y1="450.2" x2="1526" y2="489.8" stroke="#111" stroke-width="1.3"/>
+<path d="M1526,450.2 L1521,463.2 L1531,463.2 z" fill="#111"/>
+<path d="M1526,489.8 L1521,476.8 L1531,476.8 z" fill="#111"/>
+<text x="1535" y="474" font-size="13" font-weight="normal" fill="#111" text-anchor="start">slot 0.9 mm</text>
+<line x1="986" y1="456.8" x2="1066" y2="456.8" stroke="#111" stroke-width="1"/>
+<line x1="986" y1="483.2" x2="1066" y2="483.2" stroke="#111" stroke-width="1"/>
+<line x1="990" y1="440.8" x2="990" y2="499.2" stroke="#111" stroke-width="1.3"/>
+<path d="M990,456.8 L985,442.8 L995,442.8 z" fill="#111"/>
+<path d="M990,483.2 L985,497.2 L995,497.2 z" fill="#111"/>
+<line x1="990" y1="499.2" x2="990" y2="512" stroke="#111" stroke-width="1"/>
+<text x="994" y="526" font-size="13" font-weight="normal" fill="#111" text-anchor="end">FR4 substrate</text>
+<text x="994" y="542" font-size="13" font-weight="normal" fill="#111" text-anchor="end">0.6 mm</text>
+<circle cx="1403.2" cy="356.2" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="1403.2" y="360.7" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">7</text>
+<line x1="1403.2" y1="367.2" x2="1403.2" y2="440.2" stroke="#111" stroke-width="1.1"/>
+<circle cx="996" cy="410.2" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="996" y="414.7" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">8</text>
+<line x1="996" y1="419.2" x2="1124.8" y2="453.5" stroke="#111" stroke-width="1.1"/>
+<circle cx="1460" cy="533.8" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="1460" y="538.3" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">9</text>
+<circle cx="1100" cy="533.8" r="11" fill="#ffffff" stroke="#111" stroke-width="1.3"/>
+<text x="1100" y="538.3" font-size="13" font-weight="bold" fill="#111" text-anchor="middle">10</text>
+<line x1="1100" y1="522.8" x2="1100" y2="479.2" stroke="#111" stroke-width="1.1"/>
+<text x="72" y="732" font-size="14" font-weight="bold" fill="#111" text-anchor="start">View A — what the numbers on this view are</text>
+<text x="92" y="758" font-size="13" font-weight="bold" fill="#111" text-anchor="start">1</text>
+<text x="118" y="758" font-size="13" font-weight="normal" fill="#333" text-anchor="start">hub material — the board either side of, and beyond, the slot. Its LATERAL extent is SCHEMATIC: no record we hold</text>
+<text x="118" y="775" font-size="13" font-weight="normal" fill="#333" text-anchor="start">fixes it, and the hub's own thickness is TODO(unverified) (ADR-048 §5). See the sheet-scope row</text>
+<text x="92" y="799" font-size="13" font-weight="bold" fill="#111" text-anchor="start">2</text>
+<text x="118" y="799" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the ROUTED FACE of the slot — a CUT face. The pad-face ENIG (F.Cu / B.Cu at the hub's outer faces) does not</text>
+<text x="118" y="816" font-size="13" font-weight="normal" fill="#333" text-anchor="start">establish a finish on copper newly exposed by routing. Asked as Q1; NOT answered on this sheet</text>
+<text x="92" y="840" font-size="13" font-weight="bold" fill="#111" text-anchor="start">3</text>
+<text x="118" y="840" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the lands on the slot's faces — 4 per face, 4.0 mm along the insertion axis, 1.2 mm across at 1.8 mm pitch</text>
+<text x="118" y="857" font-size="13" font-weight="normal" fill="#333" text-anchor="start">(ADR-048 §2.2). Copper is drawn a little thicker than scale (it is 35 µm, 1 oz, on a 0.6 mm board) so the section</text>
+<text x="118" y="874" font-size="13" font-weight="normal" fill="#333" text-anchor="start">reads. NO construction that produces broad copper on an internal routed face is established by any record we hold</text>
+<text x="118" y="891" font-size="13" font-weight="normal" fill="#333" text-anchor="start">— the lands are drawn UNVERIFIED; asked as Q6</text>
+<text x="92" y="915" font-size="13" font-weight="bold" fill="#111" text-anchor="start">4</text>
+<text x="118" y="915" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the solder fillets — the gap between a slot face and the tab's copper on that face. ADR-046 §4.1's 0.30 mm total</text>
+<text x="118" y="932" font-size="13" font-weight="normal" fill="#333" text-anchor="start">(slot 0.9 − tab 0.6) is NOMINAL, computed on BARE substrate; the tab's copper on each face narrows the FINISHED</text>
+<text x="118" y="949" font-size="13" font-weight="normal" fill="#333" text-anchor="start">gap, and the finished gap is what is DRAWN here. Loaded in SHEAR on both faces, which is why Option A's capacity</text>
+<text x="118" y="966" font-size="13" font-weight="normal" fill="#333" text-anchor="start">is the joint's anchor (ADR-046 §4.2.2)</text>
+<text x="92" y="990" font-size="13" font-weight="bold" fill="#111" text-anchor="start">5</text>
+<text x="118" y="990" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the wing tab — 0.6 mm FR4 SUBSTRATE (ADR-046 §4.1), 8.0 mm long, seated 6.0 mm into the slot so 2.0 mm stays</text>
+<text x="118" y="1007" font-size="13" font-weight="normal" fill="#333" text-anchor="start">outside. Its tip is relieved to match the slot's routed end, so it seats to the full 6.0 mm — but that relief and the</text>
+<text x="118" y="1024" font-size="13" font-weight="normal" fill="#333" text-anchor="start">slot's end radius are NOT fixed by any record we hold, and the semicircle drawn here is an ILLUSTRATION, not a</text>
+<text x="118" y="1041" font-size="13" font-weight="normal" fill="#333" text-anchor="start">specification: the full 6.0 mm seating is a REQUIREMENT, not a verified fit. Asked as Q7. The tab carries COPPER on</text>
+<text x="118" y="1058" font-size="13" font-weight="normal" fill="#333" text-anchor="start">each face (35 µm, 1 oz), drawn on the substrate's OUTER faces here; the tab's FINISH is not fixed by a record we</text>
+<text x="118" y="1075" font-size="13" font-weight="normal" fill="#333" text-anchor="start">hold (Q1). The FINISHED tab is thicker than 0.6 mm — see the tab-stack-up row</text>
+<text x="92" y="1099" font-size="13" font-weight="bold" fill="#111" text-anchor="start">6</text>
+<text x="118" y="1099" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the slot's mouth reaches the outline ON THE SLOT'S CENTRE LINE (ADR-048 §2.5: "the land IS the interface"). The</text>
+<text x="118" y="1116" font-size="13" font-weight="normal" fill="#333" text-anchor="start">land copper runs 1.0 … 5.0 mm inboard of that edge (ADR-048 D-1). The slot's inner end is ROUNDED — a cutter</text>
+<text x="118" y="1133" font-size="13" font-weight="normal" fill="#333" text-anchor="start">radius, not a square end; see Q7</text>
+<text x="916" y="732" font-size="14" font-weight="bold" fill="#111" text-anchor="start">View B — what the numbers on this view are</text>
+<text x="936" y="758" font-size="13" font-weight="bold" fill="#111" text-anchor="start">7</text>
+<text x="962" y="758" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the four lands, seen END-ON: 1.2 mm across at 1.8 mm pitch, 0.6 mm clear between lands. Their 4.0</text>
+<text x="962" y="775" font-size="13" font-weight="normal" fill="#333" text-anchor="start">mm extent runs NORMAL to this view — dimensioned in View A. Each is a SEPARATE conductor: the</text>
+<text x="962" y="792" font-size="13" font-weight="normal" fill="#333" text-anchor="start">tab-face copper is broken at every 0.6 mm gap, so W1_SOLAR_P, GND, W1_RF and W1_SOLAR_N are</text>
+<text x="962" y="809" font-size="13" font-weight="normal" fill="#333" text-anchor="start">NOT connected to one another on either face</text>
+<text x="936" y="833" font-size="13" font-weight="bold" fill="#111" text-anchor="start">8</text>
+<text x="962" y="833" font-size="13" font-weight="normal" fill="#333" text-anchor="start">one fillet per land per face, wetting that land's 4.0 mm. The 4.0 mm runs along the insertion axis, i.e.</text>
+<text x="962" y="850" font-size="13" font-weight="normal" fill="#333" text-anchor="start">NORMAL to this view. The lane DRAWN is the FINISHED gap: slot 0.9 − (0.6 mm substrate + a copper</text>
+<text x="962" y="867" font-size="13" font-weight="normal" fill="#333" text-anchor="start">layer on each face). ADR-046 §4.1's 0.15 mm per face is NOMINAL on bare substrate and is wider — see</text>
+<text x="962" y="884" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the tab-stack-up row</text>
+<text x="936" y="908" font-size="13" font-weight="bold" fill="#111" text-anchor="start">9</text>
+<text x="962" y="908" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the hub material either side of the slot. Its extent is SCHEMATIC — no record we hold fixes how far the</text>
+<text x="962" y="925" font-size="13" font-weight="normal" fill="#333" text-anchor="start">slot runs along the hub edge, only its 0.9 mm width and 6.0 mm depth</text>
+<text x="936" y="949" font-size="13" font-weight="bold" fill="#111" text-anchor="start">10</text>
+<text x="962" y="949" font-size="13" font-weight="normal" fill="#333" text-anchor="start">the 9.0 mm tab: 4 × 1.2 mm lands + 3 × 0.6 mm gaps + 2 × 1.2 mm of tab beyond the outer lands</text>
+<text x="962" y="966" font-size="13" font-weight="normal" fill="#333" text-anchor="start">(ADR-048 §2.2). That 1.2 mm is the TAB's own margin, NOT a tab-to-slot-wall clearance — no record</text>
+<text x="962" y="983" font-size="13" font-weight="normal" fill="#333" text-anchor="start">fixes that clearance, so none is drawn or claimed here</text>
+<text x="72" y="1179" font-size="17" font-weight="bold" fill="#111" text-anchor="start">Requirements and questions for the fabricator</text>
+<line x1="72" y1="1195" x2="1628" y2="1195" stroke="#bbb" stroke-width="1.2"/>
+<text x="80" y="1223" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Sheet scope</text>
+<text x="400" y="1223" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">This sheet depicts the COMMITTED hub-side interface geometry for fabrication review. It is TWO SECTIONS: nothing outside them is drawn — no solder-mask geometry, no</text>
+<text x="400" y="1240" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">plan view, no keep-out outline. It does NOT fix the hub's outline, thickness or layer count, the component keep-out at the slot, the slot's extent along the hub edge, or any</text>
+<text x="400" y="1257" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">price — none of those is fixed by a record we hold, and none is asserted here.</text>
+<line x1="72" y1="1272" x2="1628" y2="1272" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1300" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Committed geometry</text>
+<text x="400" y="1300" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">Routed slot 0.9 x 6.0 mm in the hub edge, 0.6 mm tab seated 6.0 mm into it, the four lands on the slot's faces, the fillet loaded in SHEAR on BOTH faces. This is ADR-048</text>
+<text x="400" y="1317" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">§2.2 / ADR-046 §4.2.2 — the COMMITTED geometry for this interface.</text>
+<line x1="72" y1="1332" x2="1628" y2="1332" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1360" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Slot tolerance</text>
+<text x="400" y="1360" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">±0.10 mm is PROPOSED, not a cited figure (ADR-046 §4.3 records it as an assumption). ADR-048 §2.2 states it alongside "0.9 mm wide × 6.0 mm deep"; whether it applies</text>
+<text x="400" y="1377" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">to the depth as well as the width is not fixed by any record we hold. QUESTION Q3.</text>
+<line x1="72" y1="1392" x2="1628" y2="1392" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1420" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">State of the board</text>
+<text x="400" y="1420" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The board as built implements Option B: NO slot, J_W1…J_W4 lands on F.Cu only, fillet in peel (ADR-046 §4.2.1, measured with</text>
+<text x="400" y="1437" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">tracker/hardware/introspect_edge_interface.py). The change to the slot is PENDING. This sheet is not a statement that the board is already slotted.</text>
+<line x1="72" y1="1452" x2="1628" y2="1452" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1480" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Surface finish — pad faces</text>
+<text x="400" y="1480" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">ENIG preferred on F.Cu / B.Cu: flat and solderable after assembly. HASL is acceptable. This is the finish on the LAND, at the hub's outer faces.</text>
+<line x1="72" y1="1495" x2="1628" y2="1495" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1523" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Surface finish — routed faces</text>
+<text x="400" y="1523" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">NOT established by the pad-face finish. Copper newly exposed by routing the slot is on a CUT face, which the pad's mask opening and finish do not cover. We are asking, not</text>
+<text x="400" y="1540" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">asserting — QUESTION Q1.</text>
+<line x1="72" y1="1555" x2="1628" y2="1555" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1583" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Solder mask</text>
+<text x="400" y="1583" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The four lands are drawn as bare copper, so NO solder-mask geometry is drawn on this sheet at all: whether a mask opening is required on the routed faces is part of the</text>
+<text x="400" y="1600" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">same open question as their finish (Q1), and the sheet does not assert a mask either way. The component keep-out is a PLACEMENT constraint, not interface geometry, and</text>
+<text x="400" y="1617" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">is not drawn — see the sheet-scope row.</text>
+<line x1="72" y1="1632" x2="1628" y2="1632" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1660" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Copper at the interface</text>
+<text x="400" y="1660" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The slot's MOUTH reaches the outline ON THE SLOT'S CENTRE LINE — ADR-048 §2.5: "the land IS the interface". The land copper runs 1.0 … 5.0 mm inboard of that edge</text>
+<text x="400" y="1677" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">(ADR-048 D-1, as in the committed footprint), so on this geometry the copper is NOT flush with the routed edge. On the Option-B board as built it is flush at the edge — that</text>
+<text x="400" y="1694" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">is the as-built state, not this one.</text>
+<line x1="72" y1="1709" x2="1628" y2="1709" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1737" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">NOT wanted</text>
+<text x="400" y="1737" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">No castellation, no edge plating, no plated slot barrel — a plated slot would short the lands around the tab. Plain exposed copper on a plain routed cut.</text>
+<line x1="72" y1="1752" x2="1628" y2="1752" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1780" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Land construction — UNVERIFIED</text>
+<text x="400" y="1780" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The four lands on the slot's faces are drawn as copper because ADR-048 §2.2 places them there, but HOW they are produced, and which copper layer they are part of, is</text>
+<text x="400" y="1797" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">NOT established by any record we hold. No plating is wanted. UNVERIFIED — do not treat the drawn lands as a fabricable construction. QUESTION Q6.</text>
+<line x1="72" y1="1812" x2="1628" y2="1812" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1840" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Tab stack-up</text>
+<text x="400" y="1840" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The 0.6 mm is the tab's FR4 SUBSTRATE thickness (ADR-046 §4.1) and it is what the View B dimension measures — the tab's copper is drawn on the substrate's OUTER</text>
+<text x="400" y="1857" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">faces, outside that span. The tab carries a copper layer on each face, drawn on both sections at 35 µm (1 oz) per the board stack-up, of which the four 4.0 × 1.2 mm lands</text>
+<text x="400" y="1874" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">are the solderable patches. The FINISHED tab is thicker by that copper and its finish, so the finished solder gap is narrower than the 0.30 mm nominal. The tab's FINISH is</text>
+<text x="400" y="1891" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">not fixed by a record we hold — the same class of question as the routed face, so it is included in QUESTION Q1.</text>
+<line x1="72" y1="1906" x2="1628" y2="1906" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1934" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Mating fit — UNVERIFIED</text>
+<text x="400" y="1934" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The finished tab thickness, the slot's width and depth tolerances, the finished solder clearances, the slot-end radius and the tab-tip relief are NOT fixed by any record we</text>
+<text x="400" y="1951" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">hold — they are design decisions. They are shown UNVERIFIED — under query (Q7); no value for any of them is invented here.</text>
+<line x1="72" y1="1966" x2="1628" y2="1966" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="1994" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Routed edge positional tolerance</text>
+<text x="400" y="1994" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">Routed edge and slot relative to copper — please advise your capability. QUESTION Q2.</text>
+<line x1="72" y1="2009" x2="1628" y2="2009" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2037" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Minimum routable slot</text>
+<text x="400" y="2037" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">A repo note records a minimum non-plated slot of ~1.0 mm, i.e. above our 0.9 mm (placement freeze, §4). We do not know whether that is current or correct for this build —</text>
+<text x="400" y="2054" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">please confirm, since a 0.9 mm slot is the committed geometry. QUESTION Q4.</text>
+<line x1="72" y1="2069" x2="1628" y2="2069" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2097" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Routed cut-out cost</text>
+<text x="400" y="2097" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The slot adds a routing line item. We hold no price and ask for yours; nothing here is a claim about your pricing. QUESTION Q5.</text>
+<line x1="72" y1="2112" x2="1628" y2="2112" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2140" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Panel tabs</text>
+<text x="400" y="2140" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">Keep tabs clear of these edges. They are mating surfaces and a tab there would ruin the contact.</text>
+<line x1="72" y1="2155" x2="1628" y2="2155" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2183" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Burrs / peeling</text>
+<text x="400" y="2183" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">Please advise mitigation if the cut produces them at the interface, and whether a finish on the cut face changes that.</text>
+<line x1="72" y1="2198" x2="1628" y2="2198" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2226" font-size="13.5" font-weight="bold" fill="#111" text-anchor="start">Alignment caveat (design)</text>
+<text x="400" y="2226" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">The slot BOUNDS the attach angle; it does NOT key it. ADR-046 §4.2.2's figure is BARE-SUBSTRATE: 0.30 mm of play over a 6.0 mm insertion is 2.86°, i.e. 8.79 mm of</text>
+<text x="400" y="2243" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">wing-tip movement at 176 mm. With the tab's copper on each face the finished play is narrower — 0.30 − 2 × 0.035 ≈ 0.23 mm, ≈ 2.20° / 6.74 mm — and finish and</text>
+<text x="400" y="2260" font-size="13.5" font-weight="normal" fill="#333" text-anchor="start">tolerances narrow it further. The 90° angle is a FIXTURING requirement, and this sheet does not claim otherwise.</text>
+<line x1="72" y1="2275" x2="1628" y2="2275" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2303" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q1  routed-face finish</text>
+<text x="400" y="2303" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">Routing the slot exposes copper on a cut face. Does your process put any finish on that face? If the pad faces are ENIG, is the copper at the routed face (a) covered by the</text>
+<text x="400" y="2320" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">same finish, (b) bare copper, or (c) something else? Please say which, and how we must specify it to get what you describe. The wing TAB carries copper on its faces too and</text>
+<text x="400" y="2337" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">its finish is likewise not fixed by a record we hold — please answer for the tab's faces as well.</text>
+<line x1="72" y1="2352" x2="1628" y2="2352" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2380" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q2  tolerance</text>
+<text x="400" y="2380" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">What positional tolerance can you hold between the routed edge/slot and the copper lands?</text>
+<line x1="72" y1="2395" x2="1628" y2="2395" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2423" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q3  slot tolerance</text>
+<text x="400" y="2423" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">What width tolerance can you hold on a 0.9 mm routed slot? Does the same tolerance apply to its 6.0 mm depth?</text>
+<line x1="72" y1="2438" x2="1628" y2="2438" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2466" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q4  minimum slot</text>
+<text x="400" y="2466" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">What is your minimum routable non-plated slot width? If 0.9 mm is below it, what is the smallest you will rout, and does that change if the slot is plated?</text>
+<line x1="72" y1="2481" x2="1628" y2="2481" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2509" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q5  cost</text>
+<text x="400" y="2509" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">What is the additional cost of an internal routed cut-out on this order, as a line item?</text>
+<line x1="72" y1="2524" x2="1628" y2="2524" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2552" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q6  copper on the slot faces</text>
+<text x="400" y="2552" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">Our lands sit on the two OPPOSED INTERNAL ROUTED-SLOT FACES (4.0 × 1.2 mm per face). We are NOT identifying them as outer-layer F.Cu / B.Cu — those are the hub's</text>
+<text x="400" y="2569" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">EXTERNAL copper layers, a different surface. HOW that copper is produced and WHICH layer it connects to is UNRESOLVED by any record we hold, so we assert no</text>
+<text x="400" y="2586" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">construction. We do NOT want a plated slot barrel. Please tell us what to specify, and say if what we have drawn is not producible.</text>
+<line x1="72" y1="2601" x2="1628" y2="2601" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="2629" font-size="13.5" font-weight="bold" fill="#b00020" text-anchor="start">Q7  slot end radius</text>
+<text x="400" y="2629" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">A routed slot's inner end carries the cutter's radius. What radius will our 0.9 mm slot end have, and what relief or clearance must the mating tab's tip have to seat against</text>
+<text x="400" y="2646" font-size="13.5" font-weight="normal" fill="#b00020" text-anchor="start">it? We have drawn a semicircular end as an illustration, not as a specification.</text>
+<line x1="72" y1="2661" x2="1628" y2="2661" stroke="#e6e6e6" stroke-width="1"/>
+<text x="72" y="2691" font-size="12" font-weight="normal" fill="#777" text-anchor="start">Committed geometry: docs/adr/048-v9-hub-wing-interfaces.md §2.2 (slot 0.9 × 6.0 mm, keep-out slot outline + 1.0 mm) and docs/adr/046-wing-board-interface.md §4.1/§4.2.2. Board state measured by tracker/hardware/introspect_edge_interface.py.</text>
+<text x="72" y="2707" font-size="12" font-weight="normal" fill="#777" text-anchor="start">Generated by tracker/hardware/make_edge_section.py.</text>
 </svg>

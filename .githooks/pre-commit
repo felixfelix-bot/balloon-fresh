@@ -90,7 +90,21 @@ fi
 # FLIP TO BLOCKING: when `make pad-audit` exits 0, add `FAILED=1` inside the report branch below. The
 # condition is self-verifying -- no judgement needed. It is written here so the flip is not guesswork.
 PANDAUDIT_DONE=""
-BOARDS_STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.kicad_pcb$' || true)
+# ONLY SOURCE BOARDS. A .kicad_pcb under gerbers/ or output/ is a GENERATED ARTEFACT, and ${KIPRJMOD}
+# resolves to the project dir of wherever the board sits -- so a packaged copy has no 3dmodels/ next to it
+# and every model reference appears to fail. That produced a false REFUSAL of a legitimate commit, measured
+# 2026-10-17. Skipping is correct because the artefact is a byte-copy of a source board that IS audited;
+# the skip is PRINTED, never silent, so it cannot be mistaken for a pass.
+BOARDS_ALL=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.kicad_pcb$' || true)
+BOARDS_STAGED=""
+for b in $BOARDS_ALL; do
+    case "$b" in
+        */gerbers/*|*/output/*|*/3d/*)
+            echo "pad-audit: SKIPPED $b -- generated artefact, not a source board (NOT a pass)"
+            ;;
+        *) BOARDS_STAGED="$BOARDS_STAGED $b" ;;
+    esac
+done
 if [ -n "$BOARDS_STAGED" ]; then
     PY_PAD=""
     for c in "$HOME/venvs/kicad/bin/python" /usr/bin/python3 python3; do
@@ -112,6 +126,10 @@ if [ -n "$BOARDS_STAGED" ]; then
             # $PWD (repo root) produced nine false "model reference does not resolve" errors; passing
             # the board's directory produces zero. The bytes come from the staged copy; the PROJECT root
             # is the real one on disk, which is the whole point of separating them.
+            # --root must be the board's KiCad PROJECT directory, which is its directory IN THE REPO --
+            # not the temp dir the staged copy lives in, and not the repo root. Measured: passing $PWD
+            # produced 9 false "model reference does not resolve" errors; passing the board's own repo
+            # directory produces 0.
             b_dir="$(dirname "$b")"
             if ! "$PY_PAD" tracker/hardware/pad_audit.py --root "$b_dir" "$PAD_TMP/$b" > "$PAD_TMP/out.txt" 2>&1; then
                 echo "pad-audit: findings in $b"

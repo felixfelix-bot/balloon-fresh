@@ -1,6 +1,6 @@
 {
-  "source_board": "/home/c08r4d0r/worktrees/u4-rewire/tracker/hardware/hub_board_v9.kicad_pcb",
-  "source_sha256": "2dd363764b2314e8c5f16db240fa979b4b20909afa521045df3eb0c857d8e4c5",
+  "source_board": "/home/c08r4d0r/worktrees/u1-footprint/tracker/hardware/hub_board_v9.kicad_pcb",
+  "source_sha256": "e55a294628fd38a73e5006fa7fa9138958ab986812b167263a9d130d661c93dd",
   "packaged_board": "hub_v9.kicad_pcb",
   "footprints": 59,
   "bom_rows": 58,
