@@ -23,6 +23,7 @@ import asyncio
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import unittest
@@ -623,6 +624,69 @@ class TestSessionIdHardening(unittest.TestCase):
         self.assertTrue(a.startswith("2608301320"))
         self.assertRegex(b, r"^\d{10}[0-9a-f]{3}$")
         self.assertTrue(cap.validate_session_id(a))
+
+
+# ===========================================================================
+# R1 item 1 — validate_armed is SELF-CONTAINED.
+#
+# The Gate-2.5 fix brief is explicit: cvm_sync.validate_armed must NOT import
+# from cvm_tx_listener, because that module is a sibling deliverable and an
+# import would create a merge-order dependency (cvm_sync could not be merged
+# or tested until the listener landed). These tests PIN that property so a
+# later "DRY the validators up" refactor cannot silently reintroduce it.
+# ===========================================================================
+
+_SELF_CONTAINMENT_SNIPPET = (
+    "import sys, importlib.abc\n"
+    "class _Block(importlib.abc.MetaPathFinder):\n"
+    "    def find_spec(self, name, path=None, target=None):\n"
+    "        if name == 'cvm_tx_listener':\n"
+    "            raise ImportError('blocked: cvm_tx_listener')\n"
+    "        return None\n"
+    "sys.meta_path.insert(0, _Block())\n"
+    "import cvm_sync as cs\n"
+    "m = {'type':'ARMED','session_id':'2608301440a3f','stop':'50m',\n"
+    "     't_ready_utc':1788096000,'preset_hash':'abc','seq':1,\n"
+    "     'created_at':1788096000}\n"
+    "ok, reason = cs.validate_armed(m, now=1788096000)\n"
+    "print('ok', ok, repr(reason), 'created_at' in cs.ARMED_REQUIRED)\n"
+)
+
+
+class TestValidateArmedIsSelfContained(unittest.TestCase):
+    """R1 item 1: no import of cvm_tx_listener (no merge-order dependency)."""
+
+    def test_imports_and_validates_with_cvm_tx_listener_unavailable(self):
+        """Import cvm_sync with cvm_tx_listener poisoned out of the import
+        system. If validate_armed depended on it, this import would raise."""
+        proc = subprocess.run(
+            [sys.executable, "-c", _SELF_CONTAINMENT_SNIPPET],
+            cwd=_TOOLS_DIR, capture_output=True, text=True, timeout=60)
+        self.assertEqual(proc.returncode, 0,
+                         "cvm_sync needs cvm_tx_listener: {}".format(proc.stderr))
+        self.assertTrue(proc.stdout.startswith("ok True"),
+                        proc.stdout)
+
+    def test_source_has_no_cvm_tx_listener_import(self):
+        """Belt and braces: no import statement names cvm_tx_listener."""
+        import ast
+        src = open(os.path.join(_TOOLS_DIR, "cvm_sync.py")).read()
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    self.assertNotEqual(a.name, "cvm_tx_listener")
+            elif isinstance(node, ast.ImportFrom):
+                self.assertNotEqual(node.module, "cvm_tx_listener")
+
+    def test_armed_required_is_an_immutable_tuple_with_created_at(self):
+        """The R1 invariant: created_at is required, and the field list cannot
+        be mutated in place (a tuple, not a set/list)."""
+        import cvm_sync
+        self.assertIsInstance(cvm_sync.ARMED_REQUIRED, tuple)
+        self.assertIn("created_at", cvm_sync.ARMED_REQUIRED)
+        with self.assertRaises((TypeError, AttributeError)):
+            cvm_sync.ARMED_REQUIRED[0] = "tampered"
 
 
 if __name__ == "__main__":
