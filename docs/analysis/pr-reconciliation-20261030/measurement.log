@@ -1,0 +1,189 @@
+21:00:18: Debug: Adding duplicate image handler for 'PNG file'
+21:00:18: Debug: Adding duplicate image handler for 'JPEG file'
+21:00:18: Debug: Adding duplicate image handler for 'TIFF file'
+21:00:18: Debug: Adding duplicate image handler for 'GIF file'
+21:00:18: Debug: Adding duplicate image handler for 'PNM file'
+21:00:18: Debug: Adding duplicate image handler for 'PCX file'
+21:00:18: Debug: Adding duplicate image handler for 'IFF file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows icon file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'TGA file'
+21:00:18: Debug: Adding duplicate image handler for 'XPM file'
+21:00:18: Debug: Adding duplicate image handler for 'PNG file'
+21:00:18: Debug: Adding duplicate image handler for 'JPEG file'
+21:00:18: Debug: Adding duplicate image handler for 'TIFF file'
+21:00:18: Debug: Adding duplicate image handler for 'GIF file'
+21:00:18: Debug: Adding duplicate image handler for 'PNM file'
+21:00:18: Debug: Adding duplicate image handler for 'PCX file'
+21:00:18: Debug: Adding duplicate image handler for 'IFF file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows icon file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'TGA file'
+21:00:18: Debug: Adding duplicate image handler for 'XPM file'
+21:00:18: Debug: Adding duplicate image handler for 'PNG file'
+21:00:18: Debug: Adding duplicate image handler for 'JPEG file'
+21:00:18: Debug: Adding duplicate image handler for 'TIFF file'
+21:00:18: Debug: Adding duplicate image handler for 'GIF file'
+21:00:18: Debug: Adding duplicate image handler for 'PNM file'
+21:00:18: Debug: Adding duplicate image handler for 'PCX file'
+21:00:18: Debug: Adding duplicate image handler for 'IFF file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows icon file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'TGA file'
+21:00:18: Debug: Adding duplicate image handler for 'XPM file'
+21:00:18: Debug: Adding duplicate image handler for 'PNG file'
+21:00:18: Debug: Adding duplicate image handler for 'JPEG file'
+21:00:18: Debug: Adding duplicate image handler for 'TIFF file'
+21:00:18: Debug: Adding duplicate image handler for 'GIF file'
+21:00:18: Debug: Adding duplicate image handler for 'PNM file'
+21:00:18: Debug: Adding duplicate image handler for 'PCX file'
+21:00:18: Debug: Adding duplicate image handler for 'IFF file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows icon file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'Windows animated cursor file'
+21:00:18: Debug: Adding duplicate image handler for 'TGA file'
+21:00:18: Debug: Adding duplicate image handler for 'XPM file'
+{
+  "master": "c7074ddbd574f0b677161f1609abfbedef61faf0",
+  "geometry_comparison": {
+    "operator": {
+      "only_snapshot": 0,
+      "only_master": 0
+    },
+    "372": {
+      "only_snapshot": 62,
+      "only_master": 54
+    },
+    "373": {
+      "only_snapshot": 62,
+      "only_master": 54
+    },
+    "374": {
+      "only_snapshot": 62,
+      "only_master": 112
+    }
+  },
+  "layers": {
+    "sha256": "732bfe889020b3c957fb778f1c30f2a84a3e96171cec37c1fa51dae58a9c6561",
+    "vias": 41,
+    "layers": {
+      "F.Cu": {
+        "tracks": 452,
+        "length_mm": 944.542429,
+        "nets": {
+          "/CUT_SENSE_W1": 8,
+          "/CUT_SENSE_W2": 4,
+          "/CUT_SENSE_W3": 4,
+          "/CUT_SENSE_W4": 5,
+          "/F33_BUSY": 7,
+          "/F33_CS_N": 30,
+          "/SPI2_MISO": 8,
+          "/SPI2_MOSI": 10,
+          "/F33_RESET_N": 28,
+          "/F33_VCC": 16,
+          "/GNSS_PPS": 4,
+          "/GNSS_RX": 42,
+          "/GNSS_TX": 7,
+          "/GNSS_VCC": 18,
+          "/I2C_SCL": 16,
+          "/I2C_SDA": 26,
+          "/SCAP_ADC": 11,
+          "/SCAP_MID": 18,
+          "/E28_BUSY": 2,
+          "/E28_CS_N": 15,
+          "/E28_DIO1": 27,
+          "/E28_DIO2": 7,
+          "/E28_DIO3": 4,
+          "/SPI1_MISO": 38,
+          "/SPI1_MOSI": 5,
+          "/E28_RESET_N": 7,
+          "/SPI1_SCK": 11,
+          "/U3_BUSY": 21,
+          "/U3_CS_N": 4,
+          "/U3_RESET_N": 24,
+          "/W1_SOLAR_P": 10,
+          "/USB_DN": 13,
+          "/USB_DP": 2
+        },
+        "zones": [
+          {
+            "net": "GND",
+            "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+            "filled": true
+          }
+        ]
+      },
+      "In1.Cu": {
+        "tracks": 0,
+        "length_mm": 0.0,
+        "nets": {},
+        "zones": [
+          {
+            "net": "GND",
+            "uuid": "5be5b156-b9d0-48df-a38e-a0bcd9d4e539",
+            "filled": true
+          }
+        ]
+      },
+      "In2.Cu": {
+        "tracks": 5,
+        "length_mm": 15.486501,
+        "nets": {
+          "/F33_BUSY": 2,
+          "/GNSS_PPS": 3
+        },
+        "zones": []
+      },
+      "B.Cu": {
+        "tracks": 386,
+        "length_mm": 486.220019,
+        "nets": {
+          "/CUT_SENSE_W1": 3,
+          "/CUT_SENSE_W2": 2,
+          "/CUT_SENSE_W3": 2,
+          "/CUT_SENSE_W4": 4,
+          "/F33_RESET_N": 12,
+          "/F33_VCC": 1,
+          "/GNSS_RX": 70,
+          "/GNSS_TX": 30,
+          "/GNSS_VCC": 1,
+          "/E28_BUSY": 10,
+          "/E28_DIO2": 21,
+          "/E28_DIO3": 3,
+          "/SPI1_MOSI": 9,
+          "/E28_RESET_N": 11,
+          "/SPI1_SCK": 9,
+          "/U3_BUSY": 4,
+          "/U3_CS_N": 101,
+          "/U3_RESET_N": 27,
+          "/VTCXO_VNTC": 11,
+          "/W1_SOLAR_P": 5,
+          "/USB_DN": 6,
+          "/USB_DP": 44
+        },
+        "zones": [
+          {
+            "net": "+3V3",
+            "uuid": "16f6e88f-2e9f-413c-ae4d-c257fffafae3",
+            "filled": true
+          },
+          {
+            "net": "GND",
+            "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+            "filled": true
+          },
+          {
+            "net": "/VSCAP",
+            "uuid": "73c9b043-ca4d-478d-a850-a6b449ae5465",
+            "filled": true
+          }
+        ]
+      }
+    },
+    "track_via_geometry_sha256": "283a3a9f5ffa403b92c97ce38783ef94ef370f29d57c7a5242aa7ba1f346938f"
+  },
+  "same_tree_372_373": true
+}

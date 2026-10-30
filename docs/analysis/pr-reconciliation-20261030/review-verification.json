@@ -1,0 +1,253 @@
+{
+  "live_pr377": {
+    "headRefOid": "df793aaf77f2cf49bf6cfb179ab28c946eedb827",
+    "mergeStateStatus": "CLEAN",
+    "mergeable": "MERGEABLE",
+    "reviews": [],
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-30T19:34:44Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/felixfelix-bot/balloon-fresh/actions/runs/41116297342/job/124271292995",
+        "name": "host-tests",
+        "startedAt": "2026-10-30T19:34:06Z",
+        "status": "COMPLETED",
+        "workflowName": "Host Unit Tests"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-30T19:34:28Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/felixfelix-bot/balloon-fresh/actions/runs/41116259806/job/124271165401",
+        "name": "host-tests",
+        "startedAt": "2026-10-30T19:33:50Z",
+        "status": "COMPLETED",
+        "workflowName": "Host Unit Tests"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-30T19:37:15Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/felixfelix-bot/balloon-fresh/actions/runs/41116297220/job/124271292599",
+        "name": "test",
+        "startedAt": "2026-10-30T19:34:06Z",
+        "status": "COMPLETED",
+        "workflowName": "Tests"
+      }
+    ]
+  },
+  "rerun_manifest": {
+    "commit": "df793aaf77f2cf49bf6cfb179ab28c946eedb827",
+    "kicad": "9.0.9",
+    "inputs": {
+      "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb": "732bfe889020b3c957fb778f1c30f2a84a3e96171cec37c1fa51dae58a9c6561",
+      "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pro": "01063b32bcba962ba2ee89fa5acbd55a96b006d78567a3037403b05965a75b02",
+      "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_dru": null,
+      "tracker/hardware/fp-lib-table": "19f5062dc62c0676d702cd457b2fa40bd3801e32c6801a7689ed0cb942e454ab",
+      "tracker/hardware/footprints/v9/SX1280_QFN24.kicad_mod": "34133df67ca2e8bc9120f6edb784f6aa5f630feb10aee10de82f173739a95cd1",
+      "tracker/hardware/footprints/e28/E28-2G4M27SX.kicad_mod": "e1857c5f81ff46e27a09bc01b28f6d4246a86ff273f2bdc90921341b68eab9b0",
+      "tracker/hardware/footprints/f33/LoRa2021F33_2G4.kicad_mod": "a90cc05516a78505961392b293f94b0865775f07dc652eb80bffd7c19c043639",
+      "tracker/hardware/footprints/lora1280/LoRa1280.kicad_mod": "29ab9f3ab11410d8dd6fd6b0ddd5a4947fe7e41723b2b9b2780c2238df015572",
+      "tracker/hardware/footprints/tracker_mechanical.pretty/Wing_Tab_4P.kicad_mod": "b5bc2b8b64ed3fedcbde4b32ce733adea1b39e0e7c1d115cc159be7df7a80503",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/C_0603_1608Metric.kicad_mod": "81ac566b8d4ab23004fbd73accab54e3ccafb48cf1105a5461a7a93d3ef551ba",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/U.FL_Molex_MCRF_73412-0110_Vertical.kicad_mod": "c42973ca204900c99710b287bc3997e0ca852351973207d1a631c39a1f76eb9c",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/R_0402_1005Metric.kicad_mod": "5dce062e7cb0c47c02445c7fd875fcfa78d89684de678f0df6a8118fe3adf342",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/HOPERF_RFM9XW_SMD.kicad_mod": "8df9abbc9bce0ed1fca3c110e5caed14c0b3b4f7d8d853531ba8b81c09151d57",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/LoRa2021_Castellated.kicad_mod": "655f13ed375026d9e2d4e395aebccf324bc833f325146174328b12d34926aacd",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/PinHeader_1x06_P2.54mm_Vertical.kicad_mod": "47dcc8b45d16eb8908ad8547376add4db3c7ec0d60b5e9df462d0ec7e2bae65f",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/D_SOD-123.kicad_mod": "7634331355bfc56b5e00ab983554082405c669a471e6508ef61df94c025cb7ae",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/CP_Radial_D10.0mm_P5.00mm.kicad_mod": "f91899674a33eaa97b8e5300619584183fef65657c4d151cad44c371df4eb9f4",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/ublox_MAX.kicad_mod": "002ea0c0f7145d5ad71d194ddf2c8be21aa0091e78562f662f406e3e0f52d9b9",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/MountingHole_2.2mm_M2.kicad_mod": "b5c21571c49e4883a850ccfc4a410ed5a26f19c9cd98c9aee1444d901d3c9254",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/SOT-23-5.kicad_mod": "b895f713095147c7bae9307b21dd717ea5c2c56a8431cae29fa616245c63f542",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering.kicad_mod": "143755be6338e7f7467dd53f40fab8519df68f45e8f585bffa65b11abcfb6f40",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/PinHeader_1x02_P2.54mm_Vertical.kicad_mod": "522f6c3c29cbcafd6a82a2eaf4f326fe4e9f05c10f026c355224769536746b54",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/ESP32-C3-WROOM-02.kicad_mod": "4092d22d86fa705671ea68bace927b8fb6e9fa3c7ed426426804a8025c79434e",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/PinHeader_1x04_P2.54mm_Vertical.kicad_mod": "2ea019224e897910cb10b455fbd078263842401e0067d82f6159f89072126679",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/LED_0603_1608Metric.kicad_mod": "3cacab4ae7af6a8750aad53a05db7d3965b658c6e175a968d3071a1f23576a98",
+      "tracker/hardware/schematics/flight_board/balloon_flight.pretty/C_0402_1005Metric.kicad_mod": "a0ca6bd9cf1071cbda9fd1f4713b076280405d67c571c21817add4212dc9228e",
+      "tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.pretty/SX1280_QFN24.kicad_mod": "6f2885ef49ff747731124602f8d40ecc7d3c2c023ea634e9ed988368e753ab59",
+      "tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.pretty/LoRa2021_Castellated.kicad_mod": "8cfbd1b842b65c3d3b9b1d0a96b382bbaab8032c500d96f78d47dcd466b9ec3b",
+      "tracker/hardware/schematics/flight_board/v9_lib/balloon_flight_v9.pretty/LoRa2021F33_2G4.kicad_mod": "1bbfc6d7f4da934743a31813407103cd1794ef197460c5b56b01e612e4873713",
+      "tracker/hardware/schematics/flight_board/v10_lib/balloon_flight_v10.pretty/LoRa2021_Castellated.kicad_mod": "4e1febc57216d04e83e2eb33579486bce6ac0444460aff5e36982412f4fcb108",
+      "tracker/hardware/schematics/flight_board/v10_lib/balloon_flight_v10.pretty/LoRa2021F33_2G4.kicad_mod": "20e2561ae05e72e1cc6abf9cf1fc749a8ff822d95ed2ab123405602a675cb795",
+      "tracker/hardware/schematics/flight_board/v10_lib/balloon_flight_v10.pretty/E28-2G4M27SX.kicad_mod": "c7dc58c2e553a36559aba74447732fff1faf21b411d8a54370a2bd42fa8e3ce6"
+    },
+    "refilled_board_sha256": "732bfe889020b3c957fb778f1c30f2a84a3e96171cec37c1fa51dae58a9c6561",
+    "source_unchanged": true
+  },
+  "rerun_commands": [
+    {
+      "command": [
+        "/usr/bin/python3",
+        "-c",
+        "import pcbnew; b=pcbnew.LoadBoard('/home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/.audit-hub-copy/hub_board_v10_lora1280_7of9.kicad_pcb'); pcbnew.ZONE_FILLER(b).Fill(b.Zones()); pcbnew.SaveBoard(b.GetFileName(),b)"
+      ],
+      "exit_status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "kicad-cli",
+        "pcb",
+        "drc",
+        "--format",
+        "json",
+        "--severity-all",
+        "--exit-code-violations",
+        "--output",
+        "/home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/docs/analysis/hub-endpoint-audit-20261030/drc.json",
+        "/home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/.audit-hub-copy/hub_board_v10_lora1280_7of9.kicad_pcb"
+      ],
+      "exit_status": 5,
+      "stdout": "Found 40 violations\nFound 86 unconnected items\nSaved DRC Report to /home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/docs/analysis/hub-endpoint-audit-20261030/drc.json\n",
+      "stderr": ""
+    }
+  ],
+  "rerun_summary": {
+    "drc_classes": {
+      "starved_thermal": 2,
+      "copper_edge_clearance": 16,
+      "silk_over_copper": 3,
+      "lib_footprint_mismatch": 11,
+      "lib_footprint_issues": 8
+    },
+    "records": 86,
+    "classification": {
+      "real": 59,
+      "unresolved": 27
+    },
+    "by_net": {
+      "+3V3": 15,
+      "/CUT_SENSE_W1": 1,
+      "/CUT_SENSE_W2": 1,
+      "/CUT_SENSE_W3": 1,
+      "/CUT_SENSE_W4": 1,
+      "/F33_IRQ": 1,
+      "/SPI2_SCK": 1,
+      "/F33_VSENSE": 3,
+      "/HUB_PV_MID1": 2,
+      "/HUB_PV_N": 2,
+      "/HUB_PV_P": 2,
+      "/SPI1_MISO": 2,
+      "/SPI1_MOSI": 2,
+      "/SPI1_SCK": 2,
+      "/U3_IRQ": 1,
+      "/VSCAP": 5,
+      "/W1_SOLAR_N": 5,
+      "/W1_SOLAR_P": 1,
+      "/W2_SOLAR_N": 5,
+      "/W3_SOLAR_N": 5,
+      "GND": 27,
+      "/EN": 1
+    },
+    "radio_proven": 9,
+    "radio_total": 9,
+    "copper_graphics": [
+      {
+        "id": 1438,
+        "uuid": "e56cf735-51dc-4e87-ae90-326924aebcb1",
+        "kind": "PCB_SHAPE",
+        "net": "/USB_DN",
+        "layer": "B.Cu",
+        "island": 0,
+        "component": 97
+      },
+      {
+        "id": 1439,
+        "uuid": "f2950fc3-f7a1-416f-93e1-b555123b2c27",
+        "kind": "PCB_SHAPE",
+        "net": "/USB_DN",
+        "layer": "B.Cu",
+        "island": 0,
+        "component": 97
+      }
+    ],
+    "geometry_method": "KiCad polygons, 1um approximation / 1nm contact; PTH/via layer span only; netless graphics not used to bridge named nets"
+  },
+  "rerun_verification": {
+    "native_signal_walk": [
+      {
+        "net": "/E28_DIO2",
+        "module_pad": "1",
+        "U1_pads": [
+          "11"
+        ],
+        "visited_items": 32
+      },
+      {
+        "net": "/E28_DIO3",
+        "module_pad": "2",
+        "U1_pads": [
+          "34"
+        ],
+        "visited_items": 11
+      },
+      {
+        "net": "/SPI1_MISO",
+        "module_pad": "5",
+        "U1_pads": [
+          "9"
+        ],
+        "visited_items": 40
+      },
+      {
+        "net": "/SPI1_MOSI",
+        "module_pad": "6",
+        "U1_pads": [
+          "8"
+        ],
+        "visited_items": 18
+      },
+      {
+        "net": "/SPI1_SCK",
+        "module_pad": "7",
+        "U1_pads": [
+          "22"
+        ],
+        "visited_items": 26
+      },
+      {
+        "net": "/E28_CS_N",
+        "module_pad": "8",
+        "U1_pads": [
+          "10"
+        ],
+        "visited_items": 17
+      },
+      {
+        "net": "/E28_RESET_N",
+        "module_pad": "13",
+        "U1_pads": [
+          "32"
+        ],
+        "visited_items": 24
+      },
+      {
+        "net": "/E28_BUSY",
+        "module_pad": "15",
+        "U1_pads": [
+          "31"
+        ],
+        "visited_items": 16
+      },
+      {
+        "net": "/E28_DIO1",
+        "module_pad": "16",
+        "U1_pads": [
+          "33"
+        ],
+        "visited_items": 29
+      }
+    ],
+    "assertions": "PASS: 86/86 coverage, net tally 86, nine witnessed paths, nine cut-path negative controls",
+    "native_walk_scope": "pads/tracks/vias; no zone or graphical shape traversal required for these nine paths"
+  },
+  "exact_tree_matches": {
+    "372": true,
+    "373": true,
+    "374": true
+  }
+}
