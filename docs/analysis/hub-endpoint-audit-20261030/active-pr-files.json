@@ -1,0 +1,149 @@
+{
+  "374": {
+    "exit_status": 0,
+    "files": [
+      "ansible/pcb-workstation.yml",
+      "docs/fab/status/lora1280-3d-bottom.png",
+      "docs/fab/status/lora1280-3d-top.png",
+      "docs/runbooks/INTERACTIVE-ROUTING-LORA1280.md",
+      "mk/kicad-interactive.mk",
+      "scripts/lora1280_drc_summary.py",
+      "tests/test_hub_lora1280_swap.py",
+      "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb",
+      "tracker/hardware/hub_board_v10_lora1280_swap.kicad_pcb",
+      "tracker/hardware/swap_u_e28_to_lora1280.py"
+    ]
+  },
+  "373": {
+    "exit_status": 0,
+    "files": [
+      "ansible/pcb-workstation.yml",
+      "docs/fab/status/lora1280-3d-bottom.png",
+      "docs/fab/status/lora1280-3d-top.png",
+      "docs/runbooks/INTERACTIVE-ROUTING-LORA1280.md",
+      "mk/kicad-interactive.mk",
+      "scripts/lora1280_drc_summary.py",
+      "tests/test_hub_lora1280_swap.py",
+      "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb",
+      "tracker/hardware/hub_board_v10_lora1280_swap.kicad_pcb",
+      "tracker/hardware/route_board_nets.py",
+      "tracker/hardware/route_lora1280_independent.py",
+      "tracker/hardware/swap_u_e28_to_lora1280.py"
+    ]
+  },
+  "372": {
+    "exit_status": 0,
+    "files": [
+      "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb",
+      "tracker/hardware/route_board_nets.py",
+      "tracker/hardware/route_lora1280_independent.py"
+    ]
+  },
+  "367": {
+    "exit_status": 0,
+    "files": [
+      "docs/fab/status/router-independent-vs-repo.png",
+      "tracker/hardware/route_lora1280_independent.py"
+    ]
+  },
+  "366": {
+    "exit_status": 0,
+    "files": [
+      "docs/fab/status/router-independent-vs-repo.png",
+      "tracker/hardware/route_lora1280_independent.py"
+    ]
+  },
+  "365": {
+    "exit_status": 0,
+    "files": [
+      ".github/workflows/test.yml",
+      "docs/fab/status/HUB-AB-AND-ANTENNA-VOLUMES.md",
+      "docs/fab/status/antenna-volumes.json",
+      "docs/fab/status/hub-antenna-volumes.png",
+      "tests/test_hub_rf_and_antenna_volumes.py",
+      "tracker/hardware/reserve_antenna_volume.py"
+    ]
+  },
+  "364": {
+    "exit_status": 0,
+    "files": [
+      "docs/analysis/LORA1280-ESCAPE-CORRIDOR-STUDY.md",
+      "docs/fab/status/lora1280-orientation-scan.png",
+      "docs/fab/status/lora1280-site-status.png",
+      "tests/test_hub_lora1280_swap.py",
+      "tests/test_lora1280_footprint.py",
+      "tracker/hardware/build_lora1280_footprint.py",
+      "tracker/hardware/footprints/lora1280/LoRa1280.kicad_mod",
+      "tracker/hardware/hub_board_v10.kicad_pcb",
+      "tracker/hardware/render_lora1280_status.py",
+      "tracker/hardware/swap_u_e28_to_lora1280.py",
+      "tracker/hardware/tmp_probes/corridor_study_lora1280.py",
+      "tracker/hardware/tmp_probes/probe_lora1280_side.py",
+      "tracker/hardware/tmp_probes/scan_lora1280_orientation.py"
+    ]
+  },
+  "363": {
+    "exit_status": 0,
+    "files": [
+      "docs/fab/status/lora1280-3d-top.png",
+      "docs/fab/status/lora1280-7of9-2d.png",
+      "tracker/hardware/footprints/lora1280/LoRa1280.wrl",
+      "tracker/hardware/route_lora1280_independent.py",
+      "tracker/hardware/route_lora1280_ripup.py"
+    ]
+  },
+  "362": {
+    "exit_status": 0,
+    "files": [
+      "docs/adr/139-v10-2g4-site-non-pa-sx1280-recommendation.md",
+      "docs/modules/lora128x/FOOTPRINT-SPEC.md",
+      "tests/test_lora1280_footprint.py",
+      "tracker/hardware/build_lora1280_footprint.py",
+      "tracker/hardware/footprints/lora1280/LoRa1280.kicad_mod"
+    ]
+  },
+  "361": {
+    "exit_status": 0,
+    "files": [
+      "tests/test_lora1280_footprint.py",
+      "tracker/hardware/build_lora1280_footprint.py",
+      "tracker/hardware/footprints/lora1280/LoRa1280.kicad_mod"
+    ]
+  },
+  "309": {
+    "exit_status": 0,
+    "files": [
+      "docs/analysis/HUB-RADIO-LINK-BLOCKER.md",
+      "tracker/hardware/probe_corridor.py"
+    ]
+  },
+  "308": {
+    "exit_status": 0,
+    "files": [
+      "docs/adr/136-flight-wing-interface-two-land-and-routing-sequence.md",
+      "docs/adr/INDEX.md",
+      "tracker/hardware/add_hub_planes.py",
+      "tracker/hardware/fix_hub_footprint_ids.py",
+      "tracker/hardware/hub_board_v10.kicad_pcb",
+      "tracker/hardware/pad_audit.py",
+      "tracker/hardware/strip_missing_hub_models.py"
+    ]
+  },
+  "301": {
+    "exit_status": 0,
+    "files": [
+      "docs/adr/137-no-rf-on-hub-antenna-at-module.md",
+      "docs/fab/status/HUB-AB-AND-ANTENNA-VOLUMES.md",
+      "docs/fab/status/antenna-volumes.json",
+      "docs/fab/status/hub-antenna-volumes.png",
+      "tests/test_hub_rf_and_antenna_volumes.py",
+      "tracker/hardware/apply_adr137_remove_rf.py",
+      "tracker/hardware/hub_board_v10.kicad_pcb",
+      "tracker/hardware/hub_board_v10.kicad_pro",
+      "tracker/hardware/make_4layer.py",
+      "tracker/hardware/move_u_e28_up.py",
+      "tracker/hardware/render_antenna_volumes.py",
+      "tracker/hardware/reserve_antenna_volume.py"
+    ]
+  }
+}

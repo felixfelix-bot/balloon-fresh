@@ -1,0 +1,4936 @@
+[
+  {
+    "id": 1,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [+3V3] of U1 on F.Cu",
+        "pos": {
+          "x": 11.05,
+          "y": 35.16
+        },
+        "uuid": "26f500b8-d358-481b-9f96-064e0dc31e85",
+        "node_ids": [
+          131
+        ],
+        "components": [
+          90
+        ],
+        "candidate_components": [
+          90
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of C10 on F.Cu",
+        "pos": {
+          "x": 9.5,
+          "y": 42.98
+        },
+        "uuid": "704f0afd-bab7-4be7-8554-0207b13daa86",
+        "node_ids": [
+          91
+        ],
+        "components": [
+          65
+        ],
+        "candidate_components": [
+          65
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 2,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [+3V3] of U1 on F.Cu",
+        "pos": {
+          "x": 11.05,
+          "y": 35.16
+        },
+        "uuid": "26f500b8-d358-481b-9f96-064e0dc31e85",
+        "node_ids": [
+          131
+        ],
+        "components": [
+          90
+        ],
+        "candidate_components": [
+          90
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of U3 on B.Cu",
+        "pos": {
+          "x": 10.995,
+          "y": 11.54
+        },
+        "uuid": "44e3dc1d-48d6-4ae9-8d33-698698947611",
+        "node_ids": [
+          364
+        ],
+        "components": [
+          203
+        ],
+        "candidate_components": [
+          203
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 3,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 6 [+3V3] of U5 on F.Cu",
+        "pos": {
+          "x": 11.15,
+          "y": 59.9
+        },
+        "uuid": "c5794983-1f8a-4c4f-9913-a813f58c5405",
+        "node_ids": [
+          50
+        ],
+        "components": [
+          42
+        ],
+        "candidate_components": [
+          42
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 7 [+3V3] of U5 on F.Cu",
+        "pos": {
+          "x": 11.15,
+          "y": 61.0
+        },
+        "uuid": "6993612f-542b-4a0d-9bde-570868ac984c",
+        "node_ids": [
+          51
+        ],
+        "components": [
+          43
+        ],
+        "candidate_components": [
+          43
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 4,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 6 [+3V3] of U5 on F.Cu",
+        "pos": {
+          "x": 11.15,
+          "y": 59.9
+        },
+        "uuid": "c5794983-1f8a-4c4f-9913-a813f58c5405",
+        "node_ids": [
+          50
+        ],
+        "components": [
+          42
+        ],
+        "candidate_components": [
+          42
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of R_F1 on F.Cu",
+        "pos": {
+          "x": 22.5,
+          "y": 59.51
+        },
+        "uuid": "f03f22eb-b4a2-4c36-8a78-4b82c66f2ff1",
+        "node_ids": [
+          108
+        ],
+        "components": [
+          72
+        ],
+        "candidate_components": [
+          72
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 5,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 6 [+3V3] of U5 on F.Cu",
+        "pos": {
+          "x": 11.15,
+          "y": 59.9
+        },
+        "uuid": "c5794983-1f8a-4c4f-9913-a813f58c5405",
+        "node_ids": [
+          50
+        ],
+        "components": [
+          42
+        ],
+        "candidate_components": [
+          42
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of C10 on F.Cu",
+        "pos": {
+          "x": 9.5,
+          "y": 42.98
+        },
+        "uuid": "704f0afd-bab7-4be7-8554-0207b13daa86",
+        "node_ids": [
+          91
+        ],
+        "components": [
+          65
+        ],
+        "candidate_components": [
+          65
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 6,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 9 [+3V3] of U5 on F.Cu",
+        "pos": {
+          "x": 11.15,
+          "y": 63.2
+        },
+        "uuid": "979e470f-9f3e-440a-ac83-fcfe8987ccbc",
+        "node_ids": [
+          53
+        ],
+        "components": [
+          45
+        ],
+        "candidate_components": [
+          45
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 7 [+3V3] of U5 on F.Cu",
+        "pos": {
+          "x": 11.15,
+          "y": 61.0
+        },
+        "uuid": "6993612f-542b-4a0d-9bde-570868ac984c",
+        "node_ids": [
+          51
+        ],
+        "components": [
+          43
+        ],
+        "candidate_components": [
+          43
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 7,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'P3V3_BCu' [+3V3] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "16f6e88f-2e9f-413c-ae4d-c257fffafae3",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          172,
+          190,
+          203
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'P3V3_BCu' [+3V3] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "16f6e88f-2e9f-413c-ae4d-c257fffafae3",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          172,
+          190,
+          203
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 8,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "PTH pad 2 [+3V3] of J_PROG",
+        "pos": {
+          "x": 31.0,
+          "y": 57.24
+        },
+        "uuid": "31a3a989-fd2d-4e42-8238-be2929ac470e",
+        "node_ids": [
+          229,
+          230,
+          231,
+          232
+        ],
+        "components": [
+          121
+        ],
+        "candidate_components": [
+          121
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of R_F1 on F.Cu",
+        "pos": {
+          "x": 22.5,
+          "y": 59.51
+        },
+        "uuid": "f03f22eb-b4a2-4c36-8a78-4b82c66f2ff1",
+        "node_ids": [
+          108
+        ],
+        "components": [
+          72
+        ],
+        "candidate_components": [
+          72
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 9,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 5 [+3V3] of U2 on F.Cu",
+        "pos": {
+          "x": 33.7289,
+          "y": 9.6
+        },
+        "uuid": "f46de59a-0594-462d-9453-9b43cf66f8f5",
+        "node_ids": [
+          311
+        ],
+        "components": [
+          167
+        ],
+        "candidate_components": [
+          167
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 3 [+3V3] of J_VCC on B.Cu",
+        "pos": {
+          "x": 19.3,
+          "y": 5.0
+        },
+        "uuid": "2ba97357-8f51-43c0-ba2d-f3cd9429dda0",
+        "node_ids": [
+          347
+        ],
+        "components": [
+          190
+        ],
+        "candidate_components": [
+          190
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 10,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [+3V3] of U_C on B.Cu",
+        "pos": {
+          "x": 33.795,
+          "y": 11.54
+        },
+        "uuid": "ef341a6f-e6c1-488b-b3e7-bd5f0d0c3cfa",
+        "node_ids": [
+          325
+        ],
+        "components": [
+          172
+        ],
+        "candidate_components": [
+          172
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 5 [+3V3] of U2 on F.Cu",
+        "pos": {
+          "x": 33.7289,
+          "y": 9.6
+        },
+        "uuid": "f46de59a-0594-462d-9453-9b43cf66f8f5",
+        "node_ids": [
+          311
+        ],
+        "components": [
+          167
+        ],
+        "candidate_components": [
+          167
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 11,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [+3V3] of U_LORA1280 on F.Cu",
+        "pos": {
+          "x": 45.85,
+          "y": 65.1
+        },
+        "uuid": "4285e5d0-6bd5-4a77-a02c-1a425d8e0a1b",
+        "node_ids": [
+          112
+        ],
+        "components": [
+          75
+        ],
+        "candidate_components": [
+          75
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [+3V3] of U6 on F.Cu",
+        "pos": {
+          "x": 53.325,
+          "y": 58.675
+        },
+        "uuid": "b969a168-675c-4bff-9474-75c082237b2c",
+        "node_ids": [
+          280
+        ],
+        "components": [
+          149
+        ],
+        "candidate_components": [
+          149
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 12,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [+3V3] of U_LORA1280 on F.Cu",
+        "pos": {
+          "x": 45.85,
+          "y": 65.1
+        },
+        "uuid": "4285e5d0-6bd5-4a77-a02c-1a425d8e0a1b",
+        "node_ids": [
+          112
+        ],
+        "components": [
+          75
+        ],
+        "candidate_components": [
+          75
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "PTH pad 2 [+3V3] of J_PROG",
+        "pos": {
+          "x": 31.0,
+          "y": 57.24
+        },
+        "uuid": "31a3a989-fd2d-4e42-8238-be2929ac470e",
+        "node_ids": [
+          229,
+          230,
+          231,
+          232
+        ],
+        "components": [
+          121
+        ],
+        "candidate_components": [
+          121
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 13,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 5 [+3V3] of U7 on F.Cu",
+        "pos": {
+          "x": 49.9375,
+          "y": 54.25
+        },
+        "uuid": "2ee3ff6d-7373-4b95-a921-7a3a42a044ed",
+        "node_ids": [
+          99
+        ],
+        "components": [
+          70
+        ],
+        "candidate_components": [
+          70
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of U6 on F.Cu",
+        "pos": {
+          "x": 53.325,
+          "y": 54.925
+        },
+        "uuid": "54f06330-421e-4463-adb3-0741b7433095",
+        "node_ids": [
+          277
+        ],
+        "components": [
+          148
+        ],
+        "candidate_components": [
+          148
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 14,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [+3V3] of U6 on F.Cu",
+        "pos": {
+          "x": 53.325,
+          "y": 58.675
+        },
+        "uuid": "b969a168-675c-4bff-9474-75c082237b2c",
+        "node_ids": [
+          280
+        ],
+        "components": [
+          149
+        ],
+        "candidate_components": [
+          149
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [+3V3] of U6 on F.Cu",
+        "pos": {
+          "x": 53.325,
+          "y": 54.925
+        },
+        "uuid": "54f06330-421e-4463-adb3-0741b7433095",
+        "node_ids": [
+          277
+        ],
+        "components": [
+          148
+        ],
+        "candidate_components": [
+          148
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 15,
+    "nets": [
+      "+3V3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 5 [+3V3] of U6 on F.Cu",
+        "pos": {
+          "x": 55.475,
+          "y": 58.675
+        },
+        "uuid": "e4c2ffd2-1bc5-450e-82cc-b2b6060867b4",
+        "node_ids": [
+          281
+        ],
+        "components": [
+          150
+        ],
+        "candidate_components": [
+          150
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [+3V3] of U6 on F.Cu",
+        "pos": {
+          "x": 53.325,
+          "y": 58.675
+        },
+        "uuid": "b969a168-675c-4bff-9474-75c082237b2c",
+        "node_ids": [
+          280
+        ],
+        "components": [
+          149
+        ],
+        "candidate_components": [
+          149
+        ],
+        "nets": [
+          "+3V3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 16,
+    "nets": [
+      "/CUT_SENSE_W1"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/CUT_SENSE_W1] of J_W1 on B.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 40.9
+        },
+        "uuid": "b3f8d59c-910e-4b94-8520-e4a53ab40bd2",
+        "node_ids": [
+          290
+        ],
+        "components": [
+          154
+        ],
+        "candidate_components": [
+          154
+        ],
+        "nets": [
+          "/CUT_SENSE_W1"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Track [/CUT_SENSE_W1] on F.Cu, length 0.8500 mm",
+        "pos": {
+          "x": 3.0,
+          "y": 40.9
+        },
+        "uuid": "bb2e67f2-8a05-448c-8014-1b715443ea77",
+        "node_ids": [
+          402
+        ],
+        "components": [
+          153
+        ],
+        "candidate_components": [
+          153
+        ],
+        "nets": [
+          "/CUT_SENSE_W1"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 17,
+    "nets": [
+      "/CUT_SENSE_W2"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/CUT_SENSE_W2] of J_W2 on B.Cu",
+        "pos": {
+          "x": 36.9,
+          "y": 77.0
+        },
+        "uuid": "73363747-345c-4c31-b0a9-797cb41c837c",
+        "node_ids": [
+          25
+        ],
+        "components": [
+          17
+        ],
+        "candidate_components": [
+          17
+        ],
+        "nets": [
+          "/CUT_SENSE_W2"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Track [/CUT_SENSE_W2] on F.Cu, length 2.3500 mm",
+        "pos": {
+          "x": 36.9,
+          "y": 77.0
+        },
+        "uuid": "d4d21ff9-9247-4199-8252-1a1d7a9b48ee",
+        "node_ids": [
+          414
+        ],
+        "components": [
+          16
+        ],
+        "candidate_components": [
+          16
+        ],
+        "nets": [
+          "/CUT_SENSE_W2"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 18,
+    "nets": [
+      "/CUT_SENSE_W3"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/CUT_SENSE_W3] of J_W3 on B.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 39.1
+        },
+        "uuid": "151c5cd9-1d48-4a77-bebb-9e28d4c1f156",
+        "node_ids": [
+          262
+        ],
+        "components": [
+          135
+        ],
+        "candidate_components": [
+          135
+        ],
+        "nets": [
+          "/CUT_SENSE_W3"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Track [/CUT_SENSE_W3] on F.Cu, length 2.3500 mm",
+        "pos": {
+          "x": 69.0,
+          "y": 39.1
+        },
+        "uuid": "3398fef4-f062-4dee-9a68-d57163517711",
+        "node_ids": [
+          422
+        ],
+        "components": [
+          134
+        ],
+        "candidate_components": [
+          134
+        ],
+        "nets": [
+          "/CUT_SENSE_W3"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 19,
+    "nets": [
+      "/CUT_SENSE_W4"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/CUT_SENSE_W4] of J_W4 on B.Cu",
+        "pos": {
+          "x": 35.1,
+          "y": 3.0
+        },
+        "uuid": "0fcd77cf-66e4-4807-b7da-67be4e74b82f",
+        "node_ids": [
+          274
+        ],
+        "components": [
+          146
+        ],
+        "candidate_components": [
+          146
+        ],
+        "nets": [
+          "/CUT_SENSE_W4"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Track [/CUT_SENSE_W4] on F.Cu, length 0.1000 mm",
+        "pos": {
+          "x": 35.1,
+          "y": 3.0
+        },
+        "uuid": "030a0e40-1a84-42ea-bffa-8f7b92d2d447",
+        "node_ids": [
+          431
+        ],
+        "components": [
+          145
+        ],
+        "candidate_components": [
+          145
+        ],
+        "nets": [
+          "/CUT_SENSE_W4"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 20,
+    "nets": [
+      "/F33_IRQ"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 18 [/F33_IRQ] of U2 on F.Cu",
+        "pos": {
+          "x": 14.0844,
+          "y": 9.6
+        },
+        "uuid": "a04d5266-e3f6-4cd0-960a-447a76b9c404",
+        "node_ids": [
+          324
+        ],
+        "components": [
+          171
+        ],
+        "candidate_components": [
+          171
+        ],
+        "nets": [
+          "/F33_IRQ"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 17 [/F33_IRQ] of U1 on F.Cu",
+        "pos": {
+          "x": 15.355,
+          "y": 51.65
+        },
+        "uuid": "2833c2bc-370f-4166-8aaa-3c0ab64b9d26",
+        "node_ids": [
+          146
+        ],
+        "components": [
+          101
+        ],
+        "candidate_components": [
+          101
+        ],
+        "nets": [
+          "/F33_IRQ"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 21,
+    "nets": [
+      "/SPI2_SCK"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/SPI2_SCK] of U1 on F.Cu",
+        "pos": {
+          "x": 11.05,
+          "y": 37.7
+        },
+        "uuid": "24ef7af5-d6d8-4e93-ba4c-29cb7f2873d6",
+        "node_ids": [
+          133
+        ],
+        "components": [
+          92
+        ],
+        "candidate_components": [
+          92
+        ],
+        "nets": [
+          "/SPI2_SCK"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 12 [/SPI2_SCK] of U2 on F.Cu",
+        "pos": {
+          "x": 33.7289,
+          "y": 30.6
+        },
+        "uuid": "9585f437-31fa-4f77-b00b-2ede560e6814",
+        "node_ids": [
+          318
+        ],
+        "components": [
+          170
+        ],
+        "candidate_components": [
+          170
+        ],
+        "nets": [
+          "/SPI2_SCK"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 22,
+    "nets": [
+      "/F33_VSENSE"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [/F33_VSENSE] of R_MON1 on F.Cu",
+        "pos": {
+          "x": 15.0,
+          "y": 6.99
+        },
+        "uuid": "4358fb12-db58-4cea-962b-47a2c43e536a",
+        "node_ids": [
+          64
+        ],
+        "components": [
+          54
+        ],
+        "candidate_components": [
+          54
+        ],
+        "nets": [
+          "/F33_VSENSE"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/F33_VSENSE] of C_MON on F.Cu",
+        "pos": {
+          "x": 14.0,
+          "y": 7.98
+        },
+        "uuid": "f42ccf2d-6351-482b-8011-3320d58bd6b2",
+        "node_ids": [
+          301
+        ],
+        "components": [
+          160
+        ],
+        "candidate_components": [
+          160
+        ],
+        "nets": [
+          "/F33_VSENSE"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 23,
+    "nets": [
+      "/F33_VSENSE"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 21 [/F33_VSENSE] of U1 on F.Cu",
+        "pos": {
+          "x": 20.435,
+          "y": 51.65
+        },
+        "uuid": "65e6247f-6316-4698-9a8d-1e0900d52dcf",
+        "node_ids": [
+          150
+        ],
+        "components": [
+          105
+        ],
+        "candidate_components": [
+          105
+        ],
+        "nets": [
+          "/F33_VSENSE"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/F33_VSENSE] of R_MON2 on F.Cu",
+        "pos": {
+          "x": 22.0,
+          "y": 8.01
+        },
+        "uuid": "4c2a2146-2485-48ff-b592-d79945c9cbf7",
+        "node_ids": [
+          18
+        ],
+        "components": [
+          12
+        ],
+        "candidate_components": [
+          12
+        ],
+        "nets": [
+          "/F33_VSENSE"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 24,
+    "nets": [
+      "/F33_VSENSE"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/F33_VSENSE] of R_MON2 on F.Cu",
+        "pos": {
+          "x": 22.0,
+          "y": 8.01
+        },
+        "uuid": "4c2a2146-2485-48ff-b592-d79945c9cbf7",
+        "node_ids": [
+          18
+        ],
+        "components": [
+          12
+        ],
+        "candidate_components": [
+          12
+        ],
+        "nets": [
+          "/F33_VSENSE"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 2 [/F33_VSENSE] of R_MON1 on F.Cu",
+        "pos": {
+          "x": 15.0,
+          "y": 6.99
+        },
+        "uuid": "4358fb12-db58-4cea-962b-47a2c43e536a",
+        "node_ids": [
+          64
+        ],
+        "components": [
+          54
+        ],
+        "candidate_components": [
+          54
+        ],
+        "nets": [
+          "/F33_VSENSE"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 25,
+    "nets": [
+      "/HUB_PV_MID1"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [/HUB_PV_MID1] of D_HUB1 on F.Cu",
+        "pos": {
+          "x": 45.0,
+          "y": 52.0
+        },
+        "uuid": "33ee17e5-b446-4b4c-bfac-f2f0ec4f0840",
+        "node_ids": [
+          296
+        ],
+        "components": [
+          158
+        ],
+        "candidate_components": [
+          158
+        ],
+        "nets": [
+          "/HUB_PV_MID1"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/HUB_PV_MID1] of D_HUB2 on F.Cu",
+        "pos": {
+          "x": 38.5,
+          "y": 59.5
+        },
+        "uuid": "fb1cbe0d-0571-4108-9119-bbe2d0f444c3",
+        "node_ids": [
+          249
+        ],
+        "components": [
+          124
+        ],
+        "candidate_components": [
+          124
+        ],
+        "nets": [
+          "/HUB_PV_MID1"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 26,
+    "nets": [
+      "/HUB_PV_MID1"
+    ],
+    "endpoints": [
+      {
+        "description": "PTH pad 2 [/HUB_PV_MID1] of J_HUB_PV",
+        "pos": {
+          "x": 69.0,
+          "y": 66.54
+        },
+        "uuid": "3468ea70-e876-4af6-85b3-c6795a1e06ce",
+        "node_ids": [
+          71,
+          72,
+          73,
+          74
+        ],
+        "components": [
+          58
+        ],
+        "candidate_components": [
+          58
+        ],
+        "nets": [
+          "/HUB_PV_MID1"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 2 [/HUB_PV_MID1] of D_HUB1 on F.Cu",
+        "pos": {
+          "x": 45.0,
+          "y": 52.0
+        },
+        "uuid": "33ee17e5-b446-4b4c-bfac-f2f0ec4f0840",
+        "node_ids": [
+          296
+        ],
+        "components": [
+          158
+        ],
+        "candidate_components": [
+          158
+        ],
+        "nets": [
+          "/HUB_PV_MID1"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 27,
+    "nets": [
+      "/HUB_PV_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/HUB_PV_N] of U_HUB_CVT on F.Cu",
+        "pos": {
+          "x": 41.4375,
+          "y": 56.25
+        },
+        "uuid": "8b33b57c-1d0f-43dd-934f-47cbc904eb7b",
+        "node_ids": [
+          30
+        ],
+        "components": [
+          22
+        ],
+        "candidate_components": [
+          22
+        ],
+        "nets": [
+          "/HUB_PV_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 2 [/HUB_PV_N] of D_HUB2 on F.Cu",
+        "pos": {
+          "x": 38.5,
+          "y": 55.5
+        },
+        "uuid": "17261043-ea38-4e34-88f9-12f81232b066",
+        "node_ids": [
+          250
+        ],
+        "components": [
+          125
+        ],
+        "candidate_components": [
+          125
+        ],
+        "nets": [
+          "/HUB_PV_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 28,
+    "nets": [
+      "/HUB_PV_N"
+    ],
+    "endpoints": [
+      {
+        "description": "PTH pad 4 [/HUB_PV_N] of J_HUB_PV",
+        "pos": {
+          "x": 69.0,
+          "y": 71.62
+        },
+        "uuid": "762bccf4-f2aa-4bd8-bff1-4fd3f130e125",
+        "node_ids": [
+          79,
+          80,
+          81,
+          82
+        ],
+        "components": [
+          60
+        ],
+        "candidate_components": [
+          60
+        ],
+        "nets": [
+          "/HUB_PV_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 3 [/HUB_PV_N] of U_HUB_CVT on F.Cu",
+        "pos": {
+          "x": 41.4375,
+          "y": 56.25
+        },
+        "uuid": "8b33b57c-1d0f-43dd-934f-47cbc904eb7b",
+        "node_ids": [
+          30
+        ],
+        "components": [
+          22
+        ],
+        "candidate_components": [
+          22
+        ],
+        "nets": [
+          "/HUB_PV_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 29,
+    "nets": [
+      "/HUB_PV_P"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/HUB_PV_P] of D_HUB1 on F.Cu",
+        "pos": {
+          "x": 41.0,
+          "y": 52.0
+        },
+        "uuid": "719db66a-e7c8-4d7e-9fe4-2cfe91c09d36",
+        "node_ids": [
+          295
+        ],
+        "components": [
+          157
+        ],
+        "candidate_components": [
+          157
+        ],
+        "nets": [
+          "/HUB_PV_P"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/HUB_PV_P] of U_HUB_CVT on F.Cu",
+        "pos": {
+          "x": 41.4375,
+          "y": 55.25
+        },
+        "uuid": "21d816fb-f15d-4c1f-b5e8-f6571aba209d",
+        "node_ids": [
+          28
+        ],
+        "components": [
+          20
+        ],
+        "candidate_components": [
+          20
+        ],
+        "nets": [
+          "/HUB_PV_P"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 30,
+    "nets": [
+      "/HUB_PV_P"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/HUB_PV_P] of U_HUB_CVT on F.Cu",
+        "pos": {
+          "x": 41.4375,
+          "y": 55.25
+        },
+        "uuid": "21d816fb-f15d-4c1f-b5e8-f6571aba209d",
+        "node_ids": [
+          28
+        ],
+        "components": [
+          20
+        ],
+        "candidate_components": [
+          20
+        ],
+        "nets": [
+          "/HUB_PV_P"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "PTH pad 1 [/HUB_PV_P] of J_HUB_PV",
+        "pos": {
+          "x": 69.0,
+          "y": 64.0
+        },
+        "uuid": "e9bfd230-5c35-4ea6-a350-fe028989b543",
+        "node_ids": [
+          67,
+          68,
+          69,
+          70
+        ],
+        "components": [
+          57
+        ],
+        "candidate_components": [
+          57
+        ],
+        "nets": [
+          "/HUB_PV_P"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 31,
+    "nets": [
+      "/SPI1_MISO"
+    ],
+    "endpoints": [
+      {
+        "description": "Track [/SPI1_MISO] on F.Cu, length 11.9000 mm",
+        "pos": {
+          "x": 11.05,
+          "y": 10.75
+        },
+        "uuid": "9734f844-75e8-4601-a4c9-1ba52893d06c",
+        "node_ids": [
+          984
+        ],
+        "components": [
+          77
+        ],
+        "candidate_components": [
+          77
+        ],
+        "nets": [
+          "/SPI1_MISO"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 3 [/SPI1_MISO] of U3 on B.Cu",
+        "pos": {
+          "x": 10.995,
+          "y": 14.12
+        },
+        "uuid": "d3b0c27b-8d4f-49e9-b046-56d82d873f72",
+        "node_ids": [
+          366
+        ],
+        "components": [
+          205
+        ],
+        "candidate_components": [
+          205
+        ],
+        "nets": [
+          "/SPI1_MISO"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 32,
+    "nets": [
+      "/SPI1_MISO"
+    ],
+    "endpoints": [
+      {
+        "description": "Track [/SPI1_MISO] on F.Cu, length 1.4000 mm",
+        "pos": {
+          "x": 32.35,
+          "y": 9.25
+        },
+        "uuid": "51c3e6c0-50b5-4456-aef9-76caf4d102d8",
+        "node_ids": [
+          979
+        ],
+        "components": [
+          77
+        ],
+        "candidate_components": [
+          77
+        ],
+        "nets": [
+          "/SPI1_MISO"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 3 [/SPI1_MISO] of U_C on B.Cu",
+        "pos": {
+          "x": 33.795,
+          "y": 14.12
+        },
+        "uuid": "3237afef-82f8-4949-a5bf-42db898621c2",
+        "node_ids": [
+          327
+        ],
+        "components": [
+          174
+        ],
+        "candidate_components": [
+          174
+        ],
+        "nets": [
+          "/SPI1_MISO"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 33,
+    "nets": [
+      "/SPI1_MOSI"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/SPI1_MOSI] of U3 on B.Cu",
+        "pos": {
+          "x": 10.995,
+          "y": 15.41
+        },
+        "uuid": "4768d599-a9c2-4929-97ca-63830f1d92d9",
+        "node_ids": [
+          367
+        ],
+        "components": [
+          206
+        ],
+        "candidate_components": [
+          206
+        ],
+        "nets": [
+          "/SPI1_MOSI"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Track [/SPI1_MOSI] on B.Cu, length 1.8000 mm",
+        "pos": {
+          "x": 11.05,
+          "y": 42.25
+        },
+        "uuid": "55836363-4e1f-4c90-9f77-ac31109b4920",
+        "node_ids": [
+          1024
+        ],
+        "components": [
+          78
+        ],
+        "candidate_components": [
+          78
+        ],
+        "nets": [
+          "/SPI1_MOSI"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 34,
+    "nets": [
+      "/SPI1_MOSI"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/SPI1_MOSI] of U_C on B.Cu",
+        "pos": {
+          "x": 33.795,
+          "y": 15.41
+        },
+        "uuid": "0c41d907-f3fa-4464-b957-c1ad2046db73",
+        "node_ids": [
+          328
+        ],
+        "components": [
+          175
+        ],
+        "candidate_components": [
+          175
+        ],
+        "nets": [
+          "/SPI1_MOSI"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [/SPI1_MOSI] of U3 on B.Cu",
+        "pos": {
+          "x": 10.995,
+          "y": 15.41
+        },
+        "uuid": "4768d599-a9c2-4929-97ca-63830f1d92d9",
+        "node_ids": [
+          367
+        ],
+        "components": [
+          206
+        ],
+        "candidate_components": [
+          206
+        ],
+        "nets": [
+          "/SPI1_MOSI"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 35,
+    "nets": [
+      "/SPI1_SCK"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 5 [/SPI1_SCK] of U3 on B.Cu",
+        "pos": {
+          "x": 10.995,
+          "y": 16.7
+        },
+        "uuid": "8e91e7c3-b1cf-4667-83d9-cc8c75a21b1a",
+        "node_ids": [
+          368
+        ],
+        "components": [
+          207
+        ],
+        "candidate_components": [
+          207
+        ],
+        "nets": [
+          "/SPI1_SCK"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Track [/SPI1_SCK] on B.Cu, length 0.9000 mm",
+        "pos": {
+          "x": 19.8,
+          "y": 50.25
+        },
+        "uuid": "d12d463f-6f09-4a4f-8b71-287ad23fa66f",
+        "node_ids": [
+          1097
+        ],
+        "components": [
+          79
+        ],
+        "candidate_components": [
+          79
+        ],
+        "nets": [
+          "/SPI1_SCK"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 36,
+    "nets": [
+      "/SPI1_SCK"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 5 [/SPI1_SCK] of U_C on B.Cu",
+        "pos": {
+          "x": 33.795,
+          "y": 16.7
+        },
+        "uuid": "35f0135f-7f02-4bf9-b85b-8aad87e59a10",
+        "node_ids": [
+          329
+        ],
+        "components": [
+          176
+        ],
+        "candidate_components": [
+          176
+        ],
+        "nets": [
+          "/SPI1_SCK"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 5 [/SPI1_SCK] of U3 on B.Cu",
+        "pos": {
+          "x": 10.995,
+          "y": 16.7
+        },
+        "uuid": "8e91e7c3-b1cf-4667-83d9-cc8c75a21b1a",
+        "node_ids": [
+          368
+        ],
+        "components": [
+          207
+        ],
+        "candidate_components": [
+          207
+        ],
+        "nets": [
+          "/SPI1_SCK"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 37,
+    "nets": [
+      "/U3_IRQ"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 19 [/U3_IRQ] of U1 on F.Cu",
+        "pos": {
+          "x": 17.895,
+          "y": 51.65
+        },
+        "uuid": "57a30bd8-5a6e-4ef9-b126-9367ba0ed91a",
+        "node_ids": [
+          148
+        ],
+        "components": [
+          103
+        ],
+        "candidate_components": [
+          103
+        ],
+        "nets": [
+          "/U3_IRQ"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 15 [/U3_IRQ] of U3 on B.Cu",
+        "pos": {
+          "x": 30.805,
+          "y": 15.41
+        },
+        "uuid": "1182699f-6716-431a-afa2-eb191b75ab03",
+        "node_ids": [
+          378
+        ],
+        "components": [
+          212
+        ],
+        "candidate_components": [
+          212
+        ],
+        "nets": [
+          "/U3_IRQ"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 38,
+    "nets": [
+      "/VSCAP"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/VSCAP] of U_CUT1 on B.Cu",
+        "pos": {
+          "x": 6.3625,
+          "y": 47.95
+        },
+        "uuid": "be4b3072-f84c-457c-b925-5525e82b22f8",
+        "node_ids": [
+          382
+        ],
+        "components": [
+          71
+        ],
+        "candidate_components": [
+          71
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/VSCAP] of D1 on F.Cu",
+        "pos": {
+          "x": 1.35,
+          "y": 46.0
+        },
+        "uuid": "e30303ef-4594-4246-8d45-9ddf04dedd2d",
+        "node_ids": [
+          65
+        ],
+        "components": [
+          55
+        ],
+        "candidate_components": [
+          55
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 39,
+    "nets": [
+      "/VSCAP"
+    ],
+    "endpoints": [
+      {
+        "description": "PTH pad 1 [/VSCAP] of C_CAP1",
+        "pos": {
+          "x": 36.0,
+          "y": 37.5
+        },
+        "uuid": "da8f8e81-f7ce-46e0-bae7-098b61f85ab0",
+        "node_ids": [
+          100,
+          101,
+          102,
+          103
+        ],
+        "components": [
+          71
+        ],
+        "candidate_components": [
+          71
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/VSCAP] of R_BAL1 on F.Cu",
+        "pos": {
+          "x": 40.49,
+          "y": 43.5
+        },
+        "uuid": "4142fa5f-663b-416e-a294-6209dfcb9e92",
+        "node_ids": [
+          297
+        ],
+        "components": [
+          159
+        ],
+        "candidate_components": [
+          159
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 40,
+    "nets": [
+      "/VSCAP"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/VSCAP] of R_BAL1 on F.Cu",
+        "pos": {
+          "x": 40.49,
+          "y": 43.5
+        },
+        "uuid": "4142fa5f-663b-416e-a294-6209dfcb9e92",
+        "node_ids": [
+          297
+        ],
+        "components": [
+          159
+        ],
+        "candidate_components": [
+          159
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/VSCAP] of R_DIV1 on F.Cu",
+        "pos": {
+          "x": 42.49,
+          "y": 43.5
+        },
+        "uuid": "eb2e001c-0472-4007-b836-cbcd25d7ac89",
+        "node_ids": [
+          251
+        ],
+        "components": [
+          126
+        ],
+        "candidate_components": [
+          126
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 41,
+    "nets": [
+      "/VSCAP"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/VSCAP] of R_DIV1 on F.Cu",
+        "pos": {
+          "x": 42.49,
+          "y": 43.5
+        },
+        "uuid": "eb2e001c-0472-4007-b836-cbcd25d7ac89",
+        "node_ids": [
+          251
+        ],
+        "components": [
+          126
+        ],
+        "candidate_components": [
+          126
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/VSCAP] of U7 on F.Cu",
+        "pos": {
+          "x": 47.6625,
+          "y": 54.25
+        },
+        "uuid": "a11f01cd-2310-45e2-b7e5-e4d7826affab",
+        "node_ids": [
+          95
+        ],
+        "components": [
+          67
+        ],
+        "candidate_components": [
+          67
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 42,
+    "nets": [
+      "/VSCAP"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/VSCAP] of U7 on F.Cu",
+        "pos": {
+          "x": 47.6625,
+          "y": 56.15
+        },
+        "uuid": "dc101796-e4da-432e-b122-21190fa7e333",
+        "node_ids": [
+          97
+        ],
+        "components": [
+          68
+        ],
+        "candidate_components": [
+          68
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/VSCAP] of U7 on F.Cu",
+        "pos": {
+          "x": 47.6625,
+          "y": 54.25
+        },
+        "uuid": "a11f01cd-2310-45e2-b7e5-e4d7826affab",
+        "node_ids": [
+          95
+        ],
+        "components": [
+          67
+        ],
+        "candidate_components": [
+          67
+        ],
+        "nets": [
+          "/VSCAP"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 43,
+    "nets": [
+      "/W1_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/W1_SOLAR_N] of J_W1 on F.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 42.7
+        },
+        "uuid": "7656e304-0273-4ef0-b688-28439d2db1d0",
+        "node_ids": [
+          291
+        ],
+        "components": [
+          155
+        ],
+        "candidate_components": [
+          155
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [/W1_SOLAR_N] of J_W1 on B.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 42.7
+        },
+        "uuid": "d25f4cde-dbfa-4c1b-8f78-dba2a352c552",
+        "node_ids": [
+          292
+        ],
+        "components": [
+          156
+        ],
+        "candidate_components": [
+          156
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 44,
+    "nets": [
+      "/W1_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/W1_SOLAR_N] of J_W1 on F.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 42.7
+        },
+        "uuid": "7656e304-0273-4ef0-b688-28439d2db1d0",
+        "node_ids": [
+          291
+        ],
+        "components": [
+          155
+        ],
+        "candidate_components": [
+          155
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W1_SOLAR_N] of D_BP2 on B.Cu",
+        "pos": {
+          "x": 29.0,
+          "y": 74.0
+        },
+        "uuid": "b5bb52ad-5911-4e31-a056-486f57ef7e61",
+        "node_ids": [
+          354
+        ],
+        "components": [
+          195
+        ],
+        "candidate_components": [
+          195
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 45,
+    "nets": [
+      "/W1_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [/W1_SOLAR_N] of D_BP1 on B.Cu",
+        "pos": {
+          "x": 6.0,
+          "y": 33.0
+        },
+        "uuid": "00a50826-6b31-46f4-83dc-987c2b43fff3",
+        "node_ids": [
+          344
+        ],
+        "components": [
+          189
+        ],
+        "candidate_components": [
+          189
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [/W1_SOLAR_N] of J_W1 on F.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 42.7
+        },
+        "uuid": "7656e304-0273-4ef0-b688-28439d2db1d0",
+        "node_ids": [
+          291
+        ],
+        "components": [
+          155
+        ],
+        "candidate_components": [
+          155
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 46,
+    "nets": [
+      "/W1_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W1_SOLAR_N] of D_BP2 on B.Cu",
+        "pos": {
+          "x": 29.0,
+          "y": 74.0
+        },
+        "uuid": "b5bb52ad-5911-4e31-a056-486f57ef7e61",
+        "node_ids": [
+          354
+        ],
+        "components": [
+          195
+        ],
+        "candidate_components": [
+          195
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W1_SOLAR_N] of J_W2 on F.Cu",
+        "pos": {
+          "x": 33.3,
+          "y": 77.0
+        },
+        "uuid": "f53d24e0-f3ba-4de7-8dc9-e4bb9a918f16",
+        "node_ids": [
+          20
+        ],
+        "components": [
+          13
+        ],
+        "candidate_components": [
+          13
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 47,
+    "nets": [
+      "/W1_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W1_SOLAR_N] of J_W2 on B.Cu",
+        "pos": {
+          "x": 33.3,
+          "y": 77.0
+        },
+        "uuid": "47fa5d72-1d79-4136-a964-336a8295c732",
+        "node_ids": [
+          21
+        ],
+        "components": [
+          14
+        ],
+        "candidate_components": [
+          14
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W1_SOLAR_N] of J_W2 on F.Cu",
+        "pos": {
+          "x": 33.3,
+          "y": 77.0
+        },
+        "uuid": "f53d24e0-f3ba-4de7-8dc9-e4bb9a918f16",
+        "node_ids": [
+          20
+        ],
+        "components": [
+          13
+        ],
+        "candidate_components": [
+          13
+        ],
+        "nets": [
+          "/W1_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 48,
+    "nets": [
+      "/W1_SOLAR_P"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W1_SOLAR_P] of J_W1 on F.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 37.3
+        },
+        "uuid": "1ebad319-8e45-4855-a4d1-33830919cf73",
+        "node_ids": [
+          285
+        ],
+        "components": [
+          56
+        ],
+        "candidate_components": [
+          56
+        ],
+        "nets": [
+          "/W1_SOLAR_P"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W1_SOLAR_P] of J_W1 on B.Cu",
+        "pos": {
+          "x": 3.0,
+          "y": 37.3
+        },
+        "uuid": "477661e4-400e-4a34-a8af-c88ffd3263ab",
+        "node_ids": [
+          286
+        ],
+        "components": [
+          151
+        ],
+        "candidate_components": [
+          151
+        ],
+        "nets": [
+          "/W1_SOLAR_P"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 49,
+    "nets": [
+      "/W2_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [/W2_SOLAR_N] of D_BP2 on B.Cu",
+        "pos": {
+          "x": 29.0,
+          "y": 78.0
+        },
+        "uuid": "013e27cf-d599-469f-b884-ef947f17e181",
+        "node_ids": [
+          355
+        ],
+        "components": [
+          196
+        ],
+        "candidate_components": [
+          196
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on F.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 77.0
+        },
+        "uuid": "75db9ecf-9a7e-430e-a113-2ff1d948fc60",
+        "node_ids": [
+          26
+        ],
+        "components": [
+          18
+        ],
+        "candidate_components": [
+          18
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 50,
+    "nets": [
+      "/W2_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on F.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 77.0
+        },
+        "uuid": "75db9ecf-9a7e-430e-a113-2ff1d948fc60",
+        "node_ids": [
+          26
+        ],
+        "components": [
+          18
+        ],
+        "candidate_components": [
+          18
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on B.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 77.0
+        },
+        "uuid": "f8c950ff-ac8d-4187-861c-23a62944ac5f",
+        "node_ids": [
+          27
+        ],
+        "components": [
+          19
+        ],
+        "candidate_components": [
+          19
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 51,
+    "nets": [
+      "/W2_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/W2_SOLAR_N] of J_W2 on F.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 77.0
+        },
+        "uuid": "75db9ecf-9a7e-430e-a113-2ff1d948fc60",
+        "node_ids": [
+          26
+        ],
+        "components": [
+          18
+        ],
+        "candidate_components": [
+          18
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W2_SOLAR_N] of J_W3 on B.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 42.7
+        },
+        "uuid": "8f0a42a0-f366-48e9-b98b-7c25e2ca27e8",
+        "node_ids": [
+          258
+        ],
+        "components": [
+          132
+        ],
+        "candidate_components": [
+          132
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 52,
+    "nets": [
+      "/W2_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W2_SOLAR_N] of J_W3 on F.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 42.7
+        },
+        "uuid": "63145c0b-183b-4408-842c-58a0d4017c48",
+        "node_ids": [
+          257
+        ],
+        "components": [
+          131
+        ],
+        "candidate_components": [
+          131
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W2_SOLAR_N] of J_W3 on B.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 42.7
+        },
+        "uuid": "8f0a42a0-f366-48e9-b98b-7c25e2ca27e8",
+        "node_ids": [
+          258
+        ],
+        "components": [
+          132
+        ],
+        "candidate_components": [
+          132
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 53,
+    "nets": [
+      "/W2_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W2_SOLAR_N] of J_W3 on B.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 42.7
+        },
+        "uuid": "8f0a42a0-f366-48e9-b98b-7c25e2ca27e8",
+        "node_ids": [
+          258
+        ],
+        "components": [
+          132
+        ],
+        "candidate_components": [
+          132
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W2_SOLAR_N] of D_BP3 on B.Cu",
+        "pos": {
+          "x": 66.0,
+          "y": 33.0
+        },
+        "uuid": "36b069bb-1fe9-491a-b0bd-d01edb5bb969",
+        "node_ids": [
+          356
+        ],
+        "components": [
+          197
+        ],
+        "candidate_components": [
+          197
+        ],
+        "nets": [
+          "/W2_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 54,
+    "nets": [
+      "/W3_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on F.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 3.0
+        },
+        "uuid": "5839bb05-7264-4d71-9181-ecdbf26a66ef",
+        "node_ids": [
+          269
+        ],
+        "components": [
+          142
+        ],
+        "candidate_components": [
+          142
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on B.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 3.0
+        },
+        "uuid": "cafe191b-91a4-4b47-bafe-25299fbb5714",
+        "node_ids": [
+          270
+        ],
+        "components": [
+          143
+        ],
+        "candidate_components": [
+          143
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 55,
+    "nets": [
+      "/W3_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on B.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 3.0
+        },
+        "uuid": "cafe191b-91a4-4b47-bafe-25299fbb5714",
+        "node_ids": [
+          270
+        ],
+        "components": [
+          143
+        ],
+        "candidate_components": [
+          143
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W3_SOLAR_N] of D_BP4 on B.Cu",
+        "pos": {
+          "x": 29.0,
+          "y": 2.0
+        },
+        "uuid": "ab9ab768-1f42-4847-8d2c-5c9198a18521",
+        "node_ids": [
+          388
+        ],
+        "components": [
+          220
+        ],
+        "candidate_components": [
+          220
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 56,
+    "nets": [
+      "/W3_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/W3_SOLAR_N] of J_W3 on F.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 37.3
+        },
+        "uuid": "3a568d7e-3e32-4524-b896-1dd35975c207",
+        "node_ids": [
+          263
+        ],
+        "components": [
+          136
+        ],
+        "candidate_components": [
+          136
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [/W3_SOLAR_N] of J_W3 on B.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 37.3
+        },
+        "uuid": "48391745-6a9e-4144-8896-e3f44884766e",
+        "node_ids": [
+          264
+        ],
+        "components": [
+          137
+        ],
+        "candidate_components": [
+          137
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 57,
+    "nets": [
+      "/W3_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 4 [/W3_SOLAR_N] of J_W3 on F.Cu",
+        "pos": {
+          "x": 69.0,
+          "y": 37.3
+        },
+        "uuid": "3a568d7e-3e32-4524-b896-1dd35975c207",
+        "node_ids": [
+          263
+        ],
+        "components": [
+          136
+        ],
+        "candidate_components": [
+          136
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 2 [/W3_SOLAR_N] of D_BP3 on B.Cu",
+        "pos": {
+          "x": 70.0,
+          "y": 33.0
+        },
+        "uuid": "325d686a-7b2e-4b55-b16d-4c1eebf1277d",
+        "node_ids": [
+          357
+        ],
+        "components": [
+          198
+        ],
+        "candidate_components": [
+          198
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 58,
+    "nets": [
+      "/W3_SOLAR_N"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [/W3_SOLAR_N] of D_BP3 on B.Cu",
+        "pos": {
+          "x": 70.0,
+          "y": 33.0
+        },
+        "uuid": "325d686a-7b2e-4b55-b16d-4c1eebf1277d",
+        "node_ids": [
+          357
+        ],
+        "components": [
+          198
+        ],
+        "candidate_components": [
+          198
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 1 [/W3_SOLAR_N] of J_W4 on B.Cu",
+        "pos": {
+          "x": 38.7,
+          "y": 3.0
+        },
+        "uuid": "cafe191b-91a4-4b47-bafe-25299fbb5714",
+        "node_ids": [
+          270
+        ],
+        "components": [
+          143
+        ],
+        "candidate_components": [
+          143
+        ],
+        "nets": [
+          "/W3_SOLAR_N"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 59,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 60,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 61,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 62,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 63,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 64,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 65,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 66,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 67,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 68,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 2 [GND] of D_BP4 on B.Cu",
+        "pos": {
+          "x": 29.0,
+          "y": 6.0
+        },
+        "uuid": "0b5d101b-cf4c-4c94-a581-5020ff4b1a7d",
+        "node_ids": [
+          389
+        ],
+        "components": [
+          221
+        ],
+        "candidate_components": [
+          221
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Pad 4 [GND] of U2 on F.Cu",
+        "pos": {
+          "x": 29.8,
+          "y": 9.6
+        },
+        "uuid": "1a14e8cc-c841-4b49-bb23-0d8301fb609c",
+        "node_ids": [
+          310
+        ],
+        "components": [
+          166
+        ],
+        "candidate_components": [
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  },
+  {
+    "id": 69,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 70,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 71,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 72,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 73,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 74,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 75,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 76,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 77,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 78,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 79,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 80,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 81,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 82,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 14 [GND] of U_LORA1280 on F.Cu",
+        "pos": {
+          "x": 60.15,
+          "y": 65.1
+        },
+        "uuid": "44e6650b-6806-4f57-a7e5-9b2147a8235c",
+        "node_ids": [
+          123
+        ],
+        "components": [
+          76
+        ],
+        "candidate_components": [
+          76
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 83,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "PTH pad 5 [GND] of J_HUB_PV",
+        "pos": {
+          "x": 69.0,
+          "y": 74.16
+        },
+        "uuid": "0cca3fdd-e180-4ab1-a8af-304f45cc37a4",
+        "node_ids": [
+          83,
+          84,
+          85,
+          86
+        ],
+        "components": [
+          7
+        ],
+        "candidate_components": [
+          7
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 84,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 85,
+    "nets": [
+      "GND"
+    ],
+    "endpoints": [
+      {
+        "description": "Zone 'GND_FCu' [GND] on F.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "dd5a7dbb-15c7-4621-9bb5-0628a0024b72",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          1,
+          7,
+          21,
+          37,
+          66,
+          76,
+          89,
+          116,
+          165,
+          166
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      },
+      {
+        "description": "Zone 'GND_BCu' [GND] on B.Cu, priority 0",
+        "pos": {
+          "x": 0.45,
+          "y": 0.45
+        },
+        "uuid": "4e9f05fe-7ff4-4aac-ac9e-8283f7d40e1c",
+        "node_ids": [],
+        "components": [],
+        "candidate_components": [
+          7,
+          15,
+          133,
+          144,
+          147,
+          152,
+          173,
+          179,
+          182,
+          188,
+          191,
+          199,
+          204,
+          208,
+          211,
+          215,
+          216,
+          222
+        ],
+        "nets": [
+          "GND"
+        ],
+        "attribution": "island unresolved: DRC reports zone outline anchor rather than island location"
+      }
+    ],
+    "classification": "unresolved",
+    "reason": "DRC missing connection; polygon component attribution needs adjudication"
+  },
+  {
+    "id": 86,
+    "nets": [
+      "/EN"
+    ],
+    "endpoints": [
+      {
+        "description": "Pad 3 [/EN] of U1 on F.Cu",
+        "pos": {
+          "x": 11.05,
+          "y": 36.43
+        },
+        "uuid": "5e672328-5888-40f6-b19b-95ccb5c81f62",
+        "node_ids": [
+          132
+        ],
+        "components": [
+          91
+        ],
+        "candidate_components": [
+          91
+        ],
+        "nets": [
+          "/EN"
+        ],
+        "attribution": "resolved"
+      },
+      {
+        "description": "PTH pad 3 [/EN] of J_PROG",
+        "pos": {
+          "x": 31.0,
+          "y": 59.78
+        },
+        "uuid": "17bb4f3d-b143-4474-bd55-7a711dedd338",
+        "node_ids": [
+          233,
+          234,
+          235,
+          236
+        ],
+        "components": [
+          122
+        ],
+        "candidate_components": [
+          122
+        ],
+        "nets": [
+          "/EN"
+        ],
+        "attribution": "resolved"
+      }
+    ],
+    "classification": "real",
+    "reason": "DRC missing connection and distinct layer-aware copper components; no intentional waiver established"
+  }
+]
