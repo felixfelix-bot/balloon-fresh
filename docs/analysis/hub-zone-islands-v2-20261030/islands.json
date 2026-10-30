@@ -16,7 +16,7 @@
   "copy_sha256_after_fill": "732bfe889020b3c957fb778f1c30f2a84a3e96171cec37c1fa51dae58a9c6561",
   "refill_byte_noop": true,
   "source_unchanged": true,
-  "work_dir": "/home/c08r4d0r/worktrees/zi2-v2/.island_work"
+  "work_dir": ".zi2scratch/recovered-inventory-1"
  },
  "base_unconnected_pcbnew": 86,
  "island_total": 35,
@@ -76,6 +76,8 @@
   "/W3_SOLAR_N": 6,
   "GND": 28
  },
+ "affected_nets": 22,
+ "status": "INCOMPLETE_DRAFT_NATIVE_VALIDATION_REQUIRED",
  "islands": [
   {
    "island_id": "GND_FCu|F.Cu|0",
@@ -107,6 +109,7 @@
    "vertices": 41,
    "item_id": 1114,
    "component": 1,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -135,28 +138,21 @@
      41.5193,
      44.4592
     ],
-    "hard_clearance_mm": 9.454,
+    "hard_clearance_mm": 0.3193,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
     "edge_clearance_mm": 24.5899,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 6.3287,
+    "minimum_modeled_margin_mm": 0.1193,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 26
    }
@@ -191,6 +187,7 @@
    "vertices": 2722,
    "item_id": 1115,
    "component": 3,
+   "main_component": 3,
    "component_members": {
     "island": 5,
     "pad": 33
@@ -266,6 +263,7 @@
    "vertices": 765,
    "item_id": 1116,
    "component": 50,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 5
@@ -295,31 +293,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     49.0744,
-     68.4005
+     51.8744,
+     71.6005
     ],
-    "hard_clearance_mm": 11.528,
+    "hard_clearance_mm": 4.1995,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 11.3495,
+    "edge_clearance_mm": 8.1995,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 7.5856,
+    "minimum_modeled_margin_mm": 3.9995,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 20280
    }
@@ -354,6 +345,7 @@
    "vertices": 1181,
    "item_id": 1117,
    "component": 3,
+   "main_component": 3,
    "component_members": {
     "island": 5,
     "pad": 33
@@ -429,6 +421,7 @@
    "vertices": 835,
    "item_id": 1118,
    "component": 15,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 5
@@ -458,31 +451,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     58.6005,
-     62.445
+     49.8005,
+     59.545
     ],
-    "hard_clearance_mm": 9.7474,
+    "hard_clearance_mm": 2.8134,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 13.1495,
+    "edge_clearance_mm": 19.5632,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 3.7988,
+    "minimum_modeled_margin_mm": 2.6134,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 13330
    }
@@ -517,6 +503,7 @@
    "vertices": 311,
    "item_id": 1119,
    "component": 17,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -542,31 +529,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     9.0005,
-     54.6005
+     9.7005,
+     53.4005
     ],
-    "hard_clearance_mm": 3.7497,
+    "hard_clearance_mm": 1.0005,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 8.7505,
+    "edge_clearance_mm": 9.5005,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 1.2706,
+    "minimum_modeled_margin_mm": 0.8005,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 1575
    }
@@ -601,6 +581,7 @@
    "vertices": 374,
    "item_id": 1120,
    "component": 3,
+   "main_component": 3,
    "component_members": {
     "island": 5,
     "pad": 33
@@ -676,6 +657,7 @@
    "vertices": 76,
    "item_id": 1121,
    "component": 36,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -701,31 +683,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     9.7005,
-     41.8845
+     9.6005,
+     41.9845
     ],
-    "hard_clearance_mm": 3.6362,
+    "hard_clearance_mm": 0.4263,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 3.7954,
+    "edge_clearance_mm": 3.7465,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 2.9604,
+    "minimum_modeled_margin_mm": 0.2263,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 76
    }
@@ -760,6 +735,7 @@
    "vertices": 75,
    "item_id": 1122,
    "component": 62,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -785,31 +761,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     11.1505,
-     34.0505
+     11.0505,
+     33.1505
     ],
-    "hard_clearance_mm": 11.5905,
+    "hard_clearance_mm": 0.8005,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 7.4319,
+    "edge_clearance_mm": 8.0603,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 1.1005,
+    "minimum_modeled_margin_mm": 0.6005,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 296
    }
@@ -844,6 +813,7 @@
    "vertices": 16,
    "item_id": 1123,
    "component": 93,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -869,31 +839,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     28.1005,
-     33.6005
+     28.3005,
+     33.9005
     ],
-    "hard_clearance_mm": 5.9395,
+    "hard_clearance_mm": 0.5595,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 22.6901,
+    "edge_clearance_mm": 22.8049,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 1.6296,
+    "minimum_modeled_margin_mm": 0.3595,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 126
    }
@@ -928,6 +891,7 @@
    "vertices": 170,
    "item_id": 1124,
    "component": 163,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 2
@@ -954,31 +918,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     18.0005,
-     11.4005
+     21.2005,
+     19.9005
     ],
-    "hard_clearance_mm": 11.5087,
+    "hard_clearance_mm": 8.4949,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 11.1505,
+    "edge_clearance_mm": 19.7005,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 10.5404,
+    "minimum_modeled_margin_mm": 8.2949,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 32985
    }
@@ -1013,6 +970,7 @@
    "vertices": 55,
    "item_id": 1125,
    "component": 162,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1038,31 +996,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     19.2138,
-     9.5539
+     21.6138,
+     9.4539
     ],
-    "hard_clearance_mm": 10.738,
+    "hard_clearance_mm": 0.9258,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 9.3039,
+    "edge_clearance_mm": 9.2539,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 3.3638,
+    "minimum_modeled_margin_mm": 0.7258,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 463
    }
@@ -1097,6 +1048,7 @@
    "vertices": 30,
    "item_id": 1126,
    "component": 206,
+   "main_component": 21,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1122,25 +1074,22 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     11.8,
-     11.495
+     10.2,
+     11.395
     ],
-    "hard_clearance_mm": 7.0,
+    "hard_clearance_mm": 0.5,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 11.245,
+    "edge_clearance_mm": 10.0,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 5.501,
+    "minimum_modeled_margin_mm": 0.3,
     "lands_on_same_net_layers": [],
-    "lands_on_kinds": [],
-    "lands_on_different_component": [],
-    "lands_on_other_layer": false,
-    "needs_refill": true,
+    "lands_on_main_component": false,
     "resolves_connectivity": false,
-    "merges_same_layer_outline": false,
     "legal": false,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 68
    }
@@ -1175,6 +1124,7 @@
    "vertices": 38,
    "item_id": 1127,
    "component": 177,
+   "main_component": 21,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1200,25 +1150,22 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     34.6005,
+     33.6005,
      11.395
     ],
-    "hard_clearance_mm": 2.7487,
+    "hard_clearance_mm": 0.835,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 5.2661,
+    "edge_clearance_mm": 5.5574,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 2.1526,
+    "minimum_modeled_margin_mm": 0.635,
     "lands_on_same_net_layers": [],
-    "lands_on_kinds": [],
-    "lands_on_different_component": [],
-    "lands_on_other_layer": false,
-    "needs_refill": true,
+    "lands_on_main_component": false,
     "resolves_connectivity": false,
-    "merges_same_layer_outline": false,
     "legal": false,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 76
    }
@@ -1253,6 +1200,7 @@
    "vertices": 57,
    "item_id": 1128,
    "component": 195,
+   "main_component": 21,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1278,25 +1226,22 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     19.0505,
-     4.45
+     19.6505,
+     4.65
     ],
-    "hard_clearance_mm": 13.1716,
+    "hard_clearance_mm": 0.9005,
     "frozen_fill_clearance_mm": -0.25,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 4.2,
+    "edge_clearance_mm": 4.45,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 4.7925,
+    "minimum_modeled_margin_mm": 0.7005,
     "lands_on_same_net_layers": [],
-    "lands_on_kinds": [],
-    "lands_on_different_component": [],
-    "lands_on_other_layer": false,
-    "needs_refill": true,
+    "lands_on_main_component": false,
     "resolves_connectivity": false,
-    "merges_same_layer_outline": false,
     "legal": false,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 90
    }
@@ -1331,6 +1276,7 @@
    "vertices": 41,
    "item_id": 1129,
    "component": 9,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1357,33 +1303,24 @@
    "stitch": {
     "candidate_site_mm": [
      34.6505,
-     78.805
+     75.205
     ],
-    "hard_clearance_mm": 6.805,
-    "frozen_fill_clearance_mm": 0.1955,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
+    "hard_clearance_mm": 0.5005,
+    "frozen_fill_clearance_mm": 0.2055,
     "edge_clearance_mm": 0.8495,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 2.8649,
+    "minimum_modeled_margin_mm": 0.3005,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "pad",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 292
    }
@@ -1418,6 +1355,7 @@
    "vertices": 61,
    "item_id": 1130,
    "component": 197,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1448,26 +1386,19 @@
     ],
     "hard_clearance_mm": 0.055,
     "frozen_fill_clearance_mm": 0.055,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": false,
-    "frozen_fill_clearance_ok": false,
     "edge_clearance_mm": 3.1721,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 2.7619,
+    "minimum_modeled_margin_mm": -0.145,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": false,
-    "straddles_unnetted_copper_risk": true,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 40
    }
@@ -1502,6 +1433,7 @@
    "vertices": 50,
    "item_id": 1131,
    "component": 221,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1530,31 +1462,22 @@
      5.905,
      46.9631
     ],
-    "hard_clearance_mm": 1.82,
+    "hard_clearance_mm": 0.3631,
     "frozen_fill_clearance_mm": 0.2055,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 5.655,
+    "edge_clearance_mm": 5.705,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 2.4059,
+    "minimum_modeled_margin_mm": 0.1631,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 59
    }
@@ -1589,6 +1512,7 @@
    "vertices": 445,
    "item_id": 1132,
    "component": 3,
+   "main_component": 3,
    "component_members": {
     "island": 5,
     "pad": 33
@@ -1664,6 +1588,7 @@
    "vertices": 42,
    "item_id": 1133,
    "component": 122,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1689,34 +1614,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     70.805,
-     40.9505
+     67.205,
+     41.3505
     ],
-    "hard_clearance_mm": 6.805,
-    "frozen_fill_clearance_mm": 0.1955,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 0.4505,
+    "hard_clearance_mm": 0.4995,
+    "frozen_fill_clearance_mm": 0.2055,
+    "edge_clearance_mm": 0.8505,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 3.5955,
+    "minimum_modeled_margin_mm": 0.2995,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "pad",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 292
    }
@@ -1751,6 +1667,7 @@
    "vertices": 64,
    "item_id": 1134,
    "component": 226,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1779,31 +1696,22 @@
      62.505,
      38.405
     ],
-    "hard_clearance_mm": 1.82,
+    "hard_clearance_mm": 0.395,
     "frozen_fill_clearance_mm": 0.2055,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
     "edge_clearance_mm": 3.4949,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 1.92,
+    "minimum_modeled_margin_mm": 0.195,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 40
    }
@@ -1838,6 +1746,7 @@
    "vertices": 39,
    "item_id": 1135,
    "component": 146,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1863,34 +1772,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     1.305,
-     38.4505
+     1.205,
+     38.6505
     ],
-    "hard_clearance_mm": 9.638,
-    "frozen_fill_clearance_mm": 0.2173,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 1.0495,
+    "hard_clearance_mm": 0.5005,
+    "frozen_fill_clearance_mm": 0.2055,
+    "edge_clearance_mm": 0.8495,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 3.7262,
+    "minimum_modeled_margin_mm": 0.3005,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "pad",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 292
    }
@@ -1925,6 +1825,7 @@
    "vertices": 30,
    "item_id": 1136,
    "component": 213,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -1950,34 +1851,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     10.1005,
-     20.2743
+     10.2005,
+     20.3743
     ],
-    "hard_clearance_mm": 0.9857,
-    "frozen_fill_clearance_mm": 0.9857,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 9.8505,
+    "hard_clearance_mm": 0.4005,
+    "frozen_fill_clearance_mm": 0.4005,
+    "edge_clearance_mm": 10.0005,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 2.7938,
+    "minimum_modeled_margin_mm": 0.2005,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 209
    }
@@ -2012,6 +1904,7 @@
    "vertices": 38,
    "item_id": 1137,
    "component": 184,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2037,34 +1930,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     33.0005,
-     20.2751
+     33.4005,
+     20.5751
     ],
-    "hard_clearance_mm": 0.9849,
-    "frozen_fill_clearance_mm": 0.9849,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 14.2875,
+    "hard_clearance_mm": 0.6849,
+    "frozen_fill_clearance_mm": 0.6849,
+    "edge_clearance_mm": 14.5133,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 9.9509,
+    "minimum_modeled_margin_mm": 0.4849,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 205
    }
@@ -2099,6 +1983,7 @@
    "vertices": 70,
    "item_id": 1138,
    "component": 214,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 2
@@ -2125,31 +2010,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     30.81,
-     19.2905
+     31.21,
+     19.5905
     ],
-    "hard_clearance_mm": 1.9695,
-    "frozen_fill_clearance_mm": 1.9695,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 13.9289,
+    "hard_clearance_mm": 0.69,
+    "frozen_fill_clearance_mm": 0.69,
+    "edge_clearance_mm": 14.0788,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 9.3757,
+    "minimum_modeled_margin_mm": 0.49,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 388
    }
@@ -2184,6 +2062,7 @@
    "vertices": 75,
    "item_id": 1139,
    "component": 185,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 2
@@ -2210,34 +2089,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     53.01,
-     18.8905
+     52.91,
+     19.9905
     ],
-    "hard_clearance_mm": 2.3695,
-    "frozen_fill_clearance_mm": 2.3695,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 18.6405,
+    "hard_clearance_mm": 1.2695,
+    "frozen_fill_clearance_mm": 0.1677,
+    "edge_clearance_mm": 18.89,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 16.8599,
+    "minimum_modeled_margin_mm": 1.0695,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 388
    }
@@ -2272,6 +2142,7 @@
    "vertices": 38,
    "item_id": 1140,
    "component": 178,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2297,34 +2168,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     34.6005,
-     12.6351
+     33.4005,
+     12.8351
     ],
-    "hard_clearance_mm": 2.5455,
-    "frozen_fill_clearance_mm": 0.195,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 6.4839,
+    "hard_clearance_mm": 0.6849,
+    "frozen_fill_clearance_mm": 0.6849,
+    "edge_clearance_mm": 6.9776,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 3.0997,
+    "minimum_modeled_margin_mm": 0.4849,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 205
    }
@@ -2359,6 +2221,7 @@
    "vertices": 50,
    "item_id": 1141,
    "component": 207,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2384,34 +2247,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     11.8,
-     13.1405
+     10.2,
+     12.6405
     ],
-    "hard_clearance_mm": 7.0105,
-    "frozen_fill_clearance_mm": 0.1693,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 11.55,
+    "hard_clearance_mm": 0.5,
+    "frozen_fill_clearance_mm": 0.2055,
+    "edge_clearance_mm": 10.0,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 5.5944,
+    "minimum_modeled_margin_mm": 0.3,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 180
    }
@@ -2446,6 +2300,7 @@
    "vertices": 46,
    "item_id": 1142,
    "component": 219,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2471,31 +2326,24 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     31.51,
-     11.3005
+     30.01,
+     11.4005
     ],
-    "hard_clearance_mm": 0.9295,
-    "frozen_fill_clearance_mm": 0.2012,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 6.5377,
+    "hard_clearance_mm": 0.49,
+    "frozen_fill_clearance_mm": 0.2055,
+    "edge_clearance_mm": 7.6312,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 1.9145,
+    "minimum_modeled_margin_mm": 0.29,
     "lands_on_same_net_layers": [
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island"
-    ],
-    "lands_on_different_component": [
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 148
    }
@@ -2530,6 +2378,7 @@
    "vertices": 33,
    "item_id": 1143,
    "component": 190,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2560,29 +2409,20 @@
     ],
     "hard_clearance_mm": 0.835,
     "frozen_fill_clearance_mm": 0.2055,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 11.145,
+    "edge_clearance_mm": 11.195,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 15.9275,
+    "minimum_modeled_margin_mm": 0.635,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 132
    }
@@ -2617,6 +2457,7 @@
    "vertices": 52,
    "item_id": 1144,
    "component": 130,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2642,34 +2483,25 @@
    },
    "stitch": {
     "candidate_site_mm": [
-     36.9505,
-     4.805
+     37.3505,
+     1.205
     ],
-    "hard_clearance_mm": 6.4572,
-    "frozen_fill_clearance_mm": 0.1955,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": false,
-    "edge_clearance_mm": 0.4505,
+    "hard_clearance_mm": 0.4995,
+    "frozen_fill_clearance_mm": 0.4995,
+    "edge_clearance_mm": 0.8505,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 4.4743,
+    "minimum_modeled_margin_mm": 0.2995,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "pad",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": true,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 295
    }
@@ -2704,6 +2536,7 @@
    "vertices": 39,
    "item_id": 1145,
    "component": 134,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2730,33 +2563,24 @@
    "stitch": {
     "candidate_site_mm": [
      32.905,
-     1.505
+     1.905
     ],
-    "hard_clearance_mm": 10.3211,
+    "hard_clearance_mm": 1.345,
     "frozen_fill_clearance_mm": 0.2055,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 1.255,
+    "edge_clearance_mm": 1.705,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 5.8844,
+    "minimum_modeled_margin_mm": 1.145,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "pad",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 477
    }
@@ -2791,6 +2615,7 @@
    "vertices": 62,
    "item_id": 1146,
    "component": 204,
+   "main_component": 3,
    "component_members": {
     "island": 1,
     "pad": 1
@@ -2817,33 +2642,24 @@
    "stitch": {
     "candidate_site_mm": [
      41.405,
-     1.9005
+     2.0005
     ],
-    "hard_clearance_mm": 1.82,
+    "hard_clearance_mm": 0.3995,
     "frozen_fill_clearance_mm": 0.2055,
-    "required_clearance_mm": 0.2,
-    "hard_clearance_ok": true,
-    "frozen_fill_clearance_ok": true,
-    "edge_clearance_mm": 1.6505,
+    "edge_clearance_mm": 1.8005,
+    "required_edge_clearance_mm": 0.5,
     "edge_clearance_ok": true,
+    "hole_clearance_mm": 5.244,
+    "minimum_modeled_margin_mm": 0.1995,
     "lands_on_same_net_layers": [
      "F.Cu",
      "In1.Cu"
     ],
-    "lands_on_kinds": [
-     "island",
-     "island"
-    ],
-    "lands_on_different_component": [
-     true,
-     true
-    ],
-    "lands_on_other_layer": true,
-    "needs_refill": false,
+    "lands_on_main_component": true,
     "resolves_connectivity": true,
-    "merges_same_layer_outline": false,
     "legal": true,
-    "straddles_unnetted_copper_risk": false,
+    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 40
    }
@@ -2878,6 +2694,7 @@
    "vertices": 6101,
    "item_id": 1147,
    "component": 43,
+   "main_component": 43,
    "component_members": {
     "island": 1,
     "pad": 6
@@ -2926,6 +2743,7 @@
    "vertices": 2901,
    "item_id": 1148,
    "component": 3,
+   "main_component": 3,
    "component_members": {
     "island": 5,
     "pad": 33
@@ -3000,5 +2818,5 @@
   }
  },
  "isolated_total": 29,
- "stitchable_at_legal_rules": 25
+ "geometric_candidates_pending_native_validation": 25
 }

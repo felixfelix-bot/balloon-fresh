@@ -13,6 +13,8 @@ Runs entirely on a copy; the source board is never written.
 """
 from __future__ import annotations
 
+raise SystemExit('RETIRED count-only experiment: use validate_stitching.py; historical results are not proof')
+
 import argparse
 import collections
 import json

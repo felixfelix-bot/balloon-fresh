@@ -173,9 +173,8 @@ def sha256(p):
 
 def refill_copy(src_dir: pathlib.Path, work: pathlib.Path):
     """Copy -> fill -> report. Source is never opened for write."""
-    if work.exists():
-        shutil.rmtree(work)
-    work.mkdir(parents=True)
+    # Never remove earlier evidence or allow work to alias source.
+    work.mkdir(parents=True, exist_ok=False)
     for f in src_dir.glob(STEM + '.kicad_*'):
         shutil.copy(f, work / f.name)
     for f in src_dir.glob('*.kicad_dru'):
@@ -425,6 +424,13 @@ def main():
     sigma = sum(c - 1 for c in per_net_counts.values())
     out['graph_sigma_components_minus_1'] = sigma
     out['graph_per_net_components'] = dict(sorted(per_net_counts.items()))
+    affected = sum(c > 1 for c in per_net_counts.values())
+    out['affected_nets'] = affected
+    if (sigma, affected, out['base_unconnected_pcbnew']) != (86, 22, 86):
+        raise RuntimeError('Connectivity crosscheck failed; refusing classifications')
+    if not refill['refill_byte_noop']:
+        raise RuntimeError('Refill changed bytes; pinned inventory invalid')
+    out['status'] = 'INCOMPLETE_DRAFT_NATIVE_VALIDATION_REQUIRED'
 
     # main body per net = component with the most pads
     def pads_in(root):
@@ -432,7 +438,7 @@ def main():
 
     net_main = {}
     for net, roots in per_net.items():
-        best = max(roots, key=lambda r: (len(pads_in(r)),
+        best = max(sorted(roots), key=lambda r: (len(pads_in(r)),
                                          sum(items[i]['meta'].get('area_mm2', 0)
                                              for i in comps[r] if items[i]['kind'] == 'island')))
         net_main[net] = best
@@ -461,6 +467,7 @@ def main():
         isl['item_id'] = iid
         root = comp_of_item.get(iid) if iid is not None else None
         isl['component'] = root
+        isl['main_component'] = net_main.get(isl['net'])
         members = comps.get(root, []) if root is not None else []
         kinds = defaultdict(int)
         for m in members:
@@ -486,9 +493,9 @@ def main():
                 continue
             if root_of.get(by_item[iid2][0]) == root:
                 continue
-            for lay2 in it2['layers']:
-                g2 = nodes[by_item[iid2][0]][2]
-                if nodes[by_item[iid2][0]][1] != isl['layer']:
+            for node2 in by_item[iid2]:
+                _, lay2, g2 = nodes[node2]
+                if lay2 != isl['layer']:
                     # cross-layer distance is not a copper gap; record separately
                     continue
                 d = g_i.distance(g2)
@@ -532,13 +539,13 @@ def main():
             by_zone_layer[key]['isolated'] += 1
     out['rollup_by_zone_layer'] = dict(sorted(by_zone_layer.items()))
     out['isolated_total'] = sum(1 for i in out['islands'] if i['status'] == 'ISOLATED')
-    out['stitchable_at_legal_rules'] = sum(
+    out['geometric_candidates_pending_native_validation'] = sum(
         1 for i in out['islands']
         if i['status'] == 'ISOLATED' and i['stitch'] and i['stitch']['legal'])
 
     pathlib.Path(args.out).write_text(json.dumps(out, indent=1))
     print(f"islands={out['island_total']} isolated={out['isolated_total']} "
-          f"stitchable={out['stitchable_at_legal_rules']} sigma={sigma} "
+          f"candidate_predictions={out['geometric_candidates_pending_native_validation']} sigma={sigma} "
           f"drc={out['base_unconnected_pcbnew']}")
     print('wrote', args.out)
 
@@ -617,92 +624,65 @@ def stitch_candidate(board, isl, items, nodes, by_item, foreign_tree, netcode,
         if hk:
             hard_idx[lay] = (hk, STRtree([gg for _, gg in hk]))
 
-    def worst(p, idxs):
-        w = 1e9
-        for lay, (keep, tree) in idxs.items():
-            ring = p.buffer(R_VIA_R + R_CLEAR + 0.10, quad_segs=8)
-            for j in tree.query(ring, predicate='intersects'):
-                d = keep[j][1].distance(p) - R_VIA_R
-                if d < w:
-                    w = d
-        # Netless pads: copper on some layers, and a hole if drilled. Two rules apply.
-        for pad, g2, hole_r, layers0 in netless_pads:
-            if idxs and not any(l in idxs for l in layers0) and hard_idx is not idxs:
-                pass
-            dc = g2.distance(p) - R_VIA_R
-            if dc < w:
-                w = dc
-            if hole_r > 0 and g2.distance(p) < (VIA_DRILL_HALF + hole_r) + R_HOLE_CLEAR:
-                return -1e6               # hard blocker: hole clearance
-        return w
-
+    hard_geoms = [gg for keep, _ in hard_idx.values() for _, gg in keep]
+    all_geoms = [gg for keep, _ in all_idx.values() for _, gg in keep]
+    extra = [gg for _, gg, _, _ in netless_pads]
+    for t in board.GetTracks():
+        if t.GetNetCode() <= 0:
+            extra.append(via_poly(t) if isinstance(t, k.PCB_VIA) else track_poly(t))
+    for d in board.GetDrawings():
+        if d.GetNetCode() <= 0 and board.GetLayerName(d.GetLayer()) in CU_LAYERS:
+            extra.append(drawing_poly(d))
+    for f in board.GetFootprints():
+        for d in f.GraphicalItems():
+            if board.GetLayerName(d.GetLayer()) in CU_LAYERS:
+                extra.append(drawing_poly(d))
+    hard_union = unary_union(hard_geoms + extra)
+    all_union = unary_union(all_geoms + extra)
+    edges = unary_union(edge_segments(board))
+    holes = []
+    for f in board.GetFootprints():
+        for pad in f.Pads():
+            drill = pad.GetDrillSize()
+            if max(drill.x, drill.y) > 0:
+                pos = pad.GetPosition()
+                holes.append(Point(mm(pos.x), mm(pos.y)).buffer(mm(max(drill.x, drill.y))/2))
+    for t in board.GetTracks():
+        if isinstance(t, k.PCB_VIA):
+            pos = t.GetPosition()
+            holes.append(Point(mm(pos.x), mm(pos.y)).buffer(mm(t.GetDrillValue())/2))
+    hole_union = unary_union(holes)
+    landing_by_layer = {}
+    for lay in CU_LAYERS:
+        gs = [geom for iid2, layer, geom in nodes
+              if layer == lay and lay != isl['layer']
+              and items[iid2]['netcode'] == netcode
+              and comp_of_item.get(iid2) == isl['main_component']]
+        if gs:
+            landing_by_layer[lay] = unary_union(gs)
     scored = []
     for p in cands:
-        scored.append((worst(p, hard_idx), worst(p, all_idx), p))
-    # prefer the site with the best HARD clearance
-    scored.sort(key=lambda t: (-t[0], -t[1]))
-    hard_clear, frozen_clear, best_p = scored[0]
-
-    # copper-to-edge clearance against EVERY Edge.Cuts segment, tab walls included
-    edge_clear = None
-    segs = edge_segments(board)
-    if segs:
-        edge_clear = round(min(sg.distance(best_p) for sg in segs) - R_VIA_R, 4)
-
-    # Which OTHER layers carry same-net copper under the candidate site, and does that
-    # copper belong to a DIFFERENT component? Landing on same-net copper electrically
-    # does nothing unless that copper already reaches the net's main body.
-    landing, landing_kind, landing_reaches_main = [], [], []
-    this_comp = isl.get('component')
-    for lay in CU_LAYERS:
-        if lay == isl['layer']:
-            continue
-        for iid2, it2 in enumerate(items):
-            if it2['netcode'] != netcode or iid2 == isl['item_id']:
-                continue
-            if lay not in it2['layers']:
-                continue
-            for n in by_item.get(iid2, []):
-                if nodes[n][1] != lay:
-                    continue
-                if nodes[n][2].distance(best_p) <= R_VIA_R - 1e-6:
-                    other_comp = comp_of_item.get(iid2)
-                    if lay not in landing:
-                        landing.append(lay)
-                        landing_kind.append(it2['kind'])
-                        landing_reaches_main.append(other_comp != this_comp)
-                    break
-
-    lands = bool(landing) and any(landing_reaches_main)
-    hard_ok = hard_clear >= R_CLEAR - 1e-9
-    frozen_ok = frozen_clear >= R_CLEAR - 1e-9
-    edge_ok = (edge_clear is None) or (edge_clear >= R_CLEAR - 1e-9)
-    legal = bool(hard_ok and lands and edge_ok)
-    # "resolves" and "legal" are DIFFERENT claims and are reported separately:
-    # a via can close a ratsnest edge and still be a defect (dangling, bad clearance).
-    resolves = bool(lands)
-
-    return dict(
-        candidate_site_mm=[round(best_p.x, 4), round(best_p.y, 4)],
-        hard_clearance_mm=round(hard_clear, 4),
-        frozen_fill_clearance_mm=round(frozen_clear, 4),
-        required_clearance_mm=R_CLEAR,
-        hard_clearance_ok=bool(hard_ok),
-        frozen_fill_clearance_ok=bool(frozen_ok),
-        edge_clearance_mm=edge_clear,
-        edge_clearance_ok=bool(edge_ok),
-        lands_on_same_net_layers=landing,
-        lands_on_kinds=landing_kind,
-        lands_on_different_component=landing_reaches_main,
-        lands_on_other_layer=lands,
-        needs_refill=(not frozen_ok) and hard_ok,
-        resolves_connectivity=resolves,
-        merges_same_layer_outline=False,
-        legal=legal,
-        straddles_unnetted_copper_risk=not hard_ok,
-        grid_step_mm=step,
-        candidates_tested=len(cands),
-    )
+        hard = hard_union.distance(p) - R_VIA_R
+        frozen = all_union.distance(p) - R_VIA_R
+        edge = edges.distance(p) - R_VIA_R if not edges.is_empty else -1
+        hole = hole_union.distance(p) - VIA_DRILL_HALF if holes else 100
+        landing = [lay for lay, geom in landing_by_layer.items()
+                   if geom.distance(p) < R_VIA_R - 1e-6]
+        margin = min(hard-R_CLEAR, edge-R_EDGE, hole-R_HOLE_CLEAR)
+        scored.append((bool(landing) and margin >= 0, bool(landing), margin,
+                       hard, frozen, edge, hole, p, landing))
+    scored.sort(key=lambda t: t[:3], reverse=True)
+    predicted, lands, margin, hard, frozen, edge, hole, p, landing = scored[0]
+    return dict(candidate_site_mm=[round(p.x,4), round(p.y,4)],
+                hard_clearance_mm=round(hard,4), frozen_fill_clearance_mm=round(frozen,4),
+                edge_clearance_mm=round(edge,4), required_edge_clearance_mm=R_EDGE,
+                edge_clearance_ok=edge >= R_EDGE, hole_clearance_mm=round(hole,4),
+                minimum_modeled_margin_mm=round(margin,4),
+                lands_on_same_net_layers=landing, lands_on_main_component=lands,
+                resolves_connectivity=lands, legal=predicted,
+                proof_status='UNVERIFIED_GEOMETRIC_PREDICTION',
+                negative_scope='No legal candidate found in sampled sites; not proof of impossibility',
+                grid_step_mm=step, candidates_tested=len(cands))
 
 
 if __name__ == '__main__':
