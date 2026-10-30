@@ -1,0 +1,506 @@
+[
+  {
+    "command": [
+      "/usr/bin/python3",
+      "-c",
+      "import pcbnew; b=pcbnew.LoadBoard('/home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/.audit-hub-copy/hub_board_v10_lora1280_7of9.kicad_pcb'); pcbnew.ZONE_FILLER(b).Fill(b.Zones()); pcbnew.SaveBoard(b.GetFileName(),b)"
+    ],
+    "exit_status": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "kicad-cli",
+      "pcb",
+      "drc",
+      "--format",
+      "json",
+      "--severity-all",
+      "--exit-code-violations",
+      "--output",
+      "/home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/docs/analysis/hub-endpoint-audit-20261030/drc.json",
+      "/home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/.audit-hub-copy/hub_board_v10_lora1280_7of9.kicad_pcb"
+    ],
+    "exit_status": 5,
+    "stdout": "Found 40 violations\nFound 86 unconnected items\nSaved DRC Report to /home/c08r4d0r/worktrees/reconcile-audit377-check-20261030/docs/analysis/hub-endpoint-audit-20261030/drc.json\n",
+    "stderr": ""
+  }
+]
+{
+  "drc_classes": {
+    "starved_thermal": 2,
+    "copper_edge_clearance": 16,
+    "silk_over_copper": 3,
+    "lib_footprint_mismatch": 11,
+    "lib_footprint_issues": 8
+  },
+  "records": 86,
+  "classification": {
+    "real": 59,
+    "unresolved": 27
+  },
+  "by_net": {
+    "+3V3": 15,
+    "/CUT_SENSE_W1": 1,
+    "/CUT_SENSE_W2": 1,
+    "/CUT_SENSE_W3": 1,
+    "/CUT_SENSE_W4": 1,
+    "/F33_IRQ": 1,
+    "/SPI2_SCK": 1,
+    "/F33_VSENSE": 3,
+    "/HUB_PV_MID1": 2,
+    "/HUB_PV_N": 2,
+    "/HUB_PV_P": 2,
+    "/SPI1_MISO": 2,
+    "/SPI1_MOSI": 2,
+    "/SPI1_SCK": 2,
+    "/U3_IRQ": 1,
+    "/VSCAP": 5,
+    "/W1_SOLAR_N": 5,
+    "/W1_SOLAR_P": 1,
+    "/W2_SOLAR_N": 5,
+    "/W3_SOLAR_N": 5,
+    "GND": 27,
+    "/EN": 1
+  },
+  "radio_proven": 9,
+  "radio_total": 9,
+  "copper_graphics": [
+    {
+      "id": 1438,
+      "uuid": "e56cf735-51dc-4e87-ae90-326924aebcb1",
+      "kind": "PCB_SHAPE",
+      "net": "/USB_DN",
+      "layer": "B.Cu",
+      "island": 0,
+      "component": 97
+    },
+    {
+      "id": 1439,
+      "uuid": "f2950fc3-f7a1-416f-93e1-b555123b2c27",
+      "kind": "PCB_SHAPE",
+      "net": "/USB_DN",
+      "layer": "B.Cu",
+      "island": 0,
+      "component": 97
+    }
+  ],
+  "geometry_method": "KiCad polygons, 1um approximation / 1nm contact; PTH/via layer span only; netless graphics not used to bridge named nets"
+}
+[
+  {
+    "net": "/E28_DIO2",
+    "module_pad": "1",
+    "module_uuid": "35bd4671-af51-4f16-9665-3d7632c8c9cc",
+    "U1_candidates": [
+      {
+        "pad": "11",
+        "uuid": "f31606c8-3a2e-4fce-915b-2fe5882b5501",
+        "component": 73
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      110,
+      920,
+      921,
+      929,
+      932,
+      953,
+      943,
+      951,
+      946,
+      948,
+      947,
+      933,
+      945,
+      934,
+      941,
+      944,
+      942,
+      937,
+      950,
+      928,
+      925,
+      923,
+      919,
+      922,
+      140
+    ]
+  },
+  {
+    "net": "/E28_DIO3",
+    "module_pad": "2",
+    "module_uuid": "eb2183df-8e9b-4e47-a5f9-d8579c5d78bc",
+    "U1_candidates": [
+      {
+        "pad": "34",
+        "uuid": "b9f780ee-8165-4441-acc0-a6bf7a2d4586",
+        "component": 74
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      111,
+      955,
+      957,
+      958,
+      961,
+      967,
+      966,
+      965,
+      962,
+      956,
+      954,
+      163
+    ]
+  },
+  {
+    "net": "/SPI1_MISO",
+    "module_pad": "5",
+    "module_uuid": "55c686eb-4b05-4400-a1d2-97019fae908a",
+    "U1_candidates": [
+      {
+        "pad": "9",
+        "uuid": "38aeac84-6fe7-4f55-8322-78ecd904b694",
+        "component": 77
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      114,
+      971,
+      987,
+      983,
+      980,
+      975,
+      998,
+      970,
+      1006,
+      1002,
+      1003,
+      1004,
+      982,
+      985,
+      993,
+      997,
+      978,
+      977,
+      981,
+      979,
+      989,
+      974,
+      991,
+      988,
+      984,
+      976,
+      999,
+      996,
+      990,
+      1001,
+      973,
+      1000,
+      138
+    ]
+  },
+  {
+    "net": "/SPI1_MOSI",
+    "module_pad": "6",
+    "module_uuid": "397e1ef7-ef09-4de3-a85f-bf608094d229",
+    "U1_candidates": [
+      {
+        "pad": "8",
+        "uuid": "d05b1586-547a-4148-a35b-60454b53f1ac",
+        "component": 78
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      115,
+      1008,
+      1012,
+      1015,
+      1025,
+      1020,
+      1022,
+      1028,
+      1021,
+      1023,
+      1026,
+      1027,
+      1024,
+      1019,
+      1016,
+      1010,
+      1009,
+      137
+    ]
+  },
+  {
+    "net": "/SPI1_SCK",
+    "module_pad": "7",
+    "module_uuid": "cb01c3de-6583-4b7a-a78c-d55451468790",
+    "U1_candidates": [
+      {
+        "pad": "22",
+        "uuid": "79a23880-08d3-40d2-b7d1-fad0eef8771f",
+        "component": 79
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      116,
+      1065,
+      1078,
+      1081,
+      1095,
+      1089,
+      1086,
+      1066,
+      1069,
+      1072,
+      1073,
+      1068,
+      1067,
+      1074,
+      1077,
+      1092,
+      1094,
+      1096,
+      1091,
+      1090,
+      1093,
+      1098,
+      1097,
+      1085,
+      1082,
+      1071,
+      1070,
+      1064,
+      151
+    ]
+  },
+  {
+    "net": "/E28_CS_N",
+    "module_pad": "8",
+    "module_uuid": "19891576-85ff-4d7e-81e0-fab8a8f3c7a0",
+    "U1_candidates": [
+      {
+        "pad": "10",
+        "uuid": "27b41d43-fadd-4028-88b9-e43d50580e17",
+        "component": 80
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      117,
+      879,
+      884,
+      882,
+      878,
+      888,
+      880,
+      881,
+      890,
+      889,
+      877,
+      876,
+      883,
+      887,
+      886,
+      139
+    ]
+  },
+  {
+    "net": "/E28_RESET_N",
+    "module_pad": "13",
+    "module_uuid": "783cff7b-dc69-4626-9214-9807bac00ad2",
+    "U1_candidates": [
+      {
+        "pad": "32",
+        "uuid": "f9fbcceb-698e-42bb-ac5c-ee9f60edf855",
+        "component": 82
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      122,
+      1031,
+      1030,
+      1044,
+      1047,
+      1052,
+      1059,
+      1053,
+      1058,
+      1051,
+      1048,
+      1032,
+      1033,
+      1029,
+      1034,
+      1040,
+      1043,
+      1056,
+      1062,
+      1055,
+      1060,
+      1054,
+      1061,
+      1057,
+      1039,
+      1036,
+      1035,
+      161
+    ]
+  },
+  {
+    "net": "/E28_BUSY",
+    "module_pad": "15",
+    "module_uuid": "d4a803c0-58ec-4c0d-95b6-3533113e0494",
+    "U1_candidates": [
+      {
+        "pad": "31",
+        "uuid": "1d1c5cba-50b9-4abd-a5d4-cb162aa380fd",
+        "component": 83
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      124,
+      857,
+      862,
+      865,
+      871,
+      867,
+      875,
+      869,
+      866,
+      868,
+      873,
+      874,
+      870,
+      872,
+      861,
+      858,
+      856,
+      160
+    ]
+  },
+  {
+    "net": "/E28_DIO1",
+    "module_pad": "16",
+    "module_uuid": "c3b93d76-0788-4372-9ed1-0e8a6e4833fc",
+    "U1_candidates": [
+      {
+        "pad": "33",
+        "uuid": "fbc10e5c-9044-42e0-934c-d156f53c2b62",
+        "component": 84
+      }
+    ],
+    "connected": true,
+    "path_nodes": [
+      125,
+      905,
+      893,
+      909,
+      901,
+      898,
+      894,
+      911,
+      899,
+      913,
+      906,
+      897,
+      900,
+      910,
+      891,
+      916,
+      917,
+      914,
+      902,
+      907,
+      912,
+      162
+    ]
+  }
+]
+{
+  "native_signal_walk": [
+    {
+      "net": "/E28_DIO2",
+      "module_pad": "1",
+      "U1_pads": [
+        "11"
+      ],
+      "visited_items": 32
+    },
+    {
+      "net": "/E28_DIO3",
+      "module_pad": "2",
+      "U1_pads": [
+        "34"
+      ],
+      "visited_items": 11
+    },
+    {
+      "net": "/SPI1_MISO",
+      "module_pad": "5",
+      "U1_pads": [
+        "9"
+      ],
+      "visited_items": 40
+    },
+    {
+      "net": "/SPI1_MOSI",
+      "module_pad": "6",
+      "U1_pads": [
+        "8"
+      ],
+      "visited_items": 18
+    },
+    {
+      "net": "/SPI1_SCK",
+      "module_pad": "7",
+      "U1_pads": [
+        "22"
+      ],
+      "visited_items": 26
+    },
+    {
+      "net": "/E28_CS_N",
+      "module_pad": "8",
+      "U1_pads": [
+        "10"
+      ],
+      "visited_items": 17
+    },
+    {
+      "net": "/E28_RESET_N",
+      "module_pad": "13",
+      "U1_pads": [
+        "32"
+      ],
+      "visited_items": 24
+    },
+    {
+      "net": "/E28_BUSY",
+      "module_pad": "15",
+      "U1_pads": [
+        "31"
+      ],
+      "visited_items": 16
+    },
+    {
+      "net": "/E28_DIO1",
+      "module_pad": "16",
+      "U1_pads": [
+        "33"
+      ],
+      "visited_items": 29
+    }
+  ],
+  "assertions": "PASS: 86/86 coverage, net tally 86, nine witnessed paths, nine cut-path negative controls",
+  "native_walk_scope": "pads/tracks/vias; no zone or graphical shape traversal required for these nine paths"
+}
