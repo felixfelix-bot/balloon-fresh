@@ -1,0 +1,494 @@
+{
+ "baseline": {
+  "unconnected": 86,
+  "violations": 40,
+  "violation_types": [
+   "copper_edge_clearance",
+   "lib_footprint_issues",
+   "lib_footprint_mismatch",
+   "silk_over_copper",
+   "starved_thermal"
+  ],
+  "stdout": [
+   "Found 40 violations",
+   "Found 86 unconnected items",
+   "Saved DRC Report to /home/c08r4d0r/worktrees/zi2-v2/.stitch_work/drc_base.json"
+  ]
+ },
+ "batch": {
+  "unconnected": 67,
+  "violations": 46,
+  "violation_types": [
+   "copper_edge_clearance",
+   "hole_clearance",
+   "lib_footprint_issues",
+   "lib_footprint_mismatch",
+   "shorting_items",
+   "silk_over_copper",
+   "solder_mask_bridge",
+   "starved_thermal"
+  ],
+  "stdout": [
+   "Found 46 violations",
+   "Found 67 unconnected items",
+   "Saved DRC Report to /home/c08r4d0r/worktrees/zi2-v2/.stitch_work/drc_batch.json"
+  ]
+ },
+ "expected_unconnected": 67,
+ "batch_pass": false,
+ "claimed": [
+  "GND_FCu|F.Cu|2",
+  "GND_FCu|F.Cu|5",
+  "GND_FCu|F.Cu|10",
+  "GND_BCu|B.Cu|0",
+  "GND_BCu|B.Cu|2",
+  "GND_BCu|B.Cu|4",
+  "GND_BCu|B.Cu|5",
+  "GND_BCu|B.Cu|6",
+  "GND_BCu|B.Cu|7",
+  "GND_BCu|B.Cu|8",
+  "GND_BCu|B.Cu|9",
+  "GND_BCu|B.Cu|10",
+  "GND_BCu|B.Cu|11",
+  "GND_BCu|B.Cu|12",
+  "GND_BCu|B.Cu|13",
+  "GND_BCu|B.Cu|14",
+  "GND_BCu|B.Cu|15",
+  "GND_BCu|B.Cu|16",
+  "GND_BCu|B.Cu|17"
+ ],
+ "sites": [
+  [
+   35.1729,
+   69.4999,
+   "GND"
+  ],
+  [
+   9.0698,
+   46.2606,
+   "GND"
+  ],
+  [
+   30.0208,
+   11.5916,
+   "GND"
+  ],
+  [
+   34.9931,
+   75.936,
+   "GND"
+  ],
+  [
+   6.4522,
+   46.95,
+   "GND"
+  ],
+  [
+   67.936,
+   41.0069,
+   "GND"
+  ],
+  [
+   62.5522,
+   38.5995,
+   "GND"
+  ],
+  [
+   1.936,
+   38.9931,
+   "GND"
+  ],
+  [
+   10.2128,
+   20.3085,
+   "GND"
+  ],
+  [
+   33.8321,
+   20.8298,
+   "GND"
+  ],
+  [
+   31.1682,
+   19.7915,
+   "GND"
+  ],
+  [
+   53.7237,
+   19.9186,
+   "GND"
+  ],
+  [
+   33.6952,
+   12.8302,
+   "GND"
+  ],
+  [
+   10.4264,
+   12.436,
+   "GND"
+  ],
+  [
+   31.5077,
+   11.5382,
+   "GND"
+  ],
+  [
+   53.605,
+   11.86,
+   "GND"
+  ],
+  [
+   37.0596,
+   1.3852,
+   "GND"
+  ],
+  [
+   33.4772,
+   1.936,
+   "GND"
+  ],
+  [
+   41.5995,
+   1.9477,
+   "GND"
+  ]
+ ],
+ "per_island": [
+  {
+   "island_id": "GND_FCu|F.Cu|2",
+   "net": "GND",
+   "site": [
+    35.1729,
+    69.4999
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 3,
+   "new_violations_detail": [
+    [
+     "solder_mask_bridge",
+     "Rear solder mask aperture bridges items with different nets",
+     [
+      "Pad 6 [<no net>] of U_CUT2 on B.Cu",
+      "Via [GND] on F.Cu - B.Cu"
+     ]
+    ],
+    [
+     "shorting_items",
+     "Items shorting two nets (nets GND and )",
+     [
+      "Pad 6 [<no net>] of U_CUT2 on B.Cu",
+      "Via [GND] on F.Cu - B.Cu"
+     ]
+    ],
+    [
+     "hole_clearance",
+     "Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.0000 mm)",
+     [
+      "Pad 6 [<no net>] of U_CUT2 on B.Cu",
+      "Via [GND] on F.Cu - B.Cu"
+     ]
+    ]
+   ],
+   "removed_violations": 0,
+   "verdict": "REFUTED"
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|5",
+   "net": "GND",
+   "site": [
+    9.0698,
+    46.2606
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 3,
+   "new_violations_detail": [
+    [
+     "solder_mask_bridge",
+     "Rear solder mask aperture bridges items with different nets",
+     [
+      "Pad 4 [<no net>] of U_CUT1 on B.Cu",
+      "Via [GND] on F.Cu - B.Cu"
+     ]
+    ],
+    [
+     "shorting_items",
+     "Items shorting two nets (nets GND and )",
+     [
+      "Pad 4 [<no net>] of U_CUT1 on B.Cu",
+      "Via [GND] on F.Cu - B.Cu"
+     ]
+    ],
+    [
+     "hole_clearance",
+     "Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.0000 mm)",
+     [
+      "Pad 4 [<no net>] of U_CUT1 on B.Cu",
+      "Via [GND] on F.Cu - B.Cu"
+     ]
+    ]
+   ],
+   "removed_violations": 0,
+   "verdict": "REFUTED"
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|10",
+   "net": "GND",
+   "site": [
+    30.0208,
+    11.5916
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 84,
+   "resolved": 2,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "REFUTED"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|0",
+   "net": "GND",
+   "site": [
+    34.9931,
+    75.936
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|2",
+   "net": "GND",
+   "site": [
+    6.4522,
+    46.95
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|4",
+   "net": "GND",
+   "site": [
+    67.936,
+    41.0069
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|5",
+   "net": "GND",
+   "site": [
+    62.5522,
+    38.5995
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|6",
+   "net": "GND",
+   "site": [
+    1.936,
+    38.9931
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|7",
+   "net": "GND",
+   "site": [
+    10.2128,
+    20.3085
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|8",
+   "net": "GND",
+   "site": [
+    33.8321,
+    20.8298
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|9",
+   "net": "GND",
+   "site": [
+    31.1682,
+    19.7915
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|10",
+   "net": "GND",
+   "site": [
+    53.7237,
+    19.9186
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|11",
+   "net": "GND",
+   "site": [
+    33.6952,
+    12.8302
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|12",
+   "net": "GND",
+   "site": [
+    10.4264,
+    12.436
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|13",
+   "net": "GND",
+   "site": [
+    31.5077,
+    11.5382
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|14",
+   "net": "GND",
+   "site": [
+    53.605,
+    11.86
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|15",
+   "net": "GND",
+   "site": [
+    37.0596,
+    1.3852
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|16",
+   "net": "GND",
+   "site": [
+    33.4772,
+    1.936
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|17",
+   "net": "GND",
+   "site": [
+    41.5995,
+    1.9477
+   ],
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "resolved": 1,
+   "new_violations": 0,
+   "new_violations_detail": [],
+   "removed_violations": 0,
+   "verdict": "PROVEN"
+  }
+ ]
+}
