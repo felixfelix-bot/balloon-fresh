@@ -1,0 +1,871 @@
+{
+ "baseline_unconnected": 86,
+ "baseline_violations": 40,
+ "arms": [
+  {
+   "island_id": "GND_FCu|F.Cu|0",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 0.584876,
+   "site": [
+    41.5193,
+    44.4592
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 9.454,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|2",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 225.124958,
+   "site": [
+    49.0744,
+    68.4005
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 11.528,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|4",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 151.657962,
+   "site": [
+    58.6005,
+    62.445
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 9.7474,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|5",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 21.875731,
+   "site": [
+    9.0005,
+    54.6005
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 3.7497,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|7",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 1.830048,
+   "site": [
+    9.7005,
+    41.8845
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 3.6362,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|8",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 4.416625,
+   "site": [
+    11.1505,
+    34.0505
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 11.5905,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|9",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 1.953663,
+   "site": [
+    28.1005,
+    33.6005
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 5.9395,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|10",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 341.540465,
+   "site": [
+    18.0005,
+    11.4005
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 11.5087,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_FCu|F.Cu|11",
+   "net": "GND",
+   "layer": "F.Cu",
+   "area_mm2": 5.909013,
+   "site": [
+    19.2138,
+    9.5539
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 10.738,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "P3V3_BCu|B.Cu|0",
+   "net": "+3V3",
+   "layer": "B.Cu",
+   "area_mm2": 1.364968,
+   "site": [
+    11.8,
+    11.495
+   ],
+   "predicted_legal": false,
+   "unconnected_before": 86,
+   "unconnected_after": 86,
+   "delta_unconnected": 0,
+   "violations_before": 40,
+   "violations_after": 41,
+   "delta_violations": 1,
+   "new_violation_types": {
+    "via_dangling": 1
+   },
+   "hard_clearance_mm": 7.0,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [],
+   "predicted_resolves": false,
+   "actual_resolved": false,
+   "actual_legal": false,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "P3V3_BCu|B.Cu|1",
+   "net": "+3V3",
+   "layer": "B.Cu",
+   "area_mm2": 1.49839,
+   "site": [
+    34.6005,
+    11.395
+   ],
+   "predicted_legal": false,
+   "unconnected_before": 86,
+   "unconnected_after": 86,
+   "delta_unconnected": 0,
+   "violations_before": 40,
+   "violations_after": 41,
+   "delta_violations": 1,
+   "new_violation_types": {
+    "via_dangling": 1
+   },
+   "hard_clearance_mm": 2.7487,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [],
+   "predicted_resolves": false,
+   "actual_resolved": false,
+   "actual_legal": false,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "P3V3_BCu|B.Cu|2",
+   "net": "+3V3",
+   "layer": "B.Cu",
+   "area_mm2": 1.460928,
+   "site": [
+    19.0505,
+    4.45
+   ],
+   "predicted_legal": false,
+   "unconnected_before": 86,
+   "unconnected_after": 86,
+   "delta_unconnected": 0,
+   "violations_before": 40,
+   "violations_after": 41,
+   "delta_violations": 1,
+   "new_violation_types": {
+    "via_dangling": 1
+   },
+   "hard_clearance_mm": 13.1716,
+   "frozen_fill_clearance_mm": -0.25,
+   "lands_on": [],
+   "predicted_resolves": false,
+   "actual_resolved": false,
+   "actual_legal": false,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|0",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 4.294647,
+   "site": [
+    34.6505,
+    78.805
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 6.805,
+   "frozen_fill_clearance_mm": 0.1955,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|1",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 0.876895,
+   "site": [
+    36.68,
+    70.605
+   ],
+   "predicted_legal": false,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 42,
+   "delta_violations": 2,
+   "new_violation_types": {
+    "clearance": 2
+   },
+   "hard_clearance_mm": 0.055,
+   "frozen_fill_clearance_mm": 0.055,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": false,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|2",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 1.011458,
+   "site": [
+    5.905,
+    46.9631
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 1.82,
+   "frozen_fill_clearance_mm": 0.2055,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|4",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 4.294647,
+   "site": [
+    70.805,
+    40.9505
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 41,
+   "delta_violations": 1,
+   "new_violation_types": {
+    "copper_edge_clearance": 1
+   },
+   "hard_clearance_mm": 6.805,
+   "frozen_fill_clearance_mm": 0.1955,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": false,
+   "resolves_held": true,
+   "legal_held": false,
+   "prediction_held": false
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|5",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 0.876913,
+   "site": [
+    62.505,
+    38.405
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 1.82,
+   "frozen_fill_clearance_mm": 0.2055,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|6",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 4.294647,
+   "site": [
+    1.305,
+    38.4505
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 9.638,
+   "frozen_fill_clearance_mm": 0.2173,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|7",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 3.018984,
+   "site": [
+    10.1005,
+    20.2743
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 0.9857,
+   "frozen_fill_clearance_mm": 0.9857,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|8",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 2.937468,
+   "site": [
+    33.0005,
+    20.2751
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 0.9849,
+   "frozen_fill_clearance_mm": 0.9849,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|9",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 5.025795,
+   "site": [
+    30.81,
+    19.2905
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 1.9695,
+   "frozen_fill_clearance_mm": 1.9695,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|10",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 5.025915,
+   "site": [
+    53.01,
+    18.8905
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 2.3695,
+   "frozen_fill_clearance_mm": 2.3695,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|11",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 2.937468,
+   "site": [
+    34.6005,
+    12.6351
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 2.5455,
+   "frozen_fill_clearance_mm": 0.195,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|12",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 2.592453,
+   "site": [
+    11.8,
+    13.1405
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 84,
+   "delta_unconnected": -2,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 7.0105,
+   "frozen_fill_clearance_mm": 0.1693,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|13",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 2.202412,
+   "site": [
+    31.51,
+    11.3005
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 0.9295,
+   "frozen_fill_clearance_mm": 0.2012,
+   "lands_on": [
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|14",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 1.975037,
+   "site": [
+    52.81,
+    11.395
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 0.835,
+   "frozen_fill_clearance_mm": 0.2055,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|15",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 4.3468,
+   "site": [
+    36.9505,
+    4.805
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 41,
+   "delta_violations": 1,
+   "new_violation_types": {
+    "copper_edge_clearance": 1
+   },
+   "hard_clearance_mm": 6.4572,
+   "frozen_fill_clearance_mm": 0.1955,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": false,
+   "resolves_held": true,
+   "legal_held": false,
+   "prediction_held": false
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|16",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 6.072192,
+   "site": [
+    32.905,
+    1.505
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 10.3211,
+   "frozen_fill_clearance_mm": 0.2055,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  },
+  {
+   "island_id": "GND_BCu|B.Cu|17",
+   "net": "GND",
+   "layer": "B.Cu",
+   "area_mm2": 0.876886,
+   "site": [
+    41.405,
+    1.9005
+   ],
+   "predicted_legal": true,
+   "unconnected_before": 86,
+   "unconnected_after": 85,
+   "delta_unconnected": -1,
+   "violations_before": 40,
+   "violations_after": 40,
+   "delta_violations": 0,
+   "new_violation_types": {},
+   "hard_clearance_mm": 1.82,
+   "frozen_fill_clearance_mm": 0.2055,
+   "lands_on": [
+    "F.Cu",
+    "In1.Cu"
+   ],
+   "predicted_resolves": true,
+   "actual_resolved": true,
+   "actual_legal": true,
+   "resolves_held": true,
+   "legal_held": true,
+   "prediction_held": true
+  }
+ ],
+ "predictions_held": 27,
+ "resolves_held": 29,
+ "legal_held": 27,
+ "arms_total": 29
+}
