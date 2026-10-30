@@ -14,8 +14,10 @@ checked by native KiCad DRC. **25/29 introduced no new violation identities**;
 4 introduced new identities. Baseline: 40 violations, 86 unconnected items.
 After insertion: 25 copies had 85 unconnected items, 3 had 86, one had 84.
 Count reduction alone does not prove the candidate reaches the designated main
-component. `connectivity_proven` remains false for every arm. No combined-via
-layout was validated; independently passing sites are not a batch approval.
+component. The endpoint follow-up below establishes **22 conservative geometric
+main joins with no new native violation identities**, not native polygon membership.
+`connectivity_proven` remains false for every arm. No combined-via layout was
+validated; independently passing sites are not a batch approval.
 
 Source: `tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb`.
 SHA256 before and after:
@@ -106,23 +108,90 @@ Executed recovery directories: `.zi2scratch/recovered-inventory-1` and
 
 - Inventory execution: exit 0; 35/29/86/22, unchanged source, refill byte no-op.
 - Native single-via execution: exit 0; all 29 arms completed and checkpointed.
-- Four regression tests pass: identity order independence, equal-count replacement
-  detection, multiset duplicates, and inventory/native evidence invariants.
-- **Coverage gate blocked:** `/usr/bin/python3 -m coverage --version` fails with
-  `No module named coverage`. No ≥80% coverage is claimed; four tests do not
-  establish sufficient geometry coverage. Cross-family review also pending.
-- Post-refill native endpoint-to-main-component proof remains missing. All
-  stitchability classifications therefore remain unverified.
+- **20 regression tests pass**, including wrong-main/count-equal joins, split/merge,
+  missing/added copper, layer mismatch, witness retention, index reordering,
+  no-via topology change, extra joins and native disagreement.
+- Coverage was installed in a system-site-packages venv, not system Python.
+  Measured unit + 29-arm integration coverage for `endpoint_proof.py`: **122/134
+  statements (91.04%), 40/52 branches (76.92%), combined 87.10%**. Unit-only combined
+  coverage was 45% before the final guard additions. The whole legacy geometry
+  pipeline is NOT ≥80% covered (inventory 35%, native validator 17% in this replay).
+  `endpoint_coverage.json` preserves the measured scope; cross-family review pending.
+- Native per-filled-polygon membership remains unavailable in the installed SWIG
+  API. Geometric endpoint proof now exists for 22 legal samples; it is explicitly
+  not promoted to native proof or fabrication approval.
 - Graph geometry retains approximations (curves, holes/slots, fallback pad shapes,
   4 µm contact tolerance); agreement of global counts is not full topology proof.
 - KiCad emitted `PCB_VIA::GetWidth called without a layer argument` warnings in
   inventory execution. Results are provisional, not a fabrication gate.
 
+## Endpoint follow-up: full partition, pinned identity, and limits
+
+`endpoint_proof.py` reuses the 29 preserved refilled single-via boards, verifying
+**each board SHA against `native_validation.json` before reading it**. It does not
+regenerate evidence or edit any board. Baseline native 86 and graph 86/22 are a
+fail-closed gate, including exact per-net agreement with the published inventory.
+
+For every arm, the full copper graph is rebuilt before and after. Hard copper is
+mapped by UUID, unchanged geometry/net/layers; filled polygons are mapped by a
+unique positive-area overlap within the same zone UUID/net/layer, not outline
+index. Every polygon must retain ≥99% of its original area and its original
+interior witness. Splits, merges, lost or extra polygons fail closed. Main is
+**pinned to the entire original component's member set**, never reselected after
+adding a via. The exact target polygon, inserted via and every main member must
+reach one component. The complete after-partition must equal the before-partition
+with exactly those two components joined. A separate graph of the after-refill
+copper **excluding the new via** must equal the full original partition, ruling
+out reassignment caused by refill alone. All these checks run both with the
+legacy 4 µm tolerance and with zero-distance contacts. Native connectivity counts
+are checked against both graph totals and the saved native DRC result, never used
+to identify a particular island or to infer endpoint membership.
+
+Results (`endpoint_validation.json`, per-island mappings and witnesses retained):
+
+- **23/29** pass the conservative geometric endpoint/partition proof, including
+  the zero-tolerance sensitivity check.
+- **22/29** also have no new native DRC violation identities. These are qualified
+  geometric-main-join samples, NOT native per-island proofs or combined approval.
+- `GND_BCu|B.Cu|1`: geometric join passes, but native legality fails.
+- `P3V3_BCu|B.Cu|0`, `|1`, `|2`: sampled via does not reach pinned main; native
+  legality also fails. This does not prove no alternative via site exists.
+- `GND_FCu|F.Cu|7` and `GND_BCu|B.Cu|9`: refill adds an unmatched filled polygon
+  (respectively B.Cu index 4 and F.Cu index 11, UUIDs in evidence). Identity gate
+  refuses a proof even though these samples introduce no new native violations.
+- `GND_BCu|B.Cu|13`: target reaches main geometrically, but the change is not an
+  exact two-component join (native 84, not 85); conservatively rejected rather
+  than crediting a count improvement involving an additional component.
+
+**Exact remaining limitation:** installed pcbnew SWIG map/vector bindings do not
+provide usable per-filled-polygon native component membership. The already-proven
+API failures were not retried. Native 86→85 agreement cannot authenticate the
+geometric partition. Geometry still inherits the inventory's curve, pad-fallback
+and hole/slot approximations; zero tolerance removes the proximity-only join
+risk but not those shape-model risks. Thus native `connectivity_proven` stays
+false on all 29 arms. This is the strongest measured geometric proof, explicitly
+bounded, not an assertion that native endpoint proof was obtained.
+
+Replay after the native experiment command above (substitute its new work path):
+
+```sh
+/usr/bin/python3 "$D/endpoint_proof.py" \
+  --evidence "$PWD/.zi2scratch/reproduce-native" \
+  --out "$D/endpoint_validation.json"
+```
+
+This run used `.zi2scratch/recovered-native-1`; logs and coverage data are retained
+in `.zi2scratch/endpoint-run.log` and `.zi2scratch/endpoint.coverage`. Coverage
+7.17.0 ran in `.zi2scratch/coverage-env` with system site packages. Coverage data
+combine the actual 29-arm replay with the 20 passing unit regressions; they do not
+pretend the historical native DRC execution ran under coverage.
+
 ## Decisions
 
 Publish as an **incomplete draft**, rather than call 25 candidates stitchable.
-Evidence supports inventory counts and 29 native single-site experiments; it does
-not support the stronger endpoint-connectivity and coverage claims. Reject
+Evidence supports inventory counts, 29 native single-site experiments and the
+22 qualified geometric endpoint joins below; it does not support native
+per-island connectivity or whole-pipeline coverage claims. Reject
 silently accepting the older count-only results or inferring impossibility from
 four failed samples. Promotion requires native landing proof, sufficient test
 coverage and independent review. No merge or board edit is authorized here.

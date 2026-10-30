@@ -77,7 +77,7 @@
   "GND": 28
  },
  "affected_nets": 22,
- "status": "INCOMPLETE_DRAFT_NATIVE_VALIDATION_REQUIRED",
+ "status": "DRAFT_GEOMETRIC_ENDPOINT_PROOF_NATIVE_PER_ISLAND_UNAVAILABLE",
  "islands": [
   {
    "island_id": "GND_FCu|F.Cu|0",
@@ -151,10 +151,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 26
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -309,10 +316,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 20280
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -467,10 +481,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 13330
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -545,10 +566,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 1575
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -699,10 +727,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 76
+   },
+   "endpoint_validation": {
+    "geometric_proven": false,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -777,10 +812,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 296
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -855,10 +897,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 126
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -934,10 +983,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 32985
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1012,10 +1068,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 463
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1088,10 +1151,17 @@
     "lands_on_main_component": false,
     "resolves_connectivity": false,
     "legal": false,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 68
+   },
+   "endpoint_validation": {
+    "geometric_proven": false,
+    "native_no_new_violations": false,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1164,10 +1234,17 @@
     "lands_on_main_component": false,
     "resolves_connectivity": false,
     "legal": false,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 76
+   },
+   "endpoint_validation": {
+    "geometric_proven": false,
+    "native_no_new_violations": false,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1240,10 +1317,17 @@
     "lands_on_main_component": false,
     "resolves_connectivity": false,
     "legal": false,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 90
+   },
+   "endpoint_validation": {
+    "geometric_proven": false,
+    "native_no_new_violations": false,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1319,10 +1403,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 292
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1397,10 +1488,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": false,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 40
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": false,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1476,10 +1574,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 59
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1631,10 +1736,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 292
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1710,10 +1822,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 40
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1789,10 +1908,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 292
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1868,10 +1994,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 209
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -1947,10 +2080,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 205
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2026,10 +2166,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 388
+   },
+   "endpoint_validation": {
+    "geometric_proven": false,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2106,10 +2253,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 388
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2185,10 +2339,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 205
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2264,10 +2425,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 180
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2342,10 +2510,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "SAMPLED_CANDIDATE_NOT_PROVEN",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 148
+   },
+   "endpoint_validation": {
+    "geometric_proven": false,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "SAMPLED_CANDIDATE_NOT_PROVEN",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2421,10 +2596,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 132
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2500,10 +2682,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 295
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2579,10 +2768,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 477
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {
@@ -2658,10 +2854,17 @@
     "lands_on_main_component": true,
     "resolves_connectivity": true,
     "legal": true,
-    "proof_status": "UNVERIFIED_GEOMETRIC_PREDICTION",
+    "proof_status": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
     "negative_scope": "No legal candidate found in sampled sites; not proof of impossibility",
     "grid_step_mm": 0.1,
     "candidates_tested": 40
+   },
+   "endpoint_validation": {
+    "geometric_proven": true,
+    "native_no_new_violations": true,
+    "connectivity_proven": false,
+    "verdict": "GEOMETRIC_MAIN_JOIN_NATIVE_LEGAL_SAMPLE",
+    "evidence": "endpoint_validation.json"
    }
   },
   {

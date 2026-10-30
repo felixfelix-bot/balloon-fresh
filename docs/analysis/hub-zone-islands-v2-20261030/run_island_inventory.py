@@ -248,7 +248,7 @@ def enumerate_islands(board):
 
 
 # ----------------------------------------------------------------- phase 3
-def build_copper_graph(board):
+def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
     """Every copper body as (item, layer, geometry). Same-layer overlap unions;
     one conductor spanning layers is ONE node so barrels bridge layers."""
     items = []
@@ -286,20 +286,20 @@ def build_copper_graph(board):
                 continue
             if p.GetAttribute() == k.PAD_ATTRIB_PTH:
                 ls = list(CU_LAYERS)
-            add('pad', dict(ref=f.GetReference(), num=p.GetNumber(),
+            add('pad', dict(uuid=p.m_Uuid.AsString(), ref=f.GetReference(), num=p.GetNumber(),
                             attr=int(p.GetAttribute())),
                 p.GetNetname(), p.GetNetCode(), ls, pad_poly(p))
 
     for t in board.GetTracks():
-        if t.GetNetCode() <= 0:
+        if t.m_Uuid.AsString() == exclude_uuid or t.GetNetCode() <= 0:
             continue
         if isinstance(t, k.PCB_VIA):
             ls = [board.GetLayerName(l) for l in t.GetLayerSet().Seq()]
             ls = [l for l in ls if l in CU_LAYERS] or list(CU_LAYERS)
-            add('via', dict(drill_mm=round(mm(t.GetDrillValue()), 4)),
+            add('via', dict(uuid=t.m_Uuid.AsString(), drill_mm=round(mm(t.GetDrillValue()), 4)),
                 t.GetNetname(), t.GetNetCode(), ls, via_poly(t))
         else:
-            add('track', dict(width_mm=round(mm(t.GetWidth()), 4),
+            add('track', dict(uuid=t.m_Uuid.AsString(), width_mm=round(mm(t.GetWidth()), 4),
                               layer=board.GetLayerName(t.GetLayer())),
                 t.GetNetname(), t.GetNetCode(),
                 [board.GetLayerName(t.GetLayer())], track_poly(t))
@@ -310,7 +310,7 @@ def build_copper_graph(board):
         ls = [l for l in ls if l in CU_LAYERS]
         if not ls or d.GetNetCode() <= 0:
             continue
-        add('shape', dict(drawing=di, shape=int(d.GetShape())),
+        add('shape', dict(uuid=d.m_Uuid.AsString(), drawing=di, shape=int(d.GetShape())),
             d.GetNetname(), d.GetNetCode(), ls, drawing_poly(d))
 
     for zi, z in enumerate(board.Zones()):
@@ -321,7 +321,7 @@ def build_copper_graph(board):
             continue
         lay = board.GetLayerName(lay_id)
         for ii, shp in enumerate(polyset_to_shapely(z.GetFilledPolysList(lay_id))):
-            add('island', dict(zone=z.GetZoneName(), zone_index=zi, island=ii),
+            add('island', dict(uuid=z.m_Uuid.AsString(), zone=z.GetZoneName(), zone_index=zi, island=ii),
                 z.GetNetname(), z.GetNetCode(), [lay], shp)
 
     parent = list(range(len(nodes)))
@@ -352,7 +352,7 @@ def build_copper_graph(board):
         for a_pos, a in enumerate(idxs):
             ga = geoms[a_pos]
             na = items[nodes[a][0]]['netcode']
-            for b_pos in tree.query(ga.buffer(TOL), predicate='intersects'):
+            for b_pos in tree.query(ga.buffer(contact_tolerance), predicate='intersects'):
                 bnode = idxs[b_pos]
                 if bnode <= a:
                     continue
@@ -360,7 +360,7 @@ def build_copper_graph(board):
                     continue
                 if find(a) == find(bnode):
                     continue
-                if geoms[b_pos].distance(ga) <= TOL:
+                if geoms[b_pos].distance(ga) <= contact_tolerance:
                     union(a, bnode)
 
     # stable component id per item: smallest item id in the component
