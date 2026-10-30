@@ -88,6 +88,42 @@ backwards for two turns.
 Because the current router is itself suspect (0/9 at the best orientation), the trial may be run
 with an independent router or by hand; the evidence required is copper, not the router's opinion.
 
+#### D3 CLOSED — 2026-10-30, evidence from live copper
+
+The LoRa1280 interface is **9/9 routed and the board carries no rule-breaking copper**. Evidence,
+all measured on the merged board `tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb` at the
+original design rules (0.20 clearance / 0.20 track / 0.50 via), nothing relaxed:
+
+| check | result |
+|---|---|
+| unconnected items naming a **pad of `U_LORA1280`** | 3, all power/ground **plane joins** — none is an interface net |
+| the 9 interface nets connected **at the module** | 9 / 9 |
+| `clearance` | **0** |
+| `shorting_items` | **0** |
+| `solder_mask_bridge` | **0** |
+
+Seven nets were routed by the rip-up router, two by the operator in the KiCad interactive router.
+The trial therefore passed with **two different tools**, which is stronger evidence than D3 asked
+for: a single router succeeding could have been luck, and this session already measured that this
+repo's own router fails 0/9 on the very same board where both an independent router and a human
+succeed.
+
+Two measurement traps this closure had to survive, both recorded because they produced confident
+wrong answers first:
+
+1. **A net-name match is not a connectivity test.** `/SPI1_SCK`, `/SPI1_MOSI` and `/SPI1_MISO` also
+   run to `U3` and `U_C`, which are unrouted, so their names appear in the unconnected list while
+   the module end is perfect. The test that holds is whether an unconnected item names a **pad uuid
+   belonging to `U_LORA1280`**.
+2. **A stale zone pour invents violations.** The operator's first saved board read 136 violations
+   with 46 clearance; the second read 77 with 3. Refilling zones first gave 79 and 74 respectively —
+   in both cases the real count was unchanged and the "new" violations were the old GND pour sitting
+   where new tracks now run. Refill before DRC, always.
+
+D3 closes the **placement** gate. It does not make the board orderable: 40 violations remain from
+other classes (16 `copper_edge_clearance`, 19 `lib_footprint_*`, 3 silk, 2 starved thermal) and 86
+items remain unconnected elsewhere on the hub.
+
 ### D4 — `U2` is NOT moved on the strength of its score
 > "Do not move U2 merely because it scores 0.61. If it is completely routed, DRC-clean and
 > electrically sound, actual copper beats the proxy. If partially routed, judge the remaining
