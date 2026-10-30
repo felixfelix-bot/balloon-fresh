@@ -158,7 +158,8 @@ None.
 | 137 | `137-no-rf-on-hub-antenna-at-module.md` | No RF on the hub: antennas connect at the radio module, never on our PCB | Accepted |
 | 138 | `138-e28-ranging-capability-unproven-flight-gate.md` | The E28-2G4M27SX's ranging capability is UNPROVEN; the flight is gated on it | Accepted |
 | 139 | `139-v10-2g4-site-non-pa-sx1280-recommendation.md` | v10's 2.4 GHz site should be a NON-PA SX1280 module; the 27 dBm class is where ranging dies | Proposed |
-| 140 | `140-placement-approval-requires-route-trial.md` | Placement is approved on legality, never on routability; a route-completion trial now gates sign-off | Accepted |
+| 140 | `140-placement-approval-requires-route-trial.md` | Placement is approved on legality, never on routability; a route-completion trial now gates sign-off | Accepted — **D3 CLOSED 2026-10-30** (9/9, clearance 0) |
+| 141 | `141-drill-minimum-020-fab-limit.md` | Drill minimum is 0.20 mm, set by the fab, not by us — removes 34 permanent `drill_out_of_range` violations | Accepted |
 | ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 086 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)
