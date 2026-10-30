@@ -1,0 +1,61 @@
+{
+  "drc_classes": {
+    "starved_thermal": 2,
+    "copper_edge_clearance": 16,
+    "silk_over_copper": 3,
+    "lib_footprint_mismatch": 11,
+    "lib_footprint_issues": 8
+  },
+  "records": 86,
+  "classification": {
+    "real": 59,
+    "unresolved": 27
+  },
+  "by_net": {
+    "+3V3": 15,
+    "/CUT_SENSE_W1": 1,
+    "/CUT_SENSE_W2": 1,
+    "/CUT_SENSE_W3": 1,
+    "/CUT_SENSE_W4": 1,
+    "/F33_IRQ": 1,
+    "/SPI2_SCK": 1,
+    "/F33_VSENSE": 3,
+    "/HUB_PV_MID1": 2,
+    "/HUB_PV_N": 2,
+    "/HUB_PV_P": 2,
+    "/SPI1_MISO": 2,
+    "/SPI1_MOSI": 2,
+    "/SPI1_SCK": 2,
+    "/U3_IRQ": 1,
+    "/VSCAP": 5,
+    "/W1_SOLAR_N": 5,
+    "/W1_SOLAR_P": 1,
+    "/W2_SOLAR_N": 5,
+    "/W3_SOLAR_N": 5,
+    "GND": 27,
+    "/EN": 1
+  },
+  "radio_proven": 9,
+  "radio_total": 9,
+  "copper_graphics": [
+    {
+      "id": 1438,
+      "uuid": "e56cf735-51dc-4e87-ae90-326924aebcb1",
+      "kind": "PCB_SHAPE",
+      "net": "/USB_DN",
+      "layer": "B.Cu",
+      "island": 0,
+      "component": 97
+    },
+    {
+      "id": 1439,
+      "uuid": "f2950fc3-f7a1-416f-93e1-b555123b2c27",
+      "kind": "PCB_SHAPE",
+      "net": "/USB_DN",
+      "layer": "B.Cu",
+      "island": 0,
+      "component": 97
+    }
+  ],
+  "geometry_method": "KiCad polygons, 1um approximation / 1nm contact; PTH/via layer span only; netless graphics not used to bridge named nets"
+}

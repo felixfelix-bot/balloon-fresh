@@ -1,0 +1,78 @@
+{
+  "native_signal_walk": [
+    {
+      "net": "/E28_DIO2",
+      "module_pad": "1",
+      "U1_pads": [
+        "11"
+      ],
+      "visited_items": 32
+    },
+    {
+      "net": "/E28_DIO3",
+      "module_pad": "2",
+      "U1_pads": [
+        "34"
+      ],
+      "visited_items": 11
+    },
+    {
+      "net": "/SPI1_MISO",
+      "module_pad": "5",
+      "U1_pads": [
+        "9"
+      ],
+      "visited_items": 40
+    },
+    {
+      "net": "/SPI1_MOSI",
+      "module_pad": "6",
+      "U1_pads": [
+        "8"
+      ],
+      "visited_items": 18
+    },
+    {
+      "net": "/SPI1_SCK",
+      "module_pad": "7",
+      "U1_pads": [
+        "22"
+      ],
+      "visited_items": 26
+    },
+    {
+      "net": "/E28_CS_N",
+      "module_pad": "8",
+      "U1_pads": [
+        "10"
+      ],
+      "visited_items": 17
+    },
+    {
+      "net": "/E28_RESET_N",
+      "module_pad": "13",
+      "U1_pads": [
+        "32"
+      ],
+      "visited_items": 24
+    },
+    {
+      "net": "/E28_BUSY",
+      "module_pad": "15",
+      "U1_pads": [
+        "31"
+      ],
+      "visited_items": 16
+    },
+    {
+      "net": "/E28_DIO1",
+      "module_pad": "16",
+      "U1_pads": [
+        "33"
+      ],
+      "visited_items": 29
+    }
+  ],
+  "assertions": "PASS: 86/86 coverage, net tally 86, nine witnessed paths, nine cut-path negative controls",
+  "native_walk_scope": "pads/tracks/vias; no zone or graphical shape traversal required for these nine paths"
+}
