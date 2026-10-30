@@ -96,3 +96,8 @@ tracker/hardware/base_station/output/
 # rip-up-and-reroute scratch backups (route_ripup.py; board copies, never tracked)
 *.ripup.bak
 *.rpt
+
+# KiCad per-run artefacts
+fp-info-cache
+*.lck
+~*.kicad_pcb.lck
