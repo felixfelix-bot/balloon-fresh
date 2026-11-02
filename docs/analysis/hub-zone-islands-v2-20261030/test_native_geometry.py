@@ -6,6 +6,30 @@ import run_island_inventory as inv
 
 
 class NativeGeometry(unittest.TestCase):
+    def test_edge_rectangle_uses_centerline_not_stroke_bbox(self):
+        b = k.BOARD()
+        d = k.PCB_SHAPE(b)
+        d.SetShape(k.SHAPE_T_RECT)
+        d.SetStart(k.VECTOR2I(0, 0))
+        d.SetEnd(k.VECTOR2I(2000000, 1000000))
+        d.SetWidth(100000)
+        d.SetLayer(k.Edge_Cuts)
+        b.Add(d)
+        self.assertEqual(inv.edge_segments(b)[0].bounds, (0, 0, 2, 1))
+
+    def test_unsupported_edge_fails_closed(self):
+        b = k.BOARD()
+        d = k.PCB_SHAPE(b)
+        d.SetShape(k.SHAPE_T_CIRCLE)
+        d.SetLayer(k.Edge_Cuts)
+        b.Add(d)
+        with self.assertRaises(ValueError):
+            inv.edge_segments(b)
+
+    def test_zero_contact_does_not_join_gap(self):
+        from shapely.geometry import box
+        self.assertGreater(box(0, 0, 1, 1).distance(box(1.001, 0, 2, 1)), 0)
+
     def test_arc_is_not_chord(self):
         b = k.BOARD()
         t = k.PCB_ARC(b)

@@ -66,14 +66,24 @@ def polyset_to_shapely(s):
     for i in range(s.OutlineCount()):
         outer = contour_pts(s.COutline(i))
         if len(outer) < 3:
-            continue
+            raise ValueError('Degenerate native outline: cannot preserve island identity')
         holes = [contour_pts(s.CHole(i, h)) for h in range(s.HoleCount(i))]
         holes = [h for h in holes if len(h) >= 3]
         p = Polygon(outer, holes)
         if not p.is_valid:
-            p = p.buffer(0)
-        if not p.is_empty:
-            out.append(p)
+            # KiCad contours may retrace zero-area cuts. GEOS make_valid retains
+            # those cuts as lines: only accept normalization to ONE polygon with
+            # unchanged area, never buffer(0)'s silent splitting/deletion.
+            from shapely import make_valid
+            fixed = make_valid(p)
+            parts = list(fixed.geoms) if hasattr(fixed, 'geoms') else [fixed]
+            polygons = [g for g in parts if g.geom_type == 'Polygon']
+            if len(polygons) != 1 or abs(polygons[0].area - p.area) > 1e-8:
+                raise ValueError('Native polygon requires topology-changing repair')
+            p = polygons[0]
+        if p.is_empty:
+            raise ValueError('Empty native outline: cannot preserve island identity')
+        out.append(p)
     return out
 
 
@@ -131,9 +141,11 @@ def edge_segments(board):
             segs.append(LineString([(mm(d.GetStart().x), mm(d.GetStart().y)),
                                     (mm(d.GetEnd().x), mm(d.GetEnd().y))]))
         else:
-            bb = d.GetBoundingBox()
-            segs.append(box(mm(bb.GetLeft()), mm(bb.GetTop()),
-                            mm(bb.GetRight()), mm(bb.GetBottom())).exterior)
+            if d.GetShape() != k.SHAPE_T_RECT:
+                raise ValueError('Unsupported Edge.Cuts shape; no bounding-box surrogate')
+            a, b = d.GetStart(), d.GetEnd()
+            segs.append(box(mm(min(a.x,b.x)), mm(min(a.y,b.y)),
+                            mm(max(a.x,b.x)), mm(max(a.y,b.y))).exterior)
     for f in board.GetFootprints():
         for g in f.GraphicalItems():
             if board.GetLayerName(g.GetLayer()) != 'Edge.Cuts':
@@ -142,9 +154,11 @@ def edge_segments(board):
                 segs.append(LineString([(mm(g.GetStart().x), mm(g.GetStart().y)),
                                         (mm(g.GetEnd().x), mm(g.GetEnd().y))]))
             else:
-                bb = g.GetBoundingBox()
-                segs.append(box(mm(bb.GetLeft()), mm(bb.GetTop()),
-                                mm(bb.GetRight()), mm(bb.GetBottom())).exterior)
+                if g.GetShape() != k.SHAPE_T_RECT:
+                    raise ValueError('Unsupported footprint Edge.Cuts shape')
+                a, b = g.GetStart(), g.GetEnd()
+                segs.append(box(mm(min(a.x,b.x)), mm(min(a.y,b.y)),
+                                mm(max(a.x,b.x)), mm(max(a.y,b.y))).exterior)
     return segs
 
 
@@ -294,11 +308,15 @@ def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
                 [board.GetLayerName(t.GetLayer())], track_poly(t))
 
     # copper-layer graphic shapes: real copper, must be in the graph
-    for di, d in enumerate(board.GetDrawings()):
+    graphics = list(board.GetDrawings()) + [d for f in board.GetFootprints()
+                                           for d in f.GraphicalItems()]
+    for di, d in enumerate(graphics):
         ls = [board.GetLayerName(l) for l in d.GetLayerSet().Seq()]
         ls = [l for l in ls if l in CU_LAYERS]
         if not ls or d.GetNetCode() <= 0:
             continue
+        if not isinstance(d, k.PCB_SHAPE):
+            raise ValueError('Unsupported conductive graphic type')
         add('shape', dict(uuid=d.m_Uuid.AsString(), drawing=di, shape=int(d.GetShape())),
             d.GetNetname(), d.GetNetCode(), ls, drawing_poly(d))
 
@@ -328,6 +346,11 @@ def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
 
     # layer barrels bridge only for a genuine plated connection
     for iid, ns in by_item.items():
+        it = items[iid]
+        plated = it['kind'] == 'via' or (it['kind'] == 'pad' and
+                  it['meta']['attr'] == int(k.PAD_ATTRIB_PTH))
+        if len(ns) > 1 and not plated:
+            raise ValueError('Non-plated multilayer item requires separate layer identities')
         for x in ns[1:]:
             union(ns[0], x)
 
@@ -419,6 +442,12 @@ def main():
         raise RuntimeError('Connectivity crosscheck failed; refusing classifications')
     if not refill['refill_byte_noop']:
         raise RuntimeError('Refill changed bytes; pinned inventory invalid')
+    # A count match alone cannot exclude compensating false joins/splits.
+    zero = build_copper_graph(board, contact_tolerance=0)
+    partition = lambda cs: {frozenset(ms) for ms in cs.values()}
+    out['zero_contact_full_partition_equal'] = partition(comps) == partition(zero[3])
+    if not out['zero_contact_full_partition_equal']:
+        raise RuntimeError('Zero-contact full partition differs; refusing classifications')
     out['status'] = 'INCOMPLETE_DRAFT_NATIVE_VALIDATION_REQUIRED'
 
     # main body per net = component with the most pads
