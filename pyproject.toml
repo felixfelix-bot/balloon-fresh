@@ -4,6 +4,10 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+# An unexpected xpass must be a failure, not a silent green: the CI gate that
+# proves the four board checks ran reads JUnit XML, where a bare <testcase> from
+# a non-strict xpass is indistinguishable from a real pass.
+xfail_strict = true
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "hardware: requires actual hardware",
@@ -13,4 +17,5 @@ markers = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pyyaml>=6",
 ]

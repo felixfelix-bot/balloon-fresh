@@ -24,7 +24,10 @@ jobs:
           python-version: '3.13'
 
       - name: Install Python dependencies
-        run: pip install pytest pyserial pillow
+        # pyyaml is a hard requirement now: the CI guards in
+        # tests/test_pcb_ci_runtime.py import it directly instead of skipping
+        # themselves when it is missing.
+        run: pip install pytest pyserial pillow pyyaml
 
       # The PCB pipeline suite needs the distro KiCad bindings and runs for real
       # in the dedicated job in ci-host-tests.yml. Collecting it here, where

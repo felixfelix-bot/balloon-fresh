@@ -185,12 +185,16 @@ jobs:
         run: |
           /usr/bin/python3 -m pip install --quiet pytest \
             || /usr/bin/python3 -m pip install --quiet --break-system-packages pytest
+          # -o xfail_strict=true: an unexpected xpass must be a FAILURE. Without
+          # it a non-strict xpass emits a bare <testcase> that the JUnit gate
+          # below cannot tell from a genuine pass.
           /usr/bin/python3 -m pytest tests/test_pcb_pipeline_gates.py -v --tb=short \
+            -o xfail_strict=true \
             --junitxml="$RUNNER_TEMP/pcb-pipeline.xml"
 
-      # FAIL CLOSED. The four behavioural checks used to skip silently when the
-      # binding was missing, which is how four real failures hid behind a green
-      # tick. A skip here is a missing check, not a pass.
+      # FAIL CLOSED. The four behavioural checks SKIPPED on master whenever the
+      # binding was absent, which is how a green tick covered a no-op. A skip
+      # here is a missing check, not a pass.
       - name: Assert the four board checks actually ran
         run: |
           /usr/bin/python3 scripts/assert_board_checks_ran.py \
