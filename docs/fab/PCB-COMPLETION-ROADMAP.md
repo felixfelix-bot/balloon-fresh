@@ -4,8 +4,11 @@ Updated: 2026-11-02. Status: planning only; **not a fabrication release**.
 
 ## Authority and scope
 
-This is the current completion/investigation task entry point, not a new board
-specification. The native KiCad schematic/netlist, board, matching project/rules,
+This is a hub-specific completion/investigation checklist subordinate to the
+[program board completion plan](../plans/PROGRAM-BOARD-COMPLETION-PLAN.md),
+not a competing program roadmap or a new board specification. The program plan
+owns program-wide priorities; this checklist supplies bounded hub task details.
+Its historical machine snapshot must not be read as live readiness evidence. The native KiCad schematic/netlist, board, matching project/rules,
 parameter registry (`docs/ssot/parameters.json`) and applicable accepted ADRs
 remain authoritative. Existing production gates and routing-method restrictions
 are unchanged; a feasibility result does not authorize a replacement router.
