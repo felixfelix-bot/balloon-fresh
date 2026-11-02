@@ -1,9 +1,19 @@
-"""The CI gate that proves the PCB board checks executed must itself be exact.
+"""Hardening for the fail-closed board-check gate.
 
-WHY: the four behavioural pipeline gates were reported green while SKIPPED, so
-the suite's only end-to-end evidence was a no-op. `scripts/assert_board_checks_ran.py`
-turns the JUnit report into a hard requirement. These tests prove it refuses
-every way a check can fail to run, and accepts the real report.
+WHY: `scripts/assert_board_checks_ran.py` exists to refuse a green tick when the
+four board checks did not really run. A gate with that job must not itself have a
+way to read "not run" as "passed". A cold review found three:
+
+  * ``--require`` REPLACED the built-in list, so one flag in CI would silently
+    drop the other three checks;
+  * outcomes were keyed on the testcase NAME alone, so a same-named case in a
+    different class satisfied the requirement;
+  * a non-strict ``xfail`` that unexpectedly passes emits a bare ``<testcase>``,
+    which is indistinguishable from a genuine pass.
+
+Also fixed here: the guards below shipped with ``pytest.importorskip("yaml")``,
+which is a SKIP -- i.e. a silent green -- in the very file whose subject is that
+a skip is not a pass.
 """
 from __future__ import annotations
 
@@ -16,6 +26,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "assert_board_checks_ran.py"
+PIPELINE_CLASS = "tests.test_pcb_pipeline_gates"
 REQUIRED = (
     "test_pipeline_creates_board_headless[v1-fast-15-17]",
     "test_pipeline_creates_board_headless[v2-adc-17-18]",
@@ -31,20 +42,27 @@ def _load():
     return module
 
 
-def _case(name: str, state: str) -> str:
+def _case(name: str, state: str, classname: str = PIPELINE_CLASS) -> str:
     body = {
         "passed": "",
         "failed": '<failure message="boom"/>',
         "error": '<error message="boom"/>',
         "skipped": '<skipped message="no pcbnew"/>',
+        # A non-strict xfail that XPASSED: pytest emits a bare testcase.
+        "bare": None,
     }[state]
-    return f'<testcase classname="tests.test_pcb_pipeline_gates" name="{name}">{body}</testcase>'
+    if body is None:
+        return f'<testcase classname="{classname}" name="{name}" time="0.001" />'
+    return f'<testcase classname="{classname}" name="{name}">{body}</testcase>'
 
 
-def _xml(path: Path, cases: dict[str, str]) -> Path:
+def _xml(path: Path, cases) -> Path:
+    """cases: dict[str,str] | list[(name, state, classname)]."""
+    if isinstance(cases, dict):
+        cases = [(n, s, PIPELINE_CLASS) for n, s in cases.items()]
     path.write_text(
         '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
-        + "".join(_case(n, s) for n, s in cases.items())
+        + "".join(_case(n, s, c) for n, s, c in cases)
         + "</testsuite></testsuites>"
     )
     return path
@@ -101,3 +119,59 @@ def test_runs_as_a_script_like_ci_invokes_it(tmp_path):
                           capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
     assert "4/4 board checks ran and passed" in proc.stdout
+
+
+# ---------------------------------------------------------------------------
+# HARDENING: ways the gate could read "not run" as "passed"
+# ---------------------------------------------------------------------------
+
+def test_require_extends_the_default_set_instead_of_replacing_it(tmp_path):
+    """One `--require` in CI must not quietly drop the other three checks."""
+    module = _load()
+    extra = "test_some_extra_check"
+
+    # Sanity: default four + a passing extra is accepted.
+    allpass = {name: "passed" for name in REQUIRED}
+    allpass[extra] = "passed"
+    assert module.main([str(_xml(tmp_path / "all.xml", allpass)), "--require", extra]) == 0
+
+    # The catch: extra passes, but a DEFAULT check was skipped. If --require
+    # replaced the defaults, this would be a green tick.
+    cases = {name: "passed" for name in REQUIRED}
+    cases[REQUIRED[1]] = "skipped"
+    cases[extra] = "passed"
+    xml = _xml(tmp_path / "replaced.xml", cases)
+    assert module.main([str(xml), "--require", extra]) == 1
+    assert module.check(str(xml), module.required_for([extra])) == {REQUIRED[1]: "skipped"}
+
+
+def test_a_same_named_testcase_in_another_module_does_not_count(tmp_path):
+    """Outcomes must be keyed by class too, or any file can satisfy the gate."""
+    module = _load()
+    cases = [(name, "passed", "tests.test_unrelated") for name in REQUIRED]
+    xml = _xml(tmp_path / "wrongclass.xml", cases)
+    bad = module.check(str(xml))
+    assert set(bad) == set(REQUIRED), bad
+    assert module.main([str(xml)]) == 1
+
+
+def test_a_bare_testcase_from_an_xpass_is_not_accepted_as_a_pass(tmp_path):
+    """An xpass emits a bare <testcase>; without xf_strict that reads as green.
+
+    The script cannot tell a bare pass from an xpass, so the invocation must run
+    with xfail_strict, which turns a non-strict xpass into a <failure>. This test
+    pins that the repository actually sets it.
+    """
+    pyproject = (ROOT / "pyproject.toml").read_text()
+    assert "xfail_strict" in pyproject, (
+        "pyproject must set xfail_strict so an xpass cannot masquerade as a pass"
+    )
+    assert "true" in pyproject.split("xfail_strict", 1)[1][:20].lower()
+
+
+def test_the_ci_invocation_pins_xfail_strict(tmp_path):
+    """Belt and braces: the pcb-pipeline step itself must not rely on defaults."""
+    workflow = (ROOT / ".github/workflows/ci-host-tests.yml").read_text()
+    assert "xfail_strict" in workflow, (
+        "the pcb-pipeline invocation must pass -o xfail_strict=true"
+    )

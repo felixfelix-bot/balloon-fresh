@@ -1,20 +1,28 @@
 """Regression coverage for the PCB pipeline's KiCad runtime in CI.
 
-Why these exist: the pipeline's four behavioural gate tests could not execute on
-a runner without the distro KiCad bindings. The failure was reported as
-`ModuleNotFoundError: No module named 'pcbnew'` from a subprocess started with a
-hardcoded minor interpreter version that the runner has but whose site-packages
-do not carry pcbnew.
+The real defect, measured: the four behavioural board checks in
+tests/test_pcb_pipeline_gates.py SKIPPED on a runner without the distro KiCad
+bindings, so the job went GREEN while the pipeline's only end-to-end evidence
+was a no-op. (On the PR that introduced the pinned interpreter the same four
+checks went red instead, with ModuleNotFoundError: pcbnew from a hardcoded
+/usr/bin/python3.14 -- a runner HAS that interpreter but its site-packages carry
+no pcbnew. Both outcomes are the same root cause seen from two sides: existence
+is not capability, and a skip is not a pass.)
 
-The repair is two-part and deliberately narrow:
+The repair is deliberately narrow:
   * a dedicated CI job that installs KiCad and runs the pipeline suite, so the
-    board checks execute for real instead of erroring out;
-  * a distro-interpreter invocation, so the binding that exists is the one used.
+    board checks execute for real;
+  * the distro interpreter, which is the one that owns the binding;
+  * scripts/assert_board_checks_ran.py, which refuses a green tick unless all
+    four checks are present AND passed.
 
 Equally important: KiCad must NOT be installed job-wide for the general suites.
 The v10 board gates have their own pre-existing board/registry drift, and they
 loud-skip without pcbnew; making pcbnew available there would convert unrelated
 baseline findings into failures of every PR.
+
+NOTE: PyYAML is imported directly, not with pytest.importorskip. This file exists
+to stop a skip being read as a pass, so it must not skip itself.
 """
 import importlib.util
 import re
@@ -22,6 +30,7 @@ from pathlib import Path
 import subprocess
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 HOST_TESTS = ROOT / ".github/workflows/ci-host-tests.yml"
@@ -89,13 +98,11 @@ def test_general_suite_never_runs_the_pipeline_suite_without_kicad():
 
 @pytest.mark.parametrize("workflow", [HOST_TESTS, GENERAL_TESTS])
 def test_workflows_are_parseable_yaml(workflow):
-    yaml = pytest.importorskip("yaml", reason="PyYAML not installed")
     yaml.safe_load(workflow.read_text())
 
 
 def _run_blocks(workflow: Path) -> dict[str, str]:
     """{job/step label: shell script} for every `run:` in a workflow."""
-    yaml = pytest.importorskip("yaml", reason="PyYAML not installed")
     doc = yaml.safe_load(workflow.read_text())
     blocks = {}
     for job_name, job in (doc.get("jobs") or {}).items():
