@@ -77,49 +77,43 @@ def polyset_to_shapely(s):
     return out
 
 
+# Native polygon tessellation budget: 1 nm, inscribed copper. This is still
+# polygon geometry, not native connectivity membership.
+SHAPE_ERROR_IU = 1
+
+
+def hole_poly(item):
+    if isinstance(item, k.PAD):
+        ps = k.SHAPE_POLY_SET()
+        item.TransformHoleToPolygon(ps, 0, SHAPE_ERROR_IU, k.ERROR_OUTSIDE)
+        return unary_union(polyset_to_shapely(ps))
+    if isinstance(item, k.PCB_VIA):
+        # Via drills are circular. Circumscribe so no drill void becomes copper.
+        import math
+        n = 1024
+        r = mm(item.GetDrillValue()) / 2
+        return Point(mm(item.GetPosition().x), mm(item.GetPosition().y)).buffer(
+            r / math.cos(math.pi / (4*n)), quad_segs=n)
+    return Polygon()
+
+
+def native_copper(item, layer):
+    ps = k.SHAPE_POLY_SET()
+    item.TransformShapeToPolygon(ps, layer, 0, SHAPE_ERROR_IU, k.ERROR_INSIDE)
+    geom = unary_union(polyset_to_shapely(ps))
+    return geom.difference(hole_poly(item))
+
+
 def track_poly(t):
-    w = mm(t.GetWidth()) / 2.0
-    a = (mm(t.GetStart().x), mm(t.GetStart().y))
-    b = (mm(t.GetEnd().x), mm(t.GetEnd().y))
-    if a == b:
-        return Point(a).buffer(w, quad_segs=10)
-    return LineString([a, b]).buffer(w, quad_segs=6, cap_style='round')
+    return native_copper(t, t.GetLayer())
 
 
-def via_poly(t):
-    return Point(mm(t.GetPosition().x), mm(t.GetPosition().y)).buffer(
-        mm(t.GetWidth()) / 2.0, quad_segs=12)
+def via_poly(t, layer=k.F_Cu):
+    return native_copper(t, layer)
 
 
 def drawing_poly(d):
-    """Copper-layer graphic shape (PCB_SHAPE) as a polygon. Graphic copper on a copper
-    layer is electrically real: KiCad's connectivity graph includes it, so it must be
-    in this graph too or components are over-split."""
-    sh = d.GetShape()
-    w = mm(d.GetWidth()) / 2.0
-    if sh == k.SHAPE_T_SEGMENT:
-        a = (mm(d.GetStart().x), mm(d.GetStart().y))
-        b = (mm(d.GetEnd().x), mm(d.GetEnd().y))
-        if a == b:
-            return Point(a).buffer(max(w, 1e-6), quad_segs=8)
-        return LineString([a, b]).buffer(w, quad_segs=6, cap_style='round')
-    if sh == k.SHAPE_T_RECT:
-        bb = d.GetBoundingBox()
-        return box(mm(bb.GetLeft()) - w, mm(bb.GetTop()) - w,
-                   mm(bb.GetRight()) + w, mm(bb.GetBottom()) + w)
-    if sh == k.SHAPE_T_CIRCLE:
-        c = d.GetCenter()
-        return Point(mm(c.x), mm(c.y)).buffer(mm(d.GetRadius()) + w, quad_segs=12)
-    if sh == k.SHAPE_T_POLY:
-        try:
-            d.BuildPolyShape() if hasattr(d, 'BuildPolyShape') else None
-            ps = polyset_to_shapely(d.GetPolyShape())
-            if ps:
-                return unary_union(ps).buffer(w)
-        except Exception:
-            pass
-    bb = d.GetBoundingBox()
-    return box(mm(bb.GetLeft()), mm(bb.GetTop()), mm(bb.GetRight()), mm(bb.GetBottom()))
+    return native_copper(d, d.GetLayer())
 
 
 def edge_segments(board):
@@ -154,16 +148,8 @@ def edge_segments(board):
     return segs
 
 
-def pad_poly(p):
-    try:
-        p.BuildEffectivePolygon()
-        ps = polyset_to_shapely(p.GetEffectivePolygon())
-        if ps:
-            return unary_union(ps)
-    except Exception:
-        pass
-    bb = p.GetBoundingBox()
-    return box(mm(bb.GetLeft()), mm(bb.GetTop()), mm(bb.GetRight()), mm(bb.GetBottom()))
+def pad_poly(p, layer=k.F_Cu):
+    return native_copper(p, layer)
 
 
 # ----------------------------------------------------------------- phase 1
@@ -260,9 +246,10 @@ def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
         items.append(dict(id=iid, kind=kind, net=net, netcode=netcode,
                           layers=layers, meta=meta))
         for lay in layers:
-            if geom is not None and not geom.is_empty:
+            g = geom[lay] if isinstance(geom, dict) else geom
+            if g is not None and not g.is_empty:
                 by_item[iid].append(len(nodes))
-                nodes.append((iid, lay, geom))
+                nodes.append((iid, lay, g))
         return iid
 
     # netcode 0: not a member of any net's components, but still REAL COPPER (and
@@ -276,7 +263,7 @@ def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
                 layers0 = [l for l in layers0 if l in CU_LAYERS]
                 if p.GetAttribute() == k.PAD_ATTRIB_PTH:
                     layers0 = list(CU_LAYERS)
-                g0 = pad_poly(p)
+                g0 = unary_union([pad_poly(p, board.GetLayerID(lay)) for lay in layers0])
                 if layers0:
                     netless_pads.append((p, g0, mm(p.GetDrillSize().x) / 2.0, layers0))
                 continue
@@ -288,7 +275,8 @@ def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
                 ls = list(CU_LAYERS)
             add('pad', dict(uuid=p.m_Uuid.AsString(), ref=f.GetReference(), num=p.GetNumber(),
                             attr=int(p.GetAttribute())),
-                p.GetNetname(), p.GetNetCode(), ls, pad_poly(p))
+                p.GetNetname(), p.GetNetCode(), ls,
+                {lay: pad_poly(p, board.GetLayerID(lay)) for lay in ls})
 
     for t in board.GetTracks():
         if t.m_Uuid.AsString() == exclude_uuid or t.GetNetCode() <= 0:
@@ -297,7 +285,8 @@ def build_copper_graph(board, exclude_uuid=None, contact_tolerance=TOL):
             ls = [board.GetLayerName(l) for l in t.GetLayerSet().Seq()]
             ls = [l for l in ls if l in CU_LAYERS] or list(CU_LAYERS)
             add('via', dict(uuid=t.m_Uuid.AsString(), drill_mm=round(mm(t.GetDrillValue()), 4)),
-                t.GetNetname(), t.GetNetCode(), ls, via_poly(t))
+                t.GetNetname(), t.GetNetCode(), ls,
+                {lay: via_poly(t, board.GetLayerID(lay)) for lay in ls})
         else:
             add('track', dict(uuid=t.m_Uuid.AsString(), width_mm=round(mm(t.GetWidth()), 4),
                               layer=board.GetLayerName(t.GetLayer())),
@@ -646,11 +635,11 @@ def stitch_candidate(board, isl, items, nodes, by_item, foreign_tree, netcode,
             drill = pad.GetDrillSize()
             if max(drill.x, drill.y) > 0:
                 pos = pad.GetPosition()
-                holes.append(Point(mm(pos.x), mm(pos.y)).buffer(mm(max(drill.x, drill.y))/2))
+                holes.append(hole_poly(pad))
     for t in board.GetTracks():
         if isinstance(t, k.PCB_VIA):
             pos = t.GetPosition()
-            holes.append(Point(mm(pos.x), mm(pos.y)).buffer(mm(t.GetDrillValue())/2))
+            holes.append(hole_poly(t))
     hole_union = unary_union(holes)
     landing_by_layer = {}
     for lay in CU_LAYERS:
