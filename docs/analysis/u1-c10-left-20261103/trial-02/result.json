@@ -1,0 +1,48 @@
+{
+  "trial": 2,
+  "deadline_seconds": 180,
+  "grid_mm": 0.05,
+  "stages": [
+    {
+      "net": "MISO",
+      "waypoint": [
+        7.95,
+        42.5
+      ],
+      "paths": [
+        [
+          [
+            8.75,
+            41.25
+          ],
+          [
+            7.95,
+            42.5
+          ]
+        ],
+        [
+          [
+            7.95,
+            42.5
+          ],
+          [
+            9.0,
+            43.55
+          ],
+          [
+            11.05,
+            44.05
+          ]
+        ]
+      ]
+    },
+    {
+      "net": "C10.1",
+      "legal_screen_sites": 15,
+      "chosen": null
+    }
+  ],
+  "stopped": "No off-pad via+stub found for C10.1",
+  "refill_ok": true,
+  "sha256": "0b9308ec7401b230ca5450f3380aef86469af41d0eda76f977d4fbeb1f20af59"
+}
