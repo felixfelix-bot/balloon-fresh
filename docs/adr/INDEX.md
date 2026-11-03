@@ -160,7 +160,7 @@ None.
 | 139 | `139-v10-2g4-site-non-pa-sx1280-recommendation.md` | v10's 2.4 GHz site should be a NON-PA SX1280 module; the 27 dBm class is where ranging dies | Proposed |
 | 140 | `140-placement-approval-requires-route-trial.md` | Placement is approved on legality, never on routability; a route-completion trial now gates sign-off | Accepted — **D3 CLOSED 2026-10-30** (9/9, clearance 0) |
 | 141 | `141-drill-minimum-020-fab-limit.md` | Drill minimum is 0.20 mm, set by the fab, not by us — removes 34 permanent `drill_out_of_range` violations | Accepted |
-| 142 | `142-wing-socket-edge-exemption-does-not-extend-to-tracks.md` | The wing-socket edge exemption stays pad-only: no `.kicad_dru` form reaches a track at the socket edge (measured, 7 forms), and those tracks cross a board edge — the remaining 3 pairs complete in assembly via the two-face tab | Proposed |
+| 142 | `142-wing-socket-edge-exemption-does-not-extend-to-tracks.md` | The wing-socket edge exemption stays pad-only: no `.kicad_dru` form reaches a track at the socket edge (measured, 7 forms), and those tracks cross a board edge — the remaining 3 pairs complete in assembly via the two-face tab | Accepted — 2026-11-03 |
 | ≥044 | *(reserved)* | next free: `scripts/adr_next_number.py` → 086 | — |
 
 ## Non-conforming filenames (not `NNN-description.md`)

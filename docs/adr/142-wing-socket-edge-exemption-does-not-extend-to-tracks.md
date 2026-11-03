@@ -1,6 +1,7 @@
 # ADR-142 — The wing-socket edge exemption does NOT extend to tracks, and must not
 
-**Status:** PROPOSED — awaiting operator decision. **No rule file has been edited.**
+**Status:** **ACCEPTED** — operator ruling 2026-11-03 ("accept and continue").
+**No rule file has been edited, and none should be.**
 **Date:** 2026-11-03
 **Supersedes:** nothing. **Extends the record of:** `docs/fab/EDGE-EXEMPTION-MECHANISM.md`
 (2026-10-16).

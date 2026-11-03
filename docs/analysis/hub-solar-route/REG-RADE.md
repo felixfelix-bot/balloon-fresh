@@ -85,19 +85,26 @@ Two ways to model the slot were tried, and the DRC result separated them:
 | obstacle at the full 0.50 mm rule | **0** new — and pairs 3, 6 lose their only landing |
 
 So the honest statement is: **pairs 3 and 6 have a corridor, and no legal
-landing.** That is a design question, not a routing one, and it is left for a
-decision:
+landing.** That is a design question, not a routing one. **It is now decided —
+ADR-142, Accepted 2026-11-03:**
 
-- **(a)** extend the `.kicad_dru` exemption to tracks terminating on `J_W` lands, scoped to the
-  terminating segment only — cheap, but it weakens an edge rule that exists for a
-  reason, and needs an ADR;
+- **(a)** extend the `.kicad_dru` exemption to tracks terminating on `J_W` lands —
+  **REFUSED, and measured impossible.** No condition form reaches a track at the
+  socket edge, not even a conditionless waiver (`dru_edge_form_sweep.py`; 7 forms,
+  track items waived 0 of 4 in every one including the blanket rule).
 - **(b)** change the socket geometry so the land is ≥0.5 mm from the cavity —
-  correct, but it is a board respin;
-- **(c)** accept 5 and route 3/6 in assembly, as the wing tab already bridges the
-  faces mechanically.
+  **deferred to a v11 interface review.** It would work, but buys nothing the tab
+  does not already do, and invalidates every routed board in this investigation.
+- **(c)** accept 5 and complete 3/6/7 **in assembly** — **ACCEPTED.** The wing tab
+  bridges F/B at these lands by design (ADR-120 R1, `WING-TO-HUB-SOCKET-SPEC.md` §2).
+  That is what the two-land interface exists for.
 
-No option is taken here. The board shipped at 5 pairs is the maximum that is
-legal under the rules as written, which is a defensible place to stop.
+**A correction to the row above:** the pairs are not "0.05 mm from the cavity".
+They **cross** it — measured gaps −0.092 to −0.100 mm, i.e. the track runs over the
+edge line to reach pads on the far side of the slot. See ADR-142 §3.
+
+The board shipped at 5 pairs is the maximum that is legal under the rules as
+written, and that is now the recorded decision rather than an open question.
 
 ## Reproduce
 
