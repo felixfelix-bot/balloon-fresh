@@ -1,11 +1,51 @@
 # Solar-return routing on the hub v10 candidate — 5 of 8 pairs routed, 3 measured blocked
 
+> ## CORRECTION (2026-11-03, added on top — this document is not rewritten)
+>
+> **Two of the three "BLOCKED" verdicts below are WRONG, and the cause is this
+> report's own router, not the board.**
+>
+> The router applied the 0.50 mm board-edge rule to the **whole** board. The
+> `J_W` lands are edge-launched by design (ADR-046/048) and sit on `Edge.Cuts`,
+> so that rule walls off the very pads the routes must reach. The correct
+> treatment — the one that is both in the repo's DRC allow-list *and* used by
+> `docs/analysis/solar-8land-verify/route_solar_bitmap.py` (merged as #438) — is
+> to lift the edge rule **only under each endpoint pad's own body** and leave the
+> clearance rule in force everywhere.
+>
+> Corrected verdicts for the three rows marked BLOCKED:
+>
+> | pair | this doc said | corrected |
+> |---|---|---|
+> | `/W1_SOLAR_N` `D_BP2.1` ↔ `J_W2.1` | BLOCKED by siblings' copper | **ROUTED** (2 segs, 3.43 mm) |
+> | `/W2_SOLAR_N` `D_BP2.2` ↔ `J_W2.4` | BLOCKED | **geometry exists, but see below** |
+> | `/W3_SOLAR_N` `J_W4.1` ↔ `D_BP4.1` | BLOCKED | **geometry exists, but see below** |
+>
+> **"Geometry exists" is not "it should be routed".** Applying those two as real
+> copper and grading with native DRC produces `copper_edge_clearance` errors: each
+> `J_W` footprint carries four `Edge.Cuts` graphics forming a 6 × 0.5 mm slot cut
+> into the board edge, and those two lands sit ~0.05 mm from it. There is no
+> landing point on the pad that is also 0.50 mm from the slot, so a track cannot
+> serve them under the rule as DRC measures it. The final applied set is therefore
+> **5 pairs**, which is what actually ships (see `solar-8land-verify/APPLIED.md`,
+> merged as #440) — the count in the title holds, but *two of the three reasons
+> were wrong*.
+>
+> The lesson is recorded rather than removed: **a router result is not evidence
+> until a negative control shows the router refusing.** That control is
+> `solar-8land-verify/negative_control.py`; this report's router has no such
+> control, and its "corridor closed" verdicts were an artefact of an over-strict
+> keep-out. Read `§4` below as *"this router found no path"*, never as
+> *"no path exists"*.
+
 **Date:** 2026-11-03
 **Source board (read-only):** `hub_board_v10_lora1280_7of9.kicad_pcb`,
 sha256 `94038dd0c4608f28181017599cb7b623dcb85d81f619ec66947fdec2406c1155`
 (the hub-repair milestone-2 candidate; sha unchanged after this work — it was never written)
 **Output board:** `output/after/hub_board_v10_lora1280_7of9.kicad_pcb`,
-sha256 `894274a0d430dc52a69942f01410b335888b48cd703766b087bcf7aba34fb162`
+sha256 `84bad0dd8f35647bc51105cc21ec8ec8d40f57282b05383a2cea0920afc33a4d`
+(superseded `894274a0…fb162`, produced by the router this CORRECTION describes;
+see `REG-RADE.md` for the independent re-grade)
 **Native DRC:** KiCad 9.0.9, `kicad-cli pcb drc --severity-all`, refilled copy.
 
 ---
@@ -16,27 +56,30 @@ sha256 `894274a0d430dc52a69942f01410b335888b48cd703766b087bcf7aba34fb162`
 violations            38 -> 38      multiset IDENTICAL, zero new identities
   errors              18 -> 18
   warnings            20 -> 20
-unconnected items     86 -> 83       (3 net-level gaps closed)
+unconnected items     86 -> 82       (4 items closed)
 ```
 
 Five of the eight board-fixable diode↔wing-land pairs now carry B.Cu copper.
-Three do not, and the reason is geometric, not tuning — see §4.
+Three do not — and per the CORRECTION above, the reasons originally given for two
+of them were wrong: pair 3 has a corridor but no legal landing, and pair 2
+(`D_BP2.1`↔`J_W2.1`) routes outright. Only pair 6 has a genuinely closed
+corridor. See `REG-RADE.md` for the measurement that separates them.
 
-| net | pair | result |
+| net | pair | copper on the output board |
 |---|---|---|
-| `/W2_SOLAR_N` | `D_BP2.2` ↔ `J_W2.4` | **ROUTED** — 5 segs, 22.198 mm |
-| `/W2_SOLAR_N` | `J_W3.1` ↔ `D_BP3.1` | **ROUTED** — 3 segs, 10.050 mm |
-| `/W3_SOLAR_N` | `J_W3.4` ↔ `D_BP3.2` | **ROUTED** — 1 seg, 3.265 mm |
-| `/W1_SOLAR_N` | `D_BP1.2` ↔ `J_W1.4` | **ROUTED** — 3 segs, 9.663 mm |
-| `/W1_SOLAR_N` | `J_W1.4` ↔ `D_BP2.1` | **ROUTED** — 4 segs, 50.746 mm |
-| `/W3_SOLAR_N` | `J_W4.1` ↔ `D_BP4.1` | **BLOCKED** — see §4 |
-| `/W3_SOLAR_N` | `D_BP3.2` ↔ `J_W4.1` | **BLOCKED** — see §4 |
-| `/W1_SOLAR_N` | `D_BP2.1` ↔ `J_W2.1` | **BLOCKED** by its own siblings' copper |
+| `/W1_SOLAR_N` | `J_W1.4` ↔ `D_BP1.2` | **ROUTED** — 4 segs, 9.190 mm |
+| `/W1_SOLAR_N` | `J_W1.4` ↔ `D_BP2.1` | **ROUTED** — 8 segs, 50.946 mm |
+| `/W1_SOLAR_N` | `J_W2.1` ↔ `D_BP2.1` | **ROUTED** — 2 segs, 3.428 mm |
+| `/W2_SOLAR_N` | `J_W3.1` ↔ `D_BP3.1` | **ROUTED** — 4 segs, 9.132 mm |
+| `/W3_SOLAR_N` | `J_W3.4` ↔ `D_BP3.2` | **ROUTED** — 2 segs, 3.054 mm |
+| `/W2_SOLAR_N` | `J_W2.4` ↔ `D_BP2.2` | not routed — geometry exists, landing illegal at the slot |
+| `/W3_SOLAR_N` | `J_W4.1` ↔ `D_BP4.1` | not routed — geometry exists, landing illegal at the slot |
+| `/W3_SOLAR_N` | `D_BP3.2` ↔ `J_W4.1` | not routed — no B.Cu corridor at these rules |
 
 Plus the 9th record, which is *not* board-fixable at all:
 `GND` `D_BP4.2` (B.Cu) ↔ `U2.4` (F.Cu) — no shared copper layer. Left untouched.
 
-**Why the unconnected count moves by 3, not 5:** unconnected items are counted per
+**Why the unconnected count moves by 4, not 5:** unconnected items are counted per
 *equipotential group dimension*, not per pair. Closing a pair can merge two nets and
 therefore re-partition the remaining records of that net (KiCad re-pairs them). The
 multiset diff in `output/after/drc-summary.json` shows this explicitly: 14 records
