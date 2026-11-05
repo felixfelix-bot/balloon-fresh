@@ -1,0 +1,16 @@
+{
+  "targets": {
+    "C10.1 -> U1.2": false,
+    "C10.2 -> U7.2": false
+  },
+  "baseline_opens": 41,
+  "candidate_opens": 41,
+  "baseline_violations": 24,
+  "candidate_violations": 24,
+  "candidate_severities": {
+    "warning": 24
+  },
+  "added_nonconnectivity": [],
+  "removed_nonconnectivity": [],
+  "source_unchanged": true
+}

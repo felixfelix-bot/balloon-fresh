@@ -1,0 +1,11 @@
+{
+  "states": [
+    "baseline",
+    "candidate"
+  ],
+  "common_pad_count": 228,
+  "removed_pad_uuids": [],
+  "added_pad_uuids": [],
+  "broken_pairs": [],
+  "joined_pairs": []
+}

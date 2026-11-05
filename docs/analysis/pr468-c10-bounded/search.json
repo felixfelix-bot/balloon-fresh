@@ -1,0 +1,27 @@
+{
+  "source": "/home/c08r4d0r/reports/pr468-verification-853f648c/connectivity/refilled-after",
+  "grid_mm": 0.1,
+  "track_mm": 0.2,
+  "via_mm": [
+    0.6,
+    0.3
+  ],
+  "routes": [
+    {
+      "start": "U1.2",
+      "target": "C10.1",
+      "landing_layer": "In1.Cu",
+      "visited": 165,
+      "seconds": 14.852787206007633,
+      "success": false
+    },
+    {
+      "start": "C10.2",
+      "target": "U7.2",
+      "landing_layer": "B.Cu",
+      "visited": 218,
+      "seconds": 15.528261516010389,
+      "success": false
+    }
+  ]
+}
