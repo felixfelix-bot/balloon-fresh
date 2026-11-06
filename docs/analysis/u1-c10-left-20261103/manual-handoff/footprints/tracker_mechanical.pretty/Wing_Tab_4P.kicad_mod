@@ -1,0 +1,44 @@
+(footprint "Tracker_Mechanical:Wing_Tab_4P"
+  (version 20240108)
+  (generator "balloon_v9_hand")
+  (layer "F.Cu")
+  (descr "Hub-side WING SOCKET land set for the v9 3D hub/wing assembly: FOUR wing interfaces, one per hub edge, at 90 deg spacing. Per interface: 4 copper lands on EACH outer face (F.Cu + B.Cu) = 8 lands per interface, land 4.0 x 1.2 mm, pitch 1.8 mm, pads 1..4 = SOLAR_P / GND / RF_FEED (v9 provision, NO NET) / SOLAR_N. Cited: docs/adr/046-wing-board-interface.md s2.1/s2.2/s4.1 (4-pin tab, land 4.0x1.2 mm, 1.8 mm pitch, insert depth 6.0 mm, hub slot 0.9 mm +/-0.10 mm, 90 deg attach) and docs/WING-TO-HUB-SOCKET-SPEC.md s2/s4/s6 (4 lands per face, 8 per interface, edge clearance, keep-outs, silkscreen). docs/adr/048-v9-hub-wing-interfaces.md records which numbers are cited vs newly decided. NOT human-accepted: ADR-046 and ADR-048 are Status Proposed.")
+  (tags "balloon v9 hub wing socket 4P edge-socket Tracker_Mechanical")
+  (attr smd)
+  (property "Reference" "J_W" (at 8.0 -7.0 0) (layer "F.SilkS") (uuid "9f0a1b2c-0001-4000-8000-00000000a001") (effects (font (size 1 1) (thickness 0.15))))
+  (property "Value" "Wing_Tab_4P" (at 8.0 7.0 0) (layer "F.Fab") (uuid "9f0a1b2c-0002-4000-8000-00000000a002") (effects (font (size 1 1) (thickness 0.15))))
+  (property "Footprint" "" (at 0 0 0) (layer "F.Fab") (uuid "9f0a1b2c-0003-4000-8000-00000000a003") (effects (font (size 1 1) (thickness 0.15)) hide))
+
+
+  (pad "1" smd rect (at 3.0 -2.7) (size 4.0 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "9f0a1b2c-0101-4000-8000-00000000b101"))
+  (pad "2" smd rect (at 3.0 -0.9) (size 4.0 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "9f0a1b2c-0102-4000-8000-00000000b102"))
+  (pad "3" smd rect (at 3.0 0.9) (size 4.0 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "9f0a1b2c-0103-4000-8000-00000000b103"))
+  (pad "4" smd rect (at 3.0 2.7) (size 4.0 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "9f0a1b2c-0104-4000-8000-00000000b104"))
+
+
+  (pad "1" smd rect (at 3.0 -2.7) (size 4.0 1.2) (layers "B.Cu" "B.Paste" "B.Mask") (uuid "9f0a1b2c-0201-4000-8000-00000000c201"))
+  (pad "2" smd rect (at 3.0 -0.9) (size 4.0 1.2) (layers "B.Cu" "B.Paste" "B.Mask") (uuid "9f0a1b2c-0202-4000-8000-00000000c202"))
+  (pad "3" smd rect (at 3.0 0.9) (size 4.0 1.2) (layers "B.Cu" "B.Paste" "B.Mask") (uuid "9f0a1b2c-0203-4000-8000-00000000c203"))
+  (pad "4" smd rect (at 3.0 2.7) (size 4.0 1.2) (layers "B.Cu" "B.Paste" "B.Mask") (uuid "9f0a1b2c-0204-4000-8000-00000000c204"))
+
+  (fp_line (start 0.0 -0.25) (end 6.0 -0.25) (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "9f0a1b2c-0301-4000-8000-00000000d301"))
+  (fp_line (start 6.0 -0.25) (end 6.0 0.25) (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "9f0a1b2c-0302-4000-8000-00000000d302"))
+  (fp_line (start 6.0 0.25) (end 0.0 0.25) (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "9f0a1b2c-0303-4000-8000-00000000d303"))
+  (fp_line (start 0.0 0.25) (end 0.0 -0.25) (stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "9f0a1b2c-0304-4000-8000-00000000d304"))
+
+  (fp_line (start -1.0 -1.45) (end 7.0 -1.45) (stroke (width 0.05) (type dash)) (layer "Dwgs.User") (uuid "9f0a1b2c-0401-4000-8000-00000000e401"))
+  (fp_line (start 7.0 -1.45) (end 7.0 1.45) (stroke (width 0.05) (type dash)) (layer "Dwgs.User") (uuid "9f0a1b2c-0402-4000-8000-00000000e402"))
+  (fp_line (start 7.0 1.45) (end -1.0 1.45) (stroke (width 0.05) (type dash)) (layer "Dwgs.User") (uuid "9f0a1b2c-0403-4000-8000-00000000e403"))
+  (fp_line (start -1.0 1.45) (end -1.0 -1.45) (stroke (width 0.05) (type dash)) (layer "Dwgs.User") (uuid "9f0a1b2c-0404-4000-8000-00000000e404"))
+
+  (fp_line (start -0.5 -4.8) (end 6.5 -4.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "9f0a1b2c-0501-4000-8000-00000000f501"))
+  (fp_line (start 6.5 -4.8) (end 6.5 4.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "9f0a1b2c-0502-4000-8000-00000000f502"))
+  (fp_line (start 6.5 4.8) (end -0.5 4.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "9f0a1b2c-0503-4000-8000-00000000f503"))
+  (fp_line (start -0.5 4.8) (end -0.5 -4.8) (stroke (width 0.05) (type solid)) (layer "F.CrtYd") (uuid "9f0a1b2c-0504-4000-8000-00000000f504"))
+
+  (fp_text user "W" (at 8.0 -6.4) (layer "F.SilkS") (uuid "9f0a1b2c-0601-4000-8000-000000010601") (effects (font (size 1.0 1.0) (thickness 0.15))))
+  (fp_text user "1" (at 8.0 -2.7) (layer "F.SilkS") (uuid "9f0a1b2c-0602-4000-8000-000000010602") (effects (font (size 1.0 1.0) (thickness 0.15))))
+  (fp_text user "4" (at 8.0 2.7) (layer "F.SilkS") (uuid "9f0a1b2c-0603-4000-8000-000000010603") (effects (font (size 1.0 1.0) (thickness 0.15))))
+  (fp_text user "90" (at 8.0 5.2) (layer "F.SilkS") (uuid "9f0a1b2c-0604-4000-8000-000000010604") (effects (font (size 1.0 1.0) (thickness 0.15))))
+  (fp_line (start 6.4 0.0) (end 7.6 0.0) (stroke (width 0.15) (type solid)) (layer "F.SilkS") (uuid "9f0a1b2c-0605-4000-8000-000000010605"))
+)
