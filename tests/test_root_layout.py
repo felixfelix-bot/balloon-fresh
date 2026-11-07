@@ -43,8 +43,8 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_ALLOWLIST = {
     # VCS / tooling config
     ".gitignore", ".gitmodules", ".secret-patterns.txt",
-    # repo-wide docs
-    "AGENTS.md", "README.md", "PROGRESS.md",
+    # repo-wide docs and licence
+    "AGENTS.md", "README.md", "PROGRESS.md", "LICENSE",
     # build / test / project config
     "Makefile", "pyproject.toml", "pytest.ini", "uv.lock",
 }
