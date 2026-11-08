@@ -1,0 +1,50 @@
+{
+  "baseline": {
+    "sha256": "7be7bb4f12473156b0ceba5c722c0b840b885fb3eff873ce66fde364d66a8ee9",
+    "opens": 42,
+    "violations": {
+      "silk_over_copper:warning": 3,
+      "lib_footprint_mismatch:warning": 11,
+      "lib_footprint_issues:warning": 8,
+      "via_dangling:warning": 2
+    },
+    "new_nonconnectivity_identities": [],
+    "new_details": []
+  },
+  "trial-01": {
+    "sha256": "3a2ee372dd655b23aab51157a32ac9deda7cf4f631bcf57339fe36b284812ac7",
+    "opens": 42,
+    "violations": {
+      "silk_over_copper:warning": 3,
+      "lib_footprint_mismatch:warning": 11,
+      "lib_footprint_issues:warning": 8,
+      "via_dangling:warning": 2
+    },
+    "new_nonconnectivity_identities": [],
+    "new_details": []
+  },
+  "trial-02": {
+    "sha256": "0b9308ec7401b230ca5450f3380aef86469af41d0eda76f977d4fbeb1f20af59",
+    "opens": 42,
+    "violations": {
+      "silk_over_copper:warning": 3,
+      "lib_footprint_mismatch:warning": 11,
+      "lib_footprint_issues:warning": 8,
+      "via_dangling:warning": 2
+    },
+    "new_nonconnectivity_identities": [],
+    "new_details": []
+  },
+  "trial-03": {
+    "sha256": "3b6567faa9a294c99521f07256d1aa38d609b859777861d9f95f87631769f949",
+    "opens": 41,
+    "violations": {
+      "silk_over_copper:warning": 3,
+      "lib_footprint_mismatch:warning": 11,
+      "lib_footprint_issues:warning": 8,
+      "via_dangling:warning": 2
+    },
+    "new_nonconnectivity_identities": [],
+    "new_details": []
+  }
+}

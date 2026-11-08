@@ -1,0 +1,2 @@
+# Copy-only bounded routing experiment
+Source SHA256 7be7bb4f12473156b0ceba5c722c0b840b885fb3eff873ce66fde364d66a8ee9 verified; paired files frozen. Worktree ~/worktrees/u1-c10-left-20261103 branch experiment/u1-c10-left-20261103. No canonical edits. Scope 3 candidate attempts maximum, 180s each; all three endpoint pairs must pass plus no new native DRC identity. Existing paired rules contain legacy conditionless edge exemptions: preserved, not endorsed.

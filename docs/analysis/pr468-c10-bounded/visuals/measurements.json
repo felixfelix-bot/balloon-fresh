@@ -1,0 +1,324 @@
+{
+  "source_sha256": {
+    "before": "a732114acc2e0cf5950b750d2b64ad6f42890b7687cad178bba2942e3c892ce9",
+    "after": "a732114acc2e0cf5950b750d2b64ad6f42890b7687cad178bba2942e3c892ce9"
+  },
+  "scope": "Original boards; hard copper only, no zones. All physical copper layers checked for via-pad overlap. Kernel d_point minus via outer radius (negative = overlap); no net exclusions.",
+  "via_pad_checks": [
+    {
+      "state": "before",
+      "xy_mm": [
+        8.15,
+        40.25
+      ],
+      "net": "GND",
+      "drill_mm": 0.3,
+      "layers": {
+        "F.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "C10.2",
+              "net": "GND",
+              "gap_mm": 1.5068899099242503
+            },
+            {
+              "pad": "U1.6",
+              "net": "/SPI2_MISO",
+              "gap_mm": 1.8500000000000003
+            },
+            {
+              "pad": "U1.7",
+              "net": "/F33_CS_N",
+              "gap_mm": 1.997520402520945
+            }
+          ],
+          "pads_checked": 196
+        },
+        "In1.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.17533678849714
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.39078197163253
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.852567038730335
+            }
+          ],
+          "pads_checked": 27
+        },
+        "In2.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.17533678849714
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.39078197163253
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.852567038730335
+            }
+          ],
+          "pads_checked": 27
+        },
+        "B.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "J_W1.3",
+              "net": "/CUT_SENSE_W1",
+              "gap_mm": 2.850396800404673
+            },
+            {
+              "pad": "J_W1.2",
+              "net": "GND",
+              "gap_mm": 2.8976553910638962
+            },
+            {
+              "pad": "J_W1.4",
+              "net": "/W1_SOLAR_N",
+              "gap_mm": 3.353080891521567
+            }
+          ],
+          "pads_checked": 114
+        }
+      }
+    },
+    {
+      "state": "after",
+      "xy_mm": [
+        8.15,
+        40.25
+      ],
+      "net": "GND",
+      "drill_mm": 0.3,
+      "layers": {
+        "F.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "C10.2",
+              "net": "GND",
+              "gap_mm": 1.5068899099242503
+            },
+            {
+              "pad": "U1.6",
+              "net": "/SPI2_MISO",
+              "gap_mm": 1.8500000000000003
+            },
+            {
+              "pad": "U1.7",
+              "net": "/F33_CS_N",
+              "gap_mm": 1.997520402520945
+            }
+          ],
+          "pads_checked": 196
+        },
+        "In1.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.17533678849714
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.39078197163253
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.852567038730335
+            }
+          ],
+          "pads_checked": 27
+        },
+        "In2.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.17533678849714
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.39078197163253
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.852567038730335
+            }
+          ],
+          "pads_checked": 27
+        },
+        "B.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "J_W1.3",
+              "net": "/CUT_SENSE_W1",
+              "gap_mm": 2.850396800404673
+            },
+            {
+              "pad": "J_W1.2",
+              "net": "GND",
+              "gap_mm": 2.8976553910638962
+            },
+            {
+              "pad": "J_W1.4",
+              "net": "/W1_SOLAR_N",
+              "gap_mm": 3.353080891521567
+            }
+          ],
+          "pads_checked": 114
+        }
+      }
+    },
+    {
+      "state": "after",
+      "xy_mm": [
+        8.52,
+        43
+      ],
+      "net": "+3V3",
+      "drill_mm": 0.3,
+      "layers": {
+        "F.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "C10.1",
+              "net": "+3V3",
+              "gap_mm": 0.2500000000000007
+            },
+            {
+              "pad": "C10.2",
+              "net": "GND",
+              "gap_mm": 0.6478266297430153
+            },
+            {
+              "pad": "U1.8",
+              "net": "/SPI1_MOSI",
+              "gap_mm": 1.480000000000001
+            }
+          ],
+          "pads_checked": 196
+        },
+        "In1.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 7.808728915092243
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.038695474620297
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.482567
+            }
+          ],
+          "pads_checked": 27
+        },
+        "In2.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 7.808728915092243
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.038695474620297
+            },
+            {
+              "pad": "U1.41",
+              "net": "GND",
+              "gap_mm": 8.482567
+            }
+          ],
+          "pads_checked": 27
+        },
+        "B.Cu": {
+          "diameter_mm": 0.6,
+          "overlaps": [],
+          "nearest": [
+            {
+              "pad": "U_CUT1.4",
+              "net": "",
+              "gap_mm": 2.45
+            },
+            {
+              "pad": "U_CUT1.3",
+              "net": "/CUT_SENSE_W1",
+              "gap_mm": 2.885261936659683
+            },
+            {
+              "pad": "J_W1.4",
+              "net": "/W1_SOLAR_N",
+              "gap_mm": 3.2199999999999998
+            }
+          ],
+          "pads_checked": 114
+        }
+      }
+    }
+  ],
+  "kernel_validation": true,
+  "svg_validation": {
+    "files": [
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/local-F.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/local-In1.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/local-In2.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/local-B.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/rail-context-F.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/rail-context-In1.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/rail-context-In2.Cu-before-after.svg",
+      "/home/c08r4d0r/reports/pr468-c10-bounded/visuals/rail-context-B.Cu-before-after.svg"
+    ],
+    "xml_parse": "passed",
+    "required_annotations": "passed",
+    "fixed_label_baseline_spacing_px": 66,
+    "label_line_height_px": 17,
+    "note": "Annotation columns outside copper crop; leader lines do not alter geometry."
+  }
+}
