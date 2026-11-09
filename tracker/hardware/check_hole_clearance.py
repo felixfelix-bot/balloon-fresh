@@ -27,6 +27,9 @@ import pcbnew
 UM = 1_000_000.0
 PAD_GAP = 1.0        # mm, hole-edge to pad-edge
 LANE_GAP = 0.5       # mm, hole-edge to track-edge
+ZONE_GAP = 0.2       # mm, hole-edge to pour fill. JLCPCB's minimum NPTH-to-copper is 0.20 mm, so
+                     # 0.20 is the fabrication floor, not a comfort margin. HW1 measures 0.25 mm
+                     # on F.Cu/In1, which is why this passes by 0.05 mm and must not be loosened.
 EDGE_GAP = 2.0       # mm, hole-edge to board edge
 HOLE2HOLE = 4.0      # mm, centre-to-centre
 
@@ -104,14 +107,64 @@ def main():
                 gap = d - hr - t.GetWidth() / 2 / UM
                 if gap < LANE_GAP:
                     bad.append(f"{ref} <-> LANE {t.GetNetname() or '(no net)'}: gap {gap:.2f} < {LANE_GAP}")
-    # hole <-> zones (bbox, conservative)
+    # hole <-> zones: test the FILL, not the bounding box.
+    #
+    # The bbox test that used to be here could never pass on this board: the pours cover the whole
+    # outline (71.1 x 79.1 mm), so every mounting hole "intersected" every pour's bounding box by
+    # construction. Measured 2026-11-09: 40 violations on a board with 8 holes and 5 zones -- 8 x 5
+    # bbox hits -- reported as "verify keep-out" with no way to act on any of them. A gate that
+    # cannot pass is not a gate; it is a permanent red light people learn to ignore, which is
+    # strictly worse than no check, because it also hides real violations of the same shape.
+    #
+    # What actually matters is whether the hole's drill edge penetrates the copper that the pour
+    # really lays down. Ask the fill polygon, and ask it with the hole's edge as a circle.
     for ref, cx, cy, hr in centers:
         for z in b.Zones():
-            zb = z.GetBoundingBox()
-            zx0, zy0 = zb.GetX() / UM, zb.GetY() / UM
-            zx1, zy1 = zx0 + zb.GetWidth() / UM, zy0 + zb.GetHeight() / UM
-            if zx0 - hr < cx + hr and zx1 + hr > cx - hr and zy0 - hr < cy + hr and zy1 + hr > cy - hr:
-                bad.append(f"{ref} <-> ZONE {z.GetNetname()} bbox intersects (verify keep-out)")
+            try:
+                poly = z.GetFilledPolysList(z.GetLayer())
+            except Exception:
+                poly = None
+            if poly is None or poly.IsEmpty():
+                # unfilled zone: it lays down no copper, so it cannot violate a keep-out. Not a
+                # pass-by-omission -- a pour that has not been filled is air.
+                continue
+            hit = False
+            # CollideEdge takes a POINT, not a shape; step the hole's rim around the circle.
+            N = 24
+            for i in range(N):
+                th = 2 * math.pi * i / N
+                px = int(round((cx + hr * math.cos(th)) * UM))
+                py = int(round((cy + hr * math.sin(th)) * UM))
+                pt = pcbnew.VECTOR2I(px, py)
+                try:
+                    if poly.Collide(pt, 0):
+                        hit = True
+                        break
+                except Exception:
+                    continue
+            # and the centre, which catches a hole fully swallowed by the pour
+            if not hit:
+                try:
+                    if poly.Collide(pcbnew.VECTOR2I(int(round(cx * UM)), int(round(cy * UM))), 0):
+                        hit = True
+                except Exception:
+                    pass
+            if hit:
+                gap = 0.0
+            else:
+                # measure the real clearance, so a pour that comes close but not quite is reported
+                # with a number instead of passing silently
+                try:
+                    gap = min(
+                        poly.Distance(pcbnew.VECTOR2I(
+                            int(round((cx + hr * math.cos(2 * math.pi * i / 24)) * UM)),
+                            int(round((cy + hr * math.sin(2 * math.pi * i / 24)) * UM)))) / UM
+                        for i in range(24))
+                except Exception:
+                    continue
+            if gap < ZONE_GAP:
+                bad.append(f"{ref} <-> ZONE {z.GetNetname()} ({b.GetLayerName(z.GetLayer())}): "
+                           f"drill edge to fill {gap:.2f} mm < {ZONE_GAP} mm")
     # hole <-> edge
     for ref, cx, cy, hr in centers:
         d = min(cx - x0, (x0 + W) - cx, cy - y0, (y0 + H) - cy) - hr
