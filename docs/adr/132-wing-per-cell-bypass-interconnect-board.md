@@ -238,3 +238,11 @@ wing is weighed — do not size the keeper to the pre-board number.
 ---
 
 *Accepted by operator 2026-10-25. Design only: no board, BOM, order or fab authorisation.*
+
+> **CORRECTION 2026-11-10 — the size in the paragraph above is STALE.** Measured from the board
+> (`wing_interconnect_v1.kicad_pcb`, `Edge.Cuts` centreline): **34.60 × 20.00 mm**, not 44 × 20.
+> The generator derives the width from the pad extents — *"pads end at x=33.00, +1.6 edge = 34.6"* —
+> because the original 44 mm outline left **11 mm of the right-hand side with no copper at all**.
+> Mass therefore improves: **0.62 g/wing, 2.50 g for four** (was 0.79 / 3.18).
+> The BOARD is correct; this record's figure is stale. Fab bundle and full derivation:
+> `docs/fab/wing-interconnect-order/README.md`. Everything else in this record stands.

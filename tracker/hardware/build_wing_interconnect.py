@@ -222,7 +222,14 @@ def build() -> str:
     A("  (general (thickness 0.4))")
     A('  (paper "A4")')
     A("  (layers")
+    # COPPER + SILK alone is not a fab-ready board: with no F.Mask/B.Mask/Paste declared, the
+    # gerber exporter silently omits those layers and JLCPCB cannot produce the board. Measured
+    # 2026-11-10: DRC reported 0/0 on the old declaration, which is why this went unnoticed --
+    # DRC checks geometry, not whether the layer set is complete. The hub board declares all of
+    # these, which is why it has always exported a full set.
     A('    (0 "F.Cu" signal) (31 "B.Cu" signal)')
+    A('    (13 "F.Paste" user) (15 "B.Paste" user)')
+    A('    (5 "F.Mask" user) (7 "B.Mask" user)')
     A('    (36 "B.SilkS" user "b.silkscreen") (37 "F.SilkS" user "f.silkscreen")')
     A('    (44 "Edge.Cuts" user)')
     A("  )")

@@ -1,0 +1,5 @@
+Designator,Function
+J1,"wing->hub tab, 2 pads: SOLAR_P / SOLAR_N"
+SC1,cell 1 tail lands: SOLAR_P / SOLAR_MID1
+SC2,cell 2 tail lands: SOLAR_MID1 / SOLAR_MID2
+SC3,cell 3 tail lands: SOLAR_MID2 / SOLAR_N

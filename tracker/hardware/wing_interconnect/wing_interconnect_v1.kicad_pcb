@@ -10,6 +10,10 @@
 	(layers
 		(0 "F.Cu" signal)
 		(2 "B.Cu" signal)
+		(13 "F.Paste" user)
+		(15 "B.Paste" user)
+		(5 "F.Mask" user)
+		(7 "B.Mask" user)
 		(5 "F.SilkS" user "f.silkscreen")
 		(7 "B.SilkS" user "b.silkscreen")
 		(25 "Edge.Cuts" user)
