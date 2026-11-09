@@ -150,8 +150,21 @@ def test_b58_append_deletes_rerouted_nets_copper():
     """
     s = src()
     assert "B58" in s, "B58 comment block missing -- the delete-old-copper fix may be reverted"
-    assert re.search(r"if \(t\.GetNetname\(\) or \"\"\) in reroute:\n\s+b\.Remove\(t\)", s), (
-        "B58 regression: --append no longer REMOVES a re-routed net's existing copper"
+    # Assert the BEHAVIOUR, not one particular phrasing. The original pinned the exact two lines
+    # that did the removal; a later correct refactor (snapshot the copper first so a failed search
+    # cannot leave the net stripped) moved those lines into a loop over a `doomed` list and broke
+    # this test while the behaviour was unchanged and improved. A grep-shaped test that fails on a
+    # refactor teaches people to weaken the test rather than trust it.
+    assert re.search(r"b\.Remove\(\w+\)", s), (
+        "B58 regression: nothing in the router removes a re-routed net's existing copper"
+    )
+    assert "in reroute" in s, (
+        "B58 regression: the removal is no longer scoped to the nets being re-routed"
+    )
+    # and the net must be PUT BACK when the re-route fails -- otherwise a failure destroys it
+    assert "RESTORED" in s and "_REROUTE_BACKUP" in s, (
+        "B58b regression: a FAILED re-route no longer restores the old copper, so a failed search "
+        "would save the board with the net stripped"
     )
 
 

@@ -5,12 +5,12 @@
       "Application": "Pcbnew",
       "Version": "9.0.9-9.0.9~ubuntu24.04.1"
     },
-    "CreationDate": "2026-11-08T20:34:49+01:00"
+    "CreationDate": "2026-11-09T21:54:10+01:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
-      "Name": "board",
-      "GUID": "626f6172-642e-46b6-9963-61645f706362",
+      "Name": "regen",
+      "GUID": "72656765-6e2e-46b6-9963-61645f706362",
       "Revision": "rev?"
     },
     "Size": {
@@ -28,8 +28,8 @@
       "PadToTrack": 0.2,
       "TrackToTrack": 0.2,
       "MinLineWidth": 0.2,
-      "TrackToRegion": 0.2,
-      "RegionToRegion": 0.2
+      "TrackToRegion": 0.25,
+      "RegionToRegion": 0.25
     },
     {
       "Layers": "Inner",
@@ -37,123 +37,123 @@
       "PadToTrack": 0.0,
       "TrackToTrack": 0.2,
       "MinLineWidth": 0.2,
-      "TrackToRegion": 0.2,
-      "RegionToRegion": 0.2
+      "TrackToRegion": 0.25,
+      "RegionToRegion": 0.25
     }
   ],
   "FilesAttributes": [
     {
-      "Path": "board-F_Cu.gtl",
+      "Path": "regen-F_Cu.gtl",
       "FileFunction": "Copper,L1,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-In1_Cu.g1",
+      "Path": "regen-In1_Cu.g1",
       "FileFunction": "Copper,L2,Inr",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-In2_Cu.g2",
+      "Path": "regen-In2_Cu.g2",
       "FileFunction": "Copper,L3,Inr",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-B_Cu.gbl",
+      "Path": "regen-B_Cu.gbl",
       "FileFunction": "Copper,L4,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-F_Adhesive.gta",
+      "Path": "regen-F_Adhesive.gta",
       "FileFunction": "Glue,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-B_Adhesive.gba",
+      "Path": "regen-B_Adhesive.gba",
       "FileFunction": "Glue,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-F_Paste.gtp",
+      "Path": "regen-F_Paste.gtp",
       "FileFunction": "SolderPaste,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-B_Paste.gbp",
+      "Path": "regen-B_Paste.gbp",
       "FileFunction": "SolderPaste,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-F_Silkscreen.gto",
+      "Path": "regen-F_Silkscreen.gto",
       "FileFunction": "Legend,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-B_Silkscreen.gbo",
+      "Path": "regen-B_Silkscreen.gbo",
       "FileFunction": "Legend,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-F_Mask.gts",
+      "Path": "regen-F_Mask.gts",
       "FileFunction": "SolderMask,Top",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "board-B_Mask.gbs",
+      "Path": "regen-B_Mask.gbs",
       "FileFunction": "SolderMask,Bot",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "board-User_Drawings.gbr",
+      "Path": "regen-User_Drawings.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_Comments.gbr",
+      "Path": "regen-User_Comments.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_Eco1.gbr",
+      "Path": "regen-User_Eco1.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_Eco2.gbr",
+      "Path": "regen-User_Eco2.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-Edge_Cuts.gm1",
+      "Path": "regen-Edge_Cuts.gm1",
       "FileFunction": "Profile",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-F_Fab.gbr",
+      "Path": "regen-F_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-B_Fab.gbr",
+      "Path": "regen-B_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_1.gbr",
+      "Path": "regen-User_1.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_2.gbr",
+      "Path": "regen-User_2.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_3.gbr",
+      "Path": "regen-User_3.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "board-User_4.gbr",
+      "Path": "regen-User_4.gbr",
       "FileFunction": "Other,User",
       "FilePolarity": "Positive"
     }
