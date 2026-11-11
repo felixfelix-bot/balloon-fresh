@@ -8,6 +8,7 @@
 | | before (`_placed_v2`) | after (`_unrouted`) |
 |---|---:|---:|
 | footprints | **44** | **53** |
+| outline | 55 × 40 (declared) | **55 × 40** (was 70 × 50 in the first cut) |
 | tracks / vias | 0 | 0 |
 | **ERROR-severity DRC** | **74** | **0** |
 | warnings | 69 | 12 (`lib_footprint_mismatch`) |
@@ -82,31 +83,47 @@ report.
    ("NO SITE … within 26 mm"). The search now runs to the board diagonal. Silk went 84 → 0 in one
    round afterwards.
 
-## Density (AGENTS.md §1b) — measured, and a decision left to the operator
+## Density (AGENTS.md §1b) — 55 × 40 mm adopted
 
-| outline | area | courtyard occupancy | largest empty rect |
-|---|---:|---:|---:|
-| 55 × 40 | 2214.3 mm² | 36.93 % | 732.1 mm² |
-| 60 × 45 | 2715.8 mm² | 30.11 % | 1220.1 mm² |
-| 70 × 50 (shipped) | 3518.0 mm² | **23.22 %** | **1984.6 mm²** |
-| two-sided | **0 mm² saved** | — | — |
+`docs/fab/BASE-STATION-PLACEMENT.md` names **55 × 40** as the tight candidate and **60 × 45** as the
+routing-room fallback; 70 × 50 appears there only as a utilisation comparison point (26.1 %). The
+doc explicitly declines to commit — *"neither is a geometric commitment yet"* — so the outline was a
+decision to make, and §1b says to take the smaller one when it is materially smaller.
 
-**55 × 40 also seats all 53 parts and also grades 0 errors — 37.1 % smaller.** It is not adopted
-here because the choice trades area/cost against routing headroom, and that is the operator's
-call, not a measurement. 70 × 50 is kept because it is what the existing artifact and every
-consumer reference.
+| outline | area | occupancy | largest empty rect | grade |
+|---|---:|---:|---:|---|
+| 48 × 33 | 1584 mm² | — | — | **FAIL** — 10 `silk_edge_clearance` |
+| 50 × 36 | 1800 mm² | — | — | **FAIL** — designators on the edge |
+| 52 × 38 | 1976 mm² | — | — | **FAIL** — 3 silk |
+| **55 × 40** | **2200 mm²** | **36.93 %** | **732.1 mm²** | **CLEAN** |
+| 60 × 45 | 2700 mm² | 30.11 % | 1220.1 mm² | clean |
+| 70 × 50 (rejected) | 3500 mm² | 23.22 % | 1984.6 mm² | clean |
 
-**Two-sided buys nothing measurable on this board**, and that is a measured statement, not a
-dismissal: at 23 % single-sided occupancy the binding constraint is the packer's row layout, not
-part area, so a second side can only shrink the outline by splitting the ADR-084 RF chain
-(LNA → BPF → VGA → detector) or the U_MCU decoupler ring across faces — both forbidden by §1b
-without proof. `two_sided_measure.py` computes and prints this rather than asserting it.
+55 × 40 is **36.8 % smaller than 70 × 50** and 18.5 % smaller than 60 × 45, and it still seats all
+53 parts with 0 errors. Adoption criteria were explicit and all met: seats all 53, `SKIP 0`,
+`OVERFLOW 0`, 0 ERROR-severity violations, silk 0, placement and density gates rc=0, ratnest
+identity exact, pad_audit 0 findings, parity PASS.
+
+**The floor is the SILKSCREEN, not the parts.** 52 × 38 and 48 × 33 seat all 53 perfectly
+(`OVERFLOW 0`) but leave designators on `Edge.Cuts`, because §26 fixes designator text at
+**0.80 mm / 0.15 mm** — the JLCPCB minimum — so it needs a certain empty margin that the packing
+test does not model. Below 55 × 40 you must either shrink text under the fab minimum or accept
+edge-clipped labels. That is the real binding constraint, and it was found by running the whole
+gate, not the packer alone.
+
+**Two-sided: measured, 0 mm² claimed.** `two_sided_measure.py` now *reads the movable set from the
+board each run* and prints it — 3 of 53 parts (`R_PG`, `R_RUN`, `R_LNA_ILIM`) are series/pull parts
+that §1b permits moving; the other 50 are pinned (U_MCU decoupler ring, ADR-084 RF chain,
+connectors, test points). Three resistors cannot free a lattice row, so the claimable saving is
+zero. An earlier version of that tool *printed* a hardcoded "23.22 %" verdict — 70 × 50's number —
+without measuring; that is a verdict asserted in prose, exactly what §1b exists to stop, and it is
+fixed.
 
 ## What is NOT claimed
 
 - **Not routed.** 0 tracks, 82 opens. This is the legal pre-routing state, not a working board.
-- **No gerbers, no render, no fab package.** AGENTS §4 wants a rendered image with a board claim;
-  none is attached to this commit.
+- **No gerbers, no fab package.** A 3D render is generated and reviewed locally (`kicad-cli pcb
+  render`, 24.4 s / 629 KB — bodies present, not a flat placeholder) but is not committed.
 - **12 `lib_footprint_mismatch` warnings remain.** They vary between runs (2 at one point, 12 at
   another) which suggests library resolution in the scratch workdir rather than board damage, but
   that is **not proven** and is therefore not written off.
@@ -119,7 +136,7 @@ without proof. `two_sided_measure.py` computes and prints this rather than asser
 ```
 cd tracker/hardware/base_station
 PYTHONPATH=/usr/lib/python3/dist-packages /usr/bin/python3 build_unrouted_board.py \
-    --outline 70x50 -o base_station_v1_unrouted.kicad_pcb
+    --outline 55x40 -o base_station_v1_unrouted.kicad_pcb
 ```
 
 Instruments (each prints its numbers; none is a gate that can pass silently):

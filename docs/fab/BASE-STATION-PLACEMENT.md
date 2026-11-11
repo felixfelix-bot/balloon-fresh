@@ -29,6 +29,15 @@ placement `6998e06e`).
 routing results** — if the 55×40 route struggles, 60×45 is the fallback, and neither is a
 geometric commitment yet.
 
+**RESOLVED 2026-11-11 — 55 × 40 mm ADOPTED.** The netlist grew from 44 to 53 parts since this
+measurement, so the candidates were re-run against the real netlist. **55 × 40 seats all 53 with
+0 ERROR-severity violations and 0 silkscreen violations**, and is 36.8 % smaller than the 70 × 50
+comparison point. The floor is the *silkscreen*, not the parts: 52 × 38 and 48 × 33 also seat all
+53 (`OVERFLOW 0`) but push designators onto `Edge.Cuts`, because AGENTS §26 fixes designator text at
+0.80 mm — the JLCPCB minimum — which needs edge margin the packer does not model. Two-sided was
+measured and claims **0 mm²**: only 3 of 53 parts are movable under §1b.
+Detail and reproduce commands: `docs/fab/BASE-STATION-UNROUTED-CLEAN.md`.
+
 ## Three real defects found and fixed
 
 ### (1) My own netlist format was wrong — and failed SILENTLY

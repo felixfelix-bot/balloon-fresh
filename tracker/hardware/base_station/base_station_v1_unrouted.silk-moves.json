@@ -1,16 +1,16 @@
 {
- "board": "/tmp/baseclean/bfinal2/work/refilled.kicad_pcb",
- "out": "/home/c08r4d0r/worktrees/pr-base-clean/tracker/hardware/base_station/base_station_v1_unrouted.kicad_pcb",
+ "board": "/tmp/baseclean/final5540/work/refilled.kicad_pcb",
+ "out": "/tmp/baseclean/final5540/out.kicad_pcb",
  "moves": [
   {
    "ref": "C_DET1",
    "part_xy": [
-    30.955,
-    19.505
+    1.955,
+    25.505
    ],
    "label_xy": [
-    31.95,
-    21.55
+    2.95,
+    27.55
    ],
    "offset_mm": 2.25,
    "side": "F",
@@ -19,350 +19,378 @@
   {
    "ref": "C_DET2",
    "part_xy": [
-    33.955,
-    19.505
+    4.955,
+    25.505
    ],
    "label_xy": [
-    34.95,
-    23.4
-   ],
-   "offset_mm": 4.0,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_FLASH",
-   "part_xy": [
-    24.955,
-    21.505
-   ],
-   "label_xy": [
-    25.95,
-    23.55
-   ],
-   "offset_mm": 2.25,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_LDO1",
-   "part_xy": [
-    29.745,
-    17.025
-   ],
-   "label_xy": [
-    31.2,
-    25.15
-   ],
-   "offset_mm": 8.25,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_LDO2",
-   "part_xy": [
-    33.745,
-    17.025
-   ],
-   "label_xy": [
-    40.2,
-    22.55
-   ],
-   "offset_mm": 8.5,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_LNA1",
-   "part_xy": [
-    24.955,
-    19.505
-   ],
-   "label_xy": [
-    20.65,
-    22.0
-   ],
-   "offset_mm": 5.0,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_LNA2",
-   "part_xy": [
-    55.745,
-    16.025
-   ],
-   "label_xy": [
-    54.8,
-    20.95
-   ],
-   "offset_mm": 5.0,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU1",
-   "part_xy": [
-    49.955,
-    19.505
-   ],
-   "label_xy": [
-    49.7,
-    21.75
-   ],
-   "offset_mm": 2.25,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU2",
-   "part_xy": [
-    17.525,
-    19.775
-   ],
-   "label_xy": [
-    15.5,
-    22.95
+    8.05,
+    27.65
    ],
    "offset_mm": 3.75,
    "side": "F",
    "round": 0
   },
   {
-   "ref": "C_MCU_P10",
+   "ref": "C_FLASH",
    "part_xy": [
-    63.955,
-    19.505
+    43.955,
+    26.505
    ],
    "label_xy": [
-    64.2,
-    21.75
+    44.95,
+    28.55
    ],
    "offset_mm": 2.25,
    "side": "F",
    "round": 0
   },
   {
-   "ref": "C_MCU_P22",
+   "ref": "C_IN",
    "part_xy": [
-    66.955,
-    19.505
+    38.345,
+    22.195
    ],
    "label_xy": [
-    65.6,
-    23.55
-   ],
-   "offset_mm": 4.25,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P23",
-   "part_xy": [
-    36.955,
-    20.505
-   ],
-   "label_xy": [
-    37.9,
-    25.15
-   ],
-   "offset_mm": 4.75,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P33",
-   "part_xy": [
-    1.955,
-    20.505
-   ],
-   "label_xy": [
-    4.45,
-    22.6
-   ],
-   "offset_mm": 3.25,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P42",
-   "part_xy": [
-    4.955,
-    20.505
-   ],
-   "label_xy": [
-    5.95,
-    24.4
-   ],
-   "offset_mm": 4.0,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P43",
-   "part_xy": [
-    7.955,
-    20.505
-   ],
-   "label_xy": [
-    8.95,
-    26.15
-   ],
-   "offset_mm": 5.75,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P48",
-   "part_xy": [
-    10.955,
-    20.505
-   ],
-   "label_xy": [
-    16.4,
-    24.9
-   ],
-   "offset_mm": 7.0,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P49",
-   "part_xy": [
-    13.955,
-    20.505
-   ],
-   "label_xy": [
-    16.9,
-    26.55
-   ],
-   "offset_mm": 6.75,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "C_MCU_P50",
-   "part_xy": [
-    39.955,
-    20.505
-   ],
-   "label_xy": [
-    40.9,
-    26.95
+    39.75,
+    28.55
    ],
    "offset_mm": 6.5,
    "side": "F",
    "round": 0
   },
   {
-   "ref": "C_TAP",
+   "ref": "C_LDO1",
    "part_xy": [
-    27.955,
-    21.505
+    8.745,
+    23.025
    ],
    "label_xy": [
-    26.6,
-    25.55
+    10.15,
+    29.35
+   ],
+   "offset_mm": 6.5,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_LDO2",
+   "part_xy": [
+    12.745,
+    23.025
+   ],
+   "label_xy": [
+    15.7,
+    28.55
+   ],
+   "offset_mm": 6.25,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_LNA1",
+   "part_xy": [
+    35.955,
+    24.505
+   ],
+   "label_xy": [
+    35.6,
+    28.75
    ],
    "offset_mm": 4.25,
    "side": "F",
    "round": 0
   },
   {
-   "ref": "C_VGA1",
+   "ref": "C_LNA2",
    "part_xy": [
-    27.955,
-    19.505
+    51.745,
+    20.025
    ],
    "label_xy": [
-    29.5,
-    27.35
+    51.8,
+    26.25
    ],
-   "offset_mm": 8.0,
+   "offset_mm": 6.25,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU1",
+   "part_xy": [
+    13.955,
+    26.505
+   ],
+   "label_xy": [
+    15.8,
+    30.35
+   ],
+   "offset_mm": 4.25,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU2",
+   "part_xy": [
+    43.525,
+    23.775
+   ],
+   "label_xy": [
+    45.1,
+    30.35
+   ],
+   "offset_mm": 6.75,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P10",
+   "part_xy": [
+    16.955,
+    26.505
+   ],
+   "label_xy": [
+    22.0,
+    28.7
+   ],
+   "offset_mm": 5.5,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P22",
+   "part_xy": [
+    19.955,
+    26.505
+   ],
+   "label_xy": [
+    22.7,
+    30.35
+   ],
+   "offset_mm": 4.75,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P23",
+   "part_xy": [
+    37.955,
+    26.505
+   ],
+   "label_xy": [
+    38.6,
+    30.7
+   ],
+   "offset_mm": 4.25,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P33",
+   "part_xy": [
+    22.955,
+    26.505
+   ],
+   "label_xy": [
+    23.95,
+    32.15
+   ],
+   "offset_mm": 5.75,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P42",
+   "part_xy": [
+    25.955,
+    26.505
+   ],
+   "label_xy": [
+    26.95,
+    33.95
+   ],
+   "offset_mm": 7.5,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P43",
+   "part_xy": [
+    28.955,
+    26.505
+   ],
+   "label_xy": [
+    29.45,
+    28.7
+   ],
+   "offset_mm": 2.25,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P48",
+   "part_xy": [
+    31.955,
+    26.505
+   ],
+   "label_xy": [
+    34.8,
+    32.35
+   ],
+   "offset_mm": 6.5,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P49",
+   "part_xy": [
+    34.955,
+    26.505
+   ],
+   "label_xy": [
+    36.35,
+    34.15
+   ],
+   "offset_mm": 7.75,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_MCU_P50",
+   "part_xy": [
+    40.955,
+    26.505
+   ],
+   "label_xy": [
+    42.35,
+    32.35
+   ],
+   "offset_mm": 6.0,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_TAP",
+   "part_xy": [
+    46.955,
+    26.505
+   ],
+   "label_xy": [
+    49.75,
+    28.6
+   ],
+   "offset_mm": 3.5,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "C_VGA1",
+   "part_xy": [
+    38.955,
+    24.505
+   ],
+   "label_xy": [
+    32.35,
+    30.65
+   ],
+   "offset_mm": 9.0,
    "side": "F",
    "round": 0
   },
   {
    "ref": "C_VGA2",
    "part_xy": [
-    6.525,
-    17.775
+    28.525,
+    23.775
    ],
    "label_xy": [
-    7.85,
-    27.95
+    29.6,
+    35.75
    ],
-   "offset_mm": 10.25,
+   "offset_mm": 12.0,
    "side": "F",
    "round": 0
   },
   {
    "ref": "C_VREG_OUT",
    "part_xy": [
-    21.525,
-    19.775
+    47.525,
+    23.775
    ],
    "label_xy": [
-    22.95,
-    28.4
+    50.35,
+    32.3
    ],
-   "offset_mm": 8.75,
+   "offset_mm": 9.0,
    "side": "F",
    "round": 0
   },
   {
-   "ref": "C_X2",
+   "ref": "C_X1",
    "part_xy": [
-    46.955,
-    19.505
+    7.955,
+    25.505
    ],
    "label_xy": [
-    45.15,
-    21.6
+    5.65,
+    29.35
    ],
-   "offset_mm": 2.75,
+   "offset_mm": 4.5,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "FB_DET",
+   "part_xy": [
+    32.525,
+    23.775
+   ],
+   "label_xy": [
+    35.4,
+    35.95
+   ],
+   "offset_mm": 12.5,
    "side": "F",
    "round": 0
   },
   {
    "ref": "FB_VGA",
    "part_xy": [
-    2.525,
-    17.775
+    24.525,
+    23.775
    ],
    "label_xy": [
-    2.95,
-    28.25
+    20.6,
+    34.05
    ],
-   "offset_mm": 10.5,
+   "offset_mm": 11.0,
    "side": "F",
    "round": 0
   },
   {
    "ref": "FLT_433_A",
    "part_xy": [
-    51.5,
-    12.195
+    41.5,
+    18.195
    ],
    "label_xy": [
-    55.95,
-    22.8
+    44.5,
+    34.15
    ],
-   "offset_mm": 11.5,
+   "offset_mm": 16.25,
    "side": "F",
    "round": 0
   },
   {
    "ref": "FLT_433_B",
    "part_xy": [
-    14.5,
-    13.195
+    13.5,
+    19.195
    ],
    "label_xy": [
-    15.45,
-    28.4
+    9.55,
+    31.3
    ],
-   "offset_mm": 15.25,
+   "offset_mm": 12.75,
    "side": "F",
    "round": 0
   },
@@ -373,10 +401,10 @@
     5.105
    ],
    "label_xy": [
-    47.5,
-    23.55
+    47.3,
+    35.95
    ],
-   "offset_mm": 18.75,
+   "offset_mm": 31.0,
    "side": "F",
    "round": 0
   },
@@ -387,10 +415,10 @@
     5.105
    ],
    "label_xy": [
-    30.75,
-    29.15
+    16.65,
+    32.25
    ],
-   "offset_mm": 24.5,
+   "offset_mm": 28.75,
    "side": "F",
    "round": 0
   },
@@ -401,10 +429,10 @@
     5.105
    ],
    "label_xy": [
-    39.25,
-    28.75
+    37.8,
+    37.75
    ],
-   "offset_mm": 24.0,
+   "offset_mm": 32.75,
    "side": "F",
    "round": 0
   },
@@ -415,108 +443,94 @@
     5.245
    ],
    "label_xy": [
-    10.35,
-    22.7
+    11.25,
+    33.0
    ],
-   "offset_mm": 18.0,
+   "offset_mm": 28.0,
    "side": "F",
    "round": 0
   },
   {
    "ref": "J_SWD",
    "part_xy": [
-    59.815,
-    10.815
+    50.815,
+    2.815
    ],
    "label_xy": [
-    59.65,
-    24.55
+    52.15,
+    34.05
    ],
-   "offset_mm": 13.75,
+   "offset_mm": 31.25,
    "side": "F",
    "round": 0
   },
   {
    "ref": "L1",
    "part_xy": [
-    45.575,
-    12.295
+    49.575,
+    15.295
    ],
    "label_xy": [
-    42.95,
-    24.5
+    53.35,
+    28.0
    ],
-   "offset_mm": 12.5,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "Q_LNA_SW",
-   "part_xy": [
-    51.095,
-    16.745
-   ],
-   "label_xy": [
-    54.2,
-    24.9
-   ],
-   "offset_mm": 8.75,
+   "offset_mm": 13.25,
    "side": "F",
    "round": 0
   },
   {
    "ref": "R_LNA_ILIM",
    "part_xy": [
-    55.975,
-    10.515
+    36.975,
+    18.515
    ],
    "label_xy": [
-    58.7,
-    26.55
+    30.3,
+    37.9
    ],
-   "offset_mm": 16.25,
-   "side": "F",
-   "round": 0
-  },
-  {
-   "ref": "R_PG",
-   "part_xy": [
-    44.525,
-    16.775
-   ],
-   "label_xy": [
-    47.1,
-    25.4
-   ],
-   "offset_mm": 9.0,
+   "offset_mm": 20.5,
    "side": "F",
    "round": 0
   },
   {
    "ref": "R_RUN",
    "part_xy": [
-    55.975,
-    12.515
+    42.975,
+    21.515
    ],
    "label_xy": [
-    52.75,
-    26.65
+    50.2,
+    30.45
    ],
-   "offset_mm": 14.5,
+   "offset_mm": 11.5,
    "side": "F",
    "round": 0
   },
   {
-   "ref": "U_LDO",
+   "ref": "TP_5V",
    "part_xy": [
-    13.095,
-    17.745
+    16.298,
+    23.296
    ],
    "label_xy": [
-    14.7,
-    30.15
+    16.15,
+    34.05
    ],
-   "offset_mm": 12.5,
+   "offset_mm": 10.75,
+   "side": "F",
+   "round": 0
+  },
+  {
+   "ref": "TP_GND",
+   "part_xy": [
+    51.298,
+    23.296
+   ],
+   "label_xy": [
+    51.8,
+    37.8
+   ],
+   "offset_mm": 14.5,
    "side": "F",
    "round": 0
   }

@@ -1,5 +1,5 @@
 {
- "board": "/home/c08r4d0r/worktrees/pr-base-clean/tracker/hardware/base_station/base_station_v1_unrouted.kicad_pcb",
+ "board": "/tmp/baseclean/final5540/out.kicad_pcb",
  "unresolved": [
   "${KICAD9_3DMODEL_DIR}/Filter.3dshapes/Filter_SAW-6_3.8x3.8mm.step",
   "${KICAD9_3DMODEL_DIR}/Package_CSP.3dshapes/LFCSP-32-1EP_5x5mm_P0.5mm_EP3.1x3.1mm.step",
