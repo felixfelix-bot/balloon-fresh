@@ -42,7 +42,7 @@ ENV = dict(os.environ, PYTHONPATH="/usr/lib/python3/dist-packages")
 # Section 1b's "safe candidates": series/pull resistors and straps. Explicitly NOT decoupling caps,
 # NOT the RF chain, NOT anything with a port/edge/thermal reason.
 MOVABLE_PREFIXES = ("R_", "R")
-KEEP_ON_TOP = ("C_MCU_P", "C_VGA", "C_LNA", "C_DET", "C_TAP", "FLT_", "L1", "Q_LNA_SW", "U_",
+KEEP_ON_TOP = ("C_MCU", "C_VGA", "C_LNA", "C_DET", "C_TAP", "FLT_", "L1", "Q_LNA_SW", "U_",
                "J_", "TP_", "D_", "FB_", "Y_", "X_")
 
 

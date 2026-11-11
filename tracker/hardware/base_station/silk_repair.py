@@ -162,7 +162,42 @@ def main() -> int:
         rf.SetTextSize(pcbnew.VECTOR2I(int(TEXT_H * MM), int(TEXT_H * MM)))
         rf.SetTextThickness(int(TEXT_W * MM))
         n += 1
-    print(f"step1     : designator text -> {TEXT_H}/{TEXT_W} mm on {n} part(s)")
+    # ---- step 1b: rotate designators on parts too narrow to hold them horizontally ----------
+    # WHY ROTATION AND NOT A NAMING FIX. Measured on the 1 mm-pitch 0402 decoupler row: nine
+    # designators each ~5.76 mm wide (at the 0.80 mm fab minimum) were spaced 3.0 mm apart in X, so
+    # they overlapped by arithmetic -- no free-space search can separate text wider than its own
+    # pitch. Shortening the names (C_MCU_Pnn -> C_MCU<nn>) recovered 1.8 mm per label and is worth
+    # keeping, but the remaining 4 mm still does not fit in a 3 mm pitch.
+    #
+    # A label rotated 90 degrees occupies only its TEXT HEIGHT (~0.9 mm) along X, so a whole row
+    # can be labelled without touching each other. This is the standard fix for dense rows and it
+    # changes NOTHING electrical: silk only, no pad/zone/courtyard/outline/connectivity (AGENTS 26).
+    # Applied only to parts whose horizontal label genuinely cannot fit its own pitch, measured per
+    # part -- never blanket-rotated, which would make an easy board harder to read for no reason.
+    rot = 0
+    parts = []
+    for fp in b.GetFootprints():
+        p = fp.GetPosition()
+        parts.append((pcbnew.ToMM(p.x), pcbnew.ToMM(p.y), fp))
+    for x, y, fp in parts:
+        rf = fp.Reference()
+        # Horizontal extent of this label at the fab minimum, plus a 0.25 mm gap.
+        wide = len(fp.GetReference()) * TEXT_H * 0.80 + 0.25
+        # ROW-MATES ONLY. The same-row band must be TIGHT: an earlier version used `abs(dy) < wide`
+        # (~6 mm at this text size) and rotated 38 parts including U_REG, TP_GND and FLT_433_A --
+        # parts on completely different rows -- which created 33 new silk_over_copper items and 37
+        # lib_footprint_mismatch warnings. A row is where parts share a placement line, so the band
+        # is a few text heights, not a few label widths.
+        ROW_BAND = 2.0
+        neighbours = [abs(x2 - x) for x2, y2, fp2 in parts
+                      if fp2 is not fp and abs(y2 - y) <= ROW_BAND and x2 != x]
+        if not neighbours:
+            continue
+        pitch = min(neighbours)
+        if pitch < wide:
+            rf.SetTextAngle(pcbnew.EDA_ANGLE(90, pcbnew.DEGREES_T))
+            rot += 1
+    print(f"step1b    : {rot} designator(s) rotated 90 deg -- label wider than its row pitch")
 
     # ---- step 2: footprint silk graphics that DRC says sit over copper -> Fab --------------
     # DRIVEN BY THE DRC REPORT *AND KEYED BY UUID*, never by bounding boxes and never by

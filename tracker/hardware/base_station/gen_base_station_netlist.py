@@ -128,15 +128,15 @@ add("C_LDO2", "2.2uF 16V X7R 10% (effective >=1uF required)", "Capacitor_SMD:C_0
 # RP2040 hardware guide 2.1: local per-pin bypass, not a layout proof.
 # C_MCU1 belongs at IOVDD pad1; C_MCU2 (1uF) belongs at VREG_IN pad44.
 add("C_VREG_OUT", "1uF X7R VREG_OUT pad45", "Capacitor_SMD:C_0603_1608Metric", [("1", "+1V1_CORE"), ("2", "GND")])
-add("C_MCU_P10", "100nF X7R MCU pad10", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P22", "100nF X7R MCU pad22", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P33", "100nF X7R MCU pad33", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P42", "100nF X7R MCU pad42", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P43", "100nF X7R MCU pad43", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P48", "100nF X7R MCU pad48", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P49", "100nF X7R MCU pad49", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_MCU_P23", "100nF X7R MCU pad23", "Capacitor_SMD:C_0402_1005Metric", [("1", "+1V1_CORE"), ("2", "GND")])
-add("C_MCU_P50", "100nF X7R MCU pad50", "Capacitor_SMD:C_0402_1005Metric", [("1", "+1V1_CORE"), ("2", "GND")])
+add("C_MCU10", "100nF X7R MCU pad10", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU22", "100nF X7R MCU pad22", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU33", "100nF X7R MCU pad33", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU42", "100nF X7R MCU pad42", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU43", "100nF X7R MCU pad43", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU48", "100nF X7R MCU pad48", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU49", "100nF X7R MCU pad49", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_MCU23", "100nF X7R MCU pad23", "Capacitor_SMD:C_0402_1005Metric", [("1", "+1V1_CORE"), ("2", "GND")])
+add("C_MCU50", "100nF X7R MCU pad50", "Capacitor_SMD:C_0402_1005Metric", [("1", "+1V1_CORE"), ("2", "GND")])
 add("C_FLASH", "100nF X7R flash bypass", "Capacitor_SMD:C_0402_1005Metric", [("1", "+3V3_MCU"), ("2", "GND")])
 
 

@@ -121,6 +121,7 @@ def main() -> int:
     out = os.path.abspath(a.out)
     base = os.path.splitext(out)[0]
     staged = os.path.join(wd, "placed.kicad_pcb")
+    staged2 = os.path.join(wd, "spread.kicad_pcb")
     refilled = os.path.join(wd, "refilled.kicad_pcb")
 
     # ---- 0. the project scaffolding that makes library lookups and rules resolve -----------
@@ -148,8 +149,21 @@ def main() -> int:
         print("FAILED: placement stage")
         return 2
 
+    # ---- 1b. spread the rows over the FULL usable height ------------------------------------
+    # pack_rest() starts at the top edge, so a tall outline leaves a dead strip at the bottom
+    # (measured: 55.32 x 13.25 mm = 732.1 mm2 empty, 33 % of a 55x40 board) and crams every
+    # designator into the packed band. Respacing is additive in Y only, so it can only ADD
+    # clearance -- and it is what lets the 0.80 mm fab-minimum labels find room.
+    rc, _ = run([PY, os.path.join(HERE, "respace_rows.py"), staged, "-o", staged2,
+                 "--json", os.path.join(wd, "respace.json")], "1b/5 respace rows")
+    if rc != 0:
+        # not fatal: a board whose rows already fill the height has nothing to respace
+        print("         (respace declined -- rows already fill the usable height)")
+        import shutil as _sh
+        _sh.copyfile(staged, staged2)
+
     # ---- 2. refill the pours ---------------------------------------------------------------
-    rc, _ = run([PY, os.path.join(HERE, "refill_zones.py"), staged, "-o", refilled,
+    rc, _ = run([PY, os.path.join(HERE, "refill_zones.py"), staged2, "-o", refilled,
                  "--json", os.path.join(wd, "refill.json")], "2/4 refill zones")
     if rc != 0:
         print("FAILED: zone refill stage")
