@@ -1,8 +1,164 @@
 {
-  "_why": "Base-station PCBA v1 -- schematic capture SPEC, transcribed from the frozen document docs/BASE-STATION-PCBA-D14-FREEZE.md. This is a MACHINE-READABLE transcription of an already-operator-frozen design, NOT a new design decision. Every element carries the row/section it came from so a reviewer can check the transcription rather than re-derive the design.",
+  "_why": "Base-station candidate derived from D14 freeze, with explicitly PROPOSED buck replacement and corrected boot-core capture. NOT a faithful transcription or accepted freeze amendment. See BUCK-EVIDENCE.md.",
   "_source": "docs/BASE-STATION-PCBA-D14-FREEZE.md (2026-10-09, DESIGN FREEZE NOTE)",
   "_status": "Not yet placed, routed or DRC'd. No KiCad layout exists as of 2026-10-14.",
   "_gate_note": "The freeze's own verification gates (4 items at its section 'Verification gates before layout release') are NOT claimed to have passed.",
+
+  "rp2040_capture": {
+  "source": "Raspberry Pi RP2040 datasheet Figure 3 (printed p11), sections 1.4.2, 2.9, 2.10; https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf",
+  "status": "Corrected candidate capture only, NOT layout or complete electrical approval. Application GPIO allocation is provisional, not mandated by freeze.",
+  "pad_nets": {
+    "1": "+3V3_MCU",
+    "2": "VGA_GAIN0",
+    "3": "VGA_GAIN1",
+    "4": "VGA_GAIN2",
+    "5": "LNA_EN",
+    "6": "LNA_FLT",
+    "10": "+3V3_MCU",
+    "19": "GND",
+    "20": "XIN",
+    "21": "XOUT",
+    "22": "+3V3_MCU",
+    "23": "+1V1_MCU",
+    "24": "SWCLK",
+    "25": "SWDIO",
+    "26": "RUN",
+    "33": "+3V3_MCU",
+    "38": "DET_VOUT",
+    "42": "+3V3_MCU",
+    "43": "+3V3_MCU",
+    "44": "+3V3_MCU",
+    "45": "+1V1_MCU",
+    "46": "USB_DM",
+    "47": "USB_DP",
+    "48": "+3V3_MCU",
+    "49": "+3V3_MCU",
+    "50": "+1V1_MCU",
+    "51": "QSPI_SD3",
+    "52": "QSPI_SCLK",
+    "53": "QSPI_SD0",
+    "54": "QSPI_SD2",
+    "55": "QSPI_SD1",
+    "56": "QSPI_SS",
+    "57": "GND"
+  },
+  "unconnected_gpio_pads": [
+    7,
+    8,
+    9,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    34,
+    35,
+    36,
+    37,
+    39,
+    40,
+    41
+  ],
+  "ground_pad_note": "Datasheet Table 621 explicitly assigns central GND pad 57; local QFN footprint also uses 57. TESTEN pad 19 also grounded.",
+  "power_scheme": "Section 2.9.7.1 single 3.3V; VREG_VOUT connected externally to both DVDD pads on +1V1_MCU, never +3V3_MCU."
+},
+
+  "usb_programming": {
+    "status": "Candidate service/programming port, not USB compliance or physical boot approval",
+    "source": "Raspberry Pi Hardware design with RP2040 section 2.2 QSPI_SS boot strap and 1k; RP2040 datasheet section 1.4.2 USB 27R, section 2.8 bootrom",
+    "power_policy": "Self-powered ONLY from protected external 9-18V. USB_VBUS connects only connector1 and USBLC6 pin5; never +5V_PCBA, +3V3 or GPIO. No power ORing. External source protection contract unchanged. SWD voltage reference is not power input.",
+    "operating_policy": "Service port: attach cable to a powered host before applying external board power; hold BOOTSEL, press/release RESET, release BOOTSEL. Remove external power before host shutdown/disconnection. No VBUS detector: autonomous hotplug/suspend/self-powered USB compliance NOT claimed; ROM cannot be assumed to gate pullup with VBUS. No external supply means no boot/enumeration.",
+    "connector": {
+        "mpn": "1050170001",
+        "footprint": "Connector_USB:USB_Micro-B_Molex-105017-0001",
+        "pad_nets": {
+            "1": "USB_VBUS",
+            "2": "USB_DM_PORT",
+            "3": "USB_DP_PORT",
+            "5": "GND",
+            "6": "GND"
+        },
+        "nc_pads": [
+            "4"
+        ],
+        "source": "Molex SD-105017-001; ID unconnected, shell6 directly ground; micro-B has no CC resistors"
+    },
+    "esd": {
+        "mpn": "USBLC6-2SC6",
+        "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+        "pad_nets": {
+            "1": "USB_DM_PORT",
+            "6": "USB_DM_PORT",
+            "3": "USB_DP_PORT",
+            "4": "USB_DP_PORT",
+            "2": "GND",
+            "5": "USB_VBUS"
+        },
+        "source": "ST USBLC6-2 datasheet Figure 2 top view, paired I/O1 1/6 I/O2 3/4; VBUS5 GND2"
+    },
+    "switch": {
+        "mpn": "PTS636 SK25 SMTR LFS",
+        "footprint": "Button_Switch_SMD:SW_Tactile_SPST_NO_Straight_CK_PTS636Sx25SMTRLFS",
+        "source": "C&K PTS636 March2025 drawing, two terminals NO; G lead 2.5mm variant"
+    },
+    "boot_resistor": "1k",
+    "procurement": "Exact electrical selections, live JLC stock/price unverified; C136000/C7519 search leads only, switch JLC not located. Molex and ST drawing dimensional approval remains open."
+},
+
+  "boot_core": {
+    "status": "Candidate capture, not physically validated; sourcing unconfirmed",
+    "ldo": {
+      "mpn": "TLV75533PDBVR",
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "source": "TI SBVS320D Figure 4-2 Table 4-1 and sections 7.3.3, 8.1.1",
+      "pad_nets": {"1":"+5V_PCBA", "2":"GND", "3":"+5V_PCBA", "5":"+3V3_MCU"},
+      "nc_pads": ["4"],
+      "capacitors": "2.2uF X7R 10V; effective >= 1uF",
+      "power_policy": "Always enabled from regulated +5V_PCBA; SWD pin 1 voltage-reference output only, not external power input. No USB VBUS connection. No reverse-power protection.",
+      "limits": "1.45-5.5V input, 500mA electrical limit; thermal budget must be validated, not a 500mA board rating."
+    },
+    "crystal": {
+      "mpn": "ABM8-272-T3",
+      "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+      "pad_nets": {"1":"XIN", "2":"GND", "3":"XOUT_XTAL", "4":"GND"},
+      "source": "Abracon drawing 456603 rev B; Raspberry Pi Hardware design with RP2040 section 2.3 Figure 8",
+      "load_caps": "15pF C0G 1% 50V",
+      "xout_series": "1k",
+      "load_note": "15pF/2 + assumed 3pF parasitic = 10.5pF vs 10pF specified; layout and temperature startup/drive verification required"
+    },
+    "flash": {
+      "mpn": "W25Q16JVSSIQ",
+      "footprint": "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm",
+      "source": "Winbond W25Q16JV Rev J sections 3.1, 3.3, 11.2, 12",
+      "pad_nets": {"1":"QSPI_SS", "2":"QSPI_SD1", "3":"QSPI_SD2", "4":"GND", "5":"QSPI_SD0", "6":"QSPI_SCLK", "7":"QSPI_SD3", "8":"+3V3_MCU"},
+      "sourcing": "LCSC live product page C131025 fetched: exact W25Q16JVSSIQ, SOIC-8-208mil match. JLC assembly availability NOT verified. Distributor search indicates EOL: lifecycle review required."
+    }
+  },
+
+  "buck_proposal": {
+    "status": "PROPOSED replacement, not operator-approved amendment of frozen row 14",
+    "frozen_part": "TPS62162 (17 V maximum recommended input incompatible with required 18 V)",
+    "mpn": "TPS54202DDCR",
+    "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+    "source": "TI SLVSD26C Table 4-1, sections 5.3, 5.5, 6.3.5, 7.2; https://www.ti.com/lit/ds/symlink/tps54202.pdf",
+    "pad_nets": {"1":"GND", "2":"REG_SW", "3":"VIN_GS", "4":"REG_FB", "6":"REG_BOOT"},
+    "nc_pads": ["5"],
+    "startup": "EN5 float per TI internal pullup; no output-derived enable; internal 5ms typical soft-start. No PG output; MCU pad7 now unused.",
+    "input_contract": "J_PWR already protected upstream: 9-18 V normal, positive polarity, fuse/current limit, hot-plug/transients <=28 V at IC including ringing, no negative excursions. No onboard reverse diode/TVS claimed. Upstream protection design and validation remain open.",
+    "inductor": "Bourns SRP6060FA-150M, 15uH +/-20%, 43mOhm max DCR, Isat 5.8A typical at 30% drop, Irms 4.5A typical at 20C rise",
+    "caps": "C_IN 22uF X7R 50V effective >=10uF at 18V plus 100nF; C_OUT/C_OUT2 each 22uF X7R 25V effective >=15uF at 5V; BOOT-SW 100nF X7R 16V; C_FF 75pF C0G 50V. Effective limits include bias/tolerance/temp/aging; exact ceramic MPN curves remain procurement gate.",
+    "feedback": "100k/13.5k both 0.1%, 5.011V nominal, 4.876-5.146V reference+tolerance envelope before ripple/transients",
+    "release_limits": "Analytical candidate only; startup/load-step/stability/thermal and RF noise not measured; no physical boot claim"
+  },
 
   "rails": {
     "VIN_GS": {
@@ -10,8 +166,8 @@
       "note": "system-level input; reverse-polarity/TVS protection upstream"
     },
     "plus5V_PCBA": {
-      "from": "TPS62162 buck, configured 5.00 V",
-      "rated": "3-17 V in, 1 A out",
+      "from": "PROPOSED TPS54202DDCR replacement, configured nominal 5.011 V",
+      "rated": "4.5-28 V in, 2 A silicon capability; board target >=0.5 A continuous / 1 A peak subject to thermal validation",
       "constraint": "the 18 V system upper bound EXCEEDS the TPS62162's 17 V rating and must be enforced by upstream protection, or the regulator variant changed -- recorded in the freeze",
       "design_total_mA": 316,
       "copper_budget": ">= 0.5 A continuous, 1 A peak"
@@ -40,8 +196,8 @@
     { "ref_class": "U_MCU",  "part": "RP2040 QFN-56", "func": "MCU, SPI control, ADC input, watchdog, telemetry",
       "row": 8, "note": "no separate ADC fitted",
       "datasheet": "https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf" },
-    { "ref_class": "U_REG",  "part": "TI TPS62162", "func": "5 V buck",
-      "row": 14, "datasheet": "https://www.ti.com/lit/ds/symlink/tps62162.pdf" },
+    { "ref_class": "U_REG",  "part": "TI TPS54202DDCR (PROPOSED replacement of frozen TPS62162)", "func": "5 V buck",
+      "row": 14, "datasheet": "https://www.ti.com/lit/ds/symlink/tps54202.pdf" },
     { "ref_class": "U_VGA",  "part": "ADL5240", "func": "VGA, gain controlled by RP2040",
       "gate": "ADR-084 / checklist row 5" },
     { "ref_class": "TEE1",   "part": "Mini-Circuits ZFBT-4R2GW+", "func": "bias tee for the masthead feed",
@@ -92,6 +248,6 @@
 
   "open_at_capture": [
     "detector operating-current limit to be checked during schematic review",
-    "VIN_GS 18 V upper bound vs the TPS62162's 17 V rating -- enforce upstream or change the variant"
+    "Proposed TPS54202 replacement resolves normal 18 V incompatibility analytically; approval, upstream protection, exact ceramic derating and bench qualification remain open"
   ]
 }

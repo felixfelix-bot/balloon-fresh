@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate the base-station PCBA v1 KiCad netlist from the verified spec.
 
-Every part number, rail and net below traces to tracker/hardware/base_station/spec.json, which
-test_spec_transcription.py verifies against docs/BASE-STATION-PCBA-D14-FREEZE.md (33/33 checks).
+Candidate derived from spec.json. Buck is an explicit proposed deviation from D14 freeze;
+legacy transcription checks cover retained constraints, not approval. See BUCK-EVIDENCE.md.
 
 FROZEN SCOPE, NOT INVENTED:
   - the 433 RX AGC + telemetry controller; NO 2.4 GHz PA, NO masthead LNA on the PCBA
@@ -31,26 +31,33 @@ COMPS = []
 def add(ref, value, fp, pins):
     COMPS.append((ref, value, fp, pins))
 
-# ---------------- power entry + regulator (spec: VIN_GS 9-18V -> TPS62162 -> +5V_PCBA) -------
+# ---------------- power entry + regulator (proposed replacement: protected VIN_GS 9-18V -> TPS54202 -> +5V_PCBA) -------
 add("J_PWR", "VIN_GS 9-18V input", "TerminalBlock_4Ucon:TerminalBlock_4Ucon_1x02_P3.50mm_Vertical",
     [("1", "VIN_GS"), ("2", "GND")])
-add("D_REV", "reverse-polarity/TVS protection", "Diode_SMD:D_SMB",
-    [("1", "VIN_GS_PROT"), ("2", "VIN_GS")])
-add("D_TVS", "TVS clamp (set point TODO(unverified))", "Diode_SMD:D_SMB",
-    [("1", "VIN_GS_PROT"), ("2", "GND")])
-add("C_IN", "10uF 25V", "Capacitor_SMD:C_1206_3216Metric",
-    [("1", "VIN_GS_PROT"), ("2", "GND")])
-add("U_REG", "TPS62162 5V buck (3-17V in, 1A out)", "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm",
-    [("1", "VIN_GS_PROT"), ("2", "GND"), ("3", "REG_SW"), ("4", "REG_FB"),
-     ("5", "+5V_PCBA"), ("6", "GND"), ("7", "REG_EN"), ("8", "REG_PG"), ("9", "GND")])
-add("L1", "2.2uH buck inductor", "Inductor_SMD:L_Bourns-SRN4018",
+# Protection is external at J_PWR; see BUCK-EVIDENCE.md input contract.
+# Do not represent unselected/misoriented diodes as working protection.
+add("C_IN", "22uF X7R 50V; effective >= 10uF", "Capacitor_SMD:C_1210_3225Metric",
+    [("1", "VIN_GS"), ("2", "GND")])
+add("C_IN_HF", "100nF X7R 50V", "Capacitor_SMD:C_0603_1608Metric",
+    [("1", "VIN_GS"), ("2", "GND")])
+# TI SLVSD26C Table 4-1. EN5 deliberately NC: internal pullup (section 6.3.5).
+add("U_REG", "TPS54202DDCR", "Package_TO_SOT_SMD:SOT-23-6",
+    [("1", "GND"), ("2", "REG_SW"), ("3", "VIN_GS"), ("4", "REG_FB"), ("6", "REG_BOOT")])
+add("C_BOOT", "100nF X7R 16V", "Capacitor_SMD:C_0603_1608Metric",
+    [("1", "REG_BOOT"), ("2", "REG_SW")])
+add("L1", "SRP6060FA-150M 15uH +/-20%; Isat typ 5.8A; Irms typ 4.5A (20C rise); DCR max 43mOhm", "Inductor_SMD:L_Bourns_SRP6060FA",
     [("1", "REG_SW"), ("2", "+5V_PCBA")])
-add("R_FB1", "100k (feedback divider)", "Resistor_SMD:R_0402_1005Metric",
+add("R_FB1", "100k 0.1%", "Resistor_SMD:R_0402_1005Metric",
     [("1", "+5V_PCBA"), ("2", "REG_FB")])
-add("R_FB2", "22.6k (feedback divider)", "Resistor_SMD:R_0402_1005Metric",
+add("R_FB2", "13.5k 0.1%", "Resistor_SMD:R_0402_1005Metric",
     [("1", "REG_FB"), ("2", "GND")])
-add("C_OUT", "22uF 6V3", "Capacitor_SMD:C_1206_3216Metric",
+add("C_OUT", "22uF X7R 25V; effective >= 15uF", "Capacitor_SMD:C_1206_3216Metric",
     [("1", "+5V_PCBA"), ("2", "GND")])
+
+add("C_OUT2", "22uF X7R 25V; effective >= 15uF", "Capacitor_SMD:C_1206_3216Metric",
+    [("1", "+5V_PCBA"), ("2", "GND")])
+add("C_FF", "75pF C0G 50V", "Capacitor_SMD:C_0402_1005Metric",
+    [("1", "+5V_PCBA"), ("2", "REG_FB")])
 
 # ---------------- +5V_LNA_SW : switched, resettable-limited (spec) ---------------------------
 add("Q_LNA_SW", "load switch / resettable limiter (ADL5240 must NOT share this rail)",
@@ -86,41 +93,48 @@ add("C_DET2", "100nF (VOUT filter)", "Capacitor_SMD:C_0402_1005Metric",
 
 # ---------------- +3V3_MCU : RP2040 rail ------------------------------------------------------
 add("U_MCU", "RP2040 QFN-56", "base_station_lib:RP2040-QFN-56",
-    [("1", "IOVDD"), ("2", "GND"), ("3", "ADC_AVDD"), ("4", "GND"),
-     ("5", "IOVDD"), ("6", "GND"), ("7", "DET_VOUT"), ("8", "GND"),
-     ("9", "GND"), ("10", "QSPI_SS"), ("11", "QSPI_SCLK"), ("12", "QSPI_SD0"),
-     ("13", "QSPI_SD1"), ("14", "QSPI_SD2"), ("15", "QSPI_SD3"), ("16", "+3V3_MCU"),
-     ("17", "GND"), ("18", "VGA_GAIN0"), ("19", "VGA_GAIN1"), ("20", "VGA_GAIN2"),
-     ("21", "LNA_EN"), ("22", "LNA_FLT"), ("23", "GND"), ("24", "XIN"),
-     ("25", "XOUT"), ("26", "RUN"), ("27", "GND"), ("28", "SWCLK"),
-     ("29", "SWDIO"), ("30", "GND"), ("31", "GND"), ("32", "GND"),
-     ("33", "USB_DM"), ("34", "USB_DP"), ("35", "GND"), ("36", "GND"),
-     ("37", "GND"), ("38", "GND"), ("39", "GND"), ("40", "GND"),
-     ("41", "GND"), ("42", "GND"), ("43", "GND"), ("44", "GND"),
-     ("45", "GND"), ("46", "GND"), ("47", "GND"), ("48", "GND"),
-     ("49", "GND"), ("50", "REG_PG"), ("51", "GND"), ("52", "GND"),
-     ("53", "GND"), ("54", "GND"), ("55", "GND"), ("56", "GND"), ("57", "GND")])
-add("Y1", "12MHz crystal", "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
-    [("1", "XIN"), ("2", "GND"), ("3", "XOUT"), ("4", "GND")])
-add("C_X1", "15pF", "Capacitor_SMD:C_0402_1005Metric", [("1", "XIN"), ("2", "GND")])
-add("C_X2", "15pF", "Capacitor_SMD:C_0402_1005Metric", [("1", "XOUT"), ("2", "GND")])
-add("U_FLASH", "QSPI flash (RP2040 boot)", "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm",
-    [("1", "QSPI_SS"), ("2", "QSPI_SD0"), ("3", "QSPI_SD2"), ("4", "GND"),
-     ("5", "QSPI_SD1"), ("6", "QSPI_SCLK"), ("7", "QSPI_SD3"), ("8", "+3V3_MCU"), ("9", "GND")])
+    [(pin, net) for pin, net in SPEC["rp2040_capture"]["pad_nets"].items()])
+crystal = SPEC["boot_core"]["crystal"]
+add("Y1", crystal["mpn"], crystal["footprint"], list(crystal["pad_nets"].items()))
+add("R_XOUT", crystal["xout_series"], "Resistor_SMD:R_0402_1005Metric", [("1", "XOUT"), ("2", "XOUT_XTAL")])
+add("C_X1", crystal["load_caps"], "Capacitor_SMD:C_0402_1005Metric", [("1", "XIN"), ("2", "GND")])
+add("C_X2", crystal["load_caps"], "Capacitor_SMD:C_0402_1005Metric", [("1", "XOUT_XTAL"), ("2", "GND")])
+flash = SPEC["boot_core"]["flash"]
+add("U_FLASH", flash["mpn"], flash["footprint"], list(flash["pad_nets"].items()))
+add("C_FLASH", "100nF", "Capacitor_SMD:C_0402_1005Metric",
+    [("1", "+3V3_MCU"), ("2", "GND")])
+for ref, net in (("R_FLASH_CS", "QSPI_SS"), ("R_FLASH_WP", "QSPI_SD2"), ("R_FLASH_HOLD", "QSPI_SD3")):
+    add(ref, "10k", "Resistor_SMD:R_0402_1005Metric", [("1", "+3V3_MCU"), ("2", net)])
 add("J_SWD", "SWD debug header 1x4", "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
     [("1", "+3V3_MCU"), ("2", "SWDIO"), ("3", "GND"), ("4", "SWCLK")])
 add("R_RUN", "10k RUN pull-up", "Resistor_SMD:R_0402_1005Metric",
     [("1", "+3V3_MCU"), ("2", "RUN")])
-add("C_MCU1", "100nF", "Capacitor_SMD:C_0402_1005Metric", [("1", "IOVDD"), ("2", "GND")])
-add("C_MCU2", "1uF", "Capacitor_SMD:C_0603_1608Metric", [("1", "IOVDD"), ("2", "GND")])
+# Datasheet §§2.9,2.10: one local capacitor per supply pin. Placement is still a gate.
+for pin in (1, 10, 22, 33, 42, 49, 23, 50, 43, 48, 44, 45):
+    add(f"C_RP_{pin}", "1uF" if pin in (44, 45) else "100nF",
+        "Capacitor_SMD:C_0402_1005Metric",
+        [("1", SPEC["rp2040_capture"]["pad_nets"][str(pin)]), ("2", "GND")])
+# Datasheet §1.4.2 requires 27-ohm series termination. Port/ESD selection remains open.
+for signal in ("DM", "DP"):
+    add(f"R_USB_{signal}", "27R", "Resistor_SMD:R_0402_1005Metric",
+        [("1", f"USB_{signal}"), ("2", f"USB_{signal}_PORT")])
+
+# Service-only USB Micro-B: VBUS is an isolated ESD reference, NOT board power.
+usb = SPEC["usb_programming"]
+for ref, key in (("J_USB", "connector"), ("U_USB_ESD", "esd")):
+    part = usb[key]
+    add(ref, part["mpn"], part["footprint"], list(part["pad_nets"].items()))
+for ref, net in (("SW_BOOTSEL", "BOOTSEL_SW"), ("SW_RESET", "RUN")):
+    add(ref, usb["switch"]["mpn"], usb["switch"]["footprint"], [("1", net), ("2", "GND")])
+add("R_BOOTSEL", usb["boot_resistor"], "Resistor_SMD:R_0402_1005Metric",
+    [("1", "QSPI_SS"), ("2", "BOOTSEL_SW")])
 
 # ---------------- +3V3_MCU source: LDO from +5V_PCBA (own domain per the ERC requirement) -----
-add("U_LDO", "3.3V LDO for +3V3_MCU", "Package_TO_SOT_SMD:SOT-23-5",
-    [("1", "+5V_PCBA"), ("2", "GND"), ("3", "LDO_EN"), ("4", "GND"), ("5", "+3V3_MCU")])
-add("C_LDO1", "1uF", "Capacitor_SMD:C_0603_1608Metric", [("1", "+3V3_MCU"), ("2", "GND")])
-add("C_LDO2", "1uF", "Capacitor_SMD:C_0603_1608Metric", [("1", "+5V_PCBA"), ("2", "GND")])
-add("R_EN", "100k LDO/REG enable pull-up", "Resistor_SMD:R_0402_1005Metric",
-    [("1", "+5V_PCBA"), ("2", "REG_EN")])
+ldo = SPEC["boot_core"]["ldo"]
+add("U_LDO", ldo["mpn"], ldo["footprint"], list(ldo["pad_nets"].items()))
+add("C_LDO1", ldo["capacitors"], "Capacitor_SMD:C_0805_2012Metric", [("1", "+3V3_MCU"), ("2", "GND")])
+add("C_LDO2", ldo["capacitors"], "Capacitor_SMD:C_0805_2012Metric", [("1", "+5V_PCBA"), ("2", "GND")])
+# TPS54202 has neither an external EN pullup requirement nor a PG output.
 
 # ---------------- RF chain (spec): ant -> BPF -> tee -> LNA -> coax -> tee -> VGA -------------
 add("J_433_RX", "433 MHz RX antenna port (SMA)", "Connector_Coaxial:SMA_Amphenol_132134-10_Vertical",

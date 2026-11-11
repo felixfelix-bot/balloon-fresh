@@ -10,8 +10,11 @@ import json
 import re
 import sys
 
-SPEC = "/home/c08r4d0r/worktrees/v9-route/tracker/hardware/base_station/spec.json"
-DOC = "/home/c08r4d0r/worktrees/v9-route/docs/BASE-STATION-PCBA-D14-FREEZE.md"
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+SPEC = HERE / "spec.json"
+DOC = HERE.parents[2] / "docs/BASE-STATION-PCBA-D14-FREEZE.md"
 
 spec = json.load(open(SPEC))
 doc = open(DOC, encoding="utf-8").read()
@@ -27,6 +30,8 @@ def ck(label, cond, detail=""):
         print(f"  FAIL  {label} {detail}")
         fails.append(label)
 
+if "buck_proposal" in spec:
+    print("PROPOSED DEVIATION: TPS54202DDCR replaces frozen TPS62162; checks below only cover retained freeze constraints, NOT transcription approval.")
 print("=== part numbers appear verbatim in the source document ===")
 for part in ("AD8318ACPZ-R7", "RP2040", "TPS62162", "ADL5240", "ZFBT-4R2GW+", "ZX60-P103LN+"):
     ck(f"part {part}", part in doc)
@@ -38,6 +43,8 @@ for n, label in (("316", "design total 316 mA"), ("0.5 A", "0.5 A continuous"),
                  ("95 mA", "ZX60 bias 95 mA"), ("15 mA", "AD8318 15 mA"),
                  ("50 mA", "RP2040 50 mA")):
     ck(label, n in doc)
+ck("LNA current matches frozen 95 mA",
+   "95 mA" in doc and "95 mA" in spec["rails"]["plus5V_LNA_SW"]["load"])
 
 print()
 print("=== rail names ===")
