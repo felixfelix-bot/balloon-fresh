@@ -1,6 +1,6 @@
 {
- "board": "/tmp/baseclean/final5540/work/refilled.kicad_pcb",
- "out": "/tmp/baseclean/final5540/out.kicad_pcb",
+ "board": "/home/c08r4d0r/.tmp/bs_unrouted_lvsve_16/refilled.kicad_pcb",
+ "out": "/home/c08r4d0r/worktrees/pr-base-clean/tracker/hardware/base_station/base_station_v1_unrouted.kicad_pcb",
  "moves": [
   {
    "ref": "C_DET1",

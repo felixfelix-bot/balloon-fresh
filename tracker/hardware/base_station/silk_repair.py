@@ -302,6 +302,18 @@ def main() -> int:
     pcbnew.SaveBoard(out, pcbnew.LoadBoard(work))
     if os.path.exists(work) and os.path.abspath(work) != os.path.abspath(out):
         os.unlink(work)
+    # KiCad AUTO-CREATES a .kicad_pro (and often a .kicad_prl) beside any board it opens for DRC.
+    # With the default work path those land next to the artifact of record, so a single silk run
+    # left `base_station_v1_unrouted.silkwork.kicad_pro` untracked in the repo -- the same
+    # "build dirties the tree" defect as the scaffold in place_base_station.py. They are scratch,
+    # not artefacts, so they are removed here. `work` stays in the artifact's directory on purpose:
+    # moving it to /tmp changes which project rules DRC applies and silently grades a different
+    # rule set (measured earlier in this session -- bare-board DRC disagreed with project DRC).
+    for ext in (".kicad_pro", ".kicad_prl"):
+        side = os.path.splitext(work)[0] + ext
+        if os.path.exists(side) and os.path.abspath(side) != os.path.abspath(
+                os.path.splitext(out)[0] + ext):
+            os.unlink(side)
     if a.json:
         json.dump({"board": a.board, "out": out, "moves": log,
                    "remaining": len(vs), "remaining_by_type": counts}, open(a.json, "w"), indent=1)
