@@ -184,45 +184,50 @@ J_W4.2  GND  # v9 netlist (rails)
 J_W4.3  /CUT_SENSE_W4  # v9 netlist (wing cut/solar)
 J_W4.4  GND  # v9 netlist (rails)
 
-# --- U_LORA1280  (NiceRF LoRa1280, SX1280 12.5 dBm, ranging) - ADR-139
-# ADR-139 replaced the E28-2G4M27SX on the BOARD; this block is the same
-# change applied to the registry, pin for pin, from the remap table in
-# tracker/hardware/swap_u_e28_to_lora1280.py. The /E28_* NET NAMES are
-# retained deliberately: they are net names, not part names, and renaming
-# them would invalidate every routed segment on the board for no
-# electrical change. Pads 8/9 (RX_EN/TX_EN) do not exist on this part;
-# OPEN-E28-EN is therefore CLOSED by ADR-139, not waived.
-U_LORA1280.1  /E28_DIO2  # ADR-139 pin remap (E28 14 DIO2); net name retained from ADR-118
-U_LORA1280.2  /E28_DIO3  # ADR-139 pin remap (E28 15 DIO3); net name retained from ADR-118
-U_LORA1280.3  +3V3  # ADR-139 pin remap (E28 1 VCC)
-U_LORA1280.4  GND  # ADR-139 pin remap (E28 2/7/10/16 -> L1280 4/10/11/12/14)
-U_LORA1280.5  /SPI1_MISO  # ADR-123 (2.4GHz bus: U3+U_C+site D) + ADR-139 pin remap (E28 3)
-U_LORA1280.6  /SPI1_MOSI  # ADR-123 (2.4GHz bus: U3+U_C+site D) + ADR-139 pin remap (E28 4)
-U_LORA1280.7  /SPI1_SCK  # ADR-123 (2.4GHz bus: U3+U_C+site D) + ADR-139 pin remap (E28 5)
-U_LORA1280.8  /E28_CS_N  # ADR-139 pin remap (E28 6 NSS_CTS); net name retained from ADR-118
-U_LORA1280.9  UNASSIGNED  # ADR-139: the LoRa1280 ANTENNA pad - no net, ADR-137 (antenna at the module)
-U_LORA1280.10  GND  # ADR-139 pin remap
-U_LORA1280.11  GND  # ADR-139 pin remap
-U_LORA1280.12  GND  # ADR-139 pin remap
-U_LORA1280.13  /E28_RESET_N  # ADR-139 pin remap (E28 11 NRESET); net name retained from ADR-118
-U_LORA1280.14  GND  # ADR-139 pin remap
-U_LORA1280.15  /E28_BUSY  # ADR-139 pin remap (E28 12 BUSY); net name retained from ADR-118
-U_LORA1280.16  /E28_DIO1  # ADR-139 pin remap (E28 13 DIO1); net name retained from ADR-118
+# --- U_E28  (E28-2G4M27SX, SX1280 + PA, 27 dBm) - WHAT THE BOARD ACTUALLY CARRIES
+# ADR-139 (Accepted 2026-10-26) moves this site to a NON-PA LoRa1280 and states in its own
+# status line: "Not yet applied to `hub_board_v10.kicad_pcb`". It has NOT been applied.
+# Measured 2026-11-11: the board carries `U_E28` and no `U_LORA1280`; the two experimental
+# boards (`hub_board_v10_lora1280_swap`, `_7of9`) carry `U_LORA1280`.
+#
+# SO THIS BLOCK IS THE BOARD, NOT THE RECOMMENDATION. The registry previously described
+# U_LORA1280, i.e. the ADR-139 end state, which is why `registry.py check` reported the board
+# as drifted. Recording the intended part in the source-of-truth registry makes the registry
+# a statement of intent that silently contradicts the copper -- and any tool trusting it would
+# validate pins against a part that is not fitted. When the swap IS applied, regenerate from
+# the board and this block becomes U_LORA1280 again.
+U_E28.1  +3V3  # v9 netlist (rails)
+U_E28.2  GND  # v9 netlist (rails)
+U_E28.3  /SPI1_MISO  # ADR-123 (2.4GHz bus: U3+U_C+E28)
+U_E28.4  /SPI1_MOSI  # ADR-123 (2.4GHz bus: U3+U_C+E28)
+U_E28.5  /SPI1_SCK  # ADR-123 (2.4GHz bus: U3+U_C+E28)
+U_E28.6  /E28_CS_N  # ADR-118 + E28 sidecar pin map
+U_E28.7  GND  # v9 netlist (rails)
+U_E28.8  UNASSIGNED  # SEE connectivity/OPEN-ITEMS.md
+U_E28.9  UNASSIGNED  # SEE connectivity/OPEN-ITEMS.md
+U_E28.10  GND  # v9 netlist (rails)
+U_E28.11  /E28_RESET_N  # ADR-118 + E28 sidecar pin map
+U_E28.12  /E28_BUSY  # ADR-118 + E28 sidecar pin map
+U_E28.13  /E28_DIO1  # ADR-118 + E28 sidecar pin map
+U_E28.14  /E28_DIO2  # ADR-118 + E28 sidecar pin map
+U_E28.15  /E28_DIO3  # ADR-118 + E28 sidecar pin map
+U_E28.16  GND  # v9 netlist (rails)
 
-# --- C_CAP1  (CP_Radial_D10.0mm_P5.00mm)
+# --- C_CAP1  (as carried on the board)
 C_CAP1.1  /VSCAP  # v9 netlist (harvest storage)
 C_CAP1.2  /SCAP_MID  # v9 netlist (harvest storage)
 
-# --- C_CAP2  (CP_Radial_D10.0mm_P5.00mm)
+# --- C_CAP2  (as carried on the board)
 C_CAP2.1  /SCAP_MID  # v9 netlist (harvest storage)
 C_CAP2.2  GND  # v9 netlist (rails)
 
-# --- J_PROG  (PinHeader_1x06_P2.54mm_Vertical)
+# --- J_PROG  (as carried on the board)
 J_PROG.1  GND  # v9 netlist (rails)
 J_PROG.2  +3V3  # v9 netlist (rails)
 J_PROG.3  /EN  # ADR-121 (J_PROG)
 J_PROG.4  /USB_DN  # ADR-121 (J_PROG)
 J_PROG.5  /USB_DP  # ADR-121 (J_PROG)
+J_PROG.6  /IO0  # ADR-121 (J_PROG)
 J_PROG.6  /IO0  # ADR-121 (J_PROG)
 
 # --- U_HUB_CVT  (VQFN-16-1EP_3x3mm_P0.5mm_EP1.1x1.1mm)

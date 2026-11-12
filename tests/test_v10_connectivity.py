@@ -191,11 +191,20 @@ def test_lane_integrity_clean_board_passes():
 
 def test_back_side_pads_are_checked():
     """B6 regression: pad side must come from GetLayerSet(). Back-side parts (U3, U_C,
-    U_E28, ANT2/3) had every clearance verdict skipped when the side came from
-    pad.GetLayer(), which reports F_Cu even for back-side pads."""
+    U_E28) had every clearance verdict skipped when the side came from
+    pad.GetLayer(), which reports F_Cu even for back-side pads.
+
+    CORRECTED 2026-11-11: this test used to require ANT2 and ANT3 in the list. **ADR-137
+    deleted ANT1..ANT4** -- the U.FL connectors and their feed copper were removed because
+    the radios attach their antennas AT the module, so there is no RF on the hub. The test
+    was therefore asserting that parts exist which the design intentionally deleted, and it
+    failed on a board that is correct. The regression's INTENT is "back-side pads get a real
+    side", not "these four refs exist", so the refs are now the back-side parts the board
+    actually carries.
+    """
     pcbnew = _pcbnew()
     b = pcbnew.LoadBoard(BOARD)
-    for ref in ("U3", "U_C", "U_E28", "ANT2", "ANT3"):
+    for ref in ("U3", "U_C", "U_E28"):
         fp = b.FindFootprintByReference(ref)
         assert fp is not None, f"{ref} missing"
         assert fp.GetLayer() == pcbnew.B_Cu, f"{ref} should be on the back"
