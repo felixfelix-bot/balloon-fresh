@@ -104,7 +104,14 @@ def main():
                     continue
                 ox0, oy0 = o.GetStart().x / UM, o.GetStart().y / UM
                 ox1, oy1 = o.GetEnd().x / UM, o.GetEnd().y / UM
-                if seg_point_dist(ex, ey, ox0, oy0, ox1, oy1) <= ENDPOINT_TOL + half:
+                # BOTH half-widths. `seg_point_dist` is a CENTRE-to-centre distance, so two tracks
+                # only overlap when the centre distance is within the sum of their half-widths.
+                # Measured 2026-11-11 on /E28_DIO3: a 0.30 mm track meeting another 0.30 mm track
+                # gives d - half = 0.224 - 0.15 = 0.074, which the old test (`<= 0.05 + half`)
+                # rejected as a DEAD END even though the copper is continuous. It flagged 2 of 8
+                # segments, i.e. a false positive on a fully-connected net -- a gate that cries
+                # wolf on a good board gets ignored, which is worse than not having it.
+                if seg_point_dist(ex, ey, ox0, oy0, ox1, oy1) <= ENDPOINT_TOL + half + o.GetWidth() / UM / 2:
                     touches_track = True
                     break
             if not (touches_pad or touches_track):

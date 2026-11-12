@@ -1,7 +1,7 @@
 (export (version "E")
   (design
-    (source "/home/c08r4d0r/worktrees/foam-wing-3d/tracker/hardware/schematics/wing_interconnect/wing_interconnect.kicad_sch")
-    (date "2026-10-25T18:01:18+0100")
+    (source "/home/c08r4d0r/worktrees/v10-conn/tracker/hardware/schematics/wing_interconnect/wing_interconnect.kicad_sch")
+    (date "2026-11-12T01:06:02+0100")
     (tool "Eeschema 9.0.9-9.0.9~ubuntu24.04.1")
     (sheet (number "1") (name "/") (tstamps "/")
       (title_block
