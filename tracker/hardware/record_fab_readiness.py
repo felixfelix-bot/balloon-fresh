@@ -14,7 +14,7 @@ import sys
 BOARDS = [
     "tracker/hardware/hub_board_v9.kicad_pcb",
     "tracker/hardware/wing_board/wing_board_v9.kicad_pcb",
-    "tracker/hardware/base_station/base_station_v1_placed.kicad_pcb",
+    "tracker/hardware/base_station/base_station_v1_unrouted.kicad_pcb",
 ]
 EXPECT = "tracker/hardware/FAB-READINESS.json"
 KICAD_PY = os.path.expanduser("~/venvs/kicad/bin/python")
