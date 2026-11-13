@@ -1,0 +1,36 @@
+{
+  "stage": 1,
+  "outline_mm": [
+    80.0,
+    90.0
+  ],
+  "base_board": "hub_board_v10.kicad_pcb",
+  "diode_sites": {
+    "D_BP1": {
+      "layer": "F.Cu",
+      "x": 7.2,
+      "y": 40.8,
+      "rot": -90.0
+    },
+    "D_BP2": {
+      "layer": "F.Cu",
+      "x": 29.4,
+      "y": 73.8,
+      "rot": 0.0
+    },
+    "D_BP3": {
+      "layer": "F.Cu",
+      "x": 65.4,
+      "y": 42.8,
+      "rot": 90.0
+    },
+    "D_BP4": {
+      "layer": "F.Cu",
+      "x": 40.4,
+      "y": 7.0,
+      "rot": -90.0
+    }
+  },
+  "source": "V11-DESIGN-SPEC.md section 1 / v11_diode_sites.py",
+  "note": "STAGE 1 ONLY -- 97 of 101 components are still at their v10 positions, and nothing is routed. Not an orderable board."
+}

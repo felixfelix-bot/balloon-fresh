@@ -18,6 +18,10 @@ BOARD = sys.argv[1] if len(sys.argv) > 1 else "docs/analysis/bulk-route-20261107
 PAD_SEP = 4.0      # SMA: pads are exactly 4.00 mm apart
 MAX_REACH = 6.0    # acceptable pad-to-nearest-same-net-copper
 FP_CLEAR = 3.0     # keep clear of existing footprint centres
+# Foreign copper that must not be shorted. An SMA pad is ~1.9 mm wide and the diode body
+# needs room to sit down, so a site must be well clear of any other net's copper. Measured
+# from the failure: the rejected D_BP1 site sat DIRECTLY on foreign tracks, i.e. 0.00 mm.
+FOREIGN_CLEAR = 2.5
 EDGE_KEEP = 3.0    # stay off the board edge
 
 
@@ -47,7 +51,25 @@ def main():
         return min(math.hypot(a - x, c - y) for a, c in pts)
 
     def is_free(x, y):
-        return all(math.hypot(x - ox, y - oy) > FP_CLEAR for ox, oy, _ in occupied)
+        # Check clearance to ALL foreign copper on F.Cu, not just to other footprint origins.
+        #
+        # THE DEFECT THIS FIXES. The original version was
+        #     all(hypot(x-ox, y-oy) > FP_CLEAR for ox, oy, _ in occupied)
+        # which only rejected sites sitting on top of another footprint's ORIGIN. It never
+        # looked at the copper of other nets, so it happily returned D_BP1 at (3.0, 39.0),
+        # a site whose pads land directly on /CUT_SENSE_W1 and /W1_SOLAR_P tracks. Applying
+        # that "best site" produced 13 shorting_items in DRC -- the search was blind to the
+        # exact failure it caused.
+        #
+        # A site is free only if it is far from every foreign-net copper point as well.
+        near_origin = min((math.hypot(x - ox, y - oy) for ox, oy, _ in occupied), default=1e9)
+        if near_origin <= FP_CLEAR:
+            return False
+        for net, pts in fcu.items():
+            for a, c in pts:
+                if math.hypot(a - x, c - y) <= FOREIGN_CLEAR:
+                    return False
+        return True
 
     pairs = [
         ("D_BP1", "/W1_SOLAR_P", "/W1_SOLAR_N"),
