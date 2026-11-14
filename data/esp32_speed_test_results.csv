@@ -1,0 +1,8 @@
+timestamp,platform,tx_kbps,rx_kbps,tx_packets,rx_packets,packet_loss_pct,rssi_avg
+2026-07-27T22:06:20Z,esp32c3-gdma40mhz-flrc2600-2440mhz-fifo_tx-loop5,1616.5,0.0,500,0,100.0,NA
+2026-07-27T22:06:20Z,esp32c3-gdma40mhz-flrc2600-2440mhz-fifo_tx-loop19,1571.6,0.0,500,0,100.0,NA
+2026-07-27T22:06:20Z,esp32c3-gdma40mhz-flrc2600-2440mhz-fast_rx-loop2,0.0,0.0,500,0,100.0,NA
+2026-07-27T22:06:20Z,esp32c3-gdma40mhz-flrc2600-2440mhz-fast_rx-loop3,0.0,0.0,500,0,100.0,NA
+2026-07-27T22:06:20Z,esp32c3-gdma40mhz-flrc2600-2440mhz-fast_rx-loop4,0.0,0.0,500,0,100.0,NA
+2026-06-18T18:09:42Z,esp32c3-polling18mhz-flrc2600-868mhz-raw-spi-tx-rx,1385.9,838.8,500,500,0.0,NA
+2026-07-16T17:20:00Z,rp2040-arduino12mhz-flrc2600-2440mhz-raw-spi-baseline,1377.4,594.9,1000,1018,0.0,NA
