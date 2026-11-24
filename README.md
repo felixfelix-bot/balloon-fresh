@@ -12,7 +12,17 @@
 - The intended minimum relay population is **one high-power F33 LR2021 transmitter plus one low-power LR2021 receiver**, with the MCU and required power/support components. GPS, barometer, SX1280 ranging and the additional radio are optional.
 - Historical documents below describe earlier design states. Their quantities, routing counts and readiness statements are not acceptance evidence for the delivered batch; the manufactured archive still needs reconciliation with the received hardware.
 
+![Delivered v10 boards: underside above, component side below](docs/boards/arrival-v10.jpg)
+
+*Builder-supplied arrival photograph; visible assembly is not evidence of electrical or flight qualification.*
+
 ### Historical production-cost figures
+
+**Cost correction:** the $35 allowance below priced two low-power LoRa2021 modules
+at $12 each and one LoRa1280 at $11. It **omitted the F33 transmitter** required by
+our minimum relay. PCB/assembly fees are approximate, and the model's 23-joint
+allowance counts placements rather than actual solder joints. Do not use its
+“FULL” curve as a complete relay price or a maximum-population quotation.
 
 These existing v10 plots are **historical model outputs, not current supplier quotes**. The word “live” inside the figures refers to pricing fetched when they were generated, not continuously refreshed prices.
 
