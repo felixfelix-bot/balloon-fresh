@@ -1,5 +1,9 @@
 # Pico-Balloon Tracker & E80 Range Test Bench
 
+![Arrived prototype boards: reverse side above, populated front below](docs/boards/arrival-v10.jpg)
+
+*The boards have arrived. Builder-supplied photo; assembly and powered bring-up remain incomplete.*
+
 **A pico-balloon relay system: balloons acting as a bent pipe between base stations.**
 
 ## Current hardware status — 24 November 2026
