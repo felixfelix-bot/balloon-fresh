@@ -2,6 +2,30 @@
 
 **A pico-balloon relay system: balloons acting as a bent pipe between base stations.**
 
+## Current hardware status — 24 November 2026
+
+**Five partially populated boards have arrived, as reported by the builder. These are prototypes, not flight-qualified hardware.**
+
+- The F33 LR2021 module fits mechanically; electrical operation has not yet been verified on the arrived boards.
+- The builder reports that the small LR2021 modules do **not** fit the U3/U_C sites. Footprint identification and a mounting solution remain open; do not force-fit or buy replacements from the historical BOM alone.
+- Powered ESP32 bring-up, radio operation and flight readiness remain unverified for this batch.
+- The intended minimum relay population is **one high-power F33 LR2021 transmitter plus one low-power LR2021 receiver**, with the MCU and required power/support components. GPS, barometer, SX1280 ranging and the additional radio are optional.
+- Historical documents below describe earlier design states. Their quantities, routing counts and readiness statements are not acceptance evidence for the delivered batch; the manufactured archive still needs reconciliation with the received hardware.
+
+### Historical production-cost figures
+
+These existing v10 plots are **historical model outputs, not current supplier quotes**. The word “live” inside the figures refers to pricing fetched when they were generated, not continuously refreshed prices.
+
+![Historical v10 unit and batch cost curves](docs/analysis/bulk-route-20261107/assets/cost-curves.png)
+
+**Scope:** assembler-only versus assembler plus a flat approximately **US$35 per board** hand-fit allowance. “FULL” is the model's label, **not proof that every optional component is included**. This is not yet a comparison of the two-radio minimum against a fully populated build. Hand-fit quantity discounts are not modeled; inclusion of shipping, taxes and hand-assembly labor is unverified. The plotted full-board estimates are $47.66 at 10 boards, $41.95 at 100 and $41.60 at 200.
+
+![Historical v10 assembler-side component and fee breakdown](docs/analysis/bulk-route-20261107/assets/board-cost-scaling.png)
+
+**Scope:** JLC-side components, assembly fees and bare PCB only; the separate hand-fit radio costs are excluded. The minimum/maximum population comparison and verified hand-solder shopping list are still outstanding.
+
+---
+
 ![system diagram](docs/boards/system-diagram.png)
 
 A flight hub carries a 2.4 GHz FLRC radio, GNSS and a solar harvester, and carries four solar wings. Two
