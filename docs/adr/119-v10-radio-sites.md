@@ -1,5 +1,10 @@
 # ADR-119 — v10 radio sites: three LR2021 slots (2× LP + 1× F33) + E28-2G4M27SX ranging module
 
+> **SUPERSEDED IN PART by ADR-089 (2026-11-25), for the vnext MINIMAL variant only.** The MINIMAL
+> flight variant carries **two** RF sites (site A: F33 TX; site B: ONE LR2021 RX) and **no site C,
+> no site D**. This record's four-site table continues to govern v10 and any non-MINIMAL variant;
+> nothing here is retracted for those boards. See `docs/adr/089-vnext-minimal-flight-variant.md` §1/§3.
+
 - **Status:** ACCEPTED — operator instruction, 2026-10-20 (extends the 2026-10-14 three-slot ruling, `docs/fab/V9-RADIO-SLOT-CONSOLIDATION.md`; promoted to ADR on operator order "lock these decisions in as ADRs").
 - **Decision owner:** Felix (operator)
 - **Related:** ADR-118 (v10 directives umbrella), ADR-034 (band split 433/2.4), ADR-040 (site optionality — extended), ADR-108 (pin plan — to be re-derived), `docs/fab/SX1280-MODULE-DECISION.md` (the measured refutation of the bare-chip approach), `docs/modules/e28-2g4m27sx/E28-2G4M27SX_UserManual_v1.0.pdf` (qualification source).

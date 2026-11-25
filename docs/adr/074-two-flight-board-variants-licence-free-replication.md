@@ -1,5 +1,12 @@
 # ADR-074 — Two flight-board variants: an F33 high-power board and a low-power LR2021 board, so others can fly without a licence
 
+> **EXTENDED by ADR-089 (2026-11-25).** The variant set gains a THIRD member: the **vnext MINIMAL
+> flight variant** (F33 TX + ONE LR2021 RX + ESP32, `U_C`/ranging site removed from that variant,
+> pogo programming pads — `docs/adr/089-vnext-minimal-flight-variant.md`). This record's two
+> variants, its invariants (ground sized for the low-power board; F33 a multiplier, INV-1..4) and
+> its gating of the F33 flight are **unchanged**. Scoped supersessions of ADR-119/121/145 for the
+> MINIMAL variant are listed in ADR-089 §3.
+
 - **Status:** **Accepted by operator** (Felix, 2026-10-08) — the two-board plan is the
   operator's (*"two flight boards are built"*). The *text* is agent-drafted.
 - **Date:** 2026-10-08

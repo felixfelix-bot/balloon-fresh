@@ -1,0 +1,86 @@
+{
+  "_why": "Machine-readable requirements + mass baseline for the vnext MINIMAL flight variant (ADR-089, accepted 2026-11-25). Follows the repo's single-source-of-truth pattern (docs/ssot/parameters.json): one parameter, one owner, one canonical value. Provenance is mandatory per docs/analysis/ conventions: MEASURED (who/what/when), REPO (in-repo file), OPERATOR (operator-stated, this task brief), TODO(unverified) (no source carries it yet).",
+  "_rule": "Do not fill a TODO(unverified) slot without its measurement. Update this file as ADR-089's gates (G1-G6, docs/fab/VNEXT-MINIMAL-PLAN.md) land. A gate output that contradicts a value here supersedes the value HERE, not in the ADR prose.",
+  "variant": {
+    "id": "vnext-minimal",
+    "adr": "docs/adr/089-vnext-minimal-flight-variant.md",
+    "radio_set": {
+      "U2": {
+        "part": "LoRa2021F33-2G4 (family per F33-PART-NUMBER-VERIFICATION.md: LoRa1121F33-2G4, LCSC C53243927 for 433 MHz)",
+        "role": "433 MHz TX (high power)",
+        "decision": "KEEP",
+        "provenance": "OPERATOR 2026-11-25 + ADR-089 §1"
+      },
+      "U3": {
+        "part": "LoRa2021_Castellated (bare LR2021, low power)",
+        "role": "2.4 GHz RX link (the ONE receiver)",
+        "decision": "KEEP",
+        "provenance": "OPERATOR 2026-11-25 + ADR-089 §1"
+      },
+      "U_C": {
+        "part": "LoRa2021_Castellated",
+        "role": "second 2.4 GHz option (redundant)",
+        "decision": "REMOVE (MINIMAL only; site C remains valid on non-MINIMAL variants)",
+        "provenance": "OPERATOR 2026-11-25 + ADR-089 §1"
+      },
+      "ranging_site": {
+        "part": "LoRa1280 / E28-2G4M27SX (site D)",
+        "role": "2.4 GHz ranging",
+        "decision": "REMOVE (MINIMAL only; ADR-138 gate satisfied by removal for this variant)",
+        "known_divergence": "netlist says U_LORA1280 (ADR-139), stage-1 board carries U_E28 with E28-2G4M27SX footprint (commit e27a0d3c); gate G1 reconciles",
+        "provenance": "OPERATOR 2026-11-25 + ADR-089 §1"
+      }
+    },
+    "programming": {
+      "decision": "pogo pads replacing the J_PROG 2.54 mm header",
+      "signals": ["GND", "+3V3", "EN", "USB_D-", "USB_D+", "IO0"],
+      "en_rc": {"R": "10 kOhm", "C": "1 uF"},
+      "provenance": "OPERATOR 2026-11-25 + ADR-089 §1 + ADR-121 (electrical contract carries over)"
+    },
+    "retained": {
+      "gps_tracking": "MAX-M10S retained until evidence permits removal",
+      "burst_storage": "supercap bank retained (ADR-006/ADR-036)",
+      "release_safety": "four nichrome cut channels retained (ADR-129, V11-CUT-CHANNELS.md)",
+      "ground_plane": "retained (ADR-067)",
+      "shields": "retained"
+    },
+    "power_wiring": {
+      "decision": "evaluate direct power wiring / strain relief vs connector",
+      "owner_gate": "G5 (plan Phase 4.4)",
+      "provenance": "OPERATOR 2026-11-25 + ADR-089 §0"
+    }
+  },
+  "outline": {
+    "candidate_example_mm": [50, 60],
+    "candidate_status": "NOT A PROVEN FIT - example only; fit is an output of gate G5",
+    "full_variant_reference": {
+      "components": 101,
+      "min_square_outline_mm": 75.7,
+      "source": "tracker/hardware/v11_fit_probe.json (FULL v11 variant, not MINIMAL)"
+    }
+  },
+  "stackup": {
+    "candidate": "4-layer, nominal 0.8 mm (JLC 4-layer minimum)",
+    "status": "CANDIDATE NOT QUALIFIED - thickness/mating verification is gate G5",
+    "mating_checks": ["wing-socket tab insertion (ADR-131 assumed 0.6 mm FR4)", "pogo pad contact height", "connector seating"]
+  },
+  "mass_baseline_g": {
+    "assembly_without_f33": {"value": 27.05, "provenance": "OPERATOR-measured 2026-11-25 (task brief); not independently re-measured in-repo"},
+    "assembly_with_f33": {"value": 31.05, "provenance": "OPERATOR-measured 2026-11-25 (task brief)"},
+    "delta_with_f33": {"value": 4.0, "note": "assembly-level delta, NOT bare-PCB mass; exceeds the +2.8 g module figure, remainder unmeasured support hardware", "provenance": "OPERATOR 2026-11-25"},
+    "f33_module_mass": {"value": 2.8, "provenance": "REPO ADR-074 D4"},
+    "bare_pcb_mass_minimal": {"value": null, "status": "TODO(unverified)", "owner_gate": "G5 (outline must exist first)"},
+    "u_c_plus_ranging_site_removal_saving": {"value": null, "status": "TODO(unverified)", "note": "footprint+support copper only; measure after outline exists", "owner_gate": "G5"},
+    "support_wing_interface_hardware": {"value": null, "status": "TODO(unverified)", "note": "must be WEIGHED, gate G5 (plan Phase 4.5)", "owner_gate": "G5"},
+    "pogo_pad_assembly_mass": {"value": null, "status": "TODO(unverified)", "owner_gate": "G2 (pogo part selection)"}
+  },
+  "gates": {
+    "G1_reconcile_ordered_archive": "v10 order record + netlist-vs-board site-D divergence resolved",
+    "G2_footprint_mismatch": "both surviving radio sites measured against REAL modules; pogo pad geometry defined",
+    "G3_layer_audit": "per-layer track length / nets / filled copper on the MINIMAL net set",
+    "G4_keep_optional_remove": "every reference annotated KEEP/OPTIONAL/REMOVE with reason and evidence",
+    "G5_placement_comparison": "single- vs double-sided with actual courtyards, holes, desense, thermal, mechanical; AGENTS.md §1b density table; thickness/mating verified; interface mass weighed; power-wiring decision recorded",
+    "G6_human_gate_then_route": "operator sign-off on placement renders (ADR-112/120 R3) BEFORE routing",
+    "provenance": "OPERATOR 2026-11-25 + ADR-089 §5"
+  }
+}
