@@ -30,6 +30,23 @@ any repacking. Do not accept the enlarged outline or incomplete fit probe as the
 mass-reduction result. First derive the retained component set, including all
 shared support circuits; only then compare compact candidates with identical scope.
 
+## Correction: native CAD read contradicts the stage-1 report
+
+Direct `pcbnew.LoadBoard` inspection of the committed
+`tracker/hardware/hub_board_v11_stage1.kicad_pcb` produced:
+
+- SHA256 `09ae5819fa76e3c338461b204d5f373f9e17df0de6a52aeef78bf6352b578309`.
+- Edge bounding box 72.1 x 80.1 mm (includes edge stroke), nominal CAD thickness 1.6 mm.
+- **49 footprints, 782 track/via objects, 5 zones; 41 front / 8 back footprints.**
+- U2, U3 and U_C each have 18 pads; J_PROG has 6. No U_LORA1280 reference found.
+
+Thus the JSON's 80 x 90 mm / 101-component / unrouted description does NOT describe
+these CAD bytes. The 101-component v11 netlist also does not match this footprint
+census. Keep the earlier report findings above as superseded evidence, not a valid
+baseline. Reconcile generator output, netlist and board before deleting parts or
+claiming a v11 placement; the filename is not proof that a generated board landed.
+These are CAD measurements, not measurements of the manufactured boards.
+
 ## Netlist inspection: first removal boundary
 
 Parsed the committed `tracker/hardware/schematics/flight_board/v11_flight.net`
