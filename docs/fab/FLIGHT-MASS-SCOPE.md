@@ -30,6 +30,28 @@ any repacking. Do not accept the enlarged outline or incomplete fit probe as the
 mass-reduction result. First derive the retained component set, including all
 shared support circuits; only then compare compact candidates with identical scope.
 
+## Netlist inspection: first removal boundary
+
+Parsed the committed `tracker/hardware/schematics/flight_board/v11_flight.net`
+S-expression: 101 components. This is next-iteration source, not a delivered-board pinout.
+
+- U2 = LoRa2021F33-2G4 and U3 = LoRa2021_Castellated: retained radio pair.
+- U_C and U_LORA1280 share SPI1_MISO/MOSI/SCK with U3: keep that bus and its MCU connections.
+- U_C_BUSY/CS_N/IRQ/RESET_N each have only the U_C endpoint in this netlist.
+  The proposed expander is not yet instantiated here; do not claim it was removed.
+- Six E28-prefixed control nets join only U1 and U_LORA1280. Remove those radio
+  connections in the minimum variant; any GPIO reuse needs a new verified pin map.
+- VTCXO_VNTC joins U3.13 and U_C.13. Removing U_C does not justify deleting or
+  reinterpreting U3.13: resolve its vendor-defined function before schematic edits.
+- J_PROG is labelled **PROG/USB (GND 3V3 EN D- D+ IO0)**, not UART.
+  Preserve USB D-/D+ and boot/reset access in the pogo fixture. Earlier chat UART
+  advice was generic and must NOT be used as this header's wiring instructions.
+- U_HUB_CVT still has value `HUB_PV input (part TODO(unverified))`.
+  Compact placement must not conceal this unresolved power-component selection.
+
+This inspection does not yet authorize removal of shared passives, storage or
+release components. No PCB/netlist was modified and no layout-area gain is claimed.
+
 ## Measured baseline and unknowns
 
 Builder measurements: partially populated hub 27.05 g; with F33 31.05 g.
