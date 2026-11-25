@@ -47,6 +47,28 @@ baseline. Reconcile generator output, netlist and board before deleting parts or
 claiming a v11 placement; the filename is not proof that a generated board landed.
 These are CAD measurements, not measurements of the manufactured boards.
 
+## Native comparison and layer usage
+
+Native v10 versus stage-1 comparison finds identical footprint reference sets;
+only D_BP1..4 changed position or side. This establishes a diode-placement stage,
+not a board populated from the 101-component next-iteration netlist.
+Stage-1 track measurements (vias excluded):
+
+| Layer | Segments | Length mm | Distinct nets |
+|---|---:|---:|---:|
+| F.Cu | 323 | 426.59 | 31 |
+| B.Cu | 361 | 482.18 | 23 |
+| In1.Cu | 19 | 174.22 | 7 |
+| In2.Cu | 27 | 208.61 | 8 |
+
+Inner-layer length is 382.83 / 1291.60 mm = approximately 29.6% of track length,
+NOT 29.6% of routing importance or copper coverage. Net counts overlap across layers.
+Zone declarations are GND on F.Cu/B.Cu/In1.Cu, +3V3 on B.Cu and VSCAP on B.Cu.
+Zone declarations do not prove filled coverage or connected ground planes.
+Removing inner layers therefore requires moving real signals AND replacing the
+inner ground-return function; it is not a fabrication-option-only change.
+No board bytes were changed by this measurement.
+
 ## Netlist inspection: first removal boundary
 
 Parsed the committed `tracker/hardware/schematics/flight_board/v11_flight.net`
