@@ -13,6 +13,23 @@ functions need it. Do not copy the full-feature component additions blindly.
 The spec's historical 'no v11 board exists' line is not current-state evidence;
 inspect the open layout branch before selecting the implementation base.
 
+## Existing v11 evidence recovered (not a new placement result)
+
+The committed [stage-1 record](../../tracker/hardware/v11_board_stage1.json)
+reports an **80 x 90 mm outline**, 97 of 101 components at their v10 positions,
+and no routing. This is not the compact flight candidate: 7200 mm² is 25% larger
+than the illustrative 72 x 80 mm baseline (5760 mm²).
+The [fit-probe record](../../tracker/hardware/v11_fit_probe.json) measures 100 of
+101 components and explicitly omits U_LORA1280 because its footprint did not load.
+Its 75.7 mm minimum-square estimate is therefore NOT a complete placement proof.
+These are recovered artifact claims, not fresh native CAD measurements.
+Open PR #577 head at inspection: 48c6ae2dbdc68d2b495a2650009c2a4a2fb931a5.
+
+Next concrete audit must measure this existing stage-1 CAD and its netlist before
+any repacking. Do not accept the enlarged outline or incomplete fit probe as the
+mass-reduction result. First derive the retained component set, including all
+shared support circuits; only then compare compact candidates with identical scope.
+
 ## Measured baseline and unknowns
 
 Builder measurements: partially populated hub 27.05 g; with F33 31.05 g.
