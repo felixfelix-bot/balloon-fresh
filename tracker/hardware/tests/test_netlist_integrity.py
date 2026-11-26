@@ -285,9 +285,13 @@ PAIRS = [
     ("v9 hub (netlist -> committed board)",
      os.path.join(HW, "schematics", "flight_board", "v9_flight.net"),
      COMMITTED_HUB_BOARD),
-    ("base station (netlist -> placed board)",
+    # 2026-11-11: repointed to the artifact that is actually derived from the ERC-gated netlist.
+    # The old `_placed`/`_v2` boards carry 44 footprints while the netlist declares 53 (12 missing
+    # incl. the whole U_MCU decoupling ring, 3 removed by the startup-circularity fix), so this
+    # check failed on master. Pointing it at a stale artifact is what let that drift persist.
+    ("base station (netlist -> unrouted board)",
      os.path.join(HW, "base_station", "base_station_v1.net"),
-     os.path.join(HW, "base_station", "base_station_v1_placed.kicad_pcb")),
+     os.path.join(HW, "base_station", "base_station_v1_unrouted.kicad_pcb")),
 ]
 for label, net, brd in PAIRS:
     if not (os.path.exists(net) and os.path.exists(brd)):

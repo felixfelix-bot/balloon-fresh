@@ -7,6 +7,14 @@
     "tracks": 0,
     "vias": 0
   },
+  "tracker/hardware/base_station/base_station_v1_unrouted.kicad_pcb": {
+    "accepted_unrouted": 0,
+    "nets_routed": 0,
+    "nets_total": 40,
+    "note": "recorded by record_fab_readiness.py; regression below these values is refused",
+    "tracks": 0,
+    "vias": 0
+  },
   "tracker/hardware/hub_board_v9.kicad_pcb": {
     "accepted_unrouted": 0,
     "nets_routed": 57,

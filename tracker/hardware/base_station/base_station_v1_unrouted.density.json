@@ -1,0 +1,26 @@
+{
+ "board": "/home/c08r4d0r/worktrees/pr-base-clean/tracker/hardware/base_station/base_station_v1_unrouted.kicad_pcb",
+ "outline_mm": [
+  55.15,
+  40.15
+ ],
+ "board_area_mm2": 2214.3,
+ "footprints": 53,
+ "parts_top": 53,
+ "parts_bottom": 0,
+ "courtyard_area_top_mm2": 840.9,
+ "courtyard_area_bottom_mm2": 0.0,
+ "occupancy_top_pct": 37.98,
+ "occupancy_bottom_pct": 0.0,
+ "occupancy_any_side_pct": 37.98,
+ "largest_empty_rect_mm2": 637.0,
+ "largest_empty_rect": [
+  -0.07,
+  -0.07,
+  49.0,
+  13.0
+ ],
+ "reservations": [],
+ "reserved_area_mm2": 0,
+ "courtyards_outside_outline": []
+}

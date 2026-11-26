@@ -60,10 +60,12 @@ class MCUSupply(unittest.TestCase):
 
     def test_per_pin_decoupling(self):
         self.cap('C_MCU1', '+3V3_MCU', '100nF')  # IOVDD pin 1
+        # Refs are `C_MCU<pin>`, NOT `C_MCU_P<pin>`: the P made each designator 5.76 mm wide and
+        # the 1 mm-pitch row spaced them 3.0 mm apart, so the labels overlapped by arithmetic.
         for pin in (10, 22, 33, 42, 43, 48, 49):
-            self.cap(f'C_MCU_P{pin}', '+3V3_MCU', '100nF')
+            self.cap(f'C_MCU{pin}', '+3V3_MCU', '100nF')
         for pin in (23, 50):
-            self.cap(f'C_MCU_P{pin}', '+1V1_CORE', '100nF')
+            self.cap(f'C_MCU{pin}', '+1V1_CORE', '100nF')
         self.cap('C_FLASH', '+3V3_MCU', '100nF')
 
     def test_power_tree_no_five_volt_mcu_connection(self):

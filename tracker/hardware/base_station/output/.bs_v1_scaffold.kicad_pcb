@@ -39,7 +39,7 @@
   (net 0 "")
   (gr_rect
     (start 0 0)
-    (end 70.0 50.0)
+    (end 55.0 40.0)
     (stroke (width 0.15) (type default))
     (fill none)
     (layer "Edge.Cuts")

@@ -27,6 +27,11 @@ sys.path.insert(0, "/usr/lib/python3/dist-packages")
 NETLIST = os.path.join(HERE, "base_station_v1.net")
 OUT = os.path.join(HERE, "base_station_v1_placed.kicad_pcb")
 
+# Scratch lives outside the repo so a build cannot dirty a tracked file (see load()).
+SCRATCH = os.environ.get("BS_SCRATCH") or "/tmp/bs_place_scratch"
+# Set by main() from --scaffold; None means "use the scratch default".
+args_scaffold = None
+
 
 def _hubgen():
     spec = importlib.util.spec_from_file_location("hubgen", os.path.join(HW, "build_hub_board_v9.py"))
@@ -41,7 +46,16 @@ def load(w, h):
     hubgen = _hubgen()
 
     comps, nets = hubgen.read_netlist(NETLIST)
-    scaf = os.path.join(HERE, "output", ".bs_v1_scaffold.kicad_pcb")
+    # THE SCAFFOLD IS A WORKING BUFFER, NOT AN ARTEFACT. It used to be written to
+    # `output/.bs_v1_scaffold.kicad_pcb`, which is TRACKED -- so any run at a different outline
+    # silently rewrote a committed file, and the file's committed content was simply whatever
+    # outline the last run happened to use (it read `(end 70.0 50.0)` before being dragged to 55x40).
+    # A tracked file that a build overwrites is a defect generator: it makes `git status` dirty for
+    # reasons unrelated to the change, and it lets two runs disagree with each other invisibly.
+    # The scaffold is pure intermediate scratch (hubgen.scaffold_text(w,h) regenerates it every
+    # run), so it goes to the scratch tree. `--scaffold` still lets a caller place it elsewhere.
+    scaf = (os.path.abspath(args_scaffold) if args_scaffold
+            else os.path.join(SCRATCH, "bs_v1_scaffold.kicad_pcb"))
     os.makedirs(os.path.dirname(scaf), exist_ok=True)
     with open(scaf, "w") as f:
         f.write(hubgen.scaffold_text(w, h))
@@ -98,8 +112,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--outline", default="60x45", help="board outline WxH in mm")
     ap.add_argument("--out", default=OUT)
+    ap.add_argument("--scaffold", default=None,
+                    help="where to write the intermediate scaffold (default: scratch, NOT the repo)")
     a = ap.parse_args()
     w, h = (float(v) for v in a.outline.lower().split("x"))
+
+    global args_scaffold
+    args_scaffold = a.scaffold
 
     board, placed, skipped, comps, nets = load(w, h)
     hubgen = _hubgen()
