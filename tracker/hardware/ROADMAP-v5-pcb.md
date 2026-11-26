@@ -1,5 +1,11 @@
 # ROADMAP: PCB v5 Completion — Two-Stage Quality-Gated (Placement → Routing)
 
+> **Historical plan, not current release authority (2026-11-02).**
+> For the current completion task sequence and optional bounded investigations,
+> use [PCB completion roadmap](../../docs/fab/PCB-COMPLETION-ROADMAP.md).
+> The older variant assumptions and thresholds below do not override current
+> accepted ADRs, native KiCad sources/rules or production gates.
+
 > **Core principle:** Placement is a COMPLETE stage with hard quality gates.
 > Routing is a SEPARATE stage that CANNOT START until placement passes ALL gates.
 > Quality gates between stages are EXPLICIT and BLOCKING.

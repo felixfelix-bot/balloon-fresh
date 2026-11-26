@@ -1,5 +1,11 @@
 # PCB EXECUTION PLAN — Three-Variant Design (ADR-028)
 
+> **Historical plan, not current release authority (2026-11-02).**
+> For the current completion task sequence and optional bounded investigations,
+> use [PCB completion roadmap](../../docs/fab/PCB-COMPLETION-ROADMAP.md).
+> The older variant assumptions and thresholds below do not override current
+> accepted ADRs, native KiCad sources/rules or production gates.
+
 **Date:** 2026-08-05
 **Author:** worker-layout (kimi-k3)
 **Task:** t_baf051a8 — PCB-EXEC-PLAN
