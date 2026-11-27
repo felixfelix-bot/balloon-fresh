@@ -1,0 +1,1436 @@
+{
+ "outline": {
+  "edge_segments": 1,
+  "edge_shape_types": {
+   "1": 1
+  },
+  "bbox_mm": {
+   "x_min": 0.0,
+   "y_min": 0.0,
+   "x_max": 72.0,
+   "y_max": 80.0,
+   "width_mm": 72.0,
+   "height_mm": 80.0
+  },
+  "bbox_area_mm2": 5760.0,
+  "area_claim": "bbox_area_mm2 equals the true outline area ONLY if the outline is a rectangle (1 segment here is a PCB_SHAPE rect: 4 corners, one object). Any non-rectangular outline makes bbox an OVERESTIMATE."
+ },
+ "per_layer": {
+  "F.Cu": {
+   "track_length_mm": 944.5424294714521,
+   "segments": 452,
+   "vias": 41
+  },
+  "In1.Cu": {
+   "track_length_mm": 0.0,
+   "segments": 0,
+   "vias": 41
+  },
+  "In2.Cu": {
+   "track_length_mm": 15.486500705120548,
+   "segments": 5,
+   "vias": 41
+  },
+  "B.Cu": {
+   "track_length_mm": 486.2200192150818,
+   "segments": 386,
+   "vias": 41
+  }
+ },
+ "via_total": 41,
+ "per_net_segments": {
+  "+3V3": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: shared with kept refs C10,J_PROG,J_VCC,R_F1,U1,U2,U3,U5,U6,U7,U_C,U_LORA1280"
+  },
+  "/CUT_SENSE_W1": {
+   "segments": 11,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/CUT_SENSE_W2": {
+   "segments": 6,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/CUT_SENSE_W3": {
+   "segments": 6,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/CUT_SENSE_W4": {
+   "segments": 9,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/F33_BUSY": {
+   "segments": 9,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/F33_CS_N": {
+   "segments": 30,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/F33_IRQ": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SPI2_MISO": {
+   "segments": 8,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SPI2_MOSI": {
+   "segments": 10,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/F33_RESET_N": {
+   "segments": 40,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SPI2_SCK": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/F33_VCC": {
+   "segments": 17,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/F33_VSENSE": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/GNSS_PPS": {
+   "segments": 7,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/GNSS_RX": {
+   "segments": 112,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/GNSS_TX": {
+   "segments": 37,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/GNSS_VCC": {
+   "segments": 19,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/HUB_PV_MID1": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/HUB_PV_N": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/HUB_PV_P": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/I2C_SCL": {
+   "segments": 16,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/I2C_SDA": {
+   "segments": 26,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SCAP_ADC": {
+   "segments": 11,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SCAP_MID": {
+   "segments": 18,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/E28_BUSY": {
+   "segments": 12,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/E28_CS_N": {
+   "segments": 15,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/E28_DIO1": {
+   "segments": 27,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/E28_DIO2": {
+   "segments": 28,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/E28_DIO3": {
+   "segments": 7,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SPI1_MISO": {
+   "segments": 38,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: shared with kept refs U1,U3,U_C,U_LORA1280"
+  },
+  "/SPI1_MOSI": {
+   "segments": 14,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: shared with kept refs U1,U3,U_C,U_LORA1280"
+  },
+  "/E28_RESET_N": {
+   "segments": 18,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/SPI1_SCK": {
+   "segments": 20,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: shared with kept refs U1,U3,U_C,U_LORA1280"
+  },
+  "/U3_BUSY": {
+   "segments": 25,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/U3_CS_N": {
+   "segments": 105,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/U3_IRQ": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/U3_RESET_N": {
+   "segments": 51,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/VSCAP": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/VTCXO_VNTC": {
+   "segments": 11,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: shared with kept refs U3,U_C"
+  },
+  "/W1_SOLAR_N": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/W1_SOLAR_P": {
+   "segments": 15,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/W2_SOLAR_N": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/W3_SOLAR_N": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "GND": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: shared with kept refs C10,C4,C_BULK,C_CAP2,C_HF,C_MON,D_BP4,J_HUB_PV,J_PROG,J_W1,J_W2,J_W3,J_W4,R_BAL2,R_DIV2,R_MON2,U1,U2,U3,U5,U6,U7,U_C,U_CUT1,U_CUT2,U_CUT3,U_CUT4,U_HUB_CVT,U_LORA1280"
+  },
+  "/EN": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/USB_DN": {
+   "segments": 19,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/USB_DP": {
+   "segments": 46,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/IO0": {
+   "segments": 0,
+   "in_minimal_set": true,
+   "verdict_reason": "KEPT: no REMOVE-set consumer"
+  },
+  "/U_C_CS_N": {
+   "segments": 0,
+   "in_minimal_set": false,
+   "verdict_reason": "REMOVED: every pad consumer is on U_C/U_E28 (REMOVE set, ADR-089 S1)"
+  },
+  "/U_C_BUSY": {
+   "segments": 0,
+   "in_minimal_set": false,
+   "verdict_reason": "REMOVED: every pad consumer is on U_C/U_E28 (REMOVE set, ADR-089 S1)"
+  },
+  "/U_C_RESET_N": {
+   "segments": 0,
+   "in_minimal_set": false,
+   "verdict_reason": "REMOVED: every pad consumer is on U_C/U_E28 (REMOVE set, ADR-089 S1)"
+  },
+  "/U_C_IRQ": {
+   "segments": 0,
+   "in_minimal_set": false,
+   "verdict_reason": "REMOVED: every pad consumer is on U_C/U_E28 (REMOVE set, ADR-089 S1)"
+  }
+ },
+ "removed_nets": [
+  "/U_C_BUSY",
+  "/U_C_CS_N",
+  "/U_C_IRQ",
+  "/U_C_RESET_N"
+ ],
+ "nets_shared_with_removed_refs": {
+  "GND": [
+   "C10",
+   "C4",
+   "C_BULK",
+   "C_CAP2",
+   "C_HF",
+   "C_MON",
+   "D_BP4",
+   "J_HUB_PV",
+   "J_PROG",
+   "J_W1",
+   "J_W2",
+   "J_W3",
+   "J_W4",
+   "R_BAL2",
+   "R_DIV2",
+   "R_MON2",
+   "U1",
+   "U2",
+   "U3",
+   "U5",
+   "U6",
+   "U7",
+   "U_C",
+   "U_CUT1",
+   "U_CUT2",
+   "U_CUT3",
+   "U_CUT4",
+   "U_HUB_CVT",
+   "U_LORA1280"
+  ],
+  "+3V3": [
+   "C10",
+   "J_PROG",
+   "J_VCC",
+   "R_F1",
+   "U1",
+   "U2",
+   "U3",
+   "U5",
+   "U6",
+   "U7",
+   "U_C",
+   "U_LORA1280"
+  ],
+  "/SPI1_MISO": [
+   "U1",
+   "U3",
+   "U_C",
+   "U_LORA1280"
+  ],
+  "/SPI1_MOSI": [
+   "U1",
+   "U3",
+   "U_C",
+   "U_LORA1280"
+  ],
+  "/SPI1_SCK": [
+   "U1",
+   "U3",
+   "U_C",
+   "U_LORA1280"
+  ],
+  "/VTCXO_VNTC": [
+   "U3",
+   "U_C"
+  ]
+ },
+ "site_named_copper": {
+  "nets": [
+   "/E28_BUSY",
+   "/E28_CS_N",
+   "/E28_DIO1",
+   "/E28_DIO2",
+   "/E28_DIO3",
+   "/E28_RESET_N",
+   "/U_C_BUSY",
+   "/U_C_CS_N",
+   "/U_C_IRQ",
+   "/U_C_RESET_N"
+  ],
+  "per_layer": {
+   "F.Cu": {
+    "length_mm": 238.45653947338806,
+    "segments": 62
+   },
+   "In1.Cu": {
+    "length_mm": 0.0,
+    "segments": 0
+   },
+   "In2.Cu": {
+    "length_mm": 0.0,
+    "segments": 0
+   },
+   "B.Cu": {
+    "length_mm": 118.689174968609,
+    "segments": 45
+   }
+  },
+  "vias": 10,
+  "total_length_mm": 357.1457,
+  "total_segments": 107,
+  "caveat": "nets named for a REMOVE-set site (/U_C_, /E28_, /LORA1280_ prefixes). Their copper vanishes with the site on a MINIMAL rebuild. /U_C_* nets are UNROUTED on this board (0 segments) -- ADR-145's 19.81 mm is the PAD SPAN of U_C's control pads, not routed copper."
+ },
+ "removed_copper_per_layer": {
+  "F.Cu": {
+   "length_mm": 0.0,
+   "segments": 0
+  },
+  "In1.Cu": {
+   "length_mm": 0.0,
+   "segments": 0
+  },
+  "In2.Cu": {
+   "length_mm": 0.0,
+   "segments": 0
+  },
+  "B.Cu": {
+   "length_mm": 0.0,
+   "segments": 0
+  }
+ },
+ "removed_vias_on_removed_nets": 0,
+ "removed_copper_summary": {
+  "length_mm": 0.0,
+  "segments": 0,
+  "vias": 0,
+  "method": "tracks/arcs on nets whose EVERY pad consumer sits on U_C/U_E28. Vias on those nets counted separately; zone copper not attributed (zones are GND/+3V3/VSCAP rails shared with kept parts)."
+ },
+ "zones": [
+  {
+   "zone": "GND_FCu",
+   "net": "GND",
+   "layers": [
+    {
+     "layer": "F.Cu",
+     "filled_area_mm2": 4363.665594460462
+    }
+   ]
+  },
+  {
+   "zone": "P3V3_BCu",
+   "net": "+3V3",
+   "layers": [
+    {
+     "layer": "B.Cu",
+     "filled_area_mm2": 4.3242858501725
+    }
+   ]
+  },
+  {
+   "zone": "GND_BCu",
+   "net": "GND",
+   "layers": [
+    {
+     "layer": "B.Cu",
+     "filled_area_mm2": 60.8347433762835
+    }
+   ]
+  },
+  {
+   "zone": "VSCAP_BCu",
+   "net": "/VSCAP",
+   "layers": [
+    {
+     "layer": "B.Cu",
+     "filled_area_mm2": 4785.011986304496
+    }
+   ]
+  },
+  {
+   "zone": "GND_In1",
+   "net": "GND",
+   "layers": [
+    {
+     "layer": "In1.Cu",
+     "filled_area_mm2": 5414.961075114924
+    }
+   ]
+  }
+ ],
+ "footprints": [
+  {
+   "ref": "R_DIV2",
+   "value": "1M",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    41.0,
+    44.5
+   ],
+   "bbox_mm": [
+    40.045,
+    44.005,
+    1.91,
+    0.99
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "HW1",
+   "value": "STRING_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    4.5,
+    50.5
+   ],
+   "bbox_mm": [
+    3.25,
+    49.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C_CAP2",
+   "value": "C_CAP2",
+   "fpid": "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    47.8,
+    37.5
+   ],
+   "bbox_mm": [
+    44.76,
+    32.225,
+    10.815,
+    10.55
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "H2",
+   "value": "TETHER_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    3.3,
+    68.5
+   ],
+   "bbox_mm": [
+    2.05,
+    67.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "R_MON2",
+   "value": "4.7M",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    22.0,
+    7.5
+   ],
+   "bbox_mm": [
+    21.505,
+    6.545,
+    0.99,
+    1.91
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_W2",
+   "value": "WING_SOCKET_4P",
+   "fpid": "tracker_mechanical:Wing_Tab_4P",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    36.0,
+    80.0
+   ],
+   "bbox_mm": [
+    31.175,
+    72.325,
+    9.65,
+    8.2
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_HUB_CVT",
+   "value": "U_HUB_CVT",
+   "fpid": "Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.1x1.1mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    42.9,
+    56.0
+   ],
+   "bbox_mm": [
+    40.39,
+    53.875,
+    4.635,
+    4.25
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U5",
+   "value": "U5",
+   "fpid": "RF_GPS:ublox_MAX",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    15.9,
+    58.8
+   ],
+   "bbox_mm": [
+    9.975,
+    53.4,
+    11.85,
+    10.725
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "R_MON1",
+   "value": "4.7M",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    15.0,
+    7.5
+   ],
+   "bbox_mm": [
+    14.505,
+    6.545,
+    0.99,
+    1.91
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D1",
+   "value": "BAT54",
+   "fpid": "Diode_SMD:D_SOD-123",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    3.0,
+    46.0
+   ],
+   "bbox_mm": [
+    0.58,
+    44.825,
+    4.795,
+    2.35
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_HUB_PV",
+   "value": "HUB_PV_PANEL_5P (P | MID1 | spare | N | GND)",
+   "fpid": "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    69.0,
+    64.0
+   ],
+   "bbox_mm": [
+    67.205,
+    62.205,
+    3.59,
+    13.75
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "HW2",
+   "value": "STRING_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    36.0,
+    66.5
+   ],
+   "bbox_mm": [
+    34.75,
+    65.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C10",
+   "value": "10uF",
+   "fpid": "Capacitor_SMD:C_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    9.5,
+    42.5
+   ],
+   "bbox_mm": [
+    9.015,
+    41.565,
+    0.97,
+    1.87
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C_BULK",
+   "value": "100uF",
+   "fpid": "Capacitor_SMD:C_1206_3216Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    18.0,
+    7.5
+   ],
+   "bbox_mm": [
+    15.675,
+    6.325,
+    4.65,
+    2.35
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U7",
+   "value": "U7",
+   "fpid": "Package_TO_SOT_SMD:SOT-23-5",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    48.8,
+    55.2
+   ],
+   "bbox_mm": [
+    46.725,
+    53.3,
+    4.15,
+    3.625
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C_CAP1",
+   "value": "C_CAP1",
+   "fpid": "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    36.0,
+    37.5
+   ],
+   "bbox_mm": [
+    32.96,
+    32.225,
+    10.815,
+    10.55
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "R_F1",
+   "value": "100R",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    22.5,
+    59.0
+   ],
+   "bbox_mm": [
+    22.005,
+    58.045,
+    0.99,
+    1.91
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_LORA1280",
+   "value": "LoRa1280",
+   "fpid": "NiceRF:LoRa1280",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    53.0,
+    68.1
+   ],
+   "bbox_mm": [
+    44.05,
+    59.15,
+    17.225,
+    17.225
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "HW3",
+   "value": "STRING_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    67.5,
+    50.5
+   ],
+   "bbox_mm": [
+    66.25,
+    49.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U1",
+   "value": "U1",
+   "fpid": "RF_Module:ESP32-S3-WROOM-1U",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    19.8,
+    42.3
+   ],
+   "bbox_mm": [
+    10.025,
+    32.425,
+    19.55,
+    20.2
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "HW4",
+   "value": "STRING_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    66.0,
+    76.5
+   ],
+   "bbox_mm": [
+    64.75,
+    75.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C_HF",
+   "value": "100nF",
+   "fpid": "Capacitor_SMD:C_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    21.0,
+    7.5
+   ],
+   "bbox_mm": [
+    20.515,
+    6.565,
+    0.97,
+    1.87
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_PROG",
+   "value": "J_PROG",
+   "fpid": "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    31.0,
+    54.7
+   ],
+   "bbox_mm": [
+    29.205,
+    52.905,
+    3.59,
+    16.29
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D_HUB2",
+   "value": "SS24",
+   "fpid": "Diode_SMD:D_SMA",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    38.5,
+    57.5
+   ],
+   "bbox_mm": [
+    36.725,
+    53.975,
+    3.55,
+    7.095
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "R_DIV1",
+   "value": "1M",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    43.0,
+    43.5
+   ],
+   "bbox_mm": [
+    42.045,
+    43.005,
+    1.91,
+    0.99
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "H1",
+   "value": "TETHER_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    3.3,
+    76.5
+   ],
+   "bbox_mm": [
+    2.05,
+    75.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_W3",
+   "value": "WING_SOCKET_4P",
+   "fpid": "tracker_mechanical:Wing_Tab_4P",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    72.0,
+    40.0
+   ],
+   "bbox_mm": [
+    64.325,
+    35.175,
+    8.2,
+    9.65
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "H4",
+   "value": "TETHER_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    3.3,
+    11.5
+   ],
+   "bbox_mm": [
+    2.05,
+    10.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_W4",
+   "value": "WING_SOCKET_4P",
+   "fpid": "tracker_mechanical:Wing_Tab_4P",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    36.0,
+    0.0
+   ],
+   "bbox_mm": [
+    31.175,
+    -0.525,
+    9.65,
+    8.2
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U6",
+   "value": "U6",
+   "fpid": "Package_LGA:LGA-8_3x5mm_P1.25mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    54.4,
+    56.8
+   ],
+   "bbox_mm": [
+    52.43,
+    53.78,
+    3.795,
+    5.795
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_W1",
+   "value": "WING_SOCKET_4P",
+   "fpid": "tracker_mechanical:Wing_Tab_4P",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    0.0,
+    40.0
+   ],
+   "bbox_mm": [
+    -0.525,
+    35.175,
+    8.2,
+    9.65
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C4",
+   "value": "10uF",
+   "fpid": "Capacitor_SMD:C_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    22.5,
+    57.0
+   ],
+   "bbox_mm": [
+    22.015,
+    56.065,
+    0.97,
+    1.87
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D_HUB1",
+   "value": "SS24",
+   "fpid": "Diode_SMD:D_SMA",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    43.0,
+    52.0
+   ],
+   "bbox_mm": [
+    39.43,
+    50.225,
+    7.095,
+    3.55
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "R_BAL1",
+   "value": "10k",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    41.0,
+    43.5
+   ],
+   "bbox_mm": [
+    40.045,
+    43.005,
+    1.91,
+    0.99
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "R_BAL2",
+   "value": "10k",
+   "fpid": "Resistor_SMD:R_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    39.0,
+    43.5
+   ],
+   "bbox_mm": [
+    38.045,
+    43.005,
+    1.91,
+    0.99
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "C_MON",
+   "value": "10nF",
+   "fpid": "Capacitor_SMD:C_0402_1005Metric",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    14.0,
+    7.5
+   ],
+   "bbox_mm": [
+    13.515,
+    6.565,
+    0.97,
+    1.87
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "H3",
+   "value": "TETHER_NPTH_D2.5",
+   "fpid": "MountingHole:MountingHole_2.5mm",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    3.3,
+    3.5
+   ],
+   "bbox_mm": [
+    2.05,
+    2.25,
+    2.5,
+    2.5
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U2",
+   "value": "U2",
+   "fpid": "balloon_flight_v10:LoRa2021F33_2G4",
+   "layer": "F.Cu",
+   "side": "top",
+   "pos_mm": [
+    29.8,
+    20.1
+   ],
+   "bbox_mm": [
+    9.975,
+    8.95,
+    39.65,
+    22.3
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_C",
+   "value": "U_C",
+   "fpid": "balloon_flight_v10:LoRa2021_Castellated",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    43.7,
+    16.7
+   ],
+   "bbox_mm": [
+    32.795,
+    8.885,
+    21.81,
+    15.63
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D_BP1",
+   "value": "SS24",
+   "fpid": "Diode_SMD:D_SMA",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    4.0,
+    33.0
+   ],
+   "bbox_mm": [
+    0.43,
+    31.225,
+    7.095,
+    3.55
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "J_VCC",
+   "value": "F33_VCC_SEL (VSCAP | +3V3)",
+   "fpid": "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    18.0,
+    5.0
+   ],
+   "bbox_mm": [
+    15.675,
+    3.44,
+    4.65,
+    2.835
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_CUT2",
+   "value": "latched cut driver + cut-sense (part TODO(unverified))",
+   "fpid": "Package_TO_SOT_SMD:SOT-23-6",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    36.0,
+    70.5
+   ],
+   "bbox_mm": [
+    33.925,
+    68.6,
+    4.15,
+    3.625
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D_BP2",
+   "value": "SS24",
+   "fpid": "Diode_SMD:D_SMA",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    29.0,
+    76.0
+   ],
+   "bbox_mm": [
+    27.225,
+    72.43,
+    3.55,
+    7.095
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D_BP3",
+   "value": "SS24",
+   "fpid": "Diode_SMD:D_SMA",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    68.0,
+    33.0
+   ],
+   "bbox_mm": [
+    64.43,
+    31.225,
+    7.095,
+    3.55
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_CUT4",
+   "value": "latched cut driver + cut-sense (part TODO(unverified))",
+   "fpid": "Package_TO_SOT_SMD:SOT-23-6",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    43.0,
+    2.0
+   ],
+   "bbox_mm": [
+    40.925,
+    0.275,
+    4.15,
+    3.625
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U3",
+   "value": "U3",
+   "fpid": "balloon_flight_v10:LoRa2021_Castellated",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    20.9,
+    16.7
+   ],
+   "bbox_mm": [
+    9.995,
+    8.885,
+    21.81,
+    15.63
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_CUT1",
+   "value": "latched cut driver + cut-sense (part TODO(unverified))",
+   "fpid": "Package_TO_SOT_SMD:SOT-23-6",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    7.5,
+    47.0
+   ],
+   "bbox_mm": [
+    5.425,
+    45.275,
+    4.15,
+    3.625
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "D_BP4",
+   "value": "SS24",
+   "fpid": "Diode_SMD:D_SMA",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    29.0,
+    4.0
+   ],
+   "bbox_mm": [
+    27.225,
+    0.43,
+    3.55,
+    7.095
+   ],
+   "dnp": false
+  },
+  {
+   "ref": "U_CUT3",
+   "value": "latched cut driver + cut-sense (part TODO(unverified))",
+   "fpid": "Package_TO_SOT_SMD:SOT-23-6",
+   "layer": "B.Cu",
+   "side": "bottom",
+   "pos_mm": [
+    62.5,
+    40.0
+   ],
+   "bbox_mm": [
+    60.6,
+    37.925,
+    3.625,
+    4.15
+   ],
+   "dnp": false
+  }
+ ],
+ "counts": {
+  "footprints": 49,
+  "netted_pads": 228,
+  "named_nets": 53,
+  "total_tracks": 843
+ },
+ "_meta": {
+  "board": "/home/c08r4d0r/worktrees/vnext-minimal-docs/tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb",
+  "kicad_version": "9.0.9",
+  "read_only": true,
+  "note": "board object never mutated; no SaveBoard call; hash verified before/after",
+  "reproduce": "/home/c08r4d0r/venvs/kicad/bin/python docs/analysis/vnext-minimal-audit-20261125/vnext_layer_audit.py /home/c08r4d0r/worktrees/vnext-minimal-docs/tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb <out.json> --verify-hash <sha256>",
+  "interpreter_requirement": "a python whose pcbnew matches the board's KiCad (measured working: ~/venvs/kicad/bin/python -> 9.0.9)"
+ },
+ "_provenance": {
+  "ordered_v10": {
+   "upload_zip": "docs/fab/v10-order-top-only/v10-jlcpcb-upload.zip",
+   "upload_zip_sha256": "0f205dfeb0bf31401e572cea652510026c404146bfa40f8b076214375ecb509e",
+   "zip_contents_note": "gerbers/ + bom-jlc.csv + cpl-jlc.csv; NO .kicad_pcb ships in the order",
+   "gerbers_sha256": {
+    "board.drl": "50e03f8ac9f62a6a158463b04dcd5503b6dffc9a42b78a86515d014a5bd9e2ad",
+    "board-Edge_Cuts.gm1": "8479ac7aa10212f1fa0767d974972def53caaf20d4e64a29d3b1d5c2545e76be",
+    "board-F_Cu.gtl": "f682a85cb0fb0c9b423c3a1646a86bae53d6792a9ac9bae55e644e2dea8fac78",
+    "board-In1_Cu.g1": "89ea5f4635f3197b80db57390c917530f6b4e6ad6b7f0867a22c69a2b46c8b33",
+    "board-In2_Cu.g2": "99a3908e22bfd3dd43c0ddf43c83aa4457886722556477f6a8bdb612d7606086",
+    "board-B_Cu.gbl": "375b1827faf87eb848a0cdef8486bf1f520b17d23935e5565c8c1774245ed82a"
+   },
+   "gerber_source": "docs/analysis/bulk-route-20261107/fab-11opens/ -- each ordered gerber is BYTE-IDENTICAL (filecmp) to its fab-11opens counterpart",
+   "gerber_generator_commit": "39ffce2b chore(pcb): regenerate the bare-board fab package for the 11-open board 322ade1e",
+   "gerber_generator_note": "commit 39ffce2b regenerated the fab package from the routed board file then named latest.kicad_pcb (message: 'regenerate the bare-board fab package for the 11-open board 322ade1e')",
+   "routed_board_at_generation": "docs/analysis/bulk-route-20261107/latest.kicad_pcb",
+   "routed_board_sha256": "ad89dbddb300b726bde98ddce057c2e1e1ea37040c9cb09d27fb80753e49b75e",
+   "assembly_variant": "TOP-ONLY for the order's BOM/CPL (19 placements; D_BP1-4 excluded, SS24 qty 2 = D_HUB1-2 only). The DOUBLE-SIDED variant (assembly-partial/asm-cpl-jlc.csv, 23 placements incl. 4 bottom D_BP diodes) is a SEPARATE order option, not this zip.",
+   "canonical_v10_board": "tracker/hardware/hub_board_v10_lora1280_7of9.kicad_pcb",
+   "canonical_v10_sha256": "732bfe889020b3c957fb778f1c30f2a84a3e96171cec37c1fa51dae58a9c6561",
+   "canonical_vs_routed": "DIFFERENT files, measured: latest.kicad_pcb is the bulk-route campaign's accepted result; hub_board_v10_lora1280_7of9.kicad_pcb is the canonical v10 board of record (pr-reconciliation-20261030 REPORT.md cites sha 732bfe88... which matches the file today)",
+   "stage1_reference": "tracker/hardware/hub_board_v11_stage1.kicad_pcb",
+   "stage1_sha256": "09ae5819fa76e3c338461b204d5f373f9e17df0de6a52aeef78bf6352b578309",
+   "stage1_note": "NOT an ordered artefact. It is the v11 stage-1 experiment board (netlist-vs-board site-D divergence: netlist U_LORA1280, board U_E28 with E28-2G4M27SX footprint) used here ONLY because ADR-089 G3 names it as the reference board for the MINIMAL net set, and it is the only .kicad_pcb carrying the v11-stage part set (49 footprints incl. U_C, U_CUT1-4, U_E28)."
+  },
+  "site_D_divergence": {
+   "netlist": "tracker/hardware/schematics/flight_board/v11_flight.net names U_LORA1280 (value LoRa1280, footprint balloon_flight_v10:LoRa1280)",
+   "board": "hub_board_v11_stage1.kicad_pcb carries U_E28 (footprint E28-2G4M27SX class)",
+   "adr": "ADR-139 chose LoRa1280 over E28; the stage-1 board predates the swap-back decision",
+   "minimal_relevance": "site D is REMOVED on MINIMAL either way (ADR-089 S1), so the divergence does not change the MINIMAL net set; it must be reconciled before any non-MINIMAL vnext build (gate G1/G2)."
+  },
+  "f33_identity": {
+   "manufacturer_page": "https://www.nicerf.com/lora-module/lora2021f33-2g4.html",
+   "manufacturer_page_name": "LoRa2021F33-2G4 (2W high-power LR2021 dual-band module, 39.0 x 21.0 x 3.3 mm, 18-pin table; page retrieved live 2026-11-25)",
+   "lcsc_reading": "F33-PART-NUMBER-VERIFICATION.md (2026-10-14) reads LCSC C53243927 as LoRa1121F33-2G4-433MHz, family LoRa1121F33-2G4",
+   "conflict": "COMPETING EVIDENCE, not resolved: manufacturer says 2021 (LR2021-based), LCSC listing says 1121. NiceRF's own page is the more authoritative source for the module name; LCSC's listing title may itself be wrong. Neither reading was derived from the operator's physical module.",
+   "operator_module": "the operator owns an 'LR2021 F33' (task brief 2026-11-25); its exact identity, revision, pin mapping and land fit are STILL UNVERIFIED against a physical module (gate G2, plan Phase 1.1) -- physical fit alone is insufficient",
+   "rule": "NO RENAME performed. The repo keeps both readings side by side with their sources; the exact module the operator holds needs pin verification before any footprint is trusted."
+  }
+ },
+ "board_sha256": "732bfe889020b3c957fb778f1c30f2a84a3e96171cec37c1fa51dae58a9c6561"
+}
