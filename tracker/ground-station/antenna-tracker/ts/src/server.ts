@@ -9,8 +9,8 @@ import { SerialPort } from "serialport";
 
 // Static NSEC (hex private key)
 // nsec: REDACTED_NSEC_BALLOON_GRASP_USER
-// hex:  eb1021aeaec60f2bef13c588be23935b5dde947cdd51209fc3589de6b1433e3b
-const privateKey = "eb1021aeaec60f2bef13c588be23935b5dde947cdd51209fc3589de6b1433e3b";
+// hex:  REDACTED-RETIRED-KEY
+const privateKey = "REDACTED-RETIRED-KEY";
 
 const signer = new PrivateKeySigner(privateKey);
 
