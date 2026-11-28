@@ -395,7 +395,7 @@ make flash-b        # flash to Board B
 | `TOLLGATE_IP` | (none, must set) | Board A's AP IP (e.g., `10.192.45.1`) |
 | `TOLLGATE_SSID` | `TollGate-C0E9CA` | Board A's AP SSID |
 | `TEST_TOKEN` | (none) | Cashu token for payment tests |
-| `SUDO_PW` | `c03rad0r123` | sudo password for route management |
+| `SUDO_PW` | `RETRIEVE_FROM_VAULT` | sudo password for route management |
 
 ## External Dependencies
 
@@ -414,7 +414,7 @@ make flash-b        # flash to Board B
 - Commit + push after each working change
 - Board A is at `/dev/ttyACM0`, Board B at `/dev/ttyACM1`, Board C at `/dev/ttyACM3`
 - **Per-board locks required** before hardware access: `make lock-a PHASE="desc"`, lock files in `physical-router-test-automation/locks/`
-- `sudo` password: `c03rad0r123`
+- `sudo` password: `RETRIEVE_FROM_VAULT`
 - SPIFFS is at offset `0x410000`, size `0xF0000` — erase with `esptool.py erase_region 0x410000 0xF0000` if config is stale
 - NVS stores wallet proofs — erasing NVS clears wallet balance
 - **Relay storage** LittleFS at offset `0x500000`, size `0x400000` (4MB) — auto-formatted on first boot

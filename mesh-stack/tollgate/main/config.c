@@ -74,7 +74,7 @@ esp_err_t tollgate_config_init(void)
         const char *default_json = "{"
             "\"nsec\":\"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\","
             "\"wifi_networks\":["
-              "{\"ssid\":\"c03rad0r\",\"password\":\"c03rad0r123\"}"
+              "{\"ssid\":\"c03rad0r\",\"password\":\"RETRIEVE_FROM_VAULT\"}"
             "],"
             "\"ap_password\":\"\","
             "\"mint_url\":\"https://testnut.cashu.exchange\","
