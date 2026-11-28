@@ -151,7 +151,7 @@ Needs payload boards designed and soldered. ESP32 + RP2040 + GPS + LR2021 per pa
 
 ### TollGate Side:
 - TollGate work is mostly in research/planning phase in this context
-- GL-MT6000 router at 192.168.8.1 (root, password `c03rad0r123`, OpenWrt 21.02)
+- GL-MT6000 router at 192.168.8.1 (root, password `RETRIEVE_FROM_VAULT`, OpenWrt 21.02)
 - Multiple repos exist for captive portal, payments, Nostr daemon
 - No active firmware/hardware work on TollGate in this session — focus has been 100% balloon
 
