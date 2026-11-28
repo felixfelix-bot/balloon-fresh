@@ -1,0 +1,53 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 -- /home/c03rad0r/.hermes/hermes-agent/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/c03rad0r/worktrees/t_1e462ff7
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: cov-7.1.0, asyncio-1.3.0, anyio-4.14.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 110 items / 104 deselected / 6 selected
+
+tools/test_range_check.py::TestWriterReaderSessionDirContract::test_writer_go_dir_joins_to_writer_session FAILED [ 16%]
+tools/test_range_check.py::TestWriterReaderSessionDirContract::test_writer_legacy_dir_joins_to_writer_session FAILED [ 33%]
+tools/test_range_check.py::TestWriterReaderSessionDirContract::test_both_writer_schemes_extract_the_same_join_key FAILED [ 50%]
+tools/test_range_check.py::TestWriterReaderSessionDirContract::test_both_writer_schemes_are_discovered_by_that_session FAILED [ 66%]
+tools/test_range_check.py::TestWriterReaderSessionDirContract::test_legacy_writer_dir_keeps_its_t0_launch_tag PASSED [ 83%]
+tools/test_range_check.py::TestWriterReaderSessionDirContract::test_go_writer_dir_keeps_its_go_launch_tag FAILED [100%]
+
+=================================== FAILURES ===================================
+_ TestWriterReaderSessionDirContract.test_writer_go_dir_joins_to_writer_session _
+tools/test_range_check.py:1506: in test_writer_go_dir_joins_to_writer_session
+    assert range_check.session_from_filename(path) == GO_SESSION
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'range_check' has no attribute 'session_from_filename'
+_ TestWriterReaderSessionDirContract.test_writer_legacy_dir_joins_to_writer_session _
+tools/test_range_check.py:1515: in test_writer_legacy_dir_joins_to_writer_session
+    assert range_check.session_from_filename(path) == LEGACY_SESSION
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'range_check' has no attribute 'session_from_filename'
+_ TestWriterReaderSessionDirContract.test_both_writer_schemes_extract_the_same_join_key _
+tools/test_range_check.py:1524: in test_both_writer_schemes_extract_the_same_join_key
+    assert range_check.session_from_filename(path) == session
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'range_check' has no attribute 'session_from_filename'
+_ TestWriterReaderSessionDirContract.test_both_writer_schemes_are_discovered_by_that_session _
+tools/test_range_check.py:1534: in test_both_writer_schemes_are_discovered_by_that_session
+    assert os.path.realpath(path) in found, (session, go, found)
+E   AssertionError: ('2609130435a3f', True, [])
+E   assert '/tmp/pytest-of-c03rad0r/pytest-9/test_both_writer_schemes_are_d0/logs/s2609130435a3f-go1787921400/rx-log.csv' in []
+E    +  where '/tmp/pytest-of-c03rad0r/pytest-9/test_both_writer_schemes_are_d0/logs/s2609130435a3f-go1787921400/rx-log.csv' = <function realpath at 0x781604187c40>('/tmp/pytest-of-c03rad0r/pytest-9/test_both_writer_schemes_are_d0/logs/s2609130435a3f-go1787921400/rx-log.csv')
+E    +    where <function realpath at 0x781604187c40> = <module 'posixpath' (frozen)>.realpath
+E    +      where <module 'posixpath' (frozen)> = os.path
+_ TestWriterReaderSessionDirContract.test_go_writer_dir_keeps_its_go_launch_tag _
+tools/test_range_check.py:1546: in test_go_writer_dir_keeps_its_go_launch_tag
+    assert range_check.t0_from_filename(path) == SID_T0
+E   AssertionError: assert None == 1787921400
+E    +  where None = <function t0_from_filename at 0x781602836480>('/tmp/pytest-of-c03rad0r/pytest-9/test_go_writer_dir_keeps_its_g0/logs/s2609130435a3f-go1787921400/rx-log.csv')
+E    +    where <function t0_from_filename at 0x781602836480> = range_check.t0_from_filename
+=========================== short test summary info ============================
+FAILED tools/test_range_check.py::TestWriterReaderSessionDirContract::test_writer_go_dir_joins_to_writer_session
+FAILED tools/test_range_check.py::TestWriterReaderSessionDirContract::test_writer_legacy_dir_joins_to_writer_session
+FAILED tools/test_range_check.py::TestWriterReaderSessionDirContract::test_both_writer_schemes_extract_the_same_join_key
+FAILED tools/test_range_check.py::TestWriterReaderSessionDirContract::test_both_writer_schemes_are_discovered_by_that_session
+FAILED tools/test_range_check.py::TestWriterReaderSessionDirContract::test_go_writer_dir_keeps_its_go_launch_tag
+================= 5 failed, 1 passed, 104 deselected in 0.23s ==================

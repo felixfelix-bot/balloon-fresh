@@ -1,0 +1,32 @@
+go flag passed to the writer: go=True
+writer dir   : logs/s2609130435a3f-go1787921400/rx-log.csv
+writer session (ARMED-carried): 2609130435a3f
+reader session_from_filename  : 2609130435a3f
+reader is_go_layout           : True
+--- range_check CLI (exit 0) ---
+note: no tx-log found (sibling of /tmp/go-join-demo-65utn6qq/logs/s2609130435a3f-go1787921400/rx-log.csv) — t0 cross-check skipped
+session: 2609130435a3f (explicit)
+
+50m: COMPLETE 2/2
+
+per-config (best pass):
+  c0  CFG0                    10/10  OK
+  c1  CFG1                    10/10  OK
+
+log: /tmp/go-join-demo-65utn6qq/logs/s2609130435a3f-go1787921400/rx-log.csv
+result: COMPLETE — no re-send needed.
+50m s2609130435a3f: PASS (2/2 clean)
+
+DEMO OK: writer's GO dir joined to session 2609130435a3f
+
+legacy dir   : logs/s2608281250-t01787921400/stop-50m/rx-log-t01787921400-2608281250.csv
+writer session (legacy int)   : 2608281250
+reader session_from_filename  : 2608281250
+reader is_go_layout           : False
+--- range_check CLI (exit 1) ---
+note: no tx-log found (sibling of /tmp/legacy-join-demo-gw6pyjpg/logs/s2608281250-t01787921400/stop-50m/rx-log-t01787921400-2608281250.csv) — t0 cross-check skipped
+session: 2608281250 (explicit)
+log: /tmp/legacy-join-demo-gw6pyjpg/logs/s2608281250-t01787921400/stop-50m/rx-log-t01787921400-2608281250.csv
+50m s2608281250: LOGGING GAP (0 STAT rows for session — rx logger problem, not RF; no resend file)
+
+DEMO OK: legacy dir still joined to session 2608281250
