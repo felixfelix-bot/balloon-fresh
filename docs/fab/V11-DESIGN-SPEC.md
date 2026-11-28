@@ -1,5 +1,14 @@
 # v11 DESIGN SPECIFICATION — measured change list, not a wish list
 
+> **Read with ADR-089 (2026-11-25).** This spec is the **FULL v11** change list. The operator has
+> additionally approved a **MINIMAL flight variant** (F33 TX + ONE LR2021 RX, `U_C` and the ranging
+> site removed from that variant, pogo pads replacing J_PROG) recorded in
+> `docs/adr/089-vnext-minimal-flight-variant.md`, with implementation plan
+> `docs/fab/VNEXT-MINIMAL-PLAN.md` and machine-readable baseline
+> `docs/fab/VNEXT-MINIMAL-REQUIREMENTS.json`. Items §2 (ADS1115) and §3 (cut driver) apply to
+> MINIMAL too (release safety and rail telemetry are retained); §4 (U_C expander) is MOOT on
+> MINIMAL per ADR-089 §3.
+
 **Status:** SPECIFICATION. No v11 board exists yet; this document defines what it must change and
 what each change costs in copper. Every number below is measured on
 `docs/analysis/bulk-route-20261107/work.kicad_pcb` (board `e3cb1860`), the v10 assembly source.

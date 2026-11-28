@@ -1,5 +1,9 @@
 # ADR-145 — v11 GPIO economy: three pin-saving measures, deferred from v10
 
+> **MOOT ON THE vnext MINIMAL VARIANT by ADR-089 (2026-11-25).** MINIMAL removes `U_C` entirely
+> (with it, the problem the three measures exist to solve). This record stays PROPOSED and applies
+> to any variant that keeps `U_C`. See `docs/adr/089-vnext-minimal-flight-variant.md` §3.
+
 **Status:** PROPOSED for v11. **Not applied to v10.** Operator directive 2026-11-09: *"put all
 three pin saving improvements on the roadmap for the next board version"*.
 

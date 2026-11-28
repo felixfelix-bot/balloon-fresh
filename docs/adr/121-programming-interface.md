@@ -1,5 +1,10 @@
 # ADR-121 — Programming/debug interface: 6-pin J_PROG header on every flight board
 
+> **AMENDED IN PART by ADR-089 (2026-11-25), for the vnext MINIMAL variant only.** On MINIMAL the
+> 2.54 mm header is replaced by **functional pogo pads** exposing the SAME six signals plus the EN
+> RC — the electrical contract below carries over unchanged; only the mating hardware changes.
+> Other variants keep the header. See `docs/adr/089-vnext-minimal-flight-variant.md` §1/§3.
+
 - **Status:** ACCEPTED — operator question and direction, 2026-10-21 ("Do we also have connectors for flashing the ESP32S3?"); decision taken under standing authority and recorded here.
 - **Decision owner:** Felix (operator) — question; design under standing authority.
 - **Related:** ADR-108 OPEN-10 (which named the gap and the part), ADR-118/119/120 (v10), `docs/adr/108-f33-sx1280-pin-plan.md` line 312.

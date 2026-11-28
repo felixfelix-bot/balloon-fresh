@@ -1,0 +1,520 @@
+{
+ "_meta": {
+  "netlist": "tracker/hardware/schematics/flight_board/v11_flight.net",
+  "coverage": "101 verdicts for 101 netlist refs -- 100% of the FULL v11 variant reference set (plan Phase 3 exit criterion)",
+  "verdict_scale": "KEEP = on the MINIMAL board as-is; OPTIONAL = site retained, population/DNP decided by qualification (supercaps, barometer, jumper, converter site); REMOVE = dropped from MINIMAL only (ADR-089 S1); REPLACE = superseded by a named new feature (J_PROG -> pogo pads)"
+ },
+ "verdicts": {
+  "C10": {
+   "verdict": "KEEP",
+   "value": "10uF",
+   "reason": "10uF decoupling"
+  },
+  "C4": {
+   "verdict": "KEEP",
+   "value": "10uF",
+   "reason": "10uF decoupling"
+  },
+  "C_ADC1": {
+   "verdict": "KEEP",
+   "value": "100nF",
+   "reason": "ADS1115 decoupling/filter"
+  },
+  "C_ADC2": {
+   "verdict": "KEEP",
+   "value": "100nF",
+   "reason": "ADS1115 decoupling/filter"
+  },
+  "C_BULK": {
+   "verdict": "KEEP",
+   "value": "100uF",
+   "reason": "100uF 10V bulk cap (DC-bias corrected part, order sheet)"
+  },
+  "C_CAP1": {
+   "verdict": "OPTIONAL",
+   "value": "3.3F 2.7V (AVX SCC)",
+   "reason": "3.3F 2.7V supercap site 1: DNP on v10 (order sheet); burst storage RETAINED on MINIMAL as an optional site per ADR-089 S1 (ADR-006/036), population decision pending qualification"
+  },
+  "C_CAP2": {
+   "verdict": "OPTIONAL",
+   "value": "3.3F 2.7V (AVX SCC)",
+   "reason": "3.3F 2.7V supercap site 2 (as C_CAP1)"
+  },
+  "C_DIV1": {
+   "verdict": "KEEP",
+   "value": "10nF",
+   "reason": "10nF divider filter cap"
+  },
+  "C_HF": {
+   "verdict": "KEEP",
+   "value": "100nF",
+   "reason": "100nF HF decoupling"
+  },
+  "C_MON": {
+   "verdict": "KEEP",
+   "value": "10nF",
+   "reason": "10nF monitor filter"
+  },
+  "C_SNS1": {
+   "verdict": "KEEP",
+   "value": "100n",
+   "reason": "sense filter cap, ch 1"
+  },
+  "C_SNS2": {
+   "verdict": "KEEP",
+   "value": "100n",
+   "reason": "sense filter cap, ch 2"
+  },
+  "C_SNS3": {
+   "verdict": "KEEP",
+   "value": "100n",
+   "reason": "sense filter cap, ch 3"
+  },
+  "C_SNS4": {
+   "verdict": "KEEP",
+   "value": "100n",
+   "reason": "sense filter cap, ch 4"
+  },
+  "C_SOL1": {
+   "verdict": "KEEP",
+   "value": "10nF",
+   "reason": "solar divider filter cap (as R_SOL1 chain)"
+  },
+  "C_SOL2": {
+   "verdict": "KEEP",
+   "value": "10nF",
+   "reason": "solar divider filter cap"
+  },
+  "C_SOL3": {
+   "verdict": "KEEP",
+   "value": "10nF",
+   "reason": "solar divider filter cap"
+  },
+  "D1": {
+   "verdict": "KEEP",
+   "value": "BAT54",
+   "reason": "BAT54 gate-protection/power diode (v10 assembly)"
+  },
+  "D_BP1": {
+   "verdict": "KEEP",
+   "value": "SS24",
+   "reason": "SS24 bypass-panel diode 1 (wing solar bypass; top-side per ADR-146)"
+  },
+  "D_BP2": {
+   "verdict": "KEEP",
+   "value": "SS24",
+   "reason": "SS24 bypass-panel diode 2 (top-side per ADR-146; stage-1 board moved it)"
+  },
+  "D_BP3": {
+   "verdict": "KEEP",
+   "value": "SS24",
+   "reason": "SS24 bypass-panel diode 3 (top-side per ADR-146)"
+  },
+  "D_BP4": {
+   "verdict": "KEEP",
+   "value": "SS24",
+   "reason": "SS24 bypass-panel diode 4 (top-side per ADR-146)"
+  },
+  "D_HUB1": {
+   "verdict": "KEEP",
+   "value": "SS24",
+   "reason": "SS24 hub-PV panel diode 1 (solar input protection)"
+  },
+  "D_HUB2": {
+   "verdict": "KEEP",
+   "value": "SS24",
+   "reason": "SS24 hub-PV panel diode 2"
+  },
+  "J_HT1": {
+   "verdict": "KEEP",
+   "value": "CUT LOOP 1",
+   "reason": "cut loop 1 header (two-conductor /VSCAP-heater-drain loop, V11-CUT-CHANNELS.md)"
+  },
+  "J_HT2": {
+   "verdict": "KEEP",
+   "value": "CUT LOOP 2",
+   "reason": "cut loop 2 header (as J_HT1)"
+  },
+  "J_HT3": {
+   "verdict": "KEEP",
+   "value": "CUT LOOP 3",
+   "reason": "cut loop 3 header (as J_HT1)"
+  },
+  "J_HT4": {
+   "verdict": "KEEP",
+   "value": "CUT LOOP 4",
+   "reason": "cut loop 4 header (as J_HT1)"
+  },
+  "J_HUB_PV": {
+   "verdict": "KEEP",
+   "value": "HUB_PV_PANEL_5P (P | MID1 | spare | N | GND)",
+   "reason": "hub PV panel 5-pin header (solar input)"
+  },
+  "J_PROG": {
+   "verdict": "REPLACE",
+   "value": "PROG/USB (GND 3V3 EN D- D+ IO0)",
+   "reason": "2.54 mm 6-pin header removed on MINIMAL; replaced by functional pogo pads exposing the SAME six signals + EN RC (ADR-089 S1, ADR-121 amended in part; pogo header is the CANDIDATE implementation, its part selection pending gate G2 Phase 1.3)."
+  },
+  "J_VCC": {
+   "verdict": "OPTIONAL",
+   "value": "F33_VCC_SEL (VSCAP | +3V3)",
+   "reason": "F33_VCC_SEL solder jumper (VSCAP/+3V3): leave open until supply selection verified (handfit list row 22); site retained, strap decision pending"
+  },
+  "J_W1": {
+   "verdict": "KEEP",
+   "value": "WING_SOCKET_4P (hub wing interface 1)",
+   "reason": "wing socket 1 (board feature; support/wing interface -- its retention is tied to the support/wing interface decision, gate G5, and hardware must be weighed)"
+  },
+  "J_W2": {
+   "verdict": "KEEP",
+   "value": "WING_SOCKET_4P (hub wing interface 2)",
+   "reason": "wing socket 2 (as J_W1)"
+  },
+  "J_W3": {
+   "verdict": "KEEP",
+   "value": "WING_SOCKET_4P (hub wing interface 3)",
+   "reason": "wing socket 3 (as J_W1)"
+  },
+  "J_W4": {
+   "verdict": "KEEP",
+   "value": "WING_SOCKET_4P (hub wing interface 4)",
+   "reason": "wing socket 4 (as J_W1)"
+  },
+  "Q_CUT1": {
+   "verdict": "KEEP",
+   "value": "AO3400A",
+   "reason": "cut FET AO3400A, channel 1 (release safety, V11-CUT-CHANNELS.md)"
+  },
+  "Q_CUT2": {
+   "verdict": "KEEP",
+   "value": "AO3400A",
+   "reason": "cut FET, channel 2 (as Q_CUT1)"
+  },
+  "Q_CUT3": {
+   "verdict": "KEEP",
+   "value": "AO3400A",
+   "reason": "cut FET, channel 3 (as Q_CUT1)"
+  },
+  "Q_CUT4": {
+   "verdict": "KEEP",
+   "value": "AO3400A",
+   "reason": "cut FET, channel 4 (as Q_CUT1)"
+  },
+  "R_A0PD": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "decoder address pulldown A0 (netlist: on /CUT_FIRE + GND; keeps decoder address defined at reset)"
+  },
+  "R_A1PD": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "decoder address pulldown A1 (as R_A0PD)"
+  },
+  "R_BAL1": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "10k cell-balance tap (v10 assembly; battery management)"
+  },
+  "R_BAL2": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "10k cell-balance tap (as R_BAL1)"
+  },
+  "R_DIV1": {
+   "verdict": "KEEP",
+   "value": "2.2M",
+   "reason": "solar/SCAP divider 2.2M (netlist v11 values; v10 had 1M pair) -- SCAP monitoring chain"
+  },
+  "R_DIV2": {
+   "verdict": "KEEP",
+   "value": "620k",
+   "reason": "solar/SCAP divider 620k (as R_DIV1)"
+  },
+  "R_F1": {
+   "verdict": "KEEP",
+   "value": "100R",
+   "reason": "100R F33 CE feed/filter (netlist: R_F1.1 on +3V3 with U2.5 CE)"
+  },
+  "R_FPD": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "100k pulldown holding all four cut-FET gates low via /CUT_FIRE (measured from netlist: R_FPD.1 on /CUT_FIRE with R_GPD1-4, .2 on GND) -- release-safety default-off"
+  },
+  "R_G1": {
+   "verdict": "KEEP",
+   "value": "100",
+   "reason": "cut FET gate resistor, ch 1 (V11-CUT-CHANNELS.md gate chain)"
+  },
+  "R_G2": {
+   "verdict": "KEEP",
+   "value": "100",
+   "reason": "cut FET gate resistor, ch 2"
+  },
+  "R_G3": {
+   "verdict": "KEEP",
+   "value": "100",
+   "reason": "cut FET gate resistor, ch 3"
+  },
+  "R_G4": {
+   "verdict": "KEEP",
+   "value": "100",
+   "reason": "cut FET gate resistor, ch 4"
+  },
+  "R_GPD1": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "gate pulldown, ch 1 (netlist: .2 on GND with R_FPD)"
+  },
+  "R_GPD2": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "gate pulldown, ch 2"
+  },
+  "R_GPD3": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "gate pulldown, ch 3"
+  },
+  "R_GPD4": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "gate pulldown, ch 4"
+  },
+  "R_MON1": {
+   "verdict": "KEEP",
+   "value": "4.7M",
+   "reason": "4.7M monitor divider leg 1 (with C_MON)"
+  },
+  "R_MON2": {
+   "verdict": "KEEP",
+   "value": "4.7M",
+   "reason": "4.7M monitor divider leg 2"
+  },
+  "R_PROT1": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "cut-loop protection resistor, ch 1 (netlist cut channel chain)"
+  },
+  "R_PROT2": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "cut-loop protection resistor, ch 2"
+  },
+  "R_PROT3": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "cut-loop protection resistor, ch 3"
+  },
+  "R_PROT4": {
+   "verdict": "KEEP",
+   "value": "10k",
+   "reason": "cut-loop protection resistor, ch 4"
+  },
+  "R_PU1": {
+   "verdict": "KEEP",
+   "value": "4k7",
+   "reason": "4k7 I2C SCL pullup (netlist: R_PU1.2 on /I2C_SCL with U1/U6/U_ADC1/2)"
+  },
+  "R_PU2": {
+   "verdict": "KEEP",
+   "value": "4k7",
+   "reason": "4k7 I2C SDA pullup (netlist: R_PU2.2 on /I2C_SDA)"
+  },
+  "R_SH1": {
+   "verdict": "KEEP",
+   "value": "100m",
+   "reason": "0.1 ohm 2512 Kelvin shunt, ch 1 (V11-CUT-CHANNELS.md; sense error budget)"
+  },
+  "R_SH2": {
+   "verdict": "KEEP",
+   "value": "100m",
+   "reason": "Kelvin shunt, ch 2 (as R_SH1)"
+  },
+  "R_SH3": {
+   "verdict": "KEEP",
+   "value": "100m",
+   "reason": "Kelvin shunt, ch 3 (as R_SH1)"
+  },
+  "R_SH4": {
+   "verdict": "KEEP",
+   "value": "100m",
+   "reason": "Kelvin shunt, ch 4 (as R_SH1)"
+  },
+  "R_SNS1": {
+   "verdict": "KEEP",
+   "value": "1k",
+   "reason": "shunt sense tap, ch 1 (V11-CUT-CHANNELS.md ADC chain)"
+  },
+  "R_SNS2": {
+   "verdict": "KEEP",
+   "value": "1k",
+   "reason": "shunt sense tap, ch 2"
+  },
+  "R_SNS3": {
+   "verdict": "KEEP",
+   "value": "1k",
+   "reason": "shunt sense tap, ch 3"
+  },
+  "R_SNS4": {
+   "verdict": "KEEP",
+   "value": "1k",
+   "reason": "shunt sense tap, ch 4"
+  },
+  "R_SNSA1": {
+   "verdict": "KEEP",
+   "value": "300k",
+   "reason": "sense divider 300k, ch 1 (1/4 divider per V11-CUT-CHANNELS.md)"
+  },
+  "R_SNSA2": {
+   "verdict": "KEEP",
+   "value": "300k",
+   "reason": "sense divider 300k, ch 2"
+  },
+  "R_SNSA3": {
+   "verdict": "KEEP",
+   "value": "300k",
+   "reason": "sense divider 300k, ch 3"
+  },
+  "R_SNSA4": {
+   "verdict": "KEEP",
+   "value": "300k",
+   "reason": "sense divider 300k, ch 4"
+  },
+  "R_SNSB1": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "sense divider 100k, ch 1"
+  },
+  "R_SNSB2": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "sense divider 100k, ch 2"
+  },
+  "R_SNSB3": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "sense divider 100k, ch 3"
+  },
+  "R_SNSB4": {
+   "verdict": "KEEP",
+   "value": "100k",
+   "reason": "sense divider 100k, ch 4"
+  },
+  "R_SOL1": {
+   "verdict": "KEEP",
+   "value": "220k",
+   "reason": "solar divider 220k (wing solar monitoring, netlist chain with R_SOL2)"
+  },
+  "R_SOL2": {
+   "verdict": "KEEP",
+   "value": "62k",
+   "reason": "solar divider 62k (as R_SOL1)"
+  },
+  "R_SOL3": {
+   "verdict": "KEEP",
+   "value": "220k",
+   "reason": "solar divider 220k (as R_SOL1)"
+  },
+  "R_SOL4": {
+   "verdict": "KEEP",
+   "value": "62k",
+   "reason": "solar divider 62k (as R_SOL1)"
+  },
+  "R_SOL5": {
+   "verdict": "KEEP",
+   "value": "220k",
+   "reason": "solar divider 220k (as R_SOL1)"
+  },
+  "R_SOL6": {
+   "verdict": "KEEP",
+   "value": "62k",
+   "reason": "solar divider 62k (as R_SOL1)"
+  },
+  "U1": {
+   "verdict": "KEEP",
+   "value": "ESP32-S3-WROOM-1U-N8R8",
+   "reason": "ESP32-S3-WROOM-1U-N8R8 -- the MCU (ADR-089 S1)"
+  },
+  "U2": {
+   "verdict": "KEEP",
+   "value": "LoRa2021F33-2G4",
+   "reason": "F33 TX, the transmitter (ADR-089 S1). Part identity NOT settled: NiceRF page names LoRa2021F33-2G4; LCSC C53243927 reads LoRa1121F33-2G4-433MHz -- competing evidence recorded, pin verification pending (gate G2)."
+  },
+  "U3": {
+   "verdict": "KEEP",
+   "value": "LoRa2021_Castellated",
+   "reason": "the ONE low-power LR2021 RX (ADR-089 S1). Footprint pin-verification pending (gate G2); shopping list records the operator's small module does NOT fit U3 or U_C as a drop-in (handfit shopping list row 14)."
+  },
+  "U5": {
+   "verdict": "KEEP",
+   "value": "MAX-M10S",
+   "reason": "MAX-M10S GNSS retained on MINIMAL (ADR-089 S1); actual installed part on the operator's board is an unidentified 4-pin breakout -- needs identification (handfit list row 16; not established as the bare MAX-M10S footprint)"
+  },
+  "U6": {
+   "verdict": "OPTIONAL",
+   "value": "MS5611-01BA",
+   "reason": "MS5611 barometer: DNP by decision on v10 (order sheet DNP table); retained on MINIMAL as an optional site pending cold-qualification evidence (ADR-089 retains GPS/tracking; NTC chain measures the cold today)"
+  },
+  "U7": {
+   "verdict": "KEEP",
+   "value": "TPS7A02",
+   "reason": "TPS7A02 3V3 LDO -- required power (ADR-089 S1 'ESP32 + required power')"
+  },
+  "U_ADC1": {
+   "verdict": "KEEP",
+   "value": "ADS1115IDGS",
+   "reason": "ADS1115 #1: /SCAP_ADC + cut sense (plan Phase 0.2: both ADS1115 stay; ADR-148)"
+  },
+  "U_ADC2": {
+   "verdict": "KEEP",
+   "value": "ADS1115IDGS",
+   "reason": "ADS1115 #2: solar dividers + cut sense (as U_ADC1)"
+  },
+  "U_C": {
+   "verdict": "REMOVE",
+   "value": "LoRa2021_Castellated",
+   "reason": "redundant second LR2021 RX removed on MINIMAL (ADR-089 S1; ADR-145 MOOT on MINIMAL). Its 4 control nets have no MCU endpoint (ADR-145). Site stays valid on non-MINIMAL variants."
+  },
+  "U_CUT1": {
+   "verdict": "KEEP",
+   "value": "SN74LVC1G373DBVR",
+   "reason": "cut-driver latch, channel 1 (release safety, ADR-129; netlist value SN74LVC1G373DBVR; stage-1 board carries a placeholder footprint part TODO(unverified))"
+  },
+  "U_CUT2": {
+   "verdict": "KEEP",
+   "value": "SN74LVC1G373DBVR",
+   "reason": "cut-driver latch, channel 2 (as U_CUT1)"
+  },
+  "U_CUT3": {
+   "verdict": "KEEP",
+   "value": "SN74LVC1G373DBVR",
+   "reason": "cut-driver latch, channel 3 (as U_CUT1)"
+  },
+  "U_CUT4": {
+   "verdict": "KEEP",
+   "value": "SN74LVC1G373DBVR",
+   "reason": "cut-driver latch, channel 4 (as U_CUT1)"
+  },
+  "U_DEC": {
+   "verdict": "KEEP",
+   "value": "SN74LVC1G139DCUR",
+   "reason": "SN74LVC1G139 one-hot decoder serialising the four latch /OE lines -- hardware guarantee no two FETs conduct (V11-CUT-CHANNELS.md; release safety)"
+  },
+  "U_HUB_CVT": {
+   "verdict": "OPTIONAL",
+   "value": "HUB_PV input (part TODO(unverified))",
+   "reason": "hub PV converter site: part TODO(unverified), output net absent on v10 (order sheet DNP). Site kept as OPTIONAL pending a real converter part + netlist; NOT part of the MINIMAL radio set."
+  },
+  "U_LORA1280": {
+   "verdict": "REMOVE",
+   "value": "LoRa1280",
+   "reason": "ranging site D removed on MINIMAL (ADR-089 S1); ADR-138/139 gates bind only where site D exists. Netlist-vs-board divergence (U_LORA1280 vs U_E28) mooted by removal for THIS variant."
+  }
+ },
+ "tally": {
+  "KEEP": 93,
+  "OPTIONAL": 5,
+  "REPLACE": 1,
+  "REMOVE": 2
+ }
+}
