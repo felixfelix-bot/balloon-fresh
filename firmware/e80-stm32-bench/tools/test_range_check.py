@@ -1480,5 +1480,72 @@ class TestGoStopGuard:
         assert "PASS" not in r.stdout, r.stdout
 
 
+# ---------------------------------------------------------------------------
+# Writer -> reader contract for the run-dir name (frozen s<sid>-go<epoch>).
+#
+# resolve_log_path() is the writer that actually names a run dir
+# (e80_bench_ctl): GO mode (--sync cvm) writes logs/s<session>-go<epoch>/,
+# legacy boundary/manual runs keep logs/s<session>-t0<epoch>/. The frozen
+# join contract is that the reader (range_check) extracts the SAME session
+# id the writer minted, from BOTH spellings — the epoch must never leak into
+# the join key, and the legacy spelling must not be replaced by the GO one.
+# These fixtures drive the writer's own helper rather than hardcoding dir
+# names, so a future writer change breaks the reader-side contract test.
+# ---------------------------------------------------------------------------
+
+
+class TestWriterReaderSessionDirContract:
+    """e80_bench_ctl.resolve_log_path() -> range_check session_id join."""
+
+    def test_writer_go_dir_joins_to_writer_session(self, tmp_path):
+        path = ctl.resolve_log_path(None, True, GO_SESSION, SID_T0, "rx",
+                                    repo_root=str(tmp_path), go=True)
+        assert os.path.basename(os.path.dirname(path)) == \
+            "s{}-go{}".format(GO_SESSION, SID_T0)
+        _write_log(path, go_banner_lines(GO_SESSION))
+        assert range_check.session_from_filename(path) == GO_SESSION
+
+    def test_writer_legacy_dir_joins_to_writer_session(self, tmp_path):
+        path = ctl.resolve_log_path(None, True, LEGACY_SESSION, SID_T0, "rx",
+                                    repo_root=str(tmp_path), go=False)
+        assert os.path.basename(os.path.dirname(path)) == \
+            "s{}-t0{}".format(LEGACY_SESSION, SID_T0)
+        _write_log(path, ["# DISTRIBUTED_RX_MODE t0={} port=x loop=1"
+                          .format(_sid_iso(SID_T0))])
+        assert range_check.session_from_filename(path) == LEGACY_SESSION
+
+    def test_both_writer_schemes_extract_the_same_join_key(self, tmp_path):
+        # One writer helper, both modes: the reader's join key is the session
+        # id the writer emitted in each case — never the epoch.
+        for session, go in ((GO_SESSION, True), (LEGACY_SESSION, False)):
+            path = ctl.resolve_log_path(None, True, session, SID_T0, "rx",
+                                        repo_root=str(tmp_path), go=go)
+            _write_log(path, [""])
+            assert range_check.session_from_filename(path) == session
+
+    def test_both_writer_schemes_are_discovered_by_that_session(self, tmp_path):
+        for session, go in ((GO_SESSION, True), (LEGACY_SESSION, False)):
+            path = ctl.resolve_log_path(None, True, session, SID_T0, "rx",
+                                        repo_root=str(tmp_path), go=go)
+            _write_log(path, [""])
+            found = [os.path.realpath(p) for p in
+                     range_check.find_rx_logs("50m", session,
+                                              [str(tmp_path)])]
+            assert os.path.realpath(path) in found, (session, go, found)
+
+    def test_legacy_writer_dir_keeps_its_t0_launch_tag(self, tmp_path):
+        # the legacy dir keeps -t0<epoch> (t0 cross-check + GPS stitching);
+        # the GO spelling must not displace it.
+        path = ctl.resolve_log_path(None, True, LEGACY_SESSION, SID_T0, "rx",
+                                    repo_root=str(tmp_path), go=False)
+        assert range_check.t0_from_filename(path) == SID_T0
+
+    def test_go_writer_dir_keeps_its_go_launch_tag(self, tmp_path):
+        path = ctl.resolve_log_path(None, True, GO_SESSION, SID_T0, "rx",
+                                    repo_root=str(tmp_path), go=True)
+        assert range_check.t0_from_filename(path) == SID_T0
+        assert range_check.is_go_layout(path)
+
+
 if __name__ == "__main__":
     unittest.main()
